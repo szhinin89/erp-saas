@@ -641,7 +641,8 @@ public sealed class AuthorizeSalesInvoiceHandler
 
         // ── Egreso de inventario (Kardex) — solo consume lo ya confirmado en el
         // documento; precio/descuento/IVA siguen siendo propiedad exclusiva de Ventas ──
-        foreach (var line in inv.Lines)
+        // Orden único de locks entre ventas; OrderBy no modifica las líneas ni su SortOrder.
+        foreach (var line in inv.Lines.OrderBy(l => l.ItemId).ThenBy(l => l.WarehouseId))
         {
             if (line.ItemId is null || line.WarehouseId is null)
                 continue;

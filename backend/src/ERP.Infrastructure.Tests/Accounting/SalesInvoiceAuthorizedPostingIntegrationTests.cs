@@ -43,7 +43,7 @@ namespace ERP.Infrastructure.Tests.Accounting;
 /// mientras el ciclo externo todavía está en curso.
 /// </remarks>
 [Trait("Category", "PostgreSql")]
-public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifetime
+public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -893,7 +893,7 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
     public async Task Kardex_sequence_retry_authorizes_sale_with_every_effect_exactly_once()
     {
         var issueDate = new DateOnly(2026, 7, 25);
-        var productId = Guid.NewGuid();
+        var productId = await SeedInventoryProductAsync();
         Guid warehouseId;
         await using (var seed = CreateContext())
         {
@@ -942,23 +942,10 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
         var stock = RetryStockRepository(db);
-        await stock.AppendMovementAsync(
-            _tenantId,
-            _companyId,
-            productId,
-            warehouseId,
-            ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit,
-            -1m,
-            "UNIT",
-            issueDate,
-            inv.InvoiceNumber,
-            inv.Id,
-            "SalesInvoice",
-            _createdBy
-        );
-        inv.Authorize(_createdBy);
-
-        // Another sale of the same product/warehouse commits first: our first save collides.
+        var staleStock = (await stock.GetStockAsync(_tenantId, warehouseId, productId))!;
+        var staleXmin = db.Entry(staleStock).Property<uint>("xmin").OriginalValue;
+        // Commit the competing sale BEFORE acquiring our resource lock. Keeping the old xmin
+        // recreates the optimistic conflict without blocking a second writer behind our lock.
         await using (var other = CreateContext())
         {
             var otherRepo = RetryStockRepository(other);
@@ -978,6 +965,25 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
             );
             await otherRepo.SaveChangesWithSequenceRetryAsync();
         }
+
+        await stock.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            productId,
+            warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.SaleExit,
+            -1m,
+            "UNIT",
+            issueDate,
+            inv.InvoiceNumber,
+            inv.Id,
+            "SalesInvoice",
+            _createdBy,
+            sourceDocLineId: inv.Lines.Single().Id
+        );
+        // Force the real PostgreSQL optimistic conflict using the pre-competing-sale token.
+        db.Entry(staleStock).Property<uint>("xmin").OriginalValue = staleXmin;
+        inv.Authorize(_createdBy);
 
         await stock.SaveChangesWithSequenceRetryAsync();
 
@@ -1153,6 +1159,7 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var warehouseId = await SeedWarehouseAsync();
+        var productId = await SeedInventoryProductAsync();
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         // Sin PostingRule sembrada — RULE_NOT_FOUND dentro del pipeline, después del lock de Caja.
         var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000097");
@@ -1163,7 +1170,7 @@ public sealed class SalesInvoiceAuthorizedPostingIntegrationTests : IAsyncLifeti
         await stock.AppendMovementAsync(
             _tenantId,
             _companyId,
-            Guid.NewGuid(),
+            productId,
             warehouseId,
             ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust,
             10m,
