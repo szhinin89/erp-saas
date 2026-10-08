@@ -420,16 +420,45 @@ function Ensure-FrontendDependencies {
 
 function Invoke-DatabaseUpdate {
 
-    Write-Step "Aplicando migraciones EF Core"
+    Write-Step "Aplicando migraciones EF Core (Development)"
 
-    Push-Location $BackendPath
+    $previousAspNetEnvironment = $env:ASPNETCORE_ENVIRONMENT
+    $previousDotnetEnvironment = $env:DOTNET_ENVIRONMENT
+    $previousConnection = $env:ConnectionStrings__DefaultConnection
+
+    # La factory de EF no carga user-secrets. Pasar la conexión solo por el
+    # entorno del proceso; nunca imprimirla ni escribirla en archivos.
+    Push-Location (Split-Path $ApiProject -Parent)
 
     try {
+        $env:ASPNETCORE_ENVIRONMENT = "Development"
+        $env:DOTNET_ENVIRONMENT = "Development"
 
-       dotnet ef database update `
-        --project $InfrastructureProject `
-        --startup-project $ApiProject `
-        --context ErpDbContext
+        $secretsOutput = dotnet user-secrets list --project $ApiProject --json 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "No se pudieron leer los user-secrets de ERP.API."
+        }
+        $secretsJson = [regex]::Match(($secretsOutput -join "`n"), '(?s)\{.*\}').Value
+        if ([string]::IsNullOrWhiteSpace($secretsJson)) {
+            throw "La salida de user-secrets no contiene JSON válido."
+        }
+        $secrets = $secretsJson | ConvertFrom-Json -AsHashtable
+        $connection = $secrets['ConnectionStrings:DefaultConnection']
+        if (-not [string]::IsNullOrWhiteSpace($env:DB_CONNECTION_STRING)) {
+            # Mismo alias y precedencia que Program.cs.
+            $connection = $env:DB_CONNECTION_STRING
+        }
+        if (-not [string]::IsNullOrWhiteSpace($connection)) {
+            $env:ConnectionStrings__DefaultConnection = $connection
+        }
+        elseif ([string]::IsNullOrWhiteSpace($previousConnection)) {
+            throw "Configure DefaultConnection en user-secrets de ERP.API o en el entorno antes de migrar."
+        }
+
+        dotnet ef database update `
+            --project $InfrastructureProject `
+            --startup-project $ApiProject `
+            --context ErpDbContext
 
         if ($LASTEXITCODE -ne 0) {
             throw "Falló EF Database Update"
@@ -438,6 +467,9 @@ function Invoke-DatabaseUpdate {
         Write-Ok "Base de datos actualizada"
     }
     finally {
+        $env:ASPNETCORE_ENVIRONMENT = $previousAspNetEnvironment
+        $env:DOTNET_ENVIRONMENT = $previousDotnetEnvironment
+        $env:ConnectionStrings__DefaultConnection = $previousConnection
         Pop-Location
     }
 }
@@ -783,7 +815,7 @@ function Start-Backend {
     Start-Process powershell -ArgumentList @(
         "-NoExit",
         "-Command",
-        "Set-Location '$BackendPath'; dotnet run --project '$ApiProject' 2>&1 | Tee-Object -FilePath '$logFile'"
+        "Set-Location '$BackendPath'; `$env:ASPNETCORE_ENVIRONMENT = 'Development'; `$env:DOTNET_ENVIRONMENT = 'Development'; dotnet run --project '$ApiProject' 2>&1 | Tee-Object -FilePath '$logFile'"
     )
 
     Write-Ok "Proceso de API iniciado (log: $logFile)"
