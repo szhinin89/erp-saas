@@ -1,3 +1,4 @@
+using System.Globalization;
 using ClosedXML.Excel;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
@@ -41,9 +42,21 @@ public sealed class ClosedXmlInitialStockImportSheetReader : IInitialStockImport
             for (var col = 1; col <= lastUsedColumn; col++)
             {
                 var header = headerRow.Cell(col).GetString().Trim();
-                if (!string.IsNullOrEmpty(header))
-                    columnIndexes[header] = col;
+                if (!string.IsNullOrEmpty(header) && !columnIndexes.TryAdd(header, col))
+                    throw new DomainRuleViolationException("Encabezado duplicado: " + header);
             }
+
+            var obsolete = InitialStockImportColumns.Obsolete.Where(columnIndexes.ContainsKey).ToList();
+            if (obsolete.Count > 0)
+                throw new DomainRuleViolationException(
+                    "La plantilla ya no admite: " + string.Join(", ", obsolete)
+                        + ". La bodega se identifica por Código Bodega. Descargue la plantilla actual."
+                );
+            var missing = InitialStockImportColumns.All.Where(c => !columnIndexes.ContainsKey(c)).ToList();
+            if (missing.Count > 0)
+                throw new DomainRuleViolationException(
+                    "Faltan encabezados de la plantilla: " + string.Join(", ", missing)
+                );
 
             var rows = new List<IReadOnlyDictionary<string, string?>>();
             var lastUsedRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
@@ -57,7 +70,7 @@ public sealed class ClosedXmlInitialStockImportSheetReader : IInitialStockImport
                 foreach (var column in InitialStockImportColumns.All)
                 {
                     var value = columnIndexes.TryGetValue(column, out var colIndex)
-                        ? row.Cell(colIndex).GetString().Trim()
+                        ? InvariantText(row.Cell(colIndex))
                         : null;
                     values[column] = string.IsNullOrEmpty(value) ? null : value;
                 }
@@ -80,37 +93,65 @@ public sealed class ClosedXmlInitialStockImportSheetReader : IInitialStockImport
             cell.Style.Font.Bold = true;
         }
 
-        sheet.Cell(2, 1).Value = "PROD-0001";
-        sheet.Cell(2, 2).Value = "";
-        sheet.Cell(2, 3).Value = "Bodega Principal";
-        sheet.Cell(2, 4).Value = 100;
-        sheet.Cell(2, 5).Value = 3.50;
-        sheet.Cell(2, 6).Value = "";
-        sheet.Cell(2, 7).Value = "Saldo inicial cargado desde Excel.";
+        var example = new Dictionary<string, string>
+        {
+            [InitialStockImportColumns.Sku] = "PROD-0001",
+            [InitialStockImportColumns.Barcode] = "",
+            [InitialStockImportColumns.WarehouseCode] = "BOD-01",
+            [InitialStockImportColumns.Quantity] = "100",
+            [InitialStockImportColumns.UnitCost] = "3.50",
+            [InitialStockImportColumns.CutoffDate] = "2026-09-30",
+            [InitialStockImportColumns.Observation] = "Saldo inicial al corte.",
+        };
+        for (var i = 0; i < InitialStockImportColumns.All.Count; i++)
+        {
+            // Texto en todas las columnas: Excel no debe convertir códigos, cantidades, costos ni
+            // fechas según la configuración regional del equipo.
+            sheet.Column(i + 1).Style.NumberFormat.Format = "@";
+            sheet.Cell(2, i + 1).Value = example[InitialStockImportColumns.All[i]];
+        }
 
         sheet.Columns().AdjustToContents();
 
         var instructions = workbook.Worksheets.Add("Instrucciones");
         instructions.Cell(1, 1).Value = "Cómo llenar esta plantilla";
         instructions.Cell(1, 1).Style.Font.Bold = true;
-        instructions.Cell(3, 1).Value =
-            "Una fila = existencia inicial de un producto en una bodega. El producto y la bodega deben existir previamente — esta plantilla nunca los crea.";
-        instructions.Cell(4, 1).Value =
-            "SKU o Código de barras: al menos uno de los dos debe identificar un ítem activo ya existente.";
-        instructions.Cell(5, 1).Value = "Bodega: nombre exacto de una bodega activa ya existente.";
-        instructions.Cell(6, 1).Value =
-            "Cantidad y Costo unitario son obligatorios y deben ser mayores a cero — un ingreso de inventario siempre requiere costo.";
-        instructions.Cell(7, 1).Value =
-            "Fecha de corte es informativa — el movimiento de inventario se registra con la fecha de confirmación, no con esta fecha.";
-        instructions.Cell(8, 1).Value =
-            "No repita el mismo producto+bodega en más de una fila del mismo archivo.";
-        instructions.Cell(9, 1).Value = "No modifique los encabezados de la fila 1.";
+        string[] lines =
+        [
+            "Una fila = saldo inicial de un producto en una bodega al corte. El producto y la bodega deben existir; "
+                + "esta plantilla nunca los crea ni registra compras.",
+            "Obligatorios: SKU o Código de barras, Código Bodega, Cantidad, Costo unitario y Fecha de corte.",
+            "SKU / Código de barras: si informa ambos deben corresponder al mismo producto activo. Productos de "
+                + "servicio o con control de lotes/series no se admiten.",
+            "Código Bodega: código de una bodega activa de la sucursal activa. Para otra sucursal, cambie de "
+                + "sucursal y cargue otro archivo.",
+            "Cantidad y Costo unitario: mayores a cero, con punto decimal (p. ej. 3.50), sin separador de miles. "
+                + "Si exceden los decimales configurados para la empresa la fila se bloquea (no se redondea). "
+                + "La cantidad debe ser entera si el producto no admite decimales.",
+            "Fecha de corte: AAAA-MM-DD, no futura y la misma para todo el archivo. Es la fecha efectiva del saldo inicial.",
+            "Solo para producto+bodega sin stock ni movimientos previos; si ya tiene historia, use un ajuste de inventario.",
+            "No repita el mismo producto+bodega. Si cualquier fila tiene error, el lote no se confirma.",
+            "No modifique los encabezados de la fila 1.",
+        ];
+        for (var i = 0; i < lines.Length; i++)
+            instructions.Cell(i + 3, 1).Value = lines[i];
         instructions.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return Task.FromResult(stream.ToArray());
     }
+
+    /// <summary>
+    /// IL-4A: el texto de una celda nunca depende de la cultura del servidor — un número de Excel se
+    /// convierte con punto decimal invariante y una fecha a AAAA-MM-DD; el texto se lee tal cual.
+    /// </summary>
+    private static string InvariantText(IXLCell cell) => cell.DataType switch
+    {
+        XLDataType.Number => ((decimal)cell.GetDouble()).ToString(CultureInfo.InvariantCulture),
+        XLDataType.DateTime => cell.GetDateTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        _ => cell.GetString().Trim(),
+    };
 
     private static bool IsInstructionsSheet(string name) =>
         string.Equals(name, "Instrucciones", StringComparison.OrdinalIgnoreCase);

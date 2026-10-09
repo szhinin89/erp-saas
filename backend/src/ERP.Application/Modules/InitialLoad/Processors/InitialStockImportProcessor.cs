@@ -1,5 +1,9 @@
+using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.CreateInventoryAdjustmentReason;
@@ -15,55 +19,50 @@ using MediatR;
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
 /// <summary>
-/// Cuarto <c>IImportProcessor</c> registrado (INITIAL-LOAD-INITIAL-STOCK-01) — archivo separado a
-/// propósito del Catálogo de Productos porque afecta inventario/Kardex/costo. Confirm orquesta
-/// <see cref="CreateStockAdjustmentCommand"/> → <see cref="ExecuteStockAdjustmentCommand"/> (casos
-/// de uso existentes de Ajustes de Inventario) — un <c>StockAdjustment</c> Ingreso de una sola
-/// línea por fila válida, nunca escribe Kardex/CurrentStock directamente. Nunca crea Ítems ni
-/// Bodegas: si SKU/código de barras o Bodega no resuelven contra el catálogo ya existente, la fila
-/// se bloquea.
+/// Carga Inicial de Inventario (INITIAL-LOAD-INITIAL-STOCK-01, endurecido en IL-4A). Representa el
+/// saldo inicial al corte — nunca compras históricas ficticias. Nunca crea Ítems ni Bodegas.
 ///
-/// DECISIONES DOCUMENTADAS (INITIAL-LOAD-INITIAL-STOCK-01):
-/// - <b>Motivo de ajuste</b>: <c>ExecuteStockAdjustmentCommand</c> exige un <c>InventoryAdjustmentReason</c>
-///   activo que permita Ingreso, y ningún tenant tiene uno por defecto. Se resuelve/crea (solo en
-///   Confirm, nunca en Validate) un motivo tenant-wide de código estable <c>CARGA_INICIAL</c> vía
-///   <see cref="CreateInventoryAdjustmentReasonCommand"/> — si ya existe pero inactivo o sin
-///   permitir Ingreso, se reporta error explícito en vez de duplicar o forzar su uso.
-/// - <b>Costo unitario es OBLIGATORIO, no advertencia</b>: <c>ExecuteStockAdjustmentCommandHandler</c>
-///   ya rechaza cualquier línea de Ingreso con costo nulo o ≤ 0 (regla de dominio preexistente,
-///   ajena a este importador) — sin costo válido la fila bloquea, igual que SKU/Bodega.
-/// - <b>Fecha de corte no se aplica como fecha de posteo</b>: <c>ExecuteStockAdjustmentCommandHandler</c>
-///   postea el movimiento con <c>DateTime.UtcNow</c> fijo, sin parámetro de fecha — no hay forma de
-///   respetar una fecha retroactiva sin tocar esa infraestructura (fuera de alcance, "no tocar
-///   Kardex"). La columna se valida como fecha bien formada si viene informada, pero su valor solo
-///   queda registrado en las Observaciones de la línea — nunca como fecha real de posteo — y se
-///   reporta con una advertencia informativa.
-/// - <b>Duplicado ítem+bodega dentro del archivo</b>: se detecta con un <see cref="HashSet{T}"/> de
-///   instancia poblado a medida que se validan las filas — seguro porque
-///   <see cref="ValidateImportBatch.ValidateImportBatchHandler"/> reutiliza la MISMA instancia de
-///   processor (ciclo de vida Scoped) para todas las filas de un lote, en un bucle siempre
-///   secuencial (nunca paralelo). No es un patrón a copiar a la ligera en otro processor sin la
-///   misma garantía de secuencialidad.
+/// IL-4A — Validate es fiel a la confirmación:
+/// - Item activo, que participa de inventario y sin lote/serie; si vienen SKU y código de barras
+///   deben resolver al mismo Item.
+/// - Bodega por CÓDIGO dentro de la sucursal activa (mismo criterio que ejecuta el ajuste); otra
+///   sucursal se carga en otro lote cambiando de sucursal.
+/// - Solo Item+Bodega sin stock ni movimientos previos — con historia se usa un ajuste normal.
+/// - Cantidad y costo con punto decimal invariante, &gt; 0, sin exceder la precisión configurada
+///   de la empresa (sin redondeo silencioso); cantidad entera si el Item no admite decimales.
+/// - Fecha de corte obligatoria, no futura y única en todo el lote: es la fecha efectiva del saldo.
+///
+/// La confirmación (documento por bodega, movimiento de apertura propio con la fecha de corte,
+/// transacción única) es IL-4B; hasta entonces Confirm conserva el ajuste de Ingreso por fila.
 /// </summary>
-public sealed class InitialStockImportProcessor : IImportProcessor
+public sealed partial class InitialStockImportProcessor : IImportProcessor, IImportBatchValidator
 {
     private const string ReasonCode = "CARGA_INICIAL";
     private const string ReasonName = "Carga Inicial";
+    private static readonly string[] CutoffDateFormats = ["yyyy-MM-dd", "dd/MM/yyyy"];
 
     private readonly IInitialStockImportSheetReader _reader;
     private readonly IItemRepository _itemRepo;
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly IInventoryAdjustmentReasonRepository _reasonRepo;
+    private readonly IInitialStockLookup _stockLookup;
+    private readonly ICompanyPrecisionPolicyProvider _precisionProvider;
+    private readonly ICompanyClock _clock;
+    private readonly ICurrentBranch _branch;
     private readonly IOperationalContext _ctx;
     private readonly IMediator _mediator;
-
-    private readonly HashSet<(Guid ItemId, Guid WarehouseId)> _seenInBatch = [];
+    private (int Quantity, int UnitCost)? _precision;
+    private DateOnly? _companyToday;
 
     public InitialStockImportProcessor(
         IInitialStockImportSheetReader reader,
         IItemRepository itemRepo,
         IWarehouseRepository warehouseRepo,
         IInventoryAdjustmentReasonRepository reasonRepo,
+        IInitialStockLookup stockLookup,
+        ICompanyPrecisionPolicyProvider precisionProvider,
+        ICompanyClock clock,
+        ICurrentBranch branch,
         IOperationalContext ctx,
         IMediator mediator
     )
@@ -72,6 +71,10 @@ public sealed class InitialStockImportProcessor : IImportProcessor
         _itemRepo = itemRepo;
         _warehouseRepo = warehouseRepo;
         _reasonRepo = reasonRepo;
+        _stockLookup = stockLookup;
+        _precisionProvider = precisionProvider;
+        _clock = clock;
+        _branch = branch;
         _ctx = ctx;
         _mediator = mediator;
     }
@@ -104,45 +107,78 @@ public sealed class InitialStockImportProcessor : IImportProcessor
 
         var sku = Get(rawRow, InitialStockImportColumns.Sku);
         var barcode = Get(rawRow, InitialStockImportColumns.Barcode);
-        var warehouseName = Get(rawRow, InitialStockImportColumns.Warehouse);
+        var warehouseCode = Get(rawRow, InitialStockImportColumns.WarehouseCode);
         var quantityRaw = Get(rawRow, InitialStockImportColumns.Quantity);
         var unitCostRaw = Get(rawRow, InitialStockImportColumns.UnitCost);
         var cutoffDateRaw = Get(rawRow, InitialStockImportColumns.CutoffDate);
         var observation = Get(rawRow, InitialStockImportColumns.Observation);
 
+        _precision ??= await LoadPrecisionAsync(ct);
         var item = await ResolveItemAsync(sku, barcode, issues, ct);
-        var warehouse = await ResolveWarehouseAsync(warehouseName, issues, ct);
-        var quantity = ValidateQuantity(quantityRaw, issues);
-        var unitCost = ValidateUnitCost(unitCostRaw, issues);
-        ValidateCutoffDate(cutoffDateRaw, issues);
+        var warehouse = await ResolveWarehouseAsync(warehouseCode, issues, ct);
+        var quantity = ParseAmount(quantityRaw, InitialStockImportColumns.Quantity, "La cantidad",
+            _precision.Value.Quantity, issues);
+        var unitCost = ParseAmount(unitCostRaw, InitialStockImportColumns.UnitCost, "El costo unitario",
+            _precision.Value.UnitCost, issues);
+        var cutoffDate = await ValidateCutoffDateAsync(cutoffDateRaw, issues, ct);
 
-        if (item is not null && warehouse is not null)
-        {
-            var key = (item.Id, warehouse.Id);
-            if (!_seenInBatch.Add(key))
-                issues.Add(
-                    new RowIssue(
-                        ImportSeverity.Error,
-                        "DUPLICATE_ITEM_WAREHOUSE_IN_ROW",
-                        $"Ítem '{sku ?? barcode}' y bodega '{warehouseName}' ya aparecen en otra fila de este archivo.",
-                        InitialStockImportColumns.Sku
-                    )
-                );
-        }
+        if (item is not null && quantity is { } q && !item.StockConfig.AllowDecimalQty && q != decimal.Truncate(q))
+            issues.Add(new RowIssue(ImportSeverity.Error, "DECIMAL_QUANTITY_NOT_ALLOWED",
+                $"El ítem '{sku ?? barcode}' no admite cantidades con decimales.", InitialStockImportColumns.Quantity));
+
+        if (item is not null && warehouse is not null
+            && await _stockLookup.HasStockHistoryAsync(item.Id, warehouse.Id, ct))
+            issues.Add(new RowIssue(ImportSeverity.Error, "STOCK_HISTORY_EXISTS",
+                $"El ítem '{sku ?? barcode}' ya tiene stock o movimientos en la bodega '{warehouse.Code}'. "
+                + "La carga inicial solo aplica a ítem+bodega sin historia; use un ajuste de inventario normal.",
+                InitialStockImportColumns.Sku));
 
         var parsed = new ParsedInitialStockRow(
             item?.Id ?? Guid.Empty,
             item?.Code.ShortName ?? string.Empty,
             item?.DefaultUomCode ?? string.Empty,
             warehouse?.Id ?? Guid.Empty,
+            warehouse?.Code ?? warehouseCode ?? string.Empty,
             warehouse?.Name ?? string.Empty,
             quantity ?? 0m,
             unitCost ?? 0m,
+            cutoffDate,
             observation
         );
 
         var hasBlockingIssue = issues.Any(i => i.Severity == ImportSeverity.Error);
         return new RowValidationResult(JsonSerializer.Serialize(parsed), hasBlockingIssue, issues);
+    }
+
+    /// <summary>
+    /// Validaciones entre filas: Item+Bodega no se repite y la Fecha de corte es única en el lote
+    /// (un saldo inicial representa un único corte).
+    /// </summary>
+    public IReadOnlyList<RowValidationResult> ValidateBatch(IReadOnlyList<RowValidationResult> rows)
+    {
+        var parsed = rows.Select(r => JsonSerializer.Deserialize<ParsedInitialStockRow>(r.ParsedDataJson)!).ToList();
+        var issues = rows.Select(r => r.Issues.ToList()).ToList();
+
+        foreach (var group in parsed.Select((p, i) => (Key: (p.ItemId, p.WarehouseId), Index: i))
+                     .Where(e => e.Key.ItemId != Guid.Empty && e.Key.WarehouseId != Guid.Empty)
+                     .GroupBy(e => e.Key).Where(g => g.Count() > 1))
+            foreach (var entry in group)
+                issues[entry.Index].Add(new RowIssue(ImportSeverity.Error, "DUPLICATE_ITEM_WAREHOUSE_IN_FILE",
+                    "El mismo ítem y bodega aparecen en otras filas del archivo.", InitialStockImportColumns.Sku));
+
+        var dates = parsed.Where(p => p.CutoffDate.HasValue).Select(p => p.CutoffDate!.Value).Distinct().ToList();
+        if (dates.Count > 1)
+            for (var i = 0; i < parsed.Count; i++)
+                if (parsed[i].CutoffDate.HasValue)
+                    issues[i].Add(new RowIssue(ImportSeverity.Error, "MULTIPLE_CUTOFF_DATES",
+                        $"El archivo tiene varias fechas de corte ({string.Join(", ", dates.Order().Select(d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)))}). "
+                        + "Un saldo inicial tiene una sola fecha de corte por lote.",
+                        InitialStockImportColumns.CutoffDate));
+
+        return rows.Select((r, i) => r with
+        {
+            Issues = issues[i], HasBlockingIssue = issues[i].Any(x => x.Severity == ImportSeverity.Error),
+        }).ToList();
     }
 
     public async Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct)
@@ -188,207 +224,192 @@ public sealed class InitialStockImportProcessor : IImportProcessor
             ct
         );
         if (!executeResult.IsSuccess)
-        {
-            // El StockAdjustment quedó creado en Draft (agregado propio, no huérfano: sigue
-            // siendo un documento real y consultable) pero sin ejecutar — no hay stock/Kardex
-            // afectado. Mismo patrón de "commit parcial reportado" que Clientes/Proveedores con
-            // AssignBusinessPartnerRoleCommand.
             return RowConfirmResult.Failed(
                 $"Ajuste de inventario creado sin ejecutar, revisar manualmente: {executeResult.Error}"
             );
-        }
 
         return RowConfirmResult.Success(parsed.ItemId);
     }
 
     // ── Validate helpers ─────────────────────────────────────────────────────
 
-    private async Task<Item?> ResolveItemAsync(
-        string? sku,
-        string? barcode,
-        List<RowIssue> issues,
-        CancellationToken ct
-    )
+    private async Task<(int Quantity, int UnitCost)> LoadPrecisionAsync(CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(sku) && string.IsNullOrWhiteSpace(barcode))
+        var policy = await _precisionProvider.GetEffectiveAsync(ct);
+        return (policy.QuantityDecimals, policy.UnitCostDecimals);
+    }
+
+    private async Task<Item?> ResolveItemAsync(
+        string? sku, string? barcode, List<RowIssue> issues, CancellationToken ct)
+    {
+        if (sku is null && barcode is null)
         {
-            AddMissing(
-                issues,
-                InitialStockImportColumns.Sku,
-                "Debe indicar SKU o código de barras."
-            );
+            AddMissing(issues, InitialStockImportColumns.Sku, "Debe indicar SKU o código de barras.");
             return null;
         }
 
-        var code = !string.IsNullOrWhiteSpace(sku) ? sku.Trim() : barcode!.Trim();
-        var item = await _itemRepo.ResolveByAnyCodeAsync(code, _ctx.TenantId, ct);
-
-        if (item is null)
+        Item? bySku = null;
+        if (sku is not null)
         {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "ITEM_NOT_FOUND",
-                    $"No se encontró ningún ítem con SKU/código de barras '{code}'.",
-                    InitialStockImportColumns.Sku
-                )
-            );
+            bySku = await _itemRepo.ResolveByAnyCodeAsync(sku, _ctx.TenantId, ct);
+            if (bySku is null)
+            {
+                issues.Add(new RowIssue(ImportSeverity.Error, "ITEM_NOT_FOUND",
+                    $"No se encontró ningún ítem con SKU '{sku}'.", InitialStockImportColumns.Sku));
+                return null;
+            }
+        }
+
+        Item? byBarcode = null;
+        if (barcode is not null)
+        {
+            byBarcode = await _itemRepo.ResolveByAnyCodeAsync(barcode, _ctx.TenantId, ct);
+            if (byBarcode is null)
+            {
+                issues.Add(new RowIssue(ImportSeverity.Error, "ITEM_NOT_FOUND",
+                    $"No se encontró ningún ítem con código de barras '{barcode}'.", InitialStockImportColumns.Barcode));
+                return null;
+            }
+        }
+
+        if (bySku is not null && byBarcode is not null && bySku.Id != byBarcode.Id)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "ITEM_CODE_MISMATCH",
+                $"El SKU '{sku}' y el código de barras '{barcode}' corresponden a ítems distintos.",
+                InitialStockImportColumns.Barcode));
             return null;
         }
 
+        var item = bySku ?? byBarcode!;
+        var code = sku ?? barcode;
         if (!item.IsActive)
         {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "ITEM_INACTIVE",
-                    $"El ítem '{code}' está deshabilitado.",
-                    InitialStockImportColumns.Sku
-                )
-            );
+            issues.Add(new RowIssue(ImportSeverity.Error, "ITEM_INACTIVE",
+                $"El ítem '{code}' está deshabilitado.", InitialStockImportColumns.Sku));
+            return null;
+        }
+        if (!item.ParticipatesInInventory)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "ITEM_NOT_INVENTORIABLE",
+                $"El ítem '{code}' no participa de inventario (servicio); no admite saldo inicial.",
+                InitialStockImportColumns.Sku));
+            return null;
+        }
+        if (item.StockConfig.TracksLot || item.StockConfig.TracksSeries)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "ITEM_TRACKS_LOT_OR_SERIES",
+                $"El ítem '{code}' controla lotes o series; la carga inicial base no los admite.",
+                InitialStockImportColumns.Sku));
             return null;
         }
 
         if (!item.SaleConfig.IsAvailableOnPOS)
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Warning,
-                    "ITEM_NOT_AVAILABLE_ON_POS",
-                    $"El ítem '{code}' no está disponible en POS — el stock se importa de todas formas.",
-                    InitialStockImportColumns.Sku
-                )
-            );
+            issues.Add(new RowIssue(ImportSeverity.Warning, "ITEM_NOT_AVAILABLE_ON_POS",
+                $"El ítem '{code}' no está disponible en POS — el stock se importa de todas formas.",
+                InitialStockImportColumns.Sku));
 
         return item;
     }
 
-    private async Task<Warehouse?> ResolveWarehouseAsync(
-        string? warehouseName,
-        List<RowIssue> issues,
-        CancellationToken ct
-    )
+    private async Task<Warehouse?> ResolveWarehouseAsync(string? code, List<RowIssue> issues, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(warehouseName))
+        if (code is null)
         {
-            AddMissing(issues, InitialStockImportColumns.Warehouse, "La bodega es obligatoria.");
+            AddMissing(issues, InitialStockImportColumns.WarehouseCode, "El código de bodega es obligatorio.");
+            return null;
+        }
+        if (_branch.BranchId == Guid.Empty)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "BRANCH_REQUIRED",
+                "Seleccione una sucursal activa: la carga inicial solo acepta bodegas de la sucursal activa.",
+                InitialStockImportColumns.WarehouseCode));
             return null;
         }
 
-        var name = warehouseName.Trim();
-        var warehouses = await _warehouseRepo.GetAsync(_ctx.TenantId, true, name, null, ct);
-        var warehouse = warehouses.FirstOrDefault(w =>
-            string.Equals(w.Name, name, StringComparison.OrdinalIgnoreCase)
-        );
-
+        var candidates = await _warehouseRepo.GetAsync(_ctx.TenantId, null, code, _branch.BranchId, ct);
+        var warehouse = candidates.SingleOrDefault(w => string.Equals(w.Code, code, StringComparison.OrdinalIgnoreCase));
         if (warehouse is null)
         {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "WAREHOUSE_NOT_FOUND",
-                    $"No se encontró ninguna bodega activa llamada '{name}'.",
-                    InitialStockImportColumns.Warehouse
-                )
-            );
+            issues.Add(new RowIssue(ImportSeverity.Error, "WAREHOUSE_NOT_FOUND",
+                $"No existe la bodega con código '{code}' en la sucursal activa. Si pertenece a otra sucursal, "
+                + "cambie de sucursal y cárguela en otro lote.",
+                InitialStockImportColumns.WarehouseCode));
             return null;
         }
-
+        if (!warehouse.IsActive)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "WAREHOUSE_INACTIVE",
+                $"La bodega '{code}' está inactiva.", InitialStockImportColumns.WarehouseCode));
+            return null;
+        }
         return warehouse;
     }
 
-    private static decimal? ValidateQuantity(string? quantityRaw, List<RowIssue> issues)
+    [GeneratedRegex(@"^\d+(\.\d+)?$")]
+    private static partial Regex InvariantDecimal();
+
+    /// <summary>
+    /// Punto decimal invariante, sin signo ni separador de miles, &gt; 0 y sin exceder la precisión
+    /// configurada — nunca se redondea en silencio.
+    /// </summary>
+    private static decimal? ParseAmount(string? raw, string column, string label, int maxDecimals, List<RowIssue> issues)
     {
-        if (string.IsNullOrWhiteSpace(quantityRaw))
+        if (raw is null)
         {
-            AddMissing(issues, InitialStockImportColumns.Quantity, "La cantidad es obligatoria.");
+            AddMissing(issues, column, $"{label} es obligatorio.");
             return null;
         }
-
-        if (!decimal.TryParse(quantityRaw, out var quantity) || quantity <= 0)
+        if (!InvariantDecimal().IsMatch(raw)
+            || !decimal.TryParse(raw, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value))
         {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "INVALID_QUANTITY",
-                    $"La cantidad '{quantityRaw}' debe ser un número mayor a cero.",
-                    InitialStockImportColumns.Quantity
-                )
-            );
+            issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_NUMBER",
+                $"{label} '{raw}' no es válido: use punto decimal (p. ej. 3.50), sin separador de miles ni signo.",
+                column));
             return null;
         }
-
-        return quantity;
+        if (value <= 0)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "NON_POSITIVE_NUMBER", $"{label} debe ser mayor a cero.", column));
+            return null;
+        }
+        var decimals = raw.Contains('.') ? raw.Length - raw.IndexOf('.') - 1 : 0;
+        if (decimals > maxDecimals)
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "PRECISION_EXCEEDED",
+                $"{label} '{raw}' tiene {decimals} decimales; la empresa admite como máximo {maxDecimals}. "
+                + "No se redondea automáticamente.",
+                column));
+            return null;
+        }
+        return value;
     }
 
-    private static decimal? ValidateUnitCost(string? unitCostRaw, List<RowIssue> issues)
+    private async Task<DateOnly?> ValidateCutoffDateAsync(string? raw, List<RowIssue> issues, CancellationToken ct)
     {
-        // ExecuteStockAdjustmentCommandHandler ya exige costo > 0 para cualquier línea de
-        // Ingreso (regla de dominio preexistente) — costo faltante o cero bloquea aquí también,
-        // nunca es una advertencia.
-        if (string.IsNullOrWhiteSpace(unitCostRaw))
+        if (raw is null)
         {
-            AddMissing(
-                issues,
-                InitialStockImportColumns.UnitCost,
-                "El costo unitario es obligatorio para un ingreso de inventario."
-            );
+            AddMissing(issues, InitialStockImportColumns.CutoffDate,
+                "La fecha de corte es obligatoria: es la fecha efectiva del saldo inicial.");
             return null;
         }
 
-        if (!decimal.TryParse(unitCostRaw, out var unitCost) || unitCost <= 0)
+        // ZH-TEMPORAL-CONTRACT-02: fecha de negocio → DateOnly con formatos explícitos e InvariantCulture.
+        if (!DateOnly.TryParseExact(raw, CutoffDateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
         {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "INVALID_UNIT_COST",
-                    $"El costo unitario '{unitCostRaw}' debe ser un número mayor a cero.",
-                    InitialStockImportColumns.UnitCost
-                )
-            );
+            issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_CUTOFF_DATE",
+                $"La fecha de corte '{raw}' no es válida (use AAAA-MM-DD).", InitialStockImportColumns.CutoffDate));
             return null;
         }
 
-        return unitCost;
-    }
-
-    private static readonly string[] CutoffDateFormats = ["yyyy-MM-dd", "dd/MM/yyyy"];
-
-    private static void ValidateCutoffDate(string? cutoffDateRaw, List<RowIssue> issues)
-    {
-        if (string.IsNullOrWhiteSpace(cutoffDateRaw))
-            return;
-
-        // ZH-TEMPORAL-CONTRACT-02: fecha de negocio → DateOnly con formatos explícitos e
-        // InvariantCulture (antes DateTime.TryParse dependía de la cultura del servidor).
-        if (
-            !DateOnly.TryParseExact(
-                cutoffDateRaw.Trim(),
-                CutoffDateFormats,
-                System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None,
-                out _
-            )
-        )
+        _companyToday ??= await _clock.TodayAsync(_ctx.CompanyId, _ctx.TenantId, ct);
+        if (date > _companyToday.Value)
         {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "INVALID_CUTOFF_DATE",
-                    $"La fecha de corte '{cutoffDateRaw}' no es una fecha válida.",
-                    InitialStockImportColumns.CutoffDate
-                )
-            );
-            return;
+            issues.Add(new RowIssue(ImportSeverity.Error, "FUTURE_CUTOFF_DATE",
+                $"La fecha de corte {date:yyyy-MM-dd} es posterior a hoy ({_companyToday.Value:yyyy-MM-dd}).",
+                InitialStockImportColumns.CutoffDate));
+            return null;
         }
-
-        issues.Add(
-            new RowIssue(
-                ImportSeverity.Warning,
-                "CUTOFF_DATE_NOT_APPLIED",
-                "La fecha de corte no se usa como fecha de posteo — el movimiento de inventario se registra con la fecha de confirmación.",
-                InitialStockImportColumns.CutoffDate
-            )
-        );
+        return date;
     }
 
     // ── Confirm helpers ──────────────────────────────────────────────────────
@@ -422,5 +443,5 @@ public sealed class InitialStockImportProcessor : IImportProcessor
         issues.Add(new RowIssue(ImportSeverity.Error, "MISSING_REQUIRED_FIELD", message, field));
 
     private static string? Get(IReadOnlyDictionary<string, string?> row, string column) =>
-        row.TryGetValue(column, out var value) ? value?.Trim() : null;
+        row.TryGetValue(column, out var value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : null;
 }

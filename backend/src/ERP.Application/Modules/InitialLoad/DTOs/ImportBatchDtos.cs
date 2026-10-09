@@ -211,8 +211,10 @@ public sealed record ParsedInitialStockRow(
     string ItemName,
     string BaseUomCode,
     Guid WarehouseId,
+    string WarehouseCode,
     string WarehouseName,
     decimal Quantity,
     decimal UnitCost,
+    DateOnly? CutoffDate,
     string? Observation
 );

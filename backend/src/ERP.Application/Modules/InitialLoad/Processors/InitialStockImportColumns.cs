@@ -1,17 +1,16 @@
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
 /// <summary>
-/// Nombres de columna (encabezado, fila 1) de la plantilla Excel de Stock Inicial — SSOT
-/// compartida entre <c>InitialStockImportProcessor</c> y
-/// <c>ClosedXmlInitialStockImportSheetReader</c>. Archivo separado del Catálogo de Productos a
-/// propósito (INITIAL-LOAD-INITIAL-STOCK-01): afecta inventario/Kardex/costo, nunca crea ítems ni
-/// bodegas — solo referencia los que ya existen.
+/// Nombres de columna (encabezado, fila 1) de la plantilla Excel de Inventario Inicial — SSOT
+/// compartida entre <c>InitialStockImportProcessor</c> y <c>ClosedXmlInitialStockImportSheetReader</c>.
+/// IL-4A: la bodega se identifica por CÓDIGO dentro de la sucursal activa (el nombre no es único
+/// entre sucursales) y la Fecha de corte es obligatoria — es la fecha efectiva del saldo inicial.
 /// </summary>
 public static class InitialStockImportColumns
 {
     public const string Sku = "SKU";
     public const string Barcode = "Código de barras";
-    public const string Warehouse = "Bodega";
+    public const string WarehouseCode = "Código Bodega";
     public const string Quantity = "Cantidad";
     public const string UnitCost = "Costo unitario";
     public const string CutoffDate = "Fecha de corte";
@@ -21,10 +20,13 @@ public static class InitialStockImportColumns
     [
         Sku,
         Barcode,
-        Warehouse,
+        WarehouseCode,
         Quantity,
         UnitCost,
         CutoffDate,
         Observation,
     ];
+
+    /// <summary>La plantilla anterior identificaba la bodega por nombre (ambiguo): se rechaza.</summary>
+    public static readonly IReadOnlyList<string> Obsolete = ["Bodega"];
 }
