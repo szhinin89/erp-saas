@@ -99,7 +99,7 @@ public sealed partial class ConfirmCustomersAtomicPostgreSqlTests : IClassFixtur
         services.AddScoped<ILegalEntityTypeRepository, LegalEntityTypeRepository>();
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
         services.AddScoped<IIdentificationUsageValidator, IdentificationUsageValidator>();
-        services.AddScoped<ICustomerImportLookup, CustomerImportLookup>();
+        services.AddScoped<IBusinessPartnerImportLookup, BusinessPartnerImportLookup>();
         services.AddSingleton(_reader.Object);
         var files = new Mock<IFileStorage>();
         files.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -140,15 +140,15 @@ public sealed partial class ConfirmCustomersAtomicPostgreSqlTests : IClassFixtur
 
     private ParsedCustomerRow NewCustomer(string passport, string? email = "cliente@ejemplo.test") =>
         new("06", passport, 1, "Cliente " + passport, null, "EC", email, "0999999999", _contado,
-            CustomerImportAction.CreateCustomer, null);
+            PartnerImportAction.Create, null);
 
     private ParsedCustomerRow AssignRole() =>
         new("04", ExistingRuc, null, "Tercero Sin Rol S.A.", null, null, null, null, _contado,
-            CustomerImportAction.AssignCustomerRole, _existingBp);
+            PartnerImportAction.AssignRole, _existingBp);
 
     private ParsedCustomerRow AlreadyCustomer(Guid? term = null) =>
         new("04", CustomerRuc, null, "Cliente Previo S.A.", null, null, null, null, term ?? _contado,
-            CustomerImportAction.AlreadyCustomer, _existingCustomer);
+            PartnerImportAction.AlreadyHasRole, _existingCustomer);
 
     private async Task<Guid> BatchAsync(params ParsedCustomerRow[] rows)
     {

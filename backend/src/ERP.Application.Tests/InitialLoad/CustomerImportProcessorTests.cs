@@ -10,6 +10,7 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.SriCatalogs.Enums;
@@ -27,7 +28,7 @@ public sealed class CustomerImportProcessorTests
     private const string ValidCedula = "0302126842";
 
     private readonly Mock<ICustomerImportSheetReader> _reader = new();
-    private readonly Mock<ICustomerImportLookup> _lookup = new();
+    private readonly Mock<IBusinessPartnerImportLookup> _lookup = new();
     private readonly Mock<IPaymentTermRepository> _paymentTermRepo = new();
     private readonly Mock<ILegalEntityTypeRepository> _legalEntityRepo = new();
     private readonly Mock<IIdentificationUsageValidator> _usage = new();
@@ -61,11 +62,11 @@ public sealed class CustomerImportProcessorTests
         [CustomerImportColumns.PaymentTermCode] = "contado",
     };
 
-    private void SetupExisting(CustomerImportMatch match) =>
+    private void SetupExisting(BusinessPartnerImportMatch match) =>
         _lookup.Setup(x => x.FindByIdentificationAsync(It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<CancellationToken>())).ReturnsAsync(match);
+            RoleType.Customer, It.IsAny<CancellationToken>())).ReturnsAsync(match);
 
-    private static CustomerImportMatch Existing(bool isCustomer, Guid? termId = null, bool active = true) =>
+    private static BusinessPartnerImportMatch Existing(bool isCustomer, Guid? termId = null, bool active = true) =>
         new(Guid.NewGuid(), active, ValidRuc, "Maestro S.A.", isCustomer, termId.HasValue, termId);
 
     private async Task<RowValidationResult> Validate(Dictionary<string, string?> row) =>
@@ -81,7 +82,7 @@ public sealed class CustomerImportProcessorTests
 
         result.HasBlockingIssue.Should().BeFalse();
         result.Issues.Should().BeEmpty();
-        Parsed(result).Action.Should().Be(CustomerImportAction.CreateCustomer);
+        Parsed(result).Action.Should().Be(PartnerImportAction.Create);
         Parsed(result).PaymentTermId.Should().Be(_contado.Id);
     }
 
@@ -189,7 +190,7 @@ public sealed class CustomerImportProcessorTests
         result.HasBlockingIssue.Should().BeFalse();
         result.Issues.Should().ContainSingle(i => i.Code == "EXISTING_BUSINESS_PARTNER"
             && i.Severity == ImportSeverity.Warning);
-        Parsed(result).Action.Should().Be(CustomerImportAction.AssignCustomerRole);
+        Parsed(result).Action.Should().Be(PartnerImportAction.AssignRole);
         Parsed(result).ExistingBusinessPartnerId.Should().Be(match.BusinessPartnerId);
     }
 
@@ -201,7 +202,7 @@ public sealed class CustomerImportProcessorTests
         var result = await Validate(Row());
 
         result.HasBlockingIssue.Should().BeFalse();
-        Parsed(result).Action.Should().Be(CustomerImportAction.AlreadyCustomer);
+        Parsed(result).Action.Should().Be(PartnerImportAction.AlreadyHasRole);
     }
 
     [Fact]
@@ -246,7 +247,7 @@ public sealed class CustomerImportProcessorTests
 
     // ── ConfirmRowAsync (IL-2B): revalida contra el maestro y ejecuta la acción validada ─────
 
-    private static string Json(CustomerImportAction action, Guid? existingId, Guid termId) =>
+    private static string Json(PartnerImportAction action, Guid? existingId, Guid termId) =>
         JsonSerializer.Serialize(new ParsedCustomerRow("04", ValidRuc, null, "Cliente Válido S.A.", null, null,
             "cliente@ejemplo.test", null, termId, action, existingId));
 
@@ -262,7 +263,7 @@ public sealed class CustomerImportProcessorTests
         _mediator.Setup(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<BusinessPartnerRoleDto>.Success(null!));
 
-    private static CustomerImportMatch MatchFor(Guid bpId, bool isCustomer, Guid? termId = null) =>
+    private static BusinessPartnerImportMatch MatchFor(Guid bpId, bool isCustomer, Guid? termId = null) =>
         new(bpId, true, ValidRuc, "Maestro S.A.", isCustomer, termId.HasValue, termId);
 
     private void VerifyNoWrites()
@@ -281,7 +282,7 @@ public sealed class CustomerImportProcessorTests
         SetupSettingsOk();
 
         var result = await Processor().ConfirmRowAsync(
-            Json(CustomerImportAction.AlreadyCustomer, bpId, _contado.Id), CancellationToken.None);
+            Json(PartnerImportAction.AlreadyHasRole, bpId, _contado.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.BusinessPartnerId.Should().Be(bpId);
@@ -299,7 +300,7 @@ public sealed class CustomerImportProcessorTests
         SetupExisting(MatchFor(bpId, isCustomer: true, _contado.Id));
 
         var result = await Processor().ConfirmRowAsync(
-            Json(CustomerImportAction.AlreadyCustomer, bpId, _contado.Id), CancellationToken.None);
+            Json(PartnerImportAction.AlreadyHasRole, bpId, _contado.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.BusinessPartnerId.Should().Be(bpId);
@@ -316,7 +317,7 @@ public sealed class CustomerImportProcessorTests
         SetupSettingsOk();
 
         var result = await Processor().ConfirmRowAsync(
-            Json(CustomerImportAction.AssignCustomerRole, bpId, _contado.Id), CancellationToken.None);
+            Json(PartnerImportAction.AssignRole, bpId, _contado.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         _mediator.Verify(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -337,27 +338,27 @@ public sealed class CustomerImportProcessorTests
             .ReturnsAsync(Result<BpContactDto>.ValidationFailure("Formato de email inválido."));
 
         var result = await Processor().ConfirmRowAsync(
-            Json(CustomerImportAction.CreateCustomer, null, _contado.Id), CancellationToken.None);
+            Json(PartnerImportAction.Create, null, _contado.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Contacto inválido");
         _mediator.Verify(m => m.Send(It.IsAny<UpsertCompanyBpSalesSettingsCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    public static TheoryData<string, CustomerImportAction, bool, bool, bool> StaleCases => new()
+    public static TheoryData<string, PartnerImportAction, bool, bool, bool> StaleCases => new()
     {
         // caso, acción validada, existe ahora, es cliente ahora, otra condición ahora
-        { "nuevo pero ya existe", CustomerImportAction.CreateCustomer, true, false, false },
-        { "asignar rol pero ya es cliente", CustomerImportAction.AssignCustomerRole, true, true, false },
-        { "asignar rol pero desapareció", CustomerImportAction.AssignCustomerRole, false, false, false },
-        { "ya cliente pero perdió el rol", CustomerImportAction.AlreadyCustomer, true, false, false },
-        { "ya cliente con otra condición", CustomerImportAction.AlreadyCustomer, true, true, true },
+        { "nuevo pero ya existe", PartnerImportAction.Create, true, false, false },
+        { "asignar rol pero ya es cliente", PartnerImportAction.AssignRole, true, true, false },
+        { "asignar rol pero desapareció", PartnerImportAction.AssignRole, false, false, false },
+        { "ya cliente pero perdió el rol", PartnerImportAction.AlreadyHasRole, true, false, false },
+        { "ya cliente con otra condición", PartnerImportAction.AlreadyHasRole, true, true, true },
     };
 
     [Theory]
     [MemberData(nameof(StaleCases))]
     public async Task Maestro_cambiado_desde_la_validacion_falla_sin_escribir(
-        string caso, CustomerImportAction action, bool existsNow, bool isCustomerNow, bool otherTermNow)
+        string caso, PartnerImportAction action, bool existsNow, bool isCustomerNow, bool otherTermNow)
     {
         var bpId = Guid.NewGuid();
         SetupTermLookup();
@@ -365,7 +366,7 @@ public sealed class CustomerImportProcessorTests
             SetupExisting(MatchFor(bpId, isCustomerNow, otherTermNow ? _credito.Id : null));
 
         var result = await Processor().ConfirmRowAsync(
-            Json(action, action == CustomerImportAction.CreateCustomer ? null : bpId, _contado.Id),
+            Json(action, action == PartnerImportAction.Create ? null : bpId, _contado.Id),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse(caso);
@@ -379,7 +380,7 @@ public sealed class CustomerImportProcessorTests
         SetupTermLookup();
 
         var result = await Processor().ConfirmRowAsync(
-            Json(CustomerImportAction.CreateCustomer, null, Guid.NewGuid()), CancellationToken.None);
+            Json(PartnerImportAction.Create, null, Guid.NewGuid()), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("condición de pago");

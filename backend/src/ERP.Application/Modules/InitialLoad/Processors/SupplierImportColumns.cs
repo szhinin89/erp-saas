@@ -1,37 +1,37 @@
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
 /// <summary>
-/// Nombres de columna (encabezado, fila 1) de la plantilla Excel de Proveedores — SSOT
-/// compartida entre <c>SupplierImportProcessor</c> (Application, mapeo columna→DTO) y
-/// <c>ClosedXmlSupplierImportSheetReader</c> (Infrastructure, lectura/escritura del .xlsx).
-/// Mismo patrón que <c>CustomerImportColumns</c> (INITIAL-LOAD-ARCH-01).
-///
-/// Alcance reducido a propósito (INITIAL-LOAD-SUPPLIERS-01): de <c>SupplierRoleConfig</c> solo
-/// se importa la condición de pago (único campo obligatorio de esa VO); los campos SRI
-/// operativos avanzados (sustento tributario, retención, método de pago SRI) quedan fuera de
-/// esta plantilla — se completan luego desde la ficha del proveedor, igual que Clientes dejó
-/// fuera CreditRating/LoyaltyTier/InvoiceFormat/Classification.
+/// Nombres de columna (encabezado, fila 1) de la plantilla Excel de Proveedores — SSOT compartida
+/// entre <c>SupplierImportProcessor</c> y <c>ClosedXmlSupplierImportSheetReader</c>. IL-3A: los
+/// datos fiscales del rol Proveedor que alimentan retenciones son obligatorios y explícitos (SI/NO),
+/// sin default. Solo 04 (RUC) y 08 (Exterior) — lo que el catálogo SRI permite para Proveedor.
 /// </summary>
 public static class SupplierImportColumns
 {
-    public const string IdentificationType = "Tipo Identificación";
-    public const string IdentificationNumber = "Número Identificación";
-    public const string LegalName = "Razón Social";
-    public const string TradeName = "Nombre Comercial";
-    public const string CountryCode = "País";
-    public const string Email = "Email";
-    public const string Phone = "Teléfono";
-    public const string PaymentTermCode = "Condición de Pago";
+    public const string IdentificationType = PartnerImportColumns.IdentificationType;
+    public const string IdentificationNumber = PartnerImportColumns.IdentificationNumber;
+    public const string LegalEntityTypeCode = PartnerImportColumns.LegalEntityTypeCode;
+    public const string LegalName = PartnerImportColumns.LegalName;
+    public const string TradeName = PartnerImportColumns.TradeName;
+    public const string CountryCode = PartnerImportColumns.CountryCode;
+    public const string Email = PartnerImportColumns.Email;
+    public const string Phone = PartnerImportColumns.Phone;
+    public const string PaymentTermCode = PartnerImportColumns.PaymentTermCode;
+    public const string IsRequiredToKeepAccounting = "Obligado a llevar contabilidad";
+    public const string IsRetentionExempt = "Exento de retención";
 
     public static readonly IReadOnlyList<string> All =
     [
         IdentificationType,
         IdentificationNumber,
+        LegalEntityTypeCode,
         LegalName,
         TradeName,
         CountryCode,
         Email,
         Phone,
         PaymentTermCode,
+        IsRequiredToKeepAccounting,
+        IsRetentionExempt,
     ];
 }

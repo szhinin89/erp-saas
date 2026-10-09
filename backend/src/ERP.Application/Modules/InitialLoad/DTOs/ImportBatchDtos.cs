@@ -114,37 +114,47 @@ public sealed record ParsedCustomerRow(
     string? Email,
     string? Phone,
     Guid PaymentTermId,
-    CustomerImportAction Action,
+    PartnerImportAction Action,
     Guid? ExistingBusinessPartnerId
 );
 
-public enum CustomerImportAction
+/// <summary>
+/// Clasificación de una fila de terceros contra el maestro (IL-2A Clientes, IL-3A Proveedores).
+/// Valores numéricos estables: se persisten en el JSON del staging.
+/// </summary>
+public enum PartnerImportAction
 {
-    /// <summary>Identificación nueva en el tenant: crear BP + rol Cliente + contacto + condición.</summary>
-    CreateCustomer = 1,
+    /// <summary>Identificación nueva en el tenant: crear BP + rol + contacto + condición.</summary>
+    Create = 1,
 
-    /// <summary>BP existente sin rol Cliente activo: reutilizar BP, asignar rol y condición.</summary>
-    AssignCustomerRole = 2,
+    /// <summary>BP existente sin el rol activo: reutilizar BP, asignar rol y condición.</summary>
+    AssignRole = 2,
 
-    /// <summary>Ya es Cliente: idempotente; solo registra la condición si la Company no tiene una.</summary>
-    AlreadyCustomer = 3,
+    /// <summary>Ya tiene el rol: idempotente; solo registra la condición si la Company no tiene una.</summary>
+    AlreadyHasRole = 3,
 }
 
 /// <summary>
-/// Fila de Proveedores ya tipada — resultado del mapeo de <c>SupplierImportProcessor</c>.
-/// <see cref="PaymentTermId"/> ya viene resuelto (código de la plantilla → FK) desde
-/// ValidateRowAsync — Confirm nunca vuelve a resolverlo, evita una segunda consulta y mantiene
-/// el mismo comportamiento de "lo que se validó es lo que se confirma" que usa Clientes.
+/// Fila de Proveedores ya tipada — resultado de <c>SupplierImportProcessor</c> (IL-3A). Mismo
+/// contrato que Clientes: acción y BP existente clasificados en Validate; la condición de pago es
+/// de compras de la Company operativa (<c>CompanyBpPurchaseSettings</c>). Los datos fiscales del
+/// rol Proveedor son explícitos (sin default) y solo se aplican al asignar el rol, nunca sobre un
+/// proveedor existente.
 /// </summary>
 public sealed record ParsedSupplierRow(
     string IdentificationType,
     string IdentificationNumber,
+    int? LegalEntityTypeCode,
     string LegalName,
     string? TradeName,
     string? CountryCode,
     string? Email,
     string? Phone,
-    Guid PaymentTermId
+    Guid PaymentTermId,
+    bool IsRequiredToKeepAccounting,
+    bool IsRetentionExempt,
+    PartnerImportAction Action,
+    Guid? ExistingBusinessPartnerId
 );
 
 /// <summary>

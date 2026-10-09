@@ -71,6 +71,16 @@ public sealed partial class ConfirmImportBatchHandler
         if (batch.ImportType == ImportType.Customers)
             return await ConfirmCustomersAsync(batch, processor, cancellationToken);
 
+        // IL-3A: Proveedores es todo-o-nada — una sola fila con error bloquea el lote completo.
+        // (La confirmación atómica del lote es IL-3B.)
+        if (
+            batch.ImportType == ImportType.Suppliers
+            && (batch.IssueRows > 0 || batch.ValidRows != batch.TotalRows)
+        )
+            return Result<ImportBatchConfirmResultDto>.ValidationFailure(
+                "El lote tiene errores. Debe corregir todas las filas antes de confirmar."
+            );
+
         batch.BeginConfirming(_ctx.UserId);
         await _batchRepo.SaveChangesAsync(cancellationToken);
 

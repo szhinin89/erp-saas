@@ -1,6 +1,8 @@
 using System.Text.Json;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.MasterData.DTOs;
+using ERP.Application.MasterData.Services;
 using ERP.Application.MasterData.UseCases.AssignBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.BpContacts;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
@@ -9,47 +11,43 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
-using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using MediatR;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
 /// <summary>
-/// Segundo <c>IImportProcessor</c> registrado (INITIAL-LOAD-SUPPLIERS-01), plugin del mismo
-/// motor genérico que <see cref="CustomerImportProcessor"/> — mismo patrón: Confirm orquesta
-/// los comandos MediatR existentes (<see cref="CreateBusinessPartnerCommand"/> →
-/// <see cref="AssignBusinessPartnerRoleCommand"/> → opcionalmente <see cref="CreateBpContactCommand"/>),
-/// nunca escribe directo a <c>BusinessPartner</c>.
+/// Carga Inicial de Proveedores (INITIAL-LOAD-SUPPLIERS-01, endurecido en IL-3A). Mismo contrato
+/// que Clientes vía <see cref="BusinessPartnerImportRules"/>: Validate es fiel a Confirm, solo
+/// acepta los tipos de identificación que el catálogo SRI permite para Proveedor (04 RUC, 08
+/// Exterior) y clasifica contra el maestro: nuevo → crear; sin rol Proveedor → reutilizar y asignar
+/// rol; ya Proveedor → idempotente; nunca se duplica un BP.
 ///
-/// La condición de pago de la fila es obligatoria — se resuelve por código de plantilla contra
-/// <see cref="IPaymentTermRepository"/> durante la validación; sin condición de pago válida la fila
-/// queda bloqueada (no hay valor por defecto silencioso: es una decisión de negocio, no algo que el
-/// importador deba inventar). ADR-033: el destino de esa condición de pago es
-/// <see cref="UpsertCompanyBpPurchaseSettingsCommand"/> (default de compras/gastos de la empresa
-/// activa) — <see cref="SupplierRoleConfig"/> ya no tiene un campo de condición de pago propio.
+/// La condición de pago es obligatoria, sin default, y se guarda por Company en
+/// <c>CompanyBpPurchaseSettings</c> (ADR-033). "Obligado a llevar contabilidad" y "Exento de
+/// retención" alimentan retenciones: obligatorios SI/NO, sin default, y solo se aplican al asignar
+/// el rol — nunca modifican los datos fiscales de un proveedor existente.
 /// </summary>
-public sealed class SupplierImportProcessor : IImportProcessor
+public sealed class SupplierImportProcessor : IImportProcessor, IImportBatchValidator
 {
     private readonly ISupplierImportSheetReader _reader;
-    private readonly IBusinessPartnerRepository _bpRepo;
-    private readonly IPaymentTermRepository _paymentTermRepo;
-    private readonly IOperationalContext _ctx;
     private readonly IMediator _mediator;
+    private readonly BusinessPartnerImportRules _rules;
 
     public SupplierImportProcessor(
         ISupplierImportSheetReader reader,
-        IBusinessPartnerRepository bpRepo,
+        IBusinessPartnerImportLookup lookup,
         IPaymentTermRepository paymentTermRepo,
+        ILegalEntityTypeRepository legalEntityTypeRepo,
+        IIdentificationUsageValidator usageValidator,
         IOperationalContext ctx,
         IMediator mediator
     )
     {
         _reader = reader;
-        _bpRepo = bpRepo;
-        _paymentTermRepo = paymentTermRepo;
-        _ctx = ctx;
         _mediator = mediator;
+        _rules = new BusinessPartnerImportRules(lookup, paymentTermRepo, legalEntityTypeRepo, usageValidator,
+            ctx, PartnerImportRole.Supplier);
     }
 
     public ImportType ImportType => ImportType.Suppliers;
@@ -77,189 +75,170 @@ public sealed class SupplierImportProcessor : IImportProcessor
     )
     {
         var issues = new List<RowIssue>();
+        var row = await _rules.ValidateAsync(rawRow, issues, ct);
 
-        var identificationType = Get(rawRow, SupplierImportColumns.IdentificationType);
-        var identificationNumber = Get(rawRow, SupplierImportColumns.IdentificationNumber);
-        var legalName = Get(rawRow, SupplierImportColumns.LegalName);
-        var paymentTermCode = Get(rawRow, SupplierImportColumns.PaymentTermCode);
-        var email = Get(rawRow, SupplierImportColumns.Email);
-        var phone = Get(rawRow, SupplierImportColumns.Phone);
-
-        if (string.IsNullOrWhiteSpace(identificationType))
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "MISSING_REQUIRED_FIELD",
-                    "El tipo de identificación es obligatorio.",
-                    SupplierImportColumns.IdentificationType
-                )
-            );
-
-        if (string.IsNullOrWhiteSpace(identificationNumber))
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "MISSING_REQUIRED_FIELD",
-                    "El número de identificación es obligatorio.",
-                    SupplierImportColumns.IdentificationNumber
-                )
-            );
-
-        if (string.IsNullOrWhiteSpace(legalName))
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "MISSING_REQUIRED_FIELD",
-                    "La razón social es obligatoria.",
-                    SupplierImportColumns.LegalName
-                )
-            );
-
-        Guid paymentTermId = Guid.Empty;
-        if (string.IsNullOrWhiteSpace(paymentTermCode))
+        var keepsAccounting = ParseYesNo(rawRow, SupplierImportColumns.IsRequiredToKeepAccounting, issues);
+        var retentionExempt = ParseYesNo(rawRow, SupplierImportColumns.IsRetentionExempt, issues);
+        if (keepsAccounting is { } keeps && retentionExempt is { } exempt)
         {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "MISSING_REQUIRED_FIELD",
-                    "La condición de pago es obligatoria.",
-                    SupplierImportColumns.PaymentTermCode
-                )
-            );
+            // Misma invariante de dominio que aplicará AssignBusinessPartnerRole al confirmar.
+            var config = RoleConfigFactory.Build(new SupplierRoleConfigDto(null, null, null, exempt, keeps));
+            if (!config.IsValid)
+                issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_SUPPLIER_FISCAL_DATA", config.Error!,
+                    SupplierImportColumns.IsRetentionExempt));
         }
-        else
-        {
-            var paymentTerms = await _paymentTermRepo.ListAsync(_ctx.TenantId, null, ct);
-            var match = paymentTerms.FirstOrDefault(pt =>
-                string.Equals(pt.Code, paymentTermCode.Trim(), StringComparison.OrdinalIgnoreCase)
-                && pt.IsActive
-            );
-            if (match is null)
-                issues.Add(
-                    new RowIssue(
-                        ImportSeverity.Error,
-                        "INVALID_PAYMENT_TERM",
-                        $"La condición de pago '{paymentTermCode}' no existe o está inactiva.",
-                        SupplierImportColumns.PaymentTermCode
-                    )
-                );
-            else
-                paymentTermId = match.Id;
-        }
-
-        if (
-            !string.IsNullOrWhiteSpace(identificationType)
-            && !string.IsNullOrWhiteSpace(identificationNumber)
-            && await _bpRepo.ExistsByIdentificationAsync(
-                identificationType.Trim(),
-                identificationNumber.Trim(),
-                cancellationToken: ct
-            )
-        )
-        {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Error,
-                    "DUPLICATE_IDENTIFICATION",
-                    $"Ya existe un tercero con {identificationType} {identificationNumber}.",
-                    SupplierImportColumns.IdentificationNumber
-                )
-            );
-        }
-
-        if (string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(phone))
-        {
-            issues.Add(
-                new RowIssue(
-                    ImportSeverity.Warning,
-                    "MISSING_CONTACT_INFO",
-                    "El proveedor no tiene email ni teléfono — se importa igual, pero sin datos de contacto."
-                )
-            );
-        }
+        if (row.Action == PartnerImportAction.Create && row.Email is null && row.Phone is null)
+            issues.Add(new RowIssue(ImportSeverity.Warning, "MISSING_CONTACT_INFO",
+                "El proveedor no tiene email ni teléfono — se importa igual, pero sin datos de contacto."));
+        if (row.Action == PartnerImportAction.AlreadyHasRole && row.ExistingBusinessPartnerId.HasValue)
+            issues.Add(new RowIssue(ImportSeverity.Warning, "EXISTING_SUPPLIER_FISCAL_DATA_KEPT",
+                "El tercero ya es Proveedor: se conservan sus datos fiscales; Obligado a llevar contabilidad "
+                + "y Exento de retención del archivo no se aplican.",
+                SupplierImportColumns.IsRequiredToKeepAccounting));
 
         var parsed = new ParsedSupplierRow(
-            identificationType?.Trim() ?? string.Empty,
-            identificationNumber?.Trim() ?? string.Empty,
-            legalName?.Trim() ?? string.Empty,
-            Get(rawRow, SupplierImportColumns.TradeName),
-            Get(rawRow, SupplierImportColumns.CountryCode),
-            email,
-            phone,
-            paymentTermId
+            row.IdentificationType,
+            row.IdentificationNumber,
+            row.LegalEntityTypeCode,
+            row.LegalName,
+            row.TradeName,
+            row.CountryCode,
+            row.Email,
+            row.Phone,
+            row.PaymentTermId ?? Guid.Empty,
+            keepsAccounting ?? false,
+            retentionExempt ?? false,
+            row.Action,
+            row.ExistingBusinessPartnerId
         );
 
         var hasBlockingIssue = issues.Any(i => i.Severity == ImportSeverity.Error);
         return new RowValidationResult(JsonSerializer.Serialize(parsed), hasBlockingIssue, issues);
     }
 
+    public IReadOnlyList<RowValidationResult> ValidateBatch(IReadOnlyList<RowValidationResult> rows) =>
+        BusinessPartnerImportRules.FlagDuplicateIdentifications(rows, json =>
+        {
+            var parsed = JsonSerializer.Deserialize<ParsedSupplierRow>(json)!;
+            return (parsed.IdentificationType, parsed.IdentificationNumber);
+        });
+
+    /// <summary>
+    /// Ejecuta exactamente la acción validada, previa revalidación contra el maestro (stale
+    /// preview). Cada fallo se reporta; la confirmación atómica del lote es IL-3B.
+    /// </summary>
     public async Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct)
     {
         var parsed = JsonSerializer.Deserialize<ParsedSupplierRow>(parsedDataJson)!;
+        if (parsed.PaymentTermId == Guid.Empty)
+            return RowConfirmResult.Failed("La fila no tiene condición de pago validada.");
 
-        var bpResult = await _mediator.Send(
-            new CreateBusinessPartnerCommand(
-                parsed.IdentificationType,
-                parsed.IdentificationNumber,
-                null,
-                parsed.LegalName,
-                parsed.TradeName,
-                parsed.CountryCode
-            ),
-            ct
-        );
-        if (!bpResult.IsSuccess)
-            return RowConfirmResult.Failed(bpResult.Error ?? "No se pudo crear el tercero.");
+        var (staleError, match) = await _rules.RevalidateAsync(parsed.IdentificationType,
+            parsed.IdentificationNumber, parsed.Action, parsed.ExistingBusinessPartnerId, parsed.PaymentTermId, ct);
+        if (staleError is not null)
+            return RowConfirmResult.Failed(staleError);
 
-        var businessPartnerId = bpResult.Value!.Id;
-
-        var roleResult = await _mediator.Send(
-            new AssignBusinessPartnerRoleCommand(
-                businessPartnerId,
-                RoleType.Supplier,
-                SupplierConfig: new SupplierRoleConfigDto(null, null, null, false, false)
-            ),
-            ct
-        );
-        if (!roleResult.IsSuccess)
+        Guid businessPartnerId;
+        switch (parsed.Action)
         {
-            // Mismo patrón de CustomerImportProcessor: el BP ya quedó creado/committeado — no hay
-            // transacción cruzada entre agregados. Se reporta para revisión manual.
-            return RowConfirmResult.Failed(
-                $"Proveedor creado sin rol asignado, revisar manualmente: {roleResult.Error}"
-            );
+            case PartnerImportAction.Create:
+            {
+                var bpResult = await _mediator.Send(
+                    new CreateBusinessPartnerCommand(
+                        parsed.IdentificationType,
+                        parsed.IdentificationNumber,
+                        parsed.LegalEntityTypeCode,
+                        parsed.LegalName,
+                        parsed.TradeName,
+                        parsed.CountryCode
+                    ),
+                    ct
+                );
+                if (!bpResult.IsSuccess)
+                    return RowConfirmResult.Failed(bpResult.Error ?? "No se pudo crear el tercero.");
+                businessPartnerId = bpResult.Value!.Id;
+
+                var roleError = await AssignSupplierRoleAsync(businessPartnerId, parsed, ct);
+                if (roleError is not null)
+                    return RowConfirmResult.Failed(roleError);
+
+                if (parsed.Email is not null || parsed.Phone is not null)
+                {
+                    var contactResult = await _mediator.Send(
+                        new CreateBpContactCommand(
+                            businessPartnerId,
+                            parsed.LegalName,
+                            ContactRole.Purchasing,
+                            Email: parsed.Email,
+                            Phone: parsed.Phone
+                        ),
+                        ct
+                    );
+                    if (!contactResult.IsSuccess)
+                        return RowConfirmResult.Failed($"Contacto inválido: {contactResult.Error}");
+                }
+                break;
+            }
+            case PartnerImportAction.AssignRole:
+            {
+                businessPartnerId = parsed.ExistingBusinessPartnerId!.Value;
+                var roleError = await AssignSupplierRoleAsync(businessPartnerId, parsed, ct);
+                if (roleError is not null)
+                    return RowConfirmResult.Failed(roleError);
+                break;
+            }
+            case PartnerImportAction.AlreadyHasRole:
+                businessPartnerId = parsed.ExistingBusinessPartnerId!.Value;
+                // Idempotente: misma condición ya registrada en esta empresa → no se escribe nada.
+                if (match!.CompanyPaymentTermId == parsed.PaymentTermId)
+                    return RowConfirmResult.Success(businessPartnerId);
+                break;
+            default:
+                return RowConfirmResult.Failed("Acción de importación no soportada.");
         }
 
         // ADR-033: el default de condición de pago para compras/gastos vive en
         // CompanyBpPurchaseSettings (company-scoped), no en SupplierRoleConfig.
-        var purchaseSettingsResult = await _mediator.Send(
+        var settingsResult = await _mediator.Send(
             new UpsertCompanyBpPurchaseSettingsCommand(businessPartnerId, parsed.PaymentTermId),
             ct
         );
-        if (!purchaseSettingsResult.IsSuccess)
-        {
-            return RowConfirmResult.Failed(
-                $"Proveedor creado sin condición de pago configurada, revisar manualmente: {purchaseSettingsResult.Error}"
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(parsed.Email) || !string.IsNullOrWhiteSpace(parsed.Phone))
-        {
-            await _mediator.Send(
-                new CreateBpContactCommand(
-                    businessPartnerId,
-                    parsed.LegalName,
-                    ContactRole.Purchasing,
-                    Email: parsed.Email,
-                    Phone: parsed.Phone
-                ),
-                ct
-            );
-        }
+        if (!settingsResult.IsSuccess)
+            return RowConfirmResult.Failed($"Condición de pago: {settingsResult.Error}");
 
         return RowConfirmResult.Success(businessPartnerId);
     }
 
-    private static string? Get(IReadOnlyDictionary<string, string?> row, string column) =>
-        row.TryGetValue(column, out var value) ? value?.Trim() : null;
+    private async Task<string?> AssignSupplierRoleAsync(
+        Guid businessPartnerId, ParsedSupplierRow parsed, CancellationToken ct)
+    {
+        var roleResult = await _mediator.Send(
+            new AssignBusinessPartnerRoleCommand(
+                businessPartnerId,
+                RoleType.Supplier,
+                SupplierConfig: new SupplierRoleConfigDto(
+                    null,
+                    null,
+                    null,
+                    parsed.IsRetentionExempt,
+                    parsed.IsRequiredToKeepAccounting
+                )
+            ),
+            ct
+        );
+        return roleResult.IsSuccess ? null : roleResult.Error ?? "No se pudo asignar el rol Proveedor.";
+    }
+
+    private static bool? ParseYesNo(IReadOnlyDictionary<string, string?> row, string column, List<RowIssue> issues)
+    {
+        var raw = BusinessPartnerImportRules.Get(row, column);
+        if (string.Equals(raw, "SI", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (string.Equals(raw, "NO", StringComparison.OrdinalIgnoreCase))
+            return false;
+        issues.Add(raw is null
+            ? new RowIssue(ImportSeverity.Error, "MISSING_REQUIRED_FIELD", $"{column} es obligatorio (SI/NO).", column)
+            : new RowIssue(ImportSeverity.Error, "INVALID_YES_NO", $"{column} admite únicamente SI o NO.", column));
+        return null;
+    }
 }

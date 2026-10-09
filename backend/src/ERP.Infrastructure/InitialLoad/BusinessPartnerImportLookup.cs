@@ -5,19 +5,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.InitialLoad;
 
-/// <inheritdoc cref="ICustomerImportLookup"/>
-public sealed class CustomerImportLookup : ICustomerImportLookup
+/// <inheritdoc cref="IBusinessPartnerImportLookup"/>
+public sealed class BusinessPartnerImportLookup : IBusinessPartnerImportLookup
 {
     private readonly ErpDbContext _db;
 
-    public CustomerImportLookup(ErpDbContext db) => _db = db;
+    public BusinessPartnerImportLookup(ErpDbContext db) => _db = db;
 
-    public async Task<CustomerImportMatch?> FindByIdentificationAsync(
+    public async Task<BusinessPartnerImportMatch?> FindByIdentificationAsync(
         string identificationType,
         string identificationNumber,
+        RoleType role,
         CancellationToken ct
     )
     {
+        if (role is not (RoleType.Customer or RoleType.Supplier))
+            throw new ArgumentOutOfRangeException(nameof(role), role, "Solo Cliente o Proveedor.");
+
         var number = identificationNumber.Trim().ToUpperInvariant();
         var matches = await _db
             .BusinessPartners.AsNoTracking()
@@ -37,29 +41,31 @@ public sealed class CustomerImportLookup : ICustomerImportLookup
 
         if (matches.Count == 0)
             return null;
+
         var bp = matches[0];
         if (matches.Count > 1)
-            return new CustomerImportMatch(bp.Id, bp.IsActive, bp.Number, bp.LegalName,
+            return new BusinessPartnerImportMatch(bp.Id, bp.IsActive, bp.Number, bp.LegalName,
                 false, false, null, IsAmbiguous: true);
 
-        var hasActiveCustomerRole = await _db
+        var hasActiveRole = await _db
             .BusinessPartnerRoles.AsNoTracking()
-            .AnyAsync(
-                r => r.BusinessPartnerId == bp.Id && r.RoleType == RoleType.Customer && r.IsActive,
-                ct
-            );
-        var settings = await _db
-            .CompanyBpSalesSettings.AsNoTracking()
-            .Where(s => s.BusinessPartnerId == bp.Id)
-            .Select(s => new { s.PaymentTermId })
-            .FirstOrDefaultAsync(ct);
+            .AnyAsync(r => r.BusinessPartnerId == bp.Id && r.RoleType == role && r.IsActive, ct);
+        var settings = role == RoleType.Customer
+            ? await _db.CompanyBpSalesSettings.AsNoTracking()
+                .Where(s => s.BusinessPartnerId == bp.Id)
+                .Select(s => new { s.PaymentTermId })
+                .FirstOrDefaultAsync(ct)
+            : await _db.CompanyBpPurchaseSettings.AsNoTracking()
+                .Where(s => s.BusinessPartnerId == bp.Id)
+                .Select(s => new { s.PaymentTermId })
+                .FirstOrDefaultAsync(ct);
 
-        return new CustomerImportMatch(
+        return new BusinessPartnerImportMatch(
             bp.Id,
             bp.IsActive,
             bp.Number,
             bp.LegalName,
-            hasActiveCustomerRole,
+            hasActiveRole,
             settings is not null,
             settings?.PaymentTermId
         );

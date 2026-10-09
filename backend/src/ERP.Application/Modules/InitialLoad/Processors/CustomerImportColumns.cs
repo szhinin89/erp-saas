@@ -10,15 +10,15 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// </summary>
 public static class CustomerImportColumns
 {
-    public const string IdentificationType = "Tipo Identificación";
-    public const string IdentificationNumber = "Número Identificación";
-    public const string LegalEntityTypeCode = "Tipo Entidad Legal";
-    public const string LegalName = "Razón Social";
-    public const string TradeName = "Nombre Comercial";
-    public const string CountryCode = "País";
-    public const string Email = "Email";
-    public const string Phone = "Teléfono";
-    public const string PaymentTermCode = "Condición de Pago";
+    public const string IdentificationType = PartnerImportColumns.IdentificationType;
+    public const string IdentificationNumber = PartnerImportColumns.IdentificationNumber;
+    public const string LegalEntityTypeCode = PartnerImportColumns.LegalEntityTypeCode;
+    public const string LegalName = PartnerImportColumns.LegalName;
+    public const string TradeName = PartnerImportColumns.TradeName;
+    public const string CountryCode = PartnerImportColumns.CountryCode;
+    public const string Email = PartnerImportColumns.Email;
+    public const string Phone = PartnerImportColumns.Phone;
+    public const string PaymentTermCode = PartnerImportColumns.PaymentTermCode;
 
     public static readonly IReadOnlyList<string> All =
     [

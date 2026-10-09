@@ -40,9 +40,18 @@ public sealed class ClosedXmlSupplierImportSheetReader : ISupplierImportSheetRea
             for (var col = 1; col <= lastUsedColumn; col++)
             {
                 var header = headerRow.Cell(col).GetString().Trim();
-                if (!string.IsNullOrEmpty(header))
-                    columnIndexes[header] = col;
+                if (!string.IsNullOrEmpty(header) && !columnIndexes.TryAdd(header, col))
+                    throw new DomainRuleViolationException("Encabezado duplicado: " + header);
             }
+
+            // IL-3A: una plantilla anterior (sin Tipo Entidad Legal ni datos fiscales) se rechaza en
+            // vez de leer esas columnas como vacías.
+            var missing = SupplierImportColumns.All.Where(c => !columnIndexes.ContainsKey(c)).ToList();
+            if (missing.Count > 0)
+                throw new DomainRuleViolationException(
+                    "Faltan encabezados de la plantilla: " + string.Join(", ", missing)
+                        + ". Descargue la plantilla actual."
+                );
 
             var rows = new List<IReadOnlyDictionary<string, string?>>();
             var lastUsedRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
@@ -79,33 +88,57 @@ public sealed class ClosedXmlSupplierImportSheetReader : ISupplierImportSheetRea
             cell.Style.Font.Bold = true;
         }
 
-        sheet.Cell(2, 1).Value = "04";
-        sheet.Cell(2, 2).Value = "1790012345001";
-        sheet.Cell(2, 3).Value = "Proveedor Ejemplo S.A.";
-        sheet.Cell(2, 4).Value = "Proveedor Ejemplo";
-        sheet.Cell(2, 5).Value = "EC";
-        sheet.Cell(2, 6).Value = "contacto@proveedor-ejemplo.com";
-        sheet.Cell(2, 7).Value = "0999999999";
-        sheet.Cell(2, 8).Value = "CONTADO";
-        sheet.Cell(2, 9).Value = "Manufacturer";
-        sheet.Cell(2, 10).Value = "National";
-        sheet.Cell(2, 11).Value = "Goods";
-        sheet.Cell(2, 12).Value = "Strategic";
+        var example = new Dictionary<string, string>
+        {
+            [SupplierImportColumns.IdentificationType] = "04",
+            [SupplierImportColumns.IdentificationNumber] = "1790012345001",
+            [SupplierImportColumns.LegalEntityTypeCode] = "",
+            [SupplierImportColumns.LegalName] = "Proveedor Ejemplo S.A.",
+            [SupplierImportColumns.TradeName] = "Proveedor Ejemplo",
+            [SupplierImportColumns.CountryCode] = "EC",
+            [SupplierImportColumns.Email] = "contacto@proveedor-ejemplo.com",
+            [SupplierImportColumns.Phone] = "0999999999",
+            [SupplierImportColumns.PaymentTermCode] = "CONTADO",
+            [SupplierImportColumns.IsRequiredToKeepAccounting] = "SI",
+            [SupplierImportColumns.IsRetentionExempt] = "NO",
+        };
+        for (var i = 0; i < SupplierImportColumns.All.Count; i++)
+        {
+            var column = SupplierImportColumns.All[i];
+            // Texto: Excel no debe convertir RUC/teléfonos a número (pierden el 0 inicial).
+            if (column is SupplierImportColumns.IdentificationType
+                or SupplierImportColumns.IdentificationNumber
+                or SupplierImportColumns.Phone)
+                sheet.Column(i + 1).Style.NumberFormat.Format = "@";
+            sheet.Cell(2, i + 1).Value = example[column];
+        }
 
         sheet.Columns().AdjustToContents();
 
         var instructions = workbook.Worksheets.Add("Instrucciones");
         instructions.Cell(1, 1).Value = "Cómo llenar esta plantilla";
         instructions.Cell(1, 1).Style.Font.Bold = true;
-        instructions.Cell(3, 1).Value =
-            "Tipo Identificación / Número Identificación / Razón Social / Condición de Pago son obligatorios.";
-        instructions.Cell(4, 1).Value =
-            "Tipo Identificación: código SRI — 04 = RUC, 05 = Cédula, 06 = Pasaporte, 07 = Consumidor Final, 08 = Exterior.";
-        instructions.Cell(5, 1).Value =
-            "Condición de Pago: código exacto de una condición ya configurada en Configuración (ej. CONTADO, CREDITO30).";
-        instructions.Cell(6, 1).Value =
-            "Email y Teléfono son opcionales — si ambos faltan, la fila se importa igual con una advertencia.";
-        instructions.Cell(7, 1).Value = "No modifique los encabezados de la fila 1.";
+        string[] lines =
+        [
+            "Obligatorios: Tipo Identificación, Número Identificación, Razón Social, Condición de Pago, "
+                + "Obligado a llevar contabilidad y Exento de retención. Tipo Entidad Legal es obligatorio para Exterior.",
+            "Tipo Identificación: solo los permitidos para proveedores — 04 = RUC, 08 = Exterior.",
+            "Número Identificación: escriba el número como texto (columna formateada como Texto). Si Excel "
+                + "quita el 0 inicial de un RUC, la fila se bloquea.",
+            "Tipo Entidad Legal: código del catálogo — 1 = Persona Natural, 2 = Sociedad Privada, "
+                + "3 = Institución Pública. Para RUC se deduce; si lo informa debe coincidir.",
+            "Condición de Pago: código existente y activo (p. ej. CONTADO). No hay valor por defecto. "
+                + "Se guarda solo para la empresa actual.",
+            "Obligado a llevar contabilidad / Exento de retención: únicamente SI o NO, sin valor por defecto. "
+                + "Se aplican solo al registrar el rol Proveedor; nunca modifican un proveedor existente.",
+            "Tercero ya existente: no se duplica. Si no es proveedor se le asigna el rol Proveedor; si ya es "
+                + "proveedor la fila es idempotente. Su ficha maestra (nombre, contacto) no se modifica.",
+            "Email / Teléfono (opcionales): crean el contacto de compras solo para proveedores nuevos.",
+            "Una identificación no puede repetirse en el archivo. Si cualquier fila tiene error, el lote no se confirma.",
+            "No modifique los encabezados de la fila 1.",
+        ];
+        for (var i = 0; i < lines.Length; i++)
+            instructions.Cell(i + 3, 1).Value = lines[i];
         instructions.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();

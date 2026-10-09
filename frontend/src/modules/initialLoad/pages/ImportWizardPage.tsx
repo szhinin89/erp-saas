@@ -124,8 +124,9 @@ export function ImportWizardPage({
     confirmBatch,
     reset,
   } = useImportWizard(importType, templateFileName);
-  // Todo-o-nada: una fila con error bloquea la confirmación del lote (Items IL-1, Clientes IL-2A).
-  const requiresAllValid = importType === "Items" || importType === "Customers";
+  // Todo-o-nada: una fila con error bloquea la confirmación del lote (Items IL-1, Clientes IL-2A, Proveedores IL-3A).
+  const requiresAllValid =
+    importType === "Items" || importType === "Customers" || importType === "Suppliers";
   const previewRows = preview?.items ?? [];
   const previewIssues = previewRows.flatMap((row) => row.issues);
   const categoryCreationWarnings = previewIssues.filter(
