@@ -310,7 +310,9 @@ export function ImportWizardPage({
               ? "Esta acción importa el lote completo. Si una fila falla, no se guardará ningún producto, categoría o marca de esta importación."
               : importType === "Customers"
                 ? "Esta acción importa el lote completo. Si una fila falla, no se guardará ningún cliente, rol, contacto ni condición de pago de esta importación."
-                : "Esta acción crea los registros válidos en el sistema. No se puede deshacer."}
+                : importType === "Suppliers"
+                  ? "Esta acción importa el lote completo. Si una fila falla, no se guardará ningún proveedor, rol, contacto ni condición de pago de esta importación."
+                  : "Esta acción crea los registros válidos en el sistema. No se puede deshacer."}
           </p>
           {batch && (
             <>

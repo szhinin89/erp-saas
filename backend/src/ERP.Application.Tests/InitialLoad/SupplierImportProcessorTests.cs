@@ -257,6 +257,91 @@ public sealed class SupplierImportProcessorTests
         result[2].Issues.Should().NotContain(i => i.Code == "DUPLICATE_IDENTIFICATION_IN_FILE");
     }
 
+    // ── Rol Proveedor revocado: se distingue de "sin rol" ──────────────────────────────────
+
+    private static BusinessPartnerImportMatch Revoked(Guid bpId, bool hasFiscalData, Guid? termId = null) =>
+        new(bpId, true, ValidRuc, "Ex Proveedor S.A.", false, termId.HasValue, termId,
+            HasRevokedRole: true, RevokedRoleHasFiscalData: hasFiscalData);
+
+    [Fact]
+    public async Task Proveedor_revocado_con_datos_fiscales_se_reactiva_y_advierte_que_el_SI_NO_no_se_aplica()
+    {
+        var bpId = Guid.NewGuid();
+        SetupExisting(Revoked(bpId, hasFiscalData: true));
+
+        var result = await Validate(Row());
+
+        result.HasBlockingIssue.Should().BeFalse();
+        Parsed(result).Action.Should().Be(PartnerImportAction.ReactivateRole);
+        Parsed(result).ExistingBusinessPartnerId.Should().Be(bpId);
+        result.Issues.Should().ContainSingle(i => i.Code == "REVOKED_SUPPLIER_REACTIVATED"
+            && i.Severity == ImportSeverity.Warning).Which.Message.Should().Contain("NO se aplican");
+    }
+
+    [Fact]
+    public async Task Proveedor_revocado_sin_datos_fiscales_es_error_sin_defaults()
+    {
+        SetupExisting(Revoked(Guid.NewGuid(), hasFiscalData: false));
+
+        var result = await Validate(Row());
+
+        result.HasBlockingIssue.Should().BeTrue();
+        result.Issues.Should().ContainSingle(i => i.Code == "REVOKED_SUPPLIER_FISCAL_DATA_MISSING");
+        result.Issues.Should().NotContain(i => i.Code == "REVOKED_SUPPLIER_REACTIVATED");
+    }
+
+    [Fact]
+    public async Task Proveedor_revocado_con_otra_condicion_en_la_empresa_es_error()
+    {
+        SetupExisting(Revoked(Guid.NewGuid(), hasFiscalData: true, _credito.Id));
+
+        var result = await Validate(Row());
+
+        result.Issues.Should().Contain(i => i.Code == "PAYMENT_TERM_CONFLICT");
+    }
+
+    [Fact]
+    public async Task ConfirmRowAsync_reactiva_el_rol_sin_enviar_datos_fiscales()
+    {
+        var bpId = Guid.NewGuid();
+        SetupExisting(Revoked(bpId, hasFiscalData: true));
+        SetupRoleOk();
+        SetupSettings(Result<CompanyBpPurchaseSettingsDto>.Success(null!));
+
+        var result = await Processor().ConfirmRowAsync(Json(PartnerImportAction.ReactivateRole, bpId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        _mediator.Verify(m => m.Send(It.Is<AssignBusinessPartnerRoleCommand>(c => c.BusinessPartnerId == bpId
+            && c.RoleType == RoleType.Supplier && c.SupplierConfig == null), It.IsAny<CancellationToken>()), Times.Once);
+        _mediator.Verify(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ConfirmRowAsync_revocado_que_perdio_sus_datos_fiscales_falla_sin_escribir()
+    {
+        var bpId = Guid.NewGuid();
+        SetupExisting(Revoked(bpId, hasFiscalData: false));
+
+        var result = await Processor().ConfirmRowAsync(Json(PartnerImportAction.ReactivateRole, bpId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Vuelva a validar");
+        _mediator.Verify(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ConfirmRowAsync_asignar_rol_pero_ahora_esta_revocado_falla_sin_escribir()
+    {
+        var bpId = Guid.NewGuid();
+        SetupExisting(Revoked(bpId, hasFiscalData: true));
+
+        var result = await Processor().ConfirmRowAsync(Json(PartnerImportAction.AssignRole, bpId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("revocado").And.Contain("Vuelva a validar");
+        _mediator.Verify(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     // ── Confirmación: ejecuta exactamente la acción validada ───────────────────────────────
 
     private string Json(PartnerImportAction action, Guid? existingId, Guid? termId = null) =>

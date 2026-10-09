@@ -156,6 +156,7 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
                 break;
             }
             case PartnerImportAction.AssignRole:
+            case PartnerImportAction.ReactivateRole:
             {
                 businessPartnerId = parsed.ExistingBusinessPartnerId!.Value;
                 var roleError = await AssignCustomerRoleAsync(businessPartnerId, ct);

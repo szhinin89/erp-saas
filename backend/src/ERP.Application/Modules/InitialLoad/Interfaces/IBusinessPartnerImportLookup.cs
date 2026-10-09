@@ -8,6 +8,8 @@ namespace ERP.Application.Modules.InitialLoad.Interfaces;
 /// único de BD es exacto, así que una coincidencia exacta dejaría crear "AB123" junto a un "ab123"
 /// manual. BusinessPartner y rol son tenant-wide; la condición de pago se lee solo de la Company
 /// operativa (filtros globales fail-closed): ventas para Cliente, compras para Proveedor.
+/// Un rol revocado se distingue de "sin rol": se reactiva con sus datos previos, nunca se recrea.
+/// <c>RevokedRoleHasFiscalData</c> indica si el rol Proveedor revocado conserva su config fiscal.
 /// </summary>
 public interface IBusinessPartnerImportLookup
 {
@@ -27,5 +29,7 @@ public sealed record BusinessPartnerImportMatch(
     bool HasActiveRole,
     bool HasCompanySettings,
     Guid? CompanyPaymentTermId,
-    bool IsAmbiguous = false
+    bool IsAmbiguous = false,
+    bool HasRevokedRole = false,
+    bool RevokedRoleHasFiscalData = false
 );

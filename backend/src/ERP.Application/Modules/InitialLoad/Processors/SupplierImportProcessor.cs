@@ -90,6 +90,17 @@ public sealed class SupplierImportProcessor : IImportProcessor, IImportBatchVali
         if (row.Action == PartnerImportAction.Create && row.Email is null && row.Phone is null)
             issues.Add(new RowIssue(ImportSeverity.Warning, "MISSING_CONTACT_INFO",
                 "El proveedor no tiene email ni teléfono — se importa igual, pero sin datos de contacto."));
+        if (row.Action == PartnerImportAction.ReactivateRole)
+            issues.Add(row.Match!.RevokedRoleHasFiscalData
+                ? new RowIssue(ImportSeverity.Warning, "REVOKED_SUPPLIER_REACTIVATED",
+                    "El tercero tuvo rol Proveedor (revocado): se reactiva conservando sus datos fiscales previos; "
+                    + "Obligado a llevar contabilidad y Exento de retención del archivo NO se aplican.",
+                    SupplierImportColumns.IsRequiredToKeepAccounting)
+                : new RowIssue(ImportSeverity.Error, "REVOKED_SUPPLIER_FISCAL_DATA_MISSING",
+                    "El tercero tuvo rol Proveedor (revocado) sin datos fiscales registrados. La carga inicial no los "
+                    + "completa ni los asume: corrija explícitamente Obligado a llevar contabilidad y Exento de "
+                    + "retención en la ficha del proveedor antes de importarlo.",
+                    SupplierImportColumns.IsRequiredToKeepAccounting));
         if (row.Action == PartnerImportAction.AlreadyHasRole && row.ExistingBusinessPartnerId.HasValue)
             issues.Add(new RowIssue(ImportSeverity.Warning, "EXISTING_SUPPLIER_FISCAL_DATA_KEPT",
                 "El tercero ya es Proveedor: se conservan sus datos fiscales; Obligado a llevar contabilidad "
@@ -124,8 +135,9 @@ public sealed class SupplierImportProcessor : IImportProcessor, IImportBatchVali
         });
 
     /// <summary>
-    /// Ejecuta exactamente la acción validada, previa revalidación contra el maestro (stale
-    /// preview). Cada fallo se reporta; la confirmación atómica del lote es IL-3B.
+    /// IL-3B: se ejecuta dentro de la transacción única del lote — cualquier <c>Failed</c> revierte
+    /// todo. Antes de escribir se revalida contra el maestro actual lo que Validate clasificó
+    /// (stale preview): si el tercero, su rol o su condición cambiaron, la fila falla.
     /// </summary>
     public async Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct)
     {
@@ -137,6 +149,10 @@ public sealed class SupplierImportProcessor : IImportProcessor, IImportBatchVali
             parsed.IdentificationNumber, parsed.Action, parsed.ExistingBusinessPartnerId, parsed.PaymentTermId, ct);
         if (staleError is not null)
             return RowConfirmResult.Failed(staleError);
+        if (parsed.Action == PartnerImportAction.ReactivateRole && !match!.RevokedRoleHasFiscalData)
+            return RowConfirmResult.Failed(
+                "El maestro cambió desde la validación (el rol Proveedor revocado no tiene datos fiscales). "
+                + "Vuelva a validar el archivo.");
 
         Guid businessPartnerId;
         switch (parsed.Action)
@@ -185,6 +201,16 @@ public sealed class SupplierImportProcessor : IImportProcessor, IImportBatchVali
                 var roleError = await AssignSupplierRoleAsync(businessPartnerId, parsed, ct);
                 if (roleError is not null)
                     return RowConfirmResult.Failed(roleError);
+                break;
+            }
+            case PartnerImportAction.ReactivateRole:
+            {
+                // Reactivación sin config: los datos fiscales previos se conservan, nunca se sobrescriben.
+                businessPartnerId = parsed.ExistingBusinessPartnerId!.Value;
+                var roleResult = await _mediator.Send(
+                    new AssignBusinessPartnerRoleCommand(businessPartnerId, RoleType.Supplier), ct);
+                if (!roleResult.IsSuccess)
+                    return RowConfirmResult.Failed(roleResult.Error ?? "No se pudo reactivar el rol Proveedor.");
                 break;
             }
             case PartnerImportAction.AlreadyHasRole:

@@ -133,6 +133,8 @@ public sealed class ClosedXmlSupplierImportSheetReader : ISupplierImportSheetRea
                 + "Se aplican solo al registrar el rol Proveedor; nunca modifican un proveedor existente.",
             "Tercero ya existente: no se duplica. Si no es proveedor se le asigna el rol Proveedor; si ya es "
                 + "proveedor la fila es idempotente. Su ficha maestra (nombre, contacto) no se modifica.",
+            "Proveedor con rol revocado: se reactiva conservando sus datos fiscales previos (el SI/NO del archivo no "
+                + "se aplica). Si no tiene datos fiscales registrados, la fila se bloquea hasta corregirlos en su ficha.",
             "Email / Teléfono (opcionales): crean el contacto de compras solo para proveedores nuevos.",
             "Una identificación no puede repetirse en el archivo. Si cualquier fila tiene error, el lote no se confirma.",
             "No modifique los encabezados de la fila 1.",

@@ -47,9 +47,13 @@ public sealed class BusinessPartnerImportLookup : IBusinessPartnerImportLookup
             return new BusinessPartnerImportMatch(bp.Id, bp.IsActive, bp.Number, bp.LegalName,
                 false, false, null, IsAmbiguous: true);
 
-        var hasActiveRole = await _db
+        var existingRole = await _db
             .BusinessPartnerRoles.AsNoTracking()
-            .AnyAsync(r => r.BusinessPartnerId == bp.Id && r.RoleType == role && r.IsActive, ct);
+            .Where(r => r.BusinessPartnerId == bp.Id && r.RoleType == role)
+            .Select(r => new { r.IsActive, HasSupplierConfig = r.SupplierConfig != null })
+            .FirstOrDefaultAsync(ct);
+        var hasActiveRole = existingRole is { IsActive: true };
+        var hasRevokedRole = existingRole is { IsActive: false };
         var settings = role == RoleType.Customer
             ? await _db.CompanyBpSalesSettings.AsNoTracking()
                 .Where(s => s.BusinessPartnerId == bp.Id)
@@ -67,7 +71,9 @@ public sealed class BusinessPartnerImportLookup : IBusinessPartnerImportLookup
             bp.LegalName,
             hasActiveRole,
             settings is not null,
-            settings?.PaymentTermId
+            settings?.PaymentTermId,
+            HasRevokedRole: hasRevokedRole,
+            RevokedRoleHasFiscalData: hasRevokedRole && existingRole!.HasSupplierConfig
         );
     }
 }

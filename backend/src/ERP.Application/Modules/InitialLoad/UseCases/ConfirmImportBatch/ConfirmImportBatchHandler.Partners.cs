@@ -9,15 +9,15 @@ using FluentValidation;
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 
 /// <summary>
-/// IL-2B — Clientes se confirma como una única transacción: BP + rol Cliente + contacto +
-/// <c>CompanyBpSalesSettings</c> de todas las filas quedan juntos o no queda ninguno. Los comandos
-/// MediatR anidados comparten el DbContext de la request, así que sus SaveChanges (y el Outbox de
-/// sus eventos) participan de esta transacción.
+/// Terceros (Clientes IL-2B, Proveedores IL-3B) se confirman como una única transacción: BP + rol +
+/// contacto + condición de pago por Company (ventas/compras) de todas las filas quedan juntos o no
+/// queda ninguno. Los comandos MediatR anidados comparten el DbContext de la request, así que sus
+/// SaveChanges (y la actividad y el Outbox de sus eventos) participan de esta transacción.
 /// </summary>
 public sealed partial class ConfirmImportBatchHandler
 {
-    private async Task<Result<ImportBatchConfirmResultDto>> ConfirmCustomersAsync(
-        ImportBatch batch, IImportProcessor processor, CancellationToken ct)
+    private async Task<Result<ImportBatchConfirmResultDto>> ConfirmPartnersAsync(
+        ImportBatch batch, IImportProcessor processor, string entityName, CancellationToken ct)
     {
         await _unitOfWork.BeginTransactionAsync(ct);
         try
@@ -66,8 +66,8 @@ public sealed partial class ConfirmImportBatchHandler
                     }
                     if (!result.IsSuccess)
                         throw new DomainRuleViolationException(
-                            $"Fila {row.RowNumber}: {result.Error ?? "No se pudo confirmar el cliente."} "
-                                + "No se importó ningún cliente del lote.");
+                            $"Fila {row.RowNumber}: {result.Error ?? $"No se pudo confirmar el {entityName}."} "
+                                + $"No se importó ningún {entityName} del lote.");
                     row.MarkImported(result.BusinessPartnerId!.Value, _ctx.UserId);
                     importedRows++;
                 }

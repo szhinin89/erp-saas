@@ -63,6 +63,8 @@ public sealed class CustomerConfirmAllOrNothingTests
         var batches = new Mock<IImportBatchRepository>();
         batches.Setup(b => b.GetByIdAsync(batch.Id, Tenant, Company, It.IsAny<CancellationToken>()))
             .ReturnsAsync(batch);
+        batches.Setup(b => b.GetByIdForUpdateAsync(batch.Id, Tenant, Company, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(batch);
         var processor = new Mock<IImportProcessor>();
         var ctx = new Mock<IOperationalContext>();
         ctx.Setup(c => c.TenantId).Returns(Tenant);

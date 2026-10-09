@@ -195,6 +195,30 @@ public sealed class CustomerImportProcessorTests
     }
 
     [Fact]
+    public async Task Cliente_con_rol_revocado_se_reactiva_sin_recrear_el_rol()
+    {
+        var bpId = Guid.NewGuid();
+        SetupExisting(new BusinessPartnerImportMatch(bpId, true, ValidRuc, "Ex Cliente S.A.", false, false, null,
+            HasRevokedRole: true));
+        _paymentTermRepo.Setup(x => x.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_contado);
+        _mediator.Setup(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<BusinessPartnerRoleDto>.Success(null!));
+        _mediator.Setup(m => m.Send(It.IsAny<UpsertCompanyBpSalesSettingsCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<CompanyBpSalesSettingsDto>.Success(null!));
+
+        var validated = await Validate(Row());
+        var confirmed = await Processor().ConfirmRowAsync(validated.ParsedDataJson, CancellationToken.None);
+
+        validated.HasBlockingIssue.Should().BeFalse();
+        Parsed(validated).Action.Should().Be(PartnerImportAction.ReactivateRole);
+        confirmed.IsSuccess.Should().BeTrue(confirmed.Error);
+        _mediator.Verify(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mediator.Verify(m => m.Send(It.Is<AssignBusinessPartnerRoleCommand>(c => c.BusinessPartnerId == bpId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Cliente_existente_con_misma_condicion_es_idempotente()
     {
         SetupExisting(Existing(isCustomer: true, _contado.Id));

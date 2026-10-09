@@ -40,7 +40,8 @@ public sealed record PartnerRowValidation(
     string? Phone,
     Guid? PaymentTermId,
     PartnerImportAction Action,
-    Guid? ExistingBusinessPartnerId
+    Guid? ExistingBusinessPartnerId,
+    BusinessPartnerImportMatch? Match = null
 );
 
 /// <summary>
@@ -145,6 +146,7 @@ public sealed class BusinessPartnerImportRules
 
         var action = PartnerImportAction.Create;
         Guid? existingId = null;
+        BusinessPartnerImportMatch? existing = null;
         if (identification is not null)
         {
             var match = await _lookup.FindByIdentificationAsync(identification.Type, identification.Number, _role.Role, ct);
@@ -155,6 +157,7 @@ public sealed class BusinessPartnerImportRules
             }
             else
             {
+                existing = match;
                 existingId = match.BusinessPartnerId;
                 number = match.IdentificationNumber;
                 action = ClassifyExisting(match, paymentTermId, Error);
@@ -167,7 +170,7 @@ public sealed class BusinessPartnerImportRules
         }
 
         return new PartnerRowValidation(identificationType, number, legalEntityTypeCode, legalName, tradeName,
-            countryCode, email, phone, paymentTermId, action, existingId);
+            countryCode, email, phone, paymentTermId, action, existingId, existing);
     }
 
     /// <summary>Marca como error toda fila cuya identificación (sin distinguir mayúsculas) se repite.</summary>
@@ -220,15 +223,16 @@ public sealed class BusinessPartnerImportRules
             return "la identificación es ambigua en el maestro";
         if (!match.IsActive)
             return "el tercero fue inactivado";
-        if (action == PartnerImportAction.AssignRole && match.HasActiveRole)
+        if ((action is PartnerImportAction.AssignRole or PartnerImportAction.ReactivateRole) && match.HasActiveRole)
             return $"el tercero ya tiene rol {_role.RoleName}";
-        if (action == PartnerImportAction.AlreadyHasRole)
-        {
-            if (!match.HasActiveRole)
-                return $"el tercero ya no tiene rol {_role.RoleName} activo";
-            if (match.CompanyPaymentTermId is { } current && current != paymentTermId)
-                return $"el {_role.Singular} ya tiene otra condición de pago en esta empresa";
-        }
+        if (action == PartnerImportAction.AssignRole && match.HasRevokedRole)
+            return $"el tercero tiene el rol {_role.RoleName} revocado";
+        if (action == PartnerImportAction.ReactivateRole && !match.HasRevokedRole)
+            return $"el tercero ya no tiene el rol {_role.RoleName} revocado";
+        if (action == PartnerImportAction.AlreadyHasRole && !match.HasActiveRole)
+            return $"el tercero ya no tiene rol {_role.RoleName} activo";
+        if (match.CompanyPaymentTermId is { } current && current != paymentTermId)
+            return $"el {_role.Singular} ya tiene otra condición de pago en esta empresa";
         return null;
     }
 
@@ -342,15 +346,16 @@ public sealed class BusinessPartnerImportRules
             return PartnerImportAction.AlreadyHasRole;
         }
 
-        if (!match.HasActiveRole)
-            return PartnerImportAction.AssignRole;
-
+        // La condición existente en la Company nunca se sobrescribe — tampoco la que conserva un
+        // tercero con el rol revocado.
         if (paymentTermId is { } requested && match.CompanyPaymentTermId is { } current && current != requested)
             error("PAYMENT_TERM_CONFLICT",
                 $"El {_role.Singular} ya tiene otra condición de pago en esta empresa; la carga inicial no la sobrescribe.",
                 PartnerImportColumns.PaymentTermCode);
 
-        return PartnerImportAction.AlreadyHasRole;
+        if (match.HasActiveRole)
+            return PartnerImportAction.AlreadyHasRole;
+        return match.HasRevokedRole ? PartnerImportAction.ReactivateRole : PartnerImportAction.AssignRole;
     }
 
     private async Task<Guid?> ResolvePaymentTermAsync(

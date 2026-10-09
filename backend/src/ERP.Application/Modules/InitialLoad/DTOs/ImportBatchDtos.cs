@@ -132,6 +132,12 @@ public enum PartnerImportAction
 
     /// <summary>Ya tiene el rol: idempotente; solo registra la condición si la Company no tiene una.</summary>
     AlreadyHasRole = 3,
+
+    /// <summary>
+    /// Tuvo el rol y está revocado: reactivarlo conservando sus datos previos (nunca recrearlo ni
+    /// sobrescribir su configuración) y registrar la condición.
+    /// </summary>
+    ReactivateRole = 4,
 }
 
 /// <summary>
