@@ -1,5 +1,16 @@
 # Project Status
 
+## IL-4 — Carga Inicial de Inventario (2026-10-09)
+
+**Estado: CLOSED.** IL-4A (validación), IL-4B (apertura atómica) e IL-4C (idempotencia/concurrencia/recovery) implementados. Sin migración. Contabilidad de la apertura → IL-7.
+
+- **Saldo inicial al corte, sin compras ficticias:** un documento de apertura por bodega (`PostInitialBalanceCommand`), movimiento propio `StockMovementType.InitialBalance` ("Saldo Inicial" en Kardex) con la Fecha de Corte como fecha efectiva. Ajustes normales siguen sin backdating.
+- **Validación fiel:** decimal invariante con punto; precisión excedida = error (sin redondeo); bodega por código en la sucursal activa; SKU+barcode del mismo ítem; sin lotes/series ni servicios; solo ítem+bodega sin stock ni Kardex previo; fecha de corte obligatoria, no futura y única por lote.
+- **Todo-o-nada:** una transacción (documentos, líneas, stock, Kardex, numeración, Outbox) con revalidación antes de escribir; fuera del bucle genérico de 200 filas.
+- **Idempotencia/concurrencia/recovery:** `FOR UPDATE` por lote; Completed devuelve el resultado sin reejecutar; revalidar reemplaza staging; fallo/cancelación no deja estados intermedios; lote atado a la sucursal de su staging.
+- **Documento de apertura** no se anula con la anulación genérica de ajustes (discriminador: movimientos InitialBalance).
+- **Gates PASS:** unitarios 267/267 (InitialLoad/Inventario); PostgreSQL real 18/18 Inventario Inicial (InitialLoad 117/117, incluye 201 filas); arquitectura 143/143; gate UI negativo y positivo; verificación real SKU 10001204 / WH-E686E280: stock 10, costo 2.50, valor 25.00, InitialBalance al 2026-09-30, sin PositiveAdjust, 1 documento.
+
 ## Pendiente antes del piloto — QA-INVENTORY-INFRA-SUITES-01 (registrado 2026-10-09)
 
 **Estado: ABIERTO — no investigado.** Detectado durante IL-4B; no lo causa IL-4.

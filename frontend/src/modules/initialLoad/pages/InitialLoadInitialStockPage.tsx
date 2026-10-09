@@ -11,6 +11,7 @@ export function InitialLoadInitialStockPage() {
       resultRoute="/inventory/kardex"
       resultRouteLabel="Ver Kardex"
       resultEntityLabelPlural="existencias"
+      resultEntityLabelSingular="existencia"
       primaryColumnKey="SKU"
       primaryColumnLabel="SKU"
       secondaryColumnKey="Código Bodega"

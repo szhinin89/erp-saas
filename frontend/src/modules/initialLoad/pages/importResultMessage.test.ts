@@ -14,6 +14,15 @@ describe("importSuccessMessage", () => {
     );
   });
 
+  it("inventario inicial: singular y plural de existencias", () => {
+    expect(importSuccessMessage(1, "existencias", "existencia")).toBe(
+      "Se importó 1 existencia correctamente.",
+    );
+    expect(importSuccessMessage(201, "existencias", "existencia")).toBe(
+      "Se importaron 201 existencias correctamente.",
+    );
+  });
+
   it("sin singular configurado conserva el mensaje anterior", () => {
     expect(importSuccessMessage(1, "clientes")).toBe("Se importaron 1 clientes correctamente.");
   });
