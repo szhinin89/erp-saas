@@ -240,11 +240,15 @@ public sealed class CustomerImportProcessorTests
         result[2].HasBlockingIssue.Should().BeFalse();
     }
 
-    // ── ConfirmRowAsync ejecuta exactamente la acción validada ─────────────────────────────
+    // ── ConfirmRowAsync (IL-2B): revalida contra el maestro y ejecuta la acción validada ─────
 
     private static string Json(CustomerImportAction action, Guid? existingId, Guid termId) =>
         JsonSerializer.Serialize(new ParsedCustomerRow("04", ValidRuc, null, "Cliente Válido S.A.", null, null,
             "cliente@ejemplo.test", null, termId, action, existingId));
+
+    private void SetupTermLookup() =>
+        _paymentTermRepo.Setup(x => x.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid _, Guid id, CancellationToken _) => new[] { _contado, _credito }.FirstOrDefault(t => t.Id == id));
 
     private void SetupSettingsOk() =>
         _mediator.Setup(m => m.Send(It.IsAny<UpsertCompanyBpSalesSettingsCommand>(), It.IsAny<CancellationToken>()))
@@ -254,10 +258,22 @@ public sealed class CustomerImportProcessorTests
         _mediator.Setup(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<BusinessPartnerRoleDto>.Success(null!));
 
+    private static CustomerImportMatch MatchFor(Guid bpId, bool isCustomer, Guid? termId = null) =>
+        new(bpId, true, ValidRuc, "Maestro S.A.", isCustomer, termId.HasValue, termId);
+
+    private void VerifyNoWrites()
+    {
+        _mediator.Verify(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mediator.Verify(m => m.Send(It.IsAny<AssignBusinessPartnerRoleCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mediator.Verify(m => m.Send(It.IsAny<UpsertCompanyBpSalesSettingsCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
-    public async Task Confirmar_cliente_existente_no_crea_bp_ni_rol_y_guarda_condicion_por_empresa()
+    public async Task Confirmar_cliente_existente_sin_condicion_solo_registra_condicion_por_empresa()
     {
         var bpId = Guid.NewGuid();
+        SetupTermLookup();
+        SetupExisting(MatchFor(bpId, isCustomer: true));
         SetupSettingsOk();
 
         var result = await Processor().ConfirmRowAsync(
@@ -272,9 +288,26 @@ public sealed class CustomerImportProcessorTests
     }
 
     [Fact]
+    public async Task Confirmar_cliente_existente_con_misma_condicion_no_escribe_nada()
+    {
+        var bpId = Guid.NewGuid();
+        SetupTermLookup();
+        SetupExisting(MatchFor(bpId, isCustomer: true, _contado.Id));
+
+        var result = await Processor().ConfirmRowAsync(
+            Json(CustomerImportAction.AlreadyCustomer, bpId, _contado.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.BusinessPartnerId.Should().Be(bpId);
+        VerifyNoWrites();
+    }
+
+    [Fact]
     public async Task Confirmar_bp_existente_sin_rol_asigna_rol_sin_crear_bp()
     {
         var bpId = Guid.NewGuid();
+        SetupTermLookup();
+        SetupExisting(MatchFor(bpId, isCustomer: false));
         SetupRoleOk();
         SetupSettingsOk();
 
@@ -288,9 +321,10 @@ public sealed class CustomerImportProcessorTests
     }
 
     [Fact]
-    public async Task Confirmar_cliente_nuevo_con_contacto_fallido_no_reporta_exito()
+    public async Task Confirmar_cliente_nuevo_con_contacto_fallido_falla_la_fila()
     {
         var bpId = Guid.NewGuid();
+        SetupTermLookup();
         _mediator.Setup(m => m.Send(It.IsAny<CreateBusinessPartnerCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<BusinessPartnerSummaryDto>.Success(new BusinessPartnerSummaryDto(
                 bpId, "04", ValidRuc, "Cliente Válido S.A.", null, 2, null, true, DateTime.UtcNow)));
@@ -302,7 +336,49 @@ public sealed class CustomerImportProcessorTests
             Json(CustomerImportAction.CreateCustomer, null, _contado.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("sin contacto");
+        result.Error.Should().Contain("Contacto inválido");
         _mediator.Verify(m => m.Send(It.IsAny<UpsertCompanyBpSalesSettingsCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    public static TheoryData<string, CustomerImportAction, bool, bool, bool> StaleCases => new()
+    {
+        // caso, acción validada, existe ahora, es cliente ahora, otra condición ahora
+        { "nuevo pero ya existe", CustomerImportAction.CreateCustomer, true, false, false },
+        { "asignar rol pero ya es cliente", CustomerImportAction.AssignCustomerRole, true, true, false },
+        { "asignar rol pero desapareció", CustomerImportAction.AssignCustomerRole, false, false, false },
+        { "ya cliente pero perdió el rol", CustomerImportAction.AlreadyCustomer, true, false, false },
+        { "ya cliente con otra condición", CustomerImportAction.AlreadyCustomer, true, true, true },
+    };
+
+    [Theory]
+    [MemberData(nameof(StaleCases))]
+    public async Task Maestro_cambiado_desde_la_validacion_falla_sin_escribir(
+        string caso, CustomerImportAction action, bool existsNow, bool isCustomerNow, bool otherTermNow)
+    {
+        var bpId = Guid.NewGuid();
+        SetupTermLookup();
+        if (existsNow)
+            SetupExisting(MatchFor(bpId, isCustomerNow, otherTermNow ? _credito.Id : null));
+
+        var result = await Processor().ConfirmRowAsync(
+            Json(action, action == CustomerImportAction.CreateCustomer ? null : bpId, _contado.Id),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse(caso);
+        result.Error.Should().Contain("Vuelva a validar");
+        VerifyNoWrites();
+    }
+
+    [Fact]
+    public async Task Condicion_de_pago_eliminada_desde_la_validacion_falla_sin_escribir()
+    {
+        SetupTermLookup();
+
+        var result = await Processor().ConfirmRowAsync(
+            Json(CustomerImportAction.CreateCustomer, null, Guid.NewGuid()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("condición de pago");
+        VerifyNoWrites();
     }
 }

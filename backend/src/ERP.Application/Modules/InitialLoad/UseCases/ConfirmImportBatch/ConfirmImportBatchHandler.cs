@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 
 /// <summary>
-/// Productos se confirma como una única transacción. Otros tipos conservan su flujo existente.
+/// Productos y Clientes se confirman como una única transacción. Otros tipos conservan su flujo existente.
 /// </summary>
 public sealed partial class ConfirmImportBatchHandler
     : IRequestHandler<ConfirmImportBatchCommand, Result<ImportBatchConfirmResultDto>>
@@ -67,14 +67,9 @@ public sealed partial class ConfirmImportBatchHandler
         if (batch.ImportType == ImportType.Items)
             return await ConfirmItemsAsync(batch, processor, cancellationToken);
 
-        // IL-2A: Clientes es todo-o-nada — una sola fila con error bloquea el lote completo.
-        if (
-            batch.ImportType == ImportType.Customers
-            && (batch.IssueRows > 0 || batch.ValidRows != batch.TotalRows)
-        )
-            return Result<ImportBatchConfirmResultDto>.ValidationFailure(
-                "El lote tiene errores. Debe corregir todas las filas antes de confirmar."
-            );
+        // IL-2A/IL-2B: Clientes es todo-o-nada y se confirma en una única transacción.
+        if (batch.ImportType == ImportType.Customers)
+            return await ConfirmCustomersAsync(batch, processor, cancellationToken);
 
         batch.BeginConfirming(_ctx.UserId);
         await _batchRepo.SaveChangesAsync(cancellationToken);

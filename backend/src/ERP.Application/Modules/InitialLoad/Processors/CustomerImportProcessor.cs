@@ -208,11 +208,25 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
         }).ToList();
     }
 
+    /// <summary>
+    /// IL-2B: se ejecuta dentro de la transacción única del lote — cualquier <c>Failed</c> revierte
+    /// todo. Antes de escribir se revalida contra el maestro actual lo que Validate clasificó
+    /// (stale preview): si el tercero, su rol o su condición cambiaron, la fila falla.
+    /// </summary>
     public async Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct)
     {
         var parsed = JsonSerializer.Deserialize<ParsedCustomerRow>(parsedDataJson)!;
         if (parsed.PaymentTermId == Guid.Empty)
             return RowConfirmResult.Failed("La fila no tiene condición de pago validada.");
+
+        var paymentTerm = await _paymentTermRepo.GetByIdAsync(_ctx.TenantId, parsed.PaymentTermId, ct);
+        if (paymentTerm is null || !paymentTerm.IsActive)
+            return RowConfirmResult.Failed(StaleMessage("la condición de pago ya no existe o está inactiva"));
+
+        var match = await _lookup.FindByIdentificationAsync(parsed.IdentificationType, parsed.IdentificationNumber, ct);
+        var staleReason = StaleReason(parsed, match);
+        if (staleReason is not null)
+            return RowConfirmResult.Failed(StaleMessage(staleReason));
 
         Guid businessPartnerId;
         switch (parsed.Action)
@@ -234,11 +248,9 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
                     return RowConfirmResult.Failed(bpResult.Error ?? "No se pudo crear el tercero.");
                 businessPartnerId = bpResult.Value!.Id;
 
-                // Sin transacción cruzada entre agregados hasta IL-2B: cada fallo posterior se
-                // reporta explícitamente para revisión manual, nunca como éxito silencioso.
                 var roleError = await AssignCustomerRoleAsync(businessPartnerId, ct);
                 if (roleError is not null)
-                    return RowConfirmResult.Failed($"Cliente creado sin rol asignado, revisar manualmente: {roleError}");
+                    return RowConfirmResult.Failed(roleError);
 
                 if (parsed.Email is not null || parsed.Phone is not null)
                 {
@@ -253,8 +265,7 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
                         ct
                     );
                     if (!contactResult.IsSuccess)
-                        return RowConfirmResult.Failed(
-                            $"Cliente creado sin contacto, revisar manualmente: {contactResult.Error}");
+                        return RowConfirmResult.Failed($"Contacto inválido: {contactResult.Error}");
                 }
                 break;
             }
@@ -268,6 +279,9 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
             }
             case CustomerImportAction.AlreadyCustomer:
                 businessPartnerId = parsed.ExistingBusinessPartnerId!.Value;
+                // Idempotente: misma condición ya registrada en esta empresa → no se escribe nada.
+                if (match!.CompanyPaymentTermId == parsed.PaymentTermId)
+                    return RowConfirmResult.Success(businessPartnerId);
                 break;
             default:
                 return RowConfirmResult.Failed("Acción de importación no soportada.");
@@ -278,11 +292,35 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
             ct
         );
         if (!settingsResult.IsSuccess)
-            return RowConfirmResult.Failed(
-                $"Cliente sin condición de pago en esta empresa, revisar manualmente: {settingsResult.Error}");
+            return RowConfirmResult.Failed($"Condición de pago: {settingsResult.Error}");
 
         return RowConfirmResult.Success(businessPartnerId);
     }
+
+    private static string? StaleReason(ParsedCustomerRow parsed, CustomerImportMatch? match)
+    {
+        if (parsed.Action == CustomerImportAction.CreateCustomer)
+            return match is null ? null : "el tercero ya existe en el maestro";
+        if (match is null || match.BusinessPartnerId != parsed.ExistingBusinessPartnerId)
+            return "el tercero ya no existe en el maestro";
+        if (match.IsAmbiguous)
+            return "la identificación es ambigua en el maestro";
+        if (!match.IsActive)
+            return "el tercero fue inactivado";
+        if (parsed.Action == CustomerImportAction.AssignCustomerRole && match.HasActiveCustomerRole)
+            return "el tercero ya tiene rol Cliente";
+        if (parsed.Action == CustomerImportAction.AlreadyCustomer)
+        {
+            if (!match.HasActiveCustomerRole)
+                return "el tercero ya no tiene rol Cliente activo";
+            if (match.CompanyPaymentTermId is { } current && current != parsed.PaymentTermId)
+                return "el cliente ya tiene otra condición de pago en esta empresa";
+        }
+        return null;
+    }
+
+    private static string StaleMessage(string reason) =>
+        $"El maestro cambió desde la validación ({reason}). Vuelva a validar el archivo.";
 
     private async Task<string?> AssignCustomerRoleAsync(Guid businessPartnerId, CancellationToken ct)
     {
