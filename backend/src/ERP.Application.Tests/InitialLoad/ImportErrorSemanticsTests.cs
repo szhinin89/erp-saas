@@ -44,7 +44,7 @@ public sealed class ImportErrorSemanticsTests
             Ctx.Setup(c => c.TenantId).Returns(Tenant);
             Ctx.Setup(c => c.CompanyId).Returns(Company);
             Ctx.Setup(c => c.UserId).Returns(User);
-            Processor.Setup(p => p.ImportType).Returns(ImportType.InitialStock);
+            Processor.Setup(p => p.ImportType).Returns(ImportType.Prices);
             Batches
                 .Setup(b =>
                     b.GetByIdAsync(batch.Id, Tenant, Company, It.IsAny<CancellationToken>())
@@ -62,7 +62,7 @@ public sealed class ImportErrorSemanticsTests
         }
 
         private Dictionary<ImportType, IImportProcessor> ProcessorMap =>
-            new() { [ImportType.InitialStock] = Processor.Object };
+            new() { [ImportType.Prices] = Processor.Object };
 
         public ValidateImportBatchHandler Validate() =>
             new(
@@ -89,7 +89,7 @@ public sealed class ImportErrorSemanticsTests
 
     private static ImportBatch UploadedBatch()
     {
-        var batch = ImportBatch.Create(Tenant, Company, ImportType.InitialStock, User);
+        var batch = ImportBatch.Create(Tenant, Company, ImportType.Prices, User);
         batch.AttachFile("initial-load/f.xlsx", "f.xlsx", 3, User);
         batch.MarkUploaded(User);
         return batch;

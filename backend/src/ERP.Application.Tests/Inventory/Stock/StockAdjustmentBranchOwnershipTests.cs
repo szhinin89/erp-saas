@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CancelStockAdjustment;
@@ -512,7 +513,10 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 ReasonRepo.Object,
                 WarehouseRepo.Object,
                 Tenant.Object,
-                Branch.Object
+                Branch.Object,
+            Mock.Of<IStockRepository>(r => r.GetSourceDocIdsWithMovementTypeAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<IReadOnlyCollection<Guid>>(),
+                It.IsAny<StockMovementType>(), It.IsAny<CancellationToken>()) == Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>()))
             );
     }
 
@@ -586,7 +590,10 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 ReasonRepo.Object,
                 WarehouseRepo.Object,
                 Tenant.Object,
-                Branch.Object
+                Branch.Object,
+            Mock.Of<IStockRepository>(r => r.GetSourceDocIdsWithMovementTypeAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<IReadOnlyCollection<Guid>>(),
+                It.IsAny<StockMovementType>(), It.IsAny<CancellationToken>()) == Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>()))
             );
     }
 

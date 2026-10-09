@@ -447,7 +447,16 @@ public sealed class StockAdjustmentExecuteCancelTests
             ReasonRepo
                 .Setup(r => r.GetByIdAsync(TenantId, adj.ReasonId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateReason());
+            OpeningDocuments(isOpening: false, adj.Id);
         }
+
+        /// <summary>IL-4B — el Kardex indica si el documento es una apertura (InitialBalance).</summary>
+        public void OpeningDocuments(bool isOpening, Guid adjustmentId) =>
+            StockRepo
+                .Setup(r => r.GetSourceDocIdsWithMovementTypeAsync(TenantId, "StockAdjustment",
+                    It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(adjustmentId)),
+                    StockMovementType.InitialBalance, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(isOpening ? new HashSet<Guid> { adjustmentId } : new HashSet<Guid>());
 
         public CancelStockAdjustmentCommandHandler BuildHandler() =>
             new(
@@ -460,6 +469,29 @@ public sealed class StockAdjustmentExecuteCancelTests
                 User.Object,
                 StubCompanyClock()
             );
+    }
+
+    [Fact]
+    public async Task Cancelar_documento_de_apertura_InitialBalance_es_rechazado_sin_movimientos()
+    {
+        var adj = CreateDraft(StockAdjustment.MovementTypeIngreso, 5m, 10m);
+        adj.Execute(UserId);
+        var harness = new CancelHarness(adj);
+        harness.OpeningDocuments(isOpening: true, adj.Id);
+
+        var result = await harness
+            .BuildHandler()
+            .Handle(new CancelStockAdjustmentCommand(adj.Id, "error"), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("saldo inicial");
+        adj.Status.Should().Be("Executed");
+        harness.StockRepo.Verify(
+            r => r.AppendMovementAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<StockMovementType>(), It.IsAny<decimal>(), It.IsAny<string>(), It.IsAny<DateOnly>(),
+                It.IsAny<string?>(), It.IsAny<Guid?>(), It.IsAny<string?>(), It.IsAny<Guid>(), It.IsAny<decimal?>(),
+                It.IsAny<Guid?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>(), It.IsAny<Guid?>()),
+            Times.Never);
     }
 
     [Fact]

@@ -206,6 +206,24 @@ describe("StockAdjustmentsPage", () => {
     expect(screen.queryByText("Nuevo ajuste")).toBeNull();
   });
 
+  it("no ofrece Anular para un saldo inicial de Carga Inicial (IL-4B), sí para un ajuste normal", async () => {
+    vi.mocked(stockAdjustmentsService.list).mockResolvedValue({
+      items: [
+        adjustment({ id: "adj-open", status: "Executed", isInitialBalance: true }),
+        adjustment({ id: "adj-normal", status: "Executed" }),
+      ],
+      pageNumber: 1,
+      pageSize: 20,
+      totalCount: 2,
+    });
+
+    renderPage();
+
+    await screen.findAllByText("Ver");
+    // Dos ejecutados, pero solo el ajuste normal ofrece Anular.
+    expect(screen.getAllByText("Anular")).toHaveLength(1);
+  });
+
   it("Ejecutar abre la confirmación y luego llama a execute(id)", async () => {
     vi.mocked(stockAdjustmentsService.list).mockResolvedValue({
       items: [adjustment({ id: "adj-9", status: "Draft" })],

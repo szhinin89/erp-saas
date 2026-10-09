@@ -37,12 +37,15 @@ const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   SaleReturn: "Devolución de Cliente",
   SupplierCreditNote: "Nota de Crédito Proveedor",
   SupplierDebitNote: "Nota de Débito Proveedor",
+  // IL-4B — saldo de apertura de la Carga Inicial (StockMovementType propio, fecha = corte).
+  InitialBalance: "Saldo Inicial",
 };
 
 function movementBadgeVariant(typeName: string): BadgeVariant {
   if (
     typeName.includes("Entry") ||
     typeName === "PositiveAdjust" ||
+    typeName === "InitialBalance" ||
     typeName === "SaleReturn"
   )
     return "success";

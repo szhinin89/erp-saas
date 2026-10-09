@@ -607,6 +607,26 @@ public sealed class StockRepository : IStockRepository
             .ThenBy(m => m.SequenceNumber)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlySet<Guid>> GetSourceDocIdsWithMovementTypeAsync(
+        Guid tenantId,
+        string sourceDocType,
+        IReadOnlyCollection<Guid> sourceDocIds,
+        StockMovementType movementType,
+        CancellationToken ct = default
+    )
+    {
+        if (sourceDocIds.Count == 0)
+            return new HashSet<Guid>();
+        var ids = await _db.Set<StockMovement>()
+            .ForOperationalScope(tenantId, _company)
+            .Where(m => m.SourceDocType == sourceDocType && m.MovementType == movementType
+                && m.SourceDocId != null && sourceDocIds.Contains(m.SourceDocId.Value))
+            .Select(m => m.SourceDocId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
+        return ids.ToHashSet();
+    }
+
     public Task<StockMovement?> GetPreviousMovementAsync(
         Guid tenantId,
         Guid companyId,

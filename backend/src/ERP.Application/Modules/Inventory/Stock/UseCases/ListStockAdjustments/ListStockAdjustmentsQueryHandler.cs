@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.Mapping;
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using MediatR;
 
@@ -14,13 +15,15 @@ public sealed class ListStockAdjustmentsQueryHandler
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentBranch _branch;
+    private readonly IStockRepository _stockRepo;
 
     public ListStockAdjustmentsQueryHandler(
         IStockAdjustmentRepository adjRepo,
         IInventoryAdjustmentReasonRepository reasonRepo,
         IWarehouseRepository warehouseRepo,
         ICurrentTenant tenant,
-        ICurrentBranch branch
+        ICurrentBranch branch,
+        IStockRepository stockRepo
     )
     {
         _adjRepo = adjRepo;
@@ -28,6 +31,7 @@ public sealed class ListStockAdjustmentsQueryHandler
         _warehouseRepo = warehouseRepo;
         _tenant = tenant;
         _branch = branch;
+        _stockRepo = stockRepo;
     }
 
     public async Task<Result<PagedResult<StockAdjustmentDto>>> Handle(
@@ -81,11 +85,16 @@ public sealed class ListStockAdjustmentsQueryHandler
         var reasons = await _reasonRepo.ListAsync(tid, null, includeInactive: true, ct);
         var reasonNames = reasons.ToDictionary(r => r.Id, r => r.Name);
 
+        // IL-4B — documentos de apertura (movimientos InitialBalance) de la página, en una consulta.
+        var opening = await _stockRepo.GetSourceDocIdsWithMovementTypeAsync(
+            tid, "StockAdjustment", items.Select(a => a.Id).ToList(), StockMovementType.InitialBalance, ct);
+
         var dtos = items
             .Select(a =>
                 StockAdjustmentMapper.ToDto(
                     a,
-                    reasonNames.TryGetValue(a.ReasonId, out var name) ? name : null
+                    reasonNames.TryGetValue(a.ReasonId, out var name) ? name : null,
+                    opening.Contains(a.Id)
                 )
             )
             .ToList();

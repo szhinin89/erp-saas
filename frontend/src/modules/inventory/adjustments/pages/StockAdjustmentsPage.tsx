@@ -137,7 +137,7 @@ export function StockAdjustmentsPage() {
                 {t("inventory.adjustments.actions.execute", "Ejecutar")}
               </ZHBtn>
             )}
-            {isExecuted && ctx.canCancel && (
+            {isExecuted && ctx.canCancel && !row.isInitialBalance && (
               <ZHBtn
                 variant="ghost"
                 size="sm"

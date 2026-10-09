@@ -16,7 +16,10 @@ public sealed record StockAdjustmentDto(
     DateTime? CancelledAt,
     Guid? CancelledBy,
     string? CancelledReason,
-    IReadOnlyList<StockAdjustmentLineDto> Lines
+    IReadOnlyList<StockAdjustmentLineDto> Lines,
+    // IL-4B — documento de apertura de Carga Inicial (movimientos InitialBalance): no se anula
+    // con la anulación genérica de ajustes.
+    bool IsInitialBalance = false
 );
 
 public sealed record StockAdjustmentLineDto(

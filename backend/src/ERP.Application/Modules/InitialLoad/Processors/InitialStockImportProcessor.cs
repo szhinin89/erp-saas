@@ -8,7 +8,7 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.CreateInventoryAdjustmentReason;
 using ERP.Application.Modules.Inventory.Stock.UseCases.CreateStockAdjustment;
-using ERP.Application.Modules.Inventory.Stock.UseCases.ExecuteStockAdjustment;
+using ERP.Application.Modules.Inventory.Stock.UseCases.PostInitialBalance;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -32,10 +32,13 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 ///   de la empresa (sin redondeo silencioso); cantidad entera si el Item no admite decimales.
 /// - Fecha de corte obligatoria, no futura y única en todo el lote: es la fecha efectiva del saldo.
 ///
-/// La confirmación (documento por bodega, movimiento de apertura propio con la fecha de corte,
-/// transacción única) es IL-4B; hasta entonces Confirm conserva el ajuste de Ingreso por fila.
+/// IL-4B — se confirma el LOTE completo (<see cref="IBatchImportConfirmation"/>): un documento de
+/// apertura por bodega con todas sus líneas, posteado con <c>StockMovementType.InitialBalance</c> y
+/// la Fecha de Corte como fecha efectiva (<see cref="PostInitialBalanceCommand"/>), dentro de la
+/// transacción única del handler. Antes de escribir se revalida cada fila contra el estado actual.
 /// </summary>
-public sealed partial class InitialStockImportProcessor : IImportProcessor, IImportBatchValidator
+public sealed partial class InitialStockImportProcessor
+    : IImportProcessor, IImportBatchValidator, IBatchImportConfirmation
 {
     private const string ReasonCode = "CARGA_INICIAL";
     private const string ReasonName = "Carga Inicial";
@@ -181,54 +184,79 @@ public sealed partial class InitialStockImportProcessor : IImportProcessor, IImp
         }).ToList();
     }
 
-    public async Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct)
+    /// <summary>Inventario Inicial nunca confirma fila por fila: ver <see cref="ConfirmBatchAsync"/>.</summary>
+    public Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct) =>
+        Task.FromResult(RowConfirmResult.Failed("El inventario inicial se confirma por lote completo."));
+
+    public async Task<BatchConfirmResult> ConfirmBatchAsync(
+        IReadOnlyList<(int RowNumber, string ParsedDataJson)> rows, CancellationToken ct)
     {
-        var parsed = JsonSerializer.Deserialize<ParsedInitialStockRow>(parsedDataJson)!;
+        var parsed = rows.Select(r => (r.RowNumber, Row: JsonSerializer.Deserialize<ParsedInitialStockRow>(r.ParsedDataJson)!))
+            .ToList();
+        if (parsed.Count == 0)
+            return BatchConfirmResult.Failed("El lote no tiene filas para confirmar.");
+
+        var cutoffDates = parsed.Select(p => p.Row.CutoffDate).Distinct().ToList();
+        if (cutoffDates.Count != 1 || cutoffDates[0] is not { } cutoffDate)
+            return BatchConfirmResult.Failed("El lote debe tener una única fecha de corte. Vuelva a validar el archivo.");
+
+        // Revalidación contra el estado actual (stale preview): nada se escribe si algo cambió.
+        foreach (var (rowNumber, row) in parsed)
+        {
+            var error = await RevalidateAsync(row, ct);
+            if (error is not null)
+                return BatchConfirmResult.Failed($"Fila {rowNumber}: {error} Vuelva a validar el archivo.");
+        }
 
         var reasonId = await ResolveOrCreateReasonAsync(ct);
         if (reasonId is null)
-            return RowConfirmResult.Failed(
-                $"El motivo de ajuste '{ReasonCode}' existe pero está inactivo o no permite Ingreso — revíselo en Configuración de Inventario."
-            );
+            return BatchConfirmResult.Failed(
+                $"El motivo de ajuste '{ReasonCode}' existe pero está inactivo o no permite Ingreso — revíselo en Configuración de Inventario.");
 
-        var createResult = await _mediator.Send(
-            new CreateStockAdjustmentCommand(
-                parsed.WarehouseId,
-                parsed.WarehouseName,
-                StockAdjustment.MovementTypeIngreso,
-                reasonId.Value,
-                Notes: string.IsNullOrWhiteSpace(parsed.Observation)
-                    ? "Carga Inicial de Stock"
-                    : $"Carga Inicial de Stock — {parsed.Observation}",
-                Lines:
-                [
-                    new CreateStockAdjustmentLineInput(
-                        parsed.ItemId,
-                        parsed.ItemName,
-                        PackagingLevelId: null,
-                        parsed.Quantity,
-                        parsed.UnitCost,
-                        LineNotes: null
-                    ),
-                ]
-            ),
-            ct
-        );
-        if (!createResult.IsSuccess)
-            return RowConfirmResult.Failed(
-                createResult.Error ?? "No se pudo crear el ajuste de inventario."
+        var created = new Dictionary<int, Guid>();
+        foreach (var warehouse in parsed.GroupBy(p => p.Row.WarehouseId))
+        {
+            var first = warehouse.First().Row;
+            var result = await _mediator.Send(
+                new PostInitialBalanceCommand(
+                    first.WarehouseId,
+                    first.WarehouseName,
+                    reasonId.Value,
+                    cutoffDate,
+                    $"Saldo inicial al {cutoffDate:yyyy-MM-dd} — Carga Inicial de Inventario",
+                    warehouse.Select(p => new CreateStockAdjustmentLineInput(
+                        p.Row.ItemId, p.Row.ItemName, PackagingLevelId: null, p.Row.Quantity, p.Row.UnitCost,
+                        LineNotes: p.Row.Observation)).ToList()
+                ),
+                ct
             );
+            if (!result.IsSuccess)
+                return BatchConfirmResult.Failed(
+                    $"Bodega {first.WarehouseCode}: {result.Error ?? "No se pudo registrar la apertura."}");
+            foreach (var (rowNumber, _) in warehouse)
+                created[rowNumber] = result.Value!.Id;
+        }
 
-        var executeResult = await _mediator.Send(
-            new ExecuteStockAdjustmentCommand(createResult.Value!.Id),
-            ct
-        );
-        if (!executeResult.IsSuccess)
-            return RowConfirmResult.Failed(
-                $"Ajuste de inventario creado sin ejecutar, revisar manualmente: {executeResult.Error}"
-            );
+        return BatchConfirmResult.Success(created);
+    }
 
-        return RowConfirmResult.Success(parsed.ItemId);
+    private async Task<string?> RevalidateAsync(ParsedInitialStockRow row, CancellationToken ct)
+    {
+        var item = await _itemRepo.GetByIdLightAsync(row.ItemId, _ctx.TenantId, ct);
+        if (item is null || !item.IsActive || !item.ParticipatesInInventory)
+            return $"el ítem '{row.ItemName}' ya no existe, está inactivo o no participa de inventario.";
+        if (item.StockConfig.TracksLot || item.StockConfig.TracksSeries)
+            return $"el ítem '{row.ItemName}' ahora controla lotes o series.";
+
+        var warehouse = await _warehouseRepo.GetByIdAsync(_ctx.TenantId, row.WarehouseId, ct);
+        if (warehouse is null || !warehouse.IsActive)
+            return $"la bodega '{row.WarehouseCode}' ya no existe o está inactiva.";
+        if (warehouse.BranchId != _branch.BranchId)
+            return $"la bodega '{row.WarehouseCode}' no pertenece a la sucursal activa.";
+
+        if (await _stockLookup.HasStockHistoryAsync(row.ItemId, row.WarehouseId, ct))
+            return $"el ítem '{row.ItemName}' ya tiene stock o movimientos en la bodega '{row.WarehouseCode}'.";
+        return null;
     }
 
     // ── Validate helpers ─────────────────────────────────────────────────────

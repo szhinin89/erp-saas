@@ -6,6 +6,8 @@ using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
+using ERP.Application.Modules.Inventory.Stock.DTOs;
+using ERP.Application.Modules.Inventory.Stock.UseCases.PostInitialBalance;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -304,5 +306,95 @@ public sealed class InitialStockImportProcessorTests
         result[1].Issues.Should().Contain(i => i.Code == "DUPLICATE_ITEM_WAREHOUSE_IN_FILE");
         result[2].Issues.Should().NotContain(i => i.Code == "DUPLICATE_ITEM_WAREHOUSE_IN_FILE");
         result.Should().OnlyContain(r => r.Issues.Any(i => i.Code == "MULTIPLE_CUTOFF_DATES") && r.HasBlockingIssue);
+    }
+
+    // ── IL-4B: confirmación del lote completo ────────────────────────────────────────────────
+
+    private static readonly DateOnly Cutoff = new(2026, 9, 30);
+
+    private string Json(Item item, Warehouse warehouse, decimal quantity = 10m) =>
+        JsonSerializer.Serialize(new ParsedInitialStockRow(item.Id, item.Code.ShortName, "19", warehouse.Id,
+            warehouse.Code!, warehouse.Name, quantity, 2.5m, Cutoff, null));
+
+    private void SetupConfirmable(params (Item Item, Warehouse Warehouse)[] pairs)
+    {
+        _reasonRepo.Setup(x => x.GetByCodeAsync(TenantId, "CARGA_INICIAL", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(InventoryAdjustmentReason.Create(TenantId, null, "CARGA_INICIAL", "Carga Inicial",
+                InventoryAdjustmentReason.Ingreso, false, 0, Guid.NewGuid()));
+        foreach (var (item, warehouse) in pairs)
+        {
+            _itemRepo.Setup(x => x.GetByIdLightAsync(item.Id, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
+            _warehouseRepo.Setup(x => x.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>())).ReturnsAsync(warehouse);
+        }
+        _mediator.Setup(m => m.Send(It.IsAny<PostInitialBalanceCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PostInitialBalanceCommand c, CancellationToken _) => ERP.Application.Common.Result<StockAdjustmentDto>.Success(
+                new StockAdjustmentDto(Guid.NewGuid(), "ADJ-0001", c.WarehouseId, c.WarehouseName, "Ingreso", c.ReasonId,
+                    "Carga Inicial", c.Notes, c.CutoffDate, "Executed", DateTime.UtcNow, null, null, null, null, [])));
+    }
+
+    [Fact]
+    public async Task Confirmar_lote_crea_un_documento_por_bodega_con_la_fecha_de_corte()
+    {
+        var other = BuildWarehouse("BOD-02");
+        var second = BuildItem("PROD-0002");
+        SetupConfirmable((_item, _warehouse), (second, _warehouse), (_item, other));
+
+        var result = await Processor().ConfirmBatchAsync(
+            [(1, Json(_item, _warehouse)), (2, Json(second, _warehouse)), (3, Json(_item, other))], CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        _mediator.Verify(m => m.Send(It.Is<PostInitialBalanceCommand>(c => c.WarehouseId == _warehouse.Id
+            && c.Lines.Count == 2 && c.CutoffDate == Cutoff), It.IsAny<CancellationToken>()), Times.Once);
+        _mediator.Verify(m => m.Send(It.Is<PostInitialBalanceCommand>(c => c.WarehouseId == other.Id
+            && c.Lines.Count == 1), It.IsAny<CancellationToken>()), Times.Once);
+        result.CreatedIdsByRow![1].Should().Be(result.CreatedIdsByRow[2], "misma bodega → mismo documento");
+        result.CreatedIdsByRow[3].Should().NotBe(result.CreatedIdsByRow[1]);
+    }
+
+    [Fact]
+    public async Task Historia_aparecida_despues_del_preview_aborta_sin_escribir()
+    {
+        SetupConfirmable((_item, _warehouse));
+        _stockLookup.Setup(x => x.HasStockHistoryAsync(_item.Id, _warehouse.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await Processor().ConfirmBatchAsync([(7, Json(_item, _warehouse))], CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Fila 7").And.Contain("Vuelva a validar");
+        _mediator.Verify(m => m.Send(It.IsAny<PostInitialBalanceCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cambio_de_sucursal_despues_del_preview_aborta_sin_escribir()
+    {
+        SetupConfirmable((_item, _warehouse));
+        _branch.SetupGet(x => x.BranchId).Returns(Guid.NewGuid());
+
+        var result = await Processor().ConfirmBatchAsync([(1, Json(_item, _warehouse))], CancellationToken.None);
+
+        result.Error.Should().Contain("sucursal activa");
+        _mediator.Verify(m => m.Send(It.IsAny<PostInitialBalanceCommand>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Fallo_de_una_bodega_se_reporta_con_su_codigo()
+    {
+        SetupConfirmable((_item, _warehouse));
+        _mediator.Setup(m => m.Send(It.IsAny<PostInitialBalanceCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ERP.Application.Common.Result<StockAdjustmentDto>.ValidationFailure("ya tiene stock"));
+
+        var result = await Processor().ConfirmBatchAsync([(1, Json(_item, _warehouse))], CancellationToken.None);
+
+        result.Error.Should().Be("Bodega BOD-01: ya tiene stock");
+    }
+
+    [Fact]
+    public async Task Confirmar_fila_por_fila_nunca_escribe()
+    {
+        var result = await Processor().ConfirmRowAsync(Json(_item, _warehouse), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        _mediator.VerifyNoOtherCalls();
     }
 }

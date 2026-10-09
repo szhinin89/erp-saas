@@ -1,5 +1,13 @@
 # Project Status
 
+## Pendiente antes del piloto — QA-INVENTORY-INFRA-SUITES-01 (registrado 2026-10-09)
+
+**Estado: ABIERTO — no investigado.** Detectado durante IL-4B; no lo causa IL-4.
+
+- Suites de Infrastructure con PostgreSQL real fallan en `HEAD` limpio (`2c3387e5f`): `StockRepositoryCompanyScopeIntegrationTests`, `StockMovementBranchOwnershipIntegrationTests`, `PurchaseCancelledStockMovementIntegrationTests`, `ResolvePurchaseReceptionLinesIntegrationTests`, `PurchaseInvoiceConfirmedPostingIntegrationTests` — 24/32 fallidos en ese conjunto.
+- Síntoma principal: `StockRepository.AppendMovementAsync` lanza "El ítem no es un producto de la empresa actual." desde el seeding de las suites.
+- Riesgo: esas suites cubren Kardex, costo promedio y confirmación/anulación de compras; mientras fallen no protegen esos flujos. Resolver (causa raíz: datos de prueba vs. regla real) antes del piloto.
+
 ## IL-3 — Carga Inicial de Proveedores (2026-10-09)
 
 **Estado: CLOSED.** IL-3A (validación), IL-3B (confirmación atómica) e IL-3C (idempotencia/concurrencia/recovery) implementados; MasterData sin cambios.

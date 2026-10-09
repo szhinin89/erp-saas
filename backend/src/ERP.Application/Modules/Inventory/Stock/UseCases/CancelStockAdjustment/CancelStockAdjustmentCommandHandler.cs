@@ -70,6 +70,17 @@ public sealed class CancelStockAdjustmentCommandHandler
                 $"Solo ajustes Ejecutados pueden anularse (actual: {adj.Status})."
             );
 
+        // IL-4B — un documento de apertura (movimientos InitialBalance) no se revierte con la
+        // anulación genérica: postearía NegativeAdjust con la fecha de hoy sobre un saldo al corte.
+        // Su reverso, si se necesita, es un proceso específico de Carga Inicial.
+        var openingDocuments = await _stockRepo.GetSourceDocIdsWithMovementTypeAsync(
+            tid, "StockAdjustment", [adj.Id], StockMovementType.InitialBalance, ct);
+        if (openingDocuments.Contains(adj.Id))
+            return Result<StockAdjustmentDto>.ValidationFailure(
+                "Este documento es un saldo inicial de inventario (Carga Inicial) y no se puede anular "
+                    + "desde Ajustes de Inventario."
+            );
+
         var uid = _user.UserId;
         var effectiveDate = await _companyClock.TodayAsync(adj.CompanyId, tid, ct);
         var isIngreso = adj.MovementType == StockAdjustment.MovementTypeIngreso;

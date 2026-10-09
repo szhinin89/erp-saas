@@ -9,7 +9,7 @@ namespace ERP.Application.Modules.Inventory.Stock.Mapping;
 /// </summary>
 internal static class StockAdjustmentMapper
 {
-    public static StockAdjustmentDto ToDto(StockAdjustment a, string? reasonName) =>
+    public static StockAdjustmentDto ToDto(StockAdjustment a, string? reasonName, bool isInitialBalance = false) =>
         new(
             a.Id,
             a.AdjustmentNumber,
@@ -26,7 +26,8 @@ internal static class StockAdjustmentMapper
             a.CancelledAt,
             a.CancelledBy,
             a.CancelledReason,
-            a.Lines.OrderBy(l => l.SortOrder).Select(ToLineDto).ToList()
+            a.Lines.OrderBy(l => l.SortOrder).Select(ToLineDto).ToList(),
+            isInitialBalance
         );
 
     public static StockAdjustmentLineDto ToLineDto(StockAdjustmentLine l) =>

@@ -20,4 +20,10 @@ public enum StockMovementType
     // frontend. Aditivo puro: no reasigna ningún valor existente, persistido como int
     // (HasConversion<int>() en StockMovementConfiguration), sin CHECK constraint que ampliar.
     PurchaseCancelled = 11,
+
+    // IL-4B — saldo de apertura de la Carga Inicial de Inventario (PostInitialBalanceCommand):
+    // hecho de negocio propio, nunca PositiveAdjust, con la Fecha de Corte como fecha efectiva.
+    // Solo se postea sobre un Item+Bodega sin historia (primer movimiento de su Kardex). Aditivo
+    // puro: persistido como int, sin CHECK constraint que ampliar — sin migración.
+    InitialBalance = 12,
 }

@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
 using ERP.Application.Modules.Inventory.Stock.Mapping;
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using MediatR;
 
@@ -14,13 +15,15 @@ public sealed class GetStockAdjustmentByIdQueryHandler
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentBranch _branch;
+    private readonly IStockRepository _stockRepo;
 
     public GetStockAdjustmentByIdQueryHandler(
         IStockAdjustmentRepository adjRepo,
         IInventoryAdjustmentReasonRepository reasonRepo,
         IWarehouseRepository warehouseRepo,
         ICurrentTenant tenant,
-        ICurrentBranch branch
+        ICurrentBranch branch,
+        IStockRepository stockRepo
     )
     {
         _adjRepo = adjRepo;
@@ -28,6 +31,7 @@ public sealed class GetStockAdjustmentByIdQueryHandler
         _warehouseRepo = warehouseRepo;
         _tenant = tenant;
         _branch = branch;
+        _stockRepo = stockRepo;
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(
@@ -48,6 +52,9 @@ public sealed class GetStockAdjustmentByIdQueryHandler
             return Result<StockAdjustmentDto>.NotFound("Ajuste no encontrado.");
 
         var reason = await _reasonRepo.GetByIdAsync(tid, adj.ReasonId, ct);
-        return Result<StockAdjustmentDto>.Success(StockAdjustmentMapper.ToDto(adj, reason?.Name));
+        var opening = await _stockRepo.GetSourceDocIdsWithMovementTypeAsync(
+            tid, "StockAdjustment", [adj.Id], StockMovementType.InitialBalance, ct);
+        return Result<StockAdjustmentDto>.Success(
+            StockAdjustmentMapper.ToDto(adj, reason?.Name, opening.Contains(adj.Id)));
     }
 }

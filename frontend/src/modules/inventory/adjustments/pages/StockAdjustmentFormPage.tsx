@@ -369,7 +369,7 @@ export function StockAdjustmentFormPage() {
                   </ZHBtn>
                 )}
 
-              {isExecuted && ctx.canCancel && (
+              {isExecuted && ctx.canCancel && !ctx.adjustment?.isInitialBalance && (
                 <ZHBtn
                   variant="ghost"
                   size="sm"

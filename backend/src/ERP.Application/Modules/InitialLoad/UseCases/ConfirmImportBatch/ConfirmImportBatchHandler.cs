@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 
 /// <summary>
-/// Productos, Clientes y Proveedores se confirman como una única transacción. Otros tipos conservan su flujo existente.
+/// Productos, Clientes, Proveedores e Inventario Inicial se confirman como una única transacción. Otros tipos conservan su flujo existente.
 /// </summary>
 public sealed partial class ConfirmImportBatchHandler
     : IRequestHandler<ConfirmImportBatchCommand, Result<ImportBatchConfirmResultDto>>
@@ -73,15 +73,10 @@ public sealed partial class ConfirmImportBatchHandler
             return await ConfirmPartnersAsync(batch, processor,
                 batch.ImportType == ImportType.Customers ? "cliente" : "proveedor", cancellationToken);
 
-        // IL-4A: Inventario Inicial es todo-o-nada — una sola fila con error bloquea el lote.
-        // (La confirmación atómica por bodega es IL-4B.)
-        if (
-            batch.ImportType == ImportType.InitialStock
-            && (batch.IssueRows > 0 || batch.ValidRows != batch.TotalRows)
-        )
-            return Result<ImportBatchConfirmResultDto>.ValidationFailure(
-                "El lote tiene errores. Debe corregir todas las filas antes de confirmar."
-            );
+        // IL-4B: Inventario Inicial es todo-o-nada y se confirma por lote en una única transacción
+        // (un documento de apertura por bodega); nunca pasa por el bucle genérico de abajo.
+        if (batch.ImportType == ImportType.InitialStock)
+            return await ConfirmInitialStockAsync(batch, processor, cancellationToken);
 
         batch.BeginConfirming(_ctx.UserId);
         await _batchRepo.SaveChangesAsync(cancellationToken);

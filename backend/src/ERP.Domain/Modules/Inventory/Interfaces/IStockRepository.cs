@@ -104,6 +104,19 @@ public interface IStockRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// IL-4B — de los documentos dados, los que tienen al menos un movimiento del tipo indicado
+    /// (p. ej. <see cref="StockMovementType.InitialBalance"/> identifica un documento de apertura).
+    /// El Kardex es el discriminador: el documento en sí no distingue una apertura de un ajuste.
+    /// </summary>
+    Task<IReadOnlySet<Guid>> GetSourceDocIdsWithMovementTypeAsync(
+        Guid tenantId,
+        string sourceDocType,
+        IReadOnlyCollection<Guid> sourceDocIds,
+        StockMovementType movementType,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>Vecino anterior en la secuencia del Kardex para la misma clave Company/Product/Warehouse.</summary>
     Task<StockMovement?> GetPreviousMovementAsync(
         Guid tenantId,

@@ -119,8 +119,9 @@ public sealed class StockAdjustmentLine : ITenantScopedEntity, ICompanyOperation
 
     /// <summary>
     /// Fija los saldos resueltos al momento de Execute (antes/después) y — para Ingreso — el costo
-    /// unitario/costo total definitivamente aplicado al Kardex. Llamado exclusivamente por el
-    /// handler de ExecuteStockAdjustment; la línea no conoce stock por sí misma.
+    /// unitario/costo total definitivamente aplicado al Kardex. Llamado exclusivamente por los
+    /// handlers de ExecuteStockAdjustment y PostInitialBalance (apertura IL-4B); la línea no conoce
+    /// stock por sí misma.
     /// </summary>
     public void ApplyExecutionResult(
         decimal currentStockBefore,

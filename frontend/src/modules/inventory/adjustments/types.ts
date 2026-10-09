@@ -46,6 +46,8 @@ export interface StockAdjustmentDto {
   cancelledAt: string | null;
   cancelledBy: string | null;
   cancelledReason: string | null;
+  /** IL-4B — saldo inicial de Carga Inicial: no se anula desde Ajustes de Inventario. */
+  isInitialBalance?: boolean;
   lines: StockAdjustmentLineDto[];
 }
 
