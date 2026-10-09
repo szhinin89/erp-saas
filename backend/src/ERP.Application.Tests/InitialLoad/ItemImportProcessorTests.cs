@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.InitialLoad.UseCases.ValidateImportBatch;
 using ERP.Domain.Modules.InitialLoad.Entities;
@@ -36,11 +37,14 @@ public sealed class ItemImportProcessorTests
     private readonly Mock<ISriCatalogResolver> _sri = new();
     private readonly Mock<IOperationalContext> _ctx = new();
     private readonly Mock<IMediator> _mediator = new();
+    private static readonly DateOnly CompanyToday = new(2026, 10, 8);
+    private readonly Mock<ICompanyClock> _clock = new();
 
     private ItemImportProcessor BuildProcessor()
     {
         _ctx.SetupGet(x => x.TenantId).Returns(TenantId);
         _ctx.SetupGet(x => x.CompanyId).Returns(CompanyId);
+        _clock.Setup(x => x.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(CompanyToday);
         return new ItemImportProcessor(
             _reader.Object,
             _itemRepo.Object,
@@ -50,7 +54,8 @@ public sealed class ItemImportProcessorTests
             _bpRepo.Object,
             _sri.Object,
             _ctx.Object,
-            _mediator.Object
+            _mediator.Object,
+            _clock.Object
         );
     }
 
@@ -426,6 +431,29 @@ public sealed class ItemImportProcessorTests
 
         result.HasBlockingIssue.Should().BeTrue();
         result.Issues.Should().Contain(i => i.FieldName == ItemImportColumns.SaleVatCode && i.Code == "REQUIRED_VAT_CODE");
+    }
+
+    [Fact]
+    public async Task Vigencia_del_iva_se_evalua_en_el_dia_de_negocio_de_la_empresa()
+    {
+        // Vigente hasta el "hoy" de la empresa: válido aunque en UTC ya sea el día siguiente.
+        SetupHappyPathCatalogs();
+        _sri.Setup(x => x.ResolveVatRatesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, SriVatInfo> { ["2"] = new("IVA 15%", 15m, ValidUntil: CompanyToday) });
+        var processor = BuildProcessor();
+
+        var first = await processor.ValidateRowAsync(1, ValidRow(), false, CancellationToken.None);
+        var second = await processor.ValidateRowAsync(2, ValidRow(), false, CancellationToken.None);
+
+        first.Issues.Should().NotContain(i => i.Code == "INVALID_VAT_CODE");
+        second.Issues.Should().NotContain(i => i.Code == "INVALID_VAT_CODE");
+        _clock.Verify(x => x.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()), Times.Once,
+            "el día de negocio se resuelve una vez por lote, para la empresa del contexto");
+
+        _sri.Setup(x => x.ResolveVatRatesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, SriVatInfo> { ["2"] = new("IVA 15%", 15m, ValidUntil: CompanyToday.AddDays(-1)) });
+        var expired = await BuildProcessor().ValidateRowAsync(1, ValidRow(), false, CancellationToken.None);
+        expired.Issues.Should().Contain(i => i.Code == "INVALID_VAT_CODE");
     }
 
     [Fact]

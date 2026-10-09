@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Services;
 using ERP.Application.Items.DTOs;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Items.ValueObjects;
@@ -16,6 +17,8 @@ public sealed class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand
     private readonly ICurrentUser _user;
     private readonly ISriCatalogResolver _sri;
     private readonly IDatabaseExceptionTranslator _dbEx;
+    private readonly ICurrentCompany _company;
+    private readonly ICompanyClock _clock;
 
     public UpdateItemCommandHandler(
         IItemRepository repository,
@@ -24,7 +27,9 @@ public sealed class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand
         ICurrentTenant tenant,
         ICurrentUser user,
         ISriCatalogResolver sri,
-        IDatabaseExceptionTranslator dbEx
+        IDatabaseExceptionTranslator dbEx,
+        ICurrentCompany company,
+        ICompanyClock clock
     )
     {
         _repository = repository;
@@ -34,6 +39,8 @@ public sealed class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand
         _user = user;
         _sri = sri;
         _dbEx = dbEx;
+        _company = company;
+        _clock = clock;
     }
 
     public async Task<Result<ItemDto>> Handle(
@@ -41,7 +48,8 @@ public sealed class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand
         CancellationToken cancellationToken
     )
     {
-        var vatError = await ItemVatValidation.ValidateAsync(_sri, cmd.SaleVatCode, cmd.PurchaseVatCode, cancellationToken);
+        var today = await _clock.TodayAsync(_company.CompanyId, _currentTenant.TenantId, cancellationToken);
+        var vatError = await ItemVatValidation.ValidateAsync(_sri, cmd.SaleVatCode, cmd.PurchaseVatCode, today, cancellationToken);
         if (vatError is not null) return Result<ItemDto>.ValidationFailure(vatError);
 
         var tenantId = _currentTenant.TenantId;

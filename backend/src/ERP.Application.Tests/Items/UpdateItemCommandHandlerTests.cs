@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Items.UseCases.UpdateItem;
@@ -85,7 +86,9 @@ public sealed class UpdateItemCommandHandlerTests
             tenant.Object,
             user.Object,
             sri.Object,
-            dbEx.Object
+            dbEx.Object,
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == Guid.NewGuid()),
+            Mock.Of<ICompanyClock>()
         );
 
         return (handler, repo);

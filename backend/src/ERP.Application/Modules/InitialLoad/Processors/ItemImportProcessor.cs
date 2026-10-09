@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Items.UseCases.Brands;
 using ERP.Application.Items.UseCases.CategoryNodes;
 using ERP.Application.Items.UseCases.CreateItem;
@@ -50,6 +51,8 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
     private readonly ISriCatalogResolver _sri;
     private readonly IOperationalContext _ctx;
     private readonly IMediator _mediator;
+    private readonly ICompanyClock _clock;
+    private DateOnly? _today;
 
     public ItemImportProcessor(
         IItemImportSheetReader reader,
@@ -60,7 +63,8 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
         IBusinessPartnerRepository bpRepo,
         ISriCatalogResolver sri,
         IOperationalContext ctx,
-        IMediator mediator
+        IMediator mediator,
+        ICompanyClock clock
     )
     {
         _reader = reader;
@@ -72,6 +76,7 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
         _sri = sri;
         _ctx = ctx;
         _mediator = mediator;
+        _clock = clock;
     }
 
     public ImportType ImportType => ImportType.Items;
@@ -359,7 +364,9 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
         }
 
         var vatRates = await _sri.ResolveVatRatesAsync([vatCode.Trim()], ct);
-        if (!vatRates.TryGetValue(vatCode.Trim(), out var rate) || !rate.IsEffectiveOn(DateOnly.FromDateTime(DateTime.UtcNow)))
+        // Vigencia evaluada en el día de negocio de la empresa del lote (una vez por lote).
+        _today ??= await _clock.TodayAsync(_ctx.CompanyId, _ctx.TenantId, ct);
+        if (!vatRates.TryGetValue(vatCode.Trim(), out var rate) || !rate.IsEffectiveOn(_today.Value))
         {
             issues.Add(
                 new RowIssue(

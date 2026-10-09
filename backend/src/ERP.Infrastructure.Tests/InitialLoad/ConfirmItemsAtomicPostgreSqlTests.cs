@@ -115,6 +115,7 @@ public sealed partial class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<In
         services.AddScoped<IItemCatalogRepository, ItemCatalogRepository>();
         services.AddScoped<IItemTypeRepository, ItemTypeRepository>();
         services.AddScoped<ISriCatalogResolver, SriCatalogResolver>();
+        services.AddScoped<ERP.Application.Common.Services.ICompanyClock, ERP.Infrastructure.Persistence.Services.CompanyClock>();
         services.AddScoped<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         var config = new Mock<ICatalogConfigurationResolver>();
         config.Setup(x => x.ResolveMaxCategoryDepthAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(3);
