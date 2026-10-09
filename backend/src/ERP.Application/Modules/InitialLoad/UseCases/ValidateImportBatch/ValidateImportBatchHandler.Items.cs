@@ -20,6 +20,15 @@ public sealed partial class ValidateImportBatchHandler
             // Reject terminal/busy states before touching previously validated staging.
             if (batch.Status is not (ImportStatus.Uploaded or ImportStatus.Validated))
                 throw new DomainRuleViolationException($"No se puede validar un lote en estado '{batch.Status}'.");
+            // IL-4C: alcance derivado del staging (sucursal), comprobado antes de reemplazarlo.
+            if (processor is IImportBatchScopeGuard scopeGuard)
+            {
+                var staged = await _rowRepo.GetAllRowsAsync(batch, ct);
+                var scopeError = await scopeGuard.CheckStagingScopeAsync(
+                    staged.Where(r => r.ParsedData is not null).Select(r => r.ParsedData!).ToList(), ct);
+                if (scopeError is not null)
+                    throw new DomainRuleViolationException(scopeError);
+            }
             await _issueRepo.DeleteByBatchAsync(batch.Id, batch.TenantId, batch.CompanyId, ct);
             await _rowRepo.DeleteByBatchAsync(batch.Id, batch.TenantId, batch.CompanyId, ct);
             var result = await ValidateRowsAsync(batch, processor, ct);

@@ -3,6 +3,7 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Entities;
+using ERP.Domain.Modules.InitialLoad.Enums;
 using FluentValidation;
 
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
@@ -10,7 +11,10 @@ namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 /// <summary>
 /// IL-4B — Inventario Inicial se confirma como UNA transacción: todos los documentos de apertura
 /// (uno por bodega), sus líneas, CurrentStock, Kardex y la numeración quedan juntos o no queda
-/// nada. Nunca pasa por el bucle genérico fila por fila. Bloqueo/idempotencia del lote: IL-4C.
+/// nada. Nunca pasa por el bucle genérico fila por fila.
+/// IL-4C — FOR UPDATE por lote + Tenant + Company serializa confirmaciones/revalidaciones/
+/// cancelaciones; un lote Completed devuelve su resultado sin re-ejecutar; el staging debe ser de la
+/// sucursal activa.
 /// </summary>
 public sealed partial class ConfirmImportBatchHandler
 {
@@ -20,6 +24,23 @@ public sealed partial class ConfirmImportBatchHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            batch = await _batchRepo.GetByIdForUpdateAsync(batch.Id, _ctx.TenantId, _ctx.CompanyId, ct)
+                ?? throw new DomainRuleViolationException("Lote de importación no encontrado.");
+            var staged = await _rowRepo.GetAllRowsAsync(batch, ct);
+            if (processor is IImportBatchScopeGuard scopeGuard)
+            {
+                var scopeError = await scopeGuard.CheckStagingScopeAsync(
+                    staged.Where(r => r.ParsedData is not null).Select(r => r.ParsedData!).ToList(), ct);
+                if (scopeError is not null)
+                    throw new DomainRuleViolationException(scopeError);
+            }
+            if (batch.Status == ImportStatus.Completed)
+            {
+                await _unitOfWork.CommitAsync(ct);
+                return Result<ImportBatchConfirmResultDto>.Success(
+                    new(batch.Id, batch.Status, batch.ImportedRows, FailedRows: 0));
+            }
+
             var errors = await _rowRepo.GetPageAsync(batch.Id, batch.TenantId, batch.CompanyId,
                 pageNumber: 1, pageSize: 1, onlyWithBlockingIssue: true, ct);
             if (batch.IssueRows > 0 || errors.TotalCount > 0 || batch.ValidRows != batch.TotalRows)
@@ -31,16 +52,7 @@ public sealed partial class ConfirmImportBatchHandler
             batch.BeginConfirming(_ctx.UserId);
             await _batchRepo.SaveChangesAsync(ct);
 
-            var rows = new List<ImportBatchRow>();
-            const int pageSize = 200;
-            for (var pageNumber = 1; ; pageNumber++)
-            {
-                var page = await _rowRepo.GetPageAsync(batch.Id, batch.TenantId, batch.CompanyId,
-                    pageNumber, pageSize, onlyWithBlockingIssue: false, ct);
-                rows.AddRange(page.Rows);
-                if (page.Rows.Count < pageSize || rows.Count >= page.TotalCount)
-                    break;
-            }
+            var rows = staged;
             if (rows.Count != batch.TotalRows || rows.Any(r => r.ParsedData is null || r.IsImported))
                 throw new DomainRuleViolationException("El lote no tiene filas validadas pendientes de confirmar.");
 

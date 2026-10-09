@@ -45,12 +45,15 @@ namespace ERP.Infrastructure.Tests.InitialLoad;
 /// CurrentStock, Kardex ni Outbox. Las filas llegan ya validadas (IL-4A).
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class ConfirmInitialStockAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
+public sealed partial class ConfirmInitialStockAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
 {
     // AlwaysTodayCompanyClock fija "hoy" en 2026-09-17: el corte es otro día, a propósito.
     private static readonly DateOnly Cutoff = new(2026, 8, 31);
     private static long _nextTaxNumber = 1790096000;
     private readonly ServiceProvider _services;
+    private readonly string _connectionString;
+    private readonly Mock<IInitialStockImportSheetReader> _reader = new();
+    private Action? _onLockAttempt;
     private readonly Guid _user = Guid.NewGuid();
     private Guid _tenant;
     private Guid _company;
@@ -64,6 +67,7 @@ public sealed class ConfirmInitialStockAtomicPostgreSqlTests : IClassFixture<Ini
 
     public ConfirmInitialStockAtomicPostgreSqlTests(InitialLoadPostgresFixture postgres)
     {
+        _connectionString = postgres.ConnectionString;
         var tenant = new Mock<ICurrentTenant>();
         tenant.SetupGet(x => x.TenantId).Returns(() => _tenant);
         var company = new Mock<ICurrentCompany>();
@@ -92,7 +96,7 @@ public sealed class ConfirmInitialStockAtomicPostgreSqlTests : IClassFixture<Ini
         services.AddSingleton<ICompanyPrecisionPolicyProvider>(StandardPrecisionPolicyProvider.Instance);
         services.AddSingleton<ICompanyClock>(new AlwaysTodayCompanyClock());
         services.AddDbContext<ErpDbContext>(o => o.UseNpgsql(postgres.ConnectionString).AddInterceptors(
-            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor()));
+            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor(), new BatchLockObserver(this)));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<IItemRepository, ItemRepository>();
@@ -101,7 +105,11 @@ public sealed class ConfirmInitialStockAtomicPostgreSqlTests : IClassFixture<Ini
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
         services.AddScoped<IInventoryAdjustmentReasonRepository, InventoryAdjustmentReasonRepository>();
         services.AddScoped<IInitialStockLookup, InitialStockLookup>();
-        services.AddSingleton(Mock.Of<IInitialStockImportSheetReader>());
+        services.AddSingleton(_reader.Object);
+        var files = new Mock<ERP.Application.Common.Interfaces.IFileStorage>();
+        files.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream([1]));
+        services.AddSingleton(files.Object);
         services.AddScoped<InitialStockImportProcessor>();
         services.AddScoped<IImportBatchRepository, ImportBatchRepository>();
         services.AddScoped<IImportBatchRowRepository, ImportBatchRowRepository>();

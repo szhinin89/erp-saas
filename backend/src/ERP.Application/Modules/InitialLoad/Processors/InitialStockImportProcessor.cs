@@ -38,7 +38,7 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// transacción única del handler. Antes de escribir se revalida cada fila contra el estado actual.
 /// </summary>
 public sealed partial class InitialStockImportProcessor
-    : IImportProcessor, IImportBatchValidator, IBatchImportConfirmation
+    : IImportProcessor, IImportBatchValidator, IBatchImportConfirmation, IImportBatchScopeGuard
 {
     private const string ReasonCode = "CARGA_INICIAL";
     private const string ReasonName = "Carga Inicial";
@@ -238,6 +238,26 @@ public sealed partial class InitialStockImportProcessor
         }
 
         return BatchConfirmResult.Success(created);
+    }
+
+    /// <summary>
+    /// IL-4C — el lote pertenece a la sucursal de las bodegas resueltas en su staging; otra
+    /// sucursal no puede validarlo, confirmarlo ni cancelarlo.
+    /// </summary>
+    public async Task<string?> CheckStagingScopeAsync(IReadOnlyList<string> parsedDataJson, CancellationToken ct)
+    {
+        var warehouseIds = parsedDataJson
+            .Select(json => JsonSerializer.Deserialize<ParsedInitialStockRow>(json)!.WarehouseId)
+            .Where(id => id != Guid.Empty)
+            .Distinct();
+        foreach (var warehouseId in warehouseIds)
+        {
+            var warehouse = await _warehouseRepo.GetByIdAsync(_ctx.TenantId, warehouseId, ct);
+            if (warehouse is null || warehouse.BranchId != _branch.BranchId)
+                return "El lote pertenece a otra sucursal: cambie a la sucursal de sus bodegas para validarlo, "
+                    + "confirmarlo o cancelarlo.";
+        }
+        return null;
     }
 
     private async Task<string?> RevalidateAsync(ParsedInitialStockRow row, CancellationToken ct)
