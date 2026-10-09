@@ -124,6 +124,8 @@ export function ImportWizardPage({
     confirmBatch,
     reset,
   } = useImportWizard(importType, templateFileName);
+  // Todo-o-nada: una fila con error bloquea la confirmación del lote (Items IL-1, Clientes IL-2A).
+  const requiresAllValid = importType === "Items" || importType === "Customers";
   const previewRows = preview?.items ?? [];
   const previewIssues = previewRows.flatMap((row) => row.issues);
   const categoryCreationWarnings = previewIssues.filter(
@@ -266,7 +268,7 @@ export function ImportWizardPage({
               />
               <div className="zh-form-actions-row">
                 <ZHBtn
-                  disabled={batch.validRows === 0 || (importType === "Items" && batch.issueRows > 0)}
+                  disabled={batch.validRows === 0 || (requiresAllValid && batch.issueRows > 0)}
                   onClick={() => setConfirmModalOpen(true)}
                 >
                   Confirmar importación
@@ -287,8 +289,8 @@ export function ImportWizardPage({
         title="Confirmar importación"
         subtitle={
           batch
-            ? importType === "Items"
-              ? `Se importará el lote completo de ${batch.totalRows} productos. Todas las filas deben ser válidas.`
+            ? requiresAllValid
+              ? `Se importará el lote completo de ${batch.totalRows} ${resultEntityLabelPlural}. Todas las filas deben ser válidas.`
               : `Se importarán ${batch.validRows} ${resultEntityLabelPlural} válidos. ${batch.issueRows} fila(s) con error serán omitidas.`
             : undefined
         }

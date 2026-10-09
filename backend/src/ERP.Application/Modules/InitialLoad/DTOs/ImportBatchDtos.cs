@@ -97,19 +97,38 @@ public sealed record RowConfirmResult(bool IsSuccess, Guid? BusinessPartnerId, s
     public static RowConfirmResult Failed(string error) => new(false, null, error);
 }
 
-/// <summary>Fila de Clientes ya tipada — resultado del mapeo de <c>CustomerImportProcessor</c>.</summary>
+/// <summary>
+/// Fila de Clientes ya tipada — resultado del mapeo de <c>CustomerImportProcessor</c> (IL-2A).
+/// <see cref="Action"/> y <see cref="ExistingBusinessPartnerId"/> vienen clasificados desde
+/// Validate contra el maestro: Confirm ejecuta lo que se validó, nunca crea un BP si la
+/// identificación ya existía en el tenant. <see cref="PaymentTermId"/> es la condición de venta
+/// de la Company operativa — nunca se guarda en el BP global.
+/// </summary>
 public sealed record ParsedCustomerRow(
     string IdentificationType,
     string IdentificationNumber,
+    int? LegalEntityTypeCode,
     string LegalName,
     string? TradeName,
     string? CountryCode,
     string? Email,
     string? Phone,
-    string? CustomerCategory,
-    string? CustomerSegment,
-    string? SalesZone
+    Guid PaymentTermId,
+    CustomerImportAction Action,
+    Guid? ExistingBusinessPartnerId
 );
+
+public enum CustomerImportAction
+{
+    /// <summary>Identificación nueva en el tenant: crear BP + rol Cliente + contacto + condición.</summary>
+    CreateCustomer = 1,
+
+    /// <summary>BP existente sin rol Cliente activo: reutilizar BP, asignar rol y condición.</summary>
+    AssignCustomerRole = 2,
+
+    /// <summary>Ya es Cliente: idempotente; solo registra la condición si la Company no tiene una.</summary>
+    AlreadyCustomer = 3,
+}
 
 /// <summary>
 /// Fila de Proveedores ya tipada — resultado del mapeo de <c>SupplierImportProcessor</c>.

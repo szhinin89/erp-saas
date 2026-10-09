@@ -149,6 +149,7 @@ public static class DependencyInjection
         services.AddScoped<IImportBatchRowRepository, ImportBatchRowRepository>();
         services.AddScoped<IImportBatchIssueRepository, ImportBatchIssueRepository>();
         services.AddScoped<ICustomerImportSheetReader, ClosedXmlCustomerImportSheetReader>();
+        services.AddScoped<ICustomerImportLookup, CustomerImportLookup>();
         services.AddScoped<ISupplierImportSheetReader, ClosedXmlSupplierImportSheetReader>();
         services.AddScoped<IItemImportSheetReader, ClosedXmlItemImportSheetReader>();
         services.AddScoped<

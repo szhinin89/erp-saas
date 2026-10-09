@@ -42,9 +42,21 @@ public sealed class ClosedXmlCustomerImportSheetReader : ICustomerImportSheetRea
             for (var col = 1; col <= lastUsedColumn; col++)
             {
                 var header = headerRow.Cell(col).GetString().Trim();
-                if (!string.IsNullOrEmpty(header))
-                    columnIndexes[header] = col;
+                if (!string.IsNullOrEmpty(header) && !columnIndexes.TryAdd(header, col))
+                    throw new DomainRuleViolationException("Encabezado duplicado: " + header);
             }
+
+            var obsolete = CustomerImportColumns.Obsolete.Where(columnIndexes.ContainsKey).ToList();
+            if (obsolete.Count > 0)
+                throw new DomainRuleViolationException(
+                    "La plantilla ya no admite: " + string.Join(", ", obsolete)
+                        + ". Las condiciones comerciales se configuran por empresa. Descargue la plantilla actual."
+                );
+            var missing = CustomerImportColumns.All.Where(c => !columnIndexes.ContainsKey(c)).ToList();
+            if (missing.Count > 0)
+                throw new DomainRuleViolationException(
+                    "Faltan encabezados de la plantilla: " + string.Join(", ", missing)
+                );
 
             var rows = new List<IReadOnlyDictionary<string, string?>>();
             var lastUsedRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
@@ -81,29 +93,54 @@ public sealed class ClosedXmlCustomerImportSheetReader : ICustomerImportSheetRea
             cell.Style.Font.Bold = true;
         }
 
-        sheet.Cell(2, 1).Value = "04";
-        sheet.Cell(2, 2).Value = "1790012345001";
-        sheet.Cell(2, 3).Value = "Comercial Ejemplo S.A.";
-        sheet.Cell(2, 4).Value = "Comercial Ejemplo";
-        sheet.Cell(2, 5).Value = "EC";
-        sheet.Cell(2, 6).Value = "contacto@ejemplo.com";
-        sheet.Cell(2, 7).Value = "0999999999";
-        sheet.Cell(2, 8).Value = "Retail";
-        sheet.Cell(2, 9).Value = "SMB";
-        sheet.Cell(2, 10).Value = "Norte";
+        var example = new Dictionary<string, string>
+        {
+            [CustomerImportColumns.IdentificationType] = "04",
+            [CustomerImportColumns.IdentificationNumber] = "1790012345001",
+            [CustomerImportColumns.LegalEntityTypeCode] = "",
+            [CustomerImportColumns.LegalName] = "Comercial Ejemplo S.A.",
+            [CustomerImportColumns.TradeName] = "Comercial Ejemplo",
+            [CustomerImportColumns.CountryCode] = "EC",
+            [CustomerImportColumns.Email] = "contacto@ejemplo.com",
+            [CustomerImportColumns.Phone] = "0999999999",
+            [CustomerImportColumns.PaymentTermCode] = "CONTADO",
+        };
+        for (var i = 0; i < CustomerImportColumns.All.Count; i++)
+        {
+            var column = CustomerImportColumns.All[i];
+            // Texto: Excel no debe convertir cédulas/RUC/teléfonos a número (pierden el 0 inicial).
+            if (column is CustomerImportColumns.IdentificationType
+                or CustomerImportColumns.IdentificationNumber
+                or CustomerImportColumns.Phone)
+                sheet.Column(i + 1).Style.NumberFormat.Format = "@";
+            sheet.Cell(2, i + 1).Value = example[column];
+        }
 
         sheet.Columns().AdjustToContents();
 
         var instructions = workbook.Worksheets.Add("Instrucciones");
         instructions.Cell(1, 1).Value = "Cómo llenar esta plantilla";
         instructions.Cell(1, 1).Style.Font.Bold = true;
-        instructions.Cell(3, 1).Value =
-            "Tipo Identificación / Número Identificación / Razón Social son obligatorios.";
-        instructions.Cell(4, 1).Value =
-            "Tipo Identificación: código SRI — 04 = RUC, 05 = Cédula, 06 = Pasaporte, 07 = Consumidor Final, 08 = Exterior.";
-        instructions.Cell(5, 1).Value =
-            "Límite de Crédito y Días de Pago son numéricos, sin símbolos.";
-        instructions.Cell(6, 1).Value = "No modifique los encabezados de la fila 1.";
+        string[] lines =
+        [
+            "Obligatorios: Tipo Identificación, Número Identificación, Razón Social y Condición de Pago. "
+                + "Tipo Entidad Legal es obligatorio para Pasaporte, Exterior y Placa.",
+            "Tipo Identificación: código SRI — 04 = RUC, 05 = Cédula, 06 = Pasaporte, 08 = Exterior, 09 = Placa. "
+                + "07 = Consumidor Final no se carga por plantilla.",
+            "Número Identificación: escriba el número como texto (columna formateada como Texto). Si Excel "
+                + "quita el 0 inicial de una cédula o RUC, la fila se bloquea.",
+            "Tipo Entidad Legal: código del catálogo — 1 = Persona Natural, 2 = Sociedad Privada, "
+                + "3 = Institución Pública. Para RUC/Cédula se deduce; si lo informa debe coincidir.",
+            "Condición de Pago: código existente y activo de la empresa (p. ej. CONTADO). No hay valor por defecto. "
+                + "Se guarda solo para la empresa actual.",
+            "Tercero ya existente: no se duplica. Si no es cliente se le asigna el rol Cliente; si ya es cliente "
+                + "la fila es idempotente. Su ficha maestra (nombre, contacto) no se modifica.",
+            "Email / Teléfono (opcionales): crean el contacto de facturación solo para clientes nuevos.",
+            "Una identificación no puede repetirse en el archivo. Si cualquier fila tiene error, el lote no se confirma.",
+            "No modifique los encabezados de la fila 1.",
+        ];
+        for (var i = 0; i < lines.Length; i++)
+            instructions.Cell(i + 3, 1).Value = lines[i];
         instructions.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();
