@@ -138,7 +138,7 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
             }
             catch (ArgumentException ex)
             {
-                Error("INVALID_CONTACT", ex.Message,
+                Error("INVALID_CONTACT", PublicMessage(ex),
                     email is not null ? CustomerImportColumns.Email : CustomerImportColumns.Phone);
             }
         }
@@ -384,7 +384,7 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
         }
         catch (ArgumentException ex)
         {
-            error("INVALID_IDENTIFICATION", ex.Message, CustomerImportColumns.IdentificationNumber);
+            error("INVALID_IDENTIFICATION", PublicMessage(ex), CustomerImportColumns.IdentificationNumber);
             return null;
         }
     }
@@ -403,7 +403,7 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
             }
             catch (ArgumentException ex)
             {
-                error("INVALID_LEGAL_ENTITY_TYPE", ex.Message, CustomerImportColumns.LegalEntityTypeCode);
+                error("INVALID_LEGAL_ENTITY_TYPE", PublicMessage(ex), CustomerImportColumns.LegalEntityTypeCode);
             }
 
             if (resolved is { } code && !await _legalEntityTypeRepo.ExistsActiveAsync(code, ct))
@@ -469,6 +469,21 @@ public sealed class CustomerImportProcessor : IImportProcessor, IImportBatchVali
             return null;
         }
         return match.Id;
+    }
+
+    /// <summary>
+    /// Mensaje de la regla de dominio sin el sufijo técnico "(Parameter 'x')" que .NET agrega
+    /// cuando la excepción tiene ParamName. El sufijo se obtiene del propio runtime, así respeta
+    /// su idioma.
+    /// </summary>
+    private static string PublicMessage(ArgumentException ex)
+    {
+        if (string.IsNullOrEmpty(ex.ParamName))
+            return ex.Message;
+        var suffix = new ArgumentException(string.Empty, ex.ParamName).Message;
+        return ex.Message.EndsWith(suffix, StringComparison.Ordinal)
+            ? ex.Message[..^suffix.Length].TrimEnd()
+            : ex.Message;
     }
 
     private static string? Get(IReadOnlyDictionary<string, string?> row, string column) =>

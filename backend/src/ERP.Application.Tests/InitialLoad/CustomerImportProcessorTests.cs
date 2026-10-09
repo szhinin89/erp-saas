@@ -90,7 +90,8 @@ public sealed class CustomerImportProcessorTests
     {
         var result = await Validate(Row(number: "1791352687001"));
 
-        result.Issues.Should().Contain(i => i.Code == "INVALID_IDENTIFICATION");
+        result.Issues.Should().ContainSingle(i => i.Code == "INVALID_IDENTIFICATION")
+            .Which.Message.Should().StartWith("RUC '").And.NotContain("Parameter");
     }
 
     [Fact]
@@ -114,7 +115,9 @@ public sealed class CustomerImportProcessorTests
     public async Task Pasaporte_sin_tipo_entidad_legal_se_bloquea_y_con_tipo_es_valido()
     {
         var sinTipo = await Validate(Row("06", "AB123456"));
-        sinTipo.Issues.Should().Contain(i => i.Code == "INVALID_LEGAL_ENTITY_TYPE");
+        sinTipo.Issues.Should().ContainSingle(i => i.Code == "INVALID_LEGAL_ENTITY_TYPE")
+            .Which.Message.Should().Be("El tipo de entidad legal es obligatorio para el tipo de identificación '06' "
+                + "— no puede inferirse automáticamente.");
 
         var row = Row("06", "AB123456");
         row[CustomerImportColumns.LegalEntityTypeCode] = "1";
@@ -171,7 +174,8 @@ public sealed class CustomerImportProcessorTests
 
         var result = await Validate(row);
 
-        result.Issues.Should().Contain(i => i.Code == "INVALID_CONTACT");
+        result.Issues.Should().ContainSingle(i => i.Code == "INVALID_CONTACT")
+            .Which.Message.Should().Be("Formato de email inválido.");
     }
 
     [Fact]
