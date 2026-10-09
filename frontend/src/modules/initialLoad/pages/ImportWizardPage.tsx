@@ -7,6 +7,7 @@ import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDa
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { Badge } from "../../../components/PageShell";
+import { importSuccessMessage } from "./importResultMessage";
 import { useImportWizard } from "./useImportWizard";
 import type { ImportBatchRowPreviewDto, ImportType } from "../types/importBatch.types";
 import "./initial-load.css";
@@ -64,6 +65,8 @@ interface ImportWizardPageProps {
   resultRoute: string;
   resultRouteLabel: string;
   resultEntityLabelPlural: string;
+  /** Singular para el mensaje final cuando se importa exactamente 1 fila (p. ej. "proveedor"). */
+  resultEntityLabelSingular?: string;
   /** Columna cruda de "identificación"/código a mostrar en el preview — clave exacta de la plantilla. Default: Clientes/Proveedores. */
   primaryColumnKey?: string;
   primaryColumnLabel?: string;
@@ -90,6 +93,7 @@ export function ImportWizardPage({
   resultRoute,
   resultRouteLabel,
   resultEntityLabelPlural,
+  resultEntityLabelSingular,
   primaryColumnKey = "Número Identificación",
   primaryColumnLabel = "Identificación",
   secondaryColumnKey = "Razón Social",
@@ -182,7 +186,11 @@ export function ImportWizardPage({
             message={
               confirmResult.failedRows > 0
                 ? `Se importaron ${confirmResult.importedRows} ${resultEntityLabelPlural}. ${confirmResult.failedRows} fila(s) quedaron con error.`
-                : `Se importaron ${confirmResult.importedRows} ${resultEntityLabelPlural} correctamente.`
+                : importSuccessMessage(
+                    confirmResult.importedRows,
+                    resultEntityLabelPlural,
+                    resultEntityLabelSingular,
+                  )
             }
           />
           <div className="zh-form-actions-row">

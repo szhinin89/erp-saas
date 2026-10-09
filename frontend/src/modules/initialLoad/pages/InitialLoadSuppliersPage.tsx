@@ -11,6 +11,7 @@ export function InitialLoadSuppliersPage() {
       resultRoute="/suppliers"
       resultRouteLabel="Ver proveedores"
       resultEntityLabelPlural="proveedores"
+      resultEntityLabelSingular="proveedor"
     />
   );
 }

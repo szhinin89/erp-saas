@@ -1,5 +1,18 @@
 # Project Status
 
+## IL-3 — Carga Inicial de Proveedores (2026-10-09)
+
+**Estado: CLOSED.** IL-3A (validación), IL-3B (confirmación atómica) e IL-3C (idempotencia/concurrencia/recovery) implementados; MasterData sin cambios.
+
+- **Validación fiel:** reglas compartidas con Clientes (`BusinessPartnerImportRules`); solo 04 RUC y 08 Exterior (catálogo SRI de uso), Tipo Entidad Legal para Exterior, RUC/cero inicial, duplicados en archivo, contacto.
+- **Datos fiscales explícitos:** "Obligado a llevar contabilidad" y "Exento de retención" obligatorios SI/NO, sin default; solo se aplican al crear o asignar el rol, nunca sobre un proveedor existente.
+- **BP existente reutilizado:** sin rol → asignar; ya Proveedor → idempotente; rol revocado con datos fiscales → reactivar preservándolos (preview advierte que el SI/NO no se aplica); revocado sin datos fiscales → ERROR. Nunca se duplica BP.
+- **Condición de pago por Company:** obligatoria, sin default, en `CompanyBpPurchaseSettings`; distinta a la existente → ERROR.
+- **Todo-o-nada:** una sola transacción (BP + rol + contacto + condición + actividad/outbox) con rollback total y revalidación contra el maestro; fuera del bucle genérico de 200 filas.
+- **Idempotencia/concurrencia/recovery:** validar/confirmar/cancelar bajo `FOR UPDATE` por lote + Tenant + Company; Completed devuelve el resultado ya confirmado; revalidar reemplaza staging; fallo/cancelación no deja Validating/Confirming.
+- **Gates PASS:** unitarios InitialLoad 146/146; PostgreSQL 16 real 20/20 escenarios de Proveedores (InitialLoad 94/94, incluye 201 filas); arquitectura 143/143; gate UI real negativo y positivo PASS.
+- Observación: la confirmación toma ~100 ms por fila con el lote bloqueado; medir con el volumen real antes del piloto. Inventario Inicial sigue en el camino genérico.
+
 ## IL-2 — Carga Inicial de Clientes (2026-10-09)
 
 **Estado: CLOSED.** IL-2A (validación), IL-2B (confirmación atómica) e IL-2C (idempotencia/concurrencia/recovery) implementados; MasterData sin cambios.
