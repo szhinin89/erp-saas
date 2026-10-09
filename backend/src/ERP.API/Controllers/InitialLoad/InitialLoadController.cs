@@ -9,6 +9,7 @@ using ERP.Application.Modules.InitialLoad.UseCases.CreateImportBatch;
 using ERP.Application.Modules.InitialLoad.UseCases.DownloadImportTemplate;
 using ERP.Application.Modules.InitialLoad.UseCases.GetImportBatchHistory;
 using ERP.Application.Modules.InitialLoad.UseCases.GetImportBatchStatus;
+using ERP.Application.Modules.InitialLoad.UseCases.OpeningBalanceDate;
 using ERP.Application.Modules.InitialLoad.UseCases.PreviewImportBatch;
 using ERP.Application.Modules.InitialLoad.UseCases.UploadImportFile;
 using ERP.Application.Modules.InitialLoad.UseCases.ValidateImportBatch;
@@ -126,6 +127,21 @@ public sealed class InitialLoadController : ControllerBase
         this.ToOkOrBadRequest(
             await _mediator.Send(new GetImportBatchHistoryQuery(importType, page, pageSize), ct)
         );
+
+    // IL-5A — fecha de apertura de saldos de la empresa activa (Configuración → Implementación).
+    [HttpGet("opening-balance-date")]
+    [Authorize(Policy = $"perm:{InitialLoadPermissions.View}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<OpeningBalanceDateDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetOpeningBalanceDate(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetOpeningBalanceDateQuery(), ct));
+
+    [HttpPut("opening-balance-date")]
+    [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<OpeningBalanceDateDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SetOpeningBalanceDate(
+        [FromBody] SetOpeningBalanceDateCommand command,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct));
 
     [HttpGet("templates/{importType}")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.View}")]

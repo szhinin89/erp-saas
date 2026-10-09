@@ -218,3 +218,23 @@ public sealed record ParsedInitialStockRow(
     DateOnly? CutoffDate,
     string? Observation
 );
+
+/// <summary>
+/// IL-5A — fila validada de CxC Inicial. <see cref="DocumentKey"/> es el número normalizado
+/// (<c>SalesReceivable.NormalizeDocumentNumber</c>) para detectar duplicados; <see cref="BranchId"/>
+/// es la sucursal activa al validar (el lote queda atado a ella).
+/// </summary>
+public sealed record ParsedInitialReceivableRow(
+    Guid CustomerId,
+    string CustomerName,
+    string IdentificationType,
+    string IdentificationNumber,
+    string DocumentNumber,
+    string DocumentKey,
+    DateOnly? IssueDate,
+    DateOnly? DueDate,
+    decimal Balance,
+    string CurrencyCode,
+    DateOnly? CutoffDate,
+    Guid BranchId
+);

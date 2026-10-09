@@ -20,7 +20,8 @@ export interface SalesReceivableInstallmentDto {
  */
 export interface SalesReceivableDto {
   id: string;
-  invoiceId: string;
+  /** IL-5A: null para un saldo inicial de CxC (no proviene de una factura). */
+  invoiceId: string | null;
   invoiceNumber: string;
   customerId: string;
   customerName: string;

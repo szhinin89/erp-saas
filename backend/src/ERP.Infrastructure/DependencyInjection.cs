@@ -151,6 +151,12 @@ public static class DependencyInjection
         services.AddScoped<ICustomerImportSheetReader, ClosedXmlCustomerImportSheetReader>();
         services.AddScoped<IBusinessPartnerImportLookup, BusinessPartnerImportLookup>();
         services.AddScoped<IInitialStockLookup, InitialStockLookup>();
+        services.AddScoped<IInitialReceivableLookup, InitialReceivableLookup>();
+        services.AddScoped<IOpeningBalanceConstraintsReader, OpeningBalanceConstraintsReader>();
+        services.AddScoped<
+            IInitialReceivableImportSheetReader,
+            ClosedXmlInitialReceivableImportSheetReader
+        >();
         services.AddScoped<ISupplierImportSheetReader, ClosedXmlSupplierImportSheetReader>();
         services.AddScoped<IItemImportSheetReader, ClosedXmlItemImportSheetReader>();
         services.AddScoped<

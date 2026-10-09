@@ -144,6 +144,7 @@ public static class DependencyInjection
         services.AddScoped<IImportProcessor, SupplierImportProcessor>();
         services.AddScoped<IImportProcessor, ItemImportProcessor>();
         services.AddScoped<IImportProcessor, InitialStockImportProcessor>();
+        services.AddScoped<IImportProcessor, InitialReceivableImportProcessor>();
         services.AddScoped<IReadOnlyDictionary<ImportType, IImportProcessor>>(sp =>
             sp.GetServices<IImportProcessor>().ToDictionary(p => p.ImportType, p => p)
         );

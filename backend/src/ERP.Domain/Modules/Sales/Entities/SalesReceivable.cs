@@ -1,5 +1,6 @@
 using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.Sales.Enums;
 using static ERP.Domain.Common.FiscalPrecision;
 
 namespace ERP.Domain.Modules.Sales.Entities;
@@ -10,10 +11,27 @@ public sealed class SalesReceivable
         ICompanyOperationalEntity
 {
     public const int StatusMaxLen = 20;
+    public const int DocumentNumberMaxLen = 50;
 
     public Guid CompanyId { get; private set; }
-    public Guid InvoiceId { get; private set; }
+    public SalesReceivableOrigin Origin { get; private set; } = SalesReceivableOrigin.Invoice;
+
+    /// <summary>Solo <see cref="SalesReceivableOrigin.Invoice"/>; null para un saldo inicial.</summary>
+    public Guid? InvoiceId { get; private set; }
     public Guid CustomerId { get; private set; }
+
+    // IL-5A — datos propios de un saldo inicial (Origin = InitialBalance); null para Invoice, cuyo
+    // número/fecha/sucursal viven en la factura.
+    public string? DocumentNumber { get; private set; }
+
+    /// <summary>
+    /// Clave de unicidad de <see cref="DocumentNumber"/> (<see cref="NormalizeDocumentNumber"/>),
+    /// calculada por la fábrica y protegida por índice único parcial en BD.
+    /// </summary>
+    public string? DocumentNumberNormalized { get; private set; }
+    public DateOnly? IssueDate { get; private set; }
+    public Guid? BranchId { get; private set; }
+    public Guid? ImportBatchId { get; private set; }
     public decimal OriginalAmount { get; private set; }
     public decimal PaidAmount { get; private set; }
     public string Status { get; private set; } = "pending";
@@ -58,6 +76,90 @@ public sealed class SalesReceivable
         r.SetCreated(createdBy);
         return r;
     }
+
+    /// <summary>
+    /// IL-5A — saldo pendiente de un documento de un cliente al corte (Carga Inicial de CxC). Nunca
+    /// reconstruye la venta ni los cobros históricos: el monto original ES el saldo pendiente y se
+    /// genera una única cuota por ese saldo con su vencimiento.
+    /// </summary>
+    public static SalesReceivable CreateInitialBalance(
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
+        Guid customerId,
+        string documentNumber,
+        DateOnly issueDate,
+        DateOnly dueDate,
+        decimal balance,
+        Guid importBatchId,
+        Guid createdBy
+    )
+    {
+        if (branchId == Guid.Empty)
+            throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
+        if (customerId == Guid.Empty)
+            throw new ArgumentException("El cliente es obligatorio.", nameof(customerId));
+        if (importBatchId == Guid.Empty)
+            throw new ArgumentException("El lote de importación es obligatorio.", nameof(importBatchId));
+        var number = documentNumber?.Trim() ?? string.Empty;
+        if (number.Length == 0)
+            throw new ArgumentException("El número de documento es obligatorio.", nameof(documentNumber));
+        if (number.Length > DocumentNumberMaxLen)
+            throw new ArgumentException(
+                $"El número de documento no puede superar {DocumentNumberMaxLen} caracteres.",
+                nameof(documentNumber)
+            );
+        var normalized = NormalizeDocumentNumber(number);
+        if (normalized.Length == 0)
+            throw new ArgumentException(
+                "El número de documento debe contener letras o dígitos.",
+                nameof(documentNumber)
+            );
+        if (dueDate < issueDate)
+            throw new ArgumentException(
+                "La fecha de vencimiento no puede ser anterior a la fecha de emisión.",
+                nameof(dueDate)
+            );
+        if (balance <= 0)
+            throw new ArgumentException("El saldo pendiente debe ser mayor a cero.", nameof(balance));
+        if (decimal.Round(balance, TaxAmount) != balance)
+            throw new ArgumentException(
+                $"El saldo pendiente admite como máximo {TaxAmount} decimales.",
+                nameof(balance)
+            );
+
+        var r = new SalesReceivable
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            CompanyId = companyId,
+            Origin = SalesReceivableOrigin.InitialBalance,
+            InvoiceId = null,
+            CustomerId = customerId,
+            DocumentNumber = number,
+            DocumentNumberNormalized = normalized,
+            IssueDate = issueDate,
+            BranchId = branchId,
+            ImportBatchId = importBatchId,
+            OriginalAmount = balance,
+            PaidAmount = 0,
+            Status = "pending",
+        };
+        r._installments.Add(SalesReceivableInstallment.Create(r.Id, tenantId, 1, dueDate, balance));
+        r.SetCreated(createdBy);
+        return r;
+    }
+
+    /// <summary>
+    /// IL-5A — clave de comparación de números de documento para detectar duplicados: mayúsculas
+    /// invariantes y solo letras/dígitos ("001-001-000000123" = "001001000000123").
+    /// </summary>
+    public static string NormalizeDocumentNumber(string? documentNumber) =>
+        documentNumber is null
+            ? string.Empty
+            : new string(
+                documentNumber.Where(char.IsLetterOrDigit).Select(char.ToUpperInvariant).ToArray()
+            );
 
     public void GenerateInstallments(DateOnly baseDate, int creditTermDays, int installmentCount)
     {
@@ -114,6 +216,12 @@ public sealed class SalesReceivable
 
     public void Cancel(Guid updatedBy)
     {
+        // IL-5 decisión 10: la cancelación genérica acompaña a la anulación de una factura; un saldo
+        // inicial no tiene factura y su corrección/reverso será un flujo específico.
+        if (Origin == SalesReceivableOrigin.InitialBalance)
+            throw new DomainRuleViolationException(
+                "Un saldo inicial de cuentas por cobrar no se cancela con la anulación de facturas."
+            );
         if (PaidAmount > 0)
             throw new DomainRuleViolationException(
                 "No se puede cancelar una cuenta por cobrar con pagos registrados."

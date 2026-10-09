@@ -3,7 +3,8 @@ export type ImportType =
   | "Suppliers"
   | "Items"
   | "Prices"
-  | "InitialStock";
+  | "InitialStock"
+  | "InitialReceivables";
 
 export type ImportStatus =
   | "Draft"
@@ -67,4 +68,13 @@ export interface ImportBatchConfirmResultDto {
   status: ImportStatus;
   importedRows: number;
   failedRows: number;
+}
+
+/** IL-5A — Company.OpeningBalanceDate (Configuración → Implementación). Fechas "YYYY-MM-DD". */
+export interface OpeningBalanceDateDto {
+  openingBalanceDate: string | null;
+  hasRealOperations: boolean;
+  confirmedOpeningDates: string[];
+  isLocked: boolean;
+  lockReason: string | null;
 }

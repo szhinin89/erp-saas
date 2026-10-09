@@ -19,7 +19,7 @@ namespace ERP.Application.Modules.Sales.UseCases;
 /// </summary>
 public sealed record SalesReceivableDto(
     Guid Id,
-    Guid InvoiceId,
+    Guid? InvoiceId,
     string InvoiceNumber,
     Guid CustomerId,
     string CustomerName,
@@ -119,17 +119,18 @@ public static class SalesReceivableDtoMapper
         return new SalesReceivableDto(
             r.Id,
             r.InvoiceId,
-            invoiceSummary?.InvoiceNumber ?? "—",
+            // IL-5A: un saldo inicial no tiene factura — número, sucursal y emisión son propios.
+            invoiceSummary?.InvoiceNumber ?? r.DocumentNumber ?? "—",
             r.CustomerId,
             invoiceSummary?.CustomerName ?? "Cliente no disponible",
             invoiceSummary is null
                 ? "—"
                 : $"{invoiceSummary.Value.CustomerIdentificationType}-{invoiceSummary.Value.CustomerTaxId}",
-            invoiceSummary?.BranchId ?? Guid.Empty,
+            invoiceSummary?.BranchId ?? r.BranchId ?? Guid.Empty,
             branchName,
             invoiceSummary?.CreatedBy,
             createdByName,
-            invoiceSummary?.IssueDate ?? default,
+            invoiceSummary?.IssueDate ?? r.IssueDate ?? default,
             invoiceSummary?.CreatedAt ?? r.CreatedAt,
             dueDate,
             r.OriginalAmount,
@@ -218,10 +219,10 @@ public sealed class GetReceivableByInvoiceHandler
 
         var summaries = await _invoiceRepo.GetReceivableSummariesByIdsAsync(
             tid,
-            new[] { r.InvoiceId },
+            new[] { q.InvoiceId },
             ct
         );
-        summaries.TryGetValue(r.InvoiceId, out var summary);
+        summaries.TryGetValue(q.InvoiceId, out var summary);
 
         string? branchName = null;
         string? createdByName = null;
@@ -301,7 +302,11 @@ public sealed class GetReceivablesListHandler
 
         // Un solo query por cada catálogo de apoyo (factura/sucursal/usuario) para toda la
         // página — nunca N+1 por fila.
-        var invoiceIds = items.Select(x => x.InvoiceId).Distinct().ToList();
+        var invoiceIds = items
+            .Where(x => x.InvoiceId.HasValue)
+            .Select(x => x.InvoiceId!.Value)
+            .Distinct()
+            .ToList();
         var summaries = await _invoiceRepo.GetReceivableSummariesByIdsAsync(tid, invoiceIds, ct);
 
         // Sucursales de la empresa: sin método batch por id en IBranchRepository — el conjunto es
@@ -325,10 +330,13 @@ public sealed class GetReceivablesListHandler
         var dtos = items
             .Select(r =>
             {
-                summaries.TryGetValue(r.InvoiceId, out var summary);
+                var summary = r.InvoiceId is { } invoiceId
+                    ? summaries.GetValueOrDefault(invoiceId)
+                    : default;
                 var hasSummary = summary != default;
+                var branchId = hasSummary ? summary.BranchId : r.BranchId;
                 string? branchName =
-                    hasSummary && branchNames.TryGetValue(summary.BranchId, out var bn) ? bn : null;
+                    branchId is { } bid && branchNames.TryGetValue(bid, out var bn) ? bn : null;
                 string? createdByName =
                     hasSummary && creatorNames.TryGetValue(summary.CreatedBy, out var un)
                         ? un

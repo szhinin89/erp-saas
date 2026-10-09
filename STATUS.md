@@ -1,5 +1,16 @@
 # Project Status
 
+## IL-5 — Carga Inicial de Cuentas por Cobrar (2026-10-09)
+
+**Estado: EN CURSO — IL-5A implementado (sin commit).** Confirmación (IL-5B) e idempotencia/concurrencia/recovery (IL-5C) pendientes. Contabilidad de la apertura → IL-7.
+
+- **Modelo (migración `InitialReceivableOrigin`, no aplicada aún en BD persistente):** `SalesReceivable.Origin` = Invoice | InitialBalance; `InvoiceId` nullable; `DocumentNumber`, `DocumentNumberNormalized` (calculado por la fábrica), `IssueDate`, `BranchId`, `ImportBatchId` propios del saldo inicial. CHECK de forma por origen, FK a sucursal y lote, índice único parcial InitialBalance sobre tenant+empresa+cliente+número normalizado (protege también la concurrencia). Filas existentes quedan `origin = 1`. `CreateInitialBalance` genera una única cuota por el saldo; la cancelación genérica rechaza InitialBalance.
+- **Fecha de apertura SSOT:** `Company.OpeningBalanceDate` (nullable) — único corte de apertura de saldos; IL-6/IL-7 lo reutilizan; IL-5 lee solo este campo. Se define/corrige mientras no haya operaciones reales (venta/devolución autorizada, compra/NC/devolución de compra, gasto confirmado, cobro/pago, sesión de caja, Kardex fuera de `InitialBalance`; borradores y cargas iniciales no cuentan) y debe coincidir con las cargas iniciales ya confirmadas (inventario IL-4, CxC InitialBalance). Con operaciones reales: definitiva; si sigue null, solo admite la fecha de la apertura confirmada (compatibilidad Sumak 2026-09-30). Configuración real: `GET/PUT /api/v1/initial-load/opening-balance-date` (ver: `initialload.batches.view`; cambiar: `initialload.batches.confirm`) y tarjeta en Configuración → Carga Inicial.
+- **Validación fiel (IL-5A):** cliente existente, activo, no ambiguo y con rol Cliente activo (nunca se crea; Consumidor Final no admite CxC); número obligatorio y no duplicado (normalizado) en el archivo ni contra CxC existentes del cliente en la empresa (factura o saldo inicial); emisión ≤ corte; vencimiento ≥ emisión; saldo > 0 con máx. 2 decimales sin redondeo; moneda obligatoria, solo USD (vacío = error); corte único por lote, no futuro e igual a `Company.OpeningBalanceDate` (sin fecha definida = error; no depende de IL-4); lote atado a la sucursal activa.
+- **Confirmación bloqueada** explícitamente hasta IL-5B (backend y UI).
+- **Gates:** Domain 1372/1372; PostgreSQL fecha de apertura 6/6; API 373/373 (inventario de endpoints/permisos); frontend initialLoad 9/9; Application InitialLoad/CxC/Company 542/542 (suite completa: 1 falla preexistente en `HEAD`, `CreateSalesDraftHandlerTests.Congela_el_snapshot…`, alcance de bodega); PostgreSQL IL-5A 7/7 (incluye 201 filas, empresa sin fecha de apertura y unicidad normalizada en BD) + lector 5/5; regresión previa InitialLoad/CxC 200/201 (1 falla preexistente en `HEAD`: QA-INVENTORY-INFRA-SUITES-01); `has-pending-model-changes` = no; frontend lint/tsc/build PASS; arquitectura PASS. Gate UI real: pendiente.
+- **Antes de IL-5B:** (A) `SalesReceivableInstallment.PaidAmount` nunca se actualiza; (B) verificar que un cobro no pueda aplicarse a la CxC de otro cliente.
+
 ## IL-4 — Carga Inicial de Inventario (2026-10-09)
 
 **Estado: CLOSED.** IL-4A (validación), IL-4B (apertura atómica) e IL-4C (idempotencia/concurrencia/recovery) implementados. Sin migración. Contabilidad de la apertura → IL-7.

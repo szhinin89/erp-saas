@@ -1,4 +1,6 @@
+using System.Globalization;
 using ERP.Domain.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 
@@ -71,6 +73,13 @@ public class Company : ITenantScopedEntity
     public CompanyOperationalStatus OperationalStatus { get; private set; } =
         CompanyOperationalStatus.Operational;
 
+    /// <summary>
+    /// IL-5A — fecha de corte de la apertura de saldos de la empresa (SSOT): toda carga inicial de
+    /// saldos (CxC IL-5, CxP IL-6, contabilidad IL-7) debe usar exactamente esta fecha. Null mientras
+    /// la empresa está en implementación y aún no definió su corte.
+    /// </summary>
+    public DateOnly? OpeningBalanceDate { get; private set; }
+
     // Navigation
     public SriCountry? Country { get; set; }
     public SriTaxRegime? TaxRegime { get; set; }
@@ -92,6 +101,60 @@ public class Company : ITenantScopedEntity
         OperationalStatus = CompanyOperationalStatus.Suspended;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Define o corrige el corte de apertura de saldos. Se admite mientras la empresa no tenga
+    /// operaciones reales y la fecha coincida con las cargas iniciales ya confirmadas (si existen).
+    /// Compatibilidad: una empresa que ya opera y tiene apertura confirmada sin fecha definida puede
+    /// fijarla una única vez, solo con la fecha real de esa apertura. Repetir la fecha actual es
+    /// idempotente.
+    /// </summary>
+    public void SetOpeningBalanceDate(
+        DateOnly openingBalanceDate,
+        OpeningBalanceDateConstraints constraints,
+        Guid? updatedBy
+    )
+    {
+        if (OpeningBalanceDate == openingBalanceDate)
+            return;
+        var lockReason = OpeningBalanceDateLockReason(OpeningBalanceDate, constraints);
+        if (lockReason is not null)
+            throw new DomainRuleViolationException(lockReason);
+        if (constraints.ConfirmedOpeningDates.Count > 0
+            && !constraints.ConfirmedOpeningDates.Contains(openingBalanceDate))
+            throw new DomainRuleViolationException(
+                $"La fecha solicitada ({openingBalanceDate:yyyy-MM-dd}) no coincide con las cargas iniciales "
+                    + $"confirmadas al {FormatDates(constraints.ConfirmedOpeningDates)}. Para usar otra fecha primero "
+                    + "corrija o reabra esa apertura."
+            );
+        OpeningBalanceDate = openingBalanceDate;
+        UpdatedBy = updatedBy;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Motivo por el que la fecha de apertura no admite ningún valor nuevo, o <c>null</c> si se puede
+    /// definir/corregir (posiblemente restringida a <see cref="OpeningBalanceDateConstraints.ConfirmedOpeningDates"/>).
+    /// </summary>
+    public static string? OpeningBalanceDateLockReason(
+        DateOnly? current,
+        OpeningBalanceDateConstraints constraints
+    )
+    {
+        if (constraints.ConfirmedOpeningDates.Count > 1)
+            return $"Existen cargas iniciales confirmadas con fechas distintas ({FormatDates(constraints.ConfirmedOpeningDates)}). "
+                + "Corrija esas aperturas antes de definir la fecha.";
+        if (!constraints.HasRealOperations)
+            return null;
+        if (current is { } fixedDate)
+            return $"La fecha de apertura ({fixedDate:yyyy-MM-dd}) es definitiva: la empresa ya registra operaciones reales.";
+        return constraints.ConfirmedOpeningDates.Count == 0
+            ? "La empresa ya registra operaciones reales y no tiene ninguna carga inicial confirmada: no se puede definir una fecha de apertura."
+            : null;
+    }
+
+    private static string FormatDates(IEnumerable<DateOnly> dates) =>
+        string.Join(", ", dates.Order().Select(d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 
     // ── Factory methods ───────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "../../lib/apiEnvelope";
+import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 import { api } from "../../lib/api";
 import type {
   ImportBatchConfirmResultDto,
@@ -6,6 +6,7 @@ import type {
   ImportBatchRowPreviewDto,
   ImportSeverity,
   ImportType,
+  OpeningBalanceDateDto,
   PagedResult,
 } from "../types/importBatch.types";
 
@@ -85,6 +86,14 @@ export const initialLoadService = {
       responseType: "blob",
     });
     return data;
+  },
+
+  getOpeningBalanceDate(): Promise<OpeningBalanceDateDto> {
+    return apiGet<OpeningBalanceDateDto>(`${BASE}/opening-balance-date`);
+  },
+
+  setOpeningBalanceDate(openingBalanceDate: string): Promise<OpeningBalanceDateDto> {
+    return apiPut<OpeningBalanceDateDto>(`${BASE}/opening-balance-date`, { openingBalanceDate });
   },
 };
 

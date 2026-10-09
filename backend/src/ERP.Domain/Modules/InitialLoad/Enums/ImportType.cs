@@ -13,4 +13,7 @@ public enum ImportType
     Items = 3,
     Prices = 4,
     InitialStock = 5,
+
+    /// <summary>IL-5 — saldos pendientes de CxC al corte (nunca ventas históricas).</summary>
+    InitialReceivables = 6,
 }

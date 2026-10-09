@@ -4,6 +4,7 @@ import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
 import type { ImportType } from "../types/importBatch.types";
+import { OpeningBalanceDateCard } from "../components/OpeningBalanceDateCard";
 import "./initial-load.css";
 
 interface ImportBlock {
@@ -47,6 +48,13 @@ const BLOCKS: ImportBlock[] = [
       "Carga existencias iniciales por producto y bodega — nunca crea productos ni bodegas.",
     route: "/initial-load/initial-stock",
   },
+  {
+    importType: "InitialReceivables",
+    title: "Cuentas por Cobrar Iniciales",
+    description:
+      "Carga saldos pendientes de clientes al corte — nunca crea ventas ni clientes.",
+    route: "/initial-load/initial-receivables",
+  },
 ];
 
 /**
@@ -65,6 +73,7 @@ export function InitialLoadHubPage() {
       title="Carga Inicial"
       subtitle="Importa datos maestros y saldos iniciales para una empresa nueva."
     >
+      <OpeningBalanceDateCard />
       <div className="il-grid">
         {BLOCKS.map((block) => (
           <ZHCard
