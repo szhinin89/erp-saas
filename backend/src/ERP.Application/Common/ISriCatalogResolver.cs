@@ -2,7 +2,11 @@ namespace ERP.Application.Common;
 
 public sealed record SriUomInfo(string Abbrev, string Name);
 
-public sealed record SriVatInfo(string Name, decimal Percent);
+public sealed record SriVatInfo(string Name, decimal Percent, DateOnly? ValidFrom = null, DateOnly? ValidUntil = null)
+{
+    public bool IsEffectiveOn(DateOnly date) =>
+        (!ValidFrom.HasValue || ValidFrom.Value <= date) && (!ValidUntil.HasValue || ValidUntil.Value >= date);
+}
 
 public sealed record SriIceInfo(string Name, decimal? Percent);
 

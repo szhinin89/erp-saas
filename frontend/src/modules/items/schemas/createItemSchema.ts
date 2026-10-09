@@ -5,8 +5,8 @@ import { z } from "zod";
 // NOTA: no existen campos de cuenta contable (vatAccountId/purchaseVatAccountId/
 // exciseAccountId) ni sriServiceCode — no forman parte del contrato.
 const taxConfigSchema = z.object({
-  saleVatCode: z.string().max(10).nullable().optional(),
-  purchaseVatCode: z.string().max(10).nullable().optional(),
+  saleVatCode: z.string().trim().min(1, "items.validation.saleVatCodeRequired").max(10),
+  purchaseVatCode: z.string().trim().min(1, "items.validation.purchaseVatCodeRequired").max(10),
   exciseTaxCode: z.string().max(10).nullable().optional(),
 });
 
@@ -172,8 +172,8 @@ export const defaultCreateItemValues: CreateItemFormValues = {
   barcodes: [{ code: "", barcodeType: "", isPrimary: true }],
   supplierCodes: [],
   taxConfig: {
-    saleVatCode: null,
-    purchaseVatCode: null,
+    saleVatCode: "",
+    purchaseVatCode: "",
     exciseTaxCode: null,
   },
   saleConfig: {

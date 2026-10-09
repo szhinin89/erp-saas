@@ -42,14 +42,16 @@ public sealed class UpdateItemCommandValidator : AbstractValidator<UpdateItemCom
             .WithMessage("El código UOM no puede exceder 10 caracteres.");
 
         RuleFor(x => x.SaleVatCode)
+            .NotEmpty()
+            .WithMessage("El IVA de venta es obligatorio.")
             .MaximumLength(10)
-            .WithMessage("El código de IVA de venta no puede exceder 10 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.SaleVatCode));
+            .WithMessage("El código de IVA de venta no puede exceder 10 caracteres.");
 
         RuleFor(x => x.PurchaseVatCode)
+            .NotEmpty()
+            .WithMessage("El IVA de compra es obligatorio.")
             .MaximumLength(10)
-            .WithMessage("El código de IVA de compra no puede exceder 10 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.PurchaseVatCode));
+            .WithMessage("El código de IVA de compra no puede exceder 10 caracteres.");
 
         RuleFor(x => x.ExciseTaxCode)
             .MaximumLength(10)

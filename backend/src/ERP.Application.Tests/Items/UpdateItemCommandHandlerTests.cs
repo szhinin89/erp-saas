@@ -74,6 +74,8 @@ public sealed class UpdateItemCommandHandlerTests
             )
             .ReturnsAsync(new Dictionary<string, SriUomInfo>());
 
+        sri.Setup(x => x.ResolveVatRatesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, SriVatInfo> { ["4"] = new("Venta", 15), ["0"] = new("Compra", 0) });
         var dbEx = new Mock<IDatabaseExceptionTranslator>();
 
         var handler = new UpdateItemCommandHandler(
@@ -96,7 +98,7 @@ public sealed class UpdateItemCommandHandlerTests
             ShortName: "Item de prueba",
             Description: "Descripción de prueba",
             DefaultUomCode: "UNIT",
-            BaseSalePrice: baseSalePrice
+            BaseSalePrice: baseSalePrice, SaleVatCode: "4", PurchaseVatCode: "0"
         );
 
     [Fact]

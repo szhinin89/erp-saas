@@ -52,19 +52,9 @@ export function buildItemEditorSchema(mode: ItemEditorMode) {
         .trim()
         .max(500, "Las observaciones no pueden exceder 500 caracteres.")
         .optional(),
-      // IVA de venta — siempre editable, en ambos modos. Obligatorio al crear (este editor solo
-      // se usa desde Compras: el producto debe quedar listo para vender sin volver a pasar por el
-      // módulo de Items); en Update sigue siendo opcional para no bloquear ediciones que no tocan
-      // impuestos en ítems legados sin IVA configurado.
-      saleVatCode: isCreate
-        ? z.string().min(1, "Debe seleccionar el IVA de venta del Item.")
-        : z.string().optional(),
-      // IVA de compra — mismo criterio que saleVatCode. Antes no existía ningún campo editable en
-      // este formulario (siempre viajaba `null` al crear) — causa raíz de que las líneas de
-      // compra quedaran sin IVA y forzaran editar el Item desde el módulo completo.
-      purchaseVatCode: isCreate
-        ? z.string().min(1, "Debe seleccionar el IVA de compra del Item.")
-        : z.string().optional(),
+      // Ambos IVA requieren selección explícita e independiente, también al actualizar.
+      saleVatCode: z.string().trim().min(1, "Debe seleccionar el IVA de venta del Item."),
+      purchaseVatCode: z.string().trim().min(1, "Debe seleccionar el IVA de compra del Item."),
       // Precio de Venta — obligatorio al crear (el Item debe quedar vendible sin reproceso
       // manual); en Update sigue siendo opcional salvo que se active "Actualizar precio".
       salePrice: z

@@ -67,26 +67,7 @@ export function ItemEditorForm({
     vatRateByCode,
   } = useItemCreationCatalogs();
 
-  // El <select> de IVA solo puede reflejar seleccionada una opción que ya exista en el DOM — como
-  // el catálogo de IVA carga async (useAsync más arriba) y siempre después de que ItemEditorModal
-  // ya llamó a form.reset() con la sugerencia de purchaseContext.vatCode, esa asignación inicial
-  // se pierde (el <select> uncontrolled no tiene aún la opción "2" cuando reset() intenta fijar el
-  // valor). Este efecto reaplica la sugerencia una sola vez, apenas el catálogo está disponible —
-  // por eso usa un ref en vez de leer el valor actual del form (que ya "dice" tener la sugerencia
-  // por dentro, aunque el DOM no la refleje), y nunca vuelve a correr para no pisar una elección
-  // del usuario.
-  const appliedVatSuggestionRef = useRef(false);
-  useEffect(() => {
-    if (isUpdate || vatRateOptions.length === 0) return;
-    if (appliedVatSuggestionRef.current) return;
-    const suggested = initialData?.purchaseContext?.vatCode;
-    if (!suggested) return;
-    appliedVatSuggestionRef.current = true;
-    setValue("purchaseVatCode", suggested, { shouldValidate: false });
-    setValue("saleVatCode", suggested, { shouldValidate: false });
-  }, [isUpdate, vatRateOptions.length, initialData?.purchaseContext?.vatCode, setValue]);
-
-  // Mismo problema estructural que la sugerencia de IVA de arriba, pero en modo Actualizar: el
+  // En modo Actualizar, el
   // reset() con los valores del Item existente corre en ItemEditorModal (buildDefaults) antes de
   // que categoría/marca/UOM/IVA (catálogos cargados por separado acá, en ItemEditorForm) terminen
   // de resolver — el <select> uncontrolled no puede reflejar (ni retener al enviar el formulario,
@@ -414,7 +395,6 @@ export function ItemEditorForm({
             : undefined
         }
         register={register}
-        setValue={setValue}
         salePriceFieldError={errors.salePrice?.message}
         saleVatCodeFieldError={errors.saleVatCode?.message}
         purchaseVatCodeFieldError={errors.purchaseVatCode?.message}
@@ -512,7 +492,6 @@ function PriceAndProfitability({
   vatRateOptions,
   xmlVatPercent,
   register,
-  setValue,
   salePriceFieldError,
   saleVatCodeFieldError,
   purchaseVatCodeFieldError,
@@ -525,7 +504,6 @@ function PriceAndProfitability({
   vatRateOptions: SriVatRateLookup[];
   xmlVatPercent: number | undefined;
   register: ReturnType<typeof useFormContext<ItemEditorFormValues>>["register"];
-  setValue: ReturnType<typeof useFormContext<ItemEditorFormValues>>["setValue"];
   salePriceFieldError?: string;
   saleVatCodeFieldError?: string;
   purchaseVatCodeFieldError?: string;
@@ -577,11 +555,11 @@ function PriceAndProfitability({
         </ZHField>
         <ZHField
           label="IVA de venta"
-          required={!isUpdate}
+          required
           fieldError={saleVatCodeFieldError}
         >
           <select {...register("saleVatCode")}>
-            <option value="">Sin IVA configurado</option>
+            <option value="" disabled>Seleccione IVA</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
                 {v.name} ({formatMoney(v.percentage, pp.fiscalPercentageDecimals)}%)
@@ -591,23 +569,11 @@ function PriceAndProfitability({
         </ZHField>
         <ZHField
           label="IVA de compra"
-          required={!isUpdate}
+          required
           fieldError={purchaseVatCodeFieldError}
         >
-          <select
-            {...register("purchaseVatCode", {
-              onChange: (e) => {
-                // Sugerencia: si aún no hay IVA de venta elegido, se propone el mismo código de
-                // IVA de compra — el usuario puede cambiarlo, nunca se le impone.
-                if (!isUpdate && !saleVatCode) {
-                  setValue("saleVatCode", e.target.value, {
-                    shouldValidate: true,
-                  });
-                }
-              },
-            })}
-          >
-            <option value="">Sin IVA configurado</option>
+          <select {...register("purchaseVatCode")}>
+            <option value="" disabled>Seleccione IVA</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
                 {v.name} ({formatMoney(v.percentage, pp.fiscalPercentageDecimals)}%)

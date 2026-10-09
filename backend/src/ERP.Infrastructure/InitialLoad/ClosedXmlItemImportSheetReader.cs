@@ -99,8 +99,8 @@ public sealed class ClosedXmlItemImportSheetReader : IItemImportSheetReader
             [ItemImportColumns.Name] = "Producto Ejemplo",
             [ItemImportColumns.ItemTypeCode] = "Physical",
             [ItemImportColumns.UomCode] = "19",
-            [ItemImportColumns.SaleVatCode] = "2",
-            [ItemImportColumns.PurchaseVatCode] = "2",
+            [ItemImportColumns.SaleVatCode] = "4",
+            [ItemImportColumns.PurchaseVatCode] = "4",
             [ItemImportColumns.CategoryName] = "No aplica",
             [ItemImportColumns.BrandName] = "No aplica",
             [ItemImportColumns.Barcode1] = "PROD-0001",
@@ -118,13 +118,13 @@ public sealed class ClosedXmlItemImportSheetReader : IItemImportSheetReader
         instructions.Cell(1, 1).Value = "Cómo llenar esta plantilla";
         instructions.Cell(1, 1).Style.Font.Bold = true;
         instructions.Cell(3, 1).Value =
-            "Una fila = un producto principal. SKU / Nombre / Tipo de Ítem / Unidad Base / Categoría / Marca / Disponible POS / al menos un Código de Barra con su tipo son obligatorios.";
+            "Una fila = un producto principal. SKU / Nombre / Tipo de Ítem / Unidad Base / IVA Venta / IVA Compra / Categoría / Marca / Disponible POS / al menos un Código de Barra con su tipo son obligatorios.";
         instructions.Cell(4, 1).Value =
             "Tipo de Ítem: código exacto de un tipo activo ya configurado. Es clasificación; esta carga crea naturaleza Product.";
         instructions.Cell(5, 1).Value =
             "Unidad Base: código del catálogo SRI de unidades de medida (ej. 19 = Unidad, 07 = Kilogramo).";
         instructions.Cell(6, 1).Value =
-            "IVA Venta / IVA Compra: códigos independientes del catálogo SRI existente. Vacío = no aplica; no se asume tarifa ni se copia entre compra y venta.";
+            "IVA Venta / IVA Compra: códigos independientes del catálogo SRI existente. Ambos obligatorios: vacío = ERROR. Seleccione un código vigente explícito: 0 = 0%, 6 = no objeto, 7 = exento. No se asume tarifa ni se copia entre compra y venta.";
         instructions.Cell(7, 1).Value =
             "Categoría / Marca: obligatorias por NOMBRE. Sin clasificación aplicable escriba explícitamente No aplica en ambas; vacío nunca se sustituye. Si no existe, la fila se bloquea salvo que active "
             + "\"Crear categorías/marcas nuevas si no existen\" al subir el archivo — en ese caso se crean automáticamente al confirmar.";

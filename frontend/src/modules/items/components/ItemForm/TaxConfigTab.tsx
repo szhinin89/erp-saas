@@ -32,7 +32,7 @@ export function TaxConfigTab({
         title={t("items.tax.saleVat", "IVA en Venta")}
         description={t(
           "items.tax.saleVatDesc",
-          'Tarifa que se aplica cuando este ítem se vende. "No aplica" es una elección válida, no un campo vacío por completar después.',
+          'Seleccione explícitamente el IVA de venta vigente del catálogo SRI. Para tratamientos sin impuesto use 0%, no objeto o exento según corresponda.',
         )}
       >
         <ZHGrid cols={2}>
@@ -41,8 +41,8 @@ export function TaxConfigTab({
             fieldError={fe(errors.taxConfig?.saleVatCode?.message)}
           >
             <ZhSelect {...register("taxConfig.saleVatCode")} disabled={disabled}>
-              <option value="">
-                {t("items.tax.notApplicable", "— No aplica —")}
+              <option value="" disabled>
+                {t("items.tax.selectVat", "— Seleccione IVA —")}
               </option>
               {vatRateOptions.map((v) => (
                 <option key={v.code} value={v.code}>
@@ -70,8 +70,8 @@ export function TaxConfigTab({
               {...register("taxConfig.purchaseVatCode")}
               disabled={disabled}
             >
-              <option value="">
-                {t("items.tax.notApplicable", "— No aplica —")}
+              <option value="" disabled>
+                {t("items.tax.selectVat", "— Seleccione IVA —")}
               </option>
               {vatRateOptions.map((v) => (
                 <option key={v.code} value={v.code}>

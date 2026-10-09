@@ -353,16 +353,19 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
     )
     {
         if (string.IsNullOrWhiteSpace(vatCode))
+        {
+            issues.Add(new RowIssue(ImportSeverity.Error, "REQUIRED_VAT_CODE", $"{fieldName} es obligatorio.", fieldName));
             return null;
+        }
 
         var vatRates = await _sri.ResolveVatRatesAsync([vatCode.Trim()], ct);
-        if (!vatRates.ContainsKey(vatCode.Trim()))
+        if (!vatRates.TryGetValue(vatCode.Trim(), out var rate) || !rate.IsEffectiveOn(DateOnly.FromDateTime(DateTime.UtcNow)))
         {
             issues.Add(
                 new RowIssue(
                     ImportSeverity.Error,
                     "INVALID_VAT_CODE",
-                    $"El código de IVA '{vatCode}' no existe en el catálogo SRI.",
+                    $"El código de IVA '{vatCode}' no existe o no está vigente en el catálogo SRI.",
                     fieldName
                 )
             );

@@ -48,6 +48,7 @@ public sealed partial class ConfirmItemsAtomicPostgreSqlTests
         var rows = skus.Select(sku => (IReadOnlyDictionary<string, string?>)new Dictionary<string, string?>
         {
             [ItemImportColumns.Sku] = sku, [ItemImportColumns.Name] = sku,
+            [ItemImportColumns.SaleVatCode] = "4", [ItemImportColumns.PurchaseVatCode] = "0",
             [ItemImportColumns.ItemTypeCode] = "Physical", [ItemImportColumns.UomCode] = "19",
             [ItemImportColumns.CategoryName] = "Existing Category", [ItemImportColumns.BrandName] = "Existing Brand",
             [ItemImportColumns.Barcode1] = "BC-" + sku, [ItemImportColumns.BarcodeType1] = "Internal",

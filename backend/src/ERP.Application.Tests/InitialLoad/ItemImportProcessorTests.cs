@@ -415,7 +415,7 @@ public sealed class ItemImportProcessorTests
     }
 
     [Fact]
-    public async Task Iva_vacio_es_valido_sin_issue()
+    public async Task Iva_vacio_es_error_bloqueante()
     {
         SetupHappyPathCatalogs();
         var processor = BuildProcessor();
@@ -424,7 +424,8 @@ public sealed class ItemImportProcessorTests
 
         var result = await processor.ValidateRowAsync(1, row, false, CancellationToken.None);
 
-        result.Issues.Should().NotContain(i => i.FieldName == ItemImportColumns.SaleVatCode);
+        result.HasBlockingIssue.Should().BeTrue();
+        result.Issues.Should().Contain(i => i.FieldName == ItemImportColumns.SaleVatCode && i.Code == "REQUIRED_VAT_CODE");
     }
 
     [Fact]
@@ -544,7 +545,7 @@ public sealed class ItemImportProcessorTests
     }
 
     [Fact]
-    public async Task No_aplica_explicito_y_iva_vacios_no_inventan_defaults()
+    public async Task No_aplica_en_clasificacion_no_permite_iva_vacios()
     {
         SetupHappyPathCatalogs();
         _categoryRepo.Setup(x => x.GetAllAsync(TenantId, false, It.IsAny<CancellationToken>()))
@@ -555,10 +556,11 @@ public sealed class ItemImportProcessorTests
         row[ItemImportColumns.CategoryName] = row[ItemImportColumns.BrandName] = "No aplica";
         row[ItemImportColumns.SaleVatCode] = row[ItemImportColumns.PurchaseVatCode] = null;
         var result = await BuildProcessor().ValidateRowAsync(1, row, false, default);
-        result.HasBlockingIssue.Should().BeFalse();
+        result.HasBlockingIssue.Should().BeTrue();
         var parsed = JsonSerializer.Deserialize<ParsedItemRow>(result.ParsedDataJson)!;
         parsed.SaleVatCode.Should().BeNull();
         parsed.PurchaseVatCode.Should().BeNull();
+        result.HasBlockingIssue.Should().BeTrue();
     }
 
     [Fact]

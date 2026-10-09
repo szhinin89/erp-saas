@@ -34,7 +34,7 @@ public sealed class SriCatalogResolver : ISriCatalogResolver
 
         return await _db
             .SriVatRates.Where(v => list.Contains(v.Code) && v.IsActive)
-            .ToDictionaryAsync(v => v.Code, v => new SriVatInfo(v.Name, v.Percentage), ct);
+            .ToDictionaryAsync(v => v.Code, v => new SriVatInfo(v.Name, v.Percentage, v.ValidFrom, v.ValidUntil), ct);
     }
 
     public async Task<IReadOnlyDictionary<string, SriIceInfo>> ResolveIceRatesAsync(

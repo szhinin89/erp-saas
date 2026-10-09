@@ -54,8 +54,8 @@ function toFormValues(item: ItemDetailDto): CreateItemFormValues {
     barcodes: [],
     supplierCodes: [],
     taxConfig: {
-      saleVatCode: item.taxConfig.saleVatCode,
-      purchaseVatCode: item.taxConfig.purchaseVatCode,
+      saleVatCode: item.taxConfig.saleVatCode ?? "",
+      purchaseVatCode: item.taxConfig.purchaseVatCode ?? "",
       exciseTaxCode: item.taxConfig.exciseTaxCode,
     },
     saleConfig: {
@@ -160,10 +160,10 @@ export function ItemFormTabs({
     if (itemTypeOptions.length > 0)
       form.setValue("itemTypeId", item.itemTypeId);
     if (vatRateOptions.length > 0) {
-      form.setValue("taxConfig.saleVatCode", item.taxConfig.saleVatCode);
+      form.setValue("taxConfig.saleVatCode", item.taxConfig.saleVatCode ?? "");
       form.setValue(
         "taxConfig.purchaseVatCode",
-        item.taxConfig.purchaseVatCode,
+        item.taxConfig.purchaseVatCode ?? "",
       );
     }
     if (iceRateOptions.length > 0)

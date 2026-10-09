@@ -41,6 +41,9 @@ public sealed class UpdateItemCommandHandler : IRequestHandler<UpdateItemCommand
         CancellationToken cancellationToken
     )
     {
+        var vatError = await ItemVatValidation.ValidateAsync(_sri, cmd.SaleVatCode, cmd.PurchaseVatCode, cancellationToken);
+        if (vatError is not null) return Result<ItemDto>.ValidationFailure(vatError);
+
         var tenantId = _currentTenant.TenantId;
         var userId = _user.UserId;
 

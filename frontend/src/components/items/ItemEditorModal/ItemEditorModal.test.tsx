@@ -564,7 +564,7 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
     expect(itemService.create).not.toHaveBeenCalled();
   });
 
-  it("con purchaseContext.vatCode: precarga IVA de venta e IVA de compra sugeridos", async () => {
+  it("el IVA XML no precarga ninguno de los IVA del Item", async () => {
     const { container } = renderModal({
       initialData: {
         name: "Aceite",
@@ -574,9 +574,11 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
     await waitForCatalogs();
 
     await waitFor(() => {
-      expect(fieldByName(container, "saleVatCode").value).toBe("2");
-      expect(fieldByName(container, "purchaseVatCode").value).toBe("2");
+      expect(fieldByName(container, "saleVatCode").value).toBe("");
+      expect(fieldByName(container, "purchaseVatCode").value).toBe("");
     });
+    fireEvent.change(fieldByName(container, "purchaseVatCode"), { target: { value: "2" } });
+    expect(fieldByName(container, "saleVatCode").value).toBe("");
   });
 });
 

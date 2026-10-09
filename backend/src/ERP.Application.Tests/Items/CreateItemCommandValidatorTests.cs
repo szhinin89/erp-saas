@@ -20,6 +20,7 @@ public sealed class CreateItemCommandValidatorTests
             CategoryNodeId: Guid.NewGuid(),
             BrandId: Guid.NewGuid(),
             Barcodes: barcodes ?? [new CreateItemBarcodeDto("7501234567890", "EAN13", true)],
+            SaleVatCode: "4", PurchaseVatCode: "0",
             SupplierCodes: supplierCodes
         );
 
@@ -175,7 +176,7 @@ public sealed class CreateItemCommandValidatorTests
     }
 
     [Fact]
-    public void Codigos_de_impuesto_nulos_son_validos()
+    public void Iva_nulo_es_invalido_e_ice_sigue_opcional()
     {
         var cmd = ValidCommand() with
         {
@@ -184,6 +185,9 @@ public sealed class CreateItemCommandValidatorTests
             ExciseTaxCode = null,
         };
         var result = Validator.Validate(cmd);
-        result.IsValid.Should().BeTrue();
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "SaleVatCode");
+        result.Errors.Should().Contain(e => e.PropertyName == "PurchaseVatCode");
+        result.Errors.Should().NotContain(e => e.PropertyName == "ExciseTaxCode");
     }
 }

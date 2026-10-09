@@ -99,6 +99,7 @@ public sealed partial class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<In
         services.AddMediatR(c => c.RegisterServicesFromAssembly(typeof(CreateItemCommand).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient<IValidator<CreateItemCommand>, CreateItemCommandValidator>();
+        services.AddTransient<IValidator<ERP.Application.Items.UseCases.UpdateItem.UpdateItemCommand>, ERP.Application.Items.UseCases.UpdateItem.UpdateItemCommandValidator>();
         services.AddTransient<IValidator<CreateCategoryNodeCommand>, CreateCategoryNodeCommandValidator>();
         services.AddTransient<IValidator<CreateBrandCommand>, CreateBrandCommandValidator>();
         services.AddSingleton(tenant.Object);
@@ -159,7 +160,7 @@ public sealed partial class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<In
 
     private ParsedItemRow Row(string sku, string category = "Existing Category", string brand = "Existing Brand") =>
         new(sku, sku, sku, _type, "19", category, brand, [new("BC-" + sku, "Internal")],
-            null, null, 10m, true, null, null, null);
+            "4", "0", 10m, true, null, null, null);
 
     private async Task<Guid> BatchAsync(bool auto, params ParsedItemRow[] rows)
     {
@@ -295,7 +296,7 @@ public sealed partial class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<In
         await using (var scope = _services.CreateAsyncScope())
         {
             var result = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new CreateItemCommand(
-                "DUP", "Existing", "Existing", _type, "19", _category, _brand, [new("EXISTING-BC", "Internal", true)]));
+                "DUP", "Existing", "Existing", _type, "19", _category, _brand, [new("EXISTING-BC", "Internal", true)], SaleVatCode: "4", PurchaseVatCode: "0"));
             result.IsSuccess.Should().BeTrue(result.Error);
         }
         _createdDuringConfirmation = 0;

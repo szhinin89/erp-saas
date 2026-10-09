@@ -38,9 +38,6 @@ function buildDefaults(
   }
 
   const name = initialData?.name ?? "";
-  // Sugerencia inicial de IVA — el código de la línea de compra de origen (IVA XML) es el mejor
-  // candidato disponible para ambos IVA (venta y compra) al crear; el usuario puede cambiarlo.
-  const suggestedVatCode = initialData?.purchaseContext?.vatCode ?? "";
   return {
     sku: (initialData?.supplierCode ?? initialData?.barcode ?? "")
       .trim()
@@ -55,8 +52,8 @@ function buildDefaults(
     barcode: initialData?.barcode ?? "",
     barcodeType: "",
     observations: "",
-    saleVatCode: suggestedVatCode,
-    purchaseVatCode: suggestedVatCode,
+    saleVatCode: "",
+    purchaseVatCode: "",
     salePrice: null,
     updatePrice: false,
   };

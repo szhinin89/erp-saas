@@ -21,13 +21,14 @@ public sealed class ClosedXmlItemImportSheetReaderTests
         var row = result.Rows[0];
         row.Keys.Should().Equal(ItemImportColumns.All);
         row.Should().NotContainKey("IVA");
-        row[ItemImportColumns.SaleVatCode].Should().Be("2");
-        row[ItemImportColumns.PurchaseVatCode].Should().Be("2");
+        row[ItemImportColumns.SaleVatCode].Should().Be("4");
+        row[ItemImportColumns.PurchaseVatCode].Should().Be("4");
         row[ItemImportColumns.BarcodeType1].Should().Be("Internal");
         row[ItemImportColumns.CategoryName].Should().Be("No aplica");
         row[ItemImportColumns.BrandName].Should().Be("No aplica");
         using var workbook = new XLWorkbook(new MemoryStream(bytes));
         var instructions = string.Join(" ", workbook.Worksheet("Instrucciones").CellsUsed().Select(c => c.GetString()));
+        instructions.Should().Contain("vacío = ERROR").And.Contain("6 = no objeto").And.Contain("7 = exento");
         instructions.Should().Contain("mayor que cero").And.Contain("nunca se sustituye").And.Contain("No se infiere");
     }
 
