@@ -43,13 +43,16 @@ namespace ERP.Infrastructure.Tests.InitialLoad;
 /// maestro posteriores a la validación.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class ConfirmSuppliersAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
+public sealed partial class ConfirmSuppliersAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
 {
     private const string CustomerOnlyRuc = "1791352688001";
     private const string SupplierRuc = "1790016919001";
     private const string NewRuc = "0302126842001";
     private static long _nextTaxNumber = 1790097000;
     private readonly ServiceProvider _services;
+    private readonly string _connectionString;
+    private readonly Mock<ISupplierImportSheetReader> _reader = new();
+    private Action? _onLockAttempt;
     private readonly Guid _user = Guid.NewGuid();
     private Guid _tenant;
     private Guid _company;
@@ -63,6 +66,7 @@ public sealed class ConfirmSuppliersAtomicPostgreSqlTests : IClassFixture<Initia
 
     public ConfirmSuppliersAtomicPostgreSqlTests(InitialLoadPostgresFixture postgres)
     {
+        _connectionString = postgres.ConnectionString;
         var tenant = new Mock<ICurrentTenant>();
         tenant.SetupGet(x => x.TenantId).Returns(() => _tenant);
         var company = new Mock<ICurrentCompany>();
@@ -86,7 +90,7 @@ public sealed class ConfirmSuppliersAtomicPostgreSqlTests : IClassFixture<Initia
         services.AddSingleton(Mock.Of<ICurrentUser>(x => x.UserId == _user && x.Email == "il3b@test" && x.FullName == "IL3B"));
         services.AddSingleton(Mock.Of<IPublisher>());
         services.AddDbContext<ErpDbContext>(o => o.UseNpgsql(postgres.ConnectionString).AddInterceptors(
-            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor()));
+            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor(), new BatchLockObserver(this)));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
@@ -99,7 +103,11 @@ public sealed class ConfirmSuppliersAtomicPostgreSqlTests : IClassFixture<Initia
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
         services.AddScoped<IIdentificationUsageValidator, IdentificationUsageValidator>();
         services.AddScoped<IBusinessPartnerImportLookup, BusinessPartnerImportLookup>();
-        services.AddSingleton(Mock.Of<ISupplierImportSheetReader>());
+        services.AddSingleton(_reader.Object);
+        var files = new Mock<IFileStorage>();
+        files.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream([1]));
+        services.AddSingleton(files.Object);
         services.AddScoped<SupplierImportProcessor>();
         services.AddScoped<IImportBatchRepository, ImportBatchRepository>();
         services.AddScoped<IImportBatchRowRepository, ImportBatchRowRepository>();
