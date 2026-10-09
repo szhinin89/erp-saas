@@ -9,7 +9,7 @@ namespace ERP.Application.Modules.InitialLoad.UseCases.ValidateImportBatch;
 
 public sealed partial class ValidateImportBatchHandler
 {
-    private async Task<Result<ImportBatchDto>> ValidateItemsAsync(
+    private async Task<Result<ImportBatchDto>> ValidateReplacingStagingAsync(
         ImportBatch batch, IImportProcessor processor, CancellationToken ct)
     {
         await _unitOfWork.BeginTransactionAsync(ct);

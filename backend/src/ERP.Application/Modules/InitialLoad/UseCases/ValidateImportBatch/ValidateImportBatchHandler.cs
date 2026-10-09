@@ -68,8 +68,10 @@ public sealed partial class ValidateImportBatchHandler
                 "No hay un procesador disponible para este tipo de importación."
             );
 
-        return batch.ImportType == ImportType.Items
-            ? await ValidateItemsAsync(batch, processor, cancellationToken)
+        // Items (IL-1C) y Clientes (IL-2C): validación transaccional bajo FOR UPDATE que reemplaza
+        // el staging previo; un fallo/cancelación revierte también el estado Validating.
+        return batch.ImportType is ImportType.Items or ImportType.Customers
+            ? await ValidateReplacingStagingAsync(batch, processor, cancellationToken)
             : await ValidateRowsAsync(batch, processor, cancellationToken);
     }
 

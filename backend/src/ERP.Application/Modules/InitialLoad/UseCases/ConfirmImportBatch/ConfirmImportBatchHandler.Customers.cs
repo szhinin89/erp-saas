@@ -3,6 +3,7 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.InitialLoad.Entities;
+using ERP.Domain.Modules.InitialLoad.Enums;
 using FluentValidation;
 
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
@@ -11,7 +12,7 @@ namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 /// IL-2B — Clientes se confirma como una única transacción: BP + rol Cliente + contacto +
 /// <c>CompanyBpSalesSettings</c> de todas las filas quedan juntos o no queda ninguno. Los comandos
 /// MediatR anidados comparten el DbContext de la request, así que sus SaveChanges (y el Outbox de
-/// sus eventos) participan de esta transacción. Concurrencia/retry/recovery: IL-2C.
+/// sus eventos) participan de esta transacción.
 /// </summary>
 public sealed partial class ConfirmImportBatchHandler
 {
@@ -21,6 +22,17 @@ public sealed partial class ConfirmImportBatchHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            // IL-2C: FOR UPDATE serializa confirmaciones/revalidaciones/cancelaciones del mismo lote
+            // (Tenant+Company); la segunda ve el estado ya commiteado. Completed → mismo resultado,
+            // sin re-ejecutar (retry tras timeout o respuesta perdida).
+            batch = await _batchRepo.GetByIdForUpdateAsync(batch.Id, _ctx.TenantId, _ctx.CompanyId, ct)
+                ?? throw new DomainRuleViolationException("Lote de importación no encontrado.");
+            if (batch.Status == ImportStatus.Completed)
+            {
+                await _unitOfWork.CommitAsync(ct);
+                return Result<ImportBatchConfirmResultDto>.Success(
+                    new(batch.Id, batch.Status, batch.ImportedRows, FailedRows: 0));
+            }
             var errors = await _rowRepo.GetPageAsync(batch.Id, batch.TenantId, batch.CompanyId,
                 pageNumber: 1, pageSize: 1, onlyWithBlockingIssue: true, ct);
             if (batch.IssueRows > 0 || errors.TotalCount > 0 || batch.ValidRows != batch.TotalRows)

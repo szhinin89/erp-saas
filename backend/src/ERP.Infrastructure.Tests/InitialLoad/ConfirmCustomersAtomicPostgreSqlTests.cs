@@ -41,12 +41,15 @@ namespace ERP.Infrastructure.Tests.InitialLoad;
 /// provocan con datos que el dominio rechaza o con cambios del maestro posteriores a la validación.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class ConfirmCustomersAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
+public sealed partial class ConfirmCustomersAtomicPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
 {
     private const string ExistingRuc = "1791352688001";
     private const string CustomerRuc = "1790016919001";
     private static long _nextTaxNumber = 1790098000;
     private readonly ServiceProvider _services;
+    private readonly string _connectionString;
+    private readonly Mock<ICustomerImportSheetReader> _reader = new();
+    private Action? _onLockAttempt;
     private readonly Guid _user = Guid.NewGuid();
     private Guid _tenant;
     private Guid _company;
@@ -60,6 +63,7 @@ public sealed class ConfirmCustomersAtomicPostgreSqlTests : IClassFixture<Initia
 
     public ConfirmCustomersAtomicPostgreSqlTests(InitialLoadPostgresFixture postgres)
     {
+        _connectionString = postgres.ConnectionString;
         var tenant = new Mock<ICurrentTenant>();
         tenant.SetupGet(x => x.TenantId).Returns(() => _tenant);
         var company = new Mock<ICurrentCompany>();
@@ -75,6 +79,7 @@ public sealed class ConfirmCustomersAtomicPostgreSqlTests : IClassFixture<Initia
         services.AddLogging();
         services.AddMediatR(c => c.RegisterServicesFromAssembly(typeof(CreateBusinessPartnerCommand).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DomainRuleBehavior<,>));
         services.AddValidatorsFromAssemblyContaining<CreateBusinessPartnerValidator>(ServiceLifetime.Transient);
         services.AddSingleton(tenant.Object);
         services.AddSingleton(company.Object);
@@ -82,7 +87,7 @@ public sealed class ConfirmCustomersAtomicPostgreSqlTests : IClassFixture<Initia
         services.AddSingleton(Mock.Of<ICurrentUser>(x => x.UserId == _user && x.Email == "il2b@test" && x.FullName == "IL2B"));
         services.AddSingleton(Mock.Of<IPublisher>());
         services.AddDbContext<ErpDbContext>(o => o.UseNpgsql(postgres.ConnectionString).AddInterceptors(
-            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor()));
+            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor(), new BatchLockObserver(this)));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
@@ -95,7 +100,11 @@ public sealed class ConfirmCustomersAtomicPostgreSqlTests : IClassFixture<Initia
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
         services.AddScoped<IIdentificationUsageValidator, IdentificationUsageValidator>();
         services.AddScoped<ICustomerImportLookup, CustomerImportLookup>();
-        services.AddSingleton(Mock.Of<ICustomerImportSheetReader>());
+        services.AddSingleton(_reader.Object);
+        var files = new Mock<IFileStorage>();
+        files.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new MemoryStream([1]));
+        services.AddSingleton(files.Object);
         services.AddScoped<CustomerImportProcessor>();
         services.AddScoped<IImportBatchRepository, ImportBatchRepository>();
         services.AddScoped<IImportBatchRowRepository, ImportBatchRowRepository>();
