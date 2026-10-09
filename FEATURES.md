@@ -10,6 +10,7 @@
 |---------|-------------|-------|
 | Auth & acceso | `/login`, `/api/auth/*`, `/api/me` | JWT + refresh rotation, RBAC |
 | Master data — Business Partners (Customer/Supplier) | `/api/master/business-partners*` | BP V2, roles Customer/Supplier — FROZEN (ver `STATUS.md`) |
+| Carga Inicial — Clientes (IL-2) — **CLOSED** | `/initial-load/customers`, `/api/v1/initial-load/*` | Plantilla Excel validada con las mismas reglas que la confirmación; lote todo-o-nada en una transacción; reutiliza BP existente (asigna rol Cliente o idempotente, nunca duplica); condición de pago obligatoria por Company (`CompanyBpSalesSettings`); idempotente y seguro ante concurrencia/retry/cancelación. Gate UI real + PostgreSQL PASS (ver `STATUS.md`) |
 | Catálogo / Ítems | `/api/v1/catalog/*`, `/api/v1/items/*` | 14 entidades, 56 endpoints, CRUD completo, variantes, atributos, SRI lookups. Empaques con presentación base obligatoria para inventariables, validación de factor, bloqueo de empaques usados y advertencias visuales sin inferencia automática. FROZEN v2.0 (rediseño flujo de creación, 2026-07-02) + auditoría por fases 1-9 (2026-07-02) |
 | Motor de Pricing v2 | — (consumido internamente vía `IPricingResolver`) | `Item.BaseSalePrice` SSOT + `PricingRule` (reemplaza `ItemPrice`) + `PriceList` con regla general opcional. CLOSED (ADR-021, 2026-07-05) — ver `STATUS.md` |
 | Tipos de Ítem | `/api/v1/item-types`, `/inventory/item-types` | Catálogo tenant-editable (reemplaza enum fijo); `items.item_type_id` FK por Guid; sin flags de comportamiento. FROZEN |

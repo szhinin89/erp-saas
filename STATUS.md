@@ -1,5 +1,16 @@
 # Project Status
 
+## IL-2 — Carga Inicial de Clientes (2026-10-09)
+
+**Estado: CLOSED.** IL-2A (validación), IL-2B (confirmación atómica) e IL-2C (idempotencia/concurrencia/recovery) implementados; MasterData sin cambios.
+
+- **Validación fiel:** Validate aplica las mismas reglas de dominio que Confirm (RUC/cédula, cero inicial perdido, tipo de entidad legal para 06/08/09, catálogo de uso SRI, contacto, duplicados en archivo). Consumidor Final (07) no se importa; Categoría/Segmento/Zona salen de la plantilla.
+- **Todo-o-nada:** un lote con cualquier fila con error no se confirma; la confirmación corre en una sola transacción (BP + rol Cliente + contacto + condición) con rollback total y revalidación contra el maestro (stale preview).
+- **BP existente reutilizado:** nuevo → crear; sin rol Cliente → asignar rol; ya Cliente → idempotente. Nunca se duplica BP (coincidencia sin distinguir mayúsculas).
+- **Condición de pago por Company:** obligatoria, sin default, en `CompanyBpSalesSettings`; nunca en el BP global ni sobrescrita si ya difiere.
+- **Idempotencia/concurrencia/recovery:** validar/confirmar/cancelar bajo `FOR UPDATE` por lote + Tenant + Company; Completed devuelve el resultado ya confirmado; revalidar reemplaza staging; fallo/cancelación no deja Validating/Confirming. Cancel ya no puede sobrescribir un lote confirmado.
+- **Gates PASS:** unitarios InitialLoad 120/120; PostgreSQL 16 real 16/16 escenarios de Clientes (InitialLoad 71/71); gate UI real (prueba negativa y positiva con confirmación) PASS.
+
 ## IL-1C — Idempotencia, concurrencia y recovery de Productos (2026-10-08)
 
 **Estado: IMPLEMENTADO y validado; apto para declarar CLOSED. Sin migración, commit ni push.** IL-1A, IL-1B e Items core permanecen CLOSED.
