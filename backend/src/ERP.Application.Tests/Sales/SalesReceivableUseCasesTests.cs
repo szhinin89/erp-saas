@@ -5,6 +5,8 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Branches.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Models;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
@@ -289,6 +291,11 @@ public sealed class SalesReceivableUseCasesTests
         var company = new Mock<ICurrentCompany>();
         company.Setup(c => c.CompanyId).Returns(CompanyId);
 
+        var partners = new Mock<IBusinessPartnerRepository>();
+        partners
+            .Setup(p => p.GetDisplayInfoByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, BusinessPartnerDisplayInfo>());
+
         return new GetReceivablesListHandler(
             repo.Object,
             invoiceRepo.Object,
@@ -296,7 +303,8 @@ public sealed class SalesReceivableUseCasesTests
             accessRepo.Object,
             clock.Object,
             tenant.Object,
-            company.Object
+            company.Object,
+            partners.Object
         );
     }
 

@@ -16,7 +16,6 @@ export function InitialLoadInitialReceivablesPage() {
       primaryColumnLabel="Cliente"
       secondaryColumnKey="Número Documento"
       secondaryColumnLabel="Documento"
-      confirmUnavailableReason="La confirmación de CxC inicial todavía no está disponible: por ahora puede validar el archivo y revisar el resultado."
     />
   );
 }

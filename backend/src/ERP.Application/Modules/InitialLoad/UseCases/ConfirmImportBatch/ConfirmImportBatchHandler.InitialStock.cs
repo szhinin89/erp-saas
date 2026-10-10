@@ -60,7 +60,7 @@ public sealed partial class ConfirmImportBatchHandler
             try
             {
                 result = await batchConfirmation.ConfirmBatchAsync(
-                    rows.Select(r => (r.RowNumber, r.ParsedData!)).ToList(), ct);
+                    batch.Id, rows.Select(r => (r.RowNumber, r.ParsedData!)).ToList(), ct);
             }
             catch (ValidationException ex)
             {

@@ -75,8 +75,6 @@ interface ImportWizardPageProps {
   secondaryColumnLabel?: string;
   /** Solo Catálogo de Productos: permite crear Categoría/Marca automáticamente si no existen. */
   showAutoCreateCatalogOption?: boolean;
-  /** Si viene, el lote se puede validar y revisar pero no confirmar todavía (p. ej. CxC Inicial IL-5A). */
-  confirmUnavailableReason?: string;
 }
 
 /**
@@ -101,7 +99,6 @@ export function ImportWizardPage({
   secondaryColumnKey = "Razón Social",
   secondaryColumnLabel = "Razón Social",
   showAutoCreateCatalogOption = false,
-  confirmUnavailableReason,
 }: ImportWizardPageProps) {
   const columns = buildColumns(
     primaryColumnKey,
@@ -282,16 +279,9 @@ export function ImportWizardPage({
                 total={preview?.totalCount}
                 onPageChange={(page) => loadPreview(page, severityFilter)}
               />
-              {confirmUnavailableReason && (
-                <ZHPageNotice variant="info" message={confirmUnavailableReason} />
-              )}
               <div className="zh-form-actions-row">
                 <ZHBtn
-                  disabled={
-                    Boolean(confirmUnavailableReason) ||
-                    batch.validRows === 0 ||
-                    (requiresAllValid && batch.issueRows > 0)
-                  }
+                  disabled={batch.validRows === 0 || (requiresAllValid && batch.issueRows > 0)}
                   onClick={() => setConfirmModalOpen(true)}
                 >
                   Confirmar importación
@@ -336,7 +326,9 @@ export function ImportWizardPage({
                   ? "Esta acción importa el lote completo. Si una fila falla, no se guardará ningún proveedor, rol, contacto ni condición de pago de esta importación."
                   : importType === "InitialStock"
                     ? "Esta acción registra el saldo inicial al corte: un documento de apertura por bodega. Si una fila falla, no se registra ningún saldo ni movimiento de esta importación."
-                    : "Esta acción crea los registros válidos en el sistema. No se puede deshacer."}
+                    : importType === "InitialReceivables"
+                      ? "Esta acción registra los saldos pendientes de cobro al corte: una cuenta por cobrar por documento, sin facturas ni cobros históricos. Si una fila falla, no se registra ningún saldo de esta importación."
+                      : "Esta acción crea los registros válidos en el sistema. No se puede deshacer."}
           </p>
           {batch && (
             <>

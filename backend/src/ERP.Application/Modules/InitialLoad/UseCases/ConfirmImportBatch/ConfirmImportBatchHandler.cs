@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 
 /// <summary>
-/// Productos, Clientes, Proveedores e Inventario Inicial se confirman como una única transacción. Otros tipos conservan su flujo existente.
+/// Productos, Clientes, Proveedores, Inventario Inicial y CxC Inicial se confirman como una única transacción. Otros tipos conservan su flujo existente.
 /// </summary>
 public sealed partial class ConfirmImportBatchHandler
     : IRequestHandler<ConfirmImportBatchCommand, Result<ImportBatchConfirmResultDto>>
@@ -73,17 +73,11 @@ public sealed partial class ConfirmImportBatchHandler
             return await ConfirmPartnersAsync(batch, processor,
                 batch.ImportType == ImportType.Customers ? "cliente" : "proveedor", cancellationToken);
 
-        // IL-4B: Inventario Inicial es todo-o-nada y se confirma por lote en una única transacción
-        // (un documento de apertura por bodega); nunca pasa por el bucle genérico de abajo.
-        if (batch.ImportType == ImportType.InitialStock)
+        // IL-4B / IL-5B: Inventario Inicial y CxC Inicial son todo-o-nada y se confirman por lote
+        // en una única transacción (IBatchImportConfirmation, mismo camino FOR UPDATE + revalidación);
+        // nunca pasan por el bucle genérico fila por fila de abajo.
+        if (batch.ImportType is ImportType.InitialStock or ImportType.InitialReceivables)
             return await ConfirmInitialStockAsync(batch, processor, cancellationToken);
-
-        // IL-5A: CxC Inicial solo valida y previsualiza; la confirmación atómica llega en IL-5B.
-        // Nunca debe caer al bucle genérico fila por fila (marcaría el lote con filas fallidas).
-        if (batch.ImportType == ImportType.InitialReceivables)
-            return Result<ImportBatchConfirmResultDto>.ValidationFailure(
-                "La confirmación de CxC inicial todavía no está disponible. Puede validar y revisar el archivo."
-            );
 
         batch.BeginConfirming(_ctx.UserId);
         await _batchRepo.SaveChangesAsync(cancellationToken);

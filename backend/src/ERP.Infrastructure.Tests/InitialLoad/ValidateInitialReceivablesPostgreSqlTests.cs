@@ -9,23 +9,29 @@ using ERP.Application.Modules.InitialLoad.Processors;
 using ERP.Application.Modules.InitialLoad.UseCases.CancelImportBatch;
 using ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 using ERP.Application.Modules.InitialLoad.UseCases.ValidateImportBatch;
+using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
+using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.ValueObjects;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.InitialLoad;
+using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Interceptors;
 using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Repositories.InitialLoad;
+using ERP.Infrastructure.Persistence.Repositories.Sales;
 using ERP.Infrastructure.Tests.Seeding;
 using FluentAssertions;
 using FluentValidation;
@@ -45,7 +51,7 @@ namespace ERP.Infrastructure.Tests.InitialLoad;
 /// reforzada en BD, confirmación todavía bloqueada y lote atado a su sucursal.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class ValidateInitialReceivablesPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
+public sealed partial class ValidateInitialReceivablesPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
 {
     // AlwaysTodayCompanyClock fija "hoy" en 2026-09-17: la apertura de la empresa es anterior.
     private const string Cutoff = "2026-08-31";
@@ -96,6 +102,14 @@ public sealed class ValidateInitialReceivablesPostgreSqlTests : IClassFixture<In
         services.AddScoped<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<IBusinessPartnerImportLookup, BusinessPartnerImportLookup>();
         services.AddScoped<IInitialReceivableLookup, InitialReceivableLookup>();
+        // IL-5B — repositorio real envuelto para inyectar un fallo a mitad de la escritura del lote.
+        services.AddScoped<SalesReceivableRepository>();
+        services.AddScoped<ISalesReceivableRepository>(sp =>
+            new FailingReceivableRepository(sp.GetRequiredService<SalesReceivableRepository>(), () => _failOnAdd));
+        services.AddScoped<ISalesInvoiceRepository, SalesInvoiceRepository>();
+        services.AddScoped<IBranchRepository, BranchRepository>();
+        services.AddScoped<IAccessRepository, AccessRepository>();
+        services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddSingleton(_reader.Object);
         var files = new Mock<ERP.Application.Common.Interfaces.IFileStorage>();
         files.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -265,21 +279,6 @@ public sealed class ValidateInitialReceivablesPostgreSqlTests : IClassFixture<In
 
         (await SendAsync(new ValidateImportBatchCommand(batchId))).Value!.ValidRows.Should().Be(0);
         (await IssuesAsync(batchId)).Should().ContainSingle(i => i.Code == "CUTOFF_DATE_MISMATCH");
-    }
-
-    [Fact]
-    public async Task La_confirmacion_esta_bloqueada_y_no_cambia_el_lote()
-    {
-        var batchId = await UploadedBatchAsync(Row("1790016919001", "A-1"));
-        (await SendAsync(new ValidateImportBatchCommand(batchId))).IsSuccess.Should().BeTrue();
-
-        var result = await SendAsync(new ConfirmImportBatchCommand(batchId));
-
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("todavía no está disponible");
-        (await QueryAsync(db => db.ImportBatches.SingleAsync(b => b.Id == batchId))).Status
-            .Should().Be(ImportStatus.Validated);
-        (await QueryAsync(db => db.SalesReceivables.CountAsync())).Should().Be(0);
     }
 
     [Fact]

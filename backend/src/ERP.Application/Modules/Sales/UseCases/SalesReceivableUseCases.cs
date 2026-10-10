@@ -2,6 +2,8 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Models;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 using MediatR;
@@ -156,6 +158,34 @@ public static class SalesReceivableDtoMapper
     }
 
     /// <summary>
+    /// IL-5B — resumen de un saldo inicial (sin factura) con la misma forma que el de factura:
+    /// número, emisión y sucursal propios de la CxC; nombre e identificación del cliente desde el
+    /// maestro. Null si el tercero ya no es visible (el mapper muestra el fallback).
+    /// </summary>
+    public static (
+        string InvoiceNumber,
+        string CustomerName,
+        string CustomerTaxId,
+        string CustomerIdentificationType,
+        Guid BranchId,
+        Guid CreatedBy,
+        DateOnly IssueDate,
+        DateTime CreatedAt
+    )? InitialBalanceSummary(SalesReceivable r, BusinessPartnerDisplayInfo? customer) =>
+        customer is null
+            ? null
+            : (
+                r.DocumentNumber ?? "—",
+                customer.LegalName ?? customer.DisplayName ?? "Cliente no disponible",
+                customer.IdentificationNumber ?? "",
+                customer.IdentificationType ?? "",
+                r.BranchId ?? Guid.Empty,
+                r.CreatedBy,
+                r.IssueDate ?? default,
+                r.CreatedAt
+            );
+
+    /// <summary>
     /// Status persistido solo distingue "pending"/"cancelled" (ver SalesReceivable.cs) — "Pagada"
     /// y "Vencida" se derivan aquí desde saldo/mora, igual que ya hace el frontend de Cuentas por
     /// Pagar (getPayableStatusBadge) pero calculado en backend para que el frontend no tenga que
@@ -264,6 +294,7 @@ public sealed class GetReceivablesListHandler
     private readonly ICompanyClock _companyClock;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly IBusinessPartnerRepository _partners;
 
     public GetReceivablesListHandler(
         ISalesReceivableRepository repo,
@@ -272,7 +303,8 @@ public sealed class GetReceivablesListHandler
         IAccessRepository accessRepo,
         ICompanyClock companyClock,
         ICurrentTenant t,
-        ICurrentCompany c
+        ICurrentCompany c,
+        IBusinessPartnerRepository partners
     )
     {
         _repo = repo;
@@ -282,6 +314,7 @@ public sealed class GetReceivablesListHandler
         _companyClock = companyClock;
         _t = t;
         _c = c;
+        _partners = partners;
     }
 
     public async Task<Result<ReceivablesListResponse>> Handle(
@@ -308,6 +341,11 @@ public sealed class GetReceivablesListHandler
             .Distinct()
             .ToList();
         var summaries = await _invoiceRepo.GetReceivableSummariesByIdsAsync(tid, invoiceIds, ct);
+        // IL-5B: los saldos iniciales no tienen factura — cliente desde el maestro (1 query/página).
+        var initialBalanceCustomers = await _partners.GetDisplayInfoByIdsAsync(
+            items.Where(x => x.InvoiceId is null).Select(x => x.CustomerId),
+            ct
+        );
 
         // Sucursales de la empresa: sin método batch por id en IBranchRepository — el conjunto es
         // acotado (una empresa opera con pocas sucursales), así que traer todas una vez por
@@ -320,7 +358,11 @@ public sealed class GetReceivablesListHandler
         );
         var branchNames = branches.ToDictionary(b => b.Id, b => b.Name);
 
-        var creatorIds = summaries.Values.Select(s => s.CreatedBy).Distinct().ToList();
+        var creatorIds = summaries
+            .Values.Select(s => s.CreatedBy)
+            .Concat(items.Where(x => x.InvoiceId is null).Select(x => x.CreatedBy))
+            .Distinct()
+            .ToList();
         var creators =
             creatorIds.Count == 0 ? [] : await _accessRepo.GetUsersByIdsAsync(creatorIds, ct);
         var creatorNames = creators.ToDictionary(u => u.Id, u => u.FullName);
@@ -332,7 +374,10 @@ public sealed class GetReceivablesListHandler
             {
                 var summary = r.InvoiceId is { } invoiceId
                     ? summaries.GetValueOrDefault(invoiceId)
-                    : default;
+                    : SalesReceivableDtoMapper.InitialBalanceSummary(
+                        r,
+                        initialBalanceCustomers.GetValueOrDefault(r.CustomerId)
+                    ) ?? default;
                 var hasSummary = summary != default;
                 var branchId = hasSummary ? summary.BranchId : r.BranchId;
                 string? branchName =

@@ -6,6 +6,9 @@ using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.InitialLoad.Enums;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
+using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -28,6 +31,8 @@ public sealed class InitialReceivableImportProcessorTests
     private readonly Mock<ICompanyClock> _clock = new();
     private readonly Mock<ICurrentBranch> _branch = new();
     private readonly Mock<IOperationalContext> _ctx = new();
+    private readonly Mock<ISalesReceivableRepository> _repo = new();
+    private readonly List<SalesReceivable> _added = [];
 
     public InitialReceivableImportProcessorTests()
     {
@@ -39,10 +44,15 @@ public sealed class InitialReceivableImportProcessorTests
         _receivables.Setup(x => x.GetDocumentNumbersAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         _receivables.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Cutoff);
+        _ctx.SetupGet(x => x.UserId).Returns(Guid.NewGuid());
+        _repo.Setup(x => x.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()))
+            .Callback<SalesReceivable, CancellationToken>((r, _) => _added.Add(r))
+            .Returns(Task.CompletedTask);
     }
 
     private InitialReceivableImportProcessor Processor() =>
-        new(_reader.Object, _partners.Object, _receivables.Object, _clock.Object, _branch.Object, _ctx.Object);
+        new(_reader.Object, _partners.Object, _receivables.Object, _clock.Object, _branch.Object, _ctx.Object,
+            _repo.Object);
 
     private static BusinessPartnerImportMatch Match(bool isActive = true, bool hasActiveRole = true,
         bool hasRevokedRole = false, bool isAmbiguous = false) =>
@@ -459,5 +469,116 @@ public sealed class InitialReceivableImportProcessorTests
 
         processor.ImportType.Should().Be(ImportType.InitialReceivables);
         processor.TemplateFileName.Should().Be("plantilla-cxc-inicial.xlsx");
+    }
+
+    // ── IL-5B: confirmación atómica ─────────────────────────────────────────
+
+    private static readonly Guid BatchId = Guid.NewGuid();
+
+    private async Task<(int, string)[]> StagedAsync(params Dictionary<string, string?>[] rows)
+    {
+        var processor = Processor();
+        var results = new List<RowValidationResult>();
+        for (var i = 0; i < rows.Length; i++)
+            results.Add(await processor.ValidateRowAsync(i + 1, rows[i], false, CancellationToken.None));
+        var validated = processor.ValidateBatch(results);
+        validated.Should().OnlyContain(r => !r.HasBlockingIssue);
+        return validated.Select((r, i) => (i + 1, r.ParsedDataJson)).ToArray();
+    }
+
+    private Task<BatchConfirmResult> ConfirmAsync((int, string)[] staged) =>
+        Processor().ConfirmBatchAsync(BatchId, staged, CancellationToken.None);
+
+    [Fact]
+    public async Task Confirma_una_CxC_InitialBalance_por_fila_con_una_cuota()
+    {
+        var staged = await StagedAsync(Row(document: "A-1", balance: "150.75"), Row(document: "A-2", balance: "20"));
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        _added.Should().HaveCount(2);
+        var first = _added[0];
+        first.Origin.Should().Be(SalesReceivableOrigin.InitialBalance);
+        first.InvoiceId.Should().BeNull();
+        first.CustomerId.Should().Be(CustomerId);
+        first.DocumentNumber.Should().Be("A-1");
+        first.DocumentNumberNormalized.Should().Be("A1");
+        first.IssueDate.Should().Be(new DateOnly(2026, 8, 15));
+        first.BranchId.Should().Be(BranchId);
+        first.ImportBatchId.Should().Be(BatchId);
+        first.OriginalAmount.Should().Be(150.75m);
+        first.Installments.Should().ContainSingle(i => i.DueDate == new DateOnly(2026, 10, 15) && i.Amount == 150.75m);
+        result.CreatedIdsByRow.Should().BeEquivalentTo(new Dictionary<int, Guid> { [1] = _added[0].Id, [2] = _added[1].Id });
+        _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Duplicado_aparecido_despues_del_preview_rechaza_todo_sin_escribir()
+    {
+        var staged = await StagedAsync(Row(document: "A-1"), Row(document: "A-2"));
+        _receivables.Setup(x => x.GetDocumentNumbersAsync(CustomerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(["a 2"]);
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Fila 2").And.Contain("ya tiene una cuenta por cobrar");
+        _added.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("inactive")]
+    [InlineData("no-role")]
+    [InlineData("gone")]
+    public async Task Cliente_que_cambio_despues_del_preview_rechaza_todo(string change)
+    {
+        var staged = await StagedAsync(Row());
+        SetupCustomer(Ruc, change switch
+        {
+            "inactive" => Match(isActive: false),
+            "no-role" => Match(hasActiveRole: false),
+            _ => null,
+        });
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeFalse();
+        _added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Fecha_de_apertura_cambiada_despues_del_preview_rechaza_todo()
+    {
+        var staged = await StagedAsync(Row());
+        _receivables.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DateOnly(2026, 8, 31));
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("ya no coincide");
+        _added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Otra_sucursal_activa_rechaza_todo()
+    {
+        var staged = await StagedAsync(Row());
+        _branch.SetupGet(x => x.BranchId).Returns(Guid.NewGuid());
+
+        (await ConfirmAsync(staged)).IsSuccess.Should().BeFalse();
+        _added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Sin_lote_de_origen_no_confirma()
+    {
+        var staged = await StagedAsync(Row());
+
+        var result = await Processor().ConfirmBatchAsync(staged, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        _added.Should().BeEmpty();
     }
 }

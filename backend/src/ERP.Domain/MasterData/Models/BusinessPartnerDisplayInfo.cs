@@ -4,7 +4,8 @@ public sealed record BusinessPartnerDisplayInfo(
     Guid Id,
     string? TradeName,
     string? LegalName,
-    string? IdentificationNumber
+    string? IdentificationNumber,
+    string? IdentificationType = null
 )
 {
     public string? DisplayName =>

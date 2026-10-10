@@ -9,6 +9,7 @@ using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.ValueObjects;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Interfaces;
 using static ERP.Domain.Common.FiscalPrecision;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
@@ -26,11 +27,12 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 ///   <c>Company.OpeningBalanceDate</c> (SSOT del corte de apertura; sin fecha definida = error).
 /// - Sucursal = la activa del lote; otra sucursal se carga en otro lote.
 ///
-/// La confirmación (IL-5B) todavía no existe: <see cref="ConfirmRowAsync"/> rechaza y el handler
-/// de confirmación bloquea este tipo de lote.
+/// IL-5B — se confirma el LOTE completo (<see cref="IBatchImportConfirmation"/>): una
+/// <c>SalesReceivable</c> InitialBalance por fila, dentro de la transacción única del handler y
+/// tras revalidar cada fila contra el estado actual (ver InitialReceivableImportProcessor.Confirm.cs).
 /// </summary>
 public sealed partial class InitialReceivableImportProcessor
-    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard
+    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard, IBatchImportConfirmation
 {
     public const string SupportedCurrency = "USD";
     private static readonly string[] DateFormats = ["yyyy-MM-dd", "dd/MM/yyyy"];
@@ -44,6 +46,7 @@ public sealed partial class InitialReceivableImportProcessor
     private readonly ICompanyClock _clock;
     private readonly ICurrentBranch _branch;
     private readonly IOperationalContext _ctx;
+    private readonly ISalesReceivableRepository _receivables;
     private readonly Dictionary<string, BusinessPartnerImportMatch?> _partners = new(StringComparer.Ordinal);
     private readonly Dictionary<Guid, HashSet<string>> _documentKeysByCustomer = new();
     private (bool Loaded, DateOnly? Date) _openingBalanceDate;
@@ -55,7 +58,8 @@ public sealed partial class InitialReceivableImportProcessor
         IInitialReceivableLookup receivableLookup,
         ICompanyClock clock,
         ICurrentBranch branch,
-        IOperationalContext ctx
+        IOperationalContext ctx,
+        ISalesReceivableRepository receivables
     )
     {
         _reader = reader;
@@ -64,6 +68,7 @@ public sealed partial class InitialReceivableImportProcessor
         _clock = clock;
         _branch = branch;
         _ctx = ctx;
+        _receivables = receivables;
     }
 
     public ImportType ImportType => ImportType.InitialReceivables;
@@ -176,9 +181,9 @@ public sealed partial class InitialReceivableImportProcessor
         }).ToList();
     }
 
-    /// <summary>IL-5A: la confirmación de CxC Inicial (IL-5B) todavía no está disponible.</summary>
+    /// <summary>CxC Inicial nunca confirma fila por fila: ver <see cref="ConfirmBatchAsync(Guid, IReadOnlyList{ValueTuple{int, string}}, CancellationToken)"/>.</summary>
     public Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct) =>
-        Task.FromResult(RowConfirmResult.Failed("La confirmación de CxC inicial todavía no está disponible."));
+        Task.FromResult(RowConfirmResult.Failed("La CxC inicial se confirma por lote completo."));
 
     /// <summary>
     /// El lote pertenece a la sucursal activa con la que se validó; otra sucursal no puede

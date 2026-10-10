@@ -128,7 +128,8 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
                 x.Id,
                 x.Name.TradeName,
                 x.Name.LegalName,
-                x.Identification.Number
+                x.Identification.Number,
+                x.Identification.Type
             ))
             .ToListAsync(cancellationToken);
 
