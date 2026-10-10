@@ -154,6 +154,12 @@ public static class DependencyInjection
         services.AddScoped<IInitialReceivableLookup, InitialReceivableLookup>();
         services.AddScoped<IInitialPayableLookup, InitialPayableLookup>();
         services.AddScoped<IOpeningBalanceConstraintsReader, OpeningBalanceConstraintsReader>();
+        services.AddScoped<IOpeningBalanceSourceReader, OpeningBalanceSourceReader>();
+        services.AddScoped<
+            ERP.Domain.Modules.InitialLoad.Interfaces.IOpeningBalancePostingRepository,
+            ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningBalancePostingRepository
+        >();
+        services.AddScoped<ERP.Application.Modules.InitialLoad.OpeningPosting.OpeningBalancePostingPreflight>();
         services.AddScoped<
             IInitialReceivableImportSheetReader,
             ClosedXmlInitialReceivableImportSheetReader
@@ -394,6 +400,7 @@ public static class DependencyInjection
             ERP.Application.Modules.Accounting.Posting.IPostingEngine,
             ERP.Application.Modules.Accounting.Posting.PostingEngine
         >();
+        services.AddScoped<ERP.Application.Modules.Accounting.Posting.PostingPreflight>();
 
         // ACCOUNTING-SOURCE-TRACEABILITY-04: cada IJournalEntrySourceModuleResolver se registra
         // por separado (Strategy) — JournalEntrySourceResolver los resuelve como IEnumerable<T> y

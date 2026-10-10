@@ -2,6 +2,7 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.ValueObjects;
+using ERP.Domain.Modules.InitialLoad.Constants;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -148,7 +149,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // intermedio) — se agregan las 10 cuentas agrupadoras intermedias faltantes
     // (3.1.01/3.1.02/3.1.03/4.2.01/5.1.01/6.1.01/6.2.01/6.3.01/6.4.01/6.5.01), todas
     // AllowsPosting=false y ninguna referenciada por MinimalPostingRules.
-    public const int RetailChartAccountCount = 105;
+    // IL-7A: 105 -> 107 — agrega 3.1.04/3.1.04.001 "Saldos de apertura".
+    public const int RetailChartAccountCount = 107;
 
     private static readonly IReadOnlyList<RetailAccount> RetailChart =
     [
@@ -444,6 +446,27 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             "3.1.03.001",
             "Resultado del ejercicio",
             "3.1.03",
+            AccountType.Equity,
+            AccountNature.Credit,
+            true
+        ),
+        // IL-7A — cuenta puente patrimonial de la apertura (contrapartida de inventario, CxC y CxP
+        // iniciales y del futuro asiento manual de apertura de caja/bancos/otros). Específica:
+        // nunca Capital ni Resultados acumulados. 3.1.04 estaba libre en el plan vigente; una
+        // empresa con 3.1.04/3.1.04.001 ya usados con otro sentido no recibe ni la cuenta ni las
+        // reglas InitialLoad/* (ver OpeningBalanceAccountConflict).
+        new(
+            OpeningBalanceGroupAccountCode,
+            OpeningBalanceAccountName,
+            "3.1",
+            AccountType.Equity,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            OpeningBalanceAccountCode,
+            OpeningBalanceAccountName,
+            OpeningBalanceGroupAccountCode,
             AccountType.Equity,
             AccountNature.Credit,
             true
@@ -1135,6 +1158,34 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
+        // IL-7A — apertura de la Carga Inicial: un asiento por ImportBatch confirmado
+        // (SourceEventId = lote, EntryDate = Company.OpeningBalanceDate), GrandTotal = monto
+        // confirmado del dominio ya redondeado. Contrapartida única: la cuenta puente
+        // "Saldos de apertura". El traductor que publica estos hechos llega en IL-7B.
+        new(
+            OpeningBalancePostingFacts.SourceModule,
+            OpeningBalancePostingFacts.OpeningInventory,
+            [
+                new("1.1.04.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new(OpeningBalanceAccountCode, AccountNature.Credit, PostingAmountKind.GrandTotal),
+            ]
+        ),
+        new(
+            OpeningBalancePostingFacts.SourceModule,
+            OpeningBalancePostingFacts.OpeningReceivables,
+            [
+                new("1.1.03.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new(OpeningBalanceAccountCode, AccountNature.Credit, PostingAmountKind.GrandTotal),
+            ]
+        ),
+        new(
+            OpeningBalancePostingFacts.SourceModule,
+            OpeningBalancePostingFacts.OpeningPayables,
+            [
+                new(OpeningBalanceAccountCode, AccountNature.Debit, PostingAmountKind.GrandTotal),
+                new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
+            ]
+        ),
     ];
 
     // RETENTIONS-TAX-COMPONENT-POSTING-02C — forma sembrada por RETENTIONS-POSTING-RULE-SEED-01H
@@ -1286,8 +1337,20 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         var existingAccounts = await _db
             .Accounts.IgnoreQueryFilters()
             .Where(a => a.TenantId == tenantId && a.CompanyId == companyId)
-            .Select(a => new { a.Id, Code = a.Code.Value })
+            .Select(a => new
+            {
+                a.Id,
+                Code = a.Code.Value,
+                a.Name,
+                a.AccountType,
+                a.Nature,
+            })
             .ToListAsync(cancellationToken);
+        var openingAccountConflict = OpeningBalanceAccountConflict(
+            existingAccounts.Select(a => (a.Code, a.Name, a.AccountType, a.Nature))
+        );
+        if (openingAccountConflict is not null)
+            LogOpeningBalanceAccountConflict(openingAccountConflict, companyId);
         var accountIdByCode = existingAccounts.ToDictionary(
             a => a.Code,
             a => a.Id,
@@ -1298,6 +1361,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         foreach (var m in RetailChart)
         {
             if (accountIdByCode.ContainsKey(m.Code))
+                continue;
+            if (openingAccountConflict is not null && IsOpeningBalanceAccountCode(m.Code))
                 continue;
 
             Guid? parentAccountId = null;
@@ -1399,13 +1464,20 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             LogPeriodSkipped(currentYear, companyId);
         }
 
-        await SeedPostingRulesAsync(tenantId, companyId, actorId, cancellationToken);
+        await SeedPostingRulesAsync(
+            tenantId,
+            companyId,
+            actorId,
+            openingAccountConflict is not null,
+            cancellationToken
+        );
     }
 
     private async Task SeedPostingRulesAsync(
         Guid tenantId,
         Guid companyId,
         Guid actorId,
+        bool openingAccountConflict,
         CancellationToken cancellationToken
     )
     {
@@ -1420,6 +1492,9 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 
         var missingRules = MinimalPostingRules
             .Where(r => !existingRuleKeySet.Contains((r.SourceModule, r.FactType)))
+            // IL-7A — sin cuenta puente propia (código ocupado con otro sentido) no se siembra
+            // ninguna regla de apertura: nunca se contabiliza contra una cuenta ajena.
+            .Where(r => !(openingAccountConflict && IsOpeningBalanceRule(r)))
             .ToList();
 
         // RETENTIONS-TAX-COMPONENT-POSTING-02C — una regla existente (clave ya en

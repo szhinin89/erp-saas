@@ -706,6 +706,27 @@ if (args.Contains("backfill-supplier-credit-refund-posting-rules"))
     return;
 }
 
+// IL-7A: explicit maintenance, including Production. Dry-run by default; add `apply` to CREATE only
+// the missing opening bridge account ("3.1.04"/"3.1.04.001 Saldos de apertura") and the missing
+// InitialLoad/OpeningInventory|OpeningReceivables|OpeningPayables rules. If 3.1.04/3.1.04.001 are
+// already used with another meaning nothing is changed. Never modifies existing accounts/rules and
+// never posts journal entries.
+// `dotnet run -- backfill-opening-balance-posting-setup [apply]`. Exits without starting the host.
+if (args.Contains("backfill-opening-balance-posting-setup"))
+{
+    using var scope = app.Services.CreateScope();
+    var service =
+        scope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
+    var apply = args.Contains("apply");
+    var rows = await service.RunOpeningBalancePostingSetupMaintenanceAsync(apply);
+    Console.WriteLine(
+        $"[backfill-opening-balance-posting-setup] Mode={(apply ? "APPLY" : "DRY-RUN")} Items={rows.Count}"
+    );
+    foreach (var row in rows)
+        Console.WriteLine($"Tenant={row.TenantId} Company={row.CompanyId} {row.Item}: {row.Diagnostic}");
+    return;
+}
+
 // Bootstrap global: único flujo oficial para datos de instalación (navegación + InstallData).
 // Ver ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator.
 using (var globalBootstrapScope = app.Services.CreateScope())

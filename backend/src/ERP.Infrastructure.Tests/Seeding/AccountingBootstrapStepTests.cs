@@ -52,8 +52,11 @@ public sealed class AccountingBootstrapStepTests
     /// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B: pasa de 14 a 16 — agrega
     /// "Purchases"/"SupplierCreditRefunded" y "Purchases"/"SupplierCreditRefundReversed" (antes un
     /// FactType por destino sin regla sembrada → reembolsos sin asiento).
+    ///
+    /// IL-7A: pasa de 16 a 19 — agrega "InitialLoad"/"OpeningInventory", "OpeningReceivables" y
+    /// "OpeningPayables" (apertura de la Carga Inicial contra "3.1.04.001 Saldos de apertura").
     /// </summary>
-    private const int ExpectedPostingRulesCount = 16;
+    private const int ExpectedPostingRulesCount = 19;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -395,6 +398,9 @@ public sealed class AccountingBootstrapStepTests
                     ("Purchases", "SupplierCreditApplicationReversed"),
                     ("Purchases", "SupplierCreditRefunded"),
                     ("Purchases", "SupplierCreditRefundReversed"),
+                    ("InitialLoad", "OpeningInventory"),
+                    ("InitialLoad", "OpeningReceivables"),
+                    ("InitialLoad", "OpeningPayables"),
                 }
             );
 
