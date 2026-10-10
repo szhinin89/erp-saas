@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
-using ERP.Application.Modules.Accounting.Posting;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Constants;
@@ -90,45 +89,17 @@ public sealed class ReverseJournalEntryCommandHandler
                 OpeningReversalNotAllowedCode
             );
 
-        // Mismo criterio que PostingPeriodGuard usa para Post() (ADR-026 §6.1): un asiento no
-        // puede reversarse si su período ya no admite contabilización (Closed o Locked). No se
-        // duplica la regla — se reutiliza el mismo guard interno del Posting Engine.
-        var period = await _accountingPeriodRepository.GetByIdAsync(
-            tenantId,
-            companyId,
-            original.AccountingPeriodId,
-            ct
-        );
-        if (period is null)
-            return Result<JournalEntryDto>.ValidationFailure(
-                "El período contable del asiento original no existe."
-            );
+        // IL-8B — núcleo compartido (período, número, Reverse, alta); el bloqueo de InitialLoad de
+        // arriba queda solo en este reverso genérico.
+        var reversed = await new JournalEntryReversal(
+            _journalEntryRepository,
+            _accountingPeriodRepository,
+            _journalEntrySequenceRepository
+        ).ReverseAsync(original, _u.UserId, cmd.Reason, ct);
+        if (!reversed.IsSuccess)
+            return Result<JournalEntryDto>.ValidationFailure(reversed.Error!, reversed.Code);
+        var reversal = reversed.Value!;
 
-        var periodGuardResult = new PostingPeriodGuard().Ensure(period);
-        if (!periodGuardResult.IsSuccess)
-            return Result<JournalEntryDto>.ValidationFailure(
-                periodGuardResult.Error!,
-                periodGuardResult.Code
-            );
-
-        var entryNumber = await _journalEntrySequenceRepository.ReserveNextNumberAsync(
-            tenantId,
-            companyId,
-            original.FiscalYear,
-            ct
-        );
-
-        JournalEntry reversal;
-        try
-        {
-            reversal = original.Reverse(_u.UserId, entryNumber, cmd.Reason);
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<JournalEntryDto>.ValidationFailure(ex.Message);
-        }
-
-        await _journalEntryRepository.AddAsync(reversal, ct);
         await _journalEntryRepository.SaveChangesAsync(ct);
 
         return Result<JournalEntryDto>.Success(Map.ToDto(reversal));

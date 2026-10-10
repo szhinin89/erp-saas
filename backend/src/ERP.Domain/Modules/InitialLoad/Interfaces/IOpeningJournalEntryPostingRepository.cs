@@ -12,6 +12,14 @@ public interface IOpeningJournalEntryPostingRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>IL-8B — versión por Id (tracked; vigente o historial) de la empresa, o null.</summary>
+    Task<OpeningJournalEntryPosting?> GetByIdAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>Última versión usada por la empresa (vigente o historial); 0 si nunca tuvo ASI.</summary>
     Task<int> GetLastVersionAsync(
         Guid tenantId,

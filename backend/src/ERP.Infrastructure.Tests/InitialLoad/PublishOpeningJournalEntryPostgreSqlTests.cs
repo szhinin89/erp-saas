@@ -52,7 +52,7 @@ namespace ERP.Infrastructure.Tests.InitialLoad;
 /// fecha de apertura inmutable tras publicar y reverso genérico rechazado.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class PublishOpeningJournalEntryPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
+public sealed partial class PublishOpeningJournalEntryPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
 {
     private static readonly DateOnly Cutoff = new(2026, 8, 31);
     private static long _nextTaxNumber = 1790099000;

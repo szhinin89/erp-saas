@@ -30,6 +30,17 @@ public sealed class OpeningJournalEntryPostingRepository : IOpeningJournalEntryP
             cancellationToken
         );
 
+    public Task<OpeningJournalEntryPosting?> GetByIdAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) =>
+        _context.OpeningJournalEntryPostings.FirstOrDefaultAsync(
+            x => x.Id == id && x.TenantId == tenantId && x.CompanyId == companyId,
+            cancellationToken
+        );
+
     public async Task<int> GetLastVersionAsync(
         Guid tenantId,
         Guid companyId,

@@ -67,6 +67,12 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     public DateTime? ReversedAtUtc { get; private set; }
     public string? ReverseReason { get; private set; }
 
+    /// <summary>Longitud de <c>journal_entries.description</c> (JournalEntryConfiguration).</summary>
+    public const int DescriptionMaxLength = 500;
+
+    /// <summary>Longitud de <c>journal_entries.reverse_reason</c>: estándar del motivo de reverso.</summary>
+    public const int ReverseReasonMaxLength = 500;
+
     private readonly List<JournalEntryLine> _lines = new();
     public IReadOnlyCollection<JournalEntryLine> Lines => _lines.AsReadOnly();
 
@@ -239,7 +245,9 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
             "Accounting",
             "Reversal",
             Id,
-            $"Reverso del asiento N° {EntryNumber} — {trimmedReason}",
+            // IL-8B (BUG REAL) — prefijo + motivo de hasta ReverseReasonMaxLength excedía la columna
+            // description; la descripción es derivada (el motivo completo queda en ReverseReason).
+            Truncate($"Reverso del asiento N° {EntryNumber} — {trimmedReason}", DescriptionMaxLength),
             reversedBy
         );
 
@@ -257,4 +265,6 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
 
         return reversal;
     }
+
+    private static string Truncate(string value, int max) => value.Length > max ? value[..max] : value;
 }

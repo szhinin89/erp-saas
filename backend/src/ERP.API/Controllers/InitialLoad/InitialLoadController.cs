@@ -133,6 +133,27 @@ public sealed class InitialLoadController : ControllerBase
     ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct));
 
     /// <summary>
+    /// IL-8B — reversa por completo el ASI de apertura VIGENTE y publicado (motivo obligatorio) y lo
+    /// deja como historial; después se publica una versión nueva con el endpoint anterior. No es un
+    /// reverso contable genérico. Exige confirmar Carga Inicial y eliminar en Contabilidad.
+    /// </summary>
+    [HttpPost("opening-journal-entry/{postingId:guid}/reverse")]
+    [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.Delete}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<OpeningJournalEntryReversalDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> ReverseOpeningJournalEntry(
+        Guid postingId,
+        [FromBody] ReverseOpeningJournalEntryRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new ReverseOpeningJournalEntryCommand(postingId, request.Reason), ct)
+        );
+
+    /// <summary>
     /// IL-7C — conciliación de apertura (solo lectura): por lote y por tipo, saldo operativo
     /// confirmado contra mayor al corte, cuenta puente y bloqueos de cierre (IL-8). Muestra montos
     /// contables: exige ver Carga Inicial y ver Contabilidad.
@@ -202,3 +223,6 @@ public sealed class InitialLoadController : ControllerBase
         return File(file.Content, file.ContentType, file.FileName);
     }
 }
+
+/// <summary>IL-8B — cuerpo del reverso del ASI de apertura: solo el motivo (la versión va en la ruta).</summary>
+public sealed record ReverseOpeningJournalEntryRequest(string Reason);

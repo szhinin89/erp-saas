@@ -287,6 +287,19 @@ public sealed class JournalEntryTests
     }
 
     [Fact]
+    public void Reverse_con_motivo_de_longitud_maxima_no_excede_la_descripcion_y_conserva_el_motivo_completo()
+    {
+        var original = PostedEntry(entryNumber: 1234567);
+        var reason = new string('m', JournalEntry.ReverseReasonMaxLength);
+
+        var reversal = original.Reverse(CreatedBy, 1234568, reason);
+
+        reversal.Description.Length.Should().Be(JournalEntry.DescriptionMaxLength);
+        reversal.Description.Should().StartWith("Reverso del asiento N° 1234567 — ");
+        original.ReverseReason.Should().Be(reason);
+    }
+
+    [Fact]
     public void Reverse_nunca_modifica_los_importes_del_asiento_original()
     {
         var original = PostedEntry();
