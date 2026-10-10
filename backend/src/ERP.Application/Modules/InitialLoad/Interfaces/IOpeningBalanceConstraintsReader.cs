@@ -20,4 +20,13 @@ public interface IOpeningBalanceConstraintsReader
     /// (SSOT) que leen las cargas de saldos iniciales (CxC IL-5, CxP IL-6). Null si aún no se definió.
     /// </summary>
     Task<DateOnly?> GetOpeningBalanceDateAsync(CancellationToken ct);
+
+    /// <summary>
+    /// IL-8E — cierre definitivo de la Carga Inicial de la empresa operativa (<c>Company.InitialLoadClosedAt</c>/
+    /// <c>InitialLoadClosedBy</c>); null mientras siga abierta. Leer después del bloqueo de la empresa.
+    /// </summary>
+    Task<InitialLoadClosure?> GetInitialLoadClosureAsync(CancellationToken ct);
 }
+
+/// <summary>IL-8E — cuándo y quién cerró la Carga Inicial.</summary>
+public sealed record InitialLoadClosure(DateTime ClosedAt, Guid? ClosedBy);

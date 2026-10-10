@@ -105,6 +105,7 @@ public sealed partial class ConfirmInitialStockAtomicPostgreSqlTests : IClassFix
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
         services.AddScoped<IInventoryAdjustmentReasonRepository, InventoryAdjustmentReasonRepository>();
         services.AddScoped<IInitialStockLookup, InitialStockLookup>();
+        services.AddScoped<IOpeningBalanceConstraintsReader, OpeningBalanceConstraintsReader>();
         services.AddSingleton(_reader.Object);
         var files = new Mock<ERP.Application.Common.Interfaces.IFileStorage>();
         files.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -124,6 +125,8 @@ public sealed partial class ConfirmInitialStockAtomicPostgreSqlTests : IClassFix
         var tenant = Tenant.Create("IL4B", "il4b-" + Guid.NewGuid().ToString("N")[..8], _user);
         _tenant = tenant.Id;
         var company = Company.CreateManaged(_tenant, Interlocked.Increment(ref _nextTaxNumber) + "001", "IL4B S.A.", createdBy: _user);
+        // IL-8E — el corte del inventario inicial debe ser Company.OpeningBalanceDate.
+        company.SetOpeningBalanceDate(Cutoff, new OpeningBalanceDateConstraints(false, []), _user);
         _company = company.Id;
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();

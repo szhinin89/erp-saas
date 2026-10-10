@@ -32,7 +32,8 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// tras revalidar cada fila contra el estado actual (ver InitialPayableImportProcessor.Confirm.cs).
 /// </summary>
 public sealed partial class InitialPayableImportProcessor
-    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard, IBatchImportConfirmation
+    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard, IBatchImportConfirmation,
+        IOpeningBalanceImport
 {
     /// <summary>
     /// Tipos SRI que no son una obligación de pago: reducen la deuda (nota de crédito), la certifican
@@ -83,6 +84,10 @@ public sealed partial class InitialPayableImportProcessor
     }
 
     public ImportType ImportType => ImportType.InitialPayables;
+
+    /// <inheritdoc cref="InitialLoadClosedGuard"/>
+    public Task<string?> CheckInitialLoadOpenAsync(CancellationToken ct) =>
+        InitialLoadClosedGuard.CheckOpenAsync(_openingBalance, ct);
 
     public string TemplateFileName => "plantilla-cxp-inicial.xlsx";
 

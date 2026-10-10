@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
+using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -81,6 +82,7 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
     private readonly ICompanyClock _clock;
     private readonly IJournalEntryRepository _journal;
     private readonly JournalEntryReversal _reversal;
+    private readonly IOpeningBalanceConstraintsReader _openingBalance;
     private readonly ILogger<ReverseOpeningJournalEntryCommandHandler> _logger;
 
     public ReverseOpeningJournalEntryCommandHandler(
@@ -91,9 +93,11 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
         IAccountingPeriodRepository periods,
         IJournalEntrySequenceRepository sequences,
         ICompanyClock clock,
+        IOpeningBalanceConstraintsReader openingBalance,
         ILogger<ReverseOpeningJournalEntryCommandHandler> logger
     )
     {
+        _openingBalance = openingBalance;
         _ctx = ctx;
         _unitOfWork = unitOfWork;
         _postings = postings;
@@ -115,6 +119,9 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
         try
         {
             await _postings.LockCompanyOpeningAsync(tenantId, companyId, includeBalanceBatches: true, ct);
+            // IL-8E — tras el cierre definitivo la apertura no se corrige por esta vía (ni reintentos).
+            if (await InitialLoadClosedGuard.CheckOpenAsync(_openingBalance, ct) is { } closed)
+                return await RejectAsync(Fail(InitialLoadClosedGuard.Code, closed));
             var posting = await _postings.GetByIdAsync(tenantId, companyId, command.PostingId, ct);
             if (posting is null)
                 return await RejectAsync(Result<OpeningJournalEntryReversalDto>.NotFound(
@@ -149,8 +156,6 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
                 return await RejectAsync(Fail(JournalMismatchCode,
                     "El asiento contable de esta versión no corresponde a un asiento de apertura publicado."));
 
-            // IL-8E (cierre definitivo de la implementación inicial) aún no existe: cuando exista,
-            // ese estado también bloquea aquí cualquier corrección.
             var closedPeriod = await FindClosedPeriodSinceOpeningAsync(tenantId, companyId, posting.EntryDate, ct);
             if (closedPeriod is not null)
                 return await RejectAsync(Fail(closedPeriod.Code,

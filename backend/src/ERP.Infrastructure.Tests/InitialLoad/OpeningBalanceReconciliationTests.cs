@@ -15,6 +15,7 @@ using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.InitialLoad;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Interceptors;
+using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Repositories.InitialLoad;
 using ERP.Infrastructure.Seeding.Steps;
 using ERP.Infrastructure.Tests.Seeding;
@@ -99,7 +100,8 @@ public sealed class OpeningBalanceReconciliationTests
                 new OpeningBalanceSourceReader(db),
                 new PostingRuleRepository(db),
                 new AccountRepository(db),
-                new JournalEntryRepository(db));
+                new JournalEntryRepository(db),
+                new AccessRepository(db));
             var result = await handler.Handle(new GetOpeningBalanceReconciliationQuery(), CancellationToken.None);
             result.IsSuccess.Should().BeTrue(result.Error);
             return result.Value!;

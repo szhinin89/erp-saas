@@ -68,6 +68,11 @@ public sealed partial class ValidateImportBatchHandler
                 "No hay un procesador disponible para este tipo de importación."
             );
 
+        // IL-8E — tras el cierre de la Carga Inicial no se validan lotes de saldos.
+        if (processor is IOpeningBalanceImport opening
+            && await opening.CheckInitialLoadOpenAsync(cancellationToken) is { } closed)
+            return Result<ImportBatchDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
+
         // Items (IL-1C), Clientes (IL-2C), Proveedores (IL-3C), Inventario Inicial (IL-4C), CxC
         // Inicial (IL-5A) y CxP Inicial (IL-6A): validación transaccional bajo FOR UPDATE que reemplaza
         // el staging previo; un fallo/cancelación revierte también el estado Validating y conserva el

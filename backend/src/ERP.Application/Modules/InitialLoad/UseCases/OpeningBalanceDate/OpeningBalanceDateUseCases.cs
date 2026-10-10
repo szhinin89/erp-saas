@@ -164,7 +164,8 @@ internal static class OpeningBalanceDateMap
     )
     {
         var constraints = await reader.GetAsync(company.OpeningBalanceDate, ct);
-        var lockReason = CompanyEntity.OpeningBalanceDateLockReason(company.OpeningBalanceDate, constraints);
+        var lockReason = CompanyEntity.OpeningBalanceDateLockReason(
+            company.OpeningBalanceDate, constraints, company.IsInitialLoadClosed);
         return new OpeningBalanceDateDto(
             company.OpeningBalanceDate,
             constraints.HasRealOperations,

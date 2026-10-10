@@ -138,4 +138,28 @@ public sealed class CompanyOpeningBalanceDateTests
         CompanyEntity.OpeningBalanceDateLockReason(Sept30, With(true)).Should().Contain("definitiva");
         CompanyEntity.OpeningBalanceDateLockReason(null, With(true)).Should().Contain("ninguna carga inicial");
     }
+
+    // ── IL-8E: cierre definitivo de la Carga Inicial ─────────────────────────────────────────
+
+    [Fact]
+    public void Cerrar_carga_inicial_es_idempotente_e_inmoviliza_la_fecha()
+    {
+        var company = NewCompany();
+        company.SetOpeningBalanceDate(Sept30, Free, UserId);
+        company.IsInitialLoadClosed.Should().BeFalse();
+
+        company.CloseInitialLoad(UserId);
+        var closedAt = company.InitialLoadClosedAt;
+        company.CloseInitialLoad(Guid.NewGuid());
+
+        company.IsInitialLoadClosed.Should().BeTrue();
+        company.InitialLoadClosedAt.Should().Be(closedAt, "un segundo cierre conserva el primero");
+        company.InitialLoadClosedBy.Should().Be(UserId);
+        FluentActions.Invoking(() => company.SetOpeningBalanceDate(Aug31, Free, UserId))
+            .Should().Throw<DomainRuleViolationException>().WithMessage(CompanyEntity.InitialLoadClosedMessage);
+        company.SetOpeningBalanceDate(Sept30, Free, UserId);
+        company.OpeningBalanceDate.Should().Be(Sept30, "repetir la fecha vigente sigue siendo idempotente");
+        CompanyEntity.OpeningBalanceDateLockReason(Sept30, Free, initialLoadClosed: true)
+            .Should().Be(CompanyEntity.InitialLoadClosedMessage);
+    }
 }

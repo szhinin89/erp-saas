@@ -91,6 +91,13 @@ public sealed partial class PostOpeningBalanceCommandHandler
         try
         {
             await _postings.LockBatchAsync(_ctx.TenantId, _ctx.CompanyId, command.ImportBatchId, ct);
+            // IL-8E — tras el cierre definitivo nada se contabiliza (el cierre bloquea todos los lotes
+            // de saldos: el estado se lee después del bloqueo del lote).
+            if (await _preflight.CheckInitialLoadOpenAsync(ct) is { } closed)
+            {
+                await RollbackAsync();
+                return Result<OpeningBalancePostingDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
+            }
             var posting = await _postings.FindByBatchAsync(
                 _ctx.TenantId, _ctx.CompanyId, command.ImportBatchId, ct);
             if (posting?.Status == OpeningBalancePostingStatus.Posted)

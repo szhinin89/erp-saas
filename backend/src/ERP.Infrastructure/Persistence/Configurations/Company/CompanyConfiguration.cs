@@ -109,6 +109,9 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         // Conservado por compatibilidad de esquema/contrato de integración con Platform.
         // Las companies quedan operativas de inmediato al provisionarse (sin wizard de onboarding).
         builder.Property(x => x.OpeningBalanceDate).HasColumnName("opening_balance_date");
+        builder.Property(x => x.InitialLoadClosedAt).HasColumnName("initial_load_closed_at");
+        builder.Property(x => x.InitialLoadClosedBy).HasColumnName("initial_load_closed_by");
+        builder.Ignore(x => x.IsInitialLoadClosed);
 
         builder
             .Property(x => x.OnboardingCompleted)

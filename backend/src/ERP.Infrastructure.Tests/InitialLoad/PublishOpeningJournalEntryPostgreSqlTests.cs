@@ -110,6 +110,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests : IClassFi
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped<PostingPreflight>();
         services.AddScoped<OpeningBalancePostingPreflight>();
+        services.AddScoped<ERP.Domain.Access.Interfaces.IAccessRepository, AccessRepository>();
         _services = services.BuildServiceProvider();
     }
 

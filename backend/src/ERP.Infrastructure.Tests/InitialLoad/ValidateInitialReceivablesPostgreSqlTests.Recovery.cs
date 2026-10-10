@@ -36,7 +36,10 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests
         public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command,
             CommandEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
-            if (command.CommandText.Contains("import_batches", StringComparison.Ordinal)
+            // IL-8E — la confirmación de un lote de saldos bloquea la empresa y luego el lote: ambos
+            // cuentan como intento de bloqueo (dos confirmaciones = empresa + lote + empresa).
+            if ((command.CommandText.Contains("import_batches", StringComparison.Ordinal)
+                    || command.CommandText.Contains("FROM company", StringComparison.Ordinal))
                 && command.CommandText.Contains("FOR UPDATE", StringComparison.Ordinal)) test._onLockAttempt?.Invoke();
             return base.NonQueryExecutingAsync(command, eventData, result, cancellationToken);
         }
@@ -112,7 +115,7 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests
         var batch = await ReadyBatchAsync(2);
         var outbox = await OutboxAsync();
         var (connection, transaction) = await HoldLockAsync(batch);
-        var entered = WaitForLockAttempts(2);
+        var entered = WaitForLockAttempts(3);
 
         var first = ConfirmAsync(batch);
         var second = ConfirmAsync(batch);
@@ -140,7 +143,7 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests
     {
         var batch = await ReadyBatchAsync(1);
         var (connection, transaction) = await HoldLockAsync(batch);
-        var entered = WaitForLockAttempts(1);
+        var entered = WaitForLockAttempts(2);
         using var cts = new CancellationTokenSource();
         var pending = ConfirmAsync(batch, cts.Token);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(15));
@@ -161,7 +164,7 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests
     {
         var batch = await ReadyBatchAsync(1);
         var (connection, transaction) = await HoldLockAsync(batch);
-        var entered = WaitForLockAttempts(2);
+        var entered = WaitForLockAttempts(3);
 
         var confirm = ConfirmAsync(batch);
         var cancel = CancelAsync(batch);

@@ -75,12 +75,9 @@ public sealed partial class InitialReceivableImportProcessor
         var cutoffs = rows.Select(r => r.CutoffDate).Distinct().ToList();
         if (cutoffs.Count != 1 || cutoffs[0] is not { } cutoff)
             return "El lote debe tener una única fecha de corte.";
-        var opening = await _openingBalance.GetOpeningBalanceDateAsync(ct);
-        if (opening is null)
-            return "La empresa ya no tiene definida su fecha de apertura de saldos.";
-        if (opening.Value != cutoff)
-            return $"La fecha de corte del lote ({cutoff:yyyy-MM-dd}) ya no coincide con la fecha de apertura "
-                + $"de saldos de la empresa ({opening.Value:yyyy-MM-dd}).";
+        if (OpeningBalanceImportRules.CutoffNotOpeningDateOnConfirm(
+                cutoff, await _openingBalance.GetOpeningBalanceDateAsync(ct)) is { } cutoffError)
+            return cutoffError;
         var today = await _clock.TodayAsync(_ctx.CompanyId, _ctx.TenantId, ct);
         if (cutoff > today)
             return $"La fecha de corte {cutoff:yyyy-MM-dd} es posterior a hoy.";

@@ -12,6 +12,13 @@ public interface IImportBatchRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// IL-8E — <c>FOR UPDATE</c> de la empresa (requiere transacción). Se toma ANTES del bloqueo del
+    /// lote (orden fijo empresa → lote, el mismo de la apertura) para serializar la confirmación de
+    /// un lote de saldos con el cierre definitivo de la Carga Inicial.
+    /// </summary>
+    Task LockCompanyAsync(Guid tenantId, Guid companyId, CancellationToken cancellationToken = default);
+
     // Requires an active transaction; reloads state after obtaining the scoped row lock.
     Task<ImportBatch?> GetByIdForUpdateAsync(Guid id, Guid tenantId, Guid companyId,
         CancellationToken cancellationToken = default);

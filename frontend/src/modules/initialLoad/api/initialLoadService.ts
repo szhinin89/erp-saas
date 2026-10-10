@@ -6,6 +6,7 @@ import type {
   ImportBatchRowPreviewDto,
   ImportSeverity,
   ImportType,
+  InitialLoadClosureDto,
   OpeningBalanceDateDto,
   OpeningBalancePostingDto,
   OpeningBalanceReconciliationDto,
@@ -104,6 +105,11 @@ export const initialLoadService = {
   /** IL-7C — conciliación de apertura (solo lectura). */
   getOpeningReconciliation(): Promise<OpeningBalanceReconciliationDto> {
     return apiGet<OpeningBalanceReconciliationDto>(`${BASE}/opening-reconciliation`);
+  },
+
+  /** IL-8E — cierre DEFINITIVO e irreversible de la carga inicial (solo sin blockers). */
+  closeInitialLoad(): Promise<InitialLoadClosureDto> {
+    return apiPost<InitialLoadClosureDto>(`${BASE}/close`, {});
   },
 
   /** IL-7B — contabiliza o reintenta el asiento de apertura del lote. */

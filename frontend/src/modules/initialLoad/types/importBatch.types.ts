@@ -155,6 +155,18 @@ export interface OpeningBalanceReconciliationDto {
   openingJournalEntry: OpeningReconciliationJournalEntryDto;
   canCloseImplementation: boolean;
   blockers: OpeningReconciliationBlockerDto[];
+  /** IL-8E — carga inicial cerrada definitivamente (irreversible). */
+  isClosed: boolean;
+  closedAt: string | null;
+  closedBy: string | null;
+  closedByName: string | null;
+}
+
+/** IL-8E — resultado del cierre definitivo de la carga inicial. */
+export interface InitialLoadClosureDto {
+  closedAt: string;
+  closedBy: string | null;
+  alreadyClosed: boolean;
 }
 
 /**

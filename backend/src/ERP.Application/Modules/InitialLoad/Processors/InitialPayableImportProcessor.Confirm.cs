@@ -87,18 +87,15 @@ public sealed partial class InitialPayableImportProcessor
         if (cutoffs.Count != 1 || cutoffs[0] is not { } cutoff)
             return ("El lote debe tener una única fecha de corte.", default);
         var opening = await _openingBalance.GetOpeningBalanceDateAsync(ct);
-        if (opening is null)
-            return ("La empresa ya no tiene definida su fecha de apertura de saldos.", default);
-        if (opening.Value != cutoff)
-            return ($"La fecha de corte del lote ({cutoff:yyyy-MM-dd}) ya no coincide con la fecha de apertura "
-                + $"de saldos de la empresa ({opening.Value:yyyy-MM-dd}).", default);
+        if (OpeningBalanceImportRules.CutoffNotOpeningDateOnConfirm(cutoff, opening) is { } cutoffError)
+            return (cutoffError, default);
         var today = await _clock.TodayAsync(_ctx.CompanyId, _ctx.TenantId, ct);
         if (cutoff > today)
             return ($"La fecha de corte {cutoff:yyyy-MM-dd} es posterior a hoy.", default);
 
         if (rows.GroupBy(r => (r.SupplierId, r.DocumentKey)).Any(g => g.Count() > 1))
             return ("El lote repite un documento del mismo proveedor.", default);
-        return (null, opening.Value);
+        return (null, cutoff);
     }
 
     /// <summary>Estado actual del proveedor, tipo y unicidad del documento, y forma de la fila.</summary>

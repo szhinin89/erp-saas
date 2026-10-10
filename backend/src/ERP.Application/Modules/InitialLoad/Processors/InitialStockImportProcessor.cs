@@ -29,7 +29,8 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// - Solo Item+Bodega sin stock ni movimientos previos — con historia se usa un ajuste normal.
 /// - Cantidad y costo con punto decimal invariante, &gt; 0, sin exceder la precisión configurada
 ///   de la empresa (sin redondeo silencioso); cantidad entera si el Item no admite decimales.
-/// - Fecha de corte obligatoria, no futura y única en todo el lote: es la fecha efectiva del saldo.
+/// - Fecha de corte obligatoria, no futura, única en todo el lote e igual a
+///   <c>Company.OpeningBalanceDate</c> (IL-8E, mismo criterio que CxC/CxP): es la fecha efectiva del saldo.
 ///
 /// IL-4B — se confirma el LOTE completo (<see cref="IBatchImportConfirmation"/>): un documento de
 /// apertura por bodega con todas sus líneas, posteado con <c>StockMovementType.InitialBalance</c> y
@@ -37,7 +38,8 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// transacción única del handler. Antes de escribir se revalida cada fila contra el estado actual.
 /// </summary>
 public sealed class InitialStockImportProcessor
-    : IImportProcessor, IImportBatchValidator, IBatchImportConfirmation, IImportBatchScopeGuard
+    : IImportProcessor, IImportBatchValidator, IBatchImportConfirmation, IImportBatchScopeGuard,
+        IOpeningBalanceImport
 {
     private const string ReasonCode = "CARGA_INICIAL";
     private const string ReasonName = "Carga Inicial";
@@ -52,8 +54,10 @@ public sealed class InitialStockImportProcessor
     private readonly ICurrentBranch _branch;
     private readonly IOperationalContext _ctx;
     private readonly IMediator _mediator;
+    private readonly IOpeningBalanceConstraintsReader _openingBalance;
     private (int Quantity, int UnitCost)? _precision;
     private DateOnly? _companyToday;
+    private (bool Loaded, DateOnly? Date) _openingBalanceDate;
 
     public InitialStockImportProcessor(
         IInitialStockImportSheetReader reader,
@@ -65,9 +69,11 @@ public sealed class InitialStockImportProcessor
         ICompanyClock clock,
         ICurrentBranch branch,
         IOperationalContext ctx,
-        IMediator mediator
+        IMediator mediator,
+        IOpeningBalanceConstraintsReader openingBalance
     )
     {
+        _openingBalance = openingBalance;
         _reader = reader;
         _itemRepo = itemRepo;
         _warehouseRepo = warehouseRepo;
@@ -81,6 +87,10 @@ public sealed class InitialStockImportProcessor
     }
 
     public ImportType ImportType => ImportType.InitialStock;
+
+    /// <inheritdoc cref="InitialLoadClosedGuard"/>
+    public Task<string?> CheckInitialLoadOpenAsync(CancellationToken ct) =>
+        InitialLoadClosedGuard.CheckOpenAsync(_openingBalance, ct);
 
     public string TemplateFileName => "plantilla-stock-inicial.xlsx";
 
@@ -188,6 +198,10 @@ public sealed class InitialStockImportProcessor
         var cutoffDates = parsed.Select(p => p.Row.CutoffDate).Distinct().ToList();
         if (cutoffDates.Count != 1 || cutoffDates[0] is not { } cutoffDate)
             return BatchConfirmResult.Failed("El lote debe tener una única fecha de corte. Vuelva a validar el archivo.");
+        // IL-8E — mismo corte que CxC/CxP: Company.OpeningBalanceDate vigente al confirmar.
+        if (OpeningBalanceImportRules.CutoffNotOpeningDateOnConfirm(
+                cutoffDate, await _openingBalance.GetOpeningBalanceDateAsync(ct)) is { } cutoffError)
+            return BatchConfirmResult.Failed($"{cutoffError} Vuelva a validar el archivo.");
 
         // Revalidación contra el estado actual (stale preview): nada se escribe si algo cambió.
         foreach (var (rowNumber, row) in parsed)
@@ -443,6 +457,12 @@ public sealed class InitialStockImportProcessor
                 InitialStockImportColumns.CutoffDate));
             return null;
         }
+
+        // IL-8E — el corte del inventario inicial es Company.OpeningBalanceDate, igual que CxC/CxP.
+        if (!_openingBalanceDate.Loaded)
+            _openingBalanceDate = (true, await _openingBalance.GetOpeningBalanceDateAsync(ct));
+        OpeningBalanceImportRules.FlagCutoffNotOpeningDate(
+            date, _openingBalanceDate.Date, InitialStockImportColumns.CutoffDate, issues);
         return date;
     }
 

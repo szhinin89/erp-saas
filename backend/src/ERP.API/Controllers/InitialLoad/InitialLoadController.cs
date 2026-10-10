@@ -168,6 +168,18 @@ public sealed class InitialLoadController : ControllerBase
     public async Task<IActionResult> GetOpeningReconciliation(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new GetOpeningBalanceReconciliationQuery(), ct));
 
+    /// <summary>
+    /// IL-8E — cierre DEFINITIVO e irreversible de la Carga Inicial: solo sin blockers de la
+    /// conciliación de apertura. Después ninguna operación modifica la apertura. Exige confirmar
+    /// Carga Inicial y crear en Contabilidad (mismos permisos que publicar el ASI).
+    /// </summary>
+    [HttpPost("close")]
+    [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
+    [ProducesResponseType(typeof(Contracts.ApiResponse<InitialLoadClosureDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CloseInitialLoad(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new CloseInitialLoadCommand(), ct));
+
     [HttpPost("batches/{id:guid}/cancel")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Create}")]
     [ProducesResponseType(typeof(Contracts.ApiResponse<bool>), StatusCodes.Status200OK)]

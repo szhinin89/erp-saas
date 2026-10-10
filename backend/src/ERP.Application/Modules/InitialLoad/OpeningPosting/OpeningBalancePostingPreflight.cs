@@ -62,6 +62,10 @@ public sealed class OpeningBalancePostingPreflight
         _postingPreflight = postingPreflight;
     }
 
+    /// <summary>IL-8E — <see cref="InitialLoadClosedGuard"/> para la contabilización por lote (IL-7B).</summary>
+    public Task<string?> CheckInitialLoadOpenAsync(CancellationToken ct) =>
+        InitialLoadClosedGuard.CheckOpenAsync(_openingBalance, ct);
+
     public async Task<OpeningBalancePostingPreflightResult> CheckAsync(Guid importBatchId, CancellationToken ct)
     {
         var issues = new List<OpeningBalancePostingIssue>();

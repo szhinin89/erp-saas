@@ -31,6 +31,15 @@ public sealed class OpeningBalanceConstraintsReader : IOpeningBalanceConstraints
             .Select(c => c.OpeningBalanceDate)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<InitialLoadClosure?> GetInitialLoadClosureAsync(CancellationToken ct)
+    {
+        var closed = await _db.Companies.AsNoTracking()
+            .Where(c => c.Id == _company.CompanyId && c.InitialLoadClosedAt != null)
+            .Select(c => new { c.InitialLoadClosedAt, c.InitialLoadClosedBy })
+            .FirstOrDefaultAsync(ct);
+        return closed is null ? null : new InitialLoadClosure(closed.InitialLoadClosedAt!.Value, closed.InitialLoadClosedBy);
+    }
+
     public async Task<OpeningBalanceDateConstraints> GetAsync(
         DateOnly? currentOpeningBalanceDate, CancellationToken ct)
     {

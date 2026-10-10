@@ -41,6 +41,8 @@ interface Props {
   cutoffDate: string | null;
   bridge: OpeningBridgeAccountDto | null;
   onChanged: () => void;
+  /** IL-8E — carga inicial cerrada: solo lectura (sin publicar ni corregir). */
+  readOnly?: boolean;
 }
 
 /**
@@ -48,9 +50,15 @@ interface Props {
  * historial vienen tal cual del backend (IL-8C); esta sección solo los muestra y abre:
  * publicar (IL-8A, Missing/Pending/Failed/ReversedNotReplaced) y "Corregir apertura" (IL-8B, Posted).
  * Permisos = los del endpoint: confirmar Carga Inicial + crear (publicar) / eliminar (corregir) en
- * Contabilidad.
+ * Contabilidad. IL-8E — con la carga inicial cerrada (`readOnly`) no se ofrece ninguna acción.
  */
-export function OpeningJournalSection({ journal, cutoffDate, bridge, onChanged }: Readonly<Props>) {
+export function OpeningJournalSection({
+  journal,
+  cutoffDate,
+  bridge,
+  onChanged,
+  readOnly = false,
+}: Readonly<Props>) {
   const { canShow } = usePermissionsUi();
   const canConfirm = canShow("initialload.batches.confirm");
   const canPublish = canConfirm && canShow("accounting.create");
@@ -59,8 +67,9 @@ export function OpeningJournalSection({ journal, cutoffDate, bridge, onChanged }
   const [correcting, setCorrecting] = useState(false);
 
   const badge = STATE_BADGES[journal.state] ?? { label: String(journal.state), variant: "neutral" };
-  const showPublish = canPublish && PUBLISHABLE.has(journal.state);
-  const showCorrect = canCorrect && journal.state === "Posted" && journal.postingId !== null;
+  const showPublish = !readOnly && canPublish && PUBLISHABLE.has(journal.state);
+  const showCorrect =
+    !readOnly && canCorrect && journal.state === "Posted" && journal.postingId !== null;
 
   return (
     <section aria-label="Asiento de apertura (ASI)">

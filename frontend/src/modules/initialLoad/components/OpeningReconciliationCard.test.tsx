@@ -22,6 +22,7 @@ vi.mock("../api/initialLoadService", () => ({
     postOpeningBalance: vi.fn(),
     publishOpeningJournal: vi.fn(),
     reverseOpeningJournal: vi.fn(),
+    closeInitialLoad: vi.fn(),
   },
 }));
 
@@ -103,6 +104,10 @@ function dto(batches: OpeningReconciliationBatchDto[], overrides: Partial<Openin
         importBatchId: null,
       },
     ],
+    isClosed: false,
+    closedAt: null,
+    closedBy: null,
+    closedByName: null,
     ...overrides,
   };
 }
@@ -540,5 +545,76 @@ describe("OpeningReconciliationCard — ASI de apertura (IL-8D)", () => {
       ),
     ).toBeTruthy();
     expect(initialLoadService.getOpeningReconciliation).toHaveBeenCalledTimes(1);
+  });
+
+  // ── IL-8E: cierre definitivo de la carga inicial ──────────────────────────────────────────
+
+  it("con blockers el botón 'Cerrar carga inicial' está deshabilitado y los blockers se muestran", async () => {
+    vi.mocked(initialLoadService.getOpeningReconciliation).mockResolvedValue(dto([batch({})]));
+
+    renderCard();
+
+    const button = await screen.findByRole("button", { name: "Cerrar carga inicial" });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/no puede cerrarse todavía/)).toBeTruthy();
+    expect(screen.getByText(/saldo pendiente de reclasificación/)).toBeTruthy();
+  });
+
+  it("sin blockers cierra solo tras confirmar la acción irreversible y recarga", async () => {
+    vi.mocked(initialLoadService.getOpeningReconciliation).mockResolvedValue(
+      dto([batch({})], { canCloseImplementation: true, blockers: [] }),
+    );
+    vi.mocked(initialLoadService.closeInitialLoad).mockResolvedValue({
+      closedAt: "2026-10-10T15:00:00Z",
+      closedBy: "u1",
+      alreadyClosed: false,
+    });
+
+    renderCard();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cerrar carga inicial" }));
+    expect(await screen.findByText(/DEFINITIVA e irreversible/)).toBeTruthy();
+    expect(initialLoadService.closeInitialLoad).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar definitivamente" }));
+
+    await waitFor(() => expect(initialLoadService.closeInitialLoad).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(message.success).toHaveBeenCalled());
+    expect(initialLoadService.getOpeningReconciliation).toHaveBeenCalledTimes(2);
+  });
+
+  it("sin permiso para cerrar no ofrece el botón", async () => {
+    mockPermissions(["accounting.view"]);
+    vi.mocked(initialLoadService.getOpeningReconciliation).mockResolvedValue(
+      dto([batch({})], { canCloseImplementation: true, blockers: [] }),
+    );
+
+    renderCard();
+
+    expect(await screen.findByText(/puede cerrarse/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cerrar carga inicial" })).toBeNull();
+  });
+
+  it("cerrada: muestra fecha y usuario del cierre y oculta contabilizar, publicar y corregir", async () => {
+    mockPermissions([...ALL, "accounting.delete"]);
+    vi.mocked(initialLoadService.getOpeningReconciliation).mockResolvedValue(
+      dto(
+        [batch({ status: "PendingPosting", postingStatus: null, canPost: true, journalEntryId: null })],
+        {
+          blockers: [],
+          isClosed: true,
+          closedAt: "2026-10-10T15:00:00Z",
+          closedBy: "u1",
+          closedByName: "Ana Pérez",
+        },
+      ),
+    );
+
+    renderCard();
+
+    expect(await screen.findByText(/Carga inicial cerrada el .+ por Ana Pérez\./)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cerrar carga inicial" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Contabilizar|Reintentar/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Corregir apertura" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Publicar/ })).toBeNull();
   });
 });

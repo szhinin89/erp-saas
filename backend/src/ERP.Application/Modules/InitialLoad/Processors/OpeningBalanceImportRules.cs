@@ -167,6 +167,33 @@ public static partial class OpeningBalanceImportRules
         return (issueDate, dueDate);
     }
 
+    /// <summary>
+    /// Corte de la fila = <c>Company.OpeningBalanceDate</c> (Inventario IL-4/IL-8E, CxC IL-5, CxP IL-6):
+    /// sin fecha de apertura definida o con otra fecha, la fila no se admite.
+    /// </summary>
+    public static void FlagCutoffNotOpeningDate(DateOnly cutoff, DateOnly? opening, string column, List<RowIssue> issues)
+    {
+        if (opening is not { } openingDate)
+            issues.Add(new RowIssue(ImportSeverity.Error, "OPENING_BALANCE_DATE_NOT_SET",
+                "La empresa no tiene definida su fecha de apertura de saldos. Defínala antes de cargar saldos "
+                + "iniciales: todas las cargas deben usar ese mismo corte.",
+                column));
+        else if (cutoff != openingDate)
+            issues.Add(new RowIssue(ImportSeverity.Error, "CUTOFF_DATE_MISMATCH",
+                $"La fecha de corte {cutoff:yyyy-MM-dd} no coincide con la fecha de apertura de saldos de la "
+                + $"empresa ({openingDate:yyyy-MM-dd}). No se mezclan fechas de corte.",
+                column));
+    }
+
+    /// <summary>Revalidación al confirmar de <see cref="FlagCutoffNotOpeningDate"/>: motivo de rechazo o null.</summary>
+    public static string? CutoffNotOpeningDateOnConfirm(DateOnly cutoff, DateOnly? opening) =>
+        opening is not { } openingDate
+            ? "La empresa ya no tiene definida su fecha de apertura de saldos."
+            : openingDate != cutoff
+                ? $"La fecha de corte del lote ({cutoff:yyyy-MM-dd}) ya no coincide con la fecha de apertura "
+                    + $"de saldos de la empresa ({openingDate:yyyy-MM-dd})."
+                : null;
+
     /// <summary>Un saldo inicial tiene una sola fecha de corte por lote (Inventario IL-4, CxC IL-5, CxP IL-6).</summary>
     public static void FlagMultipleCutoffDates(IReadOnlyList<DateOnly?> cutoffs, List<List<RowIssue>> issues, string column)
     {
@@ -396,16 +423,7 @@ public sealed class OpeningBalanceRowRules
 
         if (!_openingBalanceDate.Loaded)
             _openingBalanceDate = (true, await _openingBalance.GetOpeningBalanceDateAsync(ct));
-        if (_openingBalanceDate.Date is not { } opening)
-            issues.Add(new RowIssue(ImportSeverity.Error, "OPENING_BALANCE_DATE_NOT_SET",
-                "La empresa no tiene definida su fecha de apertura de saldos. Defínala antes de cargar saldos "
-                + "iniciales: todas las cargas deben usar ese mismo corte.",
-                column));
-        else if (date.Value != opening)
-            issues.Add(new RowIssue(ImportSeverity.Error, "CUTOFF_DATE_MISMATCH",
-                $"La fecha de corte {date:yyyy-MM-dd} no coincide con la fecha de apertura de saldos de la "
-                + $"empresa ({opening:yyyy-MM-dd}). No se mezclan fechas de corte.",
-                column));
+        OpeningBalanceImportRules.FlagCutoffNotOpeningDate(date.Value, _openingBalanceDate.Date, column, issues);
         return date;
     }
 }

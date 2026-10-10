@@ -8,7 +8,7 @@ import { ZHConfirmModal } from "../../../components/zh/ZHConfirmModal";
 import { Badge } from "../../../components/PageShell";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
-import { formatDate } from "../../../lib/formatters/dateFormatters";
+import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
 import { initialLoadService } from "../api/initialLoadService";
 import { OpeningJournalSection } from "./OpeningJournalSection";
@@ -52,15 +52,20 @@ function Amount({ value }: { value: number | null }) {
  * estado y bloqueos de cierre) lo hace el backend; esta tarjeta solo lo muestra y permite
  * contabilizar/reintentar un lote (IL-7B) cuando el backend lo marca como `canPost`.
  * IL-8D — incluye la sección del ASI de apertura (publicar / "Corregir apertura").
+ * IL-8E — "Cerrar carga inicial": acción DEFINITIVA, habilitada solo sin blockers y con confirmación
+ * explícita; una vez cerrada la tarjeta queda de solo lectura (sin contabilizar, publicar ni corregir).
  */
 export function OpeningReconciliationCard() {
   const { canShow } = usePermissionsUi();
   const canView = canShow("accounting.view");
+  // Mismos permisos para contabilizar lotes (IL-7B) y para cerrar la carga inicial (IL-8E).
   const canPost = canShow("initialload.batches.confirm") && canShow("accounting.create");
   const [data, setData] = useState<OpeningBalanceReconciliationDto | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toPost, setToPost] = useState<OpeningReconciliationBatchDto | null>(null);
   const [postingId, setPostingId] = useState<string | null>(null);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -93,7 +98,23 @@ export function OpeningReconciliationCard() {
     }
   };
 
+  const close = async () => {
+    setConfirmingClose(false);
+    setClosing(true);
+    try {
+      await initialLoadService.closeInitialLoad();
+      message.success("Carga inicial cerrada definitivamente.");
+    } catch (err: unknown) {
+      message.error(formatApiRequestError(err, { generic: "No se pudo cerrar la carga inicial." }));
+    } finally {
+      setClosing(false);
+      await load();
+    }
+  };
+
   if (!canView) return null;
+
+  const isClosed = data?.isClosed ?? false;
 
   const batchColumns: ZHDataTableColumn<OpeningReconciliationBatchDto>[] = [
     {
@@ -158,7 +179,7 @@ export function OpeningReconciliationCard() {
       header: "",
       align: "right",
       render: (row) =>
-        canPost && row.canPost ? (
+        canPost && row.canPost && !isClosed ? (
           <ZHBtn
             size="xs"
             variant="primary"
@@ -272,19 +293,41 @@ export function OpeningReconciliationCard() {
               cutoffDate={data.cutoffDate}
               bridge={bridge}
               onChanged={() => void load()}
+              readOnly={isClosed}
             />
           )}
-          {data.canCloseImplementation ? (
+          {isClosed ? (
             <ZHPageNotice
               variant="success"
-              message="Apertura conciliada: la implementación puede cerrarse."
+              message={`Carga inicial cerrada el ${formatDateTime(data.closedAt)} por ${data.closedByName ?? "un usuario"}.`}
+              detail="Cierre definitivo: la apertura ya no se modifica. Las correcciones se registran con los procesos contables u operativos normales."
             />
           ) : (
-            <ZHPageNotice
-              variant="warning"
-              message="La implementación no puede cerrarse todavía."
-              detail={data.blockers.map((b) => b.message).join(" · ")}
-            />
+            <>
+              {data.canCloseImplementation ? (
+                <ZHPageNotice
+                  variant="success"
+                  message="Apertura conciliada: la carga inicial puede cerrarse."
+                />
+              ) : (
+                <ZHPageNotice
+                  variant="warning"
+                  message="La carga inicial no puede cerrarse todavía."
+                  detail={data.blockers.map((b) => b.message).join(" · ")}
+                />
+              )}
+              {canPost && (
+                <div>
+                  <ZHBtn
+                    variant="destructive"
+                    disabled={!data.canCloseImplementation || closing}
+                    onClick={() => setConfirmingClose(true)}
+                  >
+                    Cerrar carga inicial
+                  </ZHBtn>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -299,6 +342,15 @@ export function OpeningReconciliationCard() {
         confirmLabel="Contabilizar"
         onConfirm={() => toPost && void post(toPost)}
         onCancel={() => setToPost(null)}
+      />
+      <ZHConfirmModal
+        open={confirmingClose}
+        variant="danger"
+        title="Cerrar carga inicial"
+        message="Esta acción es DEFINITIVA e irreversible. Después del cierre no se podrá cambiar la fecha de apertura, cargar ni confirmar lotes de saldos iniciales, contabilizarlos, ni publicar o corregir el asiento de apertura. Las correcciones futuras se registran con los procesos contables u operativos normales. ¿Cerrar la carga inicial?"
+        confirmLabel="Cerrar definitivamente"
+        onConfirm={() => void close()}
+        onCancel={() => setConfirmingClose(false)}
       />
     </ZHCard>
   );

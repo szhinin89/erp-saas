@@ -154,6 +154,12 @@ public sealed partial class PublishOpeningJournalEntryCommandHandler
         try
         {
             await _postings.LockCompanyOpeningAsync(tenantId, companyId, includeBalanceBatches: true, ct);
+            // IL-8E — tras el cierre definitivo el ASI ya no se publica ni se reintenta.
+            if (await InitialLoadClosedGuard.CheckOpenAsync(_openingBalance, ct) is { } closed)
+            {
+                await RollbackAsync();
+                return Result<OpeningJournalEntryPostingDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
+            }
             var posting = await _postings.FindCurrentAsync(tenantId, companyId, ct);
             if (posting?.Status == OpeningBalancePostingStatus.Posted)
             {

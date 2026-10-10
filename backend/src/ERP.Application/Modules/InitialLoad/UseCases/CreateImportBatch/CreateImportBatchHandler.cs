@@ -38,10 +38,14 @@ public sealed class CreateImportBatchHandler
         CancellationToken cancellationToken
     )
     {
-        if (!_processors.ContainsKey(cmd.ImportType))
+        if (!_processors.TryGetValue(cmd.ImportType, out var processor))
             return Result<ImportBatchDto>.ValidationFailure(
                 "Este tipo de importación aún no está disponible."
             );
+        // IL-8E — tras el cierre de la Carga Inicial no se abren lotes de saldos.
+        if (processor is IOpeningBalanceImport opening
+            && await opening.CheckInitialLoadOpenAsync(cancellationToken) is { } closed)
+            return Result<ImportBatchDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
 
         var batch = ImportBatch.Create(
             _ctx.TenantId,

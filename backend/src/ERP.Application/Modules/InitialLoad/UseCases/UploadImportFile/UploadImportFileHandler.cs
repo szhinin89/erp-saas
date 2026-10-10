@@ -1,7 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.InitialLoad.DTOs;
+using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
 using MediatR;
 
@@ -13,16 +15,19 @@ public sealed class UploadImportFileHandler
     private readonly IImportBatchRepository _batchRepo;
     private readonly IFileStorage _fileStorage;
     private readonly IOperationalContext _ctx;
+    private readonly IReadOnlyDictionary<ImportType, IImportProcessor> _processors;
 
     public UploadImportFileHandler(
         IImportBatchRepository batchRepo,
         IFileStorage fileStorage,
-        IOperationalContext ctx
+        IOperationalContext ctx,
+        IReadOnlyDictionary<ImportType, IImportProcessor> processors
     )
     {
         _batchRepo = batchRepo;
         _fileStorage = fileStorage;
         _ctx = ctx;
+        _processors = processors;
     }
 
     public async Task<Result<ImportBatchDto>> Handle(
@@ -38,6 +43,12 @@ public sealed class UploadImportFileHandler
         );
         if (batch is null)
             return Result<ImportBatchDto>.NotFound("Lote de importación no encontrado.");
+
+        // IL-8E — antes de escribir el archivo: tras el cierre no se cargan saldos iniciales.
+        if (_processors.TryGetValue(batch.ImportType, out var processor)
+            && processor is IOpeningBalanceImport opening
+            && await opening.CheckInitialLoadOpenAsync(cancellationToken) is { } closed)
+            return Result<ImportBatchDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
 
         var relativePath = $"initial-load/{batch.TenantId}/{batch.Id}/{Guid.NewGuid()}.xlsx";
 

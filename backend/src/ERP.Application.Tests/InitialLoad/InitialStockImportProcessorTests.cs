@@ -40,6 +40,8 @@ public sealed class InitialStockImportProcessorTests
     private readonly Mock<ICurrentBranch> _branch = new();
     private readonly Mock<IOperationalContext> _ctx = new();
     private readonly Mock<IMediator> _mediator = new();
+    private readonly Mock<IOpeningBalanceConstraintsReader> _openingBalance = new();
+    private DateOnly? _openingBalanceDate = new(2026, 9, 30);
     private readonly Item _item = BuildItem("PROD-0001");
     private readonly Warehouse _warehouse = BuildWarehouse("BOD-01");
 
@@ -49,6 +51,8 @@ public sealed class InitialStockImportProcessorTests
         _ctx.SetupGet(x => x.CompanyId).Returns(CompanyId);
         _branch.SetupGet(x => x.BranchId).Returns(BranchId);
         _clock.Setup(x => x.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(CompanyToday);
+        _openingBalance.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => _openingBalanceDate);
         _precision.Setup(x => x.GetEffectiveAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
             new EffectivePrecisionPolicyDto("Standard", 2, 4, QuantityDecimals, 2, UnitCostDecimals, 6, 6, 0.01m,
                 false, null, null, 2, 2, 2, 2, 2, 2, 2));
@@ -59,7 +63,7 @@ public sealed class InitialStockImportProcessorTests
 
     private InitialStockImportProcessor Processor() => new(_reader.Object, _itemRepo.Object, _warehouseRepo.Object,
         _reasonRepo.Object, _stockLookup.Object, _precision.Object, _clock.Object, _branch.Object, _ctx.Object,
-        _mediator.Object);
+        _mediator.Object, _openingBalance.Object);
 
     private void SetupItem(string code, Item? item) =>
         _itemRepo.Setup(x => x.ResolveByAnyCodeAsync(code, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(item);
@@ -274,7 +278,45 @@ public sealed class InitialStockImportProcessorTests
     [Fact]
     public async Task Fecha_de_corte_de_hoy_en_la_empresa_es_valida()
     {
+        _openingBalanceDate = CompanyToday;
         (await Validate(Row(cutoff: "2026-10-09"))).HasBlockingIssue.Should().BeFalse();
+    }
+
+    // ── IL-8E: el corte del inventario inicial es Company.OpeningBalanceDate (igual que CxC/CxP) ──
+
+    [Fact]
+    public async Task Validar_corte_distinto_a_la_fecha_de_apertura_bloquea()
+    {
+        var result = await Validate(Row(cutoff: "2026-09-29"));
+
+        result.HasBlockingIssue.Should().BeTrue();
+        result.Issues.Should().ContainSingle(i => i.Code == "CUTOFF_DATE_MISMATCH"
+            && i.FieldName == InitialStockImportColumns.CutoffDate);
+    }
+
+    [Fact]
+    public async Task Validar_sin_fecha_de_apertura_definida_bloquea()
+    {
+        _openingBalanceDate = null;
+
+        var result = await Validate(Row());
+
+        result.Issues.Should().ContainSingle(i => i.Code == "OPENING_BALANCE_DATE_NOT_SET");
+    }
+
+    [Theory]
+    [InlineData("2026-09-29")]
+    [InlineData(null)]
+    public async Task Confirmar_con_corte_que_ya_no_es_la_fecha_de_apertura_no_registra_nada(string? opening)
+    {
+        _openingBalanceDate = opening is null ? null : DateOnly.Parse(opening, System.Globalization.CultureInfo.InvariantCulture);
+        SetupConfirmable((_item, _warehouse));
+
+        var result = await Processor().ConfirmBatchAsync([(1, Json(_item, _warehouse))], CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("fecha de apertura");
+        _mediator.Verify(m => m.Send(It.IsAny<PostInitialBalanceCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

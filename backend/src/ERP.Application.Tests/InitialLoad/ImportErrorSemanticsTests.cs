@@ -222,7 +222,8 @@ public sealed class ImportErrorSemanticsTests
                 x.SaveAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync("initial-load/stored.xlsx");
-        var handler = new UploadImportFileHandler(f.Batches.Object, f.Files.Object, f.Ctx.Object);
+        var handler = new UploadImportFileHandler(f.Batches.Object, f.Files.Object, f.Ctx.Object,
+            new Dictionary<ImportType, IImportProcessor>());
         var content = new MediaUploadContent(
             new MemoryStream([1, 2, 3]),
             "f.xlsx",

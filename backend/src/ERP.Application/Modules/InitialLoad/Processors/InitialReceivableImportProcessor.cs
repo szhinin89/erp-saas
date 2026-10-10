@@ -27,7 +27,8 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// tras revalidar cada fila contra el estado actual (ver InitialReceivableImportProcessor.Confirm.cs).
 /// </summary>
 public sealed partial class InitialReceivableImportProcessor
-    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard, IBatchImportConfirmation
+    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard, IBatchImportConfirmation,
+        IOpeningBalanceImport
 {
     public const string SupportedCurrency = OpeningBalanceImportRules.SupportedCurrency;
 
@@ -65,6 +66,10 @@ public sealed partial class InitialReceivableImportProcessor
     }
 
     public ImportType ImportType => ImportType.InitialReceivables;
+
+    /// <inheritdoc cref="InitialLoadClosedGuard"/>
+    public Task<string?> CheckInitialLoadOpenAsync(CancellationToken ct) =>
+        InitialLoadClosedGuard.CheckOpenAsync(_openingBalance, ct);
 
     public string TemplateFileName => "plantilla-cxc-inicial.xlsx";
 

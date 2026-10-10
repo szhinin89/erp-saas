@@ -26,6 +26,18 @@ public sealed class ImportBatchRepository : IImportBatchRepository
             .Include(x => x.Files)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
+    public async Task LockCompanyAsync(Guid tenantId, Guid companyId, CancellationToken cancellationToken = default)
+    {
+        // Proveedor en memoria (tests unitarios): sin transacciones reales ni FOR UPDATE.
+        if (!_context.Database.IsRelational())
+            return;
+        if (_context.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("El bloqueo de la empresa requiere una transacción.");
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM company WHERE id = {companyId} AND tenant_id = {tenantId} FOR UPDATE",
+            cancellationToken);
+    }
+
     public async Task<ImportBatch?> GetByIdForUpdateAsync(Guid id, Guid tenantId, Guid companyId,
         CancellationToken cancellationToken = default)
     {

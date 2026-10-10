@@ -80,6 +80,17 @@ public class Company : ITenantScopedEntity
     /// </summary>
     public DateOnly? OpeningBalanceDate { get; private set; }
 
+    /// <summary>
+    /// IL-8E — instante (UTC) del cierre definitivo de la Carga Inicial de saldos. Null mientras la
+    /// implementación sigue abierta; una vez asignado nunca se limpia (irreversible desde el ERP).
+    /// </summary>
+    public DateTime? InitialLoadClosedAt { get; private set; }
+
+    /// <summary>IL-8E — usuario que cerró la Carga Inicial (null mientras siga abierta).</summary>
+    public Guid? InitialLoadClosedBy { get; private set; }
+
+    public bool IsInitialLoadClosed => InitialLoadClosedAt is not null;
+
     // Navigation
     public SriCountry? Country { get; set; }
     public SriTaxRegime? TaxRegime { get; set; }
@@ -117,7 +128,7 @@ public class Company : ITenantScopedEntity
     {
         if (OpeningBalanceDate == openingBalanceDate)
             return;
-        var lockReason = OpeningBalanceDateLockReason(OpeningBalanceDate, constraints);
+        var lockReason = OpeningBalanceDateLockReason(OpeningBalanceDate, constraints, IsInitialLoadClosed);
         if (lockReason is not null)
             throw new DomainRuleViolationException(lockReason);
         if (constraints.ConfirmedOpeningDates.Count > 0
@@ -138,9 +149,12 @@ public class Company : ITenantScopedEntity
     /// </summary>
     public static string? OpeningBalanceDateLockReason(
         DateOnly? current,
-        OpeningBalanceDateConstraints constraints
+        OpeningBalanceDateConstraints constraints,
+        bool initialLoadClosed = false
     )
     {
+        if (initialLoadClosed)
+            return InitialLoadClosedMessage;
         if (constraints.HasPostedOpeningJournalEntry && current is { } postedDate)
             return $"La fecha de apertura ({postedDate:yyyy-MM-dd}) es definitiva: el asiento de apertura (ASI) ya está publicado.";
         if (constraints.ConfirmedOpeningDates.Count > 1)
@@ -153,6 +167,29 @@ public class Company : ITenantScopedEntity
         return constraints.ConfirmedOpeningDates.Count == 0
             ? "La empresa ya registra operaciones reales y no tiene ninguna carga inicial confirmada: no se puede definir una fecha de apertura."
             : null;
+    }
+
+    /// <summary>IL-8E — motivo único de rechazo de cualquier cambio a la apertura tras el cierre.</summary>
+    public const string InitialLoadClosedMessage =
+        "La carga inicial de la empresa está cerrada definitivamente: la apertura (fecha, lotes de saldos, "
+        + "contabilización y asiento de apertura) ya no se modifica. Las correcciones se registran con los "
+        + "procesos contables u operativos normales.";
+
+    /// <summary>
+    /// IL-8E — cierre definitivo de la Carga Inicial. Idempotente (un segundo cierre conserva el
+    /// primero) e irreversible: no existe método para reabrir. Las condiciones (conciliación sin
+    /// blockers) las verifica el caso de uso bajo el bloqueo de la apertura.
+    /// </summary>
+    public void CloseInitialLoad(Guid closedBy)
+    {
+        if (closedBy == Guid.Empty)
+            throw new ArgumentException("El usuario que cierra es obligatorio.", nameof(closedBy));
+        if (IsInitialLoadClosed)
+            return;
+        InitialLoadClosedAt = DateTime.UtcNow;
+        InitialLoadClosedBy = closedBy;
+        UpdatedBy = closedBy;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     private static string FormatDates(IEnumerable<DateOnly> dates) =>

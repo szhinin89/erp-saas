@@ -24,8 +24,17 @@ public sealed partial class ConfirmImportBatchHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
+            // IL-8E — orden fijo empresa → lote (el de la apertura): serializa con el cierre definitivo
+            // de la Carga Inicial; el estado de cierre se lee después de ambos bloqueos.
+            await _batchRepo.LockCompanyAsync(_ctx.TenantId, _ctx.CompanyId, ct);
             batch = await _batchRepo.GetByIdForUpdateAsync(batch.Id, _ctx.TenantId, _ctx.CompanyId, ct)
                 ?? throw new DomainRuleViolationException("Lote de importación no encontrado.");
+            if (processor is IOpeningBalanceImport opening
+                && await opening.CheckInitialLoadOpenAsync(ct) is { } closed)
+            {
+                await RollbackItemsAsync();
+                return Result<ImportBatchConfirmResultDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
+            }
             var staged = await _rowRepo.GetAllRowsAsync(batch, ct);
             if (processor is IImportBatchScopeGuard scopeGuard)
             {

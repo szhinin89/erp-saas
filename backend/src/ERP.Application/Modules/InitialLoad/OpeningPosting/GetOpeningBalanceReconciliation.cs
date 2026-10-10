@@ -1,6 +1,7 @@
 using System.Globalization;
 using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.Interfaces;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -141,7 +142,11 @@ public sealed record OpeningBalanceReconciliationDto(
     OpeningBridgeAccountDto? BridgeAccount,
     OpeningReconciliationJournalEntryDto OpeningJournalEntry,
     bool CanCloseImplementation,
-    IReadOnlyList<OpeningReconciliationBlockerDto> Blockers
+    IReadOnlyList<OpeningReconciliationBlockerDto> Blockers,
+    bool IsClosed,
+    DateTime? ClosedAt,
+    Guid? ClosedBy,
+    string? ClosedByName
 );
 
 /// <summary>
@@ -189,6 +194,20 @@ public sealed class GetOpeningBalanceReconciliationHandler
     public const string OpeningAsiReversedNotReplacedCode = "OPENING_ASI_REVERSED_NOT_REPLACED";
     public const string OpeningAsiFailedCode = "OPENING_ASI_FAILED";
     public const string OpeningAsiPendingCode = "OPENING_ASI_PENDING";
+    public const string OpeningBatchInProgressCode = "OPENING_BATCH_IN_PROGRESS";
+
+    /// <summary>
+    /// IL-8E — lotes de saldos en curso (con archivo, en validación, validados o confirmándose): podrían
+    /// confirmarse después; deben confirmarse o cancelarse antes del cierre. Draft (sin archivo),
+    /// Failed y Cancelled no dejaron saldos y quedan bloqueados por el cierre.
+    /// </summary>
+    private static readonly ImportStatus[] InProgressStatuses =
+    [
+        ImportStatus.Uploaded,
+        ImportStatus.Validating,
+        ImportStatus.Validated,
+        ImportStatus.Confirming,
+    ];
 
     private readonly IOperationalContext _ctx;
     private readonly IImportBatchRepository _batches;
@@ -199,6 +218,7 @@ public sealed class GetOpeningBalanceReconciliationHandler
     private readonly IPostingRuleRepository _rules;
     private readonly IAccountRepository _accounts;
     private readonly IJournalEntryRepository _journal;
+    private readonly IAccessRepository _access;
 
     public GetOpeningBalanceReconciliationHandler(
         IOperationalContext ctx,
@@ -209,9 +229,11 @@ public sealed class GetOpeningBalanceReconciliationHandler
         IOpeningBalanceSourceReader sources,
         IPostingRuleRepository rules,
         IAccountRepository accounts,
-        IJournalEntryRepository journal
+        IJournalEntryRepository journal,
+        IAccessRepository access
     )
     {
+        _access = access;
         _ctx = ctx;
         _batches = batches;
         _postings = postings;
@@ -380,7 +402,12 @@ public sealed class GetOpeningBalanceReconciliationHandler
         }
 
         var openingJournal = await OpeningJournalAsync(tenantId, companyId, ct);
-        var blockers = Blockers(cutoff, batchRows, typeRows, bridge, openingJournal);
+        var inProgress = await _batches.ListAsync(tenantId, companyId, BalanceTypes, InProgressStatuses, ct);
+        var blockers = Blockers(cutoff, batchRows, typeRows, bridge, openingJournal, inProgress);
+        var closure = await _openingBalance.GetInitialLoadClosureAsync(ct);
+        string? closedByName = null;
+        if (closure?.ClosedBy is { } closedBy)
+            closedByName = (await _access.GetUsersByIdsAsync([closedBy], ct)).FirstOrDefault()?.FullName;
         var overall = batchRows.Any(b => b.Status == OpeningReconciliationStatus.PendingPosting)
             || typeRows.Any(t => t.Status == OpeningReconciliationStatus.PendingPosting)
             ? OpeningReconciliationStatus.PendingPosting
@@ -398,8 +425,12 @@ public sealed class GetOpeningBalanceReconciliationHandler
             typeRows,
             bridge,
             openingJournal,
-            blockers.Count == 0,
-            blockers));
+            closure is null && blockers.Count == 0,
+            blockers,
+            closure is not null,
+            closure?.ClosedAt,
+            closure?.ClosedBy,
+            closedByName));
     }
 
     /// <summary>
@@ -445,7 +476,7 @@ public sealed class GetOpeningBalanceReconciliationHandler
     }
 
     /// <summary>
-    /// Regla de cierre (IL-8): ningún lote Pending/Failed/sin asiento, ninguna diferencia de
+    /// Regla de cierre (IL-8): ningún lote de saldos en curso (IL-8E), ningún lote Pending/Failed/sin asiento, ninguna diferencia de
     /// conciliación, versión vigente del ASI de apertura Posted (IL-8C, derivado solo de
     /// <see cref="OpeningJournalEntryPosting"/>) y la cuenta puente sin saldo (redondeo monetario
     /// vigente). <see cref="OpeningBridgeNotClearedCode"/> significa SOLO puente distinto de cero:
@@ -456,11 +487,18 @@ public sealed class GetOpeningBalanceReconciliationHandler
         IReadOnlyList<OpeningReconciliationBatchDto> batches,
         IReadOnlyList<OpeningReconciliationTypeDto> types,
         OpeningBridgeAccountDto? bridge,
-        OpeningReconciliationJournalEntryDto openingJournal)
+        OpeningReconciliationJournalEntryDto openingJournal,
+        IReadOnlyList<ImportBatch> inProgress)
     {
         var blockers = new List<OpeningReconciliationBlockerDto>();
         if (cutoff is null)
             blockers.Add(new("OPENING_DATE_MISSING", "La empresa no tiene definida su fecha de apertura de saldos.", null));
+
+        foreach (var b in inProgress)
+            blockers.Add(new(OpeningBatchInProgressCode,
+                $"El lote de saldos{(b.Label is { Length: > 0 } label ? $" «{label}»" : "")} está en curso sin "
+                    + "confirmar: confírmelo o cancélelo antes de cerrar la carga inicial.",
+                b.Id));
 
         foreach (var b in batches.Where(b => b.Status == OpeningReconciliationStatus.PendingPosting))
             blockers.Add(b.PostingStatus == OpeningBalancePostingStatus.Failed
