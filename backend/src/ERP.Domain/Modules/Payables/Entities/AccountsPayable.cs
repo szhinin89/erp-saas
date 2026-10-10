@@ -45,6 +45,18 @@ public sealed class AccountsPayable
     public DateOnly AccountingDate { get; private set; }
     public AccountsPayableStatus Status { get; private set; } = AccountsPayableStatus.Pending;
 
+    // IL-6A — datos propios de un saldo inicial (OriginType = InitialBalance); null para los demás
+    // orígenes, cuyo documento vive en Compras/Gastos.
+
+    /// <summary>
+    /// Clave de unicidad de <see cref="DocumentNumber"/> (<see cref="DocumentNumberKey"/>), calculada
+    /// por <see cref="CreateInitialBalance"/> y protegida por índice único parcial en BD.
+    /// </summary>
+    public string? DocumentNumberNormalized { get; private set; }
+
+    /// <summary>Lote de la Carga Inicial de CxP que registró el saldo.</summary>
+    public Guid? ImportBatchId { get; private set; }
+
     /// <summary>
     /// ZH-RETENTION-SRI-ANNULMENT-01 (ADR-036 O-13) — solicitud de anulación ante el SRI de la retención
     /// del documento origen que retiene esta CxP. Mientras exista, la CxP no admite pagos, créditos ni
@@ -159,6 +171,93 @@ public sealed class AccountsPayable
             Status = AccountsPayableStatus.Pending,
         };
         payable.SetCreated(createdBy);
+        return payable;
+    }
+
+    /// <summary>
+    /// IL-6A — saldo NETO pendiente de un documento de proveedor al corte (Carga Inicial de CxP).
+    /// Nunca reconstruye la compra/gasto, los pagos ni las retenciones históricas: el total de la
+    /// CxP ES el saldo pendiente, en una única cuota con su vencimiento. Conserva el tipo real del
+    /// documento histórico (<paramref name="documentType"/>); <c>OriginId</c> es la fila del lote
+    /// (<paramref name="importBatchRowId"/>), lo que hace idempotente la carga por el índice único
+    /// de origen. <c>AccountingDate</c> = fecha de corte.
+    /// </summary>
+    public static AccountsPayable CreateInitialBalance(
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
+        Guid supplierId,
+        string documentType,
+        string documentNumber,
+        DateOnly issueDate,
+        DateOnly dueDate,
+        DateOnly cutoffDate,
+        decimal balance,
+        Guid importBatchId,
+        Guid importBatchRowId,
+        Guid createdBy
+    )
+    {
+        if (importBatchId == Guid.Empty)
+            throw new ArgumentException(
+                "El lote de importación es obligatorio.",
+                nameof(importBatchId)
+            );
+        var type = documentType?.Trim() ?? string.Empty;
+        if (type.Length > DocumentTypeMaxLen)
+            throw new ArgumentException(
+                $"El tipo de documento no puede superar {DocumentTypeMaxLen} caracteres.",
+                nameof(documentType)
+            );
+        var number = documentNumber?.Trim() ?? string.Empty;
+        if (number.Length > DocumentNumberMaxLen)
+            throw new ArgumentException(
+                $"El número de documento no puede superar {DocumentNumberMaxLen} caracteres.",
+                nameof(documentNumber)
+            );
+        var normalized = DocumentNumberKey.Normalize(number);
+        if (number.Length > 0 && normalized.Length == 0)
+            throw new ArgumentException(
+                "El número de documento debe contener letras o dígitos.",
+                nameof(documentNumber)
+            );
+        if (issueDate > cutoffDate)
+            throw new ArgumentException(
+                "La fecha de emisión no puede ser posterior a la fecha de corte.",
+                nameof(issueDate)
+            );
+        if (dueDate < issueDate)
+            throw new ArgumentException(
+                "La fecha de vencimiento no puede ser anterior a la fecha de emisión.",
+                nameof(dueDate)
+            );
+        if (balance <= 0)
+            throw new ArgumentException(
+                "El saldo pendiente debe ser mayor a cero.",
+                nameof(balance)
+            );
+        if (decimal.Round(balance, FiscalPrecision.TaxAmount) != balance)
+            throw new ArgumentException(
+                $"El saldo pendiente admite como máximo {FiscalPrecision.TaxAmount} decimales.",
+                nameof(balance)
+            );
+
+        var payable = CreateFromOrigin(
+            tenantId,
+            companyId,
+            branchId,
+            supplierId,
+            AccountsPayableOriginType.InitialBalance,
+            importBatchRowId,
+            type,
+            number,
+            issueDate,
+            cutoffDate,
+            createdBy
+        );
+        payable.DocumentNumberNormalized = normalized;
+        payable.ImportBatchId = importBatchId;
+        payable.AddInstallment(1, dueDate, balance);
         return payable;
     }
 
@@ -365,6 +464,12 @@ public sealed class AccountsPayable
     /// <summary>Anula la CxP (reemplaza <c>PurchasePayable.CancelPayable</c>) — bloquea si ya hay pagos registrados.</summary>
     public void Cancel(Guid updatedBy)
     {
+        // IL-6 decisión 8: la anulación genérica acompaña a la anulación de su documento origen
+        // (Compra/Gasto); un saldo inicial no tiene documento ERP y no se corrige simulándolo.
+        if (OriginType == AccountsPayableOriginType.InitialBalance)
+            throw new DomainRuleViolationException(
+                "Un saldo inicial de cuentas por pagar no se anula con la anulación de compras o gastos."
+            );
         if (PaidAmount > 0)
             throw new DomainRuleViolationException(
                 "No se puede anular una cuenta por pagar con pagos registrados."

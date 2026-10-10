@@ -10,4 +10,11 @@ public enum AccountsPayableOriginType
     PurchaseInvoice,
     ExpenseDocument,
     Manual,
+
+    /// <summary>
+    /// IL-6A — saldo pendiente de un documento de proveedor al corte (Carga Inicial de CxP). Nunca
+    /// reconstruye la compra/gasto ni los pagos/retenciones históricos: <c>OriginId</c> es la fila
+    /// del lote de importación que lo cargó, y la CxP lleva su propio número normalizado y lote.
+    /// </summary>
+    InitialBalance,
 }

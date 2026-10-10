@@ -3,7 +3,7 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.Sales.Entities;
-using static ERP.Domain.Common.FiscalPrecision;
+using ERP.Domain.Common;
 
 namespace ERP.Application.Modules.InitialLoad.Processors;
 
@@ -75,7 +75,7 @@ public sealed partial class InitialReceivableImportProcessor
         var cutoffs = rows.Select(r => r.CutoffDate).Distinct().ToList();
         if (cutoffs.Count != 1 || cutoffs[0] is not { } cutoff)
             return "El lote debe tener una única fecha de corte.";
-        var opening = await _receivableLookup.GetOpeningBalanceDateAsync(ct);
+        var opening = await _openingBalance.GetOpeningBalanceDateAsync(ct);
         if (opening is null)
             return "La empresa ya no tiene definida su fecha de apertura de saldos.";
         if (opening.Value != cutoff)
@@ -99,11 +99,11 @@ public sealed partial class InitialReceivableImportProcessor
             return "la fila no está validada.";
         if (row.CurrencyCode != SupportedCurrency)
             return $"la moneda '{row.CurrencyCode}' no está admitida.";
-        if (row.Balance <= 0 || row.Balance > MaxBalance || decimal.Round(row.Balance, TaxAmount) != row.Balance)
+        if (!OpeningBalanceImportRules.IsValidBalance(row.Balance))
             return "el saldo pendiente no es válido.";
         if (issue > cutoff || due < issue)
             return "las fechas de emisión/vencimiento no son coherentes con el corte.";
-        if (row.DocumentKey.Length == 0 || SalesReceivable.NormalizeDocumentNumber(row.DocumentNumber) != row.DocumentKey)
+        if (row.DocumentKey.Length == 0 || DocumentNumberKey.Normalize(row.DocumentNumber) != row.DocumentKey)
             return "el número de documento no es válido.";
 
         var match = await _partnerLookup.FindByIdentificationAsync(
@@ -118,7 +118,7 @@ public sealed partial class InitialReceivableImportProcessor
         if (!existingKeys.TryGetValue(row.CustomerId, out var keys))
         {
             keys = (await _receivableLookup.GetDocumentNumbersAsync(row.CustomerId, ct))
-                .Select(SalesReceivable.NormalizeDocumentNumber)
+                .Select(DocumentNumberKey.Normalize)
                 .ToHashSet(StringComparer.Ordinal);
             existingKeys[row.CustomerId] = keys;
         }

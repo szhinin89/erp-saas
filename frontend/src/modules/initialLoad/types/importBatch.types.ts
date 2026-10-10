@@ -4,7 +4,8 @@ export type ImportType =
   | "Items"
   | "Prices"
   | "InitialStock"
-  | "InitialReceivables";
+  | "InitialReceivables"
+  | "InitialPayables";
 
 export type ImportStatus =
   | "Draft"

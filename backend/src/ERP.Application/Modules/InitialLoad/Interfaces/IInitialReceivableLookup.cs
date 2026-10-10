@@ -12,10 +12,4 @@ public interface IInitialReceivableLookup
     /// (InitialBalance). El processor normaliza todos antes de comparar (idempotente).
     /// </summary>
     Task<IReadOnlyList<string>> GetDocumentNumbersAsync(Guid customerId, CancellationToken ct);
-
-    /// <summary>
-    /// <c>Company.OpeningBalanceDate</c> de la empresa operativa: único corte de apertura de saldos
-    /// (SSOT). Null si la empresa aún no lo definió.
-    /// </summary>
-    Task<DateOnly?> GetOpeningBalanceDateAsync(CancellationToken ct);
 }

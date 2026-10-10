@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
@@ -14,8 +15,20 @@ namespace ERP.Infrastructure.InitialLoad;
 public sealed class OpeningBalanceConstraintsReader : IOpeningBalanceConstraintsReader
 {
     private readonly ErpDbContext _db;
+    private readonly ICurrentCompany _company;
 
-    public OpeningBalanceConstraintsReader(ErpDbContext db) => _db = db;
+    public OpeningBalanceConstraintsReader(ErpDbContext db, ICurrentCompany company)
+    {
+        _db = db;
+        _company = company;
+    }
+
+    // Company es ITenantScopedEntity: el filtro global solo acota por tenant; la empresa es explícita.
+    public Task<DateOnly?> GetOpeningBalanceDateAsync(CancellationToken ct) =>
+        _db.Companies.AsNoTracking()
+            .Where(c => c.Id == _company.CompanyId)
+            .Select(c => c.OpeningBalanceDate)
+            .FirstOrDefaultAsync(ct);
 
     public async Task<OpeningBalanceDateConstraints> GetAsync(
         DateOnly? currentOpeningBalanceDate, CancellationToken ct)

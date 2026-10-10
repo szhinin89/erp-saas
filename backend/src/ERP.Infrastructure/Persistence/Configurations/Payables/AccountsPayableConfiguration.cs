@@ -1,6 +1,7 @@
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.Payables.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -11,7 +12,19 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
 {
     public void Configure(EntityTypeBuilder<AccountsPayable> builder)
     {
-        builder.ToTable("accounts_payables");
+        // IL-6A — coherencia por origen reforzada en BD: solo un saldo inicial (origin_type = 3,
+        // AccountsPayableOriginType.InitialBalance) lleva número normalizado y lote de importación,
+        // y siempre los lleva; Compra/Gasto nunca.
+        builder.ToTable(
+            "accounts_payables",
+            t =>
+                t.HasCheckConstraint(
+                    "chk_accounts_payables_initial_balance_shape",
+                    "(origin_type <> 3 AND document_number_normalized IS NULL AND import_batch_id IS NULL) OR "
+                        + "(origin_type = 3 AND document_number_normalized IS NOT NULL "
+                        + "AND document_number_normalized <> '' AND import_batch_id IS NOT NULL)"
+                )
+        );
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
@@ -38,6 +51,11 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
         builder.Property(x => x.IssueDate).HasColumnName("issue_date").IsRequired();
         builder.Property(x => x.AccountingDate).HasColumnName("accounting_date").IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
+        builder
+            .Property(x => x.DocumentNumberNormalized)
+            .HasColumnName("document_number_normalized")
+            .HasMaxLength(AccountsPayable.DocumentNumberMaxLen);
+        builder.Property(x => x.ImportBatchId).HasColumnName("import_batch_id");
         // ZH-RETENTION-SRI-ANNULMENT-01 — retención de la CxP por una anulación en trámite ante el SRI.
         builder.Property(x => x.AnnulmentHoldRequestId).HasColumnName("annulment_hold_request_id");
         builder.Ignore(x => x.IsOnAnnulmentHold);
@@ -88,6 +106,11 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
             .WithMany()
             .HasForeignKey(x => x.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder
+            .HasOne<ImportBatch>()
+            .WithMany()
+            .HasForeignKey(x => x.ImportBatchId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasIndex(x => new
@@ -109,5 +132,25 @@ public sealed class AccountsPayableConfiguration : IEntityTypeConfiguration<Acco
                 x.Status,
             })
             .HasDatabaseName("ix_accounts_payables_tenant_company_supplier_status");
+
+        // IL-6A — el mismo documento (normalizado) de un proveedor no puede cargarse dos veces como
+        // saldo inicial en la empresa, aunque dos confirmaciones concurrentes pasen la validación.
+        // La comparación contra CxP de Compras/Gastos vive en la validación de la Carga Inicial.
+        builder
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.SupplierId,
+                x.DocumentNumberNormalized,
+            })
+            .IsUnique()
+            .HasFilter("origin_type = 3")
+            .HasDatabaseName("uq_accounts_payables_initial_balance_document");
+
+        builder
+            .HasIndex(x => x.ImportBatchId)
+            .HasFilter("import_batch_id IS NOT NULL")
+            .HasDatabaseName("ix_accounts_payables_import_batch");
     }
 }

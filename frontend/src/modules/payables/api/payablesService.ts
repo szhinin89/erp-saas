@@ -3,7 +3,7 @@ import { apiGet } from "../../lib/apiEnvelope";
 const BASE = "/api/v1/payables";
 
 /** Espejo exacto de AccountsPayableOriginType — backend. */
-export type PayableOriginType = "PurchaseInvoice" | "ExpenseDocument" | "Manual";
+export type PayableOriginType = "PurchaseInvoice" | "ExpenseDocument" | "Manual" | "InitialBalance";
 
 /** Etiqueta del origen — contrato compartido en `lib/payableOrigin` (única fuente). */
 export { payableOriginLabel } from "../../../lib/payableOrigin";

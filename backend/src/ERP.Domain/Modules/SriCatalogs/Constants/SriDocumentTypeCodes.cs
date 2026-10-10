@@ -14,5 +14,6 @@ public static class SriDocumentTypeCodes
 {
     public const string Invoice = "01";
     public const string CreditNote = "04";
+    public const string RemissionGuide = "06";
     public const string Withholding = "07";
 }

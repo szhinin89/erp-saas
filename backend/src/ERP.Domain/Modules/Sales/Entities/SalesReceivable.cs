@@ -151,15 +151,11 @@ public sealed class SalesReceivable
     }
 
     /// <summary>
-    /// IL-5A — clave de comparación de números de documento para detectar duplicados: mayúsculas
-    /// invariantes y solo letras/dígitos ("001-001-000000123" = "001001000000123").
+    /// IL-5A — clave de comparación de números de documento para detectar duplicados
+    /// (<see cref="DocumentNumberKey"/>, compartida con la CxP inicial).
     /// </summary>
     public static string NormalizeDocumentNumber(string? documentNumber) =>
-        documentNumber is null
-            ? string.Empty
-            : new string(
-                documentNumber.Where(char.IsLetterOrDigit).Select(char.ToUpperInvariant).ToArray()
-            );
+        DocumentNumberKey.Normalize(documentNumber);
 
     public void GenerateInstallments(DateOnly baseDate, int creditTermDays, int installmentCount)
     {

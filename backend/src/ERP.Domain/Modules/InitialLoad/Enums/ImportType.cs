@@ -16,4 +16,7 @@ public enum ImportType
 
     /// <summary>IL-5 — saldos pendientes de CxC al corte (nunca ventas históricas).</summary>
     InitialReceivables = 6,
+
+    /// <summary>IL-6 — saldos pendientes de CxP al corte (nunca compras/gastos históricos).</summary>
+    InitialPayables = 7,
 }

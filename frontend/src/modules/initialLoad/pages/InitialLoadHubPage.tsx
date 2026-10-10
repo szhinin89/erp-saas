@@ -55,6 +55,13 @@ const BLOCKS: ImportBlock[] = [
       "Carga saldos pendientes de clientes al corte — nunca crea ventas ni clientes.",
     route: "/initial-load/initial-receivables",
   },
+  {
+    importType: "InitialPayables",
+    title: "Cuentas por Pagar Iniciales",
+    description:
+      "Carga saldos pendientes con proveedores al corte — nunca crea compras, gastos ni proveedores.",
+    route: "/initial-load/initial-payables",
+  },
 ];
 
 /**

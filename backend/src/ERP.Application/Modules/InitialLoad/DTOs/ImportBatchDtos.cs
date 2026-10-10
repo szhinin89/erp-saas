@@ -238,3 +238,25 @@ public sealed record ParsedInitialReceivableRow(
     DateOnly? CutoffDate,
     Guid BranchId
 );
+
+/// <summary>
+/// IL-6A — fila validada de CxP Inicial (una fila = un documento = una cuota). <see cref="DocumentType"/>
+/// es el código SRI real del documento histórico; <see cref="DocumentKey"/> es el número normalizado
+/// (<c>DocumentNumberKey</c>) para detectar duplicados; <see cref="BranchId"/> es la sucursal activa al
+/// validar (el lote queda atado a ella).
+/// </summary>
+public sealed record ParsedInitialPayableRow(
+    Guid SupplierId,
+    string SupplierName,
+    string IdentificationType,
+    string IdentificationNumber,
+    string DocumentType,
+    string DocumentNumber,
+    string DocumentKey,
+    DateOnly? IssueDate,
+    DateOnly? DueDate,
+    decimal Balance,
+    string CurrencyCode,
+    DateOnly? CutoffDate,
+    Guid BranchId
+);

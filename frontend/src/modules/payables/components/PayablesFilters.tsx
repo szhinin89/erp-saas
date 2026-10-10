@@ -49,6 +49,7 @@ export function PayablesFilters({ value, onChange }: Props) {
           <option value="PurchaseInvoice">Compra</option>
           <option value="ExpenseDocument">Gasto</option>
           <option value="Manual">Manual</option>
+          <option value="InitialBalance">Saldo inicial</option>
         </ZhSelect>
       </ZHField>
 

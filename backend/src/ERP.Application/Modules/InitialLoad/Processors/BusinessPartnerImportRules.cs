@@ -242,7 +242,7 @@ public sealed class BusinessPartnerImportRules
     private async Task<TaxIdentification?> ValidateIdentificationAsync(
         string type, string number, Action<string, string, string> error, CancellationToken ct)
     {
-        if (type == TaxIdentification.SriConsumidorFinal)
+        if (IsConsumidorFinal(type))
         {
             error("CONSUMIDOR_FINAL_NOT_IMPORTABLE",
                 "Consumidor Final es un tercero del sistema y no se carga por plantilla.",
@@ -250,11 +250,9 @@ public sealed class BusinessPartnerImportRules
             return null;
         }
 
-        if (type.Length == 1 && char.IsAsciiDigit(type[0]))
+        if (IsLeadingZeroLost(type))
         {
-            error("LEADING_ZERO_LOST",
-                $"Tipo de identificación '{type}': probablemente Excel quitó el 0 inicial (use p. ej. 0{type}). "
-                + "Formatee la columna como Texto.",
+            error(LeadingZeroLostCode, LeadingZeroLostMessage("Tipo de identificación", type),
                 PartnerImportColumns.IdentificationType);
             return null;
         }
@@ -394,6 +392,19 @@ public sealed class BusinessPartnerImportRules
             ? ex.Message[..^suffix.Length].TrimEnd()
             : ex.Message;
     }
+
+    /// <summary>Consumidor Final es un tercero del sistema: nunca se importa ni tiene saldos por plantilla.</summary>
+    public static bool IsConsumidorFinal(string identificationType) =>
+        identificationType == TaxIdentification.SriConsumidorFinal;
+
+    public const string LeadingZeroLostCode = "LEADING_ZERO_LOST";
+
+    /// <summary>Código SRI de 2 dígitos al que Excel quitó el 0 inicial (p. ej. "4" en vez de "04").</summary>
+    public static bool IsLeadingZeroLost(string code) => code.Length == 1 && char.IsAsciiDigit(code[0]);
+
+    public static string LeadingZeroLostMessage(string label, string code) =>
+        $"{label} '{code}': probablemente Excel quitó el 0 inicial (use p. ej. 0{code}). "
+        + "Formatee la columna como Texto.";
 
     public static string? Get(IReadOnlyDictionary<string, string?> row, string column) =>
         row.TryGetValue(column, out var value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : null;

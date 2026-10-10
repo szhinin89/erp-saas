@@ -7,6 +7,7 @@ const PAYABLE_ORIGIN_LABEL: Record<string, string> = {
   PurchaseInvoice: "Compra",
   ExpenseDocument: "Gasto",
   Manual: "Manual",
+  InitialBalance: "Saldo inicial",
 };
 
 export function payableOriginLabel(originType: string): string {

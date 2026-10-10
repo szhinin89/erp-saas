@@ -127,6 +127,10 @@ const InitialLoadInitialReceivablesPage = lazyNamedPage(
   () => import("../modules/initialLoad/pages/InitialLoadInitialReceivablesPage"),
   "InitialLoadInitialReceivablesPage",
 );
+const InitialLoadInitialPayablesPage = lazyNamedPage(
+  () => import("../modules/initialLoad/pages/InitialLoadInitialPayablesPage"),
+  "InitialLoadInitialPayablesPage",
+);
 
 export const mainRoutes = [
   <Route key="dashboard" path="/dashboard" element={<DashboardPage />} />,
@@ -274,6 +278,11 @@ export const mainRoutes = [
     key="initial-load-initial-receivables"
     path="/initial-load/initial-receivables"
     element={<InitialLoadInitialReceivablesPage />}
+  />,
+  <Route
+    key="initial-load-initial-payables"
+    path="/initial-load/initial-payables"
+    element={<InitialLoadInitialPayablesPage />}
   />,
   // MAPA-MENU-ERP-SSOT-01: reubicado bajo SRI > Documentos electrónicos (antes bajo Ventas) —
   // misma pantalla/endpoints; /electronic-documents/monitor queda como redirect legacy.

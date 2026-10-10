@@ -14,4 +14,10 @@ public interface IOpeningBalanceConstraintsReader
     /// no guardan su propio corte).
     /// </param>
     Task<OpeningBalanceDateConstraints> GetAsync(DateOnly? currentOpeningBalanceDate, CancellationToken ct);
+
+    /// <summary>
+    /// <c>Company.OpeningBalanceDate</c> de la empresa operativa: único corte de apertura de saldos
+    /// (SSOT) que leen las cargas de saldos iniciales (CxC IL-5, CxP IL-6). Null si aún no se definió.
+    /// </summary>
+    Task<DateOnly?> GetOpeningBalanceDateAsync(CancellationToken ct);
 }

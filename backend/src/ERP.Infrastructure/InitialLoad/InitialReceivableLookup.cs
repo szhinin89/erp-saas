@@ -1,4 +1,3 @@
-using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,13 +8,8 @@ namespace ERP.Infrastructure.InitialLoad;
 public sealed class InitialReceivableLookup : IInitialReceivableLookup
 {
     private readonly ErpDbContext _db;
-    private readonly ICurrentCompany _company;
 
-    public InitialReceivableLookup(ErpDbContext db, ICurrentCompany company)
-    {
-        _db = db;
-        _company = company;
-    }
+    public InitialReceivableLookup(ErpDbContext db) => _db = db;
 
     public async Task<IReadOnlyList<string>> GetDocumentNumbersAsync(Guid customerId, CancellationToken ct)
     {
@@ -29,11 +23,4 @@ public sealed class InitialReceivableLookup : IInitialReceivableLookup
             .ToListAsync(ct);
         return [.. initialBalances, .. invoices.Where(n => !string.IsNullOrWhiteSpace(n))];
     }
-
-    // Company es ITenantScopedEntity: el filtro global solo acota por tenant; la empresa es explícita.
-    public Task<DateOnly?> GetOpeningBalanceDateAsync(CancellationToken ct) =>
-        _db.Companies.AsNoTracking()
-            .Where(c => c.Id == _company.CompanyId)
-            .Select(c => c.OpeningBalanceDate)
-            .FirstOrDefaultAsync(ct);
 }

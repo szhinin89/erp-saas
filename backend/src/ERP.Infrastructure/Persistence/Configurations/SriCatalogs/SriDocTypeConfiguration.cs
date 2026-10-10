@@ -17,8 +17,20 @@ public class SriDocTypeConfiguration : IEntityTypeConfiguration<SriDocType>
             .HasColumnName("short_name")
             .HasMaxLength(20)
             .IsRequired();
-        builder.Property(x => x.IsElectronic).HasColumnName("is_electronic").HasDefaultValue(true);
-        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        // Mismo criterio que SriRetentionCodeConfiguration (ZH-SRI-RETENTION-CATALOG-SSOT-01): con
+        // DEFAULT true y generación "on add", EF omite un `false` (valor CLR por defecto) en seeds e
+        // inserts — 02/08/09/18 declarados inactivos/no electrónicos quedaban true en BD.
+        // ValueGeneratedNever conserva el DEFAULT de la columna pero obliga a EF a escribir el valor real.
+        builder
+            .Property(x => x.IsElectronic)
+            .HasColumnName("is_electronic")
+            .HasDefaultValue(true)
+            .ValueGeneratedNever();
+        builder
+            .Property(x => x.IsActive)
+            .HasColumnName("is_active")
+            .HasDefaultValue(true)
+            .ValueGeneratedNever();
 
         builder.HasData(
             new SriDocType

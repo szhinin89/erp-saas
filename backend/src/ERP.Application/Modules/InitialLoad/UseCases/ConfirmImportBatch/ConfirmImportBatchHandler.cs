@@ -79,6 +79,13 @@ public sealed partial class ConfirmImportBatchHandler
         if (batch.ImportType is ImportType.InitialStock or ImportType.InitialReceivables)
             return await ConfirmInitialStockAsync(batch, processor, cancellationToken);
 
+        // IL-6A: CxP Inicial solo valida y previsualiza; la confirmación atómica llega en IL-6B.
+        // Nunca debe caer al bucle genérico fila por fila (marcaría el lote con filas fallidas).
+        if (batch.ImportType == ImportType.InitialPayables)
+            return Result<ImportBatchConfirmResultDto>.ValidationFailure(
+                "La confirmación de CxP inicial todavía no está disponible. Puede validar y revisar el archivo."
+            );
+
         batch.BeginConfirming(_ctx.UserId);
         await _batchRepo.SaveChangesAsync(cancellationToken);
 

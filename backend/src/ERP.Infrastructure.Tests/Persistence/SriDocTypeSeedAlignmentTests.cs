@@ -21,6 +21,7 @@ public sealed class SriDocTypeSeedAlignmentTests
     [Theory]
     [InlineData(nameof(SriDocumentTypeCodes.Invoice), SriDocumentTypeCodes.Invoice)]
     [InlineData(nameof(SriDocumentTypeCodes.CreditNote), SriDocumentTypeCodes.CreditNote)]
+    [InlineData(nameof(SriDocumentTypeCodes.RemissionGuide), SriDocumentTypeCodes.RemissionGuide)]
     [InlineData(nameof(SriDocumentTypeCodes.Withholding), SriDocumentTypeCodes.Withholding)]
     public void Every_SriDocumentTypeCodes_constant_exists_active_in_the_SriDocType_seed(
         string constantName,

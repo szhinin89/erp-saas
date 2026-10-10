@@ -75,6 +75,8 @@ interface ImportWizardPageProps {
   secondaryColumnLabel?: string;
   /** Solo Catálogo de Productos: permite crear Categoría/Marca automáticamente si no existen. */
   showAutoCreateCatalogOption?: boolean;
+  /** Si viene, el lote se puede validar y revisar pero no confirmar todavía (p. ej. CxP Inicial IL-6A). */
+  confirmUnavailableReason?: string;
 }
 
 /**
@@ -98,6 +100,7 @@ export function ImportWizardPage({
   primaryColumnLabel = "Identificación",
   secondaryColumnKey = "Razón Social",
   secondaryColumnLabel = "Razón Social",
+  confirmUnavailableReason,
   showAutoCreateCatalogOption = false,
 }: ImportWizardPageProps) {
   const columns = buildColumns(
@@ -134,7 +137,8 @@ export function ImportWizardPage({
     importType === "Customers" ||
     importType === "Suppliers" ||
     importType === "InitialStock" ||
-    importType === "InitialReceivables";
+    importType === "InitialReceivables" ||
+    importType === "InitialPayables";
   const previewRows = preview?.items ?? [];
   const previewIssues = previewRows.flatMap((row) => row.issues);
   const categoryCreationWarnings = previewIssues.filter(
@@ -279,9 +283,16 @@ export function ImportWizardPage({
                 total={preview?.totalCount}
                 onPageChange={(page) => loadPreview(page, severityFilter)}
               />
+              {confirmUnavailableReason && (
+                <ZHPageNotice variant="info" message={confirmUnavailableReason} />
+              )}
               <div className="zh-form-actions-row">
                 <ZHBtn
-                  disabled={batch.validRows === 0 || (requiresAllValid && batch.issueRows > 0)}
+                  disabled={
+                    Boolean(confirmUnavailableReason) ||
+                    batch.validRows === 0 ||
+                    (requiresAllValid && batch.issueRows > 0)
+                  }
                   onClick={() => setConfirmModalOpen(true)}
                 >
                   Confirmar importación

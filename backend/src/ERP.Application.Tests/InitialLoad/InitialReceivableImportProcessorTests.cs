@@ -28,6 +28,7 @@ public sealed class InitialReceivableImportProcessorTests
     private readonly Mock<IInitialReceivableImportSheetReader> _reader = new();
     private readonly Mock<IBusinessPartnerImportLookup> _partners = new();
     private readonly Mock<IInitialReceivableLookup> _receivables = new();
+    private readonly Mock<IOpeningBalanceConstraintsReader> _openingBalance = new();
     private readonly Mock<ICompanyClock> _clock = new();
     private readonly Mock<ICurrentBranch> _branch = new();
     private readonly Mock<IOperationalContext> _ctx = new();
@@ -43,7 +44,7 @@ public sealed class InitialReceivableImportProcessorTests
         SetupCustomer(Ruc, Match());
         _receivables.Setup(x => x.GetDocumentNumbersAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
-        _receivables.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Cutoff);
+        _openingBalance.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Cutoff);
         _ctx.SetupGet(x => x.UserId).Returns(Guid.NewGuid());
         _repo.Setup(x => x.AddAsync(It.IsAny<SalesReceivable>(), It.IsAny<CancellationToken>()))
             .Callback<SalesReceivable, CancellationToken>((r, _) => _added.Add(r))
@@ -51,8 +52,8 @@ public sealed class InitialReceivableImportProcessorTests
     }
 
     private InitialReceivableImportProcessor Processor() =>
-        new(_reader.Object, _partners.Object, _receivables.Object, _clock.Object, _branch.Object, _ctx.Object,
-            _repo.Object);
+        new(_reader.Object, _partners.Object, _receivables.Object, _openingBalance.Object, _clock.Object,
+            _branch.Object, _ctx.Object, _repo.Object);
 
     private static BusinessPartnerImportMatch Match(bool isActive = true, bool hasActiveRole = true,
         bool hasRevokedRole = false, bool isAmbiguous = false) =>
@@ -326,7 +327,7 @@ public sealed class InitialReceivableImportProcessorTests
     [Fact]
     public async Task Sin_fecha_de_apertura_definida_en_la_empresa_es_error()
     {
-        _receivables.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>())).ReturnsAsync((DateOnly?)null);
+        _openingBalance.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>())).ReturnsAsync((DateOnly?)null);
 
         ShouldHaveError(await Validate(Row()), "OPENING_BALANCE_DATE_NOT_SET", InitialReceivableImportColumns.CutoffDate);
     }
@@ -339,7 +340,7 @@ public sealed class InitialReceivableImportProcessorTests
         await processor.ValidateRowAsync(1, Row(document: "A-1"), false, CancellationToken.None);
         await processor.ValidateRowAsync(2, Row(document: "A-2"), false, CancellationToken.None);
 
-        _receivables.Verify(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _openingBalance.Verify(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -551,7 +552,7 @@ public sealed class InitialReceivableImportProcessorTests
     public async Task Fecha_de_apertura_cambiada_despues_del_preview_rechaza_todo()
     {
         var staged = await StagedAsync(Row());
-        _receivables.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>()))
+        _openingBalance.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new DateOnly(2026, 8, 31));
 
         var result = await ConfirmAsync(staged);

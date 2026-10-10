@@ -5,6 +5,7 @@ const ORIGIN_VARIANT: Record<PayableOriginType, "blue" | "gray"> = {
   PurchaseInvoice: "blue",
   ExpenseDocument: "gray",
   Manual: "gray",
+  InitialBalance: "gray",
 };
 
 export function PayableOriginBadge({ originType }: { originType: PayableOriginType }) {

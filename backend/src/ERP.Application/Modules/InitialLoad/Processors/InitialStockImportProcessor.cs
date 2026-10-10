@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Companies;
@@ -37,12 +36,11 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 /// la Fecha de Corte como fecha efectiva (<see cref="PostInitialBalanceCommand"/>), dentro de la
 /// transacción única del handler. Antes de escribir se revalida cada fila contra el estado actual.
 /// </summary>
-public sealed partial class InitialStockImportProcessor
+public sealed class InitialStockImportProcessor
     : IImportProcessor, IImportBatchValidator, IBatchImportConfirmation, IImportBatchScopeGuard
 {
     private const string ReasonCode = "CARGA_INICIAL";
     private const string ReasonName = "Carga Inicial";
-    private static readonly string[] CutoffDateFormats = ["yyyy-MM-dd", "dd/MM/yyyy"];
 
     private readonly IInitialStockImportSheetReader _reader;
     private readonly IItemRepository _itemRepo;
@@ -108,13 +106,13 @@ public sealed partial class InitialStockImportProcessor
     {
         var issues = new List<RowIssue>();
 
-        var sku = Get(rawRow, InitialStockImportColumns.Sku);
-        var barcode = Get(rawRow, InitialStockImportColumns.Barcode);
-        var warehouseCode = Get(rawRow, InitialStockImportColumns.WarehouseCode);
-        var quantityRaw = Get(rawRow, InitialStockImportColumns.Quantity);
-        var unitCostRaw = Get(rawRow, InitialStockImportColumns.UnitCost);
-        var cutoffDateRaw = Get(rawRow, InitialStockImportColumns.CutoffDate);
-        var observation = Get(rawRow, InitialStockImportColumns.Observation);
+        var sku = BusinessPartnerImportRules.Get(rawRow, InitialStockImportColumns.Sku);
+        var barcode = BusinessPartnerImportRules.Get(rawRow, InitialStockImportColumns.Barcode);
+        var warehouseCode = BusinessPartnerImportRules.Get(rawRow, InitialStockImportColumns.WarehouseCode);
+        var quantityRaw = BusinessPartnerImportRules.Get(rawRow, InitialStockImportColumns.Quantity);
+        var unitCostRaw = BusinessPartnerImportRules.Get(rawRow, InitialStockImportColumns.UnitCost);
+        var cutoffDateRaw = BusinessPartnerImportRules.Get(rawRow, InitialStockImportColumns.CutoffDate);
+        var observation = BusinessPartnerImportRules.Get(rawRow, InitialStockImportColumns.Observation);
 
         _precision ??= await LoadPrecisionAsync(ct);
         var item = await ResolveItemAsync(sku, barcode, issues, ct);
@@ -169,19 +167,10 @@ public sealed partial class InitialStockImportProcessor
                 issues[entry.Index].Add(new RowIssue(ImportSeverity.Error, "DUPLICATE_ITEM_WAREHOUSE_IN_FILE",
                     "El mismo ítem y bodega aparecen en otras filas del archivo.", InitialStockImportColumns.Sku));
 
-        var dates = parsed.Where(p => p.CutoffDate.HasValue).Select(p => p.CutoffDate!.Value).Distinct().ToList();
-        if (dates.Count > 1)
-            for (var i = 0; i < parsed.Count; i++)
-                if (parsed[i].CutoffDate.HasValue)
-                    issues[i].Add(new RowIssue(ImportSeverity.Error, "MULTIPLE_CUTOFF_DATES",
-                        $"El archivo tiene varias fechas de corte ({string.Join(", ", dates.Order().Select(d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)))}). "
-                        + "Un saldo inicial tiene una sola fecha de corte por lote.",
-                        InitialStockImportColumns.CutoffDate));
+        OpeningBalanceImportRules.FlagMultipleCutoffDates(
+            parsed.Select(p => p.CutoffDate).ToList(), issues, InitialStockImportColumns.CutoffDate);
 
-        return rows.Select((r, i) => r with
-        {
-            Issues = issues[i], HasBlockingIssue = issues[i].Any(x => x.Severity == ImportSeverity.Error),
-        }).ToList();
+        return OpeningBalanceImportRules.WithIssues(rows, issues);
     }
 
     /// <summary>Inventario Inicial nunca confirma fila por fila: ver <see cref="ConfirmBatchAsync"/>.</summary>
@@ -292,7 +281,7 @@ public sealed partial class InitialStockImportProcessor
     {
         if (sku is null && barcode is null)
         {
-            AddMissing(issues, InitialStockImportColumns.Sku, "Debe indicar SKU o código de barras.");
+            OpeningBalanceImportRules.AddMissing(issues, InitialStockImportColumns.Sku, "Debe indicar SKU o código de barras.");
             return null;
         }
 
@@ -363,7 +352,7 @@ public sealed partial class InitialStockImportProcessor
     {
         if (code is null)
         {
-            AddMissing(issues, InitialStockImportColumns.WarehouseCode, "El código de bodega es obligatorio.");
+            OpeningBalanceImportRules.AddMissing(issues, InitialStockImportColumns.WarehouseCode, "El código de bodega es obligatorio.");
             return null;
         }
         if (_branch.BranchId == Guid.Empty)
@@ -393,9 +382,6 @@ public sealed partial class InitialStockImportProcessor
         return warehouse;
     }
 
-    [GeneratedRegex(@"^\d+(\.\d+)?$")]
-    private static partial Regex InvariantDecimal();
-
     /// <summary>
     /// Punto decimal invariante, sin signo ni separador de miles, &gt; 0 y sin exceder la precisión
     /// configurada — nunca se redondea en silencio.
@@ -404,10 +390,10 @@ public sealed partial class InitialStockImportProcessor
     {
         if (raw is null)
         {
-            AddMissing(issues, column, $"{label} es obligatorio.");
+            OpeningBalanceImportRules.AddMissing(issues, column, $"{label} es obligatorio.");
             return null;
         }
-        if (!InvariantDecimal().IsMatch(raw)
+        if (!OpeningBalanceImportRules.InvariantDecimal().IsMatch(raw)
             || !decimal.TryParse(raw, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value))
         {
             issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_NUMBER",
@@ -436,13 +422,13 @@ public sealed partial class InitialStockImportProcessor
     {
         if (raw is null)
         {
-            AddMissing(issues, InitialStockImportColumns.CutoffDate,
+            OpeningBalanceImportRules.AddMissing(issues, InitialStockImportColumns.CutoffDate,
                 "La fecha de corte es obligatoria: es la fecha efectiva del saldo inicial.");
             return null;
         }
 
         // ZH-TEMPORAL-CONTRACT-02: fecha de negocio → DateOnly con formatos explícitos e InvariantCulture.
-        if (!DateOnly.TryParseExact(raw, CutoffDateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        if (!DateOnly.TryParseExact(raw, OpeningBalanceImportRules.DateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
         {
             issues.Add(new RowIssue(ImportSeverity.Error, "INVALID_CUTOFF_DATE",
                 $"La fecha de corte '{raw}' no es válida (use AAAA-MM-DD).", InitialStockImportColumns.CutoffDate));
@@ -486,10 +472,4 @@ public sealed partial class InitialStockImportProcessor
 
         return created.IsSuccess ? created.Value!.Id : null;
     }
-
-    private static void AddMissing(List<RowIssue> issues, string field, string message) =>
-        issues.Add(new RowIssue(ImportSeverity.Error, "MISSING_REQUIRED_FIELD", message, field));
-
-    private static string? Get(IReadOnlyDictionary<string, string?> row, string column) =>
-        row.TryGetValue(column, out var value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : null;
 }
