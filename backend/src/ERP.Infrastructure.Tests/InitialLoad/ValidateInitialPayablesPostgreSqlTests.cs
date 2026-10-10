@@ -52,6 +52,7 @@ public sealed partial class ValidateInitialPayablesPostgreSqlTests : IClassFixtu
     private const string NoRoleRuc = "1791352688001";
     private static long _nextTaxNumber = 1790098000;
     private readonly ServiceProvider _services;
+    private readonly string _connectionString;
     private readonly Mock<IInitialPayableImportSheetReader> _reader = new();
     private readonly Guid _user = Guid.NewGuid();
     private Guid _tenant;
@@ -89,8 +90,9 @@ public sealed partial class ValidateInitialPayablesPostgreSqlTests : IClassFixtu
         services.AddSingleton(Mock.Of<ICurrentUser>(x => x.UserId == _user && x.Email == "il6a@test" && x.FullName == "IL6A"));
         services.AddSingleton(Mock.Of<IPublisher>());
         services.AddSingleton<ICompanyClock>(new AlwaysTodayCompanyClock());
+        _connectionString = postgres.ConnectionString;
         services.AddDbContext<ErpDbContext>(o => o.UseNpgsql(postgres.ConnectionString).AddInterceptors(
-            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor()));
+            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor(), new BatchLockObserver(this)));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<IBusinessPartnerImportLookup, BusinessPartnerImportLookup>();
