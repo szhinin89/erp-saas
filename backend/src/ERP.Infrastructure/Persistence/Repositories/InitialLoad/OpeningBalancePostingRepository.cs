@@ -22,6 +22,24 @@ public sealed class OpeningBalancePostingRepository : IOpeningBalancePostingRepo
             .OpeningBalancePostings.Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
             .FirstOrDefaultAsync(x => x.ImportBatchId == importBatchId, cancellationToken);
 
+    public async Task LockBatchAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid importBatchId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        // Proveedor en memoria (tests unitarios): sin transacciones reales ni FOR UPDATE.
+        if (!_context.Database.IsRelational())
+            return;
+        if (_context.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("El bloqueo del lote requiere una transacción.");
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM import_batches WHERE id = {importBatchId} AND tenant_id = {tenantId} AND company_id = {companyId} FOR UPDATE",
+            cancellationToken
+        );
+    }
+
     public async Task AddAsync(OpeningBalancePosting posting, CancellationToken cancellationToken = default) =>
         await _context.OpeningBalancePostings.AddAsync(posting, cancellationToken);
 

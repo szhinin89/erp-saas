@@ -3,6 +3,7 @@ using ERP.API.Extensions;
 using ERP.API.Uploads;
 using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.DTOs;
+using ERP.Application.Modules.InitialLoad.OpeningPosting;
 using ERP.Application.Modules.InitialLoad.UseCases.CancelImportBatch;
 using ERP.Application.Modules.InitialLoad.UseCases.ConfirmImportBatch;
 using ERP.Application.Modules.InitialLoad.UseCases.CreateImportBatch;
@@ -99,6 +100,20 @@ public sealed class InitialLoadController : ControllerBase
     )]
     public async Task<IActionResult> Confirm(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new ConfirmImportBatchCommand(id), ct));
+
+    /// <summary>
+    /// IL-7B — contabiliza o reintenta el asiento de apertura del lote (también lotes históricos).
+    /// Exige ambos permisos existentes: confirmar Carga Inicial y crear en Contabilidad.
+    /// </summary>
+    [HttpPost("batches/{id:guid}/opening-posting")]
+    [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<OpeningBalancePostingDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> PostOpeningBalance(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new PostOpeningBalanceCommand(id), ct));
 
     [HttpPost("batches/{id:guid}/cancel")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Create}")]

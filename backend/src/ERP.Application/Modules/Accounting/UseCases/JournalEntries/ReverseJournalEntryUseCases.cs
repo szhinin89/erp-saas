@@ -3,6 +3,7 @@ using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.InitialLoad.Constants;
 using FluentValidation;
 using MediatR;
 
@@ -35,6 +36,8 @@ public sealed class ReverseJournalEntryCommandValidator
 public sealed class ReverseJournalEntryCommandHandler
     : IRequestHandler<ReverseJournalEntryCommand, Result<JournalEntryDto>>
 {
+    public const string OpeningReversalNotAllowedCode = "OPENING_REVERSAL_REQUIRES_CORRECTION_FLOW";
+
     private readonly IJournalEntryRepository _journalEntryRepository;
     private readonly IAccountingPeriodRepository _accountingPeriodRepository;
     private readonly IJournalEntrySequenceRepository _journalEntrySequenceRepository;
@@ -75,6 +78,17 @@ public sealed class ReverseJournalEntryCommandHandler
         );
         if (original is null)
             return Result<JournalEntryDto>.NotFound("Asiento contable no encontrado.");
+
+        // IL-7B — el asiento de apertura de la Carga Inicial no se reversa por sí solo: el saldo
+        // operativo que respalda (Kardex InitialBalance, CxC/CxP InitialBalance) no tiene flujo de
+        // anulación/corrección, así que reversarlo dejaría inventario/CxC/CxP sin contrapartida
+        // contable. Requiere un flujo específico de corrección de apertura (fuera de IL-7B).
+        if (original.SourceModule == OpeningBalancePostingFacts.SourceModule)
+            return Result<JournalEntryDto>.ValidationFailure(
+                "El asiento de apertura de la Carga Inicial no puede reversarse: el saldo operativo que lo "
+                    + "respalda no tiene flujo de corrección y quedaría sin contrapartida contable.",
+                OpeningReversalNotAllowedCode
+            );
 
         // Mismo criterio que PostingPeriodGuard usa para Post() (ADR-026 §6.1): un asiento no
         // puede reversarse si su período ya no admite contabilización (Closed o Locked). No se
