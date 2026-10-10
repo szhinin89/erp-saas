@@ -9,6 +9,9 @@ import type {
   OpeningBalanceDateDto,
   OpeningBalancePostingDto,
   OpeningBalanceReconciliationDto,
+  OpeningJournalEntryLineInput,
+  OpeningJournalEntryPostingDto,
+  OpeningJournalEntryReversalDto,
   PagedResult,
 } from "../types/importBatch.types";
 
@@ -106,6 +109,19 @@ export const initialLoadService = {
   /** IL-7B — contabiliza o reintenta el asiento de apertura del lote. */
   postOpeningBalance(batchId: string): Promise<OpeningBalancePostingDto> {
     return apiPost<OpeningBalancePostingDto>(`${BASE}/batches/${batchId}/opening-posting`, {});
+  },
+
+  /** IL-8A — publica (o reintenta) la versión vigente del ASI de apertura. */
+  publishOpeningJournal(lines: OpeningJournalEntryLineInput[]): Promise<OpeningJournalEntryPostingDto> {
+    return apiPost<OpeningJournalEntryPostingDto>(`${BASE}/opening-journal-entry`, { lines });
+  },
+
+  /** IL-8B — "Corregir apertura" paso 1: reversa la versión vigente publicada (motivo obligatorio). */
+  reverseOpeningJournal(postingId: string, reason: string): Promise<OpeningJournalEntryReversalDto> {
+    return apiPost<OpeningJournalEntryReversalDto>(
+      `${BASE}/opening-journal-entry/${postingId}/reverse`,
+      { reason },
+    );
   },
 };
 

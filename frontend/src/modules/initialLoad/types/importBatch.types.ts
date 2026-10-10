@@ -81,7 +81,20 @@ export interface OpeningBalanceDateDto {
 }
 
 /** IL-7C — conciliación de apertura contable vs saldos operativos confirmados. */
-export type OpeningReconciliationStatus = "Reconciled" | "Difference" | "PendingPosting";
+export type OpeningReconciliationStatus =
+  | "Reconciled"
+  | "Difference"
+  | "PendingPosting"
+  /** IL-8C — lotes conciliados, sin versión vigente del ASI de apertura publicada. */
+  | "OpeningJournalPending";
+
+/** IL-8C — estado del ASI de apertura, derivado solo de OpeningJournalEntryPosting (backend). */
+export type OpeningJournalEntryState =
+  | "Missing"
+  | "Pending"
+  | "Failed"
+  | "Posted"
+  | "ReversedNotReplaced";
 
 export type OpeningBalancePostingStatus = "Pending" | "Posted" | "Failed";
 
@@ -139,8 +152,65 @@ export interface OpeningBalanceReconciliationDto {
   batches: OpeningReconciliationBatchDto[];
   types: OpeningReconciliationTypeDto[];
   bridgeAccount: OpeningBridgeAccountDto | null;
+  openingJournalEntry: OpeningReconciliationJournalEntryDto;
   canCloseImplementation: boolean;
   blockers: OpeningReconciliationBlockerDto[];
+}
+
+/**
+ * IL-8C — ASI de apertura dentro de la conciliación: datos de la versión VIGENTE (null si no hay)
+ * más historial básico (`versionCount`, última versión reversada).
+ */
+export interface OpeningReconciliationJournalEntryDto {
+  state: OpeningJournalEntryState;
+  postingId: string | null;
+  version: number | null;
+  postingStatus: OpeningBalancePostingStatus | null;
+  entryDate: string | null;
+  totalAmount: number | null;
+  lineCount: number | null;
+  journalEntryId: string | null;
+  journalEntryNumber: number | null;
+  postedAt: string | null;
+  attempts: number;
+  errorCode: string | null;
+  errorMessage: string | null;
+  versionCount: number;
+  lastSupersededVersion: number | null;
+  lastSupersededAt: string | null;
+}
+
+/** IL-8A — línea Debe/Haber del ASI de apertura (exactamente un monto &gt; 0). */
+export interface OpeningJournalEntryLineInput {
+  accountId: string;
+  debit: number;
+  credit: number;
+  description?: string | null;
+}
+
+/** IL-8A — resultado de publicar el ASI de apertura. */
+export interface OpeningJournalEntryPostingDto {
+  id: string;
+  version: number;
+  entryDate: string;
+  totalAmount: number;
+  lineCount: number;
+  status: OpeningBalancePostingStatus;
+  journalEntryId: string | null;
+  postedAt: string | null;
+  attempts: number;
+  alreadyPosted: boolean;
+}
+
+/** IL-8B — resultado de reversar (corregir) el ASI de apertura vigente. */
+export interface OpeningJournalEntryReversalDto {
+  postingId: string;
+  version: number;
+  journalEntryId: string;
+  reversalJournalEntryId: string;
+  reversedAtUtc: string | null;
+  reason: string | null;
+  alreadyReversed: boolean;
 }
 
 /** IL-7B — resultado de contabilizar/reintentar la apertura de un lote. */

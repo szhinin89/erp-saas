@@ -11,6 +11,7 @@ import { message } from "../../../lib/messages";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
 import { initialLoadService } from "../api/initialLoadService";
+import { OpeningJournalSection } from "./OpeningJournalSection";
 import type {
   ImportType,
   OpeningBalanceReconciliationDto,
@@ -32,10 +33,12 @@ const STATUS_BADGES: Record<
   Reconciled: { label: "Conciliado", variant: "success" },
   Difference: { label: "Con diferencia", variant: "error" },
   PendingPosting: { label: "Pendiente de posting", variant: "warning" },
+  OpeningJournalPending: { label: "ASI pendiente", variant: "warning" },
 };
 
-function StatusBadge({ status }: { status: OpeningReconciliationStatus }) {
-  const badge = STATUS_BADGES[status];
+/** IL-8D — un valor de enum nuevo del backend nunca debe tumbar el hub: badge neutro con el valor crudo. */
+function StatusBadge({ status }: Readonly<{ status: OpeningReconciliationStatus }>) {
+  const badge = STATUS_BADGES[status] ?? { label: String(status), variant: "neutral" as const };
   return <Badge label={badge.label} variant={badge.variant} />;
 }
 
@@ -48,6 +51,7 @@ function Amount({ value }: { value: number | null }) {
  * confirmados, al corte `Company.OpeningBalanceDate`. Todo el cálculo (submayor, mayor, diferencia,
  * estado y bloqueos de cierre) lo hace el backend; esta tarjeta solo lo muestra y permite
  * contabilizar/reintentar un lote (IL-7B) cuando el backend lo marca como `canPost`.
+ * IL-8D — incluye la sección del ASI de apertura (publicar / "Corregir apertura").
  */
 export function OpeningReconciliationCard() {
   const { canShow } = usePermissionsUi();
@@ -254,6 +258,21 @@ export function OpeningReconciliationCard() {
                 <Amount value={bridge.pendingReclassification} />
               </strong>
             </p>
+          )}
+          {bridge && bridge.pendingReclassification !== 0 && (
+            <ZHPageNotice
+              variant="warning"
+              message={`La cuenta puente ${bridge.accountCode} ${bridge.accountName} tiene saldo pendiente de reclasificación.`}
+              detail="El asiento de apertura (ASI) debe dejar esta cuenta en cero."
+            />
+          )}
+          {data.openingJournalEntry && (
+            <OpeningJournalSection
+              journal={data.openingJournalEntry}
+              cutoffDate={data.cutoffDate}
+              bridge={bridge}
+              onChanged={() => void load()}
+            />
           )}
           {data.canCloseImplementation ? (
             <ZHPageNotice
