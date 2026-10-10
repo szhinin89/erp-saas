@@ -9,6 +9,8 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.InitialLoad.Entities;
+using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
@@ -456,6 +458,35 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
         return payable.Id;
     }
 
+    /// <summary>
+    /// IL-6B — CxP InitialBalance real (Carga Inicial de CxP): sin compra ni gasto; la fila del lote es
+    /// su origen y la moneda es la de la empresa.
+    /// </summary>
+    private async Task<Guid> SeedInitialBalancePayableAsync(decimal balance)
+    {
+        await using var db = CreateContext();
+        var batch = ImportBatch.Create(_tenantId, _companyId, ImportType.InitialPayables, _userId);
+        db.ImportBatches.Add(batch);
+        var payable = AccountsPayable.CreateInitialBalance(
+            _tenantId,
+            _companyId,
+            _branchId,
+            _supplierId,
+            "01",
+            $"001-001-{Random.Shared.Next(100000, 999999)}",
+            _today.AddDays(-60),
+            _today.AddDays(30),
+            _today.AddDays(-1),
+            balance,
+            batch.Id,
+            Guid.NewGuid(),
+            _userId
+        );
+        db.AccountsPayables.Add(payable);
+        await db.SaveChangesAsync();
+        return payable.Id;
+    }
+
     // ── Ejecución ──────────────────────────────────────────────────────────
 
     private async Task<Result<SupplierCreditDto>> ApplyAsync(
@@ -578,6 +609,40 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
             .BeEquivalentTo(
                 new[] { (_payablesLedgerAccountId, 25m, 0m), (_advancesLedgerAccountId, 0m, 25m) }
             );
+    }
+
+    [Fact]
+    public async Task IL6B_Aplica_a_CxP_de_saldo_inicial_con_el_mismo_handler_y_asiento_y_su_reversa_es_espejo()
+    {
+        var creditId = await SeedCreditAsync(100m);
+        var payableId = await SeedInitialBalancePayableAsync(60m);
+
+        var result = await ApplyAsync(creditId, payableId, 25m);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        (await StateAsync(creditId, payableId))
+            .Should()
+            .Be((75m, 25m, 35m, AccountsPayableStatus.PartiallyPaid));
+        var movementId = LastApplicationId(result.Value!);
+        (await JournalLinesAsync(movementId, "SupplierCreditApplied"))
+            .Should()
+            .BeEquivalentTo(
+                new[] { (_payablesLedgerAccountId, 25m, 0m), (_advancesLedgerAccountId, 0m, 25m) }
+            );
+        await using (var db = CreateContext())
+        {
+            (await db.PurchaseInvoices.IgnoreQueryFilters().CountAsync(i => i.TenantId == _tenantId))
+                .Should().Be(0, "nunca se inventa una compra de origen");
+            (await db.ExpenseDocuments.IgnoreQueryFilters().CountAsync(e => e.TenantId == _tenantId))
+                .Should().Be(0, "nunca se inventa un gasto de origen");
+        }
+
+        var reverse = await ReverseAsync(creditId, movementId, payableId);
+
+        reverse.IsSuccess.Should().BeTrue(reverse.Error);
+        (await StateAsync(creditId, payableId))
+            .Should()
+            .Be((100m, 0m, 60m, AccountsPayableStatus.Pending));
     }
 
     [Fact]

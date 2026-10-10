@@ -21,6 +21,17 @@ public interface IBatchImportConfirmation
         IReadOnlyList<(int RowNumber, string ParsedDataJson)> rows,
         CancellationToken ct
     ) => ConfirmBatchAsync(rows, ct);
+
+    /// <summary>
+    /// IL-6B — misma confirmación con el Id de cada <c>ImportBatchRow</c>, para processors cuyo
+    /// documento usa la fila como origen (CxP Inicial: <c>AccountsPayable.OriginId</c>). Por defecto
+    /// lo ignora.
+    /// </summary>
+    Task<BatchConfirmResult> ConfirmBatchAsync(
+        Guid importBatchId,
+        IReadOnlyList<(Guid RowId, int RowNumber, string ParsedDataJson)> rows,
+        CancellationToken ct
+    ) => ConfirmBatchAsync(importBatchId, rows.Select(r => (r.RowNumber, r.ParsedDataJson)).ToList(), ct);
 }
 
 /// <summary>Id del documento creado por número de fila, o el motivo del rechazo.</summary>

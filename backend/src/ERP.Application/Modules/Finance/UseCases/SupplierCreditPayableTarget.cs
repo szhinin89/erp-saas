@@ -23,6 +23,10 @@ namespace ERP.Application.Modules.Finance.UseCases;
 /// esa CxP; <c>Apply</c>/<c>Reverse</c> siempre actualizan la cabecera). Un choque concurrente se
 /// rechaza en <c>SaveChanges</c> (SC-010), nunca se pierde. Moneda = <c>Company.CurrencyCode</c>
 /// (<c>ExpenseDocument</c> no tiene moneda propia; misma SSOT que 02D-B).</item>
+/// <item><see cref="AccountsPayableOriginType.InitialBalance"/> (IL-6B, saldo inicial de la Carga
+/// Inicial de CxP) → no tiene documento de origen ERP que serializar ni moneda propia: mismo
+/// tratamiento que Gastos — token <c>xmin</c> de la CxP y moneda = <c>Company.CurrencyCode</c>. Nunca
+/// se inventa un documento de origen.</item>
 /// <item>Cualquier otro origen (p. ej. <c>Manual</c>) → rechazo fail-closed.</item>
 /// </list>
 /// </summary>
@@ -57,6 +61,7 @@ internal static class SupplierCreditPayableTarget
                 );
                 return null;
             case AccountsPayableOriginType.ExpenseDocument:
+            case AccountsPayableOriginType.InitialBalance:
                 return null;
             default:
                 return UnsupportedOriginMessage(origin.Value.OriginType);
@@ -75,6 +80,7 @@ internal static class SupplierCreditPayableTarget
             payable.OriginType
                 is AccountsPayableOriginType.PurchaseInvoice
                     or AccountsPayableOriginType.ExpenseDocument
+                    or AccountsPayableOriginType.InitialBalance
             ? null
             : UnsupportedOriginMessage(payable.OriginType);
     }
@@ -92,7 +98,7 @@ internal static class SupplierCreditPayableTarget
             AccountsPayableOriginType.PurchaseInvoice => (
                 await purchaseInvoices.GetByIdAsync(tenantId, payable.OriginId, ct)
             )?.CurrencyCode,
-            AccountsPayableOriginType.ExpenseDocument => (
+            AccountsPayableOriginType.ExpenseDocument or AccountsPayableOriginType.InitialBalance => (
                 await companies.GetByIdAsync(payable.CompanyId, ct)
             )?.CurrencyCode,
             _ => null,

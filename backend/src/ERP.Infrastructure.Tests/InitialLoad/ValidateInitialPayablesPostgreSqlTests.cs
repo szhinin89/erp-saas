@@ -40,11 +40,10 @@ namespace ERP.Infrastructure.Tests.InitialLoad;
 /// IL-6A — PostgreSQL 16 + migraciones completas. Validación real de CxP Inicial (handlers, lookups,
 /// filtros globales, catálogo SRI y UoW reales; solo el lector de Excel es fake): 201 filas,
 /// duplicados contra CxP existentes de cualquier origen dentro de la empresa, tipo de documento SRI
-/// real, forma de la CxP InitialBalance reforzada en BD, confirmación todavía bloqueada y lote atado
-/// a su sucursal.
+/// real, forma de la CxP InitialBalance reforzada en BD y lote atado a su sucursal (confirmación IL-6B: ver .Confirm.cs).
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class ValidateInitialPayablesPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
+public sealed partial class ValidateInitialPayablesPostgreSqlTests : IClassFixture<InitialLoadPostgresFixture>, IAsyncLifetime
 {
     // AlwaysTodayCompanyClock fija "hoy" en 2026-09-17: la apertura de la empresa es anterior.
     private const string Cutoff = "2026-08-31";
@@ -97,6 +96,15 @@ public sealed class ValidateInitialPayablesPostgreSqlTests : IClassFixture<Initi
         services.AddScoped<IBusinessPartnerImportLookup, BusinessPartnerImportLookup>();
         services.AddScoped<IInitialPayableLookup, InitialPayableLookup>();
         services.AddScoped<IOpeningBalanceConstraintsReader, OpeningBalanceConstraintsReader>();
+        // IL-6B — repositorio real envuelto para inyectar un fallo a mitad de la escritura del lote.
+        services.AddScoped<ERP.Infrastructure.Persistence.Repositories.Payables.AccountsPayableRepository>();
+        services.AddScoped<ERP.Domain.Modules.Payables.Interfaces.IAccountsPayableRepository>(sp =>
+            new FailingPayableRepository(
+                sp.GetRequiredService<ERP.Infrastructure.Persistence.Repositories.Payables.AccountsPayableRepository>(),
+                () => _failOnAdd));
+        services.AddScoped<ERP.Domain.MasterData.Interfaces.IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<ERP.Domain.Modules.Purchases.Interfaces.ISupplierCreditRepository,
+            ERP.Infrastructure.Persistence.Repositories.Purchases.SupplierCreditRepository>();
         services.AddScoped<ERP.Domain.Modules.SriCatalogs.Interfaces.ISriCatalogLookupRepository,
             ERP.Infrastructure.Persistence.Repositories.SriCatalogs.SriCatalogLookupRepository>();
         services.AddSingleton(_reader.Object);
@@ -298,21 +306,6 @@ public sealed class ValidateInitialPayablesPostgreSqlTests : IClassFixture<Initi
 
         (await SendAsync(new ValidateImportBatchCommand(batchId))).Value!.ValidRows.Should().Be(0);
         (await IssuesAsync(batchId)).Should().ContainSingle(i => i.Code == "CUTOFF_DATE_MISMATCH");
-    }
-
-    [Fact]
-    public async Task La_confirmacion_sigue_bloqueada_y_no_escribe_cxp()
-    {
-        var batchId = await UploadedBatchAsync(Row(SupplierRuc, "A-1"));
-        (await SendAsync(new ValidateImportBatchCommand(batchId))).Value!.ValidRows.Should().Be(1);
-
-        var confirm = await SendAsync(new ConfirmImportBatchCommand(batchId));
-
-        confirm.IsSuccess.Should().BeFalse();
-        confirm.Error.Should().Contain("todavía no está disponible");
-        (await QueryAsync(db => db.ImportBatches.Where(b => b.Id == batchId).Select(b => b.Status).SingleAsync()))
-            .Should().Be(ImportStatus.Validated, "nunca cae al bucle genérico fila por fila");
-        (await TenantPayablesAsync()).Should().Be(0);
     }
 
     [Fact]

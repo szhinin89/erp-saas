@@ -139,3 +139,22 @@ describe("PayableDetailPage — saldo a favor del proveedor (02D-F)", () => {
     expect(screen.queryByText("Aplicar saldo")).toBeNull();
   });
 });
+
+describe("PayableDetailPage — saldo inicial de CxP (IL-6B)", () => {
+  it("muestra el origen Saldo inicial con su documento real y sin link a compra/gasto", async () => {
+    vi.mocked(payablesService.getById).mockResolvedValue(
+      payable({
+        originType: "InitialBalance",
+        originId: "row-1",
+        documentType: "01",
+        documentNumber: "001-001-000001234",
+        issueDate: "2026-07-15",
+        accountingDate: "2026-08-31",
+      }),
+    );
+    renderPage();
+    await waitFor(() => expect(screen.getAllByText("Saldo inicial").length).toBeGreaterThan(0));
+    expect(screen.getByText(/001-001-000001234/)).toBeTruthy();
+    expect(screen.queryByText("Ver documento")).toBeNull();
+  });
+});

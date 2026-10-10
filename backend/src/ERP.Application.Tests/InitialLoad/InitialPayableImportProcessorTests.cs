@@ -6,6 +6,9 @@ using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Application.Modules.InitialLoad.Processors;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.Modules.InitialLoad.Enums;
+using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Enums;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
 using FluentAssertions;
@@ -32,11 +35,17 @@ public sealed class InitialPayableImportProcessorTests
     private readonly Mock<ICompanyClock> _clock = new();
     private readonly Mock<ICurrentBranch> _branch = new();
     private readonly Mock<IOperationalContext> _ctx = new();
+    private readonly Mock<IAccountsPayableRepository> _repo = new();
+    private readonly List<AccountsPayable> _added = [];
 
     public InitialPayableImportProcessorTests()
     {
         _ctx.SetupGet(x => x.TenantId).Returns(TenantId);
         _ctx.SetupGet(x => x.CompanyId).Returns(CompanyId);
+        _ctx.SetupGet(x => x.UserId).Returns(Guid.NewGuid());
+        _repo.Setup(x => x.AddAsync(It.IsAny<AccountsPayable>(), It.IsAny<CancellationToken>()))
+            .Callback<AccountsPayable, CancellationToken>((p, _) => _added.Add(p))
+            .Returns(Task.CompletedTask);
         _branch.SetupGet(x => x.BranchId).Returns(BranchId);
         _clock.Setup(x => x.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(CompanyToday);
         SetupSupplier(Ruc, Match());
@@ -51,7 +60,7 @@ public sealed class InitialPayableImportProcessorTests
 
     private InitialPayableImportProcessor Processor() =>
         new(_reader.Object, _partners.Object, _payables.Object, _openingBalance.Object, _sriCatalog.Object,
-            _clock.Object, _branch.Object, _ctx.Object);
+            _clock.Object, _branch.Object, _ctx.Object, _repo.Object);
 
     private static BusinessPartnerImportMatch Match(bool isActive = true, bool hasActiveRole = true,
         bool hasRevokedRole = false, bool isAmbiguous = false) =>
@@ -378,6 +387,133 @@ public sealed class InitialPayableImportProcessorTests
         _branch.SetupGet(x => x.BranchId).Returns(Guid.NewGuid());
 
         (await Processor().CheckStagingScopeAsync([json], CancellationToken.None)).Should().NotBeNull();
+    }
+
+    // ── IL-6B: confirmación atómica ─────────────────────────────────────────
+
+    private static readonly Guid BatchId = Guid.NewGuid();
+
+    private async Task<(Guid, int, string)[]> StagedAsync(params Dictionary<string, string?>[] rows)
+    {
+        var processor = Processor();
+        var results = new List<RowValidationResult>();
+        for (var i = 0; i < rows.Length; i++)
+            results.Add(await processor.ValidateRowAsync(i + 1, rows[i], false, CancellationToken.None));
+        var validated = processor.ValidateBatch(results);
+        validated.Should().OnlyContain(r => !r.HasBlockingIssue);
+        return validated.Select((r, i) => (Guid.NewGuid(), i + 1, r.ParsedDataJson)).ToArray();
+    }
+
+    private Task<BatchConfirmResult> ConfirmAsync((Guid, int, string)[] staged) =>
+        Processor().ConfirmBatchAsync(BatchId, staged, CancellationToken.None);
+
+    [Fact]
+    public async Task Confirma_una_CxP_InitialBalance_por_fila_con_una_cuota_y_la_fila_como_origen()
+    {
+        var staged = await StagedAsync(Row(document: "A-1", balance: "150.75", docType: "03"), Row(document: "A-2", balance: "20"));
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        _added.Should().HaveCount(2);
+        var first = _added[0];
+        first.OriginType.Should().Be(AccountsPayableOriginType.InitialBalance);
+        first.OriginId.Should().Be(staged[0].Item1, "OriginId = ImportBatchRow.Id");
+        first.SupplierId.Should().Be(SupplierId);
+        first.DocumentType.Should().Be("03");
+        first.DocumentNumber.Should().Be("A-1");
+        first.DocumentNumberNormalized.Should().Be("A1");
+        first.IssueDate.Should().Be(new DateOnly(2026, 8, 15));
+        first.AccountingDate.Should().Be(Cutoff, "AccountingDate = Company.OpeningBalanceDate");
+        first.BranchId.Should().Be(BranchId);
+        first.ImportBatchId.Should().Be(BatchId);
+        first.TenantId.Should().Be(TenantId);
+        first.CompanyId.Should().Be(CompanyId);
+        first.Installments.Should().ContainSingle(i => i.DueDate == new DateOnly(2026, 10, 15) && i.Amount == 150.75m);
+        first.OutstandingAmount.Should().Be(150.75m);
+        result.CreatedIdsByRow.Should().BeEquivalentTo(new Dictionary<int, Guid> { [1] = _added[0].Id, [2] = _added[1].Id });
+        _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Duplicado_aparecido_despues_del_preview_rechaza_todo_sin_escribir()
+    {
+        var staged = await StagedAsync(Row(document: "A-1"), Row(document: "A-2"));
+        _payables.Setup(x => x.GetDocumentNumbersAsync(SupplierId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(["a 2"]);
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Fila 2").And.Contain("ya tiene una cuenta por pagar");
+        _added.Should().BeEmpty();
+        _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("inactive")]
+    [InlineData("no-role")]
+    [InlineData("gone")]
+    public async Task Proveedor_que_cambio_despues_del_preview_rechaza_todo(string change)
+    {
+        var staged = await StagedAsync(Row());
+        SetupSupplier(Ruc, change switch
+        {
+            "inactive" => Match(isActive: false),
+            "no-role" => Match(hasActiveRole: false),
+            _ => null,
+        });
+
+        (await ConfirmAsync(staged)).IsSuccess.Should().BeFalse();
+        _added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Tipo_de_documento_inactivado_despues_del_preview_rechaza_todo()
+    {
+        var staged = await StagedAsync(Row(docType: "03"));
+        _sriCatalog.Setup(x => x.GetActiveDocTypesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { "01" }.Select(c => new SriDocType { Code = c, Name = c, ShortName = c }).ToList());
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("ya no está activo");
+        _added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Fecha_de_apertura_cambiada_despues_del_preview_rechaza_todo()
+    {
+        var staged = await StagedAsync(Row());
+        _openingBalance.Setup(x => x.GetOpeningBalanceDateAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DateOnly(2026, 8, 31));
+
+        var result = await ConfirmAsync(staged);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("ya no coincide");
+        _added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Otra_sucursal_activa_rechaza_todo()
+    {
+        var staged = await StagedAsync(Row());
+        _branch.SetupGet(x => x.BranchId).Returns(Guid.NewGuid());
+
+        (await ConfirmAsync(staged)).IsSuccess.Should().BeFalse();
+        _added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Sin_filas_de_origen_no_confirma()
+    {
+        var staged = (await StagedAsync(Row())).Select(r => (r.Item2, r.Item3)).ToArray();
+
+        (await Processor().ConfirmBatchAsync(staged, CancellationToken.None)).IsSuccess.Should().BeFalse();
+        (await Processor().ConfirmBatchAsync(BatchId, staged, CancellationToken.None)).IsSuccess.Should().BeFalse();
+        _added.Should().BeEmpty();
     }
 
     [Fact]

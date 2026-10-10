@@ -16,7 +16,6 @@ export function InitialLoadInitialPayablesPage() {
       primaryColumnLabel="Proveedor"
       secondaryColumnKey="Número Documento"
       secondaryColumnLabel="Documento"
-      confirmUnavailableReason="La confirmación de CxP inicial todavía no está disponible. Puede validar el archivo y revisar el resultado."
     />
   );
 }

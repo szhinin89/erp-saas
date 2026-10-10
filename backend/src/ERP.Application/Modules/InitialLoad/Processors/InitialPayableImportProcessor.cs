@@ -5,6 +5,7 @@ using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Payables.Entities;
+using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Constants;
 using ERP.Domain.Modules.SriCatalogs.Interfaces;
 
@@ -26,10 +27,12 @@ namespace ERP.Application.Modules.InitialLoad.Processors;
 ///   remisión y comprobante de retención no son deuda.
 /// - Duplicados contra CxP del proveedor de cualquier origen (Compra, Gasto o saldo inicial).
 ///
-/// La confirmación permanece bloqueada hasta IL-6B (ver <c>ConfirmImportBatchHandler</c>).
+/// IL-6B — se confirma el LOTE completo (<see cref="IBatchImportConfirmation"/>): una
+/// <c>AccountsPayable</c> InitialBalance por fila, dentro de la transacción única del handler y
+/// tras revalidar cada fila contra el estado actual (ver InitialPayableImportProcessor.Confirm.cs).
 /// </summary>
-public sealed class InitialPayableImportProcessor
-    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard
+public sealed partial class InitialPayableImportProcessor
+    : IImportProcessor, IImportBatchValidator, IImportBatchScopeGuard, IBatchImportConfirmation
 {
     /// <summary>
     /// Tipos SRI que no son una obligación de pago: reducen la deuda (nota de crédito), la certifican
@@ -43,8 +46,14 @@ public sealed class InitialPayableImportProcessor
     ];
 
     private readonly IInitialPayableImportSheetReader _reader;
+    private readonly IBusinessPartnerImportLookup _partnerLookup;
+    private readonly IInitialPayableLookup _payableLookup;
+    private readonly IOpeningBalanceConstraintsReader _openingBalance;
     private readonly ISriCatalogLookupRepository _sriCatalog;
+    private readonly ICompanyClock _clock;
     private readonly ICurrentBranch _branch;
+    private readonly IOperationalContext _ctx;
+    private readonly IAccountsPayableRepository _payables;
     private readonly OpeningBalanceRowRules _rules;
     private HashSet<string>? _activeSriDocTypes;
 
@@ -56,12 +65,19 @@ public sealed class InitialPayableImportProcessor
         ISriCatalogLookupRepository sriCatalog,
         ICompanyClock clock,
         ICurrentBranch branch,
-        IOperationalContext ctx
+        IOperationalContext ctx,
+        IAccountsPayableRepository payables
     )
     {
         _reader = reader;
+        _partnerLookup = partnerLookup;
+        _payableLookup = payableLookup;
+        _openingBalance = openingBalance;
         _sriCatalog = sriCatalog;
+        _clock = clock;
         _branch = branch;
+        _ctx = ctx;
+        _payables = payables;
         _rules = new OpeningBalanceRowRules(OpeningBalanceImportKind.Payables, partnerLookup, openingBalance,
             clock, ctx, branch, payableLookup.GetDocumentNumbersAsync, AccountsPayable.DocumentNumberMaxLen);
     }
@@ -149,7 +165,7 @@ public sealed class InitialPayableImportProcessor
         return OpeningBalanceImportRules.WithIssues(rows, issues);
     }
 
-    /// <summary>CxP Inicial nunca confirma fila por fila; la confirmación por lote llega en IL-6B.</summary>
+    /// <summary>CxP Inicial nunca confirma fila por fila: ver InitialPayableImportProcessor.Confirm.cs.</summary>
     public Task<RowConfirmResult> ConfirmRowAsync(string parsedDataJson, CancellationToken ct) =>
         Task.FromResult(RowConfirmResult.Failed("La CxP inicial se confirma por lote completo."));
 

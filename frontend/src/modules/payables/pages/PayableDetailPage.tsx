@@ -11,6 +11,7 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
+  payableOriginLabel,
   payablesService,
   type PayableDetailDto,
   type PayableOriginType,
@@ -141,7 +142,7 @@ export function PayableDetailPage() {
                     </span>
                   </Link>
                 ) : (
-                  <span>{payable.originType}</span>
+                  <span>{payableOriginLabel(payable.originType)}</span>
                 )}
               </ZHField>
             </div>

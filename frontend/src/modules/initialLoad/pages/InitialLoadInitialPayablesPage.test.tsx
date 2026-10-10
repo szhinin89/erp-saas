@@ -44,7 +44,7 @@ function mockValidatedBatch(issueRows: number) {
 
 afterEach(cleanup);
 
-describe("InitialLoadInitialPayablesPage (IL-6A)", () => {
+describe("InitialLoadInitialPayablesPage (IL-6A/IL-6B)", () => {
   it("usa la plantilla de CxP inicial", () => {
     mockValidatedBatch(0);
     render(<MemoryRouter><InitialLoadInitialPayablesPage /></MemoryRouter>);
@@ -53,11 +53,19 @@ describe("InitialLoadInitialPayablesPage (IL-6A)", () => {
     expect(screen.getByText("Carga Inicial — Cuentas por Pagar")).toBeTruthy();
   });
 
-  it("permite validar y revisar pero mantiene la confirmación bloqueada aunque todo sea válido", () => {
+  it("IL-6B: un lote todo válido se puede confirmar", () => {
     mockValidatedBatch(0);
     render(<MemoryRouter><InitialLoadInitialPayablesPage /></MemoryRouter>);
 
-    expect(screen.getByText(/confirmación de CxP inicial todavía no está disponible/)).toBeTruthy();
+    expect(screen.queryByText(/todavía no está disponible/)).toBeNull();
+    const confirm = screen.getByRole("button", { name: "Confirmar importación" }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(false);
+  });
+
+  it("todo-o-nada: una fila con error bloquea la confirmación", () => {
+    mockValidatedBatch(1);
+    render(<MemoryRouter><InitialLoadInitialPayablesPage /></MemoryRouter>);
+
     const confirm = screen.getByRole("button", { name: "Confirmar importación" }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
   });

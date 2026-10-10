@@ -415,6 +415,39 @@ public sealed class ApplySupplierCreditUseCasesTests
     }
 
     [Fact]
+    public async Task CxP_de_saldo_inicial_aplica_con_moneda_de_la_empresa_sin_documento_de_origen()
+    {
+        // IL-6B — InitialBalance no tiene compra ni gasto: mismo tratamiento que Gastos (xmin de la CxP,
+        // moneda de la empresa); nunca se busca ni se inventa un documento de origen.
+        var f = BuildFixture(creditAmount: 100m);
+        var initialPayable = BuildPayable(AccountsPayableOriginType.InitialBalance);
+        var m = MocksFor(f, initialPayable);
+
+        var result = await m.BuildHandler()
+            .Handle(
+                new ApplySupplierCreditCommand(f.Credit.Id, PayableId, 30m, Guid.NewGuid()),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.AvailableAmount.Should().Be(70m);
+        initialPayable.SupplierCreditAmount.Should().Be(30m);
+        m.ReturnRepo.Verify(
+            r =>
+                r.AcquireFinancialLockAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        m.InvoiceRepo.Verify(
+            r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
     public async Task CxP_de_origen_Manual_se_rechaza_fail_closed_antes_de_bloquear_el_credito()
     {
         var f = BuildFixture(creditAmount: 100m);

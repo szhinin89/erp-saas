@@ -4,6 +4,7 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
+using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Infrastructure.Persistence;
@@ -38,6 +39,13 @@ public sealed class OpeningBalanceConstraintsReader : IOpeningBalanceConstraints
             .Select(m => m.EffectiveDate)
             .Distinct()
             .ToListAsync(ct);
+        // IL-6B — los saldos iniciales de CxP guardan su corte en AccountingDate.
+        var payableCutoffs = await _db.AccountsPayables.AsNoTracking()
+            .Where(p => p.OriginType == AccountsPayableOriginType.InitialBalance)
+            .Select(p => p.AccountingDate)
+            .Distinct()
+            .ToListAsync(ct);
+        confirmed.AddRange(payableCutoffs.Where(d => !confirmed.Contains(d)));
         // Los saldos iniciales de CxC no guardan su corte: se confirman con la fecha vigente.
         if (currentOpeningBalanceDate is { } current && !confirmed.Contains(current)
             && await _db.SalesReceivables.AsNoTracking().AnyAsync(r => r.Origin == SalesReceivableOrigin.InitialBalance, ct))

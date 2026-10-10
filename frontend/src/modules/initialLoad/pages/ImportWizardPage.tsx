@@ -339,7 +339,9 @@ export function ImportWizardPage({
                     ? "Esta acción registra el saldo inicial al corte: un documento de apertura por bodega. Si una fila falla, no se registra ningún saldo ni movimiento de esta importación."
                     : importType === "InitialReceivables"
                       ? "Esta acción registra los saldos pendientes de cobro al corte: una cuenta por cobrar por documento, sin facturas ni cobros históricos. Si una fila falla, no se registra ningún saldo de esta importación."
-                      : "Esta acción crea los registros válidos en el sistema. No se puede deshacer."}
+                      : importType === "InitialPayables"
+                        ? "Esta acción registra los saldos netos pendientes de pago al corte: una cuenta por pagar por documento, sin compras, gastos, pagos ni retenciones históricas. Si una fila falla, no se registra ningún saldo de esta importación."
+                        : "Esta acción crea los registros válidos en el sistema. No se puede deshacer."}
           </p>
           {batch && (
             <>
