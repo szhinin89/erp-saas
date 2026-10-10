@@ -115,6 +115,21 @@ public sealed class InitialLoadController : ControllerBase
     public async Task<IActionResult> PostOpeningBalance(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new PostOpeningBalanceCommand(id), ct));
 
+    /// <summary>
+    /// IL-7C — conciliación de apertura (solo lectura): por lote y por tipo, saldo operativo
+    /// confirmado contra mayor al corte, cuenta puente y bloqueos de cierre (IL-8). Muestra montos
+    /// contables: exige ver Carga Inicial y ver Contabilidad.
+    /// </summary>
+    [HttpGet("opening-reconciliation")]
+    [Authorize(Policy = $"perm:{InitialLoadPermissions.View}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<OpeningBalanceReconciliationDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> GetOpeningReconciliation(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetOpeningBalanceReconciliationQuery(), ct));
+
     [HttpPost("batches/{id:guid}/cancel")]
     [Authorize(Policy = $"perm:{InitialLoadPermissions.Create}")]
     [ProducesResponseType(typeof(Contracts.ApiResponse<bool>), StatusCodes.Status200OK)]

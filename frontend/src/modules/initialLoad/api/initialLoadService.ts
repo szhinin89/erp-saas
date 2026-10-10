@@ -7,6 +7,8 @@ import type {
   ImportSeverity,
   ImportType,
   OpeningBalanceDateDto,
+  OpeningBalancePostingDto,
+  OpeningBalanceReconciliationDto,
   PagedResult,
 } from "../types/importBatch.types";
 
@@ -94,6 +96,16 @@ export const initialLoadService = {
 
   setOpeningBalanceDate(openingBalanceDate: string): Promise<OpeningBalanceDateDto> {
     return apiPut<OpeningBalanceDateDto>(`${BASE}/opening-balance-date`, { openingBalanceDate });
+  },
+
+  /** IL-7C — conciliación de apertura (solo lectura). */
+  getOpeningReconciliation(): Promise<OpeningBalanceReconciliationDto> {
+    return apiGet<OpeningBalanceReconciliationDto>(`${BASE}/opening-reconciliation`);
+  },
+
+  /** IL-7B — contabiliza o reintenta el asiento de apertura del lote. */
+  postOpeningBalance(batchId: string): Promise<OpeningBalancePostingDto> {
+    return apiPost<OpeningBalancePostingDto>(`${BASE}/batches/${batchId}/opening-posting`, {});
   },
 };
 

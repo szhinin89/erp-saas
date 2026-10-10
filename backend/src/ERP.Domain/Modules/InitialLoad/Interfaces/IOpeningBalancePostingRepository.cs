@@ -24,6 +24,13 @@ public interface IOpeningBalancePostingRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>IL-7C — todos los estados contables de apertura de la empresa, solo lectura (sin tracking).</summary>
+    Task<IReadOnlyList<OpeningBalancePosting>> ListByCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    );
+
     Task AddAsync(OpeningBalancePosting posting, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -22,6 +22,16 @@ public sealed class OpeningBalancePostingRepository : IOpeningBalancePostingRepo
             .OpeningBalancePostings.Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
             .FirstOrDefaultAsync(x => x.ImportBatchId == importBatchId, cancellationToken);
 
+    public async Task<IReadOnlyList<OpeningBalancePosting>> ListByCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await _context
+            .OpeningBalancePostings.AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
+            .ToListAsync(cancellationToken);
+
     public async Task LockBatchAsync(
         Guid tenantId,
         Guid companyId,

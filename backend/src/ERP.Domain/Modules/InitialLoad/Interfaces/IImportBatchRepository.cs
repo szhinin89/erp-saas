@@ -25,6 +25,15 @@ public interface IImportBatchRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>IL-7C — lotes de los tipos y estados indicados, solo lectura (sin tracking).</summary>
+    Task<IReadOnlyList<ImportBatch>> ListAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyCollection<ImportType> importTypes,
+        IReadOnlyCollection<ImportStatus> statuses,
+        CancellationToken cancellationToken = default
+    );
+
     Task AddAsync(ImportBatch batch, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

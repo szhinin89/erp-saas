@@ -64,6 +64,19 @@ public sealed class ImportBatchRepository : IImportBatchRepository
         return (batches, total);
     }
 
+    public async Task<IReadOnlyList<ImportBatch>> ListAsync(
+        Guid tenantId,
+        Guid companyId,
+        IReadOnlyCollection<ImportType> importTypes,
+        IReadOnlyCollection<ImportStatus> statuses,
+        CancellationToken cancellationToken = default
+    ) =>
+        await Scoped(tenantId, companyId)
+            .AsNoTracking()
+            .Where(x => importTypes.Contains(x.ImportType) && statuses.Contains(x.Status))
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(ImportBatch batch, CancellationToken cancellationToken = default) =>
         await _context.ImportBatches.AddAsync(batch, cancellationToken);
 

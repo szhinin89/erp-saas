@@ -5,6 +5,7 @@ import { ZHBtn } from "../../../components/zh/ZHForm";
 import { Badge } from "../../../components/PageShell";
 import type { ImportType } from "../types/importBatch.types";
 import { OpeningBalanceDateCard } from "../components/OpeningBalanceDateCard";
+import { OpeningReconciliationCard } from "../components/OpeningReconciliationCard";
 import "./initial-load.css";
 
 interface ImportBlock {
@@ -81,6 +82,7 @@ export function InitialLoadHubPage() {
       subtitle="Importa datos maestros y saldos iniciales para una empresa nueva."
     >
       <OpeningBalanceDateCard />
+      <OpeningReconciliationCard />
       <div className="il-grid">
         {BLOCKS.map((block) => (
           <ZHCard
