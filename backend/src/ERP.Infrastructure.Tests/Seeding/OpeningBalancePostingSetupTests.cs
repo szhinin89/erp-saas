@@ -84,7 +84,11 @@ public sealed class OpeningBalancePostingSetupTests
             .PostingRules.Include(r => r.Lines)
             .Where(r => r.SourceModule == "InitialLoad")
             .ToListAsync();
-        rules.Should().HaveCount(3);
+        rules.Should().HaveCount(4);
+        // IL-8A — ASI de apertura: regla activa, solo habilitadora (0 líneas fijas).
+        var asi = rules.Single(r => r.FactType == "ASI");
+        asi.IsActive.Should().BeTrue();
+        asi.Lines.Should().BeEmpty("todas las líneas del ASI de apertura son PostingAllocation");
         foreach (var (factType, debit, credit) in CanonicalRules)
         {
             var rule = rules.Single(r => r.FactType == factType);
@@ -238,6 +242,7 @@ public sealed class OpeningBalancePostingSetupTests
                     ("InitialLoad/OpeningInventory", "Missing"),
                     ("InitialLoad/OpeningReceivables", "Missing"),
                     ("InitialLoad/OpeningPayables", "Missing"),
+                    ("InitialLoad/ASI", "Missing"),
                 }
             );
         (await SnapshotAsync()).Should().Equal(before);
@@ -286,7 +291,7 @@ public sealed class OpeningBalancePostingSetupTests
         rows.Should().Contain(r => r.Item == "Account 3.1.04.001" && r.Diagnostic.StartsWith("Conflict:"));
         rows.Where(r => r.Item.StartsWith("InitialLoad/"))
             .Should()
-            .HaveCount(3)
+            .HaveCount(4)
             .And.OnlyContain(r => r.Diagnostic.StartsWith("Blocked:"));
         (await SnapshotAsync()).Should().Equal(before);
     }
@@ -313,7 +318,26 @@ public sealed class OpeningBalancePostingSetupTests
         await using var db = Db();
         var custom = await db.PostingRules.Include(r => r.Lines).SingleAsync(r => r.Id == customRuleId);
         custom.Lines.Should().HaveCount(2);
-        (await db.PostingRules.CountAsync(r => r.SourceModule == "InitialLoad")).Should().Be(3);
+        (await db.PostingRules.CountAsync(r => r.SourceModule == "InitialLoad")).Should().Be(4);
+    }
+
+    [Fact]
+    public async Task Regla_ASI_con_lineas_fijas_se_reporta_personalizada_y_no_se_toca()
+    {
+        await SeedLegacyCompanyAsync(
+            (db, accounts) =>
+            {
+                var rule = PostingRule.Create(_tenant, _companyId, "InitialLoad", "ASI", null, null, null, _actor);
+                rule.AddLine(accounts["2.1.01.001"].Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
+                db.PostingRules.Add(rule);
+            }
+        );
+
+        var rows = await RunAsync(apply: true);
+
+        rows.Single(r => r.Item == "InitialLoad/ASI").Diagnostic.Should().Be("Custom: preserved; unchanged");
+        await using var db = Db();
+        (await db.PostingRules.Include(r => r.Lines).SingleAsync(r => r.FactType == "ASI")).Lines.Should().HaveCount(1);
     }
 
     private sealed class FakeHostEnvironment(bool isProduction) : IHostEnvironment

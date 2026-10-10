@@ -9,6 +9,7 @@ using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.InitialLoad.Enums;
+using ERP.Domain.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Items.Entities;
@@ -20,6 +21,7 @@ using ERP.Infrastructure.InitialLoad;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Interceptors;
 using ERP.Infrastructure.Persistence.Repositories;
+using ERP.Infrastructure.Persistence.Repositories.InitialLoad;
 using FluentAssertions;
 using FluentValidation;
 using MediatR;
@@ -77,6 +79,8 @@ public sealed class OpeningBalanceDatePostgreSqlTests : IClassFixture<InitialLoa
             new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor()));
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<IOpeningBalanceConstraintsReader, OpeningBalanceConstraintsReader>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IOpeningJournalEntryPostingRepository, OpeningJournalEntryPostingRepository>();
         _services = services.BuildServiceProvider();
     }
 

@@ -116,6 +116,23 @@ public sealed class InitialLoadController : ControllerBase
         this.ToOkOrBadRequest(await _mediator.Send(new PostOpeningBalanceCommand(id), ct));
 
     /// <summary>
+    /// IL-8A — publica (o reintenta) el único ASI de apertura de la empresa: líneas Debe/Haber que
+    /// dejan la cuenta puente "Saldos de apertura" en 0, a la fecha de apertura. No es un editor
+    /// contable general ni expone reverso. Exige confirmar Carga Inicial y crear en Contabilidad.
+    /// </summary>
+    [HttpPost("opening-journal-entry")]
+    [Authorize(Policy = $"perm:{InitialLoadPermissions.Confirm}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<OpeningJournalEntryPostingDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> PublishOpeningJournalEntry(
+        [FromBody] PublishOpeningJournalEntryCommand command,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct));
+
+    /// <summary>
     /// IL-7C — conciliación de apertura (solo lectura): por lote y por tipo, saldo operativo
     /// confirmado contra mayor al corte, cuenta puente y bloqueos de cierre (IL-8). Muestra montos
     /// contables: exige ver Carga Inicial y ver Contabilidad.

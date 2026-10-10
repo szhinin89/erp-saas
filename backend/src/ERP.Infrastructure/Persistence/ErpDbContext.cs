@@ -297,6 +297,8 @@ public class ErpDbContext : DbContext
         Set<ERP.Domain.Modules.InitialLoad.Entities.ImportBatchIssue>();
     public DbSet<ERP.Domain.Modules.InitialLoad.Entities.OpeningBalancePosting> OpeningBalancePostings =>
         Set<ERP.Domain.Modules.InitialLoad.Entities.OpeningBalancePosting>();
+    public DbSet<ERP.Domain.Modules.InitialLoad.Entities.OpeningJournalEntryPosting> OpeningJournalEntryPostings =>
+        Set<ERP.Domain.Modules.InitialLoad.Entities.OpeningJournalEntryPosting>();
 
     // ── Items BC (canonical catalog) ──────────────────────────────────────
     public DbSet<ItemCategoryNode> ItemCategoryNodes => Set<ItemCategoryNode>();

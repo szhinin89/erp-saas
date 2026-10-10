@@ -3,6 +3,7 @@ using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.InitialLoad.Interfaces;
 using FluentValidation;
 using MediatR;
 using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
@@ -80,18 +81,24 @@ public sealed class SetOpeningBalanceDateHandler
     private readonly ICompanyRepository _companies;
     private readonly IOpeningBalanceConstraintsReader _constraints;
     private readonly ICurrentUser _currentUser;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IOpeningJournalEntryPostingRepository _openingJournal;
 
     public SetOpeningBalanceDateHandler(
         ICompanyAccessGuard accessGuard,
         ICompanyRepository companies,
         IOpeningBalanceConstraintsReader constraints,
-        ICurrentUser currentUser
+        ICurrentUser currentUser,
+        IUnitOfWork unitOfWork,
+        IOpeningJournalEntryPostingRepository openingJournal
     )
     {
         _accessGuard = accessGuard;
         _companies = companies;
         _constraints = constraints;
         _currentUser = currentUser;
+        _unitOfWork = unitOfWork;
+        _openingJournal = openingJournal;
     }
 
     public async Task<Result<OpeningBalanceDateDto>> Handle(
@@ -103,28 +110,48 @@ public sealed class SetOpeningBalanceDateHandler
         if (!access.IsSuccess)
             return Result<OpeningBalanceDateDto>.Failure(access.Error!, access.Code);
 
-        var company = await _companies.GetTrackedByIdForTenantAsync(
-            access.Value!.CompanyId,
-            access.Value.TenantId,
-            ct
-        );
-        if (company is null)
-            return Result<OpeningBalanceDateDto>.NotFound("Empresa no encontrada.");
-
-        var constraints = await _constraints.GetAsync(company.OpeningBalanceDate, ct);
+        // IL-8A — mismo bloqueo de la empresa que la publicación del ASI de apertura: la fecha y el
+        // estado del ASI se leen después del bloqueo, así un ASI recién publicado nunca queda con
+        // otra fecha.
+        await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            company.SetOpeningBalanceDate(command.OpeningBalanceDate!.Value, constraints, _currentUser.UserId);
-        }
-        catch (DomainRuleViolationException ex)
-        {
-            return Result<OpeningBalanceDateDto>.FromDomainRule(ex);
-        }
-        await _companies.SaveChangesAsync(ct);
+            await _openingJournal.LockCompanyOpeningAsync(
+                access.Value!.TenantId, access.Value.CompanyId, includeBalanceBatches: false, ct);
+            var company = await _companies.GetTrackedByIdForTenantAsync(
+                access.Value.CompanyId,
+                access.Value.TenantId,
+                ct
+            );
+            if (company is null)
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return Result<OpeningBalanceDateDto>.NotFound("Empresa no encontrada.");
+            }
 
-        return Result<OpeningBalanceDateDto>.Success(
-            await OpeningBalanceDateMap.ToDtoAsync(company, _constraints, ct)
-        );
+            var constraints = await _constraints.GetAsync(company.OpeningBalanceDate, ct);
+            try
+            {
+                company.SetOpeningBalanceDate(command.OpeningBalanceDate!.Value, constraints, _currentUser.UserId);
+            }
+            catch (DomainRuleViolationException ex)
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return Result<OpeningBalanceDateDto>.FromDomainRule(ex);
+            }
+            await _companies.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+
+            return Result<OpeningBalanceDateDto>.Success(
+                await OpeningBalanceDateMap.ToDtoAsync(company, _constraints, ct)
+            );
+        }
+        catch
+        {
+            if (_unitOfWork.HasActiveTransaction)
+                await _unitOfWork.RollbackAsync(CancellationToken.None);
+            throw;
+        }
     }
 }
 

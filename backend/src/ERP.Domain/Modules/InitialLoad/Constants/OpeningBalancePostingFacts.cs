@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.InitialLoad.Enums;
 
 namespace ERP.Domain.Modules.InitialLoad.Constants;
@@ -14,6 +15,15 @@ public static class OpeningBalancePostingFacts
     public const string OpeningInventory = "OpeningInventory";
     public const string OpeningReceivables = "OpeningReceivables";
     public const string OpeningPayables = "OpeningPayables";
+
+    /// <summary>
+    /// IL-8A — FactType del único ASI de apertura de la empresa (<c>SourceEventId</c> = id del
+    /// <c>OpeningJournalEntryPosting</c>). Reutiliza el código del catálogo
+    /// <see cref="DocTypeCodes.ManualJournalEntry"/> como identificador del hecho; su
+    /// <c>PostingRule</c> es habilitadora (0 líneas fijas): todas las líneas viajan como
+    /// <c>PostingAllocation</c>.
+    /// </summary>
+    public const string OpeningJournalEntry = DocTypeCodes.ManualJournalEntry;
 
     /// <summary>FactType del lote, o <c>null</c> si ese tipo de carga no genera asiento de apertura.</summary>
     public static string? ForImportType(ImportType importType) =>

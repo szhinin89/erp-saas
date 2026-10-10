@@ -51,7 +51,14 @@ public sealed class OpeningBalanceConstraintsReader : IOpeningBalanceConstraints
             && await _db.SalesReceivables.AsNoTracking().AnyAsync(r => r.Origin == SalesReceivableOrigin.InitialBalance, ct))
             confirmed.Add(current);
 
-        return new OpeningBalanceDateConstraints(await HasRealOperationsAsync(ct), confirmed);
+        // IL-8A — CUALQUIER versión del ASI de apertura que llegó a publicarse fija la fecha para
+        // siempre, aunque después haya sido reemplazada/reversada (historial). PostedAt solo lo
+        // asigna MarkPosted y nunca se limpia (filtro global tenant + empresa).
+        var hasPostedOpeningJournal = await _db.OpeningJournalEntryPostings.AsNoTracking()
+            .AnyAsync(p => p.CompanyId == _company.CompanyId && p.PostedAt != null, ct);
+
+        return new OpeningBalanceDateConstraints(
+            await HasRealOperationsAsync(ct), confirmed, hasPostedOpeningJournal);
     }
 
     /// <summary>

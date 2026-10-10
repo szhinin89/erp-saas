@@ -6,8 +6,11 @@ namespace ERP.Domain.Modules.Company.Entities;
 /// compra/gasto confirmado, cobro/pago, sesión de caja o movimiento de inventario operativo); las
 /// cargas iniciales son implementación y no cuentan. <see cref="ConfirmedOpeningDates"/>: fechas
 /// de corte de las cargas iniciales ya confirmadas (inventario, CxC, …).
+/// <see cref="HasPostedOpeningJournalEntry"/> (IL-8A): alguna versión del ASI de apertura llegó a
+/// publicarse (vigente o ya reemplazada/reversada); la fecha queda inmutable para siempre.
 /// </summary>
 public sealed record OpeningBalanceDateConstraints(
     bool HasRealOperations,
-    IReadOnlyCollection<DateOnly> ConfirmedOpeningDates
+    IReadOnlyCollection<DateOnly> ConfirmedOpeningDates,
+    bool HasPostedOpeningJournalEntry = false
 );

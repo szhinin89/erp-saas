@@ -1186,6 +1186,14 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
+        // IL-8A — ASI de apertura: regla HABILITADORA sin líneas fijas. Todas las líneas del asiento
+        // (Debe/Haber dinámicos) viajan como PostingAllocation; el comando de publicación exige que
+        // esta regla siga sin líneas fijas. Requiere la cuenta puente (no se siembra si hay conflicto).
+        new(
+            OpeningBalancePostingFacts.SourceModule,
+            OpeningBalancePostingFacts.OpeningJournalEntry,
+            []
+        ),
     ];
 
     // RETENTIONS-TAX-COMPONENT-POSTING-02C — forma sembrada por RETENTIONS-POSTING-RULE-SEED-01H

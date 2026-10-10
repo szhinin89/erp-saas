@@ -55,8 +55,11 @@ public sealed class AccountingBootstrapStepTests
     ///
     /// IL-7A: pasa de 16 a 19 — agrega "InitialLoad"/"OpeningInventory", "OpeningReceivables" y
     /// "OpeningPayables" (apertura de la Carga Inicial contra "3.1.04.001 Saldos de apertura").
+    ///
+    /// IL-8A: pasa de 19 a 20 — agrega "InitialLoad"/"ASI" (ASI de apertura), regla habilitadora
+    /// sin líneas fijas.
     /// </summary>
-    private const int ExpectedPostingRulesCount = 19;
+    private const int ExpectedPostingRulesCount = 20;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -401,6 +404,7 @@ public sealed class AccountingBootstrapStepTests
                     ("InitialLoad", "OpeningInventory"),
                     ("InitialLoad", "OpeningReceivables"),
                     ("InitialLoad", "OpeningPayables"),
+                    ("InitialLoad", "ASI"),
                 }
             );
 
@@ -433,7 +437,10 @@ public sealed class AccountingBootstrapStepTests
         // (ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C, ADR-035) fijan CxP (AppliedToPayable) +
         // "Anticipos a proveedores" (SupplierCredit); el Haber/Debe por cada medio de pago sigue
         // siendo dinámico vía PostingFact.Allocations.
-        rules.Except(refundRules).Should().OnlyContain(r => r.Lines.Count >= 2);
+        // IL-8A — el ASI de apertura es la única regla sin líneas fijas (todas son Allocations).
+        var openingJournalRule = rules.Single(r => r.SourceModule == "InitialLoad" && r.FactType == "ASI");
+        openingJournalRule.Lines.Should().BeEmpty();
+        rules.Except(refundRules).Except([openingJournalRule]).Should().OnlyContain(r => r.Lines.Count >= 2);
 
         async Task AssertSupplierPaymentRuleAsync(string factType, AccountNature nature)
         {

@@ -141,6 +141,8 @@ public class Company : ITenantScopedEntity
         OpeningBalanceDateConstraints constraints
     )
     {
+        if (constraints.HasPostedOpeningJournalEntry && current is { } postedDate)
+            return $"La fecha de apertura ({postedDate:yyyy-MM-dd}) es definitiva: el asiento de apertura (ASI) ya está publicado.";
         if (constraints.ConfirmedOpeningDates.Count > 1)
             return $"Existen cargas iniciales confirmadas con fechas distintas ({FormatDates(constraints.ConfirmedOpeningDates)}). "
                 + "Corrija esas aperturas antes de definir la fecha.";
