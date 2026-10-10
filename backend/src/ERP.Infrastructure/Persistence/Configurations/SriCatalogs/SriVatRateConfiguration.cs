@@ -13,7 +13,15 @@ public class SriVatRateConfiguration : IEntityTypeConfiguration<SriVatRate>
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(5);
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(60).IsRequired();
         builder.Property(x => x.Percentage).HasColumnName("percentage").HasPrecision(6, 2);
-        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        // Mismo criterio que SriRetentionCodeConfiguration (ZH-SRI-RETENTION-CATALOG-SSOT-01): con
+        // DEFAULT true y generación "on add", EF omite un `false` (valor CLR por defecto) en seeds e
+        // inserts — los códigos históricos 2 y 3 declarados inactivos quedaban activos en BD.
+        // ValueGeneratedNever conserva el DEFAULT de la columna pero obliga a EF a escribir el valor real.
+        builder
+            .Property(x => x.IsActive)
+            .HasColumnName("is_active")
+            .HasDefaultValue(true)
+            .ValueGeneratedNever();
         builder.Property(x => x.ValidFrom).HasColumnName("valid_from");
         builder.Property(x => x.ValidUntil).HasColumnName("valid_until");
 

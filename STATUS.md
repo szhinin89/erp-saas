@@ -2,7 +2,8 @@
 
 ## SRI-VAT-SEED-ACTIVE-FLAGS — BUG REAL (2026-10-09)
 
-**Estado: ABIERTO — corregir en ticket/commit separado antes del piloto.** `global.sri_vat_rate` códigos 2 y 3 están declarados inactivos en `SriVatRateConfiguration` pero quedan activos en BD (verificado en `dberpsaas`). Mismo patrón que `sri_doc_type` (DEFAULT true + generación "on add": EF omite el `false` del seed). Fix esperado: estándar de `SriRetentionCodeConfiguration` (`HasDefaultValue(true).ValueGeneratedNever()`) + migración de datos + test PostgreSQL. Configuración Tributaria es infraestructura CLOSED: requiere ADR/revisión de compatibilidad. No tocado en IL-6A.
+**Estado: CORREGIDO (sin commit) — ADR-042 + revisión de compatibilidad.** `global.sri_vat_rate` códigos históricos 2 (12%) y 3 (14%) estaban declarados inactivos en `SriVatRateConfiguration` pero quedaban activos en BD (verificado en `dberpsaas`): el `InsertData` de la migración base omitía `is_active` para esas filas (DEFAULT true + generación "on add": EF no escribe el `false`), por lo que `SriTaxResolver`/`SriGlobalRateReader` aún resolvían 12%/14% por código. Fix con el estándar de `SriRetentionCodeConfiguration`/`SriDocTypeConfiguration` (`HasDefaultValue(true).ValueGeneratedNever()`) + migración `SriVatRateSeedActiveFlags` (solo `UpdateData` de 2 y 3). Sin datos afectados (`dberpsaas` y `erp_sumak_pilot` no usan 2/3 en ítems, compras, recepciones, ventas ni gastos). Tarifas activas (0, 4, 5, 6, 7, 8, 10) sin cambios.
+- **Gates:** `SriVatRateActiveFlagsPostgreSqlTests` 11/11 (flags y tarifas = seed; 2/3 inactivos para resolver y lookup dentro de su vigencia; tarifas activas intactas; insert inactivo por EF persiste false); catálogos SRI PostgreSQL 104/105 (1 preexistente en HEAD: `SriIncomeCatalogMigrationSupplierDefaultsTests`); `has-pending-model-changes` = no; arquitectura PASS; diff check PASS.
 
 ## IL-6 — Carga Inicial de Cuentas por Pagar (2026-10-09)
 

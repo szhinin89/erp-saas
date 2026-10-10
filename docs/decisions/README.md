@@ -45,6 +45,7 @@
 | [ADR-039](./ADR-039-communications-architecture.md) | Arquitectura de Communications — capacidad transversal (Email = canal), scopes System (perfil de instancia) vs Company, `CommunicationOutbox` SSOT de entrega (distinta de `OutboxMessage`), intención durable en la transacción del hecho, idempotencia central (`CommunicationIdentity`), claim/lease PostgreSQL, reintento tipado por categoría, historial `CommunicationDeliveryAttempt`, templates embebidos versionados + override por empresa, renderer único, contributors por módulo, Auth dueño de tokens, payload sensible cifrado y con scrub, adjuntos por referencia durable, monitor en Communications, sin canales nuevos, evolución incremental | Accepted — diseño; implementación por fases (primera: hotfix de seguridad del password reset) |
 
 | [ADR-040](./ADR-040-item-company-scope-inventory-nature.md) | Item Tenant + Company; ItemNature Product/Service independiente de clasificación; control general e individual de disponibilidad | Accepted |
+| [ADR-042](./ADR-042-sri-seed-boolean-flags-persistence.md) | Flags booleanos de catálogos SRI con seed persisten el valor declarado (`HasDefaultValue(true).ValueGeneratedNever()`); IVA 2 y 3 históricos inactivos; sin cambio de esquema, tarifas ni vigencias | Accepted |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 
