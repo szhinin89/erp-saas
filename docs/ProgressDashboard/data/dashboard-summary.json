@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 07:42:39",
+    "generated":  "2026-10-10 13:16:20",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -11,10 +11,10 @@
                },
     "securityStatus":  "RED",
     "debtStatus":  "RED",
-    "productionReadinessScore":  61.58,
+    "productionReadinessScore":  61.51,
     "productionStatus":  "NOT READY",
     "maturity":  "Developing",
-    "confidenceScore":  57.59,
+    "confidenceScore":  57.52,
     "risk":  {
                  "architectureRisk":  "LOW",
                  "securityRisk":  "CRITICAL",
@@ -25,12 +25,12 @@
     "productionDecision":  "NOT READY",
     "decisionBlockers":  [
                              "Security blockers - Security score 20.2%",
-                             "Quality blockers - Quality score 7.9%",
+                             "Quality blockers - Quality score 7.55%",
                              "Debt blockers - 38 critical findings"
                          ],
     "quickRecommendations":  [
                                  "Remove detected secrets (199 found)",
-                                 "Improve automated tests and code quality (current: 7.9%)",
+                                 "Improve automated tests and code quality (current: 7.55%)",
                                  "Reduce critical findings (currently 38)",
                                  "Review security configuration (12 anonymous access points detected)"
                              ],
@@ -67,7 +67,7 @@
                     {
                         "order":  2,
                         "title":  "Quality Improvement",
-                        "detail":  "Score: 7.9%",
+                        "detail":  "Score: 7.55%",
                         "priority":  "HIGH"
                     },
                     {
@@ -86,7 +86,7 @@
                            {
                                "gate":  "Quality Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 7.9%"
+                               "detail":  "Score 7.55%"
                            },
                            {
                                "gate":  "Technical Debt Gate",
@@ -95,10 +95,10 @@
                            }
                        ],
     "trend":  {
-                  "current":  59.57,
-                  "previous":  57.56,
-                  "change":  2.01,
-                  "status":  "Improving"
+                  "current":  59.5,
+                  "previous":  59.57,
+                  "change":  -0.07,
+                  "status":  "Declining"
               },
     "executiveFlags":  {
                            "securityHealth":  "NEEDS ATTENTION",

@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-10 07:41:55",
-    "FilesAnalyzed":  11995,
-    "TODO":  734,
+    "Generated":  "2026-10-10 13:15:21",
+    "FilesAnalyzed":  12019,
+    "TODO":  735,
     "FIXME":  30,
     "HACK":  1,
     "NotImplemented":  8,
@@ -105,6 +105,10 @@
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Finance\\UseCases\\RegisterSupplierCreditRefundUseCases.cs",
                            "Lines":  532
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\InitialLoad\\OpeningPosting\\GetOpeningBalanceReconciliation.cs",
+                           "Lines":  546
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\InitialLoad\\Processors\\ItemImportProcessor.cs",
@@ -575,8 +579,16 @@
                            "Lines":  20375
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261010151014_OpeningJournalEntryPosting.Designer.cs",
+                           "Lines":  20479
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261010173648_InitialLoadClosure.Designer.cs",
+                           "Lines":  20487
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                           "Lines":  20372
+                           "Lines":  20484
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
@@ -587,8 +599,12 @@
                            "Lines":  549
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContext.cs",
+                           "Lines":  502
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\AccountingBootstrapStep.cs",
-                           "Lines":  2011
+                           "Lines":  2019
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\Steps\\ExpensesCatalogBootstrapStep.cs",
@@ -608,7 +624,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
-                           "Lines":  1173
+                           "Lines":  1177
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Accounting\\AccountingReportsRepositoryTests.cs",
@@ -693,6 +709,14 @@
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Finance\\CollectionPostingIntegrationTests.cs",
                            "Lines":  929
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\OpeningBalanceReconciliationTests.cs",
+                           "Lines":  692
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\InitialLoad\\PublishOpeningJournalEntryPostgreSqlTests.cs",
+                           "Lines":  714
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseReception\\ResolvePurchaseReceptionLinesIntegrationTests.cs",
@@ -792,7 +816,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",
-                           "Lines":  1901
+                           "Lines":  1908
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingChartBackfillServicePostingRuleTests.cs",
@@ -2841,6 +2865,10 @@
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\finance\\pages\\CreditTermsPage.tsx",
                            "Lines":  505
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\initialLoad\\components\\OpeningReconciliationCard.test.tsx",
+                           "Lines":  621
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\inventory\\adjustments\\hooks\\useStockAdjustmentFormPage.ts",

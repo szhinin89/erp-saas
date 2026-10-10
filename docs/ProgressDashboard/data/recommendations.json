@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 07:42:38",
+    "generated":  "2026-10-10 13:16:18",
     "source":  "dashboard-model-v12.json, model-health.json, completion-intelligence.json, dependencies.json, critical-path.json, release-simulation.json",
     "rule":  "Deterministic rule engine -- every recommendation cites the exact JSON field(s) that triggered it in \u0027justifiedBy\u0027. No generic text, no invented relationships. A rule that finds no matching condition produces zero recommendations for that rule.",
     "recommendations":  [
@@ -13,7 +13,7 @@
                             },
                             {
                                 "title":  "Security reaches 80% raises Production Readiness",
-                                "text":  "Security reaches 80% moves Production Readiness from 61.58% to 73.54% (+11.96 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
+                                "text":  "Security reaches 80% moves Production Readiness from 61.51% to 73.47% (+11.96 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security reaches 80%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -21,7 +21,7 @@
                             },
                             {
                                 "title":  "Quality reaches 85% raises Production Readiness",
-                                "text":  "Quality reaches 85% moves Production Readiness from 61.58% to 77.00% (+15.42 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
+                                "text":  "Quality reaches 85% moves Production Readiness from 61.51% to 77.00% (+15.49 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Quality reaches 85%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -29,7 +29,7 @@
                             },
                             {
                                 "title":  "Security 80% + Quality 85% combined raises Production Readiness",
-                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 61.58% to 88.96% (+27.38 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
+                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 61.51% to 88.96% (+27.45 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security 80% + Quality 85% combined\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -69,9 +69,9 @@
                             },
                             {
                                 "title":  "\u0027DocTypes\u0027 unblocks 2 process(es)",
-                                "text":  "Completing \u0027DocTypes\u0027 (current score 77.75%) unblocks 1 direct dependent module(s) and 29 transitive dependent module(s), covering 2 verified business process(es).",
+                                "text":  "Completing \u0027DocTypes\u0027 (current score 77.75%) unblocks 2 direct dependent module(s) and 29 transitive dependent module(s), covering 2 verified business process(es).",
                                 "justifiedBy":  [
-                                                    "critical-path.json: module=\u0027DocTypes\u0027, directUnblocks=1, transitiveUnblocks=29, unlockedProcesses=2"
+                                                    "critical-path.json: module=\u0027DocTypes\u0027, directUnblocks=2, transitiveUnblocks=29, unlockedProcesses=2"
                                                 ]
                             },
                             {
@@ -124,8 +124,8 @@
                                                 ]
                             },
                             {
-                                "title":  "Critical gap already tracked: Quality Score bajo: 7.9%",
-                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 7.9%",
+                                "title":  "Critical gap already tracked: Quality Score bajo: 7.55%",
+                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 7.55%",
                                 "justifiedBy":  [
                                                     "completion-intelligence.json: criticalGaps"
                                                 ]
