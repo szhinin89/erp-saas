@@ -58,6 +58,7 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests : IClassFi
     private static readonly DateOnly OpeningBalanceDate = new(2026, 8, 31);
     private static long _nextTaxNumber = 1790097000;
     private readonly ServiceProvider _services;
+    private readonly string _connectionString;
     private readonly Mock<IInitialReceivableImportSheetReader> _reader = new();
     private readonly Guid _user = Guid.NewGuid();
     private Guid _tenant;
@@ -96,8 +97,9 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests : IClassFi
         services.AddSingleton(Mock.Of<ICurrentUser>(x => x.UserId == _user && x.Email == "il5a@test" && x.FullName == "IL5A"));
         services.AddSingleton(Mock.Of<IPublisher>());
         services.AddSingleton<ICompanyClock>(new AlwaysTodayCompanyClock());
+        _connectionString = postgres.ConnectionString;
         services.AddDbContext<ErpDbContext>(o => o.UseNpgsql(postgres.ConnectionString).AddInterceptors(
-            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor()));
+            new CompanyTenantInterceptor(), new NewChildEntityTrackingInterceptor(), new BatchLockObserver(this)));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<IBusinessPartnerImportLookup, BusinessPartnerImportLookup>();
