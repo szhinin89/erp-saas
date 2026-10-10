@@ -291,9 +291,26 @@ public sealed class RegisterCollectionCommandHandler
         );
         foreach (var line in cmd.Lines)
         {
-            if (!receivablesByDocId.ContainsKey(line.DocumentId))
+            if (!receivablesByDocId.TryGetValue(line.DocumentId, out var receivable))
                 return Result<PaymentDto>.NotFound(
                     $"Cuenta por cobrar {line.DocumentId} no encontrada."
+                );
+
+            // ZH-COLLECTIONS-CUSTOMER-SCOPE-01 — validado ya bajo lock y antes de modificar nada: un
+            // cobro de un cliente nunca reduce la CxC de otro (el saldo bajaría en B mientras el
+            // pago, sus eventos y el asiento quedan a nombre de A), y una cuota informada debe ser
+            // de esa misma CxC. No se confía en el cliente: cualquier línea inválida rechaza el
+            // cobro completo y Handle revierte la transacción.
+            if (receivable.CustomerId != cmd.CustomerId)
+                return Result<PaymentDto>.ValidationFailure(
+                    $"La cuenta por cobrar {line.DocumentId} no pertenece al cliente del cobro."
+                );
+            if (
+                line.InstallmentId is { } installmentId
+                && receivable.Installments.All(i => i.Id != installmentId)
+            )
+                return Result<PaymentDto>.ValidationFailure(
+                    $"La cuota {installmentId} no pertenece a la cuenta por cobrar {line.DocumentId}."
                 );
 
             try

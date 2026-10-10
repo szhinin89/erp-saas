@@ -5,6 +5,7 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
+using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.ValueObjects;
@@ -322,8 +323,16 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
     /// CxC real (con factura ancla por FK) del cliente de prueba. <paramref name="foreignCompany"/>:
     /// la CxC (y su factura) pertenecen a OTRA empresa del mismo tenant — fuera del alcance del operador.
     /// </summary>
-    public async Task<Guid> CreateReceivableAsync(decimal amount, bool foreignCompany = false)
+    /// <param name="customerId">Cliente de la CxC; por defecto <see cref="CustomerId"/>.</param>
+    /// <param name="installments">Cuotas a generar (0 = sin cuotas, comportamiento previo).</param>
+    public async Task<Guid> CreateReceivableAsync(
+        decimal amount,
+        bool foreignCompany = false,
+        Guid? customerId = null,
+        int installments = 0
+    )
     {
+        var owner = customerId ?? CustomerId;
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var companyId = foreignCompany ? await EnsureForeignCompanyAsync(db) : CompanyId;
@@ -331,7 +340,7 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
             TenantId,
             companyId,
             BranchId,
-            CustomerId,
+            owner,
             CustomerSnapshot.Create("Cliente Idempotencia", "1710034065", "05"),
             invoiceNumber: $"001-001-{Random.Shared.Next(1, 999_999_999):D9}",
             issueDate: Today,
@@ -366,13 +375,60 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
             TenantId,
             companyId,
             invoice.Id,
-            CustomerId,
+            owner,
             amount,
             _adminId
         );
+        if (installments > 0)
+            receivable.GenerateInstallments(Today, 30 * installments, installments);
         db.SalesReceivables.Add(receivable);
         await db.SaveChangesAsync();
         return receivable.Id;
+    }
+
+    /// <summary>ZH-COLLECTIONS-CUSTOMER-SCOPE-01 — otro cliente del mismo tenant (rol Cliente).</summary>
+    public async Task<Guid> CreateCustomerAsync()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var partner = BusinessPartner.Create(
+            TenantId,
+            "04",
+            CompanyIdentityUpdateFixture.ValidRuc(),
+            null,
+            "Otro Cliente",
+            _adminId
+        );
+        db.BusinessPartners.Add(partner);
+        await db.SaveChangesAsync();
+        db.BusinessPartnerRoles.Add(
+            BusinessPartnerRole.Create(TenantId, partner.Id, RoleType.Customer, _adminId)
+        );
+        await db.SaveChangesAsync();
+        return partner.Id;
+    }
+
+    /// <summary>Installments de una CxC (Id por número de cuota).</summary>
+    public async Task<IReadOnlyList<Guid>> InstallmentIdsAsync(Guid receivableId)
+    {
+        using var scope = CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        return await db
+            .SalesReceivableInstallments.IgnoreQueryFilters()
+            .Where(i => i.ReceivableId == receivableId)
+            .OrderBy(i => i.InstallmentNumber)
+            .Select(i => i.Id)
+            .ToListAsync();
+    }
+
+    /// <summary>Cobros (cualquier estado) del tenant de prueba.</summary>
+    public async Task<int> CountCollectionsAsync()
+    {
+        using var scope = CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        return await db
+            .Payments.IgnoreQueryFilters()
+            .CountAsync(p => p.TenantId == TenantId && p.Direction == PaymentDirection.Collection);
     }
 
     private Guid? _foreignCompanyId;

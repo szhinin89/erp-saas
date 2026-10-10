@@ -523,4 +523,141 @@ public sealed class RegisterCollectionCommandHandlerTests
             Times.Never
         );
     }
+
+    // ── ZH-COLLECTIONS-CUSTOMER-SCOPE-01 ─────────────────────────────────────
+
+    private static readonly Guid OtherCustomerId = Guid.NewGuid();
+
+    private static SalesReceivable ReceivableOf(Guid customerId, decimal amount = 100m, int installments = 1)
+    {
+        var receivable = SalesReceivable.Create(TenantId, CompanyId, Guid.NewGuid(), customerId, amount, UserId);
+        receivable.GenerateInstallments(new DateOnly(2026, 7, 1), 30 * installments, installments);
+        return receivable;
+    }
+
+    private static void Expose(Mock<ISalesReceivableRepository> receivables, params SalesReceivable[] items)
+    {
+        foreach (var r in items)
+            receivables
+                .Setup(x => x.GetByIdAsync(TenantId, r.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(r);
+    }
+
+    private static RegisterCollectionCommand Collection(Guid customerId, params PaymentApplicationLineInput[] lines) =>
+        new(
+            customerId,
+            lines.Sum(l => l.AppliedAmount),
+            new DateOnly(2026, 7, 30),
+            null,
+            null,
+            lines,
+            ClientRequestId: Guid.NewGuid()
+        );
+
+    private static void ShouldNotPersist(Mock<IPaymentRepository> payments)
+    {
+        payments.Verify(
+            p => p.AddAsync(It.IsAny<Domain.Modules.Finance.Entities.Payment>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        payments.Verify(p => p.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cliente_A_no_puede_cobrar_la_CxC_del_cliente_B()
+    {
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var receivableOfB = ReceivableOf(OtherCustomerId);
+        Expose(receivables, receivableOfB);
+        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+
+        var result = await handler.Handle(
+            Collection(CustomerId, new PaymentApplicationLineInput(receivableOfB.Id, null, 40m)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no pertenece al cliente del cobro");
+        receivableOfB.PaidAmount.Should().Be(0m);
+        ShouldNotPersist(payments);
+    }
+
+    [Fact]
+    public async Task Una_linea_de_otro_cliente_rechaza_el_cobro_completo_sin_tocar_las_demas_CxC()
+    {
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var ownA = ReceivableOf(CustomerId);
+        var ownB = ReceivableOf(CustomerId);
+        var foreign = ReceivableOf(OtherCustomerId);
+        Expose(receivables, ownA, ownB, foreign);
+        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+
+        var result = await handler.Handle(
+            Collection(
+                CustomerId,
+                new PaymentApplicationLineInput(ownA.Id, null, 30m),
+                new PaymentApplicationLineInput(foreign.Id, null, 30m),
+                new PaymentApplicationLineInput(ownB.Id, null, 30m)
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        new[] { ownA, ownB, foreign }.Should().OnlyContain(r => r.PaidAmount == 0m);
+        ShouldNotPersist(payments);
+    }
+
+    [Fact]
+    public async Task Cuota_de_otra_CxC_se_rechaza()
+    {
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var target = ReceivableOf(CustomerId);
+        var other = ReceivableOf(CustomerId);
+        Expose(receivables, target, other);
+        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+
+        var result = await handler.Handle(
+            Collection(CustomerId, new PaymentApplicationLineInput(target.Id, other.Installments[0].Id, 40m)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no pertenece a la cuenta por cobrar");
+        target.PaidAmount.Should().Be(0m);
+        ShouldNotPersist(payments);
+    }
+
+    [Fact]
+    public async Task Cuota_inexistente_se_rechaza()
+    {
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var target = ReceivableOf(CustomerId);
+        Expose(receivables, target);
+        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+
+        var result = await handler.Handle(
+            Collection(CustomerId, new PaymentApplicationLineInput(target.Id, Guid.NewGuid(), 40m)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        ShouldNotPersist(payments);
+    }
+
+    [Fact]
+    public async Task Cuota_propia_del_mismo_cliente_se_acepta()
+    {
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var target = ReceivableOf(CustomerId, 100m, installments: 2);
+        Expose(receivables, target);
+        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+
+        var result = await handler.Handle(
+            Collection(CustomerId, new PaymentApplicationLineInput(target.Id, target.Installments[1].Id, 50m)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        target.PaidAmount.Should().Be(50m);
+    }
 }
