@@ -1,13 +1,13 @@
 ﻿{
-    "Generated":  "2026-10-03 08:26:21",
+    "Generated":  "2026-10-10 07:38:11",
     "Summary":  {
-                    "TotalFiles":  21
+                    "TotalFiles":  37
                 },
     "Migrations":  [
                        {
                            "Name":  "20260929143218_InitialEnterpriseBaseline",
-                           "SizeKB":  573.96,
-                           "Modified":  "2026-09-29 10:53:22"
+                           "SizeKB":  692.96,
+                           "Modified":  "2026-10-05 07:46:49"
                        },
                        {
                            "Name":  "20260929143218_InitialEnterpriseBaseline.Designer",
@@ -16,8 +16,8 @@
                        },
                        {
                            "Name":  "20260930024608_FinancialCommandIdempotency",
-                           "SizeKB":  3.82,
-                           "Modified":  "2026-09-29 21:46:32"
+                           "SizeKB":  3.78,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20260930024608_FinancialCommandIdempotency.Designer",
@@ -26,8 +26,8 @@
                        },
                        {
                            "Name":  "20261002040743_RetentionSriAnnulment",
-                           "SizeKB":  9.08,
-                           "Modified":  "2026-10-01 23:07:43"
+                           "SizeKB":  10.75,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261002040743_RetentionSriAnnulment.Designer",
@@ -36,8 +36,8 @@
                        },
                        {
                            "Name":  "20261002113907_RetentionSriAnnulmentVerification",
-                           "SizeKB":  3.13,
-                           "Modified":  "2026-10-02 11:23:05"
+                           "SizeKB":  3.3,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261002113907_RetentionSriAnnulmentVerification.Designer",
@@ -46,8 +46,8 @@
                        },
                        {
                            "Name":  "20261002170222_SriRetentionCatalogVersioning",
-                           "SizeKB":  13.22,
-                           "Modified":  "2026-10-02 12:02:23"
+                           "SizeKB":  20.32,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261002170222_SriRetentionCatalogVersioning.Designer",
@@ -56,8 +56,8 @@
                        },
                        {
                            "Name":  "20261002173418_SriRetentionIncomeCatalogAts20260806",
-                           "SizeKB":  31.81,
-                           "Modified":  "2026-10-02 12:34:58"
+                           "SizeKB":  35.78,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261002173418_SriRetentionIncomeCatalogAts20260806.Designer",
@@ -66,8 +66,8 @@
                        },
                        {
                            "Name":  "20261003010236_CommunicationDeliveryHardening",
-                           "SizeKB":  1.96,
-                           "Modified":  "2026-10-02 20:02:36"
+                           "SizeKB":  1.87,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261003010236_CommunicationDeliveryHardening.Designer",
@@ -76,8 +76,8 @@
                        },
                        {
                            "Name":  "20261003020718_CommunicationContract",
-                           "SizeKB":  11.41,
-                           "Modified":  "2026-10-02 21:09:40"
+                           "SizeKB":  12.11,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261003020718_CommunicationContract.Designer",
@@ -86,8 +86,8 @@
                        },
                        {
                            "Name":  "20261003035732_CommunicationTemplates",
-                           "SizeKB":  4.52,
-                           "Modified":  "2026-10-02 22:57:45"
+                           "SizeKB":  4.41,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261003035732_CommunicationTemplates.Designer",
@@ -96,8 +96,8 @@
                        },
                        {
                            "Name":  "20261003045206_EdocCommunications",
-                           "SizeKB":  1.29,
-                           "Modified":  "2026-10-02 23:52:06"
+                           "SizeKB":  1.31,
+                           "Modified":  "2026-10-05 07:46:48"
                        },
                        {
                            "Name":  "20261003045206_EdocCommunications.Designer",
@@ -105,9 +105,89 @@
                            "Modified":  "2026-10-02 23:52:06"
                        },
                        {
+                           "Name":  "20261003233053_PosCashTenderedAndEmissionTypeSnapshotNoDefault",
+                           "SizeKB":  1.88,
+                           "Modified":  "2026-10-05 07:46:48"
+                       },
+                       {
+                           "Name":  "20261003233053_PosCashTenderedAndEmissionTypeSnapshotNoDefault.Designer",
+                           "SizeKB":  828.84,
+                           "Modified":  "2026-10-03 18:30:54"
+                       },
+                       {
+                           "Name":  "20261006002212_ItemCompanyScopeAndInventoryNature",
+                           "SizeKB":  22.43,
+                           "Modified":  "2026-10-05 19:29:55"
+                       },
+                       {
+                           "Name":  "20261006002212_ItemCompanyScopeAndInventoryNature.Designer",
+                           "SizeKB":  831.74,
+                           "Modified":  "2026-10-05 19:22:12"
+                       },
+                       {
+                           "Name":  "20261006120230_NegativeSaleCostObligations",
+                           "SizeKB":  12.18,
+                           "Modified":  "2026-10-06 07:02:30"
+                       },
+                       {
+                           "Name":  "20261006120230_NegativeSaleCostObligations.Designer",
+                           "SizeKB":  842.55,
+                           "Modified":  "2026-10-06 07:02:30"
+                       },
+                       {
+                           "Name":  "20261009224546_InitialReceivableOrigin",
+                           "SizeKB":  6.47,
+                           "Modified":  "2026-10-09 17:45:47"
+                       },
+                       {
+                           "Name":  "20261009224546_InitialReceivableOrigin.Designer",
+                           "SizeKB":  845.38,
+                           "Modified":  "2026-10-09 17:45:47"
+                       },
+                       {
+                           "Name":  "20261010005447_InitialPayableOrigin",
+                           "SizeKB":  3.16,
+                           "Modified":  "2026-10-09 19:54:48"
+                       },
+                       {
+                           "Name":  "20261010005447_InitialPayableOrigin.Designer",
+                           "SizeKB":  846.85,
+                           "Modified":  "2026-10-09 19:54:48"
+                       },
+                       {
+                           "Name":  "20261010023108_SriDocTypeSeedActiveFlags",
+                           "SizeKB":  2.77,
+                           "Modified":  "2026-10-09 21:31:08"
+                       },
+                       {
+                           "Name":  "20261010023108_SriDocTypeSeedActiveFlags.Designer",
+                           "SizeKB":  846.77,
+                           "Modified":  "2026-10-09 21:31:08"
+                       },
+                       {
+                           "Name":  "20261010031536_SriVatRateSeedActiveFlags",
+                           "SizeKB":  1.46,
+                           "Modified":  "2026-10-09 22:15:36"
+                       },
+                       {
+                           "Name":  "20261010031536_SriVatRateSeedActiveFlags.Designer",
+                           "SizeKB":  846.72,
+                           "Modified":  "2026-10-09 22:15:36"
+                       },
+                       {
+                           "Name":  "20261010042542_OpeningBalancePosting",
+                           "SizeKB":  3.71,
+                           "Modified":  "2026-10-09 23:25:43"
+                       },
+                       {
+                           "Name":  "20261010042542_OpeningBalancePosting.Designer",
+                           "SizeKB":  851.12,
+                           "Modified":  "2026-10-09 23:25:43"
+                       },
+                       {
                            "Name":  "ErpDbContextModelSnapshot",
-                           "SizeKB":  828.38,
-                           "Modified":  "2026-10-02 23:52:06"
+                           "SizeKB":  851,
+                           "Modified":  "2026-10-09 23:25:43"
                        }
                    ]
 }

@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-10-03 08:27:04",
+    "generated":  "2026-10-10 07:42:24",
     "coverage":  {
-                     "mappedFeaturePoints":  45,
-                     "totalFeaturePoints":  285,
-                     "percentage":  15.79
+                     "mappedFeaturePoints":  46,
+                     "totalFeaturePoints":  289,
+                     "percentage":  15.92
                  },
     "domains":  [
                     {
@@ -164,7 +164,7 @@
                                                               }
                                                           ],
                                             "risks":  [
-                                                          "4 large file(s) (\u003e=500 lines)"
+                                                          "5 large file(s) (\u003e=500 lines)"
                                                       ],
                                             "risk":  "MEDIUM"
                                         }
@@ -188,12 +188,12 @@
                                         {
                                             "name":  "Inventory",
                                             "score":  81.5,
-                                            "features":  33,
+                                            "features":  34,
                                             "processes":  [
 
                                                           ],
                                             "risks":  [
-
+                                                          "1 large file(s) (\u003e=500 lines)"
                                                       ],
                                             "risk":  "MEDIUM"
                                         }
@@ -205,7 +205,7 @@
                                         {
                                             "name":  "Sales",
                                             "score":  81.5,
-                                            "features":  18,
+                                            "features":  19,
                                             "processes":  [
                                                               {
                                                                   "name":  "Venta",
@@ -447,7 +447,7 @@
                                         {
                                             "name":  "InitialLoad",
                                             "score":  81.5,
-                                            "features":  9,
+                                            "features":  11,
                                             "processes":  [
 
                                                           ],

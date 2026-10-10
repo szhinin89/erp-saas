@@ -1,22 +1,22 @@
 ﻿{
-    "generated":  "2026-10-03 08:27:04",
+    "generated":  "2026-10-10 07:42:25",
     "source":  "architecture-progress.json, dashboard-model-v12.json, model-health.json, modules.json, features.json, processes.json, tasks.json",
     "erpCompletion":  84,
-    "engineeringHealth":  57.56,
+    "engineeringHealth":  59.57,
     "architectureHealth":  100,
     "productionReadiness":  "NOT READY",
     "overallStatus":  "NOT READY",
     "criticalGaps":  [
-                         "Security Score bajo: 7.2% (Secrets detectados: 184, endpoints anonimos: 12)",
-                         "Quality Score bajo: 10.85%",
-                         "Technical Debt alta: 38 critical findings (TODO: 731, FIXME: 30)",
+                         "Security Score bajo: 20.2% (Secrets detectados: 199, endpoints anonimos: 12)",
+                         "Quality Score bajo: 7.9%",
+                         "Technical Debt alta: 38 critical findings (TODO: 734, FIXME: 30)",
                          "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                          "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
                          "Etapa incompleta: Operaciones al 83% (81 / 98 tareas)"
                      ],
     "recommendedOrder":  [
-                             "1. Resolver problemas de seguridad (Security Score 7.2%, 184 secretos, 12 endpoints anonimos)",
-                             "2. Reducir deuda tecnica (38 critical findings, 731 TODO, 30 FIXME)",
+                             "1. Resolver problemas de seguridad (Security Score 20.2%, 199 secretos, 12 endpoints anonimos)",
+                             "2. Reducir deuda tecnica (38 critical findings, 734 TODO, 30 FIXME)",
                              "3. Completar fases parcialmente implementadas: 45 items abiertos, priorizar Futuro (70%), Fiscal / SRI (75%), Operaciones (83%)",
                              "4. Completar fases sin iniciar (10 items en: Fiscal / SRI, Futuro)",
                              "5. Revalidar el modelo (22 items sin mapear, integrityScore 100%)"
@@ -25,7 +25,7 @@
                       "Revisar 1 marcador(es) HACK",
                       "Completar 8 ruta(s) de codigo NotImplementedException",
                       "Resolver 30 marcador(es) FIXME",
-                      "Triaje y reduccion de 731 marcador(es) TODO",
+                      "Triaje y reduccion de 734 marcador(es) TODO",
                       "Registrar dominio para 16 modulo(s) sin dominio asignado: Dashboard, Payables, Media, Menu, Settings, Integration, Retentions, Common, DocTypes, Expenses, InitialLoad, Catalog, Auxiliary, Communications, Accounting, Navigation",
                       "Completar fase cerca del 100%: Estándares esta al 99%",
                       "Completar fase cerca del 100%: Core ERP esta al 94%",

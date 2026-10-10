@@ -817,6 +817,13 @@
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Sales/UseCases/SalesReturnRefundHandler.cs"
                                           ]
+                         },
+                         {
+                             "name":  "Sales Warehouse Guard",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Sales/UseCases/SalesWarehouseGuard.cs"
+                                          ]
                          }
                      ]
     },
@@ -1475,6 +1482,13 @@
                                           ]
                          },
                          {
+                             "name":  "Post Initial Balance",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/PostInitialBalance"
+                                          ]
+                         },
+                         {
                              "name":  "Update Stock Adjustment",
                              "status":  "implemented",
                              "evidence":  [
@@ -1999,6 +2013,13 @@
                                           ]
                          },
                          {
+                             "name":  "Opening Balance Date",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/OpeningBalanceDate"
+                                          ]
+                         },
+                         {
                              "name":  "Preview Import Batch",
                              "status":  "implemented",
                              "evidence":  [
@@ -2017,6 +2038,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/InitialLoad/UseCases/ValidateImportBatch"
+                                          ]
+                         },
+                         {
+                             "name":  "Import Batch Staging",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/InitialLoad/UseCases/ImportBatchStaging.cs"
                                           ]
                          }
                      ]

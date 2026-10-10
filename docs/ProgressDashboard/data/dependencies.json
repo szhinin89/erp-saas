@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-03 08:27:16",
+    "generated":  "2026-10-10 07:42:36",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -14,11 +14,11 @@
     "nodes":  [
                   {
                       "id":  "Company",
-                      "filesScanned":  56,
-                      "fanIn":  14,
+                      "filesScanned":  57,
+                      "fanIn":  15,
                       "fanOut":  6,
-                      "coupling":  20,
-                      "instability":  0.3,
+                      "coupling":  21,
+                      "instability":  0.286,
                       "cohesionApprox":  0.562,
                       "busFactor":  1,
                       "isolated":  false,
@@ -39,6 +39,7 @@
                                            "ElectronicDocuments",
                                            "ElectronicInvoicing",
                                            "Finance",
+                                           "InitialLoad",
                                            "Integration",
                                            "Payables",
                                            "Retentions",
@@ -67,10 +68,10 @@
                   {
                       "id":  "Payables",
                       "filesScanned":  27,
-                      "fanIn":  6,
+                      "fanIn":  7,
                       "fanOut":  9,
-                      "coupling":  15,
-                      "instability":  0.6,
+                      "coupling":  16,
+                      "instability":  0.562,
                       "cohesionApprox":  0.397,
                       "busFactor":  1,
                       "isolated":  false,
@@ -90,6 +91,7 @@
                                            "Caja",
                                            "Expenses",
                                            "Finance",
+                                           "InitialLoad",
                                            "Purchases",
                                            "Retentions"
                                        ]
@@ -115,10 +117,10 @@
                   {
                       "id":  "Companies",
                       "filesScanned":  59,
-                      "fanIn":  8,
+                      "fanIn":  9,
                       "fanOut":  7,
-                      "coupling":  15,
-                      "instability":  0.467,
+                      "coupling":  16,
+                      "instability":  0.438,
                       "cohesionApprox":  0.274,
                       "busFactor":  1,
                       "isolated":  false,
@@ -133,6 +135,7 @@
                                     ],
                       "dependedOnBy":  [
                                            "Company",
+                                           "InitialLoad",
                                            "Inventory",
                                            "Items",
                                            "Pricing",
@@ -269,13 +272,13 @@
                   },
                   {
                       "id":  "Sales",
-                      "filesScanned":  85,
-                      "fanIn":  6,
+                      "filesScanned":  89,
+                      "fanIn":  7,
                       "fanOut":  17,
-                      "coupling":  23,
-                      "instability":  0.739,
-                      "cohesionApprox":  0.369,
-                      "busFactor":  1,
+                      "coupling":  24,
+                      "instability":  0.708,
+                      "cohesionApprox":  0.373,
+                      "busFactor":  2,
                       "isolated":  false,
                       "dependsOn":  [
                                         "Access",
@@ -301,18 +304,19 @@
                                            "Caja",
                                            "Companies",
                                            "Finance",
+                                           "InitialLoad",
                                            "Inventory",
                                            "Payables"
                                        ]
                   },
                   {
                       "id":  "Items",
-                      "filesScanned":  75,
+                      "filesScanned":  77,
                       "fanIn":  6,
                       "fanOut":  6,
                       "coupling":  12,
                       "instability":  0.5,
-                      "cohesionApprox":  0.526,
+                      "cohesionApprox":  0.514,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -335,10 +339,10 @@
                   {
                       "id":  "Purchases",
                       "filesScanned":  138,
-                      "fanIn":  8,
+                      "fanIn":  9,
                       "fanOut":  12,
-                      "coupling":  20,
-                      "instability":  0.6,
+                      "coupling":  21,
+                      "instability":  0.571,
                       "cohesionApprox":  0.495,
                       "busFactor":  1,
                       "isolated":  false,
@@ -360,6 +364,7 @@
                                            "Accounting",
                                            "Expenses",
                                            "Finance",
+                                           "InitialLoad",
                                            "Inventory",
                                            "Items",
                                            "Payables",
@@ -420,7 +425,7 @@
                       "fanOut":  12,
                       "coupling":  16,
                       "instability":  0.75,
-                      "cohesionApprox":  0.414,
+                      "cohesionApprox":  0.41,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -496,16 +501,17 @@
                   },
                   {
                       "id":  "Inventory",
-                      "filesScanned":  100,
+                      "filesScanned":  110,
                       "fanIn":  6,
-                      "fanOut":  8,
-                      "coupling":  14,
-                      "instability":  0.571,
-                      "cohesionApprox":  0.534,
+                      "fanOut":  9,
+                      "coupling":  15,
+                      "instability":  0.6,
+                      "cohesionApprox":  0.536,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
                                         "Access",
+                                        "Accounting",
                                         "Audit",
                                         "Branches",
                                         "Common",
@@ -526,10 +532,10 @@
                   {
                       "id":  "Finance",
                       "filesScanned":  31,
-                      "fanIn":  4,
+                      "fanIn":  5,
                       "fanOut":  9,
-                      "coupling":  13,
-                      "instability":  0.692,
+                      "coupling":  14,
+                      "instability":  0.643,
                       "cohesionApprox":  0.29,
                       "busFactor":  1,
                       "isolated":  false,
@@ -547,6 +553,7 @@
                       "dependedOnBy":  [
                                            "Accounting",
                                            "Caja",
+                                           "InitialLoad",
                                            "Payables",
                                            "Sales"
                                        ]
@@ -625,7 +632,7 @@
                       "fanOut":  10,
                       "coupling":  14,
                       "instability":  0.714,
-                      "cohesionApprox":  0.432,
+                      "cohesionApprox":  0.436,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -650,10 +657,10 @@
                   {
                       "id":  "Expenses",
                       "filesScanned":  18,
-                      "fanIn":  3,
+                      "fanIn":  4,
                       "fanOut":  8,
-                      "coupling":  11,
-                      "instability":  0.727,
+                      "coupling":  12,
+                      "instability":  0.667,
                       "cohesionApprox":  0.362,
                       "busFactor":  1,
                       "isolated":  false,
@@ -669,6 +676,7 @@
                                     ],
                       "dependedOnBy":  [
                                            "Accounting",
+                                           "InitialLoad",
                                            "Purchases",
                                            "Retentions"
                                        ]
@@ -767,21 +775,30 @@
                   },
                   {
                       "id":  "InitialLoad",
-                      "filesScanned":  48,
-                      "fanIn":  0,
-                      "fanOut":  3,
-                      "coupling":  3,
-                      "instability":  1,
-                      "cohesionApprox":  0.664,
+                      "filesScanned":  91,
+                      "fanIn":  1,
+                      "fanOut":  12,
+                      "coupling":  13,
+                      "instability":  0.923,
+                      "cohesionApprox":  0.617,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
+                                        "Accounting",
                                         "Common",
+                                        "Companies",
+                                        "Company",
+                                        "Expenses",
+                                        "Finance",
                                         "Inventory",
-                                        "Items"
+                                        "Items",
+                                        "Payables",
+                                        "Purchases",
+                                        "Sales",
+                                        "SriCatalogs"
                                     ],
                       "dependedOnBy":  [
-
+                                           "Accounting"
                                        ]
                   },
                   {
@@ -804,12 +821,12 @@
                   },
                   {
                       "id":  "ElectronicDocuments",
-                      "filesScanned":  109,
+                      "filesScanned":  110,
                       "fanIn":  4,
                       "fanOut":  7,
                       "coupling":  11,
                       "instability":  0.636,
-                      "cohesionApprox":  0.574,
+                      "cohesionApprox":  0.573,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -852,7 +869,7 @@
                       "fanOut":  4,
                       "coupling":  8,
                       "instability":  0.5,
-                      "cohesionApprox":  0.641,
+                      "cohesionApprox":  0.638,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -870,12 +887,12 @@
                   },
                   {
                       "id":  "Accounting",
-                      "filesScanned":  86,
-                      "fanIn":  5,
-                      "fanOut":  10,
-                      "coupling":  15,
-                      "instability":  0.667,
-                      "cohesionApprox":  0.536,
+                      "filesScanned":  87,
+                      "fanIn":  7,
+                      "fanOut":  11,
+                      "coupling":  18,
+                      "instability":  0.611,
+                      "cohesionApprox":  0.533,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -884,6 +901,7 @@
                                         "Common",
                                         "Expenses",
                                         "Finance",
+                                        "InitialLoad",
                                         "Inventory",
                                         "Payables",
                                         "Purchases",
@@ -894,6 +912,8 @@
                                            "Caja",
                                            "Expenses",
                                            "Finance",
+                                           "InitialLoad",
+                                           "Inventory",
                                            "Purchases",
                                            "Sales"
                                        ]
@@ -901,10 +921,10 @@
                   {
                       "id":  "SriCatalogs",
                       "filesScanned":  24,
-                      "fanIn":  8,
+                      "fanIn":  9,
                       "fanOut":  1,
-                      "coupling":  9,
-                      "instability":  0.111,
+                      "coupling":  10,
+                      "instability":  0.1,
                       "cohesionApprox":  0.857,
                       "busFactor":  1,
                       "isolated":  false,
@@ -917,6 +937,7 @@
                                            "Configuration",
                                            "ElectronicDocuments",
                                            "Expenses",
+                                           "InitialLoad",
                                            "Purchases",
                                            "Retentions",
                                            "Sales"
@@ -1063,12 +1084,13 @@
                   {
                       "from":  "Inventory",
                       "to":  "Companies",
-                      "referenceCount":  4,
+                      "referenceCount":  6,
                       "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Inventory/Costing/InventoryCostPendingUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/Stock/Common/StockAdjustmentLineResolver.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CreateStockAdjustment/CreateStockAdjustmentCommandHandler.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/ExecuteStockAdjustment/ExecuteStockAdjustmentCommandHandler.cs",
-                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/UpdateStockAdjustment/UpdateStockAdjustmentCommandHandler.cs"
+                                       "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/PostInitialBalance/PostInitialBalanceCommandHandler.cs"
                                    ]
                   },
                   {
@@ -1104,7 +1126,7 @@
                   {
                       "from":  "Caja",
                       "to":  "Common",
-                      "referenceCount":  25,
+                      "referenceCount":  24,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingPaymentSnapshot.cs",
                                        "backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestQueries.cs",
@@ -1199,7 +1221,7 @@
                   {
                       "from":  "InitialLoad",
                       "to":  "Inventory",
-                      "referenceCount":  5,
+                      "referenceCount":  7,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialStockImportProcessor.cs",
                                        "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialStockImportProcessor.cs",
@@ -1229,6 +1251,14 @@
                                        "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/GetOperationalPreferences/GetOperationalPreferencesQueryHandler.cs",
                                        "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommand.cs",
                                        "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "InitialLoad",
+                      "to":  "Expenses",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceConstraintsReader.cs"
                                    ]
                   },
                   {
@@ -1426,6 +1456,26 @@
                                    ]
                   },
                   {
+                      "from":  "Communications",
+                      "to":  "ElectronicDocuments",
+                      "referenceCount":  9,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContracts.cs",
+                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContracts.cs",
+                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContributorResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs",
+                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Retentions",
+                      "to":  "Ride",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Retentions/UseCases/GenerateRetentionRidePdfUseCases.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Sales",
                       "to":  "Pricing",
                       "referenceCount":  7,
@@ -1464,7 +1514,7 @@
                   {
                       "from":  "Sales",
                       "to":  "Company",
-                      "referenceCount":  17,
+                      "referenceCount":  16,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
                                        "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategy.cs",
@@ -1503,7 +1553,7 @@
                   {
                       "from":  "Inventory",
                       "to":  "Items",
-                      "referenceCount":  13,
+                      "referenceCount":  14,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Services/ItemMatchConfirmationService.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Services/ItemMatchFinder.cs",
@@ -1530,6 +1580,18 @@
                       "referenceCount":  1,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Ride/Services/RidePipeline.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "InitialLoad",
+                      "to":  "Payables",
+                      "referenceCount":  5,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialPayableImportProcessor.Confirm.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialPayableImportProcessor.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialPayableImportProcessor.cs",
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceConstraintsReader.cs",
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceSourceReader.cs"
                                    ]
                   },
                   {
@@ -1841,6 +1903,14 @@
                                    ]
                   },
                   {
+                      "from":  "InitialLoad",
+                      "to":  "Purchases",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceConstraintsReader.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Retentions",
                       "to":  "Payables",
                       "referenceCount":  4,
@@ -1849,6 +1919,18 @@
                                        "backend/src/ERP.Application/Modules/Retentions/Services/RetentionCanceller.cs",
                                        "backend/src/ERP.Application/Modules/Retentions/Services/RetentionCanceller.cs",
                                        "backend/src/ERP.Application/Modules/Retentions/Services/RetentionCanceller.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "InitialLoad",
+                      "to":  "Accounting",
+                      "referenceCount":  5,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/OpeningBalancePostingPreflight.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/PostOpeningBalance.cs"
                                    ]
                   },
                   {
@@ -2057,13 +2139,13 @@
                   {
                       "from":  "Items",
                       "to":  "Common",
-                      "referenceCount":  53,
+                      "referenceCount":  56,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Items/ItemMappingService.cs",
+                                       "backend/src/ERP.Application/Modules/Items/ItemVatValidation.cs",
                                        "backend/src/ERP.Application/Modules/Items/UseCases/ItemTypeUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Items/UseCases/AddItemVariant/AddItemVariantCommand.cs",
-                                       "backend/src/ERP.Application/Modules/Items/UseCases/AttributeDefinitions/AttributeDefinitionUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Items/UseCases/AttributeGroups/AttributeGroupUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Items/UseCases/AttributeDefinitions/AttributeDefinitionUseCases.cs"
                                    ]
                   },
                   {
@@ -2085,6 +2167,14 @@
                                        "backend/src/ERP.Application/Modules/Caja/UseCases/CloseCashSessionUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Caja/UseCases/CreateCashRegisterUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Caja/UseCases/OpenCashSessionUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Accounting",
+                      "to":  "InitialLoad",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Accounting/UseCases/JournalEntries/ReverseJournalEntryUseCases.cs"
                                    ]
                   },
                   {
@@ -2122,23 +2212,24 @@
                                    ]
                   },
                   {
-                      "from":  "Retentions",
-                      "to":  "Ride",
-                      "referenceCount":  1,
+                      "from":  "Inventory",
+                      "to":  "Accounting",
+                      "referenceCount":  2,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Retentions/UseCases/GenerateRetentionRidePdfUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Inventory/Costing/InventoryCostAccounting.cs",
+                                       "backend/src/ERP.Application/Modules/Inventory/Costing/InventoryCostAccounting.cs"
                                    ]
                   },
                   {
                       "from":  "InitialLoad",
                       "to":  "Common",
-                      "referenceCount":  28,
+                      "referenceCount":  54,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialStockImportProcessor.cs",
-                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/ItemImportProcessor.cs",
-                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/SupplierImportProcessor.cs",
-                                       "backend/src/ERP.Application/Modules/InitialLoad/UseCases/CancelImportBatch/CancelImportBatchCommand.cs",
-                                       "backend/src/ERP.Application/Modules/InitialLoad/UseCases/CancelImportBatch/CancelImportBatchHandler.cs"
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/OpeningBalancePostingPreflight.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/PostOpeningBalance.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/BusinessPartnerImportRules.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/BusinessPartnerImportRules.cs"
                                    ]
                   },
                   {
@@ -2199,6 +2290,16 @@
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Retentions/Services/RetentionElectronicDocumentDataProvider.cs",
                                        "backend/src/ERP.Application/Modules/Retentions/Services/RetentionEligibilityService.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "InitialLoad",
+                      "to":  "SriCatalogs",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/BusinessPartnerImportRules.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialPayableImportProcessor.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialPayableImportProcessor.cs"
                                    ]
                   },
                   {
@@ -2290,6 +2391,14 @@
                                        "backend/src/ERP.Application/Modules/Expenses/Services/ExpenseRetentionOriginCancellation.cs",
                                        "backend/src/ERP.Application/Modules/Expenses/Services/ExpenseRetentionOriginCancellation.cs",
                                        "backend/src/ERP.Application/Modules/Expenses/UseCases/Documents/CancelExpenseDocumentUseCases.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "InitialLoad",
+                      "to":  "Finance",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceConstraintsReader.cs"
                                    ]
                   },
                   {
@@ -2526,7 +2635,7 @@
                   {
                       "from":  "Accounting",
                       "to":  "Common",
-                      "referenceCount":  37,
+                      "referenceCount":  38,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Accounting/Posting/IPostingEngine.cs",
                                        "backend/src/ERP.Application/Modules/Accounting/Posting/JournalValidator.cs",
@@ -2614,7 +2723,7 @@
                   {
                       "from":  "Inventory",
                       "to":  "Common",
-                      "referenceCount":  84,
+                      "referenceCount":  92,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/CreateInventoryAdjustmentReason/CreateInventoryAdjustmentReasonCommand.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/CreateInventoryAdjustmentReason/CreateInventoryAdjustmentReasonCommandHandler.cs",
@@ -2637,13 +2746,13 @@
                   {
                       "from":  "Sales",
                       "to":  "ElectronicDocuments",
-                      "referenceCount":  14,
+                      "referenceCount":  15,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
                                        "backend/src/ERP.Application/Modules/Sales/Communications/SalesElectronicDocumentCommunicationContributor.cs",
                                        "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
                                        "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs",
-                                       "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs"
+                                       "backend/src/ERP.Application/Modules/Sales/Services/ISalesAuthorizationRetryReader.cs"
                                    ]
                   },
                   {
@@ -2776,15 +2885,15 @@
                                    ]
                   },
                   {
-                      "from":  "Communications",
-                      "to":  "ElectronicDocuments",
-                      "referenceCount":  9,
+                      "from":  "InitialLoad",
+                      "to":  "Sales",
+                      "referenceCount":  5,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContracts.cs",
-                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContracts.cs",
-                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContributorResolver.cs",
-                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs",
-                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs"
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialReceivableImportProcessor.Confirm.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialReceivableImportProcessor.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialReceivableImportProcessor.cs",
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceConstraintsReader.cs",
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceSourceReader.cs"
                                    ]
                   },
                   {
@@ -2799,13 +2908,32 @@
                   {
                       "from":  "ElectronicDocuments",
                       "to":  "Common",
-                      "referenceCount":  73,
+                      "referenceCount":  74,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/ElectronicDocuments/AdditionalInfo/ElectronicDocumentAdditionalInfoComposer.cs",
                                        "backend/src/ERP.Application/Modules/ElectronicDocuments/AdditionalInfo/IElectronicDocumentAdditionalInfoComposer.cs",
                                        "backend/src/ERP.Application/Modules/ElectronicDocuments/AdditionalInfo/SystemProviderRucAdditionalInfoContributor.cs",
                                        "backend/src/ERP.Application/Modules/ElectronicDocuments/Communications/ElectronicDocumentAuthorizedXmlAttachmentProvider.cs",
                                        "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/CommercialElectronicDocumentXmlSupplier.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "InitialLoad",
+                      "to":  "Company",
+                      "referenceCount":  3,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Interfaces/IOpeningBalanceConstraintsReader.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/UseCases/OpeningBalanceDate/OpeningBalanceDateUseCases.cs",
+                                       "backend/src/ERP.Infrastructure/InitialLoad/OpeningBalanceConstraintsReader.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "InitialLoad",
+                      "to":  "Companies",
+                      "referenceCount":  2,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/InitialLoad/Processors/InitialStockImportProcessor.cs",
+                                       "backend/src/ERP.Application/Modules/InitialLoad/UseCases/OpeningBalanceDate/OpeningBalanceDateUseCases.cs"
                                    ]
                   },
                   {
@@ -2820,7 +2948,7 @@
                   {
                       "from":  "Sales",
                       "to":  "Inventory",
-                      "referenceCount":  7,
+                      "referenceCount":  8,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesReturnUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesReturnUseCases.cs",
@@ -2951,6 +3079,7 @@
                    "Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Items",
                    "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Purchases",
                    "Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Branches",
+                   "Accounting -\u003e Inventory -\u003e Accounting",
                    "Access -\u003e Auth -\u003e Access",
                    "Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Access -\u003e Auth -\u003e Branches",
                    "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Inventory -\u003e Access -\u003e Auth -\u003e Company",
@@ -2973,24 +3102,31 @@
                    "Caja -\u003e Payables -\u003e Caja",
                    "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Caja -\u003e Payables -\u003e Purchases",
                    "Sales -\u003e Accounting -\u003e Caja -\u003e Sales",
-                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Configuration",
-                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e SriCatalogs",
-                   "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Expenses -\u003e Purchases",
-                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Expenses -\u003e SriCatalogs",
-                   "Retentions -\u003e Expenses -\u003e Retentions",
-                   "Accounting -\u003e Retentions -\u003e Expenses -\u003e Accounting",
-                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Communications -\u003e Configuration",
-                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Communications -\u003e Company",
-                   "Retentions -\u003e Communications -\u003e ElectronicDocuments -\u003e Retentions",
-                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Communications -\u003e ElectronicDocuments -\u003e SriCatalogs",
-                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Communications -\u003e ElectronicDocuments -\u003e Configuration",
-                   "Communications -\u003e ElectronicDocuments -\u003e Communications",
-                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
-                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e Configuration",
-                   "Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e Companies",
-                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Ride -\u003e Company",
-                   "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Purchases",
-                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Retentions -\u003e Company",
+                   "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Purchases",
+                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e SriCatalogs",
+                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Configuration",
+                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e SriCatalogs",
+                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e Configuration",
+                   "Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e Companies",
+                   "Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Retentions",
+                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e SriCatalogs",
+                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Configuration",
+                   "ElectronicDocuments -\u003e Communications -\u003e ElectronicDocuments",
+                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Communications -\u003e Configuration",
+                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Communications -\u003e Company",
+                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e ElectronicDocuments -\u003e Company",
+                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Ride -\u003e Company",
+                   "Expenses -\u003e Retentions -\u003e Expenses",
+                   "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Purchases",
+                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Retentions -\u003e Company",
+                   "Accounting -\u003e InitialLoad -\u003e Expenses -\u003e Accounting",
+                   "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Purchases",
+                   "Accounting -\u003e InitialLoad -\u003e Accounting",
+                   "SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e SriCatalogs",
+                   "Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Items",
+                   "Sales -\u003e Accounting -\u003e InitialLoad -\u003e Sales",
+                   "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Company",
+                   "Companies -\u003e Sales -\u003e Accounting -\u003e InitialLoad -\u003e Companies",
                    "Purchases -\u003e Pricing -\u003e Companies -\u003e Sales -\u003e Accounting -\u003e Purchases",
                    "Sales -\u003e Accounting -\u003e Sales",
                    "Pricing -\u003e Companies -\u003e Sales -\u003e Pricing",
@@ -3006,52 +3142,52 @@
                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Configuration"
                ],
     "depthByModule":  {
-                          "Company":  17,
+                          "Company":  18,
                           "Dashboard":  1,
                           "Payables":  5,
                           "Media":  1,
-                          "Companies":  10,
+                          "Companies":  11,
                           "Menu":  0,
                           "Auth":  2,
-                          "Settings":  16,
-                          "OrgConfig":  17,
-                          "Integration":  18,
+                          "Settings":  17,
+                          "OrgConfig":  18,
+                          "Integration":  19,
                           "Access":  3,
-                          "Sales":  9,
-                          "Items":  13,
-                          "Purchases":  12,
+                          "Sales":  10,
+                          "Items":  14,
+                          "Purchases":  13,
                           "Tenants":  1,
-                          "Session":  18,
-                          "Retentions":  7,
+                          "Session":  19,
+                          "Retentions":  6,
                           "Common":  0,
                           "Inventory":  4,
                           "Finance":  4,
-                          "Branches":  16,
+                          "Branches":  17,
                           "DocTypes":  1,
-                          "Pricing":  11,
+                          "Pricing":  12,
                           "Caja":  6,
-                          "Expenses":  6,
-                          "ElectronicInvoicing":  18,
+                          "Expenses":  7,
+                          "ElectronicInvoicing":  19,
                           "Security":  4,
-                          "Configuration":  15,
-                          "Ride":  4,
-                          "InitialLoad":  14,
-                          "Catalog":  15,
+                          "Configuration":  16,
+                          "Ride":  3,
+                          "InitialLoad":  8,
+                          "Catalog":  16,
                           "ElectronicDocuments":  2,
                           "Auxiliary":  0,
-                          "Communications":  3,
-                          "Accounting":  8,
-                          "SriCatalogs":  14,
+                          "Communications":  1,
+                          "Accounting":  9,
+                          "SriCatalogs":  15,
                           "Audit":  1,
                           "Navigation":  1
                       },
-    "maxDependencyDepth":  18,
+    "maxDependencyDepth":  19,
     "centralModules":  [
                            "Common",
                            "Sales",
-                           "Purchases",
                            "Company",
-                           "Configuration"
+                           "Purchases",
+                           "Accounting"
                        ],
     "criticalModules":  [
                             "Common",

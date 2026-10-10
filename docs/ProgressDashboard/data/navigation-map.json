@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-03 08:27:19",
+    "generated":  "2026-10-10 07:42:39",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -104,9 +104,9 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  1007,
+                                                                "SourceFiles":  1039,
                                                                 "Pages":  0,
-                                                                "Components":  127,
+                                                                "Components":  128,
                                                                 "Hooks":  8,
                                                                 "Services":  0,
                                                                 "Stores":  0,
@@ -432,39 +432,39 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  96,
-                                             "DbSets":  187,
+                                             "DbContext":  116,
+                                             "DbSets":  188,
                                              "EntityConfigurations":  0,
                                              "Repositories":  95,
-                                             "Migrations":  21
+                                             "Migrations":  37
                                          },
                        "migrations":  {
-                                          "totalFiles":  21,
+                                          "totalFiles":  37,
                                           "mostRecent":  [
                                                              {
-                                                                 "name":  "20261003045206_EdocCommunications",
-                                                                 "modified":  "2026-10-02 23:52:06",
-                                                                 "sizeKB":  1.29
+                                                                 "name":  "20261010042542_OpeningBalancePosting",
+                                                                 "modified":  "2026-10-09 23:25:43",
+                                                                 "sizeKB":  3.71
                                                              },
                                                              {
-                                                                 "name":  "20261003045206_EdocCommunications.Designer",
-                                                                 "modified":  "2026-10-02 23:52:06",
-                                                                 "sizeKB":  828.49
+                                                                 "name":  "20261010042542_OpeningBalancePosting.Designer",
+                                                                 "modified":  "2026-10-09 23:25:43",
+                                                                 "sizeKB":  851.12
                                                              },
                                                              {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-10-02 23:52:06",
-                                                                 "sizeKB":  828.38
+                                                                 "modified":  "2026-10-09 23:25:43",
+                                                                 "sizeKB":  851
                                                              },
                                                              {
-                                                                 "name":  "20261003035732_CommunicationTemplates",
-                                                                 "modified":  "2026-10-02 22:57:45",
-                                                                 "sizeKB":  4.52
+                                                                 "name":  "20261010031536_SriVatRateSeedActiveFlags",
+                                                                 "modified":  "2026-10-09 22:15:36",
+                                                                 "sizeKB":  1.46
                                                              },
                                                              {
-                                                                 "name":  "20261003035732_CommunicationTemplates.Designer",
-                                                                 "modified":  "2026-10-02 22:57:32",
-                                                                 "sizeKB":  828.1
+                                                                 "name":  "20261010031536_SriVatRateSeedActiveFlags.Designer",
+                                                                 "modified":  "2026-10-09 22:15:36",
+                                                                 "sizeKB":  846.72
                                                              }
                                                          ]
                                       },
