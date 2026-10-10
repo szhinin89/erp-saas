@@ -41,6 +41,17 @@ public sealed class OpeningJournalEntryPostingRepository : IOpeningJournalEntryP
             cancellationToken
         );
 
+    public async Task<IReadOnlyList<OpeningJournalEntryPosting>> ListByCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await _context
+            .OpeningJournalEntryPostings.AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
+            .OrderByDescending(x => x.Version)
+            .ToListAsync(cancellationToken);
+
     public async Task<int> GetLastVersionAsync(
         Guid tenantId,
         Guid companyId,

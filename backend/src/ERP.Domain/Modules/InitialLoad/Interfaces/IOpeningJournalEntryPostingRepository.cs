@@ -20,6 +20,16 @@ public interface IOpeningJournalEntryPostingRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// IL-8C — todas las versiones de la empresa (vigente + historial), SOLO LECTURA (sin tracking),
+    /// de la más reciente a la más antigua. Para consultas como la conciliación de apertura.
+    /// </summary>
+    Task<IReadOnlyList<OpeningJournalEntryPosting>> ListByCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>Última versión usada por la empresa (vigente o historial); 0 si nunca tuvo ASI.</summary>
     Task<int> GetLastVersionAsync(
         Guid tenantId,

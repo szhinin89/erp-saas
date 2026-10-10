@@ -23,7 +23,60 @@ public enum OpeningReconciliationStatus
 
     /// <summary>Sin asiento todavía: sin estado, Pending o Failed (ver error del intento).</summary>
     PendingPosting = 3,
+
+    /// <summary>
+    /// IL-8C — lotes contabilizados y conciliados, pero sin versión vigente del ASI de apertura
+    /// publicada (nunca publicado, Pending/Failed o reversado sin reemplazo).
+    /// </summary>
+    OpeningJournalPending = 4,
 }
+
+/// <summary>
+/// IL-8C — estado del ASI de apertura, derivado SOLO de <see cref="OpeningJournalEntryPosting"/>
+/// (nunca del saldo de la cuenta puente).
+/// </summary>
+public enum OpeningJournalEntryState
+{
+    /// <summary>La empresa nunca tuvo ninguna versión del ASI.</summary>
+    Missing = 1,
+
+    /// <summary>Versión vigente aún sin intento resuelto (defensivo: Publish la deja Failed o Posted).</summary>
+    Pending = 2,
+
+    /// <summary>Versión vigente con el último intento fallido (reintentable).</summary>
+    Failed = 3,
+
+    /// <summary>Versión vigente publicada: la única que cuenta para el cierre.</summary>
+    Posted = 4,
+
+    /// <summary>Sin versión vigente: la última publicada fue reversada y no se publicó otra.</summary>
+    ReversedNotReplaced = 5,
+}
+
+/// <summary>
+/// IL-8C — ASI de apertura dentro de la conciliación. Los datos de la versión
+/// (<see cref="PostingId"/>…<see cref="ErrorMessage"/>) son los de la vigente; null si no hay vigente.
+/// <see cref="LastSupersededVersion"/>/<see cref="LastSupersededAt"/> describen la última versión
+/// reversada (historial), si existe.
+/// </summary>
+public sealed record OpeningReconciliationJournalEntryDto(
+    OpeningJournalEntryState State,
+    Guid? PostingId,
+    int? Version,
+    OpeningBalancePostingStatus? PostingStatus,
+    DateOnly? EntryDate,
+    decimal? TotalAmount,
+    int? LineCount,
+    Guid? JournalEntryId,
+    int? JournalEntryNumber,
+    DateTime? PostedAt,
+    int Attempts,
+    string? ErrorCode,
+    string? ErrorMessage,
+    int VersionCount,
+    int? LastSupersededVersion,
+    DateTime? LastSupersededAt
+);
 
 public sealed record OpeningReconciliationBatchDto(
     Guid ImportBatchId,
@@ -86,6 +139,7 @@ public sealed record OpeningBalanceReconciliationDto(
     IReadOnlyList<OpeningReconciliationBatchDto> Batches,
     IReadOnlyList<OpeningReconciliationTypeDto> Types,
     OpeningBridgeAccountDto? BridgeAccount,
+    OpeningReconciliationJournalEntryDto OpeningJournalEntry,
     bool CanCloseImplementation,
     IReadOnlyList<OpeningReconciliationBlockerDto> Blockers
 );
@@ -131,10 +185,15 @@ public sealed class GetOpeningBalanceReconciliationHandler
     ];
 
     public const string OpeningBridgeNotClearedCode = "OPENING_BRIDGE_NOT_CLEARED";
+    public const string OpeningAsiMissingCode = "OPENING_ASI_MISSING";
+    public const string OpeningAsiReversedNotReplacedCode = "OPENING_ASI_REVERSED_NOT_REPLACED";
+    public const string OpeningAsiFailedCode = "OPENING_ASI_FAILED";
+    public const string OpeningAsiPendingCode = "OPENING_ASI_PENDING";
 
     private readonly IOperationalContext _ctx;
     private readonly IImportBatchRepository _batches;
     private readonly IOpeningBalancePostingRepository _postings;
+    private readonly IOpeningJournalEntryPostingRepository _openingJournal;
     private readonly IOpeningBalanceConstraintsReader _openingBalance;
     private readonly IOpeningBalanceSourceReader _sources;
     private readonly IPostingRuleRepository _rules;
@@ -145,6 +204,7 @@ public sealed class GetOpeningBalanceReconciliationHandler
         IOperationalContext ctx,
         IImportBatchRepository batches,
         IOpeningBalancePostingRepository postings,
+        IOpeningJournalEntryPostingRepository openingJournal,
         IOpeningBalanceConstraintsReader openingBalance,
         IOpeningBalanceSourceReader sources,
         IPostingRuleRepository rules,
@@ -155,6 +215,7 @@ public sealed class GetOpeningBalanceReconciliationHandler
         _ctx = ctx;
         _batches = batches;
         _postings = postings;
+        _openingJournal = openingJournal;
         _openingBalance = openingBalance;
         _sources = sources;
         _rules = rules;
@@ -318,14 +379,17 @@ public sealed class GetOpeningBalanceReconciliationHandler
                 balanceAtCutoff, currentBalance, bridgeFromPostings, currentBalance);
         }
 
-        var blockers = Blockers(cutoff, batchRows, typeRows, bridge);
+        var openingJournal = await OpeningJournalAsync(tenantId, companyId, ct);
+        var blockers = Blockers(cutoff, batchRows, typeRows, bridge, openingJournal);
         var overall = batchRows.Any(b => b.Status == OpeningReconciliationStatus.PendingPosting)
             || typeRows.Any(t => t.Status == OpeningReconciliationStatus.PendingPosting)
             ? OpeningReconciliationStatus.PendingPosting
             : batchRows.Any(b => b.Status == OpeningReconciliationStatus.Difference)
                 || typeRows.Any(t => t.Status == OpeningReconciliationStatus.Difference)
                 ? OpeningReconciliationStatus.Difference
-                : OpeningReconciliationStatus.Reconciled;
+                : openingJournal.State != OpeningJournalEntryState.Posted
+                    ? OpeningReconciliationStatus.OpeningJournalPending
+                    : OpeningReconciliationStatus.Reconciled;
 
         return Result<OpeningBalanceReconciliationDto>.Success(new OpeningBalanceReconciliationDto(
             cutoff,
@@ -333,21 +397,66 @@ public sealed class GetOpeningBalanceReconciliationHandler
             batchRows.OrderBy(b => Array.IndexOf(BalanceTypes, b.ImportType)).ThenBy(b => b.ConfirmedAt).ToList(),
             typeRows,
             bridge,
+            openingJournal,
             blockers.Count == 0,
             blockers));
     }
 
     /// <summary>
+    /// IL-8C — estado del ASI de apertura desde <see cref="OpeningJournalEntryPosting"/> (SSOT): la
+    /// versión vigente define el estado; sin vigente, el historial distingue "nunca publicado" de
+    /// "reversado sin reemplazo". Una versión histórica nunca cuenta como vigente.
+    /// </summary>
+    private async Task<OpeningReconciliationJournalEntryDto> OpeningJournalAsync(
+        Guid tenantId, Guid companyId, CancellationToken ct)
+    {
+        var versions = await _openingJournal.ListByCompanyAsync(tenantId, companyId, ct);
+        var current = versions.FirstOrDefault(v => v.IsCurrent);
+        var superseded = versions.FirstOrDefault(v => !v.IsCurrent);
+        var state = current?.Status switch
+        {
+            OpeningBalancePostingStatus.Posted => OpeningJournalEntryState.Posted,
+            OpeningBalancePostingStatus.Failed => OpeningJournalEntryState.Failed,
+            OpeningBalancePostingStatus.Pending => OpeningJournalEntryState.Pending,
+            _ => superseded is null ? OpeningJournalEntryState.Missing : OpeningJournalEntryState.ReversedNotReplaced,
+        };
+        var entry = current?.JournalEntryId is { } entryId
+            ? await _journal.GetByIdAsync(tenantId, companyId, entryId, ct)
+            : null;
+        var failed = state == OpeningJournalEntryState.Failed;
+
+        return new OpeningReconciliationJournalEntryDto(
+            state,
+            current?.Id,
+            current?.Version,
+            current?.Status,
+            current?.EntryDate,
+            current?.TotalAmount,
+            current?.LineCount,
+            current?.JournalEntryId,
+            entry?.EntryNumber,
+            current?.PostedAt,
+            current?.Attempts ?? 0,
+            failed ? current!.ErrorCode : null,
+            failed ? current!.ErrorMessage : null,
+            versions.Count,
+            superseded?.Version,
+            superseded?.SupersededAt);
+    }
+
+    /// <summary>
     /// Regla de cierre (IL-8): ningún lote Pending/Failed/sin asiento, ninguna diferencia de
-    /// conciliación y la cuenta puente sin saldo (redondeo monetario vigente). Un saldo en la cuenta
-    /// puente solo indica que falta reclasificarlo (<see cref="OpeningBridgeNotClearedCode"/>); no
-    /// se afirma que falte un asiento manual concreto — aún no existe modelo de ASI de apertura.
+    /// conciliación, versión vigente del ASI de apertura Posted (IL-8C, derivado solo de
+    /// <see cref="OpeningJournalEntryPosting"/>) y la cuenta puente sin saldo (redondeo monetario
+    /// vigente). <see cref="OpeningBridgeNotClearedCode"/> significa SOLO puente distinto de cero:
+    /// nunca se usa para inferir el estado del ASI, y ambos blockers pueden coexistir.
     /// </summary>
     private static List<OpeningReconciliationBlockerDto> Blockers(
         DateOnly? cutoff,
         IReadOnlyList<OpeningReconciliationBatchDto> batches,
         IReadOnlyList<OpeningReconciliationTypeDto> types,
-        OpeningBridgeAccountDto? bridge)
+        OpeningBridgeAccountDto? bridge,
+        OpeningReconciliationJournalEntryDto openingJournal)
     {
         var blockers = new List<OpeningReconciliationBlockerDto>();
         if (cutoff is null)
@@ -370,6 +479,24 @@ public sealed class GetOpeningBalanceReconciliationHandler
                     ? $"No se puede conciliar {t.FactType}: falta la regla contable o la fecha de corte."
                     : $"Diferencia de {Money(t.Difference)} entre el submayor y la cuenta {t.AccountCode} al corte.",
                 null));
+
+        var asiBlocker = openingJournal.State switch
+        {
+            OpeningJournalEntryState.Missing => new OpeningReconciliationBlockerDto(OpeningAsiMissingCode,
+                "No se ha publicado el asiento de apertura (ASI) de la empresa.", null),
+            OpeningJournalEntryState.ReversedNotReplaced => new OpeningReconciliationBlockerDto(
+                OpeningAsiReversedNotReplacedCode,
+                $"El asiento de apertura (versión {openingJournal.LastSupersededVersion}) fue reversado y no se ha "
+                    + "publicado una versión nueva: la apertura está incompleta.", null),
+            OpeningJournalEntryState.Failed => new OpeningReconciliationBlockerDto(OpeningAsiFailedCode,
+                $"La publicación del asiento de apertura (versión {openingJournal.Version}) falló: {openingJournal.ErrorMessage}",
+                null),
+            OpeningJournalEntryState.Pending => new OpeningReconciliationBlockerDto(OpeningAsiPendingCode,
+                $"El asiento de apertura (versión {openingJournal.Version}) está pendiente de publicación.", null),
+            _ => null,
+        };
+        if (asiBlocker is not null)
+            blockers.Add(asiBlocker);
 
         if (bridge is not null && OpeningBalancePosting.RoundAmount(bridge.PendingReclassification) != 0m)
             blockers.Add(new(OpeningBridgeNotClearedCode,

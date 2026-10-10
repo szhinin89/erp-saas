@@ -34,6 +34,9 @@ namespace ERP.Infrastructure.Tests.InitialLoad;
 /// <c>InitialLoad/*</c> (el engine real con sus locks SQL se prueba en IL-7B PostgreSQL). Cubre:
 /// inventario/CxC/CxP conciliados, cuenta puente sin reclasificar (OPENING_BRIDGE_NOT_CLEARED), diferencia detectada
 /// (lote y mayor), posting pendiente y fallido, aislamiento por empresa, fecha de corte y 0 escrituras.
+/// IL-8C: estado del ASI de apertura (SSOT <see cref="OpeningJournalEntryPosting"/>) y sus blockers,
+/// independientes del saldo de la cuenta puente; las versiones del ASI se escriben directo (Publish
+/// y Reverse reales se prueban en PostgreSQL).
 /// </summary>
 public sealed class OpeningBalanceReconciliationTests
 {
@@ -91,6 +94,7 @@ public sealed class OpeningBalanceReconciliationTests
                 Context().Object,
                 new ImportBatchRepository(db),
                 new OpeningBalancePostingRepository(db),
+                new OpeningJournalEntryPostingRepository(db),
                 new OpeningBalanceConstraintsReader(db, new FixedCurrentCompany(_companyId)),
                 new OpeningBalanceSourceReader(db),
                 new PostingRuleRepository(db),
@@ -226,6 +230,58 @@ public sealed class OpeningBalanceReconciliationTests
         return batch.Id;
     }
 
+    private const string Bridge = "3.1.04.001";
+
+    /// <summary>Cuentas de patrimonio postables distintas de la puente (contrapartidas del ASI).</summary>
+    private async Task<string[]> EquityCodesAsync()
+    {
+        await using var db = Db();
+        return (await db.Accounts.ToListAsync())
+            .Where(a => a.AccountType == AccountType.Equity && a.AllowsPosting && a.Code.Value != Bridge)
+            .Select(a => a.Code.Value).OrderBy(c => c).Take(2).ToArray();
+    }
+
+    /// <summary>Versión nueva del ASI publicada: asiento InitialLoad/OpeningJournalEntry + MarkPosted.</summary>
+    private async Task<Guid> PublishAsiAsync(params (string Code, decimal Debit, decimal Credit)[] lines)
+    {
+        await using var db = Db();
+        var version = await new OpeningJournalEntryPostingRepository(db).GetLastVersionAsync(_tenant, _companyId) + 1;
+        var posting = OpeningJournalEntryPosting.CreatePending(_tenant, _companyId, version, Opening,
+            lines.Sum(l => l.Debit), lines.Length, _actor);
+        db.OpeningJournalEntryPostings.Add(posting);
+        var accounts = (await db.Accounts.ToListAsync()).ToDictionary(a => a.Code.Value, a => a.Id);
+        var entryId = await WriteEntryAsync(db, "InitialLoad", "OpeningJournalEntry", posting.Id, Opening,
+            lines.Select(l => (accounts[l.Code], l.Debit, l.Credit)));
+        posting.MarkPosted(entryId, _actor);
+        await db.SaveChangesAsync();
+        return posting.Id;
+    }
+
+    /// <summary>Reverso del ASI: contraasiento con las líneas invertidas + versión como historial.</summary>
+    private async Task ReverseAsiAsync(Guid postingId)
+    {
+        await using var db = Db();
+        var posting = await db.OpeningJournalEntryPostings.SingleAsync(p => p.Id == postingId);
+        var original = await db.JournalEntries.Include(e => e.Lines).SingleAsync(e => e.Id == posting.JournalEntryId);
+        await WriteEntryAsync(db, "InitialLoad", "OpeningJournalEntry", Guid.NewGuid(), Opening,
+            original.Lines.Select(l => (l.AccountId, l.Credit, l.Debit)).ToList());
+        posting.MarkSuperseded(_actor);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<OpeningJournalEntryPosting> UnpublishedAsiAsync(bool failed)
+    {
+        await using var db = Db();
+        var posting = OpeningJournalEntryPosting.CreatePending(_tenant, _companyId, 1, Opening, 10m, 2, _actor);
+        if (failed)
+            posting.MarkFailed("PERIOD_NOT_OPEN", "El período contable no está abierto.", _actor);
+        db.OpeningJournalEntryPostings.Add(posting);
+        await db.SaveChangesAsync();
+        return posting;
+    }
+
+    private static string[] Codes(OpeningBalanceReconciliationDto r) => r.Blockers.Select(b => b.Code).ToArray();
+
     private static OpeningReconciliationTypeDto Type(OpeningBalanceReconciliationDto r, ImportType type) =>
         r.Types.Single(t => t.ImportType == type);
 
@@ -263,36 +319,170 @@ public sealed class OpeningBalanceReconciliationTests
             if (code is not null)
                 t.AccountCode.Should().Be(code);
         }
-        r.Status.Should().Be(OpeningReconciliationStatus.Reconciled);
+        r.Status.Should().Be(OpeningReconciliationStatus.OpeningJournalPending, "conciliado, pero sin ASI");
         r.BridgeAccount!.AccountCode.Should().Be("3.1.04.001");
         r.BridgeAccount.FromOpeningPostings.Should().Be(4.00m + 150.00m - 80.55m);
         r.BridgeAccount.BalanceAtCutoff.Should().Be(73.45m);
         r.BridgeAccount.CurrentBalance.Should().Be(73.45m);
         r.BridgeAccount.PendingReclassification.Should().Be(73.45m);
         r.CanCloseImplementation.Should().BeFalse();
-        var blocker = r.Blockers.Should().ContainSingle().Which;
-        blocker.Code.Should().Be(GetOpeningBalanceReconciliationHandler.OpeningBridgeNotClearedCode);
-        blocker.Message.Should().Be("La cuenta de Saldos de apertura mantiene un saldo pendiente de reclasificación.");
+        r.OpeningJournalEntry.State.Should().Be(OpeningJournalEntryState.Missing);
+        Codes(r).Should().BeEquivalentTo(
+            GetOpeningBalanceReconciliationHandler.OpeningAsiMissingCode,
+            GetOpeningBalanceReconciliationHandler.OpeningBridgeNotClearedCode);
+        r.Blockers.Single(b => b.Code == GetOpeningBalanceReconciliationHandler.OpeningBridgeNotClearedCode)
+            .Message.Should().Be("La cuenta de Saldos de apertura mantiene un saldo pendiente de reclasificación.");
     }
 
     [Fact]
-    public async Task Cuenta_puente_reclasificada_a_cero_libera_el_cierre()
+    public async Task Sin_ASI_con_puente_en_cero_no_puede_cerrar()
     {
         await SeedCompanyAsync();
         (await PostAsync(await ReceivablesBatchAsync(50m))).IsSuccess.Should().BeTrue();
-        string equityCode;
-        await using (var db = Db())
-            equityCode = (await db.Accounts.ToListAsync())
-                .Where(a => a.AccountType == AccountType.Equity && a.AllowsPosting && a.Code.Value != "3.1.04.001")
-                .Select(a => a.Code.Value).First();
+        var equity = (await EquityCodesAsync())[0];
 
-        await WriteManualEntryAsync(Opening, ("3.1.04.001", 50m, 0m), (equityCode, 0m, 50m));
+        // Reclasificación manual (no es el ASI): el puente queda en 0, pero eso no publica el ASI.
+        await WriteManualEntryAsync(Opening, (Bridge, 50m, 0m), (equity, 0m, 50m));
         var r = await ReconcileAsync();
 
         r.BridgeAccount!.PendingReclassification.Should().Be(0m);
         r.BridgeAccount.FromOpeningPostings.Should().Be(50m);
+        r.OpeningJournalEntry.State.Should().Be(OpeningJournalEntryState.Missing);
+        r.OpeningJournalEntry.PostingId.Should().BeNull();
+        r.OpeningJournalEntry.VersionCount.Should().Be(0);
+        Codes(r).Should().Equal(GetOpeningBalanceReconciliationHandler.OpeningAsiMissingCode);
+        r.Status.Should().Be(OpeningReconciliationStatus.OpeningJournalPending);
+        r.CanCloseImplementation.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ASI_vigente_publicado_con_puente_en_cero_libera_el_cierre()
+    {
+        await SeedCompanyAsync();
+        (await PostAsync(await ReceivablesBatchAsync(50m))).IsSuccess.Should().BeTrue();
+        var equity = (await EquityCodesAsync())[0];
+
+        var asi = await PublishAsiAsync((Bridge, 50m, 0m), (equity, 0m, 50m));
+        var r = await ReconcileAsync();
+
+        var j = r.OpeningJournalEntry;
+        j.State.Should().Be(OpeningJournalEntryState.Posted);
+        j.PostingId.Should().Be(asi);
+        j.Version.Should().Be(1);
+        j.PostingStatus.Should().Be(OpeningBalancePostingStatus.Posted);
+        j.EntryDate.Should().Be(Opening);
+        j.TotalAmount.Should().Be(50m);
+        j.JournalEntryId.Should().NotBeNull();
+        j.JournalEntryNumber.Should().NotBeNull();
+        j.PostedAt.Should().NotBeNull();
+        j.ErrorCode.Should().BeNull();
+        j.LastSupersededVersion.Should().BeNull();
+        r.BridgeAccount!.PendingReclassification.Should().Be(0m);
         r.Blockers.Should().BeEmpty();
+        r.Status.Should().Be(OpeningReconciliationStatus.Reconciled);
         r.CanCloseImplementation.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ASI_reversado_sin_reemplazo_con_puente_en_cero_deja_la_apertura_incompleta()
+    {
+        await SeedCompanyAsync();
+        var equity = await EquityCodesAsync();
+        // Sin lotes: el ASI no toca la puente, así que su reverso tampoco la mueve.
+        var asi = await PublishAsiAsync((equity[0], 10m, 0m), (equity[1], 0m, 10m));
+        await ReverseAsiAsync(asi);
+
+        var r = await ReconcileAsync();
+
+        r.BridgeAccount!.CurrentBalance.Should().Be(0m);
+        var j = r.OpeningJournalEntry;
+        j.State.Should().Be(OpeningJournalEntryState.ReversedNotReplaced);
+        j.PostingId.Should().BeNull("una versión reversada no es vigente");
+        j.VersionCount.Should().Be(1);
+        j.LastSupersededVersion.Should().Be(1);
+        j.LastSupersededAt.Should().NotBeNull();
+        Codes(r).Should().Equal(GetOpeningBalanceReconciliationHandler.OpeningAsiReversedNotReplacedCode);
+        r.Status.Should().Be(OpeningReconciliationStatus.OpeningJournalPending);
+        r.CanCloseImplementation.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ASI_reversado_sin_reemplazo_con_puente_distinto_de_cero_reporta_ambos_blockers()
+    {
+        await SeedCompanyAsync();
+        (await PostAsync(await ReceivablesBatchAsync(50m))).IsSuccess.Should().BeTrue();
+        var equity = (await EquityCodesAsync())[0];
+        await ReverseAsiAsync(await PublishAsiAsync((Bridge, 50m, 0m), (equity, 0m, 50m)));
+
+        var r = await ReconcileAsync();
+
+        r.BridgeAccount!.PendingReclassification.Should().Be(50m);
+        r.OpeningJournalEntry.State.Should().Be(OpeningJournalEntryState.ReversedNotReplaced);
+        Codes(r).Should().BeEquivalentTo(
+            GetOpeningBalanceReconciliationHandler.OpeningAsiReversedNotReplacedCode,
+            GetOpeningBalanceReconciliationHandler.OpeningBridgeNotClearedCode);
+        r.CanCloseImplementation.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Nueva_version_publicada_tras_el_reverso_vuelve_a_estado_valido()
+    {
+        await SeedCompanyAsync();
+        (await PostAsync(await ReceivablesBatchAsync(50m))).IsSuccess.Should().BeTrue();
+        var equity = await EquityCodesAsync();
+        await ReverseAsiAsync(await PublishAsiAsync((Bridge, 50m, 0m), (equity[0], 0m, 50m)));
+
+        var v2 = await PublishAsiAsync((Bridge, 50m, 0m), (equity[1], 0m, 50m));
+        var r = await ReconcileAsync();
+
+        var j = r.OpeningJournalEntry;
+        j.State.Should().Be(OpeningJournalEntryState.Posted);
+        j.PostingId.Should().Be(v2);
+        j.Version.Should().Be(2);
+        j.VersionCount.Should().Be(2);
+        j.LastSupersededVersion.Should().Be(1);
+        r.BridgeAccount!.PendingReclassification.Should().Be(0m);
+        r.Blockers.Should().BeEmpty();
+        r.Status.Should().Be(OpeningReconciliationStatus.Reconciled);
+        r.CanCloseImplementation.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ASI_fallido_se_expone_con_su_error_y_bloquea_el_cierre()
+    {
+        await SeedCompanyAsync();
+        var asi = await UnpublishedAsiAsync(failed: true);
+
+        var r = await ReconcileAsync();
+
+        var j = r.OpeningJournalEntry;
+        j.State.Should().Be(OpeningJournalEntryState.Failed);
+        j.PostingId.Should().Be(asi.Id);
+        j.PostingStatus.Should().Be(OpeningBalancePostingStatus.Failed);
+        j.Attempts.Should().Be(1);
+        j.ErrorCode.Should().Be("PERIOD_NOT_OPEN");
+        j.ErrorMessage.Should().Be("El período contable no está abierto.");
+        j.JournalEntryId.Should().BeNull();
+        r.Blockers.Should().ContainSingle().Which.Should().Match<OpeningReconciliationBlockerDto>(b =>
+            b.Code == GetOpeningBalanceReconciliationHandler.OpeningAsiFailedCode
+            && b.Message.Contains("El período contable no está abierto."));
+        r.Status.Should().Be(OpeningReconciliationStatus.OpeningJournalPending);
+        r.CanCloseImplementation.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ASI_pendiente_se_expone_como_blocker_defensivo()
+    {
+        await SeedCompanyAsync();
+        var asi = await UnpublishedAsiAsync(failed: false);
+
+        var r = await ReconcileAsync();
+
+        r.OpeningJournalEntry.State.Should().Be(OpeningJournalEntryState.Pending);
+        r.OpeningJournalEntry.PostingId.Should().Be(asi.Id);
+        r.OpeningJournalEntry.ErrorCode.Should().BeNull();
+        Codes(r).Should().Equal(GetOpeningBalanceReconciliationHandler.OpeningAsiPendingCode);
+        r.CanCloseImplementation.Should().BeFalse();
     }
 
     [Fact]
