@@ -40,6 +40,7 @@ public sealed class SalesReceivableConfiguration : IEntityTypeConfiguration<Sale
             .HasColumnName("origin")
             .HasConversion<int>()
             .HasDefaultValue(SalesReceivableOrigin.Invoice)
+            .HasSentinel((SalesReceivableOrigin)0)
             .IsRequired();
         builder.Property(x => x.InvoiceId).HasColumnName("invoice_id");
         builder.Property(x => x.CustomerId).HasColumnName("customer_id").IsRequired();

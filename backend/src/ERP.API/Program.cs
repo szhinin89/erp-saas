@@ -33,8 +33,12 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Asegura que los user-secrets del API ganen a appsettings.
+// Asegura que los user-secrets del API ganen a appsettings (también fuera de Development).
+// Se re-agregan env vars y args después para conservar la precedencia estándar:
+// appsettings < user-secrets < environment variables < command line.
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddCommandLine(args);
 
 // Alias opcional en hosting: DB_CONNECTION_STRING → ConnectionStrings:DefaultConnection
 var dbFromEnv = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");

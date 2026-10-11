@@ -11,7 +11,7 @@ public sealed class SystemProviderSettingsRepository : ISystemProviderSettingsRe
     public SystemProviderSettingsRepository(ErpDbContext db) => _db = db;
 
     public Task<SystemProviderSettings?> GetAsync(CancellationToken cancellationToken = default) =>
-        _db.SystemProviderSettings.FirstOrDefaultAsync(cancellationToken);
+        _db.SystemProviderSettings.SingleOrDefaultAsync(cancellationToken);
 
     public Task AddAsync(
         SystemProviderSettings settings,

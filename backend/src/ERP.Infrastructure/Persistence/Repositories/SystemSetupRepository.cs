@@ -11,7 +11,7 @@ public sealed class SystemSetupRepository : ISystemSetupRepository
     public SystemSetupRepository(ErpDbContext db) => _db = db;
 
     public Task<SystemSetupState?> GetAsync(CancellationToken cancellationToken = default) =>
-        _db.SystemSetupStates.FirstOrDefaultAsync(cancellationToken);
+        _db.SystemSetupStates.SingleOrDefaultAsync(cancellationToken);
 
     public Task AddAsync(SystemSetupState state, CancellationToken cancellationToken = default)
     {
