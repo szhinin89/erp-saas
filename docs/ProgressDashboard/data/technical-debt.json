@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-10 22:36:40",
-    "FilesAnalyzed":  11730,
+    "Generated":  "2026-10-10 23:37:30",
+    "FilesAnalyzed":  11727,
     "TODO":  735,
     "FIXME":  30,
     "HACK":  1,
@@ -116,7 +116,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Inventory\\ItemMatching\\UseCases\\ResolveLines\\ResolvePurchaseReceptionLinesHandler.cs",
-                           "Lines":  610
+                           "Lines":  735
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Payables\\Services\\SupplierPaymentRegistrar.cs",
@@ -285,6 +285,10 @@
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\InitialLoad\\ItemImportProcessorTests.cs",
                            "Lines":  719
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Inventory\\ItemMatching\\ResolvePurchaseReceptionLinesHandlerTests.cs",
+                           "Lines":  506
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Inventory\\Stock\\StockAdjustmentBranchOwnershipTests.cs",
@@ -636,7 +640,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseReception\\ResolvePurchaseReceptionLinesIntegrationTests.cs",
-                           "Lines":  808
+                           "Lines":  939
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.cs",
@@ -2832,7 +2836,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\api\\purchaseReceptionService.ts",
-                           "Lines":  511
+                           "Lines":  516
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\PurchaseReceptionXmlViewModal.tsx",
@@ -2840,7 +2844,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\ResolvePendingProductsModal.tsx",
-                           "Lines":  580
+                           "Lines":  602
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.test.ts",

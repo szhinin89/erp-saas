@@ -1,5 +1,14 @@
 # Project Status
 
+## PILOT-PURCHASE-RECEPTION-BARCODE-FIX-01 — Barcode por presentación al crear productos desde recepción (2026-10-10)
+
+**Estado: implementado (sin commit).** Solo "Resolver productos pendientes" (`ResolvePurchaseReceptionLinesHandler` + modal). Items/CreateItem, matching, XML, costos e inventario sin cambios. Origen: auditoría PILOT-PURCHASE-RECEPTION-RESOLVE-AUDIT-01.
+- El código de barras pasa del producto nuevo a la línea/presentación (`ResolveReceptionLineInput.Barcode/BarcodeType`): factor 1 → código del Item (con tipo); factor > 1 → `ItemPackagingLevel.Barcode` de esa presentación. El código de una caja/pack nunca llega a la unidad base.
+- Precarga solo de un código real (GTIN-8/12/13/14 con dígito verificador) de `codigoAuxiliar`/`codigoPrincipal`; sin "Interno" implícito. Campo opcional en la UI.
+- Regla FROZEN de Items intacta (≥1 barcode): sin código real de la unidad, el backend registra el código del proveedor (de una línea de unidad primero, nunca uno igual al código de una caja) como tipo `Internal` provisional; el modal lo avisa por fila. Reemplazable desde la ficha (`AddBarcode`/`DisableBarcode` existentes). `ItemSupplierCode` sigue igual para el matching.
+- Duplicados bloqueados: mismo código en dos presentaciones del lote, códigos distintos para una misma presentación, y código existente en BD (incluye el provisional, con mensaje propio).
+- Tests focales: Application `ResolvePurchaseReceptionLinesHandlerTests` 14/14; Infrastructure `ResolvePurchaseReceptionLinesIntegrationTests` 11/11 (Testcontainers); vitest modal + utilidades 39/39; `tsc -b` + eslint PASS; `architecture:check` 0 nuevas. Suites completas: no ejecutadas.
+
 ## PILOT-PURCHASE-UI-FIX-01 — Compras: errores reales y confirmación con cambios sin guardar (2026-10-10)
 
 **Estado: implementado (sin commit).** Solo frontend del flujo de compra; backend sin cambios. Origen: auditoría PILOT-PURCHASE-UI-AUDIT-01 (piloto Sumak).
