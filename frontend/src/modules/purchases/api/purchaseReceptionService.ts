@@ -439,15 +439,18 @@ export interface ResolveReceptionNewItem {
   categoryNodeId: string;
   brandId: string;
   defaultUomCode: string;
-  barcode: string;
-  barcodeType: string;
   saleVatCode: string | null;
   purchaseVatCode: string | null;
   exciseTaxCode: string | null;
   baseSalePrice: number;
 }
 
-/** Una línea XML: vincular Item existente (itemId) o producto nuevo del lote (newItemKey). */
+/**
+ * Una línea XML: vincular Item existente (itemId) o producto nuevo del lote (newItemKey).
+ * `barcode` = código de barras real de la presentación de ESTA línea (factor 1 → Item, con
+ * `barcodeType`; factor > 1 → la presentación). Sin código real de la unidad, el backend registra
+ * el código del proveedor como Interno provisional.
+ */
 export interface ResolveReceptionLine {
   purchaseReceptionLineId: string;
   itemId?: string | null;
@@ -456,6 +459,8 @@ export interface ResolveReceptionLine {
   presentationFactor?: number;
   presentationName?: string | null;
   presentationUomCode?: string | null;
+  barcode?: string | null;
+  barcodeType?: string | null;
 }
 
 export interface ResolveReceptionLinesRequest {

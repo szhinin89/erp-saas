@@ -44,6 +44,16 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
 {
     private const string BasePresentationName = "Unidad";
 
+    /// <summary>
+    /// Tipo del catálogo global <c>barcode_types</c> para el código provisional: Items exige ≥1
+    /// código de barras, y sin EAN/UPC real de la unidad se usa el código del proveedor como
+    /// identificación interna hasta registrar el real desde la ficha del Item.
+    /// </summary>
+    private const string ProvisionalBarcodeType = "Internal";
+
+    /// <summary>Mismo límite que el código de barras del Item (CreateItemCommandValidator).</summary>
+    private const int MaxBarcodeLength = 100;
+
     public async Task<Result<ResolvePurchaseReceptionLinesResultDto>> Handle(
         ResolvePurchaseReceptionLinesCommand cmd,
         CancellationToken cancellationToken
@@ -216,7 +226,14 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         {
             var itemLines = cmd.Lines.Where(l => l.NewItemKey == newItem.Key).ToList();
             foreach (
-                var message in await ValidateNewItemAsync(newItem, itemLines, skus, barcodes, ct)
+                var message in await ValidateNewItemAsync(
+                    document,
+                    newItem,
+                    itemLines,
+                    skus,
+                    barcodes,
+                    ct
+                )
             )
                 errors.Add(new(null, newItem.Key, message));
         }
@@ -295,6 +312,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     }
 
     private async Task<List<string>> ValidateNewItemAsync(
+        PurchaseReceptionDocument document,
         ResolveReceptionNewItemInput newItem,
         IReadOnlyList<ResolveReceptionLineInput> itemLines,
         HashSet<string> skus,
@@ -308,7 +326,30 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         if (newItem.BaseSalePrice <= 0)
             messages.Add("El precio de venta debe ser mayor a cero.");
 
-        var command = ToCreateItemCommand(newItem);
+        var conflictingBarcode = itemLines
+            .GroupBy(l => l.PresentationFactor)
+            .FirstOrDefault(g =>
+                g.Select(l => Trimmed(l.Barcode))
+                    .OfType<string>()
+                    .Distinct(StringComparer.Ordinal)
+                    .Count() > 1
+            );
+        if (conflictingBarcode is not null)
+            messages.Add(
+                $"La presentación de {conflictingBarcode.Key} unidades tiene códigos de barras distintos entre líneas."
+            );
+
+        var codes = ResolveBarcodes(document, itemLines);
+        if (codes.Presentations.Values.Any(code => code.Length > MaxBarcodeLength))
+            messages.Add(
+                $"El código de barras de la presentación no puede exceder {MaxBarcodeLength} caracteres."
+            );
+        if (itemLines.Count > 0 && codes.Base is null)
+            messages.Add(
+                "Ingrese el código de barras de la unidad: la línea no trae un código del proveedor que pueda usarse como código Interno provisional."
+            );
+
+        var command = ToCreateItemCommand(newItem, codes.Base);
         foreach (var validator in createItemValidators)
         {
             var result = await validator.ValidateAsync(command, ct);
@@ -324,11 +365,23 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         )
             messages.Add($"Ya existe un ítem con SKU '{sku}'.");
 
-        var barcode = newItem.Barcode.Trim();
-        if (barcode.Length > 0 && !barcodes.Add(barcode))
-            messages.Add($"El código de barras '{barcode}' está repetido en el lote.");
-        else if (barcode.Length > 0 && await items.BarcodeExistsAsync(barcode, tenant.TenantId, company.CompanyId, ct))
-            messages.Add($"El código de barras '{barcode}' ya está asignado a otro ítem.");
+        foreach (var (barcode, provisional) in codes.All())
+        {
+            if (!barcodes.Add(barcode))
+                messages.Add(
+                    provisional
+                        ? $"El código del proveedor '{barcode}' se usaría como código de barras Interno provisional, pero está repetido en el lote. Ingrese el código de barras de la unidad."
+                        : $"El código de barras '{barcode}' está repetido en el lote."
+                );
+            else if (
+                await items.BarcodeExistsAsync(barcode, tenant.TenantId, company.CompanyId, ct)
+            )
+                messages.Add(
+                    provisional
+                        ? $"El código del proveedor '{barcode}' se usaría como código de barras Interno provisional, pero ya está asignado a otro ítem. Ingrese el código de barras de la unidad."
+                        : $"El código de barras '{barcode}' ya está asignado a otro ítem."
+                );
+        }
 
         var conflictingFactor = itemLines
             .Where(l => l.PresentationFactor != 1m)
@@ -355,17 +408,18 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         foreach (var newItem in cmd.NewItems)
         {
             outcome.CurrentItemKey = newItem.Key;
-            var created = await mediator.Send(ToCreateItemCommand(newItem), ct);
+            var itemLines = cmd.Lines.Where(l => l.NewItemKey == newItem.Key).ToList();
+            var codes = ResolveBarcodes(document, itemLines);
+            var created = await mediator.Send(ToCreateItemCommand(newItem, codes.Base), ct);
             if (!created.IsSuccess || created.Value is null)
                 throw new RowFailureException(
                     new(null, newItem.Key, created.Error ?? "No se pudo crear el producto.")
                 );
 
-            var itemLines = cmd.Lines.Where(l => l.NewItemKey == newItem.Key).ToList();
             var packaging = await mediator.Send(
                 new ReplaceItemPackagingLevelsCommand(
                     created.Value.Id,
-                    BuildPresentations(newItem, itemLines)
+                    BuildPresentations(newItem, itemLines, codes.Presentations)
                 ),
                 ct
             );
@@ -521,11 +575,13 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     /// <summary>
     /// Presentaciones del Item nuevo: siempre la unidad base (factor 1, UOM del Item) más una por
     /// cada factor distinto que usan sus códigos de proveedor. Reutiliza el mismo contrato de
-    /// presentaciones del módulo Items (no hay motor de conversiones propio).
+    /// presentaciones del módulo Items (no hay motor de conversiones propio). El código de barras de
+    /// una caja/pack queda en SU presentación; el de la unidad vive en el Item (CreateItem).
     /// </summary>
     private static List<PackagingLevelInput> BuildPresentations(
         ResolveReceptionNewItemInput newItem,
-        IReadOnlyList<ResolveReceptionLineInput> itemLines
+        IReadOnlyList<ResolveReceptionLineInput> itemLines,
+        IReadOnlyDictionary<decimal, string> presentationBarcodes
     )
     {
         var purchaseFactor = itemLines[0].PresentationFactor;
@@ -561,6 +617,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                     level++,
                     group.Key,
                     Uom(first),
+                    Barcode: presentationBarcodes.GetValueOrDefault(group.Key),
                     IsPurchaseDefault: group.Key == purchaseFactor
                 )
             );
@@ -568,13 +625,81 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         return levels;
     }
 
+    /// <summary>Códigos de barras del Item nuevo, cada uno en su presentación.</summary>
+    private sealed record NewItemBarcodes(
+        CreateItemBarcodeDto? Base,
+        bool BaseIsProvisional,
+        IReadOnlyDictionary<decimal, string> Presentations
+    )
+    {
+        public IEnumerable<(string Code, bool Provisional)> All() =>
+            (Base is null ? [] : new[] { (Base.Code, BaseIsProvisional) }).Concat(
+                Presentations.Values.Select(code => (code, false))
+            );
+    }
+
+    /// <summary>
+    /// Código real de la unidad = el de una línea de factor 1. Sin él, el Item (que exige ≥1 código)
+    /// recibe el código del proveedor como Interno provisional — de una línea de unidad primero, y
+    /// nunca uno que ya es el código de barras de una caja/pack del mismo producto.
+    /// </summary>
+    private static NewItemBarcodes ResolveBarcodes(
+        PurchaseReceptionDocument document,
+        IReadOnlyList<ResolveReceptionLineInput> itemLines
+    )
+    {
+        var presentations = itemLines
+            .Where(l => l.PresentationFactor != 1m && Trimmed(l.Barcode) is not null)
+            .GroupBy(l => l.PresentationFactor)
+            .ToDictionary(g => g.Key, g => Trimmed(g.First().Barcode)!);
+
+        var unit = itemLines.FirstOrDefault(l =>
+            l.PresentationFactor == 1m && Trimmed(l.Barcode) is not null
+        );
+        if (unit is not null)
+            return new(
+                new CreateItemBarcodeDto(
+                    Trimmed(unit.Barcode)!,
+                    unit.BarcodeType?.Trim() ?? string.Empty,
+                    true
+                ),
+                false,
+                presentations
+            );
+
+        var supplierCode = itemLines
+            .OrderBy(l => l.PresentationFactor == 1m ? 0 : 1)
+            .Select(l =>
+                Trimmed(
+                    document.Lines.FirstOrDefault(d => d.Id == l.PurchaseReceptionLineId)?.SupplierCode
+                )
+            )
+            .FirstOrDefault(code =>
+                code is not null
+                && !presentations.Values.Contains(code, StringComparer.OrdinalIgnoreCase)
+            );
+        return new(
+            supplierCode is null
+                ? null
+                : new CreateItemBarcodeDto(supplierCode, ProvisionalBarcodeType, true),
+            true,
+            presentations
+        );
+    }
+
+    private static string? Trimmed(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static string Name(ResolveReceptionLineInput line) =>
         line.PresentationName?.Trim() ?? string.Empty;
 
     private static string Uom(ResolveReceptionLineInput line) =>
         line.PresentationUomCode?.Trim().ToUpperInvariant() ?? string.Empty;
 
-    private static CreateItemCommand ToCreateItemCommand(ResolveReceptionNewItemInput newItem) =>
+    private static CreateItemCommand ToCreateItemCommand(
+        ResolveReceptionNewItemInput newItem,
+        CreateItemBarcodeDto? unitBarcode
+    ) =>
         new(
             newItem.Sku.Trim(),
             newItem.ShortName.Trim(),
@@ -583,7 +708,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             newItem.DefaultUomCode.Trim(),
             newItem.CategoryNodeId,
             newItem.BrandId,
-            [new CreateItemBarcodeDto(newItem.Barcode.Trim(), newItem.BarcodeType, true)],
+            unitBarcode is null ? [] : [unitBarcode],
             newItem.SaleVatCode,
             newItem.PurchaseVatCode,
             newItem.ExciseTaxCode,

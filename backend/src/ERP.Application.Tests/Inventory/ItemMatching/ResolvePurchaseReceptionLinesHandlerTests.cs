@@ -148,8 +148,6 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
             Guid.NewGuid(),
             Guid.NewGuid(),
             "19",
-            $"BAR-{key}",
-            "Internal",
             "0",
             "0",
             null,
@@ -353,5 +351,155 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
 
         result.Value!.Applied.Should().BeFalse();
         result.Value.Errors.Should().ContainSingle(e => e.Message.Contains("COD-A"));
+    }
+
+    // ── PILOT-PURCHASE-RECEPTION-BARCODE-FIX-01 ──────────────────────────────────────────────
+
+    private static ResolvePurchaseReceptionLinesCommand Batch(
+        params ResolveReceptionLineInput[] lines
+    ) => new([NewItem("n1"), NewItem("n2")], lines);
+
+    private static async Task<IReadOnlyList<ResolveReceptionRowError>> RejectedAsync(
+        Fixture f,
+        ResolvePurchaseReceptionLinesCommand command
+    )
+    {
+        var result = await f.Build().Handle(command, CancellationToken.None);
+        result.Value!.Applied.Should().BeFalse();
+        return result.Value.Errors;
+    }
+
+    [Fact]
+    public async Task Product_without_real_barcode_is_valid_using_supplier_code_as_provisional_internal()
+    {
+        var f = new Fixture();
+
+        var result = await f.Build()
+            .Handle(
+                new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1")]),
+                CancellationToken.None
+            );
+
+        result.Value!.Errors.Should().BeEmpty();
+        f.Items.Verify(
+            i => i.BarcodeExistsAsync("COD-A", TenantId, CompanyId, It.IsAny<CancellationToken>()),
+            Times.Once,
+            "the supplier code is checked as the provisional unit barcode"
+        );
+    }
+
+    [Fact]
+    public async Task Provisional_supplier_code_already_used_as_barcode_is_rejected()
+    {
+        var f = new Fixture();
+        f.Items.Setup(i =>
+                i.BarcodeExistsAsync("COD-A", TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(true);
+
+        var errors = await RejectedAsync(
+            f,
+            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1")])
+        );
+
+        errors.Should().ContainSingle(e => e.NewItemKey == "n1" && e.Message.Contains("provisional"));
+    }
+
+    [Fact]
+    public async Task Real_unit_barcode_requires_its_type()
+    {
+        var f = new Fixture();
+
+        var errors = await RejectedAsync(
+            f,
+            new(
+                [NewItem("n1")],
+                [new(f.LineA.Id, NewItemKey: "n1", Barcode: "7861234567897")]
+            )
+        );
+
+        errors.Should().Contain(e => e.Message.Contains("tipo de código de barras"));
+    }
+
+    [Fact]
+    public async Task Duplicate_barcode_in_batch_is_blocked()
+    {
+        var f = new Fixture();
+
+        var errors = await RejectedAsync(
+            f,
+            Batch(
+                new(f.LineA.Id, NewItemKey: "n1", Barcode: "7861234567897", BarcodeType: "EAN13"),
+                new(f.LineB.Id, NewItemKey: "n2", Barcode: "7861234567897", BarcodeType: "EAN13")
+            )
+        );
+
+        errors.Should().ContainSingle(e => e.NewItemKey == "n2" && e.Message.Contains("repetido"));
+    }
+
+    [Fact]
+    public async Task Existing_barcode_and_different_barcodes_for_one_presentation_are_blocked()
+    {
+        var f = new Fixture();
+        f.Items.Setup(i =>
+                i.BarcodeExistsAsync(
+                    "7860000000019",
+                    TenantId,
+                    CompanyId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
+
+        var errors = await RejectedAsync(
+            f,
+            new(
+                [NewItem("n1")],
+                [
+                    new(
+                        f.LineA.Id,
+                        NewItemKey: "n1",
+                        Barcode: "7860000000019",
+                        BarcodeType: "EAN13"
+                    ),
+                    new(
+                        f.LineC.Id,
+                        NewItemKey: "n1",
+                        Barcode: "7861234567897",
+                        BarcodeType: "EAN13"
+                    ),
+                ]
+            )
+        );
+
+        errors.Should().Contain(e => e.NewItemKey == "n1" && e.Message.Contains("ya está asignado"));
+        errors
+            .Should()
+            .Contain(e => e.NewItemKey == "n1" && e.Message.Contains("códigos de barras distintos"));
+    }
+
+    [Fact]
+    public async Task Box_barcode_never_falls_back_to_the_unit()
+    {
+        var f = new Fixture();
+        // Only the box line exists and its supplier code IS the box barcode: the unit has no code.
+        var errors = await RejectedAsync(
+            f,
+            new(
+                [NewItem("n1")],
+                [
+                    new(
+                        f.LineB.Id,
+                        NewItemKey: "n1",
+                        PresentationFactor: 12m,
+                        PresentationName: "Caja x12",
+                        PresentationUomCode: "02",
+                        Barcode: "cod-b"
+                    ),
+                ]
+            )
+        );
+
+        errors.Should().Contain(e => e.NewItemKey == "n1" && e.Message.Contains("unidad"));
     }
 }

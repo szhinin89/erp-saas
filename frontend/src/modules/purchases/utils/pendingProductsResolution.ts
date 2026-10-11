@@ -61,11 +61,65 @@ export function suggestSku(code: string): string {
   return code.trim().replace(SKU_INVALID, "-").replace(/^-+|-+$/g, "").slice(0, 50);
 }
 
-/** Tipo de código de barras sugerido por forma (EAN-13/EAN-8/Interno) — solo si existe en el catálogo. */
+/**
+ * Código de barras real (GTIN-8/12/13/14 con dígito verificador válido). Un código del proveedor
+ * que no lo es sirve solo para el matching: nunca se precarga como código de barras.
+ */
+export function isRealBarcode(code: string): boolean {
+  const value = code.trim();
+  if (!/^(\d{8}|\d{12,14})$/.test(value)) return false;
+  const digits = [...value].map(Number);
+  const check = digits.pop() as number;
+  // Pesos 3,1,3… desde el dígito más cercano al verificador.
+  const sum = digits.reduceRight(
+    (acc, digit, i) => acc + digit * ((digits.length - 1 - i) % 2 === 0 ? 3 : 1),
+    0,
+  );
+  return (10 - (sum % 10)) % 10 === check;
+}
+
+/** Tipo sugerido por forma (EAN-13/EAN-8) — solo si existe en el catálogo; nunca "Interno" implícito. */
 export function suggestBarcodeType(code: string, availableTypes: string[]): string {
   const available = new Set(availableTypes);
-  const candidate = /^\d{13}$/.test(code) ? "EAN13" : /^\d{8}$/.test(code) ? "EAN8" : "Internal";
+  const candidate = /^\d{13}$/.test(code) ? "EAN13" : /^\d{8}$/.test(code) ? "EAN8" : "";
   return available.has(candidate) ? candidate : "";
+}
+
+/** Presentación de la unidad base (factor 1): su código de barras va al Item y requiere tipo. */
+export function isBasePresentation(row: Pick<PendingProductRow, "presentationFactor">): boolean {
+  return row.presentationFactor == null || row.presentationFactor === 1;
+}
+
+/**
+ * Código que el backend registrará como Interno provisional cuando el producto nuevo de `rowId`
+ * no tiene código de barras real de la unidad (mismo criterio que el servidor): código del
+ * proveedor de una línea de unidad primero, nunca uno que ya es el código de una caja/pack.
+ * `null` si la unidad ya tiene código real o no hay código del proveedor utilizable.
+ */
+export function provisionalUnitBarcode(
+  rows: PendingProductRow[],
+  rowId: string,
+  sources: ReadonlyMap<string, PendingProductSource>,
+): string | null {
+  const itemRows = rows.filter(
+    (r) =>
+      r.selected &&
+      ((r.mode === "create" && r.rowId === rowId) ||
+        (r.mode === "presentation" && r.parentRowId === rowId)),
+  );
+  if (itemRows.some((r) => isBasePresentation(r) && r.barcode.trim())) return null;
+  const packBarcodes = new Set(
+    itemRows
+      .filter((r) => !isBasePresentation(r) && r.barcode.trim())
+      .map((r) => r.barcode.trim().toUpperCase()),
+  );
+  const candidates = [
+    ...itemRows.filter((r) => isBasePresentation(r)),
+    ...itemRows.filter((r) => !isBasePresentation(r)),
+  ].map((r) => sources.get(r.rowId)?.supplierCode.trim() ?? "");
+  return (
+    candidates.find((code) => code && !packBarcodes.has(code.toUpperCase())) ?? null
+  );
 }
 
 /** Precarga de una fila: todo lo que el XML ya sabe, nada inventado. */
@@ -73,7 +127,8 @@ export function buildInitialRow(
   source: PendingProductSource,
   barcodeTypes: string[],
 ): PendingProductRow {
-  const barcode = source.supplierAuxCode || source.supplierCode;
+  const barcode =
+    [source.supplierAuxCode, source.supplierCode].map((c) => c.trim()).find(isRealBarcode) ?? "";
   return {
     rowId: source.rowId,
     selected: true,
@@ -154,11 +209,16 @@ const optional = (value: string) => (value.trim() ? value.trim() : null);
 /** Contrato del backend: productos nuevos (clave = fila que lo crea) + resolución de cada línea. */
 export function buildResolveRequest(rows: PendingProductRow[]): ResolveReceptionLinesRequest {
   const selected = rows.filter((r) => r.selected);
-  const presentation = (r: PendingProductRow) => ({
-    presentationFactor: r.presentationFactor ?? 1,
-    presentationName: r.presentationFactor === 1 ? null : optional(r.presentationName),
-    presentationUomCode: r.presentationFactor === 1 ? null : optional(r.presentationUomCode),
-  });
+  const presentation = (r: PendingProductRow) => {
+    const barcode = optional(r.barcode);
+    return {
+      presentationFactor: r.presentationFactor ?? 1,
+      presentationName: r.presentationFactor === 1 ? null : optional(r.presentationName),
+      presentationUomCode: r.presentationFactor === 1 ? null : optional(r.presentationUomCode),
+      barcode,
+      barcodeType: barcode && isBasePresentation(r) ? optional(r.barcodeType) : null,
+    };
+  };
   return {
     newItems: selected
       .filter((r) => r.mode === "create")
@@ -171,8 +231,6 @@ export function buildResolveRequest(rows: PendingProductRow[]): ResolveReception
         categoryNodeId: r.categoryNodeId,
         brandId: r.brandId,
         defaultUomCode: r.defaultUomCode,
-        barcode: r.barcode.trim(),
-        barcodeType: r.barcodeType,
         saleVatCode: optional(r.saleVatCode),
         purchaseVatCode: optional(r.purchaseVatCode),
         exciseTaxCode: optional(r.exciseTaxCode),

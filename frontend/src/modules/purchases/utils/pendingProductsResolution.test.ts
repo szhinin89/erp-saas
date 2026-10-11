@@ -4,11 +4,13 @@ import { pendingProductsFormSchema } from "../schemas/pendingProductsSchema";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PurchaseLineReadiness } from "./purchaseLineReadiness";
 import { applyBulkAssignment, applyMarginToSelected, buildInitialRow, buildResolveRequest,
-  groupRowErrors, netUnitCost, selectPendingProductSources, summarizeXmlLines,
-  type PendingProductSource } from "./pendingProductsResolution";
+  groupRowErrors, isRealBarcode, netUnitCost, provisionalUnitBarcode, selectPendingProductSources,
+  summarizeXmlLines, type PendingProductSource } from "./pendingProductsResolution";
 
+const UNIT_EAN = "7861234567898";
+const BOX_EAN = "7860000000010";
 const source: PendingProductSource = {
-  rowId: "a", lineKey: 1, supplierCode: "XML/A", supplierAuxCode: "1234567890123",
+  rowId: "a", lineKey: 1, supplierCode: "XML/A", supplierAuxCode: UNIT_EAN,
   xmlDescription: " ORIGINAL XML ", quantity: 2, unitPrice: 120, discountPct: 10,
   vatCode: "0", iceCode: "", matchStatus: "PENDING",
 };
@@ -23,11 +25,25 @@ describe("pending products schema", () => {
     expect(pendingProductsFormSchema.safeParse({ rows: [row(),
       { ...buildInitialRow({ ...source, rowId: "b" }, []), mode: "link", linkItemId: "existing" },
       { ...buildInitialRow({ ...source, rowId: "c" }, []), mode: "presentation", parentRowId: "a",
-        presentationFactor: 12, presentationName: "Caja", presentationUomCode: "02" },
+        presentationFactor: 12, presentationName: "Caja", presentationUomCode: "02", barcode: BOX_EAN },
     ] }).success).toBe(true);
   });
-  it.each(["sku", "shortName", "description", "itemTypeId", "brandId", "categoryNodeId", "defaultUomCode", "barcode", "barcodeType", "purchaseVatCode", "saleVatCode"])("requires %s on selected creates", (field) => {
+  it.each(["sku", "shortName", "description", "itemTypeId", "brandId", "categoryNodeId", "defaultUomCode", "purchaseVatCode", "saleVatCode"])("requires %s on selected creates", (field) => {
     expect(pendingProductsFormSchema.safeParse({ rows: [{ ...row(), [field]: "" }] }).success).toBe(false);
+  });
+  it("makes the barcode optional and requires a type only for a unit barcode", () => {
+    const parse = (patch: object) => pendingProductsFormSchema.safeParse({ rows: [{ ...row(), ...patch }] }).success;
+    expect(parse({ barcode: "", barcodeType: "" })).toBe(true);
+    expect(parse({ barcodeType: "" })).toBe(false);
+    expect(parse({ barcode: BOX_EAN, barcodeType: "", presentationFactor: 12, presentationName: "Caja", presentationUomCode: "02" })).toBe(true);
+  });
+  it("allows the same barcode on lines of one presentation but not a code with two barcodes", () => {
+    const box = { ...row(), rowId: "b", mode: "presentation" as const, parentRowId: "a", presentationFactor: 12,
+      presentationName: "Caja", presentationUomCode: "02", barcode: BOX_EAN };
+    expect(pendingProductsFormSchema.safeParse({ rows: [row(), box, { ...box, rowId: "c" }] }).success).toBe(true);
+    const result = pendingProductsFormSchema.safeParse({ rows: [row(), box, { ...box, rowId: "c", barcode: "7860000000027" }] });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues.map(i => i.path.join("."))).toEqual(["rows.1.barcode", "rows.2.barcode"]);
   });
   it.each([0, -1, Infinity, NaN])("rejects invalid price and factor %s", (value) => {
     expect(pendingProductsFormSchema.safeParse({ rows: [{ ...row(), salePrice: value }] }).success).toBe(false);
@@ -61,6 +77,26 @@ describe("XML sources and initial values", () => {
     expect(source.xmlDescription).toBe(" ORIGINAL XML ");
     expect(buildInitialRow({ ...source, supplierAuxCode: "" }, []).sku).toBe("XML-A");
     expect(buildInitialRow(source, []).barcodeType).toBe("");
+  });
+  it("prefills only a real barcode, never a supplier code, and never an implicit internal type", () => {
+    expect(isRealBarcode(UNIT_EAN)).toBe(true);
+    expect(isRealBarcode("12345670")).toBe(true);
+    expect(isRealBarcode("1234567890123")).toBe(false);
+    expect(isRealBarcode("XML/A")).toBe(false);
+    expect(buildInitialRow(source, ["EAN13"])).toMatchObject({ barcode: UNIT_EAN, barcodeType: "EAN13" });
+    expect(buildInitialRow({ ...source, supplierAuxCode: "", supplierCode: UNIT_EAN }, ["EAN13"]).barcode).toBe(UNIT_EAN);
+    expect(buildInitialRow({ ...source, supplierAuxCode: "AUX-9" }, ["EAN13", "Internal"]))
+      .toMatchObject({ barcode: "", barcodeType: "" });
+  });
+  it("shows the supplier code as provisional unit barcode only when the unit has no real one", () => {
+    const sources = new Map([["a", { ...source, supplierCode: "SUP-U" }], ["b", { ...source, rowId: "b", supplierCode: "SUP-BOX" }]]);
+    const box = { ...row(), rowId: "b", mode: "presentation" as const, parentRowId: "a", presentationFactor: 12, barcode: BOX_EAN };
+    expect(provisionalUnitBarcode([row(), box], "a", sources)).toBeNull();
+    expect(provisionalUnitBarcode([{ ...row(), barcode: "" }, box], "a", sources)).toBe("SUP-U");
+    // Bought only by box: the box supplier code, unless it is the box barcode itself.
+    const boxOnly = { ...row(), barcode: BOX_EAN, presentationFactor: 12 };
+    expect(provisionalUnitBarcode([boxOnly], "a", sources)).toBe("SUP-U");
+    expect(provisionalUnitBarcode([boxOnly], "a", new Map([["a", { ...source, supplierCode: BOX_EAN }]]))).toBeNull();
   });
   it("uses the original XML description and discount after editing the purchase fields", () => {
     const [result] = selectPendingProductSources([line({ purchaseReceptionLineId: "a", description: "ERP edited",
@@ -101,15 +137,20 @@ describe("bulk assignment and margin SSOT", () => {
 
 describe("request, row errors and XML summary", () => {
   it("builds a mixed batch with one item and unit/box references, excludes unselected rows", () => {
-    const request = buildResolveRequest([row(), { ...row(), rowId: "b", mode: "presentation", parentRowId: "a", presentationFactor: 12, presentationName: " Caja ", presentationUomCode: "02" },
+    const request = buildResolveRequest([row(), { ...row(), rowId: "b", mode: "presentation", parentRowId: "a", presentationFactor: 12, presentationName: " Caja ", presentationUomCode: "02", barcode: ` ${BOX_EAN} ` },
       { ...row(), rowId: "c", mode: "link", linkItemId: "item", linkPackagingLevelId: "level" }, { ...row(), rowId: "d", selected: false }]);
     expect(request.newItems).toHaveLength(1);
     expect(request.newItems[0]).toMatchObject({ key: "a", baseSalePrice: 15, exciseTaxCode: null });
+    expect(request.newItems[0]).not.toHaveProperty("barcode");
     expect(request.lines).toEqual([
-      { purchaseReceptionLineId: "a", newItemKey: "a", presentationFactor: 1, presentationName: null, presentationUomCode: null },
-      { purchaseReceptionLineId: "b", newItemKey: "a", presentationFactor: 12, presentationName: "Caja", presentationUomCode: "02" },
+      { purchaseReceptionLineId: "a", newItemKey: "a", presentationFactor: 1, presentationName: null, presentationUomCode: null, barcode: UNIT_EAN, barcodeType: "EAN13" },
+      { purchaseReceptionLineId: "b", newItemKey: "a", presentationFactor: 12, presentationName: "Caja", presentationUomCode: "02", barcode: BOX_EAN, barcodeType: null },
       { purchaseReceptionLineId: "c", itemId: "item", packagingLevelId: "level" },
     ]);
+  });
+  it("sends no barcode when the line has none", () => {
+    expect(buildResolveRequest([{ ...row(), barcode: "", barcodeType: "" }]).lines[0])
+      .toMatchObject({ barcode: null, barcodeType: null });
   });
   it("groups all row messages and keeps general errors", () => {
     const result = groupRowErrors([

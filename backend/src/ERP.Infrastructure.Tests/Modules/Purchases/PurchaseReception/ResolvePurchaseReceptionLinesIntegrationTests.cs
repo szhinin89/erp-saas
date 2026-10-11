@@ -515,8 +515,6 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
                 CategoryNodeId: _categories[i % 2],
                 BrandId: _brands[i < 12 ? 0 : 1],
                 DefaultUomCode: UnitUom,
-                Barcode: $"77{skuPrefix.GetHashCode() & 0xFFFF:D5}{i:D6}",
-                BarcodeType: "Internal",
                 SaleVatCode: "0",
                 PurchaseVatCode: "0",
                 ExciseTaxCode: null,
@@ -530,8 +528,18 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
             var (itemId, levelId) = _linkTargets[$"L-{i:D3}"];
             lines.Add(new(byCode[$"L-{i:D3}"].Id, ItemId: itemId, PackagingLevelId: levelId));
         }
+        // Odd products bring a real unit EAN; even ones have none (provisional internal code).
         for (var i = 0; i < NewCount; i++)
-            lines.Add(new(byCode[$"N-{i:D3}"].Id, NewItemKey: $"n{i}"));
+            lines.Add(
+                i % 2 == 1
+                    ? new(
+                        byCode[$"N-{i:D3}"].Id,
+                        NewItemKey: $"n{i}",
+                        Barcode: UnitEan(skuPrefix, i),
+                        BarcodeType: "EAN13"
+                    )
+                    : new(byCode[$"N-{i:D3}"].Id, NewItemKey: $"n{i}")
+            );
         for (var i = 0; i < BoxCount; i++)
             lines.Add(
                 new(
@@ -539,10 +547,29 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
                     NewItemKey: $"n{i}",
                     PresentationFactor: 12m,
                     PresentationName: "Caja x12",
-                    PresentationUomCode: BoxUom
+                    PresentationUomCode: BoxUom,
+                    Barcode: BoxEan(skuPrefix, i)
                 )
             );
         return new ResolvePurchaseReceptionLinesCommand(newItems, lines);
+    }
+
+    private static string UnitEan(string skuPrefix, int i) =>
+        $"77{skuPrefix.GetHashCode() & 0xFFFF:D5}{i:D6}";
+
+    private static string BoxEan(string skuPrefix, int i) =>
+        $"78{skuPrefix.GetHashCode() & 0xFFFF:D5}{i:D6}";
+
+    private async Task<Item> LoadCreatedAsync(string sku)
+    {
+        await using var scope = _services.CreateAsyncScope();
+        return await scope
+            .ServiceProvider.GetRequiredService<ErpDbContext>()
+            .Items.Include(i => i.Variants)
+            .ThenInclude(v => v.Barcodes)
+            .Include(i => i.PackagingLevels)
+            .Include(i => i.SupplierCodes)
+            .SingleAsync(i => i.Code.SKU == sku);
     }
 
     // ── Tests ────────────────────────────────────────────────────────────────────────────────
@@ -655,6 +682,110 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
                 .Should()
                 .Be((12m, BoxUom, UnitUom));
         }
+    }
+
+    // ── PILOT-PURCHASE-RECEPTION-BARCODE-FIX-01 ──────────────────────────────────────────────
+
+    private static string ActiveCode(Item item, string? type = null) =>
+        item
+            .Variants.SelectMany(v => v.Barcodes)
+            .Should()
+            .ContainSingle(b => b.IsActive && (type == null || b.BarcodeType == type))
+            .Which.Code;
+
+    [Fact]
+    public async Task Each_barcode_is_stored_on_its_presentation_and_supplier_codes_stay_for_matching()
+    {
+        var document = await LoadAsync(await ReceiveInvoiceAsync());
+        var outcome = await ResolveAsync(BuildBatch(document, "BC-"));
+        outcome.Applied.Should().BeTrue(string.Join(" | ", outcome.Errors.Select(e => e.Message)));
+
+        // Unit without real barcode + box with EAN: provisional internal on the unit, EAN on the box.
+        var noUnitEan = await LoadCreatedAsync("BC-000");
+        ActiveCode(noUnitEan, "Internal").Should().Be("N-000");
+        noUnitEan.PackagingLevels.Single(p => p.IsBaseUnit).Barcode.Should().BeNull();
+        noUnitEan.PackagingLevels.Single(p => !p.IsBaseUnit).Barcode.Should().Be(BoxEan("BC-", 0));
+        noUnitEan.SupplierCodes.Select(c => c.Code).Should().BeEquivalentTo(["N-000", "B-000"]);
+
+        // Unit EAN + box EAN: each one on its own presentation, never the box code on the unit.
+        var both = await LoadCreatedAsync("BC-001");
+        ActiveCode(both, "EAN13").Should().Be(UnitEan("BC-", 1));
+        both.Variants.SelectMany(v => v.Barcodes).Should().ContainSingle();
+        both.PackagingLevels.Single(p => !p.IsBaseUnit).Barcode.Should().Be(BoxEan("BC-", 1));
+
+        // Unit only: real EAN as the item barcode; without it, the provisional internal code.
+        ActiveCode(await LoadCreatedAsync("BC-021"), "EAN13").Should().Be(UnitEan("BC-", 21));
+        ActiveCode(await LoadCreatedAsync("BC-020"), "Internal").Should().Be("N-020");
+
+        // Matching still learns from the supplier code: the next invoice resolves by itself.
+        (await LoadAsync(await ReceiveInvoiceAsync()))
+            .Lines.Should()
+            .OnlyContain(l => l.MatchStatus == ItemMatchStatus.AutoMatched);
+    }
+
+    [Fact]
+    public async Task Product_bought_only_by_box_keeps_its_ean_on_the_box()
+    {
+        var document = await LoadAsync(await ReceiveInvoiceAsync());
+        var batch = BuildBatch(document, "BOX-");
+        var unitLineId = document.Lines.Single(l => l.SupplierCode == "N-000").Id;
+        batch = batch with
+        {
+            Lines = batch.Lines.Where(l => l.PurchaseReceptionLineId != unitLineId).ToList(),
+        };
+
+        var outcome = await ResolveAsync(batch);
+
+        outcome.Applied.Should().BeTrue(string.Join(" | ", outcome.Errors.Select(e => e.Message)));
+        var item = await LoadCreatedAsync("BOX-000");
+        ActiveCode(item, "Internal").Should().Be("B-000", "the box EAN never becomes the unit code");
+        var box = item.PackagingLevels.Single(p => !p.IsBaseUnit);
+        box.Barcode.Should().Be(BoxEan("BOX-", 0));
+        item.SupplierCodes.Single(c => c.Code == "B-000").PackagingLevelId.Should().Be(box.Id);
+    }
+
+    [Fact]
+    public async Task Barcode_of_an_existing_item_still_blocks_the_whole_batch()
+    {
+        var document = await LoadAsync(await ReceiveInvoiceAsync());
+        var first = BuildBatch(document, "DUP-");
+        var lines = first.Lines.ToList();
+        var index = lines.FindIndex(l => l.NewItemKey == "n1" && l.PresentationFactor == 1m);
+        // Real unit EAN already registered on another item.
+        var taken = await SeedItemWithBarcodeAsync("7861111111116");
+        lines[index] = lines[index] with { Barcode = taken };
+        var before = await CountItemsAsync();
+
+        var outcome = await ResolveAsync(first with { Lines = lines });
+
+        outcome.Applied.Should().BeFalse();
+        outcome.Errors.Should().Contain(e => e.NewItemKey == "n1" && e.Message.Contains(taken));
+        (await CountItemsAsync()).Should().Be(before);
+    }
+
+    private async Task<string> SeedItemWithBarcodeAsync(string code)
+    {
+        await using var scope = _services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var item = Item.Create(
+            _tenantId,
+            "EAN-OWNER",
+            "Con EAN",
+            "Con EAN",
+            _itemTypeId,
+            UnitUom,
+            ItemTaxConfig.Create("0", "0"),
+            ItemSaleConfig.Create(true),
+            ItemStockConfig.Create(true),
+            _userId,
+            baseSalePrice: 5m,
+            companyId: _companyId
+        );
+        item.AddVariant(Array.Empty<(Guid, string)>(), null, 0, _userId)
+            .AddBarcode(code, "EAN13", _tenantId, _userId, true);
+        db.Items.Add(item);
+        await db.SaveChangesAsync();
+        return code;
     }
 
     [Fact]

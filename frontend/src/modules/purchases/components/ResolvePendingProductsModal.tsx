@@ -37,6 +37,8 @@ import {
   buildInitialRow,
   buildResolveRequest,
   groupRowErrors,
+  isBasePresentation,
+  provisionalUnitBarcode,
   suggestBarcodeType,
   type BulkAssignment,
   type PendingProductSource,
@@ -238,6 +240,7 @@ export function ResolvePendingProductsModal({
                   key={row.rowId}
                   index={index}
                   source={sourcesById.get(row.rowId)}
+                  sourcesById={sourcesById}
                   catalogs={catalogs}
                   levels={levelsByItem[row.linkItemId] ?? []}
                   serverErrors={rowErrors.get(row.rowId) ?? []}
@@ -366,6 +369,7 @@ function CatalogSelect({
 function PendingProductRowView({
   index,
   source,
+  sourcesById,
   catalogs,
   levels,
   serverErrors,
@@ -373,6 +377,7 @@ function PendingProductRowView({
 }: {
   index: number;
   source: PendingProductSource | undefined;
+  sourcesById: ReadonlyMap<string, PendingProductSource>;
   catalogs: Catalogs;
   levels: ItemPackagingLevelDto[];
   serverErrors: string[];
@@ -390,7 +395,9 @@ function PendingProductRowView({
   const err = (name: keyof NonNullable<typeof errors>) =>
     (errors?.[name] as { message?: string } | undefined)?.message;
   const parentOptions = allRows.filter((r) => r.selected && r.mode === "create" && r.rowId !== row.rowId);
-  const factorIsBase = row.presentationFactor == null || row.presentationFactor === 1;
+  const factorIsBase = isBasePresentation(row);
+  const provisionalCode =
+    row.mode === "create" && row.selected ? provisionalUnitBarcode(allRows, row.rowId, sourcesById) : null;
 
   return (
     <tr className={serverErrors.length > 0 ? "prl-row prl-row--error" : "prl-row"}>
@@ -434,17 +441,6 @@ function PendingProductRowView({
             </ZHField>
             <ZHField density="compact" label={t("purchases.pendingProducts.field.description", "Descripción ERP")} fieldError={err("description")}>
               <input {...register(field("description"))} />
-            </ZHField>
-            <ZHField density="compact" label={t("purchases.pendingProducts.field.barcode", "Código de barras")} fieldError={err("barcode") ?? err("barcodeType")}>
-              <input {...register(field("barcode"))} />
-              <ZhSelect density="compact" {...register(field("barcodeType"))}>
-                <option value="">—</option>
-                {catalogs.barcodeTypeOptions.map((o) => (
-                  <option key={o.code} value={o.code}>
-                    {o.name}
-                  </option>
-                ))}
-              </ZhSelect>
             </ZHField>
           </>
         )}
@@ -526,6 +522,32 @@ function PendingProductRowView({
                 <RowSelect index={index} name="presentationUomCode" label={t("purchases.pendingProducts.field.presentationUom", "Unidad presentación")} error={err("presentationUomCode")} options={catalogs.uomOptions.map((o) => ({ value: o.code, label: o.name }))} />
               </>
             )}
+            <ZHField
+              density="compact"
+              label={
+                factorIsBase
+                  ? t("purchases.pendingProducts.field.unitBarcode", "Código de barras de la unidad (opcional)")
+                  : t("purchases.pendingProducts.field.presentationBarcode", "Código de barras de esta presentación (opcional)")
+              }
+              fieldError={err("barcode") ?? err("barcodeType")}
+              hint={
+                provisionalCode
+                  ? t("purchases.pendingProducts.provisionalBarcode", { code: provisionalCode })
+                  : undefined
+              }
+            >
+              <input placeholder="EAN / UPC" {...register(field("barcode"))} />
+              {factorIsBase && (
+                <ZhSelect density="compact" aria-label={t("purchases.pendingProducts.field.barcodeType", "Tipo de código de barras")} {...register(field("barcodeType"))}>
+                  <option value="">—</option>
+                  {catalogs.barcodeTypeOptions.map((o) => (
+                    <option key={o.code} value={o.code}>
+                      {o.name}
+                    </option>
+                  ))}
+                </ZhSelect>
+              )}
+            </ZHField>
           </>
         )}
       </td>

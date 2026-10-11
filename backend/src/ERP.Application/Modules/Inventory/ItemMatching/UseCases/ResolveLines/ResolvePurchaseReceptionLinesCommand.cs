@@ -7,6 +7,8 @@ namespace ERP.Application.Modules.Inventory.ItemMatching.UseCases.ResolveLines;
 /// COMPRAS-METODO-ZH-01B — Item nuevo a crear dentro del lote. Mismos campos obligatorios que
 /// <c>CreateItemCommand</c> (se crea a través de él, nunca con otro motor). <see cref="Key"/> es la
 /// referencia del cliente que usan las líneas (<see cref="ResolveReceptionLineInput.NewItemKey"/>).
+/// Los códigos de barras no van aquí: cada uno pertenece a una presentación
+/// (<see cref="ResolveReceptionLineInput.Barcode"/>).
 /// </summary>
 public sealed record ResolveReceptionNewItemInput(
     string Key,
@@ -17,8 +19,6 @@ public sealed record ResolveReceptionNewItemInput(
     Guid CategoryNodeId,
     Guid BrandId,
     string DefaultUomCode,
-    string Barcode,
-    string BarcodeType,
     string? SaleVatCode,
     string? PurchaseVatCode,
     string? ExciseTaxCode,
@@ -32,6 +32,9 @@ public sealed record ResolveReceptionNewItemInput(
 /// código se describe con <see cref="PresentationFactor"/> (1 = unidad base) y, si es mayor a 1,
 /// <see cref="PresentationName"/>/<see cref="PresentationUomCode"/> — varios códigos del mismo
 /// producto (unidad, caja x12…) apuntan al mismo <see cref="NewItemKey"/>.
+/// <see cref="Barcode"/> es el código de barras real (EAN/UPC) de ESA presentación: factor 1 →
+/// código del Item (requiere <see cref="BarcodeType"/>); factor &gt; 1 → código de la presentación.
+/// El código del proveedor nunca se usa aquí: solo sirve para el matching.
 /// </summary>
 public sealed record ResolveReceptionLineInput(
     Guid PurchaseReceptionLineId,
@@ -40,7 +43,9 @@ public sealed record ResolveReceptionLineInput(
     Guid? PackagingLevelId = null,
     decimal PresentationFactor = 1m,
     string? PresentationName = null,
-    string? PresentationUomCode = null
+    string? PresentationUomCode = null,
+    string? Barcode = null,
+    string? BarcodeType = null
 );
 
 /// <summary>

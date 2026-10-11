@@ -7,7 +7,8 @@ import type { PendingProductSource } from "../utils/pendingProductsResolution";
 const mocks = vi.hoisted(() => ({ resolve: vi.fn(), barcodeTypes: [] as { code: string; name: string }[] }));
 vi.mock("../api/purchaseReceptionService", () => ({ purchaseReceptionService: { resolveLines: mocks.resolve, getLineMatch: vi.fn() } }));
 vi.mock("./ProductPicker", () => ({ ProductPicker: () => null }));
-vi.mock("../../../i18n/i18n", () => ({ useI18n: () => ({ t: (key: string, fallback?: unknown) => typeof fallback === "string" ? fallback : key }) }));
+vi.mock("../../../i18n/i18n", () => ({ useI18n: () => ({ t: (key: string, fallback?: unknown) => typeof fallback === "string" ? fallback
+  : fallback && typeof fallback === "object" && "code" in fallback ? `${key}:${String(fallback.code)}` : key }) }));
 vi.mock("../../../components/items/ItemEditorModal/useItemCreationCatalogs", () => ({ useItemCreationCatalogs: () => ({
   barcodeTypeOptions: mocks.barcodeTypes, itemTypeOptions: [{ id: "type", name: "Type" }],
   brandOptions: [{ id: "brand", name: "Brand" }], categoryOptions: [{ id: "category", name: "Category" }],
@@ -30,7 +31,10 @@ describe("bulk resolution modal", () => {
     change("shortName", "Nombre ERP");
     mocks.barcodeTypes = [{ code: "Internal", name: "Interno" }];
     view.rerender(<ResolvePendingProductsModal {...p} sources={[{ ...source }]} />);
-    await waitFor(() => expect(input("barcodeType").value).toBe("Internal"));
+    // The supplier code is not a barcode: nothing is copied and no internal type is implied.
+    await waitFor(() => expect(screen.getByText("purchases.pendingProducts.provisionalBarcode:A")).toBeTruthy());
+    expect(input("barcode").value).toBe("");
+    expect(input("barcodeType").value).toBe("");
     expect(input("description").value).toBe("Descripción ERP editada");
     expect(input("shortName").value).toBe("Nombre ERP");
     expect(screen.getByText("Original XML")).toBeTruthy();
@@ -50,6 +54,23 @@ describe("bulk resolution modal", () => {
     fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
     await waitFor(() => expect(p.onResolved).toHaveBeenCalledOnce());
     expect(mocks.resolve.mock.calls[1][0].newItems[0]).toMatchObject({ sku: "CORREGIDO", description: "Descripción ERP", baseSalePrice: 5 });
+    expect(mocks.resolve.mock.calls[1][0].lines[0]).toMatchObject({ barcode: null, barcodeType: null });
+  });
+
+  it("puts a real XML barcode on the box presentation when the line is a box", async () => {
+    mocks.barcodeTypes = [{ code: "EAN13", name: "EAN-13" }];
+    mocks.resolve.mockResolvedValueOnce({ applied: true, errors: [], lines: [], itemsCreated: 1, linesLinked: 1, equivalencesLearned: 1, linesAutoMatched: 0 });
+    const p = props();
+    render(<ResolvePendingProductsModal {...p} sources={[{ ...source, supplierAuxCode: "7861234567898" }]} />);
+    expect(input("barcode").value).toBe("7861234567898");
+    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePrice: "5", presentationFactor: "12" })) change(name, value);
+    await waitFor(() => expect(input("barcodeType")).toBeNull());
+    change("presentationName", "Caja x12");
+    change("presentationUomCode", "19");
+    fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
+    await waitFor(() => expect(p.onResolved).toHaveBeenCalledOnce());
+    expect(mocks.resolve.mock.calls[0][0].lines[0]).toMatchObject({ presentationFactor: 12, barcode: "7861234567898", barcodeType: null });
+    expect(screen.getByText("purchases.pendingProducts.provisionalBarcode:A")).toBeTruthy();
   });
 
   it("renders 100 pending lines and selects/deselects the whole batch", () => {
