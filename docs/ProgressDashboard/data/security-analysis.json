@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-10 13:15:46",
-    "FilesAnalyzed":  12103,
+    "Generated":  "2026-10-10 21:19:40",
+    "FilesAnalyzed":  12064,
     "SecretsFound":  199,
     "SecretFiles":  [
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
@@ -31,7 +31,7 @@
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Constants\\OrgSettingKeys.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Entities\\SriSettings.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Communications\\CommunicationSettingsResolver.cs",
-                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20260929143218_InitialEnterpriseBaseline.cs",
+                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261010184156_InitialProductionBaseline.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\E2E\\E2ESeedService.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Security\\BcryptPasswordHasherTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\TestP12CertificateFactory.cs",

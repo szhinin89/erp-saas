@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 13:16:18",
+    "generated":  "2026-10-10 21:20:11",
     "source":  "dashboard-model-v12.json, model-health.json, completion-intelligence.json, dependencies.json, critical-path.json, release-simulation.json",
     "rule":  "Deterministic rule engine -- every recommendation cites the exact JSON field(s) that triggered it in \u0027justifiedBy\u0027. No generic text, no invented relationships. A rule that finds no matching condition produces zero recommendations for that rule.",
     "recommendations":  [
@@ -13,7 +13,7 @@
                             },
                             {
                                 "title":  "Security reaches 80% raises Production Readiness",
-                                "text":  "Security reaches 80% moves Production Readiness from 61.51% to 73.47% (+11.96 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
+                                "text":  "Security reaches 80% moves Production Readiness from 61.73% to 73.69% (+11.96 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security reaches 80%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -21,7 +21,7 @@
                             },
                             {
                                 "title":  "Quality reaches 85% raises Production Readiness",
-                                "text":  "Quality reaches 85% moves Production Readiness from 61.51% to 77.00% (+15.49 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
+                                "text":  "Quality reaches 85% moves Production Readiness from 61.73% to 77.00% (+15.27 pts), changing status from \u0027NOT READY\u0027 to \u0027NOT READY\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Quality reaches 85%\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -29,7 +29,7 @@
                             },
                             {
                                 "title":  "Security 80% + Quality 85% combined raises Production Readiness",
-                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 61.51% to 88.96% (+27.45 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
+                                "text":  "Security 80% + Quality 85% combined moves Production Readiness from 61.73% to 88.96% (+27.23 pts), changing status from \u0027NOT READY\u0027 to \u0027NEEDS REVIEW\u0027.",
                                 "justifiedBy":  [
                                                     "release-simulation.json scenario \u0027Security 80% + Quality 85% combined\u0027",
                                                     "Formula: average of the 5 EngineeringScore components (tools/dashboard/render-dashboard.ps1)"
@@ -124,8 +124,8 @@
                                                 ]
                             },
                             {
-                                "title":  "Critical gap already tracked: Quality Score bajo: 7.55%",
-                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 7.55%",
+                                "title":  "Critical gap already tracked: Quality Score bajo: 8.65%",
+                                "text":  "This gap is already computed by analyze-completion.ps1 and remains open: Quality Score bajo: 8.65%",
                                 "justifiedBy":  [
                                                     "completion-intelligence.json: criticalGaps"
                                                 ]

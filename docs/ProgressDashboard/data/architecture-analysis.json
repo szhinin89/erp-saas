@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-10-10 13:13:13",
+    "Generated":  "2026-10-10 21:15:33",
     "Layers":  {
                    "Domain":  {
                                   "Files":  670
@@ -11,8 +11,8 @@
                                        "Files":  1112
                                    },
                    "Infrastructure":  {
-                                          "DbContext":  118,
-                                          "Files":  526,
+                                          "DbContext":  99,
+                                          "Files":  488,
                                           "Repository":  95
                                       },
                    "API":  {
