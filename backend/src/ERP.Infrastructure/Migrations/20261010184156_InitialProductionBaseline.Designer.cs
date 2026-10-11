@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20261010023108_SriDocTypeSeedActiveFlags")]
-    partial class SriDocTypeSeedActiveFlags
+    [Migration("20261010184156_InitialProductionBaseline")]
+    partial class InitialProductionBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -4308,6 +4308,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("extra_legend");
 
+                    b.Property<DateTime?>("InitialLoadClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("initial_load_closed_at");
+
+                    b.Property<Guid?>("InitialLoadClosedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("initial_load_closed_by");
+
                     b.Property<bool>("IsAccountingReq")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -6638,6 +6646,209 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_import_batch_rows_batch_row_number");
 
                     b.ToTable("import_batch_rows", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.OpeningBalancePosting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("EntryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("entry_date");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("error_code");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("FactType")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("fact_type");
+
+                    b.Property<Guid>("ImportBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("import_batch_id");
+
+                    b.Property<int>("ImportType")
+                        .HasColumnType("integer")
+                        .HasColumnName("import_type");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journal_entry_id");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("posted_at");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImportBatchId");
+
+                    b.HasIndex("CompanyId", "ImportBatchId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_opening_balance_postings_company_batch");
+
+                    b.HasIndex("TenantId", "CompanyId", "Status")
+                        .HasDatabaseName("ix_opening_balance_postings_company_status");
+
+                    b.ToTable("opening_balance_postings", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.OpeningJournalEntryPosting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("EntryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("entry_date");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("error_code");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("error_message");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_current");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journal_entry_id");
+
+                    b.Property<int>("LineCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_count");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("posted_at");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SupersededAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("superseded_at");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_opening_journal_entry_postings_company_current")
+                        .HasFilter("is_current");
+
+                    b.HasIndex("CompanyId", "Version")
+                        .IsUnique()
+                        .HasDatabaseName("ux_opening_journal_entry_postings_company_version");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_opening_journal_entry_postings_tenant_company");
+
+                    b.ToTable("opening_journal_entry_postings", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.CurrentStock", b =>
@@ -16009,7 +16220,7 @@ namespace ERP.Infrastructure.Migrations
                             Id = new Guid("40000000-0000-0000-0000-000000000001"),
                             Document = "FICHA_TECNICA_OFFLINE",
                             DocumentSha256 = "7333aebfbdf2cb3ba83f9fc67a7a7f0346ca59506480a260cc42f96dbdfc13c9",
-                            IntroducedInMigration = "SriRetentionCatalogVersioning",
+                            IntroducedInMigration = "InitialProductionBaseline",
                             Notes = "Porcentaje → codigoRetencion: 10%→9, 20%→10, 30%→1, 50%→11, 70%→2, 100%→3, en cero→7, no procede→8. La tabla no define 15% (concepto 728 sin representación). Sin fecha de inicio confirmada: las versiones se registran sin límite inferior (ValidFrom null).",
                             PublishedOn = new DateOnly(2026, 7, 27),
                             ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%cc%81CNICA%20COMPROBANTES%20ELECTRO%cc%81NICOS%20ESQUEMA%20OFFLINE%20Versio%cc%81n%202.34.pdf",
@@ -16020,7 +16231,7 @@ namespace ERP.Infrastructure.Migrations
                         {
                             Id = new Guid("40000000-0000-0000-0000-000000000002"),
                             Document = "CATALOGO_ATS",
-                            IntroducedInMigration = "SriRetentionCatalogVersioning",
+                            IntroducedInMigration = "InitialProductionBaseline",
                             Notes = "PENDIENTE DE VERIFICACIÓN (ADR-037 DR-4). El XML usa el mismo código del catálogo, como en el ejemplo oficial de la Ficha v2.34 Anexo 1 (codigoRetencion 323B1). Porcentajes no verificados: las versiones de Renta no fijan Percentage y no se exige coincidencia.",
                             ReferenceUrl = "http://www.sri.gob.ec/web/guest/formularios-e-instructivos1",
                             Section = "Retención en la fuente de Impuesto a la Renta (referido por Ficha v2.34 §9.15)"
@@ -16030,7 +16241,7 @@ namespace ERP.Infrastructure.Migrations
                             Id = new Guid("40000000-0000-0000-0000-000000000003"),
                             Document = "CATALOGO_ATS",
                             DocumentSha256 = "bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e",
-                            IntroducedInMigration = "SriRetentionIncomeCatalogAts20260806",
+                            IntroducedInMigration = "InitialProductionBaseline",
                             Notes = "Descargado el 2026-10-02 desde https://www.sri.gob.ec/formularios-e-instructivos1. Fecha de actualización = inicio del bloque (06/08/2026). Tarifas no numéricas (\"12 o 14\", \"1 /0 según resolución…\") se registran como regla condicional, nunca como porcentaje.",
                             PublishedOn = new DateOnly(2026, 8, 6),
                             ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/e6a826af-b22c-40bb-8752-d711f293b8f9/Catalogo_ATS.xls",
@@ -17204,7 +17415,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("code");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
@@ -18690,6 +18900,15 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany("Files")
                         .HasForeignKey("ImportBatchId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.InitialLoad.Entities.OpeningBalancePosting", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.InitialLoad.Entities.ImportBatch", null)
+                        .WithMany()
+                        .HasForeignKey("ImportBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

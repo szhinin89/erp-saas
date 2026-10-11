@@ -16217,7 +16217,7 @@ namespace ERP.Infrastructure.Migrations
                             Id = new Guid("40000000-0000-0000-0000-000000000001"),
                             Document = "FICHA_TECNICA_OFFLINE",
                             DocumentSha256 = "7333aebfbdf2cb3ba83f9fc67a7a7f0346ca59506480a260cc42f96dbdfc13c9",
-                            IntroducedInMigration = "SriRetentionCatalogVersioning",
+                            IntroducedInMigration = "InitialProductionBaseline",
                             Notes = "Porcentaje → codigoRetencion: 10%→9, 20%→10, 30%→1, 50%→11, 70%→2, 100%→3, en cero→7, no procede→8. La tabla no define 15% (concepto 728 sin representación). Sin fecha de inicio confirmada: las versiones se registran sin límite inferior (ValidFrom null).",
                             PublishedOn = new DateOnly(2026, 7, 27),
                             ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%cc%81CNICA%20COMPROBANTES%20ELECTRO%cc%81NICOS%20ESQUEMA%20OFFLINE%20Versio%cc%81n%202.34.pdf",
@@ -16228,7 +16228,7 @@ namespace ERP.Infrastructure.Migrations
                         {
                             Id = new Guid("40000000-0000-0000-0000-000000000002"),
                             Document = "CATALOGO_ATS",
-                            IntroducedInMigration = "SriRetentionCatalogVersioning",
+                            IntroducedInMigration = "InitialProductionBaseline",
                             Notes = "PENDIENTE DE VERIFICACIÓN (ADR-037 DR-4). El XML usa el mismo código del catálogo, como en el ejemplo oficial de la Ficha v2.34 Anexo 1 (codigoRetencion 323B1). Porcentajes no verificados: las versiones de Renta no fijan Percentage y no se exige coincidencia.",
                             ReferenceUrl = "http://www.sri.gob.ec/web/guest/formularios-e-instructivos1",
                             Section = "Retención en la fuente de Impuesto a la Renta (referido por Ficha v2.34 §9.15)"
@@ -16238,7 +16238,7 @@ namespace ERP.Infrastructure.Migrations
                             Id = new Guid("40000000-0000-0000-0000-000000000003"),
                             Document = "CATALOGO_ATS",
                             DocumentSha256 = "bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e",
-                            IntroducedInMigration = "SriRetentionIncomeCatalogAts20260806",
+                            IntroducedInMigration = "InitialProductionBaseline",
                             Notes = "Descargado el 2026-10-02 desde https://www.sri.gob.ec/formularios-e-instructivos1. Fecha de actualización = inicio del bloque (06/08/2026). Tarifas no numéricas (\"12 o 14\", \"1 /0 según resolución…\") se registran como regla condicional, nunca como porcentaje.",
                             PublishedOn = new DateOnly(2026, 8, 6),
                             ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/e6a826af-b22c-40bb-8752-d711f293b8f9/Catalogo_ATS.xls",

@@ -1,5 +1,22 @@
 # Project Status
 
+## PURCHASE-RETURN-COST-FIX-01 — Devolución a proveedor al promedio ponderado y en unidad base (2026-10-10)
+
+**Estado: implementado (sin commit).** Purchases reabierto solo para la valoración de `PurchaseReturn` ([ADR-041 addendum](docs/decisions/ADR-041-negative-sale-inventory-cost-obligations.md#addendum-purchase-return-cost-fix-01--devolución-a-proveedor-2026-10-10)).
+- Corrige "Inventory cost cannot be negative" (10 @2 + 1 @10, consumo 8, devolución de la unidad @10): la salida de Kardex ya no usa `LandedUnitCost`, se valora al promedio vigente; `HistoricalCostAmount`/`UnitCost` = valor real de esa salida; `CostVarianceTotal = HistoricalCost − AuthorizedSubtotal` con las cuentas existentes.
+- Corrige unidades: stock/Kardex en `QuantityInBaseUom`/`BaseUomCode` con el factor de conversión original (antes cantidad comercial con presentación ≠ 1); la NC sigue en la unidad comercial y derivada de la factura.
+- Cancelación reingresa exactamente cantidad base, unidad y costo de la salida de autorización.
+- Tests focales: Domain PurchaseReturn 62/62; Application devoluciones 67/67; API `PurchaseReturnEndToEndTests` 17/17 (incluye escenarios 18–19); Infrastructure posting autorizado/cancelado 7/7 (fixture A1 `Item.Create` corregido). Suites completas: no ejecutadas.
+
+## DB-BASELINE-01 — Una sola `InitialProductionBaseline` para la primera instalación real (2026-10-10)
+
+**Estado: implementado (sin commit).** Sin producción: las 20 migraciones (`20260929143218_InitialEnterpriseBaseline` … `20261010173648_InitialLoadClosure`) se reemplazan por `20261010184156_InitialProductionBaseline` (LF). Sin upgrade-path; `dberpsaas` y `erp_sumak_pilot` recreadas desde cero (requieren de nuevo el first-run `POST /setup/admin`). Snapshot regenerado byte-idéntico al anterior; `has-pending-model-changes` sin cambios.
+- Raw SQL al final del `Up` (Down en orden inverso): `uq_mbp_identification`; `enforce_purchase_expense_exclusivity()` + 2 triggers; `pg_trgm` + 2 índices GIN; A1 `uq_items_tenant_company_sku`, `ck_items_nature`, `a1_item_barcode_unique()`/`a1_inventory_product_scope()` + 4 triggers. No se copian transformaciones históricas (desactivación de defaults de retención Renta ATS, backfills de `communication_outbox`, resolución de dueño de Items A1), ni `DROP DEFAULT` transitorios.
+- Guards: `RawSqlDatabaseObjectsSurviveMigrationSquashTests` detecta también `ALTER TABLE … ADD CONSTRAINT` y registra `ck_items_nature` (antes un squash lo perdía sin fallar nada); `RawSqlDatabaseObjectsBaselineIntegrationTests` verifica físicamente los objetos A1 (índice, CHECK, 2 funciones, 4 triggers). Retirados los tests que inspeccionaban migraciones históricas (`SriIncomeCatalogMigrationSupplierDefaultsTests`, 2 casos de `SriCatalogComplianceTests`); las 3 filas de `sri_normative_source.introduced_in_migration` declaran `InitialProductionBaseline` y el test de trazabilidad vuelve a exigir una migración existente, sin excepciones.
+- Oráculo (BD vacía + cadena anterior) vs BD vacía + baseline: 6.358 elementos de catálogo (columnas, constraints, índices, triggers, funciones por md5, extensiones, secuencias) y hash de datos de las 203 tablas idénticos, salvo 4 DEFAULT residuales de `AddColumn(defaultValue:)` que el modelo no declara (`resend_sequence`, `cost_pending` ×2, `sri_check_count`); ningún INSERT manual depende de ellos. Seeds SRI correctos (doc_type 02/08/09/18 e IVA 2/3 inactivos).
+- Arranque API sobre BD nueva: navegación (12 grupos, 97 ítems), InstallData INEC (25/224/1040, con `InstallData:Enabled=true`), `POST /setup/admin` → tenant + empresa `Principal` con bootstrap completo, login y `companies/current` 200; `similarity()` operativo.
+- Gates focales: Architecture raw SQL 2/2; Infrastructure 158/158 (raw SQL, SRI, A1, exclusividad Compra/Gasto, identificación BP, Item Matching). Suites completas: ejecución manual.
+
 ## IL-8 — ASI de apertura y cierre de implementación (2026-10-10)
 
 **Estado: EN CURSO — IL-8A CLOSED (`8897acf23`); IL-8B CLOSED (`bda79802e`); IL-8C CLOSED (`3225c0478`); IL-8D CLOSED (`5c87e3800`); IL-8E implementado (sin commit).**

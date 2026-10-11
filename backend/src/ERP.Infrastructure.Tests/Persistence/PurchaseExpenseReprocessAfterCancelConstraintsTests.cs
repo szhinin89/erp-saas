@@ -780,7 +780,7 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
     }
 
     // ── ZH-PURCHASE-EXPENSE-EXCLUSIVITY-RESTORE-01 ─────────────────────────
-    // El trigger es raw SQL de InitialEnterpriseBaseline (no está en el modelo EF). Estos casos
+    // El trigger es raw SQL de InitialProductionBaseline (no está en el modelo EF). Estos casos
     // exigen que el bloqueo venga de ESE trigger (constraint uq_purchase_expense_access_key), no de
     // otro índice.
 

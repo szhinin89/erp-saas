@@ -47,15 +47,17 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ## Migraciones
 
-### Baseline EF (desarrollo)
+### Baseline EF (pre-producción)
 
-Una sola migración: `20260929143218_InitialEnterpriseBaseline` (consolidación ZH-DB-FINAL-BASELINE-SQUASH-01, 2026-09-29). Una instalación nueva aplica solo esa migración; no existe upgrade-path desde cadenas anteriores (todas eran BD de desarrollo recreables).
+Una sola migración: `20261010184156_InitialProductionBaseline` (consolidación DB-BASELINE-01, 2026-10-10; reemplaza a `InitialEnterpriseBaseline` y a las 19 migraciones forward posteriores). Una instalación nueva aplica solo esa migración; no existe upgrade-path desde cadenas anteriores (no había producción; las BD de desarrollo/demo se recrearon). Verificada contra un oráculo (BD vacía + cadena anterior completa): esquema, constraints, índices, triggers, funciones, extensiones y datos sembrados idénticos, salvo 4 DEFAULT residuales que la cadena anterior dejaba por `AddColumn(defaultValue:)` y el modelo no declara (`communication_outbox.resend_sequence`, `current_stocks.cost_pending`, `stock_movements.cost_pending`, `retention_annulment_requests.sri_check_count`).
 
-Cambios de schema posteriores: solo migraciones forward con `dotnet ef migrations add`. No regenerar la baseline desde el modelo para "limpiar historial" sin copiar antes el raw SQL (tabla siguiente).
+Cambios de schema posteriores: solo migraciones forward con `dotnet ef migrations add`. No regenerar la baseline desde el modelo para "limpiar historial" sin copiar antes el raw SQL (tabla siguiente). Las transformaciones de datos históricas (backfills, desactivación de defaults de retención, resolución de dueño de Items A1, `DROP DEFAULT` transitorios) no forman parte de la baseline: solo aplicaban a BD con datos previos.
+
+Los archivos de migración se guardan con LF (`.gitattributes`): los raw string literals de C# trasladan el fin de línea al cuerpo de las funciones plpgsql.
 
 #### Objetos raw SQL (fuera del modelo EF)
 
-El model snapshot no los conoce: una baseline regenerada con `dotnet ef migrations add` los omite en silencio. Viven al final del `Up` de la baseline y los vigilan `ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests` (existen en las migraciones, y todo objeto raw está registrado) y `ERP.Infrastructure.Tests/Persistence/RawSqlDatabaseObjectsBaselineIntegrationTests` (existen físicamente en una BD recién migrada).
+El model snapshot no los conoce: una baseline regenerada con `dotnet ef migrations add` los omite en silencio. Viven al final del `Up` de la baseline (el `Down` los elimina en orden inverso) y los vigilan `ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests` (existen en las migraciones, y todo objeto raw —`CREATE …` o `ALTER TABLE … ADD CONSTRAINT`— está registrado) y `ERP.Infrastructure.Tests/Persistence/RawSqlDatabaseObjectsBaselineIntegrationTests` (existen físicamente, con su definición, en una BD recién migrada).
 
 | Objeto | Tipo | Motivo |
 |--------|------|--------|
@@ -64,6 +66,10 @@ El model snapshot no los conoce: una baseline regenerada con `dotnet ef migratio
 | `tr_expense_purchase_exclusivity` / `tr_purchase_expense_exclusivity` | Triggers | Invocan la función en `expense_documents` / `purchase_invoices` |
 | `pg_trgm` | Extensión | `EF.Functions.TrigramsSimilarity` en Item Matching |
 | `ix_items_short_name_trgm` / `ix_items_description_trgm` | Índices GIN trigram | Item Matching por similitud |
+| `uq_items_tenant_company_sku` | Índice único | A1; SKU único por tenant+empresa (sku vive en el owned type `ItemCode`) |
+| `ck_items_nature` | CHECK | A1; `nature IN ('Product','Service')` (string en el modelo) |
+| `a1_item_barcode_unique()` + `a1_variant_barcode_unique` / `a1_packaging_barcode_unique` | Función plpgsql + triggers | A1; barcode único por empresa entre variantes y empaques (advisory lock) |
+| `a1_inventory_product_scope()` + `a1_stock_product_scope` / `a1_movement_product_scope` | Función plpgsql + triggers | A1; inventario solo acepta Products de la misma empresa |
 
 Reset local recomendado:
 

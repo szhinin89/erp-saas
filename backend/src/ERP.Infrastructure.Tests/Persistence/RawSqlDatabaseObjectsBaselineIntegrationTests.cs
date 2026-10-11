@@ -68,6 +68,10 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
         "ix_items_description_trgm",
         "CREATE INDEX ix_items_description_trgm ON public.items USING gin (description gin_trgm_ops)"
     )]
+    [InlineData(
+        "uq_items_tenant_company_sku",
+        "CREATE UNIQUE INDEX uq_items_tenant_company_sku ON public.items USING btree (tenant_id, company_id, sku)"
+    )]
     public async Task Indice_raw_existe_con_su_definicion(
         string indexName,
         string expectedDefinition
@@ -124,6 +128,79 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
             .Be(
                 $"CREATE TRIGGER {triggerName} BEFORE INSERT OR UPDATE OF tenant_id, access_key ON public.{tableName} "
                     + "FOR EACH ROW EXECUTE FUNCTION enforce_purchase_expense_exclusivity()"
+            );
+    }
+
+    [Fact]
+    public async Task Check_de_naturaleza_de_Item_existe_con_su_definicion()
+    {
+        await using var db = CreateContext(Guid.Empty);
+
+        var definition = await db
+            .Database.SqlQuery<string>(
+                $"""
+                SELECT pg_get_constraintdef(c.oid) AS "Value"
+                  FROM pg_constraint c
+                 WHERE c.conname = 'ck_items_nature' AND c.conrelid = 'public.items'::regclass AND c.contype = 'c'
+                """
+            )
+            .SingleAsync();
+
+        definition
+            .Should()
+            .Be(
+                "CHECK (((nature)::text = ANY ((ARRAY['Product'::character varying, 'Service'::character varying])::text[])))"
+            );
+    }
+
+    [Theory]
+    [InlineData("a1_item_barcode_unique")]
+    [InlineData("a1_inventory_product_scope")]
+    public async Task Funcion_A1_existe(string functionName)
+    {
+        await using var db = CreateContext(Guid.Empty);
+
+        var count = await db
+            .Database.SqlQuery<int>(
+                $"""
+                SELECT count(*)::int AS "Value"
+                  FROM pg_proc
+                 WHERE proname = {functionName} AND prorettype = 'trigger'::regtype
+                """
+            )
+            .SingleAsync();
+
+        count.Should().Be(1);
+    }
+
+    [Theory]
+    [InlineData("a1_variant_barcode_unique", "item_variant_barcodes", "a1_item_barcode_unique")]
+    [InlineData("a1_packaging_barcode_unique", "item_packaging_levels", "a1_item_barcode_unique")]
+    [InlineData("a1_stock_product_scope", "current_stocks", "a1_inventory_product_scope")]
+    [InlineData("a1_movement_product_scope", "stock_movements", "a1_inventory_product_scope")]
+    public async Task Trigger_A1_existe_habilitado_sobre_su_tabla(
+        string triggerName,
+        string tableName,
+        string functionName
+    )
+    {
+        await using var db = CreateContext(Guid.Empty);
+
+        var definition = await db
+            .Database.SqlQuery<string>(
+                $"""
+                SELECT pg_get_triggerdef(t.oid) AS "Value"
+                  FROM pg_trigger t
+                 WHERE t.tgname = {triggerName} AND NOT t.tgisinternal AND t.tgenabled = 'O'
+                """
+            )
+            .SingleAsync();
+
+        definition
+            .Should()
+            .Be(
+                $"CREATE TRIGGER {triggerName} BEFORE INSERT OR UPDATE ON public.{tableName} "
+                    + $"FOR EACH ROW EXECUTE FUNCTION {functionName}()"
             );
     }
 

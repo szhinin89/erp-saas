@@ -41,7 +41,7 @@ Fuera de `SriCatalogs` pero relacionados: `DocTypeSriMap` (mapa tipo interno →
 | Mecanismo | Uso hoy para `sri_*` | Evidencia |
 |---|---|---|
 | `HasData` en `IEntityTypeConfiguration` | **Única fuente** de las filas de los 15 catálogos | `SriCatalogs/*Configuration.cs` |
-| Migraciones EF | Materializan el `HasData`: la baseline `20260929143218_InitialEnterpriseBaseline` crea y siembra todo (25 bloques `InsertData`). Las 3 migraciones posteriores no tocan filas `sri_*` | `Migrations/*.cs` |
+| Migraciones EF | Materializan el `HasData`: la baseline `20261010184156_InitialProductionBaseline` (DB-BASELINE-01) crea y siembra todo con el estado final de cada catálogo (incluidos flags `is_active`/`is_electronic` de ADR-042 y el versionado de retenciones) | `Migrations/*.cs` |
 | Evolución previa a la baseline | Editar `HasData` → EF genera `InsertData`/`UpdateData` en la siguiente migración (p. ej. IRBPNR + `CalculationType`, commit `ef6b7d86`) | git history |
 | Seeding steps (`Seeding/Steps/*`) | **No escriben** `sri_*`; solo leen (`ElectronicDocumentsBootstrapStep`, `SalesBootstrapStep`) | `Seeding/Steps/` |
 | `PaymentMethodSriMappingBackfillService` (startup) | No escribe catálogo; rellena `PaymentMethod.SriPaymentMethodCode` de tenants contra el catálogo | `Program.cs:480-490` |
@@ -280,7 +280,7 @@ upgrade. Prohibido: seeding steps que escriban `sri_*`, scripts SQL manuales, JS
 
 ## J. Upgrades
 
-- Toda evolución normativa = **migración incremental nueva** (nunca editar `InitialEnterpriseBaseline`).
+- Toda evolución normativa = **migración incremental nueva** (nunca editar `InitialProductionBaseline`).
 - `HasData` sigue siendo la fuente que alimenta el model snapshot. Regla de edición: **solo agregar** filas
   (conceptos/versiones/fuentes) y cerrar `ValidUntil` (`null → fecha`). Cualquier otro cambio sobre una fila
   existente es una violación, y la suite de compliance la detecta comparando contra un manifiesto aprobado
@@ -303,6 +303,9 @@ global.sri_normative_source
 Responde: de dónde salió el código (`section`), qué ficha/resolución (`document`+`version`), desde/hasta cuándo
 (`valid_from/valid_until` de la versión), qué release lo incorporó (`introduced_in_migration` ↔ `__EFMigrationsHistory`
 y git tag). Para la ficha 2.34 auditada: SHA-256 `7333aebf…13c9`.
+Desde DB-BASELINE-01 las fuentes actuales declaran `InitialProductionBaseline` (la migración que las siembra
+en toda instalación); una fuente nueva nombra la migración incremental que la incorpora. El test de
+trazabilidad exige siempre una migración existente.
 Los catálogos sin vigencia (clase "estable") pueden adoptar `normative_source_id` de forma incremental, catálogo por catálogo.
 
 ## L. Estrategia de Compliance Tests (`SriCatalogComplianceTests`)
@@ -344,7 +347,7 @@ aislado, sin BD).
 | Ausencia de `HasQueryFilter` en `SriCatalogs` | **DO NOT TOUCH** |
 | Endpoints `GET api/v1/catalog/sri-*` (solo lectura) | **KEEP** (semántica `GetSelectable`); no se agregan endpoints de escritura (D14) |
 | `RetentionXmlBuilder`, XSD, firma, SOAP, ConsultaComprobante | **DO NOT TOUCH** |
-| `InitialEnterpriseBaseline` | **DO NOT TOUCH** |
+| `InitialProductionBaseline` | **DO NOT TOUCH** |
 | XML firmados/autorizados almacenados | **DO NOT TOUCH** (evidencia histórica) |
 
 ## O. Impacto previsto del primer vertical slice — `ZH-SRI-RETENTION-CATALOG-SSOT-01`

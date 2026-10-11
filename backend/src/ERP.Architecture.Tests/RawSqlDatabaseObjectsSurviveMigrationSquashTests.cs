@@ -29,6 +29,8 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
             ["a1_inventory_product_scope"] = ["CREATE FUNCTION a1_inventory_product_scope() RETURNS trigger"],
             ["a1_stock_product_scope"] = ["CREATE TRIGGER a1_stock_product_scope BEFORE INSERT OR UPDATE ON current_stocks"],
             ["a1_movement_product_scope"] = ["CREATE TRIGGER a1_movement_product_scope BEFORE INSERT OR UPDATE ON stock_movements"],
+            // A1: ItemNature es string en el modelo; el CHECK vive solo como raw SQL (ALTER TABLE ... ADD CONSTRAINT).
+            ["ck_items_nature"] = ["ALTER TABLE items ADD CONSTRAINT ck_items_nature CHECK(nature IN ('Product','Service'))"],
             // ADR-BP-03: identificación única e incondicional por tenant.
             ["uq_mbp_identification"] =
             [
@@ -94,7 +96,8 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
     [Fact]
     public void Todo_objeto_creado_con_raw_sql_en_migraciones_esta_registrado()
     {
-        // Inverso del anterior: un objeto nuevo creado con migrationBuilder.Sql que no se registre
+        // Inverso del anterior: un objeto nuevo creado (o constraint agregado con ALTER TABLE ... ADD
+        // CONSTRAINT) con migrationBuilder.Sql que no se registre
         // en RequiredRawSqlObjects quedaría fuera de la protección en la próxima consolidación.
         var created = ReadMigrationsSql()
             .SelectMany(sql => CreatedObject().Matches(sql))
@@ -131,7 +134,7 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
     }
 
     [GeneratedRegex(
-        @"CREATE (?:OR REPLACE )?(?:UNIQUE )?(?:MATERIALIZED )?(?:INDEX|FUNCTION|TRIGGER|EXTENSION|VIEW|SEQUENCE|PROCEDURE|POLICY|TYPE|DOMAIN|RULE) (?:CONCURRENTLY )?(?:IF NOT EXISTS )?(?:public\.)?(?<name>[A-Za-z_][A-Za-z0-9_]*)"
+        @"(?:CREATE (?:OR REPLACE )?(?:UNIQUE )?(?:MATERIALIZED )?(?:INDEX|FUNCTION|TRIGGER|EXTENSION|VIEW|SEQUENCE|PROCEDURE|POLICY|TYPE|DOMAIN|RULE) (?:CONCURRENTLY )?(?:IF NOT EXISTS )?|ADD CONSTRAINT )(?:public\.)?(?<name>[A-Za-z_][A-Za-z0-9_]*)"
     )]
     private static partial Regex CreatedObject();
 

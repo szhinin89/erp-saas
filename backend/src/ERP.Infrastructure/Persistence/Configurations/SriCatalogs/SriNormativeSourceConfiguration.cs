@@ -20,7 +20,11 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
         "40000000-0000-0000-0000-000000000002"
     );
 
-    public const string IntroducedInMigration = "SriRetentionCatalogVersioning";
+    /// <summary>
+    /// Migración que siembra todas las fuentes normativas actuales: la baseline consolidada (DB-BASELINE-01).
+    /// Una fuente nueva nombra la migración incremental que la incorpora.
+    /// </summary>
+    public const string IntroducedInMigration = "InitialProductionBaseline";
 
     /// <summary>
     /// ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01 — Catálogo ATS oficial (Catalogo_ATS.xls), hoja TABLAS RETENCIONES,
@@ -29,8 +33,6 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
     public static readonly Guid AtsIncomeTable310From20260806Id = Guid.Parse(
         "40000000-0000-0000-0000-000000000003"
     );
-
-    public const string IncomeAtsIntroducedInMigration = "SriRetentionIncomeCatalogAts20260806";
 
     public void Configure(EntityTypeBuilder<SriNormativeSource> builder)
     {
@@ -114,7 +116,7 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
                 ReferenceUrl =
                     "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/e6a826af-b22c-40bb-8752-d711f293b8f9/Catalogo_ATS.xls",
                 DocumentSha256 = "bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e",
-                IntroducedInMigration = IncomeAtsIntroducedInMigration,
+                IntroducedInMigration = IntroducedInMigration,
                 Notes =
                     "Descargado el 2026-10-02 desde https://www.sri.gob.ec/formularios-e-instructivos1. Fecha de "
                     + "actualización = inicio del bloque (06/08/2026). Tarifas no numéricas (\"12 o 14\", \"1 /0 según "

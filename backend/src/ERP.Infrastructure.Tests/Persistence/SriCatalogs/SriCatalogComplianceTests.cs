@@ -333,40 +333,6 @@ public sealed class SriCatalogComplianceTests
         concepts[Guid.Parse("30000000-0000-0000-0000-000000000001")].Percentage.Should().Be(5m);
     }
 
-    [Fact]
-    public void La_migracion_del_slice_solo_agrega_datos_globales_y_solo_deshabilita_728()
-    {
-        var operations = UpOperationsOf(SriNormativeSourceConfiguration.IntroducedInMigration);
-
-        operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.DeleteDataOperation>()
-            .Should()
-            .BeEmpty();
-        operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.DropTableOperation>()
-            .Should()
-            .BeEmpty();
-        operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.AlterColumnOperation>()
-            .Should()
-            .BeEmpty();
-        operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.ITableMigrationOperation>()
-            .Select(o => o.Schema)
-            .Should()
-            .OnlyContain(schema => schema == "global", "no se tocan datos de tenant ni snapshots");
-
-        var update = operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.UpdateDataOperation>()
-            .Should()
-            .ContainSingle()
-            .Subject;
-        update.Table.Should().Be("sri_retention_code");
-        update.KeyValues[0, 0].Should().Be(Guid.Parse("10000000-0000-0000-0000-000000000006"));
-        update.Columns.Should().Equal("is_active");
-        update.Values[0, 0].Should().Be(false);
-    }
-
     // ── ZH-SRI-RETENTION-INCOME-CATALOG-SSOT-01: Renta alineada con el Catálogo ATS 06/08/2026 ─────────
 
     [Theory]
@@ -483,59 +449,7 @@ public sealed class SriCatalogComplianceTests
             .Be("bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e");
         source
             .IntroducedInMigration.Should()
-            .Be(SriNormativeSourceConfiguration.IncomeAtsIntroducedInMigration);
-    }
-
-    [Fact]
-    public void La_migracion_ATS_no_reescribe_historia_ni_toca_datos_de_tenant_fuera_de_los_defaults_afectados()
-    {
-        var operations = UpOperationsOf(
-            SriNormativeSourceConfiguration.IncomeAtsIntroducedInMigration
-        );
-
-        operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.DeleteDataOperation>()
-            .Should()
-            .BeEmpty();
-        operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.DropTableOperation>()
-            .Should()
-            .BeEmpty();
-        operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.AlterColumnOperation>()
-            .Should()
-            .BeEmpty();
-
-        var allowedVersionColumns = new[] { "valid_until", "rate_kind", "rate_rule_text" };
-        foreach (
-            var update in operations.OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.UpdateDataOperation>()
-        )
-        {
-            update.Schema.Should().Be("global");
-            if (update.Table == "sri_retention_code_version")
-                update
-                    .Columns.Should()
-                    .OnlyContain(
-                        c => allowedVersionColumns.Contains(c),
-                        "una versión solo cierra vigencia o recibe las columnas nuevas"
-                    );
-            else
-                update.Table.Should().Be("sri_retention_code");
-        }
-
-        var sql = operations
-            .OfType<Microsoft.EntityFrameworkCore.Migrations.Operations.SqlOperation>()
-            .Should()
-            .ContainSingle()
-            .Subject.Sql;
-        sql.Should()
-            .Contain("UPDATE master_supplier_retention_defaults")
-            .And.Contain("SET is_active = false");
-        sql.Should()
-            .NotContain("20000000-0000-0000-0000-000000000001'", "303 conserva su significado");
-        sql.Should()
-            .NotContain("20000000-0000-0000-0000-000000000006'", "312 conserva su significado");
-        sql.Should().NotContainAny("retention_document", "DELETE");
+            .Be(SriNormativeSourceConfiguration.IntroducedInMigration);
     }
 
     // ── 13. Trazabilidad normativa ────────────────────────────────────────────────────────────────────
@@ -654,22 +568,6 @@ public sealed class SriCatalogComplianceTests
         value is null
             ? ""
             : value.Value.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
-
-    private static IReadOnlyList<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation> UpOperationsOf(
-        string migrationName
-    )
-    {
-        var migrationType = typeof(ErpDbContext)
-            .Assembly.GetTypes()
-            .Single(t =>
-                t.GetCustomAttributes(typeof(MigrationAttribute), false)
-                    .OfType<MigrationAttribute>()
-                    .Any(a => a.Id.EndsWith("_" + migrationName, StringComparison.Ordinal))
-            );
-        var migration = (Migration)Activator.CreateInstance(migrationType)!;
-        migration.ActiveProvider = "Npgsql.EntityFrameworkCore.PostgreSQL";
-        return migration.UpOperations;
-    }
 
     private static bool IsValidOn(SriRetentionCodeVersion v, DateOnly date) =>
         (v.ValidFrom is null || v.ValidFrom <= date)
