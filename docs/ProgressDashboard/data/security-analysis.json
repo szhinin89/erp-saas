@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-10 21:19:40",
-    "FilesAnalyzed":  12064,
-    "SecretsFound":  199,
+    "Generated":  "2026-10-10 22:36:57",
+    "FilesAnalyzed":  11804,
+    "SecretsFound":  182,
     "SecretFiles":  [
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
@@ -26,7 +26,6 @@
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Communications\\SendTestEmailHandlerTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentSigningServiceTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\ElectronicInvoicing\\UpsertSriConfigurationCommandHandlerTests.cs",
-                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Kernel\\Permissions\\AccessPermissions.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Constants\\OrgSettingKeys.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Entities\\SriSettings.cs",
@@ -35,22 +34,6 @@
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\E2E\\E2ESeedService.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Security\\BcryptPasswordHasherTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\TestP12CertificateFactory.cs",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\AdminCoreLoginPage-B1t3w1TM.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\api-Cx92uelW.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\App-B1FjS1Ni.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\authService-CSN160Mt.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CommunicationsEmailSettingsPage-Bs_8vKQp.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CompletePasswordResetPage-CxugAbXs.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ElectronicInvoicingPage-D1GEHisN.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\electronicInvoicingStatusStore-CGANCLlV.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\index-CK9VN1S1.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\LoginPage-Cj0ccMmr.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\loginSchema-CIGeCvh4.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ResetPasswordPage-CVb8Tlbh.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SalesPage-DLQhDUlW.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SetupPage-ClupUbkZ.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UserConfigPage-tJGJI0Uq.js",
-                        "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UsersPage-BzqC-HzT.js",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\helpers\\api.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\.vite\\deps\\axios.js",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\.vite\\deps\\react-dom_client.js",
@@ -218,7 +201,7 @@
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\typescript.js",
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\_tsc.js"
                        ],
-    "ConnectionStringsFound":  8,
+    "ConnectionStringsFound":  7,
     "ConnectionStringFiles":  [
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
@@ -226,8 +209,7 @@
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\DevCacheEndpointsHttpContractTests.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
-                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContextFactory.cs"
                               ],
-    "Warnings":  219
+    "Warnings":  201
 }

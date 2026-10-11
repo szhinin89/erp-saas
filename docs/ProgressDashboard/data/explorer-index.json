@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 21:20:23",
+    "generated":  "2026-10-10 22:37:28",
     "source":  "modules.json, features.json, processes.json, tasks.json, domains.json, dependencies.json, critical-path.json, impact.json, dashboard-model-v12.json, completion-intelligence.json, git log",
     "method":  {
                    "changeRiskFormula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
@@ -4812,7 +4812,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
-                                                            "lines":  2197
+                                                            "lines":  2215
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
@@ -4824,7 +4824,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "lines":  3450
+                                                            "lines":  3459
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/utils/purchaseLinePresentation.test.ts",
@@ -5270,8 +5270,8 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (3450 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "Refactor large file (2197 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                            "Refactor large file (3459 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                            "Refactor large file (2215 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                             "Refactor large file (2139 lines): backend/src/ERP.Application.Tests/Purchases/ConfirmPurchaseHandlerTests.cs",
                                                             "Refactor large file (1694 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                             "Refactor large file (1641 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/CreatePurchaseReceptionDraftHandlerTests.cs",
@@ -15651,7 +15651,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (83 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -16162,7 +16162,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (3450 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                          "label":  "Refactor large file (3459 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -18596,14 +18596,14 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Refactor large file (966 lines): backend/src/ERP.API/Program.cs",
+                                                          "label":  "Refactor large file (970 lines): backend/src/ERP.API/Program.cs",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       },
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (83 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -18615,7 +18615,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (83 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -18963,7 +18963,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (2197 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                          "label":  "Refactor large file (2215 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -19119,7 +19119,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (83 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -19946,7 +19946,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (83 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -21352,13 +21352,13 @@
                              }
                          ],
     "executive":  {
-                      "engineeringScoreOverall":  59.72,
+                      "engineeringScoreOverall":  60.80,
                       "erpCompletion":  84,
                       "productionDecision":  "NOT READY",
                       "overallStatus":  "NOT READY",
                       "nextMilestone":  "Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)",
                       "blockers":  [
-                                       "Security Score bajo: 20.2% (Secrets detectados: 199, endpoints anonimos: 12)",
+                                       "Security Score bajo: 25.6% (Secrets detectados: 182, endpoints anonimos: 12)",
                                        "Quality Score bajo: 8.65%",
                                        "Technical Debt alta: 38 critical findings (TODO: 735, FIXME: 30)",
                                        "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
@@ -23261,7 +23261,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Engineering score below 60%",
+                              "label":  "Engineering score needs improvement",
                               "moduleId":  null
                           },
                           {
@@ -23281,7 +23281,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (3450 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                              "label":  "Refactor large file (3459 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -23306,7 +23306,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (2197 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                              "label":  "Refactor large file (2215 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                               "moduleId":  null
                           },
                           {
@@ -23501,12 +23501,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (970 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs",
+                              "label":  "Refactor large file (970 lines): backend/src/ERP.API/Program.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (966 lines): backend/src/ERP.API/Program.cs",
+                              "label":  "Refactor large file (970 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23581,12 +23581,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                              "label":  "Refactor large file (865 lines): backend/src/ERP.Domain.Tests/Payables/SupplierPaymentTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (865 lines): backend/src/ERP.Domain.Tests/Payables/SupplierPaymentTests.cs",
+                              "label":  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24481,7 +24481,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Review possible secrets in source files (83 real matches, excluding node_modules)",
+                              "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                               "moduleId":  null
                           },
                           {

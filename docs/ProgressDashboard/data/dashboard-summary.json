@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 21:20:12",
+    "generated":  "2026-10-10 22:37:20",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -11,10 +11,10 @@
                },
     "securityStatus":  "RED",
     "debtStatus":  "RED",
-    "productionReadinessScore":  61.73,
+    "productionReadinessScore":  62.81,
     "productionStatus":  "NOT READY",
-    "maturity":  "Developing",
-    "confidenceScore":  57.74,
+    "maturity":  "Controlled",
+    "confidenceScore":  59.09,
     "risk":  {
                  "architectureRisk":  "LOW",
                  "securityRisk":  "CRITICAL",
@@ -24,12 +24,12 @@
              },
     "productionDecision":  "NOT READY",
     "decisionBlockers":  [
-                             "Security blockers - Security score 20.2%",
+                             "Security blockers - Security score 25.6%",
                              "Quality blockers - Quality score 8.65%",
                              "Debt blockers - 38 critical findings"
                          ],
     "quickRecommendations":  [
-                                 "Remove detected secrets (199 found)",
+                                 "Remove detected secrets (182 found)",
                                  "Improve automated tests and code quality (current: 8.65%)",
                                  "Reduce critical findings (currently 38)",
                                  "Review security configuration (12 anonymous access points detected)"
@@ -61,7 +61,7 @@
                     {
                         "order":  1,
                         "title":  "Security Hardening",
-                        "detail":  "Score: 20.2%",
+                        "detail":  "Score: 25.6%",
                         "priority":  "CRITICAL"
                     },
                     {
@@ -81,7 +81,7 @@
                            {
                                "gate":  "Security Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 20.2%"
+                               "detail":  "Score 25.6%"
                            },
                            {
                                "gate":  "Quality Gate",
@@ -95,9 +95,9 @@
                            }
                        ],
     "trend":  {
-                  "current":  59.72,
-                  "previous":  59.5,
-                  "change":  0.22,
+                  "current":  60.8,
+                  "previous":  59.72,
+                  "change":  1.08,
                   "status":  "Improving"
               },
     "executiveFlags":  {

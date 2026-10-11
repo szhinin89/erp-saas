@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 21:20:09",
+    "generated":  "2026-10-10 22:37:17",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -703,8 +703,8 @@
                              "percentOfErp":  107.61,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (3450 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                  "Refactor large file (2197 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                  "Refactor large file (3459 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                  "Refactor large file (2215 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                   "Refactor large file (2139 lines): backend/src/ERP.Application.Tests/Purchases/ConfirmPurchaseHandlerTests.cs",
                                                   "Refactor large file (1694 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                   "Refactor large file (1641 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/CreatePurchaseReceptionDraftHandlerTests.cs",

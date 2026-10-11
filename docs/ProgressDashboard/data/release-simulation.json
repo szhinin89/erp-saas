@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 21:20:10",
+    "generated":  "2026-10-10 22:37:18",
     "source":  "dashboard-model-v12.json (EngineeringScore, TechnicalDebt), architecture-progress.json (stage/phase weighted completion)",
     "disclaimer":  "This is a read-only simulation. No real JSON file is modified. Formulas are copied verbatim from calculate-engineering-score.ps1 and render-dashboard.ps1 -- see \u0027method\u0027 below.",
     "method":  {
@@ -10,8 +10,8 @@
                    "erpCompletionRecalc":  "(sum of done tasks across all stages, with the simulated stage/phase\u0027s done = its totalTasks) / architecture-progress.json global.totalTasks * 100"
                },
     "baseline":  {
-                     "engineeringScoreOverall":  59.72,
-                     "productionReadiness":  61.73,
+                     "engineeringScoreOverall":  60.80,
+                     "productionReadiness":  62.81,
                      "productionStatus":  "NOT READY",
                      "overallRisk":  "CRITICAL",
                      "erpCompletion":  84
@@ -29,14 +29,14 @@
                                          "criticalFindings":  38
                                      },
                           "engineeringScoreOverall":  {
-                                                          "baseline":  59.72,
+                                                          "baseline":  60.80,
                                                           "simulated":  71.68,
-                                                          "delta":  11.96
+                                                          "delta":  10.88
                                                       },
                           "productionReadiness":  {
-                                                      "baseline":  61.73,
+                                                      "baseline":  62.81,
                                                       "simulated":  73.69,
-                                                      "delta":  11.96
+                                                      "delta":  10.88
                                                   },
                           "productionStatus":  {
                                                    "baseline":  "NOT READY",
@@ -54,18 +54,18 @@
                                          "architecture":  100,
                                          "moduleHealth":  79.82,
                                          "quality":  85,
-                                         "security":  20.2,
+                                         "security":  25.6,
                                          "dependencies":  100,
                                          "criticalFindings":  38
                                      },
                           "engineeringScoreOverall":  {
-                                                          "baseline":  59.72,
-                                                          "simulated":  74.99,
+                                                          "baseline":  60.80,
+                                                          "simulated":  76.07,
                                                           "delta":  15.27
                                                       },
                           "productionReadiness":  {
-                                                      "baseline":  61.73,
-                                                      "simulated":  77.00,
+                                                      "baseline":  62.81,
+                                                      "simulated":  78.08,
                                                       "delta":  15.27
                                                   },
                           "productionStatus":  {
@@ -89,14 +89,14 @@
                                          "criticalFindings":  38
                                      },
                           "engineeringScoreOverall":  {
-                                                          "baseline":  59.72,
+                                                          "baseline":  60.80,
                                                           "simulated":  86.95,
-                                                          "delta":  27.23
+                                                          "delta":  26.15
                                                       },
                           "productionReadiness":  {
-                                                      "baseline":  61.73,
+                                                      "baseline":  62.81,
                                                       "simulated":  88.96,
-                                                      "delta":  27.23
+                                                      "delta":  26.15
                                                   },
                           "productionStatus":  {
                                                    "baseline":  "NOT READY",

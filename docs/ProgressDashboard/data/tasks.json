@@ -1,6 +1,6 @@
 ﻿[
     {
-        "task":  "Engineering score below 60%",
+        "task":  "Engineering score needs improvement",
         "category":  "Quality Gate",
         "priority":  "HIGH",
         "source":  "QualityGate.Warnings",
@@ -36,7 +36,7 @@
                      ]
     },
     {
-        "task":  "Refactor large file (3450 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+        "task":  "Refactor large file (3459 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
@@ -81,7 +81,7 @@
                      ]
     },
     {
-        "task":  "Refactor large file (2197 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+        "task":  "Refactor large file (2215 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
@@ -432,21 +432,21 @@
                      ]
     },
     {
+        "task":  "Refactor large file (970 lines): backend/src/ERP.API/Program.cs",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.API/Program.cs"
+                     ]
+    },
+    {
         "task":  "Refactor large file (970 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (966 lines): backend/src/ERP.API/Program.cs",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.API/Program.cs"
                      ]
     },
     {
@@ -576,21 +576,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/caja/pages/CajaPage.tsx"
-                     ]
-    },
-    {
         "task":  "Refactor large file (865 lines): backend/src/ERP.Domain.Tests/Payables/SupplierPaymentTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Domain.Tests/Payables/SupplierPaymentTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/caja/pages/CajaPage.tsx"
                      ]
     },
     {
@@ -2196,7 +2196,7 @@
                      ]
     },
     {
-        "task":  "Review possible secrets in source files (83 real matches, excluding node_modules)",
+        "task":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
         "category":  "Security",
         "priority":  "HIGH",
         "source":  "Security.SecretFiles",
