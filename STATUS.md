@@ -1,5 +1,14 @@
 # Project Status
 
+## PILOT-PURCHASE-UI-FIX-01 — Compras: errores reales y confirmación con cambios sin guardar (2026-10-10)
+
+**Estado: implementado (sin commit).** Solo frontend del flujo de compra; backend sin cambios. Origen: auditoría PILOT-PURCHASE-UI-AUDIT-01 (piloto Sumak).
+- Confirmar/anular muestran el motivo real del backend (`readApiErrorMessages`: `data.errors` antes que `message.user`); el fallback genérico solo se usa si no hay detalle. Antes se mostraba "Datos inválidos. Revisa el formulario.".
+- Confirmar se deshabilita con cambios locales sin guardar en un borrador persistido; aviso "Guarda los cambios antes de confirmar la compra." y guarda defensiva en `handleConfirm`. Sin guardado+confirmación automática. La detección compara la huella del payload persistible (`buildPurchaseDraftSnapshot`, `utils/purchaseDraftPayload.ts`) tomada al cargar; no usa `formState.isDirty` (las líneas se editan con `setValue` sin `shouldDirty`).
+- `saving` se libera en `finally` en guardar, confirmar y anular (antes quedaba trabado si el guardado era rechazado por proveedor inactivo).
+- Tests focales: `usePurchasesPage.pilotFix.test.ts` 9/9 + `usePurchasesPage.retention.test.ts` 18/18; eslint 0 errores; `tsc -b` PASS. Suites completas: no ejecutadas.
+- Pendiente fuera de alcance (debt de la auditoría): barcode en compra, costo 0, presentación por defecto, `DefaultWarehouseId`, filtro de tipo de documento, navegación post-guardar.
+
 ## PURCHASE-RETURN-COST-FIX-01 — Devolución a proveedor al promedio ponderado y en unidad base (2026-10-10)
 
 **Estado: implementado (sin commit).** Purchases reabierto solo para la valoración de `PurchaseReturn` ([ADR-041 addendum](docs/decisions/ADR-041-negative-sale-inventory-cost-obligations.md#addendum-purchase-return-cost-fix-01--devolución-a-proveedor-2026-10-10)).

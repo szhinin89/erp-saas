@@ -1054,6 +1054,11 @@ export function PurchasesPage() {
               />
             )}
 
+          {/* PILOT-PURCHASE-UI-FIX-01 — Confirmar usa la versión guardada del borrador. */}
+          {ctx.hasUnsavedChanges && (
+            <ZHPageNotice variant="warning" message={ctx.unsavedChangesMessage} />
+          )}
+
           {/* Footer Actions */}
           <div className="pf-footer">
             <ZHBtn
@@ -1101,7 +1106,9 @@ export function PurchasesPage() {
                 variant="primary"
                 onClick={() => ctx.setModalConfirm(true)}
                 disabled={
-                  ctx.fieldDisabled || ctx.pendingReceptionItems.length > 0
+                  ctx.fieldDisabled ||
+                  ctx.pendingReceptionItems.length > 0 ||
+                  ctx.hasUnsavedChanges
                 }
                 title={
                   ctx.pendingReceptionItems.length > 0
@@ -1109,7 +1116,9 @@ export function PurchasesPage() {
                         "purchases.validation.resolvePendingItemsBeforeConfirm",
                         "Resuelva los productos pendientes de vinculación antes de confirmar.",
                       )
-                    : undefined
+                    : ctx.hasUnsavedChanges
+                      ? ctx.unsavedChangesMessage
+                      : undefined
                 }
               >
                 <span className="material-symbols-outlined zh-icon-md">

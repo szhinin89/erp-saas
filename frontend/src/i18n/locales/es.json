@@ -3562,6 +3562,7 @@
   "purchases.validation.sriDocTypeInvalidDetail": "Seleccione un tipo de documento SRI activo del catálogo.",
   "purchases.validation.pendingReceptionItemsTitle": "No se puede confirmar la compra: productos pendientes de vinculación",
   "purchases.validation.resolvePendingItemsBeforeConfirm": "Resuelva los productos pendientes de vinculación antes de confirmar.",
+  "purchases.validation.saveBeforeConfirm": "Guarda los cambios antes de confirmar la compra.",
   "purchases.duplicate.title": "No se puede crear esta compra.",
   "purchases.duplicate.detail": "Ya existe una compra registrada con esta clave de acceso SRI.",
   "purchases.duplicate.viewExisting": "Ver compra existente",

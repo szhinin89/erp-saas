@@ -3497,6 +3497,7 @@
   "purchases.validation.sriDocTypeInvalidDetail": "Select an active SRI document type from the catalog.",
   "purchases.validation.pendingReceptionItemsTitle": "The purchase cannot be confirmed: products pending link",
   "purchases.validation.resolvePendingItemsBeforeConfirm": "Resolve products pending link before confirming.",
+  "purchases.validation.saveBeforeConfirm": "Save your changes before confirming the purchase.",
   "purchases.duplicate.title": "This purchase cannot be created.",
   "purchases.duplicate.detail": "A purchase is already registered with this SRI access key.",
   "purchases.duplicate.viewExisting": "View existing purchase",

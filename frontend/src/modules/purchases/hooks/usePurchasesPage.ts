@@ -74,15 +74,17 @@ import { usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
 import {
   todayIso,
   addDaysIso,
-  fromDateTimeLocalInputValue,
 } from "../../../lib/formatters/dateFormatters";
-import { normalizeOptionalCode } from "../../../lib/sanitizers";
 import {
   createPurchaseInvoiceSchema,
   emptyPurchaseInvoiceForm,
   type PurchaseInvoiceFormValues,
   type PurchaseLineFormValues,
 } from "../schemas/purchaseInvoiceSchema";
+import {
+  buildPurchaseDraftPayload,
+  buildPurchaseDraftSnapshot,
+} from "../utils/purchaseDraftPayload";
 import {
   buildSupplierInactiveMessage,
   buildSupplierProfile,
@@ -113,6 +115,18 @@ type ApiErrorLike = {
   };
   message?: string;
 };
+
+/**
+ * PILOT-PURCHASE-UI-FIX-01 — motivo real devuelto por el backend: `data.errors` primero (detalle
+ * del handler) y `message.user` (mensaje genérico del catálogo) después, vía readApiErrorMessages.
+ * El fallback genérico solo se usa si no hay ningún detalle.
+ */
+function resolveApiErrorDetails(err: unknown, fallback: string): [string, ...string[]] {
+  const messages = readApiErrorMessages(err);
+  if (messages.length > 0) return [messages[0], ...messages.slice(1)];
+  const e = err as ApiErrorLike;
+  return [e?.response?.data?.data?.errors?.[0] ?? e?.response?.data?.message?.user ?? fallback];
+}
 
 export type ScheduleRow = {
   number: number;
@@ -156,6 +170,8 @@ export function usePurchasesPage() {
     useState(false);
   const duplicateAccessKeySeq = useRef(0);
   const [editing, setEditing] = useState<PurchaseInvoiceDto | null>(null);
+  // Huella del borrador tal como quedó persistido al cargarlo (null = sin borrador persistido).
+  const [savedDraftSnapshot, setSavedDraftSnapshot] = useState<string | null>(null);
   // Aviso no bloqueante cuando el borrador viene de una Recepción Electrónica con
   // ProcessingStatus PROCESSED_WITH_WARNINGS (algunas líneas del XML no se pudieron interpretar).
   const [receptionProcessingNotice, setReceptionProcessingNotice] = useState<
@@ -274,6 +290,19 @@ export function usePurchasesPage() {
   const isDraft = !editing || editing.status === "Draft";
   const readOnly = !isDraft;
   const fieldDisabled = saving || readOnly;
+  // PILOT-PURCHASE-UI-FIX-01 — cambios locales sin guardar sobre un borrador ya persistido.
+  const currentDraftSnapshot = useMemo(
+    () => (savedDraftSnapshot === null ? null : buildPurchaseDraftSnapshot(formWatch)),
+    [savedDraftSnapshot, formWatch],
+  );
+  const hasUnsavedChanges =
+    editing?.status === "Draft" &&
+    savedDraftSnapshot !== null &&
+    currentDraftSnapshot !== savedDraftSnapshot;
+  const unsavedChangesMessage = t(
+    "purchases.validation.saveBeforeConfirm",
+    "Guarda los cambios antes de confirmar la compra.",
+  );
   const hasPersistedSchedule =
     editing && editing.paymentSchedules && editing.paymentSchedules.length > 0;
 
@@ -1128,6 +1157,7 @@ export function usePurchasesPage() {
   const resetForm = useCallback(() => {
     reset(emptyPurchaseInvoiceForm());
     setEditing(null);
+    setSavedDraftSnapshot(null);
     showSaveError("");
     setDuplicateAccessKey(null);
     setDuplicateAccessKeyChecking(false);
@@ -1187,7 +1217,7 @@ export function usePurchasesPage() {
         const savedTs = inv.taxSupportCode ?? "";
         const cachedProfile = profileCache.current.get(inv.supplierId);
 
-        reset({
+        const loadedValues: PurchaseInvoiceFormValues = {
           supplierId: inv.supplierId,
           docTypeCode: inv.docTypeCode,
           invoiceNumber: inv.invoiceNumber,
@@ -1206,7 +1236,9 @@ export function usePurchasesPage() {
             savedTs || cachedProfile?.config?.defaultTaxSupportCode || "",
           paymentTermId: inv.paymentTermId ?? "",
           lines: mappedLines,
-        });
+        };
+        reset(loadedValues);
+        setSavedDraftSnapshot(buildPurchaseDraftSnapshot(loadedValues));
 
         setLineKey(inv.lines.length + 1);
 
@@ -1486,39 +1518,7 @@ export function usePurchasesPage() {
     }
     setSaving(true);
     try {
-      const payload = {
-        supplierId: data.supplierId,
-        docTypeCode: data.docTypeCode,
-        invoiceNumber: data.invoiceNumber,
-        issueDate: data.issueDate,
-        lines: data.lines.map((l: PurchaseLineFormValues) => ({
-          itemId: l.itemId,
-          description: l.description,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          vatCode: l.vatCode,
-          discountPct: l.discountPct ?? 0,
-          iceCode: normalizeOptionalCode(l.iceCode),
-          warehouseId: l.warehouseId,
-          notes: l.notes,
-          purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
-          packagingLevelId: l.packagingLevelId ?? undefined,
-          freightAllocated: l.freightAllocated ?? undefined,
-          otherCostsAllocated: l.otherCostsAllocated ?? undefined,
-        })),
-        accessKey: normalizeOptionalCode(data.accessKey),
-        authorizationNumber: normalizeOptionalCode(data.authorizationNumber),
-        // ZH-TEMPORAL-CONTRACT-02: datetime-local = hora de Company.Timezone → UTC una sola vez.
-        authorizationDate: fromDateTimeLocalInputValue(data.authorizationDate),
-        taxSupportCode: normalizeOptionalCode(data.taxSupportCode),
-        sriPaymentMethodCode: normalizeOptionalCode(data.sriPaymentMethodCode),
-        globalWarehouseId: data.globalWarehouseId || null,
-        freightCost: data.freightCost,
-        otherCosts: data.otherCosts,
-        dueDate: data.dueDate || null,
-        notes: data.notes || null,
-        paymentTermId: data.paymentTermId || null,
-      };
+      const payload = buildPurchaseDraftPayload(data);
 
       if (editing) {
         await purchaseService.update(editing.id, {
@@ -1574,14 +1574,21 @@ export function usePurchasesPage() {
             t("purchases.errors.saveFailed", "Error al guardar."),
         );
       }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   });
 
   // ── Confirm purchase ───────────────────────────────────────────────
   const handleConfirm = useCallback(async () => {
     setModalConfirm(false);
     if (!editing) return;
+    // PILOT-PURCHASE-UI-FIX-01 — el backend confirma la versión GUARDADA: con cambios locales sin
+    // guardar se perderían en silencio. Nunca guarda+confirma automáticamente.
+    if (hasUnsavedChanges) {
+      showSaveError(unsavedChangesMessage);
+      return;
+    }
     // ZH-PURCHASE-RETENTION-CONFIRM-01 — si el usuario pidió la retención, viaja como intención de
     // esta misma confirmación (todo o nada en el backend). Incompleta → no se confirma a medias.
     if (!isPurchaseRetentionIntentComplete(whPreview, retentionIntent)) {
@@ -1618,16 +1625,26 @@ export function usePurchasesPage() {
       setTab("listado");
       fetchList();
     } catch (err: unknown) {
-      const e = err as ApiErrorLike;
-      showSaveError(
-          e?.response?.data?.message?.user ??
-          e?.response?.data?.data?.errors?.[0] ??
-          e?.message ??
-          t("purchases.errors.confirmFailed", "Error al confirmar."),
+      const [detail, ...rest] = resolveApiErrorDetails(
+        err,
+        t("purchases.errors.confirmFailed", "Error al confirmar."),
       );
+      showSaveError(detail, rest);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-  }, [editing, ptRows, whPreview, retentionIntent, resetForm, fetchList, showSaveError, t]);
+  }, [
+    editing,
+    hasUnsavedChanges,
+    unsavedChangesMessage,
+    ptRows,
+    whPreview,
+    retentionIntent,
+    resetForm,
+    fetchList,
+    showSaveError,
+    t,
+  ]);
 
   // ── Cancel purchase ────────────────────────────────────────────────
   // ZH-RETENTION-SRI-ANNULMENT-01 — si la retención ya está AUTORIZADA por el SRI la compra no se
@@ -1659,16 +1676,15 @@ export function usePurchasesPage() {
         if (!requestSriAnnulment && readApiErrorCode(err) === SRI_ANNULMENT_REQUIRED_CODE) {
           setSriAnnulmentReason(reason);
         } else {
-          const e = err as ApiErrorLike;
-          showSaveError(
-            e?.response?.data?.message?.user ??
-              e?.response?.data?.data?.errors?.[0] ??
-              e?.message ??
-              t("purchases.errors.cancelFailed", "Error al anular."),
+          const [detail, ...rest] = resolveApiErrorDetails(
+            err,
+            t("purchases.errors.cancelFailed", "Error al anular."),
           );
+          showSaveError(detail, rest);
         }
+      } finally {
+        setSaving(false);
       }
-      setSaving(false);
     },
     [editing, resetForm, fetchList, showSaveError, t, loadForEdit],
   );
@@ -2087,6 +2103,8 @@ export function usePurchasesPage() {
     isDraft,
     readOnly,
     fieldDisabled,
+    hasUnsavedChanges,
+    unsavedChangesMessage,
     isSupplierInactiveBlocking,
     distributeCostDisabledReason,
     supplierInactiveMessage: supplierProfile
