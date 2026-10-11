@@ -338,6 +338,30 @@
         ]
       }
     },
+    "/api/v1/inventory/stock/costs/pending": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
+    "/api/v1/inventory/stock/costs/retry": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Stock"
+        ]
+      }
+    },
     "/api/v1/inventory/stock/items/{itemId}/warehouse-availability": {
       "get": {
         "parameters": [

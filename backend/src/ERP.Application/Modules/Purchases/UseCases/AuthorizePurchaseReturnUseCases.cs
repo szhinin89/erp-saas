@@ -219,7 +219,8 @@ public sealed class AuthorizePurchaseReturnHandler
 
             var originalLinesByDetailId =
                 new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>();
-            var uomCodeByDetailId = new Dictionary<Guid, string>();
+            var quantityDecimals = (await _precision.GetEffectiveAsync(ct)).QuantityDecimals;
+            var baseQuantityByLineId = new Dictionary<Guid, (decimal Quantity, string UomCode)>();
             foreach (var line in purchaseReturn.Lines)
             {
                 var originalLine = invoice.Lines.FirstOrDefault(l =>
@@ -286,10 +287,21 @@ public sealed class AuthorizePurchaseReturnHandler
                     originalVat.Rate ?? 0m,
                     originalIce?.TaxRateCode,
                     originalIce?.Rate ?? 0m,
-                    originalLine.LandedUnitCost,
                     originalTaxes
                 );
-                uomCodeByDetailId[line.OriginalInvoiceDetailId] = originalLine.UomCode;
+                // PURCHASE-RETURN-COST-FIX-01: la devolución se expresa en la unidad comercial de la
+                // factura; stock/Kardex siempre en unidad base con el factor de conversión original
+                // (mismo criterio que ConfirmPurchase/CancelPurchase).
+                baseQuantityByLineId[line.Id] = (
+                    line.Quantity == originalLine.Quantity
+                        ? originalLine.QuantityInBaseUom
+                        : Math.Round(
+                            line.Quantity * originalLine.ConversionFactor,
+                            quantityDecimals,
+                            MidpointRounding.AwayFromZero
+                        ),
+                    originalLine.BaseUomCode
+                );
             }
 
             // ── PR-005: stock suficiente en la bodega original de cada línea (§14.2) — chequeo
@@ -299,13 +311,14 @@ public sealed class AuthorizePurchaseReturnHandler
             {
                 var stock = await _stockRepo.GetStockAsync(tid, line.WarehouseId, line.ItemId, ct);
                 var availableQty = stock?.Quantity ?? 0m;
-                if (availableQty < line.Quantity)
+                var requiredBaseQty = baseQuantityByLineId[line.Id].Quantity;
+                if (availableQty < requiredBaseQty)
                 {
                     await _uow.RollbackAsync(ct);
                     // PR-005
                     return Result<PurchaseReturnDto>.ValidationFailure(
                         $"Stock insuficiente en la bodega original para la línea (existencia: {availableQty}, "
-                            + $"solicitado: {line.Quantity})."
+                            + $"solicitado: {requiredBaseQty})."
                     );
                 }
             }
@@ -365,7 +378,7 @@ public sealed class AuthorizePurchaseReturnHandler
                         .ToList(),
                     _returnRepo,
                     tid,
-                    (await _precision.GetEffectiveAsync(ct)).QuantityDecimals,
+                    quantityDecimals,
                     ct
                 );
                 if (resolved.Error is not null)
@@ -440,6 +453,42 @@ public sealed class AuthorizePurchaseReturnHandler
             var authorizeHash = ComputeAuthorizePayloadHash(purchaseReturn.Id, cmd.ClientRequestId);
             var balanceDueBeforeApplication = payable.OutstandingAmount;
 
+            // PURCHASE-RETURN-COST-FIX-01 (ADR-041 addendum): la salida de Kardex ocurre ANTES de
+            // Authorize() y en unidad base, valorada al promedio ponderado vigente (unitCost null —
+            // nunca LandedUnitCost). Su valor real alimenta HistoricalCost/UnitCost de la línea; la NC
+            // comercial/fiscal sigue derivando exclusivamente de la factura original.
+            var effectiveDate = await _companyClock.TodayAsync(purchaseReturn.CompanyId, tid, ct);
+            var inventoryExitByLineId =
+                new Dictionary<Guid, PurchaseReturn.InventoryExitValuation>();
+            foreach (var line in purchaseReturn.Lines)
+            {
+                var (baseQuantity, baseUomCode) = baseQuantityByLineId[line.Id];
+                var movement = await _stockRepo.AppendMovementAsync(
+                    tid,
+                    purchaseReturn.CompanyId,
+                    line.ItemId,
+                    line.WarehouseId,
+                    StockMovementType.PurchaseReturn,
+                    -baseQuantity,
+                    baseUomCode,
+                    effectiveDate,
+                    $"Devolución {returnNumber.Trim()}",
+                    purchaseReturn.Id,
+                    "PurchaseReturn",
+                    uid,
+                    sourceDocLineId: line.Id,
+                    cancellationToken: ct
+                );
+                if (movement.TotalCost is not { } exitCost)
+                    throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                        "El producto no tiene un costo de inventario valorado para registrar la devolución."
+                    );
+                inventoryExitByLineId[line.Id] = new PurchaseReturn.InventoryExitValuation(
+                    exitCost / baseQuantity,
+                    exitCost
+                );
+            }
+
             SupplierCredit? credit;
             credit = purchaseReturn.Authorize(
                 returnNumber,
@@ -449,30 +498,9 @@ public sealed class AuthorizePurchaseReturnHandler
                 hasIssuedRetention,
                 uid,
                 cmd.ClientRequestId,
-                authorizeHash
+                authorizeHash,
+                inventoryExitByLineId
             );
-
-            var effectiveDate = await _companyClock.TodayAsync(purchaseReturn.CompanyId, tid, ct);
-            foreach (var line in purchaseReturn.Lines)
-            {
-                await _stockRepo.AppendMovementAsync(
-                    tid,
-                    purchaseReturn.CompanyId,
-                    line.ItemId,
-                    line.WarehouseId,
-                    StockMovementType.PurchaseReturn,
-                    -line.Quantity,
-                    uomCodeByDetailId[line.OriginalInvoiceDetailId],
-                    effectiveDate,
-                    $"Devolución {purchaseReturn.ReturnNumber}",
-                    purchaseReturn.Id,
-                    "PurchaseReturn",
-                    uid,
-                    line.UnitCost,
-                    sourceDocLineId: line.Id,
-                    cancellationToken: ct
-                );
-            }
 
             if (creditNote is not null)
             {

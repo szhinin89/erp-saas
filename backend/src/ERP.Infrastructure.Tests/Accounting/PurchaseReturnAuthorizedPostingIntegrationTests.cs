@@ -162,7 +162,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             saleConfig: ItemSaleConfig.Create(isForSale: true),
             stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
             createdBy: _createdBy,
-            companyId: _companyId
+            companyId: company.Id
         );
         db.Set<Item>().Add(item);
         await db.SaveChangesAsync();
@@ -444,7 +444,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
     private (
         PurchaseReturn ret,
         ERP.Domain.Modules.Payables.Entities.AccountsPayable payable
-    ) BuildAuthorizedReturn(PurchaseInvoice inv, decimal returnQuantity)
+    ) BuildAuthorizedReturn(PurchaseInvoice inv, decimal returnQuantity, decimal? kardexUnitCost = null)
     {
         var payable = ERP.Domain.Modules.Payables.Entities.AccountsPayable.CreateFromOrigin(
             _tenantId,
@@ -495,7 +495,6 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost,
                 Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
@@ -508,7 +507,14 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             hasIssuedRetention: false,
             _createdBy,
             Guid.NewGuid(),
-            "hash-authorize"
+            "hash-authorize",
+            inventoryExitByLineId: ret.Lines.ToDictionary(
+                l => l.Id,
+                l => new PurchaseReturn.InventoryExitValuation(
+                    kardexUnitCost ?? original.LandedUnitCost,
+                    l.Quantity * (kardexUnitCost ?? original.LandedUnitCost)
+                )
+            )
         );
 
         return (ret, payable);
@@ -607,6 +613,31 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
                     + ret.SupplierCreditAmount!.Value
                     + Math.Max(ret.CostVarianceTotal!.Value, 0m)
             );
+    }
+
+    [Fact]
+    public async Task Promedio_de_Kardex_menor_a_la_NC_acredita_Inventario_al_costo_real_y_la_variacion()
+    {
+        // PURCHASE-RETURN-COST-FIX-01: NC comercial 2 x 35 = 70; Kardex retira 2 x 2.7272727273 = 5.45.
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await SeedRuleAndPeriodAsync(db, AccountingDateBoundary.CompanyToday);
+        var inv = await SeedConfirmedInvoiceAsync(db, new DateOnly(2026, 7, 25), "001-001-000000002");
+        await GrantStockAsync(db, 10, inv.Id);
+
+        var (ret, _) = BuildAuthorizedReturn(inv, returnQuantity: 2, kardexUnitCost: 2.7272727273m);
+        db.PurchaseReturns.Add(ret);
+        await db.SaveChangesAsync();
+
+        ret.HistoricalCostTotal.Should().Be(5.45m);
+        ret.CostVarianceTotal.Should().Be(5.45m - ret.AuthorizedSubtotal!.Value);
+        await using var verifyDb = CreateContext();
+        var entry = await verifyDb.JournalEntries.Include(e => e.Lines)
+            .SingleAsync(x => x.SourceEventId == ret.Id);
+        entry.Status.Should().Be(JournalEntryStatus.Posted);
+        entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
+        entry.Lines.Should().Contain(l => l.Credit == 5.45m, "Inventario baja por el valor real retirado del Kardex");
+        entry.Lines.Should().Contain(l => l.Credit == -ret.CostVarianceTotal!.Value, "la diferencia va a CostVarianceCredit");
+        entry.Lines.Should().NotContain(l => l.Debit > 0m && l.Debit == 5.45m - ret.AuthorizedSubtotal!.Value);
     }
 
     [Fact]

@@ -52,7 +52,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         decimal vatRate = 12m,
         decimal landedUnitCost = 100m,
         decimal paidAmount = 0m,
-        decimal returnQuantity = 3m
+        decimal returnQuantity = 3m,
+        decimal conversionFactor = 1m
     )
     {
         var invoice = PurchaseInvoice.CreateDraft(
@@ -79,9 +80,11 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             quantity: quantity,
             unitPrice: unitPrice,
             vatCode: "10",
-            uomCode: "UNIT",
+            uomCode: conversionFactor == 1m ? "UNIT" : "CAJA",
             itemId: ItemId,
-            warehouseId: WarehouseId
+            warehouseId: WarehouseId,
+            conversionFactor: conversionFactor,
+            baseUomCode: "UNIT"
         );
         line.ApplyTaxes("10", vatRate, "IVA", null, 0m, null);
         invoice.ReplaceLines(new[] { line }, UserId);
@@ -149,6 +152,10 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         public Mock<IRetentionDocumentRepository> RetentionRepo { get; } = new();
         public Mock<IPurchaseReturnSequenceRepository> SequenceRepo { get; } = new();
         public Mock<IStockRepository> StockRepo { get; } = new();
+
+        /// <summary>Promedio ponderado vigente simulado del Kardex (PURCHASE-RETURN-COST-FIX-01).</summary>
+        public decimal KardexAverageCost { get; set; } = 100m;
+        public List<(decimal Quantity, string UomCode, decimal? UnitCost)> AppendedMovements { get; } = new();
         public Mock<ISupplierCreditRepository> CreditRepo { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
@@ -265,6 +272,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                         var sourceDocLineId = (Guid?)args[16];
 
                         AppendedItemWarehouses.Add(warehouseId);
+                        AppendedMovements.Add((qty, uom, unitCost));
 
                         return Task.FromResult(
                             StockMovement.Create(
@@ -288,7 +296,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                                 unitCost,
                                 lotId,
                                 serialId,
-                                sourceDocLineId
+                                sourceDocLineId,
+                                valuationUnitCost: unitCost ?? KardexAverageCost
                             )
                         );
                     }
@@ -1064,6 +1073,62 @@ public sealed class AuthorizePurchaseReturnHandlerTests
         m.AppendedItemWarehouses.Should().OnlyContain(w => w == WarehouseId);
     }
 
+    // ── PURCHASE-RETURN-COST-FIX-01 — unidad base + promedio ponderado ──────
+
+    [Fact]
+    public async Task Presentacion_sale_del_Kardex_en_unidad_base_al_promedio_y_la_NC_sigue_la_factura()
+    {
+        // 10 cajas x 12 a $100 la caja; devolución de 3 cajas = 36 unidades base.
+        var f = BuildFixture(returnQuantity: 3m, conversionFactor: 12m);
+        var m = new Mocks(f) { KardexAverageCost = 7.5m };
+
+        var result = await m.BuildHandler()
+            .Handle(new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        m.AppendedMovements.Should().ContainSingle()
+            .Which.Should().Be((-36m, "UNIT", (decimal?)null), "sale en unidad base y sin LandedUnitCost");
+        var line = f.Return.Lines.Single();
+        line.UnitCost.Should().Be(7.5m);
+        line.HistoricalCostAmount.Should().Be(270.00m);
+        // NC comercial: 3/10 de la factura original, nunca el costo de Kardex.
+        f.Return.AuthorizedSubtotal.Should().Be(300.00m);
+        f.Return.HistoricalCostTotal.Should().Be(270.00m);
+        f.Return.CostVarianceTotal.Should().Be(-30.00m);
+    }
+
+    [Fact]
+    public async Task Devolucion_parcial_al_promedio_vigente_fija_HistoricalCost_y_CostVariance()
+    {
+        var f = BuildFixture(quantity: 10m, unitPrice: 10m, returnQuantity: 1m);
+        var m = new Mocks(f) { KardexAverageCost = 2.7272727273m };
+
+        var result = await m.BuildHandler()
+            .Handle(new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        m.AppendedMovements.Single().Quantity.Should().Be(-1m);
+        f.Return.Lines.Single().UnitCost.Should().Be(2.7272727273m);
+        f.Return.HistoricalCostTotal.Should().Be(2.73m);
+        f.Return.AuthorizedSubtotal.Should().Be(10.00m);
+        f.Return.CostVarianceTotal.Should().Be(-7.27m);
+    }
+
+    [Fact]
+    public async Task PR_005_compara_el_stock_en_unidad_base()
+    {
+        // 1 caja = 12 unidades base; solo hay 11 en la bodega.
+        var f = BuildFixture(returnQuantity: 1m, conversionFactor: 12m);
+        var m = new Mocks(f, availableStock: 11m);
+
+        var result = await m.BuildHandler()
+            .Handle(new AuthorizePurchaseReturnCommand(f.Return.Id, Guid.NewGuid()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        f.Return.Status.Should().Be(PurchaseReturnStatus.Draft);
+        m.AppendedMovements.Should().BeEmpty();
+    }
+
     // ── CostVarianceTotal exacto — ejemplo (g) de §11.3 ──────────────────
 
     [Fact]
@@ -1081,7 +1146,6 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             VatRate: 12m,
             IceCode: null,
             IceRate: 0m,
-            LandedUnitCost: 115m,
             Taxes: []
         );
         var purchaseReturn = PurchaseReturn.CreateDraft(
@@ -1106,7 +1170,8 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "authorize-hash"
+            "authorize-hash",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
 
         purchaseReturn.AuthorizedSubtotal.Should().Be(300.00m);

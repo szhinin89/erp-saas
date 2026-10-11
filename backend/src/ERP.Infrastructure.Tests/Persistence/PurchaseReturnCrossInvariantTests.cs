@@ -294,7 +294,9 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             quantity: 1m,
             unitPrice: grandTotal,
             vatCode: "10",
-            uomCode: "UNIT"
+            uomCode: "UNIT",
+            itemId: _itemId,
+            warehouseId: _warehouseId
         );
         inv.ReplaceLines(new[] { line }, _userId);
         inv.Confirm(_userId);
@@ -344,10 +346,52 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
                 confirmedLine.VatRate,
                 confirmedLine.IceCode,
                 confirmedLine.IceRate,
-                confirmedLine.LandedUnitCost,
                 Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
+        // Flujo real (PURCHASE-RETURN-COST-FIX-01): la compra entra al Kardex y la autorización
+        // registra la salida PurchaseReturn sin costo propio (promedio vigente) ANTES de Authorize;
+        // su valor real alimenta HistoricalCost y es lo que CancelPurchaseReturn revierte.
+        var stockRepo = new StockRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId),
+            new RealDatabaseExceptionTranslator(),
+            StandardPrecisionPolicyProvider.Instance
+        );
+        await stockRepo.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            _itemId,
+            _warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PurchaseEntry,
+            confirmedLine.QuantityInBaseUom,
+            confirmedLine.BaseUomCode,
+            inv.IssueDate,
+            inv.InvoiceNumber,
+            inv.Id,
+            "PurchaseInvoice",
+            _userId,
+            confirmedLine.LandedUnitCost,
+            sourceDocLineId: confirmedLine.Id
+        );
+        var returnLine = ret.Lines.Single();
+        var exit = await stockRepo.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            _itemId,
+            _warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PurchaseReturn,
+            -returnLine.Quantity,
+            confirmedLine.BaseUomCode,
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            "Devolución (seed)",
+            ret.Id,
+            "PurchaseReturn",
+            _userId,
+            sourceDocLineId: returnLine.Id
+        );
+        var exitCost = exit.TotalCost!.Value;
+
         var credit = ret.Authorize(
             Random.Shared.Next(1, 99999999).ToString("D8"),
             snapshot,
@@ -356,7 +400,11 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
             hasIssuedRetention: false,
             _userId,
             Guid.NewGuid(),
-            "hash-authorize"
+            "hash-authorize",
+            inventoryExitByLineId: new Dictionary<Guid, PurchaseReturn.InventoryExitValuation>
+            {
+                [returnLine.Id] = new(exitCost / returnLine.Quantity, exitCost),
+            }
         );
         if (ret.AppliedToPayableAmount is > 0m)
             payable.ApplyReturnCredit(ret.AppliedToPayableAmount.Value, _userId);
@@ -366,7 +414,7 @@ public sealed class PurchaseReturnCrossInvariantTests : IAsyncLifetime
         db.PurchaseReturns.Add(ret);
         if (credit is not null)
             db.Set<SupplierCredit>().Add(credit);
-        await db.SaveChangesAsync();
+        await stockRepo.SaveChangesWithSequenceRetryAsync();
 
         return new SeededReturn(inv.Id, payable.Id, ret.Id, credit?.Id);
     }

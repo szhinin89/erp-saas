@@ -134,9 +134,16 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
         decimal VatRate,
         string? IceCode,
         decimal IceRate,
-        decimal LandedUnitCost,
         IReadOnlyList<OriginalLineTaxSnapshot> Taxes
     );
+
+    /// <summary>
+    /// PURCHASE-RETURN-COST-FIX-01 (ADR-041 addendum) — valoración real de la salida de Kardex de
+    /// una línea, producida por <c>IStockRepository.AppendMovementAsync</c> al promedio ponderado
+    /// vigente (nunca el <c>LandedUnitCost</c> de la factura). <see cref="UnitCost"/> es el costo
+    /// por unidad base; <see cref="TotalCost"/> el valor retirado del inventario.
+    /// </summary>
+    public sealed record InventoryExitValuation(decimal UnitCost, decimal TotalCost);
 
     /// <summary>
     /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1) — snapshot de UNA fila de
@@ -283,6 +290,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
     /// <param name="updatedBy">Actor que ejecuta la autorización.</param>
     /// <param name="authorizeClientRequestId">Idempotencia obligatoria de autorización (§16.2).</param>
     /// <param name="authorizeRequestPayloadHash">Huella determinista del payload de autorización (§16.2).</param>
+    /// <param name="inventoryExitByLineId">Valoración real de la salida de Kardex de cada línea, indexada por <see cref="PurchaseReturnDetail.Id"/>.</param>
     public SupplierCredit? Authorize(
         string returnNumber,
         IReadOnlyDictionary<Guid, OriginalLineSnapshot> originalLinesByDetailId,
@@ -291,7 +299,8 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
         bool hasIssuedRetention,
         Guid updatedBy,
         Guid authorizeClientRequestId,
-        string authorizeRequestPayloadHash
+        string authorizeRequestPayloadHash,
+        IReadOnlyDictionary<Guid, InventoryExitValuation> inventoryExitByLineId
     )
     {
         EnsureDraft();
@@ -347,7 +356,16 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
             );
             var returnedVat = Round2(fraction * original.VatAmount);
             var returnedDiscount = Round2(fraction * original.DiscountAmount);
-            var historicalCost = Round2(original.LandedUnitCost * line.Quantity);
+            // PURCHASE-RETURN-COST-FIX-01: el costo histórico es el valor que el Kardex retiró al
+            // promedio ponderado — nunca LandedUnitCost × cantidad (la unidad pierde identidad al
+            // promediarse). La NC comercial/fiscal sigue derivando de la factura original.
+            if (!inventoryExitByLineId.TryGetValue(line.Id, out var exit))
+                throw new DomainRuleViolationException(
+                    "Falta la valoración de inventario de la línea para poder autorizar la devolución."
+                );
+            if (exit.UnitCost < 0m || exit.TotalCost < 0m)
+                throw new DomainRuleViolationException("Inventory cost cannot be negative.");
+            var historicalCost = Round2(exit.TotalCost);
 
             // TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.3, Subfase 5D-1/Fase 3) — prorratea CADA fila
             // del snapshot fiscal original (IVA/ICE/IRBPNR) por la misma fracción que ya rige
@@ -366,7 +384,7 @@ public sealed class PurchaseReturn : AuditableEntity, ITenantScopedEntity, IComp
             ));
 
             line.Freeze(
-                original.LandedUnitCost,
+                exit.UnitCost,
                 original.VatCode,
                 original.VatRate,
                 returnedSubtotal,

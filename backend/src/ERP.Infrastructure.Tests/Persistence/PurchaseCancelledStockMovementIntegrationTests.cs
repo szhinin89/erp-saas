@@ -3,6 +3,8 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
@@ -41,7 +43,7 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
     private Guid _companyId;
     private Guid _warehouseId;
     private readonly Guid _userId = Guid.NewGuid();
-    private readonly Guid _productId = Guid.NewGuid();
+    private Guid _productId;
 
     public async Task InitializeAsync()
     {
@@ -113,9 +115,25 @@ public sealed class PurchaseCancelledStockMovementIntegrationTests : IAsyncLifet
         _tenantId = tenant.Id;
         _companyId = company.Id;
         _warehouseId = warehouse.Id;
+        _productId = await SeedProductAsync();
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
+
+    /// <summary>A1: el Kardex exige un Item Product real de la misma empresa (a1_inventory_product_scope).</summary>
+    private async Task<Guid> SeedProductAsync()
+    {
+        await using var db = CreateContext();
+        var itemType = ItemTypeDefinition.Create(_tenantId, $"CLS-{Guid.NewGuid():N}"[..12], "Clasificación", 0, _userId);
+        var sku = $"SKU-{Guid.NewGuid():N}"[..12];
+        var item = Item.Create(_tenantId, sku, sku, sku, itemType.Id, "UNIT", ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(), ItemStockConfig.Create(stockControlEnabled: true), _userId,
+            companyId: _companyId, nature: ItemNature.Product);
+        db.Set<ItemTypeDefinition>().Add(itemType);
+        db.Set<Item>().Add(item);
+        await db.SaveChangesAsync();
+        return item.Id;
+    }
 
     private ErpDbContext CreateContext()
     {

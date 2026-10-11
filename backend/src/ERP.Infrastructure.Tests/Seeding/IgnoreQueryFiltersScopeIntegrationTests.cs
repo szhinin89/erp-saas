@@ -530,7 +530,6 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost,
                 Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
@@ -542,7 +541,8 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
             hasIssuedRetention: false,
             _actorId,
             Guid.NewGuid(),
-            $"authorize-{ordinal}"
+            $"authorize-{ordinal}",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(original.LandedUnitCost, l.Quantity * original.LandedUnitCost))
         );
         purchaseReturn.ClearDomainEvents();
         db.PurchaseReturns.Add(purchaseReturn);

@@ -249,7 +249,6 @@ public sealed class GetPurchaseReturnByIdHandlerTests
                         15m,
                         null,
                         0m,
-                        10m,
                         Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
                     ),
             },
@@ -258,7 +257,8 @@ public sealed class GetPurchaseReturnByIdHandlerTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "authorize-hash"
+            "authorize-hash",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(10m, l.Quantity * 10m))
         );
 
         var receptionDoc = PurchaseReceptionDocument.Create(

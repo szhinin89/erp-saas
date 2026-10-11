@@ -3,6 +3,8 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
@@ -163,6 +165,21 @@ public sealed class StockMovementBranchOwnershipIntegrationTests : IAsyncLifetim
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
+    /// <summary>A1: el Kardex exige un Item Product real de la misma empresa (a1_inventory_product_scope).</summary>
+    private async Task<Guid> SeedProductAsync()
+    {
+        await using var db = CreateContext();
+        var itemType = ItemTypeDefinition.Create(_tenantId, $"CLS-{Guid.NewGuid():N}"[..12], "Clasificación", 0, _userId);
+        var sku = $"SKU-{Guid.NewGuid():N}"[..12];
+        var item = Item.Create(_tenantId, sku, sku, sku, itemType.Id, "UNIT", ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(), ItemStockConfig.Create(stockControlEnabled: true), _userId,
+            companyId: _companyId, nature: ItemNature.Product);
+        db.Set<ItemTypeDefinition>().Add(itemType);
+        db.Set<Item>().Add(item);
+        await db.SaveChangesAsync();
+        return item.Id;
+    }
+
     private ErpDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
@@ -187,7 +204,7 @@ public sealed class StockMovementBranchOwnershipIntegrationTests : IAsyncLifetim
             new PostgresDatabaseExceptionTranslator(),
             StandardPrecisionPolicyProvider.Instance
         );
-        var productId = Guid.NewGuid();
+        var productId = await SeedProductAsync();
 
         var movement = await repo.AppendMovementAsync(
             _tenantId,
@@ -219,7 +236,7 @@ public sealed class StockMovementBranchOwnershipIntegrationTests : IAsyncLifetim
             new PostgresDatabaseExceptionTranslator(),
             StandardPrecisionPolicyProvider.Instance
         );
-        var productId = Guid.NewGuid();
+        var productId = await SeedProductAsync();
 
         // Stock inicial en la bodega origen (Sucursal A) para poder salir con TransferExit.
         await repo.AppendMovementAsync(

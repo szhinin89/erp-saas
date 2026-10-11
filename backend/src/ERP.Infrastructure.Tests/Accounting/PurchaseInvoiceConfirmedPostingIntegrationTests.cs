@@ -15,6 +15,8 @@ using ERP.Domain.Modules.Accounting.ValueObjects;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Purchases.Entities;
@@ -156,10 +158,32 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
-    private ErpDbContext CreateContext(IPublisher? publisher = null)
+    /// <summary>A1: el Kardex exige un Item Product real de la misma empresa (mismo patrón que A7).</summary>
+    private async Task<Guid> SeedInventoryProductAsync()
     {
+        await using var db = CreateContext();
+        var code = $"PI-{Guid.NewGuid():N}"[..16];
+        var type = ItemTypeDefinition.Create(_tenantId, code, code, 0, _createdBy);
+        var item = Item.Create(_tenantId, code, code, code, type.Id, "UNIT",
+            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(),
+            ItemStockConfig.Create(stockControlEnabled: true), _createdBy,
+            companyId: _companyId, nature: ItemNature.Product);
+        db.ItemTypes.Add(type);
+        db.Items.Add(item);
+        await db.SaveChangesAsync();
+        return item.Id;
+    }
+
+    private ErpDbContext CreateContext(IPublisher? publisher = null, string? applicationName = null)
+    {
+        var connectionString = applicationName is null
+            ? _postgres.GetConnectionString()
+            : new Npgsql.NpgsqlConnectionStringBuilder(_postgres.GetConnectionString())
+            {
+                ApplicationName = applicationName,
+            }.ConnectionString;
         var options = new DbContextOptionsBuilder<ErpDbContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
+            .UseNpgsql(connectionString)
             .Options;
 
         return new ErpDbContext(
@@ -720,7 +744,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         );
         db.PurchaseInvoices.Add(invoice);
         await db.SaveChangesAsync();
-        var productId = Guid.NewGuid();
+        var productId = await SeedInventoryProductAsync();
         var precision = new Mock<ICompanyPrecisionPolicyProvider>();
         precision
             .Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>()))
@@ -853,10 +877,11 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         Guid productId,
         DateOnly date,
         decimal quantity,
-        string reference
+        string reference,
+        string? applicationName = null
     )
     {
-        await using var other = CreateContext();
+        await using var other = CreateContext(applicationName: applicationName);
         var repo = NewStockRepository(other);
         await repo.AppendMovementAsync(
             _tenantId,
@@ -963,11 +988,44 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         );
     }
 
+    /// <summary>
+    /// Espera determinista (patrón de PurchaseReturnSequenceTransactionInteractionTests / A7): la
+    /// sesión del otro escritor figura en pg_stat_activity esperando un advisory lock. Nunca bloquea
+    /// el hilo de la confirmación.
+    /// </summary>
+    private async Task WaitUntilWaitingOnAdvisoryLockAsync(string applicationName, Task writer)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        await using var connection = new Npgsql.NpgsqlConnection(_postgres.GetConnectionString());
+        await connection.OpenAsync(timeout.Token);
+        while (true)
+        {
+            writer.IsCompleted.Should().BeFalse("el otro documento no puede escribir mientras la factura retiene el lock");
+            await using var command = new Npgsql.NpgsqlCommand(
+                """
+                SELECT EXISTS (SELECT 1 FROM pg_stat_activity
+                WHERE application_name = @name AND wait_event_type = 'Lock' AND wait_event = 'advisory')
+                """,
+                connection
+            );
+            command.Parameters.AddWithValue("name", applicationName);
+            if ((bool)(await command.ExecuteScalarAsync(timeout.Token))!)
+                return;
+            await Task.Delay(10, timeout.Token);
+        }
+    }
+
+    /// <summary>
+    /// ADR-041: StockRepository serializa Tenant + Company + Product + Warehouse con
+    /// pg_advisory_xact_lock, así que el conflicto de secuencia ya no puede ocurrir. La confirmación
+    /// toma el lock, el otro documento espera, y tras el commit continúa con la secuencia siguiente;
+    /// cada efecto de la confirmación queda registrado exactamente una vez.
+    /// </summary>
     [Fact]
     public async Task Kardex_sequence_retry_confirms_purchase_with_every_effect_exactly_once()
     {
         var date = new DateOnly(2026, 9, 27);
-        var productId = Guid.NewGuid();
+        var productId = await SeedInventoryProductAsync();
         await AppendCommittedMovementAsync(productId, date, 10m, "Stock inicial");
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await using var ownedDb = db;
@@ -976,11 +1034,17 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         db.PurchaseInvoices.Add(invoice);
         await db.SaveChangesAsync();
         var stock = NewStockRepository(db);
+        // La confirmación toma el lock del recurso al trackear su primer movimiento de Kardex.
         await TrackConfirmationEffectsAsync(stock, db, invoice, date, productId);
 
-        // Another document commits the same product/warehouse first: our first save collides.
-        await AppendCommittedMovementAsync(productId, date, 1m, "otro documento");
+        const string otherWriter = "zh-pi-confirm-other-writer";
+        var other = Task.Run(() =>
+            AppendCommittedMovementAsync(productId, date, 1m, "otro documento", otherWriter)
+        );
+        await WaitUntilWaitingOnAdvisoryLockAsync(otherWriter, other);
+
         await stock.SaveChangesWithSequenceRetryAsync();
+        await other.WaitAsync(TimeSpan.FromSeconds(20));
 
         await using var verify = CreateContext();
         (await verify.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id))
@@ -993,8 +1057,12 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             .ToListAsync();
         movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L, 3L, 4L);
         var ours = movements.Where(m => m.SourceDocId == invoice.Id).ToList();
+        ours.Select(m => m.SequenceNumber).Should().Equal(2L, 3L);
         ours.Select(m => m.SourceDocLineId).Should().Equal(invoice.Lines.Select(l => (Guid?)l.Id));
-        ours.Select(m => m.RunningStockValue).Should().Equal(157m, 250m);
+        ours.Select(m => m.RunningStockValue).Should().Equal(152m, 245m);
+        movements[^1].Reference.Should().Be("otro documento");
+        movements[^1].PreviousQuantity.Should().Be(13m, "el otro documento leyó el Kardex ya comiteado");
+        movements[^1].RunningStockValue.Should().Be(250m);
         (await verify.Set<CurrentStock>().SingleAsync(s => s.ProductId == productId))
             .Quantity.Should()
             .Be(14m);
@@ -1026,7 +1094,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
     public async Task Failure_after_publishing_is_not_replayed_by_the_kardex_retry()
     {
         var date = new DateOnly(2026, 9, 27);
-        var productId = Guid.NewGuid();
+        var productId = await SeedInventoryProductAsync();
         var publisher = new ConflictAfterPublishPublisher();
         // Production tracking interceptor, so the first write succeeds and the failure is post-publish.
         await using var db = new ErpDbContext(

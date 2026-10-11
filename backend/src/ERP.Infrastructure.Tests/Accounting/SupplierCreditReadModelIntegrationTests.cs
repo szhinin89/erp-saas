@@ -411,7 +411,6 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
                     line.VatRate,
                     line.IceCode,
                     line.IceRate,
-                    line.LandedUnitCost,
                     Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
                 ),
             },
@@ -420,7 +419,8 @@ public sealed class SupplierCreditReadModelIntegrationTests : IAsyncLifetime
             hasIssuedRetention: false,
             _userId,
             Guid.NewGuid(),
-            "hash-authorize"
+            "hash-authorize",
+            inventoryExitByLineId: ret.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(line.LandedUnitCost, l.Quantity * line.LandedUnitCost))
         )!;
 
         db.PurchaseInvoices.Add(invoice);

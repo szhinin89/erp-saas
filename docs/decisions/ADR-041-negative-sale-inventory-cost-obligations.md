@@ -36,3 +36,14 @@ Ambos requests requieren contexto autenticado de Company. No se introduce un wor
 ## Persistencia y gates
 
 Migración generada `20261006120230_NegativeSaleCostObligations`: base/estado de valoración, obligaciones, asignaciones y pendientes contables, con constraints y correlación de movimientos por documento/línea. Aplicada sin errores a desarrollo `dberpsaas` durante el cierre operativo autorizado; smoke de persistencia PASS (historial de migración y lectura de tablas/columnas nuevas). PostgreSQL de Testcontainers verifica migraciones completas, stock negativo, reservas, concurrencia, aislamiento, compensación parcial/completa, costo desconocido, reintento, anulaciones y devoluciones con redondeo. Los resultados finales se registran en STATUS.md.
+
+## Addendum PURCHASE-RETURN-COST-FIX-01 — devolución a proveedor (2026-10-10)
+
+Reabre Purchases solo para la valoración de `PurchaseReturn`; no cambia PostingRules, cuentas ni el cálculo comercial/fiscal.
+
+- **NC comercial = factura original.** Subtotal, descuento, IVA/ICE/IRBPNR y total acreditado se prorratean de la línea original (cantidad devuelta / cantidad original, en la unidad comercial de la factura). El costo de inventario nunca interviene en la NC.
+- **Kardex = promedio ponderado.** La salida `PurchaseReturn` se registra en unidad base (`QuantityInBaseUom` vía el `ConversionFactor` original, `BaseUomCode`) y sin costo propio: se valora al promedio vigente del recurso. `LandedUnitCost` de la factura no es costo de salida — la unidad pierde identidad al promediarse, y usarlo podía dejar el valor del inventario negativo. El invariante de costo no negativo no se relaja.
+- **HistoricalCost = valor real de Kardex.** `PurchaseReturnDetail.HistoricalCostAmount` = valor retirado por la salida (2 decimales); `UnitCost` = costo de valoración por unidad base de esa salida; `CostVarianceTotal = HistoricalCostTotal − AuthorizedSubtotal` absorbe la diferencia NC vs. inventario en las cuentas existentes (CostVarianceDebit/CostVarianceCredit).
+- **Cancelación.** Reingresa exactamente la cantidad base, la unidad y el costo valorado de la salida registrada al autorizar; el reverso contable usa los montos persistidos.
+
+Fuera de alcance: anulación completa de `PurchaseInvoice` (sigue saliendo al `LandedUnitCost`) y la conciliación flete/ICE entre Inventario contable y Kardex.

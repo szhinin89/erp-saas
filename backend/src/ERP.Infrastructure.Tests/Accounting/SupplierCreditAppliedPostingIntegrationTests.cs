@@ -159,7 +159,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             saleConfig: ItemSaleConfig.Create(isForSale: true),
             stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
             createdBy: _createdBy,
-            companyId: _companyId
+            companyId: company.Id
         );
         db.Set<Item>().Add(item);
         await db.SaveChangesAsync();

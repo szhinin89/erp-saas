@@ -633,7 +633,6 @@ public sealed class PurchaseReturnDraftUseCasesTests
             line.VatRate,
             line.IceCode,
             line.IceRate,
-            line.LandedUnitCost,
             []
         );
         purchaseReturn.Authorize(
@@ -644,7 +643,8 @@ public sealed class PurchaseReturnDraftUseCasesTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize"
+            "hash-authorize",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(line.LandedUnitCost, l.Quantity * line.LandedUnitCost))
         );
 
         var repo = new Mock<IPurchaseReturnRepository>();

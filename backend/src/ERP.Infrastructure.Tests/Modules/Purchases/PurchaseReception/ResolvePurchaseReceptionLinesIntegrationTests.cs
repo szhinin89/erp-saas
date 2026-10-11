@@ -154,6 +154,11 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         services.AddScoped<IPurchaseReceptionAutoMatcher, PurchaseReceptionAutoMatcher>();
         services.AddScoped<IItemMatchFinder, ItemMatchFinder>();
         services.AddScoped<IPurchaseXmlDraftParser, PurchaseXmlDraftParser>();
+        // CreateItemCommandHandler (vía ItemVatValidation) valida el IVA contra el día de la empresa.
+        services.AddScoped<
+            ERP.Application.Common.Services.ICompanyClock,
+            ERP.Infrastructure.Persistence.Services.CompanyClock
+        >();
         // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A: ConfirmPurchaseHandler inicia la transmisión de la
         // retención tras el commit; este test confirma sin retención y no cablea ElectronicDocuments.
         services.AddScoped(_ =>

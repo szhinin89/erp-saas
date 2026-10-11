@@ -1509,6 +1509,11 @@ public sealed class CreateSalesDraftHandlerTests
                 r.GetByIdAsync(TenantId, warehouse.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(warehouse);
+        // SalesWarehouseGuard (A6) resuelve la bodega con scope de empresa antes de crear la venta.
+        f.WarehouseRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(TenantId, CompanyId, warehouse.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(warehouse);
 
         var priceListId = Guid.NewGuid();
         // SALES-CONTEXTUAL-PRICING-DRAFT-06B: ResolveManyAsync en batch, no ResolveAsync por

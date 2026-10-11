@@ -37,12 +37,14 @@ public sealed class PurchaseReturnDetail : IMustHaveTenant
     public Guid WarehouseId { get; private set; }
 
     // ── Snapshot financiero (solo tras Authorize()) ─────────────────────
+    /// <summary>Costo de valoración real de la salida de Kardex, por unidad base (promedio ponderado vigente al autorizar).</summary>
     public decimal? UnitCost { get; private set; }
     public string? VatCode { get; private set; }
     public decimal? VatRate { get; private set; }
     public decimal? ReturnedSubtotal { get; private set; }
     public decimal? ReturnedDiscountAmount { get; private set; }
     public decimal? ReturnedVatAmount { get; private set; }
+    /// <summary>Valor real retirado del inventario por la salida de Kardex (numeric(18,2)).</summary>
     public decimal? HistoricalCostAmount { get; private set; }
 
     public bool IsFrozen { get; private set; }

@@ -232,7 +232,6 @@ public sealed class PurchaseReturnTests
                 VatRate: 15m,
                 IceCode: null,
                 IceRate: 0m,
-                LandedUnitCost: 115m,
                 Taxes: []
             ),
         };
@@ -246,7 +245,8 @@ public sealed class PurchaseReturnTests
             hasIssuedRetention: false,
             UserId,
             authorizeClientRequestId,
-            "hash-authorize-001"
+            "hash-authorize-001",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
 
         purchaseReturn.Status.Should().Be(PurchaseReturnStatus.Authorized);
@@ -285,7 +285,6 @@ public sealed class PurchaseReturnTests
                 VatRate: 15m,
                 IceCode: null,
                 IceRate: 0m,
-                LandedUnitCost: 115m,
                 Taxes:
                 [
                     new PurchaseReturn.OriginalLineTaxSnapshot(
@@ -318,7 +317,8 @@ public sealed class PurchaseReturnTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize-irbpnr"
+            "hash-authorize-irbpnr",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
 
         var line = purchaseReturn.Lines.Single();
@@ -347,7 +347,6 @@ public sealed class PurchaseReturnTests
                 VatRate: 15m,
                 IceCode: null,
                 IceRate: 0m,
-                LandedUnitCost: 115m,
                 Taxes:
                 [
                     new PurchaseReturn.OriginalLineTaxSnapshot(
@@ -371,7 +370,8 @@ public sealed class PurchaseReturnTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize-no-irbpnr"
+            "hash-authorize-no-irbpnr",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
 
         var line = purchaseReturn.Lines.Single();
@@ -396,7 +396,8 @@ public sealed class PurchaseReturnTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize-002"
+            "hash-authorize-002",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
 
         credit.Should().NotBeNull();
@@ -421,10 +422,37 @@ public sealed class PurchaseReturnTests
                 hasIssuedRetention: true,
                 UserId,
                 Guid.NewGuid(),
-                "hash-authorize-003"
+                "hash-authorize-003",
+                inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
             );
 
         act.Should().Throw<DomainRuleViolationException>().WithMessage("*retención*");
+        purchaseReturn.Status.Should().Be(PurchaseReturnStatus.Draft);
+    }
+
+    [Fact]
+    public void Authorize_exige_la_valoracion_de_Kardex_de_cada_linea_y_rechaza_costo_negativo()
+    {
+        // PURCHASE-RETURN-COST-FIX-01: HistoricalCost proviene de la salida real de Kardex.
+        var originalDetailId = Guid.NewGuid();
+        var purchaseReturn = CreateDraft(lines: new[] { Line(originalDetailId, quantity: 3m) });
+        Action Authorize(IReadOnlyDictionary<Guid, PurchaseReturn.InventoryExitValuation> exits) =>
+            () => purchaseReturn.Authorize(
+                "00000001",
+                OriginalLines(originalDetailId),
+                1120m,
+                "USD",
+                false,
+                UserId,
+                Guid.NewGuid(),
+                "hash-authorize-kardex",
+                exits
+            );
+
+        Authorize(new Dictionary<Guid, PurchaseReturn.InventoryExitValuation>())
+            .Should().Throw<DomainRuleViolationException>().WithMessage("*valoración de inventario*");
+        Authorize(purchaseReturn.Lines.ToDictionary(l => l.Id, _ => new PurchaseReturn.InventoryExitValuation(-1m, -3m)))
+            .Should().Throw<DomainRuleViolationException>().WithMessage("Inventory cost cannot be negative.");
         purchaseReturn.Status.Should().Be(PurchaseReturnStatus.Draft);
     }
 
@@ -441,7 +469,8 @@ public sealed class PurchaseReturnTests
             false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize-004"
+            "hash-authorize-004",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
 
         var act = () =>
@@ -453,7 +482,8 @@ public sealed class PurchaseReturnTests
                 false,
                 UserId,
                 Guid.NewGuid(),
-                "hash-authorize-005"
+                "hash-authorize-005",
+                inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
             );
 
         act.Should().Throw<DomainRuleViolationException>();
@@ -474,7 +504,8 @@ public sealed class PurchaseReturnTests
                 false,
                 UserId,
                 Guid.Empty,
-                "hash-authorize-006"
+                "hash-authorize-006",
+                inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
             );
 
         act.Should().Throw<ArgumentException>();
@@ -498,7 +529,8 @@ public sealed class PurchaseReturnTests
                 false,
                 UserId,
                 Guid.NewGuid(),
-                hash!
+                hash!,
+                inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
             );
 
         act.Should().Throw<ArgumentException>();
@@ -528,7 +560,8 @@ public sealed class PurchaseReturnTests
             false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize-007"
+            "hash-authorize-007",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
 
         var evt = purchaseReturn
@@ -736,7 +769,6 @@ public sealed class PurchaseReturnTests
                 VatRate: 15m,
                 IceCode: null,
                 IceRate: 0m,
-                LandedUnitCost: 115m,
                 Taxes: []
             ),
         };
@@ -752,7 +784,8 @@ public sealed class PurchaseReturnTests
             false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize-happy-path"
+            "hash-authorize-happy-path",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(115m, l.Quantity * 115m))
         );
     }
 }

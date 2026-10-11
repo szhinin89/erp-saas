@@ -338,7 +338,8 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         decimal unitPrice,
         decimal quantity,
         decimal paidAmount = 0m,
-        decimal freightCost = 0m
+        decimal freightCost = 0m,
+        decimal conversionFactor = 1m
     )
     {
         await using var db = CreateContext();
@@ -365,9 +366,11 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             quantity: quantity,
             unitPrice: unitPrice,
             vatCode: "10",
-            uomCode: "UNIT",
+            uomCode: conversionFactor == 1m ? "UNIT" : "CAJA",
             itemId: _itemId,
-            warehouseId: _warehouseId
+            warehouseId: _warehouseId,
+            conversionFactor: conversionFactor,
+            baseUomCode: "UNIT"
         );
         line.ApplyTaxes("10", 12m, "IVA", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _userId);
@@ -402,23 +405,33 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         await db.SaveChangesAsync();
 
         // Confirmar la factura no mueve inventario real en este wiring de prueba (a diferencia del
-        // flujo HTTP completo, que pasa por ConfirmPurchaseUseCases) — se siembra el stock
-        // directamente para que Authorize() encuentre existencia suficiente en la bodega original.
-        var stock = await db.Set<ERP.Domain.Modules.Inventory.Entities.CurrentStock>()
-            .FirstOrDefaultAsync(s => s.ProductId == _itemId && s.WarehouseId == _warehouseId);
-        if (stock is null)
-        {
-            stock = ERP.Domain.Modules.Inventory.Entities.CurrentStock.Create(
-                _tenantId,
-                _itemId,
-                _warehouseId,
-                _userId,
-                _companyId
-            );
-            db.Set<ERP.Domain.Modules.Inventory.Entities.CurrentStock>().Add(stock);
-        }
-        stock.ApplyMovement(quantity, _userId, unitPrice);
-        await db.SaveChangesAsync();
+        // flujo HTTP completo, que pasa por ConfirmPurchaseUseCases) — se siembra la entrada por el
+        // mismo camino de Kardex que la confirmación (PurchaseEntry al LandedUnitCost), nunca
+        // CurrentStock suelto: sin historial de Kardex la salida de la devolución valuaría contra un
+        // valor corrido 0 (estado imposible en producción).
+        var stockRepo = new StockRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId),
+            new RealDatabaseExceptionTranslator(),
+            ERP.API.Tests.Support.StandardPrecisionPolicyProvider.Instance
+        );
+        await stockRepo.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            _itemId,
+            _warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PurchaseEntry,
+            confirmedLine.QuantityInBaseUom,
+            confirmedLine.BaseUomCode,
+            inv.IssueDate,
+            inv.InvoiceNumber,
+            inv.Id,
+            "PurchaseInvoice",
+            _userId,
+            confirmedLine.LandedUnitCost,
+            sourceDocLineId: confirmedLine.Id
+        );
+        await stockRepo.SaveChangesWithSequenceRetryAsync();
 
         return new SeededInvoice(inv.Id, payable.Id, confirmedLine.Id);
     }
@@ -1258,6 +1271,172 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             + ret.AuthorizedIceTotal!.Value
             + Math.Max(-ret.CostVarianceTotal!.Value, 0m);
         debitTotal.Should().Be(creditTotal);
+    }
+
+    // ── PURCHASE-RETURN-COST-FIX-01 — promedio ponderado + unidad base ─────
+
+    private async Task ConsumeAtAverageAsync(decimal quantity)
+    {
+        // Salida sin costo propio (mismo camino de valoración que una venta): consume al promedio.
+        await using var db = CreateContext();
+        var stockRepo = new StockRepository(
+            db,
+            new FixedCurrentCompany(() => _companyId),
+            new RealDatabaseExceptionTranslator(),
+            ERP.API.Tests.Support.StandardPrecisionPolicyProvider.Instance
+        );
+        await stockRepo.AppendMovementAsync(
+            _tenantId,
+            _companyId,
+            _itemId,
+            _warehouseId,
+            ERP.Domain.Modules.Inventory.Enums.StockMovementType.NegativeAdjust,
+            -quantity,
+            "UNIT",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            "Consumo al promedio",
+            Guid.NewGuid(),
+            "StockAdjustment",
+            _userId
+        );
+        await stockRepo.SaveChangesWithSequenceRetryAsync();
+    }
+
+    private async Task<Guid> CreateDraftAsync(Guid invoiceId, Guid lineId, decimal quantity)
+    {
+        await using var db = CreateContext();
+        var draft = await new CreatePurchaseReturnDraftHandler(
+            new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
+            new RealDatabaseExceptionTranslator(),
+            new FixedCurrentTenant(() => _tenantId),
+            new FixedCurrentCompany(() => _companyId),
+            new FixedCurrentBranch(() => _branchId),
+            new FixedCurrentUser(_userId)
+        ).Handle(
+            new CreatePurchaseReturnDraftCommand(
+                Guid.NewGuid(),
+                invoiceId,
+                "Devolución al proveedor",
+                new[] { new PurchaseReturnDraftLineInput(lineId, quantity) }
+            ),
+            CancellationToken.None
+        );
+        draft.IsSuccess.Should().BeTrue(draft.Error);
+        return draft.Value!.Id;
+    }
+
+    private async Task<List<ERP.Domain.Modules.Inventory.Entities.StockMovement>> KardexAsync()
+    {
+        await using var db = CreateContext();
+        return await db.Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
+            .AsNoTracking()
+            .Where(m => m.ProductId == _itemId && m.WarehouseId == _warehouseId)
+            .OrderBy(m => m.SequenceNumber)
+            .ToListAsync();
+    }
+
+    [Fact]
+    public async Task Escenario18_Devolucion_de_la_unidad_a_10_sale_al_promedio_sin_costo_negativo()
+    {
+        // 10 @2 + 1 @10 → 11 u, valor 30.00; consumo 8 al promedio → 3 u, valor 8.18.
+        await SeedConfirmedInvoiceAsync(unitPrice: 2m, quantity: 10m);
+        var expensive = await SeedConfirmedInvoiceAsync(unitPrice: 10m, quantity: 1m);
+        await ConsumeAtAverageAsync(8m);
+        var beforeReturn = (await KardexAsync())[^1];
+        beforeReturn.RunningStockValue.Should().Be(8.18m);
+
+        var returnId = await CreateDraftAsync(expensive.InvoiceId, expensive.LineId, 1m);
+        var clientRequestId = Guid.NewGuid();
+        await using (var db = CreateContext())
+        {
+            var result = await BuildAuthorizeHandler(db)
+                .Handle(new AuthorizePurchaseReturnCommand(returnId, clientRequestId), CancellationToken.None);
+            result.IsSuccess.Should().BeTrue(result.Error);
+        }
+
+        // Reintento idempotente: no duplica la salida ni recalcula costos.
+        await using (var db = CreateContext())
+        {
+            var retry = await BuildAuthorizeHandler(db)
+                .Handle(new AuthorizePurchaseReturnCommand(returnId, clientRequestId), CancellationToken.None);
+            retry.IsSuccess.Should().BeTrue(retry.Error);
+        }
+
+        var kardex = await KardexAsync();
+        var exit = kardex.Single(m => m.SourceDocId == returnId);
+        exit.Quantity.Should().Be(-1m);
+        exit.UnitCost.Should().BeNull("la salida se valora al promedio, nunca al LandedUnitCost");
+        Math.Round(exit.TotalCost!.Value, 2).Should().Be(2.73m);
+        exit.RunningStockValue.Should().Be(5.45m);
+        exit.RunningAverageCost.Should().Be(beforeReturn.RunningAverageCost);
+
+        await using (var verify = CreateContext())
+        {
+            var ret = await verify.Set<PurchaseReturn>().Include(r => r.Lines).AsNoTracking()
+                .SingleAsync(r => r.Id == returnId);
+            // NC comercial = factura original; costo = valor real retirado por Kardex.
+            ret.AuthorizedSubtotal.Should().Be(10.00m);
+            ret.HistoricalCostTotal.Should().Be(2.73m);
+            ret.CostVarianceTotal.Should().Be(-7.27m);
+            ret.Lines.Single().HistoricalCostAmount.Should().Be(2.73m);
+            ret.Lines.Single().UnitCost.Should().Be(beforeReturn.RunningAverageCost);
+        }
+
+        // Cancelación: reingresa la misma cantidad base al mismo costo valorado → restaura el Kardex.
+        await using (var db = CreateContext())
+        {
+            var cancelled = await BuildCancelReturnHandler(db)
+                .Handle(new CancelPurchaseReturnCommand(returnId, "Error de digitación", Guid.NewGuid()), CancellationToken.None);
+            cancelled.IsSuccess.Should().BeTrue(cancelled.Error);
+        }
+        var afterCancel = await KardexAsync();
+        var reentry = afterCancel[^1];
+        afterCancel.Count(m => m.SourceDocId == returnId).Should().Be(2);
+        reentry.Quantity.Should().Be(1m);
+        reentry.RunningStockValue.Should().Be(beforeReturn.RunningStockValue);
+        // El valor y la cantidad se restauran exactos; el promedio se re-deriva del valor redondeado
+        // a 2 decimales (aritmética general del Kardex), por eso solo coincide dentro del redondeo.
+        reentry.RunningAverageCost.Should().BeApproximately(beforeReturn.RunningAverageCost, 0.001m);
+    }
+
+    [Fact]
+    public async Task Escenario19_Presentacion_factor_12_devolucion_parcial_en_unidad_base()
+    {
+        // 10 cajas x 12 a $24 la caja → 120 u base @2.00.
+        var inv = await SeedConfirmedInvoiceAsync(unitPrice: 24m, quantity: 10m, conversionFactor: 12m);
+        var returnId = await CreateDraftAsync(inv.InvoiceId, inv.LineId, 3m);
+        await using (var db = CreateContext())
+        {
+            var result = await BuildAuthorizeHandler(db)
+                .Handle(new AuthorizePurchaseReturnCommand(returnId, Guid.NewGuid()), CancellationToken.None);
+            result.IsSuccess.Should().BeTrue(result.Error);
+        }
+
+        var exit = (await KardexAsync()).Single(m => m.SourceDocId == returnId);
+        exit.Quantity.Should().Be(-36m);
+        exit.UomCode.Should().Be("UNIT");
+        exit.RunningStockValue.Should().Be(168.00m);
+        await using (var verify = CreateContext())
+        {
+            var ret = await verify.Set<PurchaseReturn>().Include(r => r.Lines).AsNoTracking()
+                .SingleAsync(r => r.Id == returnId);
+            ret.Lines.Single().Quantity.Should().Be(3m, "la devolución sigue en la unidad comercial de la factura");
+            ret.AuthorizedSubtotal.Should().Be(72.00m);
+            ret.HistoricalCostTotal.Should().Be(72.00m);
+            ret.CostVarianceTotal.Should().Be(0m);
+        }
+
+        await using (var db = CreateContext())
+        {
+            var cancelled = await BuildCancelReturnHandler(db)
+                .Handle(new CancelPurchaseReturnCommand(returnId, "Anulada", Guid.NewGuid()), CancellationToken.None);
+            cancelled.IsSuccess.Should().BeTrue(cancelled.Error);
+        }
+        var reentry = (await KardexAsync())[^1];
+        reentry.Quantity.Should().Be(36m);
+        reentry.UomCode.Should().Be("UNIT");
+        reentry.RunningStockValue.Should().Be(240.00m);
     }
 
     // ── Escenario 17 — Las 9 invariantes cruzadas de §5.1 ────────────────

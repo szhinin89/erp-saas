@@ -2,6 +2,8 @@ using ERP.Application;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Audit;
@@ -88,6 +90,26 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
         _priceListId = priceList.Id;
     }
 
+    /// <summary>
+    /// A1: price_list_items referencia (item_id, tenant_id, company_id) — el ítem debe existir y
+    /// pertenecer a la misma empresa de la lista.
+    /// </summary>
+    private async Task<Guid> SeedItemAsync()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var code = $"PL-{Guid.NewGuid():N}"[..16];
+        var type = ItemTypeDefinition.Create(_tenantId, code, code, 0, _userId);
+        var item = Item.Create(_tenantId, code, code, code, type.Id, "UNIT",
+            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(),
+            ItemStockConfig.Create(stockControlEnabled: true), _userId,
+            companyId: _companyId, nature: ItemNature.Product);
+        db.ItemTypes.Add(type);
+        db.Items.Add(item);
+        await db.SaveChangesAsync();
+        return item.Id;
+    }
+
     public async Task DisposeAsync()
     {
         await _serviceProvider.DisposeAsync();
@@ -97,7 +119,7 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Create_persists_Assigned_audit_row()
     {
-        var itemId = Guid.NewGuid();
+        var itemId = await SeedItemAsync();
 
         await using var scope = _serviceProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -118,7 +140,7 @@ public sealed class PriceListItemAuditIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Disable_then_enable_each_persist_their_own_audit_row()
     {
-        var itemId = Guid.NewGuid();
+        var itemId = await SeedItemAsync();
         Guid assignmentId;
 
         await using (var scope = _serviceProvider.CreateAsyncScope())

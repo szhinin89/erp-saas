@@ -88,7 +88,6 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost,
                 []
             ),
         };
@@ -100,7 +99,8 @@ public sealed class RegisterSupplierCreditNoteUseCasesTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "hash-authorize"
+            "hash-authorize",
+            inventoryExitByLineId: ret.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(original.LandedUnitCost, l.Quantity * original.LandedUnitCost))
         );
 
         return new Fixture(inv, ret);

@@ -1081,7 +1081,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var warehouseId = await SeedWarehouseAsync();
-        var productId = Guid.NewGuid();
+        var productId = await SeedInventoryProductAsync();
 
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await SeedRuleAndPeriodAsync(db, issueDate);

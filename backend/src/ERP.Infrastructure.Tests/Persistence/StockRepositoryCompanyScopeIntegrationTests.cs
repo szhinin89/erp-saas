@@ -5,6 +5,8 @@ using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
@@ -41,6 +43,7 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
     private Guid _warehouseAId;
     private Guid _warehouseBId;
     private Guid _productId;
+    private Guid _itemTypeId;
     private readonly Guid _userId = Guid.NewGuid();
 
     public async Task InitializeAsync()
@@ -169,7 +172,11 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         _companyBId = companyB.Id;
         _warehouseAId = warehouseA.Id;
         _warehouseBId = warehouseB.Id;
-        _productId = Guid.NewGuid();
+        var itemType = ItemTypeDefinition.Create(_tenantId, "CLASS", "Clasificación", 0, _userId);
+        db.Set<ItemTypeDefinition>().Add(itemType);
+        await db.SaveChangesAsync();
+        _itemTypeId = itemType.Id;
+        _productId = await SeedProductAsync(_companyAId);
 
         // Stock/Kardex de la Empresa A únicamente.
         await using var seedDb = CreateContext(_companyAId);
@@ -198,6 +205,19 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
+
+    /// <summary>A1: el Kardex exige un Item Product real de la misma empresa (a1_inventory_product_scope).</summary>
+    private async Task<Guid> SeedProductAsync(Guid companyId)
+    {
+        await using var db = CreateContext(companyId);
+        var sku = $"SKU-{Guid.NewGuid():N}"[..12];
+        var item = Item.Create(_tenantId, sku, sku, sku, _itemTypeId, "UNIT", ItemTaxConfig.Create("10", "10"),
+            ItemSaleConfig.Create(), ItemStockConfig.Create(stockControlEnabled: true), _userId,
+            companyId: companyId, nature: ItemNature.Product);
+        db.Set<Item>().Add(item);
+        await db.SaveChangesAsync();
+        return item.Id;
+    }
 
     private ErpDbContext CreateContext(Guid companyId)
     {
@@ -264,7 +284,7 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task Multiple_purchase_lines_for_same_item_chain_pending_kardex_values()
     {
-        var productId = Guid.NewGuid();
+        var productId = await SeedProductAsync(_companyBId);
         var documentId = Guid.NewGuid();
         var firstLineId = Guid.NewGuid();
         var secondLineId = Guid.NewGuid();
@@ -317,7 +337,7 @@ public sealed class StockRepositoryCompanyScopeIntegrationTests : IAsyncLifetime
         ICompanyPrecisionPolicyProvider precision
     )
     {
-        var productId = Guid.NewGuid();
+        var productId = await SeedProductAsync(_companyBId);
         await using (var db = CreateContext(_companyBId))
         {
             var repo = new StockRepository(

@@ -209,26 +209,38 @@ public sealed class CancelPurchaseReturnHandler
                     );
                 }
 
-                // ── Reversa de inventario: movimiento inverso (+Quantity), mismo UnitCost, misma
-                // bodega (§9.1, diseño Fase 10) ──
+                // ── Reversa de inventario (PURCHASE-RETURN-COST-FIX-01): reingresa exactamente la
+                // cantidad base, la unidad y el costo valorado de la salida registrada al autorizar
+                // (nunca la cantidad comercial ni el LandedUnitCost de la factura) ──
                 var effectiveDate = await _companyClock.TodayAsync(
                     purchaseReturn.CompanyId,
                     tid,
                     ct
                 );
+                var authorizationExits = (
+                    await _stockRepo.GetMovementsByDocumentAsync(
+                        tid,
+                        purchaseReturn.Id,
+                        "PurchaseReturn",
+                        ct
+                    )
+                )
+                    .Where(m => m.Quantity < 0m && m.SourceDocLineId.HasValue)
+                    .ToDictionary(m => m.SourceDocLineId!.Value);
                 foreach (var line in purchaseReturn.Lines)
                 {
-                    var originalLine = invoice.Lines.FirstOrDefault(l =>
-                        l.Id == line.OriginalInvoiceDetailId
-                    );
+                    if (!authorizationExits.TryGetValue(line.Id, out var exit))
+                        throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                            "No se encontró la salida de inventario de la devolución para revertirla."
+                        );
                     await _stockRepo.AppendMovementAsync(
                         tid,
                         purchaseReturn.CompanyId,
                         line.ItemId,
                         line.WarehouseId,
                         StockMovementType.PurchaseReturn,
-                        line.Quantity,
-                        originalLine?.UomCode ?? "UNIT",
+                        -exit.Quantity,
+                        exit.UomCode,
                         effectiveDate,
                         $"ANULACIÓN devolución {purchaseReturn.ReturnNumber}",
                         purchaseReturn.Id,

@@ -158,7 +158,7 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             saleConfig: ItemSaleConfig.Create(isForSale: true),
             stockConfig: ItemStockConfig.Create(stockControlEnabled: true),
             createdBy: _createdBy,
-            companyId: _companyId
+            companyId: company.Id
         );
         db.Set<Item>().Add(item);
         await db.SaveChangesAsync();
@@ -533,7 +533,6 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
                 original.VatRate,
                 original.IceCode,
                 original.IceRate,
-                original.LandedUnitCost,
                 Array.Empty<PurchaseReturn.OriginalLineTaxSnapshot>()
             ),
         };
@@ -546,7 +545,8 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             hasIssuedRetention: false,
             _createdBy,
             Guid.NewGuid(),
-            "hash-authorize"
+            "hash-authorize",
+            inventoryExitByLineId: ret.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(original.LandedUnitCost, l.Quantity * original.LandedUnitCost))
         );
 
         return ret;

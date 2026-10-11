@@ -397,8 +397,13 @@ public sealed class StockRepository : IStockRepository
                 totalCost = returnedCost == 0m && allocation.PreviousUnitCost is null
                     && allocation.ResolvedQuantity == 0m ? null : returnedCost;
                 newRunningStockValue = lastRunningValue + returnedCost;
+                // SALES-CANCEL-COLLECTION-CONCURRENCY-01: la anulación de la factura no notifica — su
+                // costo lo resuelve SalesInvoiceCancelledPostingTranslator (InventoryCostAccounting.CancelAsync
+                // cancela esta fila). Notificar postearía un asiento en la misma unidad de trabajo que
+                // CancelAsync intentaría reversar antes de persistirse ("Asiento contable no encontrado").
                 _db.Set<InventoryCostPosting>().Add(InventoryCostPosting.Create(r.TenantId, r.CompanyId,
-                    invoiceId, movement.Id, -returnedCost, r.EffectiveDate, "Return", r.ActorId, notify: true));
+                    invoiceId, movement.Id, -returnedCost, r.EffectiveDate, "Return", r.ActorId,
+                    notify: r.SourceDocType == "SalesReturn"));
                 // Resolved returned units are a real-cost entry. They can cover another still-live
                 // sale deficit, without reopening the returned original units or changing historical rows.
                 if (allocation.ActualUnitCost.HasValue && allocation.ResolvedQuantity > 0m)
@@ -429,9 +434,16 @@ public sealed class StockRepository : IStockRepository
                 basis = valued.Sum(o => o.PendingQuantity * o.ProvisionalUnitCost!.Value) / valuedQuantity;
         }
         newRunningStockValue = Math.Round(newRunningStockValue, StockMovement.StockValueScale, MidpointRounding.AwayFromZero);
-        newRunningAverageCost = resultQty > 0m
-            ? Math.Round(newRunningStockValue / resultQty, averageCostDecimals, MidpointRounding.AwayFromZero)
-            : basis ?? 0m;
+        // INVENTORY-RUNNING-AVERAGE-PRECISION-01: una salida valuada al promedio corrido (sin costo
+        // propio) no cambia el promedio; re-derivarlo del valor ya redondeado a StockValueScale
+        // introduciría deriva de redondeo en cada egreso.
+        var consumesAtAverage = r.Quantity < 0m && r.UnitCost is null && basis.HasValue;
+        if (resultQty <= 0m)
+            newRunningAverageCost = basis ?? 0m;
+        else if (consumesAtAverage)
+            newRunningAverageCost = Math.Round(basis!.Value, averageCostDecimals, MidpointRounding.AwayFromZero);
+        else
+            newRunningAverageCost = Math.Round(newRunningStockValue / resultQty, averageCostDecimals, MidpointRounding.AwayFromZero);
         if (resultQty > 0m && basis.HasValue) basis = newRunningAverageCost;
         movement.CompleteValuation(basis, pendingCost, newRunningAverageCost, newRunningStockValue, totalCost);
 

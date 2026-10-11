@@ -144,7 +144,6 @@ public sealed class CancelPurchaseReturnUseCasesTests
                 f.Line.VatRate,
                 f.Line.IceCode,
                 f.Line.IceRate,
-                f.Line.LandedUnitCost,
                 []
             ),
         };
@@ -156,7 +155,8 @@ public sealed class CancelPurchaseReturnUseCasesTests
             hasIssuedRetention: false,
             UserId,
             Guid.NewGuid(),
-            "authorize-hash"
+            "authorize-hash",
+            inventoryExitByLineId: f.Return.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(f.Line.LandedUnitCost, l.Quantity * f.Line.LandedUnitCost))
         );
         if (f.Return.AppliedToPayableAmount is > 0m)
             f.Payable.ApplyReturnCredit(f.Return.AppliedToPayableAmount.Value, UserId);
@@ -284,6 +284,8 @@ public sealed class CancelPurchaseReturnUseCasesTests
                         var sourceDocLineId = (Guid?)args[16];
 
                         AppendedQuantities.Add(qty);
+                        AppendedUoms.Add(uom);
+                        AppendedUnitCosts.Add(unitCost);
 
                         return Task.FromResult(
                             StockMovement.Create(
@@ -313,8 +315,53 @@ public sealed class CancelPurchaseReturnUseCasesTests
                     }
                 );
 
+            // PURCHASE-RETURN-COST-FIX-01: la cancelación reingresa la salida registrada al autorizar.
+            StockRepo
+                .Setup(s =>
+                    s.GetMovementsByDocumentAsync(
+                        TenantId,
+                        f.Return.Id,
+                        "PurchaseReturn",
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(() =>
+                    f.Return.Lines.Select(l =>
+                            StockMovement.Create(
+                                TenantId,
+                                BranchId,
+                                l.ItemId,
+                                l.WarehouseId,
+                                StockMovementType.PurchaseReturn,
+                                -AuthorizationBaseQuantity(l),
+                                "UNIT-BASE",
+                                0m,
+                                1,
+                                0m,
+                                0m,
+                                DateOnly.FromDateTime(DateTime.UtcNow),
+                                "auth",
+                                f.Return.Id,
+                                "PurchaseReturn",
+                                UserId,
+                                CompanyId,
+                                null,
+                                null,
+                                null,
+                                l.Id,
+                                valuationUnitCost: l.UnitCost
+                            )
+                        )
+                        .ToList()
+                );
+
             Uow.SetupGet(u => u.HasActiveTransaction).Returns(true);
         }
+
+        /// <summary>Cantidad base de la salida de autorización simulada (factor de conversión 1 por defecto).</summary>
+        public Func<PurchaseReturnDetail, decimal> AuthorizationBaseQuantity { get; set; } = l => l.Quantity;
+        public List<string> AppendedUoms { get; } = new();
+        public List<decimal?> AppendedUnitCosts { get; } = new();
 
         public CancelPurchaseReturnHandler BuildHandler()
         {
@@ -436,6 +483,22 @@ public sealed class CancelPurchaseReturnUseCasesTests
                 ERP.Domain.Modules.Purchases.Enums.SupplierCreditMovementType.SourceReturnCancelled
             );
         lastMovement.Amount.Should().Be(originalAmount);
+    }
+
+    [Fact]
+    public async Task Cancelacion_reingresa_cantidad_base_unidad_y_costo_valorado_de_la_autorizacion()
+    {
+        // PURCHASE-RETURN-COST-FIX-01: la salida de autorización fue en unidad base (factor 12).
+        var (f, _) = BuildAuthorizedFixture(paidAmount: 0m, returnQuantity: 3m);
+        var m = new Mocks(f) { AuthorizationBaseQuantity = l => l.Quantity * 12m };
+
+        var result = await m.BuildHandler()
+            .Handle(new CancelPurchaseReturnCommand(f.Return.Id, "Anulación", Guid.NewGuid()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        m.AppendedQuantities.Should().ContainSingle().Which.Should().Be(36m);
+        m.AppendedUoms.Should().ContainSingle().Which.Should().Be("UNIT-BASE");
+        m.AppendedUnitCosts.Should().ContainSingle().Which.Should().Be(f.Return.Lines.Single().UnitCost);
     }
 
     [Fact]
