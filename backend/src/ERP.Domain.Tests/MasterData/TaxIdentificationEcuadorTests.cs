@@ -202,10 +202,20 @@ public sealed class TaxIdentificationEcuadorTests
     [Fact]
     public void RUC_sociedad_privada_residuo_10_infiere_codigo_2()
     {
-        // BUGFIX-SRI-RUC-VALIDATOR-01 — caso obligatorio: RucValidator rechazaba este RUC
-        // por un residuo de módulo 11 = 10 tratado incorrectamente como inválido.
+        // BUGFIX-SRI-RUC-VALIDATOR-01 — RUC real de sociedad; desde RUC-SOCIETIES-VALIDATION-01
+        // las sociedades se validan solo por estructura (sin dígito verificador módulo 11).
         var id = TaxIdentification.Create("04", "0990789061001");
         id.TryInferLegalEntityTypeCode().Should().Be(2);
+    }
+
+    [Fact]
+    public void RUC_sociedad_privada_sin_algoritmo_verificador_infiere_codigo_2()
+    {
+        // RUC-SOCIETIES-VALIDATION-01 — COVAPACK S.A., RUC real vigente. El SRI no define
+        // algoritmo de validación para sociedades; antes se rechazaba por módulo 11.
+        var id = TaxIdentification.Create("04", "0391034777001");
+        id.TryInferLegalEntityTypeCode().Should().Be(2);
+        id.ValidateLegalEntityCompatibility(2);
     }
 
     [Fact]

@@ -67,13 +67,18 @@ export function validateIdentification(
 }
 
 /**
- * RUC Ecuador
+ * RUC Ecuador — espejo de `RucValidator` (backend).
+ *
+ * RUC-SOCIETIES-VALIDATION-01: el SRI no define algoritmo de validación para
+ * sociedades privadas (3.er dígito 9) ni públicas (3.er dígito 6); solo se valida
+ * estructura. Persona natural (0-5) mantiene módulo 10 sobre la cédula.
  */
 function isValidRuc(num: string): boolean {
   if (!/^\d{13}$/.test(num)) return false;
 
   if (!num.endsWith("001")) return false;
 
+  const province = parseInt(num.slice(0, 2), 10);
   const thirdDigit = Number(num[2]);
 
   // Natural
@@ -81,55 +86,8 @@ function isValidRuc(num: string): boolean {
     return isValidCedula(num.substring(0, 10));
   }
 
-  // Gobierno
-  if (thirdDigit === 6) {
-    return validatePublicRuc(num);
-  }
+  if (province < 1 || (province > 24 && province !== 30)) return false;
 
-  // Sociedad
-  if (thirdDigit === 9) {
-    return validatePrivateRuc(num);
-  }
-
-  return false;
-}
-
-function validatePrivateRuc(num: string): boolean {
-  const digits = num.split("").map(Number);
-
-  const coefficients = [4, 3, 2, 7, 6, 5, 4, 3, 2];
-
-  let sum = 0;
-
-  for (let i = 0; i < 9; i++) {
-    sum += digits[i]! * coefficients[i]!;
-  }
-
-  let verifier = 11 - (sum % 11);
-
-  if (verifier === 11) verifier = 0;
-
-  if (verifier === 10) verifier = 1;
-
-  return verifier === digits[9];
-}
-
-function validatePublicRuc(num: string): boolean {
-  const digits = num.split("").map(Number);
-
-  const coefficients = [3, 2, 7, 6, 5, 4, 3, 2];
-
-  let sum = 0;
-
-  for (let i = 0; i < 8; i++) {
-    sum += digits[i]! * coefficients[i]!;
-  }
-
-  let verifier = 11 - (sum % 11);
-
-  if (verifier === 11) verifier = 0;
-
-  if (verifier === 10) verifier = 1;
-
-  return verifier === digits[8];
+  // Gobierno / Sociedad — sin dígito verificador
+  return thirdDigit === 6 || thirdDigit === 9;
 }

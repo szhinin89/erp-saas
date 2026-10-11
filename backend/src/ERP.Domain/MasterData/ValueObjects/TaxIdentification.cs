@@ -82,8 +82,8 @@ public sealed record TaxIdentification
                     );
                 if (!RucValidator.EsRucValido(n))
                     throw new ArgumentException(
-                        $"RUC '{n}' inválido según el algoritmo del SRI. "
-                            + "Verifique provincia (01-24/30), tipo de contribuyente y dígito verificador.",
+                        $"RUC '{n}' inválido según las reglas del SRI. "
+                            + "Verifique provincia (01-24/30), tipo de contribuyente, establecimiento y, para persona natural, dígito verificador.",
                         nameof(number)
                     );
                 break;

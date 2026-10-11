@@ -3,23 +3,27 @@ using System.Globalization;
 namespace ERP.Domain.Common.Validators;
 
 /// <summary>
-/// Valida el RUC ecuatoriano (13 dígitos) según el algoritmo del Servicio de Rentas Internas (SRI).
+/// Valida el RUC ecuatoriano (13 dígitos) según las reglas vigentes del Servicio de Rentas Internas (SRI).
 ///
 /// Tipos de RUC según el 3.er dígito:
-///   0-5 → Persona Natural     → Módulo 10 (misma base que la cédula)
-///   6   → Entidad Pública     → Módulo 11 (8 Coefficients)
-///   9   → Sociedad Privada    → Módulo 11 (9 Coefficients)
+///   0-5 → Persona Natural     → Módulo 10 sobre la cédula (dígitos 1-10) + establecimiento ≠ "000"
+///   6   → Entidad Pública     → solo estructura: establecimiento (dígitos 10-13) ≠ "0000"
+///   9   → Sociedad Privada    → solo estructura: establecimiento (dígitos 11-13) ≠ "000"
 ///   7,8 → No asignados        → inválido
+///
+/// RUC-SOCIETIES-VALIDATION-01: el SRI indica que los RUC de sociedades privadas, sociedades
+/// públicas y extranjeros sin cédula NO tienen un algoritmo de validación específico; el antiguo
+/// dígito verificador módulo 11 rechazaba RUC reales vigentes (p. ej. 0391034777001). Para tipos 6 y 9
+/// solo se validan longitud, formato numérico, provincia, tipo y establecimiento.
 /// </summary>
 public static class RucValidator
 {
     // ── Coefficients SRI ──────────────────────────────────────────────────
     private static readonly int[] CoefPersonaNatural = { 2, 1, 2, 1, 2, 1, 2, 1, 2 };
-    private static readonly int[] CoefSociedadPrivada = { 4, 3, 2, 7, 6, 5, 4, 3, 2 };
-    private static readonly int[] CoefEntidadPublica = { 3, 2, 7, 6, 5, 4, 3, 2 };
 
     /// <summary>
-    /// Retorna <c>true</c> si el RUC supera todas las validaciones estructurales y de dígito verificador.
+    /// Retorna <c>true</c> si el RUC supera las validaciones estructurales y, para persona natural,
+    /// el dígito verificador de la cédula.
     /// </summary>
     public static bool EsRucValido(string ruc)
     {
@@ -67,40 +71,14 @@ public static class RucValidator
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Sociedad Privada — Módulo 11 (9 Coefficients)
-    // Dígitos 1-9 → suma ponderada → verificador en posición 10
+    // Sociedad Privada — sin dígito verificador (regla SRI vigente)
     // Establecimiento en posiciones 11-13 (≠ "000")
     // ─────────────────────────────────────────────────────────────────────
-    private static bool ValidarSociedadPrivada(string ruc)
-    {
-        int suma = 0;
-        for (int i = 0; i < 9; i++)
-            suma += (ruc[i] - '0') * CoefSociedadPrivada[i];
-
-        int residuo = suma % 11;
-        if (residuo == 1)
-            return false; // verificador resultaría en 10 (dos dígitos), inválido en M11
-        int verificador = residuo == 0 ? 0 : 11 - residuo;
-
-        return (ruc[9] - '0') == verificador && ruc[10..] != "000";
-    }
+    private static bool ValidarSociedadPrivada(string ruc) => ruc[10..] != "000";
 
     // ─────────────────────────────────────────────────────────────────────
-    // Entidad Pública — Módulo 11 (8 Coefficients)
-    // Dígitos 1-8 → suma ponderada → verificador en posición 9
+    // Entidad Pública — sin dígito verificador (regla SRI vigente)
     // Establecimiento en posiciones 10-13 (≠ "0000")
     // ─────────────────────────────────────────────────────────────────────
-    private static bool ValidarEntidadPublica(string ruc)
-    {
-        int suma = 0;
-        for (int i = 0; i < 8; i++)
-            suma += (ruc[i] - '0') * CoefEntidadPublica[i];
-
-        int residuo = suma % 11;
-        if (residuo == 1)
-            return false; // verificador resultaría en 10 (dos dígitos), inválido en M11
-        int verificador = residuo == 0 ? 0 : 11 - residuo;
-
-        return (ruc[8] - '0') == verificador && ruc[9..] != "0000";
-    }
+    private static bool ValidarEntidadPublica(string ruc) => ruc[9..] != "0000";
 }

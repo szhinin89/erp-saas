@@ -5,7 +5,7 @@ namespace ERP.Domain.Tests.Validators;
 
 public sealed class RucValidatorTests
 {
-    /// <summary>Primer RUC tipo sociedad (3.er dígito 9) que cumple módulo 11, hallado por barrido del dígito verificador.</summary>
+    /// <summary>Primer RUC tipo sociedad (3.er dígito 9) estructuralmente válido (sin dígito verificador desde RUC-SOCIETIES-VALIDATION-01).</summary>
     public static string ValidSociedadPrivadaRuc()
     {
         for (var d = 0; d <= 9; d++)
@@ -62,14 +62,43 @@ public sealed class RucValidatorTests
         RucValidator.EsRucValido(invalidEst).Should().BeFalse();
     }
 
-    [Fact]
-    public void EsRucValido_sociedad_privada_con_residuo_10_debe_ser_valido()
+    [Theory]
+    [InlineData("0391034777001")] // RUC-SOCIETIES-VALIDATION-01: COVAPACK S.A. — real, módulo 11 daría residuo 1
+    [InlineData("0990789061001")] // BUGFIX-SRI-RUC-VALIDATOR-01: real, módulo 11 daría residuo 10
+    [InlineData("1791352688001")]
+    public void EsRucValido_sociedad_privada_real_es_valida(string ruc)
     {
-        // BUGFIX-SRI-RUC-VALIDATOR-01: caso obligatorio. Tercer dígito 9, módulo 11
-        // produce residuo=10 → verificador=11-10=1. El código previo rechazaba este
-        // residuo por error (lo trataba como inválido, cuando el caso realmente
-        // inválido es residuo=1, que produciría un verificador de dos dígitos).
-        RucValidator.EsRucValido("0990789061001").Should().BeTrue();
+        RucValidator.EsRucValido(ruc).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("1790016918001")]
+    [InlineData("0990789069001")]
+    [InlineData("0391034770001")]
+    public void EsRucValido_sociedad_privada_no_aplica_digito_verificador(string ruc)
+    {
+        // RUC-SOCIETIES-VALIDATION-01: el SRI no define algoritmo de validación para
+        // sociedades privadas; cualquier 10.º dígito es estructuralmente aceptable.
+        RucValidator.EsRucValido(ruc).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("1760000070001")] // entidad pública real
+    [InlineData("1760016919001")] // antes rechazado por módulo 11 (8 coeficientes)
+    public void EsRucValido_entidad_publica_no_aplica_digito_verificador(string ruc)
+    {
+        RucValidator.EsRucValido(ruc).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("0391034777000")] // sociedad privada: establecimiento 000
+    [InlineData("1760000070000")] // entidad pública: establecimiento 0000
+    [InlineData("3191034777001")] // provincia 31 inválida
+    [InlineData("039103477700A")] // no numérico
+    [InlineData("039103477700")] // 12 dígitos
+    public void EsRucValido_sociedad_o_publica_estructura_invalida(string ruc)
+    {
+        RucValidator.EsRucValido(ruc).Should().BeFalse();
     }
 
     [Theory]
@@ -79,29 +108,10 @@ public sealed class RucValidatorTests
         RucValidator.EsRucValido(ruc).Should().BeTrue();
     }
 
-    [Fact]
-    public void EsRucValido_entidad_publica_barrido_debe_encontrar_al_menos_uno()
-    {
-        for (var d = 0; d <= 9; d++)
-        {
-            var r = "17600169" + d + "0001";
-            if (RucValidator.EsRucValido(r))
-            {
-                RucValidator.EsRucValido(r).Should().BeTrue();
-                return;
-            }
-        }
-
-        throw new InvalidOperationException(
-            "No se encontró RUC de entidad pública válido para la prueba (revisar algoritmo)."
-        );
-    }
-
     [Theory]
-    [InlineData("1790016918001")] // sociedad privada con dígito verificador incorrecto
-    [InlineData("1760016919001")] // entidad pública con dígito verificador incorrecto
-    [InlineData("0990789069001")] // caso obligatorio con verificador alterado (debe fallar)
-    public void EsRucValido_digito_verificador_incorrecto_es_invalido(string ruc)
+    [InlineData("1713175072001")] // persona natural: verificador módulo 10 alterado
+    [InlineData("1713175071000")] // persona natural: establecimiento 000
+    public void EsRucValido_persona_natural_mantiene_modulo_10(string ruc)
     {
         RucValidator.EsRucValido(ruc).Should().BeFalse();
     }
