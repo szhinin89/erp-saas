@@ -32,7 +32,9 @@ export const pendingProductRowSchema = z
     saleVatCode: z.string(),
     purchaseVatCode: z.string(),
     exciseTaxCode: z.string(),
-    salePrice: z.number().finite().nullable(),
+    // PVP final de venta POR UNIDAD BASE tal como lo ingresa el usuario: con IVA si la tarifa de
+    // venta lo tiene; el precio sin IVA que se persiste (BaseSalePrice) se deriva al enviar.
+    salePriceGross: z.number().finite().nullable(),
     // Presentación que entrega el proveedor con ESTE código (1 = unidad base).
     presentationFactor: z.number().finite().nullable(),
     presentationName: z.string(),
@@ -71,7 +73,7 @@ export const pendingProductRowSchema = z
       require("defaultUomCode", row.defaultUomCode.length > 0, "La unidad de medida es obligatoria.");
       require("purchaseVatCode", row.purchaseVatCode.length > 0, "Seleccione el IVA de compra.");
       require("saleVatCode", row.saleVatCode.length > 0, "Seleccione el IVA de venta.");
-      require("salePrice", row.salePrice != null && row.salePrice > 0, "El precio de venta debe ser mayor a cero.");
+      require("salePriceGross", row.salePriceGross != null && row.salePriceGross > 0, "Ingrese el PVP final (mayor a cero).");
     }
     if (row.mode === "link")
       require("linkItemId", row.linkItemId.length > 0, "Seleccione el producto existente.");

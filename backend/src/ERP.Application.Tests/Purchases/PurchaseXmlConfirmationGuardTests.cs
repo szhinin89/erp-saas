@@ -150,6 +150,12 @@ public sealed class PurchaseXmlConfirmationGuardTests
             source.MarkProcessed(invoice.Id, user);
         if (scenario == "processed_other_purchase")
             source.MarkProcessed(Guid.NewGuid(), user);
+        // FASE 3 — producto resuelto HOY en la recepción frente al guardado en el borrador.
+        var savedItemId = Guid.NewGuid();
+        if (scenario == "resolution_same_item")
+            original.ManualMatch(savedItemId, user, DateTime.UtcNow);
+        if (scenario == "resolution_corrected_after_save")
+            original.ManualMatch(Guid.NewGuid(), user, DateTime.UtcNow);
         var line = PurchaseInvoiceDetail.Create(
             invoice.Id,
             tenant,
@@ -159,7 +165,7 @@ public sealed class PurchaseXmlConfirmationGuardTests
             "0",
             "UNIT",
             discountPct: 10m,
-            itemId: Guid.NewGuid(),
+            itemId: savedItemId,
             purchaseReceptionLineId: scenario is "unlinked" or "manual_imported"
                 ? null
                 : original.Id,
@@ -209,6 +215,7 @@ public sealed class PurchaseXmlConfirmationGuardTests
     [InlineData("header_rounding")]
     [InlineData("processed_same_purchase")]
     [InlineData("manual_imported")]
+    [InlineData("resolution_same_item")]
     public async Task Reconciled_xml_allows_confirmation_and_preserves_additional_costs(
         string scenario
     )
@@ -229,6 +236,17 @@ public sealed class PurchaseXmlConfirmationGuardTests
             .Should()
             .Contain("omitidas")
             .And.Contain("trazabilidad");
+    }
+
+    [Fact]
+    public async Task Product_corrected_in_reception_after_saving_requires_saving_again()
+    {
+        var (invoice, guard) = Build("resolution_corrected_after_save");
+        (await guard.ValidateAsync(invoice, CancellationToken.None))
+            .Should()
+            .Contain("se corrigió en la recepción XML")
+            .And.Contain("Guarde nuevamente la compra");
+        invoice.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
     }
 
     [Theory]

@@ -12,8 +12,10 @@ vi.mock("../../../i18n/i18n", () => ({ useI18n: () => ({ t: (key: string, fallba
 vi.mock("../../../components/items/ItemEditorModal/useItemCreationCatalogs", () => ({ useItemCreationCatalogs: () => ({
   barcodeTypeOptions: mocks.barcodeTypes, itemTypeOptions: [{ id: "type", name: "Type" }],
   brandOptions: [{ id: "brand", name: "Brand" }], categoryOptions: [{ id: "category", name: "Category" }],
-  uomOptions: [{ code: "19", name: "Unidad" }], vatRateOptions: [{ code: "0", name: "IVA 0" }],
+  uomOptions: [{ code: "19", name: "Unidad" }], vatRateOptions: VAT_RATES,
+  vatRateByCode: new Map(VAT_RATES.map((v) => [v.code, v])), iceRateOptions: [{ code: "3011", name: "ICE cigarrillos", percentage: 0 }],
 }) }));
+const VAT_RATES = vi.hoisted(() => [{ code: "0", name: "IVA 0", percentage: 0 }, { code: "4", name: "IVA 15", percentage: 15 }]);
 
 const source: PendingProductSource = { rowId: "a", lineKey: 1, supplierCode: "A", supplierAuxCode: "", xmlDescription: "Original XML", quantity: 2, unitPrice: 3, discountPct: 0, vatCode: "0", iceCode: "", matchStatus: "PENDING" };
 const props = () => ({ open: true, sources: [source], supplierName: "Proveedor", onClose: vi.fn(), onResolved: vi.fn() });
@@ -45,7 +47,7 @@ describe("bulk resolution modal", () => {
     mocks.resolve.mockResolvedValueOnce({ applied: false, errors: [{ purchaseReceptionLineId: "a", newItemKey: null, message: "SKU duplicado" }] })
       .mockResolvedValueOnce({ applied: true, errors: [], lines: [], itemsCreated: 1, linesLinked: 1, equivalencesLearned: 1, linesAutoMatched: 0 });
     render(<ResolvePendingProductsModal {...p} />);
-    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePrice: "5", description: "Descripción ERP" })) change(name, value);
+    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5", description: "Descripción ERP" })) change(name, value);
     fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
     await waitFor(() => expect(screen.getByText("SKU duplicado")).toBeTruthy());
     expect(p.onResolved).not.toHaveBeenCalled();
@@ -63,7 +65,7 @@ describe("bulk resolution modal", () => {
     const p = props();
     render(<ResolvePendingProductsModal {...p} sources={[{ ...source, supplierAuxCode: "7861234567898" }]} />);
     expect(input("barcode").value).toBe("7861234567898");
-    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePrice: "5", presentationFactor: "12" })) change(name, value);
+    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5", presentationFactor: "12" })) change(name, value);
     await waitFor(() => expect(input("barcodeType")).toBeNull());
     change("presentationName", "Caja x12");
     change("presentationUomCode", "19");
@@ -71,6 +73,21 @@ describe("bulk resolution modal", () => {
     await waitFor(() => expect(p.onResolved).toHaveBeenCalledOnce());
     expect(mocks.resolve.mock.calls[0][0].lines[0]).toMatchObject({ presentationFactor: 12, barcode: "7861234567898", barcodeType: null });
     expect(screen.getByText("purchases.pendingProducts.provisionalBarcode:A")).toBeTruthy();
+  });
+
+  it("takes the final price with VAT, saves it without VAT and shows XML purchase taxes read-only", async () => {
+    mocks.resolve.mockResolvedValueOnce({ applied: true, errors: [], lines: [], itemsCreated: 1, linesLinked: 1, equivalencesLearned: 1, linesAutoMatched: 0 });
+    const p = props();
+    render(<ResolvePendingProductsModal {...p} sources={[{ ...source, vatCode: "4", iceCode: "3011" }]} />);
+    expect(input("purchaseVatCode")).toBeNull();
+    expect(screen.getAllByText("IVA 15").some((el) => el.tagName === "DD")).toBe(true);
+    expect(screen.getByText("ICE cigarrillos")).toBeTruthy();
+    expect(screen.getByText("PVP final con IVA (unidad base)")).toBeTruthy();
+    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5.75" })) change(name, value);
+    await waitFor(() => expect(screen.getByText("Sin IVA (se guarda)")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
+    await waitFor(() => expect(p.onResolved).toHaveBeenCalledOnce());
+    expect(mocks.resolve.mock.calls[0][0].newItems[0]).toMatchObject({ purchaseVatCode: "4", saleVatCode: "4", exciseTaxCode: "3011", baseSalePrice: 5 });
   });
 
   it("renders 100 pending lines and selects/deselects the whole batch", () => {

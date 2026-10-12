@@ -24,6 +24,7 @@ import {
   RetentionElectronicStatusBadge,
 } from "../../retentions/facades/purchaseRetentionFacade";
 import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
+import { CorrectSupplierMatchModal } from "../components/CorrectSupplierMatchModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
 import { ItemEditorModal } from "../../../components/items/ItemEditorModal/ItemEditorModal";
@@ -1714,6 +1715,15 @@ function ProductLineActionMenu({
               onAfterModalClose={closeAfterModal}
             />
           )}
+          {canEditProduct && l.purchaseReceptionLineId && (
+            <CorrectMatchAction
+              line={l}
+              ctx={ctx}
+              buttonClassName="zh-line-action-item"
+              onModalOpenChange={setProductModalOpen}
+              onAfterModalClose={closeAfterModal}
+            />
+          )}
           {canEditProduct && (
             <ZHLineActionItem
               icon="link_off"
@@ -2640,6 +2650,60 @@ function CreateItemLineAction({
  * `itemId`) y, al guardar, refresca el contexto de la línea con el mismo flujo ya existente
  * (`fetchItemContext`) — nunca un flujo paralelo de actualización visual.
  */
+/**
+ * FASE 3 — "Corregir relación" de una línea XML ya vinculada: producto/presentación correctos para
+ * esta línea y para las próximas facturas del proveedor con el mismo código (backend atómico).
+ */
+function CorrectMatchAction({
+  line: l,
+  ctx,
+  buttonClassName,
+  onModalOpenChange,
+  onAfterModalClose,
+}: {
+  line: PurchaseLineFormValues;
+  ctx: ReturnType<typeof usePurchasesPage>;
+  buttonClassName?: string;
+  onModalOpenChange?: (open: boolean) => void;
+  onAfterModalClose?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const { t } = useI18n();
+  const close = () => {
+    setOpen(false);
+    onModalOpenChange?.(false);
+    onAfterModalClose?.();
+  };
+  return (
+    <>
+      <ZHBtn
+        variant="ghost"
+        size="xs"
+        type="button"
+        className={buttonClassName}
+        disabled={ctx.matchingKey === l._key}
+        onClick={() => {
+          onModalOpenChange?.(true);
+          setOpen(true);
+        }}
+      >
+        {t("purchases.lines.correctMatch", "Corregir relación")}
+      </ZHBtn>
+      <CorrectSupplierMatchModal
+        open={open}
+        supplierName={ctx.supplierProfile?.name ?? ""}
+        supplierCode={l.xmlSupplierCode ?? ""}
+        xmlDescription={l.xmlDescription ?? l.description}
+        currentLabel={l.description}
+        onClose={close}
+        onSubmit={(itemId, packagingLevelId) =>
+          ctx.handleCorrectMatch(l._key, itemId, packagingLevelId)
+        }
+      />
+    </>
+  );
+}
+
 function UpdateItemAction({
   line: l,
   ctx,

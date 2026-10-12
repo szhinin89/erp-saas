@@ -1,10 +1,17 @@
 import { calcPriceForMargin } from "../../../lib/margin";
+import {
+  grossFromNet,
+  salePriceFromGross,
+  type SalePriceBreakdown,
+} from "../../../lib/salePrice";
 import { roundToDecimals } from "../../../lib/sanitizers";
 import type {
   ItemMatchStatus,
   ResolveReceptionLinesRequest,
   ResolveReceptionRowError,
+  ResolvedReceptionLine,
 } from "../api/purchaseReceptionService";
+import { buildPurchaseItemLabel } from "./purchaseItemProfile";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type {
   PendingProductMode,
@@ -143,9 +150,10 @@ export function buildInitialRow(
     barcode,
     barcodeType: barcode ? suggestBarcodeType(barcode, barcodeTypes) : "",
     saleVatCode: source.vatCode,
+    // IVA compra/ICE: datos del XML (solo lectura), no decisión del Item.
     purchaseVatCode: source.vatCode,
     exciseTaxCode: source.iceCode,
-    salePrice: null,
+    salePriceGross: null,
     presentationFactor: 1,
     presentationName: "",
     presentationUomCode: "",
@@ -156,15 +164,17 @@ export function buildInitialRow(
   };
 }
 
-/** Campos que se pueden asignar en bloque — mismo SSOT de catálogos que la creación de Items. */
+/**
+ * Campos que se pueden asignar en bloque — mismo SSOT de catálogos que la creación de Items. Solo
+ * decisiones válidas para cualquier fila: el tipo de código de barras depende de cada presentación
+ * y el IVA compra viene del XML.
+ */
 export type BulkAssignableField =
   | "mode"
   | "itemTypeId"
   | "brandId"
   | "categoryNodeId"
   | "defaultUomCode"
-  | "barcodeType"
-  | "purchaseVatCode"
   | "saleVatCode";
 
 export type BulkAssignment = Partial<Pick<PendingProductRow, BulkAssignableField>>;
@@ -187,27 +197,72 @@ export function netUnitCost(source: PendingProductSource, factor: number | null)
 }
 
 /**
- * Precio de venta por margen sobre PRECIO (misma fórmula única de `lib/margin`) para las filas
- * seleccionadas que crean producto; las demás filas no cambian.
+ * Contexto de precio de venta: tarifa de IVA por código (catálogo SRI) y precisión de precios de
+ * la empresa (política de precisión, nunca un número fijo de decimales).
+ */
+export interface SalePricing {
+  vatPercentByCode: ReadonlyMap<string, number>;
+  priceDecimals: number;
+}
+
+/**
+ * Redondeo del PVP sugerido. Hoy: precisión de precios de la empresa. Punto de extensión para una
+ * futura política comercial (p. ej. terminar en .05/.99) sin cambiar el cálculo ni el contrato.
+ */
+export type PvpRounding = (gross: number) => number;
+
+/** Tarifa de IVA de venta de la fila; `null` si aún no se eligió o no está en el catálogo. */
+function saleVatPercent(row: PendingProductRow, pricing: SalePricing): number | null {
+  return pricing.vatPercentByCode.get(row.saleVatCode) ?? null;
+}
+
+/**
+ * Desglose del PVP final de la fila (SSOT `lib/salePrice`): sin IVA persistible, PVP efectivo y
+ * utilidad/margen/recargo contra el costo neto por unidad base del XML.
+ */
+export function rowSalePrice(
+  row: PendingProductRow,
+  source: PendingProductSource | undefined,
+  pricing: SalePricing,
+): SalePriceBreakdown | null {
+  const vat = saleVatPercent(row, pricing);
+  if (row.salePriceGross == null || vat == null) return null;
+  return salePriceFromGross(
+    row.salePriceGross,
+    vat,
+    pricing.priceDecimals,
+    source ? netUnitCost(source, row.presentationFactor) : null,
+  );
+}
+
+/**
+ * PVP final sugerido por margen sobre PRECIO (fórmula única de `lib/margin`): el margen se aplica al
+ * precio sin IVA y el resultado se expresa como PVP final con IVA, editable por fila. Solo filas
+ * seleccionadas que crean producto y tienen IVA de venta; las demás no cambian.
  */
 export function applyMarginToSelected(
   rows: PendingProductRow[],
   sources: ReadonlyMap<string, PendingProductSource>,
   marginPct: number,
-  priceDecimals: number,
+  pricing: SalePricing,
+  roundPvp: PvpRounding = (gross) => roundToDecimals(gross, pricing.priceDecimals),
 ): PendingProductRow[] {
   return rows.map((row) => {
     const source = sources.get(row.rowId);
-    if (!row.selected || row.mode !== "create" || !source) return row;
-    const price = calcPriceForMargin(netUnitCost(source, row.presentationFactor), marginPct);
-    return price == null ? row : { ...row, salePrice: roundToDecimals(price, priceDecimals) };
+    const vat = saleVatPercent(row, pricing);
+    if (!row.selected || row.mode !== "create" || !source || vat == null) return row;
+    const net = calcPriceForMargin(netUnitCost(source, row.presentationFactor), marginPct);
+    return net == null ? row : { ...row, salePriceGross: roundPvp(grossFromNet(net, vat)) };
   });
 }
 
 const optional = (value: string) => (value.trim() ? value.trim() : null);
 
 /** Contrato del backend: productos nuevos (clave = fila que lo crea) + resolución de cada línea. */
-export function buildResolveRequest(rows: PendingProductRow[]): ResolveReceptionLinesRequest {
+export function buildResolveRequest(
+  rows: PendingProductRow[],
+  pricing: SalePricing,
+): ResolveReceptionLinesRequest {
   const selected = rows.filter((r) => r.selected);
   const presentation = (r: PendingProductRow) => {
     const barcode = optional(r.barcode);
@@ -234,7 +289,8 @@ export function buildResolveRequest(rows: PendingProductRow[]): ResolveReception
         saleVatCode: optional(r.saleVatCode),
         purchaseVatCode: optional(r.purchaseVatCode),
         exciseTaxCode: optional(r.exciseTaxCode),
-        baseSalePrice: r.salePrice ?? 0,
+        // BaseSalePrice SIEMPRE sin IVA, por unidad base, desde el PVP final ingresado.
+        baseSalePrice: rowSalePrice(r, undefined, pricing)?.net ?? 0,
       })),
     lines: selected.map((r) => {
       switch (r.mode as PendingProductMode) {
@@ -295,4 +351,33 @@ export function summarizeXmlLines(
     else if ((status && status !== "READY") || readinessByKey[line._key]?.warning) warnings++;
   }
   return { total: xml.length, resolved: xml.length - pending - warnings, pending, warnings };
+}
+
+/**
+ * Aplica al formulario de compra el estado final de líneas XML resueltas o corregidas por el
+ * backend (producto, presentación, conversión a unidad base). Si el producto cambió, descarta el
+ * contexto del producto anterior para que se vuelva a cargar. Las demás líneas no cambian.
+ */
+export function applyResolvedReceptionLines(
+  lines: PurchaseLineFormValues[],
+  resolvedLines: ResolvedReceptionLine[],
+): PurchaseLineFormValues[] {
+  const resolved = new Map(resolvedLines.map((r) => [r.purchaseReceptionLineId, r]));
+  return lines.map((l) => {
+    const r = l.purchaseReceptionLineId ? resolved.get(l.purchaseReceptionLineId) : undefined;
+    if (!r) return l;
+    return {
+      ...l,
+      itemId: r.itemId,
+      itemMatchStatus: r.matchStatus,
+      description: buildPurchaseItemLabel({ sku: r.itemSku, name: r.itemName }),
+      packagingLevelId: r.packagingLevelId,
+      uomCode: r.uomCode,
+      baseUomCode: r.baseUomCode,
+      conversionFactor: r.conversionFactor,
+      quantityInBaseUom: l.quantity * r.conversionFactor,
+      context: l.itemId === r.itemId ? l.context : undefined,
+      _readinessIssue: undefined,
+    };
+  });
 }

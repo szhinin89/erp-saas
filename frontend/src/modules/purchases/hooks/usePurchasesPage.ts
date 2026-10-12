@@ -31,8 +31,10 @@ import {
   purchaseReceptionService,
   type PurchaseDraftDto,
   type ResolveReceptionLinesResult,
+  type ResolvedReceptionLine,
 } from "../api/purchaseReceptionService";
 import {
+  applyResolvedReceptionLines,
   selectPendingProductSources,
   summarizeXmlLines,
 } from "../utils/pendingProductsResolution";
@@ -94,7 +96,6 @@ import {
   type SupplierProfile,
 } from "../utils/supplierProfile";
 import {
-  buildPurchaseItemLabel,
   buildPurchaseLineFromItem,
   normalizePurchaseLinePresentation,
 } from "../utils/purchaseItemProfile";
@@ -1123,34 +1124,26 @@ export function usePurchasesPage() {
    * presentación y conversión aprendidos por línea). Igual que la vinculación individual, solo
    * actualiza el formulario local; la compra se guarda con "Guardar".
    */
-  const applyResolvedLines = useCallback(
-    async (result: ResolveReceptionLinesResult) => {
-      const resolved = new Map(result.lines.map((r) => [r.purchaseReceptionLineId, r]));
-      const updated = getValues("lines").map((l) => {
-        const r = l.purchaseReceptionLineId ? resolved.get(l.purchaseReceptionLineId) : undefined;
-        if (!r) return l;
-        return {
-          ...l,
-          itemId: r.itemId,
-          itemMatchStatus: r.matchStatus,
-          description: buildPurchaseItemLabel({ sku: r.itemSku, name: r.itemName }),
-          packagingLevelId: r.packagingLevelId,
-          uomCode: r.uomCode,
-          baseUomCode: r.baseUomCode,
-          conversionFactor: r.conversionFactor,
-          quantityInBaseUom: l.quantity * r.conversionFactor,
-          _readinessIssue: undefined,
-        };
-      });
+  /** Aplica líneas XML resueltas/corregidas y recarga el contexto de las que cambiaron de producto. */
+  const mergeResolvedReceptionLines = useCallback(
+    (resolvedLines: ResolvedReceptionLine[]) => {
+      const updated = applyResolvedReceptionLines(getValues("lines"), resolvedLines);
       setValue("lines", updated, { shouldValidate: true });
-      setModalPendingProducts(false);
-      setPendingProductsLineId(null);
       const globalWarehouseId = getValues("globalWarehouseId");
       for (const l of updated) {
         const warehouseId = l.warehouseId || globalWarehouseId;
         if (l.itemId && l.purchaseReceptionLineId && !l.context)
           void fetchItemContext(l._key, l.itemId, warehouseId);
       }
+    },
+    [getValues, setValue, fetchItemContext],
+  );
+
+  const applyResolvedLines = useCallback(
+    async (result: ResolveReceptionLinesResult) => {
+      mergeResolvedReceptionLines(result.lines);
+      setModalPendingProducts(false);
+      setPendingProductsLineId(null);
       message.success(
         t("purchases.pendingProducts.done", {
           created: result.itemsCreated,
@@ -1159,7 +1152,39 @@ export function usePurchasesPage() {
         }),
       );
     },
-    [getValues, setValue, fetchItemContext, t],
+    [mergeResolvedReceptionLines, t],
+  );
+
+  /**
+   * "Corregir relación" (FASE 3): producto/presentación correctos para una línea XML ya vinculada.
+   * El backend corrige la línea, reemplaza la equivalencia futura y devuelve todas las líneas del
+   * documento afectadas (mismo código). Solo actualiza el formulario; la compra se guarda con
+   * "Guardar". Devuelve el mensaje de error, o `null` si se aplicó.
+   */
+  const handleCorrectMatch = useCallback(
+    async (key: number, itemId: string, packagingLevelId: string | null) => {
+      const line = getValues("lines").find((l) => l._key === key);
+      if (!line?.purchaseReceptionLineId) return null;
+      setMatchingKey(key);
+      try {
+        const result = await purchaseReceptionService.correctMatch(
+          line.purchaseReceptionLineId,
+          itemId,
+          packagingLevelId,
+        );
+        mergeResolvedReceptionLines(result.lines);
+        message.success(t("purchases.correctMatch.done", { count: result.lines.length }));
+        return null;
+      } catch (err) {
+        return (
+          readApiErrorMessage(err) ??
+          t("purchases.correctMatch.errors.generic", "No se pudo corregir la relación.")
+        );
+      } finally {
+        setMatchingKey(null);
+      }
+    },
+    [getValues, mergeResolvedReceptionLines, t],
   );
 
   const addLineWithItem = useCallback(
@@ -2332,6 +2357,7 @@ export function usePurchasesPage() {
     handleMatchItem,
     handleSaveSupplierPresentation,
     handleUnmatchItem,
+    handleCorrectMatch,
 
     // Supplier
     supplierProfile,

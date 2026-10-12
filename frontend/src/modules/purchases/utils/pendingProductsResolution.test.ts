@@ -3,9 +3,11 @@ import { calcMarginPercent, calcPriceForMargin } from "../../../lib/margin";
 import { pendingProductsFormSchema } from "../schemas/pendingProductsSchema";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PurchaseLineReadiness } from "./purchaseLineReadiness";
-import { applyBulkAssignment, applyMarginToSelected, buildInitialRow, buildResolveRequest,
-  groupRowErrors, isRealBarcode, netUnitCost, provisionalUnitBarcode, selectPendingProductSources,
-  summarizeXmlLines, type PendingProductSource } from "./pendingProductsResolution";
+import { applyBulkAssignment, applyMarginToSelected, applyResolvedReceptionLines, buildInitialRow,
+  buildResolveRequest, groupRowErrors, isRealBarcode, netUnitCost, provisionalUnitBarcode, rowSalePrice,
+  selectPendingProductSources, summarizeXmlLines, type PendingProductSource,
+  type SalePricing } from "./pendingProductsResolution";
+import type { ResolvedReceptionLine } from "../api/purchaseReceptionService";
 
 const UNIT_EAN = "7861234567898";
 const BOX_EAN = "7860000000010";
@@ -15,7 +17,9 @@ const source: PendingProductSource = {
   vatCode: "0", iceCode: "", matchStatus: "PENDING",
 };
 const row = () => ({ ...buildInitialRow(source, ["EAN13", "Internal"]),
-  itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePrice: 15 });
+  itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: 15 });
+// Catálogo SRI de IVA (código → %) y precisión de precios de la empresa.
+const pricing = (priceDecimals = 2): SalePricing => ({ vatPercentByCode: new Map([["0", 0], ["4", 15]]), priceDecimals });
 const line = (patch: Partial<PurchaseLineFormValues> = {}): PurchaseLineFormValues => ({
   _key: 1, description: "XML", quantity: 3, unitPrice: 5, discountPct: 0, vatCode: "0", ...patch,
 });
@@ -46,7 +50,7 @@ describe("pending products schema", () => {
     if (!result.success) expect(result.error.issues.map(i => i.path.join("."))).toEqual(["rows.1.barcode", "rows.2.barcode"]);
   });
   it.each([0, -1, Infinity, NaN])("rejects invalid price and factor %s", (value) => {
-    expect(pendingProductsFormSchema.safeParse({ rows: [{ ...row(), salePrice: value }] }).success).toBe(false);
+    expect(pendingProductsFormSchema.safeParse({ rows: [{ ...row(), salePriceGross: value }] }).success).toBe(false);
     expect(pendingProductsFormSchema.safeParse({ rows: [{ ...row(), presentationFactor: value }] }).success).toBe(false);
   });
   it("reports duplicate SKUs/barcodes on both rows and missing selected parents", () => {
@@ -117,28 +121,87 @@ describe("bulk assignment and margin SSOT", () => {
   });
   it("uses net cost per base unit and margin on price, rounding only the result", () => {
     expect(netUnitCost(source, 12)).toBe(9);
-    const result = applyMarginToSelected([{ ...row(), presentationFactor: 12 }], new Map([["a", source]]), 25, 2);
-    expect(result[0].salePrice).toBe(12);
+    const result = applyMarginToSelected([{ ...row(), presentationFactor: 12 }], new Map([["a", source]]), 25, pricing());
+    expect(result[0].salePriceGross).toBe(12);
     expect(calcMarginPercent(9, 12)).toBe(25);
     expect(calcPriceForMargin(9, 25)).toBe(12);
   });
   it.each([100, 120, NaN, Infinity, -Infinity])("ignores unreachable/nonfinite margins %s", margin => {
     expect(calcPriceForMargin(9, margin)).toBeNull();
-    expect(applyMarginToSelected([row()], new Map([["a", source]]), margin, 2)[0].salePrice).toBe(15);
+    expect(applyMarginToSelected([row()], new Map([["a", source]]), margin, pricing())[0].salePriceGross).toBe(15);
   });
   it("does not price existing links, presentations or unselected rows", () => {
     const rows = [{ ...row(), selected: false }, { ...row(), mode: "link" as const }, { ...row(), mode: "presentation" as const }];
-    expect(applyMarginToSelected(rows, new Map([["a", source]]), 25, 2)).toEqual(rows);
+    expect(applyMarginToSelected(rows, new Map([["a", source]]), 25, pricing())).toEqual(rows);
     expect(calcPriceForMargin(Infinity, 25)).toBeNull();
     expect(calcPriceForMargin(Number.MAX_VALUE, 99)).toBeNull();
     expect(calcPriceForMargin(0, 25)).toBeNull();
   });
 });
 
+describe("PVP final con IVA → BaseSalePrice sin IVA (FASE 3)", () => {
+  const vatRow = (gross: number) => ({ ...row(), saleVatCode: "4", salePriceGross: gross });
+  it("derives BaseSalePrice without VAT using the company price precision, not a fixed one", () => {
+    expect(rowSalePrice(vatRow(1.19), source, pricing(4))?.net).toBe(1.0348);
+    expect(rowSalePrice(vatRow(1.19), source, pricing(2))?.net).toBe(1.03);
+    expect(buildResolveRequest([vatRow(1.19)], pricing(4)).newItems[0].baseSalePrice).toBe(1.0348);
+    expect(buildResolveRequest([vatRow(1.19)], pricing(6)).newItems[0].baseSalePrice).toBe(1.034783);
+  });
+  it("recomputes the effective price from the persistible net and warns when it differs", () => {
+    expect(rowSalePrice(vatRow(1.19), source, pricing(2))).toMatchObject({ effectiveGross: 1.18, differs: true });
+    expect(rowSalePrice(vatRow(1.19), source, pricing(4))).toMatchObject({ effectiveGross: 1.19, differs: false });
+    expect(rowSalePrice(vatRow(1.15), source, pricing(2))).toMatchObject({ net: 1, vatAmount: 0.15, effectiveGross: 1.15, differs: false });
+  });
+  it("reports profit, margin on price and markup on cost against the net cost per base unit", () => {
+    // Caja x12 a 120 −10 % → 9 por unidad base; PVP 13.80 con IVA 15 % → 12 sin IVA.
+    const breakdown = rowSalePrice({ ...vatRow(13.8), presentationFactor: 12 }, source, pricing(2));
+    expect(breakdown).toMatchObject({ net: 12, profit: 3, marginPct: 25 });
+    expect(breakdown?.markupPct).toBeCloseTo(33.3333, 4);
+    expect(rowSalePrice(vatRow(13.8), undefined, pricing(2))).toMatchObject({ profit: null, marginPct: null, markupPct: null });
+  });
+  it("treats a product without VAT as final price = BaseSalePrice", () => {
+    expect(rowSalePrice(row(), source, pricing(2))).toMatchObject({ net: 15, vatAmount: 0, effectiveGross: 15, differs: false });
+    expect(buildResolveRequest([row()], pricing(2)).newItems[0].baseSalePrice).toBe(15);
+  });
+  it("needs a known sales VAT to price; never sends an invented price", () => {
+    expect(rowSalePrice({ ...row(), saleVatCode: "" }, source, pricing())).toBeNull();
+    expect(buildResolveRequest([{ ...row(), saleVatCode: "X" }], pricing()).newItems[0].baseSalePrice).toBe(0);
+  });
+  it("bulk margin ends as a final price with VAT per row, through the rounding extension point", () => {
+    const rows = [{ ...vatRow(0), presentationFactor: 12 }, { ...row(), rowId: "b", presentationFactor: 12, saleVatCode: "" }];
+    const sources = new Map([["a", source], ["b", { ...source, rowId: "b" }]]);
+    const result = applyMarginToSelected(rows, sources, 25, pricing(2));
+    expect(result[0].salePriceGross).toBe(13.8);
+    expect(result[1]).toBe(rows[1]);
+    expect(applyMarginToSelected(rows, sources, 25, pricing(2), () => 13.99)[0].salePriceGross).toBe(13.99);
+  });
+});
+
+describe("resolved/corrected reception lines on the purchase form", () => {
+  const resolved = (patch: Partial<ResolvedReceptionLine> = {}): ResolvedReceptionLine => ({
+    purchaseReceptionLineId: "r1", itemId: "C", itemSku: "C-1", itemName: "Correcto", matchStatus: "MANUALLY_MATCHED",
+    packagingLevelId: "box", uomCode: "CJ", baseUomCode: "UND", conversionFactor: 12, equivalenceLearned: true, ...patch,
+  });
+  it("relinks the corrected line to the new product and base quantity and reloads its context", () => {
+    const lines = [
+      line({ _key: 1, purchaseReceptionLineId: "r1", itemId: "B", quantity: 2, context: { shortName: "B" } as PurchaseLineFormValues["context"] }),
+      line({ _key: 2, purchaseReceptionLineId: "r2", itemId: "B", quantity: 1 }),
+    ];
+    const [corrected, untouched] = applyResolvedReceptionLines(lines, [resolved()]);
+    expect(corrected).toMatchObject({ itemId: "C", packagingLevelId: "box", uomCode: "CJ", conversionFactor: 12, quantityInBaseUom: 24, context: undefined });
+    expect(untouched).toBe(lines[1]);
+  });
+  it("keeps the loaded context when only the presentation changes", () => {
+    const context = { shortName: "C" } as PurchaseLineFormValues["context"];
+    const [result] = applyResolvedReceptionLines([line({ purchaseReceptionLineId: "r1", itemId: "C", context })], [resolved()]);
+    expect(result.context).toBe(context);
+  });
+});
+
 describe("request, row errors and XML summary", () => {
   it("builds a mixed batch with one item and unit/box references, excludes unselected rows", () => {
     const request = buildResolveRequest([row(), { ...row(), rowId: "b", mode: "presentation", parentRowId: "a", presentationFactor: 12, presentationName: " Caja ", presentationUomCode: "02", barcode: ` ${BOX_EAN} ` },
-      { ...row(), rowId: "c", mode: "link", linkItemId: "item", linkPackagingLevelId: "level" }, { ...row(), rowId: "d", selected: false }]);
+      { ...row(), rowId: "c", mode: "link", linkItemId: "item", linkPackagingLevelId: "level" }, { ...row(), rowId: "d", selected: false }], pricing());
     expect(request.newItems).toHaveLength(1);
     expect(request.newItems[0]).toMatchObject({ key: "a", baseSalePrice: 15, exciseTaxCode: null });
     expect(request.newItems[0]).not.toHaveProperty("barcode");
@@ -149,7 +212,7 @@ describe("request, row errors and XML summary", () => {
     ]);
   });
   it("sends no barcode when the line has none", () => {
-    expect(buildResolveRequest([{ ...row(), barcode: "", barcodeType: "" }]).lines[0])
+    expect(buildResolveRequest([{ ...row(), barcode: "", barcodeType: "" }], pricing()).lines[0])
       .toMatchObject({ barcode: null, barcodeType: null });
   });
   it("groups all row messages and keeps general errors", () => {

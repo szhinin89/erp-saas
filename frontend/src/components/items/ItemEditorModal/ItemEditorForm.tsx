@@ -19,6 +19,7 @@ import { useItemCreationCatalogs } from "./useItemCreationCatalogs";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginAmount, calcMarginPercent } from "../../../lib/margin";
+import { grossFromNet } from "../../../lib/salePrice";
 import type { ItemEditorFormValues } from "./itemEditorSchema";
 import type {
   CreateItemInitialData,
@@ -527,7 +528,7 @@ function PriceAndProfitability({
   )?.percentage;
   const hasItemVat = itemVatPercent != null;
   const priceFinal =
-    hasPrice && hasItemVat ? salePriceValue * (1 + itemVatPercent / 100) : null;
+    hasPrice && hasItemVat ? grossFromNet(salePriceValue, itemVatPercent) : null;
   const marginAmount =
     hasCost && hasPrice ? calcMarginAmount(costFinal, salePriceValue) : 0;
   const marginPct =

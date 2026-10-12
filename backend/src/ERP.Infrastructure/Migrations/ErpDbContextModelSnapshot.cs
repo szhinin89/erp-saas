@@ -9023,7 +9023,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "CompanyId", "SupplierId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("uq_item_supplier_codes_tenant_company_supplier_code");
+                        .HasDatabaseName("uq_item_supplier_codes_tenant_company_supplier_code")
+                        .HasFilter("is_active = true");
 
                     b.ToTable("item_supplier_codes", (string)null);
                 });

@@ -11,6 +11,7 @@ import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
+import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { Badge } from "../../../components/PageShell";
 import { useItemCreationCatalogs } from "../../../components/items/ItemEditorModal/useItemCreationCatalogs";
@@ -38,10 +39,13 @@ import {
   buildResolveRequest,
   groupRowErrors,
   isBasePresentation,
+  netUnitCost,
   provisionalUnitBarcode,
+  rowSalePrice,
   suggestBarcodeType,
   type BulkAssignment,
   type PendingProductSource,
+  type SalePricing,
 } from "../utils/pendingProductsResolution";
 
 type Props = {
@@ -72,6 +76,14 @@ export function ResolvePendingProductsModal({
 }: Props) {
   const { t } = useI18n();
   const catalogs = useItemCreationCatalogs();
+  const priceDecimals = usePrecisionDecimals("salesUnitPrice");
+  const pricing = useMemo<SalePricing>(
+    () => ({
+      vatPercentByCode: new Map(catalogs.vatRateOptions.map((v) => [v.code, v.percentage])),
+      priceDecimals,
+    }),
+    [catalogs.vatRateOptions, priceDecimals],
+  );
   const barcodeTypeCodes = catalogs.barcodeTypeOptions.map((b) => b.code);
   const form = useForm<PendingProductsFormValues>({
     resolver: zodResolver(pendingProductsFormSchema),
@@ -154,9 +166,24 @@ export function ResolvePendingProductsModal({
   const submit = form.handleSubmit(async (values) => {
     setRowErrors(new Map());
     setGeneralErrors([]);
+    // El precio sin IVA que se persiste debe quedar > 0 con la precisión de la empresa.
+    let unpriced = false;
+    values.rows.forEach((row, index) => {
+      if (!row.selected || row.mode !== "create") return;
+      const net = rowSalePrice(row, undefined, pricing)?.net ?? 0;
+      if (net > 0) return;
+      unpriced = true;
+      form.setError(`rows.${index}.salePriceGross`, {
+        message: t(
+          "purchases.pendingProducts.errors.noNetPrice",
+          "No se pudo calcular el precio sin IVA: revise el IVA de venta y el PVP.",
+        ),
+      });
+    });
+    if (unpriced) return;
     try {
       const result = await purchaseReceptionService.resolveLines(
-        buildResolveRequest(values.rows),
+        buildResolveRequest(values.rows, pricing),
       );
       if (!result.applied) {
         const grouped = groupRowErrors(result.errors);
@@ -218,7 +245,7 @@ export function ResolvePendingProductsModal({
             message={t("purchases.pendingProducts.rowsRejected", { count: rowsWithErrors })}
           />
         )}
-        <BulkActionsBar catalogs={catalogs} sourcesById={sourcesById} />
+        <BulkActionsBar catalogs={catalogs} sourcesById={sourcesById} pricing={pricing} />
         <div className="prl-scroll">
           <table className="pf-table prl-table">
             <thead>
@@ -242,6 +269,7 @@ export function ResolvePendingProductsModal({
                   source={sourcesById.get(row.rowId)}
                   sourcesById={sourcesById}
                   catalogs={catalogs}
+                  pricing={pricing}
                   levels={levelsByItem[row.linkItemId] ?? []}
                   serverErrors={rowErrors.get(row.rowId) ?? []}
                   onItemLinked={(itemId) => void loadLevels(itemId, index)}
@@ -275,13 +303,14 @@ function SelectAllCheckbox() {
 function BulkActionsBar({
   catalogs,
   sourcesById,
+  pricing,
 }: {
   catalogs: Catalogs;
   sourcesById: ReadonlyMap<string, PendingProductSource>;
+  pricing: SalePricing;
 }) {
   const { t } = useI18n();
   const { getValues, setValue, clearErrors } = useFormContext<PendingProductsFormValues>();
-  const priceDecimals = usePrecisionDecimals("salesUnitPrice");
   const [assignment, setAssignment] = useState<BulkAssignment>({});
   const [margin, setMargin] = useState<number | null>(null);
   const set = (field: keyof BulkAssignment, value: string) =>
@@ -304,8 +333,6 @@ function BulkActionsBar({
       <CatalogSelect label={t("purchases.pendingProducts.field.brand", "Marca")} value={assignment.brandId} onChange={(v) => set("brandId", v)} options={catalogs.brandOptions.map((o) => ({ value: o.id, label: o.name }))} />
       <CatalogSelect label={t("purchases.pendingProducts.field.category", "Categoría")} value={assignment.categoryNodeId} onChange={(v) => set("categoryNodeId", v)} options={catalogs.categoryOptions.map((o) => ({ value: o.id, label: o.name }))} />
       <CatalogSelect label={t("purchases.pendingProducts.field.uom", "Unidad base")} value={assignment.defaultUomCode} onChange={(v) => set("defaultUomCode", v)} options={catalogs.uomOptions.map((o) => ({ value: o.code, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.barcodeType", "Tipo de código de barras")} value={assignment.barcodeType} onChange={(v) => set("barcodeType", v)} options={catalogs.barcodeTypeOptions.map((o) => ({ value: o.code, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.purchaseVat", "IVA compra")} value={assignment.purchaseVatCode} onChange={(v) => set("purchaseVatCode", v)} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
       <CatalogSelect label={t("purchases.pendingProducts.field.saleVat", "IVA venta")} value={assignment.saleVatCode} onChange={(v) => set("saleVatCode", v)} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
       <ZHBtn
         type="button"
@@ -332,10 +359,10 @@ function BulkActionsBar({
         size="md"
         disabled={margin == null || margin >= 100}
         onClick={() =>
-          replaceRows(applyMarginToSelected(getValues("rows"), sourcesById, margin ?? 0, priceDecimals))
+          replaceRows(applyMarginToSelected(getValues("rows"), sourcesById, margin ?? 0, pricing))
         }
       >
-        {t("purchases.pendingProducts.applyMargin", "Calcular precio de venta")}
+        {t("purchases.pendingProducts.applyMargin", "Sugerir PVP final")}
       </ZHBtn>
     </div>
   );
@@ -371,6 +398,7 @@ function PendingProductRowView({
   source,
   sourcesById,
   catalogs,
+  pricing,
   levels,
   serverErrors,
   onItemLinked,
@@ -379,6 +407,7 @@ function PendingProductRowView({
   source: PendingProductSource | undefined;
   sourcesById: ReadonlyMap<string, PendingProductSource>;
   catalogs: Catalogs;
+  pricing: SalePricing;
   levels: ItemPackagingLevelDto[];
   serverErrors: string[];
   onItemLinked: (itemId: string) => void;
@@ -398,6 +427,11 @@ function PendingProductRowView({
   const factorIsBase = isBasePresentation(row);
   const provisionalCode =
     row.mode === "create" && row.selected ? provisionalUnitBarcode(allRows, row.rowId, sourcesById) : null;
+  // Factor de la presentación que entrega el proveedor: la del Item vinculado o la declarada aquí.
+  const factor =
+    row.mode === "link"
+      ? (levels.find((l) => l.id === row.linkPackagingLevelId)?.baseQuantity ?? null)
+      : row.presentationFactor;
 
   return (
     <tr className={serverErrors.length > 0 ? "prl-row prl-row--error" : "prl-row"}>
@@ -408,10 +442,7 @@ function PendingProductRowView({
         <strong>{source.supplierCode || "—"}</strong>
         {source.supplierAuxCode && <span className="prl-muted"> · {source.supplierAuxCode}</span>}
         <div className="prl-xml__desc">{source.xmlDescription}</div>
-        <div className="prl-muted">
-          {formatMoney(source.quantity, quantityDecimals)} ×{" "}
-          <ZHMoneyValue value={source.unitPrice} precision="purchaseUnitPrice" currencySymbol="" />
-        </div>
+        <XmlFacts source={source} factor={factor} catalogs={catalogs} purchaseVatError={err("purchaseVatCode")} />
         {source.matchStatus === "NEEDS_REVIEW" && (
           <Badge variant="warning" label={t("purchases.pendingProducts.suggested", "Con sugerencia")} />
         )}
@@ -439,9 +470,12 @@ function PendingProductRowView({
             <ZHField density="compact" label="SKU" fieldError={err("sku")}>
               <input {...register(field("sku"))} />
             </ZHField>
-            <ZHField density="compact" label={t("purchases.pendingProducts.field.description", "Descripción ERP")} fieldError={err("description")}>
-              <input {...register(field("description"))} />
-            </ZHField>
+            <details className="prl-more" open={err("description") ? true : undefined}>
+              <summary>{t("purchases.pendingProducts.moreData", "Más datos")}</summary>
+              <ZHField density="compact" label={t("purchases.pendingProducts.field.description", "Descripción ERP")} fieldError={err("description")}>
+                <ZhTextarea rows={3} {...register(field("description"))} />
+              </ZHField>
+            </details>
           </>
         )}
         {row.mode === "link" && (
@@ -554,21 +588,142 @@ function PendingProductRowView({
       <td className="prl-stack">
         {row.mode === "create" && (
           <>
-            <RowSelect index={index} name="purchaseVatCode" label={t("purchases.pendingProducts.field.purchaseVat", "IVA compra")} error={err("purchaseVatCode")} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
             <RowSelect index={index} name="saleVatCode" label={t("purchases.pendingProducts.field.saleVat", "IVA venta")} error={err("saleVatCode")} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
-            <ZHField density="compact" label={t("purchases.pendingProducts.field.salePrice", "Precio de venta")} fieldError={err("salePrice")}>
+            <ZHField
+              density="compact"
+              label={
+                (pricing.vatPercentByCode.get(row.saleVatCode) ?? 0) > 0
+                  ? t("purchases.pendingProducts.field.salePriceGross", "PVP final con IVA (unidad base)")
+                  : t("purchases.pendingProducts.field.salePriceNoVat", "PVP final (unidad base)")
+              }
+              fieldError={err("salePriceGross")}
+            >
               <ZhDecimalInput
                 precision="salesUnitPrice"
                 positiveOnly
-                {...register(field("salePrice"), {
+                {...register(field("salePriceGross"), {
                   setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
                 })}
               />
             </ZHField>
+            <SalePriceSummary
+              row={row}
+              breakdown={rowSalePrice(row, source, pricing)}
+              priceDecimals={pricing.priceDecimals}
+            />
           </>
         )}
       </td>
     </tr>
+  );
+}
+
+/** Datos del XML del proveedor — solo lectura: no son decisiones del Item. */
+function XmlFacts({
+  source,
+  factor,
+  catalogs,
+  purchaseVatError,
+}: {
+  source: PendingProductSource;
+  factor: number | null;
+  catalogs: Catalogs;
+  purchaseVatError: string | undefined;
+}) {
+  const { t } = useI18n();
+  const quantityDecimals = usePrecisionDecimals("quantity");
+  const percentageDecimals = usePrecisionDecimals("percentage");
+  const vat = catalogs.vatRateByCode.get(source.vatCode);
+  const ice = source.iceCode
+    ? catalogs.iceRateOptions.find((r) => r.code === source.iceCode)
+    : undefined;
+  return (
+    <dl className="prl-facts">
+      <dt>{t("purchases.pendingProducts.xml.quantityCost", "Cantidad × costo")}</dt>
+      <dd>
+        {formatMoney(source.quantity, quantityDecimals)} ×{" "}
+        <ZHMoneyValue value={source.unitPrice} precision="purchaseUnitPrice" currencySymbol="" />
+        {source.discountPct > 0 && (
+          <span className="prl-muted">
+            {" "}
+            (−{formatMoney(source.discountPct, percentageDecimals)}%)
+          </span>
+        )}
+      </dd>
+      <dt>{t("purchases.pendingProducts.xml.baseCost", "Costo neto por unidad base")}</dt>
+      <dd>
+        {factor && factor > 0 ? (
+          <ZHMoneyValue value={netUnitCost(source, factor)} precision="purchaseUnitPrice" currencySymbol="" />
+        ) : (
+          "—"
+        )}
+      </dd>
+      <dt>{t("purchases.pendingProducts.field.purchaseVat", "IVA compra")}</dt>
+      <dd>
+        {vat?.name ?? (source.vatCode || "—")}
+        {purchaseVatError && <div className="prl-row__error">{purchaseVatError}</div>}
+      </dd>
+      {source.iceCode && (
+        <>
+          <dt>ICE</dt>
+          <dd>{ice?.name ?? source.iceCode}</dd>
+        </>
+      )}
+    </dl>
+  );
+}
+
+/** Desglose del PVP final desde el precio sin IVA realmente persistible. */
+function SalePriceSummary({
+  row,
+  breakdown,
+  priceDecimals,
+}: {
+  row: PendingProductsFormValues["rows"][number];
+  breakdown: ReturnType<typeof rowSalePrice>;
+  priceDecimals: number;
+}) {
+  const { t } = useI18n();
+  const percentageDecimals = usePrecisionDecimals("percentage");
+  if (!breakdown) return null;
+  const percent = (value: number | null) =>
+    value == null ? "—" : `${formatMoney(value, percentageDecimals)}%`;
+  return (
+    <dl className="prl-facts prl-price">
+      <dt>{t("purchases.pendingProducts.price.net", "Sin IVA (se guarda)")}</dt>
+      <dd>
+        <ZHMoneyValue value={breakdown.net} precision="salesUnitPrice" currencySymbol="" />
+      </dd>
+      {breakdown.vatAmount !== 0 && (
+        <>
+          <dt>{t("purchases.pendingProducts.price.effective", "PVP efectivo con IVA")}</dt>
+          <dd>
+            <ZHMoneyValue value={breakdown.effectiveGross} precision="salesUnitPrice" currencySymbol="" />
+          </dd>
+        </>
+      )}
+      <dt>{t("purchases.pendingProducts.price.profit", "Utilidad")}</dt>
+      <dd className={breakdown.profit != null && breakdown.profit < 0 ? "prl-price--loss" : undefined}>
+        {breakdown.profit == null ? (
+          "—"
+        ) : (
+          <ZHMoneyValue value={breakdown.profit} precision="salesUnitPrice" currencySymbol="" />
+        )}
+      </dd>
+      <dt>{t("purchases.pendingProducts.price.marginMarkup", "Margen / recargo")}</dt>
+      <dd>
+        {percent(breakdown.marginPct)} / {percent(breakdown.markupPct)}
+      </dd>
+      {breakdown.differs && (
+        <dd className="prl-row__warning" role="alert">
+          {t("purchases.pendingProducts.price.differs", {
+            entered: formatMoney(row.salePriceGross ?? 0, priceDecimals),
+            effective: formatMoney(breakdown.effectiveGross, priceDecimals),
+            decimals: priceDecimals,
+          })}
+        </dd>
+      )}
+    </dl>
   );
 }
 
@@ -580,7 +735,7 @@ function RowSelect({
   options,
 }: {
   index: number;
-  name: "itemTypeId" | "brandId" | "categoryNodeId" | "defaultUomCode" | "presentationUomCode" | "purchaseVatCode" | "saleVatCode";
+  name: "itemTypeId" | "brandId" | "categoryNodeId" | "defaultUomCode" | "presentationUomCode" | "saleVatCode";
   label: string;
   error: string | undefined;
   options: { value: string; label: string }[];

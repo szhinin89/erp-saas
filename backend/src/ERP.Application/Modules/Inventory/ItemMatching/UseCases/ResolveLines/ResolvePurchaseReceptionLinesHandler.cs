@@ -3,7 +3,6 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Items.UseCases.CreateItem;
 using ERP.Application.Items.UseCases.ItemPackagingLevels;
-using ERP.Application.Modules.Inventory.ItemMatching.Mapping;
 using ERP.Application.Modules.Inventory.ItemMatching.Services;
 using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -535,42 +534,17 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         Guid? packagingLevelId,
         bool learned,
         CancellationToken ct
-    )
-    {
-        var item =
-            await items.GetByIdAsync(itemId, document.TenantId, ct)
-            ?? throw new RowFailureException(
-                new(line.Id, null, "El producto vinculado no existe.")
-            );
-        var effectiveLevelId =
-            packagingLevelId
-            ?? (
-                document.SupplierId is { } supplierId
-                && !string.IsNullOrWhiteSpace(line.SupplierCode)
-                    ? (
-                        await items.GetSupplierCodeMatchAsync(
-                            supplierId,
-                            line.SupplierCode,
-                            document.TenantId,
-                            ct
-                        )
-                    )?.PackagingLevelId
-                    : null
-            );
-        var level = item.PackagingLevels.FirstOrDefault(p => p.Id == effectiveLevelId);
-        return new ResolvedReceptionLineDto(
-            line.Id,
-            item.Id,
-            item.Code.SKU,
-            item.Code.ShortName,
-            ItemMatchingMapper.ToStatusCode(line.MatchStatus),
-            level?.Id,
-            level?.UomCode ?? item.DefaultUomCode,
-            item.DefaultUomCode,
-            level?.BaseQuantity ?? 1m,
-            learned
-        );
-    }
+    ) =>
+        await ResolvedReceptionLineFactory.BuildAsync(
+            items,
+            document,
+            line,
+            itemId,
+            packagingLevelId,
+            learned,
+            ct
+        )
+        ?? throw new RowFailureException(new(line.Id, null, "El producto vinculado no existe."));
 
     /// <summary>
     /// Presentaciones del Item nuevo: siempre la unidad base (factor 1, UOM del Item) más una por

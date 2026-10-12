@@ -9,6 +9,7 @@ import {
 import { ZhDecimalInput, ZhSelect } from "../../../../components/zh/inputs";
 import { usePrecisionDecimals } from "../../../../hooks/usePrecisionPolicy";
 import { formatMoney } from "../../../../lib/sanitizers";
+import { grossFromNet, netFromGross } from "../../../../lib/salePrice";
 import { useAsync } from "../../../../hooks/useAsync";
 import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
 import { companyProfileLookupFacade } from "../../../configuracion/empresa/facades/companyProfileLookupFacade";
@@ -70,8 +71,7 @@ function calculateNetPrice(
   if (inputPriceValue == null) return null;
   if (inputPriceMode === "net") return inputPriceValue;
   if (vatDecimal == null) return null;
-  if (vatDecimal === 0) return inputPriceValue;
-  return inputPriceValue / (1 + vatDecimal);
+  return netFromGross(inputPriceValue, vatDecimal * 100);
 }
 
 function calculateGrossPrice(
@@ -82,7 +82,7 @@ function calculateGrossPrice(
   if (inputPriceValue == null) return null;
   if (inputPriceMode === "gross") return inputPriceValue;
   if (vatDecimal == null) return null;
-  return inputPriceValue * (1 + vatDecimal);
+  return grossFromNet(inputPriceValue, vatDecimal * 100);
 }
 
 function Metric({

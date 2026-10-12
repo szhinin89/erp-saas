@@ -43,10 +43,13 @@ public sealed class ItemSupplierCodeConfiguration : IEntityTypeConfiguration<Ite
             .HasDatabaseName("ix_item_supplier_codes_packaging_level");
 
         // Un código de proveedor identifica un único ítem en el catálogo de Tenant + Company
-        // (Fase 2) — ya no está acotado por item_id.
+        // (Fase 2) — ya no está acotado por item_id. Solo entre códigos ACTIVOS: corregir una
+        // relación deshabilita el código en el Item anterior (trazabilidad, nunca DELETE) y lo
+        // aprende en el correcto; sin el filtro, el registro inactivo bloquearía la corrección.
         builder
             .HasIndex("TenantId", "CompanyId", "SupplierId", "Code")
             .IsUnique()
+            .HasFilter("is_active = true")
             .HasDatabaseName("uq_item_supplier_codes_tenant_company_supplier_code");
 
         // A lo sumo un código de proveedor marcado como principal por ítem (no obligatorio).

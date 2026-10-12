@@ -419,6 +419,21 @@ export const purchaseReceptionService = {
    * de UNA recepción. Todo o nada: si `applied` es false no se persistió nada y `errors` trae cada
    * fila con problema.
    */
+  /**
+   * "Corregir relación": cambia el producto/presentación de una línea ya vinculada y reemplaza la
+   * equivalencia Proveedor + Código (atómico). Devuelve todas las líneas del documento afectadas.
+   */
+  correctMatch(
+    lineId: string,
+    itemId: string,
+    packagingLevelId: string | null,
+  ): Promise<CorrectReceptionLineMatchResult> {
+    return apiPost<CorrectReceptionLineMatchResult>(
+      `${BASE}/lines/${lineId}/correct-match`,
+      { itemId, packagingLevelId },
+    );
+  },
+
   resolveLines(
     request: ResolveReceptionLinesRequest,
   ): Promise<ResolveReceptionLinesResult> {
@@ -485,6 +500,11 @@ export interface ResolvedReceptionLine {
   baseUomCode: string;
   conversionFactor: number;
   equivalenceLearned: boolean;
+}
+
+export interface CorrectReceptionLineMatchResult {
+  lines: ResolvedReceptionLine[];
+  equivalenceUpdated: boolean;
 }
 
 export interface ResolveReceptionLinesResult {

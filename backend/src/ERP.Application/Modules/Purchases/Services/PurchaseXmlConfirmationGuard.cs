@@ -68,6 +68,15 @@ public sealed class PurchaseXmlConfirmationGuard(
         if (!EveryXmlLineLinkedOnce(source, invoice, linked))
             return "Hay líneas XML omitidas, duplicadas o sin vínculo. Concilie cada línea antes de confirmar; redistribuir un importe no sustituye su trazabilidad.";
 
+        // FASE 3 — "Corregir relación" cambia el producto en la recepción; un borrador guardado antes
+        // conserva el anterior hasta "Guardar". Nunca se confirma ni se corrige solo: se pide guardar.
+        // Solo el producto: la presentación de la línea puede elegirse distinta a la aprendida.
+        var stale = linked.FirstOrDefault(line =>
+            ResolvedItemChanged(line, source.Lines.Single(l => l.Id == line.PurchaseReceptionLineId))
+        );
+        if (stale is not null)
+            return $"El producto de la línea '{stale.Description}' se corrigió en la recepción XML después de guardar la compra. Guarde nuevamente la compra para aplicar la corrección antes de confirmar.";
+
         var changed = linked.FirstOrDefault(line =>
             !LineMatches(line, source.Lines.Single(l => l.Id == line.PurchaseReceptionLineId))
         );
@@ -148,6 +157,16 @@ public sealed class PurchaseXmlConfirmationGuard(
             && ids.Count == source.Lines.Count
             && source.Lines.All(l => ids.Contains(l.Id));
     }
+
+    private static bool ResolvedItemChanged(
+        PurchaseInvoiceDetail line,
+        PurchaseReceptionLine reception
+    ) =>
+        reception.ItemId is { } resolved
+        && reception.MatchStatus
+            is ItemMatchStatus.AutoMatched
+                or ItemMatchStatus.ManuallyMatched
+        && line.ItemId != resolved;
 
     private static bool LineMatches(PurchaseInvoiceDetail line, PurchaseReceptionLine original) =>
         line.Quantity == original.Quantity

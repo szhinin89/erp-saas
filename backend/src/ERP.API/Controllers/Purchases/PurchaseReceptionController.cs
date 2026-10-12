@@ -3,6 +3,7 @@ using ERP.API.Extensions;
 using ERP.API.Uploads;
 using ERP.Application.Modules.Inventory.ItemMatching.DTOs;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.BulkMatchItems;
+using ERP.Application.Modules.Inventory.ItemMatching.UseCases.CorrectMatch;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.FindItemMatches;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.GetLineMatch;
 using ERP.Application.Modules.Inventory.ItemMatching.UseCases.MatchItem;
@@ -172,6 +173,29 @@ public sealed class PurchaseReceptionController : ControllerBase
     public async Task<IActionResult> UnmatchItem(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(
             await _mediator.Send(new UnmatchPurchaseReceptionItemCommand(id), ct)
+        );
+
+    /// <summary>
+    /// "Corregir relación": cambia el producto/presentación de una línea ya vinculada y reemplaza
+    /// la equivalencia Proveedor + Código en una sola transacción (la anterior queda deshabilitada).
+    /// Devuelve todas las líneas del documento afectadas. Rechaza si la compra ya está confirmada.
+    /// </summary>
+    [HttpPost("lines/{id:guid}/correct-match")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<CorrectReceptionLineMatchResultDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> CorrectMatch(
+        Guid id,
+        [FromBody] MatchItemRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new CorrectReceptionLineMatchCommand(id, body.ItemId, body.PackagingLevelId),
+                ct
+            )
         );
 
     [HttpPost("matching/bulk")]

@@ -23,3 +23,11 @@ export function calcPriceForMargin(cost: number, marginPct: number): number | nu
   const price = cost / (1 - marginPct / 100);
   return Number.isFinite(price) ? price : null;
 }
+
+/**
+ * Recargo (markup) sobre COSTO: utilidad / costo. Complemento de {@link calcMarginPercent}
+ * (margen sobre PRECIO); `0` sin costo positivo.
+ */
+export function calcMarkupPercent(cost: number, price: number): number {
+  return cost > 0 ? (calcMarginAmount(cost, price) / cost) * 100 : 0;
+}
