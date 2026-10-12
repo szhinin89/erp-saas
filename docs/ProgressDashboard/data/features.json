@@ -1342,6 +1342,13 @@
                                           ]
                          },
                          {
+                             "name":  "Correct Match",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/CorrectMatch"
+                                          ]
+                         },
+                         {
                              "name":  "Find Item Matches",
                              "status":  "implemented",
                              "evidence":  [

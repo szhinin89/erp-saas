@@ -1,14 +1,14 @@
 ﻿{
-    "generated":  "2026-10-11 20:05:05",
+    "generated":  "2026-10-11 21:31:52",
     "source":  "architecture-progress.json, dashboard-model-v12.json, model-health.json, modules.json, features.json, processes.json, tasks.json",
     "erpCompletion":  84,
-    "engineeringHealth":  60.3,
+    "engineeringHealth":  60.29,
     "architectureHealth":  100,
     "productionReadiness":  "NOT READY",
     "overallStatus":  "NOT READY",
     "criticalGaps":  [
                          "Security Score bajo: 23.4% (Secrets detectados: 183, endpoints anonimos: 12)",
-                         "Quality Score bajo: 8.35%",
+                         "Quality Score bajo: 8.3%",
                          "Technical Debt alta: 38 critical findings (TODO: 735, FIXME: 30)",
                          "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                          "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",

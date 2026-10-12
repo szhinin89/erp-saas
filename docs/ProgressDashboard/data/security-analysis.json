@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-11 20:04:55",
-    "FilesAnalyzed":  11823,
+    "Generated":  "2026-10-11 21:31:40",
+    "FilesAnalyzed":  11833,
     "SecretsFound":  183,
     "SecretFiles":  [
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",

@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-10-11 20:04:59",
+    "Generated":  "2026-10-11 21:31:44",
     "EngineeringScore":  {
-                             "Generated":  "2026-10-11 20:04:56",
+                             "Generated":  "2026-10-11 21:31:41",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
-                             "Quality":  8.35,
+                             "Quality":  8.3,
                              "Security":  23.4,
                              "Dependencies":  100,
-                             "Overall":  60.30
+                             "Overall":  60.29
                          },
     "QualityGate":  {
-                        "Generated":  "2026-10-11 20:04:58",
+                        "Generated":  "2026-10-11 21:31:43",
                         "Status":  "RED",
-                        "EngineeringScore":  60.30,
+                        "EngineeringScore":  60.29,
                         "Warnings":  [
                                          "Engineering score needs improvement",
                                          "High number of possible secrets detected",
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-10-11 20:04:58",
-                  "Snapshots":  24,
+                  "Generated":  "2026-10-11 21:31:43",
+                  "Snapshots":  25,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -147,6 +147,11 @@
                                       "Date":  "2026-10-11 20:04:57",
                                       "File":  "dashboard-2026-10-11-2004-v2.json",
                                       "Score":  60.3
+                                  },
+                                  {
+                                      "Date":  "2026-10-11 21:31:42",
+                                      "File":  "dashboard-2026-10-11-2131-v2.json",
+                                      "Score":  60.29
                                   }
                               ]
               },
@@ -498,8 +503,8 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-10-11 20:04:55",
-                     "FilesAnalyzed":  11823,
+                     "Generated":  "2026-10-11 21:31:40",
+                     "FilesAnalyzed":  11833,
                      "SecretsFound":  183,
                      "SecretFiles":  [
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
@@ -715,8 +720,8 @@
                      "Warnings":  203
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-10-11 20:04:38",
-                          "FilesAnalyzed":  11739,
+                          "Generated":  "2026-10-11 21:31:14",
+                          "FilesAnalyzed":  11749,
                           "TODO":  735,
                           "FIXME":  30,
                           "HACK":  1,
@@ -832,7 +837,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Inventory\\ItemMatching\\UseCases\\ResolveLines\\ResolvePurchaseReceptionLinesHandler.cs",
-                                                 "Lines":  735
+                                                 "Lines":  709
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Payables\\Services\\SupplierPaymentRegistrar.cs",
@@ -1231,8 +1236,12 @@
                                                  "Lines":  20499
                                              },
                                              {
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261012014646_ItemSupplierCodeActiveUnique.Designer.cs",
+                                                 "Lines":  20500
+                                             },
+                                             {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                                                 "Lines":  20496
+                                                 "Lines":  20497
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
@@ -3432,7 +3441,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\components\\items\\ItemEditorModal\\ItemEditorForm.tsx",
-                                                 "Lines":  677
+                                                 "Lines":  678
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\components\\items\\ItemEditorModal\\ItemEditorModal.test.tsx",
@@ -3560,7 +3569,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\api\\purchaseReceptionService.ts",
-                                                 "Lines":  516
+                                                 "Lines":  536
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\PurchaseReceptionXmlViewModal.tsx",
@@ -3568,7 +3577,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\ResolvePendingProductsModal.tsx",
-                                                 "Lines":  602
+                                                 "Lines":  757
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.test.ts",
@@ -3588,7 +3597,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.ts",
-                                                 "Lines":  2479
+                                                 "Lines":  2505
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\pages\\PurchaseCreditNoteDetailPage.tsx",
@@ -3600,7 +3609,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\pages\\PurchasesPage.tsx",
-                                                 "Lines":  3400
+                                                 "Lines":  3464
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\utils\\purchaseCalc.test.ts",
@@ -3658,7 +3667,7 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-10-11 20:02:16",
+                         "Generated":  "2026-10-11 21:30:48",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  670
@@ -3667,11 +3676,11 @@
                                                             "Commands":  0,
                                                             "Validators":  6,
                                                             "Queries":  5,
-                                                            "Files":  1113
+                                                            "Files":  1116
                                                         },
                                         "Infrastructure":  {
-                                                               "DbContext":  100,
-                                                               "Files":  490,
+                                                               "DbContext":  101,
+                                                               "Files":  492,
                                                                "Repository":  95
                                                            },
                                         "API":  {
@@ -3684,7 +3693,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-10-11 20:02:17",
+                         "Generated":  "2026-10-11 21:30:50",
                          "Violations":  [
 
                                         ],

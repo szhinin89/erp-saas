@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-11 20:05:15",
+    "generated":  "2026-10-11 21:32:05",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -502,12 +502,12 @@
                   },
                   {
                       "id":  "Inventory",
-                      "filesScanned":  110,
+                      "filesScanned":  113,
                       "fanIn":  6,
                       "fanOut":  9,
                       "coupling":  15,
                       "instability":  0.6,
-                      "cohesionApprox":  0.536,
+                      "cohesionApprox":  0.523,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -1566,13 +1566,13 @@
                   {
                       "from":  "Inventory",
                       "to":  "Items",
-                      "referenceCount":  14,
+                      "referenceCount":  16,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Services/ItemMatchConfirmationService.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Services/ItemMatchFinder.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Services/PurchaseReceptionAutoMatcher.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/BulkMatchItems/BulkMatchItemsHandler.cs",
-                                       "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/MatchItem/MatchItemHandler.cs"
+                                       "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/CorrectMatch/CorrectReceptionLineMatchHandler.cs"
                                    ]
                   },
                   {
@@ -1640,7 +1640,7 @@
                   {
                       "from":  "Inventory",
                       "to":  "Purchases",
-                      "referenceCount":  16,
+                      "referenceCount":  22,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Mapping/ItemMatchingMapper.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Mapping/ItemMatchingMapper.cs",
@@ -2743,7 +2743,7 @@
                   {
                       "from":  "Inventory",
                       "to":  "Common",
-                      "referenceCount":  92,
+                      "referenceCount":  95,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/CreateInventoryAdjustmentReason/CreateInventoryAdjustmentReasonCommand.cs",
                                        "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/CreateInventoryAdjustmentReason/CreateInventoryAdjustmentReasonCommandHandler.cs",

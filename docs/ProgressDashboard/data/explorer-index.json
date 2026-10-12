@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-11 20:05:27",
+    "generated":  "2026-10-11 21:32:22",
     "source":  "modules.json, features.json, processes.json, tasks.json, domains.json, dependencies.json, critical-path.json, impact.json, dashboard-model-v12.json, completion-intelligence.json, git log",
     "method":  {
                    "changeRiskFormula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
@@ -322,6 +322,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -458,7 +459,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  103.11,
+                                       "percentOfErp":  103.1,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -554,7 +555,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (862 lines): backend/src/ERP.Infrastructure.Tests/Dashboard/DashboardKpiReaderTests.cs"
                                                         ],
-                                       "percentOfErp":  0.35,
+                                       "percentOfErp":  0.34,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -897,6 +898,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -1041,7 +1043,7 @@
                                                             "Refactor large file (547 lines): backend/src/ERP.Application.Tests/Payables/PayablesCompanyLevelBranchIndependenceTests.cs",
                                                             "Refactor large file (529 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Payables/AccountsPayableSearchTests.cs"
                                                         ],
-                                       "percentOfErp":  100.35,
+                                       "percentOfErp":  100.34,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -1310,6 +1312,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -1446,7 +1449,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.27,
+                                       "percentOfErp":  98.28,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -1808,6 +1811,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -1944,7 +1948,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (558 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs"
                                                         ],
-                                       "percentOfErp":  105.19,
+                                       "percentOfErp":  105.17,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -2354,6 +2358,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -2492,7 +2497,7 @@
                                                             "Refactor large file (720 lines): backend/src/ERP.Application.Tests/Auth/SwitchCompanyHandlerTests.cs",
                                                             "Review anonymous-access endpoints (12 found)"
                                                         ],
-                                       "percentOfErp":  103.46,
+                                       "percentOfErp":  103.45,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "8 possible secret(s) detected in module source"
                                    },
@@ -3193,6 +3198,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -3333,7 +3339,7 @@
                                                             "Refactor large file (539 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx",
                                                             "Refactor large file (525 lines): frontend/src/modules/access/users/pages/UserConfigPage.tsx"
                                                         ],
-                                       "percentOfErp":  106.92,
+                                       "percentOfErp":  106.9,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "6 possible secret(s) detected in module source",
@@ -3876,6 +3882,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -4039,7 +4046,7 @@
                                                             "Refactor large file (521 lines): backend/src/ERP.Application/Modules/Sales/UseCases/PaymentMethodUseCases.cs",
                                                             "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx"
                                                         ],
-                                       "percentOfErp":  104.84,
+                                       "percentOfErp":  104.83,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "3 large file(s) (\u003e=500 lines)",
@@ -4116,7 +4123,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
-                                                            "lines":  677
+                                                            "lines":  678
                                                         },
                                                         {
                                                             "file":  "frontend/src/components/items/ItemEditorModal/ItemEditorModal.test.tsx",
@@ -4411,6 +4418,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -4547,12 +4555,12 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (953 lines): frontend/src/modules/items/detail/components/CollectionSection.tsx",
                                                             "Refactor large file (760 lines): frontend/src/components/items/ItemEditorModal/ItemEditorModal.test.tsx",
-                                                            "Refactor large file (677 lines): frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+                                                            "Refactor large file (678 lines): frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
                                                             "Refactor large file (555 lines): backend/src/ERP.Domain/Modules/Items/Entities/Item.cs",
                                                             "Refactor large file (549 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Items/ItemRepository.cs",
                                                             "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx"
                                                         ],
-                                       "percentOfErp":  106.57,
+                                       "percentOfErp":  106.55,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -4796,7 +4804,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/api/purchaseReceptionService.ts",
-                                                            "lines":  516
+                                                            "lines":  536
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
@@ -4804,7 +4812,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
-                                                            "lines":  602
+                                                            "lines":  757
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.test.ts",
@@ -4824,7 +4832,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
-                                                            "lines":  2479
+                                                            "lines":  2505
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
@@ -4836,7 +4844,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "lines":  3400
+                                                            "lines":  3464
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/utils/purchaseCalc.test.ts",
@@ -5152,6 +5160,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -5286,8 +5295,8 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (3400 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "Refactor large file (2479 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                            "Refactor large file (3464 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                            "Refactor large file (2505 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                             "Refactor large file (2215 lines): backend/src/ERP.Application.Tests/Purchases/ConfirmPurchaseHandlerTests.cs",
                                                             "Refactor large file (1910 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                             "Refactor large file (1641 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/CreatePurchaseReceptionDraftHandlerTests.cs",
@@ -5303,6 +5312,7 @@
                                                             "Refactor large file (848 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
                                                             "Refactor large file (806 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseCreditNoteTests.cs",
                                                             "Refactor large file (792 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
+                                                            "Refactor large file (757 lines): frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
                                                             "Refactor large file (719 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseReturnUseCasesTests.cs",
                                                             "Refactor large file (709 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReturnDraftUseCasesTests.cs",
                                                             "Refactor large file (702 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/GetPurchaseReceptionXmlViewHandlerTests.cs",
@@ -5312,13 +5322,12 @@
                                                             "Refactor large file (643 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseCreditNoteTaxSummaryDraftUseCasesTests.cs",
                                                             "Refactor large file (640 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
                                                             "Refactor large file (629 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/PurchaseXmlDraftParserTests.cs",
-                                                            "Refactor large file (628 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
                                                             "Refactor large file (628 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
+                                                            "Refactor large file (628 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
                                                             "Refactor large file (622 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
                                                             "Refactor large file (614 lines): frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.test.ts",
                                                             "Refactor large file (612 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
                                                             "Refactor large file (603 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-                                                            "Refactor large file (602 lines): frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
                                                             "Refactor large file (596 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnDraftUseCases.cs",
                                                             "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
                                                             "Refactor large file (591 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
@@ -5326,13 +5335,13 @@
                                                             "Refactor large file (581 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs",
                                                             "Refactor large file (580 lines): frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
                                                             "Refactor large file (543 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReception/PurchaseReceptionDocumentTests.cs",
+                                                            "Refactor large file (536 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
                                                             "Refactor large file (533 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.pilotFix.test.ts",
                                                             "Refactor large file (528 lines): frontend/src/modules/purchases/utils/purchaseCalc.test.ts",
                                                             "Refactor large file (519 lines): backend/src/ERP.Application.Tests/Purchases/GetPurchaseReturnByIdHandlerTests.cs",
-                                                            "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
-                                                            "Refactor large file (516 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts"
+                                                            "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs"
                                                         ],
-                                       "percentOfErp":  107.61,
+                                       "percentOfErp":  107.59,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "5 large file(s) (\u003e=500 lines)"
                                    },
@@ -5609,6 +5618,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -5745,7 +5755,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.27,
+                                       "percentOfErp":  98.28,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -5852,7 +5862,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  1.04,
+                                       "percentOfErp":  1.03,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -6179,6 +6189,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -6318,7 +6329,7 @@
                                                             "Refactor large file (668 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
                                                             "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs"
                                                         ],
-                                       "percentOfErp":  101.04,
+                                       "percentOfErp":  101.03,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -6666,6 +6677,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -6831,16 +6843,17 @@
                         "documentation":  70,
                         "backend":  90,
                         "frontend":  70,
-                        "filesScanned":  110,
+                        "filesScanned":  113,
                         "busFactor":  1,
                         "lastEvidenceDate":  "2026-10-11",
-                        "featuresCount":  34,
+                        "featuresCount":  35,
                         "featureNames":  [
                                              "Create Inventory Adjustment Reason",
                                              "List Inventory Adjustment Reasons",
                                              "Toggle Inventory Adjustment Reason",
                                              "Update Inventory Adjustment Reason",
                                              "Bulk Match Items",
+                                             "Correct Match",
                                              "Find Item Matches",
                                              "Get Line Match",
                                              "Match Item",
@@ -6879,7 +6892,7 @@
                                      "largeFiles":  [
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
-                                                            "lines":  735
+                                                            "lines":  709
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
@@ -7169,6 +7182,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -7304,7 +7318,7 @@
                                                              ],
                                        "relatedTasks":  [
                                                             "Refactor large file (741 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
-                                                            "Refactor large file (735 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
+                                                            "Refactor large file (709 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                             "Refactor large file (703 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                                                             "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
                                                             "Refactor large file (536 lines): frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
@@ -7313,7 +7327,7 @@
                                                             "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
                                                             "Refactor large file (506 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs"
                                                         ],
-                                       "percentOfErp":  110.03,
+                                       "percentOfErp":  110.34,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "1 large file(s) (\u003e=500 lines)"
                                    },
@@ -7642,6 +7656,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -7784,7 +7799,7 @@
                                                             "Refactor large file (516 lines): backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
                                                             "Refactor large file (505 lines): frontend/src/modules/finance/pages/CreditTermsPage.tsx"
                                                         ],
-                                       "percentOfErp":  101.73,
+                                       "percentOfErp":  101.72,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "1 large file(s) (\u003e=500 lines)"
                                    },
@@ -8102,6 +8117,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -8238,7 +8254,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (573 lines): frontend/src/modules/branches/components/BranchGeneralSection.tsx"
                                                         ],
-                                       "percentOfErp":  101.73,
+                                       "percentOfErp":  101.72,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -8509,6 +8525,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -8980,6 +8997,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -9117,7 +9135,7 @@
                                                             "Refactor large file (605 lines): frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
                                                             "Refactor large file (535 lines): frontend/src/modules/pricing/pages/PriceListsPage.tsx"
                                                         ],
-                                       "percentOfErp":  100.35,
+                                       "percentOfErp":  100.34,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -9470,6 +9488,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -9615,7 +9634,7 @@
                                                             "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
                                                             "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs"
                                                         ],
-                                       "percentOfErp":  102.08,
+                                       "percentOfErp":  102.07,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "2 large file(s) (\u003e=500 lines)"
                                    },
@@ -9961,6 +9980,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -10108,7 +10128,7 @@
                                                             "Refactor large file (565 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
                                                             "Refactor large file (546 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx"
                                                         ],
-                                       "percentOfErp":  98.96,
+                                       "percentOfErp":  98.97,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -10215,7 +10235,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  2.77,
+                                       "percentOfErp":  2.76,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "3 possible secret(s) detected in module source"
                                    },
@@ -10639,6 +10659,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -11065,6 +11086,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -11202,7 +11224,7 @@
                                                             "Refactor large file (711 lines): backend/src/ERP.Infrastructure.Tests/Ride/RidePipelineStorageAndCacheIntegrationTests.cs",
                                                             "Refactor large file (682 lines): backend/src/ERP.Application.Tests/Ride/RidePipelineTests.cs"
                                                         ],
-                                       "percentOfErp":  98.96,
+                                       "percentOfErp":  98.97,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -11546,6 +11568,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -11689,7 +11712,7 @@
                                                             "Refactor large file (546 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                                                             "Refactor large file (527 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialPayableImportProcessorTests.cs"
                                                         ],
-                                       "percentOfErp":  102.08,
+                                       "percentOfErp":  102.07,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -11786,7 +11809,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx"
                                                         ],
-                                       "percentOfErp":  0.35,
+                                       "percentOfErp":  0.34,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -12096,6 +12119,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -12636,6 +12660,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -13222,6 +13247,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -13706,6 +13732,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -13843,7 +13870,7 @@
                                                             "Refactor large file (684 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriRetentionCatalogResolutionIntegrationTests.cs",
                                                             "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs"
                                                         ],
-                                       "percentOfErp":  98.27,
+                                       "percentOfErp":  98.28,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -14137,6 +14164,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -14273,7 +14301,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.96,
+                                       "percentOfErp":  98.97,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -14538,6 +14566,7 @@
                                                                  "Inventory / Toggle Inventory Adjustment Reason",
                                                                  "Inventory / Update Inventory Adjustment Reason",
                                                                  "Inventory / Bulk Match Items",
+                                                                 "Inventory / Correct Match",
                                                                  "Inventory / Find Item Matches",
                                                                  "Inventory / Get Line Match",
                                                                  "Inventory / Match Item",
@@ -15060,7 +15089,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Inventory",
-                                                          "label":  "Refactor large file (735 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
+                                                          "label":  "Refactor large file (709 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                           "domainId":  "inventory",
                                                           "domainName":  "Inventory"
                                                       }
@@ -16000,7 +16029,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Items",
-                                                          "label":  "Refactor large file (677 lines): frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+                                                          "label":  "Refactor large file (678 lines): frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
                                                           "domainId":  "inventory",
                                                           "domainName":  "Inventory"
                                                       }
@@ -16199,7 +16228,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (3400 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                          "label":  "Refactor large file (3464 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -16780,6 +16809,18 @@
                                                           "label":  "Refactor large file (591 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  "Communications",
+                                                          "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
+                                                          "domainId":  "unmapped",
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -18357,18 +18398,6 @@
                                                   ]
                              },
                              {
-                                 "file":  "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Task",
-                                                          "module":  "Purchases",
-                                                          "label":  "Refactor large file (602 lines): frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
-                                                          "domainId":  "purchases",
-                                                          "domainName":  "Purchases"
-                                                      }
-                                                  ]
-                             },
-                             {
                                  "file":  "backend/src/ERP.Application/Modules/Company/UseCases/UpdateEmissionPoint",
                                  "referencedBy":  [
                                                       {
@@ -18441,14 +18470,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
+                                 "file":  "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
-                                                          "module":  "Communications",
-                                                          "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
-                                                          "domainId":  "unmapped",
-                                                          "domainName":  null
+                                                          "module":  "Purchases",
+                                                          "label":  "Refactor large file (757 lines): frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
+                                                          "domainId":  "purchases",
+                                                          "domainName":  "Purchases"
                                                       }
                                                   ]
                              },
@@ -19012,7 +19041,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (2479 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                          "label":  "Refactor large file (2505 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -19187,6 +19216,18 @@
                                                   ]
                              },
                              {
+                                 "file":  "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/CorrectMatch",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Feature",
+                                                          "module":  "Inventory",
+                                                          "label":  "Correct Match",
+                                                          "domainId":  "inventory",
+                                                          "domainName":  "Inventory"
+                                                      }
+                                                  ]
+                             },
+                             {
                                  "file":  "backend/src/ERP.API.Tests/Integration/CajaVentasEndToEndTests.cs",
                                  "referencedBy":  [
                                                       {
@@ -19228,7 +19269,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (516 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                                                          "label":  "Refactor large file (536 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -21437,14 +21478,14 @@
                              }
                          ],
     "executive":  {
-                      "engineeringScoreOverall":  60.30,
+                      "engineeringScoreOverall":  60.29,
                       "erpCompletion":  84,
                       "productionDecision":  "NOT READY",
                       "overallStatus":  "NOT READY",
                       "nextMilestone":  "Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)",
                       "blockers":  [
                                        "Security Score bajo: 23.4% (Secrets detectados: 183, endpoints anonimos: 12)",
-                                       "Quality Score bajo: 8.35%",
+                                       "Quality Score bajo: 8.3%",
                                        "Technical Debt alta: 38 critical findings (TODO: 735, FIXME: 30)",
                                        "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                                        "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
@@ -22721,6 +22762,11 @@
                           },
                           {
                               "type":  "Feature",
+                              "label":  "Inventory / Correct Match",
+                              "moduleId":  "Inventory"
+                          },
+                          {
+                              "type":  "Feature",
                               "label":  "Inventory / Find Item Matches",
                               "moduleId":  "Inventory"
                           },
@@ -23366,7 +23412,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (3400 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                              "label":  "Refactor large file (3464 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -23386,7 +23432,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (2479 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                              "label":  "Refactor large file (2505 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                               "moduleId":  null
                           },
                           {
@@ -23781,12 +23827,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (760 lines): frontend/src/components/items/ItemEditorModal/ItemEditorModal.test.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (760 lines): backend/src/ERP.Infrastructure.Tests/Seeding/IgnoreQueryFiltersScopeIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (760 lines): frontend/src/components/items/ItemEditorModal/ItemEditorModal.test.tsx",
+                              "label":  "Refactor large file (757 lines): frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
                               "moduleId":  null
                           },
                           {
@@ -23821,11 +23872,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (735 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs",
                               "moduleId":  null
                           },
@@ -23846,12 +23892,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseReturnUseCasesTests.cs",
+                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
+                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseReturnUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23867,6 +23913,11 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (709 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReturnDraftUseCasesTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (709 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                               "moduleId":  null
                           },
                           {
@@ -23926,12 +23977,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (678 lines): frontend/src/modules/masterData/components/MasterDataPartnerWizard.tsx",
+                              "label":  "Refactor large file (678 lines): frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (677 lines): frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+                              "label":  "Refactor large file (678 lines): frontend/src/modules/masterData/components/MasterDataPartnerWizard.tsx",
                               "moduleId":  null
                           },
                           {
@@ -23946,12 +23997,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (668 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
+                              "label":  "Refactor large file (668 lines): backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestQueries.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (668 lines): backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestQueries.cs",
+                              "label":  "Refactor large file (668 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
                               "moduleId":  null
                           },
                           {
@@ -23961,12 +24012,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs",
+                              "label":  "Refactor large file (667 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Categories/ExpenseCategoryUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (667 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Categories/ExpenseCategoryUseCases.cs",
+                              "label":  "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24011,12 +24062,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
+                              "label":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
+                              "label":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
                               "moduleId":  null
                           },
                           {
@@ -24061,12 +24112,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (628 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
+                              "label":  "Refactor large file (628 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (628 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
+                              "label":  "Refactor large file (628 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24086,12 +24137,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
+                              "label":  "Refactor large file (621 lines): frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (621 lines): frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx",
+                              "label":  "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24121,22 +24172,22 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (612 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (612 lines): backend/src/ERP.Infrastructure.Tests/Communications/ElectronicDocumentCommunicationFlow.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Accounting/PostingEngineTests.cs",
+                              "label":  "Refactor large file (612 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Accounting/PostingEngineTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24156,17 +24207,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (603 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (603 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnSequenceConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (602 lines): frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
+                              "label":  "Refactor large file (603 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -24401,6 +24447,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (536 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (536 lines): frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
                               "moduleId":  null
                           },
@@ -24426,12 +24477,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs",
+                              "label":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
+                              "label":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -24511,11 +24562,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (516 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (516 lines): backend/src/ERP.Application.Tests/Finance/ApplySupplierCreditUseCasesTests.cs",
                               "moduleId":  null
                           },
@@ -24526,12 +24572,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (511 lines): frontend/src/modules/masterData/pages/MasterDataSuppliersPage.test.tsx",
+                              "label":  "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
+                              "label":  "Refactor large file (511 lines): frontend/src/modules/masterData/pages/MasterDataSuppliersPage.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24541,12 +24587,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (510 lines): backend/src/ERP.Application.Tests/Accounting/PurchaseReturnPostingAmountKindRemediationTests.cs",
+                              "label":  "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
+                              "label":  "Refactor large file (510 lines): backend/src/ERP.Application.Tests/Accounting/PurchaseReturnPostingAmountKindRemediationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25451,6 +25497,11 @@
                           },
                           {
                               "type":  "File",
+                              "label":  "backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
+                              "moduleId":  "Communications"
+                          },
+                          {
+                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/UploadSriCertificate",
                               "moduleId":  "ElectronicInvoicing"
                           },
@@ -26086,11 +26137,6 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
-                              "moduleId":  "Purchases"
-                          },
-                          {
-                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Company/UseCases/UpdateEmissionPoint",
                               "moduleId":  "Company"
                           },
@@ -26121,8 +26167,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
-                              "moduleId":  "Communications"
+                              "label":  "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
+                              "moduleId":  "Purchases"
                           },
                           {
                               "type":  "File",
@@ -26423,6 +26469,11 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Access/UseCases/UpdateCompanyUserPreferences",
                               "moduleId":  "Access"
+                          },
+                          {
+                              "type":  "File",
+                              "label":  "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/CorrectMatch",
+                              "moduleId":  "Inventory"
                           },
                           {
                               "type":  "File",

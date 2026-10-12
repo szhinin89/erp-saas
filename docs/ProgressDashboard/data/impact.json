@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-10-11 20:05:04",
+    "generated":  "2026-10-11 21:31:51",
     "coverage":  {
                      "mappedFeaturePoints":  46,
-                     "totalFeaturePoints":  289,
-                     "percentage":  15.92
+                     "totalFeaturePoints":  290,
+                     "percentage":  15.86
                  },
     "domains":  [
                     {
@@ -188,7 +188,7 @@
                                         {
                                             "name":  "Inventory",
                                             "score":  81.5,
-                                            "features":  34,
+                                            "features":  35,
                                             "processes":  [
 
                                                           ],

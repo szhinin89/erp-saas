@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-11 20:05:18",
+    "generated":  "2026-10-11 21:32:09",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -104,7 +104,7 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  1048,
+                                                                "SourceFiles":  1051,
                                                                 "Pages":  0,
                                                                 "Components":  128,
                                                                 "Hooks":  8,
@@ -432,19 +432,29 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  100,
+                                             "DbContext":  101,
                                              "DbSets":  189,
                                              "EntityConfigurations":  0,
                                              "Repositories":  95,
-                                             "Migrations":  5
+                                             "Migrations":  7
                                          },
                        "migrations":  {
-                                          "totalFiles":  5,
+                                          "totalFiles":  7,
                                           "mostRecent":  [
                                                              {
+                                                                 "name":  "20261012014646_ItemSupplierCodeActiveUnique",
+                                                                 "modified":  "2026-10-11 20:46:46",
+                                                                 "sizeKB":  1.39
+                                                             },
+                                                             {
+                                                                 "name":  "20261012014646_ItemSupplierCodeActiveUnique.Designer",
+                                                                 "modified":  "2026-10-11 20:46:46",
+                                                                 "sizeKB":  856.36
+                                                             },
+                                                             {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-10-11 19:27:38",
-                                                                 "sizeKB":  856.17
+                                                                 "modified":  "2026-10-11 20:46:46",
+                                                                 "sizeKB":  856.23
                                                              },
                                                              {
                                                                  "name":  "20261012002737_PurchaseDraftRetentionIntent.Designer",
@@ -455,16 +465,6 @@
                                                                  "name":  "20261012002737_PurchaseDraftRetentionIntent",
                                                                  "modified":  "2026-10-11 19:27:38",
                                                                  "sizeKB":  1.53
-                                                             },
-                                                             {
-                                                                 "name":  "20261010184156_InitialProductionBaseline",
-                                                                 "modified":  "2026-10-10 14:09:07",
-                                                                 "sizeKB":  632.22
-                                                             },
-                                                             {
-                                                                 "name":  "20261010184156_InitialProductionBaseline.Designer",
-                                                                 "modified":  "2026-10-10 14:09:07",
-                                                                 "sizeKB":  835.73
                                                              }
                                                          ]
                                       },

@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-11 20:04:38",
-    "FilesAnalyzed":  11739,
+    "Generated":  "2026-10-11 21:31:14",
+    "FilesAnalyzed":  11749,
     "TODO":  735,
     "FIXME":  30,
     "HACK":  1,
@@ -116,7 +116,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Inventory\\ItemMatching\\UseCases\\ResolveLines\\ResolvePurchaseReceptionLinesHandler.cs",
-                           "Lines":  735
+                           "Lines":  709
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Payables\\Services\\SupplierPaymentRegistrar.cs",
@@ -515,8 +515,12 @@
                            "Lines":  20499
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261012014646_ItemSupplierCodeActiveUnique.Designer.cs",
+                           "Lines":  20500
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                           "Lines":  20496
+                           "Lines":  20497
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
@@ -2716,7 +2720,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\components\\items\\ItemEditorModal\\ItemEditorForm.tsx",
-                           "Lines":  677
+                           "Lines":  678
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\components\\items\\ItemEditorModal\\ItemEditorModal.test.tsx",
@@ -2844,7 +2848,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\api\\purchaseReceptionService.ts",
-                           "Lines":  516
+                           "Lines":  536
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\PurchaseReceptionXmlViewModal.tsx",
@@ -2852,7 +2856,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\ResolvePendingProductsModal.tsx",
-                           "Lines":  602
+                           "Lines":  757
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.test.ts",
@@ -2872,7 +2876,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.ts",
-                           "Lines":  2479
+                           "Lines":  2505
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\pages\\PurchaseCreditNoteDetailPage.tsx",
@@ -2884,7 +2888,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\pages\\PurchasesPage.tsx",
-                           "Lines":  3400
+                           "Lines":  3464
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\utils\\purchaseCalc.test.ts",
