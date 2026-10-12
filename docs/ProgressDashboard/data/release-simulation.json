@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-11 21:32:07",
+    "generated":  "2026-10-11 21:49:32",
     "source":  "dashboard-model-v12.json (EngineeringScore, TechnicalDebt), architecture-progress.json (stage/phase weighted completion)",
     "disclaimer":  "This is a read-only simulation. No real JSON file is modified. Formulas are copied verbatim from calculate-engineering-score.ps1 and render-dashboard.ps1 -- see \u0027method\u0027 below.",
     "method":  {

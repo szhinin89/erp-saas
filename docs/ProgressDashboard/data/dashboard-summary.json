@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-11 21:32:09",
+    "generated":  "2026-10-11 21:49:34",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -96,9 +96,9 @@
                        ],
     "trend":  {
                   "current":  60.29,
-                  "previous":  60.3,
-                  "change":  -0.01,
-                  "status":  "Declining"
+                  "previous":  60.29,
+                  "change":  0,
+                  "status":  "Stable"
               },
     "executiveFlags":  {
                            "securityHealth":  "NEEDS ATTENTION",

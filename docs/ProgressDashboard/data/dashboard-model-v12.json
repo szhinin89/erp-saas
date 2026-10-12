@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-11 21:31:44",
+    "Generated":  "2026-10-11 21:49:08",
     "EngineeringScore":  {
-                             "Generated":  "2026-10-11 21:31:41",
+                             "Generated":  "2026-10-11 21:49:06",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
                              "Quality":  8.3,
@@ -10,7 +10,7 @@
                              "Overall":  60.29
                          },
     "QualityGate":  {
-                        "Generated":  "2026-10-11 21:31:43",
+                        "Generated":  "2026-10-11 21:49:08",
                         "Status":  "RED",
                         "EngineeringScore":  60.29,
                         "Warnings":  [
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-10-11 21:31:43",
-                  "Snapshots":  25,
+                  "Generated":  "2026-10-11 21:49:07",
+                  "Snapshots":  26,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -151,6 +151,11 @@
                                   {
                                       "Date":  "2026-10-11 21:31:42",
                                       "File":  "dashboard-2026-10-11-2131-v2.json",
+                                      "Score":  60.29
+                                  },
+                                  {
+                                      "Date":  "2026-10-11 21:49:07",
+                                      "File":  "dashboard-2026-10-11-2149-v2.json",
                                       "Score":  60.29
                                   }
                               ]
@@ -503,7 +508,7 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-10-11 21:31:40",
+                     "Generated":  "2026-10-11 21:49:04",
                      "FilesAnalyzed":  11833,
                      "SecretsFound":  183,
                      "SecretFiles":  [
@@ -720,7 +725,7 @@
                      "Warnings":  203
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-10-11 21:31:14",
+                          "Generated":  "2026-10-11 21:48:41",
                           "FilesAnalyzed":  11749,
                           "TODO":  735,
                           "FIXME":  30,
@@ -3667,7 +3672,7 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-10-11 21:30:48",
+                         "Generated":  "2026-10-11 21:48:15",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  670
@@ -3693,7 +3698,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-10-11 21:30:50",
+                         "Generated":  "2026-10-11 21:48:17",
                          "Violations":  [
 
                                         ],
