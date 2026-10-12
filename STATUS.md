@@ -1,5 +1,30 @@
 # Project Status
 
+## FUTURE — Compras mixtas y costos capitalizables (FASE 4, auditoría 2026-10-11)
+
+**Estado: FUTURE — auditoría completada, no implementar en el piloto actual. No es blocker del piloto.** Sin cambios de código.
+
+Estado actual:
+- **Flujo soportado: solo el flujo manual existente.** El servicio/flete se elimina de las líneas operativas y su valor se distribuye entre los productos con la fórmula vigente (`FreightAllocated`/`OtherCostsAllocated` → `TotalLineCost`/`LandedUnitCost`, prorrateo por base neta).
+- Inventario y costo siguen normalizados a unidad base.
+- **Fuera de soporte completo:** facturas XML mixtas (productos + servicios capitalizables).
+
+Riesgos conocidos mientras siga en FUTURE (hallazgos de la auditoría):
+- **Flete con IVA en flujo manual:** el monto distribuido no lleva IVA; si la línea eliminada tenía IVA, la CxP queda por debajo del total del proveedor. Distribuir solo fletes con IVA 0 % o conservar la línea.
+- **XML: conservar la línea de flete y además distribuirla** suma el flete dos veces a `GrandTotal`/CxP; `PurchaseXmlConfirmationGuard` no compara `GrandTotal` contra `importeTotal`. Eliminar la línea XML lo bloquea el guard (correcto). Operativamente: en compras XML no usar "Distribuir flete/gasto" sobre una línea de flete existente.
+- **Servicios en Compras se debitan a Inventario:** `CostSubtotal` = Σ `TotalLineCost` de todas las líneas (servicios incluidos) → Debe `1.1.04.001`; el Kardex no los incluye → inventario contable ≠ Kardex.
+- `ApplyGlobalDiscount`/`Recalculate`/`AllocateFreight` reprorratean entre todas las líneas (incluidos servicios) y pierden la selección manual del modal.
+
+Evolución futura:
+- Diferenciar servicio normal vs servicio capitalizable (configuración dinámica; candidato: Item de servicio, requiere reabrir Items FROZEN con ADR).
+- Mantener la línea fiscal XML sin duplicar CxP (`GrandTotal` = total del comprobante; la capitalización es reclasificación interna).
+- Permitir 1..N servicios capitalizables, con trazabilidad SourceLine → TargetLine (p. ej. `PurchaseCostAllocation`).
+- Separar costo proveedor vs costo de adquisición.
+- Distribución por valor/manual y otros métodos futuros (cantidad, peso vía `ItemPackagingLevel.Weight`).
+- Posting separado Inventario vs Gasto (reutilizar `PostingFact.Allocations`).
+- Evitar doble contabilización.
+- Revisar ICE vs Kardex/costo (ICE se debita a Inventario pero no entra a `TotalLineCost`).
+
 ## PURCHASE-RESOLVE-PRODUCTS (FASE 3) — Creación masiva desde Recepción: PVP con IVA y "Corregir relación" (2026-10-11)
 
 **Estado: implementado (sin commit).** Purchases reabierto solo para esta fase. Sin cambios en FASE 1 (`66d0c66aa`), FASE 2 (`3d2acb607`), pricing por presentación, servicios capitalizables ni política comercial global.
