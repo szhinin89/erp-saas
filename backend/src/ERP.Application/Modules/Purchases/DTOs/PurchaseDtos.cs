@@ -1,3 +1,5 @@
+using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
+
 namespace ERP.Application.Modules.Purchases.DTOs;
 
 public sealed record PurchaseInvoiceDto(
@@ -44,7 +46,21 @@ public sealed record PurchaseInvoiceDto(
     DateTime? CancelledAt,
     Guid? CancelledBy,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    // PURCHASE-DRAFT-RECOVERY F3 — decisión de retención recordada por el borrador (null = nunca
+    // registrada). Solo restaura la UI; la emisión sigue viajando en el body de Confirm.
+    PurchaseRetentionIntentDraftDto? RetentionIntent = null
+);
+
+/// <summary>
+/// PURCHASE-DRAFT-RECOVERY F3 — intención de retención de un borrador de compra (entrada en
+/// Create/Update y salida en el DTO). Nunca incluye líneas ni montos: la propuesta se recalcula
+/// siempre desde la vista previa del backend.
+/// </summary>
+public sealed record PurchaseRetentionIntentDraftDto(
+    bool AppliesRetention,
+    Guid? EmissionPointId,
+    DateOnly? IssueDate
 );
 
 public sealed record PurchasePaymentScheduleDto(
@@ -111,7 +127,11 @@ public sealed record PurchaseInvoiceDetailDto(
     Guid? PurchaseReceptionLineId,
     // ── Meta ────────────────────────────────────────────────────────
     string? Notes,
-    short SortOrder
+    short SortOrder,
+    // PURCHASE-DRAFT-RECOVERY F1 — evidencia original de la PurchaseReceptionLine (mismo contrato
+    // que "Crear compra" desde Recepción). Solo se informa al leer un borrador por Id; null en
+    // líneas manuales o fuera de ese flujo.
+    PurchaseDraftLineDto? XmlSource = null
 );
 
 /// <summary>FLOW-READY-02F.1 — snapshot fiel de un &lt;impuesto&gt; del XML (IVA/ICE/IRBPNR).</summary>

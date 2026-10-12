@@ -5,6 +5,7 @@ import {
   getPurchaseLineBlockingReasons,
   getPurchaseLinePrimaryAction,
   getPurchaseLineReadiness,
+  getPurchaseLineSaveBlockingReasons,
   isPurchaseLineReady,
 } from "./purchaseLineReadiness";
 
@@ -291,5 +292,39 @@ describe("purchaseLineReadiness", () => {
     );
     expect(getPurchaseLineBlockingReasons([readyLine], { precisionPolicy: TEST_PRECISION_POLICY, vatRates: { "2": 15 } }))
       .toHaveLength(0);
+  });
+});
+
+describe("PURCHASE-DRAFT-RECOVERY B1 — Guardar vs Confirmar", () => {
+  const options = {
+    precisionPolicy: TEST_PRECISION_POLICY,
+    vatRates: { "2": 15 },
+    iceRates: {},
+  };
+
+  it("una línea XML sin producto bloquea Confirmar pero no Guardar", () => {
+    const pending = line({ itemId: undefined, context: undefined });
+
+    expect(getPurchaseLineBlockingReasons([pending], options)).toHaveLength(1);
+    expect(getPurchaseLineSaveBlockingReasons([pending], options)).toHaveLength(0);
+  });
+
+  it("presentación faltante o bodega faltante bloquean solo Confirmar", () => {
+    const noPresentation = line({ itemId: "item-1", packagingLevelId: null });
+    const noWarehouse = line({
+      itemId: "item-1",
+      packagingLevelId: "pkg-1",
+      warehouseId: undefined,
+    });
+
+    expect(getPurchaseLineBlockingReasons([noPresentation, noWarehouse], options)).toHaveLength(2);
+    expect(getPurchaseLineSaveBlockingReasons([noPresentation, noWarehouse], options)).toHaveLength(0);
+  });
+
+  it("un impuesto inválido bloquea Guardar aunque la línea también esté pendiente de producto", () => {
+    const invalidTax = line({ itemId: undefined, context: undefined, vatCode: "99" });
+
+    expect(getPurchaseLineReadiness(invalidTax, options).status).toBe("MISSING_ITEM");
+    expect(getPurchaseLineSaveBlockingReasons([invalidTax], options)).toHaveLength(1);
   });
 });

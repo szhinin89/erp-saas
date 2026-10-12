@@ -66,6 +66,14 @@ public sealed class PurchaseInvoice
     public string? Notes { get; private set; }
     public PurchaseStatus Status { get; private set; } = PurchaseStatus.Draft;
 
+    // ── Intención de retención del borrador (PURCHASE-DRAFT-RECOVERY F3) ──
+    // Solo recuerda la decisión del usuario para reabrir el borrador sin perderla. Nunca es la
+    // fuente de la emisión: ConfirmPurchase sigue recibiendo la intención en su body y revalida
+    // elegibilidad/montos. Null = el borrador nunca registró una decisión.
+    public bool? RetentionIntentApplies { get; private set; }
+    public Guid? RetentionIntentEmissionPointId { get; private set; }
+    public DateOnly? RetentionIntentIssueDate { get; private set; }
+
     // ── Totales snapshot (congelados al confirmar) ────────────────────
     public decimal? ConfirmedSubtotal { get; private set; }
     public decimal? ConfirmedTotalTax { get; private set; }
@@ -616,11 +624,10 @@ public sealed class PurchaseInvoice
         int daysBetween
     )
     {
+        // PURCHASE-DRAFT-RECOVERY F2 — en borrador las cuotas guardadas son manuales e
+        // independientes de la condición: se conservan tal cual (Confirm exige que cuadren). El
+        // cronograma definitivo solo se genera al confirmar, cuando EnsureDraft ya impide esto.
         EnsureDraft();
-        if (_paymentSchedules.Count > 0)
-            throw new DomainRuleViolationException(
-                "No se puede cambiar la condición de pago después de generar el cronograma."
-            );
 
         PaymentTermId = paymentTermId;
         PaymentTermName = paymentTermName.Trim();
@@ -713,6 +720,77 @@ public sealed class PurchaseInvoice
                 )
             );
         }
+    }
+
+    /// <summary>
+    /// PURCHASE-DRAFT-RECOVERY F2 — cuotas manuales del borrador, guardadas tal cual las dejó el
+    /// usuario para no perder trabajo: solo se validan reglas estructurales (número, monto,
+    /// duplicados). Que sumen el total y no venzan antes de la emisión es requisito de
+    /// <see cref="Confirm"/> (<see cref="PaymentScheduleMatchesTotal"/>), no de guardar.
+    /// </summary>
+    public void ReplaceDraftPaymentSchedule(
+        IReadOnlyList<(int Number, DateOnly DueDate, decimal Amount, string? Notes)> installments
+    )
+    {
+        EnsureDraft();
+        if (installments.Count == 0)
+            throw new ArgumentException("Debe incluir al menos una cuota.", nameof(installments));
+
+        var numbers = new HashSet<int>();
+        foreach (var inst in installments)
+        {
+            if (inst.Number < 1)
+                throw new ArgumentException(
+                    $"El número de cuota debe ser >= 1 (recibido: {inst.Number})."
+                );
+            if (inst.Amount <= 0)
+                throw new ArgumentException(
+                    $"Cuota #{inst.Number}: el monto debe ser mayor a cero."
+                );
+            if (!numbers.Add(inst.Number))
+                throw new ArgumentException($"Cuota #{inst.Number}: número de cuota duplicado.");
+        }
+
+        _paymentSchedules.Clear();
+        foreach (var inst in installments.OrderBy(i => i.Number))
+            _paymentSchedules.Add(
+                PurchasePaymentSchedule.Create(
+                    Id,
+                    TenantId,
+                    inst.Number,
+                    inst.DueDate,
+                    inst.Amount,
+                    inst.Notes
+                )
+            );
+    }
+
+    /// <summary>
+    /// PURCHASE-DRAFT-RECOVERY F2 — descarta el cronograma manual guardado en el borrador (volverá a
+    /// generarse desde la condición de pago al confirmar, salvo que llegue uno nuevo).
+    /// </summary>
+    public void ClearPaymentSchedule()
+    {
+        EnsureDraft();
+        _paymentSchedules.Clear();
+    }
+
+    /// <summary>
+    /// PURCHASE-DRAFT-RECOVERY F2 — un cronograma guardado solo sigue siendo válido si cuadra
+    /// exactamente con el total vigente y ninguna cuota vence antes de la emisión. Nunca se ajusta
+    /// en silencio: el llamador decide rechazar la operación.
+    /// </summary>
+    public bool PaymentScheduleMatchesTotal() =>
+        _paymentSchedules.Count > 0
+        && _paymentSchedules.Sum(s => s.Amount) == GrandTotal
+        && _paymentSchedules.All(s => s.DueDate >= IssueDate);
+
+    public void SetRetentionIntentDraft(bool applies, Guid? emissionPointId, DateOnly? issueDate)
+    {
+        EnsureDraft();
+        RetentionIntentApplies = applies;
+        RetentionIntentEmissionPointId = emissionPointId;
+        RetentionIntentIssueDate = issueDate;
     }
 
     private void ValidateScheduleTotal(decimal expectedTotal)

@@ -470,6 +470,12 @@ public sealed class RegisterSupplierCreditNoteIntegrationTests : IAsyncLifetime
             CancellationToken ct = default
         ) => inner.GetByLineIdAsync(tenantId, lineId, ct);
 
+        public Task<PurchaseReceptionDocument?> GetByLineIdWithEvidenceAsync(
+            Guid tenantId,
+            Guid lineId,
+            CancellationToken ct = default
+        ) => inner.GetByLineIdWithEvidenceAsync(tenantId, lineId, ct);
+
         public Task<(IReadOnlyList<PurchaseReceptionDocument> Items, int Total)> GetPagedAsync(
             Guid tenantId,
             int page,

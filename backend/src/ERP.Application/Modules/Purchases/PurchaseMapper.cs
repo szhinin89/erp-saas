@@ -1,11 +1,15 @@
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Domain.Modules.Purchases.Entities;
 
 namespace ERP.Application.Modules.Purchases;
 
 internal static class PurchaseMapper
 {
-    public static PurchaseInvoiceDto ToDto(PurchaseInvoice i) =>
+    public static PurchaseInvoiceDto ToDto(
+        PurchaseInvoice i,
+        IReadOnlyDictionary<Guid, PurchaseDraftLineDto>? xmlSourceByReceptionLine = null
+    ) =>
         new(
             i.Id,
             i.SupplierId,
@@ -42,16 +46,38 @@ internal static class PurchaseMapper
             i.TotalOtherCosts,
             i.GrandTotal,
             i.TotalIrbpnr,
-            i.Lines.OrderBy(l => l.SortOrder).Select(MapLine).ToList(),
+            i.Lines.OrderBy(l => l.SortOrder)
+                .Select(l => MapLine(l, FindXmlSource(l, xmlSourceByReceptionLine)))
+                .ToList(),
             i.PaymentSchedules.OrderBy(s => s.InstallmentNumber).Select(MapSchedule).ToList(),
             i.CancelReason,
             i.CancelledAt,
             i.CancelledBy,
             i.CreatedAt,
-            i.UpdatedAt
+            i.UpdatedAt,
+            i.RetentionIntentApplies is { } applies
+                ? new PurchaseRetentionIntentDraftDto(
+                    applies,
+                    i.RetentionIntentEmissionPointId,
+                    i.RetentionIntentIssueDate
+                )
+                : null
         );
 
-    public static PurchaseInvoiceDetailDto MapLine(PurchaseInvoiceDetail l) =>
+    private static PurchaseDraftLineDto? FindXmlSource(
+        PurchaseInvoiceDetail line,
+        IReadOnlyDictionary<Guid, PurchaseDraftLineDto>? xmlSourceByReceptionLine
+    ) =>
+        line.PurchaseReceptionLineId is { } receptionLineId
+        && xmlSourceByReceptionLine is not null
+        && xmlSourceByReceptionLine.TryGetValue(receptionLineId, out var source)
+            ? source
+            : null;
+
+    public static PurchaseInvoiceDetailDto MapLine(
+        PurchaseInvoiceDetail l,
+        PurchaseDraftLineDto? xmlSource = null
+    ) =>
         new(
             l.Id,
             l.ItemId,
@@ -94,7 +120,8 @@ internal static class PurchaseMapper
             l.OrderedQuantity,
             l.PurchaseReceptionLineId,
             l.Notes,
-            l.SortOrder
+            l.SortOrder,
+            xmlSource
         );
 
     public static PurchasePaymentScheduleDto MapSchedule(PurchasePaymentSchedule s) =>

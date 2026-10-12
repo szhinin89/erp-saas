@@ -35,7 +35,13 @@ public sealed class GetPurchaseByIdHandlerTests
         }
 
         public GetPurchaseByIdHandler BuildHandler() =>
-            new(Repo.Object, Tenant.Object, Branch.Object);
+            new(
+                Repo.Object,
+                Mock.Of<ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces.IPurchaseReceptionDocumentRepository>(),
+                Mock.Of<ERP.Domain.Modules.Items.Interfaces.IItemRepository>(),
+                Tenant.Object,
+                Branch.Object
+            );
     }
 
     private static PurchaseInvoice CreateInvoice(Guid branchId) =>

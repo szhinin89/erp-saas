@@ -290,6 +290,11 @@ function computePrimaryReadiness(
   };
 }
 
+/**
+ * PURCHASE-DRAFT-RECOVERY B1 — regla de CONFIRMAR: toda línea con un estado bloqueante (producto
+ * pendiente, conflicto de código, presentación faltante, costo/presentación sospechosa, bodega,
+ * impuesto) impide confirmar. Guardar el borrador usa {@link getPurchaseLineSaveBlockingReasons}.
+ */
 export function getPurchaseLineBlockingReasons(
   lines: PurchaseLineFormValues[],
   options: PurchaseLineReadinessOptions,
@@ -301,6 +306,20 @@ export function getPurchaseLineBlockingReasons(
       readiness: getPurchaseLineReadiness(line, options),
     }))
     .filter((entry) => entry.readiness.blocking);
+}
+
+/**
+ * PURCHASE-DRAFT-RECOVERY B1 — regla de GUARDAR BORRADOR: solo bloquea lo que el backend rechazaría
+ * igual al persistir (código IVA/ICE ausente o desconocido). Una línea XML pendiente o incompleta
+ * se guarda para no perder trabajo; Confirmar sigue exigiendo la línea lista.
+ */
+export function getPurchaseLineSaveBlockingReasons(
+  lines: PurchaseLineFormValues[],
+  options: PurchaseLineReadinessOptions,
+) {
+  return lines
+    .map((line, index) => ({ line, index }))
+    .filter((entry) => hasInvalidTax(entry.line, options));
 }
 
 export function isPurchaseLineReady(

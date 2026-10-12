@@ -1,14 +1,37 @@
 import type { CreatePurchasePayload } from "../api/purchaseService";
+import type { PurchaseRetentionIntentState } from "./purchaseRetentionIntent";
 import type { PurchaseInvoiceFormValues } from "../schemas/purchaseInvoiceSchema";
 import { fromDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
 
+/** Fila de cuota tal como la edita el formulario (ScheduleRow del hook). */
+export interface PurchaseDraftScheduleRow {
+  number: number;
+  dueDate: string;
+  amount: number;
+  notes: string;
+}
+
+/**
+ * PURCHASE-DRAFT-RECOVERY F2/F3 — estado del borrador que vive fuera de react-hook-form pero que
+ * "Guardar borrador" también persiste. `manualSchedule` null = cuotas generadas por la condición
+ * de pago (no se guardan; el backend las descarta con []).
+ */
+export interface PurchaseDraftExtras {
+  manualSchedule: PurchaseDraftScheduleRow[] | null;
+  retentionIntent: PurchaseRetentionIntentState;
+}
+
 /**
  * Payload create/update de la compra a partir del formulario — única proyección de lo que
  * "Guardar borrador" persiste. Los campos runtime de la línea (context, xml*, itemMatchStatus…)
- * nunca viajan al API.
+ * nunca viajan al API. Sin `extras`, cuotas e intención de retención no viajan (el backend no
+ * las toca).
  */
-export function buildPurchaseDraftPayload(data: PurchaseInvoiceFormValues): CreatePurchasePayload {
+export function buildPurchaseDraftPayload(
+  data: PurchaseInvoiceFormValues,
+  extras?: PurchaseDraftExtras,
+): CreatePurchasePayload {
   return {
     supplierId: data.supplierId,
     docTypeCode: data.docTypeCode,
@@ -41,6 +64,25 @@ export function buildPurchaseDraftPayload(data: PurchaseInvoiceFormValues): Crea
     dueDate: data.dueDate || null,
     notes: data.notes || null,
     paymentTermId: data.paymentTermId || null,
+    ...(extras ? buildPurchaseDraftExtrasPayload(extras) : {}),
+  };
+}
+
+function buildPurchaseDraftExtrasPayload(
+  extras: PurchaseDraftExtras,
+): Required<Pick<CreatePurchasePayload, "schedule" | "retentionIntent">> {
+  return {
+    schedule: (extras.manualSchedule ?? []).map((r) => ({
+      installmentNumber: r.number,
+      dueDate: r.dueDate,
+      amount: r.amount,
+      notes: r.notes || null,
+    })),
+    retentionIntent: {
+      appliesRetention: extras.retentionIntent.appliesRetention,
+      emissionPointId: extras.retentionIntent.emissionPointId || null,
+      issueDate: extras.retentionIntent.issueDate || null,
+    },
   };
 }
 
@@ -69,5 +111,18 @@ export function buildPurchaseDraftSnapshot(data: PurchaseInvoiceFormValues): str
       freightAllocated: toNumber(l.freightAllocated),
       otherCostsAllocated: toNumber(l.otherCostsAllocated),
     })),
+  });
+}
+
+/**
+ * PURCHASE-DRAFT-RECOVERY D3 — huella de cuotas manuales + intención de retención. Va aparte de la
+ * huella del formulario: ambas viajan también en el body de Confirmar (no la bloquean), pero sí
+ * cuentan como cambios sin guardar al salir o al ejecutar acciones que recargan el borrador.
+ */
+export function buildPurchaseDraftExtrasSnapshot(extras: PurchaseDraftExtras): string {
+  const payload = buildPurchaseDraftExtrasPayload(extras);
+  return JSON.stringify({
+    ...payload,
+    schedule: payload.schedule.map((r) => ({ ...r, amount: toNumber(r.amount) })),
   });
 }

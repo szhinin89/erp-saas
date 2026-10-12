@@ -180,7 +180,11 @@ public sealed class CreatePurchaseReceptionDraftHandler
 
         var mergedLines = BuildMergedLines(document);
         var draft = DraftModel.FromMergedLines(document, mergedLines);
-        var packagingByLine = await ResolvePackagingSnapshotsAsync(document, cancellationToken);
+        var packagingByLine = await PurchaseDraftPackagingResolver.ResolveAsync(
+            _itemRepo,
+            document,
+            cancellationToken
+        );
 
         return Result<PurchaseDraftDto>.Success(DraftMapper.ToDto(draft, packagingByLine));
     }
@@ -239,52 +243,5 @@ public sealed class CreatePurchaseReceptionDraftHandler
                     key
                 )
         );
-    }
-
-    private async Task<
-        IReadOnlyDictionary<Guid, PurchaseDraftLinePackagingSnapshot>
-    > ResolvePackagingSnapshotsAsync(
-        PurchaseReceptionDocument document,
-        CancellationToken cancellationToken
-    )
-    {
-        var snapshots = new Dictionary<Guid, PurchaseDraftLinePackagingSnapshot>();
-
-        if (document.SupplierId is not { } supplierId)
-            return snapshots;
-
-        foreach (var line in document.Lines)
-        {
-            if (line.ItemId is not { } itemId || string.IsNullOrWhiteSpace(line.SupplierCode))
-                continue;
-
-            var match = await _itemRepo.GetSupplierCodeMatchAsync(
-                supplierId,
-                line.SupplierCode,
-                document.TenantId,
-                cancellationToken
-            );
-            if (match is null || match.ItemId != itemId)
-                continue;
-
-            if (
-                match.PackagingLevelId is { } packagingLevelId
-                && !string.IsNullOrWhiteSpace(match.PackagingUomCode)
-                && match.PackagingBaseQuantity is > 0m
-            )
-            {
-                snapshots[line.Id] = new PurchaseDraftLinePackagingSnapshot(
-                    packagingLevelId,
-                    match.PackagingUomCode,
-                    match.BaseUomCode,
-                    match.PackagingBaseQuantity.Value
-                );
-                continue;
-            }
-
-            snapshots[line.Id] = PurchaseDraftLinePackagingSnapshot.Base(match.BaseUomCode);
-        }
-
-        return snapshots;
     }
 }

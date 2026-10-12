@@ -3,6 +3,8 @@ using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
+using ERP.Application.Modules.Purchases.PurchaseReception.PurchaseDraft;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -298,6 +300,46 @@ file static class PurchaseAccessKeyDuplicateGuard
     }
 }
 
+/// <summary>
+/// PURCHASE-DRAFT-RECOVERY F2 — cuotas manuales del borrador. Guardar las persiste tal cual (solo
+/// reglas estructurales, ver <see cref="PurchaseInvoice.ReplaceDraftPaymentSchedule"/>), aunque ya
+/// no cuadren con el total o con una condición de pago cambiada: nunca se ajustan ni regeneran
+/// solas. Que cuadren es requisito de Confirmar (ConfirmPurchaseHandler).
+/// </summary>
+file static class PurchaseDraftSchedule
+{
+    /// <summary>True si <paramref name="schedule"/> cambia las cuotas persistidas.</summary>
+    public static bool Apply(PurchaseInvoice inv, List<ConfirmScheduleInput>? schedule)
+    {
+        if (schedule is null)
+            return false;
+        if (schedule.Count == 0)
+        {
+            if (inv.PaymentSchedules.Count == 0)
+                return false;
+            inv.ClearPaymentSchedule();
+            return true;
+        }
+        inv.ReplaceDraftPaymentSchedule(
+            schedule.Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes)).ToList()
+        );
+        return true;
+    }
+
+    public static void ApplyRetentionIntent(
+        PurchaseInvoice inv,
+        PurchaseRetentionIntentDraftDto? intent
+    )
+    {
+        if (intent is not null)
+            inv.SetRetentionIntentDraft(
+                intent.AppliesRetention,
+                intent.EmissionPointId,
+                intent.IssueDate
+            );
+    }
+}
+
 // ── Commands & Queries ──────────────────────────────────────────────────
 
 public sealed record CreatePurchaseDraftCommand(
@@ -316,7 +358,13 @@ public sealed record CreatePurchaseDraftCommand(
     decimal OtherCosts = 0,
     DateOnly? DueDate = null,
     string? Notes = null,
-    Guid? PaymentTermId = null
+    Guid? PaymentTermId = null,
+    // PURCHASE-DRAFT-RECOVERY F2 — cuotas manuales del borrador: null = no tocar las guardadas
+    // (si ya no cuadran con el total se rechaza), [] = descartarlas (se generarán desde la condición
+    // de pago al confirmar), con filas = reemplazarlas (deben cuadrar exactamente con el total).
+    List<ConfirmScheduleInput>? Schedule = null,
+    // PURCHASE-DRAFT-RECOVERY F3 — null = no tocar la intención recordada.
+    PurchaseRetentionIntentDraftDto? RetentionIntent = null
 ) : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
 
 public sealed record UpdatePurchaseDraftCommand(
@@ -336,7 +384,13 @@ public sealed record UpdatePurchaseDraftCommand(
     decimal OtherCosts = 0,
     DateOnly? DueDate = null,
     string? Notes = null,
-    Guid? PaymentTermId = null
+    Guid? PaymentTermId = null,
+    // PURCHASE-DRAFT-RECOVERY F2 — cuotas manuales del borrador: null = no tocar las guardadas
+    // (si ya no cuadran con el total se rechaza), [] = descartarlas (se generarán desde la condición
+    // de pago al confirmar), con filas = reemplazarlas (deben cuadrar exactamente con el total).
+    List<ConfirmScheduleInput>? Schedule = null,
+    // PURCHASE-DRAFT-RECOVERY F3 — null = no tocar la intención recordada.
+    PurchaseRetentionIntentDraftDto? RetentionIntent = null
 ) : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
 
 public sealed record GetPurchaseByIdQuery(Guid Id)
@@ -448,6 +502,10 @@ public sealed class CreatePurchaseDraftValidator : AbstractValidator<CreatePurch
             });
         RuleFor(x => x.FreightCost).GreaterThanOrEqualTo(0);
         RuleFor(x => x.OtherCosts).GreaterThanOrEqualTo(0);
+        RuleForEach(x => x.Schedule)
+            .ChildRules(row =>
+                row.RuleFor(r => r.Notes).MaximumLength(PurchasePaymentSchedule.NotesMaxLen)
+            );
     }
 }
 
@@ -497,6 +555,10 @@ public sealed class UpdatePurchaseDraftValidator : AbstractValidator<UpdatePurch
             });
         RuleFor(x => x.FreightCost).GreaterThanOrEqualTo(0);
         RuleFor(x => x.OtherCosts).GreaterThanOrEqualTo(0);
+        RuleForEach(x => x.Schedule)
+            .ChildRules(row =>
+                row.RuleFor(r => r.Notes).MaximumLength(PurchasePaymentSchedule.NotesMaxLen)
+            );
     }
 }
 
@@ -749,7 +811,6 @@ public sealed class CreatePurchaseDraftHandler
         if (linesResult.Error is not null)
             return linesResult.Error;
 
-        inv.ReplaceLines(linesResult.Lines, _u.UserId);
         // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — si el cliente ya envió FreightAllocated/
         // OtherCostsAllocated explícitos por línea (modal "Distribuir flete/gasto" revisado antes
         // de guardar), esos valores ya quedaron aplicados en BuildLines y son la fuente de verdad:
@@ -758,8 +819,18 @@ public sealed class CreatePurchaseDraftHandler
         var hasExplicitLineCosts = cmd.Lines.Any(l =>
             l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
         );
+        inv.ReplaceLines(linesResult.Lines, _u.UserId);
         if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
             inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
+        try
+        {
+            PurchaseDraftSchedule.Apply(inv, cmd.Schedule);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+        }
+        PurchaseDraftSchedule.ApplyRetentionIntent(inv, cmd.RetentionIntent);
 
         // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo patrón que
         // AuthorizePurchaseReturnUseCases/AuthorizePurchaseCreditNoteUseCases: la recepción queda
@@ -1011,6 +1082,7 @@ public sealed class UpdatePurchaseDraftHandler
     private readonly ICurrentUser _u;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICompanyPrecisionPolicyProvider _precision;
+    private readonly IUnitOfWork _unitOfWork;
 
     public UpdatePurchaseDraftHandler(
         IPurchaseInvoiceRepository repo,
@@ -1023,10 +1095,12 @@ public sealed class UpdatePurchaseDraftHandler
         ICurrentTenant t,
         ICurrentUser u,
         IDatabaseExceptionTranslator dbEx,
-        ICompanyPrecisionPolicyProvider precision
+        ICompanyPrecisionPolicyProvider precision,
+        IUnitOfWork unitOfWork
     )
     {
         _precision = precision;
+        _unitOfWork = unitOfWork;
         _repo = repo;
         _bpRepo = bpRepo;
         _ptResolver = ptResolver;
@@ -1056,6 +1130,57 @@ public sealed class UpdatePurchaseDraftHandler
         if (inv is null)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
 
+        // PURCHASE-DRAFT-RECOVERY — Update atómico (mismo patrón que UpdateSalesDraftHandler A3 /
+        // ResolvePurchaseReceptionLinesHandler): los DELETE directos de líneas y cuotas
+        // (RemoveLinesByInvoiceAsync / ClearScheduleTrackingAsync), la reconstrucción del agregado
+        // y el SaveChangesAsync final corren en UNA transacción de IUnitOfWork.ExecuteInTransactionAsync.
+        // Cualquier rechazo o fallo de persistencia posterior hace rollback completo: compra, líneas
+        // y cuotas quedan exactamente como estaban.
+        try
+        {
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async token =>
+                {
+                    var rejection = await ApplyUpdateAsync(cmd, inv, supplier, token);
+                    if (rejection is not null)
+                        throw new PurchaseDraftRejectionException(rejection);
+                },
+                ct
+            );
+        }
+        catch (PurchaseDraftRejectionException ex)
+        {
+            _unitOfWork.ClearChangeTracker();
+            return ex.Rejection;
+        }
+        catch (ArgumentException ex)
+        {
+            // Reglas estructurales de dominio (p. ej. cuotas inválidas), ahora con rollback.
+            _unitOfWork.ClearChangeTracker();
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
+        }
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info))
+        {
+            _unitOfWork.ClearChangeTracker();
+            var mapped = PurchaseAccessKeyDuplicateGuard.MapUniqueViolation(info.ConstraintName);
+            if (mapped is not null)
+                return Result<PurchaseInvoiceDto>.Conflict(mapped);
+            throw;
+        }
+        return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+    }
+
+    /// <summary>
+    /// Cuerpo del Update ejecutado DENTRO de la transacción. Devuelve null si todo es válido (el
+    /// UoW hace el único SaveChangesAsync + Commit); un Result de rechazo fuerza el rollback.
+    /// </summary>
+    private async Task<Result<PurchaseInvoiceDto>?> ApplyUpdateAsync(
+        UpdatePurchaseDraftCommand cmd,
+        PurchaseInvoice inv,
+        ERP.Domain.MasterData.Entities.BusinessPartner supplier,
+        CancellationToken ct
+    )
+    {
         var duplicate = await PurchaseAccessKeyDuplicateGuard.FindDuplicateAsync(
             _repo,
             _t.TenantId,
@@ -1068,6 +1193,16 @@ public sealed class UpdatePurchaseDraftHandler
         if (duplicateResult is not null)
             return duplicateResult;
 
+        // PURCHASE-DRAFT-RECOVERY F2 — las cuotas manuales guardadas se conservan tal cual al cambiar
+        // la condición de pago (nunca se regeneran solas); Confirm exige que cuadren.
+        void ChangePaymentTerm(ERP.Domain.MasterData.Entities.PaymentTerm pt) =>
+            inv.UpdatePaymentTermSnapshot(
+                pt.Id,
+                pt.Name,
+                pt.Installments,
+                pt.DaysBetweenInstallments
+            );
+
         if (cmd.PaymentTermId.HasValue && cmd.PaymentTermId.Value != inv.PaymentTermId)
         {
             var ptResult = await _ptResolver.ResolveForPurchaseAsync(
@@ -1077,13 +1212,7 @@ public sealed class UpdatePurchaseDraftHandler
             );
             if (!ptResult.IsSuccess)
                 return Result<PurchaseInvoiceDto>.ValidationFailure(ptResult.Error!);
-            var pt = ptResult.Value!;
-            inv.UpdatePaymentTermSnapshot(
-                pt.Id,
-                pt.Name,
-                pt.Installments,
-                pt.DaysBetweenInstallments
-            );
+            ChangePaymentTerm(ptResult.Value!);
         }
         else if (cmd.SupplierId != inv.SupplierId)
         {
@@ -1093,15 +1222,7 @@ public sealed class UpdatePurchaseDraftHandler
             // Fase 2) — el usuario deberá elegir uno explícito si lo necesita.
             var ptResult = await _ptResolver.ResolveForPurchaseAsync(cmd.SupplierId, null, ct);
             if (ptResult.IsSuccess)
-            {
-                var pt = ptResult.Value!;
-                inv.UpdatePaymentTermSnapshot(
-                    pt.Id,
-                    pt.Name,
-                    pt.Installments,
-                    pt.DaysBetweenInstallments
-                );
-            }
+                ChangePaymentTerm(ptResult.Value!);
         }
 
         if (cmd.GlobalWarehouseId.HasValue)
@@ -1300,29 +1421,35 @@ public sealed class UpdatePurchaseDraftHandler
                 return taxResult;
             lines.Add(line);
         }
-        await _repo.RemoveLinesByInvoiceAsync(inv.Id, lines, ct);
-        inv.ReplaceLines(lines, _u.UserId);
         // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — mismo criterio que CreatePurchaseDraftHandler:
         // no reprorratear si el cliente ya envió FreightAllocated/OtherCostsAllocated explícitos.
         var hasExplicitLineCosts = cmd.Lines.Any(l =>
             l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
         );
+        await _repo.RemoveLinesByInvoiceAsync(inv.Id, lines, ct);
+        inv.ReplaceLines(lines, _u.UserId);
         if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
             inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
-
-        try
+        if (PurchaseDraftSchedule.Apply(inv, cmd.Schedule))
         {
-            await _repo.SaveChangesAsync(ct);
+            await _repo.ClearScheduleTrackingAsync(inv.Id, ct);
+            _repo.ReattachSchedulesAsAdded(inv);
         }
-        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info))
-        {
-            var mapped = PurchaseAccessKeyDuplicateGuard.MapUniqueViolation(info.ConstraintName);
-            if (mapped is not null)
-                return Result<PurchaseInvoiceDto>.Conflict(mapped);
-            throw;
-        }
-        return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+        PurchaseDraftSchedule.ApplyRetentionIntent(inv, cmd.RetentionIntent);
+        return null;
     }
+}
+
+/// <summary>
+/// Canal interno para devolver un Result de rechazo desde dentro de
+/// <see cref="IUnitOfWork.ExecuteInTransactionAsync"/> (delegate sin valor de retorno): lanzarla
+/// fuerza el rollback completo y el handler la traduce al mismo Result. Mismo patrón que
+/// UpdateSalesDraftHandler (A3).
+/// </summary>
+file sealed class PurchaseDraftRejectionException(Result<PurchaseInvoiceDto> rejection)
+    : Exception(rejection.Error)
+{
+    public Result<PurchaseInvoiceDto> Rejection { get; } = rejection;
 }
 
 file static class TaxHelper
@@ -1546,16 +1673,22 @@ public sealed class GetPurchaseByIdHandler
     : IRequestHandler<GetPurchaseByIdQuery, Result<PurchaseInvoiceDto>>
 {
     private readonly IPurchaseInvoiceRepository _repo;
+    private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
+    private readonly IItemRepository _itemRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
 
     public GetPurchaseByIdHandler(
         IPurchaseInvoiceRepository repo,
+        IPurchaseReceptionDocumentRepository receptionRepo,
+        IItemRepository itemRepo,
         ICurrentTenant t,
         ICurrentBranch b
     )
     {
         _repo = repo;
+        _receptionRepo = receptionRepo;
+        _itemRepo = itemRepo;
         _t = t;
         _b = b;
     }
@@ -1566,9 +1699,64 @@ public sealed class GetPurchaseByIdHandler
     )
     {
         var inv = await _repo.GetByIdAsync(_t.TenantId, q.Id, ct);
-        return inv is null || inv.BranchId != _b.BranchId
-            ? Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.")
-            : Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+        if (inv is null || inv.BranchId != _b.BranchId)
+            return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
+
+        var xmlSources =
+            inv.Status == PurchaseStatus.Draft ? await LoadXmlSourcesAsync(inv, ct) : null;
+        return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv, xmlSources));
+    }
+
+    /// <summary>
+    /// PURCHASE-DRAFT-RECOVERY F1/D1 — evidencia original de cada línea de recepción vinculada al
+    /// borrador, leída de la PurchaseReceptionLine PERSISTIDA: es la misma que el backend usa al
+    /// guardar (PurchaseLineNormalizer/ReceptionTaxLookup) para decidir si la línea sigue igual al
+    /// XML, así frontend y backend reconocen exactamente los mismos valores. Incluye el Item Matching
+    /// vigente de la recepción y la presentación aprendida, para que la UI recupere un match hecho
+    /// después de guardar (nunca sobrescribe lo ya persistido en la compra — eso lo decide la UI).
+    /// Solo documentos de la misma empresa que la compra.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<Guid, PurchaseDraftLineDto>> LoadXmlSourcesAsync(
+        PurchaseInvoice inv,
+        CancellationToken ct
+    )
+    {
+        var sources = new Dictionary<Guid, PurchaseDraftLineDto>();
+        var pending = inv
+            .Lines.Where(l => l.PurchaseReceptionLineId.HasValue)
+            .Select(l => l.PurchaseReceptionLineId!.Value)
+            .ToHashSet();
+
+        while (pending.Count > 0)
+        {
+            var lineId = pending.First();
+            pending.Remove(lineId);
+            var document = await _receptionRepo.GetByLineIdWithEvidenceAsync(
+                _t.TenantId,
+                lineId,
+                ct
+            );
+            if (document is null || document.CompanyId != inv.CompanyId)
+                continue;
+
+            var packagingByLine = await PurchaseDraftPackagingResolver.ResolveAsync(
+                _itemRepo,
+                document,
+                ct
+            );
+            foreach (var line in document.Lines)
+            {
+                sources[line.Id] = PurchaseDraftMapper.ToLineDto(
+                    PurchaseDraftMergedLine.FromPersisted(line),
+                    packagingByLine.TryGetValue(line.Id, out var packaging)
+                        ? packaging
+                        : PurchaseDraftLinePackagingSnapshot.Base()
+                );
+                pending.Remove(line.Id);
+            }
+        }
+
+        return sources;
     }
 }
 

@@ -1,5 +1,6 @@
 import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 import type { RetentionIntentRequest } from "../../retentions/facades/purchaseRetentionFacade";
+import type { PurchaseDraftLineDto } from "./purchaseReceptionService";
 
 const BASE = "/api/v1/purchases";
 
@@ -100,6 +101,18 @@ export interface PurchaseLineDto {
   // ── Meta ────────────────────────────────────────────────────────
   notes: string | null;
   sortOrder: number;
+  /**
+   * PURCHASE-DRAFT-RECOVERY F1 — evidencia original de la línea de recepción (mismo contrato que
+   * "Crear compra" desde Recepción). Solo al leer un borrador por Id; null en líneas manuales.
+   */
+  xmlSource?: PurchaseDraftLineDto | null;
+}
+
+/** PURCHASE-DRAFT-RECOVERY F3 — decisión de retención recordada por el borrador. */
+export interface PurchaseRetentionIntentDraftDto {
+  appliesRetention: boolean;
+  emissionPointId: string | null;
+  issueDate: string | null;
 }
 
 export interface PurchasePaymentScheduleDto {
@@ -153,6 +166,8 @@ export interface PurchaseInvoiceDto {
   paymentSchedules: PurchasePaymentScheduleDto[];
   createdAt: string;
   updatedAt: string | null;
+  /** PURCHASE-DRAFT-RECOVERY F3 — null si el borrador nunca registró una decisión. */
+  retentionIntent?: PurchaseRetentionIntentDraftDto | null;
 }
 
 export interface PurchaseListItemDto {
@@ -248,6 +263,13 @@ export interface CreatePurchasePayload {
   dueDate?: string | null;
   notes?: string | null;
   paymentTermId?: string | null;
+  /**
+   * PURCHASE-DRAFT-RECOVERY F2 — cuotas manuales del borrador: [] = descartarlas (se generan desde
+   * la condición de pago al confirmar); con filas = reemplazarlas (deben cuadrar con el total).
+   */
+  schedule?: ConfirmScheduleInput[];
+  /** PURCHASE-DRAFT-RECOVERY F3 — intención de retención recordada por el borrador. */
+  retentionIntent?: PurchaseRetentionIntentDraftDto;
 }
 
 export interface UpdatePurchasePayload extends CreatePurchasePayload {

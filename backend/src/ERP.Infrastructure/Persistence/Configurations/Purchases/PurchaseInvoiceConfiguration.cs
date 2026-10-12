@@ -101,6 +101,15 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
             .HasMaxLength(PurchaseInvoice.NotesMaxLen);
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
 
+        // PURCHASE-DRAFT-RECOVERY F3 — intención de retención recordada por el borrador.
+        builder.Property(x => x.RetentionIntentApplies).HasColumnName("retention_intent_applies");
+        builder
+            .Property(x => x.RetentionIntentEmissionPointId)
+            .HasColumnName("retention_intent_emission_point_id");
+        builder
+            .Property(x => x.RetentionIntentIssueDate)
+            .HasColumnName("retention_intent_issue_date");
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");

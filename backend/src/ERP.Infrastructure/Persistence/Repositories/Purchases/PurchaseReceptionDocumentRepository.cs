@@ -42,6 +42,20 @@ public sealed class PurchaseReceptionDocumentRepository : IPurchaseReceptionDocu
                 .ThenInclude(l => l.Taxes)
             .FirstOrDefaultAsync(x => x.Lines.Any(l => l.Id == lineId), ct);
 
+    public Task<PurchaseReceptionDocument?> GetByLineIdWithEvidenceAsync(
+        Guid tenantId,
+        Guid lineId,
+        CancellationToken ct = default
+    ) =>
+        Scoped(tenantId)
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(x => x.Lines)
+                .ThenInclude(l => l.Taxes)
+            .Include(x => x.Lines)
+                .ThenInclude(l => l.AdditionalFields)
+            .FirstOrDefaultAsync(x => x.Lines.Any(l => l.Id == lineId), ct);
+
     public async Task<(IReadOnlyList<PurchaseReceptionDocument> Items, int Total)> GetPagedAsync(
         Guid tenantId,
         int page,

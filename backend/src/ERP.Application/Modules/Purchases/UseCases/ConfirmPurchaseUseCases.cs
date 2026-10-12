@@ -353,7 +353,10 @@ public sealed class ConfirmPurchaseHandler
         inv.Confirm(uid);
 
         // ── STEP 2b: Generar calendario de pagos ────────────────────────
-        await _repo.ClearScheduleTrackingAsync(inv.Id, ct);
+        // PURCHASE-DRAFT-RECOVERY F2 — prioridad: cronograma enviado > cronograma manual guardado
+        // en el borrador (solo si sigue cuadrando con el total; nunca se ajusta en silencio) >
+        // generado desde la condición de pago. Se resuelve en memoria ANTES de borrar con SQL las
+        // cuotas persistidas: un rechazo no debe destruir el cronograma guardado del borrador.
         try
         {
             if (cmd.Schedule is { Count: > 0 })
@@ -362,6 +365,15 @@ public sealed class ConfirmPurchaseHandler
                     cmd.Schedule.Select(s => (s.InstallmentNumber, s.DueDate, s.Amount, s.Notes))
                         .ToList()
                 );
+            }
+            else if (inv.PaymentSchedules.Count > 0)
+            {
+                if (!inv.PaymentScheduleMatchesTotal())
+                    return Result<PurchaseInvoiceDto>.ValidationFailure(
+                        $"Las cuotas guardadas en el borrador ({inv.PaymentSchedules.Sum(s => s.Amount):F2}) "
+                            + $"no coinciden con el total de la compra ({inv.GrandTotal:F2}) o vencen antes de la emisión. "
+                            + "Regenere o corrija las cuotas, guarde el borrador y vuelva a confirmar."
+                    );
             }
             else
             {
@@ -377,6 +389,7 @@ public sealed class ConfirmPurchaseHandler
             );
             return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
         }
+        await _repo.ClearScheduleTrackingAsync(inv.Id, ct);
         _repo.ReattachSchedulesAsAdded(inv);
 
         // ── STEP 3: Movimientos de inventario ───────────────────────────

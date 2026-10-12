@@ -96,7 +96,8 @@ public sealed class PurchaseDraftPackagingTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             Mock.Of<IDatabaseExceptionTranslator>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            UnitOfWorkTestDouble.PassThrough().Object
         );
 
         var command = new UpdatePurchaseDraftCommand(
@@ -227,7 +228,8 @@ public sealed class PurchaseDraftPackagingTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             Mock.Of<IDatabaseExceptionTranslator>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            UnitOfWorkTestDouble.PassThrough().Object
         );
 
         var result = await handler.Handle(

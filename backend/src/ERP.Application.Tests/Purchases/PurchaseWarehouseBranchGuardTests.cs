@@ -260,7 +260,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             Mock.Of<IDatabaseExceptionTranslator>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            UnitOfWorkTestDouble.PassThrough().Object
         );
 
     [Fact]

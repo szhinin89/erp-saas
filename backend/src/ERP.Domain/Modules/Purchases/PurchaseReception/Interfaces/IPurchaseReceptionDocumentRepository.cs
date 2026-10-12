@@ -17,6 +17,17 @@ public interface IPurchaseReceptionDocumentRepository
         Guid lineId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// PURCHASE-DRAFT-RECOVERY F1 — igual que <see cref="GetByLineIdAsync"/> pero con la evidencia
+    /// completa de cada línea (impuestos y datos adicionales del XML), sin tracking: solo lectura
+    /// para reabrir un borrador de compra.
+    /// </summary>
+    Task<PurchaseReceptionDocument?> GetByLineIdWithEvidenceAsync(
+        Guid tenantId,
+        Guid lineId,
+        CancellationToken ct = default
+    );
     Task<(IReadOnlyList<PurchaseReceptionDocument> Items, int Total)> GetPagedAsync(
         Guid tenantId,
         int page,

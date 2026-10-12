@@ -652,6 +652,82 @@ public sealed class ConfirmPurchaseHandlerTests
             Notifications: new NotificationsPreferences(true, false, "es")
         );
 
+    // ── PURCHASE-DRAFT-RECOVERY F2/B1 ───────────────────────────────────
+
+    [Fact]
+    public async Task Confirm_conserva_las_cuotas_manuales_guardadas_si_no_llega_cronograma()
+    {
+        var inv = CreateDraftInvoice(1);
+        foreach (var line in inv.Lines)
+            line.ApplyTaxes("10", 15m, "IVA 15%", null, 0m, null);
+        var total = ExpectedGrandTotal(inv);
+        inv.ReplacePaymentSchedule(
+            [
+                (1, inv.IssueDate.AddDays(10), 20m, "Anticipo"),
+                (2, inv.IssueDate.AddDays(40), total - 20m, null),
+            ]
+        );
+        var (handler, _, _, _) = BuildHandler(inv);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.PaymentSchedules.Select(s => (s.InstallmentNumber, s.Amount, s.Notes))
+            .Should().Equal((1, 20m, "Anticipo"), (2, total - 20m, (string?)null));
+    }
+
+    [Fact]
+    public async Task Confirm_rechaza_cuotas_guardadas_que_no_cuadran_sin_borrarlas()
+    {
+        // Guardadas sobre el total sin IVA (50.00); al confirmar el total real es 57.50.
+        var inv = CreateDraftInvoice(1);
+        inv.ReplacePaymentSchedule([(1, inv.IssueDate.AddDays(30), inv.GrandTotal, null)]);
+        var (handler, repo, _, _) = BuildHandler(inv);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("cuotas guardadas").And.Contain("Regenere");
+        repo.Verify(
+            r => r.ClearScheduleTrackingAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Confirm_sigue_bloqueando_borrador_con_linea_XML_sin_producto()
+    {
+        var inv = CreateDraftInvoice(1);
+        var pending = PurchaseInvoiceDetail.Create(
+            inv.Id,
+            TenantId,
+            "Producto XML pendiente",
+            quantity: 1m,
+            unitPrice: 5m,
+            vatCode: "10",
+            uomCode: "UNIT",
+            purchaseReceptionLineId: Guid.NewGuid()
+        );
+        inv.ReplaceLines([inv.Lines[0], pending], UserId);
+        var (handler, repo, _, _) = BuildHandler(inv);
+
+        var result = await handler.Handle(
+            new ConfirmPurchaseCommand(inv.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("no tiene ítem vinculado");
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static decimal ExpectedGrandTotal(PurchaseInvoice inv)
     {
         // After ApplyTaxes(15%) + DistributeCosts(0,0) + Confirm (freeze)

@@ -266,7 +266,8 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             Mock.Of<IDatabaseExceptionTranslator>(),
-            PrecisionPolicyTestDouble.Mock()
+            PrecisionPolicyTestDouble.Mock(),
+            UnitOfWorkTestDouble.PassThrough().Object
         );
 
     private static PurchaseInvoice CreateExistingDraft()
@@ -593,7 +594,8 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             Mock.Of<IDatabaseExceptionTranslator>(),
-            PurchasePolicy(decimals)
+            PurchasePolicy(decimals),
+            UnitOfWorkTestDouble.PassThrough().Object
         );
 
         var result = await handler.Handle(

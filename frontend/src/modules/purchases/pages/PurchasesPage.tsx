@@ -178,8 +178,15 @@ export function PurchasesPage() {
         tabs={tabs}
         activeTab={ctx.tab}
         onChange={(id) => {
-          if (id === "listado") ctx.resetForm();
-          ctx.setTab(id);
+          if (id !== "listado") {
+            ctx.setTab(id);
+            return;
+          }
+          // PURCHASE-DRAFT-RECOVERY D3 — nunca descartar cambios sin guardar en silencio.
+          ctx.requestLeave(() => {
+            ctx.resetForm();
+            ctx.setTab(id);
+          });
         }}
       />
 
@@ -300,8 +307,10 @@ export function PurchasesPage() {
                   onClick={() => {
                     const purchaseId = ctx.duplicateAccessKey?.purchaseId;
                     if (!purchaseId) return;
-                    navigate(`/purchases?invoiceId=${purchaseId}`);
-                    void ctx.loadForEdit(purchaseId);
+                    ctx.requestLeave(() => {
+                      navigate(`/purchases?invoiceId=${purchaseId}`);
+                      void ctx.loadForEdit(purchaseId);
+                    });
                   }}
                 >
                   <span className="material-symbols-outlined zh-icon-md">
@@ -1050,7 +1059,7 @@ export function PurchasesPage() {
             )}
 
           {/* PILOT-PURCHASE-UI-FIX-01 — Confirmar usa la versión guardada del borrador. */}
-          {ctx.hasUnsavedChanges && (
+          {ctx.hasUnsavedFormChanges && (
             <ZHPageNotice variant="warning" message={ctx.unsavedChangesMessage} />
           )}
 
@@ -1059,10 +1068,12 @@ export function PurchasesPage() {
             <ZHBtn
               type="button"
               variant="secondary"
-              onClick={() => {
-                ctx.resetForm();
-                ctx.setTab("listado");
-              }}
+              onClick={() =>
+                ctx.requestLeave(() => {
+                  ctx.resetForm();
+                  ctx.setTab("listado");
+                })
+              }
             >
               <span className="material-symbols-outlined zh-icon-md">
                 arrow_back
@@ -1082,7 +1093,7 @@ export function PurchasesPage() {
                 !ctx.canUseSriDocTypes ||
                 ctx.isDuplicateAccessKeyBlocking ||
                 ctx.isSupplierInactiveBlocking ||
-                ctx.hasLineReadinessBlockers ||
+                ctx.hasLineSaveBlockers ||
                 ctx.lines.length === 0
               }
             >
@@ -1103,7 +1114,9 @@ export function PurchasesPage() {
                 disabled={
                   ctx.fieldDisabled ||
                   ctx.pendingReceptionItems.length > 0 ||
-                  ctx.hasUnsavedChanges
+                  ctx.hasLineReadinessBlockers ||
+                  ctx.scheduleBlocksConfirm ||
+                  ctx.hasUnsavedFormChanges
                 }
                 title={
                   ctx.pendingReceptionItems.length > 0
@@ -1111,9 +1124,13 @@ export function PurchasesPage() {
                         "purchases.validation.resolvePendingItemsBeforeConfirm",
                         "Resuelva los productos pendientes de vinculación antes de confirmar.",
                       )
-                    : ctx.hasUnsavedChanges
-                      ? ctx.unsavedChangesMessage
-                      : undefined
+                    : ctx.hasLineReadinessBlockers
+                      ? ctx.confirmBlockedTitle
+                      : ctx.scheduleBlocksConfirm
+                        ? ctx.scheduleMismatchConfirmMessage
+                        : ctx.hasUnsavedFormChanges
+                        ? ctx.unsavedChangesMessage
+                        : undefined
                 }
               >
                 <span className="material-symbols-outlined zh-icon-md">
@@ -1270,6 +1287,21 @@ export function PurchasesPage() {
         confirmLabel={t("purchases.cancel.confirm", "Anular")}
         onCancel={() => ctx.setModalCancelReason(false)}
         onConfirm={ctx.handleCancel}
+      />
+
+      {/* PURCHASE-DRAFT-RECOVERY D3 — salir con cambios sin guardar exige confirmación explícita. */}
+      <ZHConfirmModal
+        open={ctx.pendingLeave}
+        variant="warning"
+        title={t("purchases.draftRecovery.leaveTitle", "Hay cambios sin guardar")}
+        message={t(
+          "purchases.draftRecovery.leaveMessage",
+          "Si sale ahora se perderán los cambios que no guardó en el borrador. Use \"Guardar borrador\" para conservarlos.",
+        )}
+        confirmLabel={t("purchases.draftRecovery.leaveConfirm", "Descartar cambios")}
+        cancelLabel={t("purchases.draftRecovery.leaveCancel", "Seguir editando")}
+        onCancel={ctx.cancelLeave}
+        onConfirm={ctx.confirmLeave}
       />
 
       {/* ZH-RETENTION-SRI-ANNULMENT-01 — la retención ya está autorizada por el SRI. */}

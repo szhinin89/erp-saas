@@ -1,5 +1,18 @@
 # Project Status
 
+## PURCHASE-DRAFT-RECOVERY (FASE 2) — Guardar/reabrir borradores de compra incompletos sin perder trabajo (2026-10-11)
+
+**Estado: implementado (sin commit).** Purchases reabierto solo para esta fase. Sin cambios en pricing por presentación, modal masivo/PVP, servicios capitalizables ni el hardening de `66d0c66aa`.
+
+- **Guardar vs Confirmar (B1):** Guardar solo se bloquea por impuesto IVA/ICE inválido (`getPurchaseLineSaveBlockingReasons`); producto pendiente, conflicto de código, presentación, costo sospechoso y bodega bloquean solo Confirmar (botón + `handleConfirm`). Backend ya bloqueaba al confirmar línea XML sin ítem y línea XML inventariable sin presentación (STEP 0a, sin cambios).
+- **Evidencia XML al reabrir (F1/B2):** `PurchaseInvoiceDetailDto.XmlSource` (reutiliza `PurchaseDraftLineDto`) se llena en `GetPurchaseByIdHandler` solo para borradores, desde la `PurchaseReceptionLine` persistida (la misma que usa `PurchaseLineNormalizer`). Frontend arma los `xml*` con un único helper (`xmlEvidenceFromDraftLine`) al crear desde recepción y al reabrir: editar → guardar → reabrir → volver al XML vuelve a usar los montos del XML.
+- **Match aprendido después (D1):** si la línea de la compra sigue sin producto y la recepción tiene match resuelto (AUTO/MANUAL), se propone producto + presentación aprendida como cambio sin guardar; nunca sobrescribe lo guardado ni adopta NEEDS_REVIEW.
+- **Cuotas manuales (F2):** `Schedule?` opcional en Create/Update (null = no tocar, [] = descartar, filas = reemplazar). Guardar persiste las cuotas tal cual aunque ya no cuadren con el total o la condición de pago (solo validación estructural: número, monto > 0, sin duplicados — `ReplaceDraftPaymentSchedule`); nunca se ajustan ni regeneran solas. La UI las restaura y advierte el desfase; Confirmar (frontend y backend) las rechaza hasta corregirlas, sin borrarlas. Sin migración (`purchase_payment_schedules` existente).
+- **Update atómico:** `UpdatePurchaseDraftHandler` ejecuta DELETE de líneas/cuotas, reconstrucción y SaveChanges en una sola transacción (`IUnitOfWork.ExecuteInTransactionAsync`, mismo patrón que `UpdateSalesDraftHandler` A3); cualquier rechazo o fallo posterior (p. ej. número de factura duplicado del proveedor) hace rollback completo.
+- **Intención de retención (F3):** 3 columnas nullable en `purchase_invoices` (migración `PurchaseDraftRetentionIntent`); solo restaura la UI, Confirmar sigue recibiendo la intención en su body y revalida.
+- **Cambios sin guardar (D3):** cuotas e intención cuentan para salir (Cancelar, pestaña Listado, abrir otra compra, cerrar pestaña) y para acciones que recargan el borrador; Confirmar sigue bloqueándose solo por cambios de formulario (cuotas/intención viajan en su body).
+- Tests focales: Application filtro Purchase 484/484 (incluye `PurchaseDraftRecoveryTests` 11/11 y 3 nuevos en `ConfirmPurchaseHandlerTests`); PostgreSQL `UpdatePurchaseDraftAtomicityPostgreSqlTests` 3/3 (rollback verificado con mutación sin transacción → falla); vitest compras 358/358 (`usePurchasesPage.draftRecovery.test.ts` 16/16, `purchaseXmlEvidence.test.ts`, readiness); `tsc -b` + eslint 0 errores; `architecture:check` 0 nuevas; solución backend compila. Suites completas: no ejecutadas.
+
 ## PILOT-PURCHASE-RECEPTION-BARCODE-FIX-01 — Barcode por presentación al crear productos desde recepción (2026-10-10)
 
 **Estado: implementado (sin commit).** Solo "Resolver productos pendientes" (`ResolvePurchaseReceptionLinesHandler` + modal). Items/CreateItem, matching, XML, costos e inventario sin cambios. Origen: auditoría PILOT-PURCHASE-RECEPTION-RESOLVE-AUDIT-01.

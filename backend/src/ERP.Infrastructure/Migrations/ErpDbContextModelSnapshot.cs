@@ -11268,6 +11268,18 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("purchase_order_number");
 
+                    b.Property<bool?>("RetentionIntentApplies")
+                        .HasColumnType("boolean")
+                        .HasColumnName("retention_intent_applies");
+
+                    b.Property<Guid?>("RetentionIntentEmissionPointId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("retention_intent_emission_point_id");
+
+                    b.Property<DateOnly?>("RetentionIntentIssueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("retention_intent_issue_date");
+
                     b.Property<string>("SriPaymentMethodCode")
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)")

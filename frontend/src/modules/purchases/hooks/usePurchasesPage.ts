@@ -83,8 +83,10 @@ import {
   type PurchaseLineFormValues,
 } from "../schemas/purchaseInvoiceSchema";
 import {
+  buildPurchaseDraftExtrasSnapshot,
   buildPurchaseDraftPayload,
   buildPurchaseDraftSnapshot,
+  type PurchaseDraftExtras,
 } from "../utils/purchaseDraftPayload";
 import {
   buildSupplierInactiveMessage,
@@ -99,7 +101,12 @@ import {
 import {
   getPurchaseLineBlockingReasons,
   getPurchaseLineReadiness,
+  getPurchaseLineSaveBlockingReasons,
 } from "../utils/purchaseLineReadiness";
+import {
+  recoverLearnedMatch,
+  xmlEvidenceFromDraftLine,
+} from "../utils/purchaseXmlEvidence";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -173,6 +180,8 @@ export function usePurchasesPage() {
   const [editing, setEditing] = useState<PurchaseInvoiceDto | null>(null);
   // Huella del borrador tal como quedó persistido al cargarlo (null = sin borrador persistido).
   const [savedDraftSnapshot, setSavedDraftSnapshot] = useState<string | null>(null);
+  // PURCHASE-DRAFT-RECOVERY D3 — huella guardada de cuotas manuales + intención de retención.
+  const [savedExtrasSnapshot, setSavedExtrasSnapshot] = useState<string | null>(null);
   // Aviso no bloqueante cuando el borrador viene de una Recepción Electrónica con
   // ProcessingStatus PROCESSED_WITH_WARNINGS (algunas líneas del XML no se pudieron interpretar).
   const [receptionProcessingNotice, setReceptionProcessingNotice] = useState<
@@ -206,6 +215,10 @@ export function usePurchasesPage() {
   const [ptDaysBetween, setPtDaysBetween] = useState(0);
   const [ptRows, setPtRows] = useState<ScheduleRow[]>([]);
   const [ptLoaded, setPtLoaded] = useState(false);
+  // PURCHASE-DRAFT-RECOVERY F2 — true si las cuotas fueron personalizadas (editadas, agregadas,
+  // eliminadas o regeneradas con nro./días distintos a la condición de pago, o restauradas desde el
+  // borrador guardado). Solo las manuales se guardan con el borrador; las generadas se recalculan.
+  const [ptManual, setPtManual] = useState(false);
 
   // ── Retención ────────────────────────────────────────────────────
   // ZH-PURCHASE-RETENTION-CONFIRM-01: la retención se define en el BORRADOR y se emite dentro de
@@ -238,6 +251,8 @@ export function usePurchasesPage() {
   const [modalDistributeCost, setModalDistributeCost] = useState(false);
   // COMPRAS-METODO-ZH-01B — resolución masiva de líneas XML sin producto.
   const [modalPendingProducts, setModalPendingProducts] = useState(false);
+  // PURCHASE-DRAFT-RECOVERY D3 — salida pendiente de confirmación por cambios sin guardar.
+  const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null);
 
   // ── Collapsible sections ───────────────────────────────────────────
   const [showElectronic, setShowElectronic] = useState(false);
@@ -292,20 +307,82 @@ export function usePurchasesPage() {
   const readOnly = !isDraft;
   const fieldDisabled = saving || readOnly;
   // PILOT-PURCHASE-UI-FIX-01 — cambios locales sin guardar sobre un borrador ya persistido.
+  // PURCHASE-DRAFT-RECOVERY D3 — cuotas manuales e intención de retención forman parte de lo que
+  // "Guardar borrador" persiste y, por tanto, del dirty-check.
+  const draftExtras = useMemo<PurchaseDraftExtras>(
+    () => ({ manualSchedule: ptManual ? ptRows : null, retentionIntent }),
+    [ptManual, ptRows, retentionIntent],
+  );
   const currentDraftSnapshot = useMemo(
     () => (savedDraftSnapshot === null ? null : buildPurchaseDraftSnapshot(formWatch)),
     [savedDraftSnapshot, formWatch],
   );
-  const hasUnsavedChanges =
+  const currentExtrasSnapshot = useMemo(
+    () => buildPurchaseDraftExtrasSnapshot(draftExtras),
+    [draftExtras],
+  );
+  // Cambios del formulario (cabecera/líneas): Confirmar usa la versión guardada, así que lo
+  // bloquean. Cuotas e intención de retención viajan además en el body de Confirmar, así que solo
+  // cuentan para salir o recargar el borrador (hasUnsavedChanges).
+  const hasUnsavedFormChanges =
     editing?.status === "Draft" &&
     savedDraftSnapshot !== null &&
     currentDraftSnapshot !== savedDraftSnapshot;
+  const hasUnsavedChanges =
+    hasUnsavedFormChanges ||
+    (editing?.status === "Draft" &&
+      savedExtrasSnapshot !== null &&
+      currentExtrasSnapshot !== savedExtrasSnapshot);
   const unsavedChangesMessage = t(
     "purchases.validation.saveBeforeConfirm",
     "Guarda los cambios antes de confirmar la compra.",
   );
+
+  // PURCHASE-DRAFT-RECOVERY D3 — salir del formulario (Cancelar, pestaña Listado, abrir otra compra
+  // o cerrar/recargar la pestaña) nunca descarta en silencio un borrador con cambios sin guardar,
+  // ni una compra nueva que todavía no se guardó.
+  const hasUnsavedWork =
+    isDraft &&
+    tab === "nuevo" &&
+    (hasUnsavedChanges || (!editing && lines.length > 0));
+  const requestLeave = useCallback(
+    (action: () => void) => {
+      if (hasUnsavedWork) setPendingLeave(() => action);
+      else action();
+    },
+    [hasUnsavedWork],
+  );
+  const confirmLeave = useCallback(() => {
+    const action = pendingLeave;
+    setPendingLeave(null);
+    action?.();
+  }, [pendingLeave]);
+  const cancelLeave = useCallback(() => setPendingLeave(null), []);
+  useEffect(() => {
+    if (!hasUnsavedWork) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedWork]);
+  // Acciones que operan sobre la versión GUARDADA y recargan el borrador: con cambios locales sin
+  // guardar, esos cambios se perderían.
+  const blockIfUnsaved = useCallback(() => {
+    if (!hasUnsavedChanges) return false;
+    message.warning(
+      t(
+        "purchases.draftRecovery.saveBeforeAction",
+        "Guarde los cambios del borrador antes de ejecutar esta acción.",
+      ),
+    );
+    return true;
+  }, [hasUnsavedChanges, t]);
+  // Cronograma definitivo (solo lectura) de una compra ya confirmada. Las cuotas manuales de un
+  // borrador (PURCHASE-DRAFT-RECOVERY F2) siguen siendo editables en ptRows.
   const hasPersistedSchedule =
-    editing && editing.paymentSchedules && editing.paymentSchedules.length > 0;
+    !!editing &&
+    editing.status !== "Draft" &&
+    editing.paymentSchedules &&
+    editing.paymentSchedules.length > 0;
 
   const localSummary = useMemo(
     () => calcSummary(lines, 0, 0, vatRatesMap, iceRatesMap),
@@ -314,7 +391,7 @@ export function usePurchasesPage() {
   // PURCHASES-HARDENING-P0 (B4-B6) — los totales vienen de UNA sola fuente: los persistidos
   // mientras no haya cambios locales; en cuanto el borrador se edita, todos salen del formulario.
   // Nunca se mezcla (p. ej. IVA persistido con líneas ya editadas).
-  const showPersistedTotals = !!editing && !hasUnsavedChanges;
+  const showPersistedTotals = !!editing && !hasUnsavedFormChanges;
   const summaryTotals =
     showPersistedTotals && editing
       ? {
@@ -407,6 +484,17 @@ export function usePurchasesPage() {
     [formWatch.globalWarehouseId, iceRatesMap, lines, precisionPolicy, t, vatRatesMap],
   );
   const hasLineReadinessBlockers = lineReadinessBlockers.length > 0;
+  // PURCHASE-DRAFT-RECOVERY B1 — Guardar solo se bloquea por lo que el backend rechazaría igual;
+  // hasLineReadinessBlockers (todos los bloqueos) queda como regla de Confirmar.
+  const hasLineSaveBlockers = useMemo(
+    () =>
+      getPurchaseLineSaveBlockingReasons(lines, {
+        precisionPolicy,
+        vatRates: vatRatesMap,
+        iceRates: iceRatesMap,
+      }).length > 0,
+    [iceRatesMap, lines, precisionPolicy, vatRatesMap],
+  );
   // El detalle por línea (número + motivo) ya se muestra dentro de cada línea;
   // el aviso superior solo debe indicar que hay líneas por revisar, sin repetirlo.
   const lineReadinessBlockerDetails = useMemo(
@@ -421,16 +509,29 @@ export function usePurchasesPage() {
         : [],
     [lineReadinessBlockers, t],
   );
-  const lineReadinessBlockedTitle = t(
-    "purchases.lineReadiness.saveBlockedTitle",
-    "No se puede guardar la compra.",
+  const confirmBlockedTitle = t(
+    "purchases.lineReadiness.confirmBlockedSubmitTitle",
+    "No se puede confirmar la compra: hay líneas por resolver.",
   );
+  const lineReadinessBlockedTitle = hasLineSaveBlockers
+    ? t("purchases.lineReadiness.saveBlockedTitle", "No se puede guardar la compra.")
+    : t(
+        "purchases.lineReadiness.confirmBlockedTitle",
+        "Puede guardar el borrador, pero debe resolver las líneas marcadas antes de confirmar.",
+      );
 
   const ptRowsSum = ptRows.reduce((s, r) => s + r.amount, 0);
   const ptMismatch =
     ptRows.length > 0 &&
     localTotal > 0 &&
     roundToTotalAmount(ptRowsSum) !== roundToTotalAmount(localTotal);
+  // PURCHASE-DRAFT-RECOVERY F2 — cuotas que no cuadran (p. ej. cambió el total o la condición): el
+  // borrador se guarda igual, tal cual (nunca se ajustan solas); solo Confirmar exige corregirlas.
+  const scheduleBlocksConfirm = ptMismatch;
+  const scheduleMismatchConfirmMessage = t(
+    "purchases.schedule.mismatchBlocksConfirm",
+    "Las cuotas no cuadran con el total de la compra. Regenere o corrija las cuotas antes de confirmar.",
+  );
   const sriDocTypesUnavailable =
     sriDocTypesLoaded && (sriDocTypesLoadFailed || sriDocTypes.length === 0);
   const canUseSriDocTypes = sriDocTypesLoaded && !sriDocTypesUnavailable;
@@ -466,7 +567,7 @@ export function usePurchasesPage() {
         "purchases.distributeCost.disabled.noLines",
         "Agregue al menos un ítem antes de distribuir flete/gasto.",
       );
-    if (hasLineReadinessBlockers)
+    if (hasLineSaveBlockers)
       return t(
         "purchases.distributeCost.disabled.linesIncomplete",
         "Complete las líneas antes de distribuir flete/gasto.",
@@ -502,7 +603,7 @@ export function usePurchasesPage() {
     saving,
     hasUnsavedChanges,
     lines.length,
-    hasLineReadinessBlockers,
+    hasLineSaveBlockers,
     formWatch.supplierId,
     formWatch.docTypeCode,
     isDuplicateAccessKeyBlocking,
@@ -1116,6 +1217,7 @@ export function usePurchasesPage() {
         setPtInstallments(pt.installments);
         setPtDaysBetween(pt.daysBetweenInstallments);
         setPtLoaded(true);
+        setPtManual(false);
         setPtRows(
           generateScheduleRows(
             pt.installments,
@@ -1219,6 +1321,7 @@ export function usePurchasesPage() {
     reset(emptyPurchaseInvoiceForm());
     setEditing(null);
     setSavedDraftSnapshot(null);
+    setSavedExtrasSnapshot(null);
     showSaveError("");
     setDuplicateAccessKey(null);
     setDuplicateAccessKeyChecking(false);
@@ -1232,6 +1335,7 @@ export function usePurchasesPage() {
     setPtDaysBetween(0);
     setPtRows([]);
     setPtLoaded(false);
+    setPtManual(false);
     setGlobalQuery("");
     setGlobalResults([]);
     setGlobalOpen(false);
@@ -1275,8 +1379,16 @@ export function usePurchasesPage() {
           // sin él, el backend reprorratearía el total entre TODAS las líneas al guardar.
           freightAllocated: l.freightAllocated,
           otherCostsAllocated: l.otherCostsAllocated,
-          // B4-B6 — montos documentales (XML) para resolver impuestos igual que el backend.
-          ...documentalTaxSnapshot(l),
+          // PURCHASE-DRAFT-RECOVERY F1/B2 — evidencia original de la recepción (misma proyección
+          // que "Crear compra"): aunque la línea se haya editado y guardado, volver exactamente a
+          // los valores del XML vuelve a usar sus montos documentales, igual que el backend.
+          // Sin XmlSource (línea manual o compra antigua): montos documentales persistidos (B4-B6).
+          ...(l.xmlSource
+            ? {
+                ...xmlEvidenceFromDraftLine(l.xmlSource),
+                itemMatchStatus: l.xmlSource.itemMatchStatus,
+              }
+            : documentalTaxSnapshot(l)),
         }));
 
         // SRI codes
@@ -1304,13 +1416,59 @@ export function usePurchasesPage() {
           paymentTermId: inv.paymentTermId ?? "",
           lines: mappedLines,
         };
-        reset(loadedValues);
+
+        // PURCHASE-DRAFT-RECOVERY F2 — cuotas manuales guardadas en el borrador.
+        const isDraftInvoice = inv.status === "Draft";
+        const savedManualSchedule: ScheduleRow[] | null =
+          isDraftInvoice && inv.paymentSchedules.length > 0
+            ? inv.paymentSchedules.map((sc) => ({
+                number: sc.installmentNumber,
+                dueDate: sc.dueDate,
+                amount: sc.amount,
+                notes: sc.notes ?? "",
+              }))
+            : null;
+        // PURCHASE-DRAFT-RECOVERY F3 — intención de retención recordada por el borrador.
+        const savedRetentionIntent: PurchaseRetentionIntentState = inv.retentionIntent
+          ? {
+              appliesRetention: inv.retentionIntent.appliesRetention,
+              emissionPointId: inv.retentionIntent.emissionPointId ?? "",
+              issueDate: inv.retentionIntent.issueDate ?? todayIso(),
+            }
+          : emptyPurchaseRetentionIntent(todayIso());
+
+        // PURCHASE-DRAFT-RECOVERY D1 — match aprendido en la recepción después de guardar: se
+        // propone en el formulario (nunca pisa un producto ya guardado en la compra). La huella se
+        // toma de lo PERSISTIDO, así queda como cambio sin guardar hasta que el usuario guarde.
+        const recoveredLines = isDraftInvoice
+          ? mappedLines.map((ml, i) => {
+              const recovered = recoverLearnedMatch(ml, inv.lines[i].xmlSource);
+              return recovered ? { ...ml, ...recovered } : ml;
+            })
+          : mappedLines;
+        const recoveredCount = recoveredLines.filter(
+          (ml, i) => ml.itemId && !mappedLines[i].itemId,
+        ).length;
+
+        reset({ ...loadedValues, lines: recoveredLines });
         setSavedDraftSnapshot(buildPurchaseDraftSnapshot(loadedValues));
+        setSavedExtrasSnapshot(
+          buildPurchaseDraftExtrasSnapshot({
+            manualSchedule: savedManualSchedule,
+            retentionIntent: savedRetentionIntent,
+          }),
+        );
+        if (recoveredCount > 0)
+          message.info(
+            t("purchases.draftRecovery.learnedMatches", {
+              count: recoveredCount,
+            }),
+          );
 
         setLineKey(inv.lines.length + 1);
 
         // Fetch context for each line
-        for (const ml of mappedLines) {
+        for (const ml of recoveredLines) {
           const wh = ml.warehouseId || inv.globalWarehouseId;
           if (ml.itemId) void fetchItemContext(ml._key, ml.itemId, wh);
         }
@@ -1318,8 +1476,9 @@ export function usePurchasesPage() {
         // Reconstruye el estado de Item Matching (badge Auto/Manual/Pendiente/Revisar) de las líneas
         // que vienen de Recepción Electrónica — no se persiste en PurchaseInvoiceDetail, se lee en
         // vivo desde PurchaseReceptionLine vía el mismo backend que usa la pantalla de Recepción.
+        // Con XmlSource (borrador) el estado ya llegó en la misma lectura.
         for (const ml of mappedLines) {
-          if (!ml.purchaseReceptionLineId) continue;
+          if (!ml.purchaseReceptionLineId || ml.itemMatchStatus) continue;
           const lineId = ml.purchaseReceptionLineId;
           purchaseReceptionService
             .getLineMatch(lineId)
@@ -1340,10 +1499,13 @@ export function usePurchasesPage() {
         }
 
         // Payment schedule
-        setPtInstallments(inv.paymentTermInstallments);
+        setPtInstallments(savedManualSchedule?.length ?? inv.paymentTermInstallments);
         setPtDaysBetween(inv.paymentTermDaysBetween);
         setPtLoaded(true);
-        if (!inv.paymentSchedules || inv.paymentSchedules.length === 0) {
+        setPtManual(savedManualSchedule !== null);
+        if (savedManualSchedule) {
+          setPtRows(savedManualSchedule);
+        } else if (!inv.paymentSchedules || inv.paymentSchedules.length === 0) {
           setPtRows(
             generateScheduleRows(
               inv.paymentTermInstallments,
@@ -1355,6 +1517,7 @@ export function usePurchasesPage() {
         } else {
           setPtRows([]);
         }
+        setRetentionIntent(savedRetentionIntent);
 
         setShowElectronic(!!(inv.accessKey || inv.authorizationNumber));
         setShowNotes(!!inv.notes);
@@ -1448,31 +1611,11 @@ export function usePurchasesPage() {
             purchaseReceptionLineId: l.purchaseReceptionLineId,
             ...normalizePurchaseLinePresentation(l),
             itemMatchStatus: l.itemMatchStatus,
-            xmlSupplierCode: l.supplierCode ?? undefined,
-            xmlDescription: l.description,
-            xmlSupplierAuxCode: l.supplierAuxCode,
-            // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — copia congelada de
-            // quantity/unitPrice tal como vino del draft, ANTES de que el usuario edite la
-            // cabecera. `quantity`/`unitPrice` de arriba siguen siendo los campos editables
-            // (`ctx.updateLine` los sobrescribe); estos dos nunca se tocan de nuevo.
-            xmlQuantity: l.quantity,
-            xmlUnitPrice: l.unitPrice,
-            xmlDiscountPct: l.discountPct ?? 0,
-            xmlDiscount: l.discount,
-            xmlLineSubtotal: l.lineSubtotal,
-            xmlTaxCode: l.taxCode,
-            xmlVatPercentage: l.vatPercentage,
-            xmlTaxValue: l.taxValue,
-            xmlTotalLine: l.totalLine,
-            xmlTaxableBase:
-              l.taxes.find((tx) => tx.taxCode === "2")?.taxableBase ??
-              l.lineSubtotal - l.discount,
-            xmlIceAmount: l.taxes.find((tx) => tx.taxCode === "3")?.taxAmount,
-            xmlIrbpnrAmount: l.taxes.find((tx) => tx.taxCode === "5")?.taxAmount,
-            xmlAdditionalFields: l.additionalFields
-              .slice()
-              .sort((a, b) => a.sortOrder - b.sortOrder)
-              .map((f) => ({ name: f.name, value: f.value })),
+            // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — copia congelada del comprobante,
+            // ANTES de que el usuario edite: `quantity`/`unitPrice` de arriba siguen siendo los
+            // campos editables; los xml* nunca se tocan de nuevo. PURCHASE-DRAFT-RECOVERY F1: misma
+            // proyección que al reabrir el borrador guardado.
+            ...xmlEvidenceFromDraftLine(l),
           }),
         );
 
@@ -1495,7 +1638,9 @@ export function usePurchasesPage() {
         setPtDaysBetween(0);
         setPtRows([]);
         setPtLoaded(false);
+        setPtManual(false);
         setWhPreview(null);
+        setRetentionIntent(emptyPurchaseRetentionIntent(todayIso()));
         setRetention(null);
         setTab("nuevo");
       } catch (err) {
@@ -1551,7 +1696,7 @@ export function usePurchasesPage() {
       true,
     );
     if (inactiveSupplier) return;
-    if (hasLineReadinessBlockers) {
+    if (hasLineSaveBlockers) {
       showSaveError(lineReadinessBlockedTitle, lineReadinessBlockerDetails);
       message.error(
         `${lineReadinessBlockedTitle} ${lineReadinessBlockerDetails[0] ?? ""}`,
@@ -1586,7 +1731,7 @@ export function usePurchasesPage() {
     }
     setSaving(true);
     try {
-      const payload = buildPurchaseDraftPayload(data);
+      const payload = buildPurchaseDraftPayload(data, draftExtras);
 
       if (editing) {
         await purchaseService.update(editing.id, {
@@ -1652,9 +1797,20 @@ export function usePurchasesPage() {
     setModalConfirm(false);
     if (!editing) return;
     // PILOT-PURCHASE-UI-FIX-01 — el backend confirma la versión GUARDADA: con cambios locales sin
-    // guardar se perderían en silencio. Nunca guarda+confirma automáticamente.
-    if (hasUnsavedChanges) {
+    // guardar se perderían en silencio. Nunca guarda+confirma automáticamente. Cuotas e intención
+    // de retención no cuentan aquí: viajan en el body de esta misma confirmación.
+    if (hasUnsavedFormChanges) {
       showSaveError(unsavedChangesMessage);
+      return;
+    }
+    // PURCHASE-DRAFT-RECOVERY B1 — Guardar ya no exige líneas listas: Confirmar aplica su propia
+    // regla (producto, conflicto, presentación, costo sospechoso, bodega, impuesto).
+    if (hasLineReadinessBlockers) {
+      showSaveError(confirmBlockedTitle, lineReadinessBlockerDetails);
+      return;
+    }
+    if (scheduleBlocksConfirm) {
+      showSaveError(scheduleMismatchConfirmMessage);
       return;
     }
     // ZH-PURCHASE-RETENTION-CONFIRM-01 — si el usuario pidió la retención, viaja como intención de
@@ -1703,8 +1859,13 @@ export function usePurchasesPage() {
     }
   }, [
     editing,
-    hasUnsavedChanges,
+    hasUnsavedFormChanges,
     unsavedChangesMessage,
+    hasLineReadinessBlockers,
+    confirmBlockedTitle,
+    lineReadinessBlockerDetails,
+    scheduleBlocksConfirm,
+    scheduleMismatchConfirmMessage,
     ptRows,
     whPreview,
     retentionIntent,
@@ -1779,7 +1940,7 @@ export function usePurchasesPage() {
   const handleApplyDiscount = useCallback(
     async (val: string) => {
       setModalDiscount(false);
-      if (!editing) return;
+      if (!editing || blockIfUnsaved()) return;
       try {
         const r = await purchaseService.applyDiscount(editing.id, Number(val));
         setEditing(r);
@@ -1796,12 +1957,12 @@ export function usePurchasesPage() {
       );
       }
     },
-    [editing, loadForEdit, showSaveError, t],
+    [editing, blockIfUnsaved, loadForEdit, showSaveError, t],
   );
 
   // ── Freight/Recalculate ────────────────────────────────────────────
   const handleAllocateFreight = useCallback(async () => {
-    if (!editing) return;
+    if (!editing || blockIfUnsaved()) return;
     try {
       const r = await purchaseService.allocateFreight(editing.id);
       setEditing(r);
@@ -1814,10 +1975,10 @@ export function usePurchasesPage() {
         t("purchases.errors.freightFailed", "Error al distribuir flete."),
       );
     }
-  }, [editing, loadForEdit, showSaveError, t]);
+  }, [editing, blockIfUnsaved, loadForEdit, showSaveError, t]);
 
   const handleRecalculate = useCallback(async () => {
-    if (!editing) return;
+    if (!editing || blockIfUnsaved()) return;
     try {
       const r = await purchaseService.recalculate(editing.id);
       setEditing(r);
@@ -1828,7 +1989,7 @@ export function usePurchasesPage() {
     } catch {
       showSaveError(t("purchases.errors.recalculateFailed", "Error al recalcular."));
     }
-  }, [editing, loadForEdit, showSaveError, t]);
+  }, [editing, blockIfUnsaved, loadForEdit, showSaveError, t]);
 
   // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo revisado por el usuario en el
   // modal "Distribuir flete/gasto" (suma amount solo entre includedLineIds). Retorna true/false
@@ -1955,19 +2116,19 @@ export function usePurchasesPage() {
     void refreshRetentionPreview(editing.id);
   }, [editing, refreshRetentionPreview]);
 
-  // Otra compra → la decisión de retener no se arrastra.
-  const editingId = editing?.id;
-  useEffect(() => {
-    setRetentionIntent(emptyPurchaseRetentionIntent(todayIso()));
-  }, [editingId]);
+  // Otra compra → la decisión de retener no se arrastra: resetForm/loadFromReception la vacían y
+  // loadForEdit restaura la guardada en el borrador (PURCHASE-DRAFT-RECOVERY F3).
 
-  // Sin líneas propuestas (no elegible) la intención no puede quedar activa.
+  // Sin líneas propuestas (no elegible) la intención no puede quedar activa. Solo se decide con una
+  // vista previa ya cargada: al reabrir el borrador la intención restaurada no se apaga antes de
+  // que llegue la elegibilidad del backend.
   const canApplyRetention = canApplyPurchaseRetention(whPreview);
   const wantsRetention = retentionIntent.appliesRetention;
+  const hasRetentionPreview = whPreview !== null;
   useEffect(() => {
-    if (wantsRetention && !canApplyRetention && !whLoading)
+    if (wantsRetention && hasRetentionPreview && !canApplyRetention && !whLoading)
       setRetentionIntent((prev) => ({ ...prev, appliesRetention: false }));
-  }, [wantsRetention, canApplyRetention, whLoading]);
+  }, [wantsRetention, hasRetentionPreview, canApplyRetention, whLoading]);
 
   // Puntos de emisión: solo cuando el usuario decide emitir y puede leerlos; se preselecciona el
   // punto por defecto (el usuario puede cambiarlo).
@@ -2039,7 +2200,15 @@ export function usePurchasesPage() {
         getValues("issueDate"),
       ),
     );
-  }, [ptInstallments, ptDaysBetween, localTotal, getValues]);
+    // PURCHASE-DRAFT-RECOVERY F2 — regenerar con la condición de pago tal cual = cuotas generadas
+    // (no se guardan); con nro./días personalizados = cuotas manuales (se guardan).
+    const term = paymentTermsList.find((p) => p.id === getValues("paymentTermId"));
+    setPtManual(
+      !term ||
+        term.installments !== ptInstallments ||
+        term.daysBetweenInstallments !== ptDaysBetween,
+    );
+  }, [ptInstallments, ptDaysBetween, localTotal, getValues, paymentTermsList]);
 
   const addInstallment = useCallback(() => {
     const issueDate = getValues("issueDate");
@@ -2057,6 +2226,7 @@ export function usePurchasesPage() {
       },
     ]);
     setPtInstallments((prev) => prev + 1);
+    setPtManual(true);
   }, [ptRows, ptDaysBetween, getValues]);
 
   const removeInstallment = useCallback(
@@ -2068,6 +2238,7 @@ export function usePurchasesPage() {
           .map((r, i) => ({ ...r, number: i + 1 })),
       );
       setPtInstallments((prev) => Math.max(1, prev - 1));
+      setPtManual(true);
     },
     [ptRows],
   );
@@ -2081,6 +2252,7 @@ export function usePurchasesPage() {
       setPtRows((prev) =>
         prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)),
       );
+      setPtManual(true);
     },
     [],
   );
@@ -2094,6 +2266,7 @@ export function usePurchasesPage() {
         setPtInstallments(pt.installments);
         setPtDaysBetween(pt.daysBetweenInstallments);
         setPtLoaded(true);
+        setPtManual(false);
         setPtRows(
           generateScheduleRows(
             pt.installments,
@@ -2181,7 +2354,13 @@ export function usePurchasesPage() {
     readOnly,
     fieldDisabled,
     hasUnsavedChanges,
+    hasUnsavedFormChanges,
     unsavedChangesMessage,
+    hasUnsavedWork,
+    requestLeave,
+    pendingLeave: pendingLeave !== null,
+    confirmLeave,
+    cancelLeave,
     isSupplierInactiveBlocking,
     distributeCostDisabledReason,
     supplierInactiveMessage: supplierProfile
@@ -2191,6 +2370,10 @@ export function usePurchasesPage() {
     lineReadinessByKey,
     lineReadinessBlockers,
     hasLineReadinessBlockers,
+    hasLineSaveBlockers,
+    confirmBlockedTitle,
+    scheduleBlocksConfirm,
+    scheduleMismatchConfirmMessage,
     lineReadinessBlockerDetails,
     lineReadinessBlockedTitle,
     localSummary,
