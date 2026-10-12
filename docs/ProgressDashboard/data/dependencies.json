@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-10 23:38:09",
+    "generated":  "2026-10-11 20:05:15",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -339,12 +339,12 @@
                   },
                   {
                       "id":  "Purchases",
-                      "filesScanned":  138,
+                      "filesScanned":  139,
                       "fanIn":  9,
                       "fanOut":  12,
                       "coupling":  21,
                       "instability":  0.571,
-                      "cohesionApprox":  0.495,
+                      "cohesionApprox":  0.5,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -1108,13 +1108,13 @@
                   {
                       "from":  "Purchases",
                       "to":  "Items",
-                      "referenceCount":  9,
+                      "referenceCount":  10,
                       "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/PurchaseDraft/PurchaseDraftPackagingResolver.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/Services/PurchaseReceptionDetailProcessor.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft/CreatePurchaseReceptionDraftHandler.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteQueryUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteQueryUseCases.cs"
                                    ]
                   },
                   {
