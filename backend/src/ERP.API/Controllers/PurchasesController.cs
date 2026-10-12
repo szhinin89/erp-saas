@@ -191,7 +191,7 @@ public sealed class PurchasesController : ControllerBase
     )]
     public async Task<IActionResult> GetItemContext(
         [FromQuery] Guid itemId,
-        [FromQuery] Guid warehouseId,
+        [FromQuery] Guid? warehouseId,
         [FromQuery] Guid? supplierId,
         CancellationToken ct
     ) =>

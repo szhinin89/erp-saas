@@ -87,9 +87,11 @@ public sealed class CustomerImportProcessorTests
     }
 
     [Fact]
-    public async Task Ruc_con_digito_verificador_invalido_se_bloquea_en_validacion()
+    public async Task Ruc_persona_natural_con_digito_verificador_invalido_se_bloquea_en_validacion()
     {
-        var result = await Validate(Row(number: "1791352687001"));
+        // Regla vigente (RUC-SOCIETIES-VALIDATION-01): el dígito verificador solo aplica a persona
+        // natural (módulo 10 sobre la cédula). Mismo caso que RucValidatorTests.
+        var result = await Validate(Row(number: "1713175072001"));
 
         result.Issues.Should().ContainSingle(i => i.Code == "INVALID_IDENTIFICATION")
             .Which.Message.Should().StartWith("RUC '").And.NotContain("Parameter");

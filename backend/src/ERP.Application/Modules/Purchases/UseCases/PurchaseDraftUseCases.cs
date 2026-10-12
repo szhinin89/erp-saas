@@ -943,7 +943,13 @@ public sealed class CreatePurchaseDraftHandler
             if (l.OtherCostsAllocated.HasValue)
                 line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
 
-            var taxResult = await ResolveLineTaxesAsync(line, l.PurchaseReceptionLineId, tid, ct);
+            var taxResult = await ResolveLineTaxesAsync(
+                line,
+                l.PurchaseReceptionLineId,
+                normalizedLine.MatchesXmlDocument,
+                tid,
+                ct
+            );
             if (taxResult is not null)
                 return new(null!, taxResult);
             lines.Add(line);
@@ -960,6 +966,7 @@ public sealed class CreatePurchaseDraftHandler
     private async Task<Result<PurchaseInvoiceDto>?> ResolveLineTaxesAsync(
         PurchaseInvoiceDetail line,
         Guid? purchaseReceptionLineId,
+        bool matchesXmlDocument,
         Guid tenantId,
         CancellationToken ct
     )
@@ -976,6 +983,7 @@ public sealed class CreatePurchaseDraftHandler
                 return await ReceptionTaxHelper.ApplyReceptionTaxesAsync(
                     line,
                     receptionTaxes,
+                    matchesXmlDocument,
                     _tax,
                     ct
                 );
@@ -1277,6 +1285,7 @@ public sealed class UpdatePurchaseDraftHandler
                     taxResult = await ReceptionTaxHelper.ApplyReceptionTaxesAsync(
                         line,
                         receptionTaxes,
+                        normalizedLine.MatchesXmlDocument,
                         _tax,
                         ct
                     );
@@ -1393,6 +1402,7 @@ file static class ReceptionTaxHelper
     public static async Task<Result<PurchaseInvoiceDto>?> ApplyReceptionTaxesAsync(
         PurchaseInvoiceDetail line,
         IReadOnlyList<PurchaseReceptionLineTax> receptionTaxes,
+        bool matchesXmlDocument,
         ISriTaxResolver tax,
         CancellationToken ct
     )
@@ -1451,6 +1461,21 @@ file static class ReceptionTaxHelper
                         + "cargado o activo en el catálogo SRI global."
                 );
 
+            // PURCHASES-HARDENING-P0 (B4-B6) — si el usuario cambió cantidad/precio/% descuento, la
+            // base ya no es la del comprobante: IVA e ICE porcentual pasan a Calculated y
+            // ApplyTaxes→RecalcTaxes los recalcula por tarifa (SriTaxCalculator), igual que el
+            // frontend. ICE específico e IRBPNR son montos fijos del XML y se conservan (sin tarifa
+            // proporcional en la regla vigente).
+            var isRateBased =
+                t.TaxCode == SriVatTaxCode
+                || (
+                    t.TaxCode == SriIceTaxCode
+                    && entry.CalculationType == SriTaxCalculationType.Percentage
+                );
+            var source =
+                !matchesXmlDocument && isRateBased
+                    ? PurchaseTaxSource.Calculated
+                    : PurchaseTaxSource.Xml;
             built.Add(
                 PurchaseInvoiceDetailTax.Create(
                     line.Id,
@@ -1462,7 +1487,7 @@ file static class ReceptionTaxHelper
                     entry.CalculationType,
                     t.TaxableBase,
                     t.TaxAmount,
-                    PurchaseTaxSource.Xml
+                    source
                 )
             );
 
@@ -1641,7 +1666,10 @@ public sealed class GetPurchaseListHandler
 file sealed record PurchaseLineNormalization(
     decimal UnitPrice,
     decimal DiscountPct,
-    decimal? ExactDiscountAmount
+    decimal? ExactDiscountAmount,
+    // PURCHASES-HARDENING-P0 (B4-B6) — la línea conserva cantidad/precio/% descuento de la línea de
+    // recepción: solo entonces los montos IVA/ICE del XML siguen siendo válidos para esta línea.
+    bool MatchesXmlDocument = false
 );
 
 file static class PurchaseLineNormalizer
@@ -1678,7 +1706,7 @@ file static class PurchaseLineNormalizer
             && original.DiscountPct == line.DiscountPct;
 
         if (xmlDiscountUnchanged)
-            return new(unitPrice, line.DiscountPct, original!.Discount);
+            return new(unitPrice, line.DiscountPct, original!.Discount, MatchesXmlDocument: true);
 
         return new(
             unitPrice,

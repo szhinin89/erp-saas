@@ -49,7 +49,7 @@ import { ZHCompactNotice } from "../../../components/zh/notices";
 import { buildNotice, type NoticeSeverity } from "../../../notices";
 import {
   lineNet,
-  calcLineTax,
+  resolveLineTaxes,
   calcVatBreakdown,
   roundToTotalAmount,
   buildCostDistributionInputFromPersistedLines,
@@ -60,11 +60,6 @@ import type { PurchaseListItemDto } from "../api/purchaseService";
 import { useI18n } from "../../../i18n/i18n";
 import { ItemMatchStatusBadge } from "../components/ItemMatchStatusBadge";
 import { useOpenItemDetail } from "../../items/facades/itemDetailNavigationFacade";
-import { CreateItemFromReceptionLineModal } from "../components/CreateItemFromReceptionLineModal";
-import type {
-  PurchaseReceptionLineMatch,
-  ItemMatchStatus,
-} from "../api/purchaseReceptionService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
   buildPurchaseLinePresentation,
@@ -916,7 +911,7 @@ export function PurchasesPage() {
                     <ZHBtn
                       type="button"
                       variant="primary"
-                      onClick={() => ctx.setModalPendingProducts(true)}
+                      onClick={() => ctx.openPendingProducts()}
                     >
                       <span className="material-symbols-outlined zh-icon-md">
                         playlist_add_check
@@ -1191,9 +1186,9 @@ export function PurchasesPage() {
           mismo modal, mismo cálculo, distinto destino al aplicar (backend vs. formulario). */}
       <ResolvePendingProductsModal
         open={ctx.modalPendingProducts}
-        sources={ctx.pendingProductSources}
+        sources={ctx.modalPendingProductSources}
         supplierName={ctx.supplierProfile?.name ?? ""}
-        onClose={() => ctx.setModalPendingProducts(false)}
+        onClose={ctx.closePendingProducts}
         onResolved={(result) => void ctx.applyResolvedLines(result)}
       />
       <DistributeCostModal
@@ -1397,8 +1392,8 @@ function buildXmlConfirmChecklist(
           (sum, line) =>
             sum +
             lineNet(line) +
-            calcLineTax(line, vatRatesMap, iceRatesMap).vat +
-            calcLineTax(line, vatRatesMap, iceRatesMap).ice -
+            resolveLineTaxes(line, vatRatesMap, iceRatesMap).vat +
+            resolveLineTaxes(line, vatRatesMap, iceRatesMap).ice -
             (line.xmlTotalLine ?? 0),
           0,
         ),
@@ -1653,7 +1648,6 @@ function ProductLineActionMenu({
               disabled={disabled}
               buttonClassName="zh-line-action-item"
               label={t("purchases.lines.createProduct", "Crear producto")}
-              onModalOpenChange={setProductModalOpen}
               onAfterModalClose={closeAfterModal}
             />
           ) : (
@@ -1792,7 +1786,7 @@ function PurchaseLineCard({
       patch.description ?? p.label,
     );
     const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
-    if (wh) void ctx.fetchItemContext(l._key, p.id, wh);
+    void ctx.fetchItemContext(l._key, p.id, wh);
   };
   const handleUnlinkProduct = () => {
     if (l.purchaseReceptionLineId) {
@@ -2561,7 +2555,7 @@ function CreateItemLineAction({
     // (que solo llena `context` para mostrar, no el campo `vatCode` del formulario).
     ctx.updateLine(l._key, "vatCode", patch.vatCode ?? "");
     const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
-    if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
+    void ctx.fetchItemContext(l._key, item.id, wh);
   };
 
   return (
@@ -2651,7 +2645,7 @@ function UpdateItemAction({
     // reflejar el valor vigente del Item de inmediato.
     ctx.updateLine(l._key, "vatCode", patch.vatCode ?? "");
     const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
-    if (wh) void ctx.fetchItemContext(l._key, item.id, wh);
+    void ctx.fetchItemContext(l._key, item.id, wh);
   };
 
   return (
@@ -2694,9 +2688,12 @@ function UpdateItemAction({
 }
 
 /**
- * "Crear Item" para una línea que sí tiene PurchaseReceptionLineId — reutiliza el mismo wrapper
- * que usa la pantalla de Recepción (`CreateItemFromReceptionLineModal`), que crea el Item y lo
- * vincula server-side con `matchItem` en un solo paso, sin reimplementar esa lógica aquí.
+ * "Crear producto" para una línea que sí tiene PurchaseReceptionLineId — PURCHASES-HARDENING-P0
+ * (B9): abre el mismo "Resolver productos pendientes" (ResolvePendingProductsModal) limitado a esta
+ * línea, así la creación individual usa exactamente el SSOT del resolver masivo (frontend
+ * `buildResolveRequest` + backend ResolvePurchaseReceptionLines): barcode real de unidad → unidad,
+ * de caja/pack → su presentación, sin barcode real de unidad → código del proveedor como Interno
+ * provisional. Nunca una heurística aparte.
  */
 function ReceptionCreateItemAction({
   line: l,
@@ -2704,7 +2701,6 @@ function ReceptionCreateItemAction({
   disabled,
   buttonClassName,
   label,
-  onModalOpenChange,
   onAfterModalClose,
 }: {
   line: PurchaseLineDraft;
@@ -2712,108 +2708,23 @@ function ReceptionCreateItemAction({
   disabled?: boolean;
   buttonClassName?: string;
   label?: string;
-  onModalOpenChange?: (open: boolean) => void;
   onAfterModalClose?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const { t } = useI18n();
-
-  const receptionLine: PurchaseReceptionLineMatch = {
-    lineId: l.purchaseReceptionLineId as string,
-    supplierId: ctx.formWatch.supplierId || null,
-    supplierCode: l.xmlSupplierCode ?? null,
-    supplierAuxCode: l.xmlSupplierAuxCode ?? null,
-    description: l.description,
-    quantity: l.quantity,
-    unitPrice: l.unitPrice,
-    itemId: l.itemId ?? null,
-    matchStatus: l.itemMatchStatus ?? "PENDING",
-    matchedAt: null,
-    suggestions: [],
-  };
-
-  const applyLinked = (
-    itemId: string,
-    matchStatus: ItemMatchStatus,
-    label: string,
-    vatCode?: string | null,
-  ) => {
-    const current = ctx.getValues("lines");
-    ctx.setValue(
-      "lines",
-      current.map((x: PurchaseLineFormValues) =>
-        x._key === l._key
-          ? {
-              ...x,
-              itemId,
-              itemMatchStatus: matchStatus,
-              description: label,
-              _readinessIssue: undefined,
-              // Solo se pisa si viene un IVA de compra real — el matching manual (sin `item`
-              // recién creado) no debe borrar un vatCode ya cargado en la línea.
-              ...(vatCode !== undefined ? { vatCode: vatCode ?? "" } : {}),
-            }
-          : x,
-      ),
-    );
-    const wh = l.warehouseId || ctx.formWatch.globalWarehouseId;
-    if (wh) void ctx.fetchItemContext(l._key, itemId, wh);
-  };
-
   return (
-    <>
-      <ZHBtn
-        variant="ghost"
-        size="xs"
-        type="button"
-        className={buttonClassName}
-        disabled={disabled}
-        onClick={() => {
-          onModalOpenChange?.(true);
-          setOpen(true);
-        }}
-      >
-        {label ?? t("purchases.lines.createProduct", "Crear producto")}
-      </ZHBtn>
-      <CreateItemFromReceptionLineModal
-        open={open}
-        line={receptionLine}
-        supplierName={ctx.supplierProfile?.name ?? ""}
-        purchaseContext={
-          l.unitPrice > 0
-            ? {
-                unitCost: l.unitPrice,
-                quantity: l.quantity,
-                discountPct: l.discountPct ?? undefined,
-                vatCode: l.vatCode || undefined,
-              }
-            : undefined
-        }
-        onClose={() => {
-          setOpen(false);
-          onModalOpenChange?.(false);
-          onAfterModalClose?.();
-        }}
-        onCreated={(updatedLine, item) => {
-          setOpen(false);
-          onModalOpenChange?.(false);
-          onAfterModalClose?.();
-          const profile = buildPurchaseItemProfile(item);
-          if (updatedLine.itemId)
-            applyLinked(
-              updatedLine.itemId,
-              updatedLine.matchStatus,
-              profile.label,
-              profile.purchaseVatCode,
-            );
-        }}
-        onCreatedButNotLinked={() => {
-          setOpen(false);
-          onModalOpenChange?.(false);
-          onAfterModalClose?.();
-        }}
-      />
-    </>
+    <ZHBtn
+      variant="ghost"
+      size="xs"
+      type="button"
+      className={buttonClassName}
+      disabled={disabled}
+      onClick={() => {
+        onAfterModalClose?.();
+        ctx.openPendingProducts(l.purchaseReceptionLineId as string);
+      }}
+    >
+      {label ?? t("purchases.lines.createProduct", "Crear producto")}
+    </ZHBtn>
   );
 }
 
@@ -3333,7 +3244,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__label">{t("purchases.summary.subtotal", "Subtotal")}</span>
           <span className="pf-totals__value">
             <ZHMoneyValue
-              value={ctx.editing ? ctx.editing.subtotal : ctx.localSummary.subtotal}
+              value={ctx.summaryTotals.subtotal}
               precision="money"
             />
           </span>
@@ -3345,9 +3256,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           >
             -
             <ZHMoneyValue
-              value={
-                ctx.editing ? ctx.editing.totalDiscount : ctx.localSummary.discount
-              }
+              value={ctx.summaryTotals.discount}
               precision="money"
             />
           </span>
@@ -3356,7 +3265,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__label">{t("purchases.lines.iceShort", "ICE")}</span>
           <span className="pf-totals__value">
             <ZHMoneyValue
-              value={ctx.editing ? ctx.editing.totalIce : ctx.localSummary.ice}
+              value={ctx.summaryTotals.ice}
               precision="tax"
             />
           </span>
@@ -3368,12 +3277,12 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           </span>
           <span className="pf-totals__value">
             <ZHMoneyValue
-              value={ctx.editing ? ctx.editing.totalVat : ctx.localSummary.vat}
+              value={ctx.summaryTotals.vat}
               precision="tax"
             />
           </span>
         </div>
-        {!!ctx.editing?.totalIrbpnr && (
+        {!!ctx.summaryTotals.irbpnr && (
           <div className="pf-totals__row">
             <span className="pf-totals__label">
               IRBPNR{" "}
@@ -3381,14 +3290,14 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
                 className="pf-totals__value--warning"
                 title={t(
                   "purchases.summary.irbpnrHint",
-                  "Informativo — no incluido en el Gran Total mientras no exista soporte contable.",
+                  "Valor del comprobante XML — incluido en el Gran Total.",
                 )}
               >
                 (i)
               </span>
             </span>
             <span className="pf-totals__value">
-              <ZHMoneyValue value={ctx.editing.totalIrbpnr} precision="tax" />
+              <ZHMoneyValue value={ctx.summaryTotals.irbpnr} precision="tax" />
             </span>
           </div>
         )}
@@ -3396,7 +3305,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__label">{t("purchases.summary.freight", "Flete")}</span>
           <span className="pf-totals__value">
             <ZHMoneyValue
-              value={ctx.editing ? ctx.editing.totalFreight : ctx.formWatch.freightCost}
+              value={ctx.summaryTotals.freight}
               precision="money"
             />
           </span>
@@ -3405,7 +3314,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
           <span className="pf-totals__label">{t("purchases.summary.otherCosts", "Otros costos")}</span>
           <span className="pf-totals__value">
             <ZHMoneyValue
-              value={ctx.editing ? ctx.editing.totalOtherCosts : ctx.formWatch.otherCosts}
+              value={ctx.summaryTotals.otherCosts}
               precision="money"
             />
           </span>
@@ -3422,7 +3331,7 @@ function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
         <span className="pf-totals__grand-label">{t("purchases.summary.total", "TOTAL")}</span>
         <span className="pf-totals__grand-value">
           <ZHMoneyValue
-            value={ctx.editing ? ctx.editing.grandTotal : ctx.localTotal}
+            value={ctx.summaryTotals.total}
             precision="money"
           />
         </span>

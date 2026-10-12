@@ -10,6 +10,8 @@ import {
   calcSummary,
   calcVatBreakdown,
   generateScheduleRows,
+  resolveLineTaxes,
+  documentalTaxSnapshot,
 } from "./purchaseCalc";
 import type { PurchaseItemContextDto } from "../api/purchaseService";
 
@@ -196,8 +198,9 @@ describe("múltiples líneas mixtas", () => {
 
   it("IVA solo sobre líneas con IVA (neto)", () => {
     const s = calcSummary(lines, 0, 0);
-    const expectedVat = 950 * 0.15 + 600 * 0.15 + 0 + 450 * 0.15;
-    expect(s.vat).toBe(expectedVat);
+    // SriTaxCalculator.Compute (backend): el IVA se calcula sobre base + ICE → (450 + 9) × 15%.
+    const expectedVat = 950 * 0.15 + 600 * 0.15 + 0 + (450 + 9) * 0.15;
+    expect(s.vat).toBeCloseTo(expectedVat, 10);
   });
 
   it("ICE solo sobre línea con ICE", () => {
@@ -236,9 +239,10 @@ describe("calcVatBreakdown — agrupación por tarifa IVA", () => {
     // Orden descendente por tarifa: 15% primero, luego 0%.
     expect(rows[0].vatPercent).toBe(15);
     expect(rows[0].taxableBase).toBe(950 + 450);
-    expect(rows[0].vat).toBe(950 * 0.15 + 450 * 0.15);
+    // IVA sobre base + ICE (SriTaxCalculator.Compute): (450 + 9) × 15%.
+    expect(rows[0].vat).toBeCloseTo(950 * 0.15 + (450 + 9) * 0.15, 10);
     expect(rows[0].ice).toBe(450 * 0.02);
-    expect(rows[0].total).toBeCloseTo(950 + 950 * 0.15 + 450 + 450 * 0.15 + 450 * 0.02, 6);
+    expect(rows[0].total).toBeCloseTo(950 + 950 * 0.15 + 450 + (450 + 9) * 0.15 + 450 * 0.02, 6);
     expect(rows[1].vatPercent).toBe(0);
     expect(rows[1].taxableBase).toBe(200);
     expect(rows[1].vat).toBe(0);
@@ -421,4 +425,103 @@ describe("unit costs retain operational precision", () => {
       }
     },
   );
+});
+
+// ────────────────────────────────────────────────────────
+// PURCHASES-HARDENING-P0 (B4-B6) — precedencia documental XML
+// ────────────────────────────────────────────────────────
+describe("resolveLineTaxes — IVA/ICE/IRBPNR documental vs recalculado (espejo backend)", () => {
+  // XML: 3 × 1.11 = 3.33; IVA declarado 0.49 (por tarifa sería 0.50); ICE 1.20; IRBPNR 0.06.
+  const xmlLine = {
+    ...mkLine(3, 1.11, "4", 0, { vatPercent: 15, icePercent: 0 }),
+    xmlQuantity: 3,
+    xmlUnitPrice: 1.11,
+    xmlDiscountPct: 0,
+    xmlTaxableBase: 3.33,
+    xmlTaxValue: 0.49,
+    xmlIceAmount: 1.2,
+    xmlIrbpnrAmount: 0.06,
+  };
+
+  it("línea XML sin editar: IVA/ICE/IRBPNR del comprobante", () => {
+    expect(resolveLineTaxes(xmlLine)).toEqual({ vat: 0.49, ice: 1.2, irbpnr: 0.06 });
+  });
+
+  it("cantidad editada: IVA = round2((base + ICE específico) × tarifa); ICE específico e IRBPNR documentales", () => {
+    // base 4.44; ICE sin tarifa porcentual → 1.20 fijo; IVA = (4.44 + 1.20) × 15% = 0.846 → 0.85
+    expect(resolveLineTaxes({ ...xmlLine, quantity: 4 })).toEqual({ vat: 0.85, ice: 1.2, irbpnr: 0.06 });
+  });
+
+  it("descuento editado también invalida los montos XML", () => {
+    const tx = resolveLineTaxes({ ...xmlLine, xmlIceAmount: undefined, discountPct: 10 });
+    // base = round2(3.33 − round6(0.333)) = 3.00; IVA 0.45
+    expect(tx.vat).toBe(0.45);
+  });
+
+  it("ICE porcentual editado: round2(base × tarifa) y el IVA incluye ese ICE", () => {
+    const tx = resolveLineTaxes(
+      { ...xmlLine, iceCode: "3011", unitPrice: 2 },
+      { "4": 15 },
+      { "3011": 10 },
+    );
+    // base 6.00; ICE 0.60; IVA (6.60) × 15% = 0.99
+    expect(tx).toEqual({ vat: 0.99, ice: 0.6, irbpnr: 0.06 });
+  });
+
+  it("la tarifa sale del código de la línea (catálogo), como en backend; contexto solo de respaldo", () => {
+    const line = { ...mkLine(10, 10, "0", 0, { vatPercent: 15, icePercent: 0 }) };
+    expect(resolveLineTaxes(line, { "0": 0 }).vat).toBe(0);
+    expect(resolveLineTaxes(line).vat).toBe(15);
+  });
+
+  it("calcSummary incluye IRBPNR en el total (igual que GrandTotal backend)", () => {
+    const s = calcSummary([xmlLine], 0, 0);
+    expect(s.vat).toBe(0.49);
+    expect(s.irbpnr).toBe(0.06);
+    expect(s.total).toBeCloseTo(3.33 + 0.49 + 1.2 + 0.06, 6);
+  });
+
+  it("calcVatBreakdown usa el mismo IVA documental", () => {
+    const [row] = calcVatBreakdown([xmlLine]);
+    expect(row.vat).toBe(0.49);
+  });
+});
+
+describe("documentalTaxSnapshot — borrador reabierto", () => {
+  const tax = (taxCode: string, taxableBase: number, taxAmount: number, source = "Xml") => ({
+    taxCode, taxRateCode: "x", taxName: "x", rate: null, calculationType: "Percentage",
+    taxableBase, taxAmount, source,
+  });
+
+  const persisted = { quantity: 3, unitPrice: 1.11, discountPct: 0 };
+
+  it("IVA Xml: toma los montos documentales y los valores persistidos como originales del XML", () => {
+    expect(
+      documentalTaxSnapshot({
+        ...persisted,
+        taxes: [tax("2", 3.33, 0.5), tax("3", 3.33, 1.2), tax("5", 0, 0.02), tax("5", 0, 0.02)],
+      }),
+    ).toEqual({
+      xmlQuantity: 3,
+      xmlUnitPrice: 1.11,
+      xmlDiscountPct: 0,
+      xmlTaxableBase: 3.33,
+      xmlTaxValue: 0.5,
+      xmlIceAmount: 1.2,
+      xmlIrbpnrAmount: 0.04,
+    });
+  });
+
+  it("línea XML guardada ya editada (IVA Calculated): conserva IRBPNR documental, sin originales", () => {
+    expect(
+      documentalTaxSnapshot({
+        ...persisted,
+        taxes: [tax("2", 4.44, 0.67, "Calculated"), tax("5", 0, 0.06)],
+      }),
+    ).toEqual({ xmlTaxableBase: undefined, xmlTaxValue: undefined, xmlIceAmount: undefined, xmlIrbpnrAmount: 0.06 });
+  });
+
+  it("línea calculada (sin XML) no aporta montos documentales", () => {
+    expect(documentalTaxSnapshot({ ...persisted, taxes: [tax("2", 10, 1.5, "Calculated")] })).toEqual({});
+  });
 });

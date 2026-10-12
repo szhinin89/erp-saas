@@ -135,7 +135,9 @@ public sealed class SupplierImportProcessorTests
     [Fact]
     public async Task Ruc_invalido_se_bloquea_en_validacion_sin_sufijo_tecnico()
     {
-        var result = await Validate(Row(number: "1791352687001"));
+        // Sociedad privada con establecimiento 000: inválido por estructura con la regla vigente
+        // (RUC-SOCIETIES-VALIDATION-01). Mismo caso que RucValidatorTests.
+        var result = await Validate(Row(number: "0391034777000"));
 
         result.Issues.Should().ContainSingle(i => i.Code == "INVALID_IDENTIFICATION")
             .Which.Message.Should().NotContain("Parameter");

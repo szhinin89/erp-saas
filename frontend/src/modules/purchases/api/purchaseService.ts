@@ -147,7 +147,7 @@ export interface PurchaseInvoiceDto {
   totalFreight: number;
   totalOtherCosts: number;
   grandTotal: number;
-  // FLOW-READY-02F.1 — informativo, NUNCA incluido en grandTotal (soporte contable pendiente).
+  // FLOW-READY-02F.2 — incluido en grandTotal (TaxInclusiveTotal de cada línea, backend).
   totalIrbpnr: number;
   lines: PurchaseLineDto[];
   paymentSchedules: PurchasePaymentScheduleDto[];
@@ -370,9 +370,11 @@ export const purchaseService = {
 
   // supplierId opcional: si se indica, el backend resuelve el código de proveedor
   // específico (ItemSupplierCode), única fuente de códigos de compra.
-  getItemContext: (itemId: string, warehouseId: string, supplierId?: string) =>
+  // warehouseId opcional (PURCHASES-HARDENING-P0 B8): sin bodega no hay stock/último costo, pero
+  // sí `participatesInInventory`.
+  getItemContext: (itemId: string, warehouseId?: string | null, supplierId?: string) =>
     apiGet<PurchaseItemContextDto>(
-      `${BASE}/items/context?itemId=${itemId}&warehouseId=${warehouseId}${supplierId ? `&supplierId=${supplierId}` : ""}`,
+      `${BASE}/items/context?itemId=${itemId}${warehouseId ? `&warehouseId=${warehouseId}` : ""}${supplierId ? `&supplierId=${supplierId}` : ""}`,
     ),
 
   /** Reporte básico de compras por proveedor. Sin fechas, el backend usa el día actual. */

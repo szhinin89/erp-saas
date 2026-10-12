@@ -64,6 +64,9 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
   // "quantity"/"unitPrice" editables (ver purchaseLinePresentation.ts).
   xmlQuantity: z.number().optional(),
   xmlUnitPrice: z.number().optional(),
+  // PURCHASES-HARDENING-P0 (B4-B6) — % descuento original del XML: junto a xmlQuantity/xmlUnitPrice
+  // decide si los montos IVA/ICE del XML siguen vigentes (misma regla que backend).
+  xmlDiscountPct: z.number().optional(),
   xmlDiscount: z.number().optional(),
   xmlLineSubtotal: z.number().optional(),
   xmlTaxCode: z.string().optional(),

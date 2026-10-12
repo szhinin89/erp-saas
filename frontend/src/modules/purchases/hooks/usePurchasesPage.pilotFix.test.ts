@@ -10,6 +10,7 @@ import { purchaseService, type PurchaseInvoiceDto } from "../api/purchaseService
 import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
+import { purchaseReceptionService } from "../api/purchaseReceptionService";
 
 /**
  * PILOT-PURCHASE-UI-FIX-01 — flujo de confirmación/anulación de la compra:
@@ -112,7 +113,7 @@ vi.mock("../../items/facades/sriLookupFacade", () => ({
 }));
 
 vi.mock("../../../lib/messages", () => ({
-  message: { success: vi.fn(), error: vi.fn(), confirm: vi.fn() },
+  message: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), confirm: vi.fn() },
 }));
 
 const GENERIC_CATALOG_MESSAGE = "Datos inválidos. Revisa el formulario.";
@@ -388,5 +389,144 @@ describe("PILOT-PURCHASE-UI-FIX-01 — saving siempre se libera", () => {
     expect(purchaseService.update).toHaveBeenCalledTimes(1);
     expect(result.current.saveError).toBe("El proveedor 'Proveedor Uno' se encuentra inactivo.");
     expect(result.current.saving).toBe(false);
+  });
+});
+
+describe("PURCHASES-HARDENING-P0 — reabrir borrador con prorrateo", () => {
+  const allocatedLine = {
+    id: "line-1",
+    itemId: "item-1",
+    description: "ARROZ 1KG",
+    quantity: 10,
+    unitPrice: 2,
+    vatCode: "4",
+    discountPct: 0,
+    iceCode: null,
+    warehouseId: null,
+    notes: null,
+    freightAllocated: 5,
+    otherCostsAllocated: 1.5,
+    taxes: [],
+  };
+  const withAllocation = {
+    totalFreight: 5,
+    totalOtherCosts: 1.5,
+    grandTotal: 29.5,
+    lines: [allocatedLine] as unknown as PurchaseInvoiceDto["lines"],
+  };
+
+  it("B1: restaura freightAllocated/otherCostsAllocated y los reenvía al guardar (sin reprorrateo)", async () => {
+    vi.mocked(purchaseService.update).mockResolvedValue(buildInvoice(withAllocation));
+    const result = await setupLoaded(withAllocation);
+    await waitFor(() => expect(result.current.canUseSriDocTypes).toBe(true));
+
+    expect(result.current.lines[0].freightAllocated).toBe(5);
+    expect(result.current.lines[0].otherCostsAllocated).toBe(1.5);
+    expect(result.current.hasUnsavedChanges).toBe(false);
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(purchaseService.update).toHaveBeenCalledTimes(1);
+    const payload = vi.mocked(purchaseService.update).mock.calls[0][1];
+    expect(payload.lines[0].freightAllocated).toBe(5);
+    expect(payload.lines[0].otherCostsAllocated).toBe(1.5);
+  });
+
+  it("B2: con cambios sin guardar, Distribuir flete/gasto se bloquea y no llama al backend", async () => {
+    const result = await setupLoaded(withAllocation);
+    const key = result.current.lines[0]._key;
+
+    act(() => {
+      result.current.updateLine(key, "unitPrice", 2.5);
+    });
+    await waitFor(() => expect(result.current.hasUnsavedChanges).toBe(true));
+
+    expect(result.current.distributeCostDisabledReason).toBe(
+      "Guarde los cambios antes de distribuir flete/gasto.",
+    );
+    let applied = true;
+    await act(async () => {
+      applied = await result.current.handleDistributeCost("Freight", 10, ["line-1"]);
+    });
+    expect(applied).toBe(false);
+    expect(purchaseService.distributeCost).not.toHaveBeenCalled();
+    expect(result.current.lines[0].unitPrice).toBe(2.5);
+  });
+
+  it("B4-B6: totales persistidos sin cambios; al editar, todos salen del formulario (sin mezcla)", async () => {
+    const result = await setupLoaded(withAllocation);
+    await waitFor(() => expect(result.current.lines[0]?.context?.itemId).toBe("item-1"));
+    expect(result.current.summaryTotals.vat).toBe(3);
+    expect(result.current.summaryTotals.total).toBe(29.5);
+
+    const key = result.current.lines[0]._key;
+    act(() => {
+      result.current.updateLine(key, "unitPrice", 2.5);
+    });
+    await waitFor(() => expect(result.current.hasUnsavedChanges).toBe(true));
+
+    expect(result.current.summaryTotals.subtotal).toBe(25);
+    expect(result.current.summaryTotals.vat).toBeCloseTo(3.75, 6);
+    expect(result.current.summaryTotals.freight).toBe(5);
+    expect(result.current.summaryTotals.total).toBeCloseTo(25 + 3.75 + 5 + 1.5, 6);
+    expect(result.current.localTotal).toBeCloseTo(25 + 3.75 + 5 + 1.5, 6);
+  });
+});
+
+describe("PURCHASES-HARDENING-P0 (B8) — contexto del ítem sin bodega", () => {
+  it("servicio: pide contexto sin bodega y lo conserva (la línea deja de exigir bodega)", async () => {
+    const base = await purchaseService.getItemContext("item-1", "wh-1");
+    vi.mocked(purchaseService.getItemContext).mockResolvedValue({ ...base, participatesInInventory: false });
+    const result = await setupLoaded({ globalWarehouseId: null });
+
+    await waitFor(() => expect(result.current.lines[0]?.context?.participatesInInventory).toBe(false));
+    expect(purchaseService.getItemContext).toHaveBeenLastCalledWith("item-1", null, "supplier-1");
+  });
+
+  it("inventariable sin bodega: no guarda contexto (sin stock falso) y sigue exigiendo bodega", async () => {
+    const result = await setupLoaded({ globalWarehouseId: null });
+
+    await waitFor(() => expect(purchaseService.getItemContext).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.lines[0]?._contextLoading).toBe(false));
+    expect(result.current.lines[0]?.context).toBeUndefined();
+  });
+});
+
+describe("PURCHASES-HARDENING-P0 (B9) — crear producto individual usa el resolver masivo", () => {
+  const xmlLine = (id: string, receptionLineId: string) => ({
+    id,
+    itemId: null,
+    description: `XML ${id}`,
+    quantity: 1,
+    unitPrice: 2,
+    vatCode: "4",
+    discountPct: 0,
+    iceCode: null,
+    warehouseId: null,
+    notes: null,
+    purchaseReceptionLineId: receptionLineId,
+    taxes: [],
+  });
+
+  it("abre el mismo modal limitado a la línea; el disparador masivo sigue mostrando todas", async () => {
+    vi.mocked(purchaseReceptionService.getLineMatch).mockResolvedValue({
+      matchStatus: "PENDING",
+    } as Awaited<ReturnType<typeof purchaseReceptionService.getLineMatch>>);
+    const result = await setupLoaded({
+      lines: [xmlLine("l1", "rx-1"), xmlLine("l2", "rx-2")] as unknown as PurchaseInvoiceDto["lines"],
+    });
+    expect(result.current.pendingProductSources.map((s) => s.rowId)).toEqual(["rx-1", "rx-2"]);
+
+    act(() => result.current.openPendingProducts("rx-2"));
+    expect(result.current.modalPendingProducts).toBe(true);
+    expect(result.current.modalPendingProductSources.map((s) => s.rowId)).toEqual(["rx-2"]);
+
+    act(() => result.current.closePendingProducts());
+    expect(result.current.modalPendingProducts).toBe(false);
+
+    act(() => result.current.openPendingProducts());
+    expect(result.current.modalPendingProductSources.map((s) => s.rowId)).toEqual(["rx-1", "rx-2"]);
   });
 });

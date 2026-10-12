@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 import { roundToDecimals } from "../../../lib/sanitizers";
 import type {
   PurchaseLineInput,
@@ -8,7 +9,17 @@ import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import { getPrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { addDaysIso } from "../../../lib/formatters/dateFormatters";
 
-type LineWithContext = PurchaseLineInput & { context?: PurchaseItemContextDto };
+type LineWithContext = PurchaseLineInput & {
+  context?: PurchaseItemContextDto;
+  // Montos documentales (XML) de la línea — solo en líneas de Recepción Electrónica.
+  xmlQuantity?: number;
+  xmlUnitPrice?: number;
+  xmlDiscountPct?: number;
+  xmlTaxableBase?: number;
+  xmlTaxValue?: number;
+  xmlIceAmount?: number;
+  xmlIrbpnrAmount?: number;
+};
 
 export function lineGross(l: PurchaseLineInput): number {
   return l.quantity * l.unitPrice;
@@ -38,6 +49,110 @@ export function calcLineTax(
   return { vat: (net * vatPct) / 100, ice: (net * icePct) / 100 };
 }
 
+const FiscalDecimal = Decimal.clone({ precision: 64 });
+
+function fiscalRound(value: Decimal, decimals: number): Decimal {
+  return value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP);
+}
+
+/**
+ * PURCHASES-HARDENING-P0 (B4-B6) — misma condición que el backend
+ * (`PurchaseLineNormalizer.MatchesXmlDocument`): la línea conserva cantidad, precio y % descuento
+ * de la línea de recepción. Solo entonces los montos IVA/ICE del XML siguen siendo válidos.
+ */
+export function matchesXmlDocument(l: LineWithContext): boolean {
+  return (
+    l.xmlQuantity != null &&
+    l.xmlUnitPrice != null &&
+    l.quantity === l.xmlQuantity &&
+    l.unitPrice === l.xmlUnitPrice &&
+    (l.discountPct ?? 0) === (l.xmlDiscountPct ?? 0)
+  );
+}
+
+/**
+ * PURCHASES-HARDENING-P0 (B4-B6) — impuestos de la línea tal como los persiste el backend
+ * (`PurchaseInvoiceDetail.ApplyTaxes` → `RecalcTaxes` → `SriTaxCalculator.Compute`):
+ * - línea XML sin editar: IVA/ICE = montos documentales del XML;
+ * - si no: base = round2(subtotal − round6(descuento)), ICE porcentual = round2(base × tarifa),
+ *   IVA = round2((base + ICE) × tarifa) — el IVA se calcula sobre base + ICE (regla SRI);
+ * - ICE específico (sin tarifa porcentual) e IRBPNR: monto fijo del XML, como en backend.
+ * Tarifa por código de la línea (catálogo SRI, igual que el backend); el contexto del ítem es solo
+ * respaldo mientras el catálogo no carga.
+ */
+export function resolveLineTaxes(
+  l: LineWithContext,
+  vatRates?: Record<string, number>,
+  iceRates?: Record<string, number>,
+): { vat: number; ice: number; irbpnr: number } {
+  const irbpnr = l.xmlIrbpnrAmount ?? 0;
+  const documentMatches = matchesXmlDocument(l);
+  const gross = new FiscalDecimal(l.quantity ?? 0).times(l.unitPrice ?? 0);
+  const discountPct = l.discountPct ?? 0;
+  const discount = fiscalRound(
+    discountPct > 0 ? gross.times(discountPct).div(100) : new FiscalDecimal(0),
+    6,
+  );
+  const base = fiscalRound(gross.minus(discount), 2);
+
+  const icePct =
+    (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? l.context?.icePercent ?? 0;
+  const ice =
+    documentMatches && l.xmlIceAmount != null
+      ? new FiscalDecimal(l.xmlIceAmount)
+      : icePct > 0
+        ? fiscalRound(base.times(icePct).div(100), 2)
+        : new FiscalDecimal(l.xmlIceAmount ?? 0);
+
+  const vatPct = vatRates?.[l.vatCode] ?? l.context?.vatPercent ?? 0;
+  const vat =
+    documentMatches && l.xmlTaxValue != null
+      ? l.xmlTaxValue
+      : vatPct > 0
+        ? fiscalRound(base.plus(ice).times(vatPct).div(100), 2).toNumber()
+        : 0;
+
+  return { vat, ice: ice.toNumber(), irbpnr };
+}
+
+/**
+ * PURCHASES-HARDENING-P0 (B4-B6) — montos documentales (Source=Xml) de una línea ya persistida, para
+ * que un borrador reabierto siga resolviendo IVA/ICE/IRBPNR igual que el backend. Sin impuestos XML
+ * (línea manual) no devuelve nada: la línea se calcula por tarifa como siempre.
+ */
+export function documentalTaxSnapshot(
+  line: Pick<PurchaseLineDto, "taxes" | "quantity" | "unitPrice" | "discountPct">,
+): Pick<
+  LineWithContext,
+  | "xmlQuantity"
+  | "xmlUnitPrice"
+  | "xmlDiscountPct"
+  | "xmlTaxableBase"
+  | "xmlTaxValue"
+  | "xmlIceAmount"
+  | "xmlIrbpnrAmount"
+> {
+  const xml = (line.taxes ?? []).filter((tx) => tx.source === "Xml");
+  if (xml.length === 0) return {};
+  const vat = xml.find((tx) => tx.taxCode === "2");
+  // IVA con Source=Xml solo persiste si la línea seguía igual al comprobante al guardarse
+  // (backend MatchesXmlDocument): sus valores persistidos SON los del XML.
+  const documentValues = vat
+    ? { xmlQuantity: line.quantity, xmlUnitPrice: line.unitPrice, xmlDiscountPct: line.discountPct }
+    : {};
+  const ice = xml.filter((tx) => tx.taxCode === "3");
+  const irbpnr = xml.filter((tx) => tx.taxCode === "5");
+  const sum = (rows: typeof xml) =>
+    rows.length > 0 ? rows.reduce((s, tx) => s + tx.taxAmount, 0) : undefined;
+  return {
+    ...documentValues,
+    xmlTaxableBase: vat?.taxableBase,
+    xmlTaxValue: vat?.taxAmount,
+    xmlIceAmount: sum(ice),
+    xmlIrbpnrAmount: sum(irbpnr),
+  };
+}
+
 export function calcSummary(
   lines: LineWithContext[],
   freightCost: number,
@@ -48,23 +163,20 @@ export function calcSummary(
   const subtotal = lines.reduce((s, l) => s + lineGross(l), 0);
   const discount = lines.reduce((s, l) => s + lineDiscountAmt(l), 0);
   const netSubtotal = subtotal - discount;
-  const vat = lines.reduce(
-    (s, l) => s + calcLineTax(l, vatRates, iceRates).vat,
-    0,
-  );
-  const ice = lines.reduce(
-    (s, l) => s + calcLineTax(l, vatRates, iceRates).ice,
-    0,
-  );
-  const total = netSubtotal + vat + ice + freightCost + otherCosts;
-  return { subtotal, discount, netSubtotal, vat, ice, total };
+  const taxes = lines.map((l) => resolveLineTaxes(l, vatRates, iceRates));
+  const vat = taxes.reduce((s, tx) => s + tx.vat, 0);
+  const ice = taxes.reduce((s, tx) => s + tx.ice, 0);
+  // IRBPNR forma parte del GrandTotal en backend (TaxInclusiveTotal, FLOW-READY-02F.2).
+  const irbpnr = taxes.reduce((s, tx) => s + tx.irbpnr, 0);
+  const total = netSubtotal + vat + ice + irbpnr + freightCost + otherCosts;
+  return { subtotal, discount, netSubtotal, vat, ice, irbpnr, total };
 }
 
 /**
- * PURCHASE-INVOICE-TOTALS-SUMMARY-PANEL-01 — agrupa las líneas editables del draft (nunca el
- * snapshot xml*) por tarifa de IVA (`vatCode`), para el panel de solo lectura "Totales". Reusa
- * `lineNet`/`lineDiscountAmt`/`calcLineTax` — misma fuente de verdad que `calcSummary`, sin
- * duplicar la resolución de porcentaje (contexto del ítem > catálogo SRI > 0, nunca inferido).
+ * PURCHASE-INVOICE-TOTALS-SUMMARY-PANEL-01 — agrupa las líneas editables del draft por tarifa de
+ * IVA (`vatCode`), para el panel de solo lectura "Totales". Reusa `lineNet`/`lineDiscountAmt`/
+ * `resolveLineTaxes` — misma fuente de verdad que `calcSummary` (monto documental XML mientras la
+ * base no cambie; si no, contexto del ítem > catálogo SRI > 0, nunca inferido).
  */
 export type VatBreakdownRow = {
   vatCode: string;
@@ -85,7 +197,7 @@ export function calcVatBreakdown(
   for (const l of lines) {
     const vatCode = l.vatCode ?? "";
     const vatPercent = l.context?.vatPercent ?? vatRates?.[vatCode] ?? 0;
-    const { vat, ice } = calcLineTax(l, vatRates, iceRates);
+    const { vat, ice } = resolveLineTaxes(l, vatRates, iceRates);
     const net = lineNet(l);
     const row = rows.get(vatCode) ?? {
       vatCode,

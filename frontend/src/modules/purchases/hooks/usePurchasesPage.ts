@@ -56,6 +56,7 @@ import type {
 } from "../../items/facades/sriLookupFacade";
 import {
   calcSummary,
+  documentalTaxSnapshot,
   generateScheduleRows,
   roundToTotalAmount,
   buildCostDistributionInputFromFormLines,
@@ -310,13 +311,39 @@ export function usePurchasesPage() {
     () => calcSummary(lines, 0, 0, vatRatesMap, iceRatesMap),
     [lines, vatRatesMap, iceRatesMap],
   );
-  const localTotal = editing
-    ? editing.grandTotal
-    : localSummary.netSubtotal +
-      localSummary.vat +
-      localSummary.ice +
-      formWatch.freightCost +
-      formWatch.otherCosts;
+  // PURCHASES-HARDENING-P0 (B4-B6) — los totales vienen de UNA sola fuente: los persistidos
+  // mientras no haya cambios locales; en cuanto el borrador se edita, todos salen del formulario.
+  // Nunca se mezcla (p. ej. IVA persistido con líneas ya editadas).
+  const showPersistedTotals = !!editing && !hasUnsavedChanges;
+  const summaryTotals =
+    showPersistedTotals && editing
+      ? {
+          subtotal: editing.subtotal,
+          discount: editing.totalDiscount,
+          ice: editing.totalIce,
+          vat: editing.totalVat,
+          irbpnr: editing.totalIrbpnr,
+          freight: editing.totalFreight,
+          otherCosts: editing.totalOtherCosts,
+          total: editing.grandTotal,
+        }
+      : {
+          subtotal: localSummary.subtotal,
+          discount: localSummary.discount,
+          ice: localSummary.ice,
+          vat: localSummary.vat,
+          irbpnr: localSummary.irbpnr,
+          freight: formWatch.freightCost,
+          otherCosts: formWatch.otherCosts,
+          total:
+            localSummary.netSubtotal +
+            localSummary.vat +
+            localSummary.ice +
+            localSummary.irbpnr +
+            formWatch.freightCost +
+            formWatch.otherCosts,
+        };
+  const localTotal = summaryTotals.total;
 
   // Líneas que vienen de Recepción Electrónica y todavía no tienen Item resuelto — bloquean
   // Confirmar Compra (nunca Guardar Borrador) porque ahí es donde se generan Inventario/Kardex/
@@ -345,6 +372,24 @@ export function usePurchasesPage() {
 
   // COMPRAS-METODO-ZH-01B — orientación a excepciones: resueltas / pendientes / con advertencias.
   const pendingProductSources = useMemo(() => selectPendingProductSources(lines), [lines]);
+  // PURCHASES-HARDENING-P0 (B9) — "Crear producto" de una línea XML abre el mismo resolver masivo
+  // limitado a esa línea (mismo SSOT de barcode unidad/presentación/provisional).
+  const [pendingProductsLineId, setPendingProductsLineId] = useState<string | null>(null);
+  const modalPendingProductSources = useMemo(
+    () =>
+      pendingProductsLineId
+        ? pendingProductSources.filter((s) => s.rowId === pendingProductsLineId)
+        : pendingProductSources,
+    [pendingProductSources, pendingProductsLineId],
+  );
+  const openPendingProducts = useCallback((receptionLineId?: string) => {
+    setPendingProductsLineId(receptionLineId ?? null);
+    setModalPendingProducts(true);
+  }, []);
+  const closePendingProducts = useCallback(() => {
+    setModalPendingProducts(false);
+    setPendingProductsLineId(null);
+  }, []);
   const xmlLinesSummary = useMemo(
     () => summarizeXmlLines(lines, lineReadinessByKey),
     [lines, lineReadinessByKey],
@@ -409,6 +454,13 @@ export function usePurchasesPage() {
         "purchases.distributeCost.disabled.saving",
         "Espere a que termine la operación en curso.",
       );
+    // PURCHASES-HARDENING-P0 (B2) — sobre una compra ya guardada el prorrateo se aplica en backend
+    // y recarga el borrador: con cambios locales sin guardar, esos cambios se perderían.
+    if (hasUnsavedChanges)
+      return t(
+        "purchases.distributeCost.disabled.unsavedChanges",
+        "Guarde los cambios antes de distribuir flete/gasto.",
+      );
     if (lines.length === 0)
       return t(
         "purchases.distributeCost.disabled.noLines",
@@ -448,6 +500,7 @@ export function usePurchasesPage() {
   }, [
     isDraft,
     saving,
+    hasUnsavedChanges,
     lines.length,
     hasLineReadinessBlockers,
     formWatch.supplierId,
@@ -649,8 +702,12 @@ export function usePurchasesPage() {
   }, [fetchList]);
 
   // ── Item context loader ────────────────────────────────────────────
+  // PURCHASES-HARDENING-P0 (B8) — la bodega es opcional: sin ella el backend igual informa si el
+  // ítem participa en inventario. Ese contexto sin bodega solo se guarda para ítems NO
+  // inventariables (servicio → no exige bodega); para uno inventariable no hay stock/costo real
+  // que mostrar, así que la línea sigue sin contexto y exigiendo bodega, como antes.
   const fetchItemContext = useCallback(
-    async (key: number, itemId: string, warehouseId: string) => {
+    async (key: number, itemId: string, warehouseId?: string | null) => {
       const currentLines = getValues("lines");
       setValue(
         "lines",
@@ -667,11 +724,16 @@ export function usePurchasesPage() {
           warehouseId,
           supplierId,
         );
+        const keepContext = !!warehouseId || !ctx.participatesInInventory;
         const latest = getValues("lines");
         setValue(
           "lines",
           latest.map((l) =>
-            l._key === key ? { ...l, context: ctx, _contextLoading: false } : l,
+            l._key === key
+              ? keepContext
+                ? { ...l, context: ctx, _contextLoading: false }
+                : { ...l, _contextLoading: false }
+              : l,
           ),
         );
       } catch {
@@ -824,8 +886,7 @@ export function usePurchasesPage() {
           ),
         );
         const wh = line.warehouseId || getValues("globalWarehouseId");
-        if (updated.itemId && wh)
-          void fetchItemContext(key, updated.itemId, wh);
+        if (updated.itemId) void fetchItemContext(key, updated.itemId, wh);
       } catch (err) {
         const errorMessage = readApiErrorMessage(err);
         if (errorMessage === SUPPLIER_CODE_CONFLICT_DETAIL) {
@@ -982,10 +1043,11 @@ export function usePurchasesPage() {
       });
       setValue("lines", updated, { shouldValidate: true });
       setModalPendingProducts(false);
+      setPendingProductsLineId(null);
       const globalWarehouseId = getValues("globalWarehouseId");
       for (const l of updated) {
         const warehouseId = l.warehouseId || globalWarehouseId;
-        if (l.itemId && warehouseId && l.purchaseReceptionLineId && !l.context)
+        if (l.itemId && l.purchaseReceptionLineId && !l.context)
           void fetchItemContext(l._key, l.itemId, warehouseId);
       }
       message.success(
@@ -1010,8 +1072,7 @@ export function usePurchasesPage() {
       const currentLines = getValues("lines");
       setValue("lines", [...currentLines, newLine], { shouldValidate: true });
       setLineKey((k) => k + 1);
-      const wh = getValues("globalWarehouseId");
-      if (wh) void fetchItemContext(key, item.id, wh);
+      void fetchItemContext(key, item.id, getValues("globalWarehouseId"));
     },
     [lineKey, getValues, setValue, fetchItemContext],
   );
@@ -1210,6 +1271,12 @@ export function usePurchasesPage() {
           notes: l.notes,
           purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
           ...normalizePurchaseLinePresentation(l),
+          // PURCHASES-HARDENING-P0 (B1) — el prorrateo persistido viaja de vuelta en el payload;
+          // sin él, el backend reprorratearía el total entre TODAS las líneas al guardar.
+          freightAllocated: l.freightAllocated,
+          otherCostsAllocated: l.otherCostsAllocated,
+          // B4-B6 — montos documentales (XML) para resolver impuestos igual que el backend.
+          ...documentalTaxSnapshot(l),
         }));
 
         // SRI codes
@@ -1245,7 +1312,7 @@ export function usePurchasesPage() {
         // Fetch context for each line
         for (const ml of mappedLines) {
           const wh = ml.warehouseId || inv.globalWarehouseId;
-          if (ml.itemId && wh) void fetchItemContext(ml._key, ml.itemId, wh);
+          if (ml.itemId) void fetchItemContext(ml._key, ml.itemId, wh);
         }
 
         // Reconstruye el estado de Item Matching (badge Auto/Manual/Pendiente/Revisar) de las líneas
@@ -1390,6 +1457,7 @@ export function usePurchasesPage() {
             // (`ctx.updateLine` los sobrescribe); estos dos nunca se tocan de nuevo.
             xmlQuantity: l.quantity,
             xmlUnitPrice: l.unitPrice,
+            xmlDiscountPct: l.discountPct ?? 0,
             xmlDiscount: l.discount,
             xmlLineSubtotal: l.lineSubtotal,
             xmlTaxCode: l.taxCode,
@@ -1772,6 +1840,15 @@ export function usePurchasesPage() {
       includedLineIds: string[],
     ): Promise<boolean> => {
       if (!editing) return false;
+      if (hasUnsavedChanges) {
+        message.warning(
+          t(
+            "purchases.distributeCost.disabled.unsavedChanges",
+            "Guarde los cambios antes de distribuir flete/gasto.",
+          ),
+        );
+        return false;
+      }
       try {
         const r = await purchaseService.distributeCost(
           editing.id,
@@ -1796,7 +1873,7 @@ export function usePurchasesPage() {
         return false;
       }
     },
-    [editing, loadForEdit, showSaveError, t],
+    [editing, hasUnsavedChanges, loadForEdit, showSaveError, t],
   );
 
   // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — misma fórmula/simulación que handleDistributeCost,
@@ -2117,6 +2194,7 @@ export function usePurchasesPage() {
     lineReadinessBlockerDetails,
     lineReadinessBlockedTitle,
     localSummary,
+    summaryTotals,
     localTotal,
     hasPersistedSchedule,
     pendingReceptionItems,
@@ -2183,6 +2261,9 @@ export function usePurchasesPage() {
     modalPendingProducts,
     setModalPendingProducts,
     pendingProductSources,
+    modalPendingProductSources,
+    openPendingProducts,
+    closePendingProducts,
     xmlLinesSummary,
     applyResolvedLines,
 

@@ -68,16 +68,19 @@ public sealed class GetPurchaseItemContextQueryHandler
                 ct
             );
 
-        // 2. STOCK — SSOT desde CurrentStock
-        var stock = item.ParticipatesInInventory ? await _stockRepo.GetStockAsync(tid, request.WarehouseId, request.ItemId, ct) : null;
+        // 2. STOCK — SSOT desde CurrentStock. PURCHASES-HARDENING-P0 (B8): sin bodega no hay stock
+        // que consultar; el contexto igual se devuelve para que la línea sepa si el ítem participa
+        // en inventario (un servicio nunca exige bodega).
+        var warehouseId = item.ParticipatesInInventory ? request.WarehouseId : null;
+        var stock = warehouseId.HasValue ? await _stockRepo.GetStockAsync(tid, warehouseId.Value, request.ItemId, ct) : null;
         var currentQty = stock?.Quantity ?? 0m;
         var availableQty = stock?.AvailableQuantity ?? 0m;
         var reservedQty = stock?.ReservedQuantity ?? 0m;
         var averageCost = stock?.AverageCost ?? 0m;
 
         // 3. ÚLTIMO COSTO — desde StockMovement (PurchaseEntry más reciente)
-        var lastCost = item.ParticipatesInInventory
-            ? await _stockRepo.GetLastPurchaseCostAsync(tid, request.ItemId, request.WarehouseId, ct) ?? 0m
+        var lastCost = warehouseId.HasValue
+            ? await _stockRepo.GetLastPurchaseCostAsync(tid, request.ItemId, warehouseId.Value, ct) ?? 0m
             : 0m;
 
         // 4. PVP — SSOT vía PricingResolver (Motor de Pricing). Sin precio configurado

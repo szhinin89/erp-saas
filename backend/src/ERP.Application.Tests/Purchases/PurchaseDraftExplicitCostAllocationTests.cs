@@ -13,6 +13,7 @@ using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Enums;
 using FluentAssertions;
 using Moq;
 using PurchaseTaxResolver = ERP.Application.Modules.Purchases.Services.ISriTaxResolver;
@@ -139,6 +140,14 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         var tax = new Mock<PurchaseTaxResolver>();
         tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TaxRateResult(15m, "IVA 15%"));
+        tax.Setup(t => t.GetVatCatalogEntryAsync("10", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriTaxCatalogEntry("10", "IVA 15%", 15m, null, SriTaxCalculationType.Percentage)
+            );
+        tax.Setup(t => t.GetIrbpnrCatalogEntryAsync("5001", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriTaxCatalogEntry("5001", "IRBPNR", null, 0.02m, SriTaxCalculationType.Specific)
+            );
         return tax;
     }
 
@@ -764,5 +773,121 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         line.TaxableBase.Should().Be(100m);
         line.VatAmount.Should().Be(15m);
         line.TaxInclusiveTotal.Should().Be(115m);
+    }
+
+    // ── PURCHASES-HARDENING-P0 (B4-B6) — IVA/ICE de una línea XML editada ─────────────────
+    // XML: 3 × 1.11 = 3.33, IVA declarado 0.49 (≠ 0.50 por tarifa) + IRBPNR 0.06 (3 × 0.02).
+    private static (IPurchaseReceptionDocumentRepository Repo, Guid LineId) ReceptionWithTaxedLine()
+    {
+        var document =
+            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument.Create(
+                TenantId,
+                CompanyId,
+                BranchId,
+                ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.Invoice,
+                "1791352688001",
+                "Proveedor S.A.",
+                Guid.NewGuid(),
+                new string('2', 49),
+                "001-001-000000002",
+                new DateOnly(2026, 7, 1),
+                null,
+                3.33m,
+                0.49m,
+                3.88m,
+                UserId
+            );
+        var line =
+            ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLine.Create(
+                document.Id,
+                TenantId,
+                "Agua 500ml",
+                3m,
+                1.11m,
+                vatCode: "10",
+                taxCode: "2",
+                vatPercentage: 15m,
+                taxValue: 0.49m,
+                discountPct: 0m,
+                discount: 0m,
+                lineSubtotal: 3.33m,
+                totalLine: 3.88m,
+                taxes:
+                [
+                    ("2", "10", 15m, 3.33m, 0.49m),
+                    ("5", "5001", 0.02m, 3m, 0.06m),
+                ]
+            );
+        document.AttachSriAuthorization(
+            "AUTH-2",
+            DateTime.UtcNow,
+            "<factura/>",
+            DateTime.UtcNow,
+            [line],
+            UserId,
+            docTypeCode: "01",
+            sriPaymentMethodCode: "20",
+            processing: new ERP.Domain.Modules.Purchases.PurchaseReception.Models.PurchaseReceptionProcessingOutcome(
+                ERP.Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionProcessingStatus.Processed,
+                1,
+                1,
+                null
+            )
+        );
+        var repo = new Mock<IPurchaseReceptionDocumentRepository>();
+        repo.Setup(r => r.GetByLineIdAsync(TenantId, line.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        return (repo.Object, line.Id);
+    }
+
+    [Fact]
+    public async Task Linea_XML_sin_editar_conserva_IVA_e_IRBPNR_del_comprobante()
+    {
+        var (repo, lineId) = ReceptionWithTaxedLine();
+
+        var saved = await CreateWithLineAsync(
+            2,
+            new PurchaseLineInput(null, "XML", 3m, 1.11m, "10", PurchaseReceptionLineId: lineId),
+            repo
+        );
+
+        var line = saved.Lines.Single();
+        line.VatAmount.Should().Be(0.49m);
+        line.XmlVatAmount.Should().Be(0.49m);
+        line.IrbpnrAmount.Should().Be(0.06m);
+    }
+
+    [Fact]
+    public async Task Linea_XML_con_cantidad_editada_recalcula_IVA_por_tarifa_e_IRBPNR_queda_documental()
+    {
+        var (repo, lineId) = ReceptionWithTaxedLine();
+
+        var saved = await CreateWithLineAsync(
+            2,
+            new PurchaseLineInput(null, "XML", 4m, 1.11m, "10", PurchaseReceptionLineId: lineId),
+            repo
+        );
+
+        var line = saved.Lines.Single();
+        line.TaxableBase.Should().Be(4.44m);
+        line.VatAmount.Should().Be(0.67m);
+        line.XmlVatAmount.Should().BeNull();
+        line.IrbpnrAmount.Should().Be(0.06m);
+    }
+
+    [Fact]
+    public async Task Update_linea_XML_con_precio_editado_recalcula_IVA_por_tarifa()
+    {
+        var (repo, lineId) = ReceptionWithTaxedLine();
+
+        var invoice = await UpdateWithLineAsync(
+            2,
+            new PurchaseLineInput(null, "XML", 3m, 2m, "10", PurchaseReceptionLineId: lineId),
+            repo
+        );
+
+        var line = invoice.Lines.Single();
+        line.VatAmount.Should().Be(0.90m);
+        line.XmlVatAmount.Should().BeNull();
     }
 }

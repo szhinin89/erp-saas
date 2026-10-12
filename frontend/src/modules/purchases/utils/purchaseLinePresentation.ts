@@ -6,7 +6,7 @@ import {
 } from "../../../lib/config/precisionPolicy.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { calcMarginPercent } from "../../../lib/margin";
-import { lineNet, calcLineTax } from "./purchaseCalc";
+import { lineNet, resolveLineTaxes } from "./purchaseCalc";
 
 /** Dato desconocido — nunca se confunde con un valor real (p. ej. stock 0). */
 const UNKNOWN = "—";
@@ -54,10 +54,10 @@ export interface PurchaseLinePresentationVM {
   };
   /**
    * PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — cabecera editable de la línea (lo que se
-   * guardará como draft): SIEMPRE recalculada desde quantity/unitPrice/discountPct/vatCode/iceCode
-   * actuales — nunca desde `xml.*` de arriba (ese bloque es el snapshot documental, fijo). Editar
-   * Cantidad/Costo en cabecera cambia `line.quantity`/`line.unitPrice`, y este bloque recalcula en
-   * consecuencia en cada render — nunca queda pegado a un valor anterior.
+   * guardará como draft): recalculada desde quantity/unitPrice/discountPct/vatCode/iceCode actuales
+   * en cada render. PURCHASES-HARDENING-P0 (B4-B6): mientras la base imponible coincida con la del
+   * XML, IVA/ICE muestran el monto documental (el mismo que persiste el backend); al editar
+   * Cantidad/Costo la base cambia y se recalculan por tarifa — nunca quedan pegados a un valor anterior.
    */
   editableHeader: {
     taxableBase: number;
@@ -175,9 +175,11 @@ export function buildPurchaseLinePresentation(
   // con `hasOrigin=true` siempre mostraba `xmlTaxValue`/`xmlTotalLine` (el snapshot documental)
   // aunque el usuario ya hubiera editado quantity/unitPrice en cabecera — Base imp. sí se
   // recalculaba (`lineNet`) pero IVA/Total quedaban pegados al valor original del XML.
+  // PURCHASES-HARDENING-P0 (B4-B6): `resolveLineTaxes` — el monto documental del XML prevalece
+  // (igual que el backend) mientras la base editable siga siendo la del comprobante.
   const editableTaxableBase = lineNet(line);
-  const editableTax = calcLineTax(line, vatRates, iceRates);
-  const editableIrbpnrAmount = hasOrigin ? (line.xmlIrbpnrAmount ?? 0) : 0;
+  const editableTax = resolveLineTaxes(line, vatRates, iceRates);
+  const editableIrbpnrAmount = hasOrigin ? editableTax.irbpnr : 0;
   const editableTotal =
     editableTaxableBase + editableTax.vat + editableTax.ice + editableIrbpnrAmount;
 

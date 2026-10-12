@@ -98,7 +98,8 @@ public sealed class MatchItemHandlerTests
         Item item,
         bool packagingBelongs,
         ItemSupplierCodeMatch? supplierCodeMatch,
-        out Mock<IItemMatchConfirmationService> confirmationService
+        out Mock<IItemMatchConfirmationService> confirmationService,
+        bool? supplierCodeIsEquivalence = null
     )
     {
         var documentRepo = new Mock<IPurchaseReceptionDocumentRepository>();
@@ -130,6 +131,18 @@ public sealed class MatchItemHandlerTests
                 )
             )
             .ReturnsAsync(supplierCodeMatch);
+        // Equivalencia real (ItemSupplierCode) vs fallback por SKU: por defecto, un match informado
+        // es una equivalencia real del proveedor.
+        itemRepo
+            .Setup(r =>
+                r.SupplierCodeExistsAsync(
+                    SupplierId,
+                    line.SupplierCode!.Trim().ToUpperInvariant(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(supplierCodeIsEquivalence ?? supplierCodeMatch is not null);
 
         confirmationService = new Mock<IItemMatchConfirmationService>();
 
@@ -262,5 +275,103 @@ public sealed class MatchItemHandlerTests
                 ),
             Times.Never
         );
+    }
+
+    // PURCHASES-HARDENING-P0 (B10) — sin PackagingLevelId también se respeta la equivalencia.
+    [Fact]
+    public async Task Handle_rejects_link_without_packaging_when_supplier_code_belongs_to_another_item()
+    {
+        var document = CreateDocumentWithLine(out var line);
+        var item = CreateItem();
+        var existingMatch = new ItemSupplierCodeMatch(Guid.NewGuid(), null, null, null, "UNIT");
+        var handler = BuildHandler(
+            document,
+            line,
+            item,
+            packagingBelongs: true,
+            supplierCodeMatch: existingMatch,
+            out var service
+        );
+
+        var result = await handler.Handle(
+            new MatchItemCommand(line.Id, item.Id, null),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("otro ítem");
+        service.Verify(
+            s =>
+                s.ConfirmAsync(
+                    It.IsAny<PurchaseReceptionDocument>(),
+                    It.IsAny<PurchaseReceptionLine>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Handle_allows_link_without_packaging_when_equivalence_points_to_same_item()
+    {
+        var document = CreateDocumentWithLine(out var line);
+        var item = CreateItem();
+        var existingMatch = new ItemSupplierCodeMatch(item.Id, null, null, null, "UNIT");
+        var handler = BuildHandler(
+            document,
+            line,
+            item,
+            packagingBelongs: true,
+            supplierCodeMatch: existingMatch,
+            out var service
+        );
+
+        var result = await handler.Handle(
+            new MatchItemCommand(line.Id, item.Id, null),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        service.Verify(
+            s =>
+                s.ConfirmAsync(
+                    document,
+                    line,
+                    item.Id,
+                    UserId,
+                    It.IsAny<DateTime>(),
+                    null,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Handle_allows_link_when_match_is_only_sku_fallback_of_another_item()
+    {
+        var document = CreateDocumentWithLine(out var line);
+        var item = CreateItem();
+        var skuFallback = new ItemSupplierCodeMatch(Guid.NewGuid(), null, null, null, "UNIT");
+        var handler = BuildHandler(
+            document,
+            line,
+            item,
+            packagingBelongs: true,
+            supplierCodeMatch: skuFallback,
+            out var service,
+            supplierCodeIsEquivalence: false
+        );
+
+        var result = await handler.Handle(
+            new MatchItemCommand(line.Id, item.Id, null),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
     }
 }

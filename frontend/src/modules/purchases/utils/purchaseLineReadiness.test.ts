@@ -104,6 +104,48 @@ describe("purchaseLineReadiness", () => {
     ).toBe("SELECT_WAREHOUSE");
   });
 
+  it("PURCHASES-HARDENING-P0 (B8) — servicio/no inventariable no exige bodega", () => {
+    const base = line();
+    const readiness = getPurchaseLineReadiness(
+      line({
+        itemId: "item-1",
+        packagingLevelId: "box-1",
+        warehouseId: undefined,
+        context: { ...base.context!, participatesInInventory: false },
+      }), { precisionPolicy: TEST_PRECISION_POLICY },
+    );
+
+    expect(readiness.status).toBe("READY");
+    expect(readiness.blocking).toBe(false);
+  });
+
+  it("PURCHASES-HARDENING-P0 (B8) — linea manual sin item no exige bodega", () => {
+    const readiness = getPurchaseLineReadiness(
+      line({
+        itemId: undefined,
+        purchaseReceptionLineId: undefined,
+        xmlSupplierCode: undefined,
+        warehouseId: undefined,
+        context: undefined,
+      }), { precisionPolicy: TEST_PRECISION_POLICY },
+    );
+
+    expect(readiness.status).toBe("READY");
+  });
+
+  it("PURCHASES-HARDENING-P0 (B8) — item sin contexto cargado sigue exigiendo bodega (fail-closed)", () => {
+    const readiness = getPurchaseLineReadiness(
+      line({
+        itemId: "item-1",
+        packagingLevelId: "box-1",
+        warehouseId: undefined,
+        context: undefined,
+      }), { precisionPolicy: TEST_PRECISION_POLICY },
+    );
+
+    expect(readiness.status).toBe("MISSING_WAREHOUSE");
+  });
+
   it("detecta impuesto no reconocido cuando el catalogo cargado no contiene el codigo", () => {
     const readiness = getPurchaseLineReadiness(
       line({ itemId: "item-1", packagingLevelId: "box-1", vatCode: "999" }),

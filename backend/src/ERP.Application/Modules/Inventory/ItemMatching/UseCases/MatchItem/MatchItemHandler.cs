@@ -74,11 +74,10 @@ public sealed class MatchItemHandler
             );
         }
 
-        if (
-            request.PackagingLevelId.HasValue
-            && document.SupplierId.HasValue
-            && !string.IsNullOrWhiteSpace(line.SupplierCode)
-        )
+        // PURCHASES-HARDENING-P0 (B10) — una equivalencia proveedor→Item ya registrada no se
+        // contradice nunca, se envíe o no PackagingLevelId. Solo bloquea una equivalencia real
+        // (ItemSupplierCode activo), no el fallback por SKU de GetSupplierCodeMatchAsync.
+        if (document.SupplierId.HasValue && !string.IsNullOrWhiteSpace(line.SupplierCode))
         {
             var existingMatch = await _itemRepo.GetSupplierCodeMatchAsync(
                 document.SupplierId.Value,
@@ -86,7 +85,16 @@ public sealed class MatchItemHandler
                 _tenant.TenantId,
                 cancellationToken
             );
-            if (existingMatch is not null && existingMatch.ItemId != request.ItemId)
+            if (
+                existingMatch is not null
+                && existingMatch.ItemId != request.ItemId
+                && await _itemRepo.SupplierCodeExistsAsync(
+                    document.SupplierId.Value,
+                    line.SupplierCode!.Trim().ToUpperInvariant(),
+                    _tenant.TenantId,
+                    cancellationToken
+                )
+            )
             {
                 return Result<PurchaseReceptionLineMatchDto>.ValidationFailure(
                     "El código de proveedor ya está asociado a otro ítem."

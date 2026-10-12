@@ -76,6 +76,16 @@ function hasWarehouse(line: PurchaseLineFormValues, globalWarehouseId?: string |
   return !!(line.warehouseId?.trim() || globalWarehouseId?.trim());
 }
 
+/**
+ * PURCHASES-HARDENING-P0 (B8) — misma regla que el backend (Create/Update/ConfirmPurchase): solo
+ * una línea con Item inventariable mueve stock y exige bodega. Sin Item (línea libre) o con un Item
+ * que el contexto informa como no inventariable (servicio), la bodega no aplica. Contexto aún no
+ * cargado → se asume inventariable (fail-closed).
+ */
+function requiresWarehouse(line: PurchaseLineFormValues) {
+  return !!line.itemId && line.context?.participatesInInventory !== false;
+}
+
 function hasKnownRate(code: string, rates?: Record<string, number>) {
   if (!rates || Object.keys(rates).length === 0) return true;
   return Object.prototype.hasOwnProperty.call(rates, code);
@@ -251,7 +261,7 @@ function computePrimaryReadiness(
     };
   }
 
-  if (!hasWarehouse(line, options.globalWarehouseId)) {
+  if (requiresWarehouse(line) && !hasWarehouse(line, options.globalWarehouseId)) {
     return {
       status: "MISSING_WAREHOUSE",
       ...message(t, "MISSING_WAREHOUSE"),

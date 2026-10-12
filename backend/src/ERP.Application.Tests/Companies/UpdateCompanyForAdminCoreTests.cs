@@ -92,7 +92,7 @@ public sealed class UpdateCompanyForAdminCoreTests
     /// </summary>
     [Theory]
     [InlineData("1234567890123", "Nueva razon")]
-    [InlineData("1790016918001", "Nueva razon")]
+    [InlineData("1760000070000", "Nueva razon")] // entidad pública con establecimiento 0000 (RucValidatorTests)
     [InlineData("TMP-EC-other", "Nueva razon")]
     [InlineData("1790016919001", "   ")]
     public void Invalid_identity_is_rejected_with_the_same_rule_from_both_contexts(
