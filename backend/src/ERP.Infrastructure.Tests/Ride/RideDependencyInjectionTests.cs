@@ -64,6 +64,10 @@ public sealed class RideDependencyInjectionTests
         services.AddScoped<ICurrentUser>(_ => new FixedCurrentUser(Guid.NewGuid));
         services.AddScoped<IElectronicDocumentRepository, ElectronicDocumentRepository>();
         services.AddScoped<
+            ERP.Domain.Modules.Company.Interfaces.ICompanyRepository,
+            ERP.Infrastructure.Persistence.Repositories.CompanyRepository
+        >();
+        services.AddScoped<
             ERP.Application.Common.Interfaces.IFileStorage,
             ERP.Infrastructure.Services.LocalFileStorage
         >();

@@ -8,13 +8,17 @@ namespace ERP.Domain.Modules.Ride.ValueObjects;
 /// </summary>
 public sealed record RideModel
 {
-    public RideHeader Header { get; }
+    public RideHeader Header { get; private init; }
     public RideParty Issuer { get; }
     public RideParty Receiver { get; }
     public IReadOnlyList<RideLine> Lines { get; }
     public IReadOnlyList<RideTaxSummary> TaxSummary { get; }
     public IReadOnlyList<RidePaymentInfo> Payments { get; }
     public IReadOnlyList<RideAdditionalInfo> AdditionalInfo { get; }
+
+    /// <summary>Compone metadata de autorización sin mutar el resultado del parser XML.</summary>
+    public RideModel WithAuthorizationDate(DateTime? authorizationDate) =>
+        this with { Header = Header.WithAuthorizationDate(authorizationDate) };
 
     private RideModel(
         RideHeader header,

@@ -37,13 +37,17 @@ public sealed record RideHeader
     public string CurrencyCode { get; }
     public RideAccessKey AccessKey { get; }
     public string AuthorizationNumber { get; }
-    public DateTime? AuthorizationDate { get; }
+    /// <summary>Fecha/hora de presentación en la zona de la empresa, compuesta desde metadata UTC.</summary>
+    public DateTime? AuthorizationDate { get; private init; }
     public decimal SubtotalWithoutTax { get; }
     public decimal TotalDiscount { get; }
     public decimal Tip { get; }
     public decimal GrandTotal { get; }
     public string? Reason { get; }
     public RideModifiedDocumentReference? ModifiedDocument { get; }
+
+    public RideHeader WithAuthorizationDate(DateTime? authorizationDate) =>
+        this with { AuthorizationDate = authorizationDate };
 
     private RideHeader(
         string environment,

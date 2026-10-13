@@ -1,3 +1,5 @@
+using ERP.Domain.Modules.Company.Interfaces;
+using RideCompany = ERP.Domain.Modules.Company.Entities.Company;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -215,6 +217,10 @@ public sealed class RidePipelineInvoiceIntegrationTests
                         Guid.NewGuid()
                     )
                 )
+            ),
+            Mock.Of<ICompanyRepository>(r =>
+                r.GetByIdForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                == Task.FromResult<RideCompany?>(new RideCompany { Timezone = "America/Guayaquil" })
             )
         );
 

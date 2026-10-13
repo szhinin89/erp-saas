@@ -1,5 +1,16 @@
 # Project Status
 
+## RIDE-AUTHORIZATION-DATE — BUG REAL (2026-10-13)
+
+**Estado: corregido, sin commit/push.** El RIDE de la factura 001-001-000000001 no mostraba la fecha/hora de autorización.
+
+- **Corrección:** `ElectronicDocument.AuthorizationDate` (SSOT) → `IRideSourceXmlProvider` (`AuthorizationDateUtc`) → `RidePipeline` → `RideHeader` → QuestPDF, presentada en `Company.Timezone`. Sumak: `2026-10-13 16:27:19Z` → **13/10/2026 11:27:19**. Sin cambio de XML, parsers ni dependencia Ride → Sales. Detalle: ADR-025 §14 (addendum).
+- **Cache:** el `TemplateVersion` incorpora la huella de autorización + timezone; los PDFs previos (sin fecha) quedan invalidados y se regeneran en la siguiente solicitud.
+- **Validación focal:** Application RIDE 87/87 PASS; Infrastructure RIDE 92/92 PASS.
+- **Fuera de alcance:** "NO TIENE LOGO" es configuración de logo faltante en Sumak, no un defecto.
+- **DEBT:** `RetentionRidePdfService` no usa `RidePipeline` → el RIDE de Retención sigue mostrando "no disponible".
+- La fase piloto Ventas **no** se cierra con este ticket.
+
 ## APERTURA DE CAJA — PRE-PILOTO VENTAS (2026-10-13)
 
 **Estado: implementado, sin commit/push.** `/treasury/cash` presenta Contexto de caja, Contexto de facturación y Apertura. Caja/sucursal/bodega/cajero/disponibilidad; punto con código/nombre, estado y `EmissionPoint.EmissionType`. DTO/mapper de Caja ampliados únicamente con tipo y estado del punto. Diagnóstico electrónico reutilizado desde el store y banner oficiales (ambiente, capacidad, certificado y expiración); sin nuevo diagnóstico, reglas fiscales ni cambios en SRI/POS. Caja ocupada anticipa el bloqueo existente; advertencias fiscales y bodega faltante no bloquean. Payload intacto.

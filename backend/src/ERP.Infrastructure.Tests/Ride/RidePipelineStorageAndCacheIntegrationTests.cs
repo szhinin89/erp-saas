@@ -1,3 +1,6 @@
+using ERP.Application.Common.Services;
+using ERP.Domain.Modules.Company.Interfaces;
+using RideCompany = ERP.Domain.Modules.Company.Entities.Company;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -233,6 +236,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                             Guid.NewGuid()
                         )
                     )
+                ),
+                Mock.Of<ICompanyRepository>(r =>
+                    r.GetByIdForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                    == Task.FromResult<RideCompany?>(new RideCompany { Timezone = "America/Guayaquil" })
                 )
             );
 
@@ -388,6 +395,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                             Guid.NewGuid()
                         )
                     )
+                ),
+                Mock.Of<ICompanyRepository>(r =>
+                    r.GetByIdForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                    == Task.FromResult<RideCompany?>(new RideCompany { Timezone = "America/Guayaquil" })
                 )
             );
 
@@ -510,6 +521,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                             Guid.NewGuid()
                         )
                     )
+                ),
+                Mock.Of<ICompanyRepository>(r =>
+                    r.GetByIdForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                    == Task.FromResult<RideCompany?>(new RideCompany { Timezone = "America/Guayaquil" })
                 )
             );
 
@@ -584,8 +599,14 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
             _tenantId,
             RideDocumentType.Invoice,
             electronicDocumentId,
-            // Standard commercial policy (quantity 4, sales unit price 2) used by this fixture.
-            new RideLinePrecision(4, 2).TemplateVersion
+            // Standard commercial policy (quantity 4, sales unit price 2) used by this fixture;
+            // sin fecha de autorización en la metadata y zona America/Guayaquil de la empresa.
+            RidePipeline.BuildTemplateVersion(
+                new RideLinePrecision(4, 2),
+                authorizationDateUtc: null,
+                CompanyTimeZone.Resolve("America/Guayaquil"),
+                new RideContentHasher()
+            )
         );
         var forbiddenFullPath = Path.GetFullPath(Path.Combine(_fileStorageBasePath, relativePath));
         Directory.CreateDirectory(forbiddenFullPath);
@@ -661,6 +682,10 @@ public sealed class RidePipelineStorageAndCacheIntegrationTests : IAsyncLifetime
                         Guid.NewGuid()
                     )
                 )
+            ),
+            Mock.Of<ICompanyRepository>(r =>
+                r.GetByIdForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
+                == Task.FromResult<RideCompany?>(new RideCompany { Timezone = "America/Guayaquil" })
             )
         );
 

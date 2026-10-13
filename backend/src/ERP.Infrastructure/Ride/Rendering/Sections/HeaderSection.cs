@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Modules.Ride.Templates;
 using ERP.Domain.Configuration.Constants;
 using QuestPDF.Fluent;
@@ -108,7 +109,10 @@ public static class HeaderSection
                             text.Span("FECHA Y HORA DE AUTORIZACIÓN: ").Bold();
                             text.Span(
                                 header.AuthorizationDate.HasValue
-                                    ? header.AuthorizationDate.Value.ToString("dd/MM/yyyy HH:mm:ss")
+                                    ? header.AuthorizationDate.Value.ToString(
+                                        "dd/MM/yyyy HH:mm:ss",
+                                        CultureInfo.InvariantCulture
+                                    )
                                     : "no disponible"
                             );
                         });

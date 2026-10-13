@@ -1,3 +1,5 @@
+using ERP.Domain.Modules.Company.Interfaces;
+using RideCompany = ERP.Domain.Modules.Company.Entities.Company;
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Ride.Branding;
@@ -43,10 +45,14 @@ public sealed class RidePipelineTests
         public Mock<IRidePdfStorageService> StorageService { get; } = new();
         public Mock<IRidePdfDocumentRepository> Repository { get; } = new();
         public Mock<ICompanyPrecisionPolicyRepository> PrecisionPolicies { get; } = new();
+        public Mock<ICompanyRepository> Companies { get; } = new();
         public Mock<ICurrentUser> CurrentUser { get; } = new();
 
         public Fixture()
         {
+            Companies.Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RideCompany { Id = CompanyId, TenantId = TenantId, Timezone = "America/Guayaquil" });
+            ContentHasher.Setup(h => h.Compute(It.IsAny<string>())).Returns((string text) => new RideContentHasher().Compute(text));
             CurrentUser.SetupGet(u => u.UserId).Returns(UserId);
             PrecisionPolicies
                 .Setup(p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
@@ -67,11 +73,13 @@ public sealed class RidePipelineTests
                 StorageService.Object,
                 Repository.Object,
                 CurrentUser.Object,
-                PrecisionPolicies.Object
+                PrecisionPolicies.Object,
+                Companies.Object
             );
 
         public void SetupAvailableSource(
-            RideDocumentType documentType = RideDocumentType.Invoice
+            RideDocumentType documentType = RideDocumentType.Invoice,
+            DateTime? authorizationDateUtc = null
         ) =>
             SourceXmlProvider
                 .Setup(p =>
@@ -89,10 +97,161 @@ public sealed class RidePipelineTests
                             RideSourceXmlStatus.Available,
                             AuthorizedXml,
                             ElectronicDocumentId,
-                            documentType
+                            documentType,
+                            authorizationDateUtc
                         )
                     )
                 );
+
+        /// <summary>Cache miss completo; devuelve el layout que llega al renderer y la versión de plantilla.</summary>
+        public async Task<(InvoiceRideDocumentLayout Layout, string TemplateVersion)> RunCacheMissAsync()
+        {
+            InvoiceRideDocumentLayout? captured = null;
+            ParserResolver
+                .Setup(r => r.Resolve(RideDocumentType.Invoice))
+                .Returns(new FakeRideXmlParser(RideDocumentType.Invoice));
+            TemplateResolver
+                .Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
+                .Returns(new DefaultInvoiceRideTemplate());
+            CacheStrategy
+                .Setup(c =>
+                    c.TryGetCachedAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<RideContentHash>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(Result<RidePdfMetadataDto?>.Success(null));
+            BrandingProvider
+                .Setup(b => b.GetAsync(TenantId, CompanyId, null, null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<RideBranding>.Success(RideBranding.Empty()));
+            Renderer
+                .Setup(r => r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>()))
+                .Callback<IRideDocumentLayout, CancellationToken>((l, _) => captured = (InvoiceRideDocumentLayout)l)
+                .ReturnsAsync([1, 2, 3]);
+            StorageService
+                .Setup(s =>
+                    s.StoreAsync(
+                        TenantId,
+                        RideDocumentType.Invoice,
+                        ElectronicDocumentId,
+                        It.IsAny<string>(),
+                        It.IsAny<byte[]>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(Result<string>.Success("ride/path/v1.pdf"));
+
+            var result = await BuildPipeline()
+                .ExecuteAsync(
+                    TenantId,
+                    CompanyId,
+                    SourceModule,
+                    SourceEntityId,
+                    forceRegenerate: false,
+                    CancellationToken.None
+                );
+
+            result.IsSuccess.Should().BeTrue();
+            captured.Should().NotBeNull();
+            return (captured!, result.Value!.Metadata!.TemplateVersion);
+        }
+
+        public void SetupCompanyTimezone(string timezone) =>
+            Companies
+                .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RideCompany { Id = CompanyId, TenantId = TenantId, Timezone = timezone });
+    }
+
+    [Fact]
+    public async Task Authorization_date_from_metadata_is_converted_from_utc_to_company_timezone()
+    {
+        var fixture = new Fixture();
+        fixture.SetupAvailableSource(
+            authorizationDateUtc: new DateTime(2026, 10, 13, 16, 27, 19, DateTimeKind.Utc)
+        );
+
+        var (layout, _) = await fixture.RunCacheMissAsync();
+
+        layout.Header.AuthorizationDate.Should().Be(new DateTime(2026, 10, 13, 11, 27, 19));
+        layout.Header.AuthorizationDate!.Value.Kind.Should().Be(DateTimeKind.Unspecified);
+        layout
+            .Header.AuthorizationDate.Value.ToString("dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
+            .Should()
+            .Be("13/10/2026 11:27:19");
+    }
+
+    [Fact]
+    public async Task Null_authorization_metadata_yields_null_date_never_an_invented_one()
+    {
+        var fixture = new Fixture();
+        fixture.SetupAvailableSource(authorizationDateUtc: null);
+
+        var (layout, _) = await fixture.RunCacheMissAsync();
+
+        // El fake parser trae una fecha propia: la metadata del ElectronicDocument es la SSOT.
+        layout.Header.AuthorizationDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Missing_company_fails_closed_without_rendering()
+    {
+        var fixture = new Fixture();
+        fixture.SetupAvailableSource(
+            authorizationDateUtc: new DateTime(2026, 10, 13, 16, 27, 19, DateTimeKind.Utc)
+        );
+        fixture
+            .ParserResolver.Setup(r => r.Resolve(RideDocumentType.Invoice))
+            .Returns(new FakeRideXmlParser(RideDocumentType.Invoice));
+        fixture
+            .TemplateResolver.Setup(r => r.Resolve(It.IsAny<RideTemplateSelector>()))
+            .Returns(new DefaultInvoiceRideTemplate());
+        fixture
+            .Companies.Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RideCompany?)null);
+
+        var result = await fixture
+            .BuildPipeline()
+            .ExecuteAsync(TenantId, CompanyId, SourceModule, SourceEntityId, false, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        fixture.Renderer.Verify(
+            r => r.RenderAsync(It.IsAny<IRideDocumentLayout>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Template_version_fingerprint_changes_with_authorization_date_and_timezone_and_excludes_legacy_pdfs()
+    {
+        var authorizedAt = new DateTime(2026, 10, 13, 16, 27, 19, DateTimeKind.Utc);
+
+        async Task<string> VersionFor(DateTime? utc, string timezone)
+        {
+            var fixture = new Fixture();
+            fixture.SetupCompanyTimezone(timezone);
+            fixture.SetupAvailableSource(authorizationDateUtc: utc);
+            return (await fixture.RunCacheMissAsync()).TemplateVersion;
+        }
+
+        var baseline = await VersionFor(authorizedAt, "America/Guayaquil");
+        var sameInputs = await VersionFor(authorizedAt, "America/Guayaquil");
+        var otherDate = await VersionFor(authorizedAt.AddSeconds(1), "America/Guayaquil");
+        var withoutDate = await VersionFor(null, "America/Guayaquil");
+        var otherZone = await VersionFor(authorizedAt, "America/Bogota");
+
+        sameInputs.Should().Be(baseline, "el cache debe seguir siendo determinista");
+        new[] { otherDate, withoutDate, otherZone }.Should().NotContain(baseline);
+        otherZone.Should().NotBe(otherDate);
+        // PDFs previos al fix se persistieron con la versión "precision-1-q4-p2" sin sufijo.
+        baseline.Should().NotBe("precision-1-q4-p2").And.StartWith("precision-1-q4-p2-a1-");
+        baseline.Length.Should().BeLessThanOrEqualTo(RidePdfDocument.VersionMaxLen);
     }
 
     [Fact]
@@ -384,7 +543,7 @@ public sealed class RidePipelineTests
         result.Value.Metadata.Should().NotBeNull();
         result.Value.Metadata!.WasCached.Should().BeFalse();
         var version = $"precision-1-q{quantityDecimals}-p{priceDecimals}";
-        result.Value.Metadata.TemplateVersion.Should().Be(version);
+        result.Value.Metadata.TemplateVersion.Should().StartWith(version + "-a1-");
         fixture.PrecisionPolicies.Verify(
             p => p.FindAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()),
             Times.Once
@@ -410,7 +569,7 @@ public sealed class RidePipelineTests
                     ElectronicDocumentId,
                     It.IsAny<RideContentHash>(),
                     documentType.ToString(),
-                    version,
+                    It.Is<string>(v => v.StartsWith(version + "-a1-")),
                     "unversioned",
                     "unversioned",
                     RidePipeline.RideSpecificationVersion,

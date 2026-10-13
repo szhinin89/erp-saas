@@ -126,7 +126,8 @@ public sealed class ElectronicDocumentRideSourceXmlProvider : IRideSourceXmlProv
                     RideSourceXmlStatus.Available,
                     xmlResult.Value,
                     document.Id,
-                    documentType
+                    documentType,
+                    document.AuthorizationDate
                 )
             );
         }

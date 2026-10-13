@@ -1,4 +1,6 @@
+using System.Globalization;
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Ride.Branding;
 using ERP.Application.Modules.Ride.DTOs;
@@ -6,6 +8,7 @@ using ERP.Application.Modules.Ride.Parsers;
 using ERP.Application.Modules.Ride.Rendering;
 using ERP.Application.Modules.Ride.Storage;
 using ERP.Application.Modules.Ride.Templates;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Ride.Enums;
 using ERP.Domain.Modules.Ride.Interfaces;
@@ -30,6 +33,25 @@ public sealed class RidePipeline
     private const string NeutralBrandingVersion = "unversioned";
     private const string NeutralRendererVersion = "unversioned";
 
+    /// <summary>
+    /// Versión de plantilla = escalas de precisión + huella de la metadata de autorización
+    /// (<c>ElectronicDocument.AuthorizationDate</c> UTC + zona de <c>Company.Timezone</c>). Mantiene
+    /// SourceXmlHash puro; como la versión ya forma parte del fingerprint único y de la ruta del PDF,
+    /// un cambio de fecha/zona invalida el cache y excluye PDFs legacy generados sin fecha.
+    /// </summary>
+    public static string BuildTemplateVersion(
+        RideLinePrecision precision,
+        DateTime? authorizationDateUtc,
+        TimeZoneInfo timeZone,
+        IRideContentHasher contentHasher
+    )
+    {
+        var authorizationFingerprint = contentHasher.Compute(
+            $"authorization-v1|{authorizationDateUtc?.ToString("O", CultureInfo.InvariantCulture) ?? "null"}|{timeZone.Id}"
+        );
+        return $"{precision.TemplateVersion}-a1-{authorizationFingerprint.Value[..24]}";
+    }
+
     private readonly IRideSourceXmlProvider _sourceXmlProvider;
     private readonly IRideXmlParserResolver _parserResolver;
     private readonly IRideTemplateResolver _templateResolver;
@@ -41,6 +63,7 @@ public sealed class RidePipeline
     private readonly IRidePdfDocumentRepository _repository;
     private readonly ICurrentUser _currentUser;
     private readonly ICompanyPrecisionPolicyRepository _precisionPolicies;
+    private readonly ICompanyRepository _companies;
 
     public RidePipeline(
         IRideSourceXmlProvider sourceXmlProvider,
@@ -53,7 +76,8 @@ public sealed class RidePipeline
         IRidePdfStorageService storageService,
         IRidePdfDocumentRepository repository,
         ICurrentUser currentUser,
-        ICompanyPrecisionPolicyRepository precisionPolicies
+        ICompanyPrecisionPolicyRepository precisionPolicies,
+        ICompanyRepository companies
     )
     {
         _sourceXmlProvider = sourceXmlProvider;
@@ -67,6 +91,7 @@ public sealed class RidePipeline
         _repository = repository;
         _currentUser = currentUser;
         _precisionPolicies = precisionPolicies;
+        _companies = companies;
     }
 
     public async Task<Result<RideGenerationResultDto>> ExecuteAsync(
@@ -147,8 +172,20 @@ public sealed class RidePipeline
             policy.QuantityDecimals,
             policy.SalesUnitPriceDecimals
         );
-        // Invalidate legacy F2 PDFs and keep cached rendering tied to its presentation scales.
-        var templateVersion = precision.TemplateVersion;
+        var company = await _companies.GetByIdForTenantAsync(companyId, tenantId, ct);
+        if (company is null)
+            return Result<RideGenerationResultDto>.NotFound("La empresa del RIDE no existe.");
+
+        var timeZone = CompanyTimeZone.Resolve(company.Timezone);
+        var authorizationDate = lookup.AuthorizationDateUtc is DateTime utc
+            ? CompanyTimeZone.ToLocal(utc, timeZone)
+            : (DateTime?)null;
+        var templateVersion = BuildTemplateVersion(
+            precision,
+            lookup.AuthorizationDateUtc,
+            timeZone,
+            _contentHasher
+        );
 
         // 4. Consultar estrategia de cache — huella completa (ADR-025 §14).
         var sourceXmlHash = _contentHasher.Compute(authorizedXml);
@@ -218,7 +255,8 @@ public sealed class RidePipeline
                     "branding_resolution_failed"
                 );
 
-            var layout = template.Compose(parseResult.Value!, brandingResult.Value!, precision);
+            var model = parseResult.Value!.WithAuthorizationDate(authorizationDate);
+            var layout = template.Compose(model, brandingResult.Value!, precision);
             var pdfBytes = await _renderer.RenderAsync(layout, ct);
 
             var storeResult = await _storageService.StoreAsync(

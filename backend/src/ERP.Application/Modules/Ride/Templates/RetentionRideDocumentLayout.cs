@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Modules.Ride.Rendering;
 using ERP.Domain.Modules.Ride.ValueObjects;
 
@@ -41,7 +42,7 @@ public sealed class RetentionRideDocumentLayout : IRideDocumentLayout
         Branding = branding;
         QrPlaceholder = model.Header.AccessKey.Value;
         AuthorizationDateDisplay = model.Header.AuthorizationDate.HasValue
-            ? model.Header.AuthorizationDate.Value.ToString("dd/MM/yyyy HH:mm:ss")
+            ? model.Header.AuthorizationDate.Value.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)
             : AuthorizationDatePendingText;
     }
 }

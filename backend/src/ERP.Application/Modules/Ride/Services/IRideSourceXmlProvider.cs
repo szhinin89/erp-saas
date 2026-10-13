@@ -39,7 +39,8 @@ public sealed record RideSourceXmlLookup(
     RideSourceXmlStatus Status,
     string? AuthorizedXml,
     Guid ElectronicDocumentId,
-    RideDocumentType DocumentType
+    RideDocumentType DocumentType,
+    DateTime? AuthorizationDateUtc = null
 );
 
 public enum RideSourceXmlStatus

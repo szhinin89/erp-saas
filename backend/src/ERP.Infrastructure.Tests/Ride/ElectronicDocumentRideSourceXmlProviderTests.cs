@@ -148,6 +148,7 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
     [Fact]
     public async Task Authorized_document_with_stored_xml_returns_available()
     {
+        var authorizedAtUtc = new DateTime(2026, 10, 13, 16, 27, 19, DateTimeKind.Utc);
         const string xmlContent = "<factura>contenido de prueba</factura>";
         var sourceEntityId = Guid.NewGuid();
         var authorizedPath =
@@ -163,7 +164,7 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
             await fileStorage.SaveAsync(authorizedPath, contentStream);
 
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var document = BuildAuthorizedDocument(sourceEntityId, authorizedPath);
+            var document = BuildAuthorizedDocument(sourceEntityId, authorizedPath, authorizedAtUtc);
             db.ElectronicDocuments.Add(document);
             await db.SaveChangesAsync();
         }
@@ -173,6 +174,9 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be(RideSourceXmlStatus.Available);
         result.Value.AuthorizedXml.Should().Be(xmlContent);
+        // SSOT de la fecha de autorización: ElectronicDocument.AuthorizationDate (UTC), nunca el XML.
+        result.Value.AuthorizationDateUtc.Should().Be(authorizedAtUtc);
+        result.Value.AuthorizationDateUtc!.Value.Kind.Should().Be(DateTimeKind.Utc);
         // H5 — la traducción ElectronicDocumentType (ElectronicDocuments) → RideDocumentType (Ride)
         // es responsabilidad exclusiva de ElectronicDocumentRideSourceXmlProvider (ADR-025 §8);
         // este assert prueba que la traducción ocurrió, no solo que el campo tiene un valor.
@@ -415,13 +419,14 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
 
     private ElectronicDocument BuildAuthorizedDocument(
         Guid sourceEntityId,
-        string? authorizedXmlPath
+        string? authorizedXmlPath,
+        DateTime? authorizedAtUtc = null
     )
     {
         var document = BuildReceivedDocument(sourceEntityId);
         document.MarkAuthorized(
             AuthorizationNumber.Create(new string('7', 49)),
-            DateTime.UtcNow,
+            authorizedAtUtc ?? DateTime.UtcNow,
             authorizedXmlPath,
             _userId
         );

@@ -165,6 +165,15 @@ La validez de un PDF ya generado depende de la coincidencia simultánea de:
 
 Un cambio en cualquiera de estos cinco valores invalida el PDF cacheado y dispara una regeneración en la siguiente solicitud. Estos cinco valores se exponen en `RidePdfMetadataDto` (§7) para que cualquier consumidor pueda auditar exactamente con qué versión se generó un RIDE ya emitido, sin necesidad de regenerarlo para saberlo.
 
+**Addendum 2026-10-13 — Fecha de autorización (BUG REAL, corrección de bug demostrado sin cambio de contrato público):**
+
+- **SSOT:** `ElectronicDocument.AuthorizationDate` (instante UTC) es la única fuente de la fecha/hora de autorización. El XML autorizado no la contiene y no se modifica.
+- **Contrato de fuente:** `RideSourceXmlLookup` (contrato genérico de `IRideSourceXmlProvider`, §8) agrega `AuthorizationDateUtc` (opcional). `ElectronicDocumentRideSourceXmlProvider` lo mapea desde el documento electrónico.
+- **Parsers:** siguen limitados al contenido XML; no conocen `ElectronicDocument`, BD ni empresa.
+- **Composición:** `RidePipeline` compone modelo XML + metadata electrónica (`RideModel.WithAuthorizationDate`) antes de la plantilla. La fecha UTC se presenta en la zona de `Company.Timezone` vía `CompanyTimeZone` (sin zona hardcodeada); si la metadata es `null`, el RIDE muestra "no disponible".
+- **Cache:** `TemplateVersion` incorpora una huella de autorización + timezone (`RidePipeline.BuildTemplateVersion`: `{precisión}-a1-{hash}`). Así un cambio de fecha/zona invalida el PDF y los PDFs generados antes del fix (sin fecha) no se reutilizan. `SourceXmlHash` permanece puro. No existe cache adicional.
+- **Fronteras:** sin dependencia `Ride → Sales`; RIDE sigue reutilizable por cualquier origen de `ElectronicDocuments`.
+
 ### 15. Storage
 
 El PDF nunca se almacena en base de datos. `RidePdfDocument` persiste únicamente metadatos (ruta, hash, versiones, estado, fecha). El archivo físico se persiste exclusivamente vía `IFileStorage`, con convención de ruta centralizada en `IRidePdfStorageNamingStrategy` — nunca una ruta construida ad-hoc fuera de esa clase.
@@ -220,6 +229,8 @@ Ninguna. El diseño no tiene implementación todavía, por lo que no existe deud
 
 1. La resolución jerárquica completa de plantillas (Empresa → Sucursal → Punto de Emisión) está habilitada por el diseño de `RideTemplateSelector` pero no implementada en v1.0 (§11) — extensión aditiva declarada, no un defecto.
 2. Los tipos de comprobante distintos de `Invoice` (CreditNote, DebitNote, Retention, ShippingGuide, PurchaseSettlement) no tienen parser ni plantilla en v1.0 — mismo estado que sus builders en `ElectronicDocuments` (ADR-023, "Límites"): trabajo nuevo con su propio roadmap, no mantenimiento.
+
+**DEBT (registrado 2026-10-13):** `RetentionRidePdfService` todavía no utiliza `RidePipeline` (recibe solo el XML, sin metadata electrónica ni cache), por lo que el RIDE de Retención no muestra la fecha de autorización (§14, addendum) y la presenta como "no disponible".
 
 ## Estado de implementación
 
