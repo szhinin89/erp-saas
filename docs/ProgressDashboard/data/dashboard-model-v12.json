@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-13 09:18:48",
+    "Generated":  "2026-10-13 10:14:32",
     "EngineeringScore":  {
-                             "Generated":  "2026-10-13 09:18:44",
+                             "Generated":  "2026-10-13 10:14:30",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
                              "Quality":  8.05,
@@ -10,7 +10,7 @@
                              "Overall":  61.12
                          },
     "QualityGate":  {
-                        "Generated":  "2026-10-13 09:18:47",
+                        "Generated":  "2026-10-13 10:14:32",
                         "Status":  "RED",
                         "EngineeringScore":  61.12,
                         "Warnings":  [
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-10-13 09:18:46",
-                  "Snapshots":  28,
+                  "Generated":  "2026-10-13 10:14:31",
+                  "Snapshots":  29,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -166,6 +166,11 @@
                                   {
                                       "Date":  "2026-10-13 09:18:45",
                                       "File":  "dashboard-2026-10-13-0918-v2.json",
+                                      "Score":  61.12
+                                  },
+                                  {
+                                      "Date":  "2026-10-13 10:14:31",
+                                      "File":  "dashboard-2026-10-13-1014-v2.json",
                                       "Score":  61.12
                                   }
                               ]
@@ -518,8 +523,8 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-10-13 09:18:42",
-                     "FilesAnalyzed":  11823,
+                     "Generated":  "2026-10-13 10:14:28",
+                     "FilesAnalyzed":  11829,
                      "SecretsFound":  181,
                      "SecretFiles":  [
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
@@ -731,8 +736,8 @@
                      "Warnings":  199
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-10-13 09:18:14",
-                          "FilesAnalyzed":  11772,
+                          "Generated":  "2026-10-13 10:14:04",
+                          "FilesAnalyzed":  11777,
                           "TODO":  736,
                           "FIXME":  30,
                           "HACK":  1,
@@ -3612,7 +3617,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.ts",
-                                                 "Lines":  516
+                                                 "Lines":  513
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.draftRecovery.test.ts",
@@ -3698,7 +3703,7 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-10-13 09:15:24",
+                         "Generated":  "2026-10-13 10:13:32",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  673
@@ -3716,7 +3721,7 @@
                                                            },
                                         "API":  {
                                                     "Controllers":  502,
-                                                    "Files":  148
+                                                    "Files":  147
                                                 }
                                     },
                          "Violations":  [
@@ -3724,7 +3729,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-10-13 09:15:26",
+                         "Generated":  "2026-10-13 10:13:33",
                          "Violations":  [
 
                                         ],

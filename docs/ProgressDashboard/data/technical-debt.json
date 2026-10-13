@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-13 09:18:14",
-    "FilesAnalyzed":  11772,
+    "Generated":  "2026-10-13 10:14:04",
+    "FilesAnalyzed":  11777,
     "TODO":  736,
     "FIXME":  30,
     "HACK":  1,
@@ -2880,7 +2880,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.ts",
-                           "Lines":  516
+                           "Lines":  513
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.draftRecovery.test.ts",

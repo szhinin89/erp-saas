@@ -1,10 +1,10 @@
 ﻿{
-    "Generated":  "2026-10-13 09:15:17",
+    "Generated":  "2026-10-13 10:13:28",
     "FrontendRoot":  "C:\\ProyectCursor\\erp-saas\\frontend\\src",
     "Statistics":  {
-                       "SourceFiles":  1060,
+                       "SourceFiles":  1063,
                        "Pages":  0,
-                       "Components":  128,
+                       "Components":  129,
                        "Hooks":  8,
                        "Services":  0,
                        "Stores":  0,

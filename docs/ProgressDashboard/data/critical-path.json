@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-13 09:19:16",
+    "generated":  "2026-10-13 10:14:53",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -748,8 +748,8 @@
                                                   "Refactor large file (528 lines): frontend/src/modules/purchases/utils/purchaseCalc.test.ts",
                                                   "Refactor large file (519 lines): backend/src/ERP.Application.Tests/Purchases/GetPurchaseReturnByIdHandlerTests.cs",
                                                   "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
-                                                  "Refactor large file (516 lines): frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.ts",
                                                   "Refactor large file (514 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
+                                                  "Refactor large file (513 lines): frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.ts",
                                                   "Refactor large file (511 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/DownloadPurchaseReceptionXmlHandlerTests.cs",
                                                   "Refactor large file (507 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/ImportPurchaseReceptionHandlerTests.cs"
                                               ]
