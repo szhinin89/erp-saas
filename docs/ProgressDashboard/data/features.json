@@ -1074,6 +1074,13 @@
                                           ]
                          },
                          {
+                             "name":  "Discard Purchase Draft",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/DiscardPurchaseDraftUseCases.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Get Purchase Invoice Tax Summaries",
                              "status":  "implemented",
                              "evidence":  [

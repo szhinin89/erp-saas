@@ -36,7 +36,7 @@
                      ]
     },
     {
-        "task":  "Refactor large file (3464 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+        "task":  "Refactor large file (3685 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
@@ -72,7 +72,7 @@
                      ]
     },
     {
-        "task":  "Refactor large file (2505 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+        "task":  "Refactor large file (2557 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
@@ -108,21 +108,21 @@
                      ]
     },
     {
+        "task":  "Refactor large file (1956 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs"
+                     ]
+    },
+    {
         "task":  "Refactor large file (1938 lines): backend/src/ERP.Application.Tests/Payables/RegisterSupplierPaymentUseCasesTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Payables/RegisterSupplierPaymentUseCasesTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (1910 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs"
                      ]
     },
     {
@@ -351,6 +351,24 @@
                      ]
     },
     {
+        "task":  "Refactor large file (1092 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (1088 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/purchases/utils/purchaseLinePresentation.ts"
+                     ]
+    },
+    {
         "task":  "Refactor large file (1086 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseHandlerTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
@@ -402,15 +420,6 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Accounting/GetAccountingReportsUseCasesTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (998 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs"
                      ]
     },
     {
@@ -504,6 +513,15 @@
                      ]
     },
     {
+        "task":  "Refactor large file (922 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs"
+                     ]
+    },
+    {
         "task":  "Refactor large file (913 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditReadModelIntegrationTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
@@ -576,15 +594,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (879 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (871 lines): backend/src/ERP.Application.Tests/Finance/RegisterSupplierCreditRefundUseCasesTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
@@ -621,21 +630,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (862 lines): backend/src/ERP.Infrastructure.Tests/Dashboard/DashboardKpiReaderTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Dashboard/DashboardKpiReaderTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (862 lines): backend/src/ERP.Application.Tests/Accounting/GetJournalEntriesUseCasesTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Accounting/GetJournalEntriesUseCasesTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (862 lines): backend/src/ERP.Infrastructure.Tests/Dashboard/DashboardKpiReaderTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure.Tests/Dashboard/DashboardKpiReaderTests.cs"
                      ]
     },
     {
@@ -729,21 +738,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (792 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (792 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (792 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs"
                      ]
     },
     {
@@ -765,6 +774,15 @@
                      ]
     },
     {
+        "task":  "Refactor large file (785 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts"
+                     ]
+    },
+    {
         "task":  "Refactor large file (778 lines): backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -780,6 +798,15 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Communications/ElectronicDocumentAuthorizedCommunicationHandlerTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (766 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs"
                      ]
     },
     {
@@ -864,21 +891,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnCancelledPostingIntegrationTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnCancelledPostingIntegrationTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs"
                      ]
     },
     {
@@ -942,15 +969,6 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Purchases/PurchaseReturnDraftUseCasesTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (709 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs"
                      ]
     },
     {
@@ -1107,12 +1125,12 @@
                      ]
     },
     {
-        "task":  "Refactor large file (667 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
+        "task":  "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs"
+                         "backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs"
                      ]
     },
     {
@@ -1125,12 +1143,12 @@
                      ]
     },
     {
-        "task":  "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs",
+        "task":  "Refactor large file (667 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
-                         "backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs"
+                         "backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs"
                      ]
     },
     {
@@ -1152,15 +1170,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (662 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnConcurrencyTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnConcurrencyTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (662 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1170,12 +1179,12 @@
                      ]
     },
     {
-        "task":  "Refactor large file (657 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+        "task":  "Refactor large file (662 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnConcurrencyTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
-                         "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts"
+                         "backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnConcurrencyTests.cs"
                      ]
     },
     {
@@ -1206,15 +1215,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1224,12 +1224,30 @@
                      ]
     },
     {
+        "task":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs"
+                     ]
+    },
+    {
         "task":  "Refactor large file (650 lines): frontend/src/modules/sales/hooks/useSalesCustomerRepricing.test.ts",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "frontend/src/modules/sales/hooks/useSalesCustomerRepricing.test.ts"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (644 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs"
                      ]
     },
     {
@@ -1296,15 +1314,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (628 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/purchases/utils/purchaseLinePresentation.ts"
-                     ]
-    },
-    {
         "task":  "Refactor large file (628 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1341,21 +1350,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (621 lines): frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx"
-                     ]
-    },
-    {
         "task":  "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (621 lines): frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx"
                      ]
     },
     {
@@ -1422,21 +1431,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Accounting/PostingEngineTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Accounting/PostingEngineTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs"
                      ]
     },
     {
@@ -1473,15 +1482,6 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnSequenceConcurrencyTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (603 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs"
                      ]
     },
     {
@@ -1593,6 +1593,15 @@
                      ]
     },
     {
+        "task":  "Refactor large file (587 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs"
+                     ]
+    },
+    {
         "task":  "Refactor large file (586 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialReceivableImportProcessorTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1629,15 +1638,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (581 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx"
-                     ]
-    },
-    {
         "task":  "Refactor large file (581 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1647,21 +1647,21 @@
                      ]
     },
     {
+        "task":  "Refactor large file (581 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx"
+                     ]
+    },
+    {
         "task":  "Refactor large file (580 lines): frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs"
                      ]
     },
     {
@@ -1680,6 +1680,15 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/MasterData/BpNestedResourceOwnershipHandlerTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs"
                      ]
     },
     {
@@ -1710,21 +1719,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (565 lines): backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestRepositoryTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestRepositoryTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (565 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (565 lines): backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestRepositoryTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestRepositoryTests.cs"
                      ]
     },
     {
@@ -1746,21 +1755,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (558 lines): backend/src/ERP.Infrastructure.Tests/Persistence/RegisterSupplierCreditNoteIntegrationTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Persistence/RegisterSupplierCreditNoteIntegrationTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (558 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (558 lines): backend/src/ERP.Infrastructure.Tests/Persistence/RegisterSupplierCreditNoteIntegrationTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure.Tests/Persistence/RegisterSupplierCreditNoteIntegrationTests.cs"
                      ]
     },
     {
@@ -1836,15 +1845,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (546 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/SalesReturnRepositoryTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Persistence/Sales/SalesReturnRepositoryTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (546 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1860,6 +1860,15 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (546 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/SalesReturnRepositoryTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure.Tests/Persistence/Sales/SalesReturnRepositoryTests.cs"
                      ]
     },
     {
@@ -1899,21 +1908,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (536 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/purchases/api/purchaseReceptionService.ts"
-                     ]
-    },
-    {
         "task":  "Refactor large file (536 lines): frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "frontend/src/modules/inventory/kardex/pages/KardexPage.tsx"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (536 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/purchases/api/purchaseReceptionService.ts"
                      ]
     },
     {
@@ -1962,15 +1971,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (532 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/CashSessionCollectionSummaryRepositoryTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1989,6 +1989,15 @@
                      ]
     },
     {
+        "task":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs"
+                     ]
+    },
+    {
         "task":  "Refactor large file (530 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -1998,12 +2007,12 @@
                      ]
     },
     {
-        "task":  "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
+        "task":  "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
-                         "backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs"
+                         "frontend/src/modules/items/catalog/wizard/TreeEditor.tsx"
                      ]
     },
     {
@@ -2016,12 +2025,12 @@
                      ]
     },
     {
-        "task":  "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx",
+        "task":  "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
-                         "frontend/src/modules/items/catalog/wizard/TreeEditor.tsx"
+                         "backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs"
                      ]
     },
     {
@@ -2151,15 +2160,6 @@
                      ]
     },
     {
-        "task":  "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx"
-                     ]
-    },
-    {
         "task":  "Refactor large file (510 lines): backend/src/ERP.Application.Tests/Accounting/PurchaseReturnPostingAmountKindRemediationTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
@@ -2169,21 +2169,21 @@
                      ]
     },
     {
+        "task":  "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
+        "category":  "Technical Debt",
+        "priority":  "MEDIUM",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx"
+                     ]
+    },
+    {
         "task":  "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs",
         "category":  "Technical Debt",
         "priority":  "MEDIUM",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (506 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "MEDIUM",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs"
                      ]
     },
     {
@@ -2241,7 +2241,7 @@
                      ]
     },
     {
-        "task":  "Review possible secrets in source files (67 real matches, excluding node_modules)",
+        "task":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
         "category":  "Security",
         "priority":  "HIGH",
         "source":  "Security.SecretFiles",
@@ -2249,8 +2249,8 @@
                          "backend/src/ERP.API/bin/Debug/net10.0/appsettings.json",
                          "backend/src/ERP.API/appsettings.json",
                          "backend/src/ERP.API/Program.cs",
-                         "backend/src/ERP.API.Tests/bin/Debug/net10.0/appsettings.json",
-                         "backend/src/ERP.API.Tests/Extensions/ApiErrorContractTests.cs"
+                         "backend/src/ERP.API.Tests/Extensions/ApiErrorContractTests.cs",
+                         "backend/src/ERP.API.Tests/Extensions/ExceptionClassificationTests.cs"
                      ]
     },
     {

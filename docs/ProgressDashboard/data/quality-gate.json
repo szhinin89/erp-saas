@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-11 21:49:08",
+    "Generated":  "2026-10-13 06:22:58",
     "Status":  "RED",
-    "EngineeringScore":  60.29,
+    "EngineeringScore":  60.72,
     "Warnings":  [
                      "Engineering score needs improvement",
                      "High number of possible secrets detected",

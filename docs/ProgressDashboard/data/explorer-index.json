@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-11 21:49:46",
+    "generated":  "2026-10-13 06:23:42",
     "source":  "modules.json, features.json, processes.json, tasks.json, domains.json, dependencies.json, critical-path.json, impact.json, dashboard-model-v12.json, completion-intelligence.json, git log",
     "method":  {
                    "changeRiskFormula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
@@ -402,6 +402,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -459,7 +460,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  103.1,
+                                       "percentOfErp":  103.09,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -978,6 +979,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -1392,6 +1394,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -1891,6 +1894,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -1948,7 +1952,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (558 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs"
                                                         ],
-                                       "percentOfErp":  105.17,
+                                       "percentOfErp":  105.15,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -2438,6 +2442,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -2497,7 +2502,7 @@
                                                             "Refactor large file (720 lines): backend/src/ERP.Application.Tests/Auth/SwitchCompanyHandlerTests.cs",
                                                             "Review anonymous-access endpoints (12 found)"
                                                         ],
-                                       "percentOfErp":  103.45,
+                                       "percentOfErp":  103.44,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "8 possible secret(s) detected in module source"
                                    },
@@ -2695,7 +2700,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  1.38,
+                                       "percentOfErp":  1.37,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -3278,6 +3283,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -3339,7 +3345,7 @@
                                                             "Refactor large file (539 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx",
                                                             "Refactor large file (525 lines): frontend/src/modules/access/users/pages/UserConfigPage.tsx"
                                                         ],
-                                       "percentOfErp":  106.9,
+                                       "percentOfErp":  106.87,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "6 possible secret(s) detected in module source",
@@ -3962,6 +3968,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -4046,7 +4053,7 @@
                                                             "Refactor large file (521 lines): backend/src/ERP.Application/Modules/Sales/UseCases/PaymentMethodUseCases.cs",
                                                             "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx"
                                                         ],
-                                       "percentOfErp":  104.83,
+                                       "percentOfErp":  104.81,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "3 large file(s) (\u003e=500 lines)",
@@ -4498,6 +4505,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -4560,7 +4568,7 @@
                                                             "Refactor large file (549 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Items/ItemRepository.cs",
                                                             "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx"
                                                         ],
-                                       "percentOfErp":  106.55,
+                                       "percentOfErp":  106.53,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -4590,10 +4598,10 @@
                         "documentation":  70,
                         "backend":  90,
                         "frontend":  70,
-                        "filesScanned":  139,
+                        "filesScanned":  142,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-10-11",
-                        "featuresCount":  27,
+                        "lastEvidenceDate":  "2026-10-13",
+                        "featuresCount":  28,
                         "featureNames":  [
                                              "Get Purchase Item Context",
                                              "Get Purchases By Supplier Report",
@@ -4605,6 +4613,7 @@
                                              "Cancel Purchase",
                                              "Confirm Purchase",
                                              "Credit Note Return Lines",
+                                             "Discard Purchase Draft",
                                              "Get Purchase Invoice Tax Summaries",
                                              "Get Returnable Lines By Purchase Invoice",
                                              "Link Purchase Credit Note To Return",
@@ -4692,7 +4701,7 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
-                                                            "lines":  1910
+                                                            "lines":  1956
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnDraftUseCases.cs",
@@ -4760,11 +4769,11 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
-                                                            "lines":  879
+                                                            "lines":  922
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-                                                            "lines":  603
+                                                            "lines":  644
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
@@ -4820,7 +4829,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
-                                                            "lines":  657
+                                                            "lines":  785
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.pilotFix.test.ts",
@@ -4832,7 +4841,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
-                                                            "lines":  2505
+                                                            "lines":  2557
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
@@ -4844,7 +4853,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "lines":  3464
+                                                            "lines":  3685
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/utils/purchaseCalc.test.ts",
@@ -4856,7 +4865,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
-                                                            "lines":  628
+                                                            "lines":  1088
                                                         }
                                                     ],
                                      "largeFilesCount":  45,
@@ -5240,6 +5249,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -5295,39 +5305,39 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (3464 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "Refactor large file (2505 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                            "Refactor large file (3685 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                            "Refactor large file (2557 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                             "Refactor large file (2215 lines): backend/src/ERP.Application.Tests/Purchases/ConfirmPurchaseHandlerTests.cs",
-                                                            "Refactor large file (1910 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
+                                                            "Refactor large file (1956 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                             "Refactor large file (1641 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/CreatePurchaseReceptionDraftHandlerTests.cs",
                                                             "Refactor large file (1284 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseReturnHandlerTests.cs",
                                                             "Refactor large file (1277 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.test.ts",
                                                             "Refactor large file (1202 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.cs",
                                                             "Refactor large file (1150 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseCreditNoteDraftUseCasesTests.cs",
+                                                            "Refactor large file (1088 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
                                                             "Refactor large file (1086 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseHandlerTests.cs",
                                                             "Refactor large file (939 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseReception/ResolvePurchaseReceptionLinesIntegrationTests.cs",
                                                             "Refactor large file (932 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteDraftUseCases.cs",
+                                                            "Refactor large file (922 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
                                                             "Refactor large file (896 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
-                                                            "Refactor large file (879 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
                                                             "Refactor large file (848 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
                                                             "Refactor large file (806 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseCreditNoteTests.cs",
                                                             "Refactor large file (792 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
+                                                            "Refactor large file (785 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
                                                             "Refactor large file (757 lines): frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
                                                             "Refactor large file (719 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseReturnUseCasesTests.cs",
                                                             "Refactor large file (709 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReturnDraftUseCasesTests.cs",
                                                             "Refactor large file (702 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/GetPurchaseReceptionXmlViewHandlerTests.cs",
                                                             "Refactor large file (689 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
-                                                            "Refactor large file (657 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
                                                             "Refactor large file (653 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
+                                                            "Refactor large file (644 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                                                             "Refactor large file (643 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseCreditNoteTaxSummaryDraftUseCasesTests.cs",
                                                             "Refactor large file (640 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
                                                             "Refactor large file (629 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/PurchaseXmlDraftParserTests.cs",
-                                                            "Refactor large file (628 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
                                                             "Refactor large file (628 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
                                                             "Refactor large file (622 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
                                                             "Refactor large file (614 lines): frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.test.ts",
                                                             "Refactor large file (612 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
-                                                            "Refactor large file (603 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                                                             "Refactor large file (596 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnDraftUseCases.cs",
                                                             "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
                                                             "Refactor large file (591 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
@@ -5341,7 +5351,7 @@
                                                             "Refactor large file (519 lines): backend/src/ERP.Application.Tests/Purchases/GetPurchaseReturnByIdHandlerTests.cs",
                                                             "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs"
                                                         ],
-                                       "percentOfErp":  107.59,
+                                       "percentOfErp":  107.9,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "5 large file(s) (\u003e=500 lines)"
                                    },
@@ -5698,6 +5708,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -6269,6 +6280,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -6758,6 +6770,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -6845,7 +6858,7 @@
                         "frontend":  70,
                         "filesScanned":  113,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-10-11",
+                        "lastEvidenceDate":  "2026-10-13",
                         "featuresCount":  35,
                         "featureNames":  [
                                              "Create Inventory Adjustment Reason",
@@ -6892,11 +6905,11 @@
                                      "largeFiles":  [
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
-                                                            "lines":  709
+                                                            "lines":  766
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
-                                                            "lines":  506
+                                                            "lines":  587
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
@@ -7262,6 +7275,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -7317,17 +7331,17 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
+                                                            "Refactor large file (766 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                             "Refactor large file (741 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
-                                                            "Refactor large file (709 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                             "Refactor large file (703 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                                                             "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
+                                                            "Refactor large file (587 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                                                             "Refactor large file (536 lines): frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
                                                             "Refactor large file (523 lines): frontend/src/modules/inventory/adjustments/hooks/useStockAdjustmentFormPage.ts",
                                                             "Refactor large file (510 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Inventory/NegativeSaleCostA2Tests.cs",
-                                                            "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
-                                                            "Refactor large file (506 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs"
+                                                            "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx"
                                                         ],
-                                       "percentOfErp":  110.34,
+                                       "percentOfErp":  110.31,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "1 large file(s) (\u003e=500 lines)"
                                    },
@@ -7736,6 +7750,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -8197,6 +8212,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -8605,6 +8621,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -8662,7 +8679,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.62,
+                                       "percentOfErp":  98.63,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -9077,6 +9094,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -9568,6 +9586,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -9634,7 +9653,7 @@
                                                             "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
                                                             "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs"
                                                         ],
-                                       "percentOfErp":  102.07,
+                                       "percentOfErp":  102.06,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "2 large file(s) (\u003e=500 lines)"
                                    },
@@ -10060,6 +10079,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -10235,7 +10255,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  2.76,
+                                       "percentOfErp":  2.75,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "3 possible secret(s) detected in module source"
                                    },
@@ -10739,6 +10759,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -10796,7 +10817,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.62,
+                                       "percentOfErp":  98.63,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "2 possible secret(s) detected in module source"
                                    },
@@ -11166,6 +11187,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -11648,6 +11670,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -11712,7 +11735,7 @@
                                                             "Refactor large file (546 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                                                             "Refactor large file (527 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialPayableImportProcessorTests.cs"
                                                         ],
-                                       "percentOfErp":  102.07,
+                                       "percentOfErp":  102.06,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -12199,6 +12222,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -12258,7 +12282,7 @@
                                                             "Refactor large file (686 lines): backend/src/ERP.Domain/Modules/ElectronicDocuments/Entities/ElectronicDocument.cs",
                                                             "Refactor large file (662 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs"
                                                         ],
-                                       "percentOfErp":  101.38,
+                                       "percentOfErp":  101.37,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "1 large file(s) (\u003e=500 lines)",
@@ -12740,6 +12764,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -13327,6 +13352,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -13396,8 +13422,8 @@
                                                             "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnCancelledPostingIntegrationTests.cs",
                                                             "Refactor large file (697 lines): backend/src/ERP.Infrastructure.Tests/Accounting/AccountingReportsRepositoryTests.cs",
                                                             "Refactor large file (676 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/Reports/GetAccountingReportsUseCases.cs",
-                                                            "Refactor large file (667 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
                                                             "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs",
+                                                            "Refactor large file (667 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
                                                             "Refactor large file (655 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditApplicationReversedPostingIntegrationTests.cs",
                                                             "Refactor large file (627 lines): frontend/src/modules/accounting/pages/ChartOfAccountsPage.tsx",
                                                             "Refactor large file (617 lines): backend/src/ERP.Application.Tests/Accounting/SalesInvoiceCogsPostingPipelineTests.cs",
@@ -13812,6 +13838,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -14244,6 +14271,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -14646,6 +14674,7 @@
                                                                  "Purchases / Cancel Purchase",
                                                                  "Purchases / Confirm Purchase",
                                                                  "Purchases / Credit Note Return Lines",
+                                                                 "Purchases / Discard Purchase Draft",
                                                                  "Purchases / Get Purchase Invoice Tax Summaries",
                                                                  "Purchases / Get Returnable Lines By Purchase Invoice",
                                                                  "Purchases / Link Purchase Credit Note To Return",
@@ -14703,7 +14732,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.62,
+                                       "percentOfErp":  98.63,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -15089,7 +15118,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Inventory",
-                                                          "label":  "Refactor large file (709 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
+                                                          "label":  "Refactor large file (766 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                           "domainId":  "inventory",
                                                           "domainName":  "Inventory"
                                                       }
@@ -15705,7 +15734,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (67 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -15928,18 +15957,6 @@
                                                   ]
                              },
                              {
-                                 "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Task",
-                                                          "module":  "Purchases",
-                                                          "label":  "Refactor large file (657 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
-                                                          "domainId":  "purchases",
-                                                          "domainName":  "Purchases"
-                                                      }
-                                                  ]
-                             },
-                             {
                                  "file":  "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception",
                                  "referencedBy":  [
                                                       {
@@ -15948,6 +15965,18 @@
                                                           "label":  "Import Purchase Reception",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  "Retentions",
+                                                          "label":  "Refactor large file (778 lines): backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
+                                                          "domainId":  "unmapped",
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -16228,7 +16257,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (3464 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                          "label":  "Refactor large file (3685 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -16638,7 +16667,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (628 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
+                                                          "label":  "Refactor large file (1088 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -17077,7 +17106,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (1910 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
+                                                          "label":  "Refactor large file (1956 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -17290,14 +17319,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
+                                 "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
-                                                          "module":  "Retentions",
-                                                          "label":  "Refactor large file (778 lines): backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
-                                                          "domainId":  "unmapped",
-                                                          "domainName":  null
+                                                          "module":  "Purchases",
+                                                          "label":  "Refactor large file (785 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                                                          "domainId":  "purchases",
+                                                          "domainName":  "Purchases"
                                                       }
                                                   ]
                              },
@@ -18621,14 +18650,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Finance/UseCases/Payments",
+                                 "file":  "backend/src/ERP.Application/Modules/Purchases/UseCases/DiscardPurchaseDraftUseCases.cs",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Feature",
-                                                          "module":  "Finance",
-                                                          "label":  "Payments",
-                                                          "domainId":  "accounting",
-                                                          "domainName":  "Accounting"
+                                                          "module":  "Purchases",
+                                                          "label":  "Discard Purchase Draft",
+                                                          "domainId":  "purchases",
+                                                          "domainName":  "Purchases"
                                                       }
                                                   ]
                              },
@@ -18681,7 +18710,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (67 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -18693,7 +18722,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (67 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -19041,7 +19070,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (2505 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                          "label":  "Refactor large file (2557 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -19156,6 +19185,18 @@
                                                   ]
                              },
                              {
+                                 "file":  "frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  "Pricing",
+                                                          "label":  "Refactor large file (605 lines): frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
+                                                          "domainId":  "sales",
+                                                          "domainName":  "Sales"
+                                                      }
+                                                  ]
+                             },
+                             {
                                  "file":  "backend/src/ERP.Application/Modules/Items/UseCases/AddItemVariant",
                                  "referencedBy":  [
                                                       {
@@ -19192,14 +19233,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.API.Tests/bin/Debug/net10.0/appsettings.json",
+                                 "file":  "backend/src/ERP.Application/Modules/Finance/UseCases/Payments",
                                  "referencedBy":  [
                                                       {
-                                                          "type":  "Task",
-                                                          "module":  null,
-                                                          "label":  "Review possible secrets in source files (67 real matches, excluding node_modules)",
-                                                          "domainId":  null,
-                                                          "domainName":  null
+                                                          "type":  "Feature",
+                                                          "module":  "Finance",
+                                                          "label":  "Payments",
+                                                          "domainId":  "accounting",
+                                                          "domainName":  "Accounting"
                                                       }
                                                   ]
                              },
@@ -19420,6 +19461,18 @@
                                                   ]
                              },
                              {
+                                 "file":  "backend/src/ERP.API.Tests/Extensions/ExceptionClassificationTests.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  null,
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
+                                                          "domainId":  null,
+                                                          "domainName":  null
+                                                      }
+                                                  ]
+                             },
+                             {
                                  "file":  "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/BulkMatchItems",
                                  "referencedBy":  [
                                                       {
@@ -19512,18 +19565,6 @@
                                                           "label":  "Update Company Email Settings",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
-                                                      }
-                                                  ]
-                             },
-                             {
-                                 "file":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Task",
-                                                          "module":  "Purchases",
-                                                          "label":  "Refactor large file (603 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-                                                          "domainId":  "purchases",
-                                                          "domainName":  "Purchases"
                                                       }
                                                   ]
                              },
@@ -20048,7 +20089,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (67 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -20276,7 +20317,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Refactor large file (998 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
+                                                          "label":  "Refactor large file (1092 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -20446,14 +20487,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
+                                 "file":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
-                                                          "module":  "Pricing",
-                                                          "label":  "Refactor large file (605 lines): frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
-                                                          "domainId":  "sales",
-                                                          "domainName":  "Sales"
+                                                          "module":  "Purchases",
+                                                          "label":  "Refactor large file (644 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
+                                                          "domainId":  "purchases",
+                                                          "domainName":  "Purchases"
                                                       }
                                                   ]
                              },
@@ -20547,7 +20588,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (879 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
+                                                          "label":  "Refactor large file (922 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -21170,7 +21211,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Inventory",
-                                                          "label":  "Refactor large file (506 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
+                                                          "label":  "Refactor large file (587 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                                                           "domainId":  "inventory",
                                                           "domainName":  "Inventory"
                                                       }
@@ -21478,14 +21519,14 @@
                              }
                          ],
     "executive":  {
-                      "engineeringScoreOverall":  60.29,
+                      "engineeringScoreOverall":  60.72,
                       "erpCompletion":  84,
                       "productionDecision":  "NOT READY",
                       "overallStatus":  "NOT READY",
                       "nextMilestone":  "Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)",
                       "blockers":  [
-                                       "Security Score bajo: 23.4% (Secrets detectados: 183, endpoints anonimos: 12)",
-                                       "Quality Score bajo: 8.3%",
+                                       "Security Score bajo: 25.6% (Secrets detectados: 182, endpoints anonimos: 12)",
+                                       "Quality Score bajo: 8.25%",
                                        "Technical Debt alta: 38 critical findings (TODO: 735, FIXME: 30)",
                                        "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                                        "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
@@ -22597,6 +22638,11 @@
                           },
                           {
                               "type":  "Feature",
+                              "label":  "Purchases / Discard Purchase Draft",
+                              "moduleId":  "Purchases"
+                          },
+                          {
+                              "type":  "Feature",
                               "label":  "Purchases / Get Purchase Invoice Tax Summaries",
                               "moduleId":  "Purchases"
                           },
@@ -23412,7 +23458,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (3464 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                              "label":  "Refactor large file (3685 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -23432,7 +23478,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (2505 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                              "label":  "Refactor large file (2557 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                               "moduleId":  null
                           },
                           {
@@ -23452,12 +23498,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (1938 lines): backend/src/ERP.Application.Tests/Payables/RegisterSupplierPaymentUseCasesTests.cs",
+                              "label":  "Refactor large file (1956 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (1910 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
+                              "label":  "Refactor large file (1938 lines): backend/src/ERP.Application.Tests/Payables/RegisterSupplierPaymentUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23587,6 +23633,16 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (1092 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (1088 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (1086 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseHandlerTests.cs",
                               "moduleId":  null
                           },
@@ -23613,11 +23669,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (1006 lines): backend/src/ERP.Application.Tests/Accounting/GetAccountingReportsUseCasesTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (998 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23672,6 +23723,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (922 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (913 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditReadModelIntegrationTests.cs",
                               "moduleId":  null
                           },
@@ -23712,11 +23768,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (879 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (871 lines): backend/src/ERP.Application.Tests/Finance/RegisterSupplierCreditRefundUseCasesTests.cs",
                               "moduleId":  null
                           },
@@ -23737,12 +23788,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (862 lines): backend/src/ERP.Infrastructure.Tests/Dashboard/DashboardKpiReaderTests.cs",
+                              "label":  "Refactor large file (862 lines): backend/src/ERP.Application.Tests/Accounting/GetJournalEntriesUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (862 lines): backend/src/ERP.Application.Tests/Accounting/GetJournalEntriesUseCasesTests.cs",
+                              "label":  "Refactor large file (862 lines): backend/src/ERP.Infrastructure.Tests/Dashboard/DashboardKpiReaderTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23797,12 +23848,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (792 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
+                              "label":  "Refactor large file (792 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (792 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs",
+                              "label":  "Refactor large file (792 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23817,12 +23868,22 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (785 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (778 lines): backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (771 lines): backend/src/ERP.Application.Tests/Communications/ElectronicDocumentAuthorizedCommunicationHandlerTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (766 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                               "moduleId":  null
                           },
                           {
@@ -23872,12 +23933,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs",
+                              "label":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnCancelledPostingIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnCancelledPostingIntegrationTests.cs",
+                              "label":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23913,11 +23974,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (709 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReturnDraftUseCasesTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (709 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                               "moduleId":  null
                           },
                           {
@@ -24007,7 +24063,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (667 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
+                              "label":  "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24017,7 +24073,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Accounting/JournalFactoryTests.cs",
+                              "label":  "Refactor large file (667 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24032,17 +24088,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (662 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnConcurrencyTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (662 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (657 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                              "label":  "Refactor large file (662 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24062,17 +24113,22 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (650 lines): frontend/src/modules/sales/hooks/useSalesCustomerRepricing.test.ts",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (644 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -24112,11 +24168,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (628 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (628 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
                               "moduleId":  null
                           },
@@ -24137,12 +24188,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (621 lines): frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx",
+                              "label":  "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (621 lines): frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
+                              "label":  "Refactor large file (621 lines): frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24182,12 +24233,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
+                              "label":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Accounting/PostingEngineTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Accounting/PostingEngineTests.cs",
+                              "label":  "Refactor large file (609 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24208,11 +24259,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (603 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnSequenceConcurrencyTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (603 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -24277,6 +24323,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (587 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (586 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialReceivableImportProcessorTests.cs",
                               "moduleId":  null
                           },
@@ -24297,22 +24348,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (581 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (581 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (580 lines): frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
+                              "label":  "Refactor large file (581 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
+                              "label":  "Refactor large file (580 lines): frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24323,6 +24369,11 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (578 lines): backend/src/ERP.Application.Tests/MasterData/BpNestedResourceOwnershipHandlerTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -24342,12 +24393,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (565 lines): backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestRepositoryTests.cs",
+                              "label":  "Refactor large file (565 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (565 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
+                              "label":  "Refactor large file (565 lines): backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestRepositoryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24362,12 +24413,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (558 lines): backend/src/ERP.Infrastructure.Tests/Persistence/RegisterSupplierCreditNoteIntegrationTests.cs",
+                              "label":  "Refactor large file (558 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (558 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
+                              "label":  "Refactor large file (558 lines): backend/src/ERP.Infrastructure.Tests/Persistence/RegisterSupplierCreditNoteIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24412,17 +24463,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (546 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/SalesReturnRepositoryTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (546 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (546 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (546 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/SalesReturnRepositoryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24447,12 +24498,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (536 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                              "label":  "Refactor large file (536 lines): frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (536 lines): frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
+                              "label":  "Refactor large file (536 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
                               "moduleId":  null
                           },
                           {
@@ -24482,11 +24533,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (532 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/CashSessionCollectionSummaryRepositoryTests.cs",
                               "moduleId":  null
                           },
@@ -24497,12 +24543,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (532 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/PostingRules/PostingRuleUseCases.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (530 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
+                              "label":  "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24512,7 +24563,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx",
+                              "label":  "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24587,22 +24638,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (510 lines): backend/src/ERP.Application.Tests/Accounting/PurchaseReturnPostingAmountKindRemediationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs",
+                              "label":  "Refactor large file (510 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (506 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
+                              "label":  "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -24637,7 +24683,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Review possible secrets in source files (67 real matches, excluding node_modules)",
+                              "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
                               "moduleId":  null
                           },
                           {
@@ -25137,13 +25183,13 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                              "label":  "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception",
                               "moduleId":  "Purchases"
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception",
-                              "moduleId":  "Purchases"
+                              "label":  "backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
+                              "moduleId":  "Retentions"
                           },
                           {
                               "type":  "File",
@@ -25687,8 +25733,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
-                              "moduleId":  "Retentions"
+                              "label":  "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                              "moduleId":  "Purchases"
                           },
                           {
                               "type":  "File",
@@ -26227,8 +26273,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Finance/UseCases/Payments",
-                              "moduleId":  "Finance"
+                              "label":  "backend/src/ERP.Application/Modules/Purchases/UseCases/DiscardPurchaseDraftUseCases.cs",
+                              "moduleId":  "Purchases"
                           },
                           {
                               "type":  "File",
@@ -26447,6 +26493,11 @@
                           },
                           {
                               "type":  "File",
+                              "label":  "frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
+                              "moduleId":  "Pricing"
+                          },
+                          {
+                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Items/UseCases/AddItemVariant",
                               "moduleId":  "Items"
                           },
@@ -26462,8 +26513,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.API.Tests/bin/Debug/net10.0/appsettings.json",
-                              "moduleId":  null
+                              "label":  "backend/src/ERP.Application/Modules/Finance/UseCases/Payments",
+                              "moduleId":  "Finance"
                           },
                           {
                               "type":  "File",
@@ -26557,6 +26608,11 @@
                           },
                           {
                               "type":  "File",
+                              "label":  "backend/src/ERP.API.Tests/Extensions/ExceptionClassificationTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/BulkMatchItems",
                               "moduleId":  "Inventory"
                           },
@@ -26594,11 +26650,6 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Communications/UseCases/UpdateCompanyEmailSettings",
                               "moduleId":  "Communications"
-                          },
-                          {
-                              "type":  "File",
-                              "label":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
-                              "moduleId":  "Purchases"
                           },
                           {
                               "type":  "File",
@@ -26967,8 +27018,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
-                              "moduleId":  "Pricing"
+                              "label":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
+                              "moduleId":  "Purchases"
                           },
                           {
                               "type":  "File",

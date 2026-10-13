@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-11 21:48:19",
+    "Generated":  "2026-10-13 06:19:50",
     "Summary":  {
-                    "TotalFiles":  7
+                    "TotalFiles":  9
                 },
     "Migrations":  [
                        {
@@ -35,9 +35,19 @@
                            "Modified":  "2026-10-11 20:46:46"
                        },
                        {
+                           "Name":  "20261012114051_PurchaseLineXmlOriginPresentation",
+                           "SizeKB":  1.2,
+                           "Modified":  "2026-10-12 06:40:51"
+                       },
+                       {
+                           "Name":  "20261012114051_PurchaseLineXmlOriginPresentation.Designer",
+                           "SizeKB":  856.74,
+                           "Modified":  "2026-10-12 06:40:51"
+                       },
+                       {
                            "Name":  "ErpDbContextModelSnapshot",
-                           "SizeKB":  856.23,
-                           "Modified":  "2026-10-11 20:46:46"
+                           "SizeKB":  856.6,
+                           "Modified":  "2026-10-12 06:40:51"
                        }
                    ]
 }

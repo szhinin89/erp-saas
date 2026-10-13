@@ -1,12 +1,11 @@
 ﻿{
-    "Generated":  "2026-10-11 21:49:04",
-    "FilesAnalyzed":  11833,
-    "SecretsFound":  183,
+    "Generated":  "2026-10-13 06:22:53",
+    "FilesAnalyzed":  11828,
+    "SecretsFound":  182,
     "SecretFiles":  [
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
-                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ApiErrorContractTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ExceptionClassificationTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\ApiErrorContractHttpTests.cs",
@@ -202,16 +201,15 @@
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\typescript.js",
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\_tsc.js"
                        ],
-    "ConnectionStringsFound":  8,
+    "ConnectionStringsFound":  7,
     "ConnectionStringFiles":  [
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
-                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\DevCacheEndpointsHttpContractTests.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContextFactory.cs"
                               ],
-    "Warnings":  203
+    "Warnings":  201
 }

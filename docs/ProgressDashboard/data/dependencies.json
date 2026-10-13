@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-11 21:49:30",
+    "generated":  "2026-10-13 06:23:25",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -339,12 +339,12 @@
                   },
                   {
                       "id":  "Purchases",
-                      "filesScanned":  139,
+                      "filesScanned":  142,
                       "fanIn":  9,
                       "fanOut":  12,
                       "coupling":  21,
                       "instability":  0.571,
-                      "cohesionApprox":  0.5,
+                      "cohesionApprox":  0.501,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -1108,13 +1108,13 @@
                   {
                       "from":  "Purchases",
                       "to":  "Items",
-                      "referenceCount":  10,
+                      "referenceCount":  11,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/PurchaseDraft/PurchaseDraftPackagingResolver.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/Services/PurchaseReceptionDetailProcessor.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft/CreatePurchaseReceptionDraftHandler.cs",
-                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
-                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteQueryUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Purchases/Services/PurchaseXmlOriginPackagingResolver.cs",
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs"
                                    ]
                   },
                   {
@@ -2687,7 +2687,7 @@
                   {
                       "from":  "Purchases",
                       "to":  "Common",
-                      "referenceCount":  89,
+                      "referenceCount":  91,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/Services/ReceptionSupplierResolver.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/BatchDownloadPurchaseReceptionXml/BatchDownloadPurchaseReceptionXmlCommand.cs",
@@ -2895,7 +2895,7 @@
                   {
                       "from":  "Purchases",
                       "to":  "Audit",
-                      "referenceCount":  20,
+                      "referenceCount":  21,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Purchases/EventHandlers/PurchaseInvoiceAuditHandler.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/EventHandlers/PurchaseInvoiceAuditHandler.cs",

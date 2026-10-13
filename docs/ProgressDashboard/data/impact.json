@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-10-11 21:49:14",
+    "generated":  "2026-10-13 06:23:07",
     "coverage":  {
-                     "mappedFeaturePoints":  46,
-                     "totalFeaturePoints":  290,
-                     "percentage":  15.86
+                     "mappedFeaturePoints":  47,
+                     "totalFeaturePoints":  291,
+                     "percentage":  16.15
                  },
     "domains":  [
                     {
@@ -155,7 +155,7 @@
                                         {
                                             "name":  "Purchases",
                                             "score":  81.5,
-                                            "features":  27,
+                                            "features":  28,
                                             "processes":  [
                                                               {
                                                                   "name":  "Compra",
