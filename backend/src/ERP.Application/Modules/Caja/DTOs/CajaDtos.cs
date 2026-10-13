@@ -239,6 +239,8 @@ public sealed record CashSessionListResponse(
 /// <param name="HasOpenSession"></param>
 /// <param name="OpenSessionControlledByCurrentUser"></param>
 /// <param name="OpenSessionUserName"></param>
+/// <param name="EmissionType">Tipo del punto asociado, no el tipo de emisión de SriSettings.</param>
+/// <param name="EmissionPointIsActive">Estado actual del punto; null si no hay navegación disponible.</param>
 public sealed record CashRegisterDto(
     Guid Id,
     Guid BranchId,
@@ -266,7 +268,9 @@ public sealed record CashRegisterDto(
     // efectivo). Informativo: el backend revalida el ownership al pagar/solicitar.
     bool HasOpenSession = false,
     bool OpenSessionControlledByCurrentUser = false,
-    string? OpenSessionUserName = null
+    string? OpenSessionUserName = null,
+    string? EmissionType = null,
+    bool? EmissionPointIsActive = null
 );
 
 public sealed record EmissionPointLookupForBranchDto(

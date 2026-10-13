@@ -27,6 +27,8 @@ import { message } from "../../../lib/messages";
 import { operationalPreferencesLookupFacade } from "../../configuracion/facades/operationalPreferencesLookupFacade";
 import type { OperationalPreferencesDto } from "../../configuracion/facades/operationalPreferencesLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
+import type { ElectronicInvoicingStatusDto } from "../../configuracion/facades/electronicInvoicingLookupFacade";
 
 // ZH-CASH-FUNDING-REQUEST-UI-FINAL-02E-EF — el aviso de solicitudes pendientes tiene su propio test
 // (CashFundingRequestsPendingNotice.test.tsx); aquí se aísla para no depender del Router.
@@ -248,6 +250,7 @@ function setCountedQuantity(
 }
 
 beforeEach(() => {
+  useElectronicInvoicingStatusStore.setState({ status: null, isLoaded: true, isLoading: false });
   localStorage.removeItem(storageKey);
   vi.clearAllMocks();
   useActiveBranchStore.setState({
@@ -289,6 +292,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  useElectronicInvoicingStatusStore.getState().clear();
   cleanup();
   localStorage.removeItem(storageKey);
   useAuthStore.setState({
@@ -1426,8 +1430,8 @@ describe.each(["en"] as const)("cash i18n %s", (locale) => {
     vi.mocked(cajaService.open).mockResolvedValue(buildSession());
     render(<I18nProvider><CajaPage /></I18nProvider>);
     fireEvent.click(await screen.findByRole("button", { name: new RegExp(dict["caja.session.open"]) }));
-    await screen.findByDisplayValue("Quito Norte");
-    expect(screen.getByText(dict["caja.session.activeBranch"])).toBeTruthy();
+    await screen.findByText("Matriz");
+    expect(screen.getByText(dict["caja.openContext.operational"])).toBeTruthy();
     await waitFor(() => expect(screen.getByRole("combobox").getAttribute("disabled")).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: dict["caja.session.open"] }));
     await screen.findByRole("heading", { name: dict["caja.session.title"] });
@@ -1466,5 +1470,102 @@ describe.each(["en"] as const)("cash i18n %s", (locale) => {
     await act(async () => { await result.current.page.loadDetail("session-1"); });
     expect(result.current.page.saveError).toBe(dictionaries[locale]["caja.session.loadError"]);
     expect(result.current.page.movementTypes.map(item => item.value)).toEqual(["ManualIncome", "ManualExpense", "Withdrawal"]);
+  });
+});
+
+
+describe("opening context pre-pilot", () => {
+  const dict = dictionaries.es;
+  it("retains a known open session when revalidation fails", async () => {
+    const session = buildSession();
+    vi.mocked(cajaService.getMy).mockResolvedValueOnce(session);
+    const { result } = renderHook(() => useCajaPage(), { wrapper: I18nProvider });
+    await waitFor(() => expect(result.current.mySession?.id).toBe(session.id));
+    vi.mocked(cajaService.getMy).mockRejectedValueOnce(new Error("technical failure"));
+    await act(async () => { await result.current.fetchMySession(); });
+    expect(result.current.mySession?.id).toBe(session.id);
+    expect(result.current.mySessionError).toBeTruthy();
+    expect(result.current.mySessionLoading).toBe(false);
+    expect(result.current.canOpen).toBe(false);
+  });
+
+  async function openPage() {
+    localStorage.setItem(storageKey, "es");
+    render(<I18nProvider><CajaPage /></I18nProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(dict["caja.session.open"]) }));
+    await waitFor(() => expect(cajaService.getMy).toHaveBeenCalled());
+    await screen.findByText(dict["caja.openContext.operational"]);
+  }
+
+  it.each([false, true])("anticipates occupied=%s without changing the command", async (occupied) => {
+    vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ ...registers[0], hasOpenSession: occupied, openSessionUserName: "Operator Test" }]);
+    await openPage();
+    await screen.findByText(dict[occupied ? "caja.openContext.occupied" : "caja.openContext.available"]);
+    expect((screen.getByRole("button", { name: dict["caja.session.open"] }) as HTMLButtonElement).disabled).toBe(occupied);
+    if (occupied) {
+      expect(screen.getByText(/Operator Test/)).toBeTruthy();
+      fireEvent.submit(screen.getByRole("button", { name: dict["caja.session.open"] }).closest("form")!);
+      expect(cajaService.open).not.toHaveBeenCalled();
+    }
+  });
+
+  it.each([false, true])("warehouse present=%s is informative", async (present) => {
+    vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ ...registers[0], defaultWarehouseId: present ? "wh-1" : null, defaultWarehouseName: present ? "Warehouse Test" : null }]);
+    await openPage();
+    await screen.findByText(dict["caja.openContext.available"]);
+    expect(!!screen.queryByText(dict["caja.openContext.warehouseWarning"])).toBe(!present);
+    if (present) expect(screen.getByText("Warehouse Test")).toBeTruthy();
+    expect((screen.getByRole("button", { name: dict["caja.session.open"] }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it.each([
+    ["Ready", "Production", true, true, true],
+    ["Testing", "Test", true, true, true],
+    ["CertificateExpired", "Production", true, false, false],
+    ["NotConfigured", null, false, false, false],
+  ] as const)("uses official fiscal state %s without blocking", async (status, environment, installed, valid, canIssue) => {
+    const fiscal: ElectronicInvoicingStatusDto = {
+      status, environment, environmentName: environment === "Test" ? "Pruebas" : environment === "Production" ? "Producci\u00f3n" : null,
+      configured: status !== "NotConfigured", emissionType: "Normal", certificateInstalled: installed,
+      certificateValid: valid, certificateExpiresAt: installed ? "2026-12-31T00:00:00Z" : null,
+      certificateDaysRemaining: valid ? 40 : -1, sriAvailability: "Unknown", canIssue,
+    };
+    useElectronicInvoicingStatusStore.setState({ status: fiscal, isLoaded: true });
+    vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ ...registers[0], emissionType: "Electronic", emissionPointIsActive: true, emissionPointName: "Point Test" }]);
+    await openPage();
+    await screen.findByText(dict["caja.openContext.capacity"]);
+    expect(screen.getByText(dict[canIssue ? "caja.openContext.canIssue" : "caja.openContext.cannotIssue"])).toBeTruthy();
+    expect(screen.getByText("001 \u2014 Point Test")).toBeTruthy();
+    if (environment) expect(screen.getByText(fiscal.environmentName!)).toBeTruthy();
+    expect(!!screen.queryByText(dict["caja.openContext.expires"])).toBe(installed);
+    expect(screen.getByText(dict["caja.openContext.fiscalWarning"])).toBeTruthy();
+    expect((screen.getByRole("button", { name: dict["caja.session.open"] }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("physical point omits global fiscal context", async () => {
+    vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ ...registers[0], emissionType: "Physical", emissionPointIsActive: false }]);
+    await openPage();
+    await screen.findByText(dict["common.inactive"]);
+    expect(screen.getByText(dict["common.no"])).toBeTruthy();
+    expect(screen.queryByText(dict["caja.openContext.environment"])).toBeNull();
+  });
+
+  it.each(["registers", "session"] as const)("distinguishes %s failure and recovers", async (source) => {
+    const service = source === "registers" ? cajaService.getCashRegisters : cajaService.getMy;
+    vi.mocked(service).mockRejectedValueOnce(new Error("technical failure"));
+    await openPage();
+    await screen.findByRole("button", { name: dict["caja.openContext.retry"] });
+    expect(screen.queryByText(dict["caja.session.noRegisters"])).toBeNull();
+    expect((screen.getByRole("button", { name: dict["caja.session.open"] }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: dict["caja.openContext.retry"] }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: dict["caja.openContext.retry"] })).toBeNull());
+    await waitFor(() => expect((screen.getByRole("button", { name: dict["caja.session.open"] }) as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it("successful empty load remains an empty catalogue", async () => {
+    vi.mocked(cajaService.getCashRegisters).mockResolvedValue([]);
+    await openPage();
+    await screen.findByText(dict["caja.session.noRegisters"]);
+    expect(screen.queryByRole("button", { name: dict["caja.openContext.retry"] })).toBeNull();
   });
 });

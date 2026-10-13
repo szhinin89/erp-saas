@@ -169,6 +169,9 @@ export interface CashRegisterDto {
    * tiene sesión abierta, si la controla el usuario actual y quién la opera. Informativo (decide
    * pago directo vs. solicitud de efectivo); el backend revalida el ownership siempre. */
   hasOpenSession?: boolean;
+  /** Contexto del punto seleccionado; no es el tipo de emisión de SriSettings. */
+  emissionType?: string | null;
+  emissionPointIsActive?: boolean | null;
   openSessionControlledByCurrentUser?: boolean;
   openSessionUserName?: string | null;
 }

@@ -52,6 +52,10 @@ export function useCajaPage() {
 
   // ── Reference data ─────────────────────────────────────────────────
   const [cashRegisters, setCashRegisters] = useState<CashRegisterDto[]>([]);
+  const [registersLoading, setRegistersLoading] = useState(true);
+  const [registersError, setRegistersError] = useState("");
+  const [mySessionLoading, setMySessionLoading] = useState(true);
+  const [mySessionError, setMySessionError] = useState("");
   const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
   const currentUserName = useAuthStore((s) => s.user?.fullName) ?? null;
 
@@ -76,17 +80,25 @@ export function useCajaPage() {
 
   // ── Init ───────────────────────────────────────────────────────────
   useEffect(() => {
-    cajaService
-      .getCashRegisters(true)
-      .then((registers) => {
-        setCashRegisters(registers);
-        if (registers.length > 0)
-          openForm.setValue("cashRegisterId", registers[0].id);
-      })
-      .catch(() => {});
+    fetchRegisters();
     fetchMySession();
     fetchList();
   }, []);
+
+  const fetchRegisters = useCallback(async () => {
+    setRegistersLoading(true);
+    setRegistersError("");
+    try {
+      const registers = await cajaService.getCashRegisters(true);
+      setCashRegisters(registers);
+      if (!registers.some((r) => r.id === openForm.getValues("cashRegisterId")))
+        openForm.setValue("cashRegisterId", registers[0]?.id ?? "");
+    } catch (err: unknown) {
+      setRegistersError(formatApiRequestError(err, { generic: t("caja.openContext.registersError") }));
+    } finally {
+      setRegistersLoading(false);
+    }
+  }, [openForm, t]);
 
   // ── Fetch list ─────────────────────────────────────────────────────
   const fetchList = useCallback(async () => {
@@ -106,13 +118,21 @@ export function useCajaPage() {
 
   // ── Fetch my session ───────────────────────────────────────────────
   const fetchMySession = useCallback(async () => {
+    setMySessionLoading(true);
+    setMySessionError("");
     try {
       const s = await cajaService.getMy();
       setMySession(s);
-    } catch {
-      setMySession(null);
+    } catch (err: unknown) {
+      setMySessionError(formatApiRequestError(err, { generic: t("caja.openContext.sessionError") }));
+    } finally {
+      setMySessionLoading(false);
     }
-  }, []);
+  }, [t]);
+
+  const canOpen = !saving && !registersLoading && !registersError &&
+    !mySessionLoading && !mySessionError && !mySession &&
+    !!selectedRegister && !selectedRegister.hasOpenSession;
 
   // ── Load detail ────────────────────────────────────────────────────
   const loadDetail = useCallback(async (id: string) => {
@@ -144,7 +164,7 @@ export function useCajaPage() {
   // inicial), nunca actualiza estado local antes de que el backend confirme éxito, y muestra
   // éxito/error reales al terminar.
   const handleOpen = openForm.handleSubmit(async (data) => {
-    if (saving) return;
+    if (!canOpen) return;
 
     const register = cashRegisters.find((r) => r.id === data.cashRegisterId);
     const confirmed = await message.confirm({
@@ -287,6 +307,7 @@ export function useCajaPage() {
       setViewing(session);
       setMySession(null);
       setTab("detalle");
+      void fetchRegisters();
       fetchList();
       message.success(t("caja.session.closeSuccess"));
     } catch (err: unknown) {
@@ -316,6 +337,14 @@ export function useCajaPage() {
     collectionSummary,
     collectionSummaryLoading,
     cashRegisters,
+    registersLoading,
+    registersError,
+    mySessionLoading,
+    mySessionError,
+    fetchRegisters,
+    fetchMySession,
+    canOpen,
+    currentUserName,
     branchName,
     selectedRegister,
     allowManualMovements: manualMovement.allowManualMovements,

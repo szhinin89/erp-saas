@@ -1,5 +1,13 @@
 # Project Status
 
+## APERTURA DE CAJA — PRE-PILOTO VENTAS (2026-10-13)
+
+**Estado: implementado, sin commit/push.** `/treasury/cash` presenta Contexto de caja, Contexto de facturación y Apertura. Caja/sucursal/bodega/cajero/disponibilidad; punto con código/nombre, estado y `EmissionPoint.EmissionType`. DTO/mapper de Caja ampliados únicamente con tipo y estado del punto. Diagnóstico electrónico reutilizado desde el store y banner oficiales (ambiente, capacidad, certificado y expiración); sin nuevo diagnóstico, reglas fiscales ni cambios en SRI/POS. Caja ocupada anticipa el bloqueo existente; advertencias fiscales y bodega faltante no bloquean. Payload intacto.
+
+**BUG REAL corregido:** carga de cajas y consulta de sesión propia distinguen carga/vacío/error; mensajes con patrón existente y reintento, sin convertir un error de sesión en ausencia. Se conserva el último dato correcto y no se permite enviar apertura mientras su contexto no se haya verificado correctamente. Tras cerrar se recarga disponibilidad.
+
+**Validación focal:** Application Caja 29/29; frontend hook/pantalla/i18n 67/67; TypeScript PASS; ESLint focal sin errores (5 warnings de tamaño/hooks en archivos existentes). Responsive básico sobre DOM renderizado + CSS en Chromium: 1280 px, dos columnas; 375 px, una columna, sin overflow. No smoke autenticado, suites completas, PostgreSQL ni Dashboard: no se cambió persistencia/scope/concurrencia. DEBT: disponibilidad como lectura puntual (backend conserva autoridad), errores silenciosos del listado fuera de este alcance, tamaño/hooks preexistentes. Sin secuencial, último cierre ni fondo sugerido.
+
 ## PURCHASE-UX-PILOT-CLOSURE (FASE 5) — Línea en unidad base, estado de la compra, listado operativo (2026-10-12)
 
 **Estado: implementado (sin commit).** Purchases reabierto solo para esta fase. Sin cambios en FASE 1-3, FASE 4 (FUTURE), pricing por presentación, política comercial global ni servicios capitalizables.

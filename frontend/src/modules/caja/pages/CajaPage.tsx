@@ -1,10 +1,14 @@
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
+import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
+import { ELECTRONIC_INVOICING_STATUS_REGISTRY } from "../../../components/zh/electronicInvoicingStatusRegistry";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import {
   ZhDecimalInput,
   ZhNumberInput,
   ZhTextarea,
+  ZhSelect,
 } from "../../../components/zh/inputs";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import {
@@ -35,6 +39,7 @@ import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 
 export function CajaPage() {
+  const fiscal = useElectronicInvoicingStatusStore((s) => s.status);
   const moneyDecimals = usePrecisionDecimals("money"); // presentación (04F)
   const { t } = useI18n();
   const ctx = useCajaPage();
@@ -280,6 +285,14 @@ export function CajaPage() {
       kicker={t("caja.kicker")}
     >
       <div className="cj-content">
+        {ctx.registersError && <ZHPageNotice variant="error" message={t("caja.openContext.registersError")} detail={ctx.registersError} />}
+        {ctx.mySessionError && <ZHPageNotice variant="error" message={t("caja.openContext.sessionError")} detail={ctx.mySessionError} />}
+        {(ctx.registersError || ctx.mySessionError) && (
+          <ZHBtn variant="secondary" onClick={() => { void ctx.fetchRegisters(); void ctx.fetchMySession(); }}>
+            {t("caja.openContext.retry")}
+          </ZHBtn>
+        )}
+
         {ctx.mySession && ctx.tab === "listado" && (
           <ZHPageNotice
             variant="info"
@@ -402,28 +415,19 @@ export function CajaPage() {
 
         {/* ═══════════════════════ ABRIR CAJA ════════════════════════ */}
         {ctx.tab === "abrir" && (
-          <div className="prd-section cj-form-narrow">
+          <div className="prd-section">
             <h3 className="cj-section-title">{t("caja.session.open")}</h3>
-            {ctx.cashRegisters.length === 0 && (
+            {(ctx.registersLoading || ctx.mySessionLoading) && <p role="status">{t("common.loading")}</p>}
+            {!ctx.registersLoading && !ctx.registersError && ctx.cashRegisters.length === 0 && (
               <ZHPageNotice
                 variant="warning"
                 message={t("caja.session.noRegisters")}
               />
             )}
             <form onSubmit={ctx.handleOpen}>
-              <ZHField
-                density="compact"
-                className="zh-mb-12"
-                label={t("caja.session.activeBranch")}
-              >
-                <input
-                  type="text"
-                  value={ctx.branchName ?? "—"}
-                  readOnly
-                  disabled
-                />
-              </ZHField>
-
+              <div className="cj-opening-context">
+              <section aria-label={t("caja.openContext.operational")}>
+              <h4 className="cj-section-title">{t("caja.openContext.operational")}</h4>
               <ZHField
                 density="compact"
                 className="zh-mb-12"
@@ -433,9 +437,9 @@ export function CajaPage() {
                   ctx.openForm.formState.errors.cashRegisterId?.message
                 }
               >
-                <select
+                <ZhSelect
                   {...ctx.openForm.register("cashRegisterId")}
-                  disabled={ctx.cashRegisters.length === 0}
+                  disabled={ctx.registersLoading || !!ctx.registersError || ctx.cashRegisters.length === 0}
                 >
                   <option value="">{t("caja.movements.form.selectPlaceholder")}</option>
                   {ctx.cashRegisters.map((r) => (
@@ -443,29 +447,58 @@ export function CajaPage() {
                       {r.code} — {r.name}
                     </option>
                   ))}
-                </select>
+                </ZhSelect>
               </ZHField>
 
-              {/* Confirmación visual antes de abrir: Sucursal/Establecimiento/Punto de emisión
-                  son solo informativos, provienen del mismo CashRegisterDto que llena el <select>
-                  de arriba — no se puede editar ni se hace una petición adicional. */}
               {ctx.selectedRegister && (
-                <div className="cj-summary-grid zh-mb-12">
+                <div className="cj-summary-grid cj-opening-summary">
                   <SummaryCard
                     label={t("caja.session.branch")}
                     value={ctx.selectedRegister.branchName}
                   />
                   <SummaryCard
-                    label={t("caja.session.establishment")}
-                    value={ctx.selectedRegister.establishmentCode ?? "—"}
+                    label={t("caja.openContext.warehouse")}
+                    value={ctx.selectedRegister.defaultWarehouseName ?? t("caja.openContext.notConfigured")}
                   />
                   <SummaryCard
-                    label={t("caja.session.emissionPoint")}
-                    value={ctx.selectedRegister.emissionPointCode ?? "—"}
+                    label={t("caja.session.cashier")}
+                    value={ctx.currentUserName ?? "—"}
                   />
+                  <ZHField label={t("caja.openContext.state")} density="compact">
+                    <Badge variant={ctx.selectedRegister.hasOpenSession ? "warning" : "success"}
+                      label={t(ctx.selectedRegister.hasOpenSession ? "caja.openContext.occupied" : "caja.openContext.available")} />
+                  </ZHField>
                 </div>
               )}
-
+              {ctx.selectedRegister?.hasOpenSession && <ZHPageNotice variant="warning" message={ctx.selectedRegister.openSessionUserName
+                ? t("caja.openContext.occupiedBy", { user: ctx.selectedRegister.openSessionUserName })
+                : t("caja.openContext.occupiedWarning")} />}
+              {ctx.selectedRegister && !ctx.selectedRegister.defaultWarehouseId && <ZHPageNotice variant="warning" message={t("caja.openContext.warehouseWarning")} />}
+              </section>
+              <section aria-label={t("caja.openContext.billing")}>
+                <h4 className="cj-section-title">{t("caja.openContext.billing")}</h4>
+                {ctx.selectedRegister && <>
+                  <div className="cj-summary-grid cj-opening-summary">
+                    <SummaryCard label={t("caja.session.establishment")} value={ctx.selectedRegister.establishmentCode ?? "—"} />
+                    <SummaryCard label={t("caja.session.emissionPoint")} value={[ctx.selectedRegister.emissionPointCode, ctx.selectedRegister.emissionPointName].filter(Boolean).join(" — ") || "—"} />
+                    <SummaryCard label={t("caja.openContext.pointState")} value={ctx.selectedRegister.emissionPointIsActive == null ? "—" : t(ctx.selectedRegister.emissionPointIsActive ? "common.active" : "common.inactive")} />
+                    <SummaryCard label={t("caja.openContext.electronic")} value={ctx.selectedRegister.emissionType == null ? "—" : t(ctx.selectedRegister.emissionType === "Electronic" ? "common.yes" : "common.no")} />
+                  </div>
+                  {ctx.selectedRegister.emissionType === "Electronic" && <>
+                    <ZHElectronicEnvironmentBanner />
+                    <div className="cj-summary-grid cj-opening-summary">
+                      <SummaryCard label={t("caja.openContext.environment")} value={fiscal?.environmentName ?? "—"} />
+                      <SummaryCard label={t("caja.openContext.capacity")} value={fiscal ? t(fiscal.canIssue ? "caja.openContext.canIssue" : "caja.openContext.cannotIssue") : "—"} />
+                      <SummaryCard label={t("caja.openContext.certificate")} value={!fiscal || fiscal.status === "Error" ? "—" : fiscal.certificateValid ? t("caja.openContext.validCertificate") : !fiscal.certificateInstalled ? t("caja.openContext.notConfigured") : t(ELECTRONIC_INVOICING_STATUS_REGISTRY[fiscal.status].messageKey)} />
+                      {fiscal?.certificateExpiresAt && <SummaryCard label={t("caja.openContext.expires")} value={formatDate(fiscal.certificateExpiresAt)} />}
+                    </div>
+                    <ZHPageNotice variant="neutral" message={t("caja.openContext.fiscalWarning")} />
+                  </>}
+                </>}
+              </section>
+              </div>
+              <section className="cj-close-narrow" aria-label={t("caja.openContext.opening")}>
+              <h4 className="cj-section-title">{t("caja.openContext.opening")}</h4>
               <ZHField
                 density="compact"
                 className="zh-mb-12"
@@ -490,7 +523,7 @@ export function CajaPage() {
                 <ZHBtn
                   variant="primary"
                   type="submit"
-                  disabled={ctx.saving || ctx.cashRegisters.length === 0}
+                  disabled={!ctx.canOpen}
                 >
                   {ctx.saving ? t("caja.session.opening") : t("caja.session.open")}
                 </ZHBtn>
@@ -501,6 +534,7 @@ export function CajaPage() {
                   {t("common.cancel")}
                 </ZHBtn>
               </div>
+              </section>
             </form>
           </div>
         )}

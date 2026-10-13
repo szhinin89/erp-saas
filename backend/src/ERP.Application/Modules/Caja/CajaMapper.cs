@@ -202,7 +202,9 @@ internal static class CajaMapper
             r.DefaultCustomer?.Name.LegalName,
             r.AccountingAccountId,
             r.CreatedAt,
-            r.UpdatedAt
+            r.UpdatedAt,
+            EmissionType: r.EmissionPoint?.EmissionType.ToString(),
+            EmissionPointIsActive: r.EmissionPoint?.IsActive
         );
 
     public static CashMovementReasonDto ToDto(CashMovementReason r) =>

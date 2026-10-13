@@ -1,5 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.UseCases;
+using ERP.Application.Modules.Caja.DTOs;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
@@ -20,6 +23,47 @@ namespace ERP.Application.Tests.Caja;
 /// </summary>
 public sealed class CreateCashRegisterBranchOwnershipTests
 {
+    [Theory]
+    [InlineData(EmissionType.Electronic, true)]
+    [InlineData(EmissionType.Physical, false)]
+    public void Mapper_preserves_selected_point_type_and_state(EmissionType type, bool active)
+    {
+        var branch = CreateBranch(CompanyAId);
+        var establishment = Establishment.Create(TenantId, branch.Id, CompanyAId, "001", "Main", "Address", null, false, UserId);
+        var point = EmissionPoint.Create(TenantId, CompanyAId, establishment.Id, "002", "Point", type, false, UserId);
+        if (!active) point.Disable(UserId);
+        typeof(EmissionPoint).GetProperty(nameof(EmissionPoint.Establishment))!.SetValue(point, establishment);
+        var register = CashRegister.Create(TenantId, CompanyAId, branch.Id, "C1", "Register", UserId, point.Id);
+        typeof(CashRegister).GetProperty(nameof(CashRegister.Branch))!.SetValue(register, branch);
+        typeof(CashRegister).GetProperty(nameof(CashRegister.EmissionPoint))!.SetValue(register, point);
+
+        var dto = MapRegister(register);
+
+        dto.EmissionType.Should().Be(type.ToString());
+        dto.EmissionPointIsActive.Should().Be(active);
+        dto.EmissionPointId.Should().Be(point.Id);
+        dto.BranchId.Should().Be(branch.Id);
+        dto.EstablishmentCode.Should().Be("001");
+    }
+
+    [Fact]
+    public void Mapper_does_not_invent_missing_point_context()
+    {
+        var branch = CreateBranch(CompanyAId);
+        var register = CashRegister.Create(TenantId, CompanyAId, branch.Id, "C1", "Register", UserId);
+        typeof(CashRegister).GetProperty(nameof(CashRegister.Branch))!.SetValue(register, branch);
+        var dto = MapRegister(register);
+        dto.EmissionType.Should().BeNull();
+        dto.EmissionPointIsActive.Should().BeNull();
+    }
+
+    // Mapper interno: validar su proyección sin ampliar la API productiva para tests.
+    private static CashRegisterDto MapRegister(CashRegister register) =>
+        (CashRegisterDto)typeof(OpenCashSessionHandler).Assembly
+            .GetType("ERP.Application.Modules.Caja.CajaMapper")!
+            .GetMethod("ToDto", [typeof(CashRegister), typeof(bool)])!
+            .Invoke(null, [register, false])!;
+
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyAId = Guid.NewGuid();
     private static readonly Guid CompanyBId = Guid.NewGuid();
