@@ -2,6 +2,22 @@
 
 Decisión arquitectónica congelada 2026-06-29. No modificar sin revisión arquitectónica formal.
 
+## Addendum responsive — BUG REAL (2026-10-13)
+
+Corrección del contrato raíz autorizada en la fase Design System / Modales Responsive.
+Conserva las APIs y la lógica funcional de los componentes.
+
+- `ZHModal`, `ZHConfirmModal`, `ZHPromptModal` y `ZHDrawer`: ancho contraíble dentro del viewport; body con `min-width: 0`, `min-height: 0`, scroll vertical y sin scroll horizontal por defecto. Modales limitados por altura dinámica disponible y gutter del overlay.
+- Header y footer fuera del scroll del body; títulos/subtítulos completos con wrap. Footer permite wrap; botones directos ocupan una fila cada uno hasta 640 px. Las agrupaciones de acciones deben usar primitives flex con wrap existentes.
+- Grids de campos/detalle: tracks `minmax(0, 1fr)`, hijos contraíbles; spans de dos columnas se desactivan al pasar a una columna. Resumen auto-fit limita su mínimo al ancho disponible.
+- Texto largo, emails, UUID y claves SRI pueden romper palabras. Montos y variantes de códigos cortos conservan `nowrap`.
+- `zh-description-grid`: primitive compartido label/valor en dos tracks contraíbles. SalesIssueModal lo adopta en confirmación y éxito; se elimina la definición local duplicada, sin CSS correctivo de Sales.
+- Scroll horizontal únicamente dentro de regiones explícitas existentes (`table-scroll` / `table-card`, también utilizables para XML); no añadir scroll horizontal al body del overlay.
+
+Validación focal: `ZHOverlayGeometry.test.tsx`, Chromium real con markup de los componentes React y CSS/tokens reales, altura 720 px y anchos 320 / 375 / 768 / 1280. Modal sm/full, drawer, confirmación y prompt: 20/20 PASS. Clave de 49 dígitos, UUID/email largo, cinco acciones, contenido vertical y tabla de 1600 px con scroll propio. Antes del fix: 19/20 FAIL (fixture de tabla inicial: 900 px). Regresión focal ZHModal + SalesIssueModal: 19/19 PASS. ESLint focal y diff check PASS. Sin suites completas, commit ni push.
+
+STRUCTURAL DEBT: consumidores con layouts o agrupaciones personalizados fuera de los casos focales no fueron auditados. No incluye smoke autenticado de Sales ni otras alturas de viewport.
+
 ---
 
 ## Componente oficial: `ZHModal`

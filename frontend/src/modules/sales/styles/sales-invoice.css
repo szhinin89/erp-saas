@@ -569,24 +569,6 @@
   font-weight: 700;
 }
 
-/* ── Authorize confirmation summary ── */
-.sf-authorize-summary__grid {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 12px;
-  row-gap: 4px;
-  font-size: var(--text-body-md-size);
-  margin: 0 0 12px;
-}
-.sf-authorize-summary__grid dt {
-  color: var(--color-text-secondary);
-}
-.sf-authorize-summary__grid dd {
-  margin: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ── Issue flow: processing steps ── */
 .sf-issue-steps {
   list-style: none;

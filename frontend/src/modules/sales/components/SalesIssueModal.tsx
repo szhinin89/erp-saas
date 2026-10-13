@@ -334,7 +334,7 @@ export function SalesIssueModal({
     >
       {phase === "confirm" && (
         <div className="sf-authorize-summary">
-          <dl className="sf-authorize-summary__grid">
+          <dl className="zh-description-grid">
             <dt>Cliente</dt>
             <dd>{customerName || "—"}</dd>
             <dt>Nro. de productos</dt>
@@ -392,7 +392,7 @@ export function SalesIssueModal({
       {phase === "success" && result && (
         <div className="sf-issue-success">
           <div className="sf-issue-success__number zh-code-value">{result.invoiceNumber}</div>
-          <dl className="sf-authorize-summary__grid">
+          <dl className="zh-description-grid">
             {resultIsElectronic && (
               <>
                 <dt>Estado electrónico</dt>

@@ -1045,23 +1045,26 @@ select.zh-input--compact {
 .zh-grid {
   display: grid;
   gap: 14px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
+.zh-grid > * { min-width: 0; }
 .zh-grid--1 {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 .zh-grid--2 {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .zh-grid--3 {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .zh-grid--4 {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 @media (max-width: 720px) {
   .zh-grid--4 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1069,8 +1072,9 @@ select.zh-input--compact {
   .zh-grid--2,
   .zh-grid--3,
   .zh-grid--4 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
+  .zh-grid > .zh-col-span-2 { grid-column: auto; }
 }
 
 .zh-col-span-2 {
@@ -1968,6 +1972,7 @@ select.zh-input--compact {
   justify-content: center;
   z-index: 1000;
   padding: var(--space-6);
+  --zh-overlay-gutter: var(--space-6);
   backdrop-filter: blur(2px);
   animation: zh-overlay-in var(--motion-duration-fast) var(--motion-ease) both;
 }
@@ -1976,6 +1981,10 @@ select.zh-input--compact {
   border-radius: var(--radius-modal);
   box-shadow: var(--shadow-overlay);
   max-height: 90vh;
+  max-height: min(90dvh, calc(100dvh - 2 * var(--zh-overlay-gutter)));
+  min-width: 0;
+  min-height: 0;
+  overflow-wrap: anywhere;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2002,11 +2011,14 @@ select.zh-input--compact {
 .zh-modal--full {
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 2 * var(--zh-overlay-gutter));
 }
 
 .zh-modal-body {
   padding: var(--density-card-padding) var(--space-5) var(--space-5);
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
   flex: 1;
   min-height: 0;
 }
@@ -2018,6 +2030,8 @@ select.zh-input--compact {
   border-top: var(--border-width) solid var(--color-border-light);
   background: var(--color-table-header-bg);
   flex-shrink: 0;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 /* .zh-modal-header/.zh-modal-title/.zh-modal-close ELIMINADOS (Bloque 12B) --
@@ -2050,6 +2064,10 @@ select.zh-input--compact {
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   animation: zh-drawer-in var(--motion-duration-normal) var(--motion-ease-emphasized) both;
 }
 .zh-drawer--sm {
@@ -2065,6 +2083,8 @@ select.zh-input--compact {
 .zh-drawer-body {
   padding: 20px 22px 24px;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
   flex: 1;
   min-height: 0;
 }
@@ -2076,11 +2096,35 @@ select.zh-input--compact {
   border-top: 1px solid var(--color-border);
   background: var(--color-surface-container-low);
   flex-shrink: 0;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Overlay contract: shrink content, keep headers/actions outside the body scroll.
+   Horizontal scrolling belongs to explicit regions (.table-scroll/.table-card).
+   Money and short code variants retain their existing nowrap contract. */
+:is(.zh-modal, .zh-drawer) > .zh-form-header {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+:is(.zh-modal, .zh-drawer) :is(.zh-form-title, .zh-form-subtitle) {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+:is(.zh-modal-footer, .zh-drawer-footer) > * {
+  min-width: 0;
+  max-width: 100%;
+}
+:is(.zh-modal-footer, .zh-drawer-footer) .zh-btn {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 640px) {
   .zh-modal-overlay {
     padding: var(--space-3);
+    --zh-overlay-gutter: var(--space-3);
   }
   .zh-modal--lg,
   .zh-modal--xl,
@@ -2093,6 +2137,7 @@ select.zh-input--compact {
   .zh-modal-footer {
     padding: var(--space-3) var(--space-4);
   }
+  :is(.zh-modal-footer, .zh-drawer-footer) > .zh-btn { flex: 1 1 100%; }
   .zh-drawer--sm,
   .zh-drawer--md,
   .zh-drawer--lg {
@@ -2180,6 +2225,7 @@ select.zh-input--compact {
   flex-shrink: 0;
 }
 .zh-confirm-title {
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   margin: 0;
@@ -2187,6 +2233,11 @@ select.zh-input--compact {
 }
 .zh-confirm-body {
   padding: var(--space-5);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .zh-confirm-message {
   font-size: 13px;
@@ -3168,13 +3219,14 @@ select.zh-input--compact {
 /* Grid de detalle 3 columnas */
 [class$="-detail-grid"] {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow-wrap: anywhere;
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
 @media (max-width: 768px) {
   [class$="-detail-grid"] {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -3861,7 +3913,9 @@ select.zh-input--compact {
    .pcn-summary-grid (Compras). ZHMoneyValue hereda la tipografía del valor. */
 .zh-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  min-width: 0;
+  overflow-wrap: anywhere;
   gap: var(--space-3);
 }
 .zh-summary-grid__label {
@@ -3885,6 +3939,28 @@ select.zh-input--compact {
 .zh-readonly-text {
   font-size: var(--text-body-md-size);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:is(.zh-summary-grid, [class$="-detail-grid"]) > * { min-width: 0; }
+
+/* Label/value document details; long identifiers wrap, amounts stay atomic. */
+.zh-description-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  font-size: var(--text-body-md-size);
+  margin: 0 0 var(--space-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.zh-description-grid > * { min-width: 0; }
+.zh-description-grid dt { color: var(--color-text-secondary); }
+.zh-description-grid dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 /* Mensaje de "sin datos" dentro de una sección (no reemplaza a EmptyState de página). */
 .zh-inline-empty {
