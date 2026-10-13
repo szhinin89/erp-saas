@@ -61,7 +61,7 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         );
 
         _flow.RideSender.Verify(
-            s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()),
+            s => s.GetOrGenerateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never,
             "el RIDE no se genera dentro de la transacción fiscal"
         );

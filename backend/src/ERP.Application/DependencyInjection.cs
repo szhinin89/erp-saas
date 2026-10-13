@@ -51,6 +51,10 @@ public static class DependencyInjection
             ERP.Application.Modules.Retentions.Communications.RetentionElectronicDocumentCommunicationContributor
         >();
         services.AddScoped<ICommunicationAttachmentResolver, CommunicationAttachmentResolver>();
+        services.AddScoped<ERP.Application.Modules.Ride.Services.IRideBackgroundDocumentService,
+            ERP.Application.Modules.Ride.Services.RideBackgroundDocumentService>();
+        services.AddScoped<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentInternalReader,
+            ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentInternalReader>();
         services.AddScoped<
             ICommunicationAttachmentContentProvider,
             ERP.Application.Modules.ElectronicDocuments.Communications.ElectronicDocumentAuthorizedXmlAttachmentProvider

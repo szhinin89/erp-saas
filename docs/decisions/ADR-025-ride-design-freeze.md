@@ -265,3 +265,13 @@ Justificación: las tres rondas previas (arquitectura, auditoría contra código
 
 - **Congelar el diseño sin la ronda de auditoría contra código real**: descartada — hubiera dejado pasar H1 (la suposición no verificada de que `Authorized` implica XML disponible), que de haberse descubierto durante la implementación habría forzado a rediseñar la firma de `RideOutcome` a mitad de código, el mismo tipo de costo evitado en `ElectronicDocuments` por las pruebas reales contra el SRI antes de su cierre.
 - **Exponer `IRideDocumentService` como interfaz pública inyectable en lugar de requests MediatR**: descartada en la ronda de congelación de contratos — habría introducido un segundo estilo de integración cross-módulo distinto al ya establecido por `ElectronicDocuments`, sin ningún beneficio que lo justifique.
+
+## Addendum — RIDE adjunto desde background (2026-10-13)
+
+BUG REAL autorizado: Communications llamaba `GetOrGenerateRideQuery` desde Hangfire sin HttpContext. El guard HTTP exigía usuario autenticado y lanzaba `UnauthorizedAccessException` antes de llegar al pipeline; el adjunto opcional se omitía como `RideGenerationThrew`.
+
+- La superficie HTTP congelada y `CompanyScopeBehavior` se conservan. No se autentica artificialmente al job ni se permite HTTP anónimo.
+- Entrada exclusivamente in-process: `IRideBackgroundDocumentService`. TenantId + CompanyId deben ser no vacíos y coincidir con `ICurrentTenant`/`ICurrentCompany` del contexto de ejecución. Delega en `RideDocumentService` y el mismo `RidePipeline`; no constituye otro motor RIDE ni una API HTTP.
+- `ElectronicDocumentRideSourceXmlProvider` consume `IElectronicDocumentInternalReader`, contrato dueño de ElectronicDocuments. Verifica alcance explícito y reutiliza los handlers canónicos de lectura sin pasar por los guards HTTP. Los controles de pertenencia de cada lectura se conservan; no se accede a repositorios de ElectronicDocuments desde Ride.
+- El proveedor de adjuntos pertenece a Ride, sin dependencia hacia Sales. Conserva PendingSource reintentable y omisión opcional. Un fallo de generación registra etapa y tipo de excepción, nunca mensaje/stack, XML, rutas, destinatario o secretos.
+- Este addendum documenta la excepción background autorizada a la integración exclusivamente mediante queries HTTP de la sección 7. No cambia las firmas ni outcomes públicos de RIDE.

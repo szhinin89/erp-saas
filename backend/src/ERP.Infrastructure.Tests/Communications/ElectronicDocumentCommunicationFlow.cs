@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Ride.Services;
 using System.Collections.Concurrent;
 using System.Text;
 using ERP.Application.Common;
@@ -94,12 +95,12 @@ internal sealed class ElectronicDocumentCommunicationFlow
                     PreferencesWith(_emailOnAuthorization.GetValueOrDefault(companyId, true))
             );
         RideSender
-            .Setup(s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetOrGenerateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                (GetOrGenerateRideQuery q, CancellationToken _) =>
+                (Guid tenantId, Guid companyId, string module, Guid sourceId, CancellationToken _) =>
                 {
-                    var path = $"ride/{q.SourceModule}/{q.SourceEntityId}.pdf";
-                    Storage[path] = Encoding.ASCII.GetBytes($"%PDF-{q.SourceEntityId}");
+                    var path = $"ride/{module}/{sourceId}.pdf";
+                    Storage[path] = Encoding.ASCII.GetBytes($"%PDF-{sourceId}");
                     return Result<RideGenerationResultDto>.Success(
                         new RideGenerationResultDto(RideOutcome.Generated, path, null, null)
                     );
@@ -118,7 +119,7 @@ internal sealed class ElectronicDocumentCommunicationFlow
     public Mock<IBusinessPartnerLocationRepository> Locations { get; } = new();
     public Mock<ICompanyRepository> Companies { get; } = new();
     public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
-    public Mock<ISender> RideSender { get; } = new();
+    public Mock<IRideBackgroundDocumentService> RideSender { get; } = new();
 
     /// <summary>Cursor de la reconciliación compartido por todas las corridas de este flujo (= un proceso).</summary>
     public ElectronicDocumentCommunicationReconciliationCursor ReconciliationCursor { get; } =
@@ -427,7 +428,7 @@ internal sealed class ElectronicDocumentCommunicationFlow
                         ElectronicDocuments(ctx),
                         Storage
                     ),
-                    new RidePdfCommunicationAttachmentProvider(RideSender.Object, Storage),
+                    new RidePdfCommunicationAttachmentProvider(RideSender.Object, Storage, NullLogger<RidePdfCommunicationAttachmentProvider>.Instance),
                 ],
                 NullLogger<CommunicationAttachmentResolver>.Instance
             ),

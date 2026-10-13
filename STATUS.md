@@ -1,5 +1,16 @@
 # Project Status
 
+## COMMUNICATIONS-RIDE-BACKGROUND — BUG REAL (2026-10-13)
+
+**Estado: implementado y validado, sin commit/push.** El adjunto RIDE de la factura 001-001-000000002 se omitía como `RideGenerationThrew`: la query HTTP exigía usuario autenticado antes de entrar al pipeline desde Hangfire.
+
+- Entrada in-process `IRideBackgroundDocumentService`: tenant/company explícitos, no vacíos y coincidentes con el contexto de ejecución; delega en `RideDocumentService`/`RidePipeline` existentes. Adapter de XML usa `IElectronicDocumentInternalReader`, que verifica alcance y reutiliza los handlers canónicos; guards HTTP intactos. Sin dependencia a Sales ni cambios en SMTP/Hangfire/SRI/XML/frontend.
+- Diagnóstico: conserva resultado funcional y registra solo etapa/tipo de excepción (sin mensajes, stack, secretos, rutas, XML ni destinatarios). PendingSource y omisión opcional conservados.
+- Validación focal: Application attachment/CompanyScopeBehavior/RidePipeline 39/39 PASS; Infrastructure RIDE+adjuntos 28/28 y aislamiento/guards/mapeo 27/27 PASS (PostgreSQL Testcontainers real, PDF QuestPDF real, generación y cache sin HttpContext); límites Ride/Communications 17/17 PASS; diff check PASS. Sin suites completas ni envíos del piloto.
+- ADR-025: addendum background. El correo ya Sent no se reenvía; falta aplicar el código al proceso en ejecución y hacer smoke real autorizado si se requiere.
+
+
+
 ## MONITOR-RIDE-DOWNLOAD — PILOTO VENTAS (2026-10-13)
 
 **Estado: implementado, sin commit/push.** `/sri/electronic-documents/monitor` → Acciones → "Descargar RIDE" conectado al flujo RIDE existente (`GET /api/v1/ride` + `/content`); sin cambios de backend, pipeline, XML ni lifecycle.

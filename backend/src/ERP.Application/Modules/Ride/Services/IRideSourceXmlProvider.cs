@@ -4,12 +4,8 @@ using ERP.Domain.Modules.Ride.Enums;
 namespace ERP.Application.Modules.Ride.Services;
 
 /// <summary>
-/// Único punto de contacto de Ride con ElectronicDocuments (ADR-025 §8) — consume exclusivamente
-/// los requests públicos de lectura de ese módulo (nunca su entidad ni sus repositorios), y
-/// traduce su vocabulario (<c>ElectronicDocumentType</c>) a <see cref="RideDocumentType"/>.
-/// Identifica el documento por <c>(sourceModule, sourceEntityId)</c> — el mismo dato que ya
-/// tiene el módulo consumidor (ADR-025 §7, corrección H2) — nunca por el Id interno de
-/// <c>ElectronicDocument</c>.
+/// Owner adapter for authorized source XML, keyed by SourceModule/SourceEntityId. Uses only the
+/// internal ElectronicDocuments read contract, never its entities or repositories.
 /// </summary>
 public interface IRideSourceXmlProvider
 {

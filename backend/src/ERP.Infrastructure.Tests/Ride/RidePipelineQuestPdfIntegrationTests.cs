@@ -40,8 +40,7 @@ public sealed class RidePipelineQuestPdfIntegrationTests
             };
     }
 
-    [Fact]
-    public async Task Real_invoice_flows_end_to_end_through_the_real_renderer_and_produces_a_valid_pdf()
+    internal static string RealInvoiceXml()
     {
         var data = new ElectronicDocumentData(
             Emission: new ElectronicDocumentEmissionContext(
@@ -88,7 +87,14 @@ public sealed class RidePipelineQuestPdfIntegrationTests
         );
         var xmlResult = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
         xmlResult.IsSuccess.Should().BeTrue(xmlResult.Error);
-        var xml = xmlResult.Value!.Xml;
+        return xmlResult.Value!.Xml;
+
+    }
+
+    [Fact]
+    public async Task Real_invoice_flows_end_to_end_through_the_real_renderer_and_produces_a_valid_pdf()
+    {
+        var xml = RealInvoiceXml();
 
         var tenantId = Guid.NewGuid();
         var companyId = Guid.NewGuid();

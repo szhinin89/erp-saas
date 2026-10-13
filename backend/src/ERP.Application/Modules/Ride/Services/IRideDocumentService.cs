@@ -4,10 +4,8 @@ using ERP.Application.Modules.Ride.DTOs;
 namespace ERP.Application.Modules.Ride.Services;
 
 /// <summary>
-/// Facade interna consumida únicamente por <c>GetOrGenerateRideQueryHandler</c> y
-/// <c>RegenerateRideCommandHandler</c> — nunca expuesta directamente a otros módulos (la
-/// superficie pública real son esos dos requests de MediatR, ADR-025 §7). Orquesta
-/// <c>RidePipeline</c> (Fase 5 del plan de implementación); en esta fase es únicamente contrato.
+/// Internal pipeline facade used by the public HTTP query handlers and the verified background
+/// entry. External consumers never invoke this service directly (ADR-025 background addendum).
 /// </summary>
 public interface IRideDocumentService
 {

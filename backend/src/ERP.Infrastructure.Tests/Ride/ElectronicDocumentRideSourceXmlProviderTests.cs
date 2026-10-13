@@ -1,3 +1,4 @@
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Ride.Services;
@@ -27,13 +28,8 @@ using Testcontainers.PostgreSql;
 namespace ERP.Infrastructure.Tests.Ride;
 
 /// <summary>
-/// Suite de integración (PostgreSQL real + MediatR real + IFileStorage real vía
-/// <see cref="LocalFileStorage"/> apuntando a un directorio temporal) para
-/// <see cref="ElectronicDocumentRideSourceXmlProvider"/> — cubre exactamente los 4 escenarios de
-/// ADR-025 §8: Authorized+XML, Authorized sin XML (H1 → PendingSource), Rejected → NotApplicable,
-/// Cancelled → NotApplicable. No registra <c>CompanyScopeBehavior</c>/<c>ValidationBehavior</c>
-/// (irrelevantes para lo que se prueba aquí) — sí registra MediatR real con los handlers reales
-/// de ElectronicDocuments, sin mocks.
+/// PostgreSQL + canonical internal reads + real file storage. Covers source states, explicit scope,
+/// background PDF generation through the shared pipeline and unchanged HTTP authentication guards.
 /// </summary>
 public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetime
 {
@@ -77,6 +73,7 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
         services.AddScoped<ICurrentCompany>(_ => new FixedCurrentCompany(() => _companyId));
         services.AddScoped<IElectronicDocumentRepository, ElectronicDocumentRepository>();
         services.AddScoped<ERP.Application.Common.Interfaces.IFileStorage, LocalFileStorage>();
+        services.AddScoped<IElectronicDocumentInternalReader, ElectronicDocumentInternalReader>();
         services.AddScoped<IRideSourceXmlProvider, ElectronicDocumentRideSourceXmlProvider>();
         services.AddScoped(_ =>
         {
@@ -386,6 +383,122 @@ public sealed class ElectronicDocumentRideSourceXmlProviderTests : IAsyncLifetim
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be(RideSourceXmlStatus.NotApplicable);
+    }
+
+
+    [Fact]
+    public async Task Background_attachment_uses_real_adapter_pipeline_renderer_and_postgres_without_http()
+    {
+        using var job = JobExecutionContext.Begin(_tenantId, _companyId);
+        var http = new Microsoft.AspNetCore.Http.HttpContextAccessor();
+        var tenant = new CurrentTenantService(http);
+        var company = new CurrentCompanyService(http);
+        var user = new CurrentUserService(http);
+        user.IsAuthenticated.Should().BeFalse();
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var files = scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IFileStorage>();
+        var sourceId = Guid.NewGuid();
+        var path = $"background/{sourceId:N}.xml";
+        using (var content = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+            RidePipelineQuestPdfIntegrationTests.RealInvoiceXml())))
+            await files.SaveAsync(path, content);
+        var document = BuildAuthorizedDocument(sourceId, path);
+        db.ElectronicDocuments.Add(document);
+        db.CompanyPrecisionPolicies.Add(ERP.Domain.Configuration.Entities.CompanyPrecisionPolicy
+            .CreateStandardCommercial(_tenantId, _companyId, _userId));
+        await db.SaveChangesAsync();
+
+        var reader = new ElectronicDocumentInternalReader(
+            new ElectronicDocumentRepository(db, scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Services.ICompanyClock>()), files, tenant, company);
+        var adapter = new ElectronicDocumentRideSourceXmlProvider(reader, tenant, company);
+        var repository = new ERP.Infrastructure.Persistence.Repositories.Ride.RidePdfDocumentRepository(
+            db, new PostgresDatabaseExceptionTranslator());
+        var branding = new Mock<ERP.Application.Modules.Ride.Branding.IRideBrandingProvider>();
+        branding.Setup(b => b.GetAsync(_tenantId, _companyId, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ERP.Domain.Modules.Ride.ValueObjects.RideBranding>.Success(
+                ERP.Domain.Modules.Ride.ValueObjects.RideBranding.Empty()));
+        var pipeline = new RidePipeline(adapter,
+            new ERP.Application.Modules.Ride.Parsers.RideXmlParserResolver([
+                new ERP.Application.Modules.Ride.Parsers.InvoiceRideXmlParser()]),
+            new ERP.Application.Modules.Ride.Templates.RideTemplateResolver([
+                new ERP.Application.Modules.Ride.Templates.DefaultInvoiceRideTemplate()]),
+            new RideCacheStrategy(repository), new RideContentHasher(), branding.Object,
+            new ERP.Infrastructure.Ride.Rendering.QuestPdfRideRenderer(
+                RideQrCodeGeneratorTestFactory.Create(), RideBarcodeGeneratorTestFactory.Create(), files),
+            new ERP.Infrastructure.Ride.Storage.RidePdfStorageService(files,
+                new ERP.Infrastructure.Ride.Storage.RidePdfStorageNamingStrategy()),
+            repository, user,
+            new ERP.Infrastructure.Persistence.Repositories.CompanyConfig.CompanyPrecisionPolicyRepository(db),
+            new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(db));
+        var background = new RideBackgroundDocumentService(new RideDocumentService(pipeline), tenant, company);
+        var provider = new ERP.Application.Modules.Ride.Communications.RidePdfCommunicationAttachmentProvider(
+            background, files, Microsoft.Extensions.Logging.Abstractions.NullLogger<
+                ERP.Application.Modules.Ride.Communications.RidePdfCommunicationAttachmentProvider>.Instance);
+        var reference = new ERP.Application.Modules.Communications.Services.CommunicationAttachmentReference(
+            _tenantId, _companyId, ERP.Domain.Modules.Communications.Enums.CommunicationAttachmentType.RidePdf,
+            document.Id, SourceModule, sourceId);
+        var result = await provider.ResolveAsync(reference);
+        result.SkippedReason.Should().BeNull();
+        System.Text.Encoding.ASCII.GetString(result.Content!, 0, 5).Should().Be("%PDF-");
+        var stored = await db.RidePdfDocuments.SingleAsync(r => r.ElectronicDocumentId == document.Id);
+        stored.CompanyId.Should().Be(_companyId);
+        stored.TenantId.Should().Be(_tenantId);
+        var cached = await background.GetOrGenerateAsync(_tenantId, _companyId, SourceModule, sourceId);
+        cached.Value!.Outcome.Should().Be(ERP.Application.Modules.Ride.DTOs.RideOutcome.Cached);
+
+        (await background.GetOrGenerateAsync(Guid.NewGuid(), _companyId, SourceModule, sourceId))
+            .Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        (await background.GetOrGenerateAsync(_tenantId, Guid.NewGuid(), SourceModule, sourceId))
+            .Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        (await reader.GetXmlAsync(_tenantId, Guid.NewGuid(), SourceModule, sourceId,
+            ElectronicDocumentXmlVariant.Authorized)).Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+    }
+
+
+    [Fact]
+    public async Task Internal_reader_does_not_expose_a_document_from_another_company()
+    {
+        using var job = JobExecutionContext.Begin(_tenantId, _companyId);
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var otherCompany = Company.CreateManaged(_tenantId, "1790012345002", "Other company", createdBy: _userId);
+        db.Companies.Add(otherCompany);
+        var sourceId = Guid.NewGuid();
+        db.ElectronicDocuments.Add(ElectronicDocument.Create(_tenantId, otherCompany.Id,
+            ElectronicDocumentType.Invoice, SourceModule, sourceId, _userId));
+        await db.SaveChangesAsync();
+        var http = new Microsoft.AspNetCore.Http.HttpContextAccessor();
+        var reader = new ElectronicDocumentInternalReader(
+            new ElectronicDocumentRepository(db, scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Services.ICompanyClock>()),
+            scope.ServiceProvider.GetRequiredService<ERP.Application.Common.Interfaces.IFileStorage>(),
+            new CurrentTenantService(http), new CurrentCompanyService(http));
+        var document = await reader.GetAsync(_tenantId, _companyId, SourceModule, sourceId);
+        document.Value.Should().BeNull();
+        var xml = await reader.GetXmlAsync(_tenantId, _companyId, SourceModule, sourceId,
+            ElectronicDocumentXmlVariant.Authorized);
+        xml.IsSuccess.Should().BeFalse();
+        xml.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+    }
+
+    [Fact]
+    public async Task Http_query_without_authentication_still_rejects_even_with_job_scope()
+    {
+        using var job = JobExecutionContext.Begin(_tenantId, _companyId);
+        var http = new Microsoft.AspNetCore.Http.HttpContextAccessor();
+        var company = new CurrentCompanyService(http);
+        var user = new CurrentUserService(http);
+        var guard = new CompanyAccessGuard(null!, null!, user, new CurrentTenantService(http),
+            company, null!, null!, null!);
+        var behavior = new ERP.Application.Behaviors.CompanyScopeBehavior<
+            ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide.GetOrGenerateRideQuery,
+            Result<ERP.Application.Modules.Ride.DTOs.RideGenerationResultDto>>(guard, company);
+        var reached = false;
+        var act = () => behavior.Handle(new ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide
+            .GetOrGenerateRideQuery(SourceModule, Guid.NewGuid()),
+            _ => { reached = true; throw new InvalidOperationException("Handler reached"); }, default);
+        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("No autenticado.");
+        reached.Should().BeFalse();
     }
 
     private async Task<Result<RideSourceXmlLookup>> GetAuthorizedXmlAsync(Guid sourceEntityId)

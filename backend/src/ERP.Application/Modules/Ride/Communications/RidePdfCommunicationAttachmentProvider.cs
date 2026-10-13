@@ -1,16 +1,16 @@
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.Ride.DTOs;
-using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
+using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Modules.Communications.Enums;
-using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Ride.Communications;
 
 /// <summary>
 /// ZH-EDOC-COMMUNICATIONS-01 — Ride entrega el PDF del RIDE al ENVIAR el correo (fuera de la
 /// transacción fiscal): obtiene o genera el RIDE por su superficie pública
-/// (<see cref="GetOrGenerateRideQuery"/>, con el par <c>SourceModule</c>/<c>SourceId</c> de la
+/// (<see cref="IRideBackgroundDocumentService"/>, con el par <c>SourceModule</c>/<c>SourceId</c> de la
 /// comunicación y el alcance que abrió el processor) y lee el PDF del almacenamiento oficial.
 /// <para>
 /// Adjunto opcional (mismo criterio que el correo de factura previo): <c>PendingSource</c> es
@@ -18,14 +18,17 @@ namespace ERP.Application.Modules.Ride.Communications;
 /// RIDE y el correo sale con el XML autorizado, que es el comprobante legal.
 /// </para>
 /// </summary>
-public sealed class RidePdfCommunicationAttachmentProvider : ICommunicationAttachmentContentProvider
+public sealed partial class RidePdfCommunicationAttachmentProvider : ICommunicationAttachmentContentProvider
 {
-    private readonly ISender _sender;
+    private readonly IRideBackgroundDocumentService _documents;
+    private readonly ILogger<RidePdfCommunicationAttachmentProvider> _logger;
     private readonly IFileStorage _fileStorage;
 
-    public RidePdfCommunicationAttachmentProvider(ISender sender, IFileStorage fileStorage)
+    public RidePdfCommunicationAttachmentProvider(IRideBackgroundDocumentService documents,
+        IFileStorage fileStorage, ILogger<RidePdfCommunicationAttachmentProvider> logger)
     {
-        _sender = sender;
+        _documents = documents;
+        _logger = logger;
         _fileStorage = fileStorage;
     }
 
@@ -45,13 +48,15 @@ public sealed class RidePdfCommunicationAttachmentProvider : ICommunicationAttac
         ERP.Application.Common.Result<RideGenerationResultDto> result;
         try
         {
-            result = await _sender.Send(
-                new GetOrGenerateRideQuery(reference.SourceModule, sourceId),
+            result = await _documents.GetOrGenerateAsync(
+                reference.TenantId, reference.CompanyId, reference.SourceModule, sourceId,
                 ct
             );
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Exception text/stack can include XML, paths, credentials or PII. Log only a safe type and stage.
+            LogGenerationFailure("GetOrGenerate", ex.GetType().Name);
             // Un fallo del motor RIDE no bloquea el correo con el comprobante legal (XML autorizado).
             return CommunicationAttachmentResolution.Skipped("RideGenerationThrew");
         }
@@ -79,4 +84,8 @@ public sealed class RidePdfCommunicationAttachmentProvider : ICommunicationAttac
         await stream.CopyToAsync(buffer, ct);
         return CommunicationAttachmentResolution.Resolved(buffer.ToArray());
     }
+
+    [LoggerMessage(EventId = 4240, Level = LogLevel.Warning,
+        Message = "RIDE attachment failed at {Stage}: {ExceptionType}")]
+    private partial void LogGenerationFailure(string stage, string exceptionType);
 }

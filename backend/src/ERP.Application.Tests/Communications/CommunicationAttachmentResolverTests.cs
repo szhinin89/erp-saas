@@ -5,7 +5,7 @@ using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.ElectronicDocuments.Communications;
 using ERP.Application.Modules.Ride.Communications;
 using ERP.Application.Modules.Ride.DTOs;
-using ERP.Application.Modules.Ride.UseCases.GetOrGenerateRide;
+using ERP.Application.Modules.Ride.Services;
 using ERP.Domain.Modules.Communications.Constants;
 using ERP.Domain.Modules.Communications.Entities;
 using ERP.Domain.Modules.Communications.Enums;
@@ -15,7 +15,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
@@ -174,10 +173,8 @@ public sealed class CommunicationAttachmentResolverTests
         resolved.Single().Content.Should().Equal(37, 80, 68, 70);
         sender.Verify(
             s =>
-                s.Send(
-                    It.Is<GetOrGenerateRideQuery>(q =>
-                        q.SourceModule == "Sales" && q.SourceEntityId == message.SourceId
-                    ),
+                s.GetOrGenerateAsync(
+                    TenantId, CompanyId, "Sales", message.SourceId!.Value,
                     It.IsAny<CancellationToken>()
                 ),
             Times.Once
@@ -233,6 +230,26 @@ public sealed class CommunicationAttachmentResolverTests
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Thrown_generation_is_optional_and_logs_only_safe_stage_and_type()
+    {
+        var background = new Mock<IRideBackgroundDocumentService>();
+        background.Setup(s => s.GetOrGenerateAsync(TenantId, CompanyId, "Sales",
+            It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("secret-password customer@example.com <xml>"));
+        var logger = new Mock<Microsoft.Extensions.Logging.ILogger<RidePdfCommunicationAttachmentProvider>>();
+        logger.Setup(l => l.IsEnabled(It.IsAny<Microsoft.Extensions.Logging.LogLevel>())).Returns(true);
+        var provider = new RidePdfCommunicationAttachmentProvider(background.Object, new InMemoryStorage(), logger.Object);
+        var result = await provider.ResolveAsync(new CommunicationAttachmentReference(
+            TenantId, CompanyId, CommunicationAttachmentType.RidePdf, Guid.NewGuid(), "Sales", Guid.NewGuid()));
+        result.SkippedReason.Should().Be("RideGenerationThrew");
+        var log = logger.Invocations.Single(i => i.Method.Name == "Log");
+        var text = log.Arguments[2].ToString();
+        text.Should().Contain("GetOrGenerate").And.Contain("InvalidOperationException");
+        text.Should().NotContain("secret-password").And.NotContain("customer@example.com").And.NotContain("<xml>");
+        log.Arguments[3].Should().BeNull();
+    }
 
     private static CommunicationAttachmentResolver Resolver(
         IFileStorage storage,
@@ -303,16 +320,16 @@ public sealed class CommunicationAttachmentResolverTests
         return new ElectronicDocumentAuthorizedXmlAttachmentProvider(repository.Object, storage);
     }
 
-    private static (RidePdfCommunicationAttachmentProvider, Mock<ISender>) RideProvider(
+    private static (RidePdfCommunicationAttachmentProvider, Mock<IRideBackgroundDocumentService>) RideProvider(
         IFileStorage storage,
         RideGenerationResultDto ride
     )
     {
-        var sender = new Mock<ISender>();
+        var sender = new Mock<IRideBackgroundDocumentService>();
         sender
-            .Setup(s => s.Send(It.IsAny<GetOrGenerateRideQuery>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetOrGenerateAsync(TenantId, CompanyId, "Sales", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<RideGenerationResultDto>.Success(ride));
-        return (new RidePdfCommunicationAttachmentProvider(sender.Object, storage), sender);
+        return (new RidePdfCommunicationAttachmentProvider(sender.Object, storage, NullLogger<RidePdfCommunicationAttachmentProvider>.Instance), sender);
     }
 
     private sealed class InMemoryStorage : Dictionary<string, byte[]>, IFileStorage
