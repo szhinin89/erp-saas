@@ -12,7 +12,7 @@ import type {
 import { electronicDocumentAccessFacade } from "../../electronicDocuments/facades/electronicDocumentAccessFacade";
 import { formatApiError } from "../../lib/formatApiError";
 import { message } from "../../../lib/messages";
-import { useRideActions } from "../hooks/useRideActions";
+import { useRideActions } from "../../ride/facades/rideGenerationFacade";
 import "../../../components/zh/electronicDocuments/electronic-documents.css";
 
 // SalesReturn.Authorize()/AuthorizeSalesReturnHandler siempre registra el documento electrónico
@@ -32,8 +32,8 @@ type Props = {
  * ningún componente ni lógica nueva de polling/mapeo de estado/descarga:
  * - `electronicDocumentDiagnosticService.getDiagnosticBySource` + `ElectronicDocumentDiagnosticPanel`
  *   (mismo patrón que `SalesElectronicDiagnosticDrawer.tsx`, agnóstico de módulo desde ADR-024).
- * - `useRideActions()` (mismo hook que `SalesPage.tsx`, ya parametrizado por sourceEntityId — no
- *   requirió ningún cambio: `SOURCE_MODULE` interno ya es "Sales" para ambos documentos).
+ * - `useRideActions(SOURCE_MODULE)` de `ride/facades/rideGenerationFacade` (mismo hook que
+ *   `SalesPage.tsx` y el Monitor electrónico — "Sales" es el SourceModule de ambos documentos).
  *
  * Campos pedidos por la Fase 14 que la Fase 14 NO puede completar sin tocar Backend (fuera de
  * alcance de esta tarea, reportado en el entregable en vez de inventarse aquí):
@@ -60,7 +60,7 @@ export function SalesReturnCreditNoteSection({
   const [xmlLoading, setXmlLoading] = useState(false);
   const [xmlError, setXmlError] = useState<string | null>(null);
 
-  const ride = useRideActions();
+  const ride = useRideActions(SOURCE_MODULE);
 
   const loadDiagnostic = useCallback(async () => {
     setLoading(true);

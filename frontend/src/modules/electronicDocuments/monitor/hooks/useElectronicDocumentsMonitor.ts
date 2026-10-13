@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { formatApiError } from "../../../lib/formatApiError";
 import { todayIso } from "../../../../lib/formatters/dateFormatters";
+import { useRideActions } from "../../../ride/facades/rideGenerationFacade";
 import {
   electronicDocumentsMonitorService,
   type ElectronicDocumentDetailDto,
@@ -17,6 +18,8 @@ export function useElectronicDocumentsMonitor() {
   const canView = canShow("electronic-documents.view");
   const canViewDetail = canShow("electronic-documents.detail");
   const canRetry = canShow("electronic-documents.retry");
+  // Mismo permiso que exige GET /api/v1/ride — sin él la acción no se muestra (evita un 403).
+  const canDownloadRide = canShow("ride.view");
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -51,6 +54,10 @@ export function useElectronicDocumentsMonitor() {
   const [xmlError, setXmlError] = useState<string | null>(null);
 
   const [retryLoading, setRetryLoading] = useState(false);
+
+  const { ridePending: rideDownloading, handleDownloadRide } = useRideActions(
+    detail?.sourceModule ?? "",
+  );
 
   const loadList = useCallback(async () => {
     setListLoading(true);
@@ -171,6 +178,14 @@ export function useElectronicDocumentsMonitor() {
     }
   }, [detail, loadList, loadDashboard]);
 
+  const downloadRide = useCallback(async () => {
+    if (!detail) return;
+    await handleDownloadRide(
+      detail.sourceEntityId,
+      detail.documentNumber ?? undefined,
+    );
+  }, [detail, handleDownloadRide]);
+
   const resetFiltersAndReload = useCallback(() => {
     setDateFrom("");
     setDateTo("");
@@ -201,6 +216,7 @@ export function useElectronicDocumentsMonitor() {
     canView,
     canViewDetail,
     canRetry,
+    canDownloadRide,
     filters: { dateFrom, dateTo, state, documentType, environment, search },
     setDateFrom,
     setDateTo,
@@ -229,11 +245,13 @@ export function useElectronicDocumentsMonitor() {
     xmlLoading,
     xmlError,
     retryLoading,
+    rideDownloading,
     refresh,
     openDetail,
     closeDetail,
     viewXml,
     retryNow,
+    downloadRide,
     resetFiltersAndReload,
   };
 }

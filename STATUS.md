@@ -1,5 +1,14 @@
 # Project Status
 
+## MONITOR-RIDE-DOWNLOAD — PILOTO VENTAS (2026-10-13)
+
+**Estado: implementado, sin commit/push.** `/sri/electronic-documents/monitor` → Acciones → "Descargar RIDE" conectado al flujo RIDE existente (`GET /api/v1/ride` + `/content`); sin cambios de backend, pipeline, XML ni lifecycle.
+
+- **Reutilización:** `useRideActions` se movió de `sales/hooks` a su owner `ride/hooks`, parametrizado por `sourceModule` y expuesto vía `ride/facades/rideGenerationFacade`. Ventas lo consume con `"Sales"` (sin cambio funcional); el Monitor con `detail.sourceModule`. Una sola interpretación de `RideOutcome`; `NotApplicable` ahora usa texto genérico ("Este documento…") en vez de "Esta factura…".
+- **Monitor:** acción visible solo con `ride.view` (sin 403); habilitada para documentos Authorized (Factura / NC de devolución); `Retention` deshabilitada con aviso — el pipeline genérico no tiene parser de retención y nunca se usa el PDF preview como RIDE autorizado. "Reenviar correo" sigue deshabilitado ("próximamente" solo en esa acción).
+- **Validación focal:** vitest ride + monitor + suites Sales que consumen el hook 152/152 PASS; `tsc -b` PASS; ESLint focal sin errores; `architecture:check` sin violaciones nuevas en archivos tocados (falla preexistente `frontend-datetime` en `CajaPage.tsx:493`).
+- **DEBT:** RIDE autorizado de Retención fuera del pipeline genérico (ver RIDE-AUTHORIZATION-DATE); mensajes de `useRideActions` en español fijo (no i18n), igual que antes.
+
 ## MONITOR-PENDING-RETRIES — BUG REAL (2026-10-13)
 
 **Estado: corregido, sin commit/push.** El Monitor mostraba "Reintentos pendientes: 1" por la factura 001-001-000000001, Authorized con `RetryCount=1` por un fallo histórico: `CountPendingRetriesAsync` contaba `RetryCount > 0` sin mirar el estado actual. Cierra la nota no bloqueante registrada en la auditoría de company scoping (ver más abajo).

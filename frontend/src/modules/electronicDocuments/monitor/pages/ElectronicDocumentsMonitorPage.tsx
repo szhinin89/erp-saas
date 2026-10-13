@@ -115,9 +115,12 @@ export function ElectronicDocumentsMonitorPage() {
         xmlError={m.xmlError}
         canRetry={m.canRetry}
         retryLoading={m.retryLoading}
+        canDownloadRide={m.canDownloadRide}
+        rideDownloading={m.rideDownloading}
         onClose={m.closeDetail}
         onViewXml={(variant) => void m.viewXml(variant)}
         onRetryNow={m.retryNow}
+        onDownloadRide={() => void m.downloadRide()}
       />
     </ErpPageTemplate>
   );

@@ -1505,6 +1505,8 @@
   "electronicDocuments.monitor.detail.downloadRide": "Download RIDE",
   "electronicDocuments.monitor.detail.resendEmail": "Resend email",
   "electronicDocuments.monitor.detail.comingSoon": "Coming soon.",
+  "electronicDocuments.monitor.detail.rideRetentionUnavailable": "The authorized RIDE for retentions is not available from this flow.",
+  "electronicDocuments.monitor.detail.resendEmailComingSoon": "Resend email: coming soon.",
   "electronicDocuments.diagnostic.messagesSection": "SRI Messages",
   "electronicDocuments.diagnostic.messagesEmpty": "No messages recorded.",
   "electronicDocuments.diagnostic.technicalInfoSection": "Technical Information",

@@ -4,14 +4,14 @@ import { renderHook, act } from "@testing-library/react";
 import type {
   RideGenerationResultDto,
   RideOutcome,
-} from "../../ride/facades/rideGenerationFacade";
+} from "../api/rideService";
 
 const getOrGenerateMock = vi.fn();
 const regenerateMock = vi.fn();
 const getContentBlobMock = vi.fn();
 
-vi.mock("../../ride/facades/rideGenerationFacade", () => ({
-  rideGenerationFacade: {
+vi.mock("../api/rideService", () => ({
+  rideService: {
     getOrGenerate: (...a: unknown[]) => getOrGenerateMock(...a),
     regenerate: (...a: unknown[]) => regenerateMock(...a),
     getContentBlob: (...a: unknown[]) => getContentBlobMock(...a),
@@ -64,7 +64,7 @@ describe("useRideActions", () => {
     it("Generated: obtiene el contenido y abre una pestaña nueva, sin mensajes", async () => {
       getOrGenerateMock.mockResolvedValue(outcomeResult("Generated"));
       getContentBlobMock.mockResolvedValue(new Blob());
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -79,7 +79,7 @@ describe("useRideActions", () => {
     it("Cached: reutiliza el PDF existente (misma ruta: obtener contenido y abrir)", async () => {
       getOrGenerateMock.mockResolvedValue(outcomeResult("Cached"));
       getContentBlobMock.mockResolvedValue(new Blob());
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -91,7 +91,7 @@ describe("useRideActions", () => {
 
     it("PendingSource: muestra advertencia y nunca pide el contenido", async () => {
       getOrGenerateMock.mockResolvedValue(outcomeResult("PendingSource"));
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -103,7 +103,7 @@ describe("useRideActions", () => {
 
     it("NotApplicable: muestra advertencia y nunca pide el contenido", async () => {
       getOrGenerateMock.mockResolvedValue(outcomeResult("NotApplicable"));
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -115,7 +115,7 @@ describe("useRideActions", () => {
 
     it("Failed: muestra error y nunca pide el contenido", async () => {
       getOrGenerateMock.mockResolvedValue(outcomeResult("Failed"));
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -127,7 +127,7 @@ describe("useRideActions", () => {
 
     it("un error HTTP real nunca se muestra sin manejar — usa e.message, nunca la excepción cruda/stack", async () => {
       getOrGenerateMock.mockRejectedValue(new Error("Network Error"));
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -139,7 +139,7 @@ describe("useRideActions", () => {
 
     it("un error sin response ni message cae en el mensaje de fallback en español", async () => {
       getOrGenerateMock.mockRejectedValue({});
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -156,7 +156,7 @@ describe("useRideActions", () => {
           data: { message: { user: "Mensaje específico del backend." } },
         },
       });
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleViewRide("doc-1");
@@ -173,7 +173,7 @@ describe("useRideActions", () => {
       getOrGenerateMock.mockResolvedValue(outcomeResult("Generated"));
       const blob = new Blob();
       getContentBlobMock.mockResolvedValue(blob);
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleDownloadRide("doc-1", "001-001-000000123");
@@ -185,14 +185,85 @@ describe("useRideActions", () => {
       );
     });
 
-    it("NotApplicable: no descarga nada", async () => {
-      getOrGenerateMock.mockResolvedValue(outcomeResult("NotApplicable"));
-      const { result } = renderHook(() => useRideActions());
+    it("Cached: descarga el PDF existente", async () => {
+      getOrGenerateMock.mockResolvedValue(outcomeResult("Cached"));
+      const blob = new Blob();
+      getContentBlobMock.mockResolvedValue(blob);
+      const { result } = renderHook(() => useRideActions("Sales"));
+
+      await act(async () => {
+        await result.current.handleDownloadRide("doc-1", "001-001-000000123");
+      });
+
+      expect(downloadBlobMock).toHaveBeenCalledWith(
+        blob,
+        "RIDE-001-001-000000123.pdf",
+      );
+    });
+
+    it("usa el sourceModule recibido (no un módulo fijo) en ambas llamadas", async () => {
+      getOrGenerateMock.mockResolvedValue(outcomeResult("Generated"));
+      getContentBlobMock.mockResolvedValue(new Blob());
+      const { result } = renderHook(() => useRideActions("OtroModulo"));
+
+      await act(async () => {
+        await result.current.handleDownloadRide("doc-9", "N-1");
+      });
+
+      expect(getOrGenerateMock).toHaveBeenCalledWith("OtroModulo", "doc-9");
+      expect(getContentBlobMock).toHaveBeenCalledWith("OtroModulo", "doc-9");
+    });
+
+    it("sin número de documento usa el id como nombre de archivo", async () => {
+      getOrGenerateMock.mockResolvedValue(outcomeResult("Generated"));
+      const blob = new Blob();
+      getContentBlobMock.mockResolvedValue(blob);
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleDownloadRide("doc-1");
       });
 
+      expect(downloadBlobMock).toHaveBeenCalledWith(blob, "RIDE-doc-1.pdf");
+    });
+
+    it("PendingSource: advierte y no descarga", async () => {
+      getOrGenerateMock.mockResolvedValue(outcomeResult("PendingSource"));
+      const { result } = renderHook(() => useRideActions("Sales"));
+
+      await act(async () => {
+        await result.current.handleDownloadRide("doc-1");
+      });
+
+      expect(messageWarningMock).toHaveBeenCalledTimes(1);
+      expect(getContentBlobMock).not.toHaveBeenCalled();
+      expect(downloadBlobMock).not.toHaveBeenCalled();
+    });
+
+    it("NotApplicable: advertencia genérica (no menciona factura) y no descarga nada", async () => {
+      getOrGenerateMock.mockResolvedValue(outcomeResult("NotApplicable"));
+      const { result } = renderHook(() => useRideActions("Sales"));
+
+      await act(async () => {
+        await result.current.handleDownloadRide("doc-1");
+      });
+
+      expect(downloadBlobMock).not.toHaveBeenCalled();
+      expect(messageWarningMock).toHaveBeenCalledTimes(1);
+      const text = String(messageWarningMock.mock.calls[0][0]);
+      expect(text).not.toMatch(/factura/i);
+      expect(text).toMatch(/documento/i);
+    });
+
+    it("Failed: muestra error y no descarga", async () => {
+      getOrGenerateMock.mockResolvedValue(outcomeResult("Failed"));
+      const { result } = renderHook(() => useRideActions("Sales"));
+
+      await act(async () => {
+        await result.current.handleDownloadRide("doc-1");
+      });
+
+      expect(messageErrorMock).toHaveBeenCalledTimes(1);
       expect(downloadBlobMock).not.toHaveBeenCalled();
     });
   });
@@ -201,7 +272,7 @@ describe("useRideActions", () => {
     it("Generated: muestra éxito y abre el PDF fresco", async () => {
       regenerateMock.mockResolvedValue(outcomeResult("Generated"));
       getContentBlobMock.mockResolvedValue(new Blob());
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleRegenerateRide("doc-1");
@@ -214,7 +285,7 @@ describe("useRideActions", () => {
 
     it("Failed: muestra error, nunca éxito", async () => {
       regenerateMock.mockResolvedValue(outcomeResult("Failed"));
-      const { result } = renderHook(() => useRideActions());
+      const { result } = renderHook(() => useRideActions("Sales"));
 
       await act(async () => {
         await result.current.handleRegenerateRide("doc-1");

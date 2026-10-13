@@ -33,7 +33,7 @@ vi.mock("../../../lib/messages", () => ({
 
 const handleViewRideMock = vi.fn();
 const handleDownloadRideMock = vi.fn();
-vi.mock("../hooks/useRideActions", () => ({
+vi.mock("../../ride/facades/rideGenerationFacade", () => ({
   useRideActions: () => ({
     ridePending: false,
     handleViewRide: handleViewRideMock,

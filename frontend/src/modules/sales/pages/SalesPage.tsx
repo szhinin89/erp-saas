@@ -34,7 +34,7 @@ import { deriveDetailReference } from "../utils/paymentDetailReference";
 import { useSalesPage } from "../hooks/useSalesPage";
 import { issueStepsFor } from "../utils/salesIssueSteps";
 import type { SalesListItemDto } from "../api/salesService";
-import { useRideActions } from "../hooks/useRideActions";
+import { useRideActions } from "../../ride/facades/rideGenerationFacade";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import "../styles/sales-invoice.css";
 import "../../../styles/shared/erp-form-core.css";
@@ -54,7 +54,7 @@ const SRI_AVAILABILITY_BADGE: Record<
 
 export function SalesPage() {
   const ctx = useSalesPage();
-  const ride = useRideActions();
+  const ride = useRideActions("Sales");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const openedFromParam = useRef(false);

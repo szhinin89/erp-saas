@@ -1570,6 +1570,8 @@
   "electronicDocuments.monitor.detail.downloadRide": "Descargar RIDE",
   "electronicDocuments.monitor.detail.resendEmail": "Reenviar correo",
   "electronicDocuments.monitor.detail.comingSoon": "Próximamente.",
+  "electronicDocuments.monitor.detail.rideRetentionUnavailable": "El RIDE autorizado de retenciones no está disponible desde este flujo.",
+  "electronicDocuments.monitor.detail.resendEmailComingSoon": "Reenviar correo: próximamente.",
   "electronicDocuments.diagnostic.messagesSection": "Mensajes SRI",
   "electronicDocuments.diagnostic.messagesEmpty": "No hay mensajes registrados.",
   "electronicDocuments.diagnostic.technicalInfoSection": "Información técnica",

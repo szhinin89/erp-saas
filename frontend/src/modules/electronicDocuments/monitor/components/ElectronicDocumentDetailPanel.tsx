@@ -23,6 +23,11 @@ const RETRYABLE_STATES = new Set([
   "Failed",
 ]);
 
+// El pipeline RIDE genérico (GET /api/v1/ride) no registra parser para Retención — su PDF solo
+// existe como vista previa regenerada desde el origen, que no es el RIDE autorizado. Nunca se
+// llama al endpoint genérico para este tipo (evita un "Failed/parser_not_registered" artificial).
+const RIDE_UNSUPPORTED_DOCUMENT_TYPES = new Set(["Retention"]);
+
 type Props = {
   open: boolean;
   detail: ElectronicDocumentDetailDto | null;
@@ -34,9 +39,12 @@ type Props = {
   xmlError: string | null;
   canRetry: boolean;
   retryLoading: boolean;
+  canDownloadRide: boolean;
+  rideDownloading: boolean;
   onClose: () => void;
   onViewXml: (variant: ElectronicDocumentXmlVariant) => void;
   onRetryNow: () => Promise<void>;
+  onDownloadRide: () => void;
 };
 
 export function ElectronicDocumentDetailPanel({
@@ -50,11 +58,17 @@ export function ElectronicDocumentDetailPanel({
   xmlError,
   canRetry,
   retryLoading,
+  canDownloadRide,
+  rideDownloading,
   onClose,
   onViewXml,
   onRetryNow,
+  onDownloadRide,
 }: Props) {
   const { t } = useI18n();
+  const rideUnsupported =
+    detail !== null &&
+    RIDE_UNSUPPORTED_DOCUMENT_TYPES.has(detail.documentType);
 
   const handleRetryNow = async () => {
     const ok = await message.confirm({
@@ -170,18 +184,22 @@ export function ElectronicDocumentDetailPanel({
               title={t("electronicDocuments.monitor.detail.actionsSection")}
             >
               <div className="zh-edoc-xml-actions">
-                <ZHBtn
-                  variant="secondary"
-                  size="sm"
-                  type="button"
-                  disabled
-                  title={t("electronicDocuments.monitor.detail.comingSoon")}
-                >
-                  <span className="material-symbols-outlined zh-icon-sm">
-                    picture_as_pdf
-                  </span>
-                  {t("electronicDocuments.monitor.detail.downloadRide")}
-                </ZHBtn>
+                {canDownloadRide && (
+                  <ZHBtn
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    disabled={
+                      rideUnsupported || rideDownloading
+                    }
+                    onClick={onDownloadRide}
+                  >
+                    <span className="material-symbols-outlined zh-icon-sm">
+                      picture_as_pdf
+                    </span>
+                    {t("electronicDocuments.monitor.detail.downloadRide")}
+                  </ZHBtn>
+                )}
                 <ZHBtn
                   variant="secondary"
                   size="sm"
@@ -195,8 +213,13 @@ export function ElectronicDocumentDetailPanel({
                   {t("electronicDocuments.monitor.detail.resendEmail")}
                 </ZHBtn>
               </div>
+              {canDownloadRide && rideUnsupported && (
+                <p className="zh-edoc-hint-sm">
+                  {t("electronicDocuments.monitor.detail.rideRetentionUnavailable")}
+                </p>
+              )}
               <p className="zh-edoc-hint-sm">
-                {t("electronicDocuments.monitor.detail.comingSoon")}
+                {t("electronicDocuments.monitor.detail.resendEmailComingSoon")}
               </p>
             </ZHCard>
           )}

@@ -31,7 +31,7 @@ vi.mock("../../../components/zh/ZHConfirmModal", () => ({
 vi.mock("../../../components/zh/ZHElectronicEnvironmentBanner", () => ({
   ZHElectronicEnvironmentBanner: () => null,
 }));
-vi.mock("../hooks/useRideActions", () => ({
+vi.mock("../../ride/facades/rideGenerationFacade", () => ({
   useRideActions: () => ({
     ridePending: false,
     handleViewRide: vi.fn(),

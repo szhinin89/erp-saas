@@ -14,6 +14,9 @@ import type { RideGenerationResultDto, RideOutcome } from "../api/rideService";
 
 export type { RideGenerationResultDto, RideOutcome };
 
+/** Acciones UI Ver/Descargar/Regenerar RIDE parametrizadas por sourceModule (Ventas, Monitor). */
+export { useRideActions } from "../hooks/useRideActions";
+
 export const rideGenerationFacade = {
   getOrGenerate: rideService.getOrGenerate,
   regenerate: rideService.regenerate,

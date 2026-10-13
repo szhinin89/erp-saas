@@ -39,7 +39,7 @@ const handleViewRideMock = vi.fn();
 const handleDownloadRideMock = vi.fn();
 const handleRegenerateRideMock = vi.fn();
 
-vi.mock("../hooks/useRideActions", () => ({
+vi.mock("../../ride/facades/rideGenerationFacade", () => ({
   useRideActions: () => ({
     ridePending: false,
     handleViewRide: handleViewRideMock,

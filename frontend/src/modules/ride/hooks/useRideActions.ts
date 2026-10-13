@@ -1,16 +1,11 @@
 import { useCallback, useState } from "react";
 import { message } from "../../../lib/messages";
-import {
-  rideGenerationFacade,
-  type RideGenerationResultDto,
-} from "../../ride/facades/rideGenerationFacade";
+import { rideService, type RideGenerationResultDto } from "../api/rideService";
 import { downloadBlob } from "../../../lib/download";
 
-const SOURCE_MODULE = "Sales";
-
-// Mismo idioma de fallback de errores usado en el resto de useSalesPage.ts
-// (handleAuthorize/handleCancel/handleGenerateElectronicDocument) — nunca se muestra el error
-// HTTP crudo, siempre un mensaje en español con degradación ordenada.
+// Mismo idioma de fallback de errores usado en Ventas (useSalesPage.ts: handleAuthorize/
+// handleCancel/handleGenerateElectronicDocument) — nunca se muestra el error HTTP crudo, siempre
+// un mensaje en español con degradación ordenada.
 function extractErrorMessage(e: unknown, fallback: string): string {
   const err = e as {
     response?: {
@@ -27,10 +22,10 @@ function extractErrorMessage(e: unknown, fallback: string): string {
 }
 
 function ridePdfFileName(
-  invoiceNumber: string | undefined,
+  documentNumber: string | undefined,
   sourceEntityId: string,
 ): string {
-  return `RIDE-${invoiceNumber ?? sourceEntityId}.pdf`;
+  return `RIDE-${documentNumber ?? sourceEntityId}.pdf`;
 }
 
 /**
@@ -50,7 +45,7 @@ function announceOutcome(result: RideGenerationResultDto): boolean {
       return false;
     case "NotApplicable":
       message.warning(
-        "Esta factura no tiene un documento electrónico autorizado (rechazada, anulada o inexistente) — no se puede generar el RIDE.",
+        "Este documento no tiene un comprobante electrónico autorizado (rechazado, anulado o inexistente) — no se puede generar el RIDE.",
       );
       return false;
     case "Failed":
@@ -63,8 +58,11 @@ function announceOutcome(result: RideGenerationResultDto): boolean {
   }
 }
 
-async function openRideInNewTab(sourceEntityId: string): Promise<void> {
-  const blob = await rideGenerationFacade.getContentBlob(SOURCE_MODULE, sourceEntityId);
+async function openRideInNewTab(
+  sourceModule: string,
+  sourceEntityId: string,
+): Promise<void> {
+  const blob = await rideService.getContentBlob(sourceModule, sourceEntityId);
   const url = URL.createObjectURL(blob);
   // No se revoca inmediatamente: la pestaña nueva sigue necesitando la URL viva. El navegador
   // libera la memoria al cerrar esa pestaña — mismo criterio que useAuthenticatedImage.ts, que
@@ -72,64 +70,70 @@ async function openRideInNewTab(sourceEntityId: string): Promise<void> {
   window.open(url, "_blank");
 }
 
-export function useRideActions() {
+/**
+ * Acciones RIDE (Ver / Descargar / Regenerar) de cualquier consumidor — Ventas (Factura, Nota de
+ * Crédito de devolución) y el Monitor electrónico. El consumidor identifica su documento con el
+ * mismo par (sourceModule, sourceEntityId) que los contratos públicos de Ride; este hook es la
+ * única interpretación de `RideOutcome` en el frontend.
+ */
+export function useRideActions(sourceModule: string) {
   const [ridePending, setRidePending] = useState(false);
 
   const handleViewRide = useCallback(async (sourceEntityId: string) => {
     setRidePending(true);
     try {
-      const result = await rideGenerationFacade.getOrGenerate(
-        SOURCE_MODULE,
+      const result = await rideService.getOrGenerate(
+        sourceModule,
         sourceEntityId,
       );
       if (announceOutcome(result)) {
-        await openRideInNewTab(sourceEntityId);
+        await openRideInNewTab(sourceModule, sourceEntityId);
       }
     } catch (e) {
       message.error(extractErrorMessage(e, "No se pudo obtener el RIDE."));
     }
     setRidePending(false);
-  }, []);
+  }, [sourceModule]);
 
   const handleDownloadRide = useCallback(
-    async (sourceEntityId: string, invoiceNumber?: string) => {
+    async (sourceEntityId: string, documentNumber?: string) => {
       setRidePending(true);
       try {
-        const result = await rideGenerationFacade.getOrGenerate(
-          SOURCE_MODULE,
+        const result = await rideService.getOrGenerate(
+          sourceModule,
           sourceEntityId,
         );
         if (announceOutcome(result)) {
-          const blob = await rideGenerationFacade.getContentBlob(
-            SOURCE_MODULE,
+          const blob = await rideService.getContentBlob(
+            sourceModule,
             sourceEntityId,
           );
-          downloadBlob(blob, ridePdfFileName(invoiceNumber, sourceEntityId));
+          downloadBlob(blob, ridePdfFileName(documentNumber, sourceEntityId));
         }
       } catch (e) {
         message.error(extractErrorMessage(e, "No se pudo descargar el RIDE."));
       }
       setRidePending(false);
     },
-    [],
+    [sourceModule],
   );
 
   const handleRegenerateRide = useCallback(async (sourceEntityId: string) => {
     setRidePending(true);
     try {
-      const result = await rideGenerationFacade.regenerate(
-        SOURCE_MODULE,
+      const result = await rideService.regenerate(
+        sourceModule,
         sourceEntityId,
       );
       if (announceOutcome(result)) {
         message.success("RIDE regenerado correctamente.");
-        await openRideInNewTab(sourceEntityId);
+        await openRideInNewTab(sourceModule, sourceEntityId);
       }
     } catch (e) {
       message.error(extractErrorMessage(e, "No se pudo regenerar el RIDE."));
     }
     setRidePending(false);
-  }, []);
+  }, [sourceModule]);
 
   return {
     ridePending,
