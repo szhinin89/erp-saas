@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-10-13 12:19:13",
+    "Generated":  "2026-10-13 12:39:39",
     "Backend":  {
                     "TestProjects":  5,
-                    "TestFiles":  802,
+                    "TestFiles":  803,
                     "Projects":  [
                                      {
                                          "Project":  "ERP.API.Tests",
@@ -27,7 +27,7 @@
                                      {
                                          "Project":  "ERP.Infrastructure.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests",
-                                         "TestFiles":  227
+                                         "TestFiles":  228
                                      }
                                  ]
                 },
