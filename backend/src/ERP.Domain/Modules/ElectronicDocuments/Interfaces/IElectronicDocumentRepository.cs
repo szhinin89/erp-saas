@@ -70,7 +70,12 @@ public interface IElectronicDocumentRepository
         CancellationToken ct = default
     );
 
-    /// <summary>Documentos con al menos un reintento registrado (RetryCount &gt; 0).</summary>
+    /// <summary>
+    /// "Reintentos pendientes": documentos en un estado que el job automático de reintentos
+    /// atiende (ElectronicDocumentRetryPolicy.AutomaticRetryStates), con al menos un reintento
+    /// registrado (RetryCount &gt; 0) y que todavía no agotaron MaxAttempts. Un documento que ya
+    /// salió de esos estados (p.ej. Authorized) no cuenta aunque conserve RetryCount histórico.
+    /// </summary>
     Task<int> CountPendingRetriesAsync(
         Guid tenantId,
         Guid? companyId,

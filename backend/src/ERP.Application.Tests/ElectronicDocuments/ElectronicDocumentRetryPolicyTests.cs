@@ -1,4 +1,5 @@
 using ERP.Application.Modules.ElectronicDocuments.Services;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using FluentAssertions;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
@@ -67,5 +68,22 @@ public sealed class ElectronicDocumentRetryPolicyTests
             .IsEligibleForAutomaticRetry(4, Now.AddMinutes(-17), Now)
             .Should()
             .BeTrue();
+    }
+
+    [Fact]
+    public void Automatic_retry_states_are_exactly_the_states_the_job_has_always_picked_up()
+    {
+        // Contrato del job: mismo conjunto que antes estaba inline en GetRetryCandidatesAsync.
+        ElectronicDocumentRetryPolicy
+            .AutomaticRetryStates.Should()
+            .BeEquivalentTo(
+                new[]
+                {
+                    ElectronicDocumentState.Signed,
+                    ElectronicDocumentState.Received,
+                    ElectronicDocumentState.Draft,
+                    ElectronicDocumentState.Failed,
+                }
+            );
     }
 }

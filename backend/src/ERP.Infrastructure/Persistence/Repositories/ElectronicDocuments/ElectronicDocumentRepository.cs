@@ -1,4 +1,5 @@
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
@@ -178,7 +179,14 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         Guid tenantId,
         Guid? companyId,
         CancellationToken ct = default
-    ) => Scoped(tenantId, companyId).Where(x => x.RetryCount > 0).CountAsync(ct);
+    ) =>
+        Scoped(tenantId, companyId)
+            .Where(x =>
+                ElectronicDocumentRetryPolicy.AutomaticRetryStates.Contains(x.CurrentState)
+                && x.RetryCount > 0
+                && x.RetryCount < ElectronicDocumentRetryPolicy.MaxAttempts
+            )
+            .CountAsync(ct);
 
     public async Task<int> CountCreatedTodayAsync(
         Guid tenantId,
@@ -217,12 +225,7 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         await _db
             .ElectronicDocuments.AsPlatformQuery()
             .AsNoTracking()
-            .Where(x =>
-                x.CurrentState == ElectronicDocumentState.Signed
-                || x.CurrentState == ElectronicDocumentState.Received
-                || x.CurrentState == ElectronicDocumentState.Draft
-                || x.CurrentState == ElectronicDocumentState.Failed
-            )
+            .Where(x => ElectronicDocumentRetryPolicy.AutomaticRetryStates.Contains(x.CurrentState))
             .OrderBy(x => x.CreatedAt)
             .ThenBy(x => x.Id)
             .Select(x => new ElectronicDocumentRetryCandidate(

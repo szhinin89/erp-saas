@@ -1,5 +1,13 @@
 # Project Status
 
+## MONITOR-PENDING-RETRIES — BUG REAL (2026-10-13)
+
+**Estado: corregido, sin commit/push.** El Monitor mostraba "Reintentos pendientes: 1" por la factura 001-001-000000001, Authorized con `RetryCount=1` por un fallo histórico: `CountPendingRetriesAsync` contaba `RetryCount > 0` sin mirar el estado actual. Cierra la nota no bloqueante registrada en la auditoría de company scoping (ver más abajo).
+
+- **Corrección:** "pendiente" = estado ∈ `ElectronicDocumentRetryPolicy.AutomaticRetryStates` (Signed, Received, Draft, Failed) ∧ `RetryCount > 0` ∧ `RetryCount < MaxAttempts`. El conjunto, antes inline en `GetRetryCandidatesAsync`, ahora es fuente única para el job y el contador; el job conserva exactamente los mismos candidatos, orden, backoff y `MaxAttempts`. Sin cambios en `RetryAsync`, entidad, lifecycle, DTO ni frontend.
+- **Validación focal:** Infrastructure `ElectronicDocumentRepositoryDashboard*` 18/18 PASS (PostgreSQL real: estados excluidos, 1..4 reintentos, `RetryCount=0`, `MaxAttempts`, otra empresa/tenant, candidatos del job); Application `ElectronicDocumentRetryPolicyTests` 7/7 PASS.
+- **DEBT:** los estados reintentables manuales siguen definidos aparte (`RetryAsync`/`RetryGuardedAsync`, `MarkRetryAttempted`, `RETRYABLE_STATES` del frontend) — no unificados en esta corrección.
+
 ## RIDE-AUTHORIZATION-DATE — BUG REAL (2026-10-13)
 
 **Estado: corregido, sin commit/push.** El RIDE de la factura 001-001-000000001 no mostraba la fecha/hora de autorización.

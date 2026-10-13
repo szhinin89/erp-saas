@@ -1,13 +1,30 @@
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
+
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 
 /// <summary>
 /// Política de reintento automático (job Hangfire) para documentos varados en Signed/Received.
-/// Único lugar que declara el número de intentos y el backoff — nunca hardcodeado en el job
-/// ni en el issuer.
+/// Único lugar que declara el número de intentos, el backoff y los estados que atiende el job —
+/// nunca hardcodeado en el job ni en el issuer.
 /// </summary>
 public static class ElectronicDocumentRetryPolicy
 {
     public const int MaxAttempts = 5;
+
+    /// <summary>
+    /// Estados que el job automático de reintentos recoge como candidatos. Fuente única para
+    /// <c>GetRetryCandidatesAsync</c> y para el contador "Reintentos pendientes" del Monitor.
+    /// Excluye deliberadamente Dispatching (solo consulta manual, ADR-036), DeadLetter (requiere
+    /// acción manual) y todo estado terminal. No define qué acepta el reintento manual
+    /// (<c>IElectronicDocumentIssuer.RetryAsync</c>), que conserva sus propios guards.
+    /// </summary>
+    public static readonly IReadOnlyList<ElectronicDocumentState> AutomaticRetryStates =
+    [
+        ElectronicDocumentState.Signed,
+        ElectronicDocumentState.Received,
+        ElectronicDocumentState.Draft,
+        ElectronicDocumentState.Failed,
+    ];
 
     private static readonly TimeSpan[] BackoffSchedule =
     [
