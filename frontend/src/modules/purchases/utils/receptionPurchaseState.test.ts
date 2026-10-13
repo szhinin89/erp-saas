@@ -6,7 +6,7 @@ describe("FASE 5 PURCHASE-UX — receptionPurchaseView", () => {
     ["NONE", "Sin compra", "warning", "createPurchase", "Crear compra", null, false],
     ["DRAFT", "Compra en borrador", "warning", "continueDraft", "Continuar borrador", null, true],
     ["CONFIRMED", "Compra confirmada", "success", "viewPurchase", "Ver compra", null, true],
-    ["CANCELLED", "Compra anulada", "error", "reprocessPurchase", "Procesar nuevamente", "Ver compra anulada", false],
+    ["CANCELLED", "Compra anulada", "error", "reprocessPurchase", "Reprocesar compra", "Ver compra anulada", false],
     ["DISCARDED", "Borrador descartado", "neutral", "createPurchase", "Crear compra", "Ver borrador descartado", false],
   ] as const)("%s → %s / %s", (state, badge, variant, action, actionLabel, history, active) => {
     const view = receptionPurchaseView(state);

@@ -73,8 +73,9 @@ describe("Purchase reception document actions", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
     show({ creditNoteExists: true, creditNoteId: "cn-1" });
     expect(screen.queryByRole("button", { name: "Procesar NC" })).toBeNull();
-    expect(screen.getByText("NC ya procesada")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Ver NC existente" }));
+    // FASE 5 RECEPTION-UX — el estado "NC procesada" vive en Registro ERP, no en Acciones.
+    expect(screen.queryByText("NC procesada")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ver NC" }));
     expect(open).toHaveBeenCalledWith(
       "/purchases/credit-notes/cn-1",
       "_blank",
@@ -89,14 +90,13 @@ describe("Purchase reception document actions", () => {
       cancelledCreditNoteId: "cn-cancelled-1",
     });
 
-    expect(screen.getByText("NC anulada")).toBeTruthy();
-    expect(screen.queryByText("NC ya procesada")).toBeNull();
+    expect(screen.queryByText("NC anulada")).toBeNull();
     expect(screen.queryByRole("button", { name: "Procesar NC" })).toBeNull();
 
     // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — el click ya no navega
     // directamente con row.affectedPurchaseId (podría estar obsoleto desde el import original);
     // delega a onProcessCreditNote, que re-resuelve la factura afectada vigente antes de navegar.
-    fireEvent.click(screen.getByRole("button", { name: "Procesar nuevamente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reprocesar NC" }));
     expect(processCreditNote).toHaveBeenCalledWith(
       expect.objectContaining({ documentId: "nc-1", cancelledCreditNoteId: "cn-cancelled-1" }),
     );
@@ -122,7 +122,7 @@ describe("Purchase reception document actions", () => {
       affectedPurchaseExists: false,
       affectedPurchaseId: null,
     });
-    expect(screen.getByText("NC ya procesada")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Ver NC" })).toBeTruthy();
     expect(screen.queryByText("NC pendiente")).toBeNull();
   });
   it("keeps invoice consultation and creation", () => {
@@ -147,10 +147,10 @@ describe("Purchase reception document actions", () => {
       cancelledPurchaseId: "purchase-cancelled-1",
     });
 
-    expect(screen.getByText("Compra anulada")).toBeTruthy();
+    expect(screen.queryByText("Compra anulada")).toBeNull();
     expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Procesar nuevamente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reprocesar compra" }));
     expect(open).toHaveBeenCalledWith(
       "/purchases?fromReceptionId=nc-1&accessKey=key",
       "_blank",
@@ -188,11 +188,10 @@ describe("Purchase reception document actions", () => {
       cancelledExpenseId: "expense-cancelled-1",
     });
 
-    expect(screen.getByText("Gasto anulado")).toBeTruthy();
+    expect(screen.queryByText("Gasto anulado")).toBeNull();
     expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
 
-    const reprocessButtons = screen.getAllByRole("button", { name: "Procesar nuevamente" });
-    fireEvent.click(reprocessButtons[reprocessButtons.length - 1]);
+    fireEvent.click(screen.getByRole("button", { name: "Reprocesar gasto" }));
     expect(open).toHaveBeenCalledWith(
       "/expenses/documents/new?fromReceptionId=nc-1",
       "_blank",
@@ -224,6 +223,15 @@ describe("Purchase reception document actions", () => {
 describe("FASE 5 PURCHASE-UX — estado real de la compra en Recepción", () => {
   const invoice = { sourceDocType: "INVOICE" as const, documentStatus: "VERIFIED" as const };
 
+  it("gasto activo: solo Ver XML, sin badge de estado ni Crear compra/gasto", () => {
+    show({ ...invoice, expenseExists: true });
+    expect(screen.queryByText("Gasto registrado")).toBeNull();
+    expect(screen.queryByText("Gasto ya ingresado al sistema")).toBeNull();
+    expect(screen.getByRole("button", { name: "Ver XML" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
+  });
+
   it("NONE: Crear compra y Crear gasto permitidos", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
     show({ ...invoice, purchaseState: "NONE" });
@@ -233,42 +241,41 @@ describe("FASE 5 PURCHASE-UX — estado real de la compra en Recepción", () => 
     expect(screen.queryByText("Compra anulada")).toBeNull();
   });
 
-  it("DRAFT: 'Compra en borrador' + Continuar borrador (invoiceId existente); sin Crear compra ni Crear gasto", () => {
+  it("DRAFT: Continuar borrador (invoiceId existente); sin Crear compra ni Crear gasto", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
     show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1" });
-    expect(screen.getByText("Compra en borrador")).toBeTruthy();
-    expect(screen.queryByText("Compra ya ingresada al sistema")).toBeNull();
+    expect(screen.queryByText("Compra en borrador")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Continuar borrador" }));
     expect(open).toHaveBeenCalledWith("/purchases?invoiceId=draft-1", "_blank", "noopener,noreferrer");
     expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
   });
 
-  it("CONFIRMED: 'Compra confirmada' + Ver compra; sin Crear gasto", () => {
+  it("CONFIRMED: Ver compra; sin Crear gasto", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
     show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "CONFIRMED", purchaseExists: true, purchaseId: "p-1" });
-    expect(screen.getByText("Compra confirmada")).toBeTruthy();
+    expect(screen.queryByText("Compra confirmada")).toBeNull();
+    expect(screen.queryByText("Compra creada")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Ver compra" }));
     expect(open).toHaveBeenCalledWith("/purchases?invoiceId=p-1", "_blank", "noopener,noreferrer");
     expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
   });
 
-  it("CANCELLED: 'Compra anulada' + Procesar nuevamente + Ver compra anulada; Crear gasto permitido", () => {
+  it("CANCELLED: Reprocesar compra + Ver compra anulada; Crear gasto permitido", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
     show({ ...invoice, purchaseState: "CANCELLED", cancelledPurchaseId: "old-1" });
-    expect(screen.getByText("Compra anulada")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Procesar nuevamente" })).toBeTruthy();
+    expect(screen.queryByText("Compra anulada")).toBeNull();
+    expect(screen.getByRole("button", { name: "Reprocesar compra" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Ver compra anulada" }));
     expect(open).toHaveBeenCalledWith("/purchases?invoiceId=old-1", "_blank", "noopener,noreferrer");
     expect(screen.getByRole("button", { name: "Crear gasto" })).toBeTruthy();
   });
 
-  it("DISCARDED: 'Borrador descartado' + Crear compra + Ver borrador descartado; Crear gasto permitido", () => {
+  it("DISCARDED: Crear compra + Ver borrador descartado; Crear gasto permitido", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
     show({ ...invoice, purchaseState: "DISCARDED", cancelledPurchaseId: "discarded-1" });
-    expect(screen.getByText("Borrador descartado")).toBeTruthy();
-    expect(screen.queryByText("Compra anulada")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Procesar nuevamente" })).toBeNull();
+    expect(screen.queryByText("Borrador descartado")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Reprocesar compra" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Crear compra" }));
     expect(open).toHaveBeenCalledWith("/purchases?fromReceptionId=nc-1&accessKey=key", "_blank", "noopener,noreferrer");
     fireEvent.click(screen.getByRole("button", { name: "Ver borrador descartado" }));

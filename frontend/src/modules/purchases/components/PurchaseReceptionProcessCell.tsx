@@ -9,7 +9,7 @@ import {
 } from "../pages/purchaseReceptionLabels";
 
 /**
- * Celda "Proceso" de `/purchases/reception` — lista compacta Documento/Detalle/XML, alineada en
+ * Celda "Recepción y XML" de `/purchases/reception` — lista compacta Recepción/Lectura/XML, alineada en
  * grid label-valor. No repite el estado del proveedor (ya vive en la columna Proveedor).
  */
 export function PurchaseReceptionProcessCell({
@@ -39,7 +39,7 @@ export function PurchaseReceptionProcessCell({
   return (
     <div className="pur-process-cell">
       <span className="pur-process-label">
-        {t("purchases.reception.process.document", "Documento")}
+        {t("purchases.reception.process.document", "Recepción")}
       </span>
       <span className="pur-process-value">
         <Badge
@@ -47,12 +47,12 @@ export function PurchaseReceptionProcessCell({
           upper
           size="md"
           label={documentStatusLabel[row.documentStatus]}
-          title={`Documento persistido — id ${row.documentId}`}
+          title={t("purchases.reception.process.documentSaved", "Recepción guardada")}
         />
       </span>
 
       <span className="pur-process-label">
-        {t("purchases.reception.process.detail", "Detalle")}
+        {t("purchases.reception.process.detail", "Lectura")}
       </span>
       <span className="pur-process-value">
         {hasDetail ? (

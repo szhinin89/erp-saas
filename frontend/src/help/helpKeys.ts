@@ -22,6 +22,7 @@ export const HELP_KEYS = {
   PURCHASES_RETENTIONS: "purchases.retention",
   PURCHASES_PAYMENT_SCHEDULE: "purchases.schedule",
   PURCHASES_CREDIT_NOTE: "purchases.creditNote.type",
+  PURCHASES_RECEPTION_OVERVIEW: "purchases.reception.overview",
 } as const;
 
 export type HelpKeyId = (typeof HELP_KEYS)[keyof typeof HELP_KEYS];

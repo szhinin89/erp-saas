@@ -7,6 +7,7 @@ import {
 } from "../api/purchaseReceptionService";
 import { message } from "../../../lib/messages";
 import { chunkIds, mergeRefreshedReceptionItems } from "../utils/receptionRefresh";
+import { summarizeReceptionItems } from "../utils/receptionErpRecord";
 import { useI18n } from "../../../i18n/i18n";
 import type { ZhBatchProgressStatus } from "../../../components/zh/progress/ZhBatchProgress";
 
@@ -437,12 +438,8 @@ export function usePurchaseReceptionPage() {
 
   const summary = useMemo(
     () => ({
-      imported: items.filter((i) => i.status === "IMPORTED").length,
-      // FASE 5 PURCHASE-UX — desglose de las compras activas por estado real.
-      purchaseDrafts: items.filter((i) => i.purchaseState === "DRAFT").length,
-      purchaseConfirmed: items.filter((i) => i.purchaseState === "CONFIRMED").length,
-      pending: items.filter((i) => i.status === "PENDING").length,
-      newSupplier: items.filter((i) => i.status === "NEW_SUPPLIER").length,
+      // FASE 5 RECEPTION-UX — Compra/Gasto/NC por registro ERP activo (ver receptionErpRecord).
+      ...summarizeReceptionItems(items),
       skipped: result?.skippedUnsupportedCount ?? 0,
     }),
     [items, result],

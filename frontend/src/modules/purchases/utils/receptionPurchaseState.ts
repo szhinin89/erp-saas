@@ -12,7 +12,7 @@ export type ReceptionPurchaseAction =
   | "createPurchase" // NONE / DISCARDED → "Crear compra"
   | "continueDraft" // DRAFT → "Continuar borrador"
   | "viewPurchase" // CONFIRMED → "Ver compra"
-  | "reprocessPurchase"; // CANCELLED → "Procesar nuevamente"
+  | "reprocessPurchase"; // CANCELLED → "Reprocesar compra"
 
 /** Acción secundaria de historial (compra Cancelled más reciente). */
 export type ReceptionPurchaseHistoryAction = "viewCancelledPurchase" | "viewDiscardedDraft";
@@ -52,7 +52,7 @@ export function receptionPurchaseView(state: ReceptionPurchaseState): ReceptionP
         state,
         badge: { key: "purchases.reception.purchaseState.cancelled", fallback: "Compra anulada", variant: "error" },
         action: "reprocessPurchase",
-        actionLabel: { key: "purchases.reception.actions.reprocessPurchase", fallback: "Procesar nuevamente" },
+        actionLabel: { key: "purchases.reception.actions.reprocessPurchase", fallback: "Reprocesar compra" },
         history: {
           action: "viewCancelledPurchase",
           key: "purchases.reception.actions.viewCancelledPurchase",

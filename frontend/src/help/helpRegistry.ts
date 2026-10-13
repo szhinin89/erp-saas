@@ -103,4 +103,9 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     title: "Nota de crédito",
     short: "Tipo de nota de crédito según si el origen es una compra registrada o un XML recibido.",
   },
+  [HELP_KEYS.PURCHASES_RECEPTION_OVERVIEW]: {
+    title: "¿Qué puede hacer aquí?",
+    short:
+      "Aquí puede consultar el XML, validar el proveedor y procesar cada comprobante como Compra, Gasto o Nota de crédito de compra.",
+  },
 };

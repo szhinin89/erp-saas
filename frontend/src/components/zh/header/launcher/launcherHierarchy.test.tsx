@@ -29,7 +29,7 @@ const screenItem: NavItem = {
 const screenItemSibling: NavItem = {
   id: "item-reception",
   to: "/purchases/reception",
-  label: "Recepción electrónica (TXT)",
+  label: "Documentos de proveedores",
 };
 const categoryItem: NavItem = {
   id: "category-purchases",
@@ -146,7 +146,7 @@ describe("App Launcher — jerarquía de 3 niveles (ZH-MENU-UX-DESIGN-02)", () =
     expect(screen.getByText("Proveedores")).toBeTruthy();
     expect(screen.getByText("Compras")).toBeTruthy();
     expect(screen.getByText("Facturas de compra")).toBeTruthy();
-    expect(screen.getByText("Recepción electrónica (TXT)")).toBeTruthy();
+    expect(screen.getByText("Documentos de proveedores")).toBeTruthy();
   });
 
   it("no cambia las rutas: cada link apunta exactamente a item.to", () => {
@@ -156,7 +156,7 @@ describe("App Launcher — jerarquía de 3 niveles (ZH-MENU-UX-DESIGN-02)", () =
     expect(link?.getAttribute("href")).toBe("/purchases");
 
     const sibling = screen
-      .getByText("Recepción electrónica (TXT)")
+      .getByText("Documentos de proveedores")
       .closest("a");
     expect(sibling?.getAttribute("href")).toBe("/purchases/reception");
   });
@@ -168,7 +168,7 @@ describe("App Launcher — jerarquía de 3 niveles (ZH-MENU-UX-DESIGN-02)", () =
     expect(activeLink?.getAttribute("aria-current")).toBe("page");
 
     const inactiveLink = screen
-      .getByText("Recepción electrónica (TXT)")
+      .getByText("Documentos de proveedores")
       .closest("a");
     expect(inactiveLink?.getAttribute("aria-current")).toBeNull();
   });
@@ -198,7 +198,7 @@ describe("App Launcher — jerarquía de 3 niveles (ZH-MENU-UX-DESIGN-02)", () =
     expect(favOn.className).toContain("is-on");
 
     const favOff = screen.getByRole("button", {
-      name: /Recepción electrónica/i,
+      name: /Documentos de proveedores/i,
     });
     expect(favOff.getAttribute("aria-pressed")).toBe("false");
     expect(favOff.className).not.toContain("is-on");

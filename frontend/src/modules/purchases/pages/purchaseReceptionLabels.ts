@@ -27,7 +27,7 @@ export function buildProcessingStatusLabel(
   t: TFn,
 ): Record<PurchaseReceptionItem["processingStatus"], string> {
   return {
-    PENDING: t("purchases.reception.processing.pending", "Sin procesar"),
+    PENDING: t("purchases.reception.processing.pending", "Sin leer"),
     PROCESSED: t("purchases.reception.processing.processed", "OK"),
     PROCESSED_WITH_WARNINGS: t(
       "purchases.reception.processing.warnings",

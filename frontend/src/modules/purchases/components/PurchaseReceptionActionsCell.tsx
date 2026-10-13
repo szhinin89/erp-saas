@@ -4,7 +4,11 @@ import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
 import { receptionPurchaseView } from "../utils/receptionPurchaseState";
 
-/** Recepción conserva el XML fiscal y abre el flujo operativo propio de cada tipo. */
+/**
+ * Recepción conserva el XML fiscal y abre el flujo operativo propio de cada tipo. FASE 5
+ * RECEPTION-UX — solo acciones: el estado del registro ERP (compra/gasto/NC, activo o anulado) se
+ * muestra una única vez en la columna "Registro ERP" (receptionErpRecordView), nunca aquí.
+ */
 export function PurchaseReceptionActionsCell({
   row,
   xmlState,
@@ -21,14 +25,8 @@ export function PurchaseReceptionActionsCell({
   resolvingCreditNoteId: string | null;
 }) {
   const { t } = useI18n();
-  // FASE 5 PURCHASE-UX — estado REAL de la compra relacionada (SSOT): badge, textos y acciones.
+  // FASE 5 PURCHASE-UX — estado REAL de la compra relacionada (SSOT): textos y acciones.
   const purchaseView = receptionPurchaseView(row.purchaseState);
-  const purchaseBadge = (
-    <Badge
-      variant={purchaseView.badge.variant}
-      label={t(purchaseView.badge.key, purchaseView.badge.fallback)}
-    />
-  );
   const openPurchase = (purchaseId: string) =>
     window.open(`/purchases?invoiceId=${purchaseId}`, "_blank", "noopener,noreferrer");
 
@@ -56,10 +54,7 @@ export function PurchaseReceptionActionsCell({
   );
 
   if (row.sourceDocType === "INVOICE" && row.expenseExists) {
-    return <div className="pur-actions-cell">
-      <Badge variant="success" label="Gasto ya ingresado al sistema" />
-      {viewXmlButton}
-    </div>;
+    return <div className="pur-actions-cell">{viewXmlButton}</div>;
   }
 
   // Compra ACTIVA: borrador → "Continuar borrador"; confirmada → "Ver compra". "Crear compra" y
@@ -67,7 +62,6 @@ export function PurchaseReceptionActionsCell({
   if (purchaseView.hasActivePurchase) {
     return (
       <div className="pur-actions-cell">
-        {purchaseBadge}
         {row.purchaseId && (
           <ZHBtn
             variant={purchaseView.action === "continueDraft" ? "primary" : "secondary"}
@@ -122,13 +116,6 @@ export function PurchaseReceptionActionsCell({
     if (row.creditNoteExists && row.creditNoteId) {
       return (
         <div className="pur-actions-cell">
-          <Badge
-            variant="success"
-            label={t(
-              "purchases.creditNote.actions.ncAlreadyProcessed",
-              "NC ya procesada",
-            )}
-          />
           <ZHBtn
             variant="secondary"
             size="xs"
@@ -141,7 +128,7 @@ export function PurchaseReceptionActionsCell({
               )
             }
           >
-            {t("purchases.creditNote.actions.viewExistingNc", "Ver NC existente")}
+            {t("purchases.creditNote.actions.viewExistingNc", "Ver NC")}
           </ZHBtn>
           {consultXmlButton}
           {viewXmlButton}
@@ -152,18 +139,12 @@ export function PurchaseReceptionActionsCell({
     if (row.affectedPurchaseExists && row.affectedPurchaseId) {
       // PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 — la única NC previa de esta
       // recepción está Cancelled (nunca bloquea, ver creditNoteExists arriba): se ofrece
-      // "Procesar nuevamente" (idéntico flujo de creación, crea una NC/devolución nueva y
+      // "Reprocesar NC" (idéntico flujo de creación, crea una NC/devolución nueva y
       // limpia — nunca reutiliza la anulada) junto con "Ver NC anulada" para conservar el
       // historial, en vez del botón "Procesar NC" de primera vez.
       const isReprocessing = Boolean(row.cancelledCreditNoteId);
       return (
         <div className="pur-actions-cell">
-          {isReprocessing && (
-            <Badge
-              variant="warning"
-              label={t("purchases.creditNote.actions.ncCancelled", "NC anulada")}
-            />
-          )}
           <ZHBtn
             variant="primary"
             size="xs"
@@ -173,7 +154,7 @@ export function PurchaseReceptionActionsCell({
             onClick={() => onProcessCreditNote(row)}
           >
             {isReprocessing
-              ? t("purchases.creditNote.actions.reprocessNc", "Procesar nuevamente")
+              ? t("purchases.creditNote.actions.reprocessNc", "Reprocesar NC")
               : t("purchases.creditNote.actions.processNc", "Procesar NC")}
           </ZHBtn>
           {isReprocessing && (
@@ -247,9 +228,9 @@ export function PurchaseReceptionActionsCell({
               AccessKey está Cancelled (historial, purchaseExists=false), se ofrece "Procesar
               nuevamente" + "Ver compra anulada" en vez de "Crear compra" de primera vez, mismo
               patrón ya cerrado para NC. */}
-          {/* FASE 5 PURCHASE-UX — sin compra activa: "Compra anulada" (Procesar nuevamente) o
-              "Borrador descartado" (Crear compra), cada uno con su historial. */}
-          {purchaseView.history && purchaseBadge}
+          {/* FASE 5 PURCHASE-UX — sin compra activa: compra anulada (Reprocesar compra) o
+              borrador descartado (Crear compra), cada uno con su historial. El badge de estado
+              vive en "Registro ERP". */}
           <ZHBtn
             variant="primary"
             size="xs"
@@ -293,21 +274,22 @@ export function PurchaseReceptionActionsCell({
           )}
           {row.sourceDocType === "INVOICE" && (
             <>
-              {row.cancelledExpenseId && (
-                <Badge
-                  variant="warning"
-                  label={t("purchases.reception.actions.expenseCancelled", "Gasto anulado")}
-                />
-              )}
               <ZHBtn variant="secondary" size="xs" type="button"
                 disabled={!row.supplierExists || row.supplierIsActive === false}
-                title={!row.supplierExists ? "Cree primero el proveedor" : undefined}
+                title={
+                  row.supplierExists
+                    ? undefined
+                    : t(
+                        "purchases.reception.actions.createPurchaseDisabledSupplierMissing",
+                        "Cree primero el proveedor",
+                      )
+                }
                 onClick={() => window.open(
                   `/expenses/documents/new?fromReceptionId=${row.documentId}`,
                   "_blank", "noopener,noreferrer",
                 )}>
                 {row.cancelledExpenseId
-                  ? t("purchases.reception.actions.reprocessExpense", "Procesar nuevamente")
+                  ? t("purchases.reception.actions.reprocessExpense", "Reprocesar gasto")
                   : t("purchases.reception.actions.createExpense", "Crear gasto")}
               </ZHBtn>
               {row.cancelledExpenseId && (
@@ -345,12 +327,6 @@ export function PurchaseReceptionActionsCell({
             </p>
           )}
         </>
-      )}
-      {row.documentStatus === "PROCESSED" && (
-        <Badge
-          variant="success"
-          label={t("purchases.reception.actions.purchaseCreated", "Compra creada")}
-        />
       )}
     </div>
   );

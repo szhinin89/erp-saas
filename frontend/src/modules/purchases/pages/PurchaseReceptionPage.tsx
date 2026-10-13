@@ -10,6 +10,8 @@ import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZhSearchSelect, ZhSelect } from "../../../components/zh/inputs";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHSectionHelp } from "../../../components/zh/help";
+import { HELP_KEYS } from "../../../help";
 import { ZhBatchProgress } from "../../../components/zh/progress/ZhBatchProgress";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
 import {
@@ -29,7 +31,7 @@ import { PurchaseReceptionActionsCell } from "../components/PurchaseReceptionAct
 import { PurchaseReceptionDocumentCell } from "../components/PurchaseReceptionDocumentCell";
 import { PurchaseReceptionXmlViewModal } from "../components/PurchaseReceptionXmlViewModal";
 import "../styles/purchase-reception.css";
-import { receptionPurchaseView } from "../utils/receptionPurchaseState";
+import { receptionErpRecordView } from "../utils/receptionErpRecord";
 import { PurchaseReceptionBatchActions } from "../components/PurchaseReceptionBatchActions";
 
 // Getters estables (module-level) para ZhSearchSelect: el índice de búsqueda local se memoiza por
@@ -83,7 +85,7 @@ export function PurchaseReceptionPage() {
               {row.sourceDocType !== "CREDIT_NOTE" && (
                 // Una NC afecta una compra existente — si el proveedor no está registrado, la
                 // acción correcta es ubicar/ingresar primero la factura afectada (columna
-                // Documento), nunca crear el proveedor desde la fila de la NC.
+                // Comprobante), nunca crear el proveedor desde la fila de la NC.
                 <ZHBtn
                   variant="secondary"
                   size="xs"
@@ -109,7 +111,7 @@ export function PurchaseReceptionPage() {
     },
     {
       key: "document",
-      header: t("purchases.reception.table.document", "Documento"),
+      header: t("purchases.reception.table.document", "Comprobante"),
       render: (row) => <PurchaseReceptionDocumentCell row={row} />,
     },
     {
@@ -163,36 +165,19 @@ export function PurchaseReceptionPage() {
       },
     },
     {
-      key: "purchaseExists",
-      header: t("purchases.reception.table.purchaseErp", "Documento"),
+      key: "erpRecord",
+      header: t("purchases.reception.table.erpRecord", "Registro ERP"),
       align: "center",
-      render: (row) =>
-        row.sourceDocType === "CREDIT_NOTE" ? (
-          <Badge
-            variant={row.affectedPurchaseExists ? "success" : "warning"}
-            label={
-              row.affectedPurchaseExists
-                ? t(
-                    "purchases.reception.documentErp.affectedFound",
-                    "Factura afectada encontrada",
-                  )
-                : t(
-                    "purchases.reception.documentErp.affectedNotEntered",
-                    "Factura afectada no ingresada",
-                  )
-            }
-          />
-        ) : (
-          // FASE 5 PURCHASE-UX — estado REAL de la compra (no el booleano "ya ingresada").
-          (() => {
-            const view = receptionPurchaseView(row.purchaseState);
-            return <Badge variant={view.badge.variant} label={t(view.badge.key, view.badge.fallback)} />;
-          })()
-        ),
+      // FASE 5 RECEPTION-UX — registro ERP real del comprobante (Compra/Gasto/NC). La referencia a
+      // la factura afectada de una NC vive solo en la columna "Comprobante".
+      render: (row) => {
+        const { badge } = receptionErpRecordView(row);
+        return <Badge variant={badge.variant} label={t(badge.key, badge.fallback)} />;
+      },
     },
     {
       key: "process",
-      header: t("purchases.reception.table.process", "Proceso"),
+      header: t("purchases.reception.table.process", "Recepción y XML"),
       align: "center",
       render: (row) => (
         <PurchaseReceptionProcessCell
@@ -220,11 +205,12 @@ export function PurchaseReceptionPage() {
 
   return (
     <ErpPageTemplate
-      title={t("purchases.reception.title", "Recepción electrónica (TXT)")}
+      title={t("purchases.reception.title", "Documentos electrónicos de proveedores")}
       subtitle={t(
         "purchases.reception.subtitle",
-        "Importe el TXT de comprobantes recibidos del SRI. Cada factura queda guardada como documento de recepción y se compara contra los proveedores y compras ya registrados en el ERP. La vinculación de productos con el catálogo de Items se hace desde la pantalla de Compras al crear o abrir la compra.",
+        "Importe y gestione los comprobantes recibidos del SRI.",
       )}
+      action={<ZHSectionHelp helpKey={HELP_KEYS.PURCHASES_RECEPTION_OVERVIEW} />}
     >
       <div className="pg-section pur-reception-top">
         <div className="pur-reception-upload">
@@ -244,10 +230,16 @@ export function PurchaseReceptionPage() {
                   }
                 : null
             }
-            selectLabel="Seleccione el archivo TXT de recepción"
-            dropLabel="o arrástrelo aquí"
-            uploadingLabel="Analizando archivo..."
-            noFileLabel="Aún no se ha importado ningún archivo."
+            selectLabel={t(
+              "purchases.reception.upload.select",
+              "Seleccione el TXT de comprobantes recibidos",
+            )}
+            dropLabel={t("purchases.reception.upload.drop", "o arrástrelo aquí")}
+            uploadingLabel={t("purchases.reception.upload.uploading", "Analizando archivo...")}
+            noFileLabel={t(
+              "purchases.reception.upload.noFile",
+              "Aún no se ha importado ningún archivo.",
+            )}
           />
         </div>
 
@@ -258,17 +250,17 @@ export function PurchaseReceptionPage() {
               icon="check_circle"
               tone="success"
               label={t(
-                "purchases.reception.summary.readyPurchases.title",
-                "Compras listas",
+                "purchases.reception.summary.registered.title",
+                "Registrados en ERP",
               )}
-              value={String(ctx.summary.imported)}
+              value={String(ctx.summary.registered)}
               valueTone="success"
               sub={
                 <p className="subtle">
-                  {/* FASE 5 PURCHASE-UX — desglose por estado real: borrador ≠ confirmada. */}
-                  {t("purchases.reception.summary.readyPurchases.breakdown", {
-                    drafts: ctx.summary.purchaseDrafts,
-                    confirmed: ctx.summary.purchaseConfirmed,
+                  {t("purchases.reception.summary.registered.breakdown", {
+                    purchases: ctx.summary.purchases,
+                    expenses: ctx.summary.expenses,
+                    creditNotes: ctx.summary.creditNotes,
                   })}
                 </p>
               }
@@ -278,15 +270,15 @@ export function PurchaseReceptionPage() {
               icon="hourglass_empty"
               tone="neutral"
               label={t(
-                "purchases.reception.summary.toReview.title",
-                "Por revisar",
+                "purchases.reception.summary.toProcess.title",
+                "Por procesar",
               )}
-              value={String(ctx.summary.pending)}
+              value={String(ctx.summary.toProcess)}
               sub={
                 <p className="subtle">
                   {t(
-                    "purchases.reception.summary.toReview.description",
-                    "Falta registrar o ingresar compras",
+                    "purchases.reception.summary.toProcess.description",
+                    "Defina cómo procesar cada comprobante",
                   )}
                 </p>
               }
@@ -296,16 +288,15 @@ export function PurchaseReceptionPage() {
               icon="person_add"
               tone="warning"
               label={t(
-                "purchases.reception.summary.suppliersToCreate.title",
-                "Proveedores por crear",
+                "purchases.reception.summary.pendingSupplier.title",
+                "Pendientes de proveedor",
               )}
-              value={String(ctx.summary.newSupplier)}
+              value={String(ctx.summary.pendingSupplier)}
               sub={
                 <p className="subtle">
-                  {t(
-                    "purchases.reception.summary.suppliersToCreate.description",
-                    "Debe crearlos para ingresar las compras",
-                  )}
+                  {t("purchases.reception.summary.pendingSupplier.description", {
+                    count: ctx.summary.pendingSupplier,
+                  })}
                 </p>
               }
             />
@@ -363,7 +354,12 @@ export function PurchaseReceptionPage() {
 
       <div className="pg-section">
         {ctx.result === null && !ctx.uploading ? (
-          <EmptyState message="Importe un archivo TXT para ver los comprobantes recibidos." />
+          <EmptyState
+            message={t(
+              "purchases.reception.emptyBeforeImport",
+              "Importe un archivo TXT para ver los comprobantes recibidos.",
+            )}
+          />
         ) : (
           <>
             {/* ZH-PURCHASES-RECEPTION-FILTER-SORT-01 / ZH-SUPPLIER-SEARCH-REUSABLE-01 — filtro
@@ -447,7 +443,10 @@ export function PurchaseReceptionPage() {
             loading={ctx.uploading}
             showRowNumber
             rowNumberOffset={(ctx.page - 1) * ctx.pageSize}
-            emptyMessage="El archivo no contiene facturas para comparar."
+            emptyMessage={t(
+              "purchases.reception.emptyTable",
+              "No hay comprobantes para mostrar.",
+            )}
             page={ctx.page}
             pageSize={ctx.pageSize}
             total={ctx.total}
