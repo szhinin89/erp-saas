@@ -2,6 +2,7 @@ import { Badge } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { useI18n } from "../../../i18n/i18n";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
+import { receptionPurchaseView } from "../utils/receptionPurchaseState";
 
 /** Recepción conserva el XML fiscal y abre el flujo operativo propio de cada tipo. */
 export function PurchaseReceptionActionsCell({
@@ -20,6 +21,16 @@ export function PurchaseReceptionActionsCell({
   resolvingCreditNoteId: string | null;
 }) {
   const { t } = useI18n();
+  // FASE 5 PURCHASE-UX — estado REAL de la compra relacionada (SSOT): badge, textos y acciones.
+  const purchaseView = receptionPurchaseView(row.purchaseState);
+  const purchaseBadge = (
+    <Badge
+      variant={purchaseView.badge.variant}
+      label={t(purchaseView.badge.key, purchaseView.badge.fallback)}
+    />
+  );
+  const openPurchase = (purchaseId: string) =>
+    window.open(`/purchases?invoiceId=${purchaseId}`, "_blank", "noopener,noreferrer");
 
   // El XML solo existe una vez el documento fue verificado/procesado (AttachSriAuthorization) —
   // en Importado todavía no hay nada que mostrar.
@@ -51,33 +62,20 @@ export function PurchaseReceptionActionsCell({
     </div>;
   }
 
-  if (row.purchaseExists) {
+  // Compra ACTIVA: borrador → "Continuar borrador"; confirmada → "Ver compra". "Crear compra" y
+  // "Crear gasto" quedan bloqueados (no se renderizan) mientras exista.
+  if (purchaseView.hasActivePurchase) {
     return (
       <div className="pur-actions-cell">
-        <Badge
-          variant="success"
-          label={t(
-            "purchases.reception.actions.purchaseAlreadyEntered",
-            "Compra ya ingresada al sistema",
-          )}
-        />
+        {purchaseBadge}
         {row.purchaseId && (
           <ZHBtn
-            variant="secondary"
+            variant={purchaseView.action === "continueDraft" ? "primary" : "secondary"}
             size="xs"
             type="button"
-            onClick={() =>
-              window.open(
-                `/purchases?invoiceId=${row.purchaseId}`,
-                "_blank",
-                "noopener,noreferrer",
-              )
-            }
+            onClick={() => openPurchase(row.purchaseId as string)}
           >
-            {t(
-              "purchases.duplicate.viewExisting",
-              "Ver compra existente",
-            )}
+            {t(purchaseView.actionLabel.key, purchaseView.actionLabel.fallback)}
           </ZHBtn>
         )}
         {viewXmlButton}
@@ -249,12 +247,9 @@ export function PurchaseReceptionActionsCell({
               AccessKey está Cancelled (historial, purchaseExists=false), se ofrece "Procesar
               nuevamente" + "Ver compra anulada" en vez de "Crear compra" de primera vez, mismo
               patrón ya cerrado para NC. */}
-          {row.cancelledPurchaseId && (
-            <Badge
-              variant="warning"
-              label={t("purchases.reception.actions.purchaseCancelled", "Compra anulada")}
-            />
-          )}
+          {/* FASE 5 PURCHASE-UX — sin compra activa: "Compra anulada" (Procesar nuevamente) o
+              "Borrador descartado" (Crear compra), cada uno con su historial. */}
+          {purchaseView.history && purchaseBadge}
           <ZHBtn
             variant="primary"
             size="xs"
@@ -284,24 +279,16 @@ export function PurchaseReceptionActionsCell({
               )
             }
           >
-            {row.cancelledPurchaseId
-              ? t("purchases.reception.actions.reprocessPurchase", "Procesar nuevamente")
-              : t("purchases.reception.actions.createPurchase", "Crear compra")}
+            {t(purchaseView.actionLabel.key, purchaseView.actionLabel.fallback)}
           </ZHBtn>
-          {row.cancelledPurchaseId && (
+          {purchaseView.history && row.cancelledPurchaseId && (
             <ZHBtn
               variant="secondary"
               size="xs"
               type="button"
-              onClick={() =>
-                window.open(
-                  `/purchases?invoiceId=${row.cancelledPurchaseId}`,
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
+              onClick={() => openPurchase(row.cancelledPurchaseId as string)}
             >
-              {t("purchases.reception.actions.viewCancelledPurchase", "Ver compra anulada")}
+              {t(purchaseView.history.key, purchaseView.history.fallback)}
             </ZHBtn>
           )}
           {row.sourceDocType === "INVOICE" && (

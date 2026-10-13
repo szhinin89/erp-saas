@@ -54,6 +54,13 @@ export type PurchaseReceptionSourceDocType =
   | "RETENTION"
   | "UNKNOWN";
 
+/**
+ * FASE 5 PURCHASE-UX — estado REAL de la compra relacionada con la recepción (SSOT de Recepción):
+ * NONE sin compra; DRAFT/CONFIRMED compra activa; CANCELLED anulada (fue confirmada); DISCARDED
+ * borrador descartado (nunca confirmado).
+ */
+export type ReceptionPurchaseState = "NONE" | "DRAFT" | "CONFIRMED" | "CANCELLED" | "DISCARDED";
+
 export interface PurchaseReceptionItem {
   supplierRuc: string;
   supplierName: string;
@@ -75,6 +82,8 @@ export interface PurchaseReceptionItem {
   purchaseExists: boolean;
   expenseExists?: boolean;
   purchaseId: string | null;
+  /** FASE 5 PURCHASE-UX — estado real de la compra relacionada (badge/textos/acciones). */
+  purchaseState: ReceptionPurchaseState;
   /** Solo notas de crédito: si `modifiedDocumentNumber` ya existe como compra del mismo proveedor. False en Factura. */
   affectedPurchaseExists: boolean;
   /** Id de la compra afectada, para abrirla en `/purchases?invoiceId=<id>` — null si no existe o no aplica. */
@@ -137,6 +146,9 @@ export interface BatchDownloadXmlItemResult {
   creditNoteExists: boolean;
   creditNoteId: string | null;
   cancelledCreditNoteId: string | null;
+  /** FASE 5 PURCHASE-UX — estado real de la compra e historial de la última Cancelled. */
+  purchaseState: ReceptionPurchaseState | null;
+  cancelledPurchaseId: string | null;
 }
 
 export interface BatchDownloadXmlResult {
@@ -168,6 +180,9 @@ export interface DownloadXmlResult {
   purchaseExists: boolean;
   expenseExists?: boolean;
   purchaseId: string | null;
+  /** FASE 5 PURCHASE-UX — estado real de la compra e historial de la última Cancelled. */
+  purchaseState: ReceptionPurchaseState;
+  cancelledPurchaseId: string | null;
   supplierIsActive: boolean | null;
   /** infoTributaria/nombreComercial del emisor — null si el XML no lo declara. */
   supplierTradeName: string | null;
@@ -358,6 +373,14 @@ export const purchaseReceptionService = {
    * PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — descarga en lote solo documentos sin XML.
    * `onlyMissingXml` siempre debe ser `true` (el backend rechaza `false`).
    */
+  /**
+   * FASE 5 PURCHASE-UX — "Actualizar estados": recalcula las filas ya importadas (solo lectura; no
+   * reimporta el TXT ni descarga XML). Devuelve el mismo contrato que la importación.
+   */
+  refreshStatus(documentIds: string[]): Promise<PurchaseReceptionItem[]> {
+    return apiPost<PurchaseReceptionItem[]>(`${BASE}/documents/refresh-status`, { documentIds });
+  },
+
   downloadXmlPending(documentIds: string[]): Promise<BatchDownloadXmlResult> {
     return apiPost<BatchDownloadXmlResult>(`${BASE}/documents/download-xml-pending`, {
       documentIds,

@@ -11,6 +11,7 @@ using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
+using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Tenants.Entities;
@@ -403,9 +404,12 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         var active = await repo.GetByAccessKeyAsync(ctx.TenantId, accessKey);
         active.Should().NotBeNull();
         active!.Id.Should().Be(second.Id);
-        (await repo.GetLatestCancelledIdByAccessKeyAsync(ctx.TenantId, accessKey))
+        (await repo.GetLatestCancelledByAccessKeyAsync(ctx.TenantId, accessKey))
             .Should()
-            .Be(firstId, "el historial se conserva para \"Ver compra anulada\"");
+            .Be(
+                new CancelledPurchaseRef(firstId, IsDiscardedDraft: false),
+                "el historial se conserva para \"Ver compra anulada\""
+            );
     }
 
     [Fact]

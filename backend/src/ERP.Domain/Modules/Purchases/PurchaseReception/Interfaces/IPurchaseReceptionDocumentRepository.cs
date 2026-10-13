@@ -46,5 +46,16 @@ public interface IPurchaseReceptionDocumentRepository
         string accessKey,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — recepciones por id, mismo alcance tenant + empresa que el resto del
+    /// repositorio (los ids ajenos simplemente no vuelven). Solo lectura: sin tracking, sin líneas ni
+    /// XML — para refrescar los estados de la bandeja de Recepción.
+    /// </summary>
+    Task<IReadOnlyList<PurchaseReceptionDocument>> GetByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    );
     Task SaveChangesAsync(CancellationToken ct = default);
 }

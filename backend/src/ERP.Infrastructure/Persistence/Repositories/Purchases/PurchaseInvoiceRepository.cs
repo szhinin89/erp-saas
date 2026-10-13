@@ -48,11 +48,12 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
             );
 
     /// <summary>
-    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra Cancelled más reciente con
-    /// este AccessKey, si existe, para que la UI de Recepción ofrezca "Ver compra anulada"
-    /// (historial) sin bloquear "Crear compra" de nuevo.
+    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — compra Cancelled más reciente con este
+    /// AccessKey, si existe, para que la UI de Recepción ofrezca el historial sin bloquear "Crear
+    /// compra" de nuevo. FASE 5 PURCHASE-UX: <c>IsDiscardedDraft</c> = nunca confirmada
+    /// (<c>ConfirmedGrandTotal</c> null, mismo criterio que <c>PurchaseInvoice.IsDiscardedDraft</c>).
     /// </summary>
-    public Task<Guid?> GetLatestCancelledIdByAccessKeyAsync(
+    public Task<CancelledPurchaseRef?> GetLatestCancelledByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
@@ -60,7 +61,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         Scoped(tenantId)
             .Where(x => x.AccessKey == accessKey && x.Status == PurchaseStatus.Cancelled)
             .OrderByDescending(x => x.CancelledAt)
-            .Select(x => (Guid?)x.Id)
+            .Select(x => new CancelledPurchaseRef(x.Id, x.ConfirmedGrandTotal == null))
             .FirstOrDefaultAsync(ct);
 
     // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — usado por

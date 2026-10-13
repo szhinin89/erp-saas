@@ -49,7 +49,10 @@ public sealed record PurchaseReceptionItemDto(
     // con este AccessKey, solo presente cuando NO hay una activa (PurchaseExists/ExpenseExists en
     // false) — para "Ver compra/gasto anulado" (historial) en la UI de Recepción.
     Guid? CancelledPurchaseId = null,
-    Guid? CancelledExpenseId = null
+    Guid? CancelledExpenseId = null,
+    // FASE 5 PURCHASE-UX — estado real de la compra relacionada: NONE | DRAFT | CONFIRMED |
+    // CANCELLED | DISCARDED (SSOT para badge, textos y acciones de Recepción).
+    string PurchaseState = "NONE"
 );
 
 public sealed record PurchaseReceptionImportResultDto(

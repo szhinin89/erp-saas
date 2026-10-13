@@ -18,11 +18,12 @@ public interface IPurchaseInvoiceRepository
     );
 
     /// <summary>
-    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra Cancelled más reciente con
-    /// este AccessKey, si existe (nunca la activa) — para "Ver compra anulada" (historial) en la
-    /// UI de Recepción.
+    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — compra Cancelled más reciente con este
+    /// AccessKey, si existe (nunca la activa) — historial para Recepción. FASE 5 PURCHASE-UX:
+    /// incluye si es un borrador descartado (nunca confirmado) para distinguir "Borrador descartado"
+    /// de "Compra anulada"; proyección sin columna nueva.
     /// </summary>
-    Task<Guid?> GetLatestCancelledIdByAccessKeyAsync(
+    Task<CancelledPurchaseRef?> GetLatestCancelledByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
@@ -127,3 +128,6 @@ public interface IPurchaseInvoiceRepository
     void TrackCommunication(PurchaseCommunication communication);
     Task SaveChangesAsync(CancellationToken ct = default);
 }
+
+/// <summary>FASE 5 PURCHASE-UX — referencia a la última compra Cancelled de una clave de acceso.</summary>
+public sealed record CancelledPurchaseRef(Guid Id, bool IsDiscardedDraft);

@@ -6,6 +6,7 @@ import {
   type PurchaseReceptionXmlView,
 } from "../api/purchaseReceptionService";
 import { message } from "../../../lib/messages";
+import { chunkIds, mergeRefreshedReceptionItems } from "../utils/receptionRefresh";
 import { useI18n } from "../../../i18n/i18n";
 import type { ZhBatchProgressStatus } from "../../../components/zh/progress/ZhBatchProgress";
 
@@ -132,6 +133,9 @@ export function usePurchaseReceptionPage() {
                       processingNotes: download.processingNotes,
                       purchaseExists: download.purchaseExists,
                       purchaseId: download.purchaseId,
+                      // FASE 5 PURCHASE-UX — la descarga refresca el estado real de la compra.
+                      purchaseState: download.purchaseState ?? item.purchaseState,
+                      cancelledPurchaseId: download.cancelledPurchaseId ?? null,
                       supplierIsActive: download.supplierIsActive,
                       expenseExists: download.expenseExists,
                       supplierTradeName:
@@ -183,10 +187,45 @@ export function usePurchaseReceptionPage() {
     string | null
   >(null);
 
+  // FASE 5 PURCHASE-UX — "Actualizar estados": refresca en el lugar las filas ya importadas.
+  const [refreshingStatuses, setRefreshingStatuses] = useState(false);
+
   // PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 — descarga en lote, un único request batch.
   const [batchXmlRunning, setBatchXmlRunning] = useState(false);
   const [batchXmlProgress, setBatchXmlProgress] =
     useState<BatchXmlProgressState | null>(null);
+
+  /**
+   * FASE 5 PURCHASE-UX — recalcula los estados de TODAS las filas importadas (no solo la página
+   * visible), en lotes de 200, sin reimportar el TXT ni descargar XML. La fusión es por documentId:
+   * filtros, orden, página y estados locales (XML por fila, nombre comercial) no cambian. Si falla,
+   * las filas quedan exactamente como estaban.
+   */
+  const handleRefreshStatuses = async () => {
+    const ids = (result?.items ?? []).map((item) => item.documentId);
+    if (ids.length === 0 || refreshingStatuses || batchXmlRunning || uploading) return;
+    setRefreshingStatuses(true);
+    try {
+      const refreshed: PurchaseReceptionItem[] = [];
+      for (const chunk of chunkIds(ids))
+        refreshed.push(...(await purchaseReceptionService.refreshStatus(chunk)));
+      setResult((prev) =>
+        prev ? { ...prev, items: mergeRefreshedReceptionItems(prev.items, refreshed) } : prev,
+      );
+      message.success(
+        t("purchases.reception.messages.statusesRefreshed", { count: refreshed.length }),
+      );
+    } catch {
+      message.error(
+        t(
+          "purchases.reception.errors.refreshStatusesFailed",
+          "No se pudieron actualizar los estados. Intente nuevamente.",
+        ),
+      );
+    } finally {
+      setRefreshingStatuses(false);
+    }
+  };
 
   const handleDownloadPendingXml = async () => {
     const pendingIds = (result?.items ?? [])
@@ -242,6 +281,9 @@ export function usePurchaseReceptionPage() {
               processingStatus: batchItem.processingStatus ?? item.processingStatus,
               purchaseExists: batchItem.purchaseExists,
               purchaseId: batchItem.purchaseId,
+              // FASE 5 PURCHASE-UX — el lote refresca el estado real de la compra.
+              purchaseState: batchItem.purchaseState ?? item.purchaseState,
+              cancelledPurchaseId: batchItem.cancelledPurchaseId ?? null,
               expenseExists: batchItem.expenseExists,
               creditNoteExists: batchItem.creditNoteExists,
               creditNoteId: batchItem.creditNoteId,
@@ -396,6 +438,9 @@ export function usePurchaseReceptionPage() {
   const summary = useMemo(
     () => ({
       imported: items.filter((i) => i.status === "IMPORTED").length,
+      // FASE 5 PURCHASE-UX — desglose de las compras activas por estado real.
+      purchaseDrafts: items.filter((i) => i.purchaseState === "DRAFT").length,
+      purchaseConfirmed: items.filter((i) => i.purchaseState === "CONFIRMED").length,
       pending: items.filter((i) => i.status === "PENDING").length,
       newSupplier: items.filter((i) => i.status === "NEW_SUPPLIER").length,
       skipped: result?.skippedUnsupportedCount ?? 0,
@@ -439,6 +484,8 @@ export function usePurchaseReceptionPage() {
     processCreditNote,
     batchXmlRunning,
     batchXmlProgress,
+    refreshingStatuses,
+    handleRefreshStatuses,
     handleDownloadPendingXml: () => void handleDownloadPendingXml(),
     // El TXT SRI no expone un endpoint de "reverificar proveedor" — tras crearlo, marcamos
     // localmente las filas con ese RUC como existentes (mismo criterio que el backend: proveedor

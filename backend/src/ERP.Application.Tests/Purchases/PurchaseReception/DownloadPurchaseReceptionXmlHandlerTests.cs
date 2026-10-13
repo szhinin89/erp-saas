@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
@@ -443,5 +444,67 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
                 ),
             Times.Never
         );
+    }
+
+    // ── FASE 5 PURCHASE-UX — la descarga refresca el estado real de la compra ───────────────
+
+    private static async Task<DownloadPurchaseReceptionXmlResultDto> DownloadWithPurchaseRepo(
+        Action<Mock<IPurchaseInvoiceRepository>, PurchaseReceptionDocument> arrange
+    )
+    {
+        var document = SampleDocument();
+        var (handler, repo, purchaseRepo, _, provider, _) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        provider
+            .Setup(p => p.GetAuthorizedXmlAsync(TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new SriReceptionXmlQueryResult(true, document.AccessKey, DateTime.UtcNow, "<factura>...</factura>", null)
+            );
+        arrange(purchaseRepo, document);
+
+        var result = await handler.Handle(new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        return result.Value!;
+    }
+
+    [Fact]
+    public async Task Handle_returns_DRAFT_when_the_related_purchase_is_an_active_draft()
+    {
+        var draftId = Guid.Empty;
+        var dto = await DownloadWithPurchaseRepo((purchaseRepo, document) =>
+        {
+            var draft = PurchaseInvoice.CreateDraft(
+                TenantId, CompanyId, BranchId, Guid.NewGuid(), "QUALA ECUADOR S A", "1791352688001",
+                "01", "015-027-000161740", new DateOnly(2026, 7, 1), UserId, Guid.NewGuid(), "Contado",
+                1, 30, accessKey: document.AccessKey
+            );
+            draftId = draft.Id;
+            purchaseRepo
+                .Setup(r => r.GetByAccessKeyAsync(TenantId, document.AccessKey, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(draft);
+        });
+
+        dto.PurchaseState.Should().Be("DRAFT");
+        dto.PurchaseExists.Should().BeTrue();
+        dto.PurchaseId.Should().Be(draftId);
+        dto.CancelledPurchaseId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_returns_DISCARDED_and_history_id_when_the_last_purchase_was_discarded()
+    {
+        var discardedId = Guid.NewGuid();
+        var dto = await DownloadWithPurchaseRepo((purchaseRepo, document) =>
+            purchaseRepo
+                .Setup(r =>
+                    r.GetLatestCancelledByAccessKeyAsync(TenantId, document.AccessKey, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(new CancelledPurchaseRef(discardedId, IsDiscardedDraft: true))
+        );
+
+        dto.PurchaseState.Should().Be("DISCARDED");
+        dto.PurchaseExists.Should().BeFalse();
+        dto.CancelledPurchaseId.Should().Be(discardedId);
     }
 }

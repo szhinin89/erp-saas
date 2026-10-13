@@ -3,6 +3,7 @@ using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using FluentValidation;
 using MediatR;
 
@@ -12,8 +13,12 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 /// FASE 5 PURCHASE-UX — descarta un borrador de compra (soft: <c>Draft → Cancelled</c>, ver
 /// <see cref="PurchaseInvoice.DiscardDraft"/>). A diferencia de <see cref="CancelPurchaseCommand"/>
 /// (anula una compra CONFIRMADA y revierte inventario/CxP/contabilidad/retención), aquí no hay nada
-/// que revertir: el handler solo depende del repositorio de compras. La recepción/XML no se toca —
-/// al dejar de existir una compra activa con su clave de acceso vuelve a poder procesarse.
+/// que revertir: el handler solo depende de los repositorios de compras y de recepción.
+/// Si el borrador nació de una recepción, esa recepción quedó <c>Processed</c> vinculada a él al
+/// guardarlo (<c>CreatePurchaseDraftHandler</c> → <c>MarkProcessed</c>): se libera con
+/// <c>UnmarkProcessed</c> (vuelve a <c>Verified</c>, <c>PurchaseId</c> null), mismo paso que
+/// <c>CancelPurchaseHandler</c> 5b, para poder crear otra compra desde ella. El XML y la evidencia
+/// de la recepción no se tocan.
 /// </summary>
 public sealed record DiscardPurchaseDraftCommand(Guid PurchaseInvoiceId, string? Reason = null)
     : IRequest<Result<PurchaseInvoiceDto>>,
@@ -34,6 +39,7 @@ public sealed class DiscardPurchaseDraftValidator : AbstractValidator<DiscardPur
 
 public sealed class DiscardPurchaseDraftHandler(
     IPurchaseInvoiceRepository repo,
+    IPurchaseReceptionDocumentRepository receptions,
     ICurrentTenant tenant,
     ICurrentBranch branch,
     ICurrentUser user
@@ -56,6 +62,17 @@ public sealed class DiscardPurchaseDraftHandler(
             );
 
         inv.DiscardDraft(user.UserId, cmd.Reason);
+
+        // Liberar la recepción de origen — se busca por la misma AccessKey que la vinculó y solo se
+        // desvincula si apunta a ESTE borrador (nunca una recepción vinculada a otra compra).
+        if (!string.IsNullOrWhiteSpace(inv.AccessKey))
+        {
+            var reception = await receptions.GetByAccessKeyAsync(tenant.TenantId, inv.AccessKey, ct);
+            if (reception is not null && reception.PurchaseId == inv.Id)
+                reception.UnmarkProcessed(user.UserId);
+        }
+
+        // Mismo DbContext: compra y recepción se persisten en un único SaveChanges.
         await repo.SaveChangesAsync(ct);
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
     }

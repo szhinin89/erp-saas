@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
@@ -124,37 +125,15 @@ public sealed class ImportPurchaseReceptionHandler
                 }
             }
 
-            // PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — solo aplica a notas de crédito;
-            // GetIdByReceptionDocumentIdAsync ya excluye Cancelled (a lo sumo una NC ACTIVA por
-            // receptionDocumentId, ver PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01).
-            Guid? creditNoteId = null;
-            Guid? cancelledCreditNoteId = null;
-            if (item.Record.SourceDocType == PurchaseReceptionSourceDocType.CreditNote)
-            {
-                creditNoteId = await _creditNoteRepo.GetIdByReceptionDocumentIdAsync(
-                    _tenant.TenantId,
-                    document.Id,
-                    cancellationToken
-                );
-                // Historial ("Ver NC anulada") — solo tiene sentido consultarlo cuando no hay una
-                // activa bloqueando el reintento; con una activa, la UI ya muestra "NC ya procesada".
-                if (creditNoteId is null)
-                    cancelledCreditNoteId =
-                        await _creditNoteRepo.GetLatestCancelledIdByReceptionDocumentIdAsync(
-                            _tenant.TenantId,
-                            document.Id,
-                            cancellationToken
-                        );
-            }
-
+            // FASE 5 PURCHASE-UX — mismo armado de fila que el refresco de estados.
             itemDtos.Add(
-                PurchaseReceptionMapper.ToDto(
+                await PurchaseReceptionItemAssembler.BuildAsync(
+                    _creditNoteRepo,
+                    _tenant.TenantId,
                     item,
                     document,
                     authorizationDateUtc,
-                    creditNoteExists: creditNoteId is not null,
-                    creditNoteId: creditNoteId,
-                    cancelledCreditNoteId: cancelledCreditNoteId
+                    cancellationToken
                 )
             );
         }

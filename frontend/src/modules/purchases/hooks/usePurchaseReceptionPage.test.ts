@@ -26,6 +26,7 @@ vi.mock("../api/purchaseReceptionService", () => ({
     downloadXml: vi.fn(),
     downloadXmlPending: vi.fn(),
     getXmlView: vi.fn(),
+    refreshStatus: vi.fn(),
   },
 }));
 
@@ -41,6 +42,7 @@ vi.mock("../../../lib/messages", () => ({
 
 function buildItem(overrides: Partial<PurchaseReceptionItem> = {}): PurchaseReceptionItem {
   return {
+    purchaseState: "NONE",
     supplierRuc: "0999999999001",
     supplierName: "Proveedor Uno",
     sourceDocType: "INVOICE" as const,
@@ -257,6 +259,8 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           hasXml: true,
           purchaseExists: true,
           purchaseId: "purchase-1",
+          purchaseState: "CONFIRMED",
+          cancelledPurchaseId: null,
           expenseExists: false,
           expenseId: null,
           creditNoteExists: false,
@@ -274,6 +278,8 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
+          purchaseState: "NONE",
+          cancelledPurchaseId: null,
           creditNoteExists: false,
           creditNoteId: null,
           cancelledCreditNoteId: null,
@@ -302,11 +308,14 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
     expect(doc1?.processingStatus).toBe("PROCESSED");
     expect(doc1?.purchaseExists).toBe(true);
     expect(doc1?.purchaseId).toBe("purchase-1");
+    // FASE 5 PURCHASE-UX — el lote refresca también el estado real de la compra.
+    expect(doc1?.purchaseState).toBe("CONFIRMED");
 
     const doc3 = result.current.items.find((i) => i.documentId === "doc-3");
     expect(doc3?.documentStatus).toBe("VERIFIED");
     expect(doc3?.processingStatus).toBe("FAILED");
     expect(doc3?.purchaseExists).toBe(false);
+    expect(doc3?.purchaseState).toBe("NONE");
 
     expect(result.current.batchXmlProgress).toEqual({
       status: "success",
@@ -347,6 +356,8 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
+          purchaseState: "NONE",
+          cancelledPurchaseId: null,
           creditNoteExists: false,
           creditNoteId: null,
           cancelledCreditNoteId: null,
@@ -362,6 +373,8 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
+          purchaseState: "NONE",
+          cancelledPurchaseId: null,
           creditNoteExists: false,
           creditNoteId: null,
           cancelledCreditNoteId: null,
@@ -421,6 +434,8 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
+          purchaseState: "NONE",
+          cancelledPurchaseId: null,
           creditNoteExists: true,
           creditNoteId: "cn-99",
           cancelledCreditNoteId: null,
@@ -609,5 +624,125 @@ describe("usePurchaseReceptionPage — filtro por proveedor y orden por emisión
     });
     expect(result.current.selectedSupplierRucs).toEqual([]);
     expect(result.current.total).toBe(4);
+  });
+});
+
+describe("FASE 5 PURCHASE-UX — Actualizar estados (sin reimportar TXT)", () => {
+  /** 25 comprobantes de dos proveedores (para tener 2 páginas de 20 y un filtro aplicable). */
+  const imported = Array.from({ length: 25 }, (_, i) =>
+    buildItem({
+      documentId: `doc-${i}`,
+      supplierRuc: i % 2 === 0 ? "111" : "222",
+      supplierName: i % 2 === 0 ? "Alfa" : "Beta",
+      issueDate: `2026-08-${String((i % 28) + 1).padStart(2, "0")}`,
+      purchaseState: "NONE",
+      supplierTradeName: i === 0 ? "ALFA COMERCIAL" : null,
+    }),
+  );
+
+  async function importAll() {
+    vi.mocked(purchaseReceptionService.importTxt).mockResolvedValue({
+      items: imported,
+      totalParsed: imported.length,
+      parseErrorCount: 0,
+      skippedUnsupportedCount: 0,
+    });
+    const hook = renderReceptionPageHook();
+    await act(async () => {
+      await hook.result.current.handleFileSelected(buildFile());
+    });
+    return hook;
+  }
+
+  it("refresca TODAS las filas por documentId y conserva filtros, orden, página y estados locales", async () => {
+    const { result } = await importAll();
+    vi.mocked(purchaseReceptionService.downloadXml).mockRejectedValue(new Error("SRI caído"));
+    await act(async () => {
+      await result.current.handleDownloadXml("doc-2");
+    });
+    const xmlStateBefore = result.current.xmlRowState;
+    expect(xmlStateBefore["doc-2"]).toBe("error");
+    // Ambos proveedores seleccionados (filtro activo) → 25 filas = 2 páginas; se mira la página 2.
+    act(() => result.current.setSupplierFilter(["111", "222"]));
+    act(() => result.current.setDateSortOrder("asc"));
+    act(() => result.current.setPage(2));
+    expect(result.current.items).toHaveLength(5);
+    const visibleBefore = result.current.items.map((i) => i.documentId);
+
+    vi.mocked(purchaseReceptionService.refreshStatus).mockImplementation(async (ids) =>
+      ids.map((id) =>
+        id === "doc-0"
+          ? buildItem({ documentId: id, supplierRuc: "111", supplierName: "Alfa", issueDate: "2026-08-01",
+              purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1", supplierTradeName: null })
+          : id === "doc-4"
+            ? buildItem({ documentId: id, supplierRuc: "111", supplierName: "Alfa", issueDate: "2026-08-05",
+                purchaseState: "DISCARDED", cancelledPurchaseId: "old-4" })
+            : imported.find((i) => i.documentId === id)!,
+      ),
+    );
+
+    await act(async () => {
+      await result.current.handleRefreshStatuses();
+    });
+
+    // Un solo lote (25 ids < 200), con TODOS los importados — no solo la página/filtro visibles.
+    expect(purchaseReceptionService.refreshStatus).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(purchaseReceptionService.refreshStatus).mock.calls[0][0]).toHaveLength(25);
+    expect(purchaseReceptionService.importTxt).toHaveBeenCalledTimes(1); // no reimporta
+    expect(purchaseReceptionService.downloadXmlPending).not.toHaveBeenCalled(); // no descarga
+
+    const doc0 = result.current.result!.items.find((i) => i.documentId === "doc-0")!;
+    expect(doc0).toMatchObject({ purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1" });
+    expect(doc0.supplierTradeName).toBe("ALFA COMERCIAL");
+    expect(result.current.result!.items.find((i) => i.documentId === "doc-4")).toMatchObject({
+      purchaseState: "DISCARDED",
+      cancelledPurchaseId: "old-4",
+    });
+
+    expect(result.current.selectedSupplierRucs).toEqual(["111", "222"]);
+    expect(result.current.dateSortOrder).toBe("asc");
+    expect(result.current.page).toBe(2);
+    expect(result.current.items.map((i) => i.documentId)).toEqual(visibleBefore);
+    expect(result.current.xmlRowState).toBe(xmlStateBefore);
+    expect(result.current.refreshingStatuses).toBe(false);
+    expect(message.success).toHaveBeenCalledWith("Estados actualizados (25 comprobantes).");
+  });
+
+  it("envía lotes de 200 cuando hay muchos comprobantes", async () => {
+    const many = Array.from({ length: 450 }, (_, i) => buildItem({ documentId: `m-${i}` }));
+    vi.mocked(purchaseReceptionService.importTxt).mockResolvedValue({
+      items: many, totalParsed: many.length, parseErrorCount: 0, skippedUnsupportedCount: 0,
+    });
+    vi.mocked(purchaseReceptionService.refreshStatus).mockImplementation(async (ids) =>
+      ids.map((id) => many.find((i) => i.documentId === id)!),
+    );
+    const { result } = renderReceptionPageHook();
+    await act(async () => {
+      await result.current.handleFileSelected(buildFile());
+    });
+
+    await act(async () => {
+      await result.current.handleRefreshStatuses();
+    });
+
+    expect(vi.mocked(purchaseReceptionService.refreshStatus).mock.calls.map((c) => c[0].length)).toEqual([
+      200, 200, 50,
+    ]);
+  });
+
+  it("si falla no altera las filas y avisa", async () => {
+    const { result } = await importAll();
+    const itemsBefore = result.current.result!.items;
+    vi.mocked(purchaseReceptionService.refreshStatus).mockRejectedValue(new Error("network"));
+
+    await act(async () => {
+      await result.current.handleRefreshStatuses();
+    });
+
+    expect(result.current.result!.items).toBe(itemsBefore);
+    expect(result.current.refreshingStatuses).toBe(false);
+    expect(message.error).toHaveBeenCalledWith(
+      "No se pudieron actualizar los estados. Intente nuevamente.",
+    );
   });
 });

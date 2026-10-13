@@ -22,6 +22,15 @@ public sealed class PurchaseReceptionDocumentRepository : IPurchaseReceptionDocu
     public Task AddAsync(PurchaseReceptionDocument document, CancellationToken ct = default) =>
         _db.PurchaseReceptionDocuments.AddAsync(document, ct).AsTask();
 
+    public async Task<IReadOnlyList<PurchaseReceptionDocument>> GetByIdsAsync(
+        Guid tenantId,
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    ) =>
+        ids.Count == 0
+            ? []
+            : await Scoped(tenantId).AsNoTracking().Where(x => ids.Contains(x.Id)).ToListAsync(ct);
+
     public Task<PurchaseReceptionDocument?> GetByIdAsync(
         Guid tenantId,
         Guid id,

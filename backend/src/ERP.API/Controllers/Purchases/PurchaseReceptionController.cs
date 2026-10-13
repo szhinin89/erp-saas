@@ -16,6 +16,7 @@ using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.CreatePurchas
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurchaseReceptionXmlView;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPurchaseReception;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.RefreshPurchaseReceptionStatus;
 using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -75,6 +76,25 @@ public sealed class PurchaseReceptionController : ControllerBase
     /// documento (mismo caso de uso, sin lógica duplicada); no crea compras, gastos ni notas de
     /// crédito.
     /// </summary>
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — "Actualizar estados": recalcula las filas ya importadas (estado real de la
+    /// compra, documento/procesamiento, proveedor, gasto, NC) sin volver a importar el TXT ni
+    /// descargar XML. Solo lectura; ids fuera de la empresa activa se omiten.
+    /// </summary>
+    [HttpPost("documents/refresh-status")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<IReadOnlyList<PurchaseReceptionItemDto>>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> RefreshStatus(
+        [FromBody] RefreshPurchaseReceptionStatusRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new RefreshPurchaseReceptionStatusQuery(body.DocumentIds), ct)
+        );
+
     [HttpPost("documents/download-xml-pending")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
     [ProducesResponseType(
@@ -238,6 +258,9 @@ public sealed record ResolvePurchaseReceptionLinesRequest(
 );
 
 public sealed record MatchItemRequest(Guid ItemId, Guid? PackagingLevelId = null);
+
+/// <summary>FASE 5 PURCHASE-UX — cuerpo de "Actualizar estados".</summary>
+public sealed record RefreshPurchaseReceptionStatusRequest(IReadOnlyList<Guid> DocumentIds);
 
 public sealed record BatchDownloadPurchaseReceptionXmlRequest(
     IReadOnlyList<Guid> DocumentIds,

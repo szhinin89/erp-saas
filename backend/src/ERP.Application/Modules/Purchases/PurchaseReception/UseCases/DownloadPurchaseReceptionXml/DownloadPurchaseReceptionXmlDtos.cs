@@ -18,5 +18,9 @@ public sealed record DownloadPurchaseReceptionXmlResultDto(
     // interpretar la cabecera.
     string? SupplierTradeName,
     // EXPENSES-FROM-RECEPTION-01 — si ya existe un Gasto con esta clave de acceso SRI.
-    bool ExpenseExists
+    bool ExpenseExists,
+    // FASE 5 PURCHASE-UX — estado real de la compra relacionada (mismo resolver que la importación)
+    // e historial de la última Cancelled cuando no hay activa.
+    string PurchaseState = "NONE",
+    Guid? CancelledPurchaseId = null
 );

@@ -29,6 +29,8 @@ import { PurchaseReceptionActionsCell } from "../components/PurchaseReceptionAct
 import { PurchaseReceptionDocumentCell } from "../components/PurchaseReceptionDocumentCell";
 import { PurchaseReceptionXmlViewModal } from "../components/PurchaseReceptionXmlViewModal";
 import "../styles/purchase-reception.css";
+import { receptionPurchaseView } from "../utils/receptionPurchaseState";
+import { PurchaseReceptionBatchActions } from "../components/PurchaseReceptionBatchActions";
 
 // Getters estables (module-level) para ZhSearchSelect: el índice de búsqueda local se memoiza por
 // referencia, así 2.000+ proveedores del TXT se normalizan una sola vez por importación.
@@ -181,20 +183,11 @@ export function PurchaseReceptionPage() {
             }
           />
         ) : (
-          <Badge
-            variant={row.purchaseExists ? "success" : "warning"}
-            label={
-              row.purchaseExists
-                ? t(
-                    "purchases.reception.actions.purchaseAlreadyEntered",
-                    "Compra ya ingresada al sistema",
-                  )
-                : t(
-                    "purchases.reception.purchaseErp.notEntered",
-                    "Compra no ingresada",
-                  )
-            }
-          />
+          // FASE 5 PURCHASE-UX — estado REAL de la compra (no el booleano "ya ingresada").
+          (() => {
+            const view = receptionPurchaseView(row.purchaseState);
+            return <Badge variant={view.badge.variant} label={t(view.badge.key, view.badge.fallback)} />;
+          })()
         ),
     },
     {
@@ -272,10 +265,11 @@ export function PurchaseReceptionPage() {
               valueTone="success"
               sub={
                 <p className="subtle">
-                  {t(
-                    "purchases.reception.summary.readyPurchases.description",
-                    "Compras ya ingresadas al sistema",
-                  )}
+                  {/* FASE 5 PURCHASE-UX — desglose por estado real: borrador ≠ confirmada. */}
+                  {t("purchases.reception.summary.readyPurchases.breakdown", {
+                    drafts: ctx.summary.purchaseDrafts,
+                    confirmed: ctx.summary.purchaseConfirmed,
+                  })}
                 </p>
               }
             />
@@ -341,21 +335,16 @@ export function PurchaseReceptionPage() {
         </div>
       )}
 
-      {ctx.result && (
-        <div className="pg-section pur-reception-batch-xml">
-          <ZHBtn
-            variant="secondary"
-            size="xs"
-            type="button"
-            disabled={ctx.batchXmlRunning}
-            onClick={ctx.handleDownloadPendingXml}
-          >
-            {t(
-              "purchases.reception.actions.downloadPendingXml",
-              "Descargar XML pendientes",
-            )}
-          </ZHBtn>
-          {ctx.batchXmlProgress && (
+      {/* FASE 5 PURCHASE-UX — acciones del lote: fila compacta (ver PurchaseReceptionBatchActions). */}
+      <PurchaseReceptionBatchActions
+        importedCount={ctx.result ? ctx.result.items.length : null}
+        uploading={ctx.uploading}
+        downloadingXml={ctx.batchXmlRunning}
+        refreshing={ctx.refreshingStatuses}
+        onRefreshStatuses={() => void ctx.handleRefreshStatuses()}
+        onDownloadPendingXml={() => void ctx.handleDownloadPendingXml()}
+        progress={
+          ctx.batchXmlProgress && (
             <ZhBatchProgress
               title={t(
                 "purchases.reception.batchXml.title",
@@ -368,9 +357,9 @@ export function PurchaseReceptionPage() {
               skipped={ctx.batchXmlProgress.skipped}
               failed={ctx.batchXmlProgress.failed}
             />
-          )}
-        </div>
-      )}
+          )
+        }
+      />
 
       <div className="pg-section">
         {ctx.result === null && !ctx.uploading ? (

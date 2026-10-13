@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.BatchDownloadPurchaseReceptionXml;
@@ -338,9 +339,11 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         // El repositorio de compras/gastos solo se consulta (lectura, para el DTO del caso de uso
         // individual y para el resumen de badges del lote) — nunca se invoca un método de
         // creación/persistencia.
+        // FASE 5 PURCHASE-UX: también la lectura del historial (última Cancelled) para el estado real.
         h.PurchaseRepo.Invocations.Should()
             .OnlyContain(i =>
                 i.Method.Name == nameof(IPurchaseInvoiceRepository.GetByAccessKeyAsync)
+                || i.Method.Name == nameof(IPurchaseInvoiceRepository.GetLatestCancelledByAccessKeyAsync)
             );
         h.ExpenseRepo.Invocations.Should()
             .OnlyContain(i =>
@@ -458,5 +461,53 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
 
         result.Value!.Downloaded.Should().Be(8);
         maxObserved.Should().BeLessThanOrEqualTo(3);
+    }
+
+    // FASE 5 PURCHASE-UX — el lote refresca el estado real de la compra de cada documento.
+    [Fact]
+    public async Task Handle_refreshes_the_related_purchase_state_for_each_document()
+    {
+        using var h = BuildHarness();
+        var withConfirmed = SampleDocument("AK-CONFIRMED-00000000000000000000000001");
+        var withCancelled = SampleDocument("AK-CANCELLED-00000000000000000000000002");
+        foreach (var doc in new[] { withConfirmed, withCancelled })
+        {
+            h.Repo.Setup(r => r.GetByIdAsync(TenantId, doc.Id, It.IsAny<CancellationToken>())).ReturnsAsync(doc);
+            h.Provider.Setup(p =>
+                    p.GetAuthorizedXmlAsync(TenantId, CompanyId, doc.AccessKey, It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(new SriReceptionXmlQueryResult(true, doc.AccessKey, DateTime.UtcNow, "<factura>ok</factura>", null));
+        }
+        var confirmed = PurchaseInvoice.CreateDraft(
+            TenantId, CompanyId, BranchId, Guid.NewGuid(), "QUALA ECUADOR S A", "1791352688001",
+            "01", "015-027-000161740", new DateOnly(2026, 7, 1), UserId, Guid.NewGuid(), "Contado",
+            1, 30, accessKey: withConfirmed.AccessKey
+        );
+        confirmed.ReplaceLines(
+            [PurchaseInvoiceDetail.Create(confirmed.Id, TenantId, "FANTA", 1m, 1m, "0", "UNIT")],
+            UserId
+        );
+        confirmed.Confirm(UserId);
+        h.PurchaseRepo.Setup(r => r.GetByAccessKeyAsync(TenantId, withConfirmed.AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(confirmed);
+        var cancelledId = Guid.NewGuid();
+        h.PurchaseRepo.Setup(r =>
+                r.GetLatestCancelledByAccessKeyAsync(TenantId, withCancelled.AccessKey, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new CancelledPurchaseRef(cancelledId, IsDiscardedDraft: false));
+
+        var result = await h.Handler.Handle(
+            new BatchDownloadPurchaseReceptionXmlCommand([withConfirmed.Id, withCancelled.Id]),
+            CancellationToken.None
+        );
+
+        var confirmedItem = result.Value!.Items.Single(i => i.DocumentId == withConfirmed.Id);
+        confirmedItem.PurchaseState.Should().Be("CONFIRMED");
+        confirmedItem.PurchaseExists.Should().BeTrue();
+        confirmedItem.PurchaseId.Should().Be(confirmed.Id);
+        var cancelledItem = result.Value.Items.Single(i => i.DocumentId == withCancelled.Id);
+        cancelledItem.PurchaseState.Should().Be("CANCELLED");
+        cancelledItem.PurchaseExists.Should().BeFalse();
+        cancelledItem.CancelledPurchaseId.Should().Be(cancelledId);
     }
 }

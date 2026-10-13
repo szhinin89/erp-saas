@@ -12,7 +12,8 @@ const row: PurchaseReceptionItem = {
   modifiedDocumentNumber: "001-001-000000002", accessKey: "key", issueDate: "2026-07-01",
   authorizationDate: "2026-07-01", subtotal: 10, vatAmount: 1.5, total: 11.5,
   supplierExists: true, supplierId: "supplier-1", supplierIsActive: true,
-  purchaseExists: false, purchaseId: null, affectedPurchaseExists: true, affectedPurchaseId: "invoice-1",
+  purchaseExists: false, purchaseId: null, purchaseState: "NONE",
+  affectedPurchaseExists: true, affectedPurchaseId: "invoice-1",
   status: "PENDING", processingStatus: "PENDING", processingNotes: null, supplierTradeName: null,
 };
 function show(overrides: Partial<PurchaseReceptionItem> = {}) {
@@ -41,7 +42,12 @@ describe("Purchase reception document actions", () => {
     expect(button.disabled).toBe(true);
     expect(button.title).toBe("Cree primero el proveedor");
   });
-  it.each([{ expenseExists: true }, { purchaseExists: true }])("blocks both creation actions for consumed invoices %j", (used) => {
+  // FASE 5 PURCHASE-UX: la compra activa la indica purchaseState (DRAFT/CONFIRMED), no el booleano.
+  it.each([
+    { expenseExists: true },
+    { purchaseExists: true, purchaseId: "p-1", purchaseState: "CONFIRMED" as const },
+    { purchaseExists: true, purchaseId: "d-1", purchaseState: "DRAFT" as const },
+  ])("blocks both creation actions for consumed invoices %j", (used) => {
     show({ sourceDocType: "INVOICE", documentStatus: "VERIFIED", ...used });
     expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
@@ -137,6 +143,7 @@ describe("Purchase reception document actions", () => {
       documentStatus: "VERIFIED",
       purchaseExists: false,
       purchaseId: null,
+      purchaseState: "CANCELLED",
       cancelledPurchaseId: "purchase-cancelled-1",
     });
 
@@ -211,5 +218,61 @@ describe("Purchase reception document actions", () => {
     expect(screen.getByRole("button", { name: "Crear gasto" })).toBeTruthy();
     expect(screen.queryByText("Gasto anulado")).toBeNull();
     expect(screen.queryByRole("button", { name: "Ver gasto anulado" })).toBeNull();
+  });
+});
+
+describe("FASE 5 PURCHASE-UX — estado real de la compra en Recepción", () => {
+  const invoice = { sourceDocType: "INVOICE" as const, documentStatus: "VERIFIED" as const };
+
+  it("NONE: Crear compra y Crear gasto permitidos", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ ...invoice, purchaseState: "NONE" });
+    fireEvent.click(screen.getByRole("button", { name: "Crear compra" }));
+    expect(open).toHaveBeenCalledWith("/purchases?fromReceptionId=nc-1&accessKey=key", "_blank", "noopener,noreferrer");
+    expect(screen.getByRole("button", { name: "Crear gasto" })).toBeTruthy();
+    expect(screen.queryByText("Compra anulada")).toBeNull();
+  });
+
+  it("DRAFT: 'Compra en borrador' + Continuar borrador (invoiceId existente); sin Crear compra ni Crear gasto", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1" });
+    expect(screen.getByText("Compra en borrador")).toBeTruthy();
+    expect(screen.queryByText("Compra ya ingresada al sistema")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Continuar borrador" }));
+    expect(open).toHaveBeenCalledWith("/purchases?invoiceId=draft-1", "_blank", "noopener,noreferrer");
+    expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
+  });
+
+  it("CONFIRMED: 'Compra confirmada' + Ver compra; sin Crear gasto", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "CONFIRMED", purchaseExists: true, purchaseId: "p-1" });
+    expect(screen.getByText("Compra confirmada")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ver compra" }));
+    expect(open).toHaveBeenCalledWith("/purchases?invoiceId=p-1", "_blank", "noopener,noreferrer");
+    expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
+  });
+
+  it("CANCELLED: 'Compra anulada' + Procesar nuevamente + Ver compra anulada; Crear gasto permitido", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ ...invoice, purchaseState: "CANCELLED", cancelledPurchaseId: "old-1" });
+    expect(screen.getByText("Compra anulada")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Procesar nuevamente" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ver compra anulada" }));
+    expect(open).toHaveBeenCalledWith("/purchases?invoiceId=old-1", "_blank", "noopener,noreferrer");
+    expect(screen.getByRole("button", { name: "Crear gasto" })).toBeTruthy();
+  });
+
+  it("DISCARDED: 'Borrador descartado' + Crear compra + Ver borrador descartado; Crear gasto permitido", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    show({ ...invoice, purchaseState: "DISCARDED", cancelledPurchaseId: "discarded-1" });
+    expect(screen.getByText("Borrador descartado")).toBeTruthy();
+    expect(screen.queryByText("Compra anulada")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Procesar nuevamente" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Crear compra" }));
+    expect(open).toHaveBeenCalledWith("/purchases?fromReceptionId=nc-1&accessKey=key", "_blank", "noopener,noreferrer");
+    fireEvent.click(screen.getByRole("button", { name: "Ver borrador descartado" }));
+    expect(open).toHaveBeenCalledWith("/purchases?invoiceId=discarded-1", "_blank", "noopener,noreferrer");
+    expect(screen.getByRole("button", { name: "Crear gasto" })).toBeTruthy();
   });
 });

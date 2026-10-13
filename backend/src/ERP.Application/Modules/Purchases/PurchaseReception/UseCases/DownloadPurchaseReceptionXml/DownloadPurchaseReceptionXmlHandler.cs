@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Purchases.PurchaseReception.Services;
 using System.Xml;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
@@ -189,7 +190,8 @@ public sealed class DownloadPurchaseReceptionXmlHandler
         );
         await _documentRepo.SaveChangesAsync(cancellationToken);
 
-        var existingPurchase = await _purchaseRepo.GetByAccessKeyAsync(
+        var purchase = await PurchaseReceptionPurchaseStateResolver.ResolveAsync(
+            _purchaseRepo,
             _tenant.TenantId,
             document.AccessKey,
             cancellationToken
@@ -216,11 +218,13 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             document.LinesDetectedCount,
             document.LinesProcessedCount,
             document.ProcessingNotes,
-            existingPurchase is not null,
-            existingPurchase?.Id,
+            purchase.PurchaseExists,
+            purchase.PurchaseId,
             supplierIsActive,
             processed.SupplierTradeName,
-            expenseExists
+            expenseExists,
+            PurchaseReceptionMapper.ToPurchaseStateCode(purchase.State),
+            purchase.CancelledPurchaseId
         );
 
         return Result<DownloadPurchaseReceptionXmlResultDto>.Success(dto);

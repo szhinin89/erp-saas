@@ -22,7 +22,11 @@ public sealed record BatchDownloadPurchaseReceptionXmlItemResult(
     Guid? ExpenseId = null,
     bool CreditNoteExists = false,
     Guid? CreditNoteId = null,
-    Guid? CancelledCreditNoteId = null
+    Guid? CancelledCreditNoteId = null,
+    // FASE 5 PURCHASE-UX — estado real de la compra relacionada (mismo resolver que la importación)
+    // e historial de la última Cancelled cuando no hay activa.
+    string? PurchaseState = null,
+    Guid? CancelledPurchaseId = null
 );
 
 public sealed record BatchDownloadPurchaseReceptionXmlResultDto(

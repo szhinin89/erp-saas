@@ -44,8 +44,44 @@ public static class PurchaseReceptionMapper
             creditNoteId,
             cancelledCreditNoteId,
             item.CancelledPurchaseId,
-            item.CancelledExpenseId
+            item.CancelledExpenseId,
+            ToPurchaseStateCode(item.PurchaseState)
         );
+
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — mismo registro que produce el TXT, armado desde la recepción ya guardada
+    /// (todos esos datos se persistieron al importar). Permite re-verificar sin volver a importar.
+    /// <c>AuthorizationLocalDateTime</c> no participa en la verificación (solo se usa al crear el
+    /// documento); la fecha de autorización del DTO sale de <c>document.AuthorizationDate</c>.
+    /// </summary>
+    public static PurchaseReceptionRecord ToRecord(PurchaseReceptionDocument document) =>
+        new(
+            0,
+            document.SourceDocType,
+            document.SupplierRuc,
+            document.SupplierName,
+            document.InvoiceNumber,
+            document.AccessKey,
+            document.IssueDate,
+            document.AuthorizationDate ?? default,
+            null,
+            document.Subtotal,
+            document.VatAmount,
+            document.TotalAmount,
+            document.ModifiedDocumentNumber
+        );
+
+    /// <summary>FASE 5 PURCHASE-UX — código del estado de la compra relacionada para el contrato.</summary>
+    public static string ToPurchaseStateCode(PurchaseReceptionPurchaseState state) =>
+        state switch
+        {
+            PurchaseReceptionPurchaseState.None => "NONE",
+            PurchaseReceptionPurchaseState.Draft => "DRAFT",
+            PurchaseReceptionPurchaseState.Confirmed => "CONFIRMED",
+            PurchaseReceptionPurchaseState.Cancelled => "CANCELLED",
+            PurchaseReceptionPurchaseState.Discarded => "DISCARDED",
+            _ => throw new ArgumentOutOfRangeException(nameof(state), state, null),
+        };
 
     private static string ToSourceDocTypeCode(PurchaseReceptionSourceDocType sourceDocType) =>
         sourceDocType switch

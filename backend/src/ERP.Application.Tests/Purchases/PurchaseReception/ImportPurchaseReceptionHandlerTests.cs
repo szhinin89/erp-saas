@@ -450,4 +450,57 @@ public sealed class ImportPurchaseReceptionHandlerTests
         result.Value!.Items.Should().BeEmpty();
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    // FASE 5 PURCHASE-UX — la importación del TXT expone el estado real de la compra relacionada.
+    [Theory]
+    [InlineData(PurchaseReceptionPurchaseState.None, "NONE")]
+    [InlineData(PurchaseReceptionPurchaseState.Draft, "DRAFT")]
+    [InlineData(PurchaseReceptionPurchaseState.Confirmed, "CONFIRMED")]
+    [InlineData(PurchaseReceptionPurchaseState.Cancelled, "CANCELLED")]
+    [InlineData(PurchaseReceptionPurchaseState.Discarded, "DISCARDED")]
+    public async Task Handle_maps_the_related_purchase_state_into_the_response_dto(
+        PurchaseReceptionPurchaseState state,
+        string expected
+    )
+    {
+        var record = SampleRecord();
+        var (handler, parser, verifier, repo, _) = BuildHandler();
+        var active = state is PurchaseReceptionPurchaseState.Draft or PurchaseReceptionPurchaseState.Confirmed;
+
+        parser
+            .Setup(p => p.ParseAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PurchaseReceptionParseResult([record], [], 1));
+        verifier
+            .Setup(v =>
+                v.VerifyAsync(
+                    It.IsAny<IReadOnlyList<PurchaseReceptionRecord>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([
+                new PurchaseReceptionVerifiedItem(
+                    record,
+                    SupplierExists: true,
+                    PurchaseExists: active,
+                    active ? PurchaseReceptionStatus.Imported : PurchaseReceptionStatus.Pending,
+                    PurchaseId: active ? Guid.NewGuid() : null,
+                    PurchaseState: state
+                ),
+            ]);
+        repo.Setup(r =>
+                r.GetByAccessKeyAsync(TenantId, record.AccessKey, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((PurchaseReceptionDocument?)null);
+
+        var result = await handler.Handle(
+            new ImportPurchaseReceptionCommand(
+                new MediaUploadContent(new MemoryStream(), "reception.txt", "text/plain", 10)
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Items.Single().PurchaseState.Should().Be(expected);
+        result.Value.Items.Single().PurchaseExists.Should().Be(active);
+    }
 }

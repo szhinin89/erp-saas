@@ -413,4 +413,83 @@ public sealed class PurchaseReceptionVerifierTests
             Times.Never
         );
     }
+
+    // ── FASE 5 PURCHASE-UX — estado real de la compra relacionada ───────────────────────────
+
+    private (PurchaseReceptionVerifier Verifier, Mock<IPurchaseInvoiceRepository> Purchase) VerifierWithSupplier()
+    {
+        var (bp, role, purchase, tenant) = BuildMocks();
+        var partner = BusinessPartner.Create(
+            TenantId,
+            TaxIdentification.SriRuc,
+            "1791352688001",
+            2,
+            "QUALA ECUADOR S A",
+            UserId
+        );
+        bp.Setup(r =>
+                r.GetByIdentificationAsync(TaxIdentification.SriRuc, "1791352688001", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(partner);
+        role.Setup(r => r.GetByTypeAsync(partner.Id, RoleType.Supplier, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BusinessPartnerRole.Create(TenantId, partner.Id, RoleType.Supplier, UserId));
+        var verifier = new PurchaseReceptionVerifier(
+            bp.Object,
+            role.Object,
+            purchase.Object,
+            Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
+            tenant.Object
+        );
+        return (verifier, purchase);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_reports_DRAFT_for_an_active_draft_purchase()
+    {
+        var (verifier, purchase) = VerifierWithSupplier();
+        var draft = PurchaseInvoice.CreateDraft(
+            TenantId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "QUALA ECUADOR S A",
+            "1791352688001",
+            "01",
+            "015-027-000161740",
+            new DateOnly(2026, 7, 1),
+            UserId,
+            Guid.NewGuid(),
+            "Contado",
+            1,
+            30,
+            accessKey: Record().AccessKey
+        );
+        purchase.Setup(r => r.GetByAccessKeyAsync(TenantId, Record().AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(draft);
+
+        var result = await verifier.VerifyAsync([Record()]);
+
+        result[0].PurchaseState.Should().Be(PurchaseReceptionPurchaseState.Draft);
+        result[0].PurchaseExists.Should().BeTrue();
+        result[0].PurchaseId.Should().Be(draft.Id);
+        result[0].Status.Should().Be(PurchaseReceptionStatus.Imported);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_reports_DISCARDED_and_history_id_for_a_discarded_draft()
+    {
+        var (verifier, purchase) = VerifierWithSupplier();
+        var discardedId = Guid.NewGuid();
+        purchase.Setup(r =>
+                r.GetLatestCancelledByAccessKeyAsync(TenantId, Record().AccessKey, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new CancelledPurchaseRef(discardedId, IsDiscardedDraft: true));
+
+        var result = await verifier.VerifyAsync([Record()]);
+
+        result[0].PurchaseState.Should().Be(PurchaseReceptionPurchaseState.Discarded);
+        result[0].PurchaseExists.Should().BeFalse("un borrador descartado no es compra activa");
+        result[0].CancelledPurchaseId.Should().Be(discardedId);
+        result[0].Status.Should().Be(PurchaseReceptionStatus.Pending);
+    }
 }

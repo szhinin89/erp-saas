@@ -7,6 +7,7 @@ using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Services;
 
 namespace ERP.Infrastructure.Modules.Purchases.PurchaseReception;
 
@@ -72,9 +73,7 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                         && supplierRole.TenantId == _tenant.TenantId;
             }
 
-            var purchaseExists = false;
-            Guid? purchaseId = null;
-            Guid? cancelledPurchaseId = null;
+            var purchase = PurchaseReceptionPurchaseInfo.None;
             var expenseExists = false;
             Guid? cancelledExpenseId = null;
             if (supplierExists)
@@ -83,19 +82,13 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                 // ExistsByAccessKeyAsync ya ignoran Cancelled (solo Draft/Confirmed cuenta como
                 // "activa"); el historial de la más reciente Cancelled se resuelve aparte, solo
                 // cuando no hay ninguna activa, para "Ver compra/gasto anulado" en la UI.
-                var purchase = await _purchaseRepo.GetByAccessKeyAsync(
+                // FASE 5 PURCHASE-UX — misma resolución que la descarga de XML individual/lote.
+                purchase = await PurchaseReceptionPurchaseStateResolver.ResolveAsync(
+                    _purchaseRepo,
                     _tenant.TenantId,
                     record.AccessKey,
                     cancellationToken
                 );
-                purchaseExists = purchase is not null;
-                purchaseId = purchase?.Id;
-                if (!purchaseExists)
-                    cancelledPurchaseId = await _purchaseRepo.GetLatestCancelledIdByAccessKeyAsync(
-                        _tenant.TenantId,
-                        record.AccessKey,
-                        cancellationToken
-                    );
 
                 expenseExists = await _expenseRepo.ExistsByAccessKeyAsync(
                     _tenant.TenantId,
@@ -111,7 +104,7 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
             }
 
             var status =
-                purchaseExists ? PurchaseReceptionStatus.Imported
+                purchase.PurchaseExists ? PurchaseReceptionStatus.Imported
                 : supplierExists ? PurchaseReceptionStatus.Pending
                 : PurchaseReceptionStatus.NewSupplier;
 
@@ -140,16 +133,17 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                 new PurchaseReceptionVerifiedItem(
                     record,
                     supplierExists,
-                    purchaseExists,
+                    purchase.PurchaseExists,
                     status,
                     supplierId,
-                    purchaseId,
+                    purchase.PurchaseId,
                     affectedPurchaseExists,
                     affectedPurchaseId,
                     supplierIsActive,
                     expenseExists,
-                    cancelledPurchaseId,
-                    cancelledExpenseId
+                    purchase.CancelledPurchaseId,
+                    cancelledExpenseId,
+                    purchase.State
                 )
             );
         }

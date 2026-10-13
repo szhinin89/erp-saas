@@ -25,5 +25,7 @@ public sealed record PurchaseReceptionVerifiedItem(
     // con este AccessKey, solo resuelto cuando NO hay una activa — para "Ver compra/gasto anulado"
     // (historial) en la UI de Recepción.
     Guid? CancelledPurchaseId = null,
-    Guid? CancelledExpenseId = null
+    Guid? CancelledExpenseId = null,
+    // FASE 5 PURCHASE-UX — estado real de la compra relacionada (PurchaseReceptionPurchaseStateResolver).
+    PurchaseReceptionPurchaseState PurchaseState = PurchaseReceptionPurchaseState.None
 );

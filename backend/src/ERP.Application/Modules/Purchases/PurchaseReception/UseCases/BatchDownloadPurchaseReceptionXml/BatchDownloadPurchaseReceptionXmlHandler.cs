@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
@@ -201,7 +202,8 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
         var purchaseRepo = scope.ServiceProvider.GetRequiredService<IPurchaseInvoiceRepository>();
         var expenseRepo = scope.ServiceProvider.GetRequiredService<IExpenseDocumentRepository>();
 
-        var existingPurchase = await purchaseRepo.GetByAccessKeyAsync(
+        var purchase = await PurchaseReceptionPurchaseStateResolver.ResolveAsync(
+            purchaseRepo,
             tenantId,
             document.AccessKey,
             cancellationToken
@@ -241,13 +243,15 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
                 document.ProcessingStatus
             ),
             HasXml: document.XmlContent is not null,
-            PurchaseExists: existingPurchase is not null,
-            PurchaseId: existingPurchase?.Id,
+            PurchaseExists: purchase.PurchaseExists,
+            PurchaseId: purchase.PurchaseId,
             ExpenseExists: expenseId is not null,
             ExpenseId: expenseId,
             CreditNoteExists: creditNoteId is not null,
             CreditNoteId: creditNoteId,
-            CancelledCreditNoteId: cancelledCreditNoteId
+            CancelledCreditNoteId: cancelledCreditNoteId,
+            PurchaseState: PurchaseReceptionMapper.ToPurchaseStateCode(purchase.State),
+            CancelledPurchaseId: purchase.CancelledPurchaseId
         );
     }
 }
