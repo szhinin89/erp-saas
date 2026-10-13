@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-13 11:07:14",
+    "generated":  "2026-10-13 12:20:31",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -759,7 +759,7 @@
                       "fanOut":  7,
                       "coupling":  8,
                       "instability":  0.875,
-                      "cohesionApprox":  0.725,
+                      "cohesionApprox":  0.715,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -1825,7 +1825,7 @@
                   {
                       "from":  "Ride",
                       "to":  "Common",
-                      "referenceCount":  29,
+                      "referenceCount":  30,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Ride/Branding/IRideBrandingProvider.cs",
                                        "backend/src/ERP.Application/Modules/Ride/Communications/RidePdfCommunicationAttachmentProvider.cs",
@@ -1898,8 +1898,9 @@
                   {
                       "from":  "Ride",
                       "to":  "Company",
-                      "referenceCount":  1,
+                      "referenceCount":  2,
                       "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Ride/Services/RidePipeline.cs",
                                        "backend/src/ERP.Infrastructure/Ride/Branding/CompanyBrandingRideProvider.cs"
                                    ]
                   },

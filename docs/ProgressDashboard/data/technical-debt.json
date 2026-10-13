@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-13 11:06:35",
-    "FilesAnalyzed":  11778,
+    "Generated":  "2026-10-13 12:19:39",
+    "FilesAnalyzed":  11781,
     "TODO":  736,
     "FIXME":  30,
     "HACK":  1,
@@ -396,7 +396,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Ride\\RidePipelineTests.cs",
-                           "Lines":  682
+                           "Lines":  841
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Sales\\AuthorizeSalesInvoiceHandlerTests.cs",
@@ -756,7 +756,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Ride\\RidePipelineStorageAndCacheIntegrationTests.cs",
-                           "Lines":  711
+                           "Lines":  736
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Seeding\\AccountingBootstrapStepTests.cs",

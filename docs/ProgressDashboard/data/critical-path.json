@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-13 11:07:15",
+    "generated":  "2026-10-13 12:20:32",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -1569,8 +1569,8 @@
                              "percentOfErp":  98.97,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (711 lines): backend/src/ERP.Infrastructure.Tests/Ride/RidePipelineStorageAndCacheIntegrationTests.cs",
-                                                  "Refactor large file (682 lines): backend/src/ERP.Application.Tests/Ride/RidePipelineTests.cs"
+                                                  "Refactor large file (841 lines): backend/src/ERP.Application.Tests/Ride/RidePipelineTests.cs",
+                                                  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Ride/RidePipelineStorageAndCacheIntegrationTests.cs"
                                               ]
                          },
                          {
