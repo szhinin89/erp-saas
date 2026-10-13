@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-13 06:22:27",
-    "FilesAnalyzed":  11759,
-    "TODO":  735,
+    "Generated":  "2026-10-13 09:18:14",
+    "FilesAnalyzed":  11772,
+    "TODO":  736,
     "FIXME":  30,
     "HACK":  1,
     "NotImplemented":  8,
@@ -319,12 +319,24 @@
                            "Lines":  1122
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
+                           "Lines":  514
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\CreatePurchaseReceptionDraftHandlerTests.cs",
                            "Lines":  1641
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\DownloadPurchaseReceptionXmlHandlerTests.cs",
+                           "Lines":  511
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\GetPurchaseReceptionXmlViewHandlerTests.cs",
                            "Lines":  702
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\ImportPurchaseReceptionHandlerTests.cs",
+                           "Lines":  507
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\PurchaseXmlDraftParserTests.cs",
@@ -724,7 +736,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
-                           "Lines":  1092
+                           "Lines":  1096
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseReturnCrossInvariantTests.cs",
@@ -732,7 +744,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\RegisterSupplierCreditNoteIntegrationTests.cs",
-                           "Lines":  558
+                           "Lines":  564
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\StockRepositoryCompanyScopeIntegrationTests.cs",
@@ -2852,7 +2864,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\api\\purchaseReceptionService.ts",
-                           "Lines":  536
+                           "Lines":  559
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\PurchaseReceptionXmlViewModal.tsx",
@@ -2864,7 +2876,11 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.test.ts",
-                           "Lines":  614
+                           "Lines":  749
+                       },
+                       {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.ts",
+                           "Lines":  516
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.draftRecovery.test.ts",

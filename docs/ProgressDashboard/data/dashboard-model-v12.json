@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-10-13 06:22:58",
+    "Generated":  "2026-10-13 09:18:48",
     "EngineeringScore":  {
-                             "Generated":  "2026-10-13 06:22:55",
+                             "Generated":  "2026-10-13 09:18:44",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
-                             "Quality":  8.25,
-                             "Security":  25.6,
+                             "Quality":  8.05,
+                             "Security":  27.8,
                              "Dependencies":  100,
-                             "Overall":  60.72
+                             "Overall":  61.12
                          },
     "QualityGate":  {
-                        "Generated":  "2026-10-13 06:22:58",
+                        "Generated":  "2026-10-13 09:18:47",
                         "Status":  "RED",
-                        "EngineeringScore":  60.72,
+                        "EngineeringScore":  61.12,
                         "Warnings":  [
                                          "Engineering score needs improvement",
                                          "High number of possible secrets detected",
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-10-13 06:22:57",
-                  "Snapshots":  27,
+                  "Generated":  "2026-10-13 09:18:46",
+                  "Snapshots":  28,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -162,6 +162,11 @@
                                       "Date":  "2026-10-13 06:22:56",
                                       "File":  "dashboard-2026-10-13-0622-v2.json",
                                       "Score":  60.72
+                                  },
+                                  {
+                                      "Date":  "2026-10-13 09:18:45",
+                                      "File":  "dashboard-2026-10-13-0918-v2.json",
+                                      "Score":  61.12
                                   }
                               ]
               },
@@ -513,9 +518,9 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-10-13 06:22:53",
-                     "FilesAnalyzed":  11828,
-                     "SecretsFound":  182,
+                     "Generated":  "2026-10-13 09:18:42",
+                     "FilesAnalyzed":  11823,
+                     "SecretsFound":  181,
                      "SecretFiles":  [
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
@@ -539,7 +544,6 @@
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Communications\\SendTestEmailHandlerTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentSigningServiceTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\ElectronicInvoicing\\UpsertSriConfigurationCommandHandlerTests.cs",
-                                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Kernel\\Permissions\\AccessPermissions.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Constants\\OrgSettingKeys.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Entities\\SriSettings.cs",
@@ -715,22 +719,21 @@
                                             "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\typescript.js",
                                             "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\_tsc.js"
                                         ],
-                     "ConnectionStringsFound":  7,
+                     "ConnectionStringsFound":  6,
                      "ConnectionStringFiles":  [
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\DevCacheEndpointsHttpContractTests.cs",
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
-                                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests\\bin\\Debug\\net10.0\\appsettings.json",
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContextFactory.cs"
                                                ],
-                     "Warnings":  201
+                     "Warnings":  199
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-10-13 06:22:27",
-                          "FilesAnalyzed":  11759,
-                          "TODO":  735,
+                          "Generated":  "2026-10-13 09:18:14",
+                          "FilesAnalyzed":  11772,
+                          "TODO":  736,
                           "FIXME":  30,
                           "HACK":  1,
                           "NotImplemented":  8,
@@ -1048,12 +1051,24 @@
                                                  "Lines":  1122
                                              },
                                              {
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
+                                                 "Lines":  514
+                                             },
+                                             {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\CreatePurchaseReceptionDraftHandlerTests.cs",
                                                  "Lines":  1641
                                              },
                                              {
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\DownloadPurchaseReceptionXmlHandlerTests.cs",
+                                                 "Lines":  511
+                                             },
+                                             {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\GetPurchaseReceptionXmlViewHandlerTests.cs",
                                                  "Lines":  702
+                                             },
+                                             {
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\ImportPurchaseReceptionHandlerTests.cs",
+                                                 "Lines":  507
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\PurchaseXmlDraftParserTests.cs",
@@ -1453,7 +1468,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseExpenseReprocessAfterCancelConstraintsTests.cs",
-                                                 "Lines":  1092
+                                                 "Lines":  1096
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseReturnCrossInvariantTests.cs",
@@ -1461,7 +1476,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\RegisterSupplierCreditNoteIntegrationTests.cs",
-                                                 "Lines":  558
+                                                 "Lines":  564
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\StockRepositoryCompanyScopeIntegrationTests.cs",
@@ -3581,7 +3596,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\api\\purchaseReceptionService.ts",
-                                                 "Lines":  536
+                                                 "Lines":  559
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\components\\PurchaseReceptionXmlViewModal.tsx",
@@ -3593,7 +3608,11 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.test.ts",
-                                                 "Lines":  614
+                                                 "Lines":  749
+                                             },
+                                             {
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchaseReceptionPage.ts",
+                                                 "Lines":  516
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\purchases\\hooks\\usePurchasesPage.draftRecovery.test.ts",
@@ -3679,16 +3698,16 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-10-13 06:19:45",
+                         "Generated":  "2026-10-13 09:15:24",
                          "Layers":  {
                                         "Domain":  {
-                                                       "Files":  671
+                                                       "Files":  673
                                                    },
                                         "Application":  {
                                                             "Commands":  0,
                                                             "Validators":  6,
                                                             "Queries":  5,
-                                                            "Files":  1118
+                                                            "Files":  1120
                                                         },
                                         "Infrastructure":  {
                                                                "DbContext":  102,
@@ -3705,7 +3724,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-10-13 06:19:47",
+                         "Generated":  "2026-10-13 09:15:26",
                          "Violations":  [
 
                                         ],

@@ -1198,6 +1198,13 @@
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/ImportPurchaseReception"
                                           ]
+                         },
+                         {
+                             "name":  "Refresh Purchase Reception Status",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/RefreshPurchaseReceptionStatus"
+                                          ]
                          }
                      ]
     },
