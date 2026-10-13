@@ -490,7 +490,7 @@ export function CajaPage() {
                       <SummaryCard label={t("caja.openContext.environment")} value={fiscal?.environmentName ?? "—"} />
                       <SummaryCard label={t("caja.openContext.capacity")} value={fiscal ? t(fiscal.canIssue ? "caja.openContext.canIssue" : "caja.openContext.cannotIssue") : "—"} />
                       <SummaryCard label={t("caja.openContext.certificate")} value={!fiscal || fiscal.status === "Error" ? "—" : fiscal.certificateValid ? t("caja.openContext.validCertificate") : !fiscal.certificateInstalled ? t("caja.openContext.notConfigured") : t(ELECTRONIC_INVOICING_STATUS_REGISTRY[fiscal.status].messageKey)} />
-                      {fiscal?.certificateExpiresAt && <SummaryCard label={t("caja.openContext.expires")} value={formatDate(fiscal.certificateExpiresAt)} />}
+                      {fiscal?.certificateExpiresAt && <SummaryCard label={t("caja.openContext.expires")} value={formatDateTime(fiscal.certificateExpiresAt)} />}
                     </div>
                     <ZHPageNotice variant="neutral" message={t("caja.openContext.fiscalWarning")} />
                   </>}
