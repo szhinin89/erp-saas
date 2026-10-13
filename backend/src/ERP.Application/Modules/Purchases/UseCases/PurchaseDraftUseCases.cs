@@ -45,7 +45,11 @@ public sealed record PurchaseLineInput(
     // ese reprorrateo (que opera sobre TODAS las líneas, sin respetar inclusión/exclusión manual)
     // pise la distribución ya revisada y aceptada por el usuario.
     decimal? FreightAllocated = null,
-    decimal? OtherCostsAllocated = null
+    decimal? OtherCostsAllocated = null,
+    // FASE 5 PURCHASE-UX — presentación con la que se interpreta el documento del proveedor (solo
+    // líneas XML). El factor NUNCA viene del body: se resuelve del nivel de empaque del ítem (o se
+    // conserva el snapshot ya persistido si el nivel no cambió). No aprende nada del proveedor.
+    Guid? XmlOriginPackagingLevelId = null
 );
 
 /// <summary>
@@ -413,7 +417,8 @@ public sealed record GetPurchaseListQuery(
     int PageNumber = 1,
     int PageSize = 25,
     // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — solo lectura: acota por proveedor para el
-    // selector manual de factura afectada (search solo matchea InvoiceNumber, no proveedor).
+    // selector manual de factura afectada. FASE 5 PURCHASE-UX: search matchea InvoiceNumber o
+    // proveedor (SupplierName / SupplierTaxId).
     Guid? SupplierId = null
 ) : IRequest<Result<PurchaseListResponse>>, IBranchScopedRequest;
 
@@ -875,6 +880,7 @@ public sealed class CreatePurchaseDraftHandler
             string? snapshotSupplierCode = null;
             var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
             var participatesInInventory = false;
+            Item? lineItem = null;
 
             if (l.ItemId.HasValue)
             {
@@ -882,6 +888,7 @@ public sealed class CreatePurchaseDraftHandler
                 if (item is null)
                     return new(null!, Result<PurchaseInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa."));
                 participatesInInventory = item.ParticipatesInInventory;
+                lineItem = item;
                 if (item is not null)
                 {
                     snapshotSku = item.Code.SKU;
@@ -1013,6 +1020,15 @@ public sealed class CreatePurchaseDraftHandler
                 line.SetFreightAllocated(l.FreightAllocated.Value);
             if (l.OtherCostsAllocated.HasValue)
                 line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
+            var xmlOrigin = PurchaseXmlOriginPackagingResolver.Resolve(
+                lineItem,
+                l,
+                precision.ConversionFactorDecimals,
+                previous: null
+            );
+            if (xmlOrigin.Error is not null)
+                return new(null!, Result<PurchaseInvoiceDto>.ValidationFailure(xmlOrigin.Error));
+            line.SetXmlOrigin(xmlOrigin.LevelId, xmlOrigin.Factor);
 
             var taxResult = await ResolveLineTaxesAsync(
                 line,
@@ -1181,6 +1197,18 @@ public sealed class UpdatePurchaseDraftHandler
         CancellationToken ct
     )
     {
+        // FASE 5 PURCHASE-UX — snapshot de origen XML ya persistido por línea de recepción: si el
+        // nivel no cambia, se conserva su factor (no se recalcula desde el maestro en cada guardado).
+        var previousXmlOrigins = inv.Lines
+            .Where(x => x.PurchaseReceptionLineId.HasValue
+                && x.XmlOriginPackagingLevelId.HasValue
+                && x.XmlOriginFactor.HasValue)
+            .GroupBy(x => x.PurchaseReceptionLineId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => (g.First().XmlOriginPackagingLevelId!.Value, g.First().XmlOriginFactor!.Value)
+            );
+
         var duplicate = await PurchaseAccessKeyDuplicateGuard.FindDuplicateAsync(
             _repo,
             _t.TenantId,
@@ -1273,6 +1301,7 @@ public sealed class UpdatePurchaseDraftHandler
             string? snapshotSupplierCode = null;
             var packaging = new PurchaseLinePackagingSnapshot(null, "UNIT", "UNIT", 1m);
             var participatesInInventory = false;
+            Item? lineItem = null;
 
             if (l.ItemId.HasValue)
             {
@@ -1280,6 +1309,7 @@ public sealed class UpdatePurchaseDraftHandler
                 if (item is null)
                     return Result<PurchaseInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa.");
                 participatesInInventory = item.ParticipatesInInventory;
+                lineItem = item;
                 if (item is not null)
                 {
                     snapshotSku = item.Code.SKU;
@@ -1392,6 +1422,18 @@ public sealed class UpdatePurchaseDraftHandler
                 line.SetFreightAllocated(l.FreightAllocated.Value);
             if (l.OtherCostsAllocated.HasValue)
                 line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
+            var xmlOrigin = PurchaseXmlOriginPackagingResolver.Resolve(
+                lineItem,
+                l,
+                precision.ConversionFactorDecimals,
+                l.PurchaseReceptionLineId is { } receptionLineId
+                && previousXmlOrigins.TryGetValue(receptionLineId, out var previousOrigin)
+                    ? previousOrigin
+                    : null
+            );
+            if (xmlOrigin.Error is not null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(xmlOrigin.Error);
+            line.SetXmlOrigin(xmlOrigin.LevelId, xmlOrigin.Factor);
 
             Result<PurchaseInvoiceDto>? taxResult = null;
             if (l.PurchaseReceptionLineId.HasValue)
@@ -1832,7 +1874,11 @@ public sealed class GetPurchaseListHandler
                 i.SupplierId,
                 i.Status.ToString(),
                 lineCounts.GetValueOrDefault(i.Id),
-                i.CreatedAt
+                i.CreatedAt,
+                i.SupplierName,
+                i.SupplierTaxId,
+                i.GrandTotal,
+                i.IsDiscardedDraft
             ))
             .ToList();
         return Result<PurchaseListResponse>.Success(

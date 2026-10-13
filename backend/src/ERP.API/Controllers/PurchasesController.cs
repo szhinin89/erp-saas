@@ -182,6 +182,24 @@ public sealed class PurchasesController : ControllerBase
             )
         );
 
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — descarta un borrador de compra (soft — cambia su estado a
+    /// <c>Cancelled</c>, nunca elimina el registro; mismo patrón que <c>SalesReturnController.CancelDraft</c>).
+    /// Solo permitido desde <c>Draft</c>: una compra confirmada se anula con <c>POST {id}/cancel</c>.
+    /// Sin reversos: el borrador nunca generó inventario, CxP, contabilidad ni retención.
+    /// </summary>
+    /// <param name="reason">Motivo opcional (máx. 500 caracteres).</param>
+    /// <response code="200">Borrador descartado.</response>
+    /// <response code="404">La compra no existe en la sucursal activa.</response>
+    /// <response code="422">La compra ya no está en borrador.</response>
+    [HttpDelete("{id:guid}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
+    public async Task<IActionResult> DiscardDraft(
+        Guid id,
+        [FromQuery] string? reason,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(new DiscardPurchaseDraftCommand(id, reason), ct));
+
     /// <summary>Contexto completo de un ítem para el detalle de compra (1 request SSOT).</summary>
     [HttpGet("items/context")]
     [Authorize(Policy = $"perm:{PurchasePermissions.View}")]

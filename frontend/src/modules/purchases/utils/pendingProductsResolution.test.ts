@@ -89,8 +89,10 @@ describe("XML sources and initial values", () => {
     expect(isRealBarcode("XML/A")).toBe(false);
     expect(buildInitialRow(source, ["EAN13"])).toMatchObject({ barcode: UNIT_EAN, barcodeType: "EAN13" });
     expect(buildInitialRow({ ...source, supplierAuxCode: "", supplierCode: UNIT_EAN }, ["EAN13"]).barcode).toBe(UNIT_EAN);
+    // FASE 5: un código auxiliar que cumple las validaciones de Items se propone como código de
+    // barras de la unidad, pero sin tipo implícito (no es GTIN).
     expect(buildInitialRow({ ...source, supplierAuxCode: "AUX-9" }, ["EAN13", "Internal"]))
-      .toMatchObject({ barcode: "", barcodeType: "" });
+      .toMatchObject({ barcode: "AUX-9", barcodeType: "" });
   });
   it("shows the supplier code as provisional unit barcode only when the unit has no real one", () => {
     const sources = new Map([["a", { ...source, supplierCode: "SUP-U" }], ["b", { ...source, rowId: "b", supplierCode: "SUP-BOX" }]]);
@@ -231,5 +233,102 @@ describe("request, row errors and XML summary", () => {
       line({ _key: 3, purchaseReceptionLineId: "c", itemId: "item" })], {
         2: ready, 3: { ...ready, warning: { status: "MISSING_SALE_PRICE_FOR_MARGIN", label: "", detail: "", tone: "warning" } },
       })).toEqual({ total: 3, resolved: 1, pending: 1, warnings: 1 });
+  });
+});
+
+describe("FASE 5 — código auxiliar del XML: código de barras, nunca SKU", () => {
+  // Caso real: código principal 8433, código auxiliar 001013300320845306 (18 dígitos, no GTIN).
+  const xml: PendingProductSource = { ...source, supplierCode: "8433", supplierAuxCode: "001013300320845306" };
+  const ready = (r: ReturnType<typeof buildInitialRow>) => ({
+    ...r, itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: 15,
+  });
+
+  it("1. auxiliar válido → se propone como código de barras de la unidad, no como SKU", () => {
+    const initial = buildInitialRow(xml, ["EAN13", "Code128", "Internal"]);
+
+    expect(initial.barcode).toBe("001013300320845306");
+    expect(initial.barcodeType).toBe("");
+    expect(initial.sku).toBe("8433");
+    expect(initial.sku).not.toContain("001013300320845306");
+
+    const request = buildResolveRequest([{ ...ready(initial), barcodeType: "Code128" }], pricing());
+    expect(request.newItems[0].sku).toBe("8433");
+    expect(request.lines[0]).toMatchObject({ barcode: "001013300320845306", barcodeType: "Code128" });
+  });
+
+  it("1b. auxiliar GTIN real → código de barras con su tipo EAN sugerido", () => {
+    expect(buildInitialRow({ ...xml, supplierAuxCode: UNIT_EAN }, ["EAN13"])).toMatchObject({
+      barcode: UNIT_EAN, barcodeType: "EAN13", sku: "8433",
+    });
+  });
+
+  it("2. auxiliar no válido → no contamina SKU ni código de barras (queda como evidencia XML)", () => {
+    const tooLong = "9".repeat(101);
+    const initial = buildInitialRow({ ...xml, supplierAuxCode: tooLong }, ["EAN13"]);
+
+    expect(initial).toMatchObject({ barcode: "", barcodeType: "", sku: "8433" });
+    // La evidencia XML no se toca.
+    expect({ ...xml, supplierAuxCode: tooLong }.supplierAuxCode).toBe(tooLong);
+    // Sin auxiliar válido, un código principal GTIN real sigue siendo el código de barras (FASE 3).
+    expect(buildInitialRow({ ...xml, supplierAuxCode: tooLong, supplierCode: UNIT_EAN }, ["EAN13"]).barcode)
+      .toBe(UNIT_EAN);
+  });
+
+  it("3. el código del proveedor sigue siendo la relación aprendida (línea de recepción → producto nuevo)", () => {
+    const initial = ready(buildInitialRow(xml, ["Code128"]));
+    const request = buildResolveRequest([{ ...initial, barcodeType: "Code128" }], pricing());
+
+    // El backend aprende Proveedor + código principal desde la línea de recepción indicada.
+    expect(request.lines[0]).toMatchObject({ purchaseReceptionLineId: xml.rowId, newItemKey: xml.rowId });
+    expect(request.newItems[0]).toMatchObject({ key: xml.rowId, sku: "8433" });
+    // Sin código de barras de la unidad, el código del proveedor sigue siendo el Interno provisional.
+    const sources = new Map([[xml.rowId, xml]]);
+    expect(provisionalUnitBarcode([{ ...initial, barcode: "" }], xml.rowId, sources)).toBe("8433");
+  });
+
+  it("4. creación sin código auxiliar sigue funcionando", () => {
+    const initial = ready(buildInitialRow({ ...xml, supplierAuxCode: "" }, ["EAN13"]));
+
+    expect(initial).toMatchObject({ barcode: "", barcodeType: "", sku: "8433" });
+    expect(pendingProductsFormSchema.safeParse({ rows: [initial] }).success).toBe(true);
+    const request = buildResolveRequest([initial], pricing());
+    expect(request.newItems[0].sku).toBe("8433");
+    expect(request.lines[0]).toMatchObject({ barcode: null, barcodeType: null });
+  });
+});
+
+describe("FASE 5 — unidad de medida duplicada entre presentaciones del producto nuevo", () => {
+  // Caso real DINADEC: 8433, unidad base = Unidad (19), SIXPACK X6 con unidad de presentación Unidad.
+  const sixpack = (presentationUomCode: string) => ({
+    ...buildInitialRow({ ...source, supplierCode: "8433", supplierAuxCode: "001013300320845306" }, []),
+    itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: 15,
+    presentationFactor: 6, presentationName: "SIXPACK X6", presentationUomCode, barcodeType: "",
+  });
+  const uomErrors = (rows: ReturnType<typeof sixpack>[]) => {
+    const parsed = pendingProductsFormSchema.safeParse({ rows });
+    return parsed.success ? [] : parsed.error.issues.filter((i) => i.path.at(-1) === "presentationUomCode");
+  };
+
+  it("bloquea SIXPACK X6 con la misma unidad que la unidad base y pide otra (Paquete/Caja)", () => {
+    const errors = uomErrors([sixpack("19")]);
+
+    expect(errors).toHaveLength(1);
+    expect(errors[0].path).toEqual(["rows", 0, "presentationUomCode"]);
+    expect(errors[0].message).toContain('"SIXPACK X6" no puede usar la misma unidad que la unidad base');
+    expect(errors[0].message).toContain("Paquete o Caja");
+  });
+
+  it("acepta la presentación con su propia unidad (Paquete)", () => {
+    expect(pendingProductsFormSchema.safeParse({ rows: [sixpack("14")] }).success).toBe(true);
+  });
+
+  it("también bloquea dos presentaciones del mismo producto nuevo con la misma unidad", () => {
+    const base = { ...sixpack("14"), rowId: "a" };
+    const box = { ...sixpack("14"), rowId: "b", mode: "presentation" as const, parentRowId: "a",
+      presentationFactor: 12, presentationName: "CAJA X12", barcode: "" };
+    const errors = uomErrors([base, box]);
+
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].message).toContain("Otra presentación de este producto ya usa esa unidad");
   });
 });

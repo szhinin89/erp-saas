@@ -11623,6 +11623,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("warehouse_id");
 
+                    b.Property<decimal?>("XmlOriginFactor")
+                        .HasColumnType("numeric(22,10)")
+                        .HasColumnName("xml_origin_factor");
+
+                    b.Property<Guid?>("XmlOriginPackagingLevelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("xml_origin_packaging_level_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InvoiceId")

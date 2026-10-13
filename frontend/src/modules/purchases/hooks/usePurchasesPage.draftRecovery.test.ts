@@ -6,7 +6,10 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { usePurchasesPage } from "./usePurchasesPage";
 import { purchaseService, type PurchaseInvoiceDto } from "../api/purchaseService";
-import type { PurchaseDraftLineDto } from "../api/purchaseReceptionService";
+import {
+  purchaseReceptionService,
+  type PurchaseDraftLineDto,
+} from "../api/purchaseReceptionService";
 import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
@@ -28,6 +31,7 @@ vi.mock("../api/purchaseService", () => ({
     distributeCost: vi.fn(),
     confirm: vi.fn(),
     cancel: vi.fn(),
+    discardDraft: vi.fn(),
     retentionPreview: vi.fn(),
     getItemContext: vi.fn(),
     supplierReport: vi.fn(),
@@ -59,6 +63,7 @@ vi.mock("../api/purchaseReceptionService", () => ({
     getXmlView: vi.fn(),
     getLineMatch: vi.fn(),
     createDraft: vi.fn(),
+    matchItem: vi.fn(),
   },
 }));
 
@@ -338,6 +343,24 @@ describe("PURCHASE-DRAFT-RECOVERY B1/F1 — guardar con pendientes y reabrir", (
     const payload = vi.mocked(purchaseService.update).mock.calls[0][1];
     expect(payload.lines[1].itemId ?? null).toBeNull();
     expect(payload.lines[1].purchaseReceptionLineId).toBe("rl-1");
+  });
+
+  it("FASE 5 PURCHASE-UX — después de Guardar permanece en la compra y la recarga por id", async () => {
+    const result = await setupLoaded({
+      lines: [resolvedLine, invoiceLine()] as unknown as PurchaseInvoiceDto["lines"],
+    });
+    vi.mocked(purchaseService.getById).mockClear();
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(purchaseService.update).toHaveBeenCalledTimes(1);
+    expect(purchaseService.getById).toHaveBeenCalledWith("purchase-1");
+    expect(result.current.tab).toBe("nuevo");
+    expect(result.current.editing?.id).toBe("purchase-1");
+    expect(result.current.hasUnsavedFormChanges).toBe(false);
+    expect(result.current.documentState.kind).toBe("draftIncomplete");
   });
 
   it("Confirmar aplica su propia regla: un borrador incompleto no llama al backend", async () => {
@@ -652,5 +675,110 @@ describe("PURCHASE-DRAFT-RECOVERY D3 — salir con cambios sin guardar", () => {
     });
 
     expect(leave).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("FASE 5 PURCHASE-UX — presentación de origen XML persistida", () => {
+  // XML editada persistida operacionalmente en unidad base (nivel base), con origen SIXPACK x6
+  // elegido en esta compra; la recepción había resuelto PACA x12.
+  const editedLine = invoiceLine({
+    itemId: "item-1",
+    quantity: 11,
+    unitPrice: 4,
+    packagingLevelId: "unit-1",
+    uomCode: "UNIT",
+    baseUomCode: "UNIT",
+    conversionFactor: 1,
+    quantityInBaseUom: 11,
+    xmlOriginPackagingLevelId: "six-6",
+    xmlOriginFactor: 6,
+    xmlSource: xmlSource({
+      itemId: "item-1",
+      itemMatchStatus: "MANUALLY_MATCHED",
+      unitPrice: 24,
+      packagingLevelId: "paca-12",
+      conversionFactor: 12,
+    }),
+  });
+
+  it("al reabrir usa el origen persistido (x6), no el de la recepción (x12)", async () => {
+    const result = await setupLoaded({
+      lines: [editedLine] as unknown as PurchaseInvoiceDto["lines"],
+    });
+
+    expect(result.current.lines[0].xmlOriginPackagingLevelId).toBe("six-6");
+    expect(result.current.lines[0].xmlOriginFactor).toBe(6);
+    expect(result.current.lines[0].packagingLevelId).toBe("unit-1");
+  });
+
+  it("5. Guardar la compra persiste el origen sin aprender nada del proveedor", async () => {
+    const result = await setupLoaded({
+      lines: [editedLine] as unknown as PurchaseInvoiceDto["lines"],
+    });
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    const payload = vi.mocked(purchaseService.update).mock.calls[0][1];
+    expect(payload.lines[0].xmlOriginPackagingLevelId).toBe("six-6");
+    expect(purchaseReceptionService.matchItem).not.toHaveBeenCalled();
+  });
+
+  it("5. Guardar presentación (acción explícita) aprende el ORIGEN y no toca la línea operativa", async () => {
+    vi.mocked(purchaseReceptionService.matchItem).mockResolvedValue({
+      matchStatus: "MANUALLY_MATCHED",
+    } as Awaited<ReturnType<typeof purchaseReceptionService.matchItem>>);
+    const result = await setupLoaded({
+      lines: [editedLine] as unknown as PurchaseInvoiceDto["lines"],
+    });
+    const key = result.current.lines[0]._key;
+
+    await act(async () => {
+      await result.current.handleSaveSupplierPresentation(key);
+    });
+
+    expect(purchaseReceptionService.matchItem).toHaveBeenCalledWith("rl-1", "item-1", "six-6");
+    const line = result.current.lines[0];
+    expect(line.packagingLevelId).toBe("unit-1");
+    expect(line.quantity).toBe(11);
+    expect(line.unitPrice).toBe(4);
+    expect(line.quantityInBaseUom).toBe(11);
+    expect(purchaseService.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("FASE 5 PURCHASE-UX — Descartar borrador", () => {
+  it("descarta el borrador guardado (motivo opcional), limpia el formulario y vuelve al listado", async () => {
+    const result = await setupLoaded();
+    vi.mocked(purchaseService.discardDraft).mockResolvedValue(
+      buildInvoice({ status: "Cancelled", isDiscardedDraft: true }),
+    );
+
+    await act(async () => {
+      await result.current.handleDiscardDraft("Cargado por error");
+    });
+
+    expect(purchaseService.discardDraft).toHaveBeenCalledWith("purchase-1", "Cargado por error");
+    expect(purchaseService.cancel).not.toHaveBeenCalled();
+    expect(result.current.tab).toBe("listado");
+    expect(result.current.editing).toBeNull();
+  });
+
+  it("una compra confirmada no se descarta (eso es Anular compra)", async () => {
+    const result = await setupLoaded({ status: "Confirmed" });
+
+    await act(async () => {
+      await result.current.handleDiscardDraft("");
+    });
+
+    expect(purchaseService.discardDraft).not.toHaveBeenCalled();
+  });
+
+  it("un borrador descartado se abre en solo lectura con estado 'discarded'", async () => {
+    const result = await setupLoaded({ status: "Cancelled", isDiscardedDraft: true, cancelReason: "Duplicado" });
+
+    expect(result.current.readOnly).toBe(true);
+    expect(result.current.documentState.kind).toBe("discarded");
   });
 });

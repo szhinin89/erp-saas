@@ -41,6 +41,15 @@ public sealed class PurchaseInvoiceDetailConfiguration
 
         // ── UoM ─────────────────────────────────────────────────────────
         builder.Property(x => x.PackagingLevelId).HasColumnName("packaging_level_id");
+        // FASE 5 PURCHASE-UX — presentación de origen XML (interpretación del documento del
+        // proveedor), separada de la operativa. Nullable: líneas manuales y borradores anteriores.
+        builder
+            .Property(x => x.XmlOriginPackagingLevelId)
+            .HasColumnName("xml_origin_packaging_level_id");
+        builder
+            .Property(x => x.XmlOriginFactor)
+            .HasColumnName("xml_origin_factor")
+            .HasColumnType("numeric(22,10)");
         builder
             .Property(x => x.UomCode)
             .HasColumnName("uom_code")

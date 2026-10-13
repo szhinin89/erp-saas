@@ -33,6 +33,7 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
         public Mock<IItemRepository> Items { get; } = new();
         public Mock<IUnitOfWork> UnitOfWork { get; } = new();
         public Mock<IRuntimePermissionAuthorizer> Authorizer { get; } = new();
+        public Mock<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator> DbExceptions { get; } = new();
         public PurchaseReceptionDocument Document { get; }
         public PurchaseReceptionLine LineA { get; }
         public PurchaseReceptionLine LineB { get; }
@@ -134,7 +135,7 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId && u.Role == "Compras"),
-                Mock.Of<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator>()
+                DbExceptions.Object
             );
     }
 
@@ -501,5 +502,85 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
         );
 
         errors.Should().Contain(e => e.NewItemKey == "n1" && e.Message.Contains("unidad"));
+    }
+
+    // ── FASE 5 PURCHASE-UX — unidad de medida duplicada entre presentaciones ─────────────────
+
+    /// <summary>Caso real DINADEC: código 8433, SIXPACK X6 con la misma UoM que la unidad base.</summary>
+    private static ResolvePurchaseReceptionLinesCommand SixPackCommand(Fixture f, string presentationUom) =>
+        new(
+            [NewItem("n1")],
+            [
+                new(
+                    f.LineA.Id,
+                    NewItemKey: "n1",
+                    PresentationFactor: 6m,
+                    PresentationName: "SIXPACK X6",
+                    PresentationUomCode: presentationUom,
+                    Barcode: "001013300320845306"
+                ),
+            ]
+        );
+
+    [Fact]
+    public async Task Presentation_with_same_uom_as_base_unit_is_rejected_before_transaction()
+    {
+        var f = new Fixture();
+
+        var errors = await RejectedAsync(f, SixPackCommand(f, "19"));
+
+        errors.Should().ContainSingle(e =>
+            e.NewItemKey == "n1"
+            && e.Message.Contains("SIXPACK X6")
+            && e.Message.Contains("misma unidad de medida que la unidad base")
+            && e.Message.Contains("Paquete o Caja")
+        );
+        f.UnitOfWork.Verify(
+            u => u.ExecuteInTransactionAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Presentation_with_its_own_uom_is_valid()
+    {
+        var f = new Fixture();
+
+        var result = await f.Build().Handle(SixPackCommand(f, "14"), CancellationToken.None);
+
+        result.Value!.Errors.Should().BeEmpty();
+        result.Value.Applied.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("uq_item_packaging_uom", "misma unidad de medida", "Otro proceso")]
+    [InlineData("uq_items_tenant_company_sku", "Otro proceso", "misma unidad de medida")]
+    [InlineData("uq_item_variant_barcode_tenant_company_code", "Otro proceso", "misma unidad de medida")]
+    [InlineData("uq_item_supplier_codes_tenant_company_supplier_code", "Otro proceso", "misma unidad de medida")]
+    public async Task Unique_violation_message_depends_on_the_constraint(
+        string constraint,
+        string expected,
+        string notExpected
+    )
+    {
+        var f = new Fixture();
+        var dbError = new InvalidOperationException("23505");
+        f.UnitOfWork.Setup(u =>
+                u.ExecuteInTransactionAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>())
+            )
+            .ThrowsAsync(dbError);
+        var violation = new ERP.Application.Common.Persistence.DatabaseUniqueViolationInfo(
+            "23505",
+            constraint,
+            null,
+            null
+        );
+        f.DbExceptions.Setup(d => d.TryGetUniqueViolation(dbError, out violation)).Returns(true);
+
+        var errors = await RejectedAsync(f, SixPackCommand(f, "14"));
+
+        errors.Should().ContainSingle();
+        errors[0].Message.Should().Contain(expected).And.NotContain(notExpected);
+        f.UnitOfWork.Verify(u => u.ClearChangeTracker(), Times.Once, "all-or-nothing: nothing stays tracked");
     }
 }

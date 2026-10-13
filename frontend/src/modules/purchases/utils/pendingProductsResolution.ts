@@ -63,9 +63,32 @@ export function selectPendingProductSources(
 
 const SKU_INVALID = /[^A-Za-z0-9\-_.]+/g;
 
-/** SKU sugerido desde el código del proveedor: solo caracteres válidos, máx. 50. */
-export function suggestSku(code: string): string {
-  return code.trim().replace(SKU_INVALID, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+/**
+ * SKU sugerido para el producto nuevo — misma regla que ya aplica la creación de Items desde una
+ * compra (ItemEditorModal: código del proveedor, en mayúsculas), solo con caracteres válidos para SKU,
+ * máx. 50. FASE 5: nunca desde el código auxiliar del XML (no es un código interno del ERP); sin
+ * código del proveedor queda vacío y el usuario lo ingresa.
+ */
+export function suggestSku(supplierCode: string): string {
+  return supplierCode
+    .trim()
+    .replace(SKU_INVALID, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50)
+    .toUpperCase();
+}
+
+/** Mismo límite que Items (CreateItemCommandValidator / createItemSchema). */
+const MAX_BARCODE_LENGTH = 100;
+
+/**
+ * FASE 5 — el código auxiliar del XML cumple las validaciones existentes de código de barras de
+ * Items (obligatorio, máx. 100). Solo entonces se propone como código de barras de la unidad base;
+ * si no, queda solo como evidencia XML (nunca se convierte en SKU ni en código de barras).
+ */
+export function isAcceptableBarcode(code: string): boolean {
+  const value = code.trim();
+  return value.length > 0 && value.length <= MAX_BARCODE_LENGTH;
 }
 
 /**
@@ -129,18 +152,31 @@ export function provisionalUnitBarcode(
   );
 }
 
+/**
+ * Código de barras propuesto para la unidad base (FASE 5):
+ * - código auxiliar del XML si cumple las validaciones de código de barras de Items;
+ * - si no, el código principal del proveedor SOLO si es un código de barras real (GTIN) — el
+ *   código del proveedor se conserva como código del proveedor (ItemSupplierCode), no como barcode;
+ * - si no, vacío (el backend aplica su regla de código Interno provisional).
+ */
+export function proposedUnitBarcode(source: PendingProductSource): string {
+  const auxCode = source.supplierAuxCode.trim();
+  if (isAcceptableBarcode(auxCode)) return auxCode;
+  const supplierCode = source.supplierCode.trim();
+  return isRealBarcode(supplierCode) ? supplierCode : "";
+}
+
 /** Precarga de una fila: todo lo que el XML ya sabe, nada inventado. */
 export function buildInitialRow(
   source: PendingProductSource,
   barcodeTypes: string[],
 ): PendingProductRow {
-  const barcode =
-    [source.supplierAuxCode, source.supplierCode].map((c) => c.trim()).find(isRealBarcode) ?? "";
+  const barcode = proposedUnitBarcode(source);
   return {
     rowId: source.rowId,
     selected: true,
     mode: "create",
-    sku: suggestSku(source.supplierAuxCode || source.supplierCode),
+    sku: suggestSku(source.supplierCode),
     shortName: source.xmlDescription.trim().slice(0, 50),
     description: source.xmlDescription.trim().slice(0, 254),
     itemTypeId: "",
@@ -148,7 +184,8 @@ export function buildInitialRow(
     categoryNodeId: "",
     defaultUomCode: "",
     barcode,
-    barcodeType: barcode ? suggestBarcodeType(barcode, barcodeTypes) : "",
+    // Tipo sugerido solo para un GTIN real; cualquier otro código lo tipifica el usuario.
+    barcodeType: isRealBarcode(barcode) ? suggestBarcodeType(barcode, barcodeTypes) : "",
     saleVatCode: source.vatCode,
     // IVA compra/ICE: datos del XML (solo lectura), no decisión del Item.
     purchaseVatCode: source.vatCode,
@@ -376,6 +413,13 @@ export function applyResolvedReceptionLines(
       baseUomCode: r.baseUomCode,
       conversionFactor: r.conversionFactor,
       quantityInBaseUom: l.quantity * r.conversionFactor,
+      // FASE 5 PURCHASE-UX — la línea sigue en la unidad del documento del proveedor (quantity sin
+      // cambiar): la presentación resuelta ES la que interpreta ese documento. Sin esto el origen
+      // quedaba con el de la carga (p. ej. factor 1) y "50 SIXPACK × $6 = 300 u × $1" se veía como
+      // diferencia con el proveedor.
+      xmlOriginPackagingLevelId: r.packagingLevelId ?? undefined,
+      xmlOriginFactor: r.conversionFactor,
+      baseUnitPrice: undefined,
       context: l.itemId === r.itemId ? l.context : undefined,
       _readinessIssue: undefined,
     };

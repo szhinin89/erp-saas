@@ -61,7 +61,8 @@ internal static class PurchaseMapper
                     i.RetentionIntentEmissionPointId,
                     i.RetentionIntentIssueDate
                 )
-                : null
+                : null,
+            i.IsDiscardedDraft
         );
 
     private static PurchaseDraftLineDto? FindXmlSource(
@@ -121,7 +122,9 @@ internal static class PurchaseMapper
             l.PurchaseReceptionLineId,
             l.Notes,
             l.SortOrder,
-            xmlSource
+            xmlSource,
+            l.XmlOriginPackagingLevelId,
+            l.XmlOriginFactor
         );
 
     public static PurchasePaymentScheduleDto MapSchedule(PurchasePaymentSchedule s) =>

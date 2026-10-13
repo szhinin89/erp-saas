@@ -88,5 +88,10 @@ export function recoverLearnedMatch(
     baseUomCode: xmlSource.baseUomCode,
     conversionFactor: xmlSource.conversionFactor,
     quantityInBaseUom: line.quantity * xmlSource.conversionFactor,
+    // FASE 5 PURCHASE-UX — la presentación aprendida interpreta el documento del proveedor (la
+    // cantidad sigue en sus unidades): es también la presentación de origen.
+    xmlOriginPackagingLevelId: xmlSource.packagingLevelId ?? undefined,
+    xmlOriginFactor: xmlSource.conversionFactor,
+    baseUnitPrice: undefined,
   };
 }

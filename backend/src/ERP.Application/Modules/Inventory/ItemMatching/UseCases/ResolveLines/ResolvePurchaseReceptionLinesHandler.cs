@@ -53,6 +53,16 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     /// <summary>Mismo límite que el código de barras del Item (CreateItemCommandValidator).</summary>
     private const int MaxBarcodeLength = 100;
 
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — índice único de BD (item_id, uom_code): dos presentaciones de un mismo
+    /// Item no pueden compartir unidad de medida. Se pre-valida (ver DuplicatePresentationUom); si
+    /// igual llega a la BD, se informa como unidad duplicada, nunca como concurrencia.
+    /// </summary>
+    private const string PackagingUomUniqueConstraint = "uq_item_packaging_uom";
+
+    private const string DuplicatePresentationUomHint =
+        "Cada presentación del producto necesita su propia unidad: elija otra (p. ej. Paquete o Caja).";
+
     public async Task<Result<ResolvePurchaseReceptionLinesResultDto>> Handle(
         ResolvePurchaseReceptionLinesCommand cmd,
         CancellationToken cancellationToken
@@ -128,14 +138,24 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                 ),
             ]);
         }
-        catch (Exception ex) when (databaseExceptions.TryGetUniqueViolation(ex, out _))
+        catch (Exception ex) when (databaseExceptions.TryGetUniqueViolation(ex, out var violation))
         {
             unitOfWork.ClearChangeTracker();
+            // FASE 5 PURCHASE-UX — unidad duplicada entre presentaciones del mismo producto: es un
+            // dato del lote, no una colisión con otro proceso. El mensaje de concurrencia queda solo
+            // para SKU / código de barras / código de proveedor.
+            var message = string.Equals(
+                violation?.ConstraintName,
+                PackagingUomUniqueConstraint,
+                StringComparison.OrdinalIgnoreCase
+            )
+                ? $"Dos presentaciones del producto usan la misma unidad de medida. {DuplicatePresentationUomHint}"
+                : "Otro proceso registró el producto o código de proveedor. Actualice la factura y revise esta fila.";
             return Rejected([
                 new ResolveReceptionRowError(
                     outcome.CurrentLineId,
                     outcome.CurrentItemKey,
-                    "Otro proceso registró el producto o código de proveedor. Actualice la factura y revise esta fila."
+                    message
                 ),
             ]);
         }
@@ -390,7 +410,44 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             messages.Add(
                 $"La presentación de {conflictingFactor.Key} unidades tiene nombres o unidades distintas entre líneas."
             );
+
+        var duplicateUom = DuplicatePresentationUom(newItem, itemLines);
+        if (duplicateUom is not null)
+            messages.Add(duplicateUom);
         return messages.Distinct().ToList();
+    }
+
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — mismas presentaciones que <see cref="BuildPresentations"/> (unidad base con
+    /// la UoM del Item + una por factor): ninguna puede repetir unidad de medida (índice único
+    /// <c>uq_item_packaging_uom</c>). Devuelve el mensaje de la primera repetida, o null.
+    /// </summary>
+    private static string? DuplicatePresentationUom(
+        ResolveReceptionNewItemInput newItem,
+        IReadOnlyList<ResolveReceptionLineInput> itemLines
+    )
+    {
+        var used = new Dictionary<string, string>(StringComparer.Ordinal);
+        var baseUom = newItem.DefaultUomCode?.Trim().ToUpperInvariant() ?? string.Empty;
+        if (baseUom.Length > 0)
+            used[baseUom] = "la unidad base";
+        foreach (
+            var group in itemLines
+                .Where(l => l.PresentationFactor != 1m)
+                .GroupBy(l => l.PresentationFactor)
+                .OrderBy(g => g.Key)
+        )
+        {
+            var first = group.First();
+            var uom = Uom(first);
+            if (uom.Length == 0)
+                continue;
+            var label = $"la presentación '{Name(first)}' (x{group.Key:0.######})";
+            if (used.TryGetValue(uom, out var other))
+                return $"La presentación '{Name(first)}' (x{group.Key:0.######}) usa la misma unidad de medida que {other}. {DuplicatePresentationUomHint}";
+            used[uom] = label;
+        }
+        return null;
     }
 
     // ── Ejecución atómica ────────────────────────────────────────────────────────────────────

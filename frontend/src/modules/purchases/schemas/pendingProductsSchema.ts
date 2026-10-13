@@ -112,6 +112,22 @@ export const pendingProductsFormSchema = z
       `${r.mode === "create" ? r.rowId : r.parentRowId}:${r.presentationFactor ?? 1}`;
     const targetsByBarcode = new Map<string, Set<string>>();
     const barcodesByTarget = new Map<string, Set<string>>();
+    // FASE 5 PURCHASE-UX — cada presentación de un producto nuevo (unidad base + una por factor)
+    // necesita su propia unidad de medida (índice único item_id + uom_code). Producto = fila que lo
+    // crea; unidad base = su "Unidad base".
+    const owner = (r: PendingProductRow) => (r.mode === "create" ? r.rowId : r.parentRowId);
+    const baseUomByOwner = new Map(
+      selected.filter((r) => r.mode === "create").map((r) => [r.rowId, r.defaultUomCode.trim().toUpperCase()]),
+    );
+    const isPresentation = (r: PendingProductRow) =>
+      r.mode !== "link" && r.presentationFactor != null && r.presentationFactor !== 1;
+    const factorsByOwnerUom = new Map<string, Set<number>>();
+    for (const r of selected) {
+      const uom = r.presentationUomCode.trim().toUpperCase();
+      if (!isPresentation(r) || !uom) continue;
+      const key = `${owner(r)}:${uom}`;
+      factorsByOwnerUom.set(key, (factorsByOwnerUom.get(key) ?? new Set()).add(r.presentationFactor as number));
+    }
     for (const r of selected) {
       const sku = r.sku.trim().toUpperCase();
       if (r.mode === "create" && sku) skuCount.set(sku, (skuCount.get(sku) ?? 0) + 1);
@@ -129,6 +145,22 @@ export const pendingProductsFormSchema = z
           message: "El producto nuevo elegido debe estar seleccionado para crearse.",
         });
       if (r.mode === "link") return;
+      const presentationUom = r.presentationUomCode.trim().toUpperCase();
+      if (isPresentation(r) && presentationUom) {
+        const name = r.presentationName.trim() || `x${r.presentationFactor}`;
+        if (presentationUom === baseUomByOwner.get(owner(r)))
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["rows", index, "presentationUomCode"],
+            message: `La presentación "${name}" no puede usar la misma unidad que la unidad base. Cada presentación del producto necesita su propia unidad: elija otra (p. ej. Paquete o Caja).`,
+          });
+        else if ((factorsByOwnerUom.get(`${owner(r)}:${presentationUom}`)?.size ?? 0) > 1)
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["rows", index, "presentationUomCode"],
+            message: `Otra presentación de este producto ya usa esa unidad. Cada presentación necesita su propia unidad: elija otra (p. ej. Paquete o Caja).`,
+          });
+      }
       const barcode = r.barcode.trim();
       if (barcode && (targetsByBarcode.get(barcode)?.size ?? 0) > 1)
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rows", index, "barcode"], message: "El código de barras está repetido en el lote." });

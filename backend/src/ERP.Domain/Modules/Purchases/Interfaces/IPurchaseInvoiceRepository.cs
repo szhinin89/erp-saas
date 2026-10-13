@@ -44,11 +44,12 @@ public interface IPurchaseInvoiceRepository
     );
 
     /// <summary>
-    /// <c>LineCounts</c> se resuelve con un COUNT agrupado, no con <c>Include(Lines)</c> —
-    /// el listado no necesita las líneas completas de cada compra, solo su cantidad.
+    /// <c>LineCounts</c> se resuelve con un COUNT agrupado. FASE 5 PURCHASE-UX: los items de la
+    /// página incluyen líneas + impuestos para exponer <c>GrandTotal</c> en el listado.
     /// PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — <c>supplierId</c> opcional (solo lectura)
     /// para que el selector manual de factura afectada de la NC pueda acotar por proveedor sin
-    /// depender de <c>search</c> (que solo matchea <c>InvoiceNumber</c>).
+    /// depender de <c>search</c> (que matchea <c>InvoiceNumber</c>, <c>SupplierName</c> o
+    /// <c>SupplierTaxId</c>).
     /// </summary>
     Task<(
         IReadOnlyList<PurchaseInvoice> Items,

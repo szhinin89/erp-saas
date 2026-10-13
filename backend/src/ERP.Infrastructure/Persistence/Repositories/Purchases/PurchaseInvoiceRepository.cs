@@ -159,15 +159,26 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var s = search.Trim();
-            q = q.Where(x => x.InvoiceNumber.Contains(s));
+            // FASE 5 PURCHASE-UX — búsqueda por número de factura o por proveedor (razón social /
+            // RUC del snapshot de la compra), sin distinguir mayúsculas.
+            var pattern = $"%{search.Trim()}%";
+            q = q.Where(x =>
+                EF.Functions.ILike(x.InvoiceNumber, pattern)
+                || EF.Functions.ILike(x.SupplierName, pattern)
+                || EF.Functions.ILike(x.SupplierTaxId, pattern)
+            );
         }
 
         if (supplierId is { } sid)
             q = q.Where(x => x.SupplierId == sid);
 
         var total = await q.CountAsync(ct);
-        var items = await q.OrderByDescending(x => x.IssueDate)
+        // FASE 5 PURCHASE-UX — líneas + impuestos de la página para exponer GrandTotal en el
+        // listado (un borrador calcula su total desde las líneas; ICE vive en Taxes).
+        var items = await q.Include(x => x.Lines)
+            .ThenInclude(l => l.Taxes)
+            .AsSplitQuery()
+            .OrderByDescending(x => x.IssueDate)
             .ThenByDescending(x => x.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

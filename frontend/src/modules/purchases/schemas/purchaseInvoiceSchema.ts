@@ -35,6 +35,15 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
   baseUomCode: z.string().nullable().optional(),
   conversionFactor: z.number().optional(),
   quantityInBaseUom: z.number().optional(),
+  // FASE 5 PURCHASE-UX — precio unitario base (antes de descuento/flete) tecleado/conservado por el
+  // usuario: autoritativo frente al precio por presentación, que siempre se deriva de él. Solo
+  // estado de formulario — no viaja en el payload (ver resolveLinePersistence).
+  baseUnitPrice: z.number().optional(),
+  // FASE 5 PURCHASE-UX — presentación con la que se interpreta la unidad del documento del
+  // proveedor (línea XML), separada de la presentación operativa: una XML editada puede
+  // persistirse en unidad base sin perder "2 CAJA = 2 × PACA x12". Solo estado de formulario.
+  xmlOriginPackagingLevelId: z.string().nullable().optional(),
+  xmlOriginFactor: z.number().optional(),
   // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo aplicado en el modal "Distribuir
   // flete/gasto" ANTES de guardar (compra nueva sin Id persistido). Viaja en el payload
   // create/update; el backend lo aplica directo por línea y omite el reprorrateo automático.

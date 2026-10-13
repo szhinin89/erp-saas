@@ -74,6 +74,7 @@ import {
 import { message } from "../../../lib/messages";
 import { useI18n } from "../../../i18n/i18n";
 import { usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
+import { resolvePrecisionDecimals } from "../../../lib/config/precisionPolicy.config";
 import {
   todayIso,
   addDaysIso,
@@ -99,6 +100,8 @@ import {
   buildPurchaseLineFromItem,
   normalizePurchaseLinePresentation,
 } from "../utils/purchaseItemProfile";
+import { resolvePurchaseDocumentState } from "../utils/purchaseDocumentState";
+import { resolveXmlOriginPresentation } from "../utils/purchaseLinePresentation";
 import {
   getPurchaseLineBlockingReasons,
   getPurchaseLineReadiness,
@@ -245,6 +248,8 @@ export function usePurchasesPage() {
   const [modalConfirm, setModalConfirm] = useState(false);
   const [modalDiscount, setModalDiscount] = useState(false);
   const [modalCancelReason, setModalCancelReason] = useState(false);
+  // FASE 5 PURCHASE-UX — confirmación de "Descartar borrador" (motivo opcional).
+  const [modalDiscardDraft, setModalDiscardDraft] = useState(false);
   // ZH-RETENTION-SRI-ANNULMENT-01 — la retención ya está AUTORIZADA: el motivo se conserva para
   // iniciar la anulación ante el SRI sin pedirlo de nuevo.
   const [sriAnnulmentReason, setSriAnnulmentReason] = useState<string | null>(null);
@@ -533,6 +538,16 @@ export function usePurchasesPage() {
     "purchases.schedule.mismatchBlocksConfirm",
     "Las cuotas no cuadran con el total de la compra. Regenere o corrija las cuotas antes de confirmar.",
   );
+  // FASE 5 PURCHASE-UX — estado visible de la compra (mismas condiciones que deshabilitan Confirmar).
+  const documentState = resolvePurchaseDocumentState({
+    status: editing?.status,
+    isDiscardedDraft: editing?.isDiscardedDraft,
+    lineCount: lines.length,
+    lineBlockerCount: lineReadinessBlockers.length,
+    pendingReceptionItemCount: pendingReceptionItems.length,
+    scheduleBlocksConfirm,
+    hasUnsavedFormChanges,
+  });
   const sriDocTypesUnavailable =
     sriDocTypesLoaded && (sriDocTypesLoadFailed || sriDocTypes.length === 0);
   const canUseSriDocTypes = sriDocTypesLoaded && !sriDocTypesUnavailable;
@@ -1013,7 +1028,12 @@ export function usePurchasesPage() {
     async (key: number) => {
       const currentLines = getValues("lines");
       const line = currentLines.find((l) => l._key === key);
-      if (!line?.purchaseReceptionLineId || !line.itemId || !line.packagingLevelId)
+      // FASE 5 PURCHASE-UX — lo que se aprende para Proveedor + Código es la presentación con la que
+      // se interpreta el documento del proveedor (ORIGEN), no la operativa (una XML editada puede
+      // estar en unidad base). Acción explícita e independiente: no toca cantidad/costo/presentación
+      // operativa de la línea, y guardar la compra nunca la dispara.
+      const supplierPresentationId = line?.xmlOriginPackagingLevelId ?? line?.packagingLevelId;
+      if (!line?.purchaseReceptionLineId || !line.itemId || !supplierPresentationId)
         return;
 
       setMatchingKey(key);
@@ -1021,14 +1041,9 @@ export function usePurchasesPage() {
         const updated = await purchaseReceptionService.matchItem(
           line.purchaseReceptionLineId,
           line.itemId,
-          line.packagingLevelId,
+          supplierPresentationId,
         );
         const latest = getValues("lines");
-        const selectedPackaging = line.context?.packagingLevels?.find(
-          (p) => p.id === line.packagingLevelId,
-        );
-        const conversionFactor =
-          selectedPackaging?.baseQuantity ?? line.conversionFactor ?? 1;
         setValue(
           "lines",
           latest.map((l) =>
@@ -1036,11 +1051,6 @@ export function usePurchasesPage() {
               ? {
                   ...l,
                   itemMatchStatus: updated.matchStatus,
-                  packagingLevelId: line.packagingLevelId,
-                  uomCode: selectedPackaging?.uomCode ?? line.uomCode,
-                  baseUomCode: line.context?.baseUomCode ?? line.baseUomCode,
-                  conversionFactor,
-                  quantityInBaseUom: line.quantity * conversionFactor,
                   _readinessIssue: undefined,
                 }
               : l,
@@ -1412,6 +1422,9 @@ export function usePurchasesPage() {
             ? {
                 ...xmlEvidenceFromDraftLine(l.xmlSource),
                 itemMatchStatus: l.xmlSource.itemMatchStatus,
+                // FASE 5 PURCHASE-UX — presentación de origen del documento del proveedor (una XML
+                // editada pudo persistirse en unidad base).
+                ...resolveXmlOriginPresentation(l, l.xmlSource),
               }
             : documentalTaxSnapshot(l)),
         }));
@@ -1641,6 +1654,8 @@ export function usePurchasesPage() {
             // campos editables; los xml* nunca se tocan de nuevo. PURCHASE-DRAFT-RECOVERY F1: misma
             // proyección que al reabrir el borrador guardado.
             ...xmlEvidenceFromDraftLine(l),
+            // FASE 5 PURCHASE-UX — la presentación propuesta por la recepción interpreta el documento.
+            ...resolveXmlOriginPresentation(l),
           }),
         );
 
@@ -1756,13 +1771,17 @@ export function usePurchasesPage() {
     }
     setSaving(true);
     try {
-      const payload = buildPurchaseDraftPayload(data, draftExtras);
+      const payload = buildPurchaseDraftPayload(data, draftExtras, {
+        purchaseUnitPriceDecimals: resolvePrecisionDecimals(precisionPolicy, "purchaseUnitPrice"),
+      });
 
+      let savedId: string;
       if (editing) {
         await purchaseService.update(editing.id, {
           ...payload,
           id: editing.id,
         });
+        savedId = editing.id;
         message.success(
           t(
             "purchases.messages.updated",
@@ -1770,13 +1789,16 @@ export function usePurchasesPage() {
           ),
         );
       } else {
-        await purchaseService.create(payload);
+        const created = await purchaseService.create(payload);
+        savedId = created.id;
         message.success(
           t("purchases.messages.draftSaved", "Borrador guardado correctamente."),
         );
       }
-      resetForm();
-      setTab("listado");
+      // FASE 5 PURCHASE-UX — después de Guardar se permanece en la compra, recargada por id desde
+      // el backend (versión persistida = la que Confirmar usará), para poder confirmar sin volver
+      // a buscarla en el listado. El listado se refresca en segundo plano.
+      await loadForEdit(savedId);
       fetchList();
     } catch (err: unknown) {
       const applied = applyServerErrors(err, setFieldError);
@@ -1941,6 +1963,32 @@ export function usePurchasesPage() {
       }
     },
     [editing, resetForm, fetchList, showSaveError, t, loadForEdit],
+  );
+
+  // FASE 5 PURCHASE-UX — descarta el borrador guardado (soft, sin reversos). Al completar limpia el
+  // formulario y vuelve al listado refrescado. Nunca aplica a una compra confirmada (eso es Anular).
+  const handleDiscardDraft = useCallback(
+    async (reason: string) => {
+      setModalDiscardDraft(false);
+      if (!editing || editing.status !== "Draft") return;
+      setSaving(true);
+      try {
+        await purchaseService.discardDraft(editing.id, reason);
+        message.success(t("purchases.messages.draftDiscarded", "Borrador descartado."));
+        resetForm();
+        setTab("listado");
+        fetchList();
+      } catch (err: unknown) {
+        const [detail, ...rest] = resolveApiErrorDetails(
+          err,
+          t("purchases.errors.discardFailed", "No se pudo descartar el borrador."),
+        );
+        showSaveError(detail, rest);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [editing, resetForm, fetchList, showSaveError, t],
   );
 
   const handleCancel = useCallback(
@@ -2378,6 +2426,7 @@ export function usePurchasesPage() {
     // Derived
     isDraft,
     readOnly,
+    documentState,
     fieldDisabled,
     hasUnsavedChanges,
     hasUnsavedFormChanges,
@@ -2447,6 +2496,7 @@ export function usePurchasesPage() {
     handleSave,
     handleConfirm,
     handleCancel,
+    handleDiscardDraft,
     sriAnnulmentReason,
     setSriAnnulmentReason,
     handleStartSriAnnulment,
@@ -2465,6 +2515,8 @@ export function usePurchasesPage() {
     setModalDiscount,
     modalCancelReason,
     setModalCancelReason,
+    modalDiscardDraft,
+    setModalDiscardDraft,
     modalDistributeCost,
     setModalDistributeCost,
     modalPendingProducts,

@@ -39,6 +39,15 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public decimal ConversionFactor { get; private set; } = 1m;
     public decimal QuantityInBaseUom { get; private set; }
 
+    // FASE 5 PURCHASE-UX — presentación con la que se interpreta la unidad del documento del
+    // proveedor (línea XML), separada de la presentación OPERATIVA (PackagingLevelId): una línea XML
+    // editada puede persistirse en unidad base sin perder "2 CAJA = 2 × PACA x12". XmlOriginFactor
+    // es el snapshot del factor usado para esa interpretación. No implica aprender la presentación
+    // del proveedor (eso sigue siendo "Guardar presentación"). Null en líneas manuales y borradores
+    // anteriores.
+    public Guid? XmlOriginPackagingLevelId { get; private set; }
+    public decimal? XmlOriginFactor { get; private set; }
+
     // ── Quantity & Price ────────────────────────────────────────────────
     public decimal Quantity { get; private set; }
     public decimal UnitPrice { get; private set; }
@@ -411,6 +420,38 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         _unitCostDecimals = decimals;
         if (!IsFrozen)
             RecalcCosts();
+    }
+
+    // ── XML origin presentation ─────────────────────────────────────────
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — fija (o limpia, con ambos null) la presentación de origen XML. Solo para
+    /// líneas con <see cref="PurchaseReceptionLineId"/>; nivel y factor van juntos.
+    /// </summary>
+    public void SetXmlOrigin(Guid? packagingLevelId, decimal? factor)
+    {
+        EnsureNotFrozen();
+        if (packagingLevelId.HasValue != factor.HasValue)
+            throw new ArgumentException(
+                "La presentación de origen XML y su factor deben informarse juntos.",
+                nameof(factor)
+            );
+        if (packagingLevelId.HasValue && PurchaseReceptionLineId is null)
+            throw new ArgumentException(
+                "Solo una línea de Recepción Electrónica tiene presentación de origen XML.",
+                nameof(packagingLevelId)
+            );
+        if (packagingLevelId == Guid.Empty)
+            throw new ArgumentException(
+                "La presentación de origen XML no es válida.",
+                nameof(packagingLevelId)
+            );
+        if (factor is <= 0)
+            throw new ArgumentException(
+                "El factor de la presentación de origen XML debe ser mayor a cero.",
+                nameof(factor)
+            );
+        XmlOriginPackagingLevelId = packagingLevelId;
+        XmlOriginFactor = factor;
     }
 
     // ── Freight & Other Costs ───────────────────────────────────────────

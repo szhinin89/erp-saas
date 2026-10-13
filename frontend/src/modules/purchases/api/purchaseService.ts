@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
+import { apiDelete, apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 import type { RetentionIntentRequest } from "../../retentions/facades/purchaseRetentionFacade";
 import type { PurchaseDraftLineDto } from "./purchaseReceptionService";
 
@@ -106,6 +106,12 @@ export interface PurchaseLineDto {
    * "Crear compra" desde Recepción). Solo al leer un borrador por Id; null en líneas manuales.
    */
   xmlSource?: PurchaseDraftLineDto | null;
+  /**
+   * FASE 5 PURCHASE-UX — presentación de origen XML persistida (interpretación del documento del
+   * proveedor), separada de la operativa. null en líneas manuales y borradores anteriores.
+   */
+  xmlOriginPackagingLevelId?: string | null;
+  xmlOriginFactor?: number | null;
 }
 
 /** PURCHASE-DRAFT-RECOVERY F3 — decisión de retención recordada por el borrador. */
@@ -168,6 +174,8 @@ export interface PurchaseInvoiceDto {
   updatedAt: string | null;
   /** PURCHASE-DRAFT-RECOVERY F3 — null si el borrador nunca registró una decisión. */
   retentionIntent?: PurchaseRetentionIntentDraftDto | null;
+  /** FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada". */
+  isDiscardedDraft?: boolean;
 }
 
 export interface PurchaseListItemDto {
@@ -178,6 +186,12 @@ export interface PurchaseListItemDto {
   status: string;
   lineCount: number;
   createdAt: string;
+  // FASE 5 PURCHASE-UX — snapshot del proveedor y total del documento para el listado.
+  supplierName: string;
+  supplierTaxId: string;
+  grandTotal: number;
+  /** FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada". */
+  isDiscardedDraft?: boolean;
 }
 
 export interface PurchaseListResponse {
@@ -240,6 +254,9 @@ export interface PurchaseLineInput {
   orderedQuantity?: number | null;
   purchaseReceptionLineId?: string | null;
   packagingLevelId?: string | null;
+  // FASE 5 PURCHASE-UX — presentación de origen XML (solo líneas de recepción); el backend resuelve
+  // el factor desde el nivel del ítem. No aprende nada del proveedor.
+  xmlOriginPackagingLevelId?: string | null;
   // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo ya revisado en el modal "Distribuir
   // flete/gasto" antes de guardar; el backend lo aplica directo por línea sin reprorratear.
   freightAllocated?: number | null;
@@ -385,6 +402,13 @@ export const purchaseService = {
    */
   cancel: (id: string, reason: string, requestSriAnnulment = false) =>
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/cancel`, { reason, requestSriAnnulment }),
+
+  /**
+   * FASE 5 PURCHASE-UX — descarta un BORRADOR (soft: queda Cancelled, se conserva el historial). Sin
+   * reversos; la recepción/XML vuelve a quedar disponible. Una compra confirmada usa `cancel`.
+   */
+  discardDraft: (id: string, reason?: string) =>
+    apiDelete<PurchaseInvoiceDto>(`${BASE}/${id}`, { params: { reason: reason?.trim() || undefined } }),
 
   /** Vista previa de la retención de una compra en BORRADOR (elegibilidad + montos propuestos). */
   retentionPreview: (id: string) =>

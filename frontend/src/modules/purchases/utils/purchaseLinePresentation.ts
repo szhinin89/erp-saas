@@ -4,7 +4,7 @@ import {
   resolvePrecisionDecimals,
   type PrecisionPolicy,
 } from "../../../lib/config/precisionPolicy.config";
-import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
+import { formatMoney, formatMoneyWithSymbol, roundToDecimals as roundTo } from "../../../lib/sanitizers";
 import { calcMarginPercent } from "../../../lib/margin";
 import { lineNet, resolveLineTaxes } from "./purchaseCalc";
 
@@ -111,6 +111,29 @@ export interface PurchaseLinePresentationVM {
      * hace siempre en unidad de presentación/factura, nunca desde este valor derivado. */
     baseUnitCostValue: number;
   };
+  /**
+   * FASE 5 PURCHASE-UX — qué se registrará realmente en inventario. Cantidad y Costo de la
+   * cabecera SIEMPRE están en unidad base; esto lo explicita en una frase y deriva la
+   * presentación/origen como información, nunca como el significado de los campos.
+   */
+  registration: {
+    /** false sin producto vinculado (nada que registrar en inventario todavía). */
+    show: boolean;
+    /** Cantidad a registrar autoritativa (unidad base) — ver resolveLineBaseQuantity. */
+    baseQuantityValue: number;
+    /** "Se registrarán 24 unidades a $2.000000 c/u". */
+    sentence: string;
+    /** Aclaración del costo cuando incluye descuento y/o flete/gastos asignados; "" si no aplica. */
+    costNote: string;
+    /** "= 2 PACA (1 PACA = 12 unidades) · $24.00 por PACA" ("≈" si no es exacto); "" sin presentación. */
+    presentationDetail: string;
+    /** Línea manual cuya cantidad/costo no es exacto en la presentación: se guardará en unidad base. */
+    savedInBaseUnitNote: string;
+    /** Línea XML: resumen del documento del proveedor; "" sin origen documental. */
+    originDetail: string;
+    /** Línea XML cuya cantidad o base imponible final difiere del documento del proveedor. */
+    originDiffers: boolean;
+  };
   /** 3. Impacto para el negocio — "Información Comercial", menor peso visual, solo si hay contexto real. */
   commercial: {
     /** Contexto realmente cargado (Item + datos resueltos) — controla real vs "—", nunca 0 falso. */
@@ -203,10 +226,8 @@ export function buildPurchaseLinePresentation(
   const baseUom = ctx?.baseUomCode || line.baseUomCode || UNKNOWN;
   const presentationUom =
     selectedPackaging?.uomCode || line.uomCode || ctx?.baseUomCode || UNKNOWN;
-  const quantityInBase =
-    selectedPackaging || line.quantityInBaseUom === undefined
-      ? quantity * conversionFactor
-      : line.quantityInBaseUom;
+  // FASE 5 PURCHASE-UX — cantidad a registrar autoritativa (sin round-trip por la presentación).
+  const quantityInBase = resolveLineBaseQuantity(line, conversionFactor);
   const hasPresentation = !!line.packagingLevelId;
   // The DTO supplies UOM codes, not readable names. Never use them as labels.
   const presentationLabel = selectedPackaging?.name?.trim() ||
@@ -292,6 +313,106 @@ export function buildPurchaseLinePresentation(
 
   const missingRequiredData = hasItem && !isLoading && !line.vatCode;
 
+  // FASE 5 PURCHASE-UX — lo que se registrará es la cantidad/costo autoritativos en unidad base;
+  // la presentación y el documento del proveedor son información derivada.
+  const registeredBaseText = formatMoney(quantityInBase, decimals.quantityDecimals);
+  const baseUnitCostText = formatMoneyWithSymbol(baseUnitCost, decimals.unitCostDecimals);
+  const registrationSentence =
+    t?.("purchases.lines.registrationSentence", {
+      qty: registeredBaseText,
+      unit: baseUnitWord,
+      cost: baseUnitCostText,
+    }) ?? `Se registrarán ${registeredBaseText} ${baseUnitWord} a ${baseUnitCostText} c/u`;
+  const hasDiscount = (line.discountPct ?? 0) > 0;
+  const hasAllocatedCosts = freightAllocated + otherCostsAllocated > 0;
+  let costNote = "";
+  if (hasDiscount && hasAllocatedCosts)
+    costNote =
+      t?.(
+        "purchases.lines.costNoteDiscountAndAllocated",
+        "Costo neto de descuento, incluye flete/gastos asignados.",
+      ) ?? "Costo neto de descuento, incluye flete/gastos asignados.";
+  else if (hasDiscount)
+    costNote =
+      t?.("purchases.lines.costNoteDiscount", "Costo neto de descuento.") ??
+      "Costo neto de descuento.";
+  else if (hasAllocatedCosts)
+    costNote =
+      t?.("purchases.lines.costNoteAllocated", "Incluye flete/gastos asignados.") ??
+      "Incluye flete/gastos asignados.";
+  // Manual o XML editada: la presentación se guarda solo si expresa EXACTO lo a registrar; si no,
+  // la línea se guarda en unidad base y la equivalencia queda solo informativa (≈).
+  const persistence = resolveLinePersistence(
+    { ...line, conversionFactor },
+    decimals.purchaseUnitPriceDecimals,
+  );
+  const savedInBaseUnit = persistence.mode === "base";
+  const presentationQuantityValue = quantityInBase / conversionFactor;
+  const presentationQuantityText = formatMoney(presentationQuantityValue, decimals.quantityDecimals);
+  const presentationQuantityIsExact =
+    Math.abs(roundTo(presentationQuantityValue, decimals.quantityDecimals) - presentationQuantityValue) <=
+    1e-9;
+  const presentationCostText = formatMoneyWithSymbol(
+    baseUnitCost * conversionFactor,
+    decimals.unitCostDecimals,
+  );
+  const presentationDetail =
+    hasItem && selectedPackaging && conversionFactor !== 1
+      ? (t?.(
+          presentationQuantityIsExact && !savedInBaseUnit
+            ? "purchases.lines.registrationPresentationDetail"
+            : "purchases.lines.registrationPresentationApprox",
+          {
+            qty: presentationQuantityText,
+            presentation: selectedPackaging.name,
+            equivalence: equivalenceDetail,
+            cost: presentationCostText,
+          },
+        ) ??
+        `${presentationQuantityIsExact && !savedInBaseUnit ? "=" : "≈"} ${presentationQuantityText} ${selectedPackaging.name} (${equivalenceDetail}) · ${presentationCostText} por ${selectedPackaging.name}`)
+      : "";
+  const savedInBaseUnitNote =
+    hasItem && selectedPackaging && savedInBaseUnit
+      ? (t?.("purchases.lines.registrationSavedInBaseUnit", {
+          presentation: selectedPackaging.name,
+        }) ??
+        `No es una cantidad exacta de ${selectedPackaging.name}: la línea se guardará en unidad base, sin alterar lo que se registrará.`)
+      : "";
+  // Origen del proveedor: snapshot XML intacto, interpretado con la presentación de ORIGEN (no la
+  // operativa: una XML editada puede persistirse en unidad base).
+  const hasOriginSnapshot =
+    hasOrigin && typeof line.xmlQuantity === "number" && typeof line.xmlUnitPrice === "number";
+  const originQuantity = line.xmlQuantity ?? 0;
+  const originUnitPrice = line.xmlUnitPrice ?? 0;
+  const originFactor = resolveXmlOriginFactor(line, conversionFactor);
+  const originPresentationName =
+    ctx?.packagingLevels?.find(
+      (p) => p.id === (line.xmlOriginPackagingLevelId ?? line.packagingLevelId),
+    )?.name ?? "";
+  const originTaxableBase =
+    line.xmlTaxableBase ?? originQuantity * originUnitPrice - (line.xmlDiscount ?? 0);
+  const originDiffers =
+    hasOriginSnapshot &&
+    (isXmlLineEditedFromOrigin(line, conversionFactor) ||
+      Math.abs(editableTaxableBase - originTaxableBase) > 0.005);
+  const originBaseText = formatMoney(originQuantity * originFactor, decimals.quantityDecimals);
+  const originQuantityText = [
+    formatMoney(originQuantity, decimals.quantityDecimals),
+    originFactor !== 1 ? originPresentationName : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const originDetail = hasOriginSnapshot
+    ? (t?.("purchases.lines.registrationOrigin", {
+        qty: originQuantityText,
+        price: formatMoneyWithSymbol(originUnitPrice, decimals.purchaseUnitPriceDecimals),
+        base: formatMoneyWithSymbol(originTaxableBase, decimals.moneyDecimals),
+        baseQty: originBaseText,
+        unit: baseUnitWord,
+      }) ??
+      `Documento del proveedor: ${originQuantityText} × ${formatMoneyWithSymbol(originUnitPrice, decimals.purchaseUnitPriceDecimals)} (base imp. ${formatMoneyWithSymbol(originTaxableBase, decimals.moneyDecimals)}) = ${originBaseText} ${baseUnitWord}.`)
+    : "";
+
   return {
     xml: {
       hasOrigin,
@@ -376,6 +497,16 @@ export function buildPurchaseLinePresentation(
           ? formatMoneyWithSymbol(baseUnitCost, decimals.unitCostDecimals)
           : UNKNOWN,
       baseUnitCostValue: baseUnitCost,
+    },
+    registration: {
+      show: hasItem,
+      baseQuantityValue: quantityInBase,
+      sentence: registrationSentence,
+      costNote,
+      presentationDetail,
+      savedInBaseUnitNote,
+      originDetail,
+      originDiffers,
     },
     commercial: {
       hasContext,
@@ -623,5 +754,334 @@ export function headerInputKey(
   packagingLevelId: string | null | undefined,
 ): string {
   const mode = vm.inventory.hasPresentation ? "base" : "invoice";
-  return `${field}-${mode}-${packagingLevelId ?? "none"}-${vm.inventory.conversionFactorValue}`;
+  // FASE 5 PURCHASE-UX — Costo de cabecera es el costo unitario base (incluye flete/gastos
+  // asignados): al distribuir flete el input no controlado debe remontar con el valor nuevo.
+  return `${field}-${mode}-${packagingLevelId ?? "none"}-${vm.inventory.conversionFactorValue}-${vm.inventory.baseUnitCostValue}`;
+}
+
+/** Tolerancia de punto flotante para comparar valores ya en la misma escala. */
+const FLOAT_EPS = 1e-9;
+/** Escala con la que el backend persiste `quantity` (columna numeric(20,6)). */
+const PERSISTED_QUANTITY_DECIMALS = 6;
+
+type PackagingLine = Pick<
+  PurchaseLineFormValues,
+  | "quantity"
+  | "unitPrice"
+  | "quantityInBaseUom"
+  | "baseUnitPrice"
+  | "purchaseReceptionLineId"
+  | "xmlSupplierCode"
+  | "xmlQuantity"
+  | "xmlUnitPrice"
+  | "xmlOriginFactor"
+  | "xmlOriginPackagingLevelId"
+>;
+
+const safeFactor = (factor: number | null | undefined) => (factor && factor > 0 ? factor : 1);
+const sameValue = (a: number, b: number) => Math.abs(a - b) <= FLOAT_EPS * Math.max(1, Math.abs(b));
+
+/** Línea con origen documental del proveedor (Recepción Electrónica) — mismo criterio que el VM. */
+export function hasSupplierDocumentOrigin(line: PackagingLine): boolean {
+  return !!line.purchaseReceptionLineId || !!line.xmlSupplierCode;
+}
+
+/**
+ * FASE 5 PURCHASE-UX — cantidad a registrar (unidad base) AUTORITATIVA de la línea. Manda
+ * `quantityInBaseUom` (lo que el usuario tecleó, sin round-trip por la presentación) mientras siga
+ * alineado con quantity × factor; si quedó desalineado (otro flujo cambió quantity), se deriva.
+ */
+export function resolveLineBaseQuantity(line: PackagingLine, factor: number): number {
+  const derived = (line.quantity ?? 0) * safeFactor(factor);
+  const typed = line.quantityInBaseUom;
+  if (typed === undefined) return derived;
+  const tolerance = Math.max(FLOAT_EPS, safeFactor(factor) * 10 ** -PERSISTED_QUANTITY_DECIMALS);
+  return Math.abs(typed - derived) <= tolerance ? typed : derived;
+}
+
+/**
+ * FASE 5 PURCHASE-UX — precio unitario base (antes de descuento/flete) AUTORITATIVO de la línea:
+ * `baseUnitPrice` si sigue alineado con unitPrice / factor; si no, se deriva. El precio por
+ * presentación siempre se deriva de este valor, nunca al revés.
+ */
+export function resolveLineBaseUnitPrice(line: PackagingLine, factor: number): number {
+  const derived = (line.unitPrice ?? 0) / safeFactor(factor);
+  const typed = line.baseUnitPrice;
+  if (typed === undefined) return derived;
+  return sameValue(typed * safeFactor(factor), line.unitPrice ?? 0) ? typed : derived;
+}
+
+/**
+ * FASE 5 PURCHASE-UX — presentación con la que se interpreta la unidad del documento del proveedor
+ * (p. ej. "2 CAJA" = 2 × PACA x12). Se recuerda aparte de la presentación operativa de la línea
+ * porque una XML editada puede persistirse en unidad base. Sin dato, la presentación actual.
+ */
+export function resolveXmlOriginFactor(line: PackagingLine, currentFactor: number): number {
+  return safeFactor(line.xmlOriginFactor ?? currentFactor);
+}
+
+/**
+ * FASE 5 PURCHASE-UX — presentación de origen al (re)abrir una línea XML persistida:
+ * 1. el origen PERSISTIDO en la línea (`xmlOriginPackagingLevelId` + snapshot `xmlOriginFactor`) —
+ *    nunca vuelve a depender de la recepción si existe;
+ * Fallback (borradores anteriores sin origen persistido / línea recién creada desde Recepción):
+ * 2. la presentación de la línea si es real (factor ≠ 1);
+ * 3. la que la recepción resolvió para Proveedor + Código (`xmlSource`);
+ * 4. la de la línea.
+ */
+export function resolveXmlOriginPresentation(
+  persisted: {
+    packagingLevelId?: string | null;
+    conversionFactor?: number | null;
+    xmlOriginPackagingLevelId?: string | null;
+    xmlOriginFactor?: number | null;
+  },
+  receptionSource?: { packagingLevelId?: string | null; conversionFactor?: number | null } | null,
+): { xmlOriginPackagingLevelId: string | undefined; xmlOriginFactor: number } {
+  if (persisted.xmlOriginPackagingLevelId && persisted.xmlOriginFactor && persisted.xmlOriginFactor > 0) {
+    return {
+      xmlOriginPackagingLevelId: persisted.xmlOriginPackagingLevelId,
+      xmlOriginFactor: persisted.xmlOriginFactor,
+    };
+  }
+  if (persisted.packagingLevelId && safeFactor(persisted.conversionFactor) !== 1) {
+    return {
+      xmlOriginPackagingLevelId: persisted.packagingLevelId,
+      xmlOriginFactor: safeFactor(persisted.conversionFactor),
+    };
+  }
+  if (receptionSource?.packagingLevelId && safeFactor(receptionSource.conversionFactor) > 0) {
+    return {
+      xmlOriginPackagingLevelId: receptionSource.packagingLevelId,
+      xmlOriginFactor: safeFactor(receptionSource.conversionFactor),
+    };
+  }
+  return {
+    xmlOriginPackagingLevelId: persisted.packagingLevelId ?? undefined,
+    xmlOriginFactor: safeFactor(persisted.conversionFactor),
+  };
+}
+
+/**
+ * FASE 5 PURCHASE-UX — la línea XML ya no coincide con lo que mandó el proveedor: se compara en
+ * UNIDAD BASE (cantidad y precio a registrar vs. documento × presentación de origen), así sigue
+ * siendo correcto aunque la línea se haya persistido en unidad base. Sin snapshot, no hay origen.
+ */
+export function isXmlLineEditedFromOrigin(line: PackagingLine, currentFactor: number): boolean {
+  if (
+    !hasSupplierDocumentOrigin(line) ||
+    typeof line.xmlQuantity !== "number" ||
+    typeof line.xmlUnitPrice !== "number"
+  )
+    return false;
+  const originFactor = resolveXmlOriginFactor(line, currentFactor);
+  const quantityTolerance = Math.max(FLOAT_EPS, originFactor * 10 ** -PERSISTED_QUANTITY_DECIMALS);
+  const quantityEdited =
+    Math.abs(resolveLineBaseQuantity(line, currentFactor) - line.xmlQuantity * originFactor) >
+    quantityTolerance;
+  const priceEdited = !sameValue(
+    resolveLineBaseUnitPrice(line, currentFactor),
+    line.xmlUnitPrice / originFactor,
+  );
+  return quantityEdited || priceEdited;
+}
+
+export interface PackagingChangeResult {
+  /** "document": se reinterpreta el documento del proveedor; "base": se conserva lo a registrar. */
+  anchor: "document" | "base";
+  quantity: number;
+  unitPrice: number;
+  quantityInBaseUom: number;
+  baseUnitPrice: number | undefined;
+  xmlOriginFactor: number | undefined;
+  xmlOriginPackagingLevelId: string | undefined;
+}
+
+/**
+ * FASE 5 PURCHASE-UX — valores de la línea al cambiar de presentación.
+ * - Línea XML sin editar (`document`): la cantidad/costo ORIGINAL del proveedor se expresa en la
+ *   presentación elegida → 2 cajas x12 = 24 unidades; la elegida pasa a ser la de origen.
+ * - Línea manual, o XML ya editada (`base`): la cantidad y el precio a registrar se CONSERVAN
+ *   exactos; la presentación solo se deriva (B / f, P × f) — nunca se encadena presentación → base →
+ *   presentación, así que cambiar de presentación las veces que sea no produce drift. Una XML
+ *   editada vuelve al origen solo con {@link resetLineToSupplierOrigin} (acción explícita).
+ */
+export function resolvePackagingChange(
+  line: PackagingLine,
+  currentFactor: number,
+  nextFactor: number,
+  nextPackagingLevelId?: string,
+): PackagingChangeResult {
+  const next = safeFactor(nextFactor);
+  if (hasSupplierDocumentOrigin(line) && !isXmlLineEditedFromOrigin(line, currentFactor)) {
+    const quantity = line.xmlQuantity ?? line.quantity;
+    const unitPrice = line.xmlUnitPrice ?? line.unitPrice;
+    return {
+      anchor: "document",
+      quantity,
+      unitPrice,
+      quantityInBaseUom: quantity * next,
+      baseUnitPrice: undefined,
+      xmlOriginFactor: next,
+      xmlOriginPackagingLevelId: nextPackagingLevelId,
+    };
+  }
+  const baseQuantity = resolveLineBaseQuantity(line, currentFactor);
+  const baseUnitPrice = resolveLineBaseUnitPrice(line, currentFactor);
+  return {
+    anchor: "base",
+    quantity: baseQuantity / next,
+    unitPrice: baseUnitPrice * next,
+    quantityInBaseUom: baseQuantity,
+    baseUnitPrice,
+    xmlOriginFactor: line.xmlOriginFactor,
+    xmlOriginPackagingLevelId: line.xmlOriginPackagingLevelId ?? undefined,
+  };
+}
+
+/**
+ * FASE 5 PURCHASE-UX — "Recalcular desde XML": única acción que restaura la cantidad/costo del
+ * proveedor, en la presentación de origen. null sin snapshot documental.
+ */
+export function resetLineToSupplierOrigin(
+  line: PackagingLine & Pick<PurchaseLineFormValues, "packagingLevelId">,
+  currentFactor: number,
+): (Omit<PackagingChangeResult, "anchor"> & {
+  packagingLevelId: string | undefined;
+  conversionFactor: number;
+}) | null {
+  if (typeof line.xmlQuantity !== "number" || typeof line.xmlUnitPrice !== "number") return null;
+  const originFactor = resolveXmlOriginFactor(line, currentFactor);
+  const packagingLevelId = line.xmlOriginPackagingLevelId ?? line.packagingLevelId ?? undefined;
+  return {
+    quantity: line.xmlQuantity,
+    unitPrice: line.xmlUnitPrice,
+    quantityInBaseUom: line.xmlQuantity * originFactor,
+    baseUnitPrice: undefined,
+    packagingLevelId,
+    conversionFactor: originFactor,
+    xmlOriginFactor: originFactor,
+    xmlOriginPackagingLevelId: packagingLevelId,
+  };
+}
+
+export interface LinePersistence {
+  /**
+   * "document": XML sin editar, en la unidad del documento; "presentation": presentación sin
+   * pérdida; "base": unidad base (lo a registrar no es exacto en la presentación).
+   */
+  mode: "document" | "presentation" | "base";
+  quantity: number;
+  unitPrice: number;
+  packagingLevelId: string | undefined;
+  /** Cantidad en presentación para mostrar (informativa cuando mode = "base"). */
+  presentationQuantity: number;
+}
+
+/**
+ * FASE 5 PURCHASE-UX — cómo se PERSISTE una línea. El backend guarda quantity/unitPrice en la
+ * presentación y deriva la base (round(quantity × factor)). Invariante: guardar → reabrir → guardar
+ * nunca altera la cantidad/costo a registrar por conversión de presentación.
+ * - XML sin editar: tal cual, en la unidad del documento del proveedor.
+ * - Manual o XML editada: en la presentación solo si lo a registrar se expresa EXACTO en ella
+ *   (24 u. en paca x12 = 2 × 25.482); si no (25 u. = 2.08333… pacas), en UNIDAD BASE — manual sin
+ *   presentación; XML con el nivel base del ítem (Confirmar exige presentación en XML inventariable
+ *   y, sin ella, el backend aplicaría la presentación aprendida). El snapshot XML no se toca.
+ * Única fuente para el payload y para los avisos de la pantalla.
+ */
+export function resolveLinePersistence(
+  line: PackagingLine &
+    Pick<PurchaseLineFormValues, "packagingLevelId" | "conversionFactor" | "context">,
+  purchaseUnitPriceDecimals: number,
+): LinePersistence {
+  const factor = safeFactor(line.conversionFactor);
+  const packagingLevelId = line.packagingLevelId ?? undefined;
+  const isXml = hasSupplierDocumentOrigin(line);
+  const asIs = (mode: LinePersistence["mode"]): LinePersistence => ({
+    mode,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    packagingLevelId,
+    presentationQuantity: line.quantity,
+  });
+  if (isXml && !isXmlLineEditedFromOrigin(line, factor)) return asIs("document");
+  if (!packagingLevelId || factor === 1) return asIs("presentation");
+
+  const baseQuantity = resolveLineBaseQuantity(line, factor);
+  const baseUnitPrice = resolveLineBaseUnitPrice(line, factor);
+  const presentationQuantity = baseQuantity / factor;
+  const storedQuantity = roundTo(presentationQuantity, PERSISTED_QUANTITY_DECIMALS);
+  const presentationPrice = baseUnitPrice * factor;
+  const storedPrice = roundTo(presentationPrice, purchaseUnitPriceDecimals);
+  const lossless =
+    Math.abs(storedQuantity * factor - baseQuantity) <= FLOAT_EPS &&
+    Math.abs(storedPrice - presentationPrice) <= FLOAT_EPS;
+  if (lossless) {
+    return {
+      mode: "presentation",
+      quantity: storedQuantity,
+      unitPrice: storedPrice,
+      packagingLevelId,
+      presentationQuantity,
+    };
+  }
+  const baseUnitLevelId = line.context?.packagingLevels?.find(
+    (p) => p.isBaseUnit && p.baseQuantity === 1,
+  )?.id;
+  // XML sin nivel base conocido (contexto aún no cargado): no se puede expresar en unidad base sin
+  // que el backend aplique la presentación aprendida — se conserva la presentación actual.
+  if (isXml && !baseUnitLevelId) return asIs("presentation");
+  return {
+    mode: "base",
+    quantity: baseQuantity,
+    unitPrice: baseUnitPrice,
+    packagingLevelId: isXml ? baseUnitLevelId : undefined,
+    presentationQuantity,
+  };
+}
+
+/** FASE 5 PURCHASE-UX — el valor del input no cambió a la escala visible (blur sin edición real). */
+export function isUnchangedAtPrecision(entered: number, current: number, decimals: number): boolean {
+  return roundTo(entered, decimals) === roundTo(current, decimals);
+}
+
+/**
+ * FASE 5 PURCHASE-UX — "Cantidad a registrar" tecleada (unidad base): queda AUTORITATIVA en
+ * `quantityInBaseUom`; la cantidad del documento se deriva (B / factor). El precio base no cambia.
+ * 0/vacío no se aplica (null).
+ */
+export function applyRegisteredQuantity(
+  line: PackagingLine,
+  factor: number,
+  entered: number,
+): Pick<PackagingChangeResult, "quantity" | "quantityInBaseUom" | "baseUnitPrice"> | null {
+  if (!(entered > 0)) return null;
+  return {
+    quantity: entered / safeFactor(factor),
+    quantityInBaseUom: entered,
+    baseUnitPrice: resolveLineBaseUnitPrice(line, factor),
+  };
+}
+
+/**
+ * FASE 5 PURCHASE-UX — "Costo unitario a registrar" tecleado (neto de descuento, con flete/gastos
+ * asignados): se despeja el precio base AUTORITATIVO (fórmula inversa de computeUnitPriceFromBaseUnitCost
+ * en unidad base) y el precio por presentación se deriva (P × factor). null si no es seguro.
+ */
+export function applyRegisteredUnitCost(
+  line: PackagingLine & Pick<PurchaseLineFormValues, "discountPct" | "freightAllocated" | "otherCostsAllocated">,
+  factor: number,
+  entered: number,
+): Pick<PackagingChangeResult, "unitPrice" | "baseUnitPrice"> | null {
+  const baseQuantity = resolveLineBaseQuantity(line, factor);
+  const baseUnitPrice = computeUnitPriceFromBaseUnitCost({
+    newBaseUnitCost: entered,
+    quantity: baseQuantity,
+    quantityInBaseUom: baseQuantity,
+    discountPct: line.discountPct ?? 0,
+    freightAllocated: line.freightAllocated ?? 0,
+    otherCostsAllocated: line.otherCostsAllocated ?? 0,
+  });
+  if (baseUnitPrice === null) return null;
+  return { unitPrice: baseUnitPrice * safeFactor(factor), baseUnitPrice };
 }

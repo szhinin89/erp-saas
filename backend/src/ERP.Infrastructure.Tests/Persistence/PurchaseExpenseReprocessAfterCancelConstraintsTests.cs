@@ -249,6 +249,17 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         string? accessKey = null
     )
     {
+        var inv = BuildDraftInvoice(ctx, invoiceNumber, accessKey);
+        inv.Confirm(_userId);
+        return inv;
+    }
+
+    private PurchaseInvoice BuildDraftInvoice(
+        TenantContext ctx,
+        string invoiceNumber,
+        string? accessKey = null
+    )
+    {
         var inv = PurchaseInvoice.CreateDraft(
             ctx.TenantId,
             ctx.CompanyId,
@@ -279,7 +290,6 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
             warehouseId: ctx.WarehouseId
         );
         inv.ReplaceLines(new[] { line }, _userId);
-        inv.Confirm(_userId);
         return inv;
     }
 
@@ -672,6 +682,90 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
 
         await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
         db2.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, documentNumber));
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    // ── FASE 5 PURCHASE-UX — borrador descartado (soft Draft → Cancelled) ──────
+
+    private async Task<Guid> SeedDiscardedDraftAsync(TenantContext ctx, string invoiceNumber, string accessKey)
+    {
+        Guid draftId;
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var draft = BuildDraftInvoice(ctx, invoiceNumber, accessKey);
+            db1.PurchaseInvoices.Add(draft);
+            await db1.SaveChangesAsync();
+            draftId = draft.Id;
+        }
+        await using (var dbDiscard = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            var draft = await dbDiscard.PurchaseInvoices.SingleAsync(x => x.Id == draftId);
+            draft.DiscardDraft(_userId);
+            await dbDiscard.SaveChangesAsync();
+        }
+        return draftId;
+    }
+
+    [Fact]
+    public async Task Borrador_descartado_libera_AccessKey_y_proveedor_numero_para_otra_compra()
+    {
+        var ctx = await SeedTenantAsync();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+        var draftId = await SeedDiscardedDraftAsync(ctx, "001-001-000000901", accessKey);
+
+        // Misma clave de acceso Y mismo proveedor + número: el XML vuelve a procesarse.
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        var again = BuildDraftInvoice(ctx, "001-001-000000901", accessKey);
+        db2.PurchaseInvoices.Add(again);
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should().NotThrowAsync();
+
+        var repo = new PurchaseInvoiceRepository(
+            CreateContext(ctx.TenantId, ctx.CompanyId),
+            new FixedCurrentCompany(() => ctx.CompanyId)
+        );
+        (await repo.GetByAccessKeyAsync(ctx.TenantId, accessKey))!.Id.Should().Be(again.Id);
+
+        // Historial conservado (soft): el descartado sigue existiendo, Cancelled y nunca confirmado.
+        await using var dbRead = CreateContext(ctx.TenantId, ctx.CompanyId);
+        var discarded = await dbRead.PurchaseInvoices.SingleAsync(x => x.Id == draftId);
+        discarded.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled);
+        discarded.IsDiscardedDraft.Should().BeTrue();
+        discarded.ConfirmedGrandTotal.Should().BeNull();
+        discarded.CancelReason.Should().Be(PurchaseInvoice.DiscardedDraftDefaultReason);
+    }
+
+    [Fact]
+    public async Task Borrador_descartado_permite_registrar_el_mismo_XML_como_gasto()
+    {
+        var ctx = await SeedTenantAsync();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+        await SeedDiscardedDraftAsync(ctx, "001-001-000000911", accessKey);
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000911", accessKey));
+        var act = async () => await db2.SaveChangesAsync();
+
+        await act.Should()
+            .NotThrowAsync("un borrador de compra descartado no bloquea el trigger compra↔gasto");
+    }
+
+    [Fact]
+    public async Task Borrador_activo_sigue_bloqueando_el_mismo_XML_como_gasto()
+    {
+        var ctx = await SeedTenantAsync();
+        var accessKey = $"AK-{Guid.NewGuid():N}";
+        await using (var db1 = CreateContext(ctx.TenantId, ctx.CompanyId))
+        {
+            db1.PurchaseInvoices.Add(BuildDraftInvoice(ctx, "001-001-000000921", accessKey));
+            await db1.SaveChangesAsync();
+        }
+
+        await using var db2 = CreateContext(ctx.TenantId, ctx.CompanyId);
+        db2.ExpenseDocuments.Add(BuildConfirmedExpense(ctx, "001-001-000000921", accessKey));
         var act = async () => await db2.SaveChangesAsync();
 
         await act.Should().ThrowAsync<DbUpdateException>();

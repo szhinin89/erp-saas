@@ -12,7 +12,8 @@ namespace ERP.Application.Modules.Purchases.EventHandlers;
 /// </summary>
 public sealed class PurchaseInvoiceAuditHandler
     : INotificationHandler<PurchaseInvoiceConfirmedEvent>,
-        INotificationHandler<PurchaseInvoiceCancelledEvent>
+        INotificationHandler<PurchaseInvoiceCancelledEvent>,
+        INotificationHandler<PurchaseDraftDiscardedEvent>
 {
     private readonly IAuditService _audit;
     private readonly IAuditContext _context;
@@ -46,6 +47,23 @@ public sealed class PurchaseInvoiceAuditHandler
                 e.SupplierId,
                 e.InvoiceNumber,
                 e.GrandTotal,
+                ((IAuditEvent)e).Action,
+                ((IAuditEvent)e).Reason
+            ),
+            ct
+        );
+
+    // FASE 5 PURCHASE-UX — borrador descartado: solo auditoría (GrandTotal del borrador, nunca
+    // confirmado). Ningún otro handler consume este evento.
+    public Task Handle(PurchaseDraftDiscardedEvent e, CancellationToken ct) =>
+        _audit.RecordAsync(
+            PurchaseInvoiceAudit.Create(
+                _context.Actor,
+                _context.CompanyId,
+                e.InvoiceId,
+                e.SupplierId,
+                e.InvoiceNumber,
+                0m,
                 ((IAuditEvent)e).Action,
                 ((IAuditEvent)e).Reason
             ),

@@ -617,6 +617,49 @@ public sealed class PurchaseInvoice
         );
     }
 
+    // ── Discard draft ───────────────────────────────────────────────
+    /// <summary>Motivo registrado cuando el usuario descarta un borrador sin indicar uno.</summary>
+    public const string DiscardedDraftDefaultReason = "Borrador descartado.";
+
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — borrador descartado: <c>Cancelled</c> sin haber sido confirmado nunca
+    /// (<see cref="ConfirmedGrandTotal"/> solo se fija en <see cref="Confirm"/>). Distingue
+    /// "Descartado" de "Anulada" sin columna nueva.
+    /// </summary>
+    public bool IsDiscardedDraft => Status == PurchaseStatus.Cancelled && ConfirmedGrandTotal is null;
+
+    /// <summary>
+    /// FASE 5 PURCHASE-UX — descarta un borrador (soft: <c>Draft → Cancelled</c>, mismo criterio que
+    /// <c>SalesReturn.CancelDraft</c>; el registro y su historial se conservan). NO es
+    /// <see cref="Cancel"/>: un borrador nunca generó inventario, CxP, contabilidad ni retención, así
+    /// que no levanta <see cref="PurchaseInvoiceCancelledEvent"/> (que dispara reversos) sino
+    /// <see cref="PurchaseDraftDiscardedEvent"/>, solo de auditoría. Al quedar <c>Cancelled</c> deja
+    /// de bloquear la clave de acceso y el número del proveedor (índices filtrados status &lt;&gt; 3),
+    /// así que la recepción/XML vuelve a quedar disponible para procesarse.
+    /// </summary>
+    public void DiscardDraft(Guid discardedBy, string? reason = null)
+    {
+        if (Status != PurchaseStatus.Draft)
+            throw new DomainRuleViolationException(
+                "Solo se pueden descartar compras en estado borrador. Una compra confirmada se anula."
+            );
+        var trimmed = reason?.Trim();
+        if (trimmed is { Length: > CancelReasonMaxLen })
+            throw new ArgumentException(
+                $"El motivo no puede superar {CancelReasonMaxLen} caracteres.",
+                nameof(reason)
+            );
+
+        Status = PurchaseStatus.Cancelled;
+        CancelReason = string.IsNullOrWhiteSpace(trimmed) ? DiscardedDraftDefaultReason : trimmed;
+        CancelledAt = DateTime.UtcNow;
+        CancelledBy = discardedBy;
+        SetUpdated(discardedBy);
+        RaiseDomainEvent(
+            new PurchaseDraftDiscardedEvent(TenantId, Id, SupplierId, InvoiceNumber, CancelReason)
+        );
+    }
+
     public void UpdatePaymentTermSnapshot(
         Guid paymentTermId,
         string paymentTermName,

@@ -35,7 +35,8 @@ describe("PurchaseInvoicePicker", () => {
     vi.mocked(purchaseService.list).mockResolvedValueOnce({
       items: [
         { id: "inv-1", invoiceNumber: "001-001-000000001", issueDate: "2026-09-01",
-          supplierId: "supplier-1", status: "Confirmed", lineCount: 2, createdAt: "2026-09-01" },
+          supplierId: "supplier-1", status: "Confirmed", lineCount: 2, createdAt: "2026-09-01",
+          supplierName: "Proveedor Uno", supplierTaxId: "0999999999001", grandTotal: 10 },
       ],
       total: 1, page: 1, pageSize: 10,
     });
@@ -64,7 +65,8 @@ describe("PurchaseInvoicePicker", () => {
         <PurchaseInvoicePicker
           supplierId="supplier-1"
           value={{ id: "inv-1", invoiceNumber: "001-001-000000001", issueDate: "2026-09-01",
-            supplierId: "supplier-1", status: "Confirmed", lineCount: 2, createdAt: "2026-09-01" }}
+            supplierId: "supplier-1", status: "Confirmed", lineCount: 2, createdAt: "2026-09-01",
+          supplierName: "Proveedor Uno", supplierTaxId: "0999999999001", grandTotal: 10 }}
           onChange={onChange}
         />
       </I18nProvider>,

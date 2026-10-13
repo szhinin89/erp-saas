@@ -12,7 +12,7 @@ vi.mock("../../../i18n/i18n", () => ({ useI18n: () => ({ t: (key: string, fallba
 vi.mock("../../../components/items/ItemEditorModal/useItemCreationCatalogs", () => ({ useItemCreationCatalogs: () => ({
   barcodeTypeOptions: mocks.barcodeTypes, itemTypeOptions: [{ id: "type", name: "Type" }],
   brandOptions: [{ id: "brand", name: "Brand" }], categoryOptions: [{ id: "category", name: "Category" }],
-  uomOptions: [{ code: "19", name: "Unidad" }], vatRateOptions: VAT_RATES,
+  uomOptions: [{ code: "19", name: "Unidad" }, { code: "02", name: "Caja" }], vatRateOptions: VAT_RATES,
   vatRateByCode: new Map(VAT_RATES.map((v) => [v.code, v])), iceRateOptions: [{ code: "3011", name: "ICE cigarrillos", percentage: 0 }],
 }) }));
 const VAT_RATES = vi.hoisted(() => [{ code: "0", name: "IVA 0", percentage: 0 }, { code: "4", name: "IVA 15", percentage: 15 }]);
@@ -68,7 +68,8 @@ describe("bulk resolution modal", () => {
     for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5", presentationFactor: "12" })) change(name, value);
     await waitFor(() => expect(input("barcodeType")).toBeNull());
     change("presentationName", "Caja x12");
-    change("presentationUomCode", "19");
+    // FASE 5: la presentación necesita su propia unidad (no la de la unidad base).
+    change("presentationUomCode", "02");
     fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
     await waitFor(() => expect(p.onResolved).toHaveBeenCalledOnce());
     expect(mocks.resolve.mock.calls[0][0].lines[0]).toMatchObject({ presentationFactor: 12, barcode: "7861234567898", barcodeType: null });

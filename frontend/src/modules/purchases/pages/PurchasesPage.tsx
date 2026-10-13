@@ -37,6 +37,7 @@ import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
 import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { usePrecisionDecimals, usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
+import { resolvePrecisionDecimals } from "../../../lib/config/precisionPolicy.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
 import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
 import {
@@ -64,8 +65,12 @@ import { useOpenItemDetail } from "../../items/facades/itemDetailNavigationFacad
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import {
   buildPurchaseLinePresentation,
-  computeUnitPriceFromBaseUnitCost,
+  applyRegisteredQuantity,
+  applyRegisteredUnitCost,
   headerInputKey,
+  isUnchangedAtPrecision,
+  resetLineToSupplierOrigin,
+  resolvePackagingChange,
   type LineStatusTone,
 } from "../utils/purchaseLinePresentation";
 import {
@@ -73,6 +78,12 @@ import {
   resolvePurchaseItemSelection,
 } from "../utils/purchaseItemProfile";
 import type { PurchaseLineReadinessAction } from "../utils/purchaseLineReadiness";
+import type {
+  PurchaseDocumentState,
+  PurchaseDocumentStateKind,
+  PurchaseDocumentStateReason,
+} from "../utils/purchaseDocumentState";
+import { canDiscardDraft, purchaseStatusBadge } from "../utils/purchaseDocumentState";
 import "../../../styles/shared/items-catalog.css";
 import "../../../styles/shared/erp-form-core.css";
 import "../styles/purchases-invoice.css";
@@ -92,8 +103,6 @@ export function PurchasesPage() {
     t,
     moneyDecimals,
   );
-  const statusLabel = (status: string) =>
-    t(`purchases.status.${status.toLowerCase()}`, status);
 
   // Entrada cruzada desde el Kardex ("Ver documento origen"): abre la factura referida.
   // Entrada cruzada desde Recepción Electrónica ("Crear compra"): precarga un borrador desde el XML.
@@ -116,9 +125,11 @@ export function PurchasesPage() {
     {
       id: "nuevo",
       label: ctx.editing
-        ? t("purchases.tabs.edit", "Editar compra")
+        ? ctx.readOnly
+          ? t("purchases.tabs.view", "Ver compra")
+          : t("purchases.tabs.edit", "Editar compra")
         : t("purchases.tabs.new", "Nueva compra"),
-      icon: ctx.editing ? "edit" : "add_box",
+      icon: ctx.editing ? (ctx.readOnly ? "visibility" : "edit") : "add_box",
     },
   ];
 
@@ -131,17 +142,35 @@ export function PurchasesPage() {
       header: t("purchases.list.invoiceNumber", "Nro. factura"),
       render: (inv) => <span className="pf-invoice-number zh-code-value">{inv.invoiceNumber}</span>,
     },
+    // FASE 5 PURCHASE-UX — proveedor (snapshot de la compra) y total del documento.
+    {
+      key: "supplier",
+      header: t("purchases.list.supplier", "Proveedor"),
+      render: (inv) => (
+        <span className="pf-list-supplier">
+          <span className="pf-list-supplier__name">{inv.supplierName}</span>
+          {inv.supplierTaxId && (
+            <ZHDataValue variant="code">{inv.supplierTaxId}</ZHDataValue>
+          )}
+        </span>
+      ),
+    },
     { key: "date", header: t("purchases.list.date", "Fecha"), render: (inv) => formatDate(inv.issueDate) },
     { key: "lines", header: t("purchases.list.lines", "Líneas"), align: "center", render: (inv) => inv.lineCount },
     {
+      key: "total",
+      header: t("purchases.list.total", "Total"),
+      align: "right",
+      render: (inv) => <ZHMoneyValue value={inv.grandTotal} precision="money" />,
+    },
+    {
       key: "status",
       header: t("purchases.list.status", "Estado"),
-      render: (inv) => (
-        <Badge
-          variant={inv.status === "Draft" ? "warning" : inv.status === "Confirmed" ? "success" : "error"}
-          label={statusLabel(inv.status)}
-        />
-      ),
+      // FASE 5 PURCHASE-UX — un borrador descartado (Cancelled sin confirmar nunca) no es "Anulada".
+      render: (inv) => {
+        const badge = purchaseStatusBadge(inv.status, inv.isDiscardedDraft);
+        return <Badge variant={badge.variant} label={t(badge.key, badge.fallback)} />;
+      },
     },
     {
       key: "actions",
@@ -150,10 +179,10 @@ export function PurchasesPage() {
       render: (inv) => (
         <>
           <ZHIconButton
-            icon="edit"
+            icon={inv.status === "Draft" ? "edit" : "visibility"}
             variant="ghost"
-            title={`${t("common.edit", "Editar")} factura ${inv.invoiceNumber}`}
-            ariaLabel={`${t("common.edit", "Editar")} factura ${inv.invoiceNumber}`}
+            title={`${inv.status === "Draft" ? t("common.edit", "Editar") : t("common.view", "Ver")} factura ${inv.invoiceNumber}`}
+            ariaLabel={`${inv.status === "Draft" ? t("common.edit", "Editar") : t("common.view", "Ver")} factura ${inv.invoiceNumber}`}
             onClick={() => void ctx.loadForEdit(inv.id)}
           />
           {inv.status === "Confirmed" && (
@@ -173,7 +202,7 @@ export function PurchasesPage() {
   return (
     <ErpPageTemplate
       title={t("purchases.page.title", "Facturas de compra")}
-      subtitle={t("purchases.page.subtitle", "Gestión de compras en borrador.")}
+      subtitle={t("purchases.page.subtitle", "Registro de facturas de compra de proveedores.")}
     >
       <ZHTabBar
         tabs={tabs}
@@ -198,7 +227,7 @@ export function PurchasesPage() {
             <ZhTextInput
               placeholder={t(
                 "purchases.list.searchPlaceholder",
-                "Buscar por número de factura...",
+                "Buscar por número, proveedor o RUC...",
               )}
               value={ctx.listSearchInput}
               onChange={(e) => ctx.setListSearchInput(e.target.value)}
@@ -210,7 +239,9 @@ export function PurchasesPage() {
               <option value="">{t("purchases.list.allStatuses", "Todos los estados")}</option>
               <option value="Draft">{t("purchases.status.draft", "Borrador")}</option>
               <option value="Confirmed">{t("purchases.status.confirmed", "Confirmada")}</option>
-              <option value="Cancelled">{t("purchases.status.cancelled", "Anulada")}</option>
+              <option value="Cancelled">
+                {t("purchases.list.cancelledOrDiscarded", "Anulada / descartada")}
+              </option>
             </ZhSelect>
             <ZHBtn
               variant="secondary"
@@ -370,7 +401,17 @@ export function PurchasesPage() {
             />
           )}
 
-          {ctx.readOnly && (
+          {ctx.readOnly && ctx.editing?.isDiscardedDraft && (
+            <ZHPageNotice
+              variant="neutral"
+              message={t("purchases.notices.discardedReadOnly", {
+                date: formatDateTime(ctx.editing.cancelledAt),
+                reason:
+                  ctx.editing.cancelReason ?? t("purchases.notices.noReason", "Sin motivo"),
+              })}
+            />
+          )}
+          {ctx.readOnly && !ctx.editing?.isDiscardedDraft && (
             <ZHPageNotice
               variant={
                 ctx.editing?.status === "Cancelled" ? "error" : "success"
@@ -390,6 +431,9 @@ export function PurchasesPage() {
               }
             />
           )}
+
+          {/* FASE 5 PURCHASE-UX — estado de la COMPRA (no de los productos). */}
+          <PurchaseDocumentStateStrip state={ctx.documentState} />
 
           {/* ── SECTION 1: Header Cards ── */}
           <div className="pf-header-cards-row">
@@ -1079,8 +1123,10 @@ export function PurchasesPage() {
               <span className="material-symbols-outlined zh-icon-md">
                 arrow_back
               </span>
-              {t("common.cancel", "Cancelar")}
+              {ctx.readOnly ? t("common.back", "Volver") : t("common.cancel", "Cancelar")}
             </ZHBtn>
+            {/* FASE 5 PURCHASE-UX — una compra confirmada/anulada es solo lectura: sin Guardar. */}
+            {!ctx.readOnly && (
             <ZHBtn
               type="button"
               variant="primary"
@@ -1107,6 +1153,20 @@ export function PurchasesPage() {
                   ? t("purchases.actions.updateDraft", "Actualizar borrador")
                   : t("purchases.actions.saveDraft", "Guardar borrador")}
             </ZHBtn>
+            )}
+            {/* FASE 5 PURCHASE-UX — un borrador guardado se descarta (no se anula). "Cancelar" de
+                arriba sigue siendo solo navegación. */}
+            {canDiscardDraft(ctx.editing) && (
+              <ZHBtn
+                type="button"
+                variant="destructive"
+                onClick={() => ctx.setModalDiscardDraft(true)}
+                disabled={ctx.saving}
+              >
+                <span className="material-symbols-outlined zh-icon-md">delete</span>
+                {t("purchases.actions.discardDraft", "Descartar borrador")}
+              </ZHBtn>
+            )}
             {ctx.editing && ctx.editing.status === "Draft" && (
               <ZHBtn
                 type="button"
@@ -1235,6 +1295,15 @@ export function PurchasesPage() {
         title={t("purchases.confirm.title", "Confirmar compra")}
         message={
           <>
+            {ctx.editing && (
+              <PurchaseConfirmSummary
+                supplierName={ctx.supplierProfile?.name ?? ctx.editing.supplierName}
+                invoiceNumber={ctx.editing.invoiceNumber}
+                issueDate={ctx.editing.issueDate}
+                lineCount={ctx.editing.lines.length}
+                total={ctx.editing.grandTotal}
+              />
+            )}
             <XmlConfirmChecklist summary={xmlConfirmChecklist} />
             {ctx.retentionIntent.appliesRetention && ctx.whPreview && (
               <ZHPageNotice
@@ -1290,6 +1359,24 @@ export function PurchasesPage() {
         onConfirm={ctx.handleCancel}
       />
 
+      {/* FASE 5 PURCHASE-UX — descartar borrador: soft, sin reversos, motivo opcional. */}
+      <ZHPromptModal
+        open={ctx.modalDiscardDraft}
+        variant="danger"
+        required={false}
+        title={t("purchases.discardDraft.title", "Descartar borrador")}
+        message={
+          ctx.editing
+            ? t("purchases.discardDraft.message", { invoiceNumber: ctx.editing.invoiceNumber })
+            : ""
+        }
+        label={t("purchases.discardDraft.reasonLabel", "Motivo (opcional)")}
+        placeholder={t("purchases.discardDraft.reasonPlaceholder", "Ej.: cargado por error, duplicado...")}
+        confirmLabel={t("purchases.discardDraft.confirm", "Descartar borrador")}
+        onCancel={() => ctx.setModalDiscardDraft(false)}
+        onConfirm={(reason) => void ctx.handleDiscardDraft(reason)}
+      />
+
       {/* PURCHASE-DRAFT-RECOVERY D3 — salir con cambios sin guardar exige confirmación explícita. */}
       <ZHConfirmModal
         open={ctx.pendingLeave}
@@ -1325,6 +1412,107 @@ export function PurchasesPage() {
 }
 
 // ── Internal Components ────────────────────────────────────────────────
+
+const DOCUMENT_STATE_VARIANT: Record<PurchaseDocumentStateKind, BadgeVariant> = {
+  new: "neutral",
+  draftIncomplete: "warning",
+  draftReady: "success",
+  confirmed: "success",
+  cancelled: "error",
+  discarded: "neutral",
+};
+
+/**
+ * FASE 5 PURCHASE-UX — estado de la compra a nivel documento: Nueva / Borrador incompleto (con
+ * motivos) / Listo para confirmar / Confirmada / Anulada. Nunca habla de productos "listos".
+ */
+function PurchaseDocumentStateStrip({ state }: { state: PurchaseDocumentState }) {
+  const { t } = useI18n();
+  const labels: Record<PurchaseDocumentStateKind, string> = {
+    new: t("purchases.documentState.new", "Nueva compra · sin guardar"),
+    draftIncomplete: t("purchases.documentState.draftIncomplete", "Borrador incompleto"),
+    draftReady: t("purchases.documentState.draftReady", "Borrador listo para confirmar"),
+    confirmed: t("purchases.documentState.confirmed", "Confirmada"),
+    cancelled: t("purchases.documentState.cancelled", "Anulada"),
+    discarded: t("purchases.documentState.discarded", "Borrador descartado"),
+  };
+  const reasonText = (reason: PurchaseDocumentStateReason): string => {
+    switch (reason.code) {
+      case "noLines":
+        return t("purchases.documentState.reason.noLines", "Sin líneas");
+      case "linesToResolve":
+        return t("purchases.documentState.reason.linesToResolve", { count: reason.count });
+      case "pendingProducts":
+        return t("purchases.documentState.reason.pendingProducts", { count: reason.count });
+      case "scheduleMismatch":
+        return t(
+          "purchases.documentState.reason.scheduleMismatch",
+          "Las cuotas no cuadran con el total",
+        );
+      case "unsavedChanges":
+        return t("purchases.documentState.reason.unsavedChanges", "Cambios sin guardar");
+    }
+  };
+  const detail =
+    state.kind === "new"
+      ? t(
+          "purchases.documentState.newDetail",
+          "Guarde el borrador para poder confirmarlo.",
+        )
+      : state.reasons.map(reasonText).join(" · ");
+  return (
+    <div className="pf-doc-state" aria-live="polite">
+      <Badge variant={DOCUMENT_STATE_VARIANT[state.kind]} size="md" label={labels[state.kind]} />
+      {detail && <ZHDataValue variant="muted">{detail}</ZHDataValue>}
+    </div>
+  );
+}
+
+/** FASE 5 PURCHASE-UX — identifica la compra antes de confirmarla (evita confirmar la equivocada). */
+function PurchaseConfirmSummary({
+  supplierName,
+  invoiceNumber,
+  issueDate,
+  lineCount,
+  total,
+}: {
+  supplierName: string;
+  invoiceNumber: string;
+  issueDate: string;
+  lineCount: number;
+  total: number;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="pf-confirm-summary">
+      <ZHInfoRow
+        wide
+        label={<ZHFieldLabel size="sm">{t("purchases.confirm.summary.supplier", "Proveedor")}</ZHFieldLabel>}
+        value={<ZHDataValue variant="strong">{supplierName}</ZHDataValue>}
+      />
+      <ZHInfoRow
+        wide
+        label={<ZHFieldLabel size="sm">{t("purchases.confirm.summary.number", "Número")}</ZHFieldLabel>}
+        value={<ZHDataValue variant="code">{invoiceNumber}</ZHDataValue>}
+      />
+      <ZHInfoRow
+        wide
+        label={<ZHFieldLabel size="sm">{t("purchases.confirm.summary.date", "Fecha")}</ZHFieldLabel>}
+        value={<ZHDataValue variant="numeric">{formatDate(issueDate)}</ZHDataValue>}
+      />
+      <ZHInfoRow
+        wide
+        label={<ZHFieldLabel size="sm">{t("purchases.confirm.summary.lines", "Líneas")}</ZHFieldLabel>}
+        value={<ZHDataValue variant="numeric">{lineCount}</ZHDataValue>}
+      />
+      <ZHInfoRow
+        wide
+        label={<ZHFieldLabel size="sm">{t("purchases.confirm.summary.total", "Total")}</ZHFieldLabel>}
+        value={<ZHMoneyValue value={total} precision="money" emphasis="strong" />}
+      />
+    </div>
+  );
+}
 
 const STATUS_TONE_VARIANT: Record<LineStatusTone, BadgeVariant> = {
   success: "green",
@@ -1771,6 +1959,8 @@ function PurchaseLineCard({
   // hubiera cambiado quantity/unitPrice — Base imp. sí se recalculaba pero IVA/Total quedaban
   // pegados al valor documental original.
   const vm = buildPurchaseLinePresentation(l, precisionPolicy, t, ctx.vatRatesMap, ctx.iceRatesMap);
+  const quantityDecimals = resolvePrecisionDecimals(precisionPolicy, "quantity");
+  const purchasePriceDecimals = resolvePrecisionDecimals(precisionPolicy, "purchaseUnitPrice");
   const sub = vm.editableHeader.taxableBase;
   const vatAmt = vm.editableHeader.vatAmount;
   const iceAmt = vm.editableHeader.iceAmount;
@@ -1792,17 +1982,45 @@ function PurchaseLineCard({
     readiness?.status !== "MISSING_PRESENTATION" &&
     readinessActions;
   const packagingLevels = ctxData?.packagingLevels ?? [];
+  // FASE 5 PURCHASE-UX — Cantidad/Costo a registrar (unidad base) son autoritativos. Línea XML sin
+  // editar: la presentación expresa la cantidad ORIGINAL del proveedor (2 cajas x12 → 24). Línea
+  // manual o XML ya editada: se conserva exactamente lo a registrar, la presentación solo se deriva.
+  // Ver resolvePackagingChange.
   const handlePackagingChange = (packagingLevelId: string) => {
     const selected = packagingLevels.find((p) => p.id === packagingLevelId);
+    const nextFactor = selected?.baseQuantity ?? 1;
+    const next = resolvePackagingChange(
+      l,
+      vm.inventory.conversionFactorValue,
+      nextFactor,
+      packagingLevelId || undefined,
+    );
     ctx.updateLine(l._key, "packagingLevelId", packagingLevelId || undefined);
     ctx.updateLine(l._key, "uomCode", selected?.uomCode ?? ctxData?.baseUomCode);
     ctx.updateLine(l._key, "baseUomCode", ctxData?.baseUomCode);
-    ctx.updateLine(l._key, "conversionFactor", selected?.baseQuantity ?? 1);
-    ctx.updateLine(
-      l._key,
-      "quantityInBaseUom",
-      l.quantity * (selected?.baseQuantity ?? 1),
-    );
+    ctx.updateLine(l._key, "conversionFactor", nextFactor);
+    ctx.updateLine(l._key, "quantity", next.quantity);
+    ctx.updateLine(l._key, "unitPrice", next.unitPrice);
+    ctx.updateLine(l._key, "quantityInBaseUom", next.quantityInBaseUom);
+    ctx.updateLine(l._key, "baseUnitPrice", next.baseUnitPrice);
+    ctx.updateLine(l._key, "xmlOriginFactor", next.xmlOriginFactor);
+    ctx.updateLine(l._key, "xmlOriginPackagingLevelId", next.xmlOriginPackagingLevelId);
+  };
+  // FASE 5 PURCHASE-UX — acción EXPLÍCITA (única) para volver a la cantidad/costo del proveedor,
+  // en la presentación de origen.
+  const handleResetToSupplierOrigin = () => {
+    const origin = resetLineToSupplierOrigin(l, vm.inventory.conversionFactorValue);
+    if (!origin) return;
+    const originLevel = packagingLevels.find((p) => p.id === origin.packagingLevelId);
+    ctx.updateLine(l._key, "packagingLevelId", origin.packagingLevelId);
+    ctx.updateLine(l._key, "uomCode", originLevel?.uomCode ?? ctxData?.baseUomCode);
+    ctx.updateLine(l._key, "conversionFactor", origin.conversionFactor);
+    ctx.updateLine(l._key, "xmlOriginFactor", origin.xmlOriginFactor);
+    ctx.updateLine(l._key, "xmlOriginPackagingLevelId", origin.xmlOriginPackagingLevelId);
+    ctx.updateLine(l._key, "quantity", origin.quantity);
+    ctx.updateLine(l._key, "unitPrice", origin.unitPrice);
+    ctx.updateLine(l._key, "quantityInBaseUom", origin.quantityInBaseUom);
+    ctx.updateLine(l._key, "baseUnitPrice", origin.baseUnitPrice);
   };
   const handleProductSelect = (p: ProductProfile) => {
     const patch = resolvePurchaseItemSelection(p, {
@@ -1977,7 +2195,7 @@ function PurchaseLineCard({
               minmax() y separadores, no un bloque flex anidado) — mismos datos/orden/handlers. */}
             <div className="pdl-line__metric">
               <ZHFieldLabel size="sm">
-                {t("purchases.lines.quantity", "Cantidad")}
+                {t("purchases.lines.quantityToRegister", "Cantidad a registrar")}
               </ZHFieldLabel>
               <ZhDecimalInput
                 key={headerInputKey("qty", vm, l.packagingLevelId)}
@@ -1985,66 +2203,47 @@ function PurchaseLineCard({
                 density="compact"
                 precision="quantity"
                 positiveOnly
-                defaultValue={
-                  vm.inventory.hasPresentation
-                    ? vm.inventory.baseQuantityValue
-                    : l.quantity
-                }
+                defaultValue={vm.inventory.baseQuantityValue}
                 onBlur={(e) => {
+                  // FASE 5 PURCHASE-UX — cantidad a registrar (unidad base), autoritativa: se
+                  // guarda tal cual en quantityInBaseUom; la cantidad del documento se deriva.
+                  // Blur sin edición real no toca la línea (evita round-trip por la escala visible).
                   const entered = Number(e.target.value) || 0;
-                  if (vm.inventory.hasPresentation) {
-                    // PURCHASE-LINE-HEADER-INVENTORY-MODE-01 — con presentación vinculada, este
-                    // campo edita la cantidad real de inventario (unidad base), no la cantidad de
-                    // presentación — se reversa a `quantity` dividiendo por el factor de conversión
-                    // para no corromper el dato que el backend interpreta en unidades de presentación.
-                    const factor = vm.inventory.conversionFactorValue || 1;
-                    ctx.updateLine(l._key, "quantity", entered / factor || 1);
-                    ctx.updateLine(l._key, "quantityInBaseUom", entered);
-                  } else {
-                    ctx.updateLine(l._key, "quantity", entered || 1);
-                  }
+                  if (isUnchangedAtPrecision(entered, vm.inventory.baseQuantityValue, quantityDecimals))
+                    return;
+                  const patch = applyRegisteredQuantity(l, vm.inventory.conversionFactorValue, entered);
+                  if (!patch) return;
+                  ctx.updateLine(l._key, "quantity", patch.quantity);
+                  ctx.updateLine(l._key, "quantityInBaseUom", patch.quantityInBaseUom);
+                  ctx.updateLine(l._key, "baseUnitPrice", patch.baseUnitPrice);
                 }}
                 disabled={ctx.fieldDisabled}
               />
             </div>
             <div className="pdl-line__metric">
               <ZHFieldLabel size="sm">
-                {t("purchases.lines.costShort", "COSTO")}
+                {t("purchases.lines.unitCostToRegister", "Costo unitario a registrar")}
               </ZHFieldLabel>
               <ZHInputGroup className="pdl-line__metric-value" prefix="$">
                 <ZhDecimalInput
                   key={headerInputKey("cost", vm, l.packagingLevelId)}
                   className="pdl-input pdl-input--cost"
                   density="compact"
+                  // Escala del precio de compra: es la que el backend persiste para el precio base.
                   precision="purchaseUnitPrice"
                   positiveOnly
-                  defaultValue={
-                    vm.inventory.hasPresentation
-                      ? vm.inventory.baseUnitCostValue
-                      : l.unitPrice
-                  }
+                  defaultValue={vm.inventory.baseUnitCostValue}
                   onBlur={(e) => {
+                    // FASE 5 PURCHASE-UX — costo unitario a registrar (neto de descuento, con
+                    // flete/gastos asignados), autoritativo: se despeja el precio base y el precio
+                    // por presentación se deriva. Blur sin edición real no toca la línea.
                     const entered = Number(e.target.value) || 0;
-                    if (vm.inventory.hasPresentation) {
-                      // PURCHASE-LINE-HEADER-BASE-QTY-COST-EDIT-01 — con presentación vinculada este
-                      // campo edita el costo real unitario base; se reversa a `unitPrice` (fórmula
-                      // inversa de baseUnitCost, considerando descuento y flete/otros gastos ya
-                      // asignados) para que la línea siga cuadrando fiscalmente. Si el cálculo no es
-                      // seguro (cantidades en 0, descuento >= 100%, resultado negativo), no se aplica
-                      // — se conserva el unitPrice actual en vez de inventar un valor.
-                      const recalculatedUnitPrice = computeUnitPriceFromBaseUnitCost({
-                        newBaseUnitCost: entered,
-                        quantity: l.quantity ?? 0,
-                        quantityInBaseUom: vm.inventory.baseQuantityValue,
-                        discountPct: l.discountPct ?? 0,
-                        freightAllocated: l.freightAllocated ?? 0,
-                        otherCostsAllocated: l.otherCostsAllocated ?? 0,
-                      });
-                      if (recalculatedUnitPrice === null) return;
-                      ctx.updateLine(l._key, "unitPrice", recalculatedUnitPrice);
+                    if (isUnchangedAtPrecision(entered, vm.inventory.baseUnitCostValue, purchasePriceDecimals))
                       return;
-                    }
-                    ctx.updateLine(l._key, "unitPrice", entered);
+                    const patch = applyRegisteredUnitCost(l, vm.inventory.conversionFactorValue, entered);
+                    if (!patch) return;
+                    ctx.updateLine(l._key, "unitPrice", patch.unitPrice);
+                    ctx.updateLine(l._key, "baseUnitPrice", patch.baseUnitPrice);
                   }}
                   disabled={ctx.fieldDisabled}
                 />
@@ -2097,7 +2296,7 @@ function PurchaseLineCard({
             </div>
             <div className="pdl-line__metric">
               <ZHFieldLabel size="sm">
-                {t("purchases.lines.netTotal", "Total neto")}
+                {t("purchases.lines.lineTotalWithTaxes", "Total línea (con impuestos)")}
               </ZHFieldLabel>
               <div className="pdl-line__total">
                 <ZHMoneyValue
@@ -2119,6 +2318,59 @@ function PurchaseLineCard({
             </div>
         </div>
       </div>
+
+      {/* FASE 5 PURCHASE-UX — qué se registrará realmente (siempre visible, también colapsado). */}
+      {vm.registration.show && (
+        <div className="pdl-line__registration">
+          <span className="pdl-line__registration-sentence">{vm.registration.sentence}</span>
+          {vm.registration.presentationDetail && (
+            <ZHDataValue variant="muted">{vm.registration.presentationDetail}</ZHDataValue>
+          )}
+          {vm.registration.costNote && (
+            <ZHDataValue variant="muted">{vm.registration.costNote}</ZHDataValue>
+          )}
+        </div>
+      )}
+      {vm.registration.show && vm.registration.savedInBaseUnitNote && (
+        <ZHCompactNotice
+          notice={buildNotice({
+            severity: "info",
+            intent: "status",
+            source: "domain-status",
+            label: t("purchases.lines.registrationSavedInBaseUnitTitle", "Equivalencia informativa"),
+            detail: vm.registration.savedInBaseUnitNote,
+          })}
+        />
+      )}
+      {vm.registration.originDiffers && (
+        <>
+          <ZHCompactNotice
+            notice={buildNotice({
+              severity: "warning",
+              intent: "status",
+              source: "domain-status",
+              label: t(
+                "purchases.lines.registrationOriginDiffers",
+                "Cantidad o costo distintos al documento del proveedor",
+              ),
+              detail: vm.registration.originDetail,
+            })}
+          />
+          {!ctx.fieldDisabled && (
+            <div className="pdl-line__registration">
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                size="xs"
+                onClick={handleResetToSupplierOrigin}
+              >
+                <span className="material-symbols-outlined zh-icon-md">restart_alt</span>
+                {t("purchases.lines.resetToSupplierOrigin", "Recalcular desde XML")}
+              </ZHBtn>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Resumen de estado de preparación: solo interpreta datos ya presentes en la línea. */}
       <div className="pdl-line__status">
@@ -2337,40 +2589,17 @@ function PurchaseLineCard({
                 </ZhSelect>
               </div>
             )}
-            {vm.item.hasItem &&
-              vm.xml.hasOrigin &&
-              packagingLevels.length === 0 &&
-              !vm.inventory.hasPresentation && (
-                <ZHInfoRow
-                  wide
-                  label={
-                    <ZHFieldLabel size="sm">
-                      {t("purchases.lines.presentationUnavailable", "Presentación")}
-                    </ZHFieldLabel>
-                  }
-                  value={
-                    <Badge
-                      variant="neutral"
-                      label={t(
-                        "purchases.lines.presentationNotLinked",
-                        "Sin presentación vinculada",
-                      )}
-                    />
-                  }
-                />
-              )}
-            {vm.inventory.hasPresentation && (
-              <ZHInfoRow
-                wide
-                label={
-                  <ZHFieldLabel size="sm">
-                    {t("purchases.lines.linkedPresentation", "Presentación vinculada")}
-                  </ZHFieldLabel>
-                }
-                value={<ZHDataValue variant="numeric">{vm.inventory.presentationLabel}</ZHDataValue>}
-              />
+            {/* FASE 5 PURCHASE-UX — producto sin presentaciones: flujo normal en unidad base, sin
+                controles de presentación innecesarios. */}
+            {vm.item.hasItem && packagingLevels.length === 0 && !vm.inventory.hasPresentation && (
+              <ZHDataValue variant="muted">
+                {t(
+                  "purchases.lines.noPresentationsBaseUnit",
+                  "Producto sin presentaciones: se registra en unidad base.",
+                )}
+              </ZHDataValue>
             )}
-            {vm.item.hasItem && (
+            {vm.inventory.hasPresentation && vm.inventory.conversionFactorValue !== 1 && (
               <ZHInfoRow
                 wide
                 label={
@@ -2378,31 +2607,23 @@ function PurchaseLineCard({
                     {t("purchases.lines.conversionFactor", "Factor de conversión")}
                   </ZHFieldLabel>
                 }
-                value={<ZHDataValue variant="numeric">{vm.inventory.conversionFactorLabel}</ZHDataValue>}
+                value={
+                  <ZHDataValue variant="numeric">
+                    {vm.inventory.equivalenceDetail || vm.inventory.conversionFactorLabel}
+                  </ZHDataValue>
+                }
               />
             )}
-            <ZHInfoRow
-              label={
-                <ZHFieldLabel size="sm">
-                  {t("purchases.lines.inventory", "Ingreso a inventario")}
-                </ZHFieldLabel>
-              }
-              value={<ZHDataValue variant="numeric">{vm.inventory.baseQuantity}</ZHDataValue>}
-            />
-            <ZHInfoRow
-              label={
-                <ZHFieldLabel size="sm">
-                  {t("purchases.lines.baseCost", "Costo unitario base")}
-                </ZHFieldLabel>
-              }
-              value={<ZHDataValue variant="numeric">{vm.inventory.baseUnitCost}</ZHDataValue>}
-            />
-            {vm.item.hasItem && vm.xml.hasOrigin && (
+            {vm.item.hasItem && vm.xml.hasOrigin && packagingLevels.length > 0 && (
               <div className="pdl-cost-wide">
                 <ZHBtn
                   type="button"
                   variant="primary"
                   size="xs"
+                  title={t(
+                    "purchases.lines.saveSupplierPresentationHint",
+                    "Recordar esta presentación para las próximas facturas de este proveedor.",
+                  )}
                   disabled={
                     ctx.fieldDisabled ||
                     ctx.matchingKey === l._key ||

@@ -49,7 +49,9 @@ public sealed record PurchaseInvoiceDto(
     DateTime? UpdatedAt,
     // PURCHASE-DRAFT-RECOVERY F3 — decisión de retención recordada por el borrador (null = nunca
     // registrada). Solo restaura la UI; la emisión sigue viajando en el body de Confirm.
-    PurchaseRetentionIntentDraftDto? RetentionIntent = null
+    PurchaseRetentionIntentDraftDto? RetentionIntent = null,
+    // FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada".
+    bool IsDiscardedDraft = false
 );
 
 /// <summary>
@@ -131,7 +133,10 @@ public sealed record PurchaseInvoiceDetailDto(
     // PURCHASE-DRAFT-RECOVERY F1 — evidencia original de la PurchaseReceptionLine (mismo contrato
     // que "Crear compra" desde Recepción). Solo se informa al leer un borrador por Id; null en
     // líneas manuales o fuera de ese flujo.
-    PurchaseDraftLineDto? XmlSource = null
+    PurchaseDraftLineDto? XmlSource = null,
+    // FASE 5 PURCHASE-UX — presentación de origen XML persistida (null: manual / borrador anterior).
+    Guid? XmlOriginPackagingLevelId = null,
+    decimal? XmlOriginFactor = null
 );
 
 /// <summary>FLOW-READY-02F.1 — snapshot fiel de un &lt;impuesto&gt; del XML (IVA/ICE/IRBPNR).</summary>
@@ -153,5 +158,11 @@ public sealed record PurchaseListDto(
     Guid SupplierId,
     string Status,
     int LineCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    // FASE 5 PURCHASE-UX — datos operativos del listado (snapshot proveedor + total del documento).
+    string SupplierName = "",
+    string SupplierTaxId = "",
+    decimal GrandTotal = 0m,
+    // FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada".
+    bool IsDiscardedDraft = false
 );

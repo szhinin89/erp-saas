@@ -3,6 +3,10 @@ import type { PurchaseRetentionIntentState } from "./purchaseRetentionIntent";
 import type { PurchaseInvoiceFormValues } from "../schemas/purchaseInvoiceSchema";
 import { fromDateTimeLocalInputValue } from "../../../lib/formatters/dateFormatters";
 import { normalizeOptionalCode } from "../../../lib/sanitizers";
+import {
+  hasSupplierDocumentOrigin,
+  resolveLinePersistence,
+} from "./purchaseLinePresentation";
 
 /** Fila de cuota tal como la edita el formulario (ScheduleRow del hook). */
 export interface PurchaseDraftScheduleRow {
@@ -31,27 +35,42 @@ export interface PurchaseDraftExtras {
 export function buildPurchaseDraftPayload(
   data: PurchaseInvoiceFormValues,
   extras?: PurchaseDraftExtras,
+  // FASE 5 PURCHASE-UX — con la escala del precio de compra, una línea manual o XML editada con
+  // presentación se persiste en la presentación solo si es exacta; si no, en unidad base (sin
+  // round-trip — ver resolveLinePersistence). Sin ella (huella de cambios sin guardar) la línea
+  // viaja tal cual está en el formulario.
+  precision?: { purchaseUnitPriceDecimals: number },
 ): CreatePurchasePayload {
   return {
     supplierId: data.supplierId,
     docTypeCode: data.docTypeCode,
     invoiceNumber: data.invoiceNumber,
     issueDate: data.issueDate,
-    lines: data.lines.map((l) => ({
+    lines: data.lines.map((l) => {
+      const persisted = precision
+        ? resolveLinePersistence(l, precision.purchaseUnitPriceDecimals)
+        : null;
+      return {
       itemId: l.itemId,
       description: l.description,
-      quantity: l.quantity,
-      unitPrice: l.unitPrice,
+      quantity: persisted ? persisted.quantity : l.quantity,
+      unitPrice: persisted ? persisted.unitPrice : l.unitPrice,
       vatCode: l.vatCode,
       discountPct: l.discountPct ?? 0,
       iceCode: normalizeOptionalCode(l.iceCode),
       warehouseId: l.warehouseId,
       notes: l.notes,
       purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
-      packagingLevelId: l.packagingLevelId ?? undefined,
+      packagingLevelId: persisted ? persisted.packagingLevelId : (l.packagingLevelId ?? undefined),
+      // FASE 5 PURCHASE-UX — la presentación de origen XML se persiste (sobrevive reabrir sin volver
+      // a depender de la recepción). Solo líneas de recepción.
+      xmlOriginPackagingLevelId: hasSupplierDocumentOrigin(l)
+        ? (l.xmlOriginPackagingLevelId ?? undefined)
+        : undefined,
       freightAllocated: l.freightAllocated ?? undefined,
       otherCostsAllocated: l.otherCostsAllocated ?? undefined,
-    })),
+      };
+    }),
     accessKey: normalizeOptionalCode(data.accessKey),
     authorizationNumber: normalizeOptionalCode(data.authorizationNumber),
     // ZH-TEMPORAL-CONTRACT-02: datetime-local = hora de Company.Timezone → UTC una sola vez.
