@@ -162,6 +162,15 @@
                      ]
     },
     {
+        "task":  "Refactor large file (1572 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/caja/hooks/useCajaPage.test.tsx"
+                     ]
+    },
+    {
         "task":  "Refactor large file (1536 lines): backend/src/ERP.Infrastructure.Tests/Expenses/RetentionExpenseEndToEndTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
@@ -177,15 +186,6 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.API.Tests/Integration/PurchaseReturnEndToEndTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (1471 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/caja/hooks/useCajaPage.test.tsx"
                      ]
     },
     {
@@ -441,21 +441,21 @@
                      ]
     },
     {
-        "task":  "Refactor large file (970 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs"
-                     ]
-    },
-    {
         "task":  "Refactor large file (970 lines): backend/src/ERP.API/Program.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.API/Program.cs"
+                     ]
+    },
+    {
+        "task":  "Refactor large file (970 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs"
                      ]
     },
     {
@@ -540,6 +540,15 @@
                      ]
     },
     {
+        "task":  "Refactor large file (899 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+        "category":  "Technical Debt",
+        "priority":  "HIGH",
+        "source":  "TechnicalDebt.LargeFiles",
+        "evidence":  [
+                         "frontend/src/modules/caja/pages/CajaPage.tsx"
+                     ]
+    },
+    {
         "task":  "Refactor large file (896 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
         "category":  "Technical Debt",
         "priority":  "HIGH",
@@ -618,15 +627,6 @@
         "source":  "TechnicalDebt.LargeFiles",
         "evidence":  [
                          "backend/src/ERP.Domain.Tests/Payables/SupplierPaymentTests.cs"
-                     ]
-    },
-    {
-        "task":  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
-        "category":  "Technical Debt",
-        "priority":  "HIGH",
-        "source":  "TechnicalDebt.LargeFiles",
-        "evidence":  [
-                         "frontend/src/modules/caja/pages/CajaPage.tsx"
                      ]
     },
     {

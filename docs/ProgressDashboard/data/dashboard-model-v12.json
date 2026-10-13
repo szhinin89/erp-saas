@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-10-13 10:14:32",
+    "Generated":  "2026-10-13 11:06:56",
     "EngineeringScore":  {
-                             "Generated":  "2026-10-13 10:14:30",
+                             "Generated":  "2026-10-13 11:06:54",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
                              "Quality":  8.05,
@@ -10,7 +10,7 @@
                              "Overall":  61.12
                          },
     "QualityGate":  {
-                        "Generated":  "2026-10-13 10:14:32",
+                        "Generated":  "2026-10-13 11:06:55",
                         "Status":  "RED",
                         "EngineeringScore":  61.12,
                         "Warnings":  [
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-10-13 10:14:31",
-                  "Snapshots":  29,
+                  "Generated":  "2026-10-13 11:06:55",
+                  "Snapshots":  30,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -171,6 +171,11 @@
                                   {
                                       "Date":  "2026-10-13 10:14:31",
                                       "File":  "dashboard-2026-10-13-1014-v2.json",
+                                      "Score":  61.12
+                                  },
+                                  {
+                                      "Date":  "2026-10-13 11:06:54",
+                                      "File":  "dashboard-2026-10-13-1106-v2.json",
                                       "Score":  61.12
                                   }
                               ]
@@ -523,7 +528,7 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-10-13 10:14:28",
+                     "Generated":  "2026-10-13 11:06:52",
                      "FilesAnalyzed":  11829,
                      "SecretsFound":  181,
                      "SecretFiles":  [
@@ -736,8 +741,8 @@
                      "Warnings":  199
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-10-13 10:14:04",
-                          "FilesAnalyzed":  11777,
+                          "Generated":  "2026-10-13 11:06:35",
+                          "FilesAnalyzed":  11778,
                           "TODO":  736,
                           "FIXME":  30,
                           "HACK":  1,
@@ -3517,11 +3522,11 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\caja\\hooks\\useCajaPage.test.tsx",
-                                                 "Lines":  1471
+                                                 "Lines":  1572
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\caja\\pages\\CajaPage.tsx",
-                                                 "Lines":  865
+                                                 "Lines":  899
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\configuracion\\documentFlows\\pages\\DocumentFlowPoliciesPage.tsx",
@@ -3703,7 +3708,7 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-10-13 10:13:32",
+                         "Generated":  "2026-10-13 11:06:16",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  673
@@ -3721,7 +3726,7 @@
                                                            },
                                         "API":  {
                                                     "Controllers":  502,
-                                                    "Files":  147
+                                                    "Files":  148
                                                 }
                                     },
                          "Violations":  [
@@ -3729,7 +3734,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-10-13 10:13:33",
+                         "Generated":  "2026-10-13 11:06:17",
                          "Violations":  [
 
                                         ],

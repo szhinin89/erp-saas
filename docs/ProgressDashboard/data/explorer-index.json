@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-13 10:15:06",
+    "generated":  "2026-10-13 11:07:27",
     "source":  "modules.json, features.json, processes.json, tasks.json, domains.json, dependencies.json, critical-path.json, impact.json, dashboard-model-v12.json, completion-intelligence.json, git log",
     "method":  {
                    "changeRiskFormula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
@@ -9223,7 +9223,7 @@
                         "frontend":  70,
                         "filesScanned":  33,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-10-05",
+                        "lastEvidenceDate":  "2026-10-13",
                         "featuresCount":  11,
                         "featureNames":  [
                                              "Cash Movement Reason",
@@ -9278,11 +9278,11 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
-                                                            "lines":  1471
+                                                            "lines":  1572
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/caja/pages/CajaPage.tsx",
-                                                            "lines":  865
+                                                            "lines":  899
                                                         }
                                                     ],
                                      "largeFilesCount":  10,
@@ -9681,9 +9681,9 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (1471 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
+                                                            "Refactor large file (1572 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
                                                             "Refactor large file (1020 lines): backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestWorkflowIntegrationTests.cs",
-                                                            "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                                                            "Refactor large file (899 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
                                                             "Refactor large file (851 lines): backend/src/ERP.Application.Tests/Caja/CashSessionCollectionSummaryHandlerTests.cs",
                                                             "Refactor large file (739 lines): backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestUseCases.cs",
                                                             "Refactor large file (668 lines): backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestQueries.cs",
@@ -14826,6 +14826,18 @@
                                                   ]
                              },
                              {
+                                 "file":  "backend/src/ERP.Application.Tests/Expenses/CancelExpenseDocumentUseCasesTests.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  "Expenses",
+                                                          "label":  "Refactor large file (789 lines): backend/src/ERP.Application.Tests/Expenses/CancelExpenseDocumentUseCasesTests.cs",
+                                                          "domainId":  "unmapped",
+                                                          "domainName":  null
+                                                      }
+                                                  ]
+                             },
+                             {
                                  "file":  "backend/src/ERP.Domain.Tests/Purchases/PurchaseReception/PurchaseReceptionDocumentTests.cs",
                                  "referencedBy":  [
                                                       {
@@ -15227,7 +15239,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Caja",
-                                                          "label":  "Refactor large file (1471 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
+                                                          "label":  "Refactor large file (1572 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
                                                           "domainId":  "cash",
                                                           "domainName":  "Cash"
                                                       }
@@ -16524,14 +16536,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "frontend/src/modules/caja/pages/CajaPage.tsx",
+                                 "file":  "backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
-                                                          "module":  "Caja",
-                                                          "label":  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
-                                                          "domainId":  "cash",
-                                                          "domainName":  "Cash"
+                                                          "module":  "Purchases",
+                                                          "label":  "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
+                                                          "domainId":  "purchases",
+                                                          "domainName":  "Purchases"
                                                       }
                                                   ]
                              },
@@ -18572,14 +18584,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
+                                 "file":  "frontend/src/modules/caja/pages/CajaPage.tsx",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
-                                                          "module":  "Expenses",
-                                                          "label":  "Refactor large file (885 lines): backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
-                                                          "domainId":  "unmapped",
-                                                          "domainName":  null
+                                                          "module":  "Caja",
+                                                          "label":  "Refactor large file (899 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                                                          "domainId":  "cash",
+                                                          "domainName":  "Cash"
                                                       }
                                                   ]
                              },
@@ -19965,18 +19977,6 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Task",
-                                                          "module":  "Purchases",
-                                                          "label":  "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
-                                                          "domainId":  "purchases",
-                                                          "domainName":  "Purchases"
-                                                      }
-                                                  ]
-                             },
-                             {
                                  "file":  "backend/src/ERP.Application/Modules/Session/UseCases/SwitchBranch",
                                  "referencedBy":  [
                                                       {
@@ -21087,12 +21087,12 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application.Tests/Expenses/CancelExpenseDocumentUseCasesTests.cs",
+                                 "file":  "backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Expenses",
-                                                          "label":  "Refactor large file (789 lines): backend/src/ERP.Application.Tests/Expenses/CancelExpenseDocumentUseCasesTests.cs",
+                                                          "label":  "Refactor large file (885 lines): backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -23642,17 +23642,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (1572 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (1536 lines): backend/src/ERP.Infrastructure.Tests/Expenses/RetentionExpenseEndToEndTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (1519 lines): backend/src/ERP.API.Tests/Integration/PurchaseReturnEndToEndTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (1471 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -23797,12 +23797,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (970 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs",
+                              "label":  "Refactor large file (970 lines): backend/src/ERP.API/Program.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (970 lines): backend/src/ERP.API/Program.cs",
+                              "label":  "Refactor large file (970 lines): backend/src/ERP.Infrastructure.Tests/Persistence/PurchaseCreditNoteConstraintsTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -23852,6 +23852,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (899 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (896 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
                               "moduleId":  null
                           },
@@ -23893,11 +23898,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (865 lines): backend/src/ERP.Domain.Tests/Payables/SupplierPaymentTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24837,6 +24837,11 @@
                           },
                           {
                               "type":  "File",
+                              "label":  "backend/src/ERP.Application.Tests/Expenses/CancelExpenseDocumentUseCasesTests.cs",
+                              "moduleId":  "Expenses"
+                          },
+                          {
+                              "type":  "File",
                               "label":  "backend/src/ERP.Domain.Tests/Purchases/PurchaseReception/PurchaseReceptionDocumentTests.cs",
                               "moduleId":  "Purchases"
                           },
@@ -25527,8 +25532,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "frontend/src/modules/caja/pages/CajaPage.tsx",
-                              "moduleId":  "Caja"
+                              "label":  "backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
+                              "moduleId":  "Purchases"
                           },
                           {
                               "type":  "File",
@@ -26357,8 +26362,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
-                              "moduleId":  "Expenses"
+                              "label":  "frontend/src/modules/caja/pages/CajaPage.tsx",
+                              "moduleId":  "Caja"
                           },
                           {
                               "type":  "File",
@@ -26917,11 +26922,6 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
-                              "moduleId":  "Purchases"
-                          },
-                          {
-                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Session/UseCases/SwitchBranch",
                               "moduleId":  "Session"
                           },
@@ -27367,7 +27367,7 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application.Tests/Expenses/CancelExpenseDocumentUseCasesTests.cs",
+                              "label":  "backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
                               "moduleId":  "Expenses"
                           },
                           {

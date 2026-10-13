@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-13 10:14:53",
+    "generated":  "2026-10-13 11:07:15",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -1330,9 +1330,9 @@
                              "percentOfErp":  102.05,
                              "riskOfModifying":  "MEDIUM",
                              "relatedTasks":  [
-                                                  "Refactor large file (1471 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
+                                                  "Refactor large file (1572 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
                                                   "Refactor large file (1020 lines): backend/src/ERP.Infrastructure.Tests/Caja/CashFundingRequestWorkflowIntegrationTests.cs",
-                                                  "Refactor large file (865 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                                                  "Refactor large file (899 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
                                                   "Refactor large file (851 lines): backend/src/ERP.Application.Tests/Caja/CashSessionCollectionSummaryHandlerTests.cs",
                                                   "Refactor large file (739 lines): backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestUseCases.cs",
                                                   "Refactor large file (668 lines): backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestQueries.cs",

@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-13 10:14:04",
-    "FilesAnalyzed":  11777,
+    "Generated":  "2026-10-13 11:06:35",
+    "FilesAnalyzed":  11778,
     "TODO":  736,
     "FIXME":  30,
     "HACK":  1,
@@ -2780,11 +2780,11 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\caja\\hooks\\useCajaPage.test.tsx",
-                           "Lines":  1471
+                           "Lines":  1572
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\caja\\pages\\CajaPage.tsx",
-                           "Lines":  865
+                           "Lines":  899
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\configuracion\\documentFlows\\pages\\DocumentFlowPoliciesPage.tsx",

@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-10-13 10:13:32",
+    "Generated":  "2026-10-13 11:06:16",
     "Layers":  {
                    "Domain":  {
                                   "Files":  673
@@ -17,7 +17,7 @@
                                       },
                    "API":  {
                                "Controllers":  502,
-                               "Files":  147
+                               "Files":  148
                            }
                },
     "Violations":  [
