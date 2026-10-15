@@ -622,19 +622,12 @@ public sealed class PurchaseInvoice
     public const string DiscardedDraftDefaultReason = "Borrador descartado.";
 
     /// <summary>
-    /// FASE 5 PURCHASE-UX — borrador descartado: <c>Cancelled</c> sin haber sido confirmado nunca
-    /// (<see cref="ConfirmedGrandTotal"/> solo se fija en <see cref="Confirm"/>). Distingue
-    /// "Descartado" de "Anulada" sin columna nueva.
-    /// </summary>
-    public bool IsDiscardedDraft => Status == PurchaseStatus.Cancelled && ConfirmedGrandTotal is null;
-
-    /// <summary>
-    /// FASE 5 PURCHASE-UX — descarta un borrador (soft: <c>Draft → Cancelled</c>, mismo criterio que
-    /// <c>SalesReturn.CancelDraft</c>; el registro y su historial se conservan). NO es
+    /// FASE 5 PURCHASE-UX — descarta un borrador (soft: <c>Draft → Discarded</c>;
+    /// el registro y su historial se conservan). NO es
     /// <see cref="Cancel"/>: un borrador nunca generó inventario, CxP, contabilidad ni retención, así
     /// que no levanta <see cref="PurchaseInvoiceCancelledEvent"/> (que dispara reversos) sino
-    /// <see cref="PurchaseDraftDiscardedEvent"/>, solo de auditoría. Al quedar <c>Cancelled</c> deja
-    /// de bloquear la clave de acceso y el número del proveedor (índices filtrados status &lt;&gt; 3),
+    /// <see cref="PurchaseDraftDiscardedEvent"/>, solo de auditoría. Al quedar <c>Discarded</c> deja
+    /// de bloquear la clave de acceso y el número del proveedor (unicidad solo Draft/Confirmed),
     /// así que la recepción/XML vuelve a quedar disponible para procesarse.
     /// </summary>
     public void DiscardDraft(Guid discardedBy, string? reason = null)
@@ -650,7 +643,7 @@ public sealed class PurchaseInvoice
                 nameof(reason)
             );
 
-        Status = PurchaseStatus.Cancelled;
+        Status = PurchaseStatus.Discarded;
         CancelReason = string.IsNullOrWhiteSpace(trimmed) ? DiscardedDraftDefaultReason : trimmed;
         CancelledAt = DateTime.UtcNow;
         CancelledBy = discardedBy;

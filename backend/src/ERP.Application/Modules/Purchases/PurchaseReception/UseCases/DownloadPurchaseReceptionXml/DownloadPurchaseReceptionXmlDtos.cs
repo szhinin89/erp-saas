@@ -10,7 +10,6 @@ public sealed record DownloadPurchaseReceptionXmlResultDto(
     int LinesDetectedCount,
     int LinesProcessedCount,
     string? ProcessingNotes,
-    bool PurchaseExists,
     Guid? PurchaseId,
     bool? SupplierIsActive,
     // infoTributaria/nombreComercial del emisor — solo para precargar el formulario de creación de

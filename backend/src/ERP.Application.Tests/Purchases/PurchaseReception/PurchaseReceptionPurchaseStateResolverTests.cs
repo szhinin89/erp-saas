@@ -45,14 +45,14 @@ public sealed class PurchaseReceptionPurchaseStateResolverTests
 
     private static Mock<IPurchaseInvoiceRepository> Repo(
         PurchaseInvoice? active,
-        CancelledPurchaseRef? latestCancelled
+        HistoricalPurchaseRef? latestCancelled
     )
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
         repo.Setup(r => r.GetByAccessKeyAsync(TenantId, AccessKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(active);
         repo.Setup(r =>
-                r.GetLatestCancelledByAccessKeyAsync(TenantId, AccessKey, It.IsAny<CancellationToken>())
+                r.GetLatestHistoricalByAccessKeyAsync(TenantId, AccessKey, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(latestCancelled);
         return repo;
@@ -67,7 +67,6 @@ public sealed class PurchaseReceptionPurchaseStateResolverTests
         var info = await Resolve(Repo(active: null, latestCancelled: null));
 
         info.State.Should().Be(PurchaseReceptionPurchaseState.None);
-        info.PurchaseExists.Should().BeFalse();
         info.PurchaseId.Should().BeNull();
         info.CancelledPurchaseId.Should().BeNull();
     }
@@ -81,11 +80,10 @@ public sealed class PurchaseReceptionPurchaseStateResolverTests
         var info = await Resolve(repo);
 
         info.State.Should().Be(PurchaseReceptionPurchaseState.Draft);
-        info.PurchaseExists.Should().BeTrue();
         info.PurchaseId.Should().Be(draft.Id);
         info.CancelledPurchaseId.Should().BeNull();
         repo.Verify(
-            r => r.GetLatestCancelledByAccessKeyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r => r.GetLatestHistoricalByAccessKeyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never,
             "con compra activa no se consulta el historial"
         );
@@ -108,10 +106,9 @@ public sealed class PurchaseReceptionPurchaseStateResolverTests
     {
         var cancelledId = Guid.NewGuid();
 
-        var info = await Resolve(Repo(active: null, new CancelledPurchaseRef(cancelledId, IsDiscardedDraft: false)));
+        var info = await Resolve(Repo(active: null, new HistoricalPurchaseRef(cancelledId, Status: ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled)));
 
         info.State.Should().Be(PurchaseReceptionPurchaseState.Cancelled);
-        info.PurchaseExists.Should().BeFalse();
         info.CancelledPurchaseId.Should().Be(cancelledId);
     }
 
@@ -120,10 +117,9 @@ public sealed class PurchaseReceptionPurchaseStateResolverTests
     {
         var discardedId = Guid.NewGuid();
 
-        var info = await Resolve(Repo(active: null, new CancelledPurchaseRef(discardedId, IsDiscardedDraft: true)));
+        var info = await Resolve(Repo(active: null, new HistoricalPurchaseRef(discardedId, Status: ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Discarded)));
 
         info.State.Should().Be(PurchaseReceptionPurchaseState.Discarded);
-        info.PurchaseExists.Should().BeFalse();
         info.CancelledPurchaseId.Should().Be(discardedId);
     }
 

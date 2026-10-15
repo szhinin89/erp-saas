@@ -752,7 +752,7 @@ describe("FASE 5 PURCHASE-UX — Descartar borrador", () => {
   it("descarta el borrador guardado (motivo opcional), limpia el formulario y vuelve al listado", async () => {
     const result = await setupLoaded();
     vi.mocked(purchaseService.discardDraft).mockResolvedValue(
-      buildInvoice({ status: "Cancelled", isDiscardedDraft: true }),
+      buildInvoice({ status: "Discarded" }),
     );
 
     await act(async () => {
@@ -776,7 +776,7 @@ describe("FASE 5 PURCHASE-UX — Descartar borrador", () => {
   });
 
   it("un borrador descartado se abre en solo lectura con estado 'discarded'", async () => {
-    const result = await setupLoaded({ status: "Cancelled", isDiscardedDraft: true, cancelReason: "Duplicado" });
+    const result = await setupLoaded({ status: "Discarded", cancelReason: "Duplicado" });
 
     expect(result.current.readOnly).toBe(true);
     expect(result.current.documentState.kind).toBe("discarded");

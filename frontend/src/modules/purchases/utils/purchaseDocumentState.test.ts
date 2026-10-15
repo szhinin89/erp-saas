@@ -71,8 +71,8 @@ describe("FASE 5 PURCHASE-UX — Descartar borrador (UI)", () => {
   it("etiquetas: Borrador / Confirmada / Anulada / Descartado", () => {
     expect(purchaseStatusBadge("Draft")).toMatchObject({ fallback: "Borrador", variant: "warning" });
     expect(purchaseStatusBadge("Confirmed")).toMatchObject({ fallback: "Confirmada", variant: "success" });
-    expect(purchaseStatusBadge("Cancelled", false)).toMatchObject({ fallback: "Anulada", variant: "error" });
-    expect(purchaseStatusBadge("Cancelled", true)).toMatchObject({
+    expect(purchaseStatusBadge("Cancelled")).toMatchObject({ fallback: "Anulada", variant: "error" });
+    expect(purchaseStatusBadge("Discarded")).toMatchObject({
       key: "purchases.status.discarded",
       fallback: "Descartado",
       variant: "neutral",
@@ -80,7 +80,7 @@ describe("FASE 5 PURCHASE-UX — Descartar borrador (UI)", () => {
   });
 
   it("estado del documento: descartado ≠ anulado", () => {
-    expect(resolvePurchaseDocumentState({ ...base, status: "Cancelled", isDiscardedDraft: true }).kind)
+    expect(resolvePurchaseDocumentState({ ...base, status: "Discarded" }).kind)
       .toBe("discarded");
     expect(resolvePurchaseDocumentState({ ...base, status: "Cancelled" }).kind).toBe("cancelled");
   });

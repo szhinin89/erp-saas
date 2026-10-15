@@ -132,7 +132,6 @@ export function usePurchaseReceptionPage() {
                       documentStatus: download.status,
                       processingStatus: download.processingStatus,
                       processingNotes: download.processingNotes,
-                      purchaseExists: download.purchaseExists,
                       purchaseId: download.purchaseId,
                       // FASE 5 PURCHASE-UX — la descarga refresca el estado real de la compra.
                       purchaseState: download.purchaseState ?? item.purchaseState,
@@ -280,7 +279,6 @@ export function usePurchaseReceptionPage() {
               ...item,
               documentStatus: batchItem.documentStatus,
               processingStatus: batchItem.processingStatus ?? item.processingStatus,
-              purchaseExists: batchItem.purchaseExists,
               purchaseId: batchItem.purchaseId,
               // FASE 5 PURCHASE-UX — el lote refresca el estado real de la compra.
               purchaseState: batchItem.purchaseState ?? item.purchaseState,
@@ -500,7 +498,7 @@ export function usePurchaseReceptionPage() {
                       supplierId: item.sourceDocType === "INVOICE" ? supplierId || null : item.supplierId,
                       supplierExists: item.sourceDocType === "INVOICE" ? !!supplierId : true,
                       supplierIsActive: true,
-                      status: item.purchaseExists ? item.status : "PENDING",
+                      status: item.purchaseState === "DRAFT" || item.purchaseState === "CONFIRMED" ? item.status : "PENDING",
                     }
                   : item,
               ),

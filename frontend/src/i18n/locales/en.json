@@ -3291,7 +3291,6 @@
   "purchases.itemMatchStatus.AUTO_MATCHED": "Auto",
   "purchases.itemMatchStatus.MANUALLY_MATCHED": "Manual link",
   "purchases.list.searchPlaceholder": "Search by number, supplier or tax ID...",
-  "purchases.list.cancelledOrDiscarded": "Cancelled / discarded",
   "purchases.list.supplier": "Supplier",
   "purchases.list.total": "Total",
   "purchases.list.allStatuses": "All statuses",

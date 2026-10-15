@@ -97,7 +97,6 @@ public sealed class PurchaseReceptionVerifierTests
 
         result.Should().ContainSingle();
         result[0].SupplierExists.Should().BeFalse();
-        result[0].PurchaseExists.Should().BeFalse();
         result[0].Status.Should().Be(PurchaseReceptionStatus.NewSupplier);
         purchase.Verify(
             r =>
@@ -152,7 +151,6 @@ public sealed class PurchaseReceptionVerifierTests
         var result = await verifier.VerifyAsync([Record()]);
 
         result[0].SupplierExists.Should().BeTrue();
-        result[0].PurchaseExists.Should().BeFalse();
         result[0].Status.Should().Be(PurchaseReceptionStatus.Pending);
     }
 
@@ -220,7 +218,6 @@ public sealed class PurchaseReceptionVerifierTests
         var result = await verifier.VerifyAsync([Record()]);
 
         result[0].SupplierExists.Should().BeTrue();
-        result[0].PurchaseExists.Should().BeTrue();
         result[0].Status.Should().Be(PurchaseReceptionStatus.Imported);
     }
 
@@ -470,7 +467,6 @@ public sealed class PurchaseReceptionVerifierTests
         var result = await verifier.VerifyAsync([Record()]);
 
         result[0].PurchaseState.Should().Be(PurchaseReceptionPurchaseState.Draft);
-        result[0].PurchaseExists.Should().BeTrue();
         result[0].PurchaseId.Should().Be(draft.Id);
         result[0].Status.Should().Be(PurchaseReceptionStatus.Imported);
     }
@@ -481,14 +477,13 @@ public sealed class PurchaseReceptionVerifierTests
         var (verifier, purchase) = VerifierWithSupplier();
         var discardedId = Guid.NewGuid();
         purchase.Setup(r =>
-                r.GetLatestCancelledByAccessKeyAsync(TenantId, Record().AccessKey, It.IsAny<CancellationToken>())
+                r.GetLatestHistoricalByAccessKeyAsync(TenantId, Record().AccessKey, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(new CancelledPurchaseRef(discardedId, IsDiscardedDraft: true));
+            .ReturnsAsync(new HistoricalPurchaseRef(discardedId, Status: ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Discarded));
 
         var result = await verifier.VerifyAsync([Record()]);
 
         result[0].PurchaseState.Should().Be(PurchaseReceptionPurchaseState.Discarded);
-        result[0].PurchaseExists.Should().BeFalse("un borrador descartado no es compra activa");
         result[0].CancelledPurchaseId.Should().Be(discardedId);
         result[0].Status.Should().Be(PurchaseReceptionStatus.Pending);
     }

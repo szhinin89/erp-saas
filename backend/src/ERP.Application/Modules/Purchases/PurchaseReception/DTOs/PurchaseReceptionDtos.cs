@@ -18,7 +18,6 @@ public sealed record PurchaseReceptionItemDto(
     bool SupplierExists,
     Guid? SupplierId,
     bool? SupplierIsActive,
-    bool PurchaseExists,
     Guid? PurchaseId,
     // Solo aplica a notas de crédito: si la factura afectada (ModifiedDocumentNumber) ya está
     // ingresada como compra del mismo proveedor. False/null en Factura.
@@ -30,7 +29,7 @@ public sealed record PurchaseReceptionItemDto(
     string ProcessingStatus,
     string? ProcessingNotes,
     // EXPENSES-FROM-RECEPTION-01 — si ya existe un Gasto con esta clave de acceso SRI (bloquea
-    // "Crear compra" en la UI, mirror de PurchaseExists bloqueando "Crear gasto"). Solo aplica a
+    // "Crear compra" en la UI, con PurchaseState bloqueando "Crear gasto"). Solo aplica a
     // Factura — false en NC/ND.
     bool ExpenseExists,
     // PURCHASE-CREDIT-NOTE-RECEPTION-IDEMPOTENCY-UI-01 — si esta recepción (DocumentId) ya está
@@ -45,9 +44,8 @@ public sealed record PurchaseReceptionItemDto(
     // "Ver NC anulada". Null si nunca hubo una NC cancelada para esta recepción, o si hay una
     // activa (en ese caso la UI muestra "NC ya procesada"/"Ver NC existente" en su lugar).
     Guid? CancelledCreditNoteId = null,
-    // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — Id de la compra/gasto Cancelled más reciente
-    // con este AccessKey, solo presente cuando NO hay una activa (PurchaseExists/ExpenseExists en
-    // false) — para "Ver compra/gasto anulado" (historial) en la UI de Recepción.
+    // Última compra histórica (Cancelled/Discarded) o gasto anulado con este AccessKey,
+    // solo presente cuando no hay un documento activo; permite consultar el historial.
     Guid? CancelledPurchaseId = null,
     Guid? CancelledExpenseId = null,
     // FASE 5 PURCHASE-UX — estado real de la compra relacionada: NONE | DRAFT | CONFIRMED |

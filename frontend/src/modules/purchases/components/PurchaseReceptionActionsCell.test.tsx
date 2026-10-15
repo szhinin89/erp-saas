@@ -12,7 +12,7 @@ const row: PurchaseReceptionItem = {
   modifiedDocumentNumber: "001-001-000000002", accessKey: "key", issueDate: "2026-07-01",
   authorizationDate: "2026-07-01", subtotal: 10, vatAmount: 1.5, total: 11.5,
   supplierExists: true, supplierId: "supplier-1", supplierIsActive: true,
-  purchaseExists: false, purchaseId: null, purchaseState: "NONE",
+  purchaseId: null, purchaseState: "NONE",
   affectedPurchaseExists: true, affectedPurchaseId: "invoice-1",
   status: "PENDING", processingStatus: "PENDING", processingNotes: null, supplierTradeName: null,
 };
@@ -45,8 +45,8 @@ describe("Purchase reception document actions", () => {
   // FASE 5 PURCHASE-UX: la compra activa la indica purchaseState (DRAFT/CONFIRMED), no el booleano.
   it.each([
     { expenseExists: true },
-    { purchaseExists: true, purchaseId: "p-1", purchaseState: "CONFIRMED" as const },
-    { purchaseExists: true, purchaseId: "d-1", purchaseState: "DRAFT" as const },
+    { purchaseId: "p-1", purchaseState: "CONFIRMED" as const },
+    { purchaseId: "d-1", purchaseState: "DRAFT" as const },
   ])("blocks both creation actions for consumed invoices %j", (used) => {
     show({ sourceDocType: "INVOICE", documentStatus: "VERIFIED", ...used });
     expect(screen.queryByRole("button", { name: "Crear gasto" })).toBeNull();
@@ -141,7 +141,6 @@ describe("Purchase reception document actions", () => {
     show({
       sourceDocType: "INVOICE",
       documentStatus: "VERIFIED",
-      purchaseExists: false,
       purchaseId: null,
       purchaseState: "CANCELLED",
       cancelledPurchaseId: "purchase-cancelled-1",
@@ -169,7 +168,6 @@ describe("Purchase reception document actions", () => {
     show({
       sourceDocType: "INVOICE",
       documentStatus: "VERIFIED",
-      purchaseExists: false,
       purchaseId: null,
       cancelledPurchaseId: null,
     });
@@ -243,7 +241,7 @@ describe("FASE 5 PURCHASE-UX — estado real de la compra en Recepción", () => 
 
   it("DRAFT: Continuar borrador (invoiceId existente); sin Crear compra ni Crear gasto", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
-    show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1" });
+    show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "DRAFT", purchaseId: "draft-1" });
     expect(screen.queryByText("Compra en borrador")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Continuar borrador" }));
     expect(open).toHaveBeenCalledWith("/purchases?invoiceId=draft-1", "_blank", "noopener,noreferrer");
@@ -253,7 +251,7 @@ describe("FASE 5 PURCHASE-UX — estado real de la compra en Recepción", () => 
 
   it("CONFIRMED: Ver compra; sin Crear gasto", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
-    show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "CONFIRMED", purchaseExists: true, purchaseId: "p-1" });
+    show({ ...invoice, documentStatus: "PROCESSED", purchaseState: "CONFIRMED", purchaseId: "p-1" });
     expect(screen.queryByText("Compra confirmada")).toBeNull();
     expect(screen.queryByText("Compra creada")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Ver compra" }));

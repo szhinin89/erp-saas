@@ -201,7 +201,6 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         var downloadedItem = result.Value.Items.Single(i => i.DocumentId == pending.Id);
         downloadedItem.DocumentStatus.Should().Be("VERIFIED");
         downloadedItem.HasXml.Should().BeTrue();
-        downloadedItem.PurchaseExists.Should().BeFalse();
         downloadedItem.ExpenseExists.Should().BeFalse();
         downloadedItem.CreditNoteExists.Should().BeFalse();
 
@@ -343,7 +342,7 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         h.PurchaseRepo.Invocations.Should()
             .OnlyContain(i =>
                 i.Method.Name == nameof(IPurchaseInvoiceRepository.GetByAccessKeyAsync)
-                || i.Method.Name == nameof(IPurchaseInvoiceRepository.GetLatestCancelledByAccessKeyAsync)
+                || i.Method.Name == nameof(IPurchaseInvoiceRepository.GetLatestHistoricalByAccessKeyAsync)
             );
         h.ExpenseRepo.Invocations.Should()
             .OnlyContain(i =>
@@ -492,9 +491,9 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
             .ReturnsAsync(confirmed);
         var cancelledId = Guid.NewGuid();
         h.PurchaseRepo.Setup(r =>
-                r.GetLatestCancelledByAccessKeyAsync(TenantId, withCancelled.AccessKey, It.IsAny<CancellationToken>())
+                r.GetLatestHistoricalByAccessKeyAsync(TenantId, withCancelled.AccessKey, It.IsAny<CancellationToken>())
             )
-            .ReturnsAsync(new CancelledPurchaseRef(cancelledId, IsDiscardedDraft: false));
+            .ReturnsAsync(new HistoricalPurchaseRef(cancelledId, Status: ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled));
 
         var result = await h.Handler.Handle(
             new BatchDownloadPurchaseReceptionXmlCommand([withConfirmed.Id, withCancelled.Id]),
@@ -503,11 +502,9 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
 
         var confirmedItem = result.Value!.Items.Single(i => i.DocumentId == withConfirmed.Id);
         confirmedItem.PurchaseState.Should().Be("CONFIRMED");
-        confirmedItem.PurchaseExists.Should().BeTrue();
         confirmedItem.PurchaseId.Should().Be(confirmed.Id);
         var cancelledItem = result.Value.Items.Single(i => i.DocumentId == withCancelled.Id);
         cancelledItem.PurchaseState.Should().Be("CANCELLED");
-        cancelledItem.PurchaseExists.Should().BeFalse();
         cancelledItem.CancelledPurchaseId.Should().Be(cancelledId);
     }
 }

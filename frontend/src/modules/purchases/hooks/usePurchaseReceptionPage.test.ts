@@ -57,7 +57,6 @@ function buildItem(overrides: Partial<PurchaseReceptionItem> = {}): PurchaseRece
     supplierExists: true,
     supplierId: "supplier-1",
     supplierIsActive: true,
-    purchaseExists: false,
     purchaseId: null,
     affectedPurchaseExists: false,
     affectedPurchaseId: null,
@@ -210,6 +209,25 @@ it("does not claim an invoice supplier is registered without a resolved BP id", 
   expect(result.current.items[0].supplierId).toBe("real-bp-id");
 });
 
+it.each(["NONE", "DRAFT", "CONFIRMED", "CANCELLED", "DISCARDED"] as const)(
+  "supplier creation uses purchaseState %s to preserve active purchases or enable processing",
+  async (purchaseState) => {
+    const active = purchaseState === "DRAFT" || purchaseState === "CONFIRMED";
+    vi.mocked(purchaseReceptionService.importTxt).mockResolvedValue({
+      items: [buildItem({ purchaseState, purchaseId: active ? "active-1" : null,
+        status: active ? "IMPORTED" : "NEW_SUPPLIER", supplierExists: false, supplierId: null })],
+      totalParsed: 1, parseErrorCount: 0, skippedUnsupportedCount: 0,
+    });
+    const { result } = renderReceptionPageHook();
+    await act(async () => { await result.current.handleFileSelected(buildFile()); });
+    act(() => result.current.handleSupplierCreated("0999999999001", "supplier-new"));
+    expect(result.current.items[0]).toMatchObject({
+      purchaseState, purchaseId: active ? "active-1" : null,
+      status: active ? "IMPORTED" : "PENDING", supplierId: "supplier-new",
+    });
+  },
+);
+
 describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01)", () => {
   it("shows a message and never calls the API when there are no pending documents", async () => {
     vi.mocked(purchaseReceptionService.importTxt).mockResolvedValue({
@@ -257,7 +275,6 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           documentStatus: "VERIFIED",
           processingStatus: "PROCESSED",
           hasXml: true,
-          purchaseExists: true,
           purchaseId: "purchase-1",
           purchaseState: "CONFIRMED",
           cancelledPurchaseId: null,
@@ -274,7 +291,6 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           documentStatus: "VERIFIED",
           processingStatus: "FAILED",
           hasXml: true,
-          purchaseExists: false,
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
@@ -306,7 +322,6 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
     const doc1 = result.current.items.find((i) => i.documentId === "doc-1");
     expect(doc1?.documentStatus).toBe("VERIFIED");
     expect(doc1?.processingStatus).toBe("PROCESSED");
-    expect(doc1?.purchaseExists).toBe(true);
     expect(doc1?.purchaseId).toBe("purchase-1");
     // FASE 5 PURCHASE-UX — el lote refresca también el estado real de la compra.
     expect(doc1?.purchaseState).toBe("CONFIRMED");
@@ -314,7 +329,6 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
     const doc3 = result.current.items.find((i) => i.documentId === "doc-3");
     expect(doc3?.documentStatus).toBe("VERIFIED");
     expect(doc3?.processingStatus).toBe("FAILED");
-    expect(doc3?.purchaseExists).toBe(false);
     expect(doc3?.purchaseState).toBe("NONE");
 
     expect(result.current.batchXmlProgress).toEqual({
@@ -352,7 +366,6 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           documentStatus: "VERIFIED",
           processingStatus: "PROCESSED",
           hasXml: true,
-          purchaseExists: false,
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
@@ -369,7 +382,6 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           documentStatus: "IMPORTED",
           processingStatus: null,
           hasXml: false,
-          purchaseExists: false,
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
@@ -430,7 +442,6 @@ describe("usePurchaseReceptionPage — handleDownloadPendingXml (PURCHASE-RECEPT
           documentStatus: "VERIFIED",
           processingStatus: "PROCESSED",
           hasXml: true,
-          purchaseExists: false,
           purchaseId: null,
           expenseExists: false,
           expenseId: null,
@@ -673,7 +684,7 @@ describe("FASE 5 PURCHASE-UX — Actualizar estados (sin reimportar TXT)", () =>
       ids.map((id) =>
         id === "doc-0"
           ? buildItem({ documentId: id, supplierRuc: "111", supplierName: "Alfa", issueDate: "2026-08-01",
-              purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1", supplierTradeName: null })
+              purchaseState: "DRAFT", purchaseId: "draft-1", supplierTradeName: null })
           : id === "doc-4"
             ? buildItem({ documentId: id, supplierRuc: "111", supplierName: "Alfa", issueDate: "2026-08-05",
                 purchaseState: "DISCARDED", cancelledPurchaseId: "old-4" })
@@ -692,7 +703,7 @@ describe("FASE 5 PURCHASE-UX — Actualizar estados (sin reimportar TXT)", () =>
     expect(purchaseReceptionService.downloadXmlPending).not.toHaveBeenCalled(); // no descarga
 
     const doc0 = result.current.result!.items.find((i) => i.documentId === "doc-0")!;
-    expect(doc0).toMatchObject({ purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1" });
+    expect(doc0).toMatchObject({ purchaseState: "DRAFT", purchaseId: "draft-1" });
     expect(doc0.supplierTradeName).toBe("ALFA COMERCIAL");
     expect(result.current.result!.items.find((i) => i.documentId === "doc-4")).toMatchObject({
       purchaseState: "DISCARDED",

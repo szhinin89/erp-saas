@@ -275,7 +275,7 @@ public sealed class DiscardPurchaseDraftReleasesReceptionPostgreSqlTests : IAsyn
             var discarded = await BuildDiscardHandler(db)
                 .Handle(new DiscardPurchaseDraftCommand(firstDraftId, "error de digitación"), CancellationToken.None);
             discarded.IsSuccess.Should().BeTrue(discarded.Error);
-            discarded.Value!.IsDiscardedDraft.Should().BeTrue();
+            discarded.Value!.Status.Should().Be("Discarded");
         }
         var afterDiscard = await ReloadReceptionAsync();
         afterDiscard.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
@@ -289,11 +289,10 @@ public sealed class DiscardPurchaseDraftReleasesReceptionPostgreSqlTests : IAsyn
         afterRecreate.Status.Should().Be(PurchaseReceptionDocumentStatus.Processed);
         afterRecreate.PurchaseId.Should().Be(secondDraftId);
 
-        // Historial: el borrador descartado se conserva, Cancelled y nunca confirmado.
+        // Historial: el borrador descartado se conserva como Discarded.
         await using var dbRead = CreateContext();
         var history = await dbRead.PurchaseInvoices.AsNoTracking().SingleAsync(x => x.Id == firstDraftId);
-        history.Status.Should().Be(PurchaseStatus.Cancelled);
-        history.IsDiscardedDraft.Should().BeTrue();
+        history.Status.Should().Be(PurchaseStatus.Discarded);
     }
 
     private static ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider CreatePrecisionPolicy()

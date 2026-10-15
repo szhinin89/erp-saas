@@ -10,7 +10,7 @@ using MediatR;
 namespace ERP.Application.Modules.Purchases.UseCases;
 
 /// <summary>
-/// FASE 5 PURCHASE-UX — descarta un borrador de compra (soft: <c>Draft → Cancelled</c>, ver
+/// FASE 5 PURCHASE-UX — descarta un borrador de compra (soft: <c>Draft → Discarded</c>, ver
 /// <see cref="PurchaseInvoice.DiscardDraft"/>). A diferencia de <see cref="CancelPurchaseCommand"/>
 /// (anula una compra CONFIRMADA y revierte inventario/CxP/contabilidad/retención), aquí no hay nada
 /// que revertir: el handler solo depende de los repositorios de compras y de recepción.

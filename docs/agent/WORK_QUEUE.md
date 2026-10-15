@@ -1,5 +1,19 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
+## PURCHASES FASE B — BUG REAL: ORDEN DE MIGRACIÓN
+
+**Status: CORREGIDO y validado focalmente (2026-10-15).** Índices/trigger de activos
+antes del backfill; regresiones de ambas claves únicas. PostgreSQL PASS 6/6 + 2/2
+trigger, reproducción previa FAIL 4/4 por 23505. Reaplicación al piloto pendiente.
+Sin suites completas, commit/push. [Entrega](PURCHASES_PHASE_B_DELIVERY.md).
+
+## PURCHASES LEGACY / DOMAIN — FASE B
+
+**Status: IMPLEMENTADO y validado focalmente (2026-10-15).** Sin commit/push.
+SSOT PurchaseState + PurchaseId y Discarded=4 persistido; sin flags legacy.
+Pruebas focales PASS, incluida migración/índices en PostgreSQL real. Aplicación
+al piloto pendiente de despliegue. [Entrega](PURCHASES_PHASE_B_DELIVERY.md).
+
 ## A9 — Commercial → ElectronicDocument recovery
 
 **Status: IMPLEMENTADO y validado; apto para declarar CLOSED (2026-10-08).**

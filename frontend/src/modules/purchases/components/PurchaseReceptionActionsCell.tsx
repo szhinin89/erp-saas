@@ -225,7 +225,7 @@ export function PurchaseReceptionActionsCell({
         // fallaría igual del lado del servidor.
         <>
           {/* RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — si la única compra previa de este
-              AccessKey está Cancelled (historial, purchaseExists=false), se ofrece "Procesar
+              AccessKey está Cancelled (historial, sin compra activa), se ofrece "Procesar
               nuevamente" + "Ver compra anulada" en vez de "Crear compra" de primera vez, mismo
               patrón ya cerrado para NC. */}
           {/* FASE 5 PURCHASE-UX — sin compra activa: compra anulada (Reprocesar compra) o

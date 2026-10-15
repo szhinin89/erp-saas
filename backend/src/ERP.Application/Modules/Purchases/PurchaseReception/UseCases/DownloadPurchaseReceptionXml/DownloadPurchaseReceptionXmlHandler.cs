@@ -218,7 +218,6 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             document.LinesDetectedCount,
             document.LinesProcessedCount,
             document.ProcessingNotes,
-            purchase.PurchaseExists,
             purchase.PurchaseId,
             supplierIsActive,
             processed.SupplierTradeName,

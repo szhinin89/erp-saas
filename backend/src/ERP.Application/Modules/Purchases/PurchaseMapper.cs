@@ -61,8 +61,7 @@ internal static class PurchaseMapper
                     i.RetentionIntentEmissionPointId,
                     i.RetentionIntentIssueDate
                 )
-                : null,
-            i.IsDiscardedDraft
+                : null
         );
 
     private static PurchaseDraftLineDto? FindXmlSource(

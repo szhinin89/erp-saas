@@ -174,8 +174,6 @@ export interface PurchaseInvoiceDto {
   updatedAt: string | null;
   /** PURCHASE-DRAFT-RECOVERY F3 — null si el borrador nunca registró una decisión. */
   retentionIntent?: PurchaseRetentionIntentDraftDto | null;
-  /** FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada". */
-  isDiscardedDraft?: boolean;
 }
 
 export interface PurchaseListItemDto {
@@ -190,8 +188,6 @@ export interface PurchaseListItemDto {
   supplierName: string;
   supplierTaxId: string;
   grandTotal: number;
-  /** FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada". */
-  isDiscardedDraft?: boolean;
 }
 
 export interface PurchaseListResponse {
@@ -404,7 +400,7 @@ export const purchaseService = {
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/cancel`, { reason, requestSriAnnulment }),
 
   /**
-   * FASE 5 PURCHASE-UX — descarta un BORRADOR (soft: queda Cancelled, se conserva el historial). Sin
+   * FASE 5 PURCHASE-UX — descarta un BORRADOR (soft: queda Discarded, se conserva el historial). Sin
    * reversos; la recepción/XML vuelve a quedar disponible. Una compra confirmada usa `cancel`.
    */
   discardDraft: (id: string, reason?: string) =>

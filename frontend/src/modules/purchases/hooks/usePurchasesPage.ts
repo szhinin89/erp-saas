@@ -541,7 +541,6 @@ export function usePurchasesPage() {
   // FASE 5 PURCHASE-UX — estado visible de la compra (mismas condiciones que deshabilitan Confirmar).
   const documentState = resolvePurchaseDocumentState({
     status: editing?.status,
-    isDiscardedDraft: editing?.isDiscardedDraft,
     lineCount: lines.length,
     lineBlockerCount: lineReadinessBlockers.length,
     pendingReceptionItemCount: pendingReceptionItems.length,

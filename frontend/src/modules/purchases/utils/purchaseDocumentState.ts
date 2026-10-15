@@ -28,8 +28,6 @@ export interface PurchaseDocumentState {
 export function resolvePurchaseDocumentState(input: {
   /** Estado persistido de la compra; null/undefined = compra nueva aún no guardada. */
   status: string | null | undefined;
-  /** FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca (borrador descartado). */
-  isDiscardedDraft?: boolean;
   lineCount: number;
   lineBlockerCount: number;
   pendingReceptionItemCount: number;
@@ -38,7 +36,8 @@ export function resolvePurchaseDocumentState(input: {
 }): PurchaseDocumentState {
   if (input.status === "Confirmed") return { kind: "confirmed", reasons: [] };
   if (input.status === "Cancelled")
-    return { kind: input.isDiscardedDraft ? "discarded" : "cancelled", reasons: [] };
+    return { kind: "cancelled", reasons: [] };
+  if (input.status === "Discarded") return { kind: "discarded", reasons: [] };
   if (!input.status) return { kind: "new", reasons: [] };
 
   const reasons: PurchaseDocumentStateReason[] = [];
@@ -65,14 +64,12 @@ export type PurchaseStatusBadgeVariant = "warning" | "success" | "error" | "neut
 
 /**
  * FASE 5 PURCHASE-UX — etiqueta/variante del estado de una compra en listado y detalle:
- * Draft → Borrador; Confirmed → Confirmada; Cancelled confirmada → Anulada; Cancelled sin haber sido
- * confirmada nunca (borrador descartado) → Descartado.
+ * Draft → Borrador; Confirmed → Confirmada; Cancelled → Anulada; Discarded → Descartado.
  */
 export function purchaseStatusBadge(
   status: string,
-  isDiscardedDraft?: boolean,
 ): { key: string; fallback: string; variant: PurchaseStatusBadgeVariant } {
-  if (status === "Cancelled" && isDiscardedDraft)
+  if (status === "Discarded")
     return { key: "purchases.status.discarded", fallback: "Descartado", variant: "neutral" };
   if (status === "Draft") return { key: "purchases.status.draft", fallback: "Borrador", variant: "warning" };
   if (status === "Confirmed")

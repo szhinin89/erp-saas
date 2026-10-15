@@ -16,7 +16,6 @@ public sealed record BatchDownloadPurchaseReceptionXmlItemResult(
     string? DocumentStatus = null,
     string? ProcessingStatus = null,
     bool HasXml = false,
-    bool PurchaseExists = false,
     Guid? PurchaseId = null,
     bool ExpenseExists = false,
     Guid? ExpenseId = null,

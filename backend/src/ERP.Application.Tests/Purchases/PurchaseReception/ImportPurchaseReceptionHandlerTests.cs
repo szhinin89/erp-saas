@@ -137,7 +137,6 @@ public sealed class ImportPurchaseReceptionHandlerTests
                 new PurchaseReceptionVerifiedItem(
                     record,
                     SupplierExists: true,
-                    PurchaseExists: false,
                     PurchaseReceptionStatus.Pending
                 ),
             ]);
@@ -219,8 +218,9 @@ public sealed class ImportPurchaseReceptionHandlerTests
                 new PurchaseReceptionVerifiedItem(
                     record,
                     SupplierExists: true,
-                    PurchaseExists: true,
-                    PurchaseReceptionStatus.Imported
+                    PurchaseReceptionStatus.Imported,
+                    PurchaseId: Guid.NewGuid(),
+                    PurchaseState: PurchaseReceptionPurchaseState.Confirmed
                 ),
             ]);
         repo.Setup(r =>
@@ -289,7 +289,6 @@ public sealed class ImportPurchaseReceptionHandlerTests
                 new PurchaseReceptionVerifiedItem(
                     record,
                     SupplierExists: true,
-                    PurchaseExists: false,
                     PurchaseReceptionStatus.Pending
                 ),
             ]);
@@ -340,7 +339,6 @@ public sealed class ImportPurchaseReceptionHandlerTests
                 new PurchaseReceptionVerifiedItem(
                     record,
                     SupplierExists: true,
-                    PurchaseExists: false,
                     PurchaseReceptionStatus.Pending
                 ),
             ]);
@@ -392,13 +390,11 @@ public sealed class ImportPurchaseReceptionHandlerTests
                 new PurchaseReceptionVerifiedItem(
                     record1,
                     SupplierExists: false,
-                    PurchaseExists: false,
                     PurchaseReceptionStatus.NewSupplier
                 ),
                 new PurchaseReceptionVerifiedItem(
                     record2,
                     SupplierExists: false,
-                    PurchaseExists: false,
                     PurchaseReceptionStatus.NewSupplier
                 ),
             ]);
@@ -481,7 +477,6 @@ public sealed class ImportPurchaseReceptionHandlerTests
                 new PurchaseReceptionVerifiedItem(
                     record,
                     SupplierExists: true,
-                    PurchaseExists: active,
                     active ? PurchaseReceptionStatus.Imported : PurchaseReceptionStatus.Pending,
                     PurchaseId: active ? Guid.NewGuid() : null,
                     PurchaseState: state
@@ -501,6 +496,5 @@ public sealed class ImportPurchaseReceptionHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Items.Single().PurchaseState.Should().Be(expected);
-        result.Value.Items.Single().PurchaseExists.Should().Be(active);
     }
 }

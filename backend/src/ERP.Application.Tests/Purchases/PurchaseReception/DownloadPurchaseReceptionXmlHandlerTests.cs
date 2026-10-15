@@ -486,7 +486,6 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         });
 
         dto.PurchaseState.Should().Be("DRAFT");
-        dto.PurchaseExists.Should().BeTrue();
         dto.PurchaseId.Should().Be(draftId);
         dto.CancelledPurchaseId.Should().BeNull();
     }
@@ -498,13 +497,12 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         var dto = await DownloadWithPurchaseRepo((purchaseRepo, document) =>
             purchaseRepo
                 .Setup(r =>
-                    r.GetLatestCancelledByAccessKeyAsync(TenantId, document.AccessKey, It.IsAny<CancellationToken>())
+                    r.GetLatestHistoricalByAccessKeyAsync(TenantId, document.AccessKey, It.IsAny<CancellationToken>())
                 )
-                .ReturnsAsync(new CancelledPurchaseRef(discardedId, IsDiscardedDraft: true))
+                .ReturnsAsync(new HistoricalPurchaseRef(discardedId, Status: ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Discarded))
         );
 
         dto.PurchaseState.Should().Be("DISCARDED");
-        dto.PurchaseExists.Should().BeFalse();
         dto.CancelledPurchaseId.Should().Be(discardedId);
     }
 }

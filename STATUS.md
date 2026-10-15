@@ -1,5 +1,39 @@
 # Project Status
 
+## PURCHASES FASE B — BUG REAL: ORDEN DE MIGRACIÓN (2026-10-15)
+
+Corregido `20261015202527_PurchaseDiscardedState`: primero reemplaza AMBOS índices
+únicos por activos explícitos (Draft/Confirmed), después actualiza la función del
+trigger compra/gasto y finalmente ejecuta el backfill histórico. El orden anterior
+reintroducía temporalmente Discarded en índices legacy y producía 23505 cuando una
+compra activa ya reutilizaba la clave histórica. Sin predicados `status <> 3` en
+Up/Down de esta migración; dimensiones de scope y lock intactas.
+
+Reproducción PostgreSQL: FAIL 4/4 antes (23505, dos casos por cada índice).
+Fix PASS 6/6 (cuatro regresiones, backfill/evidencia y reproceso de recepción),
+trigger PASS 2/2; diff review/check PASS. Solo pruebas focales, PostgreSQL 16 real.
+Fix no reaplicado al piloto; sin suites completas, commit ni push.
+Detalle: [entrega Fase B](docs/agent/PURCHASES_PHASE_B_DELIVERY.md).
+
+## PURCHASES LEGACY / DOMAIN — FASE B (2026-10-15)
+
+**Implementado y validado focalmente; sin commit/push.** Eliminados el booleano legacy
+de existencia de compra y los flags de descarte derivados de totales. Recepción usa
+`PurchaseState` + `PurchaseId`; `AffectedPurchaseExists` de NC permanece intacto.
+`PurchaseStatus.Discarded = 4` persiste Draft → Discarded, con evento propio, sin
+reversos y liberando la recepción vinculada. Activos = Draft/Confirmed; históricos
+= Cancelled/Discarded; scope tenant/company/branch conservado.
+
+- Migración EF `20261015202527_PurchaseDiscardedState`: backfill exclusivo de
+  Cancelled con total confirmado NULL, dos índices únicos activos y actualización
+  del trigger de exclusividad compra/gasto, preservando su scope y lock actuales.
+- PASS: Application 51/51; Infrastructure focal 41/41 más migración PostgreSQL
+  1/1; frontend 90/90; TypeScript, build frontend, lint focal (sin errores),
+  guard de arquitectura (0 nuevas violaciones) y diff check.
+- Migración validada únicamente en PostgreSQL 16 de pruebas, no aplicada al piloto.
+  Sin deuda funcional pendiente dentro del alcance. Sin suites completas.
+- Inventario de archivos, validación y límites: [entrega](docs/agent/PURCHASES_PHASE_B_DELIVERY.md).
+
 ## ZH BACKGROUND SSOT CLEANUP - FASE A: DOBLES VERDADES (2026-10-15)
 
 **STRUCTURAL DEBT: implementado y validado focalmente, sin commit/push.**

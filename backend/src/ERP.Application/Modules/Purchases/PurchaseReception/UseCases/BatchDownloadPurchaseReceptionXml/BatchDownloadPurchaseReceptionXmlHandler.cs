@@ -243,7 +243,6 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandler
                 document.ProcessingStatus
             ),
             HasXml: document.XmlContent is not null,
-            PurchaseExists: purchase.PurchaseExists,
             PurchaseId: purchase.PurchaseId,
             ExpenseExists: expenseId is not null,
             ExpenseId: expenseId,

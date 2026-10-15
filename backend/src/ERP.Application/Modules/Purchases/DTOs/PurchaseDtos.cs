@@ -49,9 +49,7 @@ public sealed record PurchaseInvoiceDto(
     DateTime? UpdatedAt,
     // PURCHASE-DRAFT-RECOVERY F3 — decisión de retención recordada por el borrador (null = nunca
     // registrada). Solo restaura la UI; la emisión sigue viajando en el body de Confirm.
-    PurchaseRetentionIntentDraftDto? RetentionIntent = null,
-    // FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada".
-    bool IsDiscardedDraft = false
+    PurchaseRetentionIntentDraftDto? RetentionIntent = null
 );
 
 /// <summary>
@@ -162,7 +160,5 @@ public sealed record PurchaseListDto(
     // FASE 5 PURCHASE-UX — datos operativos del listado (snapshot proveedor + total del documento).
     string SupplierName = "",
     string SupplierTaxId = "",
-    decimal GrandTotal = 0m,
-    // FASE 5 PURCHASE-UX — Cancelled sin haber sido confirmada nunca: "Descartado", no "Anulada".
-    bool IsDiscardedDraft = false
+    decimal GrandTotal = 0m
 );

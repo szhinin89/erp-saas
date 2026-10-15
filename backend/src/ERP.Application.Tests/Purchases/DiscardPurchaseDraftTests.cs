@@ -57,14 +57,13 @@ public sealed class DiscardPurchaseDraftTests
     // ── Dominio ───────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Borrador_se_descarta_como_Cancelled_sin_evento_de_anulacion_y_con_evento_de_auditoria()
+    public void Borrador_se_descarta_como_Discarded_sin_evento_de_anulacion_y_con_evento_de_auditoria()
     {
         var invoice = Draft();
 
         invoice.DiscardDraft(UserId, "  Cargado por error  ");
 
-        invoice.Status.Should().Be(PurchaseStatus.Cancelled);
-        invoice.IsDiscardedDraft.Should().BeTrue();
+        invoice.Status.Should().Be(PurchaseStatus.Discarded);
         invoice.CancelReason.Should().Be("Cargado por error");
         invoice.CancelledBy.Should().Be(UserId);
         invoice.CancelledAt.Should().NotBeNull();
@@ -106,7 +105,6 @@ public sealed class DiscardPurchaseDraftTests
         invoice.Cancel("Anulada por error", UserId);
 
         invoice.Status.Should().Be(PurchaseStatus.Cancelled);
-        invoice.IsDiscardedDraft.Should().BeFalse();
     }
 
     // ── Handler ───────────────────────────────────────────────────────────────
@@ -177,7 +175,7 @@ public sealed class DiscardPurchaseDraftTests
     }
 
     [Fact]
-    public async Task Handler_descarta_el_borrador_y_expone_IsDiscardedDraft()
+    public async Task Handler_descarta_el_borrador_y_expone_estado_Discarded()
     {
         var invoice = Draft();
         var (handler, repo, _) = Build(invoice);
@@ -188,8 +186,7 @@ public sealed class DiscardPurchaseDraftTests
         );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Status.Should().Be("Cancelled");
-        result.Value.IsDiscardedDraft.Should().BeTrue();
+        result.Value!.Status.Should().Be("Discarded");
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -269,7 +266,7 @@ public sealed class DiscardPurchaseDraftTests
         var result = await handler.Handle(new DiscardPurchaseDraftCommand(invoice.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        invoice.IsDiscardedDraft.Should().BeTrue();
+        invoice.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Discarded);
         reception.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
         reception.PurchaseId.Should().BeNull();
         reception.XmlContent.Should().Be("<factura/>", "el XML/evidencia no se toca");
@@ -301,7 +298,7 @@ public sealed class DiscardPurchaseDraftTests
         var result = await handler.Handle(new DiscardPurchaseDraftCommand(invoice.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        invoice.IsDiscardedDraft.Should().BeTrue();
+        invoice.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Discarded);
         receptions.Verify(
             r => r.GetByAccessKeyAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never

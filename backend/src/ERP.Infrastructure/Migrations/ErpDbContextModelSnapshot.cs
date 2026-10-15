@@ -11353,7 +11353,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_purchase_invoices_tenant_access_key")
-                        .HasFilter("access_key IS NOT NULL AND status <> 3");
+                        .HasFilter("access_key IS NOT NULL AND status IN (1, 2)");
 
                     b.HasIndex("TenantId", "CompanyId")
                         .HasDatabaseName("ix_purchase_invoices_tenant_company");
@@ -11367,7 +11367,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "CompanyId", "SupplierId", "InvoiceNumber")
                         .IsUnique()
                         .HasDatabaseName("uq_purchase_invoices_tenant_company_supplier_number")
-                        .HasFilter("\"status\" <> 3");
+                        .HasFilter("\"status\" IN (1, 2)");
 
                     b.ToTable("purchase_invoices", (string)null);
                 });

@@ -30,7 +30,6 @@ public static class PurchaseReceptionMapper
             item.SupplierExists,
             item.SupplierId,
             item.SupplierIsActive,
-            item.PurchaseExists,
             item.PurchaseId,
             item.AffectedPurchaseExists,
             item.AffectedPurchaseId,

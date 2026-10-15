@@ -6,7 +6,7 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Services;
 
 /// <summary>
 /// FASE 5 PURCHASE-UX — compra relacionada con una recepción. <see cref="PurchaseId"/> = compra
-/// ACTIVA (Draft/Confirmed); <see cref="CancelledPurchaseId"/> = última Cancelled, solo cuando no hay
+/// ACTIVA (Draft/Confirmed); <see cref="CancelledPurchaseId"/> = última Cancelled/Discarded, solo cuando no hay
 /// activa (historial "Ver compra anulada / Ver borrador descartado").
 /// </summary>
 public sealed record PurchaseReceptionPurchaseInfo(
@@ -15,9 +15,6 @@ public sealed record PurchaseReceptionPurchaseInfo(
     Guid? CancelledPurchaseId
 )
 {
-    /// <summary>Compatibilidad: existe una compra ACTIVA (bloquea "Crear gasto" y "Crear compra").</summary>
-    public bool PurchaseExists => PurchaseId is not null;
-
     public static readonly PurchaseReceptionPurchaseInfo None = new(
         PurchaseReceptionPurchaseState.None,
         null,
@@ -29,8 +26,8 @@ public sealed record PurchaseReceptionPurchaseInfo(
 /// FASE 5 PURCHASE-UX — única resolución del estado de la compra de una recepción, reutilizada por la
 /// importación del TXT (<c>PurchaseReceptionVerifier</c>) y por la descarga de XML individual y en
 /// lote. Mismo criterio de "activa" que el resto del sistema
-/// (RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01): Draft/Confirmed cuentan, Cancelled es historial.
-/// A lo sumo dos consultas: la compra activa y, solo si no hay, la última Cancelled.
+/// (RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01): Draft/Confirmed cuentan, Cancelled/Discarded son historial.
+/// A lo sumo dos consultas: la compra activa y, solo si no hay, la última histórica.
 /// </summary>
 public static class PurchaseReceptionPurchaseStateResolver
 {
@@ -54,16 +51,16 @@ public static class PurchaseReceptionPurchaseStateResolver
                 null
             );
 
-        var cancelled = await purchases.GetLatestCancelledByAccessKeyAsync(tenantId, accessKey, ct);
-        if (cancelled is null)
+        var historical = await purchases.GetLatestHistoricalByAccessKeyAsync(tenantId, accessKey, ct);
+        if (historical is null)
             return PurchaseReceptionPurchaseInfo.None;
 
         return new(
-            cancelled.IsDiscardedDraft
+            historical.Status == PurchaseStatus.Discarded
                 ? PurchaseReceptionPurchaseState.Discarded
                 : PurchaseReceptionPurchaseState.Cancelled,
             null,
-            cancelled.Id
+            historical.Id
         );
     }
 }

@@ -166,9 +166,9 @@ export function PurchasesPage() {
     {
       key: "status",
       header: t("purchases.list.status", "Estado"),
-      // FASE 5 PURCHASE-UX — un borrador descartado (Cancelled sin confirmar nunca) no es "Anulada".
+      // El estado persistido distingue Discarded de Cancelled.
       render: (inv) => {
-        const badge = purchaseStatusBadge(inv.status, inv.isDiscardedDraft);
+        const badge = purchaseStatusBadge(inv.status);
         return <Badge variant={badge.variant} label={t(badge.key, badge.fallback)} />;
       },
     },
@@ -240,8 +240,9 @@ export function PurchasesPage() {
               <option value="Draft">{t("purchases.status.draft", "Borrador")}</option>
               <option value="Confirmed">{t("purchases.status.confirmed", "Confirmada")}</option>
               <option value="Cancelled">
-                {t("purchases.list.cancelledOrDiscarded", "Anulada / descartada")}
+                {t("purchases.status.cancelled", "Anulada")}
               </option>
+              <option value="Discarded">{t("purchases.status.discarded", "Descartado")}</option>
             </ZhSelect>
             <ZHBtn
               variant="secondary"
@@ -401,7 +402,7 @@ export function PurchasesPage() {
             />
           )}
 
-          {ctx.readOnly && ctx.editing?.isDiscardedDraft && (
+          {ctx.readOnly && ctx.editing?.status === "Discarded" && (
             <ZHPageNotice
               variant="neutral"
               message={t("purchases.notices.discardedReadOnly", {
@@ -411,7 +412,7 @@ export function PurchasesPage() {
               })}
             />
           )}
-          {ctx.readOnly && !ctx.editing?.isDiscardedDraft && (
+          {ctx.readOnly && ctx.editing?.status !== "Discarded" && (
             <ZHPageNotice
               variant={
                 ctx.editing?.status === "Cancelled" ? "error" : "success"

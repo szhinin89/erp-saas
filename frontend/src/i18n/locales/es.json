@@ -3356,7 +3356,6 @@
   "purchases.itemMatchStatus.AUTO_MATCHED": "Auto",
   "purchases.itemMatchStatus.MANUALLY_MATCHED": "Vínculo manual",
   "purchases.list.searchPlaceholder": "Buscar por número, proveedor o RUC...",
-  "purchases.list.cancelledOrDiscarded": "Anulada / descartada",
   "purchases.list.supplier": "Proveedor",
   "purchases.list.total": "Total",
   "purchases.list.allStatuses": "Todos los estados",

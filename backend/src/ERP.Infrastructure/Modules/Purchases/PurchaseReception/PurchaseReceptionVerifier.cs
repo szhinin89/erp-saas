@@ -104,7 +104,8 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
             }
 
             var status =
-                purchase.PurchaseExists ? PurchaseReceptionStatus.Imported
+                purchase.State is PurchaseReceptionPurchaseState.Draft or PurchaseReceptionPurchaseState.Confirmed
+                    ? PurchaseReceptionStatus.Imported
                 : supplierExists ? PurchaseReceptionStatus.Pending
                 : PurchaseReceptionStatus.NewSupplier;
 
@@ -133,7 +134,6 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                 new PurchaseReceptionVerifiedItem(
                     record,
                     supplierExists,
-                    purchase.PurchaseExists,
                     status,
                     supplierId,
                     purchase.PurchaseId,

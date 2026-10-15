@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 
 namespace ERP.Domain.Modules.Purchases.Interfaces;
 
@@ -18,12 +19,10 @@ public interface IPurchaseInvoiceRepository
     );
 
     /// <summary>
-    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — compra Cancelled más reciente con este
-    /// AccessKey, si existe (nunca la activa) — historial para Recepción. FASE 5 PURCHASE-UX:
-    /// incluye si es un borrador descartado (nunca confirmado) para distinguir "Borrador descartado"
-    /// de "Compra anulada"; proyección sin columna nueva.
+    /// Compra histórica (Cancelled/Discarded) más reciente con este AccessKey, si existe.
+    /// Proyecta el estado persistido para el historial de Recepción.
     /// </summary>
-    Task<CancelledPurchaseRef?> GetLatestCancelledByAccessKeyAsync(
+    Task<HistoricalPurchaseRef?> GetLatestHistoricalByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
@@ -129,5 +128,5 @@ public interface IPurchaseInvoiceRepository
     Task SaveChangesAsync(CancellationToken ct = default);
 }
 
-/// <summary>FASE 5 PURCHASE-UX — referencia a la última compra Cancelled de una clave de acceso.</summary>
-public sealed record CancelledPurchaseRef(Guid Id, bool IsDiscardedDraft);
+/// <summary>Referencia al estado persistido de la última compra histórica de una clave de acceso.</summary>
+public sealed record HistoricalPurchaseRef(Guid Id, PurchaseStatus Status);

@@ -1,5 +1,21 @@
 # PROJECT_STATE.md — Estado vigente del proyecto
 
+## PURCHASES FASE B — BUG REAL: ORDEN DE MIGRACIÓN (2026-10-15)
+
+Corregido el 23505 de históricos con claves reutilizadas: ambos índices de activos
+y función del trigger se actualizan antes del backfill. Reproducción FAIL 4/4;
+fix PostgreSQL PASS 6/6 y trigger PASS 2/2. Sin reaplicar al piloto, suites completas,
+commit ni push. [Detalle](PURCHASES_PHASE_B_DELIVERY.md).
+
+## PURCHASES LEGACY / DOMAIN — FASE B (2026-10-15)
+
+Implementado y validado focalmente, sin commit/push. Recepción usa PurchaseState +
+PurchaseId; Discarded=4 es estado persistido propio, sin inferencias por totales ni
+booleanos legacy. Activos Draft/Confirmed, históricos Cancelled/Discarded.
+Application 51/51, Infrastructure 41/41 + migración PostgreSQL 1/1, frontend 90/90;
+build/TypeScript/lint focal/arquitectura/diff PASS. Migración al piloto pendiente.
+Detalle e inventario: [entrega](PURCHASES_PHASE_B_DELIVERY.md).
+
 ## ZH BACKGROUND PROCESSING — STRUCTURAL DEBT (2026-10-15)
 
 Implementado y validado, sin commit/push. Siete jobs, runner/catálogo/options únicos,

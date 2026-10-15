@@ -130,8 +130,8 @@ public sealed class RefreshPurchaseReceptionStatusHandlerTests
             .Setup(r => r.GetByAccessKeyAsync(TenantId, withDraft.AccessKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(draft);
         f.Purchases
-            .Setup(r => r.GetLatestCancelledByAccessKeyAsync(TenantId, withDiscarded.AccessKey, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CancelledPurchaseRef(discardedId, IsDiscardedDraft: true));
+            .Setup(r => r.GetLatestHistoricalByAccessKeyAsync(TenantId, withDiscarded.AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HistoricalPurchaseRef(discardedId, Status: ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Discarded));
 
         var result = await f.Build().Handle(
             new RefreshPurchaseReceptionStatusQuery([withDraft.Id, withDiscarded.Id]),
@@ -141,7 +141,6 @@ public sealed class RefreshPurchaseReceptionStatusHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         var draftRow = result.Value!.Single(i => i.DocumentId == withDraft.Id);
         draftRow.PurchaseState.Should().Be("DRAFT");
-        draftRow.PurchaseExists.Should().BeTrue();
         draftRow.PurchaseId.Should().Be(draft.Id);
         draftRow.Status.Should().Be("IMPORTED");
         draftRow.DocumentStatus.Should().Be("IMPORTED");
@@ -152,7 +151,6 @@ public sealed class RefreshPurchaseReceptionStatusHandlerTests
 
         var discardedRow = result.Value!.Single(i => i.DocumentId == withDiscarded.Id);
         discardedRow.PurchaseState.Should().Be("DISCARDED");
-        discardedRow.PurchaseExists.Should().BeFalse();
         discardedRow.CancelledPurchaseId.Should().Be(discardedId);
         discardedRow.Status.Should().Be("PENDING");
     }

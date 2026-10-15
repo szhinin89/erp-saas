@@ -1877,8 +1877,7 @@ public sealed class GetPurchaseListHandler
                 i.CreatedAt,
                 i.SupplierName,
                 i.SupplierTaxId,
-                i.GrandTotal,
-                i.IsDiscardedDraft
+                i.GrandTotal
             ))
             .ToList();
         return Result<PurchaseListResponse>.Success(

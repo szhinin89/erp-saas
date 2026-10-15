@@ -43,25 +43,26 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     ) =>
         Scoped(tenantId)
             .FirstOrDefaultAsync(
-                x => x.AccessKey == accessKey && x.Status != PurchaseStatus.Cancelled,
+                x => x.AccessKey == accessKey
+                    && (x.Status == PurchaseStatus.Draft || x.Status == PurchaseStatus.Confirmed),
                 ct
             );
 
     /// <summary>
-    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — compra Cancelled más reciente con este
+    /// RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — compra Cancelled/Discarded más reciente con este
     /// AccessKey, si existe, para que la UI de Recepción ofrezca el historial sin bloquear "Crear
-    /// compra" de nuevo. FASE 5 PURCHASE-UX: <c>IsDiscardedDraft</c> = nunca confirmada
-    /// (<c>ConfirmedGrandTotal</c> null, mismo criterio que <c>PurchaseInvoice.IsDiscardedDraft</c>).
+    /// compra" de nuevo. El estado histórico se lee directamente del estado persistido.
     /// </summary>
-    public Task<CancelledPurchaseRef?> GetLatestCancelledByAccessKeyAsync(
+    public Task<HistoricalPurchaseRef?> GetLatestHistoricalByAccessKeyAsync(
         Guid tenantId,
         string accessKey,
         CancellationToken ct = default
     ) =>
         Scoped(tenantId)
-            .Where(x => x.AccessKey == accessKey && x.Status == PurchaseStatus.Cancelled)
+            .Where(x => x.AccessKey == accessKey
+                && (x.Status == PurchaseStatus.Cancelled || x.Status == PurchaseStatus.Discarded))
             .OrderByDescending(x => x.CancelledAt)
-            .Select(x => new CancelledPurchaseRef(x.Id, x.ConfirmedGrandTotal == null))
+            .Select(x => new HistoricalPurchaseRef(x.Id, x.Status))
             .FirstOrDefaultAsync(ct);
 
     // PURCHASE-CREDIT-NOTE-AFFECTED-INVOICE-RESOLVES-CANCELLED-01 — usado por
@@ -69,7 +70,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     // desde Recepción: una compra Cancelled es historial, nunca debe poder ser la factura afectada
     // de una NC nueva. Excluir Cancelled aquí es suficiente para desambiguar sin necesidad de un
     // criterio de desempate explícito — uq_purchase_invoices_tenant_company_supplier_number ya es
-    // un índice único FILTRADO (status <> 3, ver RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01): a
+    // un índice único FILTRADO a Draft/Confirmed: a
     // lo sumo una fila no-Cancelled puede existir para el mismo (supplier, invoiceNumber), así que
     // nunca hay ambigüedad entre "cuál Confirmed elegir" — la que exista, si existe, ya es única.
     public Task<PurchaseInvoice?> GetBySupplierAndInvoiceNumberAsync(
@@ -83,7 +84,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
                 x =>
                     x.SupplierId == supplierId
                     && x.InvoiceNumber == invoiceNumber
-                    && x.Status != PurchaseStatus.Cancelled,
+                    && (x.Status == PurchaseStatus.Draft || x.Status == PurchaseStatus.Confirmed),
                 ct
             );
 

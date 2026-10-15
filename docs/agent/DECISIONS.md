@@ -2,6 +2,15 @@
 
 Espejo condensado de decisiones operativas. Cada regla enlaza a su fuente de autoridad; ante discrepancia prevalece el ADR / STATUS.md citado.
 
+- **Purchases Fase B (decisión funcional aprobada 2026-10-15):**
+  `PurchaseStatus`: Draft=1, Confirmed=2, Cancelled=3, Discarded=4. Descartar es
+  Draft → Discarded, sin reversos; Cancelled corresponde a confirmada anulada.
+  Activos = Draft/Confirmed, históricos = Cancelled/Discarded. Recepción usa
+  PurchaseState + PurchaseId, sin booleano legacy ni inferencia desde totales.
+  `AffectedPurchaseExists` de NC es otro concepto y se conserva.
+  Fuente: STATUS.md, sección PURCHASES LEGACY / DOMAIN — FASE B; detalle en
+  [entrega](PURCHASES_PHASE_B_DELIVERY.md).
+
 - **BusinessPartner es tenant-wide.** (ADR-017 "subscriber-scoped", confirmado como tenant-wide por ADR-040.)
 - **Item es Tenant + Company.** (ADR-040.)
 - **Branch no posee Items.** (ADR-040.)

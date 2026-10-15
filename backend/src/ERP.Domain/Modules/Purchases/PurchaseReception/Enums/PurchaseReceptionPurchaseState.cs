@@ -16,9 +16,9 @@ public enum PurchaseReceptionPurchaseState
     /// <summary>Compra activa confirmada.</summary>
     Confirmed = 2,
 
-    /// <summary>Sin compra activa; la última Cancelled fue confirmada y anulada.</summary>
+    /// <summary>Sin compra activa; la última compra histórica está Cancelled.</summary>
     Cancelled = 3,
 
-    /// <summary>Sin compra activa; la última Cancelled nunca se confirmó (borrador descartado).</summary>
+    /// <summary>Sin compra activa; la última compra histórica está Discarded.</summary>
     Discarded = 4,
 }

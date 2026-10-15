@@ -3,7 +3,7 @@ import type { ReceptionPurchaseState } from "../api/purchaseReceptionService";
 /**
  * FASE 5 PURCHASE-UX — presentación del estado REAL de la compra relacionada con una recepción.
  * `purchaseState` (backend, PurchaseReceptionPurchaseStateResolver) es la única fuente de verdad
- * para badge, textos y acciones de Recepción; `purchaseExists` queda solo por compatibilidad.
+ * para badge, textos y acciones de Recepción; PurchaseId identifica la compra activa.
  */
 export type ReceptionPurchaseBadgeVariant = "warning" | "success" | "error" | "neutral";
 

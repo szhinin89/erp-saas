@@ -9,7 +9,6 @@ const item = (documentId: string, overrides: Partial<PurchaseReceptionItem> = {}
     supplierName: "DINADEC S.A.",
     supplierTradeName: null,
     purchaseState: "NONE",
-    purchaseExists: false,
     purchaseId: null,
     cancelledPurchaseId: null,
     documentStatus: "VERIFIED",
@@ -27,11 +26,11 @@ describe("FASE 5 PURCHASE-UX — refresco de estados de Recepción", () => {
     const current = [
       item("a", { supplierTradeName: "DINADEC", purchaseState: "NONE" }),
       item("b"),
-      item("c", { purchaseState: "DRAFT", purchaseExists: true, purchaseId: "draft-1" }),
+      item("c", { purchaseState: "DRAFT", purchaseId: "draft-1" }),
     ];
     const refreshed = [
       item("c", { purchaseState: "DISCARDED", cancelledPurchaseId: "draft-1", documentStatus: "VERIFIED" }),
-      item("a", { purchaseState: "CONFIRMED", purchaseExists: true, purchaseId: "p-1", documentStatus: "PROCESSED" }),
+      item("a", { purchaseState: "CONFIRMED", purchaseId: "p-1", documentStatus: "PROCESSED" }),
     ];
 
     const merged = mergeRefreshedReceptionItems(current, refreshed);
@@ -39,7 +38,6 @@ describe("FASE 5 PURCHASE-UX — refresco de estados de Recepción", () => {
     expect(merged.map((i) => i.documentId)).toEqual(["a", "b", "c"]);
     expect(merged[0]).toMatchObject({
       purchaseState: "CONFIRMED",
-      purchaseExists: true,
       purchaseId: "p-1",
       documentStatus: "PROCESSED",
       supplierTradeName: "DINADEC", // solo llega con la descarga del XML: se conserva
@@ -47,7 +45,6 @@ describe("FASE 5 PURCHASE-UX — refresco de estados de Recepción", () => {
     expect(merged[1]).toBe(current[1]); // no devuelta → intacta
     expect(merged[2]).toMatchObject({
       purchaseState: "DISCARDED",
-      purchaseExists: false,
       purchaseId: null,
       cancelledPurchaseId: "draft-1",
     });

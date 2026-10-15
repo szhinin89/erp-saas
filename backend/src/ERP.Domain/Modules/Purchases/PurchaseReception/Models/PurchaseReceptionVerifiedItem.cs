@@ -6,7 +6,6 @@ namespace ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 public sealed record PurchaseReceptionVerifiedItem(
     PurchaseReceptionRecord Record,
     bool SupplierExists,
-    bool PurchaseExists,
     PurchaseReceptionStatus Status,
     Guid? SupplierId = null,
     Guid? PurchaseId = null,
@@ -17,7 +16,7 @@ public sealed record PurchaseReceptionVerifiedItem(
     Guid? AffectedPurchaseId = null,
     bool? SupplierIsActive = null,
     // EXPENSES-FROM-RECEPTION-01 — si ya existe un ExpenseDocument ACTIVO (Draft/Confirmed) con
-    // esta clave de acceso SRI (bloquea "Crear compra", mirror de PurchaseExists bloqueando "Crear
+    // esta clave de acceso SRI (bloquea "Crear compra", con PurchaseState bloqueando "Crear
     // gasto"). RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01: un ExpenseDocument Cancelled nunca
     // cuenta aquí.
     bool ExpenseExists = false,

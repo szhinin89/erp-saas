@@ -228,7 +228,7 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
                 x.InvoiceNumber,
             })
             .IsUnique()
-            .HasFilter("\"status\" <> 3")
+            .HasFilter("\"status\" IN (1, 2)")
             .HasDatabaseName("uq_purchase_invoices_tenant_company_supplier_number");
 
         builder
@@ -245,7 +245,7 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
             .HasIndex(x => new { x.TenantId, x.AccessKey })
             .IsUnique()
             .HasDatabaseName("uq_purchase_invoices_tenant_access_key")
-            .HasFilter("access_key IS NOT NULL AND status <> 3");
+            .HasFilter("access_key IS NOT NULL AND status IN (1, 2)");
 
         builder
             .HasIndex(x => x.PurchaseOrderId)
