@@ -36,7 +36,6 @@ public sealed class ConfigurationDefinitionCatalogTests
         yield return new object[] { OrgSettingKeys.Communications.ReplyToEmail };
         yield return new object[] { OrgSettingKeys.Communications.MaxRetries };
         yield return new object[] { OrgSettingKeys.Communications.DefaultLanguage };
-        yield return new object[] { OrgSettingKeys.Communications.SalesInvoiceAuthorizedEnabled };
         yield return new object[] { OrgSettingKeys.Communications.SendCopyToCompanyEmail };
         yield return new object[] { OrgSettingKeys.SalesPos.RequireOpenCashSession };
         yield return new object[] { OrgSettingKeys.SalesPos.AllowManualPrice };

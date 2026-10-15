@@ -176,7 +176,7 @@ public sealed class CreateSalesDraftHandlerTests
                             true,
                             true
                         ),
-                        Notifications: new NotificationsPreferences(true, false, "es")
+                        Notifications: new NotificationsPreferences(false, "es")
                     )
                 );
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
@@ -718,7 +718,7 @@ public sealed class CreateSalesDraftHandlerTests
                         false
                     ),
                     ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-                    Notifications: new NotificationsPreferences(true, false, "es")
+                    Notifications: new NotificationsPreferences(false, "es")
                 )
             );
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
@@ -773,7 +773,7 @@ public sealed class CreateSalesDraftHandlerTests
                         false
                     ),
                     ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-                    Notifications: new NotificationsPreferences(true, false, "es")
+                    Notifications: new NotificationsPreferences(false, "es")
                 )
             );
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);
@@ -828,7 +828,7 @@ public sealed class CreateSalesDraftHandlerTests
                         false
                     ),
                     ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-                    Notifications: new NotificationsPreferences(true, false, "es")
+                    Notifications: new NotificationsPreferences(false, "es")
                 )
             );
         f.CashSession.Setup(c => c.HasOpenSession).Returns(true);

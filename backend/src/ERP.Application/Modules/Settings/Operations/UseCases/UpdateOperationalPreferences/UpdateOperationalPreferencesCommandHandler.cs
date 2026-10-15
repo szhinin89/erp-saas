@@ -408,15 +408,6 @@ public sealed class UpdateOperationalPreferencesCommandHandler
             await UpsertAsync(
                 tenantId,
                 companyId,
-                OrgSettingKeys.Communications.SalesInvoiceAuthorizedEnabled,
-                Bool(notifications.SalesInvoiceAuthorizedEnabled),
-                SettingDataType.Bool,
-                userId,
-                cancellationToken
-            );
-            await UpsertAsync(
-                tenantId,
-                companyId,
                 OrgSettingKeys.Communications.SendCopyToCompanyEmail,
                 Bool(notifications.SendCopyToCompanyEmail),
                 SettingDataType.Bool,
@@ -488,7 +479,6 @@ public sealed class UpdateOperationalPreferencesCommandHandler
                     p.ElectronicDocuments.EmailOnAuthorization
                 ),
                 Notifications: new NotificationsPreferencesDto(
-                    p.Notifications.SalesInvoiceAuthorizedEnabled,
                     p.Notifications.SendCopyToCompanyEmail,
                     p.Notifications.DefaultLanguage
                 ),

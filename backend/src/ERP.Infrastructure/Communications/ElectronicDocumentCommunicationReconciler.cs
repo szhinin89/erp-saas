@@ -1,7 +1,6 @@
 using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Infrastructure.Persistence;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
-using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,13 +44,14 @@ public sealed record ElectronicDocumentCommunicationReconciliationSummary(
 /// (checkpoint PostgreSQL durable) y vuelve al más antiguo al llegar
 /// al final. Los faltantes que el servicio omite y siguen faltando (origen aún no autorizado o inexistente)
 /// se reexaminan en la vuelta siguiente, pero nunca bloquean a los posteriores.</item>
-/// <item>Empresas con la preferencia desactivada se excluyen en SQL: no consumen el lote.</item>
+/// <item>Empresas con la preferencia desactivada se excluyen en SQL (única decisión previa al lote);
+/// el servicio conserva su guard al encolar.</item>
 /// </list>
 /// No reencola filas Failed (la outbox ya tiene la evidencia; reencolar es una acción manual futura).
 /// </para>
 /// <para>
-/// Cross-tenant con el patrón autorizado: la consulta solo devuelve identificadores; la preferencia de
-/// cada empresa y cada comprobante se procesan en su propio scope bajo <see cref="JobExecutionContext"/>.
+/// Cross-tenant con el patrón autorizado: la consulta solo devuelve identificadores; cada comprobante
+/// se procesa en su propio scope bajo <see cref="JobExecutionContext"/>.
 /// </para>
 /// </summary>
 public sealed partial class ElectronicDocumentCommunicationReconciler
@@ -89,8 +89,6 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
                 .Routes;
 
         var summary = new Counter();
-        var preferenceByCompany = new Dictionary<Guid, bool>();
-        var excludedCompanies = new List<Guid>();
         ElectronicDocumentCommunicationCandidate? after;
         await using (var progressScope = _scopeFactory.CreateAsyncScope())
         {
@@ -111,7 +109,6 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
                         routes,
                         lastChangeBefore,
                         after,
-                        excludedCompanies,
                         pageLimit,
                         ct
                     );
@@ -122,23 +119,8 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
                 if (summary.Examined >= batchSize)
                     break;
                 after = candidate;
-
-                if (!preferenceByCompany.TryGetValue(candidate.CompanyId, out var enabled))
-                {
-                    enabled = await IsEmailOnAuthorizationEnabledAsync(
-                        candidate.TenantId,
-                        candidate.CompanyId,
-                        ct
-                    );
-                    preferenceByCompany[candidate.CompanyId] = enabled;
-                    if (!enabled)
-                        excludedCompanies.Add(candidate.CompanyId);
-                }
-
                 summary.Examined++;
-                if (enabled)
-                    await ReconcileOneAsync(candidate, summary, ct);
-                else summary.Skipped++;
+                await ReconcileOneAsync(candidate, summary, ct);
             }
 
             if (page.Count < pageLimit)
@@ -215,20 +197,6 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
             summary.Failed++;
             LogCandidateFailed(candidate.ElectronicDocumentId, ex);
         }
-    }
-
-    private async Task<bool> IsEmailOnAuthorizationEnabledAsync(
-        Guid tenantId,
-        Guid companyId,
-        CancellationToken ct
-    )
-    {
-        using var _ = JobExecutionContext.Begin(tenantId, companyId);
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var preferences = await scope
-            .ServiceProvider.GetRequiredService<IOperationalPreferencesResolver>()
-            .ResolveAsync(tenantId, companyId, ct);
-        return preferences.ElectronicDocuments.EmailOnAuthorization;
     }
 
     private sealed class Counter

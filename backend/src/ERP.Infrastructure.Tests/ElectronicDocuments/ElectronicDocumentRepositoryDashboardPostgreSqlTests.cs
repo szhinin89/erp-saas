@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
@@ -74,12 +75,12 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
         ElectronicDocumentState state
     )
     {
-        var retryCounts = Enumerable.Range(1, ElectronicDocumentRetryPolicy.MaxAttempts - 1);
+        var retryCounts = Enumerable.Range(1, ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default - 1);
         await SeedAsync(_tenantId, _companyId, retryCounts.Select(r => (state, r)).ToArray());
 
         var count = await CountPendingRetriesAsync();
 
-        count.Should().Be(ElectronicDocumentRetryPolicy.MaxAttempts - 1);
+        count.Should().Be(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default - 1);
     }
 
     [Fact]
@@ -103,8 +104,8 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
         await SeedAsync(
             _tenantId,
             _companyId,
-            (ElectronicDocumentState.Signed, ElectronicDocumentRetryPolicy.MaxAttempts),
-            (ElectronicDocumentState.Failed, ElectronicDocumentRetryPolicy.MaxAttempts + 1)
+            (ElectronicDocumentState.Signed, ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default),
+            (ElectronicDocumentState.Failed, ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 1)
         );
 
         var count = await CountPendingRetriesAsync();
@@ -160,6 +161,53 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
                     ElectronicDocumentState.Failed,
                 }
             );
+    }
+
+    [Theory]
+    [InlineData("2", 2)]
+    [InlineData(" +0002 ", 2)]
+    [InlineData("10", 10)]
+    [InlineData("invalid", 5)]
+    [InlineData("0", 5)]
+    [InlineData("11", 5)]
+    [InlineData(null, 5)]
+    public async Task Company_maximum_is_applied_in_SQL_before_batch_and_matches_resolver(string? raw, int expected)
+    {
+        var otherCompany = Guid.NewGuid();
+        await SeedAsync(_tenantId, _companyId, (ElectronicDocumentState.Failed, expected));
+        await SeedAsync(_tenantId, otherCompany, (ElectronicDocumentState.Failed, 6));
+        await using var db = NewDbContext(_tenantId, _companyId);
+        if (raw is not null)
+            db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(_tenantId, _companyId,
+                ERP.Domain.Configuration.Enums.OrgScope.Company, _companyId,
+                ERP.Domain.Configuration.Constants.OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts,
+                raw, ERP.Domain.Configuration.Enums.SettingDataType.Int, _userId));
+        db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(_tenantId, otherCompany,
+            ERP.Domain.Configuration.Enums.OrgScope.Company, otherCompany,
+            ERP.Domain.Configuration.Constants.OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts,
+            "7", ERP.Domain.Configuration.Enums.SettingDataType.Int, _userId));
+        await db.SaveChangesAsync();
+        var repository = NewRepository(db);
+        var candidates = await repository.GetRetryCandidatesAsync(1);
+        candidates.Should().ContainSingle().Which.CompanyId.Should().Be(otherCompany);
+        (await repository.CountPendingRetriesAsync(_tenantId, _companyId)).Should().Be(0);
+        ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Resolve(
+            await repository.GetRetryMaximumSettingAsync(_tenantId, _companyId)).Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task Legacy_notification_rows_are_removed_by_migration()
+    {
+        await using var db = NewDbContext(_tenantId, _companyId);
+        var migrator = db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
+        await migrator.MigrateAsync("20261015000000_BackgroundJobProgress");
+        db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(_tenantId, _companyId,
+            ERP.Domain.Configuration.Enums.OrgScope.Company, _companyId,
+            "communications.sales_invoice_authorized.enabled", "false",
+            ERP.Domain.Configuration.Enums.SettingDataType.Bool, _userId));
+        await db.SaveChangesAsync();
+        await migrator.MigrateAsync();
+        (await db.OrgSettings.AsNoTracking().CountAsync()).Should().Be(0);
     }
 
     private async Task<int> CountPendingRetriesAsync()

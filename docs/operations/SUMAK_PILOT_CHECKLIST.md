@@ -16,8 +16,8 @@ Snapshot de referencia (inventario tomado 2026-08-08, ver reporte PROD-01J): ten
 
 - [x] Docker `up` y `healthy` (`erp-api-localprod`, `erp-frontend-localprod`, `postgreszh`, `erp-saas-redis`).
 - [x] `/health/live` → `Healthy`.
-- [x] `/health/ready` → `Healthy` (database, membership-consistency, masterdata-sync,
-      masterdata-reconciliation, redis, sri-external).
+- [ ] `/health/ready` → `Healthy` (database, redis, sri-external). Contrato vigente desde ADR-043:
+      membership-consistency/masterdata-sync son checks `security`, fuera de ready; re-verificar.
 - [x] Backup reciente ejecutado (`backups/localprod/20260808-143536/` con `manifest.json` +
       `SHA256SUMS.txt`).
 - [x] Restore drill aislado probado (PROD-01I.1, `scripts/restore-check-localprod.ps1`).

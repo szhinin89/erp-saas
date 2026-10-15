@@ -68,7 +68,7 @@ public sealed class CashSessionOwnershipTests
                 false
             ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-            Notifications: new NotificationsPreferences(true, false, "es")
+            Notifications: new NotificationsPreferences(false, "es")
         );
 
     private static Mock<ICurrentUser> User(Guid userId)

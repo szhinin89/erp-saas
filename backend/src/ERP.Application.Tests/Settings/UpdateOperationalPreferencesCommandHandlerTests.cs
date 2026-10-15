@@ -50,7 +50,7 @@ public sealed class UpdateOperationalPreferencesCommandHandlerTests
                     new InventoryPreferences(false, false, false, 0),
                     new PrintingPreferences("Ticket", 1, "58mm", false, false, false, false),
                     new ElectronicDocumentsPreferences(false, 3, false, false),
-                    new NotificationsPreferences(false, false, "es")
+                    new NotificationsPreferences(false, "es")
                 )
             );
 

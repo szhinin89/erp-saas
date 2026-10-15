@@ -579,7 +579,7 @@ public sealed class ElectronicDocumentIssuerReceptionTests
     {
         // TIMEOUT no es una decisión del SRI (el WS sigue procesando) — nunca debe deadletterar
         // en el primer intento. Solo ApplyDeadLetterIfExhaustedAsync puede escalar a DeadLetter,
-        // y solo tras agotar ElectronicDocumentRetryPolicy.MaxAttempts.
+        // y solo tras agotar ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default.
         var repository = new Mock<IElectronicDocumentRepository>();
         var reception = ReceptionReturning("RECIBIDA");
 

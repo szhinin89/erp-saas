@@ -122,16 +122,21 @@ internal sealed class ElectronicDocumentCommunicationFlow
     public Mock<IRideBackgroundDocumentService> RideSender { get; } = new();
 
 
-    public void DisableEmailOnAuthorization(Guid companyId)
+    public void DisableEmailOnAuthorization(Guid companyId, string persistedValue = "false")
     {
         _emailOnAuthorization[companyId] = false;
         using var db = _db.Context();
         var tenantId = db.Companies.IgnoreQueryFilters().Where(c => c.Id == companyId).Select(c => c.TenantId).Single();
         db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(tenantId, companyId,
             ERP.Domain.Configuration.Enums.OrgScope.Company, companyId,
-            "electronic_documents.email_on_authorization", "false", ERP.Domain.Configuration.Enums.SettingDataType.Bool, Guid.Empty));
+            ERP.Domain.Configuration.Constants.OrgSettingKeys.ElectronicDocuments.EmailOnAuthorization,
+            persistedValue, ERP.Domain.Configuration.Enums.SettingDataType.Bool, Guid.Empty));
         db.SaveChanges();
     }
+
+    /// <summary>Solo el guard del servicio ve la preferencia apagada (sin setting persistido).</summary>
+    public void DisableEmailOnAuthorizationInServiceOnly(Guid companyId) =>
+        _emailOnAuthorization[companyId] = false;
 
     // ── negocio simulado ──────────────────────────────────────────────────────────────────
 
@@ -512,7 +517,7 @@ internal sealed class ElectronicDocumentCommunicationFlow
                 true,
                 emailOnAuthorization
             ),
-            Notifications: new NotificationsPreferences(true, false, "es")
+            Notifications: new NotificationsPreferences(false, "es")
         );
 
     /// <summary>Publisher del ErpDbContext que entrega ElectronicDocumentAuthorizedEvent al handler real.</summary>

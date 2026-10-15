@@ -646,6 +646,12 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
             retentionId,
             ElectronicDocumentState.Failed
         );
+        // MarkFailed fija LastAttemptUtc = ahora: fuera del backoff de la política (2 min), como
+        // un documento varado.
+        await using (var seed = CreateContext())
+            await seed.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE electronic_documents SET last_attempt_utc = {DateTime.UtcNow.AddHours(-1)} WHERE id = {documentId}"
+            );
 
         await using var db = CreateJobContext();
         var candidates = await new ElectronicDocumentRepository(

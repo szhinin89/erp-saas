@@ -555,12 +555,14 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             )
         )
             return;
-        if (document.RetryCount < ElectronicDocumentRetryPolicy.MaxAttempts)
+        var maximum = ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Resolve(
+            await _repository.GetRetryMaximumSettingAsync(document.TenantId, document.CompanyId, ct));
+        if (document.RetryCount < maximum)
             return;
 
         var reason = lastFailureReason is null
-            ? $"Reintentos agotados tras {ElectronicDocumentRetryPolicy.MaxAttempts} intentos."
-            : $"Reintentos agotados tras {ElectronicDocumentRetryPolicy.MaxAttempts} intentos. Último error: {lastFailureReason}";
+            ? $"Reintentos agotados tras {maximum} intentos."
+            : $"Reintentos agotados tras {maximum} intentos. Último error: {lastFailureReason}";
         document.MarkDeadLetter(reason, userId);
         await _repository.SaveChangesAsync(ct);
         LogDocumentDeadLettered(document.Id, reason);
@@ -966,7 +968,7 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             // sus propios 5 intentos con backoff 2s/4s/8s/16s). Se trata igual que cualquier otra
             // consulta sin respuesta definitiva (rama !authResult.IsSuccess más arriba): el
             // documento permanece en Received, y solo ApplyDeadLetterIfExhaustedAsync decide el
-            // DeadLetter, tras agotar ElectronicDocumentRetryPolicy.MaxAttempts.
+            // DeadLetter, tras agotar el máximo efectivo de la empresa.
             var reason =
                 auth.ErrorMessage
                 ?? "El SRI no respondió a la consulta de autorización tras varios reintentos.";

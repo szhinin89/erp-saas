@@ -7,13 +7,17 @@ using Npgsql;
 
 namespace ERP.API.Hangfire;
 
+/// <summary>
+/// Única entrada de Hangfire (ADR-043). Concurrencia máxima 1 por ID es un invariante del runner,
+/// no una opción: el advisory lock de sesión impide solapar el mismo job entre workers e instancias.
+/// </summary>
 public sealed class RecurringJobRunner(
     IServiceScopeFactory scopes, IOptions<HangfireOptions> options, ILogger<RecurringJobRunner> logger)
 {
     [AutomaticRetry(Attempts = 0)]
     public async Task RunAsync(string id, CancellationToken cancellationToken)
     {
-        if (!HangfireRecurringJobs.All.TryGetValue(id, out var definition)) return;
+        if (!HangfireRecurringJobs.All.TryGetValue(id, out var jobType)) return;
         var settings = options.Value.Jobs[id];
         if (settings.Enabled != true) return;
         await using var connection = new NpgsqlConnection(options.Value.StorageConnectionString);
@@ -35,7 +39,7 @@ public sealed class RecurringJobRunner(
         try
         {
             await using var scope = scopes.CreateAsyncScope();
-            await ((IRecurringJob)scope.ServiceProvider.GetRequiredService(definition.JobType))
+            await ((IRecurringJob)scope.ServiceProvider.GetRequiredService(jobType))
                 .ExecuteAsync(settings.BatchSize, cancellationToken);
             logger.LogInformation("Job {JobId} completed", id);
         }

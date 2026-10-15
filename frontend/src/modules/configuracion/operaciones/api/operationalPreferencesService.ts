@@ -65,7 +65,6 @@ export type ElectronicDocumentsPreferencesDto = {
 };
 
 export type NotificationsPreferencesDto = {
-  salesInvoiceAuthorizedEnabled: boolean;
   sendCopyToCompanyEmail: boolean;
   defaultLanguage: "es" | "en";
 };

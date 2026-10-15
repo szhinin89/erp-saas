@@ -4,6 +4,8 @@ using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using ERP.Domain.Configuration.Constants;
+using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments;
@@ -176,16 +178,31 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         return authorized.Average(x => (x.AuthorizationDate - x.CreatedAt).TotalMinutes);
     }
 
+    private IQueryable<ERP.Domain.Configuration.Entities.OrgSetting> RetryMaximumSettings() =>
+        _db.OrgSettings.AsPlatformQuery().Where(s => s.Scope == ERP.Domain.Configuration.Enums.OrgScope.Company
+            && s.ScopeId == s.CompanyId && s.Key == OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts);
+
+    public Task<string?> GetRetryMaximumSettingAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
+        RetryMaximumSettings().Where(s => s.TenantId == tenantId && s.CompanyId == companyId)
+            .Select(s => s.Value).FirstOrDefaultAsync(ct);
+
+    private IQueryable<ElectronicDocument> WithinRetryMaximum(IQueryable<ElectronicDocument> documents)
+    {
+        var settings = RetryMaximumSettings();
+        return documents.Where(ElectronicDocumentRetryPolicy.WithinMaximum(x => settings
+            .Where(s => s.TenantId == x.TenantId && s.CompanyId == x.CompanyId)
+            .Select(s => s.Value).FirstOrDefault()));
+    }
+
     public Task<int> CountPendingRetriesAsync(
         Guid tenantId,
         Guid? companyId,
         CancellationToken ct = default
     ) =>
-        Scoped(tenantId, companyId)
+        WithinRetryMaximum(Scoped(tenantId, companyId))
             .Where(x =>
                 ElectronicDocumentRetryPolicy.AutomaticRetryStates.Contains(x.CurrentState)
                 && x.RetryCount > 0
-                && x.RetryCount < ElectronicDocumentRetryPolicy.MaxAttempts
             )
             .CountAsync(ct);
 
@@ -224,20 +241,23 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         // filtro fail-closed devolvería 0 filas); devuelve únicamente identificadores, y cada
         // candidato se procesa después con JobExecutionContext de su propio tenant/empresa, donde
         // los filtros vuelven a aplicar (mismo patrón que GetPendingElectronicStartAsync).
+        // Elegibilidad (política) y preferencia de empresa se filtran aquí, antes del lote: el job
+        // procesa lo que recibe sin volver a decidir.
+        var autoRetryDisabled = DefaultOnCompanySwitch.Disabling(
+            _db,
+            OrgSettingKeys.ElectronicDocuments.AutoRetryEnabled
+        );
+        var maximumSettings = RetryMaximumSettings();
         var query = _db
             .ElectronicDocuments.AsPlatformQuery()
             .AsNoTracking()
-            .Where(x => ElectronicDocumentRetryPolicy.AutomaticRetryStates.Contains(x.CurrentState))
-            .Where(x => x.RetryCount < ElectronicDocumentRetryPolicy.MaxAttempts)
-            .Where(x => x.LastAttemptUtc == null || x.LastAttemptUtc.Value.AddMinutes(Math.Pow(2, x.RetryCount)) <= DateTime.UtcNow)
-            .Where(x => !_db.OrgSettings.AsPlatformQuery().Any(setting =>
-                setting.TenantId == x.TenantId && setting.CompanyId == x.CompanyId
-                && setting.Scope == ERP.Domain.Configuration.Enums.OrgScope.Company
-                && setting.ScopeId == x.CompanyId
-                && setting.Key == "electronic_documents.auto_retry_enabled"
-                && setting.Value != null && setting.Value.Trim().ToLower() == "false"));
+            .Where(ElectronicDocumentRetryPolicy.AutomaticRetryCandidate(DateTime.UtcNow, x => maximumSettings
+                .Where(s => s.TenantId == x.TenantId && s.CompanyId == x.CompanyId)
+                .Select(s => s.Value).FirstOrDefault()))
+            .Where(x => !autoRetryDisabled.Any(setting =>
+                setting.TenantId == x.TenantId && setting.CompanyId == x.CompanyId));
         return await BackgroundJobProgress.ReadBatchAsync(_db, "electronic-retry", query,
-            x => new ElectronicDocumentRetryCandidate(x.TenantId, x.CompanyId, x.Id, x.RetryCount, x.LastAttemptUtc),
+            x => new ElectronicDocumentRetryCandidate(x.TenantId, x.CompanyId, x.Id),
             x => x.ElectronicDocumentId, x => x.CreatedAt, batchSize, ct);
     }
 }

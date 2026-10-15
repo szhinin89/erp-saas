@@ -478,7 +478,7 @@ public sealed class UpdateSalesDraftAtomicityPostgreSqlTests : IAsyncLifetime
                 false
             ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-            Notifications: new NotificationsPreferences(true, false, "es")
+            Notifications: new NotificationsPreferences(false, "es")
         );
 
     private sealed record Snapshot(

@@ -1,5 +1,55 @@
 # Project Status
 
+## ZH BACKGROUND SSOT CLEANUP - FASE A: DOBLES VERDADES (2026-10-15)
+
+**STRUCTURAL DEBT: implementado y validado focalmente, sin commit/push.**
+
+- KEEP: `ElectronicDocumentRetryPolicy` sigue como SSOT de estados/backoff y
+  elegibilidad automática. EXTEND: `electronic_documents.max_retry_attempts`
+  gobierna por empresa candidatos SQL (antes del BatchSize), contador y DeadLetter.
+  `ElectronicDocumentRetryMaximum` centraliza default 5, rango 1..10 y resolución
+  faltante/corrupto; el mismo árbol se compila para lectura y traduce a SQL.
+  Se elimina `MaxAttempts` fijo; job/repositorio no interpretan configuración.
+- KEEP: `electronic_documents.email_on_authorization` es la única decisión de
+  correo al autorizar. Eliminados clave/definición, DTO/command, resolver, escritura
+  y contrato frontend de `communications.sales_invoice_authorized.enabled`.
+  No estaba renderizada en UI. Fixtures actualizados sin conservar campo legacy.
+- NEW: migración `20261015010000_RemoveLegacyAuthorizationNotification` elimina
+  filas legacy (incluida variante underscore). Probada con PostgreSQL 16 real;
+  no aplicada a la base de preproducción/piloto.
+- PASS: Application retry/policy/Communications/settings 38/38; Infrastructure
+  dashboard/retries/migración/Communications PostgreSQL 44/44; API Background
+  tenant context/host registration 9/9; frontend contrato Caja 61/61; diff check.
+  Se verifican empresas con límites diferentes, filtro antes de lote de una fila,
+  agotamiento/DeadLetter coherente y ausencia de contrato/configuración legacy.
+- STRUCTURAL DEBT previa separada: `RideDependencyInjectionTests` (DI manual sin
+  `IElectronicDocumentInternalReader`, ya registrada desde `f936c66d9`). No tocada
+  ni ejecutada en esta fase. Sin suites completas, jobs reales, commit o push.
+
+## ZH BACKGROUND SSOT CLEANUP — FASE A (2026-10-15)
+
+**Estado: implementado, validación focal PASS, sin commit/push.** Cierra los cinco
+hallazgos de la auditoría transversal sobre ADR-043, sin legacy paralelo:
+
+- Reintento electrónico: `ElectronicDocumentRetryPolicy.AutomaticRetryCandidate`
+  (estados, MaxAttempts, backoff `min(1·2^n, 16)` min) es el único predicado y EF lo
+  traduce a SQL antes del lote. El job ya no reevalúa política ni preferencia;
+  `ElectronicDocumentRetryCandidate` lleva solo identidad.
+- `auto_retry_enabled`/`email_on_authorization`: clave de `OrgSettingKeys` y semántica
+  del resolver (`DefaultOnCompanySwitch`) solo en SQL. Eliminados `excludedCompanies`
+  y la resolución propia del reconciliador; el servicio conserva su guard.
+- API/worker: `ErpHostRegistration` es el único registro común (configuración,
+  Serilog, Redis/memoria, Infrastructure/Application, Data Protection, opciones).
+  El worker ya no fuerza caché en memoria ni duplica registros.
+- Jobs: catálogo = ID → tipo; Enabled/Cron/Queue/BatchSize y Workers por cola solo
+  en configuración. Eliminados `MaxConcurrency` (invariante del runner) y `Dashboard`;
+  el binding estricto rechaza esas claves al arrancar.
+- Docs: ADR-043, COMMUNICATIONS-ARCHITECTURE, events.md y checklist piloto alineados.
+- Validación focal: Application 8/8; API Hangfire 36/36 + startup/health 24/24;
+  Infrastructure Communications/retry/dashboard/guards 54/54. Pendiente fuera de
+  alcance: `RideDependencyInjectionTests` falla desde `f936c66d9` (DI manual sin
+  `IElectronicDocumentInternalReader`). Worker en docker-compose: FASE D.
+
 ## ZH BACKGROUND PROCESSING — STRUCTURAL DEBT (2026-10-15)
 
 **Verificación posterior:** [aceptación de diez puntos](docs/agent/BACKGROUND_PROCESSING_ACCEPTANCE.md).

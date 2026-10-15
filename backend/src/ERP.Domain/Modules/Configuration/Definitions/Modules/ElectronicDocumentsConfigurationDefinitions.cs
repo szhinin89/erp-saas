@@ -10,14 +10,6 @@ namespace ERP.Domain.Configuration.Definitions.Modules;
 /// reintento AUTOMÁTICO del job Hangfire; el reintento manual vía IElectronicDocumentIssuer.RetryAsync
 /// sigue disponible siempre).
 ///
-/// MaxRetryAttempts: DELIBERADAMENTE NO conectado en este bloque. ElectronicDocumentRetryPolicy.
-/// MaxAttempts (hoy hardcodeado en 5) también decide el dead-letter dentro de
-/// ElectronicDocumentIssuer — infraestructura ElectronicDocuments v1.0, FROZEN (ver
-/// docs/architecture/frozen-infrastructure.md). Conectarlo requiere tocar esa lógica de
-/// dead-letter, fuera de alcance de CONFIG-DYNAMIC-OPERATIONS-02. Nota aparte: el default aquí
-/// (3) no coincide con el hardcodeado real (5) — si en el futuro se conecta, el default debe
-/// pasar a 5 para no cambiar el comportamiento vigente por defecto.
-///
 /// GenerateRideOnAuthorization: sin consumidor todavía (Fase C).
 /// </summary>
 public static class ElectronicDocumentsConfigurationDefinitions
@@ -27,8 +19,8 @@ public static class ElectronicDocumentsConfigurationDefinitions
         yield return Bool(OrgSettingKeys.ElectronicDocuments.AutoRetryEnabled, "true");
         yield return Int(
             OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts,
-            value => IsIntInRange(value, 1, 10),
-            "3"
+            ElectronicDocumentRetryMaximum.IsValid,
+            ElectronicDocumentRetryMaximum.Default.ToString(System.Globalization.CultureInfo.InvariantCulture)
         );
         yield return Bool(OrgSettingKeys.ElectronicDocuments.GenerateRideOnAuthorization, "true");
         yield return Bool(OrgSettingKeys.ElectronicDocuments.EmailOnAuthorization, "true");
@@ -66,6 +58,4 @@ public static class ElectronicDocumentsConfigurationDefinitions
             Validator = validator,
         };
 
-    private static bool IsIntInRange(string? value, int min, int max) =>
-        int.TryParse(value, out var parsed) && parsed >= min && parsed <= max;
 }

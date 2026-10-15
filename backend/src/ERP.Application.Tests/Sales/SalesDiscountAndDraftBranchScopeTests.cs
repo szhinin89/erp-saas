@@ -80,7 +80,7 @@ public sealed class SalesDiscountAndDraftBranchScopeTests
                 false
             ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-            Notifications: new NotificationsPreferences(true, false, "es")
+            Notifications: new NotificationsPreferences(false, "es")
         );
 
     // A3 (Atomic Sales Draft Update): UoW de paso — ejecuta el delegate directamente y propaga

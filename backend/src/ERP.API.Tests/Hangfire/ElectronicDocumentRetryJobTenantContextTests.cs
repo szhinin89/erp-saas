@@ -3,7 +3,6 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Services;
-using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
@@ -44,7 +43,6 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
 
     private ServiceProvider _provider = null!;
     private readonly RecordingIssuerLog _issuerLog = new();
-    private readonly HashSet<Guid> _companiesWithAutoRetryDisabled = [];
     private readonly Dictionary<Guid, (Guid TenantId, Guid CompanyId)> _owners = [];
 
     // Tenant A con dos empresas (aislamiento por empresa) y tenant B (aislamiento por tenant).
@@ -67,9 +65,6 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         services.AddScoped<IElectronicDocumentRepository, ElectronicDocumentRepository>();
         services.AddSingleton(_issuerLog);
         services.AddScoped<IElectronicDocumentIssuer, RecordingIssuer>();
-        services.AddSingleton<IOperationalPreferencesResolver>(
-            new FakePreferencesResolver(_companiesWithAutoRetryDisabled)
-        );
         _provider = services.BuildServiceProvider();
 
         await using var scope = _provider.CreateAsyncScope();
@@ -196,7 +191,7 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         var exhausted = await SeedAsync(
             _a1,
             ElectronicDocumentState.Signed,
-            retryAttempts: ElectronicDocumentRetryPolicy.MaxAttempts
+            retryAttempts: ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default
         );
         var inBackoff = await SeedAsync(
             _b,
@@ -205,7 +200,7 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
             lastAttemptAgo: TimeSpan.Zero
         );
         var autoRetryOff = await SeedAsync(_a2, ElectronicDocumentState.Signed);
-        _companiesWithAutoRetryDisabled.Add(_a2.CompanyId);
+        await DisableAutoRetryAsync(_a2, " False ");
 
         await RunJobAsync();
 
@@ -214,7 +209,7 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         (await ReadAsync(deadLetter)).CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
         (await ReadAsync(exhausted))
             .RetryCount.Should()
-            .Be(ElectronicDocumentRetryPolicy.MaxAttempts);
+            .Be(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default);
         (await ReadAsync(inBackoff)).RetryCount.Should().Be(1);
         (await ReadAsync(autoRetryOff)).RetryCount.Should().Be(0);
     }
@@ -243,14 +238,7 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         var documents = new[] { await SeedAsync(_a1, ElectronicDocumentState.Signed),
             await SeedAsync(_a1, ElectronicDocumentState.Signed), await SeedAsync(_b, ElectronicDocumentState.Failed) };
         var disabled = await SeedAsync(_a2, ElectronicDocumentState.Draft);
-        await using (var seed = _provider.CreateAsyncScope())
-        {
-            var db = seed.ServiceProvider.GetRequiredService<ErpDbContext>();
-            db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(_a2.TenantId, _a2.CompanyId,
-                ERP.Domain.Configuration.Enums.OrgScope.Company, _a2.CompanyId,
-                "electronic_documents.auto_retry_enabled", "false", ERP.Domain.Configuration.Enums.SettingDataType.Bool, UserId));
-            await db.SaveChangesAsync();
-        }
+        await DisableAutoRetryAsync(_a2, "false");
         var discovered = new List<Guid>();
         for (var run = 0; run < 3; run++)
         {
@@ -259,6 +247,36 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
             discovered.Add(batch.Should().ContainSingle().Subject.ElectronicDocumentId);
         }
         discovered.Should().BeEquivalentTo(documents).And.NotContain(disabled);
+    }
+
+    [Fact]
+    public async Task Candidate_query_applies_policy_backoff_before_the_batch()
+    {
+        // MarkFailed deja RetryCount=1 → backoff de la política: 2 minutos.
+        var due = await SeedAsync(_a1, ElectronicDocumentState.Failed, lastAttemptAgo: TimeSpan.FromSeconds(125));
+        await SeedAsync(_b, ElectronicDocumentState.Failed, lastAttemptAgo: TimeSpan.FromSeconds(90));
+        var corruptPreference = await SeedAsync(_a2, ElectronicDocumentState.Signed);
+        await DisableAutoRetryAsync(_a2, "no");
+
+        await using var scope = _provider.CreateAsyncScope();
+        var candidates = await scope
+            .ServiceProvider.GetRequiredService<IElectronicDocumentRepository>()
+            .GetRetryCandidatesAsync(50);
+
+        candidates.Select(c => c.ElectronicDocumentId).Should().BeEquivalentTo(
+            new[] { due, corruptPreference },
+            "el backoff vigente y un valor corrupto (default del resolver: activo) se resuelven en SQL");
+    }
+
+    private async Task DisableAutoRetryAsync((Guid TenantId, Guid CompanyId) owner, string persistedValue)
+    {
+        await using var seed = _provider.CreateAsyncScope();
+        var db = seed.ServiceProvider.GetRequiredService<ErpDbContext>();
+        db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(owner.TenantId, owner.CompanyId,
+            ERP.Domain.Configuration.Enums.OrgScope.Company, owner.CompanyId,
+            ERP.Domain.Configuration.Constants.OrgSettingKeys.ElectronicDocuments.AutoRetryEnabled,
+            persistedValue, ERP.Domain.Configuration.Enums.SettingDataType.Bool, UserId));
+        await db.SaveChangesAsync();
     }
 
     private Task RunJobAsync() =>
@@ -402,54 +420,6 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
             await repository.SaveChangesAsync(ct);
             return Result<ElectronicDocumentDto>.Success(null!);
         }
-    }
-
-    private sealed class FakePreferencesResolver(HashSet<Guid> companiesWithAutoRetryDisabled)
-        : IOperationalPreferencesResolver
-    {
-        public Task<OperationalPreferences> ResolveAsync(
-            CancellationToken cancellationToken = default
-        ) => throw new NotSupportedException("El job resuelve con tenant/empresa explícitos.");
-
-        public Task<OperationalPreferences> ResolveAsync(
-            Guid tenantId,
-            Guid companyId,
-            CancellationToken cancellationToken = default
-        ) =>
-            Task.FromResult(
-                new OperationalPreferences(
-                    SalesPos: new SalesPosPreferences(
-                        true,
-                        false,
-                        true,
-                        0m,
-                        null,
-                        false,
-                        false,
-                        null,
-                        null
-                    ),
-                    Cash: new CashPreferences(true, true, 0m, true, true, true),
-                    Purchases: new PurchasesPreferences(null, true, true, true, false),
-                    Inventory: new InventoryPreferences(false, true, false, 0m),
-                    Printing: new PrintingPreferences(
-                        "AskBeforePrint",
-                        1,
-                        "80mm",
-                        false,
-                        true,
-                        true,
-                        false
-                    ),
-                    ElectronicDocuments: new ElectronicDocumentsPreferences(
-                        AutoRetryEnabled: !companiesWithAutoRetryDisabled.Contains(companyId),
-                        MaxRetryAttempts: 3,
-                        GenerateRideOnAuthorization: true,
-                        EmailOnAuthorization: false
-                    ),
-                    Notifications: new NotificationsPreferences(true, false, "es")
-                )
-            );
     }
 
     private sealed class NoOpPublisher : MediatR.IPublisher

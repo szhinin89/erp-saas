@@ -10,19 +10,21 @@ public interface IRecurringJob
     Task ExecuteAsync(int batchSize, CancellationToken cancellationToken);
 }
 
-public sealed record RecurringJobDefinition(Type JobType, string Queue);
-
+/// <summary>
+/// Catálogo inmutable ID → tipo concreto (ADR-043). Solo identidad: cola, cron, lote y Enabled
+/// son valores operativos de <see cref="HangfireOptions"/>.
+/// </summary>
 public static class HangfireRecurringJobs
 {
-    public static readonly IReadOnlyDictionary<string, RecurringJobDefinition> All = new Dictionary<string, RecurringJobDefinition>(StringComparer.Ordinal)
+    public static readonly IReadOnlyDictionary<string, Type> All = new Dictionary<string, Type>(StringComparer.Ordinal)
     {
-        ["process-outbox"] = new(typeof(ProcessOutboxJob), "core"),
-        ["process-communications"] = new(typeof(ProcessCommunicationsJob), "communications"),
-        ["reconcile-electronic-document-communications"] = new(typeof(ReconcileElectronicDocumentCommunicationsJob), "communications"),
-        ["electronic-document-retry"] = new(typeof(ElectronicDocumentRetryJob), "sri"),
-        ["sales-electronic-document-recovery"] = new(typeof(SalesElectronicDocumentRecoveryJob), "sri"),
-        ["retention-electronic-recovery"] = new(typeof(RetentionElectronicRecoveryJob), "sri"),
-        ["expire-user-sessions"] = new(typeof(ExpireUserSessionsJob), "maintenance"),
+        ["process-outbox"] = typeof(ProcessOutboxJob),
+        ["process-communications"] = typeof(ProcessCommunicationsJob),
+        ["reconcile-electronic-document-communications"] = typeof(ReconcileElectronicDocumentCommunicationsJob),
+        ["electronic-document-retry"] = typeof(ElectronicDocumentRetryJob),
+        ["sales-electronic-document-recovery"] = typeof(SalesElectronicDocumentRecoveryJob),
+        ["retention-electronic-recovery"] = typeof(RetentionElectronicRecoveryJob),
+        ["expire-user-sessions"] = typeof(ExpireUserSessionsJob),
     }.AsReadOnly();
 
     public static IServiceCollection AddErpBackgroundProcessing(this IServiceCollection services, IConfiguration configuration)
@@ -34,7 +36,7 @@ public static class HangfireRecurringJobs
             ?? throw new InvalidOperationException("Hangfire configuration is required.");
         var validation = new HangfireOptionsValidator().Validate(null, settings);
         if (validation.Failed) throw new OptionsValidationException("Hangfire", typeof(HangfireOptions), validation.Failures);
-        foreach (var definition in All.Values) services.AddScoped(definition.JobType);
+        foreach (var jobType in All.Values) services.AddScoped(jobType);
         services.AddScoped<RecurringJobRunner>();
         if (settings.Server.Enabled == true)
         {

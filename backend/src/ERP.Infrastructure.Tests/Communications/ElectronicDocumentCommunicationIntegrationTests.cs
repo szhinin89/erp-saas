@@ -331,9 +331,35 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
             .Examined.Should()
             .Be(0, "recién autorizado: el evento aún puede estar en curso");
 
-        _flow.DisableEmailOnAuthorization(_db.CompanyA);
+        _flow.DisableEmailOnAuthorization(_db.CompanyA, " FALSE ");
         (await _flow.Reconciler().ReconcileAsync(200)).Examined.Should().Be(0);
         (await RowsAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Reconciliacion_decide_la_preferencia_solo_en_SQL_y_el_servicio_conserva_su_guard()
+    {
+        var document = await AuthorizeAsync(ElectronicDocumentType.Invoice, "cliente@example.com", publish: false);
+        await _flow.BackdateAsync(document, TimeSpan.FromDays(1));
+        _flow.DisableEmailOnAuthorizationInServiceOnly(_db.CompanyA);
+        _flow.Preferences.Invocations.Clear();
+
+        var summary = await _flow.Reconciler().ReconcileAsync(200);
+
+        summary.Examined.Should().Be(1, "sin setting persistido el filtro SQL lo deja pasar");
+        summary.Skipped.Should().Be(1, "el guard del servicio es la única otra decisión");
+        (await RowsAsync()).Should().BeEmpty();
+        _flow.Preferences.Invocations.Should().ContainSingle("el reconciliador no resuelve la preferencia por su cuenta");
+    }
+
+    [Fact]
+    public async Task Valor_corrupto_de_la_preferencia_conserva_el_default_igual_que_el_resolver()
+    {
+        var document = await AuthorizeAsync(ElectronicDocumentType.Invoice, "cliente@example.com", publish: false);
+        await _flow.BackdateAsync(document, TimeSpan.FromDays(1));
+        _flow.DisableEmailOnAuthorization(_db.CompanyA, "no");
+
+        (await _flow.Reconciler().ReconcileAsync(200)).Examined.Should().Be(1);
     }
 
     // ── horizonte (verificación final): sin límite de antigüedad ──────────────────────────

@@ -5,6 +5,7 @@ namespace ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 
 public interface IElectronicDocumentRepository
 {
+    Task<string?> GetRetryMaximumSettingAsync(Guid tenantId, Guid companyId, CancellationToken ct = default);
     Task<ElectronicDocument?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     /// <summary>
@@ -73,7 +74,7 @@ public interface IElectronicDocumentRepository
     /// <summary>
     /// "Reintentos pendientes": documentos en un estado que el job automático de reintentos
     /// atiende (ElectronicDocumentRetryPolicy.AutomaticRetryStates), con al menos un reintento
-    /// registrado (RetryCount &gt; 0) y que todavía no agotaron MaxAttempts. Un documento que ya
+    /// registrado (RetryCount &gt; 0) y que todavía no agotaron el máximo efectivo de empresa. Un documento que ya
     /// salió de esos estados (p.ej. Authorized) no cuenta aunque conserve RetryCount histórico.
     /// </summary>
     Task<int> CountPendingRetriesAsync(
@@ -90,22 +91,21 @@ public interface IElectronicDocumentRepository
     );
 
     /// <summary>
-    /// Candidatos a reintento automático (Draft/Failed/Signed/Received), cross-tenant — usado
-    /// exclusivamente por el job Hangfire de reintentos, que corre sin contexto de tenant.
-    /// ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01: devuelve solo identificadores y los datos del
-    /// backoff (sin tracking); cada candidato se procesa después bajo el contexto de su propio
-    /// tenant/empresa, donde el documento se vuelve a leer con los filtros fail-closed.
+    /// Candidatos a reintento automático, cross-tenant — usado exclusivamente por el job Hangfire
+    /// de reintentos, que corre sin contexto de tenant. Filtra antes del lote con la política
+    /// (estados, intentos y backoff) y la preferencia de empresa: todo candidato devuelto es
+    /// elegible. ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01: devuelve solo identificadores (sin
+    /// tracking); cada candidato se procesa después bajo el contexto de su propio tenant/empresa,
+    /// donde el documento se vuelve a leer con los filtros fail-closed.
     /// </summary>
     Task<IReadOnlyList<ElectronicDocumentRetryCandidate>> GetRetryCandidatesAsync(
         int batchSize, CancellationToken ct = default
     );
 }
 
-/// <summary>Identidad de un candidato a reintento automático y los datos de su backoff.</summary>
+/// <summary>Identidad de un candidato a reintento automático ya elegible.</summary>
 public sealed record ElectronicDocumentRetryCandidate(
     Guid TenantId,
     Guid CompanyId,
-    Guid ElectronicDocumentId,
-    int RetryCount,
-    DateTime? LastAttemptUtc
+    Guid ElectronicDocumentId
 );

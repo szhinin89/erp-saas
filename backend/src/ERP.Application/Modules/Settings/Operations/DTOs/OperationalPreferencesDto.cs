@@ -69,7 +69,6 @@ public sealed record ElectronicDocumentsPreferencesDto(
 );
 
 public sealed record NotificationsPreferencesDto(
-    bool SalesInvoiceAuthorizedEnabled,
     bool SendCopyToCompanyEmail,
     string DefaultLanguage
 );

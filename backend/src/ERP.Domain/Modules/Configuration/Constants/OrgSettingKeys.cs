@@ -89,14 +89,6 @@ public static class OrgSettingKeys
         public const string DefaultLanguage = "communications.email.default_language";
 
         /// <summary>
-        /// CONFIG-DYNAMIC-OPERATIONS-01: si se envía el correo de "factura autorizada" al cliente.
-        /// Propietario: Empresa (scope=Company). Ausencia de fila → true (comportamiento actual,
-        /// sin cambios, ver ElectronicDocumentAuthorizedCommunicationHandler).
-        /// </summary>
-        public const string SalesInvoiceAuthorizedEnabled =
-            "communications.sales_invoice_authorized.enabled";
-
-        /// <summary>
         /// CONFIG-DYNAMIC-OPERATIONS-01: si además del cliente, se envía copia del correo de
         /// factura autorizada al correo de la propia empresa. Propietario: Empresa (scope=Company).
         /// </summary>

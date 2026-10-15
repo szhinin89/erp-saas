@@ -73,7 +73,7 @@ public sealed class UpdateOperationalPreferencesCommandValidator
             c => c.ElectronicDocuments is not null,
             () =>
                 RuleFor(c => c.ElectronicDocuments!.MaxRetryAttempts)
-                    .InclusiveBetween(1, 10)
+                    .InclusiveBetween(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Minimum, ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Maximum)
                     .WithMessage("Los reintentos máximos deben estar entre 1 y 10.")
         );
 

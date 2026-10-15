@@ -221,7 +221,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
     public async Task RetryAsync_when_max_attempts_reached_without_resolution_moves_to_dead_letter()
     {
         var document = NewReceivedDocument();
-        for (var i = 0; i < ElectronicDocumentRetryPolicy.MaxAttempts - 1; i++)
+        for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default - 1; i++)
             document.MarkRetryAttempted(UserId);
         var repository = RepositoryReturning(document);
         var issuer = BuildIssuer(repository); // autorización inalcanzable por defecto
@@ -229,7 +229,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        document.RetryCount.Should().Be(ElectronicDocumentRetryPolicy.MaxAttempts);
+        document.RetryCount.Should().Be(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default);
         document.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
         document.PreDeadLetterState.Should().Be(ElectronicDocumentState.Received);
     }
@@ -237,7 +237,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
     [Fact]
     public async Task RetryAsync_on_timeout_stays_received_without_reaching_max_attempts()
     {
-        // Un único TIMEOUT nunca deadlettera — solo agotar ElectronicDocumentRetryPolicy.MaxAttempts lo hace.
+        // Un único TIMEOUT nunca deadlettera — solo agotar ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default lo hace.
         var document = NewReceivedDocument();
         var repository = RepositoryReturning(document);
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
@@ -265,7 +265,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
     public async Task RetryAsync_on_repeated_timeout_moves_to_dead_letter_only_after_max_attempts()
     {
         var document = NewReceivedDocument();
-        for (var i = 0; i < ElectronicDocumentRetryPolicy.MaxAttempts - 1; i++)
+        for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default - 1; i++)
             document.MarkRetryAttempted(UserId);
         var repository = RepositoryReturning(document);
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
@@ -285,9 +285,30 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        document.RetryCount.Should().Be(ElectronicDocumentRetryPolicy.MaxAttempts);
+        document.RetryCount.Should().Be(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default);
         document.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
         document.PreDeadLetterState.Should().Be(ElectronicDocumentState.Received);
+    }
+
+    [Theory]
+    [InlineData("2", 2)]
+    [InlineData("7", 7)]
+    [InlineData("invalid", 5)]
+    public async Task RetryAsync_dead_letter_uses_company_maximum(string raw, int maximum)
+    {
+        var document = NewReceivedDocument();
+        for (var i = 0; i < maximum - 1; i++) document.MarkRetryAttempted(UserId);
+        var repository = RepositoryReturning(document);
+        repository.Setup(r => r.GetRetryMaximumSettingAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(raw);
+        var authorization = new Mock<IElectronicDocumentAuthorizationService>();
+        authorization.Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult { Status = "TIMEOUT" }));
+        var result = await BuildIssuer(repository, authorization: authorization).RetryAsync(TenantId, document.Id, UserId);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        document.RetryCount.Should().Be(maximum);
+        document.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
+        document.LastError.Should().Contain($"{maximum} intentos");
     }
 
     [Fact]

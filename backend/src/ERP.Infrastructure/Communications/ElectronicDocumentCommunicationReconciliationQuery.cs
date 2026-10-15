@@ -1,7 +1,9 @@
 using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Configuration.Constants;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Communications;
@@ -41,7 +43,6 @@ public sealed class ElectronicDocumentCommunicationReconciliationQuery
         IReadOnlyCollection<ElectronicDocumentCommunicationRoute> routes,
         DateTime lastChangeBeforeUtc,
         ElectronicDocumentCommunicationCandidate? after,
-        IReadOnlyCollection<Guid> excludedCompanyIds,
         int limit,
         CancellationToken ct = default
     )
@@ -53,7 +54,10 @@ public sealed class ElectronicDocumentCommunicationReconciliationQuery
         var types = routes.Select(r => (int)r.DocumentType).ToArray();
         var sourceTypes = routes.Select(r => r.SourceType).ToArray();
         var purposes = routes.Select(r => r.Purpose).ToArray();
-        var excluded = excludedCompanyIds.ToArray();
+        // Empresas con email_on_authorization apagado no consumen el lote: misma semántica que el
+        // resolver (DefaultOnCompanySwitch); el servicio conserva su propio guard.
+        var emailOnAuthorizationKey = OrgSettingKeys.ElectronicDocuments.EmailOnAuthorization;
+        var disabledValue = DefaultOnCompanySwitch.DisabledValue;
         var authorized = (int)ElectronicDocumentState.Authorized;
         var afterCreatedAt = after?.CreatedAtUtc ?? DateTime.UnixEpoch;
         var afterId = after?.ElectronicDocumentId ?? Guid.Empty;
@@ -72,9 +76,8 @@ public sealed class ElectronicDocumentCommunicationReconciliationQuery
                       AND NOT EXISTS (SELECT 1 FROM org_settings s
                           WHERE s.tenant_id = ed.tenant_id AND s.company_id = ed.company_id
                             AND s.scope = 'company' AND s.scope_id = ed.company_id
-                            AND s.key = 'electronic_documents.email_on_authorization'
-                            AND lower(trim(s.value)) = 'false')
-                      AND NOT (ed.company_id = ANY({excluded}::uuid[]))
+                            AND s.key = {emailOnAuthorizationKey}
+                            AND lower(trim(s.value)) = {disabledValue})
                       AND NOT EXISTS (
                           SELECT 1 FROM communication_outbox co
                           WHERE co.tenant_id = ed.tenant_id

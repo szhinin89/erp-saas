@@ -229,7 +229,6 @@ function buildOperationalPreferences(
       emailOnAuthorization: true,
     },
     notifications: {
-      salesInvoiceAuthorizedEnabled: true,
       sendCopyToCompanyEmail: false,
       defaultLanguage: "es",
     },

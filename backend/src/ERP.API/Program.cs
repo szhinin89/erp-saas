@@ -6,6 +6,7 @@ using System.Threading.RateLimiting;
 using ERP.API.Authorization;
 using ERP.API.Extensions;
 using ERP.API.Hangfire;
+using ERP.API.Hosting;
 using ERP.API.Health;
 using ERP.API.Middleware;
 using ERP.API.Services;
@@ -38,22 +39,8 @@ if (args.Contains("--worker", StringComparer.Ordinal))
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Asegura que los user-secrets del API ganen a appsettings (también fuera de Development).
-// Se re-agregan env vars y args después para conservar la precedencia estándar:
-// appsettings < user-secrets < environment variables < command line.
-if (!builder.Environment.IsEnvironment("Testing"))
-    builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
-builder.Configuration.AddEnvironmentVariables();
-builder.Configuration.AddCommandLine(args);
-
-// Alias opcional en hosting: DB_CONNECTION_STRING → ConnectionStrings:DefaultConnection
-var dbFromEnv = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
-if (!string.IsNullOrWhiteSpace(dbFromEnv))
-{
-    builder.Configuration.AddInMemoryCollection([
-        new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", dbFromEnv),
-    ]);
-}
+// Fuentes de configuración comunes con el worker (precedencia y alias DB_CONNECTION_STRING).
+builder.Configuration.AddErpConfigurationSources(builder.Environment, args);
 
 // Production guard: falla rápido si sigue el placeholder de appsettings.json en vez
 // de un valor real inyectado por env/secret store. Nunca loggear el valor, solo el
@@ -102,16 +89,6 @@ if (builder.Environment.IsProduction())
         );
     }
 }
-
-builder.Host.UseSerilog(
-    (context, _, configuration) =>
-    {
-        configuration
-            .ReadFrom.Configuration(context.Configuration)
-            .Enrich.FromLogContext()
-            .Enrich.WithProperty("Application", "ERP");
-    }
-);
 
 builder
     .Services.AddControllers(opts =>
@@ -257,61 +234,10 @@ builder.Services.AddRateLimiter(options =>
     );
 });
 
-// IDistributedCache: Redis si Redis:ConnectionString o ConnectionStrings:Redis está definida;
-// en tests y producción sin Redis, memoria (no comparte entre instancias).
-var redisConnection =
-    builder.Configuration["Redis:ConnectionString"]
-    ?? builder.Configuration.GetConnectionString("Redis");
-var redisInstanceName = builder.Configuration["Redis:InstanceName"];
-if (string.IsNullOrWhiteSpace(redisInstanceName))
-    redisInstanceName = "ERP_";
-
-var redisConfigured = !string.IsNullOrWhiteSpace(redisConnection);
-if (redisConfigured)
-{
-    builder.Services.AddStackExchangeRedisCache(options =>
-    {
-        options.Configuration = redisConnection;
-        options.InstanceName = redisInstanceName;
-    });
-
-    // Una sola conexión Redis: la usa RedisCache y la usan los rate limits que necesitan
-    // incremento atómico (DistributedFixedWindowRateLimit), que IDistributedCache no ofrece.
-    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
-        StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnection!)
-    );
-    builder
-        .Services.AddOptions<Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions>()
-        .Configure<IServiceProvider>(
-            (options, sp) =>
-                options.ConnectionMultiplexerFactory = () =>
-                    Task.FromResult(
-                        sp.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>()
-                    )
-        );
-}
-else
-{
-    builder.Services.AddDistributedMemoryCache();
-}
-
-builder.Services.AddDistributedCacheInstrumentation(builder.Configuration, redisConfigured);
-
-builder.Services.AddInfrastructure(builder.Configuration);
-
-// Sin persistencia explícita, el keyring de Data Protection es efímero al contenedor y se
-// pierde en cada recreate — invalidando secretos ya cifrados con él (p.ej. sri_settings.cert_password).
-// Se persiste en el mismo volumen durable que FileStorage (erp-api-files) para sobrevivir recreates.
-var dataProtectionKeysPath = Path.Combine(
-    builder.Configuration["FileStorage:BasePath"]
-        ?? Path.Combine(builder.Environment.ContentRootPath, "files"),
-    "dataprotection-keys"
-);
-builder
-    .Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
-
-builder.Services.AddApplication();
+// Registro común API/worker: logging, caché distribuida, Infrastructure/Application, Data
+// Protection y opciones (ErpHostRegistration).
+builder.Services.AddErpHostCore(builder.Configuration, builder.Environment);
+var redisConnection = ErpHostRegistration.RedisConnection(builder.Configuration);
 builder.Services.AddScoped<AppFeatureDiscoveryService>();
 builder.Services.AddScoped<ERP.API.Diagnostics.CacheHealthProbe>(); // DEV ONLY: /api/dev/redis-health
 
@@ -349,8 +275,8 @@ var healthChecks = builder
 builder.Services.AddHostedService<ErpScopeMarkerStartupValidator>();
 
 var enableRedisHealthCheck = builder.Configuration.GetValue("HealthChecks:EnableRedis", true);
-if (!builder.Environment.IsEnvironment("Testing") && enableRedisHealthCheck && redisConfigured)
-    healthChecks.AddRedis(redisConnection!, name: "redis", tags: ["ready"]);
+if (!builder.Environment.IsEnvironment("Testing") && enableRedisHealthCheck && redisConnection is not null)
+    healthChecks.AddRedis(redisConnection, name: "redis", tags: ["ready"]);
 
 var sriProbeUrl = builder.Configuration["HealthChecks:SriProbeUrl"];
 if (
@@ -370,39 +296,6 @@ if (
 }
 
 builder.Services.AddErpBackgroundProcessing(builder.Configuration);
-
-// Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
-// como plain class (inyectable directamente en Application handlers).
-var kardexSection = builder.Configuration.GetSection(
-    ERP.Application.Common.Config.KardexOptions.Section
-);
-builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSection);
-builder.Services.Configure<ERP.Application.Common.Config.PasswordResetOptions>(
-    builder.Configuration.GetSection(ERP.Application.Common.Config.PasswordResetOptions.SectionName)
-);
-builder.Services.Configure<ERP.Application.Common.Config.AuthOptions>(
-    builder.Configuration.GetSection(ERP.Application.Common.Config.AuthOptions.Section)
-);
-builder.Services.Configure<ERP.Application.Common.Config.SriPollingOptions>(
-    builder.Configuration.GetSection(ERP.Application.Common.Config.SriPollingOptions.Section)
-);
-builder.Services.AddSingleton(sp =>
-    kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
-    ?? new ERP.Application.Common.Config.KardexOptions()
-);
-
-// Política de expiración de UserSession (Fase 9) — mismo patrón que KardexOptions arriba:
-// plain class inyectable directamente en ExpireUserSessionsHandler (Application).
-var sessionExpirationSection = builder.Configuration.GetSection(
-    ERP.Application.Common.Config.SessionExpirationOptions.Section
-);
-builder.Services.Configure<ERP.Application.Common.Config.SessionExpirationOptions>(
-    sessionExpirationSection
-);
-builder.Services.AddSingleton(sp =>
-    sessionExpirationSection.Get<ERP.Application.Common.Config.SessionExpirationOptions>()
-    ?? new ERP.Application.Common.Config.SessionExpirationOptions()
-);
 
 // Authorization: por defecto SOLO permite tokens de sesión ERP (tenant_id válido).
 builder.Services.AddSingleton<IAuthorizationHandler, HasTenantHandler>();

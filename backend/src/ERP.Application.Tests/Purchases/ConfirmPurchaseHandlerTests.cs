@@ -649,7 +649,7 @@ public sealed class ConfirmPurchaseHandlerTests
                 false
             ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-            Notifications: new NotificationsPreferences(true, false, "es")
+            Notifications: new NotificationsPreferences(false, "es")
         );
 
     // ── PURCHASE-DRAFT-RECOVERY F2/B1 ───────────────────────────────────

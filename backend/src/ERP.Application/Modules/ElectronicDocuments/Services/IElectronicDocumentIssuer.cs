@@ -49,7 +49,7 @@ public interface IElectronicDocumentIssuer
     /// resolvió). Si el documento está en DeadLetter, lo reactiva primero
     /// (<see cref="ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument.Reactivate"/>)
     /// y continúa desde el estado restaurado. Incrementa RetryCount antes del intento; si no
-    /// resuelve el documento y se agotó <see cref="ElectronicDocumentRetryPolicy.MaxAttempts"/>,
+    /// resuelve el documento y se agotó el máximo efectivo de la empresa,
     /// lo pasa a DeadLetter. Llamable desde un job sin HttpContext (tenantId/userId explícitos).
     /// </summary>
     Task<Result<ElectronicDocumentDto>> RetryAsync(

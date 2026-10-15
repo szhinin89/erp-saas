@@ -102,7 +102,6 @@ public sealed record ElectronicDocumentsPreferences(
 
 /// <summary>DefaultLanguage reutiliza OrgSettingKeys.Communications.DefaultLanguage (no una key nueva) — ver plan CONFIG-DYNAMIC-OPERATIONS-01.</summary>
 public sealed record NotificationsPreferences(
-    bool SalesInvoiceAuthorizedEnabled,
     bool SendCopyToCompanyEmail,
     string DefaultLanguage
 );

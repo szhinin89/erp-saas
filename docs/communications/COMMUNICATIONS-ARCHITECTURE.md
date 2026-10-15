@@ -52,7 +52,7 @@ empresa**, solo para propósitos Company que lo permitan. No hay templates exclu
 | Domain | `CommunicationOutbox`, `CommunicationOutboxAttachment`, `CommunicationTemplate`, `CommunicationChannel` (Email/WhatsApp/Sms/Internal), `CommunicationStatus` (Pending/Processing/Sent/Failed/Cancelled), `CommunicationPriority`, `CommunicationAttachmentType`, `CommunicationPurposes` (solo `SALES_INVOICE_AUTHORIZED`) | Outbox **genérica** (no es una cola de Factura). Implementa `ICompanyOperationalEntity` (Tenant/Company Guid no nulos, filtro global fail-closed) |
 | Application | `ICommunicationQueue`/`CommunicationQueue` (entrada real), `IEmailSender`, `ICommunicationSettingsResolver`, `ICommunicationOutboxProcessor`, `SalesInvoiceAuthorizedCommunicationHandler`, `QueueEmailCommand` (sin llamadores), `SendTestEmailCommand`, `Get/UpdateCompanyEmailSettings` | Tenant/Company de la cola salen del contexto ambiente |
 | Infrastructure | `CommunicationOutboxProcessor`, `SmtpEmailSender` (System.Net.Mail), `CommunicationSettingsResolver`, repositorios, tablas `communication_outbox`, `communication_outbox_attachments`, `communication_templates` | Sin FK a tenants/companies |
-| API | `CommunicationsEmailSettingsController`, `ProcessCommunicationsJob` (`process-communications`, cada minuto) | Job sin `[DisableConcurrentExecution]` |
+| API | `CommunicationsEmailSettingsController`, `ProcessCommunicationsJob` (`process-communications`, cada minuto) | Sin exclusión del scheduler (hoy: advisory lock de `RecurringJobRunner`, ADR-043) |
 | Frontend | `/settings/communications/email` | No hay monitor |
 | Auth | `ForgotPasswordHandler` → `IPasswordResetLinkSender` → **`LoggingPasswordResetLinkSender`** (única implementación) | Escribe el enlace con el token en el log; no envía correo |
 | Otros | `OutboxMessage`/`OutboxProcessor` (outbox técnica de domain events), `PurchaseCommunication` (nota de seguimiento de Compras, no envía) | Concerns distintos, solo comparten nombre |
@@ -304,8 +304,8 @@ v1:{scope}:{tenantId|-}:{companyId|-}:{purpose}:{channel}:{sourceType}:{sourceId
 
 ## G. Concurrencia: claim atómico y lease
 
-La garantía es de PostgreSQL, no del scheduler. `[DisableConcurrentExecution]` se agrega solo como defensa
-secundaria, para reducir trabajo inútil.
+La garantía es de PostgreSQL, no del scheduler. El advisory lock por ID de `RecurringJobRunner` (ADR-043) evita
+corridas solapadas del mismo job solo como defensa secundaria, para reducir trabajo inútil.
 
 **Claim** (una fila por iteración, en una transacción corta, patrón `FOR UPDATE` ya usado en el repo):
 
@@ -386,7 +386,7 @@ fencing invalida resultados tardíos.
   `lease_until_utc timestamptz`, `failure_category varchar(30)` e índice parcial `ix_communication_outbox_claimable
   (status, scheduled_at_utc) WHERE status IN ('Pending','Processing')`. `EXPLAIN` con 20 000 filas `Sent` + 60
   reclamables: `Index Scan using ix_communication_outbox_claimable` (no recorre las terminales).
-- **Hangfire:** `[DisableConcurrentExecution(10)]` en `ProcessCommunicationsJob`, solo como defensa secundaria.
+- **Hangfire:** advisory lock por ID en `RecurringJobRunner` (ADR-043), solo como defensa secundaria.
 - **Eventos de log:** `CommunicationClaimed`, `CommunicationRecoveredAfterLease`, `CommunicationDeliverySucceeded`,
   `CommunicationDeliveryFailed`, `CommunicationClaimLost` (id, tenant, empresa, propósito, canal, contadores,
   categoría). Nunca cuerpo, destinatario, adjuntos ni credenciales. La traza completa solo se registra para fallos
@@ -737,16 +737,17 @@ Job reconcile-electronic-document-communications (cada 10 min) → mismo servici
   autorizados + outbox, como antes; no hay índice nuevo.
 
   El reconciliador:
-  - resuelve la preferencia una vez por empresa (sin duplicar su SSOT) y excluye en SQL a las desactivadas;
+  - excluye en SQL a las empresas con `email_on_authorization` apagado (clave de `OrgSettingKeys`, semántica de
+    `DefaultOnCompanySwitch`) — única decisión previa al lote; el servicio conserva su guard al encolar;
   - orden global determinístico (`created_at`, `id`), más antiguos primero, páginas de 50 y hasta 200 por corrida;
-  - usa un cursor process-local (singleton): la corrida siguiente continúa tras el último examinado y vuelve al
-    inicio al llegar al final. Así los faltantes que el servicio omite y siguen faltando (origen aún no autorizado
-    o inexistente) nunca bloquean a los posteriores. Si se pierde en un reinicio, solo se reexamina desde el más
-    antiguo;
+  - persiste su checkpoint en PostgreSQL (`background_job_progress`, ADR-043): la corrida siguiente continúa tras
+    el último examinado y vuelve al inicio al llegar al final. Así los faltantes que el servicio omite y siguen
+    faltando (origen aún no autorizado o inexistente) nunca bloquean a los posteriores, también tras reinicios o
+    cambios de nodo;
   - procesa cada documento en su propio scope bajo `JobExecutionContext`.
 
-  No reencola `Failed` ni crea tablas. Job Hangfire `*/10 * * * *` con `[DisableConcurrentExecution]` como
-  defensa secundaria; la exclusión real es la identidad única.
+  No reencola `Failed`. Job Hangfire `*/10 * * * *` bajo el advisory lock de `RecurringJobRunner` como defensa
+  secundaria; la exclusión real es la identidad única.
 - **Logs** (sin PII):
   - 4230–4237 `ElectronicDocumentCommunication{Requested,Skipped,Queued,SourceMissing,Failed,Reconciled,ReconciliationFailed,ReconciliationRun}`;
   - 4212 `CommunicationRecipientMissing`;
@@ -825,7 +826,8 @@ Job reconcile-electronic-document-communications (cada 10 min) → mismo servici
 
 **Settings duplicados:**
 
-- `communications.sales_invoice_authorized.enabled` → REMOVE EVENTUALLY (Fase 5). Diferido en la implementación de la Fase 5 (sigue sin consumidor; su retiro es una migración de settings aparte). La única autoridad es
+- `communications.sales_invoice_authorized.enabled` eliminada en Fase A (2026-10-15):
+  clave/contrato y filas legacy retirados por migración. La única autoridad es
   `electronic_documents.email_on_authorization`.
 - `communications.send_copy_to_company_email` → se **implementa** en la Fase 5 como `RecipientRole = CompanyCopy`. **Diferido** por ZH-EDOC-COMMUNICATIONS-01 (alcance explícito del ticket).
   Dueño: la empresa (configuración); consumidor: el handler genérico de ED.
@@ -911,7 +913,7 @@ Job reconcile-electronic-document-communications (cada 10 min) → mismo servici
 | `CommunicationOutboxAttachment` | **EXTEND** | Referencia lógica; `FileStoragePath` y `BinaryContent` → REMOVE EVENTUALLY |
 | `CommunicationQueue` / `ICommunicationQueue` | **EXTEND** | Scope explícito, identidad central, INSERT ON CONFLICT; se elimina `SaveImmediately` |
 | `CommunicationOutboxProcessor` | **EXTEND** | Claim/lease/fencing, composición, política de reintento, intentos |
-| `ProcessCommunicationsJob` | **EXTEND** | `[DisableConcurrentExecution]` como defensa secundaria; presupuesto por ejecución |
+| `ProcessCommunicationsJob` | **EXTEND** | Advisory lock de `RecurringJobRunner` (ADR-043) como defensa secundaria; presupuesto por ejecución (`BatchSize`) |
 | `IEmailSender` | **KEEP / EXTEND** | Resultado + error tipado |
 | `SmtpEmailSender` | **KEEP / EXTEND** | Timeout, clasificación, `Message-ID`; MailKit solo si hace falta |
 | `CommunicationSettingsResolver` | **EXTEND** | Scope explícito, perfil completo, política de fallback |
@@ -922,7 +924,7 @@ Job reconcile-electronic-document-communications (cada 10 min) → mismo servici
 | `QueueEmailCommand` (+ validator, handler) | **REMOVE EVENTUALLY** | Sin llamadores; las reglas útiles del validador pasan al dominio/queue |
 | `SendTestEmailCommand` | **KEEP** | Excepción legítima documentada |
 | Paquete RazorLight | **REMOVE EVENTUALLY** | Sin uso (Fase 4) |
-| `communications.sales_invoice_authorized.enabled` | **REMOVE EVENTUALLY** | Duplicado de `email_on_authorization` |
+| `communications.sales_invoice_authorized.enabled` | **ELIMINADA (Fase A)** | SSOT: `email_on_authorization`; migración elimina filas |
 | `communications.send_copy_to_company_email` | **EXTEND** | Se implementa como `CompanyCopy` (Fase 5) |
 | `CommunicationChannel` | **KEEP** | Solo Email implementado |
 | `OutboxMessage` / `OutboxProcessor` | **DO NOT TOUCH** | Concern distinto |
@@ -941,7 +943,7 @@ lo indicado.
 |---|---|---|---|---|
 | 0 | ZH-COMMUNICATIONS-ARCHITECTURE-02 | ADR-039 + este documento | No | — |
 | 1 | ZH-AUTH-PASSWORD-RESET-SECURITY-HOTFIX-01 | Quitar el enlace/token del log, respuesta neutral, rate limit por IP + por cuenta | No | — |
-| 2 | ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 | Claim atómico + lease + fencing, recuperación de `Processing`, `[DisableConcurrentExecution]` secundario, `MaxRetries` real (snapshot), clasificación de errores, timeout SMTP, `Message-ID` determinístico | Sí (`claim_token`, `lease_until_utc`) | — |
+| 2 | ZH-COMMUNICATIONS-DELIVERY-HARDENING-01 | Claim atómico + lease + fencing, recuperación de `Processing`, exclusión secundaria del scheduler (hoy advisory lock, ADR-043), `MaxRetries` real (snapshot), clasificación de errores, timeout SMTP, `Message-ID` determinístico | Sí (`claim_token`, `lease_until_utc`) | — |
 | 3 | ZH-COMMUNICATIONS-CONTRACT-01 | `ScopeKind` + invariantes + CHECK, `CommunicationIdentity`, origen (`SourceModule`/`SourceType`/`SourceId`/`SourceDisplay`/`TraceId`), `RecipientRole`, `ExpiresAtUtc`, `Skipped`/`Expired`, `CommunicationDeliveryAttempt`, `LastErrorSafeText`, resolver con scope explícito y perfil completo, INSERT ON CONFLICT, backfill de `RecipientRole = Primary` | Sí | 2 |
 | 4 | ZH-COMMUNICATIONS-TEMPLATES-01 | Catálogo embebido + renderer + override por empresa (sin UI); migrar Factura **byte a byte**; quitar RazorLight | Sí (`base_template_version`, columnas de template en la outbox) | 3 |
 | 5 | ZH-EDOC-COMMUNICATIONS-01 (= ADR-038 fase 6) | **IMPLEMENTED 2026-10-03.** Handler genérico, contributors Sales (Factura, NC) y Retentions, composición en el processor (RIDE fuera de la transacción SRI), referencias de adjuntos + resolver de ED, reconciliación con horizonte, `CompanyCopy`, retirar `SalesInvoiceAuthorizedCommunicationHandler` y el setting duplicado. Implementado con composición al encolar (fase 4); `CompanyCopy` y retiro del setting duplicado diferidos | Sí (columnas de referencia en adjuntos) | 3, 4 |

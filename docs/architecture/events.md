@@ -367,13 +367,11 @@ La tabla `OutboxMessages` crece indefinidamente. El `OutboxProcessor` solo marca
 
 ## Implementación futura: IOutboxRetentionJob
 
-Cuando sea necesario (tabla > ~500k filas o impacto en queries), crear:
-
-```
-ERP.API/Hangfire/
-├── IOutboxRetentionJob.cs   (interface)
-└── OutboxRetentionJob.cs    (implementación)
-```
+Cuando sea necesario (tabla > ~500k filas o impacto en queries), agregarlo como un job más de
+Background Processing ([ADR-043](../decisions/ADR-043-background-processing-ssot.md)): una clase
+`OutboxRetentionJob : IRecurringJob` registrada en el catálogo `HangfireRecurringJobs.All` (ID → tipo)
+y su entrada `Hangfire:Jobs:<id>` (Enabled/Cron/Queue/BatchSize). Sin interfaz propia por job ni
+atributos de concurrencia: `RecurringJobRunner` es la única entrada y aplica el lock por ID.
 
 **No usar `OutboxProcessor` para purga** — son responsabilidades separadas:
 - `OutboxProcessor` → procesar eventos

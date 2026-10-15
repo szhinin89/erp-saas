@@ -219,7 +219,8 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
 
         var electronicDocuments = new ElectronicDocumentsPreferences(
             AutoRetryEnabled: Bool(OrgSettingKeys.ElectronicDocuments.AutoRetryEnabled, true),
-            MaxRetryAttempts: Int(OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts, 3),
+            MaxRetryAttempts: ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Resolve(
+                lookup.GetValueOrDefault(OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts)),
             GenerateRideOnAuthorization: Bool(
                 OrgSettingKeys.ElectronicDocuments.GenerateRideOnAuthorization,
                 true
@@ -231,10 +232,6 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
         );
 
         var notifications = new NotificationsPreferences(
-            SalesInvoiceAuthorizedEnabled: Bool(
-                OrgSettingKeys.Communications.SalesInvoiceAuthorizedEnabled,
-                true
-            ),
             SendCopyToCompanyEmail: Bool(
                 OrgSettingKeys.Communications.SendCopyToCompanyEmail,
                 false

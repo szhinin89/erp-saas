@@ -178,7 +178,7 @@ public sealed class SalesDraftSpecialTaxTests
                             true,
                             true
                         ),
-                        Notifications: new NotificationsPreferences(true, false, "es")
+                        Notifications: new NotificationsPreferences(false, "es")
                     )
                 );
 

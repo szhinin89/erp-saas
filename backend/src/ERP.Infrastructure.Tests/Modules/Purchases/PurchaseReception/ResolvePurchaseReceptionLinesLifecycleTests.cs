@@ -120,7 +120,7 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
             new InventoryPreferences(false, true, false, 0m),
             new PrintingPreferences("AskBeforePrint", 1, "80mm", false, true, true, false),
             new ElectronicDocumentsPreferences(true, 3, true, true),
-            new NotificationsPreferences(true, false, "es")
+            new NotificationsPreferences(false, "es")
         );
         services.AddScoped(_ =>
             Mock.Of<IOperationalPreferencesResolver>(p =>

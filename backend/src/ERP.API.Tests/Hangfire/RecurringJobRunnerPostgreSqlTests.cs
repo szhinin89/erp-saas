@@ -95,8 +95,8 @@ public sealed class RecurringJobRunnerPostgreSqlTests : IAsyncLifetime
         host.Services.GetRequiredService<IOptions<Microsoft.AspNetCore.DataProtection.DataProtectionOptions>>().Value.ApplicationDiscriminator
             .Should().Be(api.Services.GetRequiredService<IOptions<Microsoft.AspNetCore.DataProtection.DataProtectionOptions>>().Value.ApplicationDiscriminator);
         using (var scope = host.Services.CreateScope())
-            foreach (var definition in HangfireRecurringJobs.All.Values)
-                scope.ServiceProvider.GetRequiredService(definition.JobType).Should().BeAssignableTo<IRecurringJob>();
+            foreach (var jobType in HangfireRecurringJobs.All.Values)
+                scope.ServiceProvider.GetRequiredService(jobType).Should().BeAssignableTo<IRecurringJob>();
         await host.StartAsync();
         var storage = host.Services.GetRequiredService<JobStorage>();
         var expected = host.Services.GetRequiredService<IOptions<HangfireOptions>>().Value.Workers;

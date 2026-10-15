@@ -11,11 +11,12 @@ negocio y entrega SMTP se conservan. Sin Dashboard ni UI/AdminCore.
 
 ## Arquitectura única
 
-`HangfireRecurringJobs.All` es el catálogo inmutable ID → tipo concreto. Deriva DI,
-validación, registro y sincronización. Los siete tipos implementan `IRecurringJob`
-y reciben BatchSize explícito. `HangfireOptions` es el único modelo: binding
-estricto, IValidateOptions y ValidateOnStart. Claves desconocidas o faltantes
-abortan incluso con Server OFF. Storage exige cadena PostgreSQL explícita con
+`HangfireRecurringJobs.All` es el catálogo inmutable ID → tipo concreto y solo define
+identidad. Deriva DI, validación, registro y sincronización. Los siete tipos implementan
+`IRecurringJob` y reciben BatchSize explícito. `HangfireOptions` es el único modelo de
+valores operativos (Server, storage, Workers por cola y, por job, Enabled/Cron/Queue/
+BatchSize): binding estricto, IValidateOptions y ValidateOnStart. Claves desconocidas
+o faltantes abortan incluso con Server OFF. Storage exige cadena PostgreSQL explícita con
 Host/Database/Username, sin fallback a la base ERP; puede apuntar a dberpsaas.
 Multiplexing se rechaza porque el lock requiere afinidad de sesión.
 
@@ -35,20 +36,22 @@ explícitos. Ningún servidor consume `default`.
 
 ## Configuración final
 
-| Job | Cola | Cron UTC | BatchSize | MaxConcurrency |
-|---|---|---|---:|---:|
-| process-outbox | core | `* * * * *` | 50 | 1 |
-| process-communications | communications | `* * * * *` | 50 | 1 |
-| reconcile-electronic-document-communications | communications | `*/10 * * * *` | 200 | 1 |
-| electronic-document-retry | sri | `* * * * *` | 50 | 1 |
-| sales-electronic-document-recovery | sri | `* * * * *` | 50 | 1 |
-| retention-electronic-recovery | sri | `* * * * *` | 50 | 1 |
-| expire-user-sessions | maintenance | `0 4 * * *` | 50 | 1 |
+| Job | Cola | Cron UTC | BatchSize |
+|---|---|---|---:|
+| process-outbox | core | `* * * * *` | 50 |
+| process-communications | communications | `* * * * *` | 50 |
+| reconcile-electronic-document-communications | communications | `*/10 * * * *` | 200 |
+| electronic-document-retry | sri | `* * * * *` | 50 |
+| sales-electronic-document-recovery | sri | `* * * * *` | 50 |
+| retention-electronic-recovery | sri | `* * * * *` | 50 |
+| expire-user-sessions | maintenance | `0 4 * * *` | 50 |
 
 Todos declaran Enabled explícito. Cron admite cinco campos numéricos con listas,
-rangos y pasos. Workers: core=1, communications=2, sri=2, maintenance=1. Son valores
-iniciales explícitos para afinar con métricas. MaxConcurrency=1 es obligatorio:
-varios workers permiten correr distintos jobs de la cola, sin solapar el mismo ID.
+rangos y pasos. La cola de cada job es configuración (minúsculas, nunca `default`);
+`Workers` declara exactamente las colas usadas por los jobs, con 1..256 workers cada
+una: core=1, communications=2, sri=2, maintenance=1 como valores iniciales para afinar
+con métricas. Concurrencia máxima 1 por ID es invariante del runner (advisory lock),
+no una opción: varios workers corren distintos jobs de la cola, nunca el mismo ID.
 
 API sin workers: `Hangfire:Server:Enabled=false` (versionado). Host combinado:
 Server.Enabled=true. Worker separado, desde el directorio publicado de API:
@@ -57,13 +60,16 @@ Server.Enabled=true. Worker separado, desde el directorio publicado de API:
 dotnet ERP.API.dll --worker --Hangfire:Server:Enabled true
 ```
 
-El worker usa Generic Host sin Kestrel. Comparte Application/Infrastructure y el
-registro único de Background Processing. El despliegue aplica migraciones antes
+El worker usa Generic Host sin Kestrel. API y worker componen la infraestructura común
+solo con `ErpHostRegistration` (fuentes de configuración, Serilog, caché Redis/memoria,
+Infrastructure/Application, Data Protection y opciones) más el registro único de
+Background Processing; lo exclusivo de HTTP queda en `Program.cs`. El despliegue aplica migraciones antes
 de arrancar workers separados; API conserva su migración previa al bootstrap.
 Ambos requieren misma base ERP, storage Hangfire y volumen FileStorage/keyring.
-Dashboard.Enabled=false es obligatorio. Se eliminan las claves antiguas del
-entorno, incluidos user-secrets: Enabled → Server:Enabled y ConnectionString →
-StorageConnectionString, preservando valores. No se leen como aliases.
+No hay Dashboard de Hangfire. Se eliminan las claves antiguas del entorno, incluidos
+user-secrets: Enabled → Server:Enabled y ConnectionString → StorageConnectionString,
+preservando valores; `Dashboard:*` y `Jobs:*:MaxConcurrency` se eliminan. Ninguna se
+lee como alias: el binding estricto las rechaza al arrancar.
 
 ## Lotes, fairness y ownership
 
@@ -84,8 +90,13 @@ revisitan en otra vuelta. Se elimina el cursor singleton en memoria. El anti-joi
 conserva el CTE materializado; LIMIT acota filas cargadas, COUNT/MIN quedan en SQL.
 
 Las preferencias auto_retry_enabled y email_on_authorization se correlacionan por
-tenant/company/scope en SQL antes del límite. Los defaults operativos vigentes de
-valores faltantes/corruptos se conservan. Communications resuelve el perfil de cada
+tenant/company/scope en SQL antes del límite, con la clave de `OrgSettingKeys` y la
+semántica de `OperationalPreferencesResolver` (`DefaultOnCompanySwitch`: solo un valor
+que se lee como `false` apaga; faltante/corrupto conserva el default activo). Es la
+única decisión previa al lote: el job de reintentos y el reconciliador no vuelven a
+resolverlas; el servicio de comunicación conserva su guard al encolar. La elegibilidad
+de reintento (estados, m?ximo efectivo por empresa y backoff `min(1·2^n, 16)` minutos) existe una sola
+vez como predicado de `ElectronicDocumentRetryPolicy`, traducido a SQL. Communications resuelve el perfil de cada
 fila y conserva claims, leases, fencing y política de reintento. No hay preferencias
 por empresa nuevas para procesos técnicos.
 
@@ -114,3 +125,18 @@ workers antiguos. No hay rutas paralelas ni compatibilidad. Validación focal co
 PostgreSQL 16 real para locks entre instancias, migraciones, scopes, fairness,
 ownership y sincronización. Resultados en STATUS.md. Sin ejecutar jobs del piloto,
 suites completas, commit ni push.
+
+## Fase A - máximo por empresa y eliminación legacy
+
+`electronic_documents.max_retry_attempts` gobierna candidatos y DeadLetter.
+`ElectronicDocumentRetryMaximum` centraliza default 5, rango 1..10 y la expresión
+única de resolución (faltante/corrupto: default), compilada para el resolver y
+traducida a SQL para candidatos/contador. `ElectronicDocumentRetryPolicy` conserva
+estados/backoff y compone la elegibilidad; el filtro efectivo precede al BatchSize.
+El job no interpreta configuración. El issuer lee el mismo setting scoped y aplica
+la misma resolución para DeadLetter. Se elimina el límite fijo `MaxAttempts`.
+
+`communications.sales_invoice_authorized.enabled` duplicaba la decisión vigente
+`electronic_documents.email_on_authorization`: se eliminan clave, definición y
+contrato legacy, y una migración elimina sus filas (también la variante underscore).
+No hay alias ni segunda ruta; Communications conserva su guard y perfil SMTP.

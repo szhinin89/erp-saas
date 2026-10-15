@@ -71,7 +71,6 @@ public sealed class GetOperationalPreferencesQueryHandler
                     p.ElectronicDocuments.EmailOnAuthorization
                 ),
                 Notifications: new NotificationsPreferencesDto(
-                    p.Notifications.SalesInvoiceAuthorizedEnabled,
                     p.Notifications.SendCopyToCompanyEmail,
                     p.Notifications.DefaultLanguage
                 ),

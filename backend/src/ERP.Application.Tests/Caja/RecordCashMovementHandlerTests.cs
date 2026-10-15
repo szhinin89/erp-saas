@@ -64,7 +64,7 @@ public sealed class RecordCashMovementHandlerTests
                 false
             ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-            Notifications: new NotificationsPreferences(true, false, "es")
+            Notifications: new NotificationsPreferences(false, "es")
         );
 
     private static CashMovementReason ValidReason(

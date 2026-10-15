@@ -503,7 +503,7 @@ public sealed class ElectronicDocumentAuthorizedCommunicationHandlerTests
                             true,
                             emailOnAuthorization
                         ),
-                        Notifications: new NotificationsPreferences(true, false, "es")
+                        Notifications: new NotificationsPreferences(false, "es")
                     )
                 );
 

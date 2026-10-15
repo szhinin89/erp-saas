@@ -464,7 +464,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 false
             ),
             ElectronicDocuments: new ElectronicDocumentsPreferences(true, 3, true, true),
-            Notifications: new NotificationsPreferences(true, false, "es")
+            Notifications: new NotificationsPreferences(false, "es")
         );
 
     /// <summary>Compra en borrador: 1 × 100 + IVA 15% = 115 (base retenible IVA 15, Renta 100).</summary>
