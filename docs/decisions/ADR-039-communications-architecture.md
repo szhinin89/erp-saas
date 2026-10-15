@@ -1,5 +1,10 @@
 # ADR-039 — Arquitectura de Communications
 
+> Background orchestration (including Draft recovery ownership, recurring guards and
+> the reconciler cursor) is superseded by [ADR-043](./ADR-043-background-processing-ssot.md).
+> Fiscal and communication business rules remain unchanged.
+
+
 **Status:** Accepted · **Fecha:** 2026-10-02 · **Tickets:** ZH-COMMUNICATIONS-ARCHITECTURE-01 (auditoría),
 ZH-COMMUNICATIONS-ARCHITECTURE-02 (cierre)
 **Evidencia y diseño detallado:** [`docs/communications/COMMUNICATIONS-ARCHITECTURE.md`](../communications/COMMUNICATIONS-ARCHITECTURE.md)

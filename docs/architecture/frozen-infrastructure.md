@@ -310,7 +310,7 @@ A partir de este cierre, cualquier cambio al núcleo de `ElectronicDocuments` de
 | `IElectronicDocumentIssuer` (`RegisterAsync`/`RetryAsync`) | `ERP.Application/Modules/ElectronicDocuments/Services/` | FROZEN |
 | Pipeline (`ElectronicDocumentIssuer.RunPipelineAsync`) | `ERP.Application/Modules/ElectronicDocuments/Services/` | FROZEN |
 | `XadesBesSigner` / `SriSoapClient` / `SriReceptionClient` / `SriAuthorizationClient` | `ERP.Infrastructure/Services/Sri/` | FROZEN |
-| `ElectronicDocumentRetryPolicy` (5 intentos, backoff 1-16 min) + `ElectronicDocumentRetryJob` | `ERP.Application`/`ERP.API/Hangfire/` | FROZEN |
+| `ElectronicDocumentRetryPolicy` (5 intentos, backoff 1-16 min) | `ERP.Application` | FROZEN; orchestration replaced by ADR-043 |
 | `EmbeddedXmlSchemaProvider` + `manifest.json` + XSD oficiales | `ERP.Infrastructure/ElectronicDocuments/Resources/SRI/` | FROZEN |
 | Controladores `ElectronicDocumentsController` / `ElectronicInvoicingController` | `ERP.API/Controllers/` | FROZEN |
 
@@ -355,3 +355,5 @@ Decisión arquitectónica congelada 2026-07-07. ADR: [`docs/decisions/ADR-022-au
 Infraestructura transversal del ERP. Reemplaza el patrón anterior de escribir auditoría de negocio a mano contra la tabla genérica `UserActivity` (que queda reservada exclusivamente para el feed liviano "mi actividad reciente", nunca para auditoría de negocio con valores tipados antes/después).
 
 Componentes congelados, reglas 1-3, prohibiciones, `AuditActor` como snapshot histórico y deuda técnica conocida: ver [audit-infrastructure.md](./audit-infrastructure.md) (cuerpo normativo único — no duplicado aquí).
+
+Background processing orchestration is governed by [ADR-043](../decisions/ADR-043-background-processing-ssot.md), replacing the former recurring jobs infrastructure. Fiscal pipeline and retry business policy remain FROZEN.

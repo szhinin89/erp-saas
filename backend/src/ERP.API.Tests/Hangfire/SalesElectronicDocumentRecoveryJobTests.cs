@@ -29,7 +29,7 @@ public sealed class SalesElectronicDocumentRecoveryJobTests
         var previous = (JobTenantContext.Current, JobCompanyContext.Current);
         var job = new SalesElectronicDocumentRecoveryJob(provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<SalesElectronicDocumentRecoveryJob>.Instance);
-        await job.ExecuteAsync();
+        await job.ExecuteAsync(50);
         calls.Should().HaveCount(candidates.Length);
         calls.Select(c => c.ScopeId).Distinct().Should().HaveCount(candidates.Length);
         calls.Select(c => (c.TenantId, c.CompanyId, c.BranchId))
@@ -44,7 +44,7 @@ public sealed class SalesElectronicDocumentRecoveryJobTests
     {
         private readonly Guid _scopeId = Guid.NewGuid();
 
-        public Task<IReadOnlyList<SalesElectronicRecoveryCandidate>> GetCandidatesAsync(CancellationToken ct) =>
+        public Task<IReadOnlyList<SalesElectronicRecoveryCandidate>> GetCandidatesAsync(int batchSize, CancellationToken ct) =>
             Task.FromResult(candidates);
 
         public Task RecoverAsync(SalesElectronicRecoveryCandidate candidate, CancellationToken ct)

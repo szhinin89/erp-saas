@@ -555,6 +555,17 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
             new FixedCurrentCompany(Guid.Empty)
         );
 
+    [Fact]
+    public async Task Retention_Draft_has_only_electronic_document_retry_owner()
+    {
+        var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
+        var documentId = await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Draft);
+        (await RecoveryCandidatesAsync()).Should().NotContain(c => c.RetentionId == retentionId);
+        await using var db = CreateJobContext();
+        (await new ElectronicDocumentRepository(db, new CompanyClock(db)).GetRetryCandidatesAsync(1))
+            .Should().ContainSingle(c => c.ElectronicDocumentId == documentId);
+    }
+
     private async Task<
         IReadOnlyList<ERP.Domain.Modules.Retentions.Interfaces.RetentionElectronicStartCandidate>
     > RecoveryCandidatesAsync()
@@ -640,7 +651,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var candidates = await new ElectronicDocumentRepository(
             db,
             new CompanyClock(db)
-        ).GetRetryCandidatesAsync();
+        ).GetRetryCandidatesAsync(50);
 
         var candidate = candidates
             .Should()

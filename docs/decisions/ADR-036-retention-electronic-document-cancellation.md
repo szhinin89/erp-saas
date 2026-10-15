@@ -1,5 +1,10 @@
 # ADR-036 — Documento electrónico de una retención cuyo origen se anula
 
+> Background orchestration (including Draft recovery ownership, recurring guards and
+> the reconciler cursor) is superseded by [ADR-043](./ADR-043-background-processing-ssot.md).
+> Fiscal and communication business rules remain unchanged.
+
+
 **Status:** Accepted (política) — decisiones D-1…D-11 aprobadas el 2026-10-01 · **fases 1–2 y transmisión inmediata implementadas en ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (§23)** · **anulación oficial SRI (flujo asistido) implementada en ZH-RETENTION-SRI-ANNULMENT-01 (§24)** · quedan decisiones abiertas (§22) · **Fecha:** 2026-10-01 · **Ticket:** ZH-RETENTION-ELECTRONIC-CANCELLATION-ADR-01
 **Relacionado:** ADR-023 (ElectronicDocuments v1.0 CLOSED; este ADR **la extiende de forma controlada**), ADR-024 (diagnóstico SRI), ADR-025 (RIDE), ADR-034 (contrato temporal), `RETENTIONS-MODULE-DESIGN-01`, `RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B`, `docs/architecture/backend.md` § Retenciones (ZH-RETENTION-CANCELLATION-LIFECYCLE-01).
 

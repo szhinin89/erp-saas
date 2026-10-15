@@ -97,7 +97,7 @@ public interface IElectronicDocumentRepository
     /// tenant/empresa, donde el documento se vuelve a leer con los filtros fail-closed.
     /// </summary>
     Task<IReadOnlyList<ElectronicDocumentRetryCandidate>> GetRetryCandidatesAsync(
-        CancellationToken ct = default
+        int batchSize, CancellationToken ct = default
     );
 }
 

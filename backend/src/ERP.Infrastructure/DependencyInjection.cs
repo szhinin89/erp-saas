@@ -225,10 +225,6 @@ public static class DependencyInjection
         services.AddScoped<ERP.Application.Modules.Sales.Services.ISalesElectronicDocumentRecovery,
             ERP.Infrastructure.Persistence.Repositories.Sales.SalesElectronicDocumentRecovery>();
         services.AddScoped<
-            ERP.Application.MasterData.Reconciliation.IMasterDataReconciliationService,
-            MasterData.Reconciliation.BusinessPartnerReconciliationService
-        >();
-        services.AddScoped<
             ERP.Application.Common.Security.IOperatorCompanyAccessPolicy,
             OperatorCompanyAccessPolicy
         >();
@@ -1105,8 +1101,6 @@ public static class DependencyInjection
             ERP.Application.Modules.Communications.ElectronicDocuments.IElectronicDocumentCommunicationReconciliationQuery,
             ElectronicDocumentCommunicationReconciliationQuery
         >();
-        // Posición de la reconciliación entre corridas (process-local; perderla solo reinicia desde el más antiguo).
-        services.AddSingleton<ElectronicDocumentCommunicationReconciliationCursor>();
         services.AddScoped<
             IElectronicDocumentCommunicationReconciler,
             ElectronicDocumentCommunicationReconciler

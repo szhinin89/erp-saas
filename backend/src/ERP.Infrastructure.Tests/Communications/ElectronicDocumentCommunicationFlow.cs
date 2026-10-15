@@ -121,12 +121,17 @@ internal sealed class ElectronicDocumentCommunicationFlow
     public Mock<IOperationalPreferencesResolver> Preferences { get; } = new();
     public Mock<IRideBackgroundDocumentService> RideSender { get; } = new();
 
-    /// <summary>Cursor de la reconciliación compartido por todas las corridas de este flujo (= un proceso).</summary>
-    public ElectronicDocumentCommunicationReconciliationCursor ReconciliationCursor { get; } =
-        new();
 
-    public void DisableEmailOnAuthorization(Guid companyId) =>
+    public void DisableEmailOnAuthorization(Guid companyId)
+    {
         _emailOnAuthorization[companyId] = false;
+        using var db = _db.Context();
+        var tenantId = db.Companies.IgnoreQueryFilters().Where(c => c.Id == companyId).Select(c => c.TenantId).Single();
+        db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(tenantId, companyId,
+            ERP.Domain.Configuration.Enums.OrgScope.Company, companyId,
+            "electronic_documents.email_on_authorization", "false", ERP.Domain.Configuration.Enums.SettingDataType.Bool, Guid.Empty));
+        db.SaveChanges();
+    }
 
     // ── negocio simulado ──────────────────────────────────────────────────────────────────
 
@@ -435,13 +440,12 @@ internal sealed class ElectronicDocumentCommunicationFlow
             new FixedSettings(),
             TimeProvider.System,
             NullLogger<CommunicationOutboxProcessor>.Instance
-        ).ProcessPendingAsync();
+        ).ProcessPendingAsync(50);
     }
 
     /// <summary>Reconciliador real con DI real por scope (un ErpDbContext por scope, como en producción).</summary>
     public ElectronicDocumentCommunicationReconciler Reconciler(
-        TimeSpan? clockOffset = null,
-        int maxPerRun = ElectronicDocumentCommunicationReconciler.MaxPerRun
+        TimeSpan? clockOffset = null
     )
     {
         var services = new ServiceCollection();
@@ -464,10 +468,8 @@ internal sealed class ElectronicDocumentCommunicationFlow
         var provider = services.BuildServiceProvider();
         return new ElectronicDocumentCommunicationReconciler(
             provider.GetRequiredService<IServiceScopeFactory>(),
-            ReconciliationCursor,
             new ShiftedTimeProvider(clockOffset ?? TimeSpan.FromMinutes(10)),
-            NullLogger<ElectronicDocumentCommunicationReconciler>.Instance,
-            maxPerRun
+            NullLogger<ElectronicDocumentCommunicationReconciler>.Instance
         );
     }
 

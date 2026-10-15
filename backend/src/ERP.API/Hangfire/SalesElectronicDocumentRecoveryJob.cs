@@ -1,24 +1,20 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Infrastructure.Services;
 
 namespace ERP.API.Hangfire;
 
-public interface ISalesElectronicDocumentRecoveryJob
-{
-    Task ExecuteAsync(CancellationToken cancellationToken = default);
-}
-
 public sealed class SalesElectronicDocumentRecoveryJob(
     IServiceScopeFactory scopeFactory, ILogger<SalesElectronicDocumentRecoveryJob> logger)
-    : ISalesElectronicDocumentRecoveryJob
+    : IRecurringJob
 {
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(int batchSize, CancellationToken cancellationToken = default)
     {
         IReadOnlyList<SalesElectronicRecoveryCandidate> candidates;
         await using (var discovery = scopeFactory.CreateAsyncScope())
             candidates = await discovery.ServiceProvider
                 .GetRequiredService<ISalesElectronicDocumentRecovery>()
-                .GetCandidatesAsync(cancellationToken);
+                .GetCandidatesAsync(batchSize, cancellationToken);
 
         foreach (var candidate in candidates)
         {
@@ -29,9 +25,11 @@ public sealed class SalesElectronicDocumentRecoveryJob(
             {
                 await scope.ServiceProvider.GetRequiredService<ISalesElectronicDocumentRecovery>()
                     .RecoverAsync(candidate, cancellationToken);
+                JobMetrics.RecordProcessed();
             }
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
+                JobMetrics.RecordFailed();
                 logger.LogError(ex, "Sales electronic recovery failed for {InvoiceId} ({TenantId}/{CompanyId}/{BranchId})",
                     candidate.InvoiceId, candidate.TenantId, candidate.CompanyId, candidate.BranchId);
                 // Absence of the document remains durable work for the next execution.

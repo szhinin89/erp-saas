@@ -1,3 +1,4 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
@@ -74,19 +75,13 @@ public sealed class RetentionAnnulmentRequestRepository : IRetentionAnnulmentReq
         IReadOnlyList<(Guid TenantId, Guid CompanyId, Guid RequestId)>
     > GetPendingFinalizationAsync(int take, CancellationToken ct = default)
     {
-        var rows = await _db
+        var query = _db
             .RetentionAnnulmentRequests.AsPlatformQuery()
             .AsNoTracking()
-            .Where(x => x.Status == RetentionAnnulmentStatus.Accepted && x.FinalizedAtUtc == null)
-            .OrderBy(x => x.ResolvedAtUtc)
-            .Take(take)
-            .Select(x => new
-            {
-                x.TenantId,
-                x.CompanyId,
-                x.Id,
-            })
-            .ToListAsync(ct);
+            .Where(x => x.Status == RetentionAnnulmentStatus.Accepted && x.FinalizedAtUtc == null);
+        var rows = await BackgroundJobProgress.ReadBatchAsync(_db, "retention-finalization", query,
+            x => new { x.TenantId, x.CompanyId, x.Id }, x => x.Id,
+            x => x.ResolvedAtUtc, take, ct);
         return rows.Select(row => (row.TenantId, row.CompanyId, row.Id)).ToList();
     }
 
@@ -98,22 +93,16 @@ public sealed class RetentionAnnulmentRequestRepository : IRetentionAnnulmentReq
         CancellationToken ct = default
     )
     {
-        var rows = await _db
+        var query = _db
             .RetentionAnnulmentRequests.AsPlatformQuery()
             .AsNoTracking()
             .Where(x =>
                 x.Status == RetentionAnnulmentStatus.PendingSriResolution
                 && (x.LastSriCheckAtUtc == null || x.LastSriCheckAtUtc < checkedBeforeUtc)
-            )
-            .OrderBy(x => x.LastSriCheckAtUtc ?? x.SubmittedAtUtc)
-            .Take(take)
-            .Select(x => new
-            {
-                x.TenantId,
-                x.CompanyId,
-                x.Id,
-            })
-            .ToListAsync(ct);
+            );
+        var rows = await BackgroundJobProgress.ReadBatchAsync(_db, "retention-verification", query,
+            x => new { x.TenantId, x.CompanyId, x.Id }, x => x.Id,
+            x => x.SubmittedAtUtc, take, ct);
         return rows.Select(row => (row.TenantId, row.CompanyId, row.Id)).ToList();
     }
 }

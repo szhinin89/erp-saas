@@ -1,3 +1,4 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -5,7 +6,6 @@ namespace ERP.Infrastructure.Persistence.Outbox;
 
 internal sealed partial class OutboxProcessor : IOutboxProcessor
 {
-    private const int BatchSize = 50;
 
     private readonly ErpDbContext _db;
     private readonly ILogger<OutboxProcessor> _logger;
@@ -16,12 +16,16 @@ internal sealed partial class OutboxProcessor : IOutboxProcessor
         _logger = logger;
     }
 
-    public async Task ProcessPendingAsync(CancellationToken cancellationToken = default)
+    public async Task ProcessPendingAsync(int batchSize, CancellationToken cancellationToken = default)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
+        var backlog = _db.OutboxMessages.Where(m => m.ProcessedOnUtc == null);
+        JobMetrics.RecordBacklog(await backlog.LongCountAsync(cancellationToken),
+            await backlog.MinAsync(m => (DateTime?)m.OccurredOnUtc, cancellationToken));
         var pending = await _db
             .OutboxMessages.Where(m => m.ProcessedOnUtc == null)
             .OrderBy(m => m.OccurredOnUtc)
-            .Take(BatchSize)
+            .Take(batchSize)
             .ToListAsync(cancellationToken);
 
         if (pending.Count == 0)
@@ -54,11 +58,13 @@ internal sealed partial class OutboxProcessor : IOutboxProcessor
             catch (Exception ex)
             {
                 message.MarkFailed(ex.Message);
+                JobMetrics.RecordFailed();
                 LogMessageFailed(ex, message.EventName, message.Id);
             }
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+        JobMetrics.RecordProcessed(pending.Count(m => m.ProcessedOnUtc != null));
 
         // TODO (Phase 4 — Retention): add a separate purge job that deletes or archives
         // OutboxMessages where ProcessedOnUtc < UtcNow - RetentionWindow.

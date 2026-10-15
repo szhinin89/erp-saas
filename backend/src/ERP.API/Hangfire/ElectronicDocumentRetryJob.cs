@@ -1,15 +1,10 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Infrastructure.Services;
-using Hangfire;
 
 namespace ERP.API.Hangfire;
-
-public interface IElectronicDocumentRetryJob
-{
-    Task ExecuteAsync(CancellationToken cancellationToken = default);
-}
 
 /// <summary>
 /// Hangfire recurring job que reintenta documentos electrónicos varados en Signed/Received,
@@ -19,7 +14,7 @@ public interface IElectronicDocumentRetryJob
 /// y devuelve solo identificadores; cada documento se procesa en su propio scope bajo
 /// <see cref="JobExecutionContext"/> de su tenant/empresa, sin HttpContext.
 /// </summary>
-public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetryJob
+public sealed partial class ElectronicDocumentRetryJob : IRecurringJob
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ElectronicDocumentRetryJob> _logger;
@@ -33,32 +28,18 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
         _logger = logger;
     }
 
-    // A1 (auditoría de robustez): el cron dispara cada minuto ("* * * * *" en Program.cs). Si una
-    // corrida tarda más de 60s (varios tenants, SOAP lento al SRI), sin este guard Hangfire
-    // encolaría una segunda ejecución que podría tomar el mismo lote de candidatos — el xmin ya
-    // evita el doble envío real al SRI, pero produce logs de error indistinguibles de un bug real
-    // en cada solape. timeoutInSeconds corto: si otra ejecución ya tiene el lock, esta invocación
-    // desiste rápido en vez de bloquear un worker de Hangfire — el próximo tick (un minuto
-    // después) vuelve a intentar de todas formas.
-    [DisableConcurrentExecution(timeoutInSeconds: 10)]
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(int batchSize, CancellationToken cancellationToken = default)
     {
         // ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01 (ADR-036 §23.3): Hangfire no tiene HttpContext ni
         // contexto de tenant, así que la consulta de candidatos es cross-tenant y devuelve solo
         // identificadores. Antes se leían las entidades con el filtro fail-closed activo y sin
         // contexto: 0 filas, el reintento automático no procesaba nada.
         IReadOnlyList<ElectronicDocumentRetryCandidate> candidates;
-        try
         {
             await using var queryScope = _scopeFactory.CreateAsyncScope();
             candidates = await queryScope
                 .ServiceProvider.GetRequiredService<IElectronicDocumentRepository>()
-                .GetRetryCandidatesAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            LogCandidateQueryFailed(ex);
-            return;
+                .GetRetryCandidatesAsync(batchSize, cancellationToken);
         }
 
         // CONFIG-DYNAMIC-OPERATIONS-02 (electronic_documents.auto_retry_enabled): cacheada por
@@ -110,20 +91,19 @@ public sealed partial class ElectronicDocumentRetryJob : IElectronicDocumentRetr
                         cancellationToken
                     );
                 if (!result.IsSuccess)
+                {
+                    JobMetrics.RecordFailed();
                     LogRetryFailed(candidate.ElectronicDocumentId, result.Error);
+                }
+                else JobMetrics.RecordProcessed();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
+                JobMetrics.RecordFailed();
                 LogRetryThrew(candidate.ElectronicDocumentId, ex);
             }
         }
     }
-
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "ElectronicDocumentRetryJob: no se pudo obtener la lista de candidatos a reintento"
-    )]
-    private partial void LogCandidateQueryFailed(Exception ex);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

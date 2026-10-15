@@ -23,7 +23,6 @@ public sealed class IgnoreQueryFiltersAuditTests
     )
     {
         "src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
-        "src/ERP.Infrastructure/MasterData/Reconciliation/BusinessPartnerReconciliationService.cs", // platform-level reconciliation
         "src/ERP.Infrastructure/Seeding/Steps/OrganizationBootstrapStep.cs", // bootstrap needs cross-tenant visibility
         "src/ERP.Infrastructure/Seeding/Steps/ElectronicDocumentsBootstrapStep.cs", // idem
         "src/ERP.Infrastructure/Seeding/Steps/InventoryBootstrapStep.cs", // idem

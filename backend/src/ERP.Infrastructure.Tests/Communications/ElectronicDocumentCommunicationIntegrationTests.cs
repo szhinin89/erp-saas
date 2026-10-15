@@ -39,7 +39,7 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     {
         await using var ctx = _db.Context();
         await ctx.Database.ExecuteSqlRawAsync(
-            "DELETE FROM communication_delivery_attempts; DELETE FROM communication_outbox_attachments; DELETE FROM communication_outbox; DELETE FROM communication_templates; DELETE FROM electronic_documents;"
+            "DELETE FROM communication_delivery_attempts; DELETE FROM communication_outbox_attachments; DELETE FROM communication_outbox; DELETE FROM communication_templates; DELETE FROM electronic_documents; DELETE FROM background_job_progress; DELETE FROM org_settings WHERE key = 'electronic_documents.email_on_authorization';"
         );
     }
 
@@ -179,7 +179,7 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         sender.Sent.Should().BeEmpty();
 
         await _flow.RepublishAsync(document);
-        (await _flow.Reconciler().ReconcileAsync())
+        (await _flow.Reconciler().ReconcileAsync(200))
             .Examined.Should()
             .Be(0, "una fila Failed es evidencia: no se reencola");
         (await RowsAsync()).Should().ContainSingle();
@@ -260,8 +260,8 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         );
         (await RowsAsync()).Should().BeEmpty("simula que el evento se perdió");
 
-        var first = await _flow.Reconciler().ReconcileAsync();
-        var second = await _flow.Reconciler().ReconcileAsync();
+        var first = await _flow.Reconciler().ReconcileAsync(200);
+        var second = await _flow.Reconciler().ReconcileAsync(200);
 
         first
             .Should()
@@ -301,7 +301,7 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
 
         var runs = Enumerable
             .Range(0, 6)
-            .Select(_ => Task.Run(() => _flow.Reconciler().ReconcileAsync()))
+            .Select(_ => Task.Run(() => _flow.Reconciler().ReconcileAsync(200)))
             .Concat<Task>(
                 documents.SelectMany(d =>
                     Enumerable.Range(0, 3).Select(_ => Task.Run(() => _flow.RepublishAsync(d)))
@@ -327,12 +327,12 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
     {
         await AuthorizeAsync(ElectronicDocumentType.Invoice, "cliente@example.com", publish: false);
 
-        (await _flow.Reconciler(clockOffset: TimeSpan.Zero).ReconcileAsync())
+        (await _flow.Reconciler(clockOffset: TimeSpan.Zero).ReconcileAsync(200))
             .Examined.Should()
             .Be(0, "recién autorizado: el evento aún puede estar en curso");
 
         _flow.DisableEmailOnAuthorization(_db.CompanyA);
-        (await _flow.Reconciler().ReconcileAsync()).Examined.Should().Be(0);
+        (await _flow.Reconciler().ReconcileAsync(200)).Examined.Should().Be(0);
         (await RowsAsync()).Should().BeEmpty();
     }
 
@@ -351,7 +351,7 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         (await RowsAsync()).Should().BeEmpty();
 
         // 4-5. El reconciliador crea exactamente una intención.
-        var first = await _flow.Reconciler().ReconcileAsync();
+        var first = await _flow.Reconciler().ReconcileAsync(200);
 
         first.Queued.Should().Be(1);
         var row = (await RowsAsync()).Should().ContainSingle().Subject;
@@ -360,7 +360,7 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         row.Status.Should().Be(CommunicationStatus.Pending);
 
         // Otra vez: sigue existiendo una sola.
-        var second = await _flow.Reconciler().ReconcileAsync();
+        var second = await _flow.Reconciler().ReconcileAsync(200);
 
         second.Examined.Should().Be(0, "ya tiene comunicación");
         (await RowsAsync()).Should().ContainSingle();
@@ -382,10 +382,10 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         await _flow.BackdateAsync(reciente, TimeSpan.FromDays(10));
         await _flow.BackdateAsync(antiguo, TimeSpan.FromDays(400));
 
-        await _flow.Reconciler(maxPerRun: 1).ReconcileAsync();
+        await _flow.Reconciler().ReconcileAsync(1);
         (await RowsAsync()).Single().SourceId.Should().Be(antiguo.SourceEntityId);
 
-        await _flow.Reconciler(maxPerRun: 1).ReconcileAsync();
+        await _flow.Reconciler().ReconcileAsync(1);
         (await RowsAsync())
             .Select(r => r.SourceId)
             .Should()
@@ -418,14 +418,14 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         );
         await _flow.BackdateAsync(elegible, TimeSpan.FromDays(50));
 
-        var run1 = await _flow.Reconciler(maxPerRun: 2).ReconcileAsync();
+        var run1 = await _flow.Reconciler().ReconcileAsync(2);
         run1.Should()
             .Match<ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary>(
                 s => s.Examined == 2 && s.Skipped == 2 && !s.Wrapped
             );
         (await RowsAsync()).Should().BeEmpty();
 
-        var run2 = await _flow.Reconciler(maxPerRun: 2).ReconcileAsync();
+        var run2 = await _flow.Reconciler().ReconcileAsync(2);
         run2.Should()
             .Match<ERP.Infrastructure.Communications.ElectronicDocumentCommunicationReconciliationSummary>(
                 s => s.Examined == 2 && s.Queued == 1
@@ -433,8 +433,9 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
         (await RowsAsync()).Should().ContainSingle(r => r.SourceId == elegible.SourceEntityId);
 
         // Al llegar al final vuelve al más antiguo: los anómalos se reexaminan (por si su origen se corrige).
-        run2.Wrapped.Should().BeTrue();
-        (await _flow.Reconciler(maxPerRun: 2).ReconcileAsync()).Skipped.Should().Be(2);
+        run2.Wrapped.Should().BeFalse();
+        (await _flow.Reconciler().ReconcileAsync(2)).Wrapped.Should().BeTrue();
+        (await _flow.Reconciler().ReconcileAsync(2)).Skipped.Should().Be(2);
         (await RowsAsync()).Should().ContainSingle();
     }
 
@@ -461,7 +462,7 @@ public sealed class ElectronicDocumentCommunicationIntegrationTests
             publish: false
         );
 
-        var summary = await _flow.Reconciler().ReconcileAsync();
+        var summary = await _flow.Reconciler().ReconcileAsync(200);
 
         summary
             .Queued.Should()

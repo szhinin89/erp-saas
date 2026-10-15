@@ -25,3 +25,24 @@
 ## Log scope (HTTP)
 
 `SecurityCorrelationMiddleware`: TenantId, CompanyId, UserId, SessionId, RequestId.
+
+## Meter `ERP.Jobs` (ADR-043)
+
+| Metric | Instrument | Meaning |
+|---|---|---|
+| `erp.jobs.duration` | Histogram, s | Whole execution duration |
+| `erp.jobs.processed` | Counter | Completed candidates/attempts |
+| `erp.jobs.failed` | Counter | Candidate failures or execution errors |
+| `erp.jobs.lock_skipped` | Counter | Nonblocking job lock already held |
+| `erp.jobs.backlog` | Gauge | Pending candidate count, SQL aggregate |
+| `erp.jobs.oldest_pending_age` | Gauge, s | Age of oldest pending candidate; zero if empty |
+
+Tags: `job`; backlog/age also `stream` (three streams for retention recovery).
+No tenant, email, document ID or secret labels. Candidate failure and infrastructure
+failure may both count if an execution cannot continue. SMTP processed means a claim
+was handled; delivery failure increments failed separately. SQL snapshots are taken
+at discovery, so gauges describe that instant, before processing the batch.
+
+API Prometheus subscribes to ERP.Jobs. A separate worker emits the Meter without
+opening an HTTP endpoint; exporting it requires an in-process collector configured
+for that deployment. Never query all candidate entities to compute backlog.

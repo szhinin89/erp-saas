@@ -159,10 +159,18 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
         var queryRepo = new UserSessionRepository(queryDb);
         var cutoff = DateTime.UtcNow.AddDays(-30);
 
-        var expired = await queryRepo.GetExpiredActiveSessionsAsync(cutoff, CancellationToken.None);
+        var expired = await queryRepo.GetExpiredActiveSessionsAsync(cutoff, 50, CancellationToken.None);
 
         expired.Should().ContainSingle(x => x.Id == oldSession.Id);
         expired.Should().NotContain(x => x.Id == recentSession.Id);
+        var futureCutoff = DateTime.UtcNow.AddMinutes(1);
+        var firstBatch = await queryRepo.GetExpiredActiveSessionsAsync(futureCutoff, 1);
+        firstBatch.Should().ContainSingle(x => x.Id == oldSession.Id);
+        firstBatch[0].MarkExpired(Guid.Empty);
+        await queryRepo.SaveChangesAsync();
+        (await queryRepo.GetExpiredActiveSessionsAsync(futureCutoff, 1)).Should()
+            .ContainSingle(x => x.Id == recentSession.Id);
+
     }
 
     [Fact]
@@ -191,7 +199,7 @@ public sealed class ExpireUserSessionsIntegrationTests : IAsyncLifetime
         var queryRepo = new UserSessionRepository(queryDb);
         var cutoff = DateTime.UtcNow.AddDays(-30);
 
-        var expired = await queryRepo.GetExpiredActiveSessionsAsync(cutoff, CancellationToken.None);
+        var expired = await queryRepo.GetExpiredActiveSessionsAsync(cutoff, 50, CancellationToken.None);
 
         expired.Should().NotContain(x => x.Id == closedSession.Id);
     }

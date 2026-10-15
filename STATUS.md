@@ -1,5 +1,43 @@
 # Project Status
 
+## ZH BACKGROUND PROCESSING — STRUCTURAL DEBT (2026-10-15)
+
+**Verificación posterior:** [aceptación de diez puntos](docs/agent/BACKGROUND_PROCESSING_ACCEPTANCE.md).
+24/24 pruebas focales PASS. Consulta READ ONLY a dberpsaas confirma migración,
+checkpoints y siete recurring jobs con Job.Queue correcto, sin masterdata-reconciliation.
+No había workers registrados ni respuesta en localhost:5003. Smoke local pendiente
+de autorización: revisión automática rechazó iniciar la API por los efectos de
+migración/bootstrap/backfills del arranque. Sin envíos reales del piloto.
+
+**Estado: implementado y validado, sin commit/push.** Arquitectura única en
+[ADR-043](docs/decisions/ADR-043-background-processing-ssot.md). Las auditorías
+anteriores permanecen cerradas; este alcance reemplaza expresamente la
+orquestación FROZEN, sin cambiar el pipeline fiscal ni las reglas de negocio.
+
+- Siete jobs, catálogo único para DI/validación/sync, HangfireOptions estricto con
+  ValidateOnStart, runner único, lock PostgreSQL no bloqueante por ID y
+  AutomaticRetry(0). Colas core/communications/sri/maintenance con workers 1/2/2/1.
+- Lotes explícitos, preferencias filtradas en SQL y checkpoints PostgreSQL durables
+  para fairness. Retentions solo recupera antes del registro; ElectronicDocuments
+  es dueño desde que existe el documento, incluido Draft. Sales sigue create-only.
+- Eliminados masterdata-reconciliation, su health/servicio, ocho interfaces por job,
+  Dashboard, guards declarativos, cursor local y configuración anterior. Ready
+  conserva conectividad/probes; integridad queda en endpoints diagnósticos.
+- API sin worker y Generic Host `--worker` sin HTTP verificados. Meter ERP.Jobs:
+  duración, procesados, fallidos, skipped por lock, backlog y edad por stream.
+- Validación focal PASS: API/Hangfire 30/30; catálogo/runner/worker 19/19;
+  encolado real fuera de default 1/1; Communications/lotes PostgreSQL 20/20;
+  recovery/dashboard/ownership/guards PostgreSQL 39/39; Application 12/12.
+  Los grupos se solapan. Build y diff check PASS. Sin suites completas ni jobs
+  reales del piloto. User-secrets: dos claves Hangfire migradas, valores preservados.
+- Despliegue: aplicar `20261015000000_BackgroundJobProgress` antes de iniciar
+  workers separados y reemplazar/reiniciar procesos antiguos. No se aplicó a la
+  base del piloto. STRUCTURAL DEBT: afinar valores con carga real y configurar el
+  collector del Meter para despliegues worker independientes; API ya exporta ERP.Jobs.
+
+Inventario, configuración, ownership y evidencia:
+[entrega](docs/agent/BACKGROUND_PROCESSING_DELIVERY.md).
+
 ## COMMUNICATIONS-RIDE-BACKGROUND — BUG REAL (2026-10-13)
 
 **Estado: implementado y validado, sin commit/push.** El adjunto RIDE de la factura 001-001-000000002 se omitía como `RideGenerationThrew`: la query HTTP exigía usuario autenticado antes de entrar al pipeline desde Hangfire.

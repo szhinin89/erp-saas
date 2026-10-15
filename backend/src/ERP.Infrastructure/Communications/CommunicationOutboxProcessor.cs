@@ -30,7 +30,6 @@ namespace ERP.Infrastructure.Communications;
 /// </summary>
 public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxProcessor
 {
-    private const int BatchSize = 50;
 
     private readonly CommunicationOutboxDeliveryStore _store;
     private readonly IEmailSender _emailSender;
@@ -56,9 +55,11 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
         _logger = logger;
     }
 
-    public async Task ProcessPendingAsync(CancellationToken ct = default)
+    public async Task ProcessPendingAsync(int batchSize, CancellationToken ct = default)
     {
-        for (var processed = 0; processed < BatchSize; processed++)
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
+        await _store.RecordBacklogAsync(ct);
+        for (var processed = 0; processed < batchSize; processed++)
         {
             ct.ThrowIfCancellationRequested();
             var claim = await _store.ClaimNextAsync(
@@ -70,6 +71,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
                 return;
 
             await ProcessClaimAsync(claim, ct);
+            BackgroundProcessing.JobMetrics.RecordProcessed();
         }
     }
 
@@ -297,6 +299,7 @@ public sealed partial class CommunicationOutboxProcessor : ICommunicationOutboxP
             return;
         }
 
+        BackgroundProcessing.JobMetrics.RecordFailed();
         LogDeliveryFailed(
             claim.Id,
             claim.TenantId,

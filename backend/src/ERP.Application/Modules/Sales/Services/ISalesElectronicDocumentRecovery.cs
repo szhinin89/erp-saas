@@ -5,6 +5,6 @@ public sealed record SalesElectronicRecoveryCandidate(
 
 public interface ISalesElectronicDocumentRecovery
 {
-    Task<IReadOnlyList<SalesElectronicRecoveryCandidate>> GetCandidatesAsync(CancellationToken ct);
+    Task<IReadOnlyList<SalesElectronicRecoveryCandidate>> GetCandidatesAsync(int batchSize, CancellationToken ct);
     Task RecoverAsync(SalesElectronicRecoveryCandidate candidate, CancellationToken ct);
 }

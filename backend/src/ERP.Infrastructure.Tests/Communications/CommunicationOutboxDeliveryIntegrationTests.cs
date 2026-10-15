@@ -505,7 +505,7 @@ public sealed class CommunicationOutboxDeliveryIntegrationTests
             time ?? _time,
             NullLogger<CommunicationOutboxProcessor>.Instance
         );
-        await processor.ProcessPendingAsync();
+        await processor.ProcessPendingAsync(50);
     }
 
     private async Task<List<Guid>> SeedAsync(

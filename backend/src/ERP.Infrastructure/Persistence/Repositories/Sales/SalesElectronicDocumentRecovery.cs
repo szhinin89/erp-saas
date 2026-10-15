@@ -1,3 +1,4 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using System.Text.RegularExpressions;
 using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.Services;
@@ -23,17 +24,17 @@ public sealed class SalesElectronicDocumentRecovery(
             && Regex.IsMatch(i.InvoiceNumber, DefinitiveNumber)
             && !i.InvoiceNumber.EndsWith("-000000000"));
 
-    public async Task<IReadOnlyList<SalesElectronicRecoveryCandidate>> GetCandidatesAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<SalesElectronicRecoveryCandidate>> GetCandidatesAsync(int batchSize, CancellationToken ct)
     {
         // Platform discovery only: return identifiers, never tracked business entities.
         // No age cutoff: committed sales remain durable work after any restart.
         var documents = db.ElectronicDocuments.AsPlatformQuery();
-        return await Eligible(db.SalesInvoices.AsPlatformQuery().AsNoTracking())
+        var query = Eligible(db.SalesInvoices.AsPlatformQuery().AsNoTracking())
             .Where(i => !documents.Any(d => d.TenantId == i.TenantId
-                && d.SourceModule == "Sales" && d.SourceEntityId == i.Id))
-            .OrderBy(i => i.CreatedAt).ThenBy(i => i.Id)
-            .Select(i => new SalesElectronicRecoveryCandidate(i.TenantId, i.CompanyId, i.BranchId, i.Id))
-            .ToListAsync(ct);
+                && d.SourceModule == "Sales" && d.SourceEntityId == i.Id));
+        return await BackgroundJobProgress.ReadBatchAsync(db, "sales-recovery", query,
+            i => new SalesElectronicRecoveryCandidate(i.TenantId, i.CompanyId, i.BranchId, i.Id),
+            i => i.InvoiceId, i => i.CreatedAt, batchSize, ct);
     }
 
     public async Task RecoverAsync(SalesElectronicRecoveryCandidate candidate, CancellationToken ct)

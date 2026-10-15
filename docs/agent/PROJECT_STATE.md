@@ -1,5 +1,13 @@
 # PROJECT_STATE.md — Estado vigente del proyecto
 
+## ZH BACKGROUND PROCESSING — STRUCTURAL DEBT (2026-10-15)
+
+Implementado y validado, sin commit/push. Siete jobs, runner/catálogo/options únicos,
+locks PostgreSQL, lotes y checkpoints durables; API y worker separables. ADR-043
+reemplaza explícitamente la orquestación FROZEN anterior. Gate focal PASS; detalle
+en STATUS.md y BACKGROUND_PROCESSING_DELIVERY.md. Migración creada y validada en
+PostgreSQL de pruebas; aplicación al piloto pendiente de despliegue.
+
 Actualizado: 2026-10-06. Fuente de verdad de entrega: `STATUS.md`. Este archivo es un espejo operativo condensado; en caso de discrepancia, prevalece `STATUS.md` + ADRs citados.
 
 ## Entregas cerradas

@@ -1,3 +1,5 @@
+using ERP.Infrastructure.BackgroundProcessing;
+using ERP.Infrastructure.Persistence;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
@@ -10,11 +12,11 @@ namespace ERP.Infrastructure.Communications;
 public interface IElectronicDocumentCommunicationReconciler
 {
     Task<ElectronicDocumentCommunicationReconciliationSummary> ReconcileAsync(
-        CancellationToken ct = default
+        int batchSize, CancellationToken ct = default
     );
 }
 
-/// <param name="Examined">Comprobantes entregados al servicio en esta corrida (≤ <see cref="ElectronicDocumentCommunicationReconciler.MaxPerRun"/>).</param>
+/// <param name="Examined">Comprobantes entregados al servicio en esta corrida (≤ configured batch).</param>
 /// <param name="Wrapped">La corrida llegó al final de los faltantes: la próxima vuelve a empezar por el más antiguo.</param>
 public sealed record ElectronicDocumentCommunicationReconciliationSummary(
     int Examined,
@@ -24,31 +26,6 @@ public sealed record ElectronicDocumentCommunicationReconciliationSummary(
     int Failed,
     bool Wrapped = true
 );
-
-/// <summary>
-/// Posición de la reconciliación entre corridas (keyset del último comprobante examinado). Singleton
-/// process-local, sin tabla: perderlo (reinicio) solo hace que la siguiente corrida empiece otra vez por
-/// el más antiguo — nunca se pierde un faltante, a lo sumo se reexamina.
-/// </summary>
-public sealed class ElectronicDocumentCommunicationReconciliationCursor
-{
-    private readonly object _gate = new();
-    private ElectronicDocumentCommunicationCandidate? _resumeAfter;
-
-    public ElectronicDocumentCommunicationCandidate? ResumeAfter
-    {
-        get
-        {
-            lock (_gate)
-                return _resumeAfter;
-        }
-        set
-        {
-            lock (_gate)
-                _resumeAfter = value;
-        }
-    }
-}
 
 /// <summary>
 /// ZH-EDOC-COMMUNICATIONS-01 — red de seguridad del evento: un comprobante Authorized cuya
@@ -62,10 +39,10 @@ public sealed class ElectronicDocumentCommunicationReconciliationCursor
 /// viejo. Orden determinístico y global, más antiguos primero (<c>created_at</c>, <c>id</c>):
 /// <list type="bullet">
 /// <item>Antigüedad mínima <see cref="MinimumAge"/> desde el último cambio (no compite con el evento).</item>
-/// <item>Lote acotado: como máximo <see cref="MaxPerRun"/> comprobantes por corrida, en páginas de
+/// <item>Lote acotado: como máximo configured batch comprobantes por corrida, en páginas de
 /// <see cref="PageSize"/>.</item>
 /// <item>Progreso garantizado: la corrida continúa donde terminó la anterior
-/// (<see cref="ElectronicDocumentCommunicationReconciliationCursor"/>) y vuelve al más antiguo al llegar
+/// (checkpoint PostgreSQL durable) y vuelve al más antiguo al llegar
 /// al final. Los faltantes que el servicio omite y siguen faltando (origen aún no autorizado o inexistente)
 /// se reexaminan en la vuelta siguiente, pero nunca bloquean a los posteriores.</item>
 /// <item>Empresas con la preferencia desactivada se excluyen en SQL: no consumen el lote.</item>
@@ -82,34 +59,27 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
 {
     public static readonly TimeSpan MinimumAge = TimeSpan.FromMinutes(5);
     public const int PageSize = 50;
-    public const int MaxPerRun = 200;
 
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ElectronicDocumentCommunicationReconciliationCursor _cursor;
     private readonly TimeProvider _time;
     private readonly ILogger<ElectronicDocumentCommunicationReconciler> _logger;
-    private readonly int _maxPerRun;
 
-    /// <param name="maxPerRun">Tamaño del lote; producción usa <see cref="MaxPerRun"/> (los tests lo reducen).</param>
     public ElectronicDocumentCommunicationReconciler(
         IServiceScopeFactory scopeFactory,
-        ElectronicDocumentCommunicationReconciliationCursor cursor,
         TimeProvider time,
-        ILogger<ElectronicDocumentCommunicationReconciler> logger,
-        int maxPerRun = MaxPerRun
+        ILogger<ElectronicDocumentCommunicationReconciler> logger
     )
     {
-        _maxPerRun = Math.Clamp(maxPerRun, 1, MaxPerRun);
         _scopeFactory = scopeFactory;
-        _cursor = cursor;
         _time = time;
         _logger = logger;
     }
 
     public async Task<ElectronicDocumentCommunicationReconciliationSummary> ReconcileAsync(
-        CancellationToken ct = default
+        int batchSize, CancellationToken ct = default
     )
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
         var lastChangeBefore = _time.GetUtcNow().UtcDateTime - MinimumAge;
 
         IReadOnlyList<ElectronicDocumentCommunicationRoute> routes;
@@ -121,11 +91,17 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
         var summary = new Counter();
         var preferenceByCompany = new Dictionary<Guid, bool>();
         var excludedCompanies = new List<Guid>();
-        var after = _cursor.ResumeAfter;
+        ElectronicDocumentCommunicationCandidate? after;
+        await using (var progressScope = _scopeFactory.CreateAsyncScope())
+        {
+            var saved = await BackgroundJobProgress.ReadAsync(progressScope.ServiceProvider.GetRequiredService<ErpDbContext>(), "communications-reconciliation", ct);
+            after = saved is null ? null : new(Guid.Empty, Guid.Empty, saved.Id, saved.CreatedAt);
+        }
         var reachedEnd = false;
 
-        while (summary.Examined < _maxPerRun)
+        while (summary.Examined < batchSize)
         {
+            var pageLimit = Math.Min(PageSize, batchSize - summary.Examined);
             IReadOnlyList<ElectronicDocumentCommunicationCandidate> page;
             await using (var scope = _scopeFactory.CreateAsyncScope())
             {
@@ -136,14 +112,14 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
                         lastChangeBefore,
                         after,
                         excludedCompanies,
-                        PageSize,
+                        pageLimit,
                         ct
                     );
             }
 
             foreach (var candidate in page)
             {
-                if (summary.Examined >= _maxPerRun)
+                if (summary.Examined >= batchSize)
                     break;
                 after = candidate;
 
@@ -159,11 +135,13 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
                         excludedCompanies.Add(candidate.CompanyId);
                 }
 
+                summary.Examined++;
                 if (enabled)
                     await ReconcileOneAsync(candidate, summary, ct);
+                else summary.Skipped++;
             }
 
-            if (page.Count < PageSize && (page.Count == 0 || after == page[^1]))
+            if (page.Count < pageLimit)
             {
                 reachedEnd = true;
                 break;
@@ -171,7 +149,10 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
         }
 
         // Al final de los faltantes la próxima corrida vuelve al más antiguo; si no, continúa aquí.
-        _cursor.ResumeAfter = reachedEnd ? null : after;
+        await using (var progressScope = _scopeFactory.CreateAsyncScope())
+            await BackgroundJobProgress.WriteAsync(progressScope.ServiceProvider.GetRequiredService<ErpDbContext>(),
+                "communications-reconciliation", reachedEnd ? Guid.Empty : after!.ElectronicDocumentId,
+                reachedEnd ? DateTime.UnixEpoch : after!.CreatedAtUtc, ct);
 
         var result = summary.ToSummary(reachedEnd);
         if (result.Examined > 0)
@@ -192,7 +173,6 @@ public sealed partial class ElectronicDocumentCommunicationReconciler
         CancellationToken ct
     )
     {
-        summary.Examined++;
         using var _ = JobExecutionContext.Begin(candidate.TenantId, candidate.CompanyId);
         try
         {

@@ -1,5 +1,5 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Application.Common;
-using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Retentions;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
@@ -82,13 +82,14 @@ public sealed class RetentionDocumentRepository : IRetentionDocumentRepository
         DateTime issuedBeforeUtc,
         int take,
         CancellationToken ct = default
-    ) =>
+    )
+    {
         // Bypass de filtros globales vía el accessor sancionado (AsPlatformQuery), deliberado y
         // acotado: lo usa SOLO el job de recuperación (sin contexto de tenant en Hangfire); devuelve
         // únicamente identificadores (tenant/empresa/retención, correlacionando el comprobante por
         // el MISMO tenant), y cada candidato se procesa después con JobExecutionContext de su propio
         // tenant/empresa, donde los filtros fail-closed vuelven a aplicar.
-        await _db.Set<RetentionDocument>()
+        var query = _db.Set<RetentionDocument>()
             .AsPlatformQuery()
             .AsNoTracking()
             .Where(r => r.Status == RetentionStatus.Issued)
@@ -100,13 +101,12 @@ public sealed class RetentionDocumentRepository : IRetentionDocumentRepository
                         e.TenantId == r.TenantId
                         && e.SourceModule == RetentionElectronicDocumentSource.SourceModule
                         && e.SourceEntityId == r.Id
-                        && e.CurrentState != ElectronicDocumentState.Draft
                     )
-            )
-            .OrderBy(r => r.UpdatedAt)
-            .Take(take)
-            .Select(r => new RetentionElectronicStartCandidate(r.TenantId, r.CompanyId, r.Id))
-            .ToListAsync(ct);
+            );
+        return await BackgroundJobProgress.ReadBatchAsync(_db, "retention-start", query,
+            r => new RetentionElectronicStartCandidate(r.TenantId, r.CompanyId, r.Id),
+            r => r.RetentionId, r => r.UpdatedAt, take, ct);
+    }
 
     public Task<RetentionDocument?> GetBySourceAsync(
         Guid tenantId,

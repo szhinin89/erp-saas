@@ -42,6 +42,21 @@ public sealed class CommunicationOutboxDeliveryStore
         _db = db;
     }
 
+    public async Task RecordBacklogAsync(CancellationToken ct)
+    {
+        var row = await _db.Database.SqlQuery<BacklogRow>($"""
+            SELECT count(*) AS "Count", min(created_at) AS "Oldest"
+            FROM communication_outbox WHERE status IN ('Pending', 'Processing')
+            """).SingleAsync(ct);
+        BackgroundProcessing.JobMetrics.RecordBacklog(row.Count, row.Oldest);
+    }
+
+    private sealed class BacklogRow
+    {
+        public long Count { get; set; }
+        public DateTime? Oldest { get; set; }
+    }
+
     public async Task<ClaimedCommunication?> ClaimNextAsync(
         DateTime utcNow,
         TimeSpan lease,

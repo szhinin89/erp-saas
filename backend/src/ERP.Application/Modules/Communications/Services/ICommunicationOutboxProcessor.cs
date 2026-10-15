@@ -2,5 +2,5 @@ namespace ERP.Application.Modules.Communications.Services;
 
 public interface ICommunicationOutboxProcessor
 {
-    Task ProcessPendingAsync(CancellationToken ct = default);
+    Task ProcessPendingAsync(int batchSize, CancellationToken ct = default);
 }

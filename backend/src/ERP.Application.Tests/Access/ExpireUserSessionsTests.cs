@@ -23,12 +23,12 @@ public sealed class ExpireUserSessionsHandlerTests
     {
         var repo = new Mock<IUserSessionRepository>();
         repo.Setup(r =>
-                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(Array.Empty<UserSession>());
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());
-        var result = await handler.Handle(new ExpireUserSessionsCommand(), CancellationToken.None);
+        var result = await handler.Handle(new ExpireUserSessionsCommand(50), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(0);
@@ -46,12 +46,12 @@ public sealed class ExpireUserSessionsHandlerTests
 
         var repo = new Mock<IUserSessionRepository>();
         repo.Setup(r =>
-                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(new[] { session });
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());
-        var result = await handler.Handle(new ExpireUserSessionsCommand(), CancellationToken.None);
+        var result = await handler.Handle(new ExpireUserSessionsCommand(50), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(1);
@@ -66,13 +66,13 @@ public sealed class ExpireUserSessionsHandlerTests
         DateTime? capturedCutoff = null;
         var repo = new Mock<IUserSessionRepository>();
         repo.Setup(r =>
-                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
-            .Callback<DateTime, CancellationToken>((cutoff, _) => capturedCutoff = cutoff)
+            .Callback<DateTime, int, CancellationToken>((cutoff, batchSize, _) => capturedCutoff = cutoff)
             .ReturnsAsync(Array.Empty<UserSession>());
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options(maxDays: 15));
-        await handler.Handle(new ExpireUserSessionsCommand(), CancellationToken.None);
+        await handler.Handle(new ExpireUserSessionsCommand(50), CancellationToken.None);
 
         capturedCutoff.Should().NotBeNull();
         capturedCutoff!
@@ -101,12 +101,12 @@ public sealed class ExpireUserSessionsHandlerTests
 
         var repo = new Mock<IUserSessionRepository>();
         repo.Setup(r =>
-                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(new[] { sessionA, sessionB });
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());
-        var result = await handler.Handle(new ExpireUserSessionsCommand(), CancellationToken.None);
+        var result = await handler.Handle(new ExpireUserSessionsCommand(50), CancellationToken.None);
 
         result.Value.Should().Be(2);
         sessionA.Status.Should().Be(UserSessionStatus.Expired);
@@ -121,14 +121,14 @@ public sealed class ExpireUserSessionsHandlerTests
 
         var call = 0;
         repo.Setup(r =>
-                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())
+                r.GetExpiredActiveSessionsAsync(It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(() => call++ == 0 ? new[] { session } : Array.Empty<UserSession>());
 
         var handler = new ExpireUserSessionsHandler(repo.Object, Options());
 
-        var first = await handler.Handle(new ExpireUserSessionsCommand(), CancellationToken.None);
-        var second = await handler.Handle(new ExpireUserSessionsCommand(), CancellationToken.None);
+        var first = await handler.Handle(new ExpireUserSessionsCommand(50), CancellationToken.None);
+        var second = await handler.Handle(new ExpireUserSessionsCommand(50), CancellationToken.None);
 
         first.Value.Should().Be(1);
         second.Value.Should().Be(0);

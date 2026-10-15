@@ -174,7 +174,7 @@ public sealed class CommunicationTemplateIntegrationTests
                 new InstanceResolver(),
                 TimeProvider.System,
                 NullLogger<CommunicationOutboxProcessor>.Instance
-            ).ProcessPendingAsync();
+            ).ProcessPendingAsync(50);
         }
 
         sentSubject

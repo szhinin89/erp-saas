@@ -36,11 +36,11 @@ Handlers con patrón check-then-insert capturan `DbUpdateException` → `Postgre
 
 Implementación: `IDatabaseExceptionTranslator` (Infrastructure).
 
-## Reconciliation (READ-ONLY)
+## Background processing
 
-- `IMasterDataReconciliationService` detecta drift legacy ↔ BP.
-- Health: `/health/masterdata-reconciliation`
-- Hangfire: `masterdata-reconciliation` (diario 03:00) — **no autocorrige**.
+MasterData reconciliation and its health endpoint were removed by
+[ADR-043](../decisions/ADR-043-background-processing-ssot.md). Readiness checks
+connectivity; integrity checks remain explicit diagnostic endpoints.
 
 ## Dual-write (BP-3 / BP-4)
 

@@ -34,7 +34,7 @@ public sealed class ExpireUserSessionsHandler
     )
     {
         var cutoff = DateTime.UtcNow.AddDays(-_options.MaxSessionAgeDays);
-        var candidates = await _repository.GetExpiredActiveSessionsAsync(cutoff, cancellationToken);
+        var candidates = await _repository.GetExpiredActiveSessionsAsync(cutoff, request.BatchSize, cancellationToken);
 
         if (candidates.Count == 0)
             return Result<int>.Success(0);

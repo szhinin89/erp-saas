@@ -135,7 +135,7 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
         IReadOnlyList<Guid> candidateIds;
         await using (var db = NewDbContext(_tenantId, _companyId))
         {
-            var candidates = await NewRepository(db).GetRetryCandidatesAsync();
+            var candidates = await NewRepository(db).GetRetryCandidatesAsync(50);
             candidateIds = candidates
                 .Where(c => c.TenantId == _tenantId)
                 .Select(c => c.ElectronicDocumentId)

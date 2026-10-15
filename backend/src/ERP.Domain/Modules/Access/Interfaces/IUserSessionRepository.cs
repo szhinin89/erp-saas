@@ -24,7 +24,7 @@ public interface IUserSessionRepository
     /// allowlist de IgnoreQueryFilters, sin necesidad de una nueva entrada).
     /// </summary>
     Task<IReadOnlyList<UserSession>> GetExpiredActiveSessionsAsync(
-        DateTime olderThanUtc,
+        DateTime olderThanUtc, int batchSize,
         CancellationToken cancellationToken = default
     );
 

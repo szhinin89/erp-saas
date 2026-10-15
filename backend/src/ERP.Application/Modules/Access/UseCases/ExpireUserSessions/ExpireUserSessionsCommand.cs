@@ -3,10 +3,5 @@ using MediatR;
 
 namespace ERP.Application.Access.UseCases.ExpireUserSessions;
 
-/// <summary>
-/// Limpieza pasiva de sesiones (Fase 9) — cierra (Expired) las UserSession Active más antiguas
-/// que la política configurada (SessionExpirationOptions). Sin parámetros: opera cross-tenant
-/// por diseño (job de sistema, no una operación de un usuario/empresa específicos).
-/// Devuelve la cantidad de sesiones cerradas, para que el job la registre en el log.
-/// </summary>
-public sealed record ExpireUserSessionsCommand : IRequest<Result<int>>;
+/// <summary>System-wide passive expiration with an explicit bounded batch; returns expired count.</summary>
+public sealed record ExpireUserSessionsCommand(int BatchSize) : IRequest<Result<int>>;

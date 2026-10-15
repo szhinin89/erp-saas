@@ -123,7 +123,7 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         await using var scope = _provider.CreateAsyncScope();
         var candidates = await scope
             .ServiceProvider.GetRequiredService<IElectronicDocumentRepository>()
-            .GetRetryCandidatesAsync();
+            .GetRetryCandidatesAsync(50);
 
         foreach (var (documentId, owner) in new[] { (signed, _a1), (failed, _b) })
         {
@@ -237,11 +237,35 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
 
     // ── Helpers ────────────────────────────────────────────────────────────────────────────
 
+    [Fact]
+    public async Task Bounded_candidates_rotate_durably_and_disabled_company_does_not_consume_batch()
+    {
+        var documents = new[] { await SeedAsync(_a1, ElectronicDocumentState.Signed),
+            await SeedAsync(_a1, ElectronicDocumentState.Signed), await SeedAsync(_b, ElectronicDocumentState.Failed) };
+        var disabled = await SeedAsync(_a2, ElectronicDocumentState.Draft);
+        await using (var seed = _provider.CreateAsyncScope())
+        {
+            var db = seed.ServiceProvider.GetRequiredService<ErpDbContext>();
+            db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(_a2.TenantId, _a2.CompanyId,
+                ERP.Domain.Configuration.Enums.OrgScope.Company, _a2.CompanyId,
+                "electronic_documents.auto_retry_enabled", "false", ERP.Domain.Configuration.Enums.SettingDataType.Bool, UserId));
+            await db.SaveChangesAsync();
+        }
+        var discovered = new List<Guid>();
+        for (var run = 0; run < 3; run++)
+        {
+            await using var scope = _provider.CreateAsyncScope();
+            var batch = await scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>().GetRetryCandidatesAsync(1);
+            discovered.Add(batch.Should().ContainSingle().Subject.ElectronicDocumentId);
+        }
+        discovered.Should().BeEquivalentTo(documents).And.NotContain(disabled);
+    }
+
     private Task RunJobAsync() =>
         new ElectronicDocumentRetryJob(
             _provider.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<ElectronicDocumentRetryJob>.Instance
-        ).ExecuteAsync();
+        ).ExecuteAsync(50);
 
     private async Task<Guid> SeedAsync(
         (Guid TenantId, Guid CompanyId) owner,

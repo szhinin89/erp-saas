@@ -442,7 +442,7 @@ public sealed class CommunicationContractIntegrationTests
             new ScopedResolver(),
             _time,
             NullLogger<CommunicationOutboxProcessor>.Instance
-        ).ProcessPendingAsync();
+        ).ProcessPendingAsync(50);
     }
 
     private async Task<List<Guid>> VisibleFromAsync(Guid tenantId, Guid companyId)

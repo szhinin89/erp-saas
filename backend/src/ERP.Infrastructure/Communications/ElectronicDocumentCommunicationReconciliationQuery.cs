@@ -1,3 +1,4 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Application.Modules.Communications.ElectronicDocuments;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Infrastructure.Persistence;
@@ -68,6 +69,11 @@ public sealed class ElectronicDocumentCommunicationReconciliationQuery
                       ON r.source_module = ed.source_module AND r.document_type = ed.document_type
                     WHERE ed.current_state = {authorized}
                       AND COALESCE(ed.updated_at, ed.created_at) <= {lastChangeBeforeUtc}
+                      AND NOT EXISTS (SELECT 1 FROM org_settings s
+                          WHERE s.tenant_id = ed.tenant_id AND s.company_id = ed.company_id
+                            AND s.scope = 'company' AND s.scope_id = ed.company_id
+                            AND s.key = 'electronic_documents.email_on_authorization'
+                            AND lower(trim(s.value)) = 'false')
                       AND NOT (ed.company_id = ANY({excluded}::uuid[]))
                       AND NOT EXISTS (
                           SELECT 1 FROM communication_outbox co
@@ -78,30 +84,37 @@ public sealed class ElectronicDocumentCommunicationReconciliationQuery
                             AND co.purpose = r.purpose
                             AND co.source_module = ed.source_module)
                 )
-                SELECT tenant_id AS "TenantId", company_id AS "CompanyId", id AS "ElectronicDocumentId", created_at AS "CreatedAtUtc"
-                FROM missing
-                WHERE (created_at, id) > ({afterCreatedAt}, {afterId})
-                ORDER BY created_at, id
-                LIMIT {limit}
+                SELECT page.tenant_id AS "TenantId", page.company_id AS "CompanyId",
+                       page.id AS "ElectronicDocumentId", page.created_at AS "CreatedAtUtc",
+                       stats.total AS "Total", stats.oldest AS "Oldest"
+                FROM (SELECT count(*) AS total, min(created_at) AS oldest FROM missing) stats
+                LEFT JOIN LATERAL (
+                    SELECT * FROM missing WHERE (created_at, id) > ({afterCreatedAt}, {afterId})
+                    ORDER BY created_at, id LIMIT {limit}
+                ) page ON true
+                ORDER BY page.created_at, page.id
                 """
             )
             .ToListAsync(ct);
 
         // timestamptz: Npgsql ya devuelve created_at con Kind = Utc.
-        return rows.Select(r => new ElectronicDocumentCommunicationCandidate(
-                r.TenantId,
-                r.CompanyId,
-                r.ElectronicDocumentId,
-                r.CreatedAtUtc
+        JobMetrics.RecordBacklog(rows[0].Total, rows[0].Oldest);
+        return rows.Where(r => r.ElectronicDocumentId.HasValue).Select(r => new ElectronicDocumentCommunicationCandidate(
+                r.TenantId!.Value,
+                r.CompanyId!.Value,
+                r.ElectronicDocumentId!.Value,
+                r.CreatedAtUtc!.Value
             ))
             .ToList();
     }
 
     private sealed class CandidateRow
     {
-        public Guid TenantId { get; init; }
-        public Guid CompanyId { get; init; }
-        public Guid ElectronicDocumentId { get; init; }
-        public DateTime CreatedAtUtc { get; init; }
+        public long Total { get; init; }
+        public DateTime? Oldest { get; init; }
+        public Guid? TenantId { get; init; }
+        public Guid? CompanyId { get; init; }
+        public Guid? ElectronicDocumentId { get; init; }
+        public DateTime? CreatedAtUtc { get; init; }
     }
 }

@@ -9,12 +9,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ERP.API.Tests.Hangfire;
 
-/// <summary>
-/// Fase 9: ExpireUserSessionsJob con StubMediator — prueba únicamente que el job invoca
-/// ExpireUserSessionsCommand vía MediatR (sin DbContext directo) y maneja fallos/excepciones
-/// sin propagarlas (mismo patrón que ElectronicDocumentRetryJob: un job de limpieza nunca debe
-/// tumbar el proceso de Hangfire por una corrida fallida).
-/// </summary>
+/// <summary>Job delegates the configured batch; failures propagate to the common runner.</summary>
 public sealed class ExpireUserSessionsJobTests
 {
     private static ExpireUserSessionsJob BuildJob(Func<object, object> handler)
@@ -23,10 +18,7 @@ public sealed class ExpireUserSessionsJobTests
         services.AddSingleton<IMediator>(new StubMediator(handler));
         var provider = services.BuildServiceProvider();
 
-        return new ExpireUserSessionsJob(
-            provider.GetRequiredService<IServiceScopeFactory>(),
-            NullLogger<ExpireUserSessionsJob>.Instance
-        );
+        return new ExpireUserSessionsJob(provider.GetRequiredService<IMediator>());
     }
 
     [Fact]
@@ -39,35 +31,32 @@ public sealed class ExpireUserSessionsJobTests
             return Result<int>.Success(3);
         });
 
-        await job.ExecuteAsync(CancellationToken.None);
+        await job.ExecuteAsync(50, CancellationToken.None);
 
-        sentRequest.Should().BeOfType<ExpireUserSessionsCommand>();
+        sentRequest.Should().BeOfType<ExpireUserSessionsCommand>().Which.BatchSize.Should().Be(50);
     }
 
     [Fact]
-    public async Task ExecuteAsync_si_el_command_falla_no_propaga_excepcion()
+    public async Task ExecuteAsync_si_el_command_falla_propaga_al_runner()
     {
         var job = BuildJob(_ => Result<int>.Failure("Fallo simulado."));
 
-        var act = () => job.ExecuteAsync(CancellationToken.None);
+        var act = () => job.ExecuteAsync(50, CancellationToken.None);
 
-        await act.Should().NotThrowAsync();
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     [Fact]
-    public async Task ExecuteAsync_si_el_mediator_lanza_excepcion_no_la_propaga()
+    public async Task ExecuteAsync_si_el_mediator_lanza_excepcion_propaga_al_runner()
     {
         var services = new ServiceCollection();
         services.AddSingleton<IMediator>(new ThrowingMediator());
         var provider = services.BuildServiceProvider();
-        var job = new ExpireUserSessionsJob(
-            provider.GetRequiredService<IServiceScopeFactory>(),
-            NullLogger<ExpireUserSessionsJob>.Instance
-        );
+        var job = new ExpireUserSessionsJob(provider.GetRequiredService<IMediator>());
 
-        var act = () => job.ExecuteAsync(CancellationToken.None);
+        var act = () => job.ExecuteAsync(50, CancellationToken.None);
 
-        await act.Should().NotThrowAsync();
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     private sealed class ThrowingMediator : IMediator

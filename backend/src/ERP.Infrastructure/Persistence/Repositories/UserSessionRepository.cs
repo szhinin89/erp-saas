@@ -1,3 +1,4 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
@@ -35,13 +36,15 @@ public sealed class UserSessionRepository : IUserSessionRepository
     // IgnoreQueryFilters(): limpieza de sistema cross-tenant (Hangfire, Fase 9) — mismo
     // criterio que GetActiveSessionsAsync arriba, archivo ya en la allowlist del gate.
     public async Task<IReadOnlyList<UserSession>> GetExpiredActiveSessionsAsync(
-        DateTime olderThanUtc,
-        CancellationToken cancellationToken = default
-    ) =>
-        await _db
-            .UserSessions.AsPlatformQuery()
-            .Where(x => x.Status == UserSessionStatus.Active && x.StartedAt < olderThanUtc)
-            .ToListAsync(cancellationToken);
+        DateTime olderThanUtc, int batchSize, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
+        var query = _db.UserSessions.AsPlatformQuery()
+            .Where(x => x.Status == UserSessionStatus.Active && x.StartedAt < olderThanUtc);
+        JobMetrics.RecordBacklog(await query.LongCountAsync(cancellationToken),
+            await query.MinAsync(x => (DateTime?)x.StartedAt, cancellationToken));
+        return await query.OrderBy(x => x.StartedAt).ThenBy(x => x.Id).Take(batchSize).ToListAsync(cancellationToken);
+    }
 
     // IgnoreQueryFilters(): dashboard administrativo (Fase 10) — CompanyId es un filtro
     // opcional explícito, no el scope automático de ICompanyOperationalEntity, porque un

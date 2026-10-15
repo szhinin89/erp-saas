@@ -7,5 +7,5 @@ namespace ERP.Infrastructure.Persistence.Outbox;
 /// </summary>
 public interface IOutboxProcessor
 {
-    Task ProcessPendingAsync(CancellationToken cancellationToken = default);
+    Task ProcessPendingAsync(int batchSize, CancellationToken cancellationToken = default);
 }

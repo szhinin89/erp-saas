@@ -134,6 +134,21 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
     }
 
     [Fact]
+    public async Task A9_bounded_discovery_rotates_across_fresh_contexts_without_starvation()
+    {
+        var expected = new[] { await SeedA9Async(number: "001-001-000000091"),
+            await SeedA9Async(number: "001-001-000000092"), await SeedA9Async(number: "001-001-000000093") };
+        var seen = new List<Guid>();
+        for (var run = 0; run < 3; run++)
+        {
+            await using var discovery = A9Context();
+            var batch = await A9Recovery(discovery).GetCandidatesAsync(1, default);
+            seen.Add(batch.Should().ContainSingle().Subject.InvoiceId);
+        }
+        seen.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
     public async Task A9_committed_sale_without_document_survives_authorization_retry_then_recovers_in_new_context()
     {
         var id = await SeedA9Async();
@@ -142,7 +157,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         await using (var before = CreateContext())
             (await before.ElectronicDocuments.CountAsync()).Should().Be(0);
         await using (var discovery = A9Context(Guid.Empty, Guid.Empty))
-            (await A9Recovery(discovery, Guid.Empty, Guid.Empty).GetCandidatesAsync(default))
+            (await A9Recovery(discovery, Guid.Empty, Guid.Empty).GetCandidatesAsync(50, default))
                 .Should().ContainSingle(c => c == A9Candidate(id));
         // All request/discovery state has gone away; only persisted PostgreSQL state is retained.
         await using (var restarted = A9Context())
@@ -168,7 +183,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         }
         await using var verify = CreateContext();
         (await verify.ElectronicDocuments.CountAsync()).Should().Be(1);
-        (await A9Recovery(verify).GetCandidatesAsync(default)).Should().BeEmpty();
+        (await A9Recovery(verify).GetCandidatesAsync(50, default)).Should().BeEmpty();
         var invoice = await verify.SalesInvoices.AsNoTracking().SingleAsync();
         invoice.Should().BeEquivalentTo(originalInvoice);
         (await verify.OutboxMessages.CountAsync(m => originalEvents.Contains(m.Id))).Should().Be(originalEvents.Length);
@@ -210,7 +225,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         }
         await using var db = A9Context();
         var before = await db.ElectronicDocuments.AsNoTracking().SingleAsync();
-        (await A9Recovery(db).GetCandidatesAsync(default)).Should().BeEmpty();
+        (await A9Recovery(db).GetCandidatesAsync(50, default)).Should().BeEmpty();
         await A9Recovery(db).RecoverAsync(A9Candidate(id), default);
         // Exercise the inner check too: document appeared after the reconciler's outer check.
         var result = await A9Issuer(db).RegisterMissingAsync(new(_tenantId, _companyId,
@@ -229,7 +244,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
     {
         var id = await SeedA9Async(status, emission, number);
         await using var db = A9Context();
-        (await A9Recovery(db).GetCandidatesAsync(default)).Should().BeEmpty();
+        (await A9Recovery(db).GetCandidatesAsync(50, default)).Should().BeEmpty();
         await A9Recovery(db).RecoverAsync(A9Candidate(id), default);
         (await db.ElectronicDocuments.CountAsync()).Should().Be(0);
     }
@@ -266,7 +281,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         var third = await SeedA9Async(owner: thirdOwner);
         IReadOnlyList<SalesElectronicRecoveryCandidate> candidates;
         await using (var discovery = A9Context(Guid.Empty, Guid.Empty))
-            candidates = await A9Recovery(discovery, Guid.Empty, Guid.Empty).GetCandidatesAsync(default);
+            candidates = await A9Recovery(discovery, Guid.Empty, Guid.Empty).GetCandidatesAsync(50, default);
         candidates.Should().HaveCount(3);
         foreach (var candidate in candidates)
         {
@@ -290,7 +305,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
     {
         var id = await SeedA9Async();
         await using (var discovery = A9Context())
-            (await A9Recovery(discovery).GetCandidatesAsync(default)).Should().ContainSingle();
+            (await A9Recovery(discovery).GetCandidatesAsync(50, default)).Should().ContainSingle();
         await using (var cancel = CreateContext())
         {
             (await cancel.SalesInvoices.SingleAsync()).Cancel("A9 stale candidate", _createdBy);
@@ -308,7 +323,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         await using var db = A9Context();
         await db.SalesInvoices.Where(i => i.Id == id)
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.EmissionPointId, (Guid?)null));
-        (await A9Recovery(db).GetCandidatesAsync(default)).Should().BeEmpty();
+        (await A9Recovery(db).GetCandidatesAsync(50, default)).Should().BeEmpty();
         await A9Recovery(db).RecoverAsync(A9Candidate(id), default);
         (await db.ElectronicDocuments.CountAsync()).Should().Be(0);
     }
@@ -362,7 +377,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             await FluentActions.Awaiting(() => A9Recovery(failing).RecoverAsync(A9Candidate(id), default))
                 .Should().ThrowAsync<InvalidOperationException>();
         await using var restarted = A9Context();
-        (await A9Recovery(restarted).GetCandidatesAsync(default)).Should().ContainSingle();
+        (await A9Recovery(restarted).GetCandidatesAsync(50, default)).Should().ContainSingle();
         await A9Recovery(restarted).RecoverAsync(A9Candidate(id), default);
         (await restarted.ElectronicDocuments.CountAsync()).Should().Be(1);
     }

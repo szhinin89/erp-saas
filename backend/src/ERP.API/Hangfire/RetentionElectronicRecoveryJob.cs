@@ -1,41 +1,20 @@
+using ERP.Infrastructure.BackgroundProcessing;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using ERP.Infrastructure.Services;
-using Hangfire;
 
 namespace ERP.API.Hangfire;
 
-public interface IRetentionElectronicRecoveryJob
-{
-    Task ExecuteAsync(CancellationToken cancellationToken = default);
-}
-
 /// <summary>
-/// ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036 §14) — recuperación de la transmisión inmediata.
-/// La transmisión se inicia después del commit de la confirmación de Compra/Gasto; si el proceso cae
-/// entre ese commit y el inicio (o la petición se corta antes de crear/avanzar el comprobante), la
-/// fuente durable de lo pendiente es la propia retención: <c>Issued</c> sin ElectronicDocument (o con
-/// uno que quedó en Draft). No hay un segundo pipeline: cada candidato entra por el MISMO
-/// <see cref="IRetentionElectronicTransmission.StartAsync"/> que el flujo inmediato.
-///
-/// Idempotente: el registro es único por origen (chequeo + índice único
-/// <c>uq_electronic_document_source</c>), así que dos corridas — o una corrida y la transmisión
-/// inmediata — nunca crean dos ElectronicDocument. La ventana de gracia evita competir con la
-/// transmisión inmediata recién iniciada. Cross-tenant por diseño (mismo patrón que
-/// <see cref="ElectronicDocumentRetryJob"/>): la consulta de candidatos ignora filtros globales y
-/// devuelve solo identificadores; cada candidato se procesa en su propio scope bajo
-/// <see cref="JobExecutionContext"/> de su tenant/empresa.
-///
-/// También retoma la anulación SRI de retenciones autorizadas (ZH-RETENTION-SRI-ANNULMENT-01/01B):
-/// finalizaciones pendientes tras un ANULADO y el polling de ConsultaComprobante de las solicitudes
-/// presentadas.
+/// Starts only Issued retentions without an ElectronicDocument, and recovers annulment
+/// finalization and verification. Existing electronic documents, including Draft, belong
+/// exclusively to ElectronicDocuments. Each stream has a durable fair checkpoint.
 /// </summary>
-public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectronicRecoveryJob
+public sealed partial class RetentionElectronicRecoveryJob : IRecurringJob
 {
     /// <summary>Antigüedad mínima de la emisión antes de considerarla "no iniciada".</summary>
     public static readonly TimeSpan GracePeriod = TimeSpan.FromMinutes(2);
 
-    private const int BatchSize = 50;
 
     /// <summary>
     /// 01B — intervalo mínimo entre consultas a ConsultaComprobante de una misma solicitud presentada. La
@@ -45,7 +24,6 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
     public static readonly TimeSpan SriVerificationInterval = TimeSpan.FromMinutes(30);
 
     /// <summary>Pocas por corrida: cada consulta SOAP puede tardar (reintentos HTTP) y no debe frenar el resto del job.</summary>
-    private const int SriVerificationBatchSize = 10;
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<RetentionElectronicRecoveryJob> _logger;
@@ -58,28 +36,22 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
         _scopeFactory = scopeFactory;
         _logger = logger;
     }
-
-    [DisableConcurrentExecution(timeoutInSeconds: 10)]
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task ExecuteAsync(int batchSize, CancellationToken cancellationToken = default)
     {
-        await FinalizeAcceptedAnnulmentsAsync(cancellationToken);
+        ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 3);
+        var quota = batchSize / 3;
+        await FinalizeAcceptedAnnulmentsAsync(quota, cancellationToken);
 
         IReadOnlyList<RetentionElectronicStartCandidate> candidates;
-        try
         {
             await using var queryScope = _scopeFactory.CreateAsyncScope();
             candidates = await queryScope
                 .ServiceProvider.GetRequiredService<IRetentionDocumentRepository>()
                 .GetPendingElectronicStartAsync(
                     DateTime.UtcNow - GracePeriod,
-                    BatchSize,
+                    batchSize - 2 * quota,
                     cancellationToken
                 );
-        }
-        catch (Exception ex)
-        {
-            LogCandidateQueryFailed(ex);
-            return;
         }
 
         foreach (var candidate in candidates)
@@ -90,21 +62,24 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
                 await using var scope = _scopeFactory.CreateAsyncScope();
                 var transmission =
                     scope.ServiceProvider.GetRequiredService<IRetentionElectronicTransmission>();
-                await transmission.StartAsync(
+                var result = await transmission.StartAsync(
                     candidate.TenantId,
                     candidate.CompanyId,
                     candidate.RetentionId,
                     Guid.Empty,
                     cancellationToken
                 );
+                if (result.IsSuccess) JobMetrics.RecordProcessed();
+                else JobMetrics.RecordFailed();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
+                JobMetrics.RecordFailed();
                 LogCandidateThrew(candidate.RetentionId, ex);
             }
         }
 
-        await VerifySubmittedAnnulmentsAsync(cancellationToken);
+        await VerifySubmittedAnnulmentsAsync(quota, cancellationToken);
     }
 
     /// <summary>
@@ -114,24 +89,18 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
     /// ante una verificación concurrente desde la UI. Cross-tenant: solo identificadores; cada solicitud en
     /// su scope bajo <see cref="JobExecutionContext"/>.
     /// </summary>
-    private async Task VerifySubmittedAnnulmentsAsync(CancellationToken cancellationToken)
+    private async Task VerifySubmittedAnnulmentsAsync(int batchSize, CancellationToken cancellationToken)
     {
         IReadOnlyList<(Guid TenantId, Guid CompanyId, Guid RequestId)> due;
-        try
         {
             await using var queryScope = _scopeFactory.CreateAsyncScope();
             due = await queryScope
                 .ServiceProvider.GetRequiredService<IRetentionAnnulmentRequestRepository>()
                 .GetDueForSriVerificationAsync(
                     DateTime.UtcNow - SriVerificationInterval,
-                    SriVerificationBatchSize,
+                    batchSize,
                     cancellationToken
                 );
-        }
-        catch (Exception ex)
-        {
-            LogCandidateQueryFailed(ex);
-            return;
         }
 
         foreach (var (tenantId, companyId, requestId) in due)
@@ -140,7 +109,7 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
             try
             {
                 await using var scope = _scopeFactory.CreateAsyncScope();
-                await scope
+                var result = await scope
                     .ServiceProvider.GetRequiredService<IRetentionAnnulmentService>()
                     .VerifyWithSriAsync(
                         tenantId,
@@ -149,9 +118,12 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
                         Guid.Empty,
                         cancellationToken
                     );
+                if (result.IsSuccess) JobMetrics.RecordProcessed();
+                else JobMetrics.RecordFailed();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
+                JobMetrics.RecordFailed();
                 LogCandidateThrew(requestId, ex);
             }
         }
@@ -162,20 +134,14 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
     /// terminó de anularse (caída o fallo tras registrar la resolución): se reintenta la finalización
     /// idempotente por el mismo servicio que la resolución en línea.
     /// </summary>
-    private async Task FinalizeAcceptedAnnulmentsAsync(CancellationToken cancellationToken)
+    private async Task FinalizeAcceptedAnnulmentsAsync(int batchSize, CancellationToken cancellationToken)
     {
         IReadOnlyList<(Guid TenantId, Guid CompanyId, Guid RequestId)> pending;
-        try
         {
             await using var queryScope = _scopeFactory.CreateAsyncScope();
             pending = await queryScope
                 .ServiceProvider.GetRequiredService<IRetentionAnnulmentRequestRepository>()
-                .GetPendingFinalizationAsync(BatchSize, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            LogCandidateQueryFailed(ex);
-            return;
+                .GetPendingFinalizationAsync(batchSize, cancellationToken);
         }
 
         foreach (var (tenantId, companyId, requestId) in pending)
@@ -184,22 +150,19 @@ public sealed partial class RetentionElectronicRecoveryJob : IRetentionElectroni
             try
             {
                 await using var scope = _scopeFactory.CreateAsyncScope();
-                await scope
+                var result = await scope
                     .ServiceProvider.GetRequiredService<IRetentionAnnulmentService>()
                     .FinalizeAsync(tenantId, companyId, requestId, Guid.Empty, cancellationToken);
+                if (result.IsSuccess) JobMetrics.RecordProcessed();
+                else JobMetrics.RecordFailed();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
+                JobMetrics.RecordFailed();
                 LogCandidateThrew(requestId, ex);
             }
         }
     }
-
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "RetentionElectronicRecoveryJob: no se pudo obtener la lista de retenciones pendientes de transmisión"
-    )]
-    private partial void LogCandidateQueryFailed(Exception ex);
 
     [LoggerMessage(
         Level = LogLevel.Error,

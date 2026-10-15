@@ -14,8 +14,6 @@ using ERP.Domain.Kernel.Security;
 using ERP.Infrastructure;
 using ERP.Infrastructure.Caching;
 using ERP.Infrastructure.Persistence;
-using Hangfire;
-using Hangfire.PostgreSql;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -31,12 +29,20 @@ using Serilog;
 // Cambiar a LicenseType.Professional si aplica.
 QuestPDF.Settings.License = LicenseType.Community;
 
+if (args.Contains("--worker", StringComparer.Ordinal))
+{
+    using var worker = BackgroundWorkerHost.Build(args.Where(a => a != "--worker").ToArray());
+    await worker.RunAsync();
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Asegura que los user-secrets del API ganen a appsettings (también fuera de Development).
 // Se re-agregan env vars y args después para conservar la precedencia estándar:
 // appsettings < user-secrets < environment variables < command line.
-builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+if (!builder.Environment.IsEnvironment("Testing"))
+    builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 
@@ -322,7 +328,7 @@ if (observabilityEnabled && !builder.Environment.IsEnvironment("Testing"))
             )
         )
         .WithMetrics(m =>
-            m.AddAspNetCoreInstrumentation().AddMeter("ERP.Security").AddPrometheusExporter()
+            m.AddAspNetCoreInstrumentation().AddMeter("ERP.Security", "ERP.Jobs").AddPrometheusExporter()
         );
 }
 
@@ -334,15 +340,11 @@ var healthChecks = builder
     .AddCheck<SecurityContextHealthCheck>("security-context", tags: ["security"])
     .AddCheck<MembershipConsistencyHealthCheck>(
         "membership-consistency",
-        tags: ["security", "ready"]
+        tags: ["security"]
     )
-    .AddCheck<MasterDataSyncHealthCheck>("masterdata-sync", tags: ["security", "ready"])
+    .AddCheck<MasterDataSyncHealthCheck>("masterdata-sync", tags: ["security"])
     .AddCheck<BackgroundContextHealthCheck>("background-context", tags: ["security"])
-    .AddCheck<QueryFilterEnforcementHealthCheck>("query-filter-enforcement", tags: ["security"])
-    .AddCheck<MasterDataReconciliationHealthCheck>(
-        "masterdata-reconciliation",
-        tags: ["security", "ready"]
-    );
+    .AddCheck<QueryFilterEnforcementHealthCheck>("query-filter-enforcement", tags: ["security"]);
 
 builder.Services.AddHostedService<ErpScopeMarkerStartupValidator>();
 
@@ -367,33 +369,7 @@ if (
     );
 }
 
-var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", false);
-if (hangfireEnabled)
-{
-    var hangfireConn =
-        builder.Configuration["Hangfire:ConnectionString"]
-        ?? builder.Configuration.GetConnectionString("DefaultConnection");
-    if (string.IsNullOrWhiteSpace(hangfireConn))
-        throw new InvalidOperationException(
-            "Hangfire:Enabled es true pero no hay cadena de conexión (Hangfire:ConnectionString o DefaultConnection)."
-        );
-
-    builder.Services.AddHangfire(configuration =>
-        configuration.UsePostgreSqlStorage(options => options.UseNpgsqlConnection(hangfireConn))
-    );
-    builder.Services.AddHangfireServer();
-    builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
-    builder.Services.AddScoped<IProcessCommunicationsJob, ProcessCommunicationsJob>();
-    builder.Services.AddScoped<
-        IReconcileElectronicDocumentCommunicationsJob,
-        ReconcileElectronicDocumentCommunicationsJob
-    >();
-    builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
-    builder.Services.AddScoped<IElectronicDocumentRetryJob, ElectronicDocumentRetryJob>();
-    builder.Services.AddScoped<ISalesElectronicDocumentRecoveryJob, SalesElectronicDocumentRecoveryJob>();
-    builder.Services.AddScoped<IRetentionElectronicRecoveryJob, RetentionElectronicRecoveryJob>();
-    builder.Services.AddScoped<IExpireUserSessionsJob, ExpireUserSessionsJob>();
-}
+builder.Services.AddErpBackgroundProcessing(builder.Configuration);
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
 // como plain class (inyectable directamente en Application handlers).
@@ -871,14 +847,6 @@ app.MapHealthChecks(
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
     }
 );
-app.MapHealthChecks(
-    "/health/masterdata-reconciliation",
-    new HealthCheckOptions
-    {
-        Predicate = r => r.Name == "masterdata-reconciliation",
-        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
-    }
-);
 if (observabilityEnabled && !app.Environment.IsEnvironment("Testing"))
     app.MapPrometheusScrapingEndpoint("/metrics");
 
@@ -891,69 +859,6 @@ app.UseMiddleware<EnterpriseDiagnosticMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseMiddleware<ForbiddenAccessLoggingMiddleware>();
-
-if (hangfireEnabled)
-{
-    var dashEnabled = app.Configuration.GetValue("Hangfire:Dashboard:Enabled", true);
-    if (dashEnabled)
-    {
-        var dashPath = app.Configuration["Hangfire:Dashboard:Path"] ?? "/hangfire";
-        app.UseHangfireDashboard(
-            dashPath,
-            new DashboardOptions { Authorization = [new HangfireDashboardAuthorizationFilter()] }
-        );
-    }
-
-    RecurringJob.AddOrUpdate<IProcessOutboxJob>(
-        "process-outbox",
-        x => x.ExecuteAsync(CancellationToken.None),
-        "* * * * *"
-    );
-
-    RecurringJob.AddOrUpdate<IProcessCommunicationsJob>(
-        "process-communications",
-        x => x.ExecuteAsync(CancellationToken.None),
-        "* * * * *"
-    );
-
-    // ZH-EDOC-COMMUNICATIONS-01 — comprobantes autorizados sin comunicación (red de seguridad del evento).
-    RecurringJob.AddOrUpdate<IReconcileElectronicDocumentCommunicationsJob>(
-        "reconcile-electronic-document-communications",
-        x => x.ExecuteAsync(CancellationToken.None),
-        "*/10 * * * *"
-    );
-
-    RecurringJob.AddOrUpdate<IMasterDataReconciliationJob>(
-        "masterdata-reconciliation",
-        x => x.ExecuteAsync(CancellationToken.None),
-        Cron.Daily(hour: 3)
-    );
-
-    RecurringJob.AddOrUpdate<IElectronicDocumentRetryJob>(
-        "electronic-document-retry",
-        x => x.ExecuteAsync(CancellationToken.None),
-        "* * * * *"
-    );
-
-    RecurringJob.AddOrUpdate<ISalesElectronicDocumentRecoveryJob>(
-        "sales-electronic-document-recovery",
-        x => x.ExecuteAsync(CancellationToken.None),
-        "* * * * *"
-    );
-
-    // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — retenciones Issued cuya transmisión no arrancó.
-    RecurringJob.AddOrUpdate<IRetentionElectronicRecoveryJob>(
-        "retention-electronic-recovery",
-        x => x.ExecuteAsync(CancellationToken.None),
-        "* * * * *"
-    );
-
-    RecurringJob.AddOrUpdate<IExpireUserSessionsJob>(
-        "expire-user-sessions",
-        x => x.ExecuteAsync(CancellationToken.None),
-        Cron.Daily(hour: 4)
-    );
-}
 
 app.MapControllers();
 
