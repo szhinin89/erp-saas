@@ -3962,6 +3962,13 @@ select.zh-input--compact {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* Full-width supporting text within label/value details, including narrow overlays. */
+.zh-description-grid > .zh-description-grid__full-row {
+  grid-column: 1 / -1;
+  text-align: start;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 /* Mensaje de "sin datos" dentro de una sección (no reemplaza a EmptyState de página). */
 .zh-inline-empty {
   color: var(--color-text-secondary);

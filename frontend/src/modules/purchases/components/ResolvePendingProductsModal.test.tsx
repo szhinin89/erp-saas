@@ -91,6 +91,32 @@ describe("bulk resolution modal", () => {
     expect(mocks.resolve.mock.calls[0][0].newItems[0]).toMatchObject({ purchaseVatCode: "4", saleVatCode: "4", exciseTaxCode: "3011", baseSalePrice: 5 });
   });
 
+  it("uses shared description grids for XML facts and price details", async () => {
+    render(<ResolvePendingProductsModal {...props()} sources={[{ ...source, vatCode: "4" }]} />);
+    change("salePriceGross", "5.75");
+    const net = await screen.findByText("Sin IVA (se guarda)");
+    const xml = screen.getByText("Cantidad × costo").closest("dl")!;
+    const price = net.closest("dl")!;
+    expect(xml.className).toBe("zh-description-grid");
+    expect(price.className).toBe("zh-description-grid");
+    expect(xml).not.toBe(price);
+    expect(document.querySelector(".prl-facts,.prl-price")).toBeNull();
+    expect(price.querySelector("dd .zh-money-value")).toBeTruthy();
+  });
+
+  it("keeps the rounding warning conditional and uses the shared full-width row", async () => {
+    render(<ResolvePendingProductsModal {...props()} sources={[{ ...source, vatCode: "4" }]} />);
+    change("salePriceGross", "1.19");
+    const warning = await screen.findByRole("alert");
+    expect(warning.tagName).toBe("DD");
+    expect(warning.classList.contains("zh-description-grid__full-row")).toBe(true);
+    expect(warning.classList.contains("prl-row__warning")).toBe(true);
+    expect(warning.parentElement?.className).toBe("zh-description-grid");
+    expect(warning.textContent).toBe("purchases.pendingProducts.price.differs");
+    change("salePriceGross", "1.15");
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+  });
+
   it("renders 100 pending lines and selects/deselects the whole batch", () => {
     render(<ResolvePendingProductsModal {...props()} sources={Array.from({ length: 100 }, (_, i) => ({ ...source, rowId: `${i}`, lineKey: i, supplierCode: `CODE-${i}` }))} />);
     expect(screen.getAllByRole("row")).toHaveLength(101);

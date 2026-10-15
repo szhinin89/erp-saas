@@ -1164,25 +1164,6 @@
   color: var(--color-error);
   font-size: var(--text-body-sm-size);
 }
-/* Datos del XML (solo lectura) y desglose del PVP: pares etiqueta/valor compactos. */
-.prl-facts {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 2px var(--space-2);
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-body-sm-size);
-}
-.prl-facts dt {
-  color: var(--color-text-secondary);
-}
-.prl-facts dd {
-  margin: 0;
-  text-align: right;
-}
-.prl-facts .prl-row__warning {
-  grid-column: 1 / -1;
-  text-align: left;
-}
 .prl-price--loss {
   color: var(--color-error);
 }

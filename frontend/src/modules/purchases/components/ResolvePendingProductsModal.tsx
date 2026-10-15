@@ -638,7 +638,7 @@ function XmlFacts({
     ? catalogs.iceRateOptions.find((r) => r.code === source.iceCode)
     : undefined;
   return (
-    <dl className="prl-facts">
+    <dl className="zh-description-grid">
       <dt>{t("purchases.pendingProducts.xml.quantityCost", "Cantidad × costo")}</dt>
       <dd>
         {formatMoney(source.quantity, quantityDecimals)} ×{" "}
@@ -689,7 +689,7 @@ function SalePriceSummary({
   const percent = (value: number | null) =>
     value == null ? "—" : `${formatMoney(value, percentageDecimals)}%`;
   return (
-    <dl className="prl-facts prl-price">
+    <dl className="zh-description-grid">
       <dt>{t("purchases.pendingProducts.price.net", "Sin IVA (se guarda)")}</dt>
       <dd>
         <ZHMoneyValue value={breakdown.net} precision="salesUnitPrice" currencySymbol="" />
@@ -715,7 +715,7 @@ function SalePriceSummary({
         {percent(breakdown.marginPct)} / {percent(breakdown.markupPct)}
       </dd>
       {breakdown.differs && (
-        <dd className="prl-row__warning" role="alert">
+        <dd className="zh-description-grid__full-row prl-row__warning" role="alert">
           {t("purchases.pendingProducts.price.differs", {
             entered: formatMoney(row.salePriceGross ?? 0, priceDecimals),
             effective: formatMoney(breakdown.effectiveGross, priceDecimals),

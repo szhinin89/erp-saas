@@ -20,6 +20,9 @@ const content = (
       <dd>{email}</dd>
       <dt>UUID</dt>
       <dd>{uuid}</dd>
+      <dd className="zh-description-grid__full-row" role="alert">
+        {("Aviso de diferencia de redondeo " + email + key + " ").repeat(4)}
+      </dd>
     </dl>
     <div className="zh-grid zh-grid--2">
       <div>{email}</div>
@@ -163,6 +166,16 @@ describe.each([320, 375, 768, 1280])("overlay geometry at %i px", (width) => {
                 ".zh-money-value,.zh-code-value--document",
               ),
             ].every((el) => getComputedStyle(el).whiteSpace === "nowrap"),
+            fullRow: [...body.querySelectorAll<HTMLElement>(".zh-description-grid__full-row")].every((el) => {
+              const grid = el.parentElement!;
+              const row = el.getBoundingClientRect();
+              const bounds = grid.getBoundingClientRect();
+              const style = getComputedStyle(el);
+              return Math.abs(row.left - bounds.left) <= 1 &&
+                Math.abs(row.right - bounds.right) <= 1 &&
+                style.textAlign === "start" && style.overflowWrap === "anywhere" &&
+                el.scrollWidth <= el.clientWidth + 1 && row.height > 20;
+            }),
             title: (() => {
               const el = panel.querySelector<HTMLElement>("h2,h3")!;
               return (
@@ -196,6 +209,7 @@ describe.each([320, 375, 768, 1280])("overlay geometry at %i px", (width) => {
           vertical: true,
           table: true,
           nowrap: true,
+          fullRow: true,
           title: true,
           text: true,
         });
