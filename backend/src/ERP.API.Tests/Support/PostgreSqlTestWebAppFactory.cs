@@ -48,6 +48,7 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
         builder.UseEnvironment("Testing");
         builder.UseSetting("Observability:EnablePrometheus", "false");
         builder.UseSetting("Hangfire:Server:Enabled", "false");
+        builder.UseSetting("Hangfire:StorageConnectionString", ConnectionString);
         builder.UseSetting("HealthChecks:EnableRedis", "false");
         builder.UseSetting("Testing:SkipFirstRunSetup", "true");
         builder.UseSetting("Testing:SkipCommercialPlansBootstrap", "true");

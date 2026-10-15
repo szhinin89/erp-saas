@@ -59,12 +59,21 @@ public sealed class HangfireRecurringJobsTests
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory != null && !File.Exists(Path.Combine(directory.FullName, "STATUS.md"))) directory = directory.Parent;
-        var config = new ConfigurationBuilder().AddJsonFile(Path.Combine(directory!.FullName, "backend/src/ERP.API/appsettings.json")).Build();
+        var config = new ConfigurationBuilder().AddJsonFile(Path.Combine(directory!.FullName, "backend/src/ERP.API/appsettings.json"))
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Hangfire:StorageConnectionString"] = "Host=postgres;Database=test;Username=test" }).Build();
         var services = new ServiceCollection();
         services.AddErpBackgroundProcessing(config);
         using var provider = services.BuildServiceProvider();
         provider.GetRequiredService<IOptions<HangfireOptions>>().Value.Server.Enabled.Should().BeFalse();
         provider.GetService<global::Hangfire.JobStorage>().Should().BeNull();
+    }
+
+    [Fact] public void Versioned_configuration_requires_explicit_storage_even_for_API()
+    {
+        var config = new ConfigurationBuilder().AddJsonFile(AppSettingsPath()).Build();
+        config["Hangfire:StorageConnectionString"].Should().BeNull();
+        var action = () => new ServiceCollection().AddErpBackgroundProcessing(config);
+        action.Should().Throw<OptionsValidationException>();
     }
 
     [Theory]

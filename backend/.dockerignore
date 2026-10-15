@@ -1,0 +1,10 @@
+# Host build outputs must not replace the Linux restore assets in Docker.
+**/bin/
+**/obj/
+**/TestResults/
+**/logs/
+**/files/
+**/appsettings.Development.json
+**/appsettings.Testing.json
+**/secrets.json
+.env*

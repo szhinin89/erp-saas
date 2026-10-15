@@ -1,5 +1,13 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
+## BACKGROUND DEPLOYMENT — FASE D
+
+**Status: IMPLEMENTADO y validado focalmente (2026-10-15).** API/Worker separados
+en Compose canónico, misma imagen/volumen, storage explícito y Redis único.
+PASS Compose 4/4, tests 21/21 + PostgreSQL 4/4, build/smoke aislado. Coolify real
+pendiente de inspección/transición según runbook. Sin suites completas, commit/push.
+[Entrega](BACKGROUND_DEPLOYMENT_PHASE_D_DELIVERY.md).
+
 ## PURCHASES FASE B — BUG REAL: ORDEN DE MIGRACIÓN
 
 **Status: CORREGIDO y validado focalmente (2026-10-15).** Índices/trigger de activos

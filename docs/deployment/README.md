@@ -1,16 +1,48 @@
-# Deployment — ERP SaaS
+# Deployment — API + Worker separados
 
-Plantillas y guías de despliegue (placeholder enterprise).
+## Contrato canónico
 
-| Recurso | Ubicación |
-|---------|-----------|
-| Docker Compose prod | [`docker-compose.prod.yml`](../../docker-compose.prod.yml) |
-| Docker Compose localprod (piloto) | [`docker-compose.localprod.yml`](../../docker-compose.localprod.yml) — ver [`docs/DOCKER_LOCAL_PROD.md`](../DOCKER_LOCAL_PROD.md) |
-| Base de servicios | [`infrastructure/docker/compose.base.yml`](../../infrastructure/docker/compose.base.yml) |
-| Ops / deployment IaC | [`infrastructure/deployment/`](../../infrastructure/deployment/) |
-| CI deploy opcional | [`.github/workflows/build-and-deploy.yml`](../../.github/workflows/build-and-deploy.yml) |
+Localprod y prod incluyen `infrastructure/docker/compose.app.yml`: API HTTP y Worker
+`--worker`, misma imagen/tag `ERP_IMAGE`, una réplica Worker sin HTTP. PostgreSQL/Redis
+son servicios existentes en `ERP_NETWORK`. API migra/bootstrap; Worker nunca migra.
+API fija Server OFF, Worker ON. No usar host combinado para despliegue.
 
-> Antes de producción real: secrets, redes, volúmenes, réplicas y variables de entorno según [`docs/DEVELOPMENT.md`](../DEVELOPMENT.md). `docker-compose.prod.yml` es hoy un stub (solo incluye `compose.base.yml`) — no define aún los servicios `erp-api`/`erp-frontend` para producción real; para piloto se usa `docker-compose.localprod.yml`.
+Variables, build, almacenamiento y supervisión: [Docker local/prod](../DOCKER_LOCAL_PROD.md).
+Plantilla única: [`.env.docker.local.example`](../../.env.docker.local.example).
+Secrets en archivo ignorado local o gestor de secretos Coolify, nunca en Git.
+Prod usa imágenes publicadas inmutables y `up -d --no-build`; el frontend necesita
+PUBLIC_API_URL correcto durante build. TLS/routing público se configura en Coolify.
+No existe otra ruta operativa vigente para Background Processing.
+
+## Transición real de Coolify (pendiente de inspección)
+
+No se inspeccionó ni modificó Coolify activo. Antes de ejecutar:
+
+1. Inventariar recursos actuales, imágenes/tags, comandos, variables efectivas,
+   redes, volúmenes/keyring y procesos con Hangfire Server ON. Respaldar BD/archivos.
+2. Preparar la topología Compose canónica en Coolify, misma imagen ERP para API y
+   Worker, una réplica Worker. Conectar ambos a la red real de PostgreSQL/Redis;
+   montar el volumen durable real existente en ambos, sin sustituirlo por uno vacío.
+   El mismo volumen local exige el mismo host; no separar en nodos sin storage compartido.
+3. Cargar conexiones externas explícitas y secretos compartidos. Storage Hangfire usa
+   DNS PostgreSQL interno y puerto 5432, sin localhost/5435/multiplexing. Publicar solo
+   Redis__ConnectionString y el mismo Redis__InstanceName. Eliminar variables legacy.
+4. Detener todos los workers antiguos y API antiguas con Server.Enabled=true.
+   No dejar procesos viejos sincronizando recurring jobs durante la transición.
+5. Desplegar primero API con Server.Enabled=false; confirmar migraciones/bootstrap
+   completos y `/health/ready` healthy (BD/Redis). Verificar migración BackgroundJobProgress.
+6. Desplegar Worker con `--worker`, Server.Enabled=true y exactamente la imagen de API.
+   En Compose depende de API healthy; si la plataforma no respeta esa dependencia,
+   ejecutar estos pasos secuencialmente antes de habilitar el servicio Worker.
+7. Confirmar proceso vivo, sin listener HTTP, cuatro servidores Hangfire activos con
+   colas core/communications/sri/maintenance (1/2/2/1 workers), siete recurring jobs y
+   ningún servidor perteneciente al hostname API. Revisar heartbeat/logs y ausencia
+   de procesos antiguos activos; un registro histórico no equivale a worker vivo.
+8. Habilitar alertas de heartbeat/reinicios, verificar archivos/keyring compartidos y
+   realizar smoke controlado. En actualizaciones: detener Worker → API ready → Worker.
+
+Los locks existentes evitan concurrencia por ID; no sustituyen la retirada de procesos
+antiguos ni garantizan ejecución exactamente una vez. ADR-043 permanece sin cambios.
 
 ## Backup / Restore / Rollback
 
@@ -58,9 +90,8 @@ resuelve la configuración SMTP en dos capas, en este orden:
    | `Communications__Email__UseSsl` | `true` |
    | `Communications__Email__MaxRetries` | `3` |
 
-   Agregar estas variables al bloque `environment:` de `erp-api` en `docker-compose.localprod.yml` (o a
-   `.env.docker.local`, gitignored, y referenciarlas desde ahí) — igual patrón que `JWT_SECRET_KEY`/
-   `POSTGRES_PASSWORD`. **Nunca** comitear la contraseña SMTP real en ningún archivo versionado.
+   Configurar las variables SMTP de `.env.docker.local.example`; el bloque común de
+   `infrastructure/docker/compose.app.yml` las transmite a API y Worker. **Nunca** comitear la contraseña SMTP real en ningún archivo versionado.
 
 **Smoke real de envío queda pendiente únicamente por la credencial SMTP real** — con las variables de
 arriba configuradas, el flujo ya está implementado y probado (ERP-CORE-CLOSEOUT-06/07); falta solo
@@ -75,7 +106,7 @@ que el piloto provea una cuenta Zoho real para verificar la entrega end-to-end.
 
 ## Dominio / SSL
 
-**Pendiente externo, no resuelto en este repo.** `docker-compose.localprod.yml` expone la API/frontend en `localhost` sin TLS. Para el piloto real falta: dominio `.com.ec` registrado, terminación SSL (reverse proxy tipo Caddy/Traefik/nginx+certbot delante de `erp-frontend`), y actualizar `Cors:AllowedOrigins`/`VITE_API_URL` al dominio real. No inventar aquí una configuración de SSL sin el dominio real confirmado.
+**Pendiente externo, no resuelto en este repo.** `docker-compose.localprod.yml` publica los puertos API/frontend sin terminación TLS integrada. Para el piloto real falta: dominio `.com.ec` registrado, terminación SSL (reverse proxy tipo Caddy/Traefik/nginx+certbot delante de `erp-frontend`), y actualizar `Cors:AllowedOrigins`/`VITE_API_URL` al dominio real. No inventar aquí una configuración de SSL sin el dominio real confirmado.
 
 ## Pendientes externos del piloto (resumen)
 

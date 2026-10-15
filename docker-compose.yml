@@ -3,7 +3,7 @@
 # Apagar: docker compose down  (datos persisten hasta docker compose down -v)
 #
 # Definición de servicios: infrastructure/docker/compose.base.yml
-# Entornos: docker-compose.dev.yml (local) · docker-compose.prod.yml (plantilla)
+# Infra local: docker-compose.dev.yml. API/Worker: docker-compose.localprod.yml / prod.yml.
 
 include:
   - path: infrastructure/docker/compose.base.yml

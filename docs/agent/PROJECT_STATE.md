@@ -1,5 +1,12 @@
 # PROJECT_STATE.md — Estado vigente del proyecto
 
+## BACKGROUND DEPLOYMENT — FASE D (2026-10-15)
+
+Implementado: Compose único API OFF / Worker ON, misma imagen y volumen; storage
+explícito, Redis único, orden API ready → Worker. PASS Compose 4/4, tests focales
+21/21 + PostgreSQL 4/4, build y smoke aislado. Sin tocar piloto/Coolify, suites
+completas, commit ni push. Transición real pendiente. [Entrega](BACKGROUND_DEPLOYMENT_PHASE_D_DELIVERY.md).
+
 ## PURCHASES FASE B — BUG REAL: ORDEN DE MIGRACIÓN (2026-10-15)
 
 Corregido el 23505 de históricos con claves reutilizadas: ambos índices de activos

@@ -110,6 +110,15 @@ public sealed class RecurringJobRunnerPostgreSqlTests : IAsyncLifetime
             server.Queues.Should().ContainSingle();
             server.WorkersCount.Should().Be(expected[server.Queues.Single()]);
         }
+        // This fresh ERP database is still unmigrated after the worker starts.
+        // Hangfire may create its own schema, but worker must never apply ERP migrations.
+        await using (var connection = new Npgsql.NpgsqlConnection(_postgres.GetConnectionString()))
+        {
+            await connection.OpenAsync();
+            await using var command = new Npgsql.NpgsqlCommand(
+                "SELECT to_regclass('public.\"__EFMigrationsHistory\"') IS NULL", connection);
+            (await command.ExecuteScalarAsync()).Should().Be(true);
+        }
         await host.StopAsync();
         global::Hangfire.Logging.LogProvider.SetCurrentLogProvider(null);
     }

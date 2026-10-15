@@ -1,0 +1,97 @@
+# Canonical API + Worker + Frontend; existing PostgreSQL/Redis in ERP_NETWORK.
+name: erp-saas-localprod
+
+services:
+  erp-api:
+    image: "${ERP_IMAGE:?immutable ERP image required}"
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: &erp-environment
+        DOTNET_ENVIRONMENT: Production
+        ASPNETCORE_ENVIRONMENT: Production
+        ConnectionStrings__DefaultConnection: "Host=${POSTGRES_HOST:?internal PostgreSQL DNS required};Port=5432;Database=${POSTGRES_DB:?required};Username=${POSTGRES_USER:?required};Password=${POSTGRES_PASSWORD:?required}"
+        Hangfire__StorageConnectionString: "${Hangfire__StorageConnectionString:?explicit PostgreSQL Hangfire storage required}"
+        Redis__ConnectionString: "${Redis__ConnectionString:?internal Redis connection required}"
+        Redis__InstanceName: "${Redis__InstanceName:?shared Redis prefix required}"
+        FileStorage__BasePath: /app/data/files
+        PasswordReset__PublicBaseUrl: "${PUBLIC_FRONTEND_URL:?required}"
+        Communications__Email__Enabled: "${SMTP_ENABLED:-false}"
+        Communications__Email__SmtpHost: "${SMTP_HOST:-}"
+        Communications__Email__SmtpPort: "${SMTP_PORT:-587}"
+        Communications__Email__SmtpUsername: "${SMTP_USERNAME:-}"
+        Communications__Email__SmtpPassword: "${SMTP_PASSWORD:-}"
+        Communications__Email__SenderEmail: "${SMTP_SENDER_EMAIL:-}"
+        Communications__Email__SenderName: "${SMTP_SENDER_NAME:-}"
+        Communications__Email__UseSsl: "${SMTP_USE_SSL:-true}"
+      Hangfire__Server__Enabled: "false"
+      ASPNETCORE_URLS: http://+:8080
+      Jwt__SecretKey: ${JWT_SECRET_KEY:?required}
+      Cors__AllowedOrigins__0: "${PUBLIC_FRONTEND_URL:?required}"
+      HealthChecks__SriProbeUrl: ""
+    ports:
+      - "${API_PORT:-5003}:8080"
+    networks:
+      - erp-saas-existing
+    volumes:
+      - erp-api-files:/app/data/files
+      # Serilog (appsettings.json) escribe en la ruta relativa logs/erp-.txt, que con
+      # WORKDIR=/app del Dockerfile resuelve a /app/logs — sin volumen, el historial de
+      # logs se pierde en cada recreación del contenedor (ERP-CORE-CLOSEOUT-10).
+      - erp-api-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  erp-worker:
+    image: "${ERP_IMAGE:?immutable ERP image required}"
+    command: ["--worker"]
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+    environment:
+      <<: *erp-environment
+      Hangfire__Server__Enabled: "true"
+    depends_on:
+      erp-api:
+        condition: service_healthy
+    networks:
+      - erp-saas-existing
+    volumes:
+      - erp-api-files:/app/data/files
+    # No HTTP: supervise process exit/restart and Hangfire heartbeat (see runbook).
+
+  erp-frontend:
+    image: "${FRONTEND_IMAGE:?versioned frontend image required}"
+    build:
+      context: ../..
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: "${PUBLIC_API_URL:?browser-accessible API URL required}"
+    restart: unless-stopped
+    depends_on:
+      # API must finish migrations/bootstrap before the browser uses it.
+      erp-api:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    networks:
+      - erp-saas-existing
+
+networks:
+  erp-saas-existing:
+    name: "${ERP_NETWORK:-erp-saas_default}"
+    external: true
+
+volumes:
+  # Certificados P12, XML firmados/autorizados y RIDE (PDF) generados por erp-api.
+  # Nombrado (no bind mount) para no depender de rutas del host — sobrevive a
+  # `docker compose ... up -d --force-recreate erp-api`; solo se borra con `down -v`,
+  # que este proyecto nunca ejecuta contra este compose (ver docs/DOCKER_LOCAL_PROD.md).
+  erp-api-files:
+  erp-api-logs:

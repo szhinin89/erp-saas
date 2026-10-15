@@ -1,11 +1,10 @@
-# Infrastructure — deployment (placeholder)
+# Deployment
 
-Espacio reservado para artefactos de despliegue (Bicep/Terraform, manifests, runbooks).
+Topología única API + Worker separados: `../docker/compose.app.yml`, incluida por
+`docker-compose.localprod.yml` y `docker-compose.prod.yml` en la raíz.
 
-| Área | Estado |
-|------|--------|
-| Azure App Service | Workflow opcional en `build-and-deploy.yml` |
-| Container images | Pendiente definición producto |
-| Secrets | Ver [`docs/security/README.md#secrets`](../../docs/security/README.md#secrets) |
+API/Worker usan la misma imagen inmutable; API Server OFF y Worker `--worker` ON.
+PostgreSQL/Redis existentes, configuración y almacenamiento durable compartidos.
+Secrets externos. No hay infraestructura Coolify activa administrada desde este repo.
 
-Relacionado: [`docs/deployment/README.md`](../../docs/deployment/README.md).
+Contrato y transición: [runbook](../../docs/deployment/README.md).

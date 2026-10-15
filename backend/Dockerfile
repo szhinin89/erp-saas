@@ -1,4 +1,4 @@
-# ERP.API — imagen production-like para docker-compose.localprod.yml
+# ERP.API — imagen única API/Worker para Compose localprod/prod
 # Build context: backend/  (docker compose -f docker-compose.localprod.yml build en la raíz del repo)
 #
 # Esta imagen NO incluye PostgreSQL ni Redis: se conecta a los contenedores
@@ -68,6 +68,7 @@ EXPOSE 8080
 
 COPY --from=build /app/publish .
 
+# Solo el modo HTTP aplica migraciones/bootstrap; --worker no ejecuta migraciones.
 # Migraciones (db.Database.MigrateAsync()) se aplican automáticamente en el
 # arranque de ERP.API contra la base de datos existente — no se ejecuta ningún
 # comando de inicialización destructivo desde esta imagen.

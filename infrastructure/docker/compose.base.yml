@@ -26,7 +26,7 @@ services:
       - "5435:5432"
     environment:
       POSTGRES_USER: postgres
-      # Sin default: cualquier compose que incluya este archivo (dev, prod) debe
+      # Sin default: cualquier compose de infraestructura que incluya este archivo debe
       # proveer POSTGRES_PASSWORD. Docker Compose no permite override de un
       # `services:` incluido vía `include:` (genera conflicto, no merge) — por eso
       # el default de conveniencia para dev vive en el .env raíz del repo

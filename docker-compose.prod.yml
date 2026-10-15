@@ -1,17 +1,4 @@
-# Plantilla producción — NO usar tal cual en local.
-# Ajustar secrets, redes, volúmenes y réplicas antes de desplegar.
-# Ver docs/deployment/README.md e infrastructure/deployment/
-#
-# POSTGRES_PASSWORD es obligatorio (sin default): compose.base.yml falla el arranque
-# si no se exporta la variable. Nunca fijar un valor real en este archivo.
-
+# Canonical deployment; prod uses immutable images with up -d --no-build.
+name: erp-saas-localprod
 include:
-  - path: infrastructure/docker/compose.base.yml
-
-# Ejemplo futuro:
-# services:
-#   postgres:
-#     deploy:
-#       resources:
-#         limits:
-#           memory: 2G
+  - path: infrastructure/docker/compose.app.yml

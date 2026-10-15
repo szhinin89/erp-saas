@@ -1,257 +1,111 @@
-# Docker Local "Production-Like" — API + Frontend
+# Docker local production-like — API + Worker + Frontend
 
-> Nivel 3 (documentación técnica especializada). No reemplaza `docs/DEVELOPMENT.md` (modo desarrollo
-> normal, sigue funcionando exactamente igual). Esto es un stack **adicional** para correr API y
-> Frontend compilados en Docker, contra el PostgreSQL y Redis que **ya tienes corriendo**.
+## Topología única
 
-## Qué es y qué NO es
+`docker-compose.localprod.yml` y `docker-compose.prod.yml` incluyen
+`infrastructure/docker/compose.app.yml`. API y Worker usan exactamente `ERP_IMAGE`.
+API ejecuta HTTP con `Hangfire__Server__Enabled=false`; Worker usa `--worker`,
+`Hangfire__Server__Enabled=true`, una réplica y `restart: unless-stopped`, sin HTTP
+ni migraciones. El entrypoint conserva tini y el mismo `ERP.API.dll`.
 
-- Levanta `ERP.API` (compilada, `dotnet publish`) y el Frontend (compilado con Vite, servido por Nginx)
-  dentro de contenedores Docker.
-- **NO** crea un PostgreSQL nuevo. **NO** crea un Redis nuevo. **NO** duplica bases de datos.
-- Se conecta a los contenedores `postgreszh` y `erp-saas-redis` que ya administra
-  `docker-compose.yml` / `infrastructure/docker/compose.base.yml`, vía la red Docker
-  `erp-saas_default` (declarada como `external: true` en `docker-compose.localprod.yml`).
-- Las migraciones EF Core se aplican automáticamente al arrancar `ERP.API` (`db.Database.MigrateAsync()`,
-  igual que en desarrollo) — no se ejecuta ningún seed destructivo (`InstallData.Enabled` permanece en
-  `false`, valor por defecto en `appsettings.json`, salvo que tú mismo lo actives).
+`docker-compose.yml` y `docker-compose.dev.yml` provisionan solo PostgreSQL/Redis;
+no representan otra topología de Background Processing. La aplicación utiliza esos
+servicios existentes por una red Docker externa. No crea otra base de datos.
 
-Archivos que agrega esta funcionalidad:
+## Preparación
 
-| Archivo | Propósito |
-|---|---|
-| `backend/Dockerfile` | Multi-stage build de `ERP.API` (SDK 10.0.203 → runtime `aspnet:10.0-alpine`). |
-| `frontend/Dockerfile` | Multi-stage build del frontend (`node:22-alpine` → `nginx:1.27-alpine`). |
-| `frontend/nginx.conf` | Sirve el SPA con fallback a `index.html` + proxy `/api/` → `erp-api:8080`. |
-| `docker-compose.localprod.yml` | Orquesta `erp-api` + `erp-frontend`, sin declarar `postgres`/`redis`. |
-| `.env.docker.local.example` | Plantilla de variables (versionada). Copiar a `.env.docker.local` (ignorado por Git). |
+1. Inspeccionar `docker ps` y la red con `docker network inspect erp-saas_default`.
+2. Copiar `.env.docker.local.example` a `.env.docker.local` (ignorado por Git).
+3. Completar secretos, DNS internos, URLs públicas e identificadores de imágenes.
+4. Para el ejemplo local, registrar `127.0.0.1 erp.local.test` en hosts. En demo/prod
+   utilizar dominio y HTTPS reales. Frontend consume `PUBLIC_API_URL` en build-time;
+   nginx sirve estáticos, sin proxy interno `/api`.
 
----
+Conexiones dentro de contenedores: PostgreSQL DNS `postgreszh`, puerto **5432**;
+Redis DNS `erp-saas-redis`, puerto 6379. El puerto publicado 5435 solo sirve a clientes
+fuera de Docker. `Hangfire__StorageConnectionString` es obligatoria, explícita y sin
+fallback; puede apuntar a la misma base ERP. No usar localhost ni multiplexing.
+Nunca mostrar la salida interpolada de `docker compose config` con secretos reales.
 
-## 1. Confirmar el PostgreSQL y Redis existentes
+## Configuración compartida y específica
 
-Antes de tocar nada, identifica los contenedores y la red reales en tu máquina — pueden diferir de los
-nombres por defecto de este repo si los renombraste.
+El anchor común de Compose comparte conexión ERP, `Hangfire__StorageConnectionString`,
+`Redis__ConnectionString`, `Redis__InstanceName`, configuración SMTP, entorno Production,
+URL pública de recuperación y `FileStorage__BasePath=/app/data/files`.
+Solo se publica una clave Redis de despliegue. No establecer `DB_CONNECTION_STRING`
+ni `ConnectionStrings__Redis` además de las claves canónicas.
 
-```powershell
-docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
-```
+Ambos montan **el mismo** volumen `erp-api-files` en `/app/data/files`: certificados,
+XML, RIDE y `dataprotection-keys`. Mantener el nombre de proyecto existente
+`erp-saas-localprod` para conservar el volumen del piloto. En una transición de Coolify,
+identificar y montar el volumen real previo; no crear uno vacío como sustituto.
+API tiene volumen de logs histórico; Worker Production registra en consola.
 
-Deberías ver algo como:
+API añade JWT, CORS, URL/puerto HTTP y health. Worker añade únicamente su modo y
+Server ON; no publica puertos ni tiene sonda HTTP. Catálogo de siete jobs, cron,
+lotes y workers por cola siguen en `appsettings.json`, sin copias en Compose:
+core=1, communications=2, sri=2, maintenance=1.
 
-```
-NAMES            IMAGE                PORTS
-postgreszh       postgres:16          0.0.0.0:5435->5432/tcp
-erp-saas-redis   redis:7-alpine       0.0.0.0:6379->6379/tcp
-```
+## Construir y arrancar
 
-Confirma en qué red Docker están (por defecto, la que crea `docker-compose.yml` de este repo):
-
-```powershell
-docker network ls
-docker network inspect erp-saas_default
-```
-
-Si tus contenedores están en una red con **otro nombre**, ajusta `name: erp-saas_default` dentro de
-`docker-compose.localprod.yml` (bloque `networks:`) para que coincida.
-
-Si el nombre de contenedor de Postgres/Redis es distinto de `postgreszh` / `erp-saas-redis`, ajusta
-`POSTGRES_HOST` / `REDIS_HOST` en tu `.env.docker.local` (paso 2) — no hace falta tocar el compose.
-
----
-
-## 2. Configurar `.env.docker.local`
+Antes de activar esta versión, detener cualquier API/worker anterior con Server ON.
+El arranque ejecutará migraciones/bootstrap y jobs: usar exclusivamente la base prevista.
 
 ```powershell
-Copy-Item .env.docker.local.example .env.docker.local
+docker compose -f docker-compose.localprod.yml --env-file .env.docker.local build erp-api erp-frontend
+docker compose -f docker-compose.localprod.yml --env-file .env.docker.local up -d --no-build
 ```
 
-Edita `.env.docker.local` y completa, como mínimo:
+El build de API crea la imagen que consume Worker. En prod, publicar previamente las
+imágenes con tags inmutables (o digest), ejecutar `pull` y `up -d --no-build`.
+PostgreSQL/Redis deben estar disponibles antes del arranque. Al ser recursos externos,
+Compose no puede expresar `depends_on` sobre ellos: API verifica BD/Redis en
+`/health/ready`; Worker depende de API `service_healthy`. Este endpoint solo responde
+tras terminar migraciones/bootstrap e iniciar HTTP. La sonda SRI opcional se excluye
+de esta barrera de dependencias. `/health/live` sigue disponible para liveness.
 
-- `POSTGRES_PASSWORD` — debe coincidir **exactamente** con la contraseña real del Postgres que ya
-  corre (revísala en tu `appsettings.Development.json` local o en cómo arrancaste ese contenedor).
-- `JWT_SECRET_KEY` — genera un secreto propio para este stack, no reutilices el de desarrollo:
-  ```powershell
-  [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
-  ```
+`depends_on` ordena el arranque inicial; no detiene Worker si API enferma después.
+En actualizaciones detener Worker antes de reemplazar API, esperar readiness y luego
+recrear Worker con **la misma** imagen. Worker no aplica migraciones.
 
-`.env.docker.local` está en `.gitignore` — nunca se versiona. `.env.docker.local.example` sí, sin
-secretos reales.
-
----
-
-## 3. Construir las imágenes
-
-Desde la raíz del repo (los build contexts están definidos en `docker-compose.localprod.yml`:
-`backend/` para la API, `.` para el frontend, porque su `npm run build` referencia `../tools/ci`):
+## Verificación y supervisión
 
 ```powershell
-docker compose -f docker-compose.localprod.yml --env-file .env.docker.local build
+docker compose -f docker-compose.localprod.yml --env-file .env.docker.local ps
+curl.exe --fail http://localhost:5003/health/ready
+docker compose -f docker-compose.localprod.yml --env-file .env.docker.local logs --tail 100 erp-api erp-worker
 ```
 
----
+Supervisar salida/reinicios del proceso Worker y heartbeat Hangfire en PostgreSQL.
+Esperar cuatro servidores activos del hostname/PID del Worker, cada uno con una cola
+core/communications/sri/maintenance y workers 1/2/2/1; siete recurring jobs con las
+colas del SSOT y ninguno en default. El hostname de API no debe aparecer como servidor.
+Los registros antiguos pueden persistir hasta expirar: distinguir heartbeat activo
+de registros históricos. No existe dashboard Hangfire.
 
-## 4. Levantar el stack
+Restart actúa al terminar el proceso; no detecta procesos bloqueados. Alertar por
+heartbeat vencido y reinicios repetidos. No usar `curl` contra Worker. Locks por ID
+existentes limitan concurrencia; no garantizan ejecución exactamente una vez.
 
-```powershell
-docker compose -f docker-compose.localprod.yml --env-file .env.docker.local up -d --build
-```
+## Apagar, respaldar y rollback
 
-Esto:
+`docker compose -f docker-compose.localprod.yml --env-file .env.docker.local down`
+detiene API/Worker/frontend sin eliminar los volúmenes ni PostgreSQL/Redis externos.
+**No usar `down -v`**: destruye los volúmenes de archivos/keyring y logs del stack.
+Backup/restore: `docs/BACKUP_RESTORE_LOCALPROD.md`, scripts `backup-localprod.ps1` y
+`restore-check-localprod.ps1`. Confirmar que los scripts cubren el volumen real antes
+de una transición fuera de localprod.
 
-1. Construye `erp-api-localprod` y `erp-frontend-localprod` si hay cambios.
-2. Los conecta a la red externa `erp-saas_default` (donde ya están `postgreszh` y `erp-saas-redis`).
-3. Publica:
-   - API en `http://localhost:5003` (dentro del contenedor escucha en `:8080`, ver `ASPNETCORE_URLS`).
-   - Frontend en `http://localhost:8080` (Nginx, puerto `80` interno).
-4. Al arrancar, `ERP.API` aplica migraciones pendientes contra el Postgres existente y sirve tráfico.
+Rollback de aplicación: detener Worker, seleccionar el tag anterior compatible en
+ERP_IMAGE (ambos procesos), desplegar API, esperar ready y desplegar Worker. API no
+revierte migraciones automáticamente. Revisar esquema y Down antes de un downgrade;
+si no es seguro, restaurar backup verificado según el runbook.
 
-Verificar:
+## Troubleshooting
 
-```powershell
-docker compose -f docker-compose.localprod.yml ps
-curl http://localhost:5003/health/live
-```
-
-Abrir `http://localhost:8080` en el navegador — el frontend llama a la API vía proxy Nginx
-(`/api/*` → `erp-api:8080`, mismo patrón relativo que usa Vite en desarrollo), así que no hace falta
-configurar CORS adicional.
-
----
-
-## 5. Aplicar migraciones contra la DB existente
-
-No requiere ningún paso manual: `ERP.API` ejecuta `db.Database.MigrateAsync()` en el arranque
-(`Program.cs`), igual que en modo desarrollo. Si necesitas verlo en los logs:
-
-```powershell
-docker compose -f docker-compose.localprod.yml logs -f erp-api
-```
-
-Si por alguna razón necesitas aplicar migraciones manualmente contra la misma base (fuera del
-contenedor, con `dotnet ef`), usa la connection string apuntando al puerto publicado del Postgres
-existente (`localhost:5435` si sigues el valor por defecto de `infrastructure/docker/compose.base.yml`)
-— exactamente como ya lo haces en desarrollo. Esta imagen Docker no cambia ese flujo.
-
----
-
-## 6. Ver logs
-
-```powershell
-docker compose -f docker-compose.localprod.yml logs -f erp-api
-docker compose -f docker-compose.localprod.yml logs -f erp-frontend
-docker compose -f docker-compose.localprod.yml logs -f          # ambos
-```
-
----
-
-## 7. Apagar sin borrar datos
-
-```powershell
-docker compose -f docker-compose.localprod.yml down
-```
-
-Esto elimina **solo** `erp-api-localprod` y `erp-frontend-localprod`. `postgreszh` y `erp-saas-redis`
-siguen corriendo (no son parte de este compose) y sus datos persisten en los volúmenes de
-`infrastructure/docker/compose.base.yml` (`erp_saas_pgdata`, `erp_saas_redisdata`).
-
-> ⚠️ **Nunca ejecutes `docker compose -f docker-compose.localprod.yml down -v`** pensando que borra
-> algo de este stack: este compose no declara volúmenes propios, así que `-v` no tiene efecto aquí —
-> pero tampoco ejecutes `down -v` sobre `docker-compose.yml` (el de Postgres/Redis) salvo que
-> **realmente** quieras destruir los datos. **Jamás** ejecutes `DROP DATABASE`, `TRUNCATE` masivo, ni
-> `docker volume rm erp_saas_pgdata` contra la base de datos compartida — este stack fue diseñado
-> explícitamente para no requerir ninguna de esas operaciones.
-
----
-
-## Persistencia de archivos (certificados SRI, XML, RIDE)
-
-`ERP.API` guarda certificados P12 (`electronic-invoicing/sri-configuration/certificate`), XML
-firmados/autorizados y PDFs RIDE en disco vía `IFileStorage`/`LocalFileStorage`, bajo la ruta que
-indique `FileStorage:BasePath`. `docker-compose.localprod.yml` fija esa ruta a `/app/data/files`
-dentro del contenedor (`FileStorage__BasePath`) y la monta sobre el volumen nombrado
-**`erp-api-files`** — así los archivos sobreviven a
-`docker compose ... up -d --force-recreate erp-api` (necesario tras cada rebuild de imagen).
-
-Sin este volumen, `LocalFileStorage` cae a `<workdir>/files` = `/app/files`, que vive en el
-filesystem efímero del contenedor y se borra en cada recreación — cualquier certificado subido se
-perdería silenciosamente en el próximo rebuild.
-
-Verificar que el volumen existe:
-
-```powershell
-docker volume ls | findstr erp-api-files
-```
-
-⚠️ El volumen `erp-api-files` **solo** se borra con `docker compose -f docker-compose.localprod.yml
-down -v` — nunca ejecutes ese comando salvo que quieras perder certificados/XML/RIDE ya generados.
-
-### Logs de la API
-
-Mismo patrón: Serilog escribe en la ruta relativa `logs/erp-.txt` (`appsettings.json`), que con
-`WORKDIR=/app` del Dockerfile resuelve a `/app/logs` dentro del contenedor. `docker-compose.localprod.yml`
-monta esa ruta sobre el volumen nombrado **`erp-api-logs`**, así el historial de logs (rolling diario,
-retención 14 días) sobrevive a `--force-recreate` igual que `erp-api-files`.
-
-```powershell
-docker volume ls | findstr erp-api-logs
-```
-
----
-
-## Rollback de la aplicación
-
-Las imágenes `erp-api-localprod`/`erp-frontend-localprod` se construyen desde el código fuente
-(`build:`), no desde un registry con tags versionados — hoy no hay "volver a la imagen anterior" con
-un solo comando. El procedimiento real:
-
-```powershell
-# 1. Confirma el commit al que quieres volver (debe ser uno ya probado/estable)
-git log --oneline -10
-
-# 2. Vuelve a ese commit (crea una rama si vas a seguir trabajando después)
-git checkout <commit-estable>
-
-# 3. Reconstruye y levanta — los datos (Postgres, erp-api-files, erp-api-logs) NO se tocan,
-#    solo se reconstruyen las imágenes de aplicación
-docker compose -f docker-compose.localprod.yml --env-file .env.docker.local up -d --build
-
-# 4. Verifica
-curl.exe -s http://localhost:5003/health/live
-```
-
-**Importante — rollback de esquema de base de datos**: `ERP.API` aplica migraciones automáticamente
-al iniciar (`db.Database.MigrateAsync()`), pero nunca las revierte solo. Si el commit al que vuelves
-tiene MENOS migraciones que las ya aplicadas contra `dberpsaas`, el esquema no baja solo — necesitas
-revertir manualmente con `dotnet ef database update <MigraciónAnterior>` **solo si** confirmaste que
-el `Down()` de las migraciones a revertir no es destructivo (revisa cada migración antes de ejecutar).
-Si tienes dudas, restaura desde un backup previo (`docs/BACKUP_RESTORE_LOCALPROD.md`) en vez de
-intentar un downgrade de esquema a ciegas.
-
----
-
-## Seguridad
-
-- **Nunca** ejecutes `docker compose -f docker-compose.localprod.yml --env-file .env.docker.local config`
-  y pegues la salida completa en un log, chat, PR o terminal compartida — esa salida interpola
-  `POSTGRES_PASSWORD` y `JWT_SECRET_KEY` en texto plano dentro de `ConnectionStrings__DefaultConnection`
-  y `Jwt__SecretKey`. Si necesitas inspeccionar el cableado, filtra esas líneas antes de mostrarlas
-  (por ejemplo `... config | grep -viE "password=|secretkey"`), o revisa solo las claves, no los valores.
-- Si `POSTGRES_PASSWORD` o `JWT_SECRET_KEY` se exponen por accidente (log, captura de pantalla, salida
-  de comando sin filtrar), rótalos de inmediato: `ALTER USER postgres WITH PASSWORD '...'` en Postgres
-  y un nuevo valor aleatorio para `JWT_SECRET_KEY` (invalida todas las sesiones activas al reiniciar
-  `erp-api`, es el comportamiento esperado).
-- `.env.docker.local` nunca se versiona (`.gitignore`); `.env.docker.local.example` solo contiene
-  placeholders `CHANGE_ME_*`, nunca secretos reales.
-
----
-
-## Troubleshooting rápido
-
-| Síntoma | Causa probable | Acción |
-|---|---|---|
-| `erp-api` no arranca, error de conexión a Postgres | `POSTGRES_HOST`/`POSTGRES_PASSWORD` no coinciden con el contenedor real | Revisar paso 1 y 2 |
-| `erp-api` no arranca, error de conexión a Redis | `REDIS_HOST` no coincide con el contenedor real | Revisar paso 1 y 2 |
-| Frontend carga pero las llamadas a `/api/*` fallan | `erp-api` no está healthy o el nombre de servicio cambió en el compose | `docker compose -f docker-compose.localprod.yml ps` y logs de `erp-api` |
-| `docker compose ... build` falla en el stage de frontend por `run-platform-guard` | Violación real de las reglas de `tools/ci/` (mismo gate que corre en desarrollo) | Corregir el código, no el gate |
-| Error "network erp-saas_default not found" | El PostgreSQL/Redis existente aún no está levantado, o está en otra red | `docker compose up -d` (compose base) primero, o ajustar `name:` de la red en `docker-compose.localprod.yml` |
+- Falla interpolación: falta una variable obligatoria de la plantilla.
+- API no healthy: revisar migraciones/bootstrap y conectividad BD/Redis/credenciales.
+- Worker termina al inicio: revisar storage Hangfire explícito y configuración estricta.
+- Archivos no disponibles: comprobar mismo volumen, ruta y permisos en ambos procesos.
+- Frontend no alcanza API: revisar PUBLIC_API_URL de build, CORS y dominio público.
+- Red inexistente: verificar ERP_NETWORK contra la red de PostgreSQL/Redis.

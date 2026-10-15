@@ -1,5 +1,17 @@
 # Project Status
 
+## BACKGROUND DEPLOYMENT — FASE D (2026-10-15)
+
+Implementado y validado focalmente, sin commit/push. Compose canónico API OFF +
+Worker `--worker` ON (misma imagen, una réplica), storage Hangfire explícito sin
+fallback, Redis único y volumen/keyring compartidos. Worker espera API ready tras
+migraciones/bootstrap; no migra ni expone HTTP. ADR-043 y jobs intactos.
+PASS: Compose 4/4, tests configuración/registro 21/21 y PostgreSQL real 4/4;
+build Linux y smoke Compose aislado (API healthy, 4 servidores Worker, 7 recurring
+jobs, 0 servidores API, volumen compartido). BUG REAL de bin/obj Windows en build
+corregido con .dockerignore. Recursos temporales retirados; piloto/Coolify intactos.
+Transición real pendiente de inspección, según runbook. [Entrega](docs/agent/BACKGROUND_DEPLOYMENT_PHASE_D_DELIVERY.md).
+
 ## PURCHASES FASE B — BUG REAL: ORDEN DE MIGRACIÓN (2026-10-15)
 
 Corregido `20261015202527_PurchaseDiscardedState`: primero reemplaza AMBOS índices
