@@ -1,4 +1,5 @@
 using ERP.Application.Audit;
+using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -52,6 +53,9 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
     public const string InternalErrorCode = "INTERNAL";
     public const string InternalErrorMessage = "Error interno del sistema al contabilizar.";
 
+    private readonly JournalEntryReversal _reversal;
+    private readonly IJournalEntryRepository _journal;
+    private readonly IAccountingOperationalPolicyRepository _policies;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAccountingPostingRepository _postings;
     private readonly AccountingPostingFactBuilder _factBuilder;
@@ -73,7 +77,10 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
         ICurrentCompany company,
         ICurrentUser user,
         IAuditContext audit,
-        ILogger<AccountingPostingExecutor> logger
+        ILogger<AccountingPostingExecutor> logger,
+        JournalEntryReversal reversal,
+        IJournalEntryRepository journal,
+        IAccountingOperationalPolicyRepository policies
     )
     {
         _unitOfWork = unitOfWork;
@@ -86,6 +93,9 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
         _user = user;
         _audit = audit;
         _logger = logger;
+        _reversal = reversal;
+        _journal = journal;
+        _policies = policies;
     }
 
     public async Task DispatchPendingAsync(CancellationToken ct)
@@ -181,6 +191,7 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
         try
         {
             await _unitOfWork.BeginTransactionAsync(ct);
+            await _policies.AcquireSharedLockAsync(_company.CompanyId, ct);
             var posting = await _postings.LockByIdAsync(_tenant.TenantId, _company.CompanyId, postingId, ct);
             if (posting is null)
             {
@@ -220,6 +231,19 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
         CancellationToken ct
     )
     {
+        if (posting.SourceModule == "Accounting" && posting.FactType == "Reversal")
+        {
+            var payload = AccountingPostingPayload.Deserialize(posting.PayloadVersion, posting.Payload);
+            var original = payload?.OriginalJournalEntryId is { } originalId && originalId == posting.SourceEventId
+                ? await _journal.GetByIdAsync(posting.TenantId, posting.CompanyId, originalId, ct) : null;
+            if (original is null)
+                return posting.RecordFailed("REVERSAL_ORIGINAL_MISSING", "No se encontró el asiento original del reverso.",
+                    context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
+            var result = await _reversal.ReverseAsync(original, posting.CreatedBy, payload!.ReversalReason!, posting.EntryDate, ct);
+            return result.IsSuccess
+                ? posting.RecordPosted(result.Value!.Id, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow)
+                : posting.RecordFailed(result.Code, result.Error, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
+        }
         var fact = await _factBuilder.BuildAsync(posting, ct);
         if (!fact.IsSuccess)
             return posting.RecordFailed(fact.Code, fact.Error, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
@@ -241,6 +265,7 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
         try
         {
             await _unitOfWork.BeginTransactionAsync(ct);
+            await _policies.AcquireSharedLockAsync(_company.CompanyId, ct);
             var posting = await _postings.LockByIdAsync(_tenant.TenantId, _company.CompanyId, postingId, ct);
             if (posting is null || posting.IsResolved)
             {

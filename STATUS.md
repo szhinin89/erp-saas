@@ -1,5 +1,13 @@
 # Project Status
 
+## ACCOUNTING-CONTINUITY-03 (2026-10-16)
+
+Implementado: reverso común histórico con original inmutable, fecha efectiva,
+período Open y numeración destino; pago/cobro y anulaciones existentes adoptados.
+Obligación durable y reproceso manual existentes; sin otro motor ni retry automático.
+Validación focal e inventario: [entrega](docs/agent/ACCOUNTING_CONTINUITY_03_DELIVERY.md).
+Sin staging, migración, commit ni push.
+
 ## ACCOUNTING-CONTINUITY-02 (2026-10-16)
 
 EXTEND: reproceso manual individual y por lote de IDs (hasta 100), con motivo

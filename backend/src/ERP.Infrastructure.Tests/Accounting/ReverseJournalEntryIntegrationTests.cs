@@ -1,4 +1,12 @@
 using ERP.Application.Common;
+using ERP.Application.Audit;
+using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Application.Modules.Accounting.Posting;
+using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -114,7 +122,7 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         );
     }
 
-    private async Task<Guid> SeedPostedEntryAsync()
+    private async Task<Guid> SeedPostedEntryAsync(string module = "Sales", string fact = "InvoiceIssued")
     {
         // Reserva el número vía JournalEntrySequenceRepository (no lo fija a mano) — así la fila
         // de journal_entry_sequences queda en el mismo estado que dejaría el Posting Engine real,
@@ -134,8 +142,8 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
             new DateOnly(2026, 7, 15),
             _accountingPeriodId,
             2026,
-            "Sales",
-            "InvoiceIssued",
+            module,
+            fact,
             Guid.NewGuid(),
             "Asiento original",
             _createdBy
@@ -161,99 +169,187 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
             new JournalEntrySequenceRepository(db),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
-            new FixedCurrentUser(userId)
+            new FixedCurrentUser(userId),
+            new UnitOfWork(db),
+            new AccountingOperationalPolicyRepository(db)
         );
 
-    [Fact]
-    public async Task Reverso_persiste_el_nuevo_asiento_con_lineas_invertidas_y_EntryNumber_correlativo()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task Historical_original_is_immutable_and_reverses_in_destination_year(int originalState)
     {
-        var originalId = await SeedPostedEntryAsync();
-
-        await using var db = CreateContext();
-        var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(
-                new ReverseJournalEntryCommand(originalId, "Error de digitación"),
-                CancellationToken.None
-            );
-
-        result.IsSuccess.Should().BeTrue();
-        result
-            .Value!.EntryNumber.Should()
-            .Be(2, because: "el original ya ocupó el número 1 del mismo (CompanyId, FiscalYear)");
-
-        await using var verifyDb = CreateContext();
-        var reversal = await verifyDb
-            .JournalEntries.Include(x => x.Lines)
-            .FirstAsync(x => x.Id == result.Value.Id);
-
-        reversal.Status.Should().Be(JournalEntryStatus.Posted);
-        reversal.Lines.Should().HaveCount(2);
-        reversal
-            .Lines.Should()
-            .Contain(l => l.AccountId == _debitAccountId && l.Credit == 100m && l.Debit == 0m);
-        reversal
-            .Lines.Should()
-            .Contain(l => l.AccountId == _creditAccountId && l.Debit == 100m && l.Credit == 0m);
+        var id = await SeedPostedEntryAsync();
+        string before;
+        Guid destinationId;
+        await using (var seed = CreateContext())
+        {
+            var oldPeriod = await seed.AccountingPeriods.SingleAsync(x => x.Id == _accountingPeriodId);
+            if (originalState > 0) oldPeriod.Close(_createdBy, new(false, false, false));
+            if (originalState == 2) oldPeriod.Lock(_createdBy);
+            var destination = AccountingPeriod.Create(_tenantId, _companyId, 2027, 1, new(2027, 1, 1), new(2027, 1, 31), _createdBy);
+            seed.AccountingPeriods.Add(destination);
+            await seed.SaveChangesAsync();
+            destinationId = destination.Id;
+            before = System.Text.Json.JsonSerializer.Serialize(await seed.JournalEntries.Include(x => x.Lines).SingleAsync(x => x.Id == id));
+        }
+        await using (var db = CreateContext())
+        {
+            var handler = BuildHandler(db, _tenantId, _companyId, _createdBy);
+            var result = await handler.Handle(new(id, "historical reason", new(2027, 1, 1)), default);
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.FiscalYear.Should().Be(2027);
+            result.Value.EntryNumber.Should().Be(1);
+            result.Value.AccountingPeriodId.Should().Be(destinationId);
+            var repeat = await handler.Handle(new(id, "ignored repeat", new(2030, 1, 1)), default);
+            repeat.Value!.Id.Should().Be(result.Value.Id);
+        }
+        await using var verify = CreateContext();
+        var original = await verify.JournalEntries.Include(x => x.Lines).SingleAsync(x => x.Id == id);
+        System.Text.Json.JsonSerializer.Serialize(original).Should().Be(before);
+        var reversal = await verify.JournalEntries.Include(x => x.Lines).SingleAsync(x => x.OriginalJournalEntryId == id);
+        reversal.Lines.OrderBy(x => x.SortOrder).Select(x => (x.AccountId, x.Description, x.Debit, x.Credit))
+            .Should().Equal(original.Lines.OrderBy(x => x.SortOrder).Select(x => (x.AccountId, x.Description, x.Credit, x.Debit)));
     }
 
     [Fact]
-    public async Task Reverso_establece_trazabilidad_bidireccional_persistida()
+    public async Task Concurrent_requests_return_same_persisted_reversal()
     {
-        var originalId = await SeedPostedEntryAsync();
-
-        await using var db = CreateContext();
-        var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
-            .Handle(
-                new ReverseJournalEntryCommand(originalId, "Ajuste contable"),
-                CancellationToken.None
-            );
-
-        result.IsSuccess.Should().BeTrue();
-
-        await using var verifyDb = CreateContext();
-        var original = await verifyDb.JournalEntries.FirstAsync(x => x.Id == originalId);
-        var reversal = await verifyDb.JournalEntries.FirstAsync(x => x.Id == result.Value!.Id);
-
-        original.Status.Should().Be(JournalEntryStatus.Reversed);
-        original.ReverseJournalEntryId.Should().Be(reversal.Id);
-        original.ReverseReason.Should().Be("Ajuste contable");
-        reversal.OriginalJournalEntryId.Should().Be(original.Id);
+        var id = await SeedPostedEntryAsync();
+        await using var first = CreateContext();
+        await using var second = CreateContext();
+        var results = await Task.WhenAll(
+            BuildHandler(first, _tenantId, _companyId, _createdBy).Handle(new(id, "first", new(2026, 7, 20)), default),
+            BuildHandler(second, _tenantId, _companyId, _createdBy).Handle(new(id, "second", new(2026, 7, 20)), default));
+        results.Should().OnlyContain(x => x.IsSuccess);
+        results[0].Value!.Id.Should().Be(results[1].Value!.Id);
+        await using var verify = CreateContext();
+        (await verify.JournalEntries.CountAsync(x => x.OriginalJournalEntryId == id)).Should().Be(1);
+        (await verify.JournalEntries.CountAsync()).Should().Be(2);
     }
 
     [Fact]
-    public async Task Indice_unico_original_journal_entry_id_rechaza_un_segundo_reverso_concurrente()
+    public async Task Closing_waits_for_reversal_transaction()
     {
-        var originalId = await SeedPostedEntryAsync();
+        var id = await SeedPostedEntryAsync();
+        await using var reversalDb = CreateContext();
+        await using var closeDb = CreateContext();
+        var unit = new UnitOfWork(reversalDb);
+        await unit.BeginTransactionAsync();
+        var result = await BuildHandler(reversalDb, _tenantId, _companyId, _createdBy)
+            .Handle(new(id, "reason", new(2026, 7, 20)), default);
+        result.IsSuccess.Should().BeTrue();
+        var close = new ERP.Application.Modules.Accounting.UseCases.AccountingPeriods.CloseAccountingPeriodHandler(
+            new AccountingPeriodRepository(closeDb), new JournalEntryRepository(closeDb), new AccountingPostingRepository(closeDb),
+            new AccountingOperationalPolicyRepository(closeDb), new UnitOfWork(closeDb),
+            new FixedCurrentTenant(_tenantId), new FixedCurrentCompany(_companyId), new FixedCurrentUser(_createdBy));
+        var closing = close.Handle(new(_accountingPeriodId), default);
+        await WaitForBlockedLockAsync();
+        closing.IsCompleted.Should().BeFalse();
+        await unit.CommitAsync();
+        (await closing.WaitAsync(TimeSpan.FromSeconds(10))).IsSuccess.Should().BeTrue();
+    }
 
-        // Dos contextos independientes leen el mismo asiento (todavía Posted en ambos, ninguno ha
-        // comiteado) — simula la ventana de carrera entre dos solicitudes de reverso concurrentes
-        // para el mismo asiento original. El primer SaveChangesAsync gana; el segundo debe fallar
-        // por uq_journal_entries_original_journal_entry_id, no por el chequeo de Status en memoria
-        // (que en este escenario no alcanza a detectar el conflicto porque ambas copias se
-        // cargaron antes de que la primera comiteara).
-        await using var dbA = CreateContext();
-        await using var dbB = CreateContext();
+    [Fact]
+    public async Task Reversal_waits_for_close_then_rejects_closed_effective_period()
+    {
+        var id = await SeedPostedEntryAsync();
+        await using var closeDb = CreateContext();
+        await using var reversalDb = CreateContext();
+        var unit = new UnitOfWork(closeDb);
+        await unit.BeginTransactionAsync();
+        await new AccountingOperationalPolicyRepository(closeDb).AcquireExclusiveLockAsync(_companyId);
+        var period = await closeDb.AccountingPeriods.SingleAsync(x => x.Id == _accountingPeriodId);
+        period.Close(_createdBy, new(false, false, false));
+        await closeDb.SaveChangesAsync();
+        // Preload Open in the other tracker: resolver must read fresh after waiting on the lock.
+        await reversalDb.AccountingPeriods.SingleAsync(x => x.Id == _accountingPeriodId);
+        var reversing = BuildHandler(reversalDb, _tenantId, _companyId, _createdBy)
+            .Handle(new(id, "reason", new(2026, 7, 20)), default);
+        await WaitForBlockedLockAsync();
+        reversing.IsCompleted.Should().BeFalse();
+        await unit.CommitAsync();
+        var result = await reversing.WaitAsync(TimeSpan.FromSeconds(10));
+        result.Code.Should().Be("PERIOD_NOT_OPEN");
+        await using var verify = CreateContext();
+        (await verify.JournalEntries.CountAsync()).Should().Be(1);
+    }
 
-        var originalA = await dbA
-            .JournalEntries.Include(x => x.Lines)
-            .FirstAsync(x => x.Id == originalId);
-        var originalB = await dbB
-            .JournalEntries.Include(x => x.Lines)
-            .FirstAsync(x => x.Id == originalId);
+    [Theory]
+    [InlineData("Payables", "SupplierPaymentConfirmed")]
+    [InlineData("Finance", "CollectionApplied")]
+    public async Task Operational_reversal_is_durable_and_ignores_changed_accounts_and_rules(string module, string fact)
+    {
+        var originalId = await SeedPostedEntryAsync(module, fact);
+        var actor = Guid.NewGuid();
+        Guid postingId;
+        var queue = new AccountingPostingDispatchQueue();
+        await using (var db = CreateContext())
+        {
+            var unit = new UnitOfWork(db);
+            await unit.BeginTransactionAsync();
+            var journal = new JournalEntryRepository(db);
+            var postings = new AccountingPostingRepository(db);
+            var policies = new AccountingOperationalPolicyRepository(db);
+            var user = new FixedCurrentUser(actor);
+            var core = new JournalEntryReversal(journal, new AccountingPeriodRepository(db), new JournalEntrySequenceRepository(db), policies);
+            var recorder = new AccountingReversalRecorder(new(postings, journal, user, policies), core,
+                journal, postings, queue, Mock.Of<ICompanyClock>(), user, Mock.Of<IAuditContext>(), policies);
+            var original = (await journal.GetByIdAsync(_tenantId, _companyId, originalId))!;
+            await recorder.RecordAsync(original, "effective reason", new(2026, 7, 20), default);
+            await db.SaveChangesAsync();
+            await unit.CommitAsync();
+            postingId = queue.Drain().Single();
+        }
+        await using (var db = CreateContext())
+        {
+            // Configuration now contradicts the historical entry, and its old account is inactive.
+            var changed = PostingRule.Create(_tenantId, _companyId, module, fact,
+                _creditAccountId, _debitAccountId, null, _createdBy);
+            db.PostingRules.Add(changed);
+            (await db.Accounts.SingleAsync(x => x.Id == _debitAccountId)).Disable(_createdBy);
+            await db.SaveChangesAsync();
+            var sequenceFailure = new Mock<IJournalEntrySequenceRepository>();
+            sequenceFailure.Setup(x => x.ReserveNextNumberAsync(_tenantId, _companyId, 2026, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("injected sequence failure"));
+            var failed = await Executor(db, sequenceFailure.Object).RunAsync(postingId, ERP.Domain.Modules.Accounting.Enums.AccountingPostingAttemptTrigger.Initial, null, null, default);
+            failed.Posting!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+        }
+        await using (var db = CreateContext())
+        {
+            var posted = await Executor(db).ExecuteAsync(postingId, ERP.Domain.Modules.Accounting.Enums.AccountingPostingAttemptTrigger.Manual, "manual recovery", default);
+            posted.Value!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted);
+            posted.Value.EntryDate.Should().Be(new DateOnly(2026, 7, 20));
+        }
+        await using var verify = CreateContext();
+        var reversal = await verify.JournalEntries.Include(x => x.Lines).SingleAsync(x => x.OriginalJournalEntryId == originalId);
+        reversal.CreatedBy.Should().Be(actor);
+        reversal.ReverseReason.Should().Be("effective reason");
+        reversal.EntryDate.Should().Be(new DateOnly(2026, 7, 20));
+        reversal.Lines.Should().Contain(x => x.AccountId == _debitAccountId && x.Credit == 100);
+        (await verify.AccountingPostingAttempts.CountAsync(x => x.AccountingPostingId == postingId)).Should().Be(2);
+    }
 
-        var reversalA = originalA.Reverse(_createdBy, 2, "Reverso A");
-        var reversalB = originalB.Reverse(_createdBy, 3, "Reverso B");
+    private AccountingPostingExecutor Executor(ErpDbContext db, IJournalEntrySequenceRepository? sequences = null)
+    {
+        var journal = new JournalEntryRepository(db);
+        var policies = new AccountingOperationalPolicyRepository(db);
+        // A reversal must never invoke the rule-based engine or resolve configurable expense accounts.
+        return new(new UnitOfWork(db), new AccountingPostingRepository(db),
+            new AccountingPostingFactBuilder(Mock.Of<IExpenseCategoryRepository>(MockBehavior.Strict), Mock.Of<IAccountRepository>(MockBehavior.Strict)),
+            Mock.Of<IPostingEngine>(MockBehavior.Strict), new AccountingPostingDispatchQueue(),
+            new FixedCurrentTenant(_tenantId), new FixedCurrentCompany(_companyId), new FixedCurrentUser(_createdBy),
+            Mock.Of<IAuditContext>(), NullLogger<AccountingPostingExecutor>.Instance,
+            new JournalEntryReversal(journal, new AccountingPeriodRepository(db), sequences ?? new JournalEntrySequenceRepository(db), policies), journal, policies);
+    }
 
-        dbA.JournalEntries.Add(reversalA);
-        await dbA.SaveChangesAsync();
-
-        dbB.JournalEntries.Add(reversalB);
-        var act = async () => await dbB.SaveChangesAsync();
-
-        await act.Should()
-            .ThrowAsync<DbUpdateException>(
-                because: "uq_journal_entries_original_journal_entry_id impide dos reversos para el mismo asiento original"
-            );
+    private async Task WaitForBlockedLockAsync()
+    {
+        await using var probe = CreateContext();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (await probe.Database.SqlQueryRaw<int>("SELECT count(*)::int AS \"Value\" FROM pg_locks WHERE locktype = 'advisory' AND NOT granted").SingleAsync(timeout.Token) == 0)
+            await Task.Delay(20, timeout.Token);
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

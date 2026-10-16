@@ -96,6 +96,7 @@ public sealed class PostOpeningBalancePostgreSqlTests : IClassFixture<InitialLoa
         services.AddScoped<IOpeningBalanceConstraintsReader, OpeningBalanceConstraintsReader>();
         services.AddScoped<IOpeningBalanceSourceReader, OpeningBalanceSourceReader>();
         services.AddScoped<IJournalEntryRepository, JournalEntryRepository>();
+        services.AddScoped<IAccountingOperationalPolicyRepository, AccountingOperationalPolicyRepository>();
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
@@ -347,7 +348,7 @@ public sealed class PostOpeningBalancePostgreSqlTests : IClassFixture<InitialLoa
 
         await using var scope = _services.CreateAsyncScope();
         var result = await scope.ServiceProvider.GetRequiredService<IMediator>()
-            .Send(new ReverseJournalEntryCommand(posted.Value!.JournalEntryId!.Value, "corrección"));
+            .Send(new ReverseJournalEntryCommand(posted.Value!.JournalEntryId!.Value, "corrección", new DateOnly(2026, 7, 15)));
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ReverseJournalEntryCommandHandler.OpeningReversalNotAllowedCode);

@@ -94,7 +94,8 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
         IJournalEntrySequenceRepository sequences,
         ICompanyClock clock,
         IOpeningBalanceConstraintsReader openingBalance,
-        ILogger<ReverseOpeningJournalEntryCommandHandler> logger
+        ILogger<ReverseOpeningJournalEntryCommandHandler> logger,
+        IAccountingOperationalPolicyRepository policies
     )
     {
         _openingBalance = openingBalance;
@@ -104,7 +105,7 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
         _journal = journal;
         _periods = periods;
         _clock = clock;
-        _reversal = new JournalEntryReversal(journal, periods, sequences);
+        _reversal = new JournalEntryReversal(journal, periods, sequences, policies);
         _logger = logger;
     }
 
@@ -134,11 +135,12 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
             if (!posting.IsCurrent)
             {
                 // Reintento de un reverso ya hecho (o reverso concurrente que ganó): mismo resultado.
-                if (entry is { Status: JournalEntryStatus.Reversed, ReverseJournalEntryId: { } reversalId })
+                var existingReversal = entry is null ? null : await _journal.FindByKeyAsync(tenantId, companyId, "Accounting", "Reversal", entry.Id, ct);
+                if (entry is not null && existingReversal is not null)
                 {
                     await _unitOfWork.CommitAsync(ct);
                     return Result<OpeningJournalEntryReversalDto>.Success(
-                        ToDto(posting.Id, posting.Version, entry, reversalId, alreadyReversed: true));
+                        ToDto(posting.Id, posting.Version, existingReversal, existingReversal.Id, alreadyReversed: true));
                 }
                 return await RejectAsync(Fail(NotCurrentCode,
                     "Esta versión del asiento de apertura ya no es la vigente; solo se reversa la versión vigente."));
@@ -162,7 +164,7 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
                     closedPeriod.Error + " Hay un período contable cerrado desde la fecha de apertura: el asiento de "
                         + "apertura queda histórico y su corrección debe hacerse con un ajuste contable en un período abierto."));
 
-            var reversed = await _reversal.ReverseAsync(entry, _ctx.UserId, command.Reason, ct);
+            var reversed = await _reversal.ReverseAsync(entry, _ctx.UserId, command.Reason, posting.EntryDate, ct);
             if (!reversed.IsSuccess)
                 return await RejectAsync(Fail(reversed.Code, reversed.Error!));
 
@@ -170,7 +172,7 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
             await _postings.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
             return Result<OpeningJournalEntryReversalDto>.Success(
-                ToDto(posting.Id, posting.Version, entry, reversed.Value!.Id, alreadyReversed: false));
+                ToDto(posting.Id, posting.Version, reversed.Value!, reversed.Value!.Id, alreadyReversed: false));
         }
         catch (OperationCanceledException)
         {
@@ -218,7 +220,7 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
 
     private static OpeningJournalEntryReversalDto ToDto(
         Guid postingId, int version, JournalEntry entry, Guid reversalId, bool alreadyReversed) =>
-        new(postingId, version, entry.Id, reversalId, entry.ReversedAtUtc, entry.ReverseReason, alreadyReversed);
+        new(postingId, version, entry.OriginalJournalEntryId ?? entry.Id, reversalId, entry.ReversedAtUtc, entry.ReverseReason, alreadyReversed);
 
     [LoggerMessage(
         Level = LogLevel.Error,

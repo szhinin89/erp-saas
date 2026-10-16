@@ -11,8 +11,9 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// (Fase 5.2, ADR-026 §6/§8) junto con la asignación de <see cref="EntryNumber"/> (Fase 5.3,
 /// mismo patrón arquitectónico de <c>DocumentSequence</c>/ADR-019, ver
 /// <c>JournalEntrySequence</c>). <see cref="Reverse"/> (Fase 5.4, ADR-026 §6/§9) nunca modifica
-/// los importes del asiento original — crea un asiento nuevo con las líneas invertidas y deja
-/// trazabilidad bidireccional (<see cref="OriginalJournalEntryId"/>/<see cref="ReverseJournalEntryId"/>).
+/// los importes del asiento original — crea un asiento nuevo con las líneas invertidas y conserva
+/// referencia al original sin modificarlo; la relación inversa se consulta desde el reverso.
+/// Trazabilidad histórica (<see cref="OriginalJournalEntryId"/>/<see cref="ReverseJournalEntryId"/>).
 /// </summary>
 /// <remarks>
 /// <c>Create()</c> no levanta ningún evento de dominio todavía — a diferencia de
@@ -57,12 +58,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     /// </summary>
     public Guid? OriginalJournalEntryId { get; private set; }
 
-    /// <summary>
-    /// Fase 5.4: si este asiento FUE reversado, apunta al asiento de reverso que lo invalida.
-    /// Nulo mientras el asiento no haya sido reversado — <see cref="Reverse"/> es el único punto
-    /// que lo asigna, exactamente una vez (el chequeo de <see cref="Status"/> en
-    /// <see cref="Reverse"/> impide una segunda asignación).
-    /// </summary>
+    /// <summary>Referencia inversa legacy. Los nuevos reversos se consultan por OriginalJournalEntryId.</summary>
     public Guid? ReverseJournalEntryId { get; private set; }
     public DateTime? ReversedAtUtc { get; private set; }
     public string? ReverseReason { get; private set; }
@@ -210,59 +206,27 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
         SetUpdated(postedBy);
     }
 
-    /// <summary>
-    /// Reverso contable (Fase 5.4, ADR-026 §6/§9): solo un asiento <see cref="JournalEntryStatus.Posted"/>
-    /// puede reversarse — un <see cref="JournalEntryStatus.Draft"/> nunca tuvo efecto contable
-    /// real (nada que revertir) y un asiento ya <see cref="JournalEntryStatus.Reversed"/> no puede
-    /// reversarse de nuevo (el mismo chequeo de estado lo impide, sin bandera adicional). Nunca
-    /// modifica los importes de <c>this</c>: crea y devuelve un <see cref="JournalEntry"/> nuevo,
-    /// con las mismas líneas y Débito/Crédito invertidos (balanceado automáticamente, porque
-    /// invertir un asiento ya balanceado preserva Σ Debit == Σ Credit), dejando <c>this</c>
-    /// intacto salvo por su cambio de <see cref="Status"/> y los campos de trazabilidad. El
-    /// bloqueo por período cerrado/bloqueado es responsabilidad de la capa de Application (mismo
-    /// patrón que <c>PostingPeriodGuard</c> aplica para <see cref="Post"/>) — este método no
-    /// conoce <c>AccountingPeriod</c>. <paramref name="reverseEntryNumber"/> debe provenir
-    /// siempre de <c>IJournalEntrySequenceRepository.ReserveNextNumberAsync</c>, igual que en
-    /// <see cref="Post"/>.
-    /// </summary>
-    public JournalEntry Reverse(Guid reversedBy, int reverseEntryNumber, string reason)
+    /// <summary>Crea el espejo histórico sin modificar este asiento ni sus líneas.</summary>
+    public JournalEntry Reverse(Guid reversedBy, int reverseEntryNumber, string reason,
+        DateOnly effectiveDate, Guid destinationPeriodId, int destinationFiscalYear)
     {
         if (Status != JournalEntryStatus.Posted)
-            throw new DomainRuleViolationException(
-                $"Solo un asiento Posted puede reversarse (estado actual: {Status})."
-            );
-        if (string.IsNullOrWhiteSpace(reason))
-            throw new ArgumentException("El motivo del reverso es obligatorio.", nameof(reason));
+            throw new DomainRuleViolationException("Solo un asiento Posted puede reversarse.");
+        if (effectiveDate == default || destinationPeriodId == Guid.Empty)
+            throw new ArgumentException("La fecha efectiva y el período destino son obligatorios.");
+        if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length > ReverseReasonMaxLength)
+            throw new ArgumentException("El motivo del reverso es obligatorio y admite hasta 500 caracteres.", nameof(reason));
 
-        var trimmedReason = reason.Trim();
-
-        var reversal = Create(
-            TenantId,
-            CompanyId,
-            EntryDate,
-            AccountingPeriodId,
-            FiscalYear,
-            "Accounting",
-            "Reversal",
-            Id,
-            // IL-8B (BUG REAL) — prefijo + motivo de hasta ReverseReasonMaxLength excedía la columna
-            // description; la descripción es derivada (el motivo completo queda en ReverseReason).
-            Truncate($"Reverso del asiento N° {EntryNumber} — {trimmedReason}", DescriptionMaxLength),
-            reversedBy
-        );
-
-        foreach (var line in _lines)
-            reversal.AddLine(line.AccountId, line.Description, line.Credit, line.Debit);
-
+        var reversal = Create(TenantId, CompanyId, effectiveDate, destinationPeriodId,
+            destinationFiscalYear, "Accounting", "Reversal", Id,
+            Truncate($"Reverso del asiento N° {EntryNumber} — {reason.Trim()}", DescriptionMaxLength), reversedBy);
+        foreach (var line in _lines.OrderBy(l => l.SortOrder))
+            reversal._lines.Add(JournalEntryLine.Create(reversal.Id, TenantId, line.AccountId,
+                line.Description, line.Credit, line.Debit, line.SortOrder));
         reversal.Post(reversedBy, reverseEntryNumber);
         reversal.OriginalJournalEntryId = Id;
-
-        Status = JournalEntryStatus.Reversed;
-        ReversedAtUtc = DateTime.UtcNow;
-        ReverseReason = trimmedReason;
-        ReverseJournalEntryId = reversal.Id;
-        SetUpdated(reversedBy);
-
+        reversal.ReverseReason = reason.Trim();
+        reversal.ReversedAtUtc = reversal.PostedAtUtc;
         return reversal;
     }
 

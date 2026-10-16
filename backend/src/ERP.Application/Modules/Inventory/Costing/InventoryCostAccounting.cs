@@ -63,7 +63,7 @@ public sealed class InventoryCostAccounting(IInventoryCostLedger ledger, IPostin
         {
             if (row.JournalEntryId.HasValue)
             {
-                var result = await mediator.Send(new ReverseJournalEntryCommand(row.JournalEntryId.Value, reason), ct);
+                var result = await mediator.Send(new ReverseJournalEntryCommand(row.JournalEntryId.Value, reason, row.EntryDate), ct);
                 if (!result.IsSuccess)
                     throw new DomainRuleViolationException($"No se pudo reversar el costo de la venta: {result.Error}");
             }

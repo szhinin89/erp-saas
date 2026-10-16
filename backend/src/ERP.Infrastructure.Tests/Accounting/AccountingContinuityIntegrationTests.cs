@@ -116,7 +116,11 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             company,
             Mock.Of<ICurrentUser>(u => u.UserId == (userId ?? _userId)),
             new TestAuditContext(_tenantId, companyId, userId ?? _userId),
-            NullLogger<AccountingPostingExecutor>.Instance
+            NullLogger<AccountingPostingExecutor>.Instance,
+            new ERP.Application.Modules.Accounting.UseCases.JournalEntries.JournalEntryReversal(
+                new JournalEntryRepository(db), new AccountingPeriodRepository(db),
+                new JournalEntrySequenceRepository(db), new AccountingOperationalPolicyRepository(db)),
+            new JournalEntryRepository(db), new AccountingOperationalPolicyRepository(db)
         );
     }
 
@@ -636,6 +640,39 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         await using var verify = CreateContext();
         (await verify.AccountingPostingAttempts.CountAsync()).Should().Be(2);
         (await verify.JournalEntries.CountAsync()).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Continuity03_cancellation_serializes_with_original_attempt_without_mirror()
+    {
+        await SeedRuleAndPeriodAsync(_companyId);
+        var pending = await SeedPendingAsync(_companyId);
+        await using var cancelDb = CreateContext();
+        await using var attemptDb = CreateContext();
+        var unit = new UnitOfWork(cancelDb);
+        await unit.BeginTransactionAsync();
+        var cancellation = new AccountingPostingCancellation(new AccountingPostingRepository(cancelDb),
+            new JournalEntryRepository(cancelDb), Mock.Of<ICurrentUser>(x => x.UserId == _userId),
+            new AccountingOperationalPolicyRepository(cancelDb));
+        var original = await cancellation.PrepareAsync(_tenantId, _companyId, pending.SourceModule,
+            pending.FactType, pending.SourceEventId, default);
+        original.Should().BeNull();
+        var attempt = Executor(attemptDb, _companyId).RunAsync(pending.Id, AccountingPostingAttemptTrigger.Manual,
+            "manual concurrent", null, default);
+        await using (var probe = CreateContext())
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            while (await probe.Database.SqlQueryRaw<int>("SELECT count(*)::int AS \"Value\" FROM pg_locks WHERE locktype = 'transactionid' AND NOT granted").SingleAsync(timeout.Token) == 0)
+                await Task.Delay(20, timeout.Token);
+        }
+        attempt.IsCompleted.Should().BeFalse();
+        await cancelDb.SaveChangesAsync();
+        await unit.CommitAsync();
+        (await attempt.WaitAsync(TimeSpan.FromSeconds(10))).Outcome.Should().Be(AccountingPostingExecutionOutcome.AlreadyResolved);
+        await using var verify = CreateContext();
+        (await verify.AccountingPostings.SingleAsync(x => x.Id == pending.Id)).Status.Should().Be(AccountingPostingStatus.Canceled);
+        (await verify.JournalEntries.CountAsync()).Should().Be(0);
+        (await verify.AccountingPostingAttempts.CountAsync()).Should().Be(0);
     }
 
     private sealed class TestTenant(Guid tenantId) : ICurrentTenant

@@ -1,5 +1,11 @@
 # Features — ERP SaaS
 
+## ACCOUNTING-CONTINUITY-03
+
+Reverso histórico común implementado para pago proveedor, cobro cliente y
+anulaciones existentes de Compra/Gasto/Retención, con adaptación mínima de Venta/NC.
+Estado y validación: [entrega](docs/agent/ACCOUNTING_CONTINUITY_03_DELIVERY.md).
+
 ## ACCOUNTING-CONTINUITY-02
 
 EXTEND: Contabilizaciones permite seleccionar hasta 100 obligaciones Pending/Failed,

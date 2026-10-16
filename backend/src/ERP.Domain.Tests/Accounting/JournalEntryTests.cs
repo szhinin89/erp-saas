@@ -272,18 +272,19 @@ public sealed class JournalEntryTests
     }
 
     [Fact]
-    public void Reverse_marca_el_original_como_Reversed_y_registra_trazabilidad()
+    public void Reverse_conserva_original_y_registra_motivo_en_reverso()
     {
         var original = PostedEntry();
         var before = DateTime.UtcNow;
 
-        var reversal = original.Reverse(CreatedBy, 2, "Error de digitación");
+        var reversal = original.Reverse(CreatedBy, 2, "Error de digitación", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
-        original.Status.Should().Be(JournalEntryStatus.Reversed);
-        original.ReversedAtUtc.Should().NotBeNull();
-        original.ReversedAtUtc!.Value.Should().BeOnOrAfter(before);
-        original.ReverseReason.Should().Be("Error de digitación");
-        original.ReverseJournalEntryId.Should().Be(reversal.Id);
+        original.Status.Should().Be(JournalEntryStatus.Posted);
+        original.ReversedAtUtc.Should().BeNull();
+        original.ReverseReason.Should().BeNull();
+        original.ReverseJournalEntryId.Should().BeNull();
+        reversal.ReverseReason.Should().Be("Error de digitación");
+        reversal.ReversedAtUtc.Should().BeOnOrAfter(before);
     }
 
     [Fact]
@@ -292,11 +293,11 @@ public sealed class JournalEntryTests
         var original = PostedEntry(entryNumber: 1234567);
         var reason = new string('m', JournalEntry.ReverseReasonMaxLength);
 
-        var reversal = original.Reverse(CreatedBy, 1234568, reason);
+        var reversal = original.Reverse(CreatedBy, 1234568, reason, original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         reversal.Description.Length.Should().Be(JournalEntry.DescriptionMaxLength);
         reversal.Description.Should().StartWith("Reverso del asiento N° 1234567 — ");
-        original.ReverseReason.Should().Be(reason);
+        reversal.ReverseReason.Should().Be(reason);
     }
 
     [Fact]
@@ -307,7 +308,7 @@ public sealed class JournalEntryTests
         var originalCredit = original.Lines.Sum(l => l.Credit);
         var originalLineCount = original.Lines.Count;
 
-        original.Reverse(CreatedBy, 2, "Ajuste");
+        original.Reverse(CreatedBy, 2, "Ajuste", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         original.Lines.Should().HaveCount(originalLineCount);
         original.Lines.Sum(l => l.Debit).Should().Be(originalDebit);
@@ -319,7 +320,7 @@ public sealed class JournalEntryTests
     {
         var original = PostedEntry();
 
-        var reversal = original.Reverse(CreatedBy, 2, "Ajuste");
+        var reversal = original.Reverse(CreatedBy, 2, "Ajuste", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         reversal.Id.Should().NotBe(original.Id);
         reversal.CompanyId.Should().Be(original.CompanyId);
@@ -344,7 +345,7 @@ public sealed class JournalEntryTests
     {
         var original = PostedEntry(entryNumber: 1);
 
-        var reversal = original.Reverse(CreatedBy, 7, "Ajuste");
+        var reversal = original.Reverse(CreatedBy, 7, "Ajuste", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         reversal.Status.Should().Be(JournalEntryStatus.Posted);
         reversal.EntryNumber.Should().Be(7);
@@ -356,10 +357,10 @@ public sealed class JournalEntryTests
     {
         var original = PostedEntry();
 
-        var reversal = original.Reverse(CreatedBy, 2, "Ajuste");
+        var reversal = original.Reverse(CreatedBy, 2, "Ajuste", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         reversal.OriginalJournalEntryId.Should().Be(original.Id);
-        original.ReverseJournalEntryId.Should().Be(reversal.Id);
+        original.ReverseJournalEntryId.Should().BeNull();
     }
 
     [Fact]
@@ -369,26 +370,19 @@ public sealed class JournalEntryTests
         entry.AddLine(DebitAccountId, null, 100m, 0m);
         entry.AddLine(CreditAccountId, null, 0m, 100m);
 
-        var act = () => entry.Reverse(CreatedBy, 1, "Ajuste");
+        var act = () => entry.Reverse(CreatedBy, 1, "Ajuste", entry.EntryDate, entry.AccountingPeriodId, entry.FiscalYear);
 
         act.Should().Throw<DomainRuleViolationException>().WithMessage("*Posted*");
     }
 
     [Fact]
-    public void Reverse_rechaza_reversar_dos_veces()
+    public void Reverse_no_muta_estado_para_idempotencia_que_pertenece_al_repositorio()
     {
         var original = PostedEntry();
-        original.Reverse(CreatedBy, 2, "Primer reverso");
-
-        var act = () => original.Reverse(CreatedBy, 3, "Segundo intento");
-
-        act.Should().Throw<DomainRuleViolationException>().WithMessage("*Posted*");
-        original
-            .ReverseReason.Should()
-            .Be(
-                "Primer reverso",
-                because: "el segundo intento de reverso no debe pisar la trazabilidad del primero"
-            );
+        var first = original.Reverse(CreatedBy, 2, "primero", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
+        var second = original.Reverse(CreatedBy, 3, "segundo", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
+        first.OriginalJournalEntryId.Should().Be(second.OriginalJournalEntryId);
+        original.Status.Should().Be(JournalEntryStatus.Posted);
     }
 
     [Fact]
@@ -396,7 +390,7 @@ public sealed class JournalEntryTests
     {
         var original = PostedEntry();
 
-        var act = () => original.Reverse(CreatedBy, 2, "   ");
+        var act = () => original.Reverse(CreatedBy, 2, "   ", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         act.Should().Throw<ArgumentException>();
         original

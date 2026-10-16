@@ -16,7 +16,7 @@ namespace ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 /// Purchases, ...) vía <c>PostingRule</c> — parte directamente de un <see cref="JournalEntry"/>
 /// ya existente y usa <see cref="JournalEntry.Reverse"/> para construir el asiento inverso.
 /// </summary>
-public sealed record ReverseJournalEntryCommand(Guid JournalEntryId, string Reason)
+public sealed record ReverseJournalEntryCommand(Guid JournalEntryId, string Reason, DateOnly EffectiveDate)
     : IRequest<Result<JournalEntryDto>>,
         ICompanyScopedRequest;
 
@@ -26,6 +26,8 @@ public sealed class ReverseJournalEntryCommandValidator
     public ReverseJournalEntryCommandValidator()
     {
         RuleFor(x => x.JournalEntryId).NotEmpty();
+        RuleFor(x => x.EffectiveDate).NotEmpty();
+        RuleFor(x => x.Reason).MaximumLength(JournalEntry.ReverseReasonMaxLength);
         RuleFor(x => x.Reason).NotEmpty().WithMessage("El motivo del reverso es obligatorio.");
     }
 }
@@ -40,6 +42,8 @@ public sealed class ReverseJournalEntryCommandHandler
     private readonly IJournalEntryRepository _journalEntryRepository;
     private readonly IAccountingPeriodRepository _accountingPeriodRepository;
     private readonly IJournalEntrySequenceRepository _journalEntrySequenceRepository;
+    private readonly IUnitOfWork _uow;
+    private readonly IAccountingOperationalPolicyRepository _policies;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -50,12 +54,16 @@ public sealed class ReverseJournalEntryCommandHandler
         IJournalEntrySequenceRepository journalEntrySequenceRepository,
         ICurrentTenant t,
         ICurrentCompany c,
-        ICurrentUser u
+        ICurrentUser u,
+        IUnitOfWork uow,
+        IAccountingOperationalPolicyRepository policies
     )
     {
         _journalEntryRepository = journalEntryRepository;
         _accountingPeriodRepository = accountingPeriodRepository;
         _journalEntrySequenceRepository = journalEntrySequenceRepository;
+        _uow = uow;
+        _policies = policies;
         _t = t;
         _c = c;
         _u = u;
@@ -65,6 +73,27 @@ public sealed class ReverseJournalEntryCommandHandler
         ReverseJournalEntryCommand cmd,
         CancellationToken ct
     )
+    {
+        var ownsTransaction = !_uow.HasActiveTransaction;
+        if (ownsTransaction) await _uow.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await ReverseAsync(cmd, ct);
+            if (ownsTransaction)
+            {
+                if (result.IsSuccess) await _uow.CommitAsync(ct);
+                else await _uow.RollbackAsync(ct);
+            }
+            return result;
+        }
+        catch
+        {
+            if (ownsTransaction) await _uow.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
+    private async Task<Result<JournalEntryDto>> ReverseAsync(ReverseJournalEntryCommand cmd, CancellationToken ct)
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
@@ -94,8 +123,9 @@ public sealed class ReverseJournalEntryCommandHandler
         var reversed = await new JournalEntryReversal(
             _journalEntryRepository,
             _accountingPeriodRepository,
-            _journalEntrySequenceRepository
-        ).ReverseAsync(original, _u.UserId, cmd.Reason, ct);
+            _journalEntrySequenceRepository,
+            _policies
+        ).ReverseAsync(original, _u.UserId, cmd.Reason, cmd.EffectiveDate, ct);
         if (!reversed.IsSuccess)
             return Result<JournalEntryDto>.ValidationFailure(reversed.Error!, reversed.Code);
         var reversal = reversed.Value!;

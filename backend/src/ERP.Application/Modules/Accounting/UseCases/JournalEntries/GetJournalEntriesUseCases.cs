@@ -166,9 +166,7 @@ public sealed class GetJournalEntryByIdHandler
         var originalEntry = entry.OriginalJournalEntryId is { } originalId
             ? await _repo.GetByIdAsync(tenantId, companyId, originalId, ct)
             : null;
-        var reverseEntry = entry.ReverseJournalEntryId is { } reverseId
-            ? await _repo.GetByIdAsync(tenantId, companyId, reverseId, ct)
-            : null;
+        var reverseEntry = await _repo.FindByKeyAsync(tenantId, companyId, "Accounting", "Reversal", entry.Id, ct);
 
         var sourceRequests = new List<JournalEntrySourceRequest> { Map.ToSourceRequest(entry) };
         if (originalEntry is not null)
@@ -386,11 +384,11 @@ file static class Map
             e.OriginalJournalEntryId,
             originalEntry?.EntryNumber,
             originalEntry?.EntryDate,
-            e.ReverseJournalEntryId,
+            reverseEntry?.Id ?? e.ReverseJournalEntryId,
             reverseEntry?.EntryNumber,
             reverseEntry?.EntryDate,
-            e.ReversedAtUtc,
-            e.ReverseReason,
+            reverseEntry?.ReversedAtUtc ?? e.ReversedAtUtc,
+            reverseEntry?.ReverseReason ?? e.ReverseReason,
             lines,
             totalDebit,
             totalCredit,

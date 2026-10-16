@@ -383,8 +383,8 @@ public sealed class PostOpeningBalanceCommandTests
             new JournalEntrySequenceRepository(context),
             new FixedCurrentTenant(_tenant),
             new FixedCurrentCompany(_companyId),
-            Mock.Of<ICurrentUser>(u => u.UserId == _actor));
-        var result = await handler.Handle(new ReverseJournalEntryCommand(entryId, "corrección"), CancellationToken.None);
+            Mock.Of<ICurrentUser>(u => u.UserId == _actor), new UnitOfWork(context), new AccountingOperationalPolicyRepository(context));
+        var result = await handler.Handle(new ReverseJournalEntryCommand(entryId, "corrección", new DateOnly(2026, 7, 15)), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ReverseJournalEntryCommandHandler.OpeningReversalNotAllowedCode);

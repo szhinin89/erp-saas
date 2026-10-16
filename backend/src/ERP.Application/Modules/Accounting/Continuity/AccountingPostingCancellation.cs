@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -20,16 +21,19 @@ public sealed class AccountingPostingCancellation
     private readonly IAccountingPostingRepository _postings;
     private readonly IJournalEntryRepository _journalEntries;
     private readonly ICurrentUser _user;
+    private readonly IAccountingOperationalPolicyRepository _policies;
 
     public AccountingPostingCancellation(
         IAccountingPostingRepository postings,
         IJournalEntryRepository journalEntries,
-        ICurrentUser user
+        ICurrentUser user,
+        IAccountingOperationalPolicyRepository policies
     )
     {
         _postings = postings;
         _journalEntries = journalEntries;
         _user = user;
+        _policies = policies;
     }
 
     /// <returns>El asiento Posted a reversar, o null si no hay efecto publicado.</returns>
@@ -42,6 +46,7 @@ public sealed class AccountingPostingCancellation
         CancellationToken ct
     )
     {
+        await _policies.AcquireSharedLockAsync(companyId, ct);
         var posting = await _postings.LockByKeyAsync(
             tenantId,
             companyId,
@@ -59,7 +64,7 @@ public sealed class AccountingPostingCancellation
             ct
         );
         var original = candidates.FirstOrDefault(x =>
-            x.SourceEventType == factType && x.Status == JournalEntryStatus.Posted
+            x.SourceEventType == factType && x.Status is JournalEntryStatus.Posted or JournalEntryStatus.Reversed
         );
 
         if (original is not null)
@@ -70,6 +75,8 @@ public sealed class AccountingPostingCancellation
             return original;
         }
 
+        if (posting is { Status: AccountingPostingStatus.Posted })
+            throw new DomainRuleViolationException("No se encuentra el asiento de una contabilizacion publicada; no puede omitirse su reverso.");
         if (posting is { IsResolved: false })
             posting.Cancel(_user.UserId);
         return null;

@@ -72,9 +72,9 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests
         reversed.Value.Reason.Should().Be("Cuenta de capital equivocada");
         var original = await QueryAsync(db => db.JournalEntries.AsNoTracking().Include(e => e.Lines)
             .SingleAsync(e => e.Id == v1.JournalEntryId));
-        original.Status.Should().Be(JournalEntryStatus.Reversed, "el original se conserva, nunca se edita ni borra");
+        original.Status.Should().Be(JournalEntryStatus.Posted, "el original se conserva, nunca se edita ni borra");
         original.Lines.Sum(l => l.Debit).Should().Be(100m);
-        original.ReverseJournalEntryId.Should().Be(reversed.Value.ReversalJournalEntryId);
+        original.ReverseJournalEntryId.Should().BeNull();
         var reversal = (await ReversalsAsync()).Should().ContainSingle().Subject;
         reversal.Id.Should().Be(reversed.Value.ReversalJournalEntryId);
         reversal.OriginalJournalEntryId.Should().Be(original.Id);

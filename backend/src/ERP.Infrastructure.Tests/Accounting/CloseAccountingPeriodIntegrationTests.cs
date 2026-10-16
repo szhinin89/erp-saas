@@ -303,7 +303,7 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
             var tracked = await db
                 .JournalEntries.Include(x => x.Lines)
                 .FirstAsync(x => x.Id == original.Id);
-            var reversal = tracked.Reverse(_createdBy, entryNumber, "Ajuste de prueba");
+            var reversal = tracked.Reverse(_createdBy, entryNumber, "Ajuste de prueba", tracked.EntryDate, tracked.AccountingPeriodId, tracked.FiscalYear);
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
         }

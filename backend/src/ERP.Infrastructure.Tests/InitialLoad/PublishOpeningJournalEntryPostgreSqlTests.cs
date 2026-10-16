@@ -103,6 +103,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests : IClassFi
         services.AddScoped<IOpeningBalanceConstraintsReader, OpeningBalanceConstraintsReader>();
         services.AddScoped<IOpeningBalanceSourceReader, OpeningBalanceSourceReader>();
         services.AddScoped<IJournalEntryRepository, JournalEntryRepository>();
+        services.AddScoped<IAccountingOperationalPolicyRepository, AccountingOperationalPolicyRepository>();
         services.AddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
@@ -689,7 +690,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests : IClassFi
         await LoadBridgeAsync();
         var published = await PublishAsync(await ValidLinesAsync());
 
-        var result = await SendAsync(new ReverseJournalEntryCommand(published.Value!.JournalEntryId!.Value, "corrección"));
+        var result = await SendAsync(new ReverseJournalEntryCommand(published.Value!.JournalEntryId!.Value, "corrección", new DateOnly(2026, 7, 15)));
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ReverseJournalEntryCommandHandler.OpeningReversalNotAllowedCode);

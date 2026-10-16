@@ -284,9 +284,11 @@ public sealed class GetJournalEntriesUseCasesTests
         var debitAccount = NewAccount("1.1.01", "Caja");
         var creditAccount = NewAccount("4.1.01", "Ventas");
         var original = PostedEntryWithLines(debitAccount.Id, creditAccount.Id, entryNumber: 1);
-        var reversal = original.Reverse(CreatedBy, 2, "Factura anulada");
+        var reversal = original.Reverse(CreatedBy, 2, "Factura anulada", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         var m = new Mocks();
+        m.JournalEntries.Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Accounting", "Reversal", original.Id,
+            It.IsAny<CancellationToken>())).ReturnsAsync(reversal);
         m.JournalEntries.Setup(r =>
                 r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())
             )
@@ -313,7 +315,7 @@ public sealed class GetJournalEntriesUseCasesTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Status.Should().Be("Reversed");
+        result.Value!.Status.Should().Be("Posted");
         result.Value.ReverseJournalEntryId.Should().Be(reversal.Id);
         result.Value.ReverseJournalEntryNumber.Should().Be(2);
         result.Value.ReverseJournalEntryDate.Should().Be(reversal.EntryDate);
@@ -325,7 +327,7 @@ public sealed class GetJournalEntriesUseCasesTests
         var debitAccount = NewAccount("1.1.01", "Caja");
         var creditAccount = NewAccount("4.1.01", "Ventas");
         var original = PostedEntryWithLines(debitAccount.Id, creditAccount.Id, entryNumber: 1);
-        var reversal = original.Reverse(CreatedBy, 2, "Factura anulada");
+        var reversal = original.Reverse(CreatedBy, 2, "Factura anulada", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         var m = new Mocks();
         m.JournalEntries.Setup(r =>
@@ -412,7 +414,7 @@ public sealed class GetJournalEntriesUseCasesTests
         original.AddLine(debitAccount.Id, "Gasto", 100m, 0m);
         original.AddLine(creditAccount.Id, "CxP", 0m, 100m);
         original.Post(CreatedBy, 1);
-        var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado");
+        var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         var m = new Mocks();
         m.JournalEntries.Setup(r =>
@@ -624,7 +626,7 @@ public sealed class GetJournalEntriesUseCasesTests
         var creditAccount = NewAccount("2.1.01", "Cuentas por pagar");
         var expenseId = Guid.NewGuid();
         var original = ExpenseConfirmedEntry(debitAccount.Id, creditAccount.Id, expenseId);
-        var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado");
+        var reversal = original.Reverse(CreatedBy, 2, "Gasto anulado", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         var m = new Mocks();
         m.JournalEntries.Setup(r =>

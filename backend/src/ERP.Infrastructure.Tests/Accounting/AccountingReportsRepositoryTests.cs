@@ -204,7 +204,7 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             var loaded = await db
                 .JournalEntries.Include(x => x.Lines)
                 .FirstAsync(x => x.Id == original.Id);
-            reversal = loaded.Reverse(_createdBy, 2, "Error de digitación");
+            reversal = loaded.Reverse(_createdBy, 2, "Error de digitación", loaded.EntryDate, loaded.AccountingPeriodId, loaded.FiscalYear);
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
         }
@@ -231,7 +231,7 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
         items.Select(e => e.Id).Should().BeEquivalentTo(new[] { original.Id, reversal.Id });
         items
             .Should()
-            .ContainSingle(e => e.Id == original.Id && e.Status == JournalEntryStatus.Reversed);
+            .ContainSingle(e => e.Id == original.Id && e.Status == JournalEntryStatus.Posted);
         items
             .Should()
             .ContainSingle(e => e.Id == reversal.Id && e.Status == JournalEntryStatus.Posted);
@@ -358,7 +358,7 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             var loaded = await db
                 .JournalEntries.Include(x => x.Lines)
                 .FirstAsync(x => x.Id == original.Id);
-            var reversal = loaded.Reverse(_createdBy, 2, "Factura de compra anulada");
+            var reversal = loaded.Reverse(_createdBy, 2, "Factura de compra anulada", loaded.EntryDate, loaded.AccountingPeriodId, loaded.FiscalYear);
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
         }
@@ -416,7 +416,7 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             var loaded = await db
                 .JournalEntries.Include(x => x.Lines)
                 .FirstAsync(x => x.Id == original.Id);
-            var reversal = loaded.Reverse(_createdBy, 2, "Factura anulada");
+            var reversal = loaded.Reverse(_createdBy, 2, "Factura anulada", loaded.EntryDate, loaded.AccountingPeriodId, loaded.FiscalYear);
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
         }
@@ -460,7 +460,7 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             var loaded = await db
                 .JournalEntries.Include(x => x.Lines)
                 .FirstAsync(x => x.Id == original.Id);
-            var reversal = loaded.Reverse(_createdBy, 2, "Cobro duplicado");
+            var reversal = loaded.Reverse(_createdBy, 2, "Cobro duplicado", loaded.EntryDate, loaded.AccountingPeriodId, loaded.FiscalYear);
             db.JournalEntries.Add(reversal);
             await db.SaveChangesAsync();
         }

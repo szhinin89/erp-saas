@@ -1,215 +1,36 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting.Translators;
-using ERP.Application.Modules.Payables.Exceptions;
-using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Caja.Entities;
-using ERP.Domain.Modules.Caja.Interfaces;
-using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Payables.Events;
 using FluentAssertions;
 using Moq;
 
 namespace ERP.Application.Tests.Accounting;
 
-/// <summary>
-/// SUPPLIER-PAYMENTS-REVERSE-16 — reemplaza al test homónimo legacy (Finance/Payment, código
-/// muerto eliminado junto con su traductor en este ticket). Mismo criterio estricto que
-/// <see cref="SupplierPaymentConfirmedPostingTranslator"/>: un posting fallido debe LANZAR (nunca
-/// solo loguear), para que la reversa completa se revierta.
-/// </summary>
 public sealed class SupplierPaymentReversedPostingTranslatorTests
 {
-    private static readonly Guid TenantId = Guid.NewGuid();
-    private static readonly Guid CompanyId = Guid.NewGuid();
-    private static readonly Guid BranchId = Guid.NewGuid();
-    private static readonly Guid SupplierId = Guid.NewGuid();
-    private static readonly Guid UserId = Guid.NewGuid();
-
-    private sealed class Mocks
-    {
-        public Mock<IPostingEngine> PostingEngine { get; } = new();
-        public Mock<ICompanyBankAccountRepository> BankAccounts { get; } = new();
-        public Mock<ICashRegisterRepository> CashRegisters { get; } = new();
-
-        public SupplierPaymentReversedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, BankAccounts.Object, CashRegisters.Object);
-
-        public void RegisterCashRegister(CashRegister cashRegister) =>
-            CashRegisters
-                .Setup(r =>
-                    r.GetByIdAsync(TenantId, cashRegister.Id, It.IsAny<CancellationToken>())
-                )
-                .ReturnsAsync(cashRegister);
-    }
-
-    private static CashRegister Destination(Guid? companyId = null, bool isActive = true)
-    {
-        var destination = CashRegister.Create(
-            TenantId,
-            companyId ?? CompanyId,
-            BranchId,
-            $"CAJA-{Guid.NewGuid():N}"[..10],
-            "Caja Principal",
-            UserId
-        );
-        destination.SetAccountingAccount(Guid.NewGuid(), UserId);
-        if (!isActive)
-            destination.Disable(UserId);
-        return destination;
-    }
-
-    private static SupplierPaymentConfirmedMethodLine CashLine(
-        CashRegister destination,
-        decimal amount
-    ) => new(null, destination.Id, amount);
-
-    private static SupplierPaymentReversedEvent Event(
-        IReadOnlyList<SupplierPaymentConfirmedMethodLine> methodLines,
-        decimal totalAmount,
-        Guid? supplierPaymentId = null
-    ) =>
-        new(
-            TenantId,
-            supplierPaymentId ?? Guid.NewGuid(),
-            CompanyId,
-            SupplierId,
-            totalAmount,
-            new DateOnly(2026, 8, 28),
-            "Error de digitación",
-            methodLines,
-            new[] { new SupplierPaymentReversedApplicationLine(Guid.NewGuid(), totalAmount) }
-        );
+    private static readonly Guid Tenant = Guid.NewGuid(), Company = Guid.NewGuid(), Id = Guid.NewGuid();
+    private static SupplierPaymentReversedEvent Event() => new(Tenant, Id, Company, Guid.NewGuid(), 200m, new DateOnly(2025, 12, 1), "motivo", [new(null, Guid.NewGuid(), 200m)], [new(Guid.NewGuid(), 180m)], appliedAmount: 180m);
 
     [Fact]
-    public async Task Reversa_con_1_medio_genera_1_debito_y_acredita_CxP_por_el_total()
+    public async Task Usa_identidad_historica_y_fecha_del_acto_sin_reglas_ni_cuentas()
     {
-        var m = new Mocks();
-        var destination = Destination();
-        m.RegisterCashRegister(destination);
-
-        PostingFact? captured = null;
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(
-                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
-                )
-            );
-
-        var supplierPaymentId = Guid.NewGuid();
-        var evt = Event(new[] { CashLine(destination, 300m) }, 300m, supplierPaymentId);
-
-        await m.BuildTranslator().Handle(evt, CancellationToken.None);
-
-        captured.Should().NotBeNull();
-        captured!.SourceModule.Should().Be("Payables");
-        captured.FactType.Should().Be("SupplierPaymentReversed");
-        captured.SourceEventId.Should().Be(supplierPaymentId);
-        captured
-            .GrandTotal.Should()
-            .Be(300m, "el Haber de CxP se resuelve vía PostingRule con GrandTotal");
-        captured.Allocations.Should().ContainSingle();
-        var allocation = captured.Allocations!.Single();
-        allocation.AccountingAccountId.Should().Be(destination.AccountingAccountId!.Value);
-        allocation.Amount.Should().Be(300m);
-        allocation
-            .Nature.Should()
-            .Be(AccountNature.Debit, "el reverso invierte: Debe caja/banco, Haber CxP");
+        var recorder = new Mock<IAccountingReversalRecorder>();
+        var evt = Event();
+        await new SupplierPaymentReversedPostingTranslator(recorder.Object).Handle(evt, CancellationToken.None);
+        recorder.Verify(r => r.RecordSourceAsync(Tenant, Company, "Payables", "SupplierPaymentConfirmed", Id,
+            It.Is<string>(s => s.Contains("motivo")), evt.OccurredOn, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Reversa_con_2_medios_genera_2_debitos_banco_caja()
+    public async Task Gate_de_periodo_se_propaga_y_no_se_olvida_como_warning()
     {
-        var m = new Mocks();
-        var destinationA = Destination();
-        var destinationB = Destination();
-        m.RegisterCashRegister(destinationA);
-        m.RegisterCashRegister(destinationB);
-
-        PostingFact? captured = null;
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(
-                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
-                )
-            );
-
-        var evt = Event(new[] { CashLine(destinationA, 100m), CashLine(destinationB, 200m) }, 300m);
-
-        await m.BuildTranslator().Handle(evt, CancellationToken.None);
-
-        captured!.Allocations.Should().HaveCount(2);
-        captured.Allocations!.Should().OnlyContain(a => a.Nature == AccountNature.Debit);
-        captured.Allocations!.Sum(a => a.Amount).Should().Be(300m);
-    }
-
-    [Fact]
-    public async Task Posting_exitoso_no_lanza()
-    {
-        var m = new Mocks();
-        var destination = Destination();
-        m.RegisterCashRegister(destination);
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(
-                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
-                )
-            );
-
-        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
-
-        var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
-
-        await act.Should().NotThrowAsync();
-    }
-
-    [Fact]
-    public async Task Posting_failure_lanza_SupplierPaymentPostingFailedException_en_vez_de_loguear_warning()
-    {
-        var m = new Mocks();
-        var destination = Destination();
-        m.RegisterCashRegister(destination);
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.ValidationFailure(
-                    "No existe regla de contabilización.",
-                    "RULE_NOT_FOUND"
-                )
-            );
-
-        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
-
-        var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
-
-        var thrown = await act.Should().ThrowAsync<SupplierPaymentPostingFailedException>();
-        thrown.Which.Code.Should().Be("RULE_NOT_FOUND");
-    }
-
-    [Fact]
-    public async Task Destino_financiero_inactivo_bloquea_lanzando()
-    {
-        var m = new Mocks();
-        var destination = Destination(isActive: false);
-        m.RegisterCashRegister(destination);
-
-        var evt = Event(new[] { CashLine(destination, 100m) }, 100m);
-
-        var act = async () => await m.BuildTranslator().Handle(evt, CancellationToken.None);
-
-        await act.Should().ThrowAsync<SupplierPaymentPostingFailedException>();
-        m.PostingEngine.Verify(
-            e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
+        var recorder = new Mock<IAccountingReversalRecorder>();
+        recorder.Setup(r => r.RecordSourceAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DomainRuleViolationException("Período no abierto"));
+        var act = () => new SupplierPaymentReversedPostingTranslator(recorder.Object).Handle(Event(), CancellationToken.None);
+        await act.Should().ThrowAsync<DomainRuleViolationException>();
     }
 }

@@ -5,83 +5,48 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 
-/// <summary>
-/// IL-8B — núcleo único del reverso contable (Fase 5.4, ADR-026 §9), compartido por
-/// <see cref="ReverseJournalEntryCommandHandler"/> (anulaciones de Ventas/Compras/Gastos/...) y el
-/// reverso específico del ASI de apertura: período del original abierto (<see cref="PostingPeriodGuard"/>),
-/// número reservado vía <c>IJournalEntrySequenceRepository.ReserveNextNumberAsync</c>,
-/// <see cref="JournalEntry.Reverse"/> y alta del asiento inverso. No conoce módulos de origen (cada
-/// llamador decide qué asientos puede reversar), no guarda ni abre transacción: el llamador hace
-/// <c>SaveChanges</c> dentro de su transacción, que es la que retiene el advisory lock de la secuencia.
-/// Clase sin registro DI: la construye cada handler con sus propios repositorios.
-/// </summary>
-internal sealed class JournalEntryReversal
+/// <summary>Núcleo único del reverso. El llamador mantiene la transacción hasta persistir.</summary>
+public sealed class JournalEntryReversal(
+    IJournalEntryRepository journal,
+    IAccountingPeriodRepository periods,
+    IJournalEntrySequenceRepository sequences,
+    IAccountingOperationalPolicyRepository policies)
 {
-    private readonly IJournalEntryRepository _journalEntryRepository;
-    private readonly IAccountingPeriodRepository _accountingPeriodRepository;
-    private readonly IJournalEntrySequenceRepository _journalEntrySequenceRepository;
-
-    public JournalEntryReversal(
-        IJournalEntryRepository journalEntryRepository,
-        IAccountingPeriodRepository accountingPeriodRepository,
-        IJournalEntrySequenceRepository journalEntrySequenceRepository
-    )
+    public async Task<Result<AccountingPeriod>> RequirePeriodAsync(
+        Guid tenantId, Guid companyId, DateOnly effectiveDate, CancellationToken ct)
     {
-        _journalEntryRepository = journalEntryRepository;
-        _accountingPeriodRepository = accountingPeriodRepository;
-        _journalEntrySequenceRepository = journalEntrySequenceRepository;
+        await policies.AcquireSharedLockAsync(companyId, ct);
+        var period = await periods.FindContainingDateAsync(tenantId, companyId, effectiveDate, ct);
+        return period is null
+            ? Result<AccountingPeriod>.ValidationFailure("No existe un período Open para la fecha efectiva del reverso.", "PERIOD_NOT_OPEN")
+            : new PostingPeriodGuard().Ensure(period);
     }
 
-    /// <summary>
-    /// Reversa <paramref name="original"/> (tracked) con la misma fecha y período del original y
-    /// agrega el asiento inverso al contexto sin guardar. Devuelve el asiento inverso.
-    /// </summary>
-    public async Task<Result<JournalEntry>> ReverseAsync(
-        JournalEntry original,
-        Guid reversedBy,
-        string reason,
-        CancellationToken ct
-    )
+    public async Task<Result<JournalEntry>> ReverseAsync(JournalEntry original, Guid reversedBy,
+        string reason, DateOnly effectiveDate, CancellationToken ct)
     {
-        // Mismo criterio que PostingPeriodGuard usa para Post() (ADR-026 §6.1): un asiento no
-        // puede reversarse si su período ya no admite contabilización (Closed o Locked). No se
-        // duplica la regla — se reutiliza el mismo guard interno del Posting Engine.
-        var period = await _accountingPeriodRepository.GetByIdAsync(
-            original.TenantId,
-            original.CompanyId,
-            original.AccountingPeriodId,
-            ct
-        );
-        if (period is null)
-            return Result<JournalEntry>.ValidationFailure(
-                "El período contable del asiento original no existe."
-            );
-
-        var periodGuardResult = new PostingPeriodGuard().Ensure(period);
-        if (!periodGuardResult.IsSuccess)
-            return Result<JournalEntry>.ValidationFailure(
-                periodGuardResult.Error!,
-                periodGuardResult.Code
-            );
-
-        var entryNumber = await _journalEntrySequenceRepository.ReserveNextNumberAsync(
-            original.TenantId,
-            original.CompanyId,
-            original.FiscalYear,
-            ct
-        );
-
+        await policies.AcquireSharedLockAsync(original.CompanyId, ct);
+        await journal.AcquireIdempotencyLockAsync(original.CompanyId, "Accounting", original.Id, "Reversal", ct);
+        var existing = await journal.FindByKeyAsync(original.TenantId, original.CompanyId,
+            "Accounting", "Reversal", original.Id, ct);
+        if (existing is not null)
+            return Result<JournalEntry>.Success(existing);
+        var period = await RequirePeriodAsync(original.TenantId, original.CompanyId, effectiveDate, ct);
+        if (!period.IsSuccess)
+            return Result<JournalEntry>.ValidationFailure(period.Error!, period.Code);
+        var number = await sequences.ReserveNextNumberAsync(original.TenantId, original.CompanyId,
+            period.Value!.FiscalYear, ct);
         JournalEntry reversal;
         try
         {
-            reversal = original.Reverse(reversedBy, entryNumber, reason);
+            reversal = original.Reverse(reversedBy, number, reason, effectiveDate,
+                period.Value.Id, period.Value.FiscalYear);
         }
         catch (ArgumentException ex)
         {
             return Result<JournalEntry>.ValidationFailure(ex.Message);
         }
-
-        await _journalEntryRepository.AddAsync(reversal, ct);
+        await journal.AddAsync(reversal, ct);
         return Result<JournalEntry>.Success(reversal);
     }
 }

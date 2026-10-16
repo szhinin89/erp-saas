@@ -259,7 +259,7 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
         var engine = new PostingEngine(journals, new PostingRuleRepository(db), periods, sequences,
             new AccountRepository(db), NullLogger<PostingEngine>.Instance);
         var reverse = new ReverseJournalEntryCommandHandler(journals, periods, sequences,
-            new CurrentTenant(_tenantId), new CurrentCompany(_companyA), Mock.Of<ICurrentUser>(u => u.UserId == _actor));
+            new CurrentTenant(_tenantId), new CurrentCompany(_companyA), Mock.Of<ICurrentUser>(u => u.UserId == _actor), new UnitOfWork(db), new AccountingOperationalPolicyRepository(db));
         var mediator = new Mock<IMediator>();
         mediator.Setup(m => m.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
             .Returns((ReverseJournalEntryCommand c, CancellationToken ct) => reverse.Handle(c, ct));

@@ -38,6 +38,10 @@ public static class AccountingContinuityTestWiring
             sp.GetRequiredService<AccountingPostingExecutor>()
         );
         services.AddScoped<AccountingPostingCancellation>();
+        services.AddScoped<ERP.Application.Modules.Accounting.UseCases.JournalEntries.JournalEntryReversal>();
+        services.AddScoped<AccountingReversalRecorder>();
+        services.AddScoped<IAccountingReversalRecorder>(sp => sp.GetRequiredService<AccountingReversalRecorder>());
+
         return services;
     }
 

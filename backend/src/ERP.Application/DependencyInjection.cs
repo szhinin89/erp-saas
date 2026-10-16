@@ -36,6 +36,9 @@ public static class DependencyInjection
             sp.GetRequiredService<AccountingPostingExecutor>()
         );
         services.AddScoped<AccountingPostingCancellation>();
+        services.AddScoped<AccountingReversalRecorder>();
+        services.AddScoped<IAccountingReversalRecorder>(sp => sp.GetRequiredService<AccountingReversalRecorder>());
+        services.AddScoped<ERP.Application.Modules.Accounting.UseCases.JournalEntries.JournalEntryReversal>();
         services.AddScoped<ERP.Application.Modules.Accounting.UseCases.Continuity.AccountingOperationalPolicyReader>();
         services.AddScoped<IEffectivePermissionKeysProvider, EffectivePermissionKeysProvider>();
         services.AddScoped<ICompanyContextProvider, CompanyContextProvider>();
@@ -153,6 +156,7 @@ public static class DependencyInjection
         // de negocio nunca se guarde en caché. Solo se aplica a respuestas IDomainRuleResult (Result<T>).
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(DomainRuleBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AccountingPostingDispatchBehavior<,>));
 
         // Carga Inicial (INITIAL-LOAD-ARCH-01): un IImportProcessor por ImportType, resuelto
         // como diccionario. Agregar un import type nuevo es agregar una implementación aquí —

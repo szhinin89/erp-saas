@@ -84,23 +84,17 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(ct);
 
-    public Task<JournalEntry?> FindByKeyAsync(
-        Guid tenantId,
-        Guid companyId,
-        string sourceModule,
-        string factType,
-        Guid sourceEventId,
-        CancellationToken ct = default
-    ) =>
-        _context
-            .JournalEntries.Where(x =>
-                x.TenantId == tenantId
-                && x.CompanyId == companyId
-                && x.SourceModule == sourceModule
-                && x.SourceEventType == factType
-                && x.SourceEventId == sourceEventId
-            )
-            .FirstOrDefaultAsync(ct);
+    public Task<JournalEntry?> FindByKeyAsync(Guid tenantId, Guid companyId, string sourceModule,
+        string factType, Guid sourceEventId, CancellationToken ct = default)
+    {
+        var local = _context.JournalEntries.Local.FirstOrDefault(x => x.TenantId == tenantId
+            && x.CompanyId == companyId && x.SourceModule == sourceModule
+            && x.SourceEventType == factType && x.SourceEventId == sourceEventId);
+        return local is not null ? Task.FromResult<JournalEntry?>(local)
+            : _context.JournalEntries.Include(x => x.Lines).FirstOrDefaultAsync(x =>
+                x.TenantId == tenantId && x.CompanyId == companyId && x.SourceModule == sourceModule
+                && x.SourceEventType == factType && x.SourceEventId == sourceEventId, ct);
+    }
 
     public async Task AcquireIdempotencyLockAsync(
         Guid companyId,

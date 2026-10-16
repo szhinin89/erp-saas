@@ -17,9 +17,9 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | KEEP | Patrones durables específicos de costos de inventario y apertura implementados (convergencia pendiente, CONTINUITY-05) |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-01: política operativa versionada por Company, obligación contable durable común con historial de intentos, intento inicial posterior al commit y reproceso manual individual para Compra, Gasto (confirmación de borrador y creación directa) y Retención emitida; anulación común de esos orígenes; gate mínimo de cierre; `AccountingPostingMode` retirado |
 | BUG REAL | Ventas, devoluciones/NC, pagos, cobros, créditos de proveedor y caja siguen contabilizando en línea (excepción o warning según traductor); falta convergencia a la obligación durable |
-| BUG REAL | El reverso actual fuerza fecha/período originales y modifica estado/metadatos del original; no cumple el contrato de libro cerrado |
+| KEEP | ACCOUNTING-CONTINUITY-03: espejo histórico, original inmutable, fecha efectiva y período Open destino, idempotencia y obligación durable para los consumidores migrados |
 | BUG REAL | El cierre exige obligaciones resueltas y asientos completos, pero no concilia orígenes sin obligación; costos puede reintentar Failed implícitamente |
-| EXTEND | Disabled operativo, reproceso en bloque, reversos como obligación, integridad completa de cierre/reportes y manuales generales pendientes |
+| EXTEND | Disabled operativo, integridad completa de cierre/reportes y manuales generales pendientes |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -195,7 +195,7 @@ Reversar crea un asiento nuevo: mismas cuentas, mismas líneas e importes, con d
 y créditos intercambiados; conserva referencia al asiento y documento originales y
 motivo/autor. No resolverlo mediante reglas vigentes, cuentas sustitutas o valoración nueva.
 
-Para un original en Closed/Locked, el original permanece **totalmente inmutable**, incluso
+El original permanece **totalmente inmutable**, también en Open y en Closed/Locked, incluso
 su estado y metadatos persistidos. La relación inversa se consulta desde el nuevo reverso
 o evidencia append-only; no actualizar el original para marcarlo Reversed/enlazarlo.
 El reverso se registra en el período Open que contiene la fecha efectiva de la
@@ -422,15 +422,15 @@ Rutas abreviadas desde `backend/src/`:
 | BUG REAL | Application/Modules/Accounting/Posting/Translators: SalesInvoiceAuthorized lanza excepción de posting (Compra, Gasto y Retención emitida convergieron a la obligación durable en ACCOUNTING-CONTINUITY-01) |
 | BUG REAL | PurchaseReturnAuthorized registra warning sin obligación genérica; CollectionApplied mezcla excepción con warning según destino |
 | BUG REAL | La autorización de venta resuelve cuentas antes de completar el núcleo (la prevalidación IRBPNR de Compra se retiró en ACCOUNTING-CONTINUITY-01) |
-| BUG REAL | Application/Modules/Accounting/UseCases/JournalEntries/JournalEntryReversal usa período/ejercicio originales; Domain/Modules/Accounting/Entities/JournalEntry.Reverse modifica el original |
+| KEEP | ACCOUNTING-CONTINUITY-03: JournalEntryReversal y JournalEntry.Reverse conservan el original y espejan el libro histórico en fecha/período/ejercicio destino; pago, cobro y anulaciones existentes adoptados |
 | BUG REAL | El cierre consulta asientos y obligaciones Pending/Failed, pero no concilia orígenes que deberían haber generado obligación |
 | BUG REAL | Application/Modules/Inventory/Costing/InventoryCostAccounting recorre Failed al procesar otros hechos de la factura |
 
 Corte Compra/Gasto + Retención adoptado (ACCOUNTING-CONTINUITY-01). Siguientes cortes:
-reversos como obligación y fecha efectiva de libro cerrado, demás integraciones automáticas,
+demás integraciones automáticas,
 convergencia de costos/apertura, integridad completa de cierre/reportes
-y manuales generales. Mientras el reverso general no converja, el reverso fallido de un asiento
-Posted de Compra/Gasto/Retención bloquea su anulación (rollback completo). Cada corte requiere
+y manuales generales. ACCOUNTING-CONTINUITY-03 reemplaza el rollback por fallos posteriores
+al gate de período con una obligación durable en los consumidores migrados. Cada corte requiere
 reproducción, fix mínimo, tests focales y revisión de diff. No se autoriza un pipeline
 paralelo ni reabrir reglas operativas CLOSED por esta consolidación.
 
@@ -460,3 +460,22 @@ fuera de cualquier transacción ajena; conserva tracking durante la transacción
 para permitir varias reservas válidas de JournalEntrySequence. Los locks y las
 claves de idempotencia existentes permanecen. La UI reutiliza componentes ZH,
 selecciona solo Pending/Failed, exige motivo y confirmación, y muestra cada resultado.
+
+## 18. Reverso común ACCOUNTING-CONTINUITY-03
+
+El reverso conserva `OriginalJournalEntryId`; su identidad es Accounting / Reversal /
+original.Id. Motivo completo y autor viven en el reverso. La relación inversa del detalle
+se consulta desde ese asiento; los campos inversos antiguos permanecen solo para lectura histórica.
+La fecha efectiva se fija convirtiendo el instante del acto con `ICompanyClock.LocalDateAsync`
+y queda persistida en la obligación. El núcleo resuelve el período y ejercicio destino,
+protege Company con el lock compartido compatible con cierre y serializa por identidad.
+Consulta el reverso existente antes de validar nuevamente el período o reservar un número.
+
+Pago proveedor, cobro, Compra/Gasto/Retención y las anulaciones de Venta/NC de compra que
+ya consumían el comando registran la obligación en su transacción, tras superar el gate
+Open. Pending/Failed sin asiento se cancela, sin espejo. El intento inicial posterior al
+commit y el reproceso manual usan el mismo AccountingPostingExecutor y JournalEntryReversal;
+jamás PostingRules/cuentas actuales. Un fallo queda durable; no hay reintento automático.
+Apertura conserva fecha y restricciones propias; costos solo adapta la firma existente.
+No se corrigen reversos históricos previos ni se amplía a los demás flujos financieros.
+Validación e inventario: [entrega](../agent/ACCOUNTING_CONTINUITY_03_DELIVERY.md).

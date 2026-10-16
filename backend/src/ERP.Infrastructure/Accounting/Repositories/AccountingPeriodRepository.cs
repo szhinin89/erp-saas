@@ -51,7 +51,7 @@ public sealed class AccountingPeriodRepository : IAccountingPeriodRepository
         DateOnly date,
         CancellationToken ct = default
     ) =>
-        Scoped(tenantId, companyId)
+        Scoped(tenantId, companyId).AsNoTracking()
             .FirstOrDefaultAsync(x => x.StartDate <= date && x.EndDate >= date, ct);
 
     public Task AddAsync(AccountingPeriod period, CancellationToken ct = default) =>

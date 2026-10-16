@@ -191,66 +191,14 @@ public sealed class SupplierPaymentUnappliedAdvancePostingTests
     }
 
     [Fact]
-    public async Task Reversa_con_remanente_es_espejo_y_aplica_el_mismo_guard()
+    public async Task Reversa_con_remanente_solicita_el_asiento_completo_sin_guard_de_regla_actual()
     {
-        var (engine, registers, register) = Arrange(
-            advanceLineConfigured: true,
-            "SupplierPaymentReversed"
-        );
-        PostingFact? captured = null;
-        engine
-            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
-            .Callback<PostingFact, CancellationToken>((f, _) => captured = f)
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(
-                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
-                )
-            );
-        var evt = new SupplierPaymentReversedEvent(
-            TenantId,
-            Guid.NewGuid(),
-            CompanyId,
-            Guid.NewGuid(),
-            200m,
-            PaymentDate,
-            "No ejecutada",
-            [new SupplierPaymentConfirmedMethodLine(null, register.Id, 200m)],
-            [new SupplierPaymentReversedApplicationLine(Guid.NewGuid(), 180m)],
-            appliedAmount: 180m
-        );
-
-        await new SupplierPaymentReversedPostingTranslator(
-            engine.Object,
-            Mock.Of<ICompanyBankAccountRepository>(),
-            registers.Object
-        ).Handle(evt, CancellationToken.None);
-
-        captured!.AppliedToPayableAmount.Should().Be(180m);
-        captured.SupplierCreditAmount.Should().Be(20m);
-        captured.Allocations!.Should().OnlyContain(a => a.Nature == AccountNature.Debit);
-
-        var (engineOff, registersOff, registerOff) = Arrange(
-            advanceLineConfigured: false,
-            "SupplierPaymentReversed"
-        );
-        var evtOff = new SupplierPaymentReversedEvent(
-            TenantId,
-            Guid.NewGuid(),
-            CompanyId,
-            Guid.NewGuid(),
-            200m,
-            PaymentDate,
-            "x",
-            [new SupplierPaymentConfirmedMethodLine(null, registerOff.Id, 200m)],
-            [new SupplierPaymentReversedApplicationLine(Guid.NewGuid(), 180m)],
-            appliedAmount: 180m
-        );
-        var act = () =>
-            new SupplierPaymentReversedPostingTranslator(
-                engineOff.Object,
-                Mock.Of<ICompanyBankAccountRepository>(),
-                registersOff.Object
-            ).Handle(evtOff, CancellationToken.None);
-        await act.Should().ThrowAsync<SupplierPaymentPostingFailedException>();
+        var recorder = new Mock<ERP.Application.Modules.Accounting.Continuity.IAccountingReversalRecorder>();
+        var evt = new SupplierPaymentReversedEvent(TenantId, Guid.NewGuid(), CompanyId, Guid.NewGuid(),
+            200m, PaymentDate, "motivo", [new(null, Guid.NewGuid(), 200m)],
+            [new(Guid.NewGuid(), 180m)], appliedAmount: 180m);
+        await new SupplierPaymentReversedPostingTranslator(recorder.Object).Handle(evt, CancellationToken.None);
+        recorder.Verify(r => r.RecordSourceAsync(TenantId, CompanyId, "Payables", "SupplierPaymentConfirmed",
+            evt.SupplierPaymentId, "motivo", evt.OccurredOn, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

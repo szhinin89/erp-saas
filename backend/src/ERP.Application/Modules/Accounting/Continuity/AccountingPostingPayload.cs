@@ -7,6 +7,8 @@ namespace ERP.Application.Modules.Accounting.Continuity;
 /// (<c>AccountingPosting.Payload</c>, versión <see cref="CurrentVersion"/>). Solo importes y
 /// referencias de origen ya resueltos por el módulo operativo; nunca cuentas contables: las
 /// cuentas se resuelven con la configuración vigente en cada intento (accounting.md §6).
+/// Excepción: Reversal conserva OriginalJournalEntryId y motivo; sus líneas vienen exclusivamente
+/// del libro histórico, nunca de cuentas o reglas vigentes.
 /// </summary>
 public sealed record AccountingPostingPayload(
     decimal Subtotal,
@@ -18,7 +20,9 @@ public sealed record AccountingPostingPayload(
     decimal? RetainedAmount = null,
     decimal? RetainedVatAmount = null,
     decimal? RetainedIncomeAmount = null,
-    IReadOnlyList<AccountingPostingExpenseLine>? ExpenseLines = null
+    IReadOnlyList<AccountingPostingExpenseLine>? ExpenseLines = null,
+    Guid? OriginalJournalEntryId = null,
+    string? ReversalReason = null
 )
 {
     public const int CurrentVersion = 1;
