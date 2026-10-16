@@ -1,5 +1,11 @@
 # DECISIONS.md — Reglas de dominio vigentes
 
+- **CancelPurchase (2026-10-16):** cualquier salida efectiva posterior del mismo
+  Item + Warehouse bloquea Cancel definitivamente, incluso revertida. Entradas
+  solas no bloquean. Sin atribuir unidades a compras ni sustituir costo histórico
+  por promedio. Política SRI global por fecha de emisión; factura del proveedor
+  recibida no se trata como comprobante propio emitido. Fuente: [ADR-044](../decisions/ADR-044-purchase-cancellation-and-global-sri-policy.md).
+
 Espejo condensado de decisiones operativas. Cada regla enlaza a su fuente de autoridad; ante discrepancia prevalece el ADR / STATUS.md citado.
 
 - **Purchases Fase B (decisión funcional aprobada 2026-10-15):**

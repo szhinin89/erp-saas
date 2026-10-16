@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -171,12 +172,6 @@ public sealed class CancelPurchaseHandler
                 return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
             }
 
-            if (inv.Status == ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Cancelled)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue anulada.");
-            }
-
             _logger.LogInformation(
                 "Cancelling purchase {InvoiceNumber} ({InvoiceId}) for tenant {TenantId}. Reason: {Reason}",
                 inv.InvoiceNumber,
@@ -193,48 +188,16 @@ public sealed class CancelPurchaseHandler
                 inv.Id,
                 ct
             );
-            if (payable is not null && payable.PaidAmount > 0)
+            var eligibility = await new PurchaseCancellationEligibility(_stockRepo, _purchaseReturnRepo)
+                .EvaluateAsync(inv, payable, ct);
+            if (!eligibility.IsSuccess)
             {
                 await _uow.RollbackAsync(ct);
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    "No se puede anular una compra con pagos aplicados. Reverse los pagos primero."
-                );
+                return Result<PurchaseInvoiceDto>.ValidationFailure(eligibility.Error!, eligibility.Code);
             }
 
-            // ── PI-CANC-01 (§FASE 3 remediación 01, diseño §5.1 caso 1, §21): no se puede
-            // anular una factura que tiene una PurchaseReturn Authorized asociada — debe
-            // cancelarse primero la devolución por su propio flujo auditado.
-            if (
-                await _purchaseReturnRepo.ExistsAuthorizedByPurchaseInvoiceIdAsync(
-                    tid,
-                    cid,
-                    inv.Id,
-                    ct
-                )
-            )
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    "No se puede anular una compra que tiene una devolución de compra autorizada asociada. Cancele primero la devolución."
-                );
-            }
-
-            // ── PI-CANC-02 (§FASE 3): no se puede anular con crédito de proveedor
-            // (SupplierCredit vía P0-02) ya aplicado contra esta CxP.
-            if (payable is not null && payable.SupplierCreditAmount > 0)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    "No se puede anular una compra con crédito de proveedor ya aplicado contra su cuenta por pagar."
-                );
-            }
-
-            // ── 2. Anular retención (si existe) ───────────────────────────
-            // Cascada automática al anular la compra origen, vía IRetentionCanceller (generalizado
-            // para PurchaseInvoice en PURCHASES-RETENTIONS-CANCEL-05D): resuelve la MISMA
-            // AccountsPayable ya cargada arriba (identity map de EF Core sobre este mismo
-            // DbContext) y le aplica ReverseRetention() antes de que payable.Cancel() se ejecute
-            // más abajo.
+            // Gate fiscal único ADR-036: solo la retención emitida por nuestra empresa.
+            // La factura recibida pertenece al proveedor; Cancel local no solicita su anulación SRI.
             var retention = await _retentionRepo.GetBySourceAsync(
                 tid,
                 cid,

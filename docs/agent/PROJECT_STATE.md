@@ -1,5 +1,12 @@
 # PROJECT_STATE.md — Estado vigente del proyecto
 
+## PURCHASE CANCELLATION — BUG REAL (2026-10-16)
+
+Implementado; gate conservador de salidas posteriores bajo lock y política SRI
+global versionada. Validación focal PASS. Sin suites generales, commit/push ni
+migración al piloto. Calendario oficial y ventana interna Company: STRUCTURAL DEBT.
+[Entrega](PURCHASE_CANCELLATION_DELIVERY.md), [ADR-044](../decisions/ADR-044-purchase-cancellation-and-global-sri-policy.md).
+
 ## BACKGROUND DEPLOYMENT — FASE D (2026-10-15)
 
 Implementado: Compose único API OFF / Worker ON, misma imagen y volumen; storage

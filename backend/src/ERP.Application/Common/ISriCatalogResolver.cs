@@ -16,6 +16,9 @@ public sealed record SriIceInfo(string Name, decimal? Percent);
 /// </summary>
 public interface ISriCatalogResolver
 {
+    Task<ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicyVersion> ResolveAnnulmentPolicyAsync(
+        DateOnly issueDate, CancellationToken ct = default);
+
     /// <summary>Batch: carga todos los UOM de los códigos proporcionados en una sola query.</summary>
     Task<IReadOnlyDictionary<string, SriUomInfo>> ResolveUomsAsync(
         IEnumerable<string> codes,

@@ -22,6 +22,12 @@ public static class MessageCatalog
 {
     private static readonly Dictionary<string, CatalogMessage> Entries = new()
     {
+        [ApiResponseCodes.Purchases.CancellationSubsequentInventoryExit] = new(
+            ApiSeverity.Error,
+            "La compra no puede anularse porque existen movimientos posteriores de salida de inventario. Utilice devolución o nota de crédito según corresponda.",
+            "Purchase cancellation blocked by a subsequent effective inventory exit; a reversal does not restore eligibility.",
+            ApiErrorCategory.BusinessRule
+        ),
         [ApiResponseCodes.Common.Ok] = new(
             ApiSeverity.Success,
             "Operación realizada correctamente.",

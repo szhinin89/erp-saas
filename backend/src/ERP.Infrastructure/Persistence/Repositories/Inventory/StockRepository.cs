@@ -28,7 +28,6 @@ public sealed class StockRepository : IStockRepository
     private readonly ICompanyPrecisionPolicyProvider _precision;
     private readonly IOperationalPreferencesResolver? _preferences;
     private Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? _ownedStockTransaction;
-    private readonly HashSet<string> _heldStockKeys = new();
 
     private sealed record PendingMovement(
         Guid TenantId,
@@ -166,7 +165,6 @@ public sealed class StockRepository : IStockRepository
                     await _ownedStockTransaction.DisposeAsync();
                     _ownedStockTransaction = null;
                 }
-                _heldStockKeys.Clear();
                 _pending.Clear();
                 return result;
             }
@@ -188,7 +186,6 @@ public sealed class StockRepository : IStockRepository
                     await _ownedStockTransaction.DisposeAsync();
                     _ownedStockTransaction = null;
                 }
-                _heldStockKeys.Clear();
                 throw;
             }
         }
@@ -460,9 +457,7 @@ public sealed class StockRepository : IStockRepository
         if (!_db.Database.IsNpgsql()) return;
         if (_db.Database.CurrentTransaction is null)
             _ownedStockTransaction = await _db.Database.BeginTransactionAsync(ct);
-        var key = $"inventory:{r.TenantId}:{r.CompanyId}:{r.ProductId}:{r.WarehouseId}";
-        if (!_heldStockKeys.Add(key)) return;
-        await _db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", ct);
+        await AcquireResourceLockAsync(r.TenantId, r.CompanyId, r.ProductId, r.WarehouseId, ct);
         // An authorization precheck may have loaded an older snapshot before this resource lock.
         foreach (var entry in _db.ChangeTracker.Entries<CurrentStock>().Where(e =>
             e.Entity.TenantId == r.TenantId && e.Entity.CompanyId == r.CompanyId
@@ -470,6 +465,26 @@ public sealed class StockRepository : IStockRepository
             && e.State == EntityState.Unchanged).ToList())
             await entry.ReloadAsync(ct);
     }
+
+    public async Task AcquireResourceLockAsync(Guid tenantId, Guid companyId, Guid productId,
+        Guid warehouseId, CancellationToken ct = default)
+    {
+        if (!_company.HasCompanyContext || companyId != _company.CompanyId || tenantId == Guid.Empty)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException("Empresa de inventario inválida.");
+        if (_db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("El lock de inventario requiere una transacción activa.");
+        var key = $"inventory:{tenantId}:{companyId}:{productId}:{warehouseId}";
+        // pg_advisory_xact_lock es reentrante y se libera con la transacción, incluso tras rollback.
+        // No reutilizar un cache de claves entre transacciones del mismo DbContext.
+        await _db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", ct);
+    }
+
+    public Task<bool> HasExitAfterAsync(Guid tenantId, Guid companyId, Guid productId,
+        Guid warehouseId, long sequenceNumber, CancellationToken ct = default) =>
+        _db.Set<StockMovement>().ForOperationalScope(tenantId, _company)
+            .AnyAsync(m => m.CompanyId == companyId && m.ProductId == productId
+                && m.WarehouseId == warehouseId && m.SequenceNumber > sequenceNumber
+                && m.Quantity < 0m, ct);
 
     private async Task<List<SaleCostObligation>> GetCostObligationsAsync(PendingMovement r, CancellationToken ct)
     {

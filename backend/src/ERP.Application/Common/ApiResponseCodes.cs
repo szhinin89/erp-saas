@@ -19,6 +19,11 @@ namespace ERP.Application.Common;
 /// </remarks>
 public static class ApiResponseCodes
 {
+    public static class Purchases
+    {
+        public const string CancellationSubsequentInventoryExit = "PURCHASE_CANCELLATION_SUBSEQUENT_INVENTORY_EXIT";
+    }
+
     /// <summary>Códigos transversales (éxito genérico, errores HTTP comunes, infraestructura).</summary>
     public static class Common
     {

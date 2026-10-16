@@ -229,8 +229,8 @@ export function RetentionAnnulmentPanel({
             variant={annulment.isPastOrdinaryDeadline ? "error" : "attention"}
             message={
               annulment.isPastOrdinaryDeadline
-                ? "El plazo ordinario (día 7 del mes siguiente a la emisión) ya venció."
-                : "Plazo ordinario: hasta el día 7 del mes siguiente a la emisión."
+                ? "El plazo ordinario indicado ya venció."
+                : "Plazo ordinario según la política SRI vigente a la fecha de emisión."
             }
             detail="El ERP no conoce días hábiles ni feriados: valide el plazo efectivo en SRI en Línea. La anulación solo puede solicitarse en línea y puede requerir la aceptación del receptor."
           />

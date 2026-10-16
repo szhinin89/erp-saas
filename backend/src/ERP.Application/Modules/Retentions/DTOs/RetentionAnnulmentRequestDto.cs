@@ -7,8 +7,8 @@ namespace ERP.Application.Modules.Retentions.DTOs;
 /// <summary>
 /// ZH-RETENTION-SRI-ANNULMENT-01 — situación de la anulación ante el SRI de una retención autorizada,
 /// con los datos exactos que el usuario necesita para el trámite en SRI en Línea (clave de acceso,
-/// número, fecha de emisión, receptor, motivo) y el plazo ORDINARIO (día 7 del mes siguiente a la
-/// emisión; debe validarse contra el SRI — el ERP no tiene calendario de días hábiles).
+/// número, fecha de emisión, receptor, motivo) y el plazo ORDINARIO resuelto por la política global
+/// vigente a la emisión; debe validarse contra el SRI — el ERP no tiene calendario de días hábiles.
 /// 01B: última verificación en ConsultaComprobante (resultado técnico, estado fiscal informado por el
 /// SRI y literal crudo) y si el usuario puede desistir.
 /// </summary>

@@ -15111,6 +15111,107 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("sales_return_refund_allocations", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("code");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("sri_annulment_policy", "global");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("41000000-0000-0000-0000-000000000001"),
+                            Code = "ELECTRONIC_DOCUMENT_ONLINE_ANNULMENT"
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicyVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int?>("DayOfFollowingMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("day_of_following_month");
+
+                    b.Property<int?>("DaysAfterIssue")
+                        .HasColumnType("integer")
+                        .HasColumnName("days_after_issue");
+
+                    b.Property<bool>("ExtendToNextBusinessDay")
+                        .HasColumnType("boolean")
+                        .HasColumnName("extend_to_next_business_day");
+
+                    b.Property<Guid>("NormativeSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("normative_source_id");
+
+                    b.Property<Guid>("PolicyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("policy_id");
+
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_until");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormativeSourceId");
+
+                    b.HasIndex("PolicyId", "ValidFrom")
+                        .IsUnique();
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("PolicyId", "ValidFrom"), false);
+
+                    b.ToTable("sri_annulment_policy_version", "global", t =>
+                        {
+                            t.HasCheckConstraint("ck_sri_annulment_policy_dates", "valid_from IS NULL OR valid_until IS NULL OR valid_from <= valid_until");
+
+                            t.HasCheckConstraint("ck_sri_annulment_policy_deadline", "COALESCE((day_of_following_month BETWEEN 1 AND 28 AND days_after_issue IS NULL) OR (day_of_following_month IS NULL AND days_after_issue > 0), FALSE)");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("42000000-0000-0000-0000-000000000001"),
+                            DaysAfterIssue = 90,
+                            ExtendToNextBusinessDay = false,
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000004"),
+                            PolicyId = new Guid("41000000-0000-0000-0000-000000000001"),
+                            ValidFrom = new DateOnly(2016, 2, 22),
+                            ValidUntil = new DateOnly(2025, 7, 31)
+                        },
+                        new
+                        {
+                            Id = new Guid("42000000-0000-0000-0000-000000000002"),
+                            DayOfFollowingMonth = 7,
+                            ExtendToNextBusinessDay = true,
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000005"),
+                            PolicyId = new Guid("41000000-0000-0000-0000-000000000001"),
+                            ValidFrom = new DateOnly(2025, 8, 1)
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriCountry", b =>
                 {
                     b.Property<string>("Code")
@@ -16233,6 +16334,25 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("sri_normative_source", "global");
 
                     b.HasData(
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000004"),
+                            Document = "NAC-DGERCGC16-00000092",
+                            IntroducedInMigration = "SriAnnulmentPolicyVersioning",
+                            Notes = "Historia por fecha de emisión, hasta 2025-07-31; no se reinterpreta evidencia fiscal persistida.",
+                            PublishedOn = new DateOnly(2016, 2, 22),
+                            ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/c97242e6-c271-4eb8-8f6a-f687313118ba/Guia%20para%20contribuyentes%20de%20anulaci%C3%B3n%20de%20comprobantes%20electr%C3%B3nicos.pdf",
+                            Section = "Art. 7 — anulación en línea, 90 días"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000005"),
+                            Document = "NAC-DGERCGC25-00000017",
+                            IntroducedInMigration = "SriAnnulmentPolicyVersioning",
+                            Notes = "Firmada 2025-07-29. Día 7 del mes siguiente para emisión desde 2025-08-01; extensión por descanso obligatorio/feriado nacional o local según art. 3 reformado. No aplica excepción ISD al dominio IVA/Renta.",
+                            ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=e98fc8a6-299e-4ea9-8de7-2f6c70dbb4f5&nombre=NAC-DGERCGC25-00000017.pdf",
+                            Section = "Art. 1 a), transitoria primera; reforma NAC-DGERCGC25-00000014 art. 3"
+                        },
                         new
                         {
                             Id = new Guid("40000000-0000-0000-0000-000000000001"),
@@ -20252,6 +20372,21 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany("RefundAllocations")
                         .HasForeignKey("ReturnId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicyVersion", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriNormativeSource", null)
+                        .WithMany()
+                        .HasForeignKey("NormativeSourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicy", null)
+                        .WithMany()
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

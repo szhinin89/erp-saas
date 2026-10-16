@@ -561,6 +561,7 @@ public interface IRetentionAnnulmentRequester
 
 public sealed partial class RetentionAnnulmentRequester : IRetentionAnnulmentRequester
 {
+    private readonly ISriCatalogResolver _catalogs;
     private readonly IRetentionAnnulmentRequestRepository _requests;
     private readonly IElectronicDocumentSriAnnulment _sriAnnulment;
     private readonly IAccountsPayableRepository _payables;
@@ -572,7 +573,8 @@ public sealed partial class RetentionAnnulmentRequester : IRetentionAnnulmentReq
         IElectronicDocumentSriAnnulment sriAnnulment,
         IAccountsPayableRepository payables,
         IBusinessPartnerRepository partners,
-        ILogger<RetentionAnnulmentRequester> logger
+        ILogger<RetentionAnnulmentRequester> logger,
+        ISriCatalogResolver catalogs
     )
     {
         _requests = requests;
@@ -580,6 +582,7 @@ public sealed partial class RetentionAnnulmentRequester : IRetentionAnnulmentReq
         _payables = payables;
         _partners = partners;
         _logger = logger;
+        _catalogs = catalogs;
     }
 
     public async Task<Result<RetentionAnnulmentRequest>> RequestAsync(
@@ -606,6 +609,8 @@ public sealed partial class RetentionAnnulmentRequester : IRetentionAnnulmentReq
                 ApiResponseCodes.ElectronicDocuments.AnnulmentPending
             );
 
+        var policy = await _catalogs.ResolveAnnulmentPolicyAsync(retention.IssueDate!.Value, ct);
+        var deadline = policy.OrdinaryDeadline(retention.IssueDate.Value);
         var requestId = Guid.NewGuid();
         var electronic = await _sriAnnulment.BeginAsync(
             retention.TenantId,
@@ -652,6 +657,7 @@ public sealed partial class RetentionAnnulmentRequester : IRetentionAnnulmentReq
             subject?.Name.LegalName ?? string.Empty,
             reason,
             userId,
+            deadline,
             requestId
         );
         await _requests.AddAsync(request, ct);

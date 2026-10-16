@@ -122,6 +122,9 @@ public sealed class CancelPurchaseHandlerTests
         var repo = new Mock<IPurchaseInvoiceRepository>();
         var payableRepo = new Mock<IAccountsPayableRepository>();
         var stockRepo = new Mock<IStockRepository>();
+        stockRepo.Setup(r => r.GetMovementsByDocumentAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<ERP.Domain.Modules.Inventory.Entities.StockMovement>());
         var purchaseReturnRepo = new Mock<IPurchaseReturnRepository>();
         var uow = new Mock<IUnitOfWork>();
         return (repo, payableRepo, stockRepo, purchaseReturnRepo, uow);

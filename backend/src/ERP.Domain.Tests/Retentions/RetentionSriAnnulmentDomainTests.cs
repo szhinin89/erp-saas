@@ -88,7 +88,9 @@ public sealed class RetentionSriAnnulmentDomainTests
             "1791352688001",
             "Proveedor",
             "Error de digitación",
-            UserId
+            UserId,
+            new ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicyVersion { DayOfFollowingMonth = 7 }
+                .OrdinaryDeadline(issueDate ?? IssueDate)
         );
 
     private static RetentionAnnulmentRequest SubmittedRequest()
@@ -226,8 +228,8 @@ public sealed class RetentionSriAnnulmentDomainTests
         int ed
     )
     {
-        RetentionAnnulmentDeadline
-            .Ordinary(new DateOnly(y, m, d))
+        new ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicyVersion { DayOfFollowingMonth = 7 }
+            .OrdinaryDeadline(new DateOnly(y, m, d))
             .Should()
             .Be(new DateOnly(ey, em, ed));
         NewRequest(new DateOnly(y, m, d)).OrdinaryDeadline.Should().Be(new DateOnly(ey, em, ed));
@@ -247,7 +249,8 @@ public sealed class RetentionSriAnnulmentDomainTests
                 "1",
                 "P",
                 "m",
-                UserId
+                UserId,
+                new DateOnly(2026, 10, 7)
             );
 
         act.Should().Throw<DomainRuleViolationException>();

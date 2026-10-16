@@ -98,7 +98,7 @@ describe("RetentionAnnulmentPanel (ZH-RETENTION-SRI-ANNULMENT-01/01B)", () => {
     expect(screen.getByText("La compra aún NO está anulada.")).toBeTruthy();
     expect(screen.getByText("1".repeat(49))).toBeTruthy();
     expect(screen.getByText("001-001-000000007")).toBeTruthy();
-    expect(screen.getByText("Plazo ordinario: hasta el día 7 del mes siguiente a la emisión.")).toBeTruthy();
+    expect(screen.getByText("Plazo ordinario según la política SRI vigente a la fecha de emisión.")).toBeTruthy();
     expect(screen.queryByText("Anulada por el SRI")).toBeNull();
     expect(screen.getByRole("button", { name: "Ya presenté la solicitud" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Desistir" })).toBeTruthy();

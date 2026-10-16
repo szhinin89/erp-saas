@@ -5,6 +5,14 @@ namespace ERP.Domain.Modules.Inventory.Interfaces;
 
 public interface IStockRepository
 {
+    /// <summary>Serializa el recurso con AppendMovementAsync durante la transacción del llamador.</summary>
+    Task AcquireResourceLockAsync(Guid tenantId, Guid companyId, Guid productId, Guid warehouseId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Salida efectiva (Quantity &lt; 0) posterior a la secuencia indicada; las reversas no la eliminan.</summary>
+    Task<bool> HasExitAfterAsync(Guid tenantId, Guid companyId, Guid productId, Guid warehouseId,
+        long sequenceNumber, CancellationToken cancellationToken = default);
+
     Task<CurrentStock?> GetStockAsync(
         Guid tenantId,
         Guid warehouseId,

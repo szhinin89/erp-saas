@@ -53,7 +53,7 @@ public sealed class RetentionAnnulmentRequest
     public string ReceptorIdentification { get; private set; } = null!;
     public string ReceptorName { get; private set; } = null!;
 
-    /// <summary>Plazo ORDINARIO (día 7 del mes siguiente a la emisión) — ver <see cref="RetentionAnnulmentDeadline"/>.</summary>
+    /// <summary>Snapshot del plazo ordinario resuelto desde la política global SRI vigente a la emisión.</summary>
     public DateOnly OrdinaryDeadline { get; private set; }
 
     // ── Presentación al SRI ──
@@ -121,6 +121,7 @@ public sealed class RetentionAnnulmentRequest
         string receptorName,
         string reason,
         Guid requestedBy,
+        DateOnly ordinaryDeadline,
         Guid? id = null
     )
     {
@@ -166,7 +167,7 @@ public sealed class RetentionAnnulmentRequest
                 ? "—"
                 : receptorIdentification.Trim(),
             ReceptorName = string.IsNullOrWhiteSpace(receptorName) ? "—" : receptorName.Trim(),
-            OrdinaryDeadline = RetentionAnnulmentDeadline.Ordinary(retention.IssueDate.Value),
+            OrdinaryDeadline = ordinaryDeadline,
         };
         request.SetCreated(requestedBy);
         request.Raise(null, "Requested", request.Reason);

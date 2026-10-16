@@ -1,5 +1,17 @@
 # Project Status
 
+## PURCHASE CANCELLATION — BUG REAL (2026-10-16)
+
+Implementado y validado focalmente. Cancel bloqueado definitivamente ante salida
+posterior efectiva del mismo Item/Bodega, incluso si fue revertida; entradas solas
+no bloquean. Reverso histórico y flujos de devolución/NC conservados. Política SRI
+global versionada por migración EF, reutilizando catálogos/resolver/fuentes existentes.
+PASS: PostgreSQL 10/10 casos distintos, Application 24/24, Domain 25/25, contrato API 6/6, UI 12/12;
+TypeScript, build frontend, lint focal y diff check. Sin suites generales ni commit/push.
+Migración solo en PostgreSQL aislado de pruebas, no en piloto. STRUCTURAL DEBT:
+calendario oficial y ventana interna Company. [ADR-044](docs/decisions/ADR-044-purchase-cancellation-and-global-sri-policy.md),
+[entrega y comandos](docs/agent/PURCHASE_CANCELLATION_DELIVERY.md).
+
 ## BACKGROUND DEPLOYMENT — FASE D (2026-10-15)
 
 Implementado y validado focalmente, sin commit/push. Compose canónico API OFF +

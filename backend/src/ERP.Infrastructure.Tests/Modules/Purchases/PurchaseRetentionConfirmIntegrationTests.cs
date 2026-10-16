@@ -468,7 +468,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         );
 
     /// <summary>Compra en borrador: 1 × 100 + IVA 15% = 115 (base retenible IVA 15, Renta 100).</summary>
-    private async Task<Guid> SeedDraftPurchaseAsync(Guid? branchId = null)
+    private async Task<Guid> SeedDraftPurchaseAsync(Guid? branchId = null, decimal quantity = 1m, decimal unitPrice = 100m)
     {
         await using var db = CreateContext();
         var number = $"001-001-{++_invoiceSeq:000000000}";
@@ -492,8 +492,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             invoice.Id,
             _tenantId,
             "Producto Retención",
-            1m,
-            100m,
+            quantity,
+            unitPrice,
             "4",
             "UNIT",
             itemId: _itemId,

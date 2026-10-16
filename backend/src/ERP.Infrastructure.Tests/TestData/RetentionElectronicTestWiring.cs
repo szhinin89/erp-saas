@@ -366,7 +366,8 @@ public static class RetentionElectronicTestWiring
             SriAnnulment(db, company),
             new AccountsPayableRepository(db),
             new BusinessPartnerRepository(db),
-            NullLogger<RetentionAnnulmentRequester>.Instance
+            NullLogger<RetentionAnnulmentRequester>.Instance,
+            new ERP.Infrastructure.Persistence.Catalogs.SriCatalogResolver(db)
         );
 
     public static IElectronicDocumentSriAnnulment SriAnnulment(

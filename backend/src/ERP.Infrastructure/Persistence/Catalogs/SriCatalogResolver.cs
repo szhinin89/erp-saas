@@ -9,6 +9,20 @@ public sealed class SriCatalogResolver : ISriCatalogResolver
 
     public SriCatalogResolver(ErpDbContext db) => _db = db;
 
+    public async Task<ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicyVersion> ResolveAnnulmentPolicyAsync(
+        DateOnly issueDate, CancellationToken ct = default)
+    {
+        var versions = await _db.Set<ERP.Domain.Modules.SriCatalogs.Entities.SriAnnulmentPolicyVersion>()
+            .AsNoTracking().Where(v =>
+                (!v.ValidFrom.HasValue || v.ValidFrom <= issueDate)
+                && (!v.ValidUntil.HasValue || v.ValidUntil >= issueDate)).ToListAsync(ct);
+        if (versions.Count != 1)
+            throw new ERP.Domain.Exceptions.DomainRuleViolationException(
+                "La política global SRI de anulación debe tener exactamente una versión vigente para la fecha de emisión.");
+        _ = versions[0].OrdinaryDeadline(issueDate);
+        return versions[0];
+    }
+
     public async Task<IReadOnlyDictionary<string, SriUomInfo>> ResolveUomsAsync(
         IEnumerable<string> codes,
         CancellationToken ct = default

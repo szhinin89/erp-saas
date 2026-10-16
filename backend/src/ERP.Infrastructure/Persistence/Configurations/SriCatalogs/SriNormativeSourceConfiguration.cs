@@ -74,6 +74,23 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
         builder.HasData(
             new SriNormativeSource
             {
+                Id = SriAnnulmentPolicyVersionConfiguration.LegacySourceId,
+                Document = "NAC-DGERCGC16-00000092", Section = "Art. 7 — anulación en línea, 90 días",
+                PublishedOn = new DateOnly(2016, 2, 22),
+                ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/c97242e6-c271-4eb8-8f6a-f687313118ba/Guia%20para%20contribuyentes%20de%20anulaci%C3%B3n%20de%20comprobantes%20electr%C3%B3nicos.pdf",
+                IntroducedInMigration = "SriAnnulmentPolicyVersioning",
+                Notes = "Historia por fecha de emisión, hasta 2025-07-31; no se reinterpreta evidencia fiscal persistida.",
+            },
+            new SriNormativeSource
+            {
+                Id = SriAnnulmentPolicyVersionConfiguration.CurrentSourceId,
+                Document = "NAC-DGERCGC25-00000017", Section = "Art. 1 a), transitoria primera; reforma NAC-DGERCGC25-00000014 art. 3",
+                ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=e98fc8a6-299e-4ea9-8de7-2f6c70dbb4f5&nombre=NAC-DGERCGC25-00000017.pdf",
+                IntroducedInMigration = "SriAnnulmentPolicyVersioning",
+                Notes = "Firmada 2025-07-29. Día 7 del mes siguiente para emisión desde 2025-08-01; extensión por descanso obligatorio/feriado nacional o local según art. 3 reformado. No aplica excepción ISD al dominio IVA/Renta.",
+            },
+            new SriNormativeSource
+            {
                 Id = FichaV234Table20Id,
                 Document = "FICHA_TECNICA_OFFLINE",
                 Version = "2.34",
