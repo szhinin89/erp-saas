@@ -91,8 +91,7 @@ Solicitar el trámite no equivale a anular; no se añade ningún envío ni ruta 
 Inventario: Cancel válido conserva cantidades base y reverso al costo histórico;
 Cancel bloqueado no agrega movimientos ni cambia cantidad/promedio/valoración.
 CxP: no se cancela ni altera ante bloqueo; se conservan pagos/créditos/retenciones.
-Contabilidad: se conserva el traductor y el reverso existente. El gate no crea eventos,
-asientos ni reversos parciales; las pruebas comparan persistencia antes/después.
+Contabilidad: [Accounting](../architecture/accounting.md).
 
 Se rechazan: costo promedio como parche de Cancel (oculta una operación ya consumida
 y cambia el significado del reverso); atribución FIFO/LIFO o reconstrucción de cadenas;

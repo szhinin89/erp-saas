@@ -11,7 +11,6 @@ import { ConfigTabsLayout } from "../../../../components/shared/ConfigTabsLayout
 import { message } from "../../../../lib/messages";
 import {
   documentFlowPolicyService,
-  type AccountingPostingMode,
   type AuthorizationMode,
   type CancellationMode,
   type ConfirmationMode,
@@ -23,7 +22,6 @@ import {
   type PendingDocumentMode,
 } from "../api/documentFlowPolicyService";
 import {
-  ACCOUNTING_POSTING_MODE_OPTIONS,
   AUTHORIZATION_MODE_OPTIONS,
   CANCELLATION_MODE_OPTIONS,
   CONFIRMATION_MODE_OPTIONS,
@@ -37,7 +35,6 @@ import {
   REQUIRES_CANCELLATION_REASON_FLAG,
   REQUIRES_DUE_DATE_FLAG,
   REQUIRES_SUPPLIER_FLAG,
-  accountingPostingModeOption,
   authorizationModeOption,
   cancellationModeOption,
   compareDocumentCategory,
@@ -162,7 +159,6 @@ export function DocumentFlowPoliciesPage() {
         requiresSupplier: editing.requiresSupplier,
         requiresDueDate: editing.requiresDueDate,
         payableGenerationMode: editing.payableGenerationMode,
-        accountingPostingMode: editing.accountingPostingMode,
         inventoryImpactMode: editing.inventoryImpactMode,
         notificationMode: editing.notificationMode,
       });
@@ -220,12 +216,10 @@ export function DocumentFlowPoliciesPage() {
 
   const effectBadges = (p: DocumentFlowPolicyDto) => {
     const payable = payableGenerationModeOption(p.payableGenerationMode);
-    const posting = accountingPostingModeOption(p.accountingPostingMode);
     const inventory = inventoryImpactModeOption(p.inventoryImpactMode);
     return (
       <div className="prd-row-actions cfg-dfp-effects">
         <Badge label={payable.summary} variant={payable.badgeVariant} size="md" />
-        <Badge label={posting.summary} variant={posting.badgeVariant} size="md" />
         <Badge label={inventory.summary} variant={inventory.badgeVariant} size="md" />
       </div>
     );
@@ -506,24 +500,6 @@ export function DocumentFlowPoliciesPage() {
             }
           >
             {PAYABLE_GENERATION_MODE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </ZhSelect>
-        </ZHField>
-        <ZHField
-          label={t("documentFlows.form.accountingPostingMode", "Asiento contable")}
-          hint={accountingPostingModeOption(editing.accountingPostingMode).help}
-        >
-          <ZhSelect
-            value={editing.accountingPostingMode}
-            disabled={saving}
-            onChange={(e) =>
-              updateField("accountingPostingMode", e.target.value as AccountingPostingMode)
-            }
-          >
-            {ACCOUNTING_POSTING_MODE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>

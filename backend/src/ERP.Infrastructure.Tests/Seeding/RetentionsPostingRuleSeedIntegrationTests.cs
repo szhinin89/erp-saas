@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -11,11 +12,13 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Seeding.Steps;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Seeding;
@@ -65,6 +68,9 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         await db.SaveChangesAsync();
 
         _tenantId = tenant.Id;
@@ -132,6 +138,11 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
+        services.AddSingleton<ICurrentUser>(Mock.Of<ICurrentUser>(u => u.UserId == _createdBy));
+        services.AddScoped<ERP.Application.Audit.IAuditContext>(_ =>
+            new ERP.Infrastructure.Tests.Audit.FixedAuditContext(() => _tenantId, () => _companyId, _createdBy)
+        );
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(RetentionDocumentIssuedPostingTranslator).Assembly
@@ -140,8 +151,27 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
+        _dispatcher = provider.GetRequiredService<IAccountingPostingDispatcher>();
 
         return (db, deferred);
+    }
+
+    private IAccountingPostingDispatcher? _dispatcher;
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01: el traductor registra la obligación en la transacción del hecho
+    /// (como dentro de ErpDbContext.SaveChangesAsync) y el asiento se publica en el intento
+    /// posterior al commit.
+    /// </summary>
+    private async Task PublishAndPostAsync(ErpDbContext db, IPublisher publisher, RetentionDocumentIssuedEvent evt)
+    {
+        await using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            await publisher.Publish(evt);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        await _dispatcher!.DispatchPendingAsync(CancellationToken.None);
     }
 
     [Fact]
@@ -164,11 +194,7 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
             issueDate: new DateOnly(DateTime.UtcNow.Year, 1, 15)
         );
 
-        await publisher.Publish(evt);
-        // IPostingEngine.PostAsync deja el JournalEntry en staging en el ChangeTracker (ver
-        // remarks de PostingEngine.cs) — en producción, el flush final ocurre dentro del mismo
-        // ErpDbContext.SaveChangesAsync que originó el evento; aquí lo replicamos explícitamente.
-        await db.SaveChangesAsync();
+        await PublishAndPostAsync(db, publisher, evt);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb
@@ -210,13 +236,13 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// RETENTIONS-POSTING-RULE-SEED-01H — regresión previa a esta fase: sin la PostingRule
-    /// sembrada (empresa que por algún motivo nunca pasó por el bootstrap/backfill), el mismo
-    /// evento falla fail-closed vía <c>RetentionPostingFailedException</c> — nunca contabiliza en
-    /// silencio ni con una cuenta improvisada.
+    /// RETENTIONS-POSTING-RULE-SEED-01H / ACCOUNTING-CONTINUITY-01 — sin la PostingRule sembrada
+    /// (empresa que nunca pasó por el bootstrap/backfill) el asiento sigue siendo fail-closed: nunca
+    /// contabiliza en silencio ni con una cuenta improvisada. El fallo queda durable en la
+    /// obligación (Failed RULE_NOT_FOUND) en vez de revertir la retención.
     /// </summary>
     [Fact]
-    public async Task Sin_la_postingrule_sembrada_el_evento_falla_fail_closed()
+    public async Task Sin_la_postingrule_sembrada_el_asiento_falla_fail_closed_y_queda_Failed()
     {
         await using (var setupDb = CreateContext())
         {
@@ -229,7 +255,7 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
             await setupDb.SaveChangesAsync();
         }
 
-        var (_, publisher) = BuildWiredContext();
+        var (db, publisher) = BuildWiredContext();
 
         var evt = new RetentionDocumentIssuedEvent(
             _tenantId,
@@ -245,10 +271,16 @@ public sealed class RetentionsPostingRuleSeedIntegrationTests : IAsyncLifetime
             issueDate: new DateOnly(DateTime.UtcNow.Year, 1, 15)
         );
 
-        var act = async () => await publisher.Publish(evt);
+        await PublishAndPostAsync(db, publisher, evt);
 
-        await act.Should()
-            .ThrowAsync<ERP.Application.Modules.Retentions.Exceptions.RetentionPostingFailedException>();
+        await using var verifyDb = CreateContext();
+        (await verifyDb.JournalEntries.AnyAsync(x => x.SourceEventId == evt.RetentionDocumentId))
+            .Should().BeFalse();
+        var obligation = await verifyDb.AccountingPostings.SingleAsync(x =>
+            x.SourceEventId == evt.RetentionDocumentId
+        );
+        obligation.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+        obligation.ErrorCode.Should().Be("RULE_NOT_FOUND");
     }
 
     private sealed class DeferredPublisher : IPublisher

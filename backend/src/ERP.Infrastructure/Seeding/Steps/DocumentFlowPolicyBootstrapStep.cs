@@ -11,7 +11,7 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// <summary>
 /// Una fila de <see cref="DocumentFlowPolicy"/> por cada <see cref="DocType"/> activo del catálogo
 /// global, para la company nueva. GASDOC (Gastos) recibe la política obligatoria de
-/// DOCUMENT-FLOW-POLICY-01 (borrador requerido, confirmación manual, CxP y asiento al confirmar,
+/// DOCUMENT-FLOW-POLICY-01 (borrador requerido, confirmación manual, CxP al confirmar,
 /// anulación con reversa); el resto queda con el default seguro heredado del comportamiento
 /// existente antes de esta entidad (creación directa, sin efectos declarados vía política — sus
 /// módulos, si los tienen, resuelven esos efectos por su cuenta). No depende de ningún otro step.
@@ -96,7 +96,6 @@ public sealed partial class DocumentFlowPolicyBootstrapStep : ICompanyBootstrapS
             requiresSupplier: true,
             requiresDueDate: true,
             payableGenerationMode: PayableGenerationMode.OnConfirmation,
-            accountingPostingMode: AccountingPostingMode.OnConfirmation,
             inventoryImpactMode: InventoryImpactMode.None,
             notificationMode: NotificationMode.None,
             createdBy: actorId
@@ -124,7 +123,6 @@ public sealed partial class DocumentFlowPolicyBootstrapStep : ICompanyBootstrapS
             requiresSupplier: false,
             requiresDueDate: false,
             payableGenerationMode: PayableGenerationMode.None,
-            accountingPostingMode: AccountingPostingMode.None,
             inventoryImpactMode: InventoryImpactMode.None,
             notificationMode: NotificationMode.None,
             createdBy: actorId

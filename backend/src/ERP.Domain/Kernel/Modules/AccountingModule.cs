@@ -57,7 +57,7 @@ public static class AccountingModule
         LabelKey = "app.nav.item.accounting.journalGroup",
         SortOrder = 10,
         Id = "405b951f-84c9-4520-a7be-53d1e52b0cf4",
-        PermissionsAnyCsv = AccountingPermissions.View
+        PermissionsAnyCsv = AccountingPermissions.View + "," + AccountingPermissions.PostingsView
     )]
     public const string JournalGroup = "/accounting/journal-entries/group";
 
@@ -70,6 +70,20 @@ public static class AccountingModule
         ParentId = "405b951f-84c9-4520-a7be-53d1e52b0cf4"
     )]
     public const string JournalEntries = "/accounting/journal-entries";
+
+    // ACCOUNTING-CONTINUITY-01: obligaciones contables durables (Pending/Failed/Posted/Canceled),
+    // su historial de intentos y el reproceso manual individual. Permiso dedicado: consultar el
+    // libro (accounting.view) no concede ver ni reprocesar obligaciones.
+    [NavItem(
+        "Contabilizaciones",
+        Permission = AccountingPermissions.PostingsView,
+        LabelKey = "app.nav.item.accounting.postings",
+        SortOrder = 20,
+        Id = "ac000000-0000-4000-9000-000000000007",
+        ParentId = "405b951f-84c9-4520-a7be-53d1e52b0cf4",
+        RelatedActionPermissionsCsv = AccountingPermissions.PostingsReprocess
+    )]
+    public const string Postings = "/accounting/postings";
 
     [NavItem(
         "Plan contable",
@@ -154,6 +168,19 @@ public static class AccountingModule
         ParentId = "ac000000-0000-4000-9000-000000000006"
     )]
     public const string PostingRules = "/accounting/configuration/posting-rules";
+
+    // ACCOUNTING-CONTINUITY-01: modo operativo de Accounting por empresa (política versionada con
+    // vigencia). Lectura con accounting.view; el cambio exige accounting.settings.update.
+    [NavItem(
+        "Modo operativo",
+        Permission = AccountingPermissions.View,
+        LabelKey = "app.nav.item.accounting.operationalMode",
+        SortOrder = 1,
+        Id = "ac000000-0000-4000-9000-000000000008",
+        ParentId = "ac000000-0000-4000-9000-000000000006",
+        RelatedActionPermissionsCsv = AccountingPermissions.SettingsUpdate
+    )]
+    public const string OperationalMode = "/accounting/configuration/operational-mode";
 
     // DESTINOS-CONTABLES-COBROS-VENTAS-01: movido desde SettingsModule.PaymentMethods
     // (Configuración > Condiciones comerciales, ver PAYMENT-METHOD-ACCOUNT-UI-NAV-01) hacia

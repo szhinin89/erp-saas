@@ -13,9 +13,9 @@ El módulo de Gastos ya cuenta con, verificado en código:
 - Catálogo jerárquico Tipo → Categoría → Subcategoría, con cuenta contable destino en la subcategoría.
 - `ExpenseDocument` / `ExpenseLine` / `ExpensePaymentSchedule`.
 - Estados `Draft` / `Confirmed` / `Cancelled`.
-- Posting contable al confirmar (estricto: aborta la transacción si falla).
+- Integración contable: [Accounting](../architecture/accounting.md).
 - Integración con `AccountsPayable` (CxP genérica, company-level) al confirmar.
-- Cancelación con reverso contable y bloqueo si la CxP tiene pagos aplicados.
+- Cancelación con bloqueo si la CxP tiene pagos aplicados.
 - Integración con `DocumentFlowPolicy` (separación correcta permiso vs. política documental).
 - Permisos básicos (10 permission keys en `ExpensePermissions`).
 - Aislamiento multi-tenant/company/branch fail-closed, verificado en repositorio y handlers (no confía en el body para tenant/company/branch).

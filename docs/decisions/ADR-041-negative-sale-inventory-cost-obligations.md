@@ -16,22 +16,17 @@ CostBasis nullable distingue costo desconocido de costo real cero. El costo cono
 
 SaleCostObligation es una proyección por movimiento y línea original. SaleCostAllocation registra las compensaciones y devoluciones sin modificar destructivamente el Kardex histórico. Una entrada con costo real cubre primero obligaciones vigentes en SequenceNumber ascendente dentro de Company + Item + Warehouse, hasta agotar su cantidad. Las obligaciones anuladas, devueltas o ya cubiertas quedan excluidas. Esta prioridad ordena exclusivamente la compensación de obligaciones, no la valoración de inventario.
 
-La diferencia entre costo real y provisional se reconoce con ajustes COGS append-only mediante las reglas y el motor contable existentes. Los importes reconocidos se concilian a la precisión monetaria existente de dos decimales, incluyendo el remanente de redondeo en devoluciones sucesivas. Las asignaciones conservan cantidad, origen, obligación y costo; las claves únicas previenen duplicados.
+Las asignaciones conservan cantidad, origen, obligación y costo; las claves únicas previenen duplicados.
 
 ## Anulación y devolución
 
-La anulación extingue las obligaciones pendientes y reversa tanto el COGS original como sus ajustes; no deja COGS residual de la venta. La devolución se vincula explícitamente con unidades de la línea original: extingue primero unidades pendientes y luego unidades regularizadas. Las primeras no reversan COGS inexistente; las segundas reversan el costo efectivamente reconocido, asignado proporcionalmente entre regularizaciones de la misma línea. No se usa indiscriminadamente el promedio vigente. Las unidades extinguidas no vuelven a regularizarse.
+La anulación extingue las obligaciones operativas pendientes. La devolución se vincula con unidades de la línea original y conserva su trazabilidad de cantidades y costo; las unidades extinguidas no vuelven a regularizarse. Integración contable: [Accounting](../architecture/accounting.md).
 
 Una devolución aún sin costo resuelto devuelve cantidad conservando la incertidumbre de valoración. Las unidades devueltas con costo real pueden compensar otras obligaciones vigentes del mismo recurso; las asignaciones quedan registradas. No se reescribe el movimiento original.
 
 ## Pendientes contables y operación
 
-InventoryCostPosting persiste importe, factura, evento, estado, intentos, error y asiento. Los errores de configuración contable quedan Failed, visibles y reintentables; no se pierden ni se marcan falsamente como contabilizados. El procesamiento respeta el reconocimiento original antes de sus ajustes y utiliza idempotencia del motor existente. La anulación revierte los asientos realmente publicados y cancela los pendientes.
-
-- GET `/api/v1/inventory/stock/costs/pending`: obligaciones de costo y contabilizaciones pendientes/fallidas; permiso StockView.
-- POST `/api/v1/inventory/stock/costs/retry`: reintento idempotente de pendientes contables de la empresa activa; permiso StockManage.
-
-Ambos requests requieren contexto autenticado de Company. No se introduce un worker ni una nueva pantalla; el costo pendiente legítimo requiere una base real de valoración y no se resuelve con un reintento contable.
+[Accounting](../architecture/accounting.md).
 
 ## Persistencia y gates
 
@@ -43,7 +38,7 @@ Reabre Purchases solo para la valoración de `PurchaseReturn`; no cambia Posting
 
 - **NC comercial = factura original.** Subtotal, descuento, IVA/ICE/IRBPNR y total acreditado se prorratean de la línea original (cantidad devuelta / cantidad original, en la unidad comercial de la factura). El costo de inventario nunca interviene en la NC.
 - **Kardex = promedio ponderado.** La salida `PurchaseReturn` se registra en unidad base (`QuantityInBaseUom` vía el `ConversionFactor` original, `BaseUomCode`) y sin costo propio: se valora al promedio vigente del recurso. `LandedUnitCost` de la factura no es costo de salida — la unidad pierde identidad al promediarse, y usarlo podía dejar el valor del inventario negativo. El invariante de costo no negativo no se relaja.
-- **HistoricalCost = valor real de Kardex.** `PurchaseReturnDetail.HistoricalCostAmount` = valor retirado por la salida (2 decimales); `UnitCost` = costo de valoración por unidad base de esa salida; `CostVarianceTotal = HistoricalCostTotal − AuthorizedSubtotal` absorbe la diferencia NC vs. inventario en las cuentas existentes (CostVarianceDebit/CostVarianceCredit).
-- **Cancelación.** Reingresa exactamente la cantidad base, la unidad y el costo valorado de la salida registrada al autorizar; el reverso contable usa los montos persistidos.
+- **HistoricalCost = valor real de Kardex.** `PurchaseReturnDetail.HistoricalCostAmount` = valor retirado por la salida (2 decimales); `UnitCost` = costo de valoración por unidad base de esa salida.
+- **Cancelación.** Reingresa exactamente la cantidad base, la unidad y el costo valorado de la salida registrada al autorizar.
 
 Fuera de alcance: anulación completa de `PurchaseInvoice` (sigue saliendo al `LandedUnitCost`) y la conciliación flete/ICE entre Inventario contable y Kardex.

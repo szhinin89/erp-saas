@@ -388,6 +388,15 @@ public static class DependencyInjection
             ERP.Domain.Modules.Accounting.Interfaces.IJournalEntryRepository,
             ERP.Infrastructure.Accounting.Repositories.JournalEntryRepository
         >();
+        // ACCOUNTING-CONTINUITY-01
+        services.AddScoped<
+            ERP.Domain.Modules.Accounting.Interfaces.IAccountingPostingRepository,
+            ERP.Infrastructure.Accounting.Repositories.AccountingPostingRepository
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Accounting.Interfaces.IAccountingOperationalPolicyRepository,
+            ERP.Infrastructure.Accounting.Repositories.AccountingOperationalPolicyRepository
+        >();
         services.AddScoped<
             ERP.Domain.Modules.Accounting.Interfaces.IPostingRuleRepository,
             ERP.Infrastructure.Accounting.Repositories.PostingRuleRepository

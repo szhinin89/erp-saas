@@ -342,18 +342,16 @@ public sealed class ExpenseDocument
     }
 
     /// <summary>
-    /// EXPENSES-CONFIRM-07 — confirma el borrador y deja el documento listo para postear.
+    /// EXPENSES-CONFIRM-07 — confirma el borrador y congela los totales (<c>Confirmed*</c>).
     /// <paramref name="lineAccountSnapshots"/> trae, por línea (clave <c>ExpenseLine.Id</c>), la
-    /// cuenta contable YA validada por Application (activa, postable, misma empresa, tipo Gasto)
-    /// contra la subcategoría vigente — este método solo recongela el snapshot de cada línea con
-    /// ese dato (la subcategoría pudo cambiar de cuenta desde que el borrador se creó/editó) y
-    /// congela los totales (<c>Confirmed*</c>), nunca vuelve a resolver ni validar cuentas por su
-    /// cuenta (esa responsabilidad es de Application/Accounting, no de este aggregate).
+    /// cuenta configurada hoy en su subcategoría, solo como snapshot INFORMATIVO
+    /// (ACCOUNTING-CONTINUITY-01): la cuenta no es requisito operativo del gasto — una línea sin
+    /// entrada o con cuenta null confirma igual, y Accounting resuelve la cuenta en cada intento.
     /// </summary>
     public void Confirm(
         IReadOnlyDictionary<
             Guid,
-            (Guid AccountId, string? Code, string? Name)
+            (Guid? AccountId, string? Code, string? Name)
         > lineAccountSnapshots,
         Guid confirmedBy
     )
@@ -366,10 +364,7 @@ public sealed class ExpenseDocument
 
         foreach (var line in _lines)
         {
-            if (!lineAccountSnapshots.TryGetValue(line.Id, out var snapshot))
-                throw new DomainRuleViolationException(
-                    "Falta la cuenta contable resuelta para una línea del gasto."
-                );
+            lineAccountSnapshots.TryGetValue(line.Id, out var snapshot);
             line.RefreshAccountSnapshot(snapshot.AccountId, snapshot.Code, snapshot.Name);
         }
 
@@ -383,7 +378,7 @@ public sealed class ExpenseDocument
         var lineAllocations = _lines
             .Select(l => new ExpenseDocumentConfirmedLineAllocation(
                 l.Id,
-                l.SnapshotAccountingAccountId,
+                l.ExpenseSubcategoryId,
                 l.TaxableBase,
                 l.Description
             ))

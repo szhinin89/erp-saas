@@ -4,14 +4,14 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Modules.Expenses.Events;
 
 /// <summary>
-/// EXPENSES-CONFIRM-07 — allocation por línea ya resuelta por <c>ExpenseDocument.Confirm()</c>:
-/// cuenta contable snapshot (recongelada al confirmar) + base imponible de esa línea. Traducido a
-/// <c>PostingAllocation</c> (Application) por <c>ExpenseDocumentConfirmedPostingTranslator</c> —
-/// Domain no conoce ese tipo (no depende de Application).
+/// EXPENSES-CONFIRM-07 — importe por línea congelado por <c>ExpenseDocument.Confirm()</c>:
+/// subcategoría de gasto + base imponible de esa línea. ACCOUNTING-CONTINUITY-01: la cuenta
+/// contable no viaja en el hecho — Accounting la resuelve desde la subcategoría con la
+/// configuración vigente en cada intento.
 /// </summary>
 public sealed record ExpenseDocumentConfirmedLineAllocation(
     Guid ExpenseLineId,
-    Guid AccountingAccountId,
+    Guid ExpenseSubcategoryId,
     decimal Amount,
     string? Description
 );
@@ -34,8 +34,8 @@ public sealed class ExpenseDocumentConfirmedEvent : BaseDomainEvent, IAuditEvent
 
     /// <summary>
     /// Una allocation por línea de gasto (EXPENSES-POSTING-ALLOCATIONS-06) — cardinalidad variable,
-    /// a diferencia de los montos únicos de arriba. Cada una debita la cuenta contable snapshot de
-    /// su línea, nunca una cuenta fija de PostingRule.
+    /// a diferencia de los montos únicos de arriba. Cada una debita la cuenta configurada en la
+    /// subcategoría de su línea al momento del intento contable, nunca una cuenta fija de PostingRule.
     /// </summary>
     public IReadOnlyList<ExpenseDocumentConfirmedLineAllocation> LineAllocations { get; }
 

@@ -20,7 +20,6 @@ public sealed record DocumentFlowPolicyResult(
     bool RequiresSupplier,
     bool RequiresDueDate,
     PayableGenerationMode PayableGenerationMode,
-    AccountingPostingMode AccountingPostingMode,
     InventoryImpactMode InventoryImpactMode,
     NotificationMode NotificationMode
 );
@@ -57,7 +56,7 @@ public interface IDocumentFlowPolicyService
     /// <summary>
     /// Lanza si el tipo está deshabilitado, o si <see cref="AuthorizationMode"/> exige autorización
     /// previa a la confirmación. Devuelve la política resuelta para que el caller decida los efectos
-    /// a disparar (CxP, asiento, inventario, notificaciones) según sus modos.
+    /// a disparar (CxP, inventario, notificaciones) según sus modos.
     /// </summary>
     Task<DocumentFlowPolicyResult> EnsureConfirmationFlowAsync(
         Guid companyId,

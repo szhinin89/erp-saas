@@ -1,5 +1,6 @@
 using ERP.Application.Audit;
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Companies;
@@ -28,6 +29,7 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Tests.Audit;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -146,6 +148,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         db.BusinessPartners.Add(supplier);
         db.PaymentTerms.Add(paymentTerm);
         db.Warehouses.Add(warehouse);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         await db.SaveChangesAsync();
 
         _tenantId = tenant.Id;
@@ -200,7 +205,8 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
     private static (ErpDbContext db, IPublisher publisher) BuildWiredContext(
         Guid tenantId,
         Guid companyId,
-        PostgreSqlContainer postgres
+        PostgreSqlContainer postgres,
+        IPostingEngine? engineOverride = null
     )
     {
         var deferred = new DeferredPublisher();
@@ -235,7 +241,10 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         services.AddScoped<IAccountingPeriodRepository, AccountingPeriodRepository>();
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<IPostingEngine, PostingEngine>();
+        if (engineOverride is null)
+            services.AddScoped<IPostingEngine, PostingEngine>();
+        else
+            services.AddSingleton(engineOverride);
         // PurchaseInvoiceAuditHandler (Entity Audit, ADR-022) también escucha
         // PurchaseInvoiceConfirmedEvent — el escaneo de ensamblado de AddMediatR lo descubre
         // igual que al Translator, así que requiere su propia cadena de dependencias registrada
@@ -247,6 +256,8 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             () => companyId,
             Guid.NewGuid()
         ));
+        services.AddSingleton<ICurrentUser>(Mock.Of<ICurrentUser>(u => u.UserId == Guid.Empty));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(PurchaseInvoiceConfirmedPostingTranslator).Assembly
@@ -255,9 +266,20 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
+        WiredProviders.AddOrUpdate(db, provider);
 
         return (db, deferred);
     }
+
+    // ACCOUNTING-CONTINUITY-01: la confirmación solo registra la obligación (Pending) dentro de su
+    // transacción; el asiento se publica en el intento posterior al commit, como hace
+    // ConfirmPurchaseHandler con IAccountingPostingDispatcher.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ErpDbContext, IServiceProvider> WiredProviders = new();
+
+    private static Task PostPendingAsync(ErpDbContext db) =>
+        WiredProviders.TryGetValue(db, out var provider)
+            ? provider.GetRequiredService<IAccountingPostingDispatcher>().DispatchPendingAsync(CancellationToken.None)
+            : throw new InvalidOperationException("Contexto sin cableado contable.");
 
     private async Task SeedRuleAndPeriodAsync(ErpDbContext db, DateOnly entryDate)
     {
@@ -468,6 +490,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
         inv.Confirm(_createdBy);
         await db.SaveChangesAsync();
+        await PostPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
@@ -475,6 +498,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         );
 
         entry.Should().NotBeNull();
+        var obligation = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == inv.Id);
+        obligation.Status.Should().Be(AccountingPostingStatus.Posted);
+        obligation.JournalEntryId.Should().Be(entry!.Id);
         // Fase 5.2: el Posting Engine publica (Post()) el asiento antes de persistirlo.
         entry!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
         entry.PostedAtUtc.Should().NotBeNull();
@@ -500,6 +526,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
         inv.Confirm(_createdBy);
         await db.SaveChangesAsync();
+        await PostPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb
@@ -671,6 +698,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
         inv.Confirm(_createdBy);
         await db.SaveChangesAsync();
+        await PostPendingAsync(db);
 
         inv.ConfirmedGrandTotal.Should().Be(100m + 16.5m + 10m + 0.30m);
 
@@ -696,7 +724,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Confirmation_cost_stock_payable_and_accounting_commit_or_rollback_together(
+    public async Task Confirmation_commits_cost_stock_payable_and_records_accounting_outcome_durably(
         bool postingConfigured
     )
     {
@@ -813,14 +841,10 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             _createdBy
         );
 
-        if (postingConfigured)
-            await stock.SaveChangesWithSequenceRetryAsync();
-        else
-        {
-            var save = async () => await stock.SaveChangesWithSequenceRetryAsync();
-            await save.Should()
-                .ThrowAsync<ERP.Application.Modules.Purchases.Exceptions.PurchasePostingFailedException>();
-        }
+        // ACCOUNTING-CONTINUITY-01: el núcleo (compra/Kardex/CxP) se comitea siempre; la falta de
+        // configuración contable solo deja la obligación Failed, nunca revierte la compra.
+        await stock.SaveChangesWithSequenceRetryAsync();
+        await PostPendingAsync(db);
         await using var verifyDb = CreateContext();
         var persisted = await verifyDb.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id);
         var movements = await verifyDb
@@ -835,31 +859,29 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         var entry = await verifyDb
             .JournalEntries.Include(e => e.Lines)
             .SingleOrDefaultAsync(e => e.SourceEventId == invoice.Id);
+        var obligation = await verifyDb.AccountingPostings.SingleAsync(p => p.SourceEventId == invoice.Id);
+        persisted.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        movements.Select(m => m.RunningStockValue).Should().Equal(102m, 195m);
+        movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L);
+        movements
+            .Select(m => m.SourceDocLineId)
+            .Should()
+            .Equal(invoice.Lines.Select(l => (Guid?)l.Id));
+        payable!.TotalAmount.Should().Be(195m);
         if (postingConfigured)
         {
-            persisted
-                .Status.Should()
-                .Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
-            movements.Select(m => m.RunningStockValue).Should().Equal(102m, 195m);
-            movements.Select(m => m.SequenceNumber).Should().Equal(1L, 2L);
-            movements
-                .Select(m => m.SourceDocLineId)
-                .Should()
-                .Equal(invoice.Lines.Select(l => (Guid?)l.Id));
-            payable!.TotalAmount.Should().Be(195m);
             entry!.Status.Should().Be(JournalEntryStatus.Posted);
             entry.Lines.Sum(l => l.Debit).Should().Be(195m);
             entry.Lines.Sum(l => l.Credit).Should().Be(payable.TotalAmount);
+            obligation.Status.Should().Be(AccountingPostingStatus.Posted);
+            obligation.JournalEntryId.Should().Be(entry.Id);
         }
         else
         {
-            persisted.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
-            movements.Should().BeEmpty();
-            (await verifyDb.Set<CurrentStock>().AnyAsync(s => s.ProductId == productId))
-                .Should()
-                .BeFalse();
-            payable.Should().BeNull();
             entry.Should().BeNull();
+            obligation.Status.Should().Be(AccountingPostingStatus.Failed);
+            obligation.JournalEntryId.Should().BeNull();
+            obligation.Attempts.Should().Be(1);
         }
     }
 
@@ -1045,6 +1067,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
         await stock.SaveChangesWithSequenceRetryAsync();
         await other.WaitAsync(TimeSpan.FromSeconds(20));
+        await PostPendingAsync(db);
 
         await using var verify = CreateContext();
         (await verify.PurchaseInvoices.SingleAsync(x => x.Id == invoice.Id))
@@ -1161,31 +1184,97 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         }
     }
 
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — sin PostingRule (RULE_NOT_FOUND) la compra queda Confirmed y la
+    /// obligación Failed con error e intento durables; no existe asiento parcial.
+    /// </summary>
     [Fact]
-    public async Task Fallo_de_Posting_revierte_la_confirmacion()
+    public async Task Sin_regla_contable_la_compra_queda_confirmada_y_la_obligacion_Failed()
     {
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        // Sin PostingRule sembrada — fuerza RULE_NOT_FOUND dentro del pipeline.
 
         var inv = BuildConfirmableInvoice(issueDate, "001-001-000000002");
         db.PurchaseInvoices.Add(inv);
         await db.SaveChangesAsync();
 
         inv.Confirm(_createdBy);
-        var act = async () => await db.SaveChangesAsync();
-
-        await act.Should()
-            .ThrowAsync<ERP.Application.Modules.Purchases.Exceptions.PurchasePostingFailedException>();
+        await db.SaveChangesAsync();
+        await PostPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var persisted = await verifyDb.PurchaseInvoices.FirstAsync(x => x.Id == inv.Id);
-        persisted.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+        persisted.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        (await verifyDb.JournalEntries.AnyAsync(x => x.SourceEventId == inv.Id)).Should().BeFalse();
+        var obligation = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == inv.Id);
+        obligation.Status.Should().Be(AccountingPostingStatus.Failed);
+        obligation.ErrorCode.Should().Be("RULE_NOT_FOUND");
+        obligation.LastAttemptAtUtc.Should().NotBeNull();
+    }
 
-        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
-            x.SourceEventId == inv.Id
-        );
-        entry.Should().BeNull();
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — una excepción interna durante el intento inicial (posterior al
+    /// commit) no afecta la compra confirmada: la obligación queda Failed INTERNAL, durable.
+    /// </summary>
+    [Fact]
+    public async Task Excepcion_interna_en_el_intento_inicial_no_afecta_la_compra_confirmada()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var throwing = new Mock<IPostingEngine>();
+        throwing
+            .Setup(e => e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("fallo interno simulado"));
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres, throwing.Object);
+        await SeedRuleAndPeriodAsync(db, issueDate);
+
+        var inv = BuildConfirmableInvoice(issueDate, "001-001-000000301");
+        db.PurchaseInvoices.Add(inv);
+        await db.SaveChangesAsync();
+        inv.Confirm(_createdBy);
+        await db.SaveChangesAsync();
+        await PostPendingAsync(db);
+
+        await using var verifyDb = CreateContext();
+        (await verifyDb.PurchaseInvoices.SingleAsync(x => x.Id == inv.Id))
+            .Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        var obligation = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == inv.Id);
+        obligation.Status.Should().Be(AccountingPostingStatus.Failed);
+        obligation.ErrorCode.Should().Be(AccountingPostingExecutor.InternalErrorCode);
+        (await verifyDb.JournalEntries.AnyAsync(x => x.SourceEventId == inv.Id)).Should().BeFalse();
+    }
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — no hay reintento implícito: confirmar otra compra después de
+    /// corregir la configuración publica solo la nueva; la obligación Failed previa no se toca.
+    /// </summary>
+    [Fact]
+    public async Task Confirmar_otro_documento_no_reintenta_obligaciones_Failed_existentes()
+    {
+        var issueDate = new DateOnly(2026, 7, 25);
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+
+        var failed = BuildConfirmableInvoice(issueDate, "001-001-000000302");
+        db.PurchaseInvoices.Add(failed);
+        await db.SaveChangesAsync();
+        failed.Confirm(_createdBy);
+        await db.SaveChangesAsync();
+        await PostPendingAsync(db);
+
+        await SeedRuleAndPeriodAsync(db, issueDate);
+        var next = BuildConfirmableInvoice(issueDate, "001-001-000000303");
+        db.PurchaseInvoices.Add(next);
+        await db.SaveChangesAsync();
+        next.Confirm(_createdBy);
+        await db.SaveChangesAsync();
+        await PostPendingAsync(db);
+
+        await using var verifyDb = CreateContext();
+        var previous = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == failed.Id);
+        previous.Status.Should().Be(AccountingPostingStatus.Failed);
+        previous.Attempts.Should().Be(1);
+        (await verifyDb.JournalEntries.AnyAsync(x => x.SourceEventId == failed.Id)).Should().BeFalse();
+        (await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == next.Id))
+            .Status.Should().Be(AccountingPostingStatus.Posted);
     }
 
     [Fact]
@@ -1201,6 +1290,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
 
         inv.Confirm(_createdBy);
         await db.SaveChangesAsync();
+        await PostPendingAsync(db);
 
         // Republicación manual del mismo evento — nunca se re-confirma la compra (Confirm() es de
         // un solo uso), se simula un reintento de entrega del mismo Domain Event.
@@ -1218,9 +1308,16 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             inv.TotalIce,
             inv.TotalDiscount
         );
-        await publisher.Publish(repeated, CancellationToken.None);
+        await using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            await publisher.Publish(repeated, CancellationToken.None);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        await PostPendingAsync(db);
 
         await using var verifyDb = CreateContext();
+        (await verifyDb.AccountingPostings.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(1);
         var count = await verifyDb.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id);
         count
             .Should()
@@ -1292,7 +1389,12 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
                     + "DbUpdateConcurrencyException ni violación UNIQUE"
             );
 
+        await PostPendingAsync(seedDb);
+
         await using var verifyDb = CreateContext();
+        (await verifyDb.AccountingPostings.CountAsync(x => x.SourceEventId == inv.Id))
+            .Should()
+            .Be(1, "una sola obligación durable por identidad");
         var count = await verifyDb.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id);
         count
             .Should()

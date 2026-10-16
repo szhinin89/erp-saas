@@ -58,7 +58,7 @@ export type {
 export interface ExpenseLineDto {
   id: string;
   expenseSubcategoryId: string;
-  snapshotAccountingAccountId: string;
+  snapshotAccountingAccountId: string | null;
   snapshotAccountingAccountCode: string | null;
   snapshotAccountingAccountName: string | null;
   description: string;

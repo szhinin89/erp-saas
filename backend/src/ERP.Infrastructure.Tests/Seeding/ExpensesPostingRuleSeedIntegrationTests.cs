@@ -1,20 +1,23 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
-using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Events;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Accounting.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Seeding.Steps;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Seeding;
@@ -64,6 +67,9 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         await db.SaveChangesAsync();
 
         _tenantId = tenant.Id;
@@ -81,6 +87,40 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         await bootstrapStep.ExecuteAsync(
             new CompanyBootstrapContext(_tenantId, _companyId, _createdBy)
         );
+
+        // ACCOUNTING-CONTINUITY-01: la línea de gasto transporta su subcategoría; la cuenta (la
+        // 6.1.01.001 del plan sembrado) se resuelve desde la subcategoría en cada intento.
+        // Contexto nuevo: el anterior se creó sin Company y su query filter no ve las cuentas.
+        await using var scoped = CreateContext();
+        var expenseAccountId = (await scoped.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync())
+            .Single(a => a.Code.Value == "6.1.01.001")
+            .Id;
+        var type = ExpenseCategoryNode.CreateType(_tenantId, _companyId, "EXPSEED", "Gastos seed", _createdBy);
+        var category = ExpenseCategoryNode.CreateCategory(_tenantId, _companyId, type, "EXPSEED-C", "Categoría seed", _createdBy);
+        var subcategory = ExpenseCategoryNode.CreateSubcategory(
+            _tenantId, _companyId, category, "EXPSEED-S", "Subcategoría seed", expenseAccountId, _createdBy);
+        scoped.AddRange(type, category, subcategory);
+        await scoped.SaveChangesAsync();
+        _subcategoryId = subcategory.Id;
+    }
+
+    private Guid _subcategoryId;
+    private IAccountingPostingDispatcher? _dispatcher;
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01: el traductor registra la obligación en la transacción del hecho
+    /// (como dentro de ErpDbContext.SaveChangesAsync) y el asiento se publica en el intento
+    /// posterior al commit.
+    /// </summary>
+    private async Task PublishAndPostAsync(ErpDbContext db, IPublisher publisher, ExpenseDocumentConfirmedEvent evt)
+    {
+        await using (var tx = await db.Database.BeginTransactionAsync())
+        {
+            await publisher.Publish(evt);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        await _dispatcher!.DispatchPendingAsync(CancellationToken.None);
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
@@ -127,6 +167,11 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         services.AddScoped<IJournalEntrySequenceRepository, JournalEntrySequenceRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
+        services.AddSingleton<ICurrentUser>(Mock.Of<ICurrentUser>(u => u.UserId == _createdBy));
+        services.AddScoped<ERP.Application.Audit.IAuditContext>(_ =>
+            new ERP.Infrastructure.Tests.Audit.FixedAuditContext(() => _tenantId, () => _companyId, _createdBy)
+        );
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly
@@ -135,6 +180,7 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
+        _dispatcher = provider.GetRequiredService<IAccountingPostingDispatcher>();
 
         return (db, deferred);
     }
@@ -144,9 +190,6 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
     {
         var (db, publisher) = BuildWiredContext();
 
-        var vatAccountId = (await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync())
-            .Single(a => a.Code.Value == "6.1.01.001")
-            .Id;
         var expenseDocumentId = Guid.NewGuid();
         var evt = new ExpenseDocumentConfirmedEvent(
             _tenantId,
@@ -161,18 +204,14 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
             [
                 new ExpenseDocumentConfirmedLineAllocation(
                     Guid.NewGuid(),
-                    vatAccountId,
+                    _subcategoryId,
                     100m,
                     "EXPSEED linea"
                 ),
             ]
         );
 
-        await publisher.Publish(evt);
-        // IPostingEngine.PostAsync deja el JournalEntry en staging (ver PostingEngine.cs) — el
-        // flush final ocurre en el mismo SaveChangesAsync que originó el evento en producción; aquí
-        // lo replicamos explícitamente, mismo patrón que RetentionsPostingRuleSeedIntegrationTests.
-        await db.SaveChangesAsync();
+        await PublishAndPostAsync(db, publisher, evt);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb
@@ -214,14 +253,13 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01 — regresión previa a esta fase: sin la
-    /// PostingRule sembrada (empresa que por algún motivo nunca pasó por el bootstrap/backfill), el
-    /// mismo evento falla fail-closed vía <c>ExpensePostingFailedException</c> — nunca contabiliza
-    /// en silencio ni con una cuenta improvisada. Este era exactamente el error real observado en
-    /// preparación QA antes de que esta fase agregara la regla a MinimalPostingRules.
+    /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01 / ACCOUNTING-CONTINUITY-01 — sin la
+    /// PostingRule sembrada (empresa que nunca pasó por el bootstrap/backfill) el asiento sigue
+    /// siendo fail-closed: nunca contabiliza en silencio ni con una cuenta improvisada. El fallo
+    /// queda durable en la obligación (Failed RULE_NOT_FOUND) en vez de revertir el gasto.
     /// </summary>
     [Fact]
-    public async Task Sin_la_postingrule_sembrada_el_evento_falla_fail_closed()
+    public async Task Sin_la_postingrule_sembrada_el_asiento_falla_fail_closed_y_queda_Failed()
     {
         await using (var setupDb = CreateContext())
         {
@@ -235,9 +273,6 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
         }
 
         var (db, publisher) = BuildWiredContext();
-        var vatAccountId = (await db.Accounts.Where(a => a.CompanyId == _companyId).ToListAsync())
-            .Single(a => a.Code.Value == "6.1.01.001")
-            .Id;
 
         var evt = new ExpenseDocumentConfirmedEvent(
             _tenantId,
@@ -252,16 +287,23 @@ public sealed class ExpensesPostingRuleSeedIntegrationTests : IAsyncLifetime
             [
                 new ExpenseDocumentConfirmedLineAllocation(
                     Guid.NewGuid(),
-                    vatAccountId,
+                    _subcategoryId,
                     100m,
                     "EXPSEED linea"
                 ),
             ]
         );
 
-        var act = async () => await publisher.Publish(evt);
+        await PublishAndPostAsync(db, publisher, evt);
 
-        await act.Should().ThrowAsync<ExpensePostingFailedException>();
+        await using var verifyDb = CreateContext();
+        (await verifyDb.JournalEntries.AnyAsync(x => x.SourceEventId == evt.ExpenseDocumentId))
+            .Should().BeFalse();
+        var obligation = await verifyDb.AccountingPostings.SingleAsync(x =>
+            x.SourceEventId == evt.ExpenseDocumentId
+        );
+        obligation.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+        obligation.ErrorCode.Should().Be("RULE_NOT_FOUND");
     }
 
     private sealed class DeferredPublisher : IPublisher

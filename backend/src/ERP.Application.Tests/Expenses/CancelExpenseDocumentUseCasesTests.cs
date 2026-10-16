@@ -315,7 +315,6 @@ public sealed class CancelExpenseDocumentUseCasesTests
                     RequiresSupplier: true,
                     RequiresDueDate: true,
                     PayableGenerationMode.OnConfirmation,
-                    AccountingPostingMode.OnConfirmation,
                     InventoryImpactMode.None,
                     NotificationMode.None
                 )
@@ -587,7 +586,6 @@ public sealed class CancelExpenseDocumentUseCasesTests
                         RequiresSupplier: true,
                         RequiresDueDate: true,
                         PayableGenerationMode.OnConfirmation,
-                        AccountingPostingMode.OnConfirmation,
                         InventoryImpactMode.None,
                         NotificationMode.None
                     )
@@ -628,7 +626,7 @@ public sealed class CancelExpenseDocumentUseCasesTests
             );
             document.ReplaceLines([line], UserId);
             document.Confirm(
-                new Dictionary<Guid, (Guid, string?, string?)>
+                new Dictionary<Guid, (Guid?, string?, string?)>
                 {
                     [line.Id] = (ExpenseAccountId, "6.1.01", "Internet"),
                 },

@@ -68,7 +68,6 @@ const GASDOC_POLICY: DocumentFlowPolicyDto = {
   requiresSupplier: true,
   requiresDueDate: true,
   payableGenerationMode: "OnConfirmation",
-  accountingPostingMode: "OnConfirmation",
   inventoryImpactMode: "None",
   notificationMode: "None",
 };
@@ -88,7 +87,6 @@ const SALES_POLICY: DocumentFlowPolicyDto = {
   requiresSupplier: false,
   requiresDueDate: false,
   payableGenerationMode: "None",
-  accountingPostingMode: "None",
   inventoryImpactMode: "None",
   notificationMode: "None",
 };
@@ -240,7 +238,6 @@ describe("DocumentFlowPoliciesPage — editor en español y contrato de guardado
         confirmationMode: "ManualConfirmation",
         cancellationMode: "AllowedAfterConfirmationWithReversal",
         payableGenerationMode: "OnConfirmation",
-        accountingPostingMode: "OnConfirmation",
       }),
     );
     expect(message.success).toHaveBeenCalledWith(

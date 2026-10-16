@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
@@ -181,17 +182,16 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         result.Value!.GrandTotal.Should().Be(165m);
         // El handler no invoca IPostingEngine directamente — ExpenseDocumentConfirmedPostingTranslator
         // lo hace, disparado por ErpDbContext.SaveChangesAsync (mockeado aqui como no-op). Lo que el
-        // handler SI controla es que Confirm() levante el evento con una allocation por cuenta, que
-        // es lo que el traductor luego convierte en PostingAllocation (ver
-        // ExpenseDocumentConfirmedPostingTranslatorTests para esa conversion).
+        // handler SI controla es que Confirm() levante el evento con un importe por linea y su
+        // subcategoria; la cuenta la resuelve Accounting en cada intento (ACCOUNTING-CONTINUITY-01).
         var raised = document.DomainEvents.OfType<ExpenseDocumentConfirmedEvent>().Single();
         raised.LineAllocations.Should().HaveCount(2);
         raised
             .LineAllocations.Should()
-            .Contain(a => a.AccountingAccountId == fx.Account.Id && a.Amount == 100m);
+            .Contain(a => a.ExpenseSubcategoryId == fx.Subcategory.Id && a.Amount == 100m);
         raised
             .LineAllocations.Should()
-            .Contain(a => a.AccountingAccountId == otherAccount.Id && a.Amount == 50m);
+            .Contain(a => a.ExpenseSubcategoryId == otherSubcategory.Id && a.Amount == 50m);
     }
 
     [Fact]
@@ -250,17 +250,24 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    // ACCOUNTING-CONTINUITY-01: la cuenta contable de la subcategoría no es requisito operativo
+    // del gasto. Una cuenta inválida o ausente no bloquea la confirmación: el gasto se confirma y
+    // el intento contable posterior (no este handler) deja la obligación Failed.
     [Theory]
     [InlineData("inactive")]
     [InlineData("not_postable")]
     [InlineData("not_expense")]
-    public async Task Confirmar_con_cuenta_invalida_se_bloquea(string scenario)
+    [InlineData("missing")]
+    public async Task Confirmar_con_cuenta_invalida_o_ausente_confirma_el_gasto(string scenario)
     {
         var fx = new Fixture();
-        var account =
-            scenario == "inactive" ? fx.ExpenseAccount("6.1.01.001", isActive: false)
-            : scenario == "not_postable" ? fx.ExpenseAccount("6.1.01.001", allowsPosting: false)
-            : fx.ExpenseAccount("6.1.01.001", accountType: AccountType.Asset);
+        Account? account = scenario switch
+        {
+            "inactive" => fx.ExpenseAccount("6.1.01.001", isActive: false),
+            "not_postable" => fx.ExpenseAccount("6.1.01.001", allowsPosting: false),
+            "not_expense" => fx.ExpenseAccount("6.1.01.001", accountType: AccountType.Asset),
+            _ => null,
+        };
         fx.Accounts.Setup(r =>
                 r.GetByIdAsync(
                     TenantId,
@@ -278,68 +285,34 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
-        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        result.IsSuccess.Should().BeTrue();
+        document.Status.Should().Be(ExpenseStatus.Confirmed);
+        document.Lines.Single().SnapshotAccountingAccountId.Should().Be(account?.Id);
+        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        fx.AccountingPostings.Verify(d => d.DispatchPendingAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Confirmar_con_cuenta_de_otra_empresa_se_bloquea()
-    {
-        var fx = new Fixture();
-        fx.Accounts.Setup(r =>
-                r.GetByIdAsync(
-                    TenantId,
-                    CompanyId,
-                    fx.Subcategory.AccountingAccountId!.Value,
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync((Account?)null);
-        var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
-        fx.SetupDocument(document);
-
-        var result = await fx.Handler.Handle(
-            new ConfirmExpenseDocumentCommand(document.Id),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-        fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Si_falla_el_posting_la_confirmacion_falla_y_el_documento_queda_Draft()
+    public async Task Confirmar_ejecuta_el_intento_contable_despues_del_commit_del_gasto()
     {
         var fx = new Fixture();
         var document = fx.DraftDocumentWithLines(fx.Line(fx.Subcategory, fx.Account, 100m, "0"));
         fx.SetupDocument(document);
+        var order = new List<string>();
         fx.Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new ExpensePostingFailedException(
-                    "No existe regla de contabilizacion.",
-                    "RULE_NOT_FOUND"
-                )
-            );
+            .Callback(() => order.Add("commit"))
+            .Returns(Task.CompletedTask);
+        fx.AccountingPostings.Setup(d => d.DispatchPendingAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => order.Add("attempt"))
+            .Returns(Task.CompletedTask);
 
         var result = await fx.Handler.Handle(
             new ConfirmExpenseDocumentCommand(document.Id),
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("RULE_NOT_FOUND");
-        // La mutacion en memoria de Confirm() ocurrio antes del SaveChangesAsync fallido, pero
-        // nada se persistio (ExpensePostingFailedException simula el rollback real de
-        // ErpDbContext.SaveChangesAsync) — lo que importa para el caller es que el Result sea
-        // un fallo explicito, nunca un exito con documento a medio confirmar.
-        document
-            .Status.Should()
-            .Be(
-                ExpenseStatus.Confirmed,
-                "el rollback real de BD (no simulado aqui) es quien revierte el estado en persistencia"
-            );
+        result.IsSuccess.Should().BeTrue();
+        order.Should().Equal("commit", "attempt");
     }
 
     [Fact]
@@ -422,7 +395,6 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                     RequiresSupplier: true,
                     RequiresDueDate: true,
                     PayableGenerationMode.None,
-                    AccountingPostingMode.OnConfirmation,
                     InventoryImpactMode.None,
                     NotificationMode.None
                 )
@@ -666,7 +638,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
     // llega a persistir (SaveChangesAsync nunca se invoca), que es lo que en producción evita que
     // ErpDbContext escriba el estado Confirmed en BD. La mutación en memoria de Confirm() (arriba,
     // antes de invocar al emisor) no se revierte aquí porque nunca llegó a flushearse — mismo
-    // criterio que "Si_falla_el_posting_la_confirmacion_falla_y_el_documento_queda_Draft".
+    // criterio de rollback completo de la confirmación cuando falla un paso del núcleo operativo.
     [Fact]
     public async Task Si_falla_la_emision_de_retencion_el_gasto_no_queda_persistido_como_Confirmed()
     {
@@ -1021,43 +993,6 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         fx.Docs.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    // 9) Si falla el posting contable de la retención (RetentionPostingFailedException desde
-    // SaveChangesAsync), no queda gasto confirmado, ni RetentionDocument, ni AccountsPayable
-    // persistidos — mismo criterio que el fallo de posting del gasto (ExpensePostingFailedException).
-    [Fact]
-    public async Task Si_falla_el_posting_de_la_retencion_la_confirmacion_completa_falla()
-    {
-        var fx = new Fixture();
-        var document = fx.DraftDocumentWithLines(
-            fx.Line(fx.Subcategory, fx.Account, 100m, "2", 15m)
-        );
-        fx.SetupDocument(document);
-        var issuedRetention = IssuedRetentionFor(document);
-        fx.RetentionIssuer.Setup(i =>
-                i.IssueForExpenseAsync(
-                    It.IsAny<ExpenseDocument>(),
-                    It.IsAny<RetentionIssueRequest>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(Result<RetentionDocument>.Success(issuedRetention));
-        fx.Docs.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new RetentionPostingFailedException(
-                    "No existe regla de contabilizacion para Retentions.",
-                    "RULE_NOT_FOUND"
-                )
-            );
-
-        var result = await fx.Handler.Handle(
-            new ConfirmExpenseDocumentCommand(document.Id, AppliesRetentionIntent()),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("RULE_NOT_FOUND");
-    }
-
     private static void SetPrivateStatus(ExpenseDocument document, ExpenseStatus status)
     {
         var property = typeof(ExpenseDocument).GetProperty(nameof(ExpenseDocument.Status))!;
@@ -1073,6 +1008,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
         public Mock<IRetentionIssuer> RetentionIssuer { get; } = new();
         public Mock<IPaymentTermRepository> PaymentTerms { get; } = new();
+        public Mock<IAccountingPostingDispatcher> AccountingPostings { get; } = new();
         public PaymentTerm ActivePaymentTerm { get; } =
             PaymentTerm.Create(TenantId, "CONT", "Contado", 1, 0, UserId);
 
@@ -1093,6 +1029,7 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                 WorkflowPolicy.Object,
                 RetentionIssuer.Object,
                 Transmission.Object,
+                AccountingPostings.Object,
                 PaymentTerms.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
@@ -1166,7 +1103,6 @@ public sealed class ExpenseDocumentConfirmUseCasesTests
                         RequiresSupplier: true,
                         RequiresDueDate: true,
                         PayableGenerationMode.OnConfirmation,
-                        AccountingPostingMode.OnConfirmation,
                         InventoryImpactMode.None,
                         NotificationMode.None
                     )

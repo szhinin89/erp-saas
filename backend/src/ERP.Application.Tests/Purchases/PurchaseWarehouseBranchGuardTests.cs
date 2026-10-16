@@ -352,7 +352,7 @@ public sealed class PurchaseWarehouseBranchGuardTests
             whRepo.Object,
             ptRepo.Object,
             Mock.Of<PurchaseTaxResolver>(),
-            Mock.Of<IPostingEngine>(),
+            Mock.Of<ERP.Application.Modules.Accounting.Continuity.IAccountingPostingDispatcher>(),
             Mock.Of<IPricingResolver>(),
             Mock.Of<IAccountsPayableService>(),
             Mock.Of<ILogger<ConfirmPurchaseHandler>>(),

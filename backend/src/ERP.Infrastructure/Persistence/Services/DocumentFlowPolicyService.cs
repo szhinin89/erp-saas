@@ -42,7 +42,6 @@ public sealed class DocumentFlowPolicyService : IDocumentFlowPolicyService
             policy.RequiresSupplier,
             policy.RequiresDueDate,
             policy.PayableGenerationMode,
-            policy.AccountingPostingMode,
             policy.InventoryImpactMode,
             policy.NotificationMode
         );

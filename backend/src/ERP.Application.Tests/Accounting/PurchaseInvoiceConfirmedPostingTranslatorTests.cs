@@ -1,175 +1,135 @@
-using ERP.Application.Common;
-using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting.Translators;
-using ERP.Application.Modules.Purchases.Exceptions;
+using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Purchases.Events;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace ERP.Application.Tests.Accounting;
 
+/// <summary>
+/// ACCOUNTING-CONTINUITY-01 — la confirmación de compra registra una obligación durable Pending (no
+/// invoca el Posting Engine dentro de la transacción de la compra).
+/// </summary>
 public sealed class PurchaseInvoiceConfirmedPostingTranslatorTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
 
-    private static PurchaseInvoiceConfirmedEvent Event(
-        DateOnly? issueDate = null,
-        Guid? invoiceId = null
-    ) =>
+    private static PurchaseInvoiceConfirmedEvent Event(Guid invoiceId, DateOnly issueDate) =>
         new(
             TenantId,
-            invoiceId ?? Guid.NewGuid(),
+            invoiceId,
             SupplierId,
             "001-001-000000001",
-            115m,
+            118.48m,
             CompanyId,
-            issueDate ?? new DateOnly(2026, 7, 25),
+            issueDate,
             100m,
-            100m,
+            103m,
             15m,
             0m,
-            0m
+            2m,
+            totalIrbpnr: 0.48m
         );
 
-    private sealed class Mocks
-    {
-        public Mock<IPostingEngine> PostingEngine { get; } = new();
-        public Mock<ILogger<PurchaseInvoiceConfirmedPostingTranslator>> Logger { get; } = new();
-
-        public PurchaseInvoiceConfirmedPostingTranslator BuildTranslator() =>
-            new(PostingEngine.Object, Logger.Object);
-
-        public void VerifyWarningLogged(Times times) =>
-            Logger.Verify(
-                l =>
-                    l.Log(
-                        LogLevel.Warning,
-                        It.IsAny<EventId>(),
-                        It.IsAny<It.IsAnyType>(),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-                    ),
-                times
-            );
-    }
-
     [Fact]
-    public async Task Evento_valido_construye_PostingFact_correcto()
+    public async Task Registra_obligacion_Pending_con_identidad_fecha_e_importes_del_origen()
     {
-        var m = new Mocks();
+        var h = new AccountingContinuityTestHarness(TenantId, CompanyId);
         var invoiceId = Guid.NewGuid();
-        var issueDate = new DateOnly(2026, 7, 20);
-        PostingFact? captured = null;
+        var issueDate = new DateOnly(2026, 7, 25);
 
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(
-                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
-                )
-            );
-
-        var translator = m.BuildTranslator();
-        await translator.Handle(Event(issueDate, invoiceId), CancellationToken.None);
-
-        captured.Should().NotBeNull();
-        captured!.TenantId.Should().Be(TenantId);
-        captured.CompanyId.Should().Be(CompanyId);
-        captured.SourceModule.Should().Be("Purchases");
-        captured.FactType.Should().Be("InvoiceReceived");
-        captured.SourceEventId.Should().Be(invoiceId);
-        captured.EntryDate.Should().Be(issueDate);
-        captured.Subtotal.Should().Be(100m);
-        captured.TotalVat.Should().Be(15m);
-        captured.TotalIce.Should().Be(0m);
-        captured.TotalDiscount.Should().Be(0m);
-        captured.GrandTotal.Should().Be(115m);
-    }
-
-    [Fact]
-    public async Task Posting_exitoso_no_genera_warning()
-    {
-        var m = new Mocks();
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.Success(
-                    new PostingOutcomeDto(Guid.NewGuid(), PostingOutcomeStatus.Created)
-                )
-            );
-
-        var translator = m.BuildTranslator();
-        var act = async () => await translator.Handle(Event(), CancellationToken.None);
-
-        await act.Should().NotThrowAsync();
-        m.VerifyWarningLogged(Times.Never());
-    }
-
-    [Fact]
-    public async Task Posting_failure_aborta_la_transaccion()
-    {
-        var m = new Mocks();
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.ValidationFailure(
-                    "No existe una regla de contabilización activa.",
-                    "RULE_NOT_FOUND"
-                )
-            );
-
-        var translator = m.BuildTranslator();
-        var act = async () => await translator.Handle(Event(), CancellationToken.None);
-
-        await act.Should().ThrowAsync<PurchasePostingFailedException>();
-        m.VerifyWarningLogged(Times.Once());
-    }
-
-    [Fact]
-    public async Task Evento_con_datos_incompletos_falla_correctamente()
-    {
-        // El Translator solo mapea — Guid.Empty/fechas límite se propagan tal cual al
-        // PostingFact; la validación fail-closed real vive en el Pipeline de Fase 3.1, no aquí.
-        var m = new Mocks();
-        PostingFact? captured = null;
-        m.PostingEngine.Setup(e =>
-                e.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-            )
-            .Callback<PostingFact, CancellationToken>((fact, _) => captured = fact)
-            .ReturnsAsync(
-                Result<PostingOutcomeDto>.ValidationFailure(
-                    "Período no encontrado.",
-                    "PERIOD_NOT_OPEN"
-                )
-            );
-
-        var evt = new PurchaseInvoiceConfirmedEvent(
-            TenantId,
-            Guid.NewGuid(),
-            SupplierId,
-            "001-001-000000009",
-            10m,
-            Guid.Empty,
-            default,
-            10m,
-            10m,
-            0m,
-            0m,
-            0m
+        await new PurchaseInvoiceConfirmedPostingTranslator(h.Recorder).Handle(
+            Event(invoiceId, issueDate),
+            CancellationToken.None
         );
 
-        var translator = m.BuildTranslator();
-        var act = async () => await translator.Handle(evt, CancellationToken.None);
+        var posting = h.Added.Single();
+        posting.Status.Should().Be(AccountingPostingStatus.Pending);
+        posting.SourceModule.Should().Be("Purchases");
+        posting.FactType.Should().Be("InvoiceReceived");
+        posting.SourceEventId.Should().Be(invoiceId);
+        posting.SourceDocumentNumber.Should().Be("001-001-000000001");
+        posting.BusinessDate.Should().Be(issueDate);
+        posting.EntryDate.Should().Be(issueDate);
+        posting.CreatedBy.Should().Be(AccountingContinuityTestHarness.UserId);
+        posting.CorrelationId.Should().Be(AccountingContinuityTestHarness.CorrelationId);
+        var payload = h.SinglePayload();
+        payload.Subtotal.Should().Be(103m, "Subtotal = CostSubtotal congelado por Compras");
+        payload.TotalVat.Should().Be(15m);
+        payload.TotalDiscount.Should().Be(2m);
+        payload.GrandTotal.Should().Be(118.48m);
+        payload.TotalIrbpnr.Should().Be(0.48m);
+        h.Queue.Drain().Should().Equal(posting.Id);
+    }
 
-        await act.Should().ThrowAsync<PurchasePostingFailedException>();
-        captured!.CompanyId.Should().Be(Guid.Empty);
-        m.VerifyWarningLogged(Times.Once());
+    [Fact]
+    public async Task Fecha_fuera_de_la_vigencia_Enabled_no_genera_obligacion()
+    {
+        var h = new AccountingContinuityTestHarness(
+            TenantId,
+            CompanyId,
+            effectiveFrom: new DateOnly(2026, 8, 1)
+        );
+
+        await new PurchaseInvoiceConfirmedPostingTranslator(h.Recorder).Handle(
+            Event(Guid.NewGuid(), new DateOnly(2026, 7, 31)),
+            CancellationToken.None
+        );
+
+        h.Added.Should().BeEmpty("activar Accounting no genera contabilización histórica");
+        h.Queue.Drain().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Empresa_sin_modo_operativo_definido_rechaza_la_operacion()
+    {
+        var h = new AccountingContinuityTestHarness(TenantId, CompanyId, mode: null);
+
+        var act = () =>
+            new PurchaseInvoiceConfirmedPostingTranslator(h.Recorder).Handle(
+                Event(Guid.NewGuid(), new DateOnly(2026, 7, 25)),
+                CancellationToken.None
+            );
+
+        await act.Should()
+            .ThrowAsync<DomainRuleViolationException>()
+            .WithMessage("*modo operativo de Contabilidad*");
+        h.Added.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Obligacion_ya_existente_para_la_identidad_no_se_duplica()
+    {
+        var h = new AccountingContinuityTestHarness(TenantId, CompanyId);
+        var invoiceId = Guid.NewGuid();
+        var existing = ERP.Domain.Modules.Accounting.Entities.AccountingPosting.CreatePending(
+            TenantId,
+            CompanyId,
+            "Purchases",
+            "InvoiceReceived",
+            invoiceId,
+            null,
+            new DateOnly(2026, 7, 25),
+            new DateOnly(2026, 7, 25),
+            AccountingPostingPayload.CurrentVersion,
+            "{}",
+            Guid.NewGuid(),
+            null
+        );
+        h.Postings.Setup(p =>
+                p.FindByKeyAsync(TenantId, CompanyId, "Purchases", "InvoiceReceived", invoiceId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(existing);
+
+        await new PurchaseInvoiceConfirmedPostingTranslator(h.Recorder).Handle(
+            Event(invoiceId, new DateOnly(2026, 7, 25)),
+            CancellationToken.None
+        );
+
+        h.Added.Should().BeEmpty();
     }
 }

@@ -25,14 +25,23 @@ namespace ERP.Domain.Modules.Accounting.ValueObjects;
 /// asignado, o un asiento que es en sí mismo un reverso (<c>OriginalJournalEntryId</c> no nulo)
 /// pero no quedó <c>Posted</c> — ambos casos representan un reverso a medio completar.
 /// </param>
+/// <param name="HasUnresolvedPostings">
+/// ACCOUNTING-CONTINUITY-01 — existe al menos una obligación contable durable
+/// (<c>AccountingPosting</c>) Pending o Failed cuya <c>EntryDate</c> pertenece al período: un hecho
+/// que debería contabilizarse sin resolución (docs/architecture/accounting.md §8, gate mínimo).
+/// </param>
 public sealed record JournalEntryClosureReadiness(
     bool HasDraftOrNonFinalEntries,
     bool HasEntriesWithoutEntryNumber,
-    bool HasIncompleteReversals
+    bool HasIncompleteReversals,
+    bool HasUnresolvedPostings = false
 )
 {
     public bool IsReady =>
-        !HasDraftOrNonFinalEntries && !HasEntriesWithoutEntryNumber && !HasIncompleteReversals;
+        !HasDraftOrNonFinalEntries
+        && !HasEntriesWithoutEntryNumber
+        && !HasIncompleteReversals
+        && !HasUnresolvedPostings;
 
     /// <summary>Motivos de bloqueo en español, listos para componer el mensaje de la excepción de dominio.</summary>
     public IEnumerable<string> BuildBlockingReasons()
@@ -43,5 +52,7 @@ public sealed record JournalEntryClosureReadiness(
             yield return "existen asientos publicados sin número de asiento asignado";
         if (HasIncompleteReversals)
             yield return "existen reversos contables incompletos";
+        if (HasUnresolvedPostings)
+            yield return "existen contabilizaciones pendientes o fallidas con fecha dentro del período";
     }
 }

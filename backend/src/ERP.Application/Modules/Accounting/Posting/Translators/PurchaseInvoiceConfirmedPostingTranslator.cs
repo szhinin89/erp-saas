@@ -1,71 +1,51 @@
-using ERP.Application.Modules.Purchases.Exceptions;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
 /// <summary>
-/// Traduce PurchaseInvoiceConfirmedEvent (Purchases) a PostingFact e invoca IPostingEngine — no crea
-/// JournalEntry, no resuelve cuentas, no contiene lógica financiera (ADR-026 §8, Fase 3.4).
+/// Traduce PurchaseInvoiceConfirmedEvent (Purchases) al hecho contable InvoiceReceived y lo registra
+/// como obligación durable en la misma transacción que Compra/Kardex/CxP — no invoca el Posting
+/// Engine, no resuelve cuentas, no contiene lógica financiera.
 /// </summary>
 /// <remarks>
-/// COMPRAS-METODO-ZH-01A — el asiento InvoiceReceived es obligatorio: un fallo lanza
-/// <see cref="PurchasePostingFailedException"/> para revertir Compra/Kardex/CxP juntos (mismo criterio
-/// que SalesInvoiceAuthorizedPostingTranslator). Subtotal = <c>CostSubtotal</c>: base neta de
-/// descuentos + flete/otros costos ya congelados por Compras, para que Debe (Subtotal+impuestos)
-/// cuadre con Haber (GrandTotal) sin una segunda fórmula de costos.
+/// ACCOUNTING-CONTINUITY-01 — un fallo contable ya no revierte la compra: el intento ocurre tras el
+/// commit (<see cref="AccountingPostingExecutor"/>) y queda Posted o Failed durable. Subtotal =
+/// <c>CostSubtotal</c>: base neta de descuentos + flete/otros costos ya congelados por Compras, para
+/// que Debe (Subtotal+impuestos) cuadre con Haber (GrandTotal) sin una segunda fórmula de costos.
 /// </remarks>
 public sealed class PurchaseInvoiceConfirmedPostingTranslator
     : INotificationHandler<PurchaseInvoiceConfirmedEvent>
 {
-    private const string SourceModuleName = "Purchases";
-    private const string FactTypeName = "InvoiceReceived";
+    public const string SourceModuleName = "Purchases";
+    public const string FactTypeName = "InvoiceReceived";
 
-    private readonly IPostingEngine _postingEngine;
-    private readonly ILogger<PurchaseInvoiceConfirmedPostingTranslator> _logger;
+    private readonly AccountingPostingRecorder _recorder;
 
-    public PurchaseInvoiceConfirmedPostingTranslator(
-        IPostingEngine postingEngine,
-        ILogger<PurchaseInvoiceConfirmedPostingTranslator> logger
-    )
-    {
-        _postingEngine = postingEngine;
-        _logger = logger;
-    }
+    public PurchaseInvoiceConfirmedPostingTranslator(AccountingPostingRecorder recorder) =>
+        _recorder = recorder;
 
-    public async Task Handle(PurchaseInvoiceConfirmedEvent e, CancellationToken ct)
-    {
-        var fact = new PostingFact(
-            e.TenantId!.Value,
-            e.CompanyId,
-            SourceModuleName,
-            FactTypeName,
-            e.InvoiceId,
-            e.IssueDate,
-            e.CostSubtotal,
-            e.TotalVat,
-            e.TotalIce,
-            e.TotalDiscount,
-            e.GrandTotal,
-            TotalIrbpnr: e.TotalIrbpnr
-        );
-
-        var result = await _postingEngine.PostAsync(fact, ct);
-
-        if (!result.IsSuccess)
-        {
-            _logger.LogWarning(
-                "Posting failed for PurchaseInvoice {InvoiceId} ({InvoiceNumber}): {Code} — {Error}",
+    public Task Handle(PurchaseInvoiceConfirmedEvent e, CancellationToken ct) =>
+        _recorder.RecordAsync(
+            new AccountingPostingRequest(
+                e.TenantId!.Value,
+                e.CompanyId,
+                SourceModuleName,
+                FactTypeName,
                 e.InvoiceId,
                 e.InvoiceNumber,
-                result.Code,
-                result.Error
-            );
-            throw new PurchasePostingFailedException(
-                result.Error ?? "No se pudo contabilizar la compra.",
-                result.Code
-            );
-        }
-    }
+                e.IssueDate,
+                e.IssueDate,
+                new AccountingPostingPayload(
+                    e.CostSubtotal,
+                    e.TotalVat,
+                    e.TotalIce,
+                    e.TotalDiscount,
+                    e.GrandTotal,
+                    TotalIrbpnr: e.TotalIrbpnr
+                )
+            ),
+            ct
+        );
 }

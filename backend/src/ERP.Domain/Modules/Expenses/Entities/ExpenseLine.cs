@@ -16,7 +16,12 @@ public sealed class ExpenseLine : IMustHaveTenant
     public Guid TenantId { get; private set; }
     public Guid ExpenseDocumentId { get; private set; }
     public Guid ExpenseSubcategoryId { get; private set; }
-    public Guid SnapshotAccountingAccountId { get; private set; }
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — informativo: cuenta configurada en la subcategoría al
+    /// registrar/confirmar la línea (null si no tenía). No es autoridad del posting: la cuenta se
+    /// resuelve en cada intento contable con la configuración vigente.
+    /// </summary>
+    public Guid? SnapshotAccountingAccountId { get; private set; }
     public string? SnapshotAccountingAccountCode { get; private set; }
     public string? SnapshotAccountingAccountName { get; private set; }
     public string Description { get; private set; } = null!;
@@ -52,7 +57,7 @@ public sealed class ExpenseLine : IMustHaveTenant
         Guid expenseDocumentId,
         Guid tenantId,
         Guid expenseSubcategoryId,
-        Guid snapshotAccountingAccountId,
+        Guid? snapshotAccountingAccountId,
         string description,
         decimal quantity,
         decimal unitAmount,
@@ -77,11 +82,6 @@ public sealed class ExpenseLine : IMustHaveTenant
             throw new ArgumentException(
                 "La subcategoría de gasto es obligatoria.",
                 nameof(expenseSubcategoryId)
-            );
-        if (snapshotAccountingAccountId == Guid.Empty)
-            throw new ArgumentException(
-                "La cuenta contable snapshot es obligatoria.",
-                nameof(snapshotAccountingAccountId)
             );
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException(
@@ -121,7 +121,8 @@ public sealed class ExpenseLine : IMustHaveTenant
             TenantId = tenantId,
             ExpenseDocumentId = expenseDocumentId,
             ExpenseSubcategoryId = expenseSubcategoryId,
-            SnapshotAccountingAccountId = snapshotAccountingAccountId,
+            SnapshotAccountingAccountId =
+                snapshotAccountingAccountId == Guid.Empty ? null : snapshotAccountingAccountId,
             SnapshotAccountingAccountCode = Normalize(snapshotAccountingAccountCode),
             SnapshotAccountingAccountName = Normalize(snapshotAccountingAccountName),
             Description = description.Trim(),
@@ -140,23 +141,16 @@ public sealed class ExpenseLine : IMustHaveTenant
     internal void SetSortOrder(short order) => SortOrder = order;
 
     /// <summary>
-    /// EXPENSES-CONFIRM-07 — recongela el snapshot de cuenta contable al confirmar el documento
-    /// (llamado únicamente desde <c>ExpenseDocument.Confirm()</c>, mismo assembly). La subcategoría
-    /// pudo cambiar de cuenta contable (<c>ExpenseCategoryNode.ChangeSubcategoryAccount</c>) entre
-    /// la creación del borrador y la confirmación — este método asegura que el asiento se genere
-    /// con la cuenta vigente al momento de confirmar, nunca con una snapshot obsoleta.
+    /// EXPENSES-CONFIRM-07 / ACCOUNTING-CONTINUITY-01 — recongela al confirmar el snapshot
+    /// INFORMATIVO de cuenta (llamado únicamente desde <c>ExpenseDocument.Confirm()</c>). La
+    /// subcategoría pudo cambiar de cuenta, o no tener ninguna; null es válido.
     /// </summary>
-    internal void RefreshAccountSnapshot(Guid accountingAccountId, string? code, string? name)
+    internal void RefreshAccountSnapshot(Guid? accountingAccountId, string? code, string? name)
     {
-        if (accountingAccountId == Guid.Empty)
-            throw new ArgumentException(
-                "La cuenta contable snapshot es obligatoria.",
-                nameof(accountingAccountId)
-            );
-
-        SnapshotAccountingAccountId = accountingAccountId;
-        SnapshotAccountingAccountCode = Normalize(code);
-        SnapshotAccountingAccountName = Normalize(name);
+        var hasAccount = accountingAccountId is { } id && id != Guid.Empty;
+        SnapshotAccountingAccountId = hasAccount ? accountingAccountId : null;
+        SnapshotAccountingAccountCode = hasAccount ? Normalize(code) : null;
+        SnapshotAccountingAccountName = hasAccount ? Normalize(name) : null;
     }
 
     private void RecalculateAmounts(decimal? explicitDiscountAmount = null)

@@ -1,84 +1,55 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
-using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
 /// <summary>
-/// ACCOUNTING-REVERSALS-05: a diferencia de <see cref="PurchaseReturnAuthorizedPostingTranslator"/>/
-/// <see cref="PurchaseReturnCancelledPostingTranslator"/> (que publican un <c>PostingFact</c>
-/// NUEVO e independiente — una devolución es un documento distinto de la factura original),
-/// anular una factura de compra ya contabilizada deshace ESE MISMO hecho contable: el tratamiento
-/// correcto es reversar el <c>JournalEntry</c> original (<c>JournalEntry.Reverse()</c>, vía
-/// <see cref="ReverseJournalEntryCommand"/>), no crear un asiento compensatorio nuevo. Reutiliza
-/// <see cref="ReverseJournalEntryCommandHandler"/> tal cual (mismas invariantes ya probadas:
-/// solo Posted, sin doble reverso, período abierto) — este traductor solo localiza el
-/// JournalEntry original vía <see cref="IJournalEntryRepository.GetBySourceAsync"/> y delega.
+/// ACCOUNTING-REVERSALS-05: anular una factura de compra ya contabilizada deshace ESE MISMO hecho
+/// contable: reversa el <c>JournalEntry</c> original vía <see cref="ReverseJournalEntryCommand"/>
+/// (mismas invariantes ya probadas: solo Posted, sin doble reverso, período abierto), nunca un
+/// asiento compensatorio nuevo.
 /// </summary>
 /// <remarks>
-/// Log-and-continue, mismo criterio que el resto de translators (ver
-/// <c>SalesInvoiceAuthorizedPostingTranslator</c>): un fallo al reversar (p. ej. período
-/// cerrado/bloqueado) nunca revierte la anulación de la compra ya confirmada en Purchases — la
-/// inconsistencia queda registrada en el log estructurado para revisión manual, no bloquea al
-/// usuario. Si la factura nunca se contabilizó (sin <c>PostingRule</c> configurada en su momento,
-/// o sin asiento <c>Posted</c> localizable), no hay nada que reversar — se omite silenciosamente
-/// (info, no warning: no es un error).
+/// ACCOUNTING-CONTINUITY-01 — comportamiento común de anulación (<see cref="AccountingPostingCancellation"/>):
+/// obligación Pending/Failed sin asiento → Canceled; sin asiento ni obligación (Accounting no
+/// aplicaba) → nada; asiento Posted → reverso. Si el reverso falla, LANZA
+/// <see cref="PurchasePostingFailedException"/> y la anulación completa hace rollback: antes solo
+/// se registraba un warning y la compra quedaba anulada con su asiento vigente.
 /// </remarks>
 public sealed class PurchaseInvoiceCancelledPostingTranslator
     : INotificationHandler<PurchaseInvoiceCancelledEvent>
 {
-    private const string SourceModuleName = "Purchases";
-    private const string InvoiceReceivedFactType = "InvoiceReceived";
-
-    private readonly IJournalEntryRepository _journalEntryRepository;
+    private readonly AccountingPostingCancellation _cancellation;
     private readonly IMediator _mediator;
     private readonly ICurrentCompany _company;
-    private readonly ILogger<PurchaseInvoiceCancelledPostingTranslator> _logger;
 
     public PurchaseInvoiceCancelledPostingTranslator(
-        IJournalEntryRepository journalEntryRepository,
+        AccountingPostingCancellation cancellation,
         IMediator mediator,
-        ICurrentCompany company,
-        ILogger<PurchaseInvoiceCancelledPostingTranslator> logger
+        ICurrentCompany company
     )
     {
-        _journalEntryRepository = journalEntryRepository;
+        _cancellation = cancellation;
         _mediator = mediator;
         _company = company;
-        _logger = logger;
     }
 
     public async Task Handle(PurchaseInvoiceCancelledEvent e, CancellationToken ct)
     {
-        var tenantId = e.TenantId!.Value;
-        var companyId = _company.CompanyId;
-
-        var candidates = await _journalEntryRepository.GetBySourceAsync(
-            tenantId,
-            companyId,
-            SourceModuleName,
+        var original = await _cancellation.PrepareAsync(
+            e.TenantId!.Value,
+            _company.CompanyId,
+            PurchaseInvoiceConfirmedPostingTranslator.SourceModuleName,
+            PurchaseInvoiceConfirmedPostingTranslator.FactTypeName,
             e.InvoiceId,
             ct
         );
-
-        var original = candidates.FirstOrDefault(x =>
-            x.SourceEventType == InvoiceReceivedFactType && x.Status == JournalEntryStatus.Posted
-        );
-
         if (original is null)
-        {
-            _logger.LogInformation(
-                "No hay asiento Posted que reversar para PurchaseInvoice {InvoiceId} ({InvoiceNumber}) — "
-                    + "probablemente nunca se contabilizó (sin PostingRule configurada en su momento).",
-                e.InvoiceId,
-                e.InvoiceNumber
-            );
             return;
-        }
 
         var result = await _mediator.Send(
             new ReverseJournalEntryCommand(
@@ -89,14 +60,9 @@ public sealed class PurchaseInvoiceCancelledPostingTranslator
         );
 
         if (!result.IsSuccess)
-        {
-            _logger.LogWarning(
-                "Reverso de asiento falló para PurchaseInvoice {InvoiceId} ({InvoiceNumber}): {Code} — {Error}",
-                e.InvoiceId,
-                e.InvoiceNumber,
-                result.Code,
-                result.Error
+            throw new PurchasePostingFailedException(
+                result.Error ?? "No se pudo reversar la contabilización de la compra.",
+                result.Code
             );
-        }
     }
 }

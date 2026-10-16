@@ -30,7 +30,7 @@ Lo que este ADR **no** supone, porque no está documentado: qué casos exigen ac
 
 ## 3. Problema (reproducido)
 
-En PostgreSQL real (§15): **hoy un XML de retención sale hacia el SRI después de que la retención quedó `Cancelled`**, y el resultado puede terminar en ERP `Cancelled` / SRI `Authorized`, sin señal alguna. Además, la anulación de la Compra/Gasto revierte la CxP y los asientos aunque el comprobante esté autorizado, es decir, todavía vigente ante el SRI.
+En PostgreSQL real (§15): **hoy un XML de retención sale hacia el SRI después de que la retención quedó `Cancelled`**, y el resultado puede terminar en ERP `Cancelled` / SRI `Authorized`, sin señal alguna. Además, la anulación de la Compra/Gasto revierte la CxP aunque el comprobante esté autorizado, es decir, todavía vigente ante el SRI.
 
 ## 4. Estado actual — flujo electrónico completo
 
@@ -76,8 +76,8 @@ Respuesta SRI ambigua: `SriSoapClient` no distingue "el SRI no conoce la clave" 
 - **I-1 (D-1).** Si `RetentionDocument.Status = Cancelled`, ningún proceso, manual o automático, puede registrar, generar o regenerar XML, firmar, despachar, enviar o reenviar, reactivar, ni aplicar una transición de avance (`Received`/`Authorized`/…) sobre su ED. Con la política aprobada (D-5…D-8) **ya no puede surgir** una retención `Cancelled` con el ED en vuelo o autorizado, porque la anulación se bloquea antes. Si ese caso existe, viene de datos previos a la implementación (§16) y se resuelve con un **procedimiento manual de conciliación auditado**, nunca con el pipeline automático (O-9).
 - **I-2 (D-2).** `Discarded` solo es alcanzable con **certeza de que no hubo intento externo**: `Draft`, `Failed`, `DeadLetter(pre=Failed)`, o `Signed` creado **después** de introducir `Dispatching` y que nunca pasó por él. Un `Signed` existente hoy no es descartable (I-3).
 - **I-3 (D-4, D-10).** Un `Signed` existente es incierto. Antes de cualquier reenvío se consulta la autorización por clave de acceso, y solo una respuesta **positivamente concluyente** de que el SRI no tiene el comprobante habilita el reenvío o el descarte. `TIMEOUT`, `SIN_RESPUESTA`, un error de transporte u otra respuesta no concluyente **nunca** autorizan el reenvío: el ED sigue incierto y se vuelve a consultar. Mientras no se resuelva P-2 (§22), un `Signed` existente **no puede reenviarse automáticamente**.
-- **I-4 (D-6, D-7).** Mientras el ED esté `Dispatching`, `Received`, `Authorized` o `AnnulmentPending`, el comprobante se considera **vigente o potencialmente vigente**: el origen no se anula y la CxP, el asiento y el Kardex no se revierten.
-- **I-5 (D-8).** Los reversos del ERP (retención, CxP, asientos, Kardex y el resto del origen) se ejecutan **exactamente una vez**, por el camino único de anulación del origen ya existente, y **solo** cuando el ED llega a `Cancelled` con la evidencia de ANULADO.
+- **I-4 (D-6, D-7).** Mientras el ED esté `Dispatching`, `Received`, `Authorized` o `AnnulmentPending`, el comprobante se considera **vigente o potencialmente vigente**: el origen no se anula y la CxP y el Kardex no se revierten.
+- **I-5 (D-8).** Los reversos del ERP (retención, CxP, Kardex y el resto del origen) se ejecutan **exactamente una vez**, por el camino único de anulación del origen ya existente, y **solo** cuando el ED llega a `Cancelled` con la evidencia de ANULADO.
 
 ## 7. Modelo de estados objetivo del ElectronicDocument (extensión de ADR-023)
 
@@ -165,7 +165,7 @@ La anulación del origen se rechaza con un mensaje explícito. El job **solo con
 
 ### 9.4 Authorized → anulación oficial (D-6)
 
-La anulación del origen **no** se ejecuta: no se revierten la retención, la CxP, los asientos ni el Kardex. El usuario debe tramitar la anulación **en línea ante el SRI**: el ERP no tiene integración para eso y la normativa la define como exclusivamente en línea. El ERP registra la solicitud como `AnnulmentPending`.
+La anulación del origen **no** se ejecuta: no se revierten la retención, la CxP ni el Kardex. El usuario debe tramitar la anulación **en línea ante el SRI**: el ERP no tiene integración para eso y la normativa la define como exclusivamente en línea. El ERP registra la solicitud como `AnnulmentPending`.
 
 Dato que debe guardarse: la fecha de solicitud, el usuario y el motivo del origen, porque la anulación del origen se ejecutará más tarde con ese motivo.
 
@@ -221,7 +221,7 @@ El origen se conoce por el dato (`SourceDocumentType`), así que la verificació
 ## 14. `Issued` frente a la obligación de transmisión inmediata (D-12)
 
 **Hallazgos:**
-- `RetentionDocument.Issue()` corre dentro de la confirmación del origen: asigna el número de la secuencia `07` y la `IssueDate`, aplica la retención en la CxP y contabiliza. Con eso, la retención ya es un hecho contable y fiscal del ERP.
+- `RetentionDocument.Issue()` corre dentro de la confirmación del origen: asigna el número de la secuencia `07` y la `IssueDate`, aplica la retención en la CxP. Integración contable: [Accounting](../architecture/accounting.md).
 - La transmisión al SRI es **manual y separada**. `RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B` §K eligió la *Opción B — manual/endpoint, "para reducir riesgo inicial"* frente al disparo automático, como decisión de QA de puesta en marcha, no como política fiscal. `RegisterRetentionElectronicDocumentHandler` lo reitera: "Deliberadamente manual en esta fase".
 - **Compras** tiene el botón "Registrar electrónicamente" (`PurchasesPage`/`usePurchasesPage` → `purchaseRetentionFacade.registerElectronic`). **Gastos no tiene ningún camino de UI**: las retenciones de Gastos solo se pueden transmitir llamando a la API directamente.
 - Nada detecta ni alerta una retención `Issued` sin ED. `RetentionDocumentDto` no expone el estado electrónico y las pantallas no consultan `electronic-documents/by-source`.
@@ -574,7 +574,7 @@ Conclusión: **solicitud asistida (B) + verificación automática (A)**. No exis
 3. ~~**Resolver:** `POST /retentions/annulments/{id}/resolution` (ANULADO / RECHAZADO / SIN EFECTO declarados por el usuario).~~ **Retirado en 01B:** el usuario nunca declara el estado fiscal. Lo reemplaza la verificación automática `POST /retentions/annulments/{id}/sri-verification` (§25.4).
 4. **Desistir:** `POST /retentions/annulments/{id}/abandon`, antes de presentar o — desde 01B — ya presentada cuando la última consulta al SRI informa AUTORIZADO (§25.4).
 5. **Finalizar** (`FinalizeRetentionOriginCancellation`, `IRetentionAnnulmentService.FinalizeAsync`): se ejecuta fuera de la transacción de la verificación que aceptó el ANULADO, mediante `IRetentionOriginCancellation`, un puerto por origen implementado por Compras y Gastos.
-   - Llama al **flujo oficial existente** (`CancelPurchaseHandler.ExecuteAsync` / `CancelExpenseDocumentHandler.ExecuteAsync`, el mismo cuerpo que el endpoint, con el motivo y el usuario de la solicitud y sin sucursal activa). Ese flujo revierte Kardex, CxP, retención y asientos **una vez**.
+   - Llama al **flujo oficial existente** (`CancelPurchaseHandler.ExecuteAsync` / `CancelExpenseDocumentHandler.ExecuteAsync`, el mismo cuerpo que el endpoint, con el motivo y el usuario de la solicitud y sin sucursal activa). Ese flujo revierte Kardex, CxP y retención **una vez**.
    - Un origen ya anulado cuenta como `AlreadyCancelled`.
    - Si falla, se limpia el change tracker, se registra el error y el intento, y la respuesta es `RETENTION_ANNULMENT_FINALIZATION_PENDING`. Lo retoman `RetentionElectronicRecoveryJob` (consulta cross-tenant vía `AsPlatformQuery`, contexto por candidato) o la acción manual `POST /retentions/annulments/{id}/finalization`.
 6. **Permisos** (server-side, por origen, en `RetentionAnnulmentAccess` / `IRetentionSourceAccess`):
@@ -592,7 +592,7 @@ Conclusión: **solicitud asistida (B) + verificación automática (A)**. No exis
 | E. Dos solicitudes simultáneas | Una sola solicitud (Lock A, más el índice único parcial). |
 | F. ANULADO repetido | Idempotente (`RETENTION_ANNULMENT_FINALIZED`; la evidencia original se conserva y el SRI no se vuelve a consultar). |
 | G. ~~RECHAZADO después de ANULADO~~ | Retirado en 01B (no hay resolución manual). Una solicitud `Accepted` no admite otra transición. |
-| H. Finalización reintentada / concurrente | El origen se anula exactamente una vez (reverso contable y Kardex ×1). |
+| H. Finalización reintentada / concurrente | El origen se anula exactamente una vez (Kardex y efectos operativos ×1). |
 
 Orden de locks: origen (Lock A / `xmin`) → retención (`FOR UPDATE`) → comprobante / solicitud / CxP (`xmin`). Es el mismo orden de 01A.
 

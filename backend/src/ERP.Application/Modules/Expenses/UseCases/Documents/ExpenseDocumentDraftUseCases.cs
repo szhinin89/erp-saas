@@ -8,8 +8,6 @@ using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.MasterData.Enums;
 using ERP.Domain.MasterData.Interfaces;
-using ERP.Domain.Modules.Accounting.Entities;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.Expenses.Entities;
@@ -798,23 +796,15 @@ internal static class ExpenseDraftRules
                     null,
                     Validation("Cada linea debe apuntar a una subcategoria de gasto.")
                 );
-            if (!category.AccountingAccountId.HasValue)
-                return new LineResolution(
-                    null,
-                    Validation(
-                        $"La subcategoria '{category.Name}' no tiene cuenta contable configurada."
-                    )
-                );
-
-            var account = await accounts.GetByIdAsync(
+            // ACCOUNTING-CONTINUITY-01: la cuenta de la subcategoría es solo snapshot informativo,
+            // no requisito operativo del gasto; Accounting la resuelve en cada intento contable.
+            var account = await ExpenseLineAccountSnapshot.FindAsync(
+                accounts,
                 tenantId,
                 companyId,
-                category.AccountingAccountId.Value,
+                category,
                 ct
             );
-            var accountError = ValidateAccount(account, category.Name);
-            if (accountError is not null)
-                return new LineResolution(null, accountError);
 
             var vatCode = input.VatCode.Trim();
             var vat = await tax.GetVatRateWithNameAsync(vatCode, ct);
@@ -835,7 +825,7 @@ internal static class ExpenseDraftRules
                         documentId,
                         tenantId,
                         category.Id,
-                        account!.Id,
+                        account?.Id,
                         description,
                         input.Quantity,
                         input.UnitPrice,
@@ -843,8 +833,8 @@ internal static class ExpenseDraftRules
                         vat.Rate,
                         vat.Name,
                         discountAmount: input.DiscountValue,
-                        snapshotAccountingAccountCode: account.Code.Value,
-                        snapshotAccountingAccountName: account.Name,
+                        snapshotAccountingAccountCode: account?.Code.Value,
+                        snapshotAccountingAccountName: account?.Name,
                         notes: input.Notes
                     )
                 );
@@ -856,29 +846,6 @@ internal static class ExpenseDraftRules
         }
 
         return new LineResolution(lines, null);
-    }
-
-    private static ExpenseDraftError? ValidateAccount(Account? account, string categoryName)
-    {
-        if (account is null)
-            return new ExpenseDraftError(
-                $"La cuenta contable de la subcategoria '{categoryName}' no existe.",
-                ApiResponseCodes.Common.NotFound
-            );
-        if (!account.IsActive)
-            return Validation(
-                $"La cuenta contable de la subcategoria '{categoryName}' esta inactiva."
-            );
-        if (!account.AllowsPosting)
-            return Validation(
-                $"La cuenta contable de la subcategoria '{categoryName}' no permite contabilizacion."
-            );
-        if (account.AccountType != AccountType.Expense)
-            return Validation(
-                $"La cuenta contable de la subcategoria '{categoryName}' debe ser de tipo gasto."
-            );
-
-        return null;
     }
 
     private static SupplierResolution NotFoundSupplier() =>

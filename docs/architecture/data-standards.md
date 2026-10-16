@@ -86,7 +86,7 @@ Dos tipos de dato temporal. Nunca se mezclan ni se compensan entre sí.
 
 `ICompanyClock` resuelve `Company.Timezone` y delega toda la aritmética en `CompanyTimeZone` (única implementación; el catálogo SRI platform-scoped usa la misma con la zona fiscal nacional `America/Guayaquil`).
 
-**Fecha contable (ZH-ACCOUNTING-DATE-BOUNDARY-01).** `PostingFact.EntryDate` es una fecha de negocio y define el período (`AccountingPeriod` que la contiene, abierto; si no, `PERIOD_NOT_OPEN`): (a) si el hecho trae su fecha de documento, esa (`IssueDate` factura de venta/compra y COGS, `PaymentDate` cobro aplicado y pago a proveedor/su reversa, `AccountingDate` gasto, `IssueDate` retención, `EffectiveDate` reembolso de crédito de proveedor y su reversa); (b) si no la trae, el "hoy" de la empresa con `ICompanyClock.TodayAsync` (autorización/cancelación de devolución de compra, NC de compra, devolución de venta y su reverso de costo, aplicación/reversa de crédito de proveedor, reversa de cobro). Nunca el día UTC. Un reverso por `ReverseJournalEntryCommand` (anulaciones) conserva el `EntryDate` del asiento original; solo `ReversedAtUtc` es instante. `CompanyClock` toma el instante "ahora" de `TimeProvider` (producción: `TimeProvider.System`): los tests que dependen del "hoy" de la empresa lo fijan (`FixedTimeProvider`, `AccountingDateBoundary` en `ERP.Infrastructure.Tests`) y siembran períodos y fechas desde ese mismo día — nunca `DateOnly.FromDateTime(DateTime.UtcNow)`, que difiere del día de la empresa entre 19:00 y 23:59 Ecuador.
+**Fecha contable:** [Accounting](./accounting.md).
 
 ### Prohibido (fechas) — bloqueado por guards
 

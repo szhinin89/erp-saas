@@ -269,7 +269,7 @@ public sealed class GetRetentionEligibilityHandlerTests
             );
             document.ReplaceLines([line], UserId);
             document.Confirm(
-                new Dictionary<Guid, (Guid, string?, string?)>
+                new Dictionary<Guid, (Guid?, string?, string?)>
                 {
                     [line.Id] = (ExpenseAccountId, "6.1.01", "Internet"),
                 },

@@ -1,7 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Application.Modules.Purchases.Services;
+using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -301,6 +303,18 @@ public sealed class CancelPurchaseHandler
             );
 
             return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+        }
+        // ACCOUNTING-CONTINUITY-01: el reverso fallido de un asiento Posted (compra o retención)
+        // bloquea la anulación completa — nunca queda anulada con su asiento vigente.
+        catch (PurchasePostingFailedException ex)
+        {
+            await _uow.RollbackAsync(ct);
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message, ex.Code);
+        }
+        catch (RetentionPostingFailedException ex)
+        {
+            await _uow.RollbackAsync(ct);
+            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message, ex.Code);
         }
         catch
         {

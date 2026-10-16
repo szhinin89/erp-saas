@@ -1,5 +1,8 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Companies.DTOs;
+using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
 
@@ -11,16 +14,22 @@ public sealed class UpdateCompanyFiscalHandler
     private readonly ICompanyAccessGuard _accessGuard;
     private readonly ICompanyRepository _companies;
     private readonly ICurrentUser _currentUser;
+    private readonly IAccountingOperationalPolicyRepository _accountingPolicies;
+    private readonly ICompanyClock _clock;
 
     public UpdateCompanyFiscalHandler(
         ICompanyAccessGuard accessGuard,
         ICompanyRepository companies,
-        ICurrentUser currentUser
+        ICurrentUser currentUser,
+        IAccountingOperationalPolicyRepository accountingPolicies,
+        ICompanyClock clock
     )
     {
         _accessGuard = accessGuard;
         _companies = companies;
         _currentUser = currentUser;
+        _accountingPolicies = accountingPolicies;
+        _clock = clock;
     }
 
     public async Task<Result<CompanyProfileDto>> Handle(
@@ -40,6 +49,18 @@ public sealed class UpdateCompanyFiscalHandler
         if (entity is null)
             return Result<CompanyProfileDto>.Failure("Empresa no encontrada.");
 
+        // ACCOUNTING-CONTINUITY-01 (accounting.md §3): una empresa obligada a llevar contabilidad
+        // debe tener Accounting Enabled; no se activa automáticamente desde el dato fiscal.
+        if (
+            command.IsAccountingReq
+            && !entity.IsAccountingReq
+            && !await IsAccountingEnabledFromTodayAsync(entity.Id, entity.TenantId, cancellationToken)
+        )
+            return Result<CompanyProfileDto>.ValidationFailure(
+                "Para marcar la empresa como obligada a llevar contabilidad, primero habilite "
+                    + "Contabilidad en Contabilidad > Configuración > Modo operativo."
+            );
+
         entity.UpdateFiscalSettings(
             command.TaxRegimeCode,
             command.IsAccountingReq,
@@ -53,5 +74,21 @@ public sealed class UpdateCompanyFiscalHandler
         await _companies.SaveChangesAsync(cancellationToken);
 
         return Result<CompanyProfileDto>.Success(CompanyProfileDto.FromEntity(entity));
+    }
+
+    /// <summary>Enabled vigente hoy y sin ninguna versión posterior que lo deshabilite.</summary>
+    private async Task<bool> IsAccountingEnabledFromTodayAsync(
+        Guid companyId,
+        Guid tenantId,
+        CancellationToken ct
+    )
+    {
+        var today = await _clock.TodayAsync(companyId, tenantId, ct);
+        var versions = await _accountingPolicies.ListAsync(tenantId, companyId, ct);
+        var current = versions.FirstOrDefault(v => v.Covers(today));
+        return current?.Mode == AccountingOperationalMode.Enabled
+            && versions
+                .Where(v => v.EffectiveFrom > today)
+                .All(v => v.Mode == AccountingOperationalMode.Enabled);
     }
 }

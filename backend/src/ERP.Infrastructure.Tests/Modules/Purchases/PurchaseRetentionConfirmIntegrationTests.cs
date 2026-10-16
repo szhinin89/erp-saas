@@ -2,6 +2,7 @@ using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Payables.UseCases;
@@ -105,6 +106,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _userId)
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
@@ -317,14 +321,26 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             () => _companyId,
             _userId
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(PurchaseInvoiceConfirmedPostingTranslator).Assembly
             )
         );
-        deferred.Inner = services.BuildServiceProvider().GetRequiredService<IPublisher>();
+        var provider = services.BuildServiceProvider();
+        deferred.Inner = provider.GetRequiredService<IPublisher>();
+        _wiredProviders.AddOrUpdate(db, provider);
         return db;
     }
+
+    // ACCOUNTING-CONTINUITY-01: cada contexto cableado tiene su contenedor; el dispatcher del
+    // handler debe ser el mismo cuya cola llenan los traductores publicados por ese contexto.
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ErpDbContext, IServiceProvider> _wiredProviders = new();
+
+    private IAccountingPostingDispatcher AccountingDispatcher(ErpDbContext db) =>
+        _wiredProviders.TryGetValue(db, out var provider)
+            ? provider.GetRequiredService<IAccountingPostingDispatcher>()
+            : Mock.Of<IAccountingPostingDispatcher>();
 
     private RetentionEligibilityService Eligibility(ErpDbContext db) =>
         new(
@@ -358,14 +374,6 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         xmlGuard
             .Setup(g => g.ValidateAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string?)null);
-        var postingEngine = new PostingEngine(
-            new JournalEntryRepository(db),
-            new PostingRuleRepository(db),
-            new AccountingPeriodRepository(db),
-            new JournalEntrySequenceRepository(db),
-            new AccountRepository(db),
-            NullLogger<PostingEngine>.Instance
-        );
         return new ConfirmPurchaseHandler(
             new PurchaseInvoiceRepository(db, company),
             new StockRepository(
@@ -378,7 +386,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             new WarehouseRepository(db, company),
             new PaymentTermRepository(db),
             tax.Object,
-            postingEngine,
+            AccountingDispatcher(db),
             pricing.Object,
             new AccountsPayableService(new AccountsPayableRepository(db)),
             NullLogger<ConfirmPurchaseHandler>.Instance,
@@ -762,10 +770,13 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         ShouldBeUntouchedDraft(await ReadAsync(invoiceId));
     }
 
-    // ── 5. Fallo del asiento de la retención: rollback completo ───────────
+    // ── 5. ACCOUNTING-CONTINUITY-01: obligaciones independientes ─────────
+    // Un fallo contable de la retención ya no revierte nada: compra, inventario, CxP neta y
+    // retención quedan confirmados; la obligación de la compra queda Posted con su asiento y la de
+    // la retención Failed (sin asiento), cada una con su intento inicial registrado.
 
     [Fact]
-    public async Task Fallo_del_asiento_de_la_retencion_revierte_compra_inventario_CxP_retencion_y_asiento_de_compra()
+    public async Task Fallo_contable_de_la_retencion_no_revierte_la_compra_y_deja_obligaciones_independientes()
     {
         await using (var db = CreateContext())
         {
@@ -781,9 +792,29 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
 
         var result = await ConfirmAsync(invoiceId, VatIntent());
 
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("RULE_NOT_FOUND", "falló el asiento de la retención, no otro paso");
-        ShouldBeUntouchedDraft(await ReadAsync(invoiceId));
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Confirmed);
+        var retention = s.Retentions.Should().ContainSingle().Which;
+        retention.Status.Should().Be(RetentionStatus.Issued);
+        s.Payables.Should().ContainSingle().Which.RetainedAmount.Should().Be(4.5m);
+        s.StockMovements.Should().Be(1);
+        s.PurchaseEntries.Should().Be(1);
+        s.RetentionEntries.Should().Be(0);
+
+        await using var verify = CreateContext();
+        var postings = await verify.AccountingPostings.AsNoTracking().ToListAsync();
+        var purchasePosting = postings.Single(p => p.SourceModule == "Purchases" && p.SourceEventId == invoiceId);
+        purchasePosting.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted);
+        purchasePosting.JournalEntryId.Should().NotBeNull();
+        var retentionPosting = postings.Single(p => p.SourceModule == "Retentions" && p.SourceEventId == retention.Id);
+        retentionPosting.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+        retentionPosting.JournalEntryId.Should().BeNull();
+        retentionPosting.ErrorCode.Should().Be("RULE_NOT_FOUND");
+        retentionPosting.Attempts.Should().Be(1);
+        var attempts = await verify.AccountingPostingAttempts.AsNoTracking().ToListAsync();
+        attempts.Should().HaveCount(2);
+        attempts.Should().OnlyContain(a => a.Trigger == ERP.Domain.Modules.Accounting.Enums.AccountingPostingAttemptTrigger.Initial);
     }
 
     // ── 6/7. Concurrencia, reintento y 1:1 ────────────────────────────────
@@ -920,6 +951,68 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             .SingleAsync(e => e.Id == retentionEntry.ReverseJournalEntryId);
         reverse.Lines.Sum(l => l.Debit).Should().Be(4.5m);
         reverse.Lines.Sum(l => l.Credit).Should().Be(4.5m);
+    }
+
+    // ── ACCOUNTING-CONTINUITY-01: anulación con obligaciones no publicadas / reverso fallido ──
+
+    [Fact]
+    public async Task Anular_compra_con_obligacion_Failed_la_cancela_sin_reverso_y_reversa_la_retencion_publicada()
+    {
+        await using (var db = CreateContext())
+        {
+            var rule = await db.PostingRules.SingleAsync(r =>
+                r.CompanyId == _companyId && r.SourceModule == "Purchases" && r.FactType == "InvoiceReceived"
+            );
+            rule.Disable(_userId);
+            await db.SaveChangesAsync();
+        }
+        var invoiceId = await SeedDraftPurchaseAsync();
+        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+
+        var cancel = await CancelPurchaseAsync(invoiceId);
+
+        cancel.IsSuccess.Should().BeTrue(cancel.Error);
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Cancelled);
+        var retention = s.Retentions.Should().ContainSingle().Which;
+        retention.Status.Should().Be(RetentionStatus.Cancelled);
+        await using var verify = CreateContext();
+        var purchasePosting = await verify.AccountingPostings.SingleAsync(p => p.SourceEventId == invoiceId);
+        purchasePosting.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Canceled);
+        (await verify.JournalEntries.AnyAsync(e => e.SourceModule == "Purchases" && e.SourceEventId == invoiceId))
+            .Should().BeFalse("no se fabrica un reverso de un asiento inexistente");
+        var retentionEntry = await verify.JournalEntries.SingleAsync(e =>
+            e.SourceModule == "Retentions" && e.SourceEventType == "DocumentIssued" && e.SourceEventId == retention.Id
+        );
+        retentionEntry.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
+        (await verify.AccountingPostings.SingleAsync(p => p.SourceEventId == retention.Id))
+            .Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted);
+    }
+
+    [Fact]
+    public async Task Reverso_fallido_de_un_asiento_Posted_bloquea_la_anulacion_completa()
+    {
+        var invoiceId = await SeedDraftPurchaseAsync();
+        (await ConfirmAsync(invoiceId, VatIntent())).IsSuccess.Should().BeTrue();
+        await using (var db = CreateContext())
+        {
+            var period = await db.AccountingPeriods.SingleAsync(p =>
+                p.CompanyId == _companyId && p.StartDate <= IssueDate && p.EndDate >= IssueDate
+            );
+            period.Close(_userId, new ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness(false, false, false));
+            await db.SaveChangesAsync();
+        }
+
+        var cancel = await CancelPurchaseAsync(invoiceId);
+
+        cancel.IsSuccess.Should().BeFalse("el período del asiento está cerrado: el reverso falla");
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Confirmed);
+        s.Retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Issued);
+        s.Payables.Should().ContainSingle().Which.Status.Should().NotBe(AccountsPayableStatus.Cancelled);
+        await using var verify = CreateContext();
+        (await verify.JournalEntries.CountAsync(e => e.SourceModule == "Accounting" && e.SourceEventType == "Reversal"))
+            .Should().Be(0);
     }
 
     // ── ZH-RETENTION-CANCELLATION-LIFECYCLE-01: la retención solo se anula con su origen ──

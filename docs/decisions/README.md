@@ -48,6 +48,7 @@
 | [ADR-042](./ADR-042-sri-seed-boolean-flags-persistence.md) | Flags booleanos de catálogos SRI con seed persisten el valor declarado (`HasDefaultValue(true).ValueGeneratedNever()`); IVA 2 y 3 históricos inactivos; sin cambio de esquema, tarifas ni vigencias | Accepted |
 | [ADR-043](./ADR-043-background-processing-ssot.md) | Background Processing SSOT: seven jobs, typed options, PostgreSQL locks, explicit batches/queues/workers and durable fairness | Accepted |
 | [ADR-044](./ADR-044-purchase-cancellation-and-global-sri-policy.md) | Anulación de compra: bloqueo permanente tras salida efectiva; política global SRI versionada | Accepted |
+| [ADR-045](./ADR-045-accounting-operational-continuity.md) | Consolidación arquitectónica de Accounting | Accepted |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

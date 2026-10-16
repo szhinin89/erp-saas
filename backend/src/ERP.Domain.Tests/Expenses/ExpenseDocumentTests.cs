@@ -107,7 +107,7 @@ public sealed class ExpenseDocumentTests
         var newAccountId = Guid.NewGuid();
 
         document.Confirm(
-            new Dictionary<Guid, (Guid, string?, string?)>
+            new Dictionary<Guid, (Guid?, string?, string?)>
             {
                 [line.Id] = (newAccountId, "6.1.02", "Gasto reasignado"),
             },
@@ -123,7 +123,7 @@ public sealed class ExpenseDocumentTests
     }
 
     [Fact]
-    public void Confirm_levanta_ExpenseDocumentConfirmedEvent_con_una_allocation_por_linea()
+    public void Confirm_levanta_ExpenseDocumentConfirmedEvent_con_una_allocation_por_linea_por_subcategoria()
     {
         var document = CreateDraftDocument();
         var lineA = ExpenseLine.Create(
@@ -138,10 +138,11 @@ public sealed class ExpenseDocumentTests
             vatRate: 15m
         );
         var accountB = Guid.NewGuid();
+        var subcategoryB = Guid.NewGuid();
         var lineB = ExpenseLine.Create(
             document.Id,
             TenantId,
-            Guid.NewGuid(),
+            subcategoryB,
             accountB,
             "Suministros",
             1m,
@@ -151,7 +152,7 @@ public sealed class ExpenseDocumentTests
         document.ReplaceLines([lineA, lineB], UserId);
 
         document.Confirm(
-            new Dictionary<Guid, (Guid, string?, string?)>
+            new Dictionary<Guid, (Guid?, string?, string?)>
             {
                 [lineA.Id] = (ExpenseAccountId, "6.1.01", "Internet"),
                 [lineB.Id] = (accountB, "6.1.02", "Suministros"),
@@ -163,12 +164,44 @@ public sealed class ExpenseDocumentTests
         raised.LineAllocations.Should().HaveCount(2);
         raised
             .LineAllocations.Should()
-            .Contain(a => a.AccountingAccountId == ExpenseAccountId && a.Amount == 100m);
+            .Contain(a => a.ExpenseSubcategoryId == ExpenseSubcategoryId && a.Amount == 100m);
         raised
             .LineAllocations.Should()
-            .Contain(a => a.AccountingAccountId == accountB && a.Amount == 50m);
+            .Contain(a => a.ExpenseSubcategoryId == subcategoryB && a.Amount == 50m);
         raised.TotalVat.Should().Be(15m);
         raised.GrandTotal.Should().Be(165m);
+    }
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — la cuenta contable de la línea es solo snapshot informativo: una
+    /// línea sin cuenta (subcategoría sin cuenta configurada) confirma igual y el evento transporta
+    /// la subcategoría, no una cuenta.
+    /// </summary>
+    [Fact]
+    public void Confirm_sin_cuenta_contable_en_la_linea_confirma_y_deja_snapshot_null()
+    {
+        var document = CreateDraftDocument();
+        var line = ExpenseLine.Create(
+            document.Id,
+            TenantId,
+            ExpenseSubcategoryId,
+            null,
+            "Servicio sin cuenta",
+            1m,
+            100m,
+            "0"
+        );
+        document.ReplaceLines([line], UserId);
+
+        document.Confirm(new Dictionary<Guid, (Guid?, string?, string?)>(), UserId);
+
+        document.Status.Should().Be(ExpenseStatus.Confirmed);
+        document.Lines.Single().SnapshotAccountingAccountId.Should().BeNull();
+        document
+            .DomainEvents.OfType<ExpenseDocumentConfirmedEvent>()
+            .Single()
+            .LineAllocations.Should()
+            .ContainSingle(a => a.ExpenseSubcategoryId == ExpenseSubcategoryId && a.Amount == 100m);
     }
 
     [Fact]
@@ -187,7 +220,7 @@ public sealed class ExpenseDocumentTests
         );
         document.ReplaceLines([line], UserId);
         document.Confirm(
-            new Dictionary<Guid, (Guid, string?, string?)>
+            new Dictionary<Guid, (Guid?, string?, string?)>
             {
                 [line.Id] = (ExpenseAccountId, null, null),
             },
@@ -196,7 +229,7 @@ public sealed class ExpenseDocumentTests
 
         var act = () =>
             document.Confirm(
-                new Dictionary<Guid, (Guid, string?, string?)>
+                new Dictionary<Guid, (Guid?, string?, string?)>
                 {
                     [line.Id] = (ExpenseAccountId, null, null),
                 },
@@ -211,7 +244,7 @@ public sealed class ExpenseDocumentTests
     {
         var document = CreateDraftDocument();
 
-        var act = () => document.Confirm(new Dictionary<Guid, (Guid, string?, string?)>(), UserId);
+        var act = () => document.Confirm(new Dictionary<Guid, (Guid?, string?, string?)>(), UserId);
 
         act.Should().Throw<DomainRuleViolationException>().WithMessage("*al menos una línea*");
     }
@@ -295,7 +328,7 @@ public sealed class ExpenseDocumentTests
         );
         document.ReplaceLines([line], UserId);
         document.Confirm(
-            new Dictionary<Guid, (Guid, string?, string?)>
+            new Dictionary<Guid, (Guid?, string?, string?)>
             {
                 [line.Id] = (ExpenseAccountId, "6.1.01", "Internet"),
             },

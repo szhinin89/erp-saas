@@ -338,6 +338,13 @@ public class ErpDbContext : DbContext
     public DbSet<PostingRule> PostingRules => Set<PostingRule>();
     public DbSet<PostingRuleLine> PostingRuleLines => Set<PostingRuleLine>();
 
+    // ACCOUNTING-CONTINUITY-01 — política operativa por Company y obligación contable durable.
+    public DbSet<AccountingOperationalPolicy> AccountingOperationalPolicies =>
+        Set<AccountingOperationalPolicy>();
+    public DbSet<AccountingPosting> AccountingPostings => Set<AccountingPosting>();
+    public DbSet<AccountingPostingAttempt> AccountingPostingAttempts =>
+        Set<AccountingPostingAttempt>();
+
     // ── ElectronicDocuments BC (núcleo — sin SOAP/SRI, ver Fases 1-7) ──────
     public DbSet<ElectronicDocument> ElectronicDocuments => Set<ElectronicDocument>();
     public DbSet<ElectronicDocumentAudit> ElectronicDocumentAudits =>

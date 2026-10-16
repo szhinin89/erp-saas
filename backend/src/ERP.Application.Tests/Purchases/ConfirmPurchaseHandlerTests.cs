@@ -27,6 +27,8 @@ namespace ERP.Application.Tests.Purchases;
 
 public sealed class ConfirmPurchaseHandlerTests
 {
+    private Mock<ERP.Application.Modules.Accounting.Continuity.IAccountingPostingDispatcher> AccountingPostings { get; } = new();
+
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid BranchId = Guid.NewGuid();
@@ -107,25 +109,33 @@ public sealed class ConfirmPurchaseHandlerTests
         payables.Invocations.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — la contabilización ya no ocurre dentro de la transacción de la
+    /// compra: el handler comitea compra/Kardex/CxP y recién después ejecuta el intento inicial de
+    /// las obligaciones contables creadas. Un error contable no puede revertir la compra.
+    /// </summary>
     [Fact]
-    public async Task Posting_failure_returns_validation_failure_instead_of_success()
+    public async Task Confirm_ejecuta_el_intento_contable_despues_del_commit_de_la_compra()
     {
         var inv = CreateDraftInvoice();
         var (handler, _, stock, _) = BuildHandler(inv);
+        var order = new List<string>();
         stock
             .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new ERP.Application.Modules.Purchases.Exceptions.PurchasePostingFailedException(
-                    "Posting failed",
-                    "RULE_NOT_FOUND"
-                )
-            );
+            .Callback(() => order.Add("commit"))
+            .ReturnsAsync(1);
+        AccountingPostings
+            .Setup(d => d.DispatchPendingAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => order.Add("attempt"))
+            .Returns(Task.CompletedTask);
+
         var result = await handler.Handle(
             new ConfirmPurchaseCommand(inv.Id),
             CancellationToken.None
         );
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("RULE_NOT_FOUND");
+
+        result.IsSuccess.Should().BeTrue($"Error: {result.Error}");
+        order.Should().Equal("commit", "attempt");
     }
 
     private static PurchaseInvoice CreateDraftInvoice(int lineCount = 1, bool sameItem = false)
@@ -324,7 +334,6 @@ public sealed class ConfirmPurchaseHandlerTests
         Mock<IAccountsPayableService> payables
     ) BuildHandler(
         PurchaseInvoice inv,
-        bool irbpnrConfigured = false,
         Item? itemForXmlLines = null,
         Item? itemForMarginGuard = null,
         decimal? marginGuardSalePrice = null,
@@ -517,20 +526,6 @@ public sealed class ConfirmPurchaseHandlerTests
         tax.Setup(t => t.GetVatRateWithNameAsync("10", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ERP.Application.Common.Services.TaxRateResult(15m, "IVA 15%"));
 
-        var postingEngine = new Mock<IPostingEngine>();
-        postingEngine
-            .Setup(p =>
-                p.IsAmountKindConfiguredAsync(
-                    TenantId,
-                    CompanyId,
-                    "Purchases",
-                    "InvoiceReceived",
-                    PostingAmountKind.TaxIrbpnr,
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(irbpnrConfigured);
-
         var logger = new Mock<ILogger<ConfirmPurchaseHandler>>();
 
         var tenant = new Mock<ICurrentTenant>();
@@ -594,7 +589,7 @@ public sealed class ConfirmPurchaseHandlerTests
             whRepo.Object,
             ActivePaymentTermRepoMock().Object,
             tax.Object,
-            postingEngine.Object,
+            AccountingPostings.Object,
             pricingResolver.Object,
             payables.Object,
             logger.Object,
@@ -1126,58 +1121,15 @@ public sealed class ConfirmPurchaseHandlerTests
         ]);
 
     [Fact]
-    public async Task Confirm_blocks_a_purchase_with_IRBPNR_when_no_PostingRuleLine_is_configured()
+    public async Task Confirm_con_IRBPNR_no_exige_configuracion_contable_previa()
     {
-        // FLOW-READY-02F.2 — el bloqueo ya no es incondicional (02F.1): ahora depende de si existe
-        // una PostingRuleLine para TaxIrbpnr (aquí el mock de IPostingEngine responde "no
-        // configurado", vía irbpnrConfigured: false por defecto en BuildHandler).
-        var inv = CreateDraftInvoice(1);
-        AttachIrbpnr(inv.Lines[0], 0.48m);
-        var (handler, _, stockRepo, _) = BuildHandler(inv);
-
-        var result = await handler.Handle(
-            new ConfirmPurchaseCommand(inv.Id),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("IRBPNR");
-        result.Error.Should().Contain("PostingRuleLine");
-        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
-        stockRepo.Verify(
-            s =>
-                s.AppendMovementAsync(
-                    It.IsAny<Guid>(),
-                    It.IsAny<Guid>(),
-                    It.IsAny<Guid>(),
-                    It.IsAny<Guid>(),
-                    It.IsAny<StockMovementType>(),
-                    It.IsAny<decimal>(),
-                    It.IsAny<string>(),
-                    It.IsAny<DateOnly>(),
-                    It.IsAny<string?>(),
-                    It.IsAny<Guid?>(),
-                    It.IsAny<string?>(),
-                    It.IsAny<Guid>(),
-                    It.IsAny<decimal?>(),
-                    It.IsAny<Guid?>(),
-                    It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
-                ),
-            Times.Never
-        );
-    }
-
-    [Fact]
-    public async Task Confirm_succeeds_with_IRBPNR_when_PostingRuleLine_is_configured()
-    {
-        // FLOW-READY-02F.2 — con la configuración contable presente (mock devuelve true), la
-        // compra confirma y GrandTotal/PurchasePayable incluyen el monto IRBPNR.
+        // ACCOUNTING-CONTINUITY-01 — se retira la prevalidación contable IRBPNR (FLOW-READY-02F.2):
+        // la compra confirma y GrandTotal/PurchasePayable incluyen el monto IRBPNR; una
+        // PostingRuleLine faltante deja Failed la obligación contable, nunca bloquea la compra.
         var inv = CreateDraftInvoice(1);
         var line = inv.Lines[0];
         AttachIrbpnr(line, 0.48m);
-        var (handler, _, _, payables) = BuildHandler(inv, irbpnrConfigured: true);
+        var (handler, _, _, payables) = BuildHandler(inv);
 
         var expectedGrandTotal = ExpectedGrandTotal(inv) + 0.48m;
         var schedule = new List<ConfirmScheduleInput>
@@ -1205,22 +1157,6 @@ public sealed class ConfirmPurchaseHandlerTests
                 ),
             Times.Once
         );
-    }
-
-    [Fact]
-    public async Task Confirm_without_IRBPNR_is_unaffected_by_the_guard()
-    {
-        // Regresión — el guard nuevo no debe afectar compras sin IRBPNR (mayoría de los casos).
-        var inv = CreateDraftInvoice(1);
-        var (handler, _, _, _) = BuildHandler(inv);
-
-        var result = await handler.Handle(
-            new ConfirmPurchaseCommand(inv.Id),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
     }
 
     [Fact]
@@ -1257,7 +1193,7 @@ public sealed class ConfirmPurchaseHandlerTests
             Mock.Of<IWarehouseRepository>(),
             ptRepo.Object,
             Mock.Of<ISriTaxResolver>(),
-            Mock.Of<IPostingEngine>(),
+            Mock.Of<ERP.Application.Modules.Accounting.Continuity.IAccountingPostingDispatcher>(),
             Mock.Of<IPricingResolver>(),
             Mock.Of<IAccountsPayableService>(),
             Mock.Of<ILogger<ConfirmPurchaseHandler>>(),
@@ -1318,7 +1254,7 @@ public sealed class ConfirmPurchaseHandlerTests
             new Mock<IWarehouseRepository>().Object,
             ActivePaymentTermRepoMock().Object,
             new Mock<ISriTaxResolver>().Object,
-            new Mock<IPostingEngine>().Object,
+            Mock.Of<ERP.Application.Modules.Accounting.Continuity.IAccountingPostingDispatcher>(),
             new Mock<IPricingResolver>().Object,
             new Mock<IAccountsPayableService>().Object,
             new Mock<ILogger<ConfirmPurchaseHandler>>().Object,
@@ -2144,45 +2080,6 @@ public sealed class ConfirmPurchaseHandlerTests
             s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
-    }
-
-    [Fact]
-    public async Task Fallo_del_asiento_de_la_retencion_devuelve_su_codigo_tras_el_rollback_completo()
-    {
-        var inv = CreateDraftInvoice();
-        var issuer = new Mock<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>();
-        issuer
-            .Setup(i =>
-                i.IssueAsync(
-                    It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionSourceDocumentData>(),
-                    It.IsAny<ERP.Application.Modules.Retentions.Services.RetentionIssueRequest>(),
-                    It.IsAny<CancellationToken>()
-                )
-            )
-            .ReturnsAsync(() =>
-                Result<ERP.Domain.Modules.Retentions.Entities.RetentionDocument>.Success(
-                    IssuedRetention(inv)
-                )
-            );
-        var (handler, _, stock, payables) = BuildHandler(inv, retentionIssuer: issuer.Object);
-        StagePayableReturning(payables, inv, 115m);
-        stock
-            .Setup(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new ERP.Application.Modules.Retentions.Exceptions.RetentionPostingFailedException(
-                    "Sin regla de retención",
-                    "RULE_NOT_FOUND"
-                )
-            );
-
-        var result = await handler.Handle(
-            new ConfirmPurchaseCommand(inv.Id, null, RetentionIntentFor()),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("RULE_NOT_FOUND");
-        result.Error.Should().Be("Sin regla de retención");
     }
 
     [Fact]

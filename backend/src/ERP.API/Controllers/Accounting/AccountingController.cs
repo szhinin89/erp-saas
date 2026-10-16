@@ -2,6 +2,7 @@ using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 using ERP.Application.Modules.Accounting.UseCases.Accounts;
+using ERP.Application.Modules.Accounting.UseCases.Continuity;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 using ERP.Application.Modules.Accounting.UseCases.PostingRules;
 using ERP.Domain.Kernel.Permissions;
@@ -209,4 +210,46 @@ public sealed class AccountingController : ControllerBase
             ),
             "OK"
         );
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CONTINUIDAD CONTABLE (ACCOUNTING-CONTINUITY-01)
+    // ══════════════════════════════════════════════════════════════════════
+
+    [HttpGet("operational-policy")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
+    public async Task<IActionResult> GetOperationalPolicy(CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetAccountingOperationalPolicyQuery(), ct));
+
+    [HttpPut("operational-policy")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.SettingsUpdate}")]
+    public async Task<IActionResult> SetOperationalMode(
+        [FromBody] SetAccountingOperationalModeCommand command,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct));
+
+    [HttpGet("postings")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PostingsView}")]
+    public async Task<IActionResult> GetPostings(
+        [FromQuery] AccountingPostingStatus? status,
+        [FromQuery] string? sourceModule,
+        [FromQuery] Guid? sourceEventId,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new GetAccountingPostingsQuery(status, sourceModule, sourceEventId),
+                ct
+            ),
+            "OK"
+        );
+
+    [HttpGet("postings/{id:guid}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PostingsView}")]
+    public async Task<IActionResult> GetPostingById(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetAccountingPostingByIdQuery(id), ct));
+
+    [HttpPost("postings/{id:guid}/reprocess")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PostingsReprocess}")]
+    public async Task<IActionResult> ReprocessPosting(Guid id, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new ReprocessAccountingPostingCommand(id), ct));
 }

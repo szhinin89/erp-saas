@@ -31,7 +31,7 @@ Casillas sin marcar a propósito: corresponden a la **próxima regresión**, no 
 - [ ] NC por devolución y descuento: comprobar impuestos históricos, efecto de inventario según tipo, CxP, asiento y anulación sin duplicación.
 - [ ] Gasto manual/XML: comprobar IVA desde `sri-vat-rates`, tipo documental desde `sri-doc-types`, totales XML y generación de CxP.
 - [ ] Por cada origen (compra/gasto), pagar parcialmente y totalmente; bloquear anulación con pagos activos; reversar todos los pagos y anular, respetando otras restricciones documentales.
-- [ ] Comprobar asientos balanceados y rollback si falla posting; verificar que reportes netean original `Reversed` y reverso sin perder movimientos.
+- [ ] Validar [Accounting](../architecture/accounting.md).
 - [ ] Cambiar de empresa: impedir consulta/aplicación/reversa de CxP y pagos ajenos.
 - [ ] Verificar origen y líneas contables legibles; cuentas resueltas por reglas/configuración.
 - [ ] Ejecutar E2E/integración del flujo afectado, registrar comando, fecha y resultado. No declarar aprobado por inspección de código solamente.

@@ -15,7 +15,6 @@ export type CancellationMode =
   | "AllowedBeforeConfirmation"
   | "AllowedAfterConfirmationWithReversal";
 export type PayableGenerationMode = "None" | "OnConfirmation" | "OnAuthorization";
-export type AccountingPostingMode = "None" | "OnConfirmation" | "OnAuthorization";
 export type InventoryImpactMode = "None" | "OnConfirmation" | "OnAuthorization";
 export type NotificationMode =
   | "None"
@@ -38,7 +37,6 @@ export type DocumentFlowPolicyDto = {
   requiresSupplier: boolean;
   requiresDueDate: boolean;
   payableGenerationMode: PayableGenerationMode;
-  accountingPostingMode: AccountingPostingMode;
   inventoryImpactMode: InventoryImpactMode;
   notificationMode: NotificationMode;
 };

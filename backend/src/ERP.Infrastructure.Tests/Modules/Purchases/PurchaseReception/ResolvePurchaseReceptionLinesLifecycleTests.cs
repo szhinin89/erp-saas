@@ -1,7 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.MasterData.Services;
-using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Pricing.DTOs;
@@ -42,8 +41,8 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
     private PaymentTerm _paymentTerm = null!;
 
     // Real XML/draft/confirmation handlers and PostgreSQL repositories, including Stock and AP.
-    // Accounting posting, operational preferences and price-list selection are fixture boundaries;
-    // this is a backend integration test, not a browser or accounting end-to-end test.
+    // Accounting runs for real (durable obligation + engine); operational preferences and
+    // price-list selection are fixture boundaries. Not a browser or accounting end-to-end test.
     private void ConfigurePurchaseServices(IServiceCollection services)
     {
         services.AddSingleton<ICompanyPrecisionPolicyProvider>(
@@ -77,16 +76,10 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
                 ) == Task.FromResult(Result<PaymentTerm>.Success(_paymentTerm))
             )
         );
-        services.AddScoped(_ =>
-            Mock.Of<IPostingEngine>(p =>
-                p.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>())
-                == Task.FromResult(
-                    Result<PostingOutcomeDto>.Success(
-                        new(Guid.NewGuid(), PostingOutcomeStatus.Created)
-                    )
-                )
-            )
-        );
+        // ACCOUNTING-CONTINUITY-01: motor contable y obligación durable reales sobre PostgreSQL.
+        // Sin PostingRule sembrada, la confirmación deja la obligación Failed sin afectar la compra.
+        services.AddAccountingEngine();
+        services.AddAccountingContinuity();
         services.AddScoped<IPricingResolver>(sp =>
         {
             var pricing = new Mock<IPricingResolver>();

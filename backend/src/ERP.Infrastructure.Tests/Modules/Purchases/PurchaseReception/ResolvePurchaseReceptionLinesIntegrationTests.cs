@@ -243,6 +243,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            ERP.Infrastructure.Tests.TestData.AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _userId)
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;

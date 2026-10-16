@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Application.Modules.Expenses.UseCases.Documents;
@@ -42,6 +43,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Testcontainers.PostgreSql;
 
 namespace ERP.Infrastructure.Tests.Expenses;
@@ -375,16 +377,26 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             requiresSupplier: true,
             requiresDueDate: true,
             payableGenerationMode: PayableGenerationMode.OnConfirmation,
-            accountingPostingMode: AccountingPostingMode.OnConfirmation,
             inventoryImpactMode: InventoryImpactMode.None,
             notificationMode: NotificationMode.None,
             createdBy: _createdBy
         );
         db.DocumentFlowPolicies.Add(policy);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         await db.SaveChangesAsync();
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
+
+    // ACCOUNTING-CONTINUITY-01: contenedor del último BuildWiredContext — su dispatcher comparte
+    // la cola de obligaciones con los traductores publicados por ese mismo contexto.
+    private IServiceProvider? _wiredProvider;
+
+    private IAccountingPostingDispatcher AccountingDispatcher() =>
+        _wiredProvider?.GetRequiredService<IAccountingPostingDispatcher>()
+        ?? Mock.Of<IAccountingPostingDispatcher>();
 
     private ErpDbContext CreateContext(IPublisher? publisher = null)
     {
@@ -450,6 +462,7 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
                 _createdBy
             )
         );
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly
@@ -458,6 +471,7 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
+        _wiredProvider = provider;
 
         return (db, deferred);
     }
@@ -556,6 +570,7 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
                 new DocumentSequenceRepository(db)
             ),
             transmission ?? RetentionElectronicTestWiring.NoOpTransmission(),
+            AccountingDispatcher(),
             new PaymentTermRepository(db),
             new FixedCurrentTenant(_tenantId),
             new FixedCurrentCompany(_companyId),
@@ -1249,6 +1264,85 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         (await verifyDb2.ExpenseDocuments.FirstAsync(x => x.Id == expenseId))
             .Status.Should()
             .Be(ExpenseStatus.Cancelled);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ACCOUNTING-CONTINUITY-01 — un fallo contable nunca revierte el gasto ni su retención
+    // ══════════════════════════════════════════════════════════════════════
+
+    // Se deshabilita en el MISMO contexto cableado que confirmará el gasto: ese contexto ya tiene
+    // la regla trackeada desde el seed y no vería un cambio hecho por otro DbContext.
+    private async Task DisablePostingRuleAsync(ErpDbContext db, string sourceModule, string factType)
+    {
+        var rule = await db.PostingRules.SingleAsync(r =>
+            r.CompanyId == _companyId && r.SourceModule == sourceModule && r.FactType == factType
+        );
+        rule.Disable(_createdBy);
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Gasto_sin_regla_contable_queda_confirmado_con_CxP_y_obligacion_Failed_sin_asiento()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedAccountingChartAsync(db);
+        await DisablePostingRuleAsync(db, "Expenses", "DocumentConfirmed");
+        var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "CONT-001");
+
+        var result = await BuildConfirmHandler(db)
+            .Handle(new ConfirmExpenseDocumentCommand(expenseId, Retention: null), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        await using var verifyDb = CreateContext();
+        (await verifyDb.ExpenseDocuments.FirstAsync(x => x.Id == expenseId))
+            .Status.Should().Be(ExpenseStatus.Confirmed);
+        (await verifyDb.AccountsPayables.Include(x => x.Installments).FirstAsync(x => x.OriginId == expenseId))
+            .OutstandingAmount.Should().Be(115m);
+        (await verifyDb.JournalEntries.AnyAsync(x => x.SourceEventId == expenseId)).Should().BeFalse();
+        var obligation = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == expenseId);
+        obligation.Status.Should().Be(AccountingPostingStatus.Failed);
+        obligation.ErrorCode.Should().Be("RULE_NOT_FOUND");
+        obligation.Attempts.Should().Be(1);
+
+        // Anular el gasto con su obligación Failed (sin asiento) la cancela; no fabrica reversos.
+        var (dbCancel, _) = BuildWiredContext();
+        var cancel = await BuildCancelHandler(dbCancel)
+            .Handle(new CancelExpenseDocumentCommand(expenseId, "CONT anulación"), CancellationToken.None);
+        cancel.IsSuccess.Should().BeTrue(because: cancel.Error);
+        await using var verifyCancel = CreateContext();
+        (await verifyCancel.AccountingPostings.SingleAsync(x => x.SourceEventId == expenseId))
+            .Status.Should().Be(AccountingPostingStatus.Canceled);
+        (await verifyCancel.JournalEntries.AnyAsync(x => x.SourceEventId == expenseId)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Gasto_con_retencion_genera_obligaciones_independientes_y_el_fallo_de_una_no_afecta_a_la_otra()
+    {
+        var (db, _) = BuildWiredContext();
+        await SeedAccountingChartAsync(db);
+        await DisablePostingRuleAsync(db, "Retentions", "DocumentIssued");
+        var expenseId = await CreateDraftExpenseAsync(db, _supplierNonExemptId, "CONT-002");
+
+        var result = await BuildConfirmHandler(db)
+            .Handle(
+                new ConfirmExpenseDocumentCommand(expenseId, BuildVatRetentionIntent(15m)),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue(because: result.Error);
+        await using var verifyDb = CreateContext();
+        var retention = await verifyDb.RetentionDocuments.SingleAsync(x => x.SourceDocumentId == expenseId);
+        retention.Status.Should().Be(RetentionStatus.Issued);
+        (await verifyDb.AccountsPayables.Include(x => x.Installments).FirstAsync(x => x.OriginId == expenseId))
+            .RetainedAmount.Should().Be(10.5m);
+        var expensePosting = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == expenseId);
+        expensePosting.Status.Should().Be(AccountingPostingStatus.Posted);
+        expensePosting.JournalEntryId.Should().NotBeNull();
+        var retentionPosting = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == retention.Id);
+        retentionPosting.SourceModule.Should().Be("Retentions");
+        retentionPosting.Status.Should().Be(AccountingPostingStatus.Failed);
+        retentionPosting.JournalEntryId.Should().BeNull();
+        (await verifyDb.JournalEntries.AnyAsync(x => x.SourceEventId == retention.Id)).Should().BeFalse();
     }
 
     // ══════════════════════════════════════════════════════════════════════

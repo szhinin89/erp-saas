@@ -269,6 +269,9 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         line.ApplyTaxes("2", 15m, "IVA", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _createdBy);
         inv.Confirm(_createdBy);
+        // Fixture: compra ya confirmada. Su contabilización (obligación durable InvoiceReceived,
+        // ACCOUNTING-CONTINUITY-01) está cubierta por PurchaseInvoiceConfirmedPostingIntegrationTests.
+        inv.ClearDomainEvents();
 
         var payable = AccountsPayable.CreateFromOrigin(
             _tenantId,

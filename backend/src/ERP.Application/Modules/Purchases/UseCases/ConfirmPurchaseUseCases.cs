@@ -1,17 +1,14 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Modules.Pricing.Services;
 using ERP.Application.Modules.Purchases.DTOs;
-using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Application.Modules.Purchases.Services;
-using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -67,7 +64,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly IWarehouseRepository _whRepo;
     private readonly IPaymentTermRepository _ptRepo;
     private readonly ISriTaxResolver _tax;
-    private readonly IPostingEngine _postingEngine;
+    private readonly IAccountingPostingDispatcher _accountingPostings;
     private readonly IPricingResolver _pricingResolver;
     private readonly IAccountsPayableService _payables;
     private readonly ILogger<ConfirmPurchaseHandler> _logger;
@@ -88,7 +85,7 @@ public sealed class ConfirmPurchaseHandler
         IWarehouseRepository whRepo,
         IPaymentTermRepository ptRepo,
         ISriTaxResolver tax,
-        IPostingEngine postingEngine,
+        IAccountingPostingDispatcher accountingPostings,
         IPricingResolver pricingResolver,
         IAccountsPayableService payables,
         ILogger<ConfirmPurchaseHandler> logger,
@@ -113,7 +110,7 @@ public sealed class ConfirmPurchaseHandler
         _whRepo = whRepo;
         _ptRepo = ptRepo;
         _tax = tax;
-        _postingEngine = postingEngine;
+        _accountingPostings = accountingPostings;
         _pricingResolver = pricingResolver;
         _payables = payables;
         _logger = logger;
@@ -223,31 +220,6 @@ public sealed class ConfirmPurchaseHandler
                 return Result<PurchaseInvoiceDto>.ValidationFailure($"El producto '{line.Description}' requiere bodega.");
             if (!item.ParticipatesInInventory && line.WarehouseId.HasValue)
                 return Result<PurchaseInvoiceDto>.ValidationFailure($"El servicio '{line.Description}' no admite bodega.");
-        }
-
-        // ── STEP 0: Guard IRBPNR (FLOW-READY-02F.2) ──────────────────────
-        // COMPRAS-METODO-ZH-01A: un fallo de posting ahora lanza PurchasePostingFailedException y revierte
-        // toda la confirmación (ver PurchaseInvoiceConfirmedPostingTranslator); esta precondición se
-        // conserva para devolver un mensaje específico antes de inv.Confirm()/SaveChanges, en lugar
-        // del error genérico de asiento descuadrado. GrandTotal/PurchasePayable/el evento SÍ incluyen IRBPNR desde
-        // esta fase, así que confirmar sin una PostingRuleLine para TaxIrbpnr generaría un asiento
-        // descuadrado (línea de crédito GrandTotal sin su contrapartida de débito) — se bloquea.
-        if (inv.Lines.Any(l => l.IrbpnrAmount > 0))
-        {
-            var irbpnrConfigured = await _postingEngine.IsAmountKindConfiguredAsync(
-                tid,
-                cid,
-                "Purchases",
-                "InvoiceReceived",
-                PostingAmountKind.TaxIrbpnr,
-                ct
-            );
-            if (!irbpnrConfigured)
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    "Esta compra contiene IRBPNR (impuesto código 5), pero no existe una regla de "
-                        + "contabilización (PostingRuleLine) configurada para IRBPNR en Compras. "
-                        + "Configure la cuenta contable correspondiente antes de confirmar."
-                );
         }
 
         // ── STEP 1: Recalcular impuestos con nombres ────────────────────
@@ -547,20 +519,11 @@ public sealed class ConfirmPurchaseHandler
             inv.GrandTotal
         );
 
-        try
-        {
-            await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
-        }
-        catch (PurchasePostingFailedException ex)
-        {
-            // ErpDbContext has already rolled back Purchase, Stock, AP and Accounting.
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message, ex.Code);
-        }
-        catch (RetentionPostingFailedException ex)
-        {
-            // Mismo rollback completo: compra, inventario, CxP, retención y asientos.
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message, ex.Code);
-        }
+        // ACCOUNTING-CONTINUITY-01: compra, Kardex, CxP y retención se comitean junto con sus
+        // obligaciones contables durables (Pending). Un error contable ya no revierte la compra:
+        // el intento inicial ocurre después del commit y queda Posted o Failed.
+        await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
+        await _accountingPostings.DispatchPendingAsync(ct);
 
         _logger.LogInformation(
             "Purchase {InvoiceNumber} ({InvoiceId}) confirmed successfully",

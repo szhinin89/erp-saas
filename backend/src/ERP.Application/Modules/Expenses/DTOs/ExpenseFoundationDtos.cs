@@ -34,7 +34,7 @@ public sealed record ExpenseCategoryTreeNodeDto(
 public sealed record ExpenseLineDto(
     Guid Id,
     Guid ExpenseSubcategoryId,
-    Guid SnapshotAccountingAccountId,
+    Guid? SnapshotAccountingAccountId,
     string? SnapshotAccountingAccountCode,
     string? SnapshotAccountingAccountName,
     string Description,

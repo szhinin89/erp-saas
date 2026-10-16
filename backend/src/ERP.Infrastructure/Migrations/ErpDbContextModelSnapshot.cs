@@ -2806,6 +2806,74 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("accounts", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingOperationalPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<DateOnly?>("EffectiveTo")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_to");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("mode");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("uq_accounting_operational_policies_company_from");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_accounting_operational_policies_scope");
+
+                    b.ToTable("accounting_operational_policies", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPeriod", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2872,6 +2940,222 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_accounting_periods_company_year_period");
 
                     b.ToTable("accounting_periods", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPosting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("EntryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("entry_date");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("error_code");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("FactType")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("fact_type");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journal_entry_id");
+
+                    b.Property<DateTime?>("LastAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_attempt_at_utc");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<int>("PayloadVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("payload_version");
+
+                    b.Property<string>("SourceDocumentNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("source_document_number");
+
+                    b.Property<Guid>("SourceEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_event_id");
+
+                    b.Property<string>("SourceModule")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("source_module");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JournalEntryId");
+
+                    b.HasIndex("CompanyId", "SourceModule", "SourceEventId", "FactType")
+                        .IsUnique()
+                        .HasDatabaseName("uq_accounting_postings_company_source_event_fact");
+
+                    b.HasIndex("TenantId", "CompanyId", "Status", "EntryDate")
+                        .HasDatabaseName("ix_accounting_postings_scope_status_entry_date");
+
+                    b.ToTable("accounting_postings", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPostingAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountingPostingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_posting_id");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_number");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("error_code");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("error_message");
+
+                    b.Property<DateTime>("FinishedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at_utc");
+
+                    b.Property<Guid?>("JournalEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journal_entry_id");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("outcome");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Trigger")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("trigger");
+
+                    b.Property<Guid>("TriggeredBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("triggered_by");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingPostingId", "AttemptNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_accounting_posting_attempts_posting_number");
+
+                    b.HasIndex("TenantId", "CompanyId")
+                        .HasDatabaseName("ix_accounting_posting_attempts_scope");
+
+                    b.ToTable("accounting_posting_attempts", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.JournalEntry", b =>
@@ -4907,12 +5191,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("AccountingPostingMode")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("accounting_posting_mode");
-
                     b.Property<string>("AuthorizationMode")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -5684,7 +5962,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("snapshot_accounting_account_code");
 
-                    b.Property<Guid>("SnapshotAccountingAccountId")
+                    b.Property<Guid?>("SnapshotAccountingAccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("snapshot_accounting_account_id");
 
@@ -18541,6 +18819,23 @@ namespace ERP.Infrastructure.Migrations
                         .HasConstraintName("fk_srd_sri_retention_code");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPosting", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.JournalEntry", null)
+                        .WithMany()
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPostingAttempt", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.AccountingPosting", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingPostingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.JournalEntry", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Accounting.Entities.AccountingPeriod", null)
@@ -18894,8 +19189,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
                         .WithMany()
                         .HasForeignKey("SnapshotAccountingAccountId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpensePaymentSchedule", b =>

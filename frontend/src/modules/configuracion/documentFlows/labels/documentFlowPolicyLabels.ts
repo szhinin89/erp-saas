@@ -1,6 +1,5 @@
 import type { BadgeVariant } from "../../../../components/PageShell";
 import type {
-  AccountingPostingMode,
   AuthorizationMode,
   CancellationMode,
   ConfirmationMode,
@@ -167,30 +166,6 @@ export const PAYABLE_GENERATION_MODE_OPTIONS: ModeOption<PayableGenerationMode>[
   },
 ];
 
-export const ACCOUNTING_POSTING_MODE_OPTIONS: ModeOption<AccountingPostingMode>[] = [
-  {
-    value: "None",
-    label: "No genera asiento",
-    summary: "No genera asiento",
-    help: "Este documento nunca genera un asiento contable.",
-    badgeVariant: "neutral",
-  },
-  {
-    value: "OnConfirmation",
-    label: "Genera asiento al confirmar",
-    summary: "Asiento al confirmar",
-    help: "El asiento contable se genera en el momento de confirmar el documento.",
-    badgeVariant: "info",
-  },
-  {
-    value: "OnAuthorization",
-    label: "Genera asiento al autorizar",
-    summary: "Asiento al autorizar",
-    help: "El asiento contable se genera en el momento de autorizar el documento.",
-    badgeVariant: "info",
-  },
-];
-
 export const INVENTORY_IMPACT_MODE_OPTIONS: ModeOption<InventoryImpactMode>[] = [
   {
     value: "None",
@@ -262,8 +237,6 @@ export const cancellationModeOption = (value: CancellationMode) =>
   findOption(CANCELLATION_MODE_OPTIONS, value);
 export const payableGenerationModeOption = (value: PayableGenerationMode) =>
   findOption(PAYABLE_GENERATION_MODE_OPTIONS, value);
-export const accountingPostingModeOption = (value: AccountingPostingMode) =>
-  findOption(ACCOUNTING_POSTING_MODE_OPTIONS, value);
 export const inventoryImpactModeOption = (value: InventoryImpactMode) =>
   findOption(INVENTORY_IMPACT_MODE_OPTIONS, value);
 export const notificationModeOption = (value: NotificationMode) =>

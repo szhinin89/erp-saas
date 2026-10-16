@@ -467,8 +467,11 @@ public sealed class ExpenseDocumentDraftUseCasesTests
         result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
     }
 
+    // ACCOUNTING-CONTINUITY-01: la cuenta contable de la subcategoría no es requisito operativo del
+    // gasto. El borrador se registra igual con un snapshot informativo (o null); la validez
+    // contable se evalúa en cada intento de contabilización, donde una carencia deja Failed.
     [Fact]
-    public async Task Create_con_subcategoria_sin_cuenta_contable_se_bloquea()
+    public async Task Create_con_subcategoria_sin_cuenta_contable_registra_snapshot_null()
     {
         var fx = new Fixture();
         SetPrivateProperty<Guid?>(
@@ -479,8 +482,8 @@ public sealed class ExpenseDocumentDraftUseCasesTests
 
         var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Lines.Should().ContainSingle().Which.SnapshotAccountingAccountId.Should().BeNull();
     }
 
     [Theory]
@@ -488,7 +491,7 @@ public sealed class ExpenseDocumentDraftUseCasesTests
     [InlineData("not_postable")]
     [InlineData("not_expense")]
     [InlineData("other_company")]
-    public async Task Create_con_cuenta_no_utilizable_se_bloquea(string scenario)
+    public async Task Create_con_cuenta_no_utilizable_no_bloquea_el_borrador(string scenario)
     {
         var fx = new Fixture();
         var account =
@@ -501,14 +504,9 @@ public sealed class ExpenseDocumentDraftUseCasesTests
 
         var result = await fx.CreateHandler.Handle(fx.ValidCreateCommand(), CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result
-            .Code.Should()
-            .Be(
-                scenario == "other_company"
-                    ? ApiResponseCodes.Common.NotFound
-                    : ApiResponseCodes.Common.ValidationError
-            );
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Lines.Should().ContainSingle()
+            .Which.SnapshotAccountingAccountId.Should().Be(account?.Id);
     }
 
     [Fact]

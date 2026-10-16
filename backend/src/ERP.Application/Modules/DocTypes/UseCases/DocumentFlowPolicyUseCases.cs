@@ -29,7 +29,6 @@ public sealed record DocumentFlowPolicyDto(
     bool RequiresSupplier,
     bool RequiresDueDate,
     PayableGenerationMode PayableGenerationMode,
-    AccountingPostingMode AccountingPostingMode,
     InventoryImpactMode InventoryImpactMode,
     NotificationMode NotificationMode
 );
@@ -59,7 +58,6 @@ public sealed record UpdateDocumentFlowPolicyCommand(
     bool RequiresSupplier,
     bool RequiresDueDate,
     PayableGenerationMode PayableGenerationMode,
-    AccountingPostingMode AccountingPostingMode,
     InventoryImpactMode InventoryImpactMode,
     NotificationMode NotificationMode
 ) : IRequest<Result<DocumentFlowPolicyDto>>, ICompanyScopedRequest;
@@ -124,7 +122,6 @@ public sealed class GetDocumentFlowPoliciesHandler
             p.RequiresSupplier,
             p.RequiresDueDate,
             p.PayableGenerationMode,
-            p.AccountingPostingMode,
             p.InventoryImpactMode,
             p.NotificationMode
         );
@@ -207,7 +204,6 @@ public sealed class UpdateDocumentFlowPolicyHandler
             cmd.RequiresSupplier,
             cmd.RequiresDueDate,
             cmd.PayableGenerationMode,
-            cmd.AccountingPostingMode,
             cmd.InventoryImpactMode,
             cmd.NotificationMode,
             _user.UserId

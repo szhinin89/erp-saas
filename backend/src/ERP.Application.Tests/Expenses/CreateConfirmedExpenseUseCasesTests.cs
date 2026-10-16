@@ -336,6 +336,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
         public Mock<IAccountsPayableService> Payables { get; } = new();
         public Mock<IDocumentFlowPolicyService> WorkflowPolicy { get; } = new();
         public Mock<IRetentionIssuer> RetentionIssuer { get; } = new();
+        public Mock<ERP.Application.Modules.Accounting.Continuity.IAccountingPostingDispatcher> AccountingPostings { get; } = new();
 
         public Account Account { get; }
         public ExpenseCategoryNode Type { get; }
@@ -361,6 +362,7 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                 WorkflowPolicy.Object,
                 RetentionIssuer.Object,
                 Transmission.Object,
+                AccountingPostings.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
@@ -513,7 +515,6 @@ public sealed class CreateConfirmedExpenseUseCasesTests
                         RequiresSupplier: true,
                         RequiresDueDate: true,
                         PayableGenerationMode.OnConfirmation,
-                        AccountingPostingMode.OnConfirmation,
                         InventoryImpactMode.None,
                         NotificationMode.None
                     )

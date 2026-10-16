@@ -1,16 +1,14 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.DocTypes.Services;
 using ERP.Application.Modules.Expenses.DTOs;
-using ERP.Application.Modules.Expenses.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
-using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Exceptions;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.DocTypes.Constants;
 using ERP.Domain.Modules.DocTypes.Enums;
@@ -70,6 +68,7 @@ public sealed class ConfirmExpenseDocumentHandler
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly IRetentionIssuer _retentionIssuer;
     private readonly IRetentionElectronicTransmission _retentionTransmission;
+    private readonly IAccountingPostingDispatcher _accountingPostings;
     private readonly IPaymentTermRepository _ptRepo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
@@ -85,6 +84,7 @@ public sealed class ConfirmExpenseDocumentHandler
         IDocumentFlowPolicyService workflowPolicy,
         IRetentionIssuer retentionIssuer,
         IRetentionElectronicTransmission retentionTransmission,
+        IAccountingPostingDispatcher accountingPostings,
         IPaymentTermRepository ptRepo,
         ICurrentTenant tenant,
         ICurrentCompany company,
@@ -100,6 +100,7 @@ public sealed class ConfirmExpenseDocumentHandler
         _workflowPolicy = workflowPolicy;
         _retentionIssuer = retentionIssuer;
         _retentionTransmission = retentionTransmission;
+        _accountingPostings = accountingPostings;
         _ptRepo = ptRepo;
         _tenant = tenant;
         _company = company;
@@ -164,7 +165,7 @@ public sealed class ConfirmExpenseDocumentHandler
                     + "seleccione una condición de pago activa antes de confirmar."
             );
 
-        var snapshots = new Dictionary<Guid, (Guid AccountId, string? Code, string? Name)>();
+        var snapshots = new Dictionary<Guid, (Guid? AccountId, string? Code, string? Name)>();
         foreach (var line in document.Lines)
         {
             var resolution = await ExpenseConfirmRules.ResolveLineAccountAsync(
@@ -179,9 +180,9 @@ public sealed class ConfirmExpenseDocumentHandler
                 return resolution.Error.ToResult<ExpenseDocumentDetailDto>();
 
             snapshots[line.Id] = (
-                resolution.Account!.Id,
-                resolution.Account.Code.Value,
-                resolution.Account.Name
+                resolution.Account?.Id,
+                resolution.Account?.Code.Value,
+                resolution.Account?.Name
             );
         }
 
@@ -334,33 +335,11 @@ public sealed class ConfirmExpenseDocumentHandler
             }
         }
 
-        try
-        {
-            // EXPENSES-CONFIRM-07: a diferencia de Purchases/Sales, el posting de Gastos es
-            // estricto — ExpenseDocumentConfirmedPostingTranslator lanza ExpensePostingFailedException
-            // (en vez de solo loguear un warning) si IPostingEngine.PostAsync falla. La excepción se
-            // propaga desde el Publish() interno de ErpDbContext.SaveChangesAsync, que hace rollback
-            // completo de la transacción ANTES de este catch — el documento queda en Draft en BD,
-            // nada de lo mutado en memoria (Confirm() de arriba, ni el RetentionDocument/AccountsPayable
-            // en staging de arriba) llegó a persistirse.
-            // RETENTIONS-EXPENSES-INTEGRATION-01D-2: mismo criterio para el posting de la retención
-            // — RetentionDocumentIssuedPostingTranslator lanza RetentionPostingFailedException si
-            // falla, capturada abajo, con el mismo efecto de rollback completo.
-            // DOCUMENT-FLOW-POLICY-01: la política inicial obligatoria de GASDOC declara
-            // AccountingPostingMode.OnConfirmation, que coincide con este comportamiento existente
-            // (posting disparado por ExpenseDocumentConfirmedEvent al confirmar). Reestructurar el
-            // translator para leer el modo de la política queda fuera de alcance — no rompe nada
-            // hoy porque ambos coinciden.
-            await _repo.SaveChangesAsync(ct);
-        }
-        catch (ExpensePostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
-        catch (RetentionPostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
+        // ACCOUNTING-CONTINUITY-01: el gasto, su CxP y su retención se persisten junto con sus
+        // obligaciones contables durables (Pending) en un único SaveChangesAsync. Un error contable
+        // ya no revierte el gasto: el intento ocurre después del commit y queda Posted o Failed.
+        await _repo.SaveChangesAsync(ct);
+        await _accountingPostings.DispatchPendingAsync(ct);
 
         // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — transmisión electrónica de la retención DESPUÉS del
         // commit del gasto (nunca dentro de su transacción). Un fallo aquí no afecta el gasto ya
@@ -438,6 +417,7 @@ public sealed class CreateConfirmedExpenseHandler
     private readonly IDocumentFlowPolicyService _workflowPolicy;
     private readonly IRetentionIssuer _retentionIssuer;
     private readonly IRetentionElectronicTransmission _retentionTransmission;
+    private readonly IAccountingPostingDispatcher _accountingPostings;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentBranch _branch;
@@ -456,6 +436,7 @@ public sealed class CreateConfirmedExpenseHandler
         IDocumentFlowPolicyService workflowPolicy,
         IRetentionIssuer retentionIssuer,
         IRetentionElectronicTransmission retentionTransmission,
+        IAccountingPostingDispatcher accountingPostings,
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentBranch branch,
@@ -474,6 +455,7 @@ public sealed class CreateConfirmedExpenseHandler
         _workflowPolicy = workflowPolicy;
         _retentionIssuer = retentionIssuer;
         _retentionTransmission = retentionTransmission;
+        _accountingPostings = accountingPostings;
         _tenant = tenant;
         _company = company;
         _branch = branch;
@@ -727,22 +709,9 @@ public sealed class CreateConfirmedExpenseHandler
             }
         }
 
-        try
-        {
-            // Mismo criterio que ConfirmExpenseDocumentHandler (EXPENSES-CONFIRM-07): posting de
-            // Gastos es estricto — ExpensePostingFailedException aborta la transacción completa,
-            // nada de lo construido arriba llega a persistirse. RETENTIONS-EXPENSES-INTEGRATION-01D-2:
-            // mismo criterio para RetentionPostingFailedException (posting de la retención).
-            await _repo.SaveChangesAsync(ct);
-        }
-        catch (ExpensePostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
-        catch (RetentionPostingFailedException ex)
-        {
-            return Result<ExpenseDocumentDetailDto>.ValidationFailure(ex.Message, ex.Code);
-        }
+        // ACCOUNTING-CONTINUITY-01: mismo criterio que ConfirmExpenseDocumentHandler.
+        await _repo.SaveChangesAsync(ct);
+        await _accountingPostings.DispatchPendingAsync(ct);
 
         // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A — transmisión electrónica de la retención DESPUÉS del
         // commit del gasto (nunca dentro de su transacción). Un fallo aquí no afecta el gasto ya
@@ -771,12 +740,11 @@ file sealed record ExpenseConfirmError(string Message, string Code)
 file sealed record LineAccountResolution(Account? Account, ExpenseConfirmError? Error);
 
 /// <summary>
-/// EXPENSES-CONFIRM-07 — re-valida, al confirmar, exactamente las mismas reglas que
-/// <c>ExpenseDraftRules.BuildLinesAsync</c> exige al crear/editar el borrador (subcategoría activa,
-/// nivel Subcategory, misma empresa, cuenta contable activa/postable/tipo Gasto/misma empresa).
-/// Se revalida aquí porque ambas pudieron cambiar entre la creación del borrador y la confirmación
-/// (la subcategoría puede desactivarse o cambiar de cuenta; la cuenta puede desactivarse o perder
-/// AllowsPosting) — el snapshot tomado al crear la línea puede estar obsoleto.
+/// EXPENSES-CONFIRM-07 — re-valida, al confirmar, las mismas reglas de negocio que
+/// <c>ExpenseDraftRules.BuildLinesAsync</c> exige al crear/editar el borrador (subcategoría
+/// existente, activa, nivel Subcategory, misma empresa), porque pudieron cambiar desde entonces.
+/// ACCOUNTING-CONTINUITY-01: la cuenta contable de la subcategoría ya no se valida aquí — solo se
+/// recongela como snapshot informativo (puede ser null); Accounting la resuelve en cada intento.
 /// </summary>
 file static class ExpenseConfirmRules
 {
@@ -814,50 +782,14 @@ file static class ExpenseConfirmRules
                 null,
                 Validation("Cada linea debe apuntar a una subcategoria de gasto.")
             );
-        if (!category.AccountingAccountId.HasValue)
-            return new LineAccountResolution(
-                null,
-                Validation(
-                    $"La subcategoria '{category.Name}' no tiene cuenta contable configurada."
-                )
-            );
 
-        var account = await accounts.GetByIdAsync(
+        var account = await ExpenseLineAccountSnapshot.FindAsync(
+            accounts,
             tenantId,
             companyId,
-            category.AccountingAccountId.Value,
+            category,
             ct
         );
-        if (account is null)
-            return new LineAccountResolution(
-                null,
-                new ExpenseConfirmError(
-                    $"La cuenta contable de la subcategoria '{category.Name}' no existe.",
-                    ApiResponseCodes.Common.NotFound
-                )
-            );
-        if (!account.IsActive)
-            return new LineAccountResolution(
-                null,
-                Validation(
-                    $"La cuenta contable de la subcategoria '{category.Name}' esta inactiva."
-                )
-            );
-        if (!account.AllowsPosting)
-            return new LineAccountResolution(
-                null,
-                Validation(
-                    $"La cuenta contable de la subcategoria '{category.Name}' no permite contabilizacion."
-                )
-            );
-        if (account.AccountType != AccountType.Expense)
-            return new LineAccountResolution(
-                null,
-                Validation(
-                    $"La cuenta contable de la subcategoria '{category.Name}' debe ser de tipo gasto."
-                )
-            );
-
         return new LineAccountResolution(account, null);
     }
 

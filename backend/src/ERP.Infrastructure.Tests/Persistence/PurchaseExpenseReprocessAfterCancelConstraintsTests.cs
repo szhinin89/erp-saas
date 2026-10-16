@@ -489,7 +489,7 @@ public sealed class PurchaseExpenseReprocessAfterCancelConstraintsTests : IAsync
         );
         doc.ReplaceLines(new[] { line }, _userId);
         doc.Confirm(
-            new Dictionary<Guid, (Guid AccountId, string? Code, string? Name)>
+            new Dictionary<Guid, (Guid? AccountId, string? Code, string? Name)>
             {
                 [line.Id] = (ctx.ExpenseAccountId, null, null),
             },

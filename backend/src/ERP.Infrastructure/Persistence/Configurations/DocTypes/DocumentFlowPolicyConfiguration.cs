@@ -30,10 +30,6 @@ public sealed class DocumentFlowPolicyConfiguration : IEntityTypeConfiguration<D
             builder.Property(e => e.PayableGenerationMode),
             "payable_generation_mode"
         );
-        ConfigureModeColumn(
-            builder.Property(e => e.AccountingPostingMode),
-            "accounting_posting_mode"
-        );
         ConfigureModeColumn(builder.Property(e => e.InventoryImpactMode), "inventory_impact_mode");
         ConfigureModeColumn(builder.Property(e => e.NotificationMode), "notification_mode");
 

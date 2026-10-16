@@ -179,6 +179,9 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
         new(
             new AccountingPeriodRepository(db),
             new JournalEntryRepository(db),
+            new AccountingPostingRepository(db),
+            new AccountingOperationalPolicyRepository(db),
+            new ERP.Infrastructure.Persistence.UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)
@@ -223,6 +226,64 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
         await using var verifyDb = CreateContext();
         var loaded = await verifyDb.AccountingPeriods.FirstAsync(x => x.Id == period.Id);
         loaded.Status.Should().Be(PeriodStatus.Open);
+    }
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — gate mínimo: una obligación Pending o Failed con EntryDate dentro
+    /// del período bloquea el cierre aunque todos los asientos estén Posted; fuera del período no.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Cierre_falla_si_existe_una_contabilizacion_Pending_o_Failed_del_periodo(bool failed)
+    {
+        var period = await SeedPeriodAsync();
+        await SeedPostedEntryAsync(period);
+        await using (var seed = CreateContext())
+        {
+            AccountingPosting Obligation(DateOnly date) =>
+                AccountingPosting.CreatePending(_tenantId, _companyId, "Purchases", "InvoiceReceived",
+                    Guid.NewGuid(), null, date, date, 1, "{}", _createdBy, null);
+            var inside = Obligation(new DateOnly(2026, 7, 31));
+            if (failed)
+                inside.RecordFailed("RULE_NOT_FOUND", "Sin regla", AccountingPostingAttemptTrigger.Initial,
+                    _createdBy, null, DateTime.UtcNow, DateTime.UtcNow);
+            seed.AccountingPostings.AddRange(inside, Obligation(new DateOnly(2026, 8, 1)));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var db = CreateContext();
+        var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
+            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("contabilizaciones pendientes o fallidas");
+        await using var verifyDb = CreateContext();
+        (await verifyDb.AccountingPeriods.FirstAsync(x => x.Id == period.Id))
+            .Status.Should().Be(PeriodStatus.Open);
+    }
+
+    [Fact]
+    public async Task Cierre_correcto_si_las_obligaciones_del_periodo_estan_Posted_o_Canceled_y_las_pendientes_son_de_otro_periodo()
+    {
+        var period = await SeedPeriodAsync();
+        await SeedPostedEntryAsync(period);
+        await using (var seed = CreateContext())
+        {
+            var canceled = AccountingPosting.CreatePending(_tenantId, _companyId, "Purchases", "InvoiceReceived",
+                Guid.NewGuid(), null, new DateOnly(2026, 7, 10), new DateOnly(2026, 7, 10), 1, "{}", _createdBy, null);
+            canceled.Cancel(_createdBy);
+            var nextPeriod = AccountingPosting.CreatePending(_tenantId, _companyId, "Purchases", "InvoiceReceived",
+                Guid.NewGuid(), null, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 1), 1, "{}", _createdBy, null);
+            seed.AccountingPostings.AddRange(canceled, nextPeriod);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var db = CreateContext();
+        var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
+            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
     }
 
     [Fact]

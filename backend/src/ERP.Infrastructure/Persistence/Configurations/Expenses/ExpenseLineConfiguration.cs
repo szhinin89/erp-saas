@@ -25,7 +25,8 @@ public sealed class ExpenseLineConfiguration : IEntityTypeConfiguration<ExpenseL
         builder
             .Property(x => x.SnapshotAccountingAccountId)
             .HasColumnName("snapshot_accounting_account_id")
-            .IsRequired();
+            // ACCOUNTING-CONTINUITY-01: snapshot informativo; la cuenta no es requisito del gasto.
+            .IsRequired(false);
         builder
             .Property(x => x.SnapshotAccountingAccountCode)
             .HasColumnName("snapshot_accounting_account_code")

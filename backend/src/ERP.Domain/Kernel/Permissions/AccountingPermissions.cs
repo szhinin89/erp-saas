@@ -24,4 +24,19 @@ public static class AccountingPermissions
         "accounting.destinations.sales_collections.view";
     public const string DestinationsSalesCollectionsUpdate =
         "accounting.destinations.sales_collections.update";
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — cambiar el modo operativo de Accounting de la empresa (versión
+    /// nueva de la política con vigencia). Ver docs/architecture/accounting.md §3/§14.
+    /// </summary>
+    public const string SettingsUpdate = "accounting.settings.update";
+
+    /// <summary>ACCOUNTING-CONTINUITY-01 — consultar obligaciones contables y su historial de intentos.</summary>
+    public const string PostingsView = "accounting.postings.view";
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-01 — reproceso manual individual de una obligación Pending/Failed. El
+    /// permiso del documento origen no concede esta capacidad.
+    /// </summary>
+    public const string PostingsReprocess = "accounting.postings.reprocess";
 }

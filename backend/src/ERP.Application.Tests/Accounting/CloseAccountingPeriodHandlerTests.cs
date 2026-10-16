@@ -38,6 +38,9 @@ public sealed class CloseAccountingPeriodHandlerTests
     {
         public Mock<IAccountingPeriodRepository> Periods { get; } = new();
         public Mock<IJournalEntryRepository> JournalEntries { get; } = new();
+        public Mock<IAccountingPostingRepository> Postings { get; } = new();
+        public Mock<IAccountingOperationalPolicyRepository> AccountingLock { get; } = new();
+        public Mock<IUnitOfWork> UnitOfWork { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
@@ -50,7 +53,16 @@ public sealed class CloseAccountingPeriodHandlerTests
         }
 
         public CloseAccountingPeriodHandler BuildHandler() =>
-            new(Periods.Object, JournalEntries.Object, Tenant.Object, Company.Object, User.Object);
+            new(
+                Periods.Object,
+                JournalEntries.Object,
+                Postings.Object,
+                AccountingLock.Object,
+                UnitOfWork.Object,
+                Tenant.Object,
+                Company.Object,
+                User.Object
+            );
     }
 
     [Fact]
@@ -170,6 +182,45 @@ public sealed class CloseAccountingPeriodHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("reversos contables incompletos");
         period.Status.Should().Be(PeriodStatus.Open);
+    }
+
+    // ACCOUNTING-CONTINUITY-01 — gate mínimo: obligaciones Pending/Failed con EntryDate dentro del
+    // período bloquean el cierre, aunque el libro (JournalEntry) esté listo.
+    [Fact]
+    public async Task Falla_por_contabilizaciones_pendientes_o_fallidas_del_periodo()
+    {
+        var period = OpenPeriod();
+        var m = new Mocks();
+        m.Periods.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(period);
+        m.JournalEntries.Setup(r =>
+                r.GetClosureReadinessAsync(TenantId, CompanyId, period.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Ready);
+        m.Postings.Setup(r =>
+                r.HasUnresolvedInRangeAsync(
+                    TenantId,
+                    CompanyId,
+                    new DateOnly(2026, 7, 1),
+                    new DateOnly(2026, 7, 31),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
+
+        var result = await m.BuildHandler()
+            .HandleWithDomainRules(
+                new CloseAccountingPeriodCommand(period.Id),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("contabilizaciones pendientes o fallidas");
+        period.Status.Should().Be(PeriodStatus.Open);
+        m.AccountingLock.Verify(l => l.AcquireExclusiveLockAsync(CompanyId, It.IsAny<CancellationToken>()), Times.Once);
+        m.Periods.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

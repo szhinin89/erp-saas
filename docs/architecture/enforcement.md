@@ -6,13 +6,35 @@
 
 > **Política anti-drift obligatoria.**
 
+### SSOT por módulo
+
+Antes de crear, modificar o documentar una regla funcional, técnica o arquitectónica,
+identificar la SSOT vigente del módulo. Cada módulo tiene una única fuente funcional
+vigente en `docs/architecture/<modulo>.md` o en el archivo canónico definido para su
+dominio. Para conocer cómo funciona actualmente un módulo debe bastar leer esa SSOT.
+
+| Documento | Responsabilidad |
+|-----------|-----------------|
+| SSOT del módulo | Especificación completa de las reglas vigentes y extensiones aprobadas, distinguiendo su estado de implementación |
+| `STATUS.md` | Estado y avance; no define reglas |
+| `FEATURES.md` | Resumen de alcance y capacidades; no define políticas |
+| ADR | Motivo de la decisión; no duplica la especificación funcional |
+| QA, roadmaps, entregas y notas de agente | Cobertura, planificación o evidencia; nunca autoridad de reglas vigentes |
+| Documentación de otros módulos | Referencia a la SSOT o explicación breve necesaria para la integración; no otra especificación del mismo módulo |
+
+Antes de escribir una regla nueva, comprobar si ya existe una SSOT que deba ampliarse;
+no crear otro documento para el mismo contrato. Si cambia una regla, actualizar primero
+la SSOT y después retirar duplicaciones y limpiar referencias o contradicciones.
+En preproducción no conservar reglas funcionales antiguas por compatibilidad histórica.
+
 | ✅ Correcto | ❌ Incorrecto |
 |------------|---------------|
 | Regla completa **una vez** en `docs/architecture/*` | Misma regla repetida en `CLAUDE.md` + `backend/CLAUDE.md` + `frontend/CLAUDE.md` + `docs/architecture/*` |
 | `backend/CLAUDE.md`/`frontend/CLAUDE.md` con enlace + hint ≤5 líneas | Copiar 300 líneas al `CLAUDE.md` de capa |
 | Editar canónico → actualizar enlaces | Editar solo `CLAUDE.md` y olvidar canónico |
 
-Al añadir regla nueva: elegir **un** archivo canónico en `docs/architecture/` → enlazar desde `CLAUDE.md`/`backend/CLAUDE.md`/`frontend/CLAUDE.md`.
+Al añadir una regla: ampliar la SSOT existente o, si el dominio aún no tiene una,
+definir un único archivo canónico → actualizar sus referencias de entrada.
 
 Ver [Compatibilidad multi-agente](#compatibilidad-multi-agente) más abajo en este documento.
 

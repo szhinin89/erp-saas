@@ -46,6 +46,14 @@ const ChartOfAccountsPage = lazyNamedPage(
   () => import("../modules/accounting/pages/ChartOfAccountsPage"),
   "ChartOfAccountsPage",
 );
+const AccountingOperationalModePage = lazyNamedPage(
+  () => import("../modules/accounting/pages/AccountingOperationalModePage"),
+  "AccountingOperationalModePage",
+);
+const AccountingPostingsPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/AccountingPostingsPage"),
+  "AccountingPostingsPage",
+);
 const PostingRulesPage = lazyNamedPage(
   () => import("../modules/accounting/pages/PostingRulesPage"),
   "PostingRulesPage",
@@ -421,6 +429,17 @@ export const catalogRoutes = [
     key="accounting-posting-rules"
     path="/accounting/configuration/posting-rules"
     element={<PostingRulesPage />}
+  />,
+  // ACCOUNTING-CONTINUITY-01: modo operativo por empresa y obligaciones contables durables.
+  <Route
+    key="accounting-operational-mode"
+    path="/accounting/configuration/operational-mode"
+    element={<AccountingOperationalModePage />}
+  />,
+  <Route
+    key="accounting-postings"
+    path="/accounting/postings"
+    element={<AccountingPostingsPage />}
   />,
   <Route
     key="accounting-posting-rules-legacy"

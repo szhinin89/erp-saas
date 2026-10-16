@@ -42,7 +42,7 @@ También existe `PurchaseReceptionLineTax` (`ERP.Domain/Modules/Purchases/Purcha
 - Ventas — Devolución: `SalesReturnDraftUseCases.cs` (L350-370) copia `IceCode/IceRate` posicionalmente a `SalesReturnDetail`.
 - Ventas — NC (RIDE/XML): `SalesReturnCreditNoteDataProvider.cs` (L210-217) arma el nodo XML de ICE solo si `line.IceCode` no está vacío, desde escalares.
 
-**Ninguna devolución/NC de ningún módulo propaga IRBPNR.** Es la brecha funcional más concreta detectada: una NC de compra sobre una factura con IRBPNR no lo revierte, ni contable ni fiscalmente.
+**Ninguna devolución/NC de ningún módulo propaga IRBPNR.** Es la brecha funcional más concreta detectada: una NC de compra sobre una factura con IRBPNR no lo revierte, fiscalmente.
 
 ### 2.4 Recepción electrónica (Compras) — ya lista, no requiere cambios
 
@@ -63,17 +63,8 @@ No hay una carpeta de reportes fiscales que lea `IceAmount`/`IceRate` directamen
 
 ### 2.7 Contabilidad
 
-`PostingFact.cs` ya tiene `TotalVat/TotalIce/TotalIrbpnr` (L29-30, L40) como categorías independientes, y `JournalFactory.cs` (L96) ya mapea `PostingAmountKind.TaxIrbpnr` a su propia cuenta contable — **el contrato de posteo ya distingue IRBPNR de ICE**, no hay nada que rediseñar ahí. Lo que cambia es el origen del dato: hoy los traductores (`PurchaseInvoiceConfirmedPostingTranslator.cs`, etc.) reciben esos totales ya agregados desde el evento de dominio, que a su vez agrega los escalares/derivados de cada línea — no consultan `PurchaseInvoiceDetailTax` directamente. `ConfirmPurchaseUseCases.cs` (L160-183) ya tiene un guard que bloquea el Confirm si hay `IrbpnrAmount > 0` sin regla de posteo configurada — este guard se preserva.
+[Accounting](../architecture/accounting.md).
 
-### 2.8 Catálogos SRI — ya existen, no se tocan en este ADR
-
-`SriVatRate`, `SriIceRate` (`Code, Name, Percentage, UnitValue, CalculationType`), `SriIrbpnrRate` (mismo shape, entidad separada "a propósito" según su propio comentario) ya son dinámicos, sin hardcodeo, resueltos vía `ISriTaxResolver`. `SriTaxCategoryCodes` centraliza los códigos de categoría del protocolo SRI (`Vat="2"`, `Ice="3"`, `Irbpnr="5"`). **No se propone consolidar en un catálogo `TaxType` único** — sería una refactorización de infraestructura ya funcional, sin necesidad funcional que la motive dentro del alcance de este ticket (ver §6, Alternativas consideradas).
-
-### 2.9 Configuración tributaria del ítem — sin soporte de IRBPNR
-
-`ItemTaxConfig` (VO embebido en `Item`, `ERP.Domain/Modules/Items/ValueObjects/ItemTaxConfig.cs`): `SaleVatCode, PurchaseVatCode, ExciseTaxCode` — `ExciseTaxCode` se resuelve **únicamente** contra el catálogo ICE (`GetPurchaseItemContextQueryHandler.cs` L104). No existe ningún campo para IRBPNR a nivel de ítem.
-
----
 
 ## 3. Diseño propuesto
 
@@ -150,8 +141,7 @@ Si falta cualquiera de las dos, la línea de venta no lleva ese impuesto — no 
 ### 3.5 Consumidores que cambian de fuente
 
 - `SalesInvoiceElectronicDocumentDataProvider.BuildDetailLine` y `SalesReturnCreditNoteDataProvider`: leen de `SalesInvoiceDetailTax`/`SalesReturnDetailTax` en vez de armar el nodo manualmente desde escalares — agregan IRBPNR automáticamente cuando existe.
-- Traductores de posteo contable (`PurchaseInvoiceConfirmedPostingTranslator`, `PurchaseCreditNoteAuthorizedPostingTranslator`, `PurchaseReturnAuthorizedPostingTranslator`, y sus equivalentes nuevos en Ventas si aplica): siguen recibiendo `PostingFact.TotalVat/TotalIce/TotalIrbpnr` sin cambio de contrato — solo cambia que esos totales, al agregarse desde las líneas, ahora sumarán consistentemente sobre `_taxes` en ambos módulos (hoy Compras ya lo hace vía los derivados; Ventas empieza a hacerlo).
-- `PurchaseCreditNoteAuthorizedPostingTranslator` gana soporte de IRBPNR (hoy no lo maneja — gap detectado en §2.3/§2.7).
+- Integración contable: [Accounting](../architecture/accounting.md).
 
 ---
 
@@ -223,7 +213,6 @@ Compras y Ventas comparten el mismo producto y el mismo `ItemSpecialTaxConfigura
 - Ventas gana capacidad de modelar IRBPNR e ICE "Specific" por primera vez — habilita facturación correcta para ítems gravados con esos impuestos que hoy no se pueden vender con el impuesto reflejado en el XML.
 - Devoluciones y notas de crédito de ambos módulos ganan un mecanismo único de propagación de impuestos (copia de `*DetailTax`), cerrando el gap de IRBPNR no reversado.
 - Compras invierte la autoridad de ICE (de escalar a derivado) sin cambio de contrato público — cualquier consumidor externo que lea `line.IceAmount` sigue funcionando igual.
-- Contabilidad no cambia de contrato (`PostingFact`/`PostingAmountKind` ya soportan `TaxIrbpnr`); gana consistencia en el origen del dato agregado y cierra el gap de IRBPNR en NC de compra.
 - **Pendiente fuera de este ADR:** `GetDailySalesReportQueryHandler` no desglosa ICE/IRBPNR — no se corrige aquí por no ser parte del alcance del ticket (no se auditó como "consumidor a migrar", es una funcionalidad de reporte inexistente, no un consumidor de un campo existente). Requiere ticket propio si se decide agregar ese desglose.
 - **Pendiente fuera de este ADR:** consolidación de `SriVatRate`/`SriIceRate`/`SriIrbpnrRate` en un catálogo único (ver §6) — deliberadamente no se toca.
 - **`ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01` — RESUELTO (2026-08-29)**: `SriTaxCategoryCodeResolver` (`ERP.Infrastructure/Services/ElectronicDocuments/`) ahora reconoce `IRBPNR→"5"` además de `VAT→"2"`/`ICE→"3"`. `InvoiceXmlBuilder` no requirió cambios (ya era agnóstico). Una factura de venta con IRBPNR ya genera su nodo `<impuesto>` correctamente en el XML electrónico. Ver `STATUS.md` § "ELECTRONIC-DOCUMENTS-IRBPNR-CATEGORY-01" para el detalle.

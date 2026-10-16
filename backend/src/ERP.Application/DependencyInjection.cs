@@ -3,6 +3,7 @@ using ERP.Application.Access;
 using ERP.Application.Access.Authorization;
 using ERP.Application.Access.Caching;
 using ERP.Application.Behaviors;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Communications.Services;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Application.Modules.InitialLoad.Interfaces;
@@ -24,6 +25,18 @@ public static class DependencyInjection
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddScoped<ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting>();
+        // ACCOUNTING-CONTINUITY-01 — obligación contable durable: decisión operativa, registro en
+        // la transacción del núcleo, intento tras el commit (único ejecutor) y anulación común.
+        services.AddScoped<AccountingOperationalDecision>();
+        services.AddScoped<AccountingPostingDispatchQueue>();
+        services.AddScoped<AccountingPostingRecorder>();
+        services.AddScoped<AccountingPostingFactBuilder>();
+        services.AddScoped<AccountingPostingExecutor>();
+        services.AddScoped<IAccountingPostingDispatcher>(sp =>
+            sp.GetRequiredService<AccountingPostingExecutor>()
+        );
+        services.AddScoped<AccountingPostingCancellation>();
+        services.AddScoped<ERP.Application.Modules.Accounting.UseCases.Continuity.AccountingOperationalPolicyReader>();
         services.AddScoped<IEffectivePermissionKeysProvider, EffectivePermissionKeysProvider>();
         services.AddScoped<ICompanyContextProvider, CompanyContextProvider>();
         services.AddScoped<ICommunicationQueue, CommunicationQueue>();

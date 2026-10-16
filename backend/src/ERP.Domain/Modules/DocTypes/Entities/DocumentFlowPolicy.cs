@@ -6,8 +6,9 @@ namespace ERP.Domain.Modules.DocTypes.Entities;
 /// <summary>
 /// DOCUMENT-FLOW-POLICY-01: política por company de CÓMO se comporta un
 /// <see cref="DocType"/> a lo largo de su ciclo de vida — creación, confirmación,
-/// autorización, anulación y los efectos que dispara (CxP, asiento contable, inventario,
-/// notificaciones). Una fila = una company + un doc type.
+/// autorización, anulación y los efectos que dispara (CxP, inventario, notificaciones). No decide
+/// si un hecho se contabiliza: esa autoridad es la política operativa de Accounting por Company
+/// (ACCOUNTING-CONTINUITY-01, docs/architecture/accounting.md §13). Una fila = una company + un doc type.
 ///
 /// Separación conceptual obligatoria (no debe romperse nunca):
 /// - Los <b>permisos</b> (<c>ExpensePermissions</c>, etc.) definen QUIÉN puede ejecutar una acción.
@@ -37,7 +38,6 @@ public sealed class DocumentFlowPolicy : AuditableEntity, ITenantScopedEntity, I
     public bool RequiresDueDate { get; private set; }
 
     public PayableGenerationMode PayableGenerationMode { get; private set; }
-    public AccountingPostingMode AccountingPostingMode { get; private set; }
     public InventoryImpactMode InventoryImpactMode { get; private set; }
     public NotificationMode NotificationMode { get; private set; }
 
@@ -58,7 +58,6 @@ public sealed class DocumentFlowPolicy : AuditableEntity, ITenantScopedEntity, I
         bool requiresSupplier,
         bool requiresDueDate,
         PayableGenerationMode payableGenerationMode,
-        AccountingPostingMode accountingPostingMode,
         InventoryImpactMode inventoryImpactMode,
         NotificationMode notificationMode,
         Guid createdBy
@@ -80,7 +79,6 @@ public sealed class DocumentFlowPolicy : AuditableEntity, ITenantScopedEntity, I
             RequiresSupplier = requiresSupplier,
             RequiresDueDate = requiresDueDate,
             PayableGenerationMode = payableGenerationMode,
-            AccountingPostingMode = accountingPostingMode,
             InventoryImpactMode = inventoryImpactMode,
             NotificationMode = notificationMode,
         };
@@ -100,7 +98,6 @@ public sealed class DocumentFlowPolicy : AuditableEntity, ITenantScopedEntity, I
         bool requiresSupplier,
         bool requiresDueDate,
         PayableGenerationMode payableGenerationMode,
-        AccountingPostingMode accountingPostingMode,
         InventoryImpactMode inventoryImpactMode,
         NotificationMode notificationMode,
         Guid updatedBy
@@ -117,7 +114,6 @@ public sealed class DocumentFlowPolicy : AuditableEntity, ITenantScopedEntity, I
         RequiresSupplier = requiresSupplier;
         RequiresDueDate = requiresDueDate;
         PayableGenerationMode = payableGenerationMode;
-        AccountingPostingMode = accountingPostingMode;
         InventoryImpactMode = inventoryImpactMode;
         NotificationMode = notificationMode;
         SetUpdated(updatedBy);

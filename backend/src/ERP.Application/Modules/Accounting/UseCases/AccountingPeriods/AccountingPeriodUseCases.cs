@@ -145,6 +145,9 @@ public sealed class CloseAccountingPeriodHandler
 {
     private readonly IAccountingPeriodRepository _repo;
     private readonly IJournalEntryRepository _journalEntryRepository;
+    private readonly IAccountingPostingRepository _postings;
+    private readonly IAccountingOperationalPolicyRepository _accountingLock;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -152,6 +155,9 @@ public sealed class CloseAccountingPeriodHandler
     public CloseAccountingPeriodHandler(
         IAccountingPeriodRepository repo,
         IJournalEntryRepository journalEntryRepository,
+        IAccountingPostingRepository postings,
+        IAccountingOperationalPolicyRepository accountingLock,
+        IUnitOfWork unitOfWork,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
@@ -159,6 +165,9 @@ public sealed class CloseAccountingPeriodHandler
     {
         _repo = repo;
         _journalEntryRepository = journalEntryRepository;
+        _postings = postings;
+        _accountingLock = accountingLock;
+        _unitOfWork = unitOfWork;
         _t = t;
         _c = c;
         _u = u;
@@ -172,23 +181,47 @@ public sealed class CloseAccountingPeriodHandler
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
-        var period = await _repo.GetByIdAsync(tenantId, companyId, cmd.Id, ct);
-        if (period is null)
-            return Result<AccountingPeriodDto>.NotFound("Período contable no encontrado.");
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            // ACCOUNTING-CONTINUITY-01: lock exclusivo por Company — ninguna obligación contable
+            // nueva puede comitearse entre la evaluación del gate y el cierre (accounting.md §8).
+            await _accountingLock.AcquireExclusiveLockAsync(companyId, ct);
 
-        // Fase 5.5 (ADR-026 §6.1/§9): precondición cross-aggregate resuelta aquí (Application),
-        // nunca dentro de AccountingPeriod — el aggregate solo recibe el resumen ya calculado.
-        var readiness = await _journalEntryRepository.GetClosureReadinessAsync(
-            tenantId,
-            companyId,
-            period.Id,
-            ct
-        );
+            var period = await _repo.GetByIdAsync(tenantId, companyId, cmd.Id, ct);
+            if (period is null)
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return Result<AccountingPeriodDto>.NotFound("Período contable no encontrado.");
+            }
 
-        period.Close(_u.UserId, readiness);
+            // Fase 5.5 (ADR-026 §6.1/§9): precondición cross-aggregate resuelta aquí (Application),
+            // nunca dentro de AccountingPeriod — el aggregate solo recibe el resumen ya calculado.
+            var readiness = await _journalEntryRepository.GetClosureReadinessAsync(
+                tenantId,
+                companyId,
+                period.Id,
+                ct
+            );
+            var hasUnresolvedPostings = await _postings.HasUnresolvedInRangeAsync(
+                tenantId,
+                companyId,
+                period.StartDate,
+                period.EndDate,
+                ct
+            );
 
-        await _repo.SaveChangesAsync(ct);
-        return Result<AccountingPeriodDto>.Success(Map.ToDto(period));
+            period.Close(_u.UserId, readiness with { HasUnresolvedPostings = hasUnresolvedPostings });
+
+            await _repo.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+            return Result<AccountingPeriodDto>.Success(Map.ToDto(period));
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            throw;
+        }
     }
 }
 

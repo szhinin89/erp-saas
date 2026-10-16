@@ -1,5 +1,7 @@
 # Backend — reglas de implementación
 
+Contabilidad: [accounting.md](./accounting.md).
+
 Canónico para .NET 10 / Clean Architecture. Catálogo PR B-xx: [PR-RULES-CATALOG.md](./pr-rules-catalog.md). Seguridad tenant: [SECURITY.md](./security.md).
 
 ---
@@ -276,9 +278,9 @@ La idempotencia protege **una** intención; dos intenciones **distintas** que co
 1. Transacción explícita (`IUnitOfWork.BeginTransactionAsync`) — sin ella el `FOR UPDATE` se libera al terminar la sentencia.
 2. `Get…ForUpdateAsync` del repositorio: `SELECT 1 … WHERE tenant_id AND company_id AND id … FOR UPDATE` → lectura acotada al alcance operativo → `Entry(x).ReloadAsync`. Una fila fuera del alcance no se bloquea ni se devuelve (fail-closed → 404).
 3. **Recién entonces** la regla de dominio decide si el monto cabe; el perdedor reevalúa contra el saldo ya consumido y recibe la regla canónica (`422 DOMAIN_RULE_VIOLATION`) sin ningún efecto.
-4. `SaveChanges` (estado + posting + outbox) y `Commit`; cualquier fallo → `Rollback` completo.
+4. Persistir y confirmar el núcleo operativo bajo sus locks. Integración contable: [Accounting](./accounting.md).
 
-Todo escritor del saldo **o del estado** de `SalesReceivable` lo lee por `GetByIdsForUpdateAsync`/`GetByInvoiceIdForUpdateAsync`: registrar cobro, reversar cobro (además bloquea el `Payment`), crédito por devolución de venta y anulación de factura (ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01: además bloquea la `SalesInvoice` con `ISalesInvoiceRepository.GetByIdForUpdateAsync`; decisión y efectos — CxC, Kardex, reverso contable, outbox — en una transacción).
+Todo escritor del saldo **o del estado** de `SalesReceivable` lo lee por `GetByIdsForUpdateAsync`/`GetByInvoiceIdForUpdateAsync`: registrar cobro, reversar cobro (además bloquea el `Payment`), crédito por devolución de venta y anulación de factura (ZH-SALES-CANCEL-COLLECTION-CONCURRENCY-01: además bloquea la `SalesInvoice` con `ISalesInvoiceRepository.GetByIdForUpdateAsync`; decisión y efectos operativos — CxC, Kardex y outbox — en una transacción).
 
 Orden canónico de locks (evita deadlocks; cada flujo toma solo un subconjunto, siempre en este orden):
 
@@ -286,7 +288,7 @@ Orden canónico de locks (evita deadlocks; cada flujo toma solo un subconjunto, 
 2. `SalesInvoice` (anulación y autorización de devolución — ZH-SALES-RETURN-INVOICE-STATE-CONCURRENCY-01: la devolución revalida bajo este lock que la factura siga `Authorized` antes de cualquier efecto);
 3. `Payment` (reversa de cobro);
 4. `SalesReceivable` en orden ascendente de Id;
-5. secuencia documental → Kardex (`CurrentStock`, optimista con reintento) → secuencia de asientos (posting en `SaveChanges`).
+5. secuencia documental → Kardex (`CurrentStock`, optimista con reintento). Integración contable: [Accounting](./accounting.md).
 
 ### Revertir una venta: un solo camino por factura (ZH-SALES-CANCEL-AUTHORIZED-RETURN-RULE-01)
 
@@ -294,13 +296,13 @@ Una venta autorizada se revierte por **uno** de dos caminos excluyentes, decidid
 
 | Situación de la factura `Authorized` | Anular (`CancelSalesInvoice`) | Devolver (`AuthorizeSalesReturn`) |
 |---|---|---|
-| Sin devoluciones, CxC sin cobros | Permitido: revierte la factura completa (CxC, Kardex, asientos) | Permitido |
+| Sin devoluciones, CxC sin cobros | Permitido: revierte el núcleo de la factura (CxC, Kardex) | Permitido |
 | Con devolución `Draft` (o `Cancelled`) | Permitido; el Draft no tiene efectos, queda Draft y ya no puede autorizarse | Permitido mientras la factura siga `Authorized` |
 | Con devolución `Authorized` (parcial o total, efectivo o crédito a CxC) | **Rechazado** — `SalesInvoiceCancellationPolicy` (422 `DOMAIN_RULE_VIOLATION`) | Permitido por el remanente |
 | CxC con cobros | Rechazado (`SalesReceivable.Cancel`) | Permitido |
 | Factura `Cancelled` | Rechazado (ya anulada) | **Rechazado** — `SalesReturnInvoiceEligibility` |
 
-Una devolución autorizada es terminal y ya reingresó Kardex, reembolsó, contabilizó y emitió su Nota de Crédito; la anulación revierte la factura completa, así que nunca se combinan: Σ devuelto + Σ anulado ≤ vendido en cantidad, costo, reembolso/CxC e impuestos. Mismo criterio que Compras (PI-CANC-01). Ambas reglas se evalúan bajo el lock de la factura antes de cualquier efecto, por lo que la anulación y la autorización concurrentes se serializan y la segunda ve el resultado de la primera. La UI muestra "Anular" en toda factura autorizada; el servidor es la autoridad (ocultarlo requeriría exponer las devoluciones en el DTO — mejora de UX opcional, no implementada).
+Una devolución autorizada es terminal y ya reingresó Kardex, reembolsó, emitió su Nota de Crédito; la anulación revierte la factura completa, así que nunca se combinan: Σ devuelto + Σ anulado ≤ vendido en cantidad, costo, reembolso/CxC e impuestos. Mismo criterio que Compras (PI-CANC-01). Ambas reglas se evalúan bajo el lock de la factura antes de cualquier efecto, por lo que la anulación y la autorización concurrentes se serializan y la segunda ve el resultado de la primera. La UI muestra "Anular" en toda factura autorizada; el servidor es la autoridad (ocultarlo requeriría exponer las devoluciones en el DTO — mejora de UX opcional, no implementada).
 
 `SalesInvoice` y `Payment` nunca se toman en el mismo flujo; ningún flujo que tenga la CxC vuelve a pedir factura, pago o advisory. El cobro no toma `CashSession`. Sin `advisory lock` adicional ni migración: la fila existente es el recurso compartido.
 
@@ -341,22 +343,22 @@ Mismo dato → misma respuesta desde ambos: inválido 422 `VALIDATION_ERROR`, RU
 
 ## Retenciones: una capacidad, una política de emisión (ZH-RETENTION-EMISSION-SSOT-01, ZH-PURCHASE-RETENTION-CONFIRM-01)
 
-Capacidad única (módulo `Retentions`, compartida por todo origen): `RetentionIssuer.IssueAsync` (unicidad por origen + revalidación server-side de elegibilidad con `IRetentionEligibilityService` + secuencia SRI "07" vía `CaptureNextAsync` + `RetentionDocument.Issue`, solo staging), `RetentionCanceller` (anula y revierte `AccountsPayable.ApplyRetention`, bloquea si la CxP tiene pagos), un único asiento `Retentions/DocumentIssued` (traductor estricto: si falla, falla la operación) y su reverso por `ReverseJournalEntryCommand` al anular. Invariante 1:1: a lo sumo una retención no anulada por origen (`ExistsActiveBySourceAsync` + índice único parcial `uq_retention_documents_active_source`).
+Capacidad única (módulo `Retentions`, compartida por todo origen): `RetentionIssuer.IssueAsync` (unicidad por origen + revalidación server-side de elegibilidad con `IRetentionEligibilityService` + secuencia SRI "07" vía `CaptureNextAsync` + `RetentionDocument.Issue`, solo staging), `RetentionCanceller` (anula y revierte `AccountsPayable.ApplyRetention`, bloquea si la CxP tiene pagos), integración contable según [Accounting](./accounting.md). Invariante 1:1: a lo sumo una retención no anulada por origen (`ExistsActiveBySourceAsync` + índice único parcial `uq_retention_documents_active_source`).
 
-**Política única (RETENTIONS-MODULE-DESIGN-01, decisión 15):** la retención de una Compra o un Gasto se define ANTES de confirmar el documento origen y, si hay `RetentionIntent` (`Retentions/UseCases/RetentionIntent.cs`, contrato único con `RetentionIntentValidator`), se emite DENTRO de la misma unidad de trabajo de la confirmación: documento confirmado + CxP creada con la retención aplicada + `RetentionDocument` emitido + asientos, en un único `SaveChanges`. Si cualquier paso falla (elegibilidad, punto de emisión, saldo de CxP, asiento), falla toda la confirmación y el documento sigue en borrador. Sin intención, la confirmación es exactamente la de siempre. No existe emisión posterior sobre un documento ya confirmado (`IssueRetentionCommand` y `POST /purchases/{id}/retention` fueron retirados).
+**Política única (RETENTIONS-MODULE-DESIGN-01, decisión 15):** la retención de una Compra o un Gasto se define ANTES de confirmar el documento origen y, si hay `RetentionIntent` (`Retentions/UseCases/RetentionIntent.cs`, contrato único con `RetentionIntentValidator`), se emite DENTRO de la misma unidad de trabajo de la confirmación: documento confirmado + CxP creada con la retención aplicada + `RetentionDocument` emitido, en la misma transacción. Si falla el núcleo operativo/tributario (elegibilidad, punto de emisión, saldo de CxP), falla toda la confirmación y el documento sigue en borrador. Integración contable: [Accounting](./accounting.md). Sin intención, la confirmación es exactamente la de siempre. No existe emisión posterior sobre un documento ya confirmado (`IssueRetentionCommand` y `POST /purchases/{id}/retention` fueron retirados).
 
-Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (nace, recibe número "07", aplica a la CxP y contabiliza junto con la confirmación) → `Cancelled`. La parte SRI es otro agregado (`ElectronicDocument`) y un acto explícito POSTERIOR para ambos orígenes, nunca automático al confirmar: `POST /retentions/{id}/electronic/register` (XML → firma → envío → autorización); XML y RIDE se consultan bajo demanda (`/retentions/{id}/electronic/xml`, `/ride/pdf`).
+Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (nace, recibe número "07", aplica a la CxP) → `Cancelled`. La parte SRI es otro agregado (`ElectronicDocument`) y un acto explícito POSTERIOR para ambos orígenes, nunca automático al confirmar: `POST /retentions/{id}/electronic/register` (XML → firma → envío → autorización); XML y RIDE se consultan bajo demanda (`/retentions/{id}/electronic/xml`, `/ride/pdf`).
 
 | | Gastos | Compras |
 |---|---|---|
 | Vista previa (borrador) | `GET /expenses/{id}/retention-eligibility` — elegibilidad; montos los escribe el usuario | `GET /purchases/{id}/retention-preview` (`CalculateRetentionHandler`) — misma `IRetentionEligibilityService` sobre las mismas bases que la emisión (`PurchaseRetentionSource`: IVA total / suma de bases imponibles) + `RetentionCalculator` para los montos propuestos (precargados, no editables). Solo sobre borradores |
 | Emisión | `RetentionIntent` en `ConfirmExpenseDocumentCommand`/`CreateConfirmedExpenseCommand` | `RetentionIntent` en `ConfirmPurchaseCommand` (`POST /purchases/{id}/confirm`, campo `retention`) |
-| Orden de efectos | confirmar gasto → emitir retención → CxP staged con `ApplyRetention` → `SaveChanges` (asientos de gasto y de retención) | precondiciones → recalcular impuestos → `Confirm` (congela costos) → cronograma → inventario/Kardex → CxP staged → **emitir retención + `ApplyRetention` (paso 4b)** → PVP → comunicación → `SaveChangesWithSequenceRetryAsync` (asientos de compra y de retención) |
+| Orden de efectos | confirmar gasto → emitir retención → CxP staged con `ApplyRetention` → `SaveChanges` del núcleo | precondiciones → recalcular impuestos → `Confirm` (congela costos) → cronograma → inventario/Kardex → CxP staged → **emitir retención + `ApplyRetention` (paso 4b)** → PVP → comunicación → persistencia del núcleo |
 | Concurrencia | `xmin` del gasto + índice 1:1 | `xmin` de la compra + índice único de CxP por origen + índice 1:1 (sin lock nuevo) |
 | Anular | Solo anulando el gasto (cascada `RetentionCanceller`) | Solo anulando la compra (cascada `RetentionCanceller`) |
 | Permisos | `expenses.documents.confirm` | `purchases.update` (confirmar) / `purchases.view` (vista previa); ningún permiso de Gastos |
 
-**Anulación (ZH-RETENTION-CANCELLATION-LIFECYCLE-01) — una sola semántica para todo origen:** la retención forma parte de la confirmación de su documento origen, así que solo se anula como consecuencia de anular ese origen (`CancelPurchaseHandler`/`CancelExpenseDocumentHandler` → `RetentionCanceller`: anula la retención, `ReverseRetention` en la CxP exactamente una vez, bloquea si la CxP tiene pagos, y el asiento `Retentions/DocumentIssued` se reversa por `RetentionDocumentCancelledEvent`, todo en la transacción de la anulación del origen). `Cancelled` es terminal: no hay reemisión ni reemplazo, y una retención anulada no se registra ante el SRI. Corregir una retención = anular el documento origen y registrarlo de nuevo. No existe anulación aislada (`CancelRetentionCommand` y `POST /purchases/{id}/retention/{rid}/cancel` fueron retirados); el gate `RetentionCancellationLifecycleTests` impide reintroducirla. Concurrencia: la anulación del origen serializa (Compras: Lock A + `xmin`; Gastos: `xmin`) y un reintento sobre el origen ya anulado se rechaza sin segundo reverso.
+**Anulación (ZH-RETENTION-CANCELLATION-LIFECYCLE-01) — una sola semántica para todo origen:** la retención forma parte de la confirmación de su documento origen, así que solo se anula como consecuencia de anular ese origen (`CancelPurchaseHandler`/`CancelExpenseDocumentHandler` → `RetentionCanceller`: anula la retención, `ReverseRetention` en la CxP exactamente una vez, bloquea si la CxP tiene pagos, todo en la transacción operativa de anulación del origen; integración contable en [Accounting](./accounting.md)). `Cancelled` es terminal: no hay reemisión ni reemplazo, y una retención anulada no se registra ante el SRI. Corregir una retención = anular el documento origen y registrarlo de nuevo. No existe anulación aislada (`CancelRetentionCommand` y `POST /purchases/{id}/retention/{rid}/cancel` fueron retirados); el gate `RetentionCancellationLifecycleTests` impide reintroducirla. Concurrencia: la anulación del origen serializa (Compras: Lock A + `xmin`; Gastos: `xmin`) y un reintento sobre el origen ya anulado se rechaza sin segundo reverso.
 
 **Ciclo electrónico (ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A, [ADR-036](../decisions/ADR-036-retention-electronic-document-cancellation.md)):**
 - **Transmisión automática:** confirmar Compra/Gasto con retención inicia su transmisión DESPUÉS del commit, vía `IRetentionElectronicTransmission.StartAsync` → `IElectronicDocumentIssuer.RegisterAsync` (único pipeline). `RetentionElectronicRecoveryJob` (cada minuto) retoma retenciones `Issued` sin comprobante o con uno en `Draft` (gracia de 2 min). Ambos entran por el mismo `StartAsync`; un solo comprobante por origen (`uq_electronic_document_source`). `POST /retentions/{id}/electronic/register` queda solo como recuperación (`electronic-documents.retry` + permiso de acción del origen).

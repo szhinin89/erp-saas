@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from "../../lib/apiEnvelope";
+import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 
 const BASE = "/api/v1/accounting";
 
@@ -276,6 +276,74 @@ export interface GetBalanceSheetReportResponse {
  * es deliberadamente solo lectura: revisión/auditoría de las reglas sembradas por
  * ACCOUNTING-POSTING-RULES-SEED-11B, sin editor todavía.
  */
+// ── ACCOUNTING-CONTINUITY-01 (espejo de AccountingContinuityDtos.cs en ERP.Application) ──
+
+export type AccountingOperationalMode = "Enabled" | "Disabled";
+export type AccountingPostingStatus = "Pending" | "Failed" | "Posted" | "Canceled";
+export type AccountingPostingAttemptTrigger = "Initial" | "Manual";
+
+export interface AccountingOperationalPolicyVersionDto {
+  id: string;
+  mode: AccountingOperationalMode;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  reason: string | null;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface AccountingOperationalPolicyDto {
+  isAccountingRequired: boolean;
+  isConfigured: boolean;
+  currentMode: AccountingOperationalMode | null;
+  today: string;
+  disabledAvailable: boolean;
+  versions: AccountingOperationalPolicyVersionDto[];
+}
+
+export interface SetAccountingOperationalModePayload {
+  mode: AccountingOperationalMode;
+  effectiveFrom: string;
+  reason: string | null;
+}
+
+export interface AccountingPostingDto {
+  id: string;
+  sourceModule: string;
+  factType: string;
+  sourceEventId: string;
+  sourceDocumentNumber: string | null;
+  businessDate: string;
+  entryDate: string;
+  status: AccountingPostingStatus;
+  errorCode: string | null;
+  errorMessage: string | null;
+  attempts: number;
+  lastAttemptAtUtc: string | null;
+  journalEntryId: string | null;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface AccountingPostingAttemptDto {
+  id: string;
+  attemptNumber: number;
+  trigger: AccountingPostingAttemptTrigger;
+  triggeredBy: string;
+  correlationId: string | null;
+  startedAtUtc: string;
+  finishedAtUtc: string;
+  outcome: AccountingPostingStatus;
+  errorCode: string | null;
+  errorMessage: string | null;
+  journalEntryId: string | null;
+}
+
+export interface AccountingPostingDetailDto {
+  posting: AccountingPostingDto;
+  attemptHistory: AccountingPostingAttemptDto[];
+}
+
 export const accountingApi = {
   listAccounts: () => apiGet<AccountDto[]>(`${BASE}/accounts`),
 
@@ -373,4 +441,24 @@ export const accountingApi = {
     qs.set("asOfDate", params.asOfDate);
     return apiGet<GetBalanceSheetReportResponse>(`${BASE}/reports/balance-sheet?${qs}`);
   },
+
+  // ACCOUNTING-CONTINUITY-01 — modo operativo por empresa y obligaciones contables durables.
+  getOperationalPolicy: () =>
+    apiGet<AccountingOperationalPolicyDto>(`${BASE}/operational-policy`),
+
+  setOperationalMode: (payload: SetAccountingOperationalModePayload) =>
+    apiPut<AccountingOperationalPolicyDto>(`${BASE}/operational-policy`, payload),
+
+  listPostings: (filters: { status?: AccountingPostingStatus | ""; sourceModule?: string }) => {
+    const params = new URLSearchParams();
+    if (filters.status) params.set("status", filters.status);
+    if (filters.sourceModule) params.set("sourceModule", filters.sourceModule);
+    const qs = params.toString();
+    return apiGet<AccountingPostingDto[]>(`${BASE}/postings${qs ? `?${qs}` : ""}`);
+  },
+
+  getPosting: (id: string) => apiGet<AccountingPostingDetailDto>(`${BASE}/postings/${id}`),
+
+  reprocessPosting: (id: string) =>
+    apiPost<AccountingPostingDto>(`${BASE}/postings/${id}/reprocess`, {}),
 };
