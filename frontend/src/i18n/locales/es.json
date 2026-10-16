@@ -4234,5 +4234,15 @@
   "accounting.continuity.postings.reprocessPosted": "Contabilización publicada.",
   "accounting.continuity.postings.reprocessFailed": "El intento volvió a fallar: {{error}}",
   "accounting.continuity.postings.error.load": "No se pudieron cargar las contabilizaciones.",
-  "accounting.continuity.postings.error.reprocess": "No se pudo reprocesar la contabilización."
+  "accounting.continuity.postings.error.reprocess": "No se pudo reprocesar la contabilización.",
+  "accounting.continuity.postings.reason": "Motivo",
+  "accounting.continuity.postings.reasonRequired": "El motivo es obligatorio.",
+  "accounting.continuity.postings.select": "Seleccionar",
+  "accounting.continuity.postings.batch": "Reprocesar selección",
+  "accounting.continuity.postings.confirm": "Continuar",
+  "accounting.continuity.postings.results": "Resultados del lote",
+  "accounting.continuity.postings.result.Attempted": "Intentado",
+  "accounting.continuity.postings.result.AlreadyResolved": "Ya resuelta",
+  "accounting.continuity.postings.result.NotFound": "No encontrada",
+  "accounting.continuity.postings.result.NotAttempted": "No intentada"
 }

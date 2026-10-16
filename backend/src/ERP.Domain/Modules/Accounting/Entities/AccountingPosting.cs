@@ -23,6 +23,7 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
     public const int ErrorCodeMaxLength = AccountingPostingAttempt.ErrorCodeMaxLength;
     public const int ErrorMessageMaxLength = AccountingPostingAttempt.ErrorMessageMaxLength;
     public const int CorrelationIdMaxLength = AccountingPostingAttempt.CorrelationIdMaxLength;
+    public const int ReasonMaxLength = AccountingPostingAttempt.ReasonMaxLength;
 
     public Guid CompanyId { get; private set; }
     public string SourceModule { get; private set; } = null!;
@@ -102,6 +103,7 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
         AccountingPostingAttemptTrigger trigger,
         Guid triggeredBy,
         string? correlationId,
+        string? reason,
         DateTime startedAtUtc,
         DateTime finishedAtUtc
     )
@@ -109,12 +111,13 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
         if (journalEntryId == Guid.Empty)
             throw new ArgumentException("El asiento es obligatorio.", nameof(journalEntryId));
         EnsureAttemptable();
+        var normalizedReason = NormalizeReason(trigger, reason);
 
         Status = AccountingPostingStatus.Posted;
         JournalEntryId = journalEntryId;
         ErrorCode = null;
         ErrorMessage = null;
-        return RegisterAttempt(trigger, triggeredBy, correlationId, startedAtUtc, finishedAtUtc, null, null);
+        return RegisterAttempt(trigger, triggeredBy, correlationId, normalizedReason, startedAtUtc, finishedAtUtc, null, null);
     }
 
     /// <summary>Resultado fallido de un intento: error durable, sin asiento.</summary>
@@ -124,11 +127,13 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
         AccountingPostingAttemptTrigger trigger,
         Guid triggeredBy,
         string? correlationId,
+        string? reason,
         DateTime startedAtUtc,
         DateTime finishedAtUtc
     )
     {
         EnsureAttemptable();
+        var normalizedReason = NormalizeReason(trigger, reason);
 
         Status = AccountingPostingStatus.Failed;
         ErrorCode = Truncate(string.IsNullOrWhiteSpace(errorCode) ? "POSTING_FAILED" : errorCode, ErrorCodeMaxLength);
@@ -137,6 +142,7 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
             trigger,
             triggeredBy,
             correlationId,
+            normalizedReason,
             startedAtUtc,
             finishedAtUtc,
             ErrorCode,
@@ -190,10 +196,28 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
             );
     }
 
+    /// <summary>
+    /// Un reproceso manual exige motivo (docs/architecture/accounting.md §14); el intento inicial es
+    /// del sistema y no lo lleva.
+    /// </summary>
+    public static string? NormalizeReason(AccountingPostingAttemptTrigger trigger, string? reason)
+    {
+        var trimmed = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        if (trigger == AccountingPostingAttemptTrigger.Manual && trimmed is null)
+            throw new ArgumentException("El motivo del reproceso manual es obligatorio.", nameof(reason));
+        if (trimmed is { Length: > ReasonMaxLength })
+            throw new ArgumentException(
+                $"El motivo no puede superar {ReasonMaxLength} caracteres.",
+                nameof(reason)
+            );
+        return trimmed;
+    }
+
     private AccountingPostingAttempt RegisterAttempt(
         AccountingPostingAttemptTrigger trigger,
         Guid triggeredBy,
         string? correlationId,
+        string? reason,
         DateTime startedAtUtc,
         DateTime finishedAtUtc,
         string? errorCode,
@@ -209,6 +233,7 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
             trigger,
             triggeredBy,
             correlationId,
+            reason,
             startedAtUtc,
             finishedAtUtc,
             Status,

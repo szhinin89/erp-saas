@@ -4234,5 +4234,15 @@
   "accounting.continuity.postings.reprocessPosted": "Posting published.",
   "accounting.continuity.postings.reprocessFailed": "The attempt failed again: {{error}}",
   "accounting.continuity.postings.error.load": "Could not load postings.",
-  "accounting.continuity.postings.error.reprocess": "Could not reprocess the posting."
+  "accounting.continuity.postings.error.reprocess": "Could not reprocess the posting.",
+  "accounting.continuity.postings.reason": "Reason",
+  "accounting.continuity.postings.reasonRequired": "Reason is required.",
+  "accounting.continuity.postings.select": "Select",
+  "accounting.continuity.postings.batch": "Reprocess selection",
+  "accounting.continuity.postings.confirm": "Continue",
+  "accounting.continuity.postings.results": "Batch results",
+  "accounting.continuity.postings.result.Attempted": "Attempted",
+  "accounting.continuity.postings.result.AlreadyResolved": "Already resolved",
+  "accounting.continuity.postings.result.NotFound": "Not found",
+  "accounting.continuity.postings.result.NotAttempted": "Not attempted"
 }

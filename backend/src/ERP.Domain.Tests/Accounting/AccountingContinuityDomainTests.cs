@@ -32,6 +32,20 @@ public sealed class AccountingContinuityDomainTests
             "corr"
         );
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Manual_reason_is_required_before_state_changes(string? reason)
+    {
+        var posting = Pending();
+        var attempt = () => posting.RecordFailed("X", "Y", AccountingPostingAttemptTrigger.Manual,
+            UserId, "correlation", reason, Now, Now);
+        attempt.Should().Throw<ArgumentException>();
+        posting.Status.Should().Be(AccountingPostingStatus.Pending);
+        posting.Attempts.Should().Be(0);
+    }
+
     [Fact]
     public void Nace_Pending_sin_intentos_ni_asiento()
     {
@@ -50,8 +64,8 @@ public sealed class AccountingContinuityDomainTests
         var reprocessor = Guid.NewGuid();
         var entryId = Guid.NewGuid();
 
-        var first = posting.RecordFailed("RULE_NOT_FOUND", "Sin regla", AccountingPostingAttemptTrigger.Initial, UserId, "c1", Now, Now);
-        var second = posting.RecordPosted(entryId, AccountingPostingAttemptTrigger.Manual, reprocessor, "c2", Now, Now.AddSeconds(1));
+        var first = posting.RecordFailed("RULE_NOT_FOUND", "Sin regla", AccountingPostingAttemptTrigger.Initial, UserId, "c1", null, Now, Now);
+        var second = posting.RecordPosted(entryId, AccountingPostingAttemptTrigger.Manual, reprocessor, "c2", "Regla corregida", Now, Now.AddSeconds(1));
 
         first.AttemptNumber.Should().Be(1);
         first.Outcome.Should().Be(AccountingPostingStatus.Failed);
@@ -71,9 +85,9 @@ public sealed class AccountingContinuityDomainTests
     public void Posted_no_admite_nuevos_intentos_ni_cancelacion()
     {
         var posting = Pending();
-        posting.RecordPosted(Guid.NewGuid(), AccountingPostingAttemptTrigger.Initial, UserId, null, Now, Now);
+        posting.RecordPosted(Guid.NewGuid(), AccountingPostingAttemptTrigger.Initial, UserId, null, null, Now, Now);
 
-        var retry = () => posting.RecordFailed("X", "Y", AccountingPostingAttemptTrigger.Manual, UserId, null, Now, Now);
+        var retry = () => posting.RecordFailed("X", "Y", AccountingPostingAttemptTrigger.Manual, UserId, null, "Reproceso", Now, Now);
         var cancel = () => posting.Cancel(UserId);
 
         retry.Should().Throw<DomainRuleViolationException>();
@@ -84,10 +98,10 @@ public sealed class AccountingContinuityDomainTests
     public void Failed_se_cancela_y_luego_no_admite_intentos()
     {
         var posting = Pending();
-        posting.RecordFailed("RULE_NOT_FOUND", null, AccountingPostingAttemptTrigger.Initial, UserId, null, Now, Now);
+        posting.RecordFailed("RULE_NOT_FOUND", null, AccountingPostingAttemptTrigger.Initial, UserId, null, null, Now, Now);
 
         posting.Cancel(UserId);
-        var retry = () => posting.RecordPosted(Guid.NewGuid(), AccountingPostingAttemptTrigger.Manual, UserId, null, Now, Now);
+        var retry = () => posting.RecordPosted(Guid.NewGuid(), AccountingPostingAttemptTrigger.Manual, UserId, null, "Reproceso", Now, Now);
 
         posting.Status.Should().Be(AccountingPostingStatus.Canceled);
         posting.IsResolved.Should().BeTrue();
@@ -99,7 +113,7 @@ public sealed class AccountingContinuityDomainTests
     {
         var posting = Pending();
 
-        var attempt = posting.RecordFailed(null, new string('x', 5000), AccountingPostingAttemptTrigger.Initial, UserId, null, Now, Now);
+        var attempt = posting.RecordFailed(null, new string('x', 5000), AccountingPostingAttemptTrigger.Initial, UserId, null, null, Now, Now);
 
         posting.ErrorCode.Should().Be("POSTING_FAILED");
         posting.ErrorMessage!.Length.Should().Be(AccountingPosting.ErrorMessageMaxLength);

@@ -247,7 +247,7 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
             var inside = Obligation(new DateOnly(2026, 7, 31));
             if (failed)
                 inside.RecordFailed("RULE_NOT_FOUND", "Sin regla", AccountingPostingAttemptTrigger.Initial,
-                    _createdBy, null, DateTime.UtcNow, DateTime.UtcNow);
+                    _createdBy, null, null, DateTime.UtcNow, DateTime.UtcNow);
             seed.AccountingPostings.AddRange(inside, Obligation(new DateOnly(2026, 8, 1)));
             await seed.SaveChangesAsync();
         }

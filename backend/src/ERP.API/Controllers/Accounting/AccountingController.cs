@@ -250,6 +250,23 @@ public sealed class AccountingController : ControllerBase
 
     [HttpPost("postings/{id:guid}/reprocess")]
     [Authorize(Policy = $"perm:{AccountingPermissions.PostingsReprocess}")]
-    public async Task<IActionResult> ReprocessPosting(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new ReprocessAccountingPostingCommand(id), ct));
+    public async Task<IActionResult> ReprocessPosting(
+        Guid id,
+        [FromBody] ReprocessAccountingPostingRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new ReprocessAccountingPostingCommand(id, request.Reason), ct)
+        );
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-02 — reproceso manual en lote por IDs explícitos (máx. 100). Responde 200
+    /// con el resultado individual de cada obligación, aunque alguna falle.
+    /// </summary>
+    [HttpPost("postings/reprocess")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PostingsReprocess}")]
+    public async Task<IActionResult> ReprocessPostings(
+        [FromBody] ReprocessAccountingPostingsCommand command,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct));
 }

@@ -35,8 +35,8 @@ public static class AccountingPermissions
     public const string PostingsView = "accounting.postings.view";
 
     /// <summary>
-    /// ACCOUNTING-CONTINUITY-01 — reproceso manual individual de una obligación Pending/Failed. El
-    /// permiso del documento origen no concede esta capacidad.
+    /// ACCOUNTING-CONTINUITY-01/02 — reproceso manual individual y en lote de obligaciones
+    /// Pending/Failed. El permiso del documento origen no concede esta capacidad.
     /// </summary>
     public const string PostingsReprocess = "accounting.postings.reprocess";
 }

@@ -32,6 +32,10 @@ public sealed class AccountingPostingAttemptConfiguration
             .Property(x => x.CorrelationId)
             .HasColumnName("correlation_id")
             .HasMaxLength(AccountingPostingAttempt.CorrelationIdMaxLength);
+        builder
+            .Property(x => x.Reason)
+            .HasColumnName("reason")
+            .HasMaxLength(AccountingPostingAttempt.ReasonMaxLength);
         builder.Property(x => x.StartedAtUtc).HasColumnName("started_at_utc").IsRequired();
         builder.Property(x => x.FinishedAtUtc).HasColumnName("finished_at_utc").IsRequired();
         builder

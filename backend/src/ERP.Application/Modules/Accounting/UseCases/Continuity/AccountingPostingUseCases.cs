@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 using FluentValidation;
@@ -7,8 +8,8 @@ using MediatR;
 
 namespace ERP.Application.Modules.Accounting.UseCases.Continuity;
 
-// ACCOUNTING-CONTINUITY-01 — consulta de obligaciones contables y reproceso manual individual.
-// Sin reproceso masivo, sin reintento automático (docs/architecture/accounting.md §6).
+// ACCOUNTING-CONTINUITY-01/02 — consulta de obligaciones contables y reproceso manual individual
+// y en lote. Sin reintento automático (docs/architecture/accounting.md §6).
 
 public sealed record GetAccountingPostingsQuery(
     AccountingPostingStatus? Status = null,
@@ -21,9 +22,12 @@ public sealed record GetAccountingPostingByIdQuery(Guid Id)
     : IRequest<Result<AccountingPostingDetailDto>>,
         ICompanyScopedRequest;
 
-public sealed record ReprocessAccountingPostingCommand(Guid Id)
+public sealed record ReprocessAccountingPostingCommand(Guid Id, string? Reason)
     : IRequest<Result<AccountingPostingDto>>,
         ICompanyScopedRequest;
+
+/// <summary>Cuerpo HTTP del reproceso individual (el Id viaja en la ruta).</summary>
+public sealed record ReprocessAccountingPostingRequest(string? Reason);
 
 public sealed class GetAccountingPostingsQueryValidator : AbstractValidator<GetAccountingPostingsQuery>
 {
@@ -44,7 +48,22 @@ public sealed class GetAccountingPostingByIdQueryValidator
 public sealed class ReprocessAccountingPostingCommandValidator
     : AbstractValidator<ReprocessAccountingPostingCommand>
 {
-    public ReprocessAccountingPostingCommandValidator() => RuleFor(x => x.Id).NotEmpty();
+    public ReprocessAccountingPostingCommandValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Reason).ValidReprocessReason();
+    }
+}
+
+internal static class AccountingPostingReprocessRules
+{
+    public static IRuleBuilderOptions<T, string?> ValidReprocessReason<T>(
+        this IRuleBuilder<T, string?> rule
+    ) =>
+        rule.Must(r => !string.IsNullOrWhiteSpace(r))
+            .WithMessage("El motivo del reproceso es obligatorio.")
+            .MaximumLength(AccountingPostingAttempt.ReasonMaxLength)
+            .WithMessage($"El motivo no puede superar {AccountingPostingAttempt.ReasonMaxLength} caracteres.");
 }
 
 public sealed class GetAccountingPostingsHandler
@@ -142,5 +161,5 @@ public sealed class ReprocessAccountingPostingHandler
     public Task<Result<AccountingPostingDto>> Handle(
         ReprocessAccountingPostingCommand command,
         CancellationToken ct
-    ) => _executor.ExecuteAsync(command.Id, AccountingPostingAttemptTrigger.Manual, ct);
+    ) => _executor.ExecuteAsync(command.Id, AccountingPostingAttemptTrigger.Manual, command.Reason, ct);
 }

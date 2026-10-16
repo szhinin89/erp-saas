@@ -3120,6 +3120,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("outcome");
 
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
                     b.Property<DateTime>("StartedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("started_at_utc");

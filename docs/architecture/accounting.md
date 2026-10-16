@@ -389,7 +389,7 @@ de Accounting. DocumentFlowPolicy no es un permiso.
 Evidencia actual: AccountingController usa `AccountingPermissions.View/Create/Update/Delete`
 para sus consultas y administración; `accounting.settings.update` cambia el modo operativo,
 `accounting.postings.view` consulta obligaciones e intentos y `accounting.postings.reprocess`
-ejecuta el reproceso manual individual. El retry de costos usa StockManage y la apertura sus
+ejecuta el reproceso manual individual y en lote. El retry de costos usa StockManage y la apertura sus
 permisos combinados existentes; aún no existe permiso de asientos manuales.
 
 Auditar cambios de configuración y vigencia, creación/resolución/cancelación de obligación,
@@ -428,7 +428,7 @@ Rutas abreviadas desde `backend/src/`:
 
 Corte Compra/Gasto + Retención adoptado (ACCOUNTING-CONTINUITY-01). Siguientes cortes:
 reversos como obligación y fecha efectiva de libro cerrado, demás integraciones automáticas,
-convergencia de costos/apertura, reproceso en bloque, integridad completa de cierre/reportes
+convergencia de costos/apertura, integridad completa de cierre/reportes
 y manuales generales. Mientras el reverso general no converja, el reverso fallido de un asiento
 Posted de Compra/Gasto/Retención bloquea su anulación (rollback completo). Cada corte requiere
 reproducción, fix mínimo, tests focales y revisión de diff. No se autoriza un pipeline
@@ -438,3 +438,25 @@ PostgreSQL real es obligatorio para verificar transacciones, concurrencia, scope
 locks e invariantes de persistencia; no sustituir por SQLite, memoria o mocks.
 No hay decisiones funcionales pendientes para consolidar este contrato; si la
 implementación descubre una contradicción de dominio, se eleva la decisión necesaria.
+
+## 17. Reproceso manual ACCOUNTING-CONTINUITY-02
+
+EXTEND: `POST /api/v1/accounting/postings/reprocess` recibe `{ ids, reason }`, hasta
+100 IDs explícitos por solicitud, deduplicados conservando orden. Reutiliza
+`accounting.postings.reprocess` y el mismo ejecutor individual con `IPostingEngine`.
+Cada obligación tiene transacción propia y resultado `Attempted` (Posted/Failed),
+`AlreadyResolved` (Posted/Canceled), `NotFound` (incluye otro Tenant/Company) o
+`NotAttempted` (cancelación). Un fallo no detiene las siguientes. Si tampoco puede
+persistirse el fallo, `Attempted` incluye error interno seguro y Posting null;
+la obligación conserva su estado durable anterior.
+
+`AccountingPostingAttempt.Reason` almacena el motivo manual obligatorio (hasta 500
+caracteres, recortado en sus extremos), junto con usuario y correlación común del
+lote. Los intentos iniciales y los registros históricos pueden tener motivo null.
+El endpoint individual recibe `{ reason }`. No hay tabla Batch ni retry automático.
+
+BUG REAL: el ejecutor limpia tracking antes/después de cada intento independiente,
+fuera de cualquier transacción ajena; conserva tracking durante la transacción
+para permitir varias reservas válidas de JournalEntrySequence. Los locks y las
+claves de idempotencia existentes permanecen. La UI reutiliza componentes ZH,
+selecciona solo Pending/Failed, exige motivo y confirmación, y muestra cada resultado.

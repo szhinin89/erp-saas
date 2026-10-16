@@ -1,5 +1,15 @@
 # Project Status
 
+## ACCOUNTING-CONTINUITY-02 (2026-10-16)
+
+EXTEND: reproceso manual individual y por lote de IDs (hasta 100), con motivo
+persistido, permiso existente, correlación común y resultados independientes.
+BUG REAL: aislamiento del contexto entre intentos sin alterar reservas dentro de
+una misma transacción. Sin retry automático, workers ni tabla Batch.
+Validación y archivos: [entrega](docs/agent/ACCOUNTING_CONTINUITY_02_DELIVERY.md).
+Migración AccountingContinuity02 solo en PostgreSQL aislado de pruebas; piloto pendiente.
+Sin suites completas, gates amplios, staging, commit ni push.
+
 ## ACCOUNTING
 
 ACCOUNTING-CONTINUITY-01 (2026-10-16) implementado y validado focalmente, sin commit/push: política operativa versionada por empresa, obligación contable durable con intentos y reproceso manual individual para Compra, Gasto y Retención; gate mínimo de cierre; `AccountingPostingMode` retirado. Migración `AccountingContinuity01`. Demás integraciones, reversos y cierre completo pendientes. Estado y contrato: [Accounting](docs/architecture/accounting.md).

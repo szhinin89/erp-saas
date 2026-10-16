@@ -326,6 +326,7 @@ export interface AccountingPostingDto {
 }
 
 export interface AccountingPostingAttemptDto {
+  reason: string | null;
   id: string;
   attemptNumber: number;
   trigger: AccountingPostingAttemptTrigger;
@@ -337,6 +338,18 @@ export interface AccountingPostingAttemptDto {
   errorCode: string | null;
   errorMessage: string | null;
   journalEntryId: string | null;
+}
+
+export interface AccountingPostingBatchItemDto {
+  id: string;
+  outcome: "Attempted" | "AlreadyResolved" | "NotFound" | "NotAttempted";
+  posting: AccountingPostingDto | null;
+  errorMessage?: string | null;
+}
+export interface AccountingPostingBatchReprocessDto {
+  correlationId: string;
+  items: AccountingPostingBatchItemDto[];
+  summary: { requested: number; attempted: number; alreadyResolved: number; notFound: number; notAttempted: number };
 }
 
 export interface AccountingPostingDetailDto {
@@ -459,6 +472,8 @@ export const accountingApi = {
 
   getPosting: (id: string) => apiGet<AccountingPostingDetailDto>(`${BASE}/postings/${id}`),
 
-  reprocessPosting: (id: string) =>
-    apiPost<AccountingPostingDto>(`${BASE}/postings/${id}/reprocess`, {}),
+  reprocessPosting: (id: string, reason: string) =>
+    apiPost<AccountingPostingDto>(`${BASE}/postings/${id}/reprocess`, { reason }),
+  reprocessPostings: (ids: string[], reason: string) =>
+    apiPost<AccountingPostingBatchReprocessDto>(`${BASE}/postings/reprocess`, { ids, reason }),
 };

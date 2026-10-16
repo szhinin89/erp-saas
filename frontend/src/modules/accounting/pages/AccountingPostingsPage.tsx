@@ -1,18 +1,33 @@
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { applyServerErrors } from "../../lib/validationErrors";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PageShell, Badge, type BadgeVariant } from "../../../components/PageShell";
+import {
+  PageShell,
+  Badge,
+  type BadgeVariant,
+} from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZHModal } from "../../../components/zh/ZHModal";
-import { ZhSelect } from "../../../components/zh/inputs";
-import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { ZhSelect, ZhTextarea } from "../../../components/zh/inputs";
+import {
+  ZHDataTable,
+  type ZHDataTableColumn,
+} from "../../../components/zh/ZHDataTable";
 import { useI18n } from "../../../i18n/i18n";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
-import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
+import {
+  formatDate,
+  formatDateTime,
+} from "../../../lib/formatters/dateFormatters";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
 import {
   accountingApi,
+  type AccountingPostingBatchItemDto,
   type AccountingPostingAttemptDto,
   type AccountingPostingDetailDto,
   type AccountingPostingDto,
@@ -23,7 +38,12 @@ import { factTypeLabel, sourceModuleLabel } from "../labels/accountingLabels";
 import "../../../styles/shared/items-catalog.css";
 
 const REPROCESS_PERMISSION = "accounting.postings.reprocess";
-const STATUSES: AccountingPostingStatus[] = ["Pending", "Failed", "Posted", "Canceled"];
+const STATUSES: AccountingPostingStatus[] = [
+  "Pending",
+  "Failed",
+  "Posted",
+  "Canceled",
+];
 // Orígenes que hoy generan obligación durable (ACCOUNTING-CONTINUITY-01).
 const SOURCE_MODULES = ["Purchases", "Expenses", "Retentions"];
 
@@ -38,8 +58,8 @@ const STATUS_VARIANT: Record<AccountingPostingStatus, BadgeVariant> = {
  * Contabilidad → Asientos → Contabilizaciones (ACCOUNTING-CONTINUITY-01). Auditoría de
  * reutilización: revisadas `PostingRulesPage.tsx` (filtros ZHFilterBar+ZHField compact+ZhSelect) y
  * `JournalEntriesPage.tsx` (listado ZHDataTable con Badge de estado); historial en `ZHModal` y
- * confirmación vía `message.confirm`. Sin componentes nuevos. El reproceso es individual y manual
- * (`accounting.postings.reprocess`): no hay reproceso masivo ni automático.
+ * confirmation via message.confirm; RHF/Zod + ZhTextarea for the reason and checkbox selection.
+ * Extends this page with a manual batch and ZHDataTable results. No new components.
  */
 export function AccountingPostingsPage() {
   const { t } = useI18n();
@@ -50,10 +70,29 @@ export function AccountingPostingsPage() {
   const [status, setStatus] = useState<AccountingPostingStatus | "">("Failed");
   const [sourceModule, setSourceModule] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [batchMode, setBatchMode] = useState(false);
+  const [requestIds, setRequestIds] = useState<string[] | null>(null);
+  const [results, setResults] = useState<
+    AccountingPostingBatchItemDto[] | null
+  >(null);
+  const form = useForm<{ reason: string }>({
+    resolver: zodResolver(
+      z.object({
+        reason: z
+          .string()
+          .trim()
+          .min(1, t("accounting.continuity.postings.reasonRequired"))
+          .max(500),
+      }),
+    ),
+    defaultValues: { reason: "" },
+  });
   const [detail, setDetail] = useState<AccountingPostingDetailDto | null>(null);
 
   const statusLabel = useCallback(
-    (value: AccountingPostingStatus) => t(`accounting.continuity.postings.status.${value}`),
+    (value: AccountingPostingStatus) =>
+      t(`accounting.continuity.postings.status.${value}`),
     [t],
   );
 
@@ -61,8 +100,13 @@ export function AccountingPostingsPage() {
     setLoading(true);
     try {
       setPostings(await accountingApi.listPostings({ status, sourceModule }));
+      setSelected([]);
     } catch (err: unknown) {
-      message.error(formatApiRequestError(err, { generic: t("accounting.continuity.postings.error.load") }));
+      message.error(
+        formatApiRequestError(err, {
+          generic: t("accounting.continuity.postings.error.load"),
+        }),
+      );
     } finally {
       setLoading(false);
     }
@@ -77,43 +121,94 @@ export function AccountingPostingsPage() {
       try {
         setDetail(await accountingApi.getPosting(row.id));
       } catch (err: unknown) {
-        message.error(formatApiRequestError(err, { generic: t("accounting.continuity.postings.error.load") }));
+        message.error(
+          formatApiRequestError(err, {
+            generic: t("accounting.continuity.postings.error.load"),
+          }),
+        );
       }
     },
     [t],
   );
 
-  const reprocess = useCallback(async (row: AccountingPostingDto) => {
+  const reprocess = async ({ reason }: { reason: string }) => {
+    if (!requestIds?.length || requestIds.length > 100 || busyId) return;
     const confirmed = await message.confirm({
       title: t("accounting.continuity.postings.reprocessConfirmTitle"),
       message: t("accounting.continuity.postings.reprocessConfirmMessage"),
       confirmLabel: t("accounting.continuity.postings.reprocess"),
     });
     if (!confirmed) return;
-    setBusyId(row.id);
+    setBusyId(requestIds[0]);
     try {
-      const result = await accountingApi.reprocessPosting(row.id);
-      if (result.status === "Posted") message.success(t("accounting.continuity.postings.reprocessPosted"));
-      else
-        message.warning(
-          t("accounting.continuity.postings.reprocessFailed", { error: result.errorMessage ?? result.errorCode ?? "" }),
+      if (batchMode) {
+        const batch = await accountingApi.reprocessPostings(requestIds, reason);
+        setResults(batch.items);
+      } else {
+        const result = await accountingApi.reprocessPosting(
+          requestIds[0],
+          reason,
         );
+        if (result.status === "Posted")
+          message.success(t("accounting.continuity.postings.reprocessPosted"));
+        else
+          message.warning(
+            t("accounting.continuity.postings.reprocessFailed", {
+              error: result.errorMessage ?? result.errorCode ?? "",
+            }),
+          );
+      }
+      setRequestIds(null);
       await fetchPostings();
     } catch (err: unknown) {
-      message.error(formatApiRequestError(err, { generic: t("accounting.continuity.postings.error.reprocess") }));
+      if (!applyServerErrors(err, form.setError, (msg) => message.error(msg)))
+        message.error(
+          formatApiRequestError(err, {
+            generic: t("accounting.continuity.postings.error.reprocess"),
+          }),
+        );
     } finally {
       setBusyId(null);
     }
-  }, [fetchPostings, t]);
+  };
 
   const columns = useMemo<ZHDataTableColumn<AccountingPostingDto>[]>(
     () => [
+      ...(canReprocess
+        ? [
+            {
+              key: "selection",
+              header: t("accounting.continuity.postings.select"),
+              render: (row: AccountingPostingDto) =>
+                row.status === "Pending" || row.status === "Failed" ? (
+                  <input
+                    type="checkbox"
+                    aria-label={`${t("accounting.continuity.postings.select")} ${row.id}`}
+                    checked={selected.includes(row.id)}
+                    disabled={
+                      loading ||
+                      busyId !== null ||
+                      (!selected.includes(row.id) && selected.length >= 100)
+                    }
+                    onChange={(e) =>
+                      setSelected((ids) =>
+                        e.target.checked
+                          ? [...ids, row.id]
+                          : ids.filter((id) => id !== row.id),
+                      )
+                    }
+                  />
+                ) : null,
+            },
+          ]
+        : []),
       {
         key: "document",
         header: t("accounting.continuity.postings.column.document"),
         render: (row) => (
           <span>
-            <strong>{sourceModuleLabel(t, row.sourceModule)}</strong> {row.sourceDocumentNumber ?? ""}
+            <strong>{sourceModuleLabel(t, row.sourceModule)}</strong>{" "}
+            {row.sourceDocumentNumber ?? ""}
           </span>
         ),
       },
@@ -131,7 +226,12 @@ export function AccountingPostingsPage() {
         key: "status",
         header: t("accounting.continuity.postings.column.status"),
         align: "center",
-        render: (row) => <Badge label={statusLabel(row.status)} variant={STATUS_VARIANT[row.status]} />,
+        render: (row) => (
+          <Badge
+            label={statusLabel(row.status)}
+            variant={STATUS_VARIANT[row.status]}
+          />
+        ),
       },
       {
         key: "attempts",
@@ -143,7 +243,8 @@ export function AccountingPostingsPage() {
       {
         key: "lastAttempt",
         header: t("accounting.continuity.postings.column.lastAttempt"),
-        render: (row) => (row.lastAttemptAtUtc ? formatDateTime(row.lastAttemptAtUtc) : "—"),
+        render: (row) =>
+          row.lastAttemptAtUtc ? formatDateTime(row.lastAttemptAtUtc) : "—",
       },
       {
         key: "error",
@@ -156,24 +257,43 @@ export function AccountingPostingsPage() {
         align: "right",
         render: (row) => (
           <div className="prd-row-actions">
-            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void openHistory(row)}>
+            <ZHBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => void openHistory(row)}
+            >
               {t("accounting.continuity.postings.history")}
             </ZHBtn>
-            {canReprocess && (row.status === "Pending" || row.status === "Failed") && (
-              <ZHBtn
-                size="sm"
-                type="button"
-                disabled={busyId !== null}
-                onClick={() => void reprocess(row)}
-              >
-                {t("accounting.continuity.postings.reprocess")}
-              </ZHBtn>
-            )}
+            {canReprocess &&
+              (row.status === "Pending" || row.status === "Failed") && (
+                <ZHBtn
+                  size="sm"
+                  type="button"
+                  disabled={busyId !== null}
+                  onClick={() => {
+                    form.reset();
+                    setBatchMode(false);
+                    setRequestIds([row.id]);
+                  }}
+                >
+                  {t("accounting.continuity.postings.reprocess")}
+                </ZHBtn>
+              )}
           </div>
         ),
       },
     ],
-    [t, statusLabel, canReprocess, busyId, openHistory, reprocess],
+    [
+      t,
+      statusLabel,
+      canReprocess,
+      busyId,
+      openHistory,
+      selected,
+      loading,
+      form,
+    ],
   );
 
   const attemptColumns: ZHDataTableColumn<AccountingPostingAttemptDto>[] = [
@@ -184,9 +304,15 @@ export function AccountingPostingsPage() {
       render: (row) => row.attemptNumber,
     },
     {
+      key: "reason",
+      header: t("accounting.continuity.postings.reason"),
+      render: (row) => row.reason ?? "—",
+    },
+    {
       key: "trigger",
       header: t("accounting.continuity.postings.attempt.trigger"),
-      render: (row) => t(`accounting.continuity.postings.trigger.${row.trigger}`),
+      render: (row) =>
+        t(`accounting.continuity.postings.trigger.${row.trigger}`),
     },
     {
       key: "finishedAt",
@@ -196,7 +322,12 @@ export function AccountingPostingsPage() {
     {
       key: "outcome",
       header: t("accounting.continuity.postings.attempt.outcome"),
-      render: (row) => <Badge label={statusLabel(row.outcome)} variant={STATUS_VARIANT[row.outcome]} />,
+      render: (row) => (
+        <Badge
+          label={statusLabel(row.outcome)}
+          variant={STATUS_VARIANT[row.outcome]}
+        />
+      ),
     },
     {
       key: "error",
@@ -220,13 +351,20 @@ export function AccountingPostingsPage() {
           disabled={loading}
         >
           <div className="zh-filterbar__field">
-            <ZHField label={t("accounting.continuity.postings.column.status")} density="compact">
+            <ZHField
+              label={t("accounting.continuity.postings.column.status")}
+              density="compact"
+            >
               <ZhSelect
                 value={status}
                 disabled={loading}
-                onChange={(e) => setStatus(e.target.value as AccountingPostingStatus | "")}
+                onChange={(e) =>
+                  setStatus(e.target.value as AccountingPostingStatus | "")
+                }
               >
-                <option value="">{t("accounting.continuity.postings.filter.allStatuses")}</option>
+                <option value="">
+                  {t("accounting.continuity.postings.filter.allStatuses")}
+                </option>
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {statusLabel(s)}
@@ -236,9 +374,18 @@ export function AccountingPostingsPage() {
             </ZHField>
           </div>
           <div className="zh-filterbar__field">
-            <ZHField label={t("accounting.continuity.postings.column.document")} density="compact">
-              <ZhSelect value={sourceModule} disabled={loading} onChange={(e) => setSourceModule(e.target.value)}>
-                <option value="">{t("accounting.continuity.postings.filter.allModules")}</option>
+            <ZHField
+              label={t("accounting.continuity.postings.column.document")}
+              density="compact"
+            >
+              <ZhSelect
+                value={sourceModule}
+                disabled={loading}
+                onChange={(e) => setSourceModule(e.target.value)}
+              >
+                <option value="">
+                  {t("accounting.continuity.postings.filter.allModules")}
+                </option>
                 {SOURCE_MODULES.map((m) => (
                   <option key={m} value={m}>
                     {sourceModuleLabel(t, m)}
@@ -248,7 +395,13 @@ export function AccountingPostingsPage() {
             </ZHField>
           </div>
           <div className="zh-filterbar__field">
-            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void fetchPostings()} disabled={loading}>
+            <ZHBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => void fetchPostings()}
+              disabled={loading}
+            >
               {t("common.refresh")}
             </ZHBtn>
           </div>
@@ -256,6 +409,19 @@ export function AccountingPostingsPage() {
       </ZHCard>
 
       <ZHCard>
+        {canReprocess && (
+          <ZHBtn
+            type="button"
+            disabled={!selected.length || busyId !== null || loading}
+            onClick={() => {
+              form.reset();
+              setBatchMode(true);
+              setRequestIds(selected);
+            }}
+          >
+            {t("accounting.continuity.postings.batch")} ({selected.length}/100)
+          </ZHBtn>
+        )}
         <ZHDataTable
           columns={columns}
           rows={postings}
@@ -264,6 +430,74 @@ export function AccountingPostingsPage() {
           emptyMessage={t("accounting.continuity.postings.empty")}
         />
       </ZHCard>
+
+      <ZHModal
+        open={requestIds !== null}
+        onClose={() => {
+          if (!busyId) setRequestIds(null);
+        }}
+        title={t("accounting.continuity.postings.reprocessConfirmTitle")}
+      >
+        <form onSubmit={form.handleSubmit(reprocess)}>
+          <ZHField
+            label={t("accounting.continuity.postings.reason")}
+            error={form.formState.errors.reason?.message}
+          >
+            <ZhTextarea
+              aria-label={t("accounting.continuity.postings.reason")}
+              maxLength={500}
+              disabled={busyId !== null}
+              {...form.register("reason")}
+            />
+          </ZHField>
+          <ZHBtn
+            type="submit"
+            disabled={
+              busyId !== null ||
+              form.formState.isSubmitting ||
+              !form.watch("reason").trim()
+            }
+          >
+            {t("accounting.continuity.postings.confirm")}
+          </ZHBtn>
+        </form>
+      </ZHModal>
+      <ZHModal
+        open={results !== null}
+        onClose={() => setResults(null)}
+        title={t("accounting.continuity.postings.results")}
+        size="lg"
+      >
+        <ZHDataTable
+          rows={results ?? []}
+          rowKey={(row) => row.id}
+          columns={[
+            {
+              key: "id",
+              header: t("accounting.continuity.postings.column.document"),
+              render: (row) => row.posting?.sourceDocumentNumber ?? row.id,
+            },
+            {
+              key: "outcome",
+              header: t("accounting.continuity.postings.attempt.outcome"),
+              render: (row) =>
+                t(`accounting.continuity.postings.result.${row.outcome}`),
+            },
+            {
+              key: "status",
+              header: t("accounting.continuity.postings.column.status"),
+              render: (row) =>
+                row.posting ? statusLabel(row.posting.status) : "—",
+            },
+            {
+              key: "error",
+              header: t("accounting.continuity.postings.column.error"),
+              render: (row) =>
+                row.errorMessage ?? row.posting?.errorMessage ?? "—",
+            },
+          ]}
+        />
+      </ZHModal>
 
       <ZHModal
         open={detail !== null}

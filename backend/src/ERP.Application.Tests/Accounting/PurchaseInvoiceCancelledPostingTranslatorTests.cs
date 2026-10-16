@@ -134,7 +134,7 @@ public sealed class PurchaseInvoiceCancelledPostingTranslatorTests
     {
         var invoiceId = Guid.NewGuid();
         var obligation = Obligation(TenantId, CompanyId, "Purchases", "InvoiceReceived", invoiceId);
-        obligation.RecordFailed("RULE_NOT_FOUND", "Sin regla", AccountingPostingAttemptTrigger.Initial, CreatedBy, null, DateTime.UtcNow, DateTime.UtcNow);
+        obligation.RecordFailed("RULE_NOT_FOUND", "Sin regla", AccountingPostingAttemptTrigger.Initial, CreatedBy, null, null, DateTime.UtcNow, DateTime.UtcNow);
         var m = new Mocks();
         m.Ledger(invoiceId);
         m.Locked(invoiceId, obligation);

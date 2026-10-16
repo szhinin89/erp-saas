@@ -1,5 +1,12 @@
 # Features — ERP SaaS
 
+## ACCOUNTING-CONTINUITY-02
+
+EXTEND: Contabilizaciones permite seleccionar hasta 100 obligaciones Pending/Failed,
+introducir motivo obligatorio, confirmar y consultar resultados individuales del lote.
+El reproceso individual también exige motivo. Se reutiliza accounting.postings.reprocess.
+[Entrega](docs/agent/ACCOUNTING_CONTINUITY_02_DELIVERY.md).
+
 Accounting: contrato documental consolidado; implementación parcial. Reglas y capacidades aprobadas únicamente en [Accounting](docs/architecture/accounting.md).
 
 > Estado de delivery por módulo: [`STATUS.md`](STATUS.md) · Arquitectura y rutas API: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)

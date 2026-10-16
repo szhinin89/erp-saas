@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { AccountingPostingsPage } from "./AccountingPostingsPage";
@@ -14,6 +20,7 @@ import type { AccountingPostingDto } from "../api/accountingApi";
 const mocks = vi.hoisted(() => ({
   listPostings: vi.fn(),
   reprocessPosting: vi.fn(),
+  reprocessPostings: vi.fn(),
   getPosting: vi.fn(),
   confirm: vi.fn(),
   success: vi.fn(),
@@ -24,6 +31,7 @@ vi.mock("../api/accountingApi", () => ({
   accountingApi: {
     listPostings: mocks.listPostings,
     reprocessPosting: mocks.reprocessPosting,
+    reprocessPostings: mocks.reprocessPostings,
     getPosting: mocks.getPosting,
   },
 }));
@@ -36,10 +44,16 @@ vi.mock("../../../lib/messages", () => ({
   },
 }));
 vi.mock("../../../access/usePermissionsUi", () => ({
-  usePermissionsUi: () => ({ canShow: mocks.canShow, has: mocks.canShow, isAdminRole: false }),
+  usePermissionsUi: () => ({
+    canShow: mocks.canShow,
+    has: mocks.canShow,
+    isAdminRole: false,
+  }),
 }));
 
-const posting = (overrides: Partial<AccountingPostingDto>): AccountingPostingDto => ({
+const posting = (
+  overrides: Partial<AccountingPostingDto>,
+): AccountingPostingDto => ({
   id: "p-1",
   sourceModule: "Purchases",
   factType: "InvoiceReceived",
@@ -77,18 +91,28 @@ afterEach(cleanup);
 it("reprocesa una obligación Failed tras confirmar y refresca la lista", async () => {
   mocks.listPostings.mockResolvedValue([posting({})]);
   mocks.confirm.mockResolvedValue(true);
-  mocks.reprocessPosting.mockResolvedValue(posting({ status: "Posted", errorMessage: null }));
+  mocks.reprocessPosting.mockResolvedValue(
+    posting({ status: "Posted", errorMessage: null }),
+  );
   show();
 
   fireEvent.click(await screen.findByRole("button", { name: "Reprocesar" }));
 
-  await waitFor(() => expect(mocks.reprocessPosting).toHaveBeenCalledWith("p-1"));
+  fireEvent.change(screen.getByRole("textbox"), {
+    target: { value: "Correccion" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+  await waitFor(() =>
+    expect(mocks.reprocessPosting).toHaveBeenCalledWith("p-1", "Correccion"),
+  );
   expect(mocks.success).toHaveBeenCalledWith("Contabilización publicada.");
   expect(mocks.listPostings).toHaveBeenCalledTimes(2);
 });
 
 it("no ofrece reprocesar obligaciones Posted ni sin permiso", async () => {
-  mocks.listPostings.mockResolvedValue([posting({ id: "p-2", status: "Posted", errorMessage: null })]);
+  mocks.listPostings.mockResolvedValue([
+    posting({ id: "p-2", status: "Posted", errorMessage: null }),
+  ]);
   show();
   await screen.findByText("Contabilizada");
   expect(screen.queryByRole("button", { name: "Reprocesar" })).toBeNull();
@@ -109,9 +133,71 @@ it("informa cuando el reproceso vuelve a fallar", async () => {
 
   fireEvent.click(await screen.findByRole("button", { name: "Reprocesar" }));
 
+  fireEvent.change(screen.getByRole("textbox"), {
+    target: { value: "Correccion" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
   await waitFor(() =>
     expect(mocks.warning).toHaveBeenCalledWith(
       "El intento volvió a fallar: No existe regla de contabilización.",
     ),
   );
 });
+
+it("batch requires reason and confirmation and displays individual outcomes", async () => {
+  mocks.listPostings.mockResolvedValue([
+    posting({}),
+    posting({ id: "p-2", status: "Pending" }),
+    posting({ id: "p-3", status: "Canceled" }),
+  ]);
+  mocks.confirm.mockResolvedValue(true);
+  mocks.reprocessPostings.mockResolvedValue({
+    items: [
+      {
+        id: "p-1",
+        outcome: "Attempted",
+        posting: posting({ status: "Posted" }),
+      },
+      { id: "p-2", outcome: "NotFound", posting: null },
+    ],
+  });
+  show();
+  const checks = await screen.findAllByRole("checkbox");
+  expect(checks).toHaveLength(2);
+  checks.forEach((check) => fireEvent.click(check));
+  fireEvent.click(screen.getByRole("button", { name: /Reprocesar selecci/ }));
+  expect(
+    (screen.getByRole("button", { name: "Continuar" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  fireEvent.change(screen.getByRole("textbox"), {
+    target: { value: "Correccion" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+  await waitFor(() =>
+    expect(mocks.reprocessPostings).toHaveBeenCalledWith(
+      ["p-1", "p-2"],
+      "Correccion",
+    ),
+  );
+  expect(await screen.findByText("Intentado")).toBeTruthy();
+  expect(screen.getByText("No encontrada")).toBeTruthy();
+});
+
+it("caps selection at 100 and cancellation sends no request", async () => {
+  mocks.listPostings.mockResolvedValue(
+    Array.from({ length: 101 }, (_, i) => posting({ id: `p-${i}` })),
+  );
+  mocks.confirm.mockResolvedValue(false);
+  show();
+  const checks = await screen.findAllByRole("checkbox");
+  checks.slice(0, 100).forEach((check) => fireEvent.click(check));
+  expect((checks[100] as HTMLInputElement).disabled).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: /Reprocesar selecci/ }));
+  fireEvent.change(screen.getByRole("textbox"), {
+    target: { value: "Correccion" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+  await waitFor(() => expect(mocks.confirm).toHaveBeenCalledOnce());
+  expect(mocks.reprocessPostings).not.toHaveBeenCalled();
+}, 15000);

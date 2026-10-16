@@ -35,6 +35,7 @@ namespace ERP.Infrastructure.Tests.Accounting;
 public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
 {
     private static readonly DateOnly EntryDate = new(2026, 7, 25);
+    private const string ManualReason = "Regla contable corregida";
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -96,12 +97,14 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         ErpDbContext db,
         Guid companyId,
         Guid? userId = null,
-        IPostingEngine? engine = null
+        IPostingEngine? engine = null,
+        Guid? tenantId = null,
+        IUnitOfWork? unitOfWork = null
     )
     {
         var company = new TestCompany(companyId);
         return new AccountingPostingExecutor(
-            new UnitOfWork(db),
+            unitOfWork ?? new UnitOfWork(db),
             new AccountingPostingRepository(db),
             new AccountingPostingFactBuilder(
                 new ExpenseCategoryRepository(db, company),
@@ -109,7 +112,7 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             ),
             engine ?? Engine(db),
             new AccountingPostingDispatchQueue(),
-            new TestTenant(_tenantId),
+            new TestTenant(tenantId ?? _tenantId),
             company,
             Mock.Of<ICurrentUser>(u => u.UserId == (userId ?? _userId)),
             new TestAuditContext(_tenantId, companyId, userId ?? _userId),
@@ -137,7 +140,11 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
 
     private static AccountingPostingPayload Payload() => new(100m, 0m, 0m, 0m, 100m);
 
-    private async Task<AccountingPosting> SeedPendingAsync(Guid companyId, Guid? sourceEventId = null)
+    private async Task<AccountingPosting> SeedPendingAsync(
+        Guid companyId,
+        Guid? sourceEventId = null,
+        DateOnly? entryDate = null
+    )
     {
         await using var db = CreateContext(_tenantId, companyId);
         var posting = AccountingPosting.CreatePending(
@@ -147,8 +154,8 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             "InvoiceReceived",
             sourceEventId ?? Guid.NewGuid(),
             "001-001-000000001",
-            EntryDate,
-            EntryDate,
+            entryDate ?? EntryDate,
+            entryDate ?? EntryDate,
             AccountingPostingPayload.CurrentVersion,
             Payload().Serialize(),
             _userId,
@@ -174,7 +181,7 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
                 await go.Task;
                 await using var db = CreateContext();
                 return await Executor(db, _companyId)
-                    .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Manual, CancellationToken.None);
+                    .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Manual, ManualReason, CancellationToken.None);
             });
 
         var a = Run();
@@ -215,7 +222,7 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         await using (var db = CreateContext())
         {
             var result = await Executor(db, _companyId)
-                .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Manual, CancellationToken.None);
+                .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Manual, ManualReason, CancellationToken.None);
             result.Value!.Status.Should().Be(AccountingPostingStatus.Posted);
             result.Value.JournalEntryId.Should().Be(existingEntryId);
         }
@@ -236,7 +243,7 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         await using (var db = CreateContext())
         {
             var result = await Executor(db, _companyId, engine: throwing.Object)
-                .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Initial, CancellationToken.None);
+                .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Initial, null, CancellationToken.None);
             result.IsSuccess.Should().BeTrue();
             result.Value!.Status.Should().Be(AccountingPostingStatus.Failed);
         }
@@ -258,7 +265,7 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         var posting = await SeedPendingAsync(_companyId);
         await using (var db = CreateContext())
             (await Executor(db, _companyId)
-                .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Initial, CancellationToken.None))
+                .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Initial, null, CancellationToken.None))
                 .Value!.Status.Should().Be(AccountingPostingStatus.Failed);
 
         await SeedRuleAndPeriodAsync(_companyId);
@@ -266,7 +273,10 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         await using (var db = CreateContext())
         {
             var handler = new ReprocessAccountingPostingHandler(Executor(db, _companyId, reprocessor));
-            var result = await handler.Handle(new ReprocessAccountingPostingCommand(posting.Id), CancellationToken.None);
+            var result = await handler.Handle(
+                new ReprocessAccountingPostingCommand(posting.Id, ManualReason),
+                CancellationToken.None
+            );
             result.Value!.Status.Should().Be(AccountingPostingStatus.Posted);
         }
 
@@ -286,6 +296,8 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         attempts[1].TriggeredBy.Should().Be(reprocessor);
         attempts[1].JournalEntryId.Should().Be(stored.JournalEntryId);
         attempts[1].CorrelationId.Should().Be(TestAuditContext.Correlation);
+        attempts[0].Reason.Should().BeNull("el intento inicial es del sistema");
+        attempts[1].Reason.Should().Be(ManualReason);
     }
 
     // ── Aislamiento Tenant/Company ─────────────────────────────────────────
@@ -297,7 +309,7 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
 
         await using var db = CreateContext(_tenantId, _otherCompanyId);
         var reprocess = await Executor(db, _otherCompanyId)
-            .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Manual, CancellationToken.None);
+            .ExecuteAsync(posting.Id, AccountingPostingAttemptTrigger.Manual, ManualReason, CancellationToken.None);
         reprocess.IsSuccess.Should().BeFalse();
         reprocess.Code.Should().Be(ApiResponseCodes.Common.NotFound);
 
@@ -476,6 +488,155 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
     }
 
     // ── Dobles ─────────────────────────────────────────────────────────────
+
+
+    private ReprocessAccountingPostingsHandler Batch(ErpDbContext db, Guid? companyId = null, Guid? tenantId = null) =>
+        new(Executor(db, companyId ?? _companyId, tenantId: tenantId),
+            new TestAuditContext(tenantId ?? _tenantId, companyId ?? _companyId, _userId));
+
+    [Fact]
+    public async Task Batch_mixed_deduplicates_and_records_actor_reason_correlation()
+    {
+        await SeedRuleAndPeriodAsync(_companyId);
+        var good = await SeedPendingAsync(_companyId);
+        var failed = await SeedPendingAsync(_companyId, entryDate: new DateOnly(2027, 1, 1));
+        var canceled = await SeedPendingAsync(_companyId);
+        var foreign = await SeedPendingAsync(_otherCompanyId);
+        await using (var seed = CreateContext())
+        {
+            (await seed.AccountingPostings.SingleAsync(x => x.Id == canceled.Id)).Cancel(_userId);
+            await seed.SaveChangesAsync();
+        }
+        await using var db = CreateContext();
+        (await Executor(db, _companyId).ExecuteAsync(failed.Id, AccountingPostingAttemptTrigger.Initial, null, CancellationToken.None))
+            .Value!.Status.Should().Be(AccountingPostingStatus.Failed);
+        var ids = new[] { failed.Id, good.Id, canceled.Id, foreign.Id, Guid.NewGuid(), good.Id };
+        var result = (await Batch(db).Handle(new(ids, "  Manual correction  "), CancellationToken.None)).Value!;
+        result.Items.Select(x => x.Outcome).Should().Equal(
+            AccountingPostingBatchItemOutcome.Attempted, AccountingPostingBatchItemOutcome.Attempted,
+            AccountingPostingBatchItemOutcome.AlreadyResolved, AccountingPostingBatchItemOutcome.NotFound,
+            AccountingPostingBatchItemOutcome.NotFound);
+        result.Items[0].Posting!.Status.Should().Be(AccountingPostingStatus.Failed);
+        result.Items[1].Posting!.Status.Should().Be(AccountingPostingStatus.Posted);
+        var again = (await Batch(db).Handle(new(new[] { good.Id }, ManualReason), CancellationToken.None)).Value!;
+        again.Items.Single().Outcome.Should().Be(AccountingPostingBatchItemOutcome.AlreadyResolved);
+        await using var verify = CreateContext();
+        var attempts = await verify.AccountingPostingAttempts.Where(x => x.Trigger == AccountingPostingAttemptTrigger.Manual).ToListAsync();
+        attempts.Should().HaveCount(2).And.OnlyContain(x => x.Reason == "Manual correction"
+            && x.TriggeredBy == _userId && x.CorrelationId == result.CorrelationId);
+        var otherTenant = Guid.NewGuid();
+        await using var wrongTenant = CreateContext(otherTenant, _companyId);
+        var hidden = (await Batch(wrongTenant, tenantId: otherTenant).Handle(new(new[] { good.Id }, ManualReason), CancellationToken.None)).Value!;
+        hidden.Items.Single().Outcome.Should().Be(AccountingPostingBatchItemOutcome.NotFound);
+    }
+
+    [Fact]
+    public async Task Batch_concurrent_same_ids_posts_once()
+    {
+        await SeedRuleAndPeriodAsync(_companyId);
+        var a = await SeedPendingAsync(_companyId);
+        var b = await SeedPendingAsync(_companyId);
+        async Task<AccountingPostingBatchReprocessDto> Run()
+        {
+            await using var db = CreateContext();
+            return (await Batch(db).Handle(new(new[] { a.Id, b.Id }, ManualReason), CancellationToken.None)).Value!;
+        }
+        var results = await Task.WhenAll(Run(), Run());
+        results.SelectMany(x => x.Items).Count(x => x.Outcome == AccountingPostingBatchItemOutcome.Attempted).Should().Be(2);
+        results.SelectMany(x => x.Items).Count(x => x.Outcome == AccountingPostingBatchItemOutcome.AlreadyResolved).Should().Be(2);
+        await using var verify = CreateContext();
+        (await verify.JournalEntries.CountAsync()).Should().Be(2);
+        (await verify.AccountingPostingAttempts.CountAsync()).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Batch_sequence_is_fresh_between_attempts_but_keeps_multiple_reservations_in_transaction()
+    {
+        await SeedRuleAndPeriodAsync(_companyId);
+        var a = await SeedPendingAsync(_companyId);
+        var b = await SeedPendingAsync(_companyId);
+        var c = await SeedPendingAsync(_companyId);
+        await using var db = CreateContext();
+        var executor = Executor(db, _companyId);
+        (await executor.ExecuteAsync(a.Id, AccountingPostingAttemptTrigger.Manual, ManualReason, CancellationToken.None)).Value!.Status.Should().Be(AccountingPostingStatus.Posted);
+        await using (var other = CreateContext())
+            (await Executor(other, _companyId).ExecuteAsync(b.Id, AccountingPostingAttemptTrigger.Manual, ManualReason, CancellationToken.None)).Value!.Status.Should().Be(AccountingPostingStatus.Posted);
+        (await executor.ExecuteAsync(c.Id, AccountingPostingAttemptTrigger.Manual, ManualReason, CancellationToken.None)).Value!.Status.Should().Be(AccountingPostingStatus.Posted);
+        (await db.JournalEntries.OrderBy(x => x.EntryNumber).Select(x => x.EntryNumber).ToListAsync()).Should().Equal(1, 2, 3);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var sequences = new JournalEntrySequenceRepository(db);
+        (await sequences.ReserveNextNumberAsync(_tenantId, _companyId, 2026)).Should().Be(4);
+        (await sequences.ReserveNextNumberAsync(_tenantId, _companyId, 2026)).Should().Be(5);
+        (await sequences.ReserveNextNumberAsync(_tenantId, _companyId, 2028)).Should().Be(1);
+        (await sequences.ReserveNextNumberAsync(_tenantId, _companyId, 2028)).Should().Be(2);
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+    }
+
+    [Fact]
+    public async Task Batch_canceled_before_start_marks_all_not_attempted()
+    {
+        var first = await SeedPendingAsync(_companyId);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        await using var db = CreateContext();
+        var result = (await Batch(db).Handle(new(new[] { first.Id, Guid.NewGuid() }, ManualReason), cancellation.Token)).Value!;
+        result.Items.Should().OnlyContain(x => x.Outcome == AccountingPostingBatchItemOutcome.NotAttempted);
+        (await db.AccountingPostingAttempts.CountAsync()).Should().Be(0);
+    }
+
+
+    [Fact]
+    public async Task Batch_cancellation_after_commit_keeps_first_and_skips_rest()
+    {
+        await SeedRuleAndPeriodAsync(_companyId);
+        var first = await SeedPendingAsync(_companyId);
+        var second = await SeedPendingAsync(_companyId);
+        using var cancellation = new CancellationTokenSource();
+        await using var db = CreateContext();
+        var unit = new UnitOfWork(db);
+        var wrapper = new Mock<IUnitOfWork>();
+        wrapper.SetupGet(x => x.HasActiveTransaction).Returns(() => unit.HasActiveTransaction);
+        wrapper.Setup(x => x.ClearChangeTracker()).Callback(unit.ClearChangeTracker);
+        wrapper.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .Returns((CancellationToken ct) => unit.BeginTransactionAsync(ct));
+        wrapper.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns((CancellationToken ct) => unit.SaveChangesAsync(ct));
+        wrapper.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>()))
+            .Returns((CancellationToken ct) => unit.RollbackAsync(ct));
+        wrapper.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>()))
+            .Returns(async (CancellationToken ct) => { await unit.CommitAsync(ct); cancellation.Cancel(); });
+        var handler = new ReprocessAccountingPostingsHandler(
+            Executor(db, _companyId, unitOfWork: wrapper.Object), new TestAuditContext(_tenantId, _companyId, _userId));
+        var result = (await handler.Handle(new(new[] { first.Id, second.Id }, ManualReason), cancellation.Token)).Value!;
+        result.Items.Select(x => x.Outcome).Should().Equal(AccountingPostingBatchItemOutcome.Attempted, AccountingPostingBatchItemOutcome.NotAttempted);
+        await using var verify = CreateContext();
+        (await verify.AccountingPostings.SingleAsync(x => x.Id == first.Id)).Status.Should().Be(AccountingPostingStatus.Posted);
+        (await verify.AccountingPostings.SingleAsync(x => x.Id == second.Id)).Attempts.Should().Be(0);
+    }
+
+
+    [Fact]
+    public async Task Batch_internal_failure_does_not_stop_next_obligation()
+    {
+        await SeedRuleAndPeriodAsync(_companyId);
+        var first = await SeedPendingAsync(_companyId);
+        var second = await SeedPendingAsync(_companyId);
+        await using var db = CreateContext();
+        var engine = new Mock<IPostingEngine>();
+        engine.Setup(x => x.PostAsync(It.IsAny<PostingFact>(), It.IsAny<CancellationToken>()))
+            .Returns((PostingFact fact, CancellationToken ct) => fact.SourceEventId == first.SourceEventId
+                ? throw new InvalidOperationException("internal detail") : Engine(db).PostAsync(fact, ct));
+        var handler = new ReprocessAccountingPostingsHandler(Executor(db, _companyId, engine: engine.Object),
+            new TestAuditContext(_tenantId, _companyId, _userId));
+        var result = (await handler.Handle(new(new[] { first.Id, second.Id }, ManualReason), CancellationToken.None)).Value!;
+        result.Items.Should().OnlyContain(x => x.Outcome == AccountingPostingBatchItemOutcome.Attempted);
+        result.Items[0].Posting!.ErrorCode.Should().Be(AccountingPostingExecutor.InternalErrorCode);
+        result.Items[1].Posting!.Status.Should().Be(AccountingPostingStatus.Posted);
+        await using var verify = CreateContext();
+        (await verify.AccountingPostingAttempts.CountAsync()).Should().Be(2);
+        (await verify.JournalEntries.CountAsync()).Should().Be(1);
+    }
 
     private sealed class TestTenant(Guid tenantId) : ICurrentTenant
     {

@@ -17,6 +17,7 @@ public sealed class AccountingPostingAttempt
     public const int ErrorCodeMaxLength = 100;
     public const int ErrorMessageMaxLength = 2000;
     public const int CorrelationIdMaxLength = 100;
+    public const int ReasonMaxLength = 500;
 
     public Guid CompanyId { get; private set; }
     public Guid AccountingPostingId { get; private set; }
@@ -24,6 +25,9 @@ public sealed class AccountingPostingAttempt
     public AccountingPostingAttemptTrigger Trigger { get; private set; }
     public Guid TriggeredBy { get; private set; }
     public string? CorrelationId { get; private set; }
+
+    /// <summary>Motivo del reproceso manual (obligatorio para <see cref="AccountingPostingAttemptTrigger.Manual"/>).</summary>
+    public string? Reason { get; private set; }
     public DateTime StartedAtUtc { get; private set; }
     public DateTime FinishedAtUtc { get; private set; }
     public AccountingPostingStatus Outcome { get; private set; }
@@ -39,6 +43,7 @@ public sealed class AccountingPostingAttempt
         AccountingPostingAttemptTrigger trigger,
         Guid triggeredBy,
         string? correlationId,
+        string? reason,
         DateTime startedAtUtc,
         DateTime finishedAtUtc,
         AccountingPostingStatus outcome,
@@ -57,6 +62,7 @@ public sealed class AccountingPostingAttempt
             Trigger = trigger,
             TriggeredBy = triggeredBy,
             CorrelationId = AccountingPosting.Truncate(correlationId, CorrelationIdMaxLength),
+            Reason = reason,
             StartedAtUtc = startedAtUtc,
             FinishedAtUtc = finishedAtUtc,
             Outcome = outcome,
