@@ -62,27 +62,36 @@ internal sealed class PostingAccountGuard
             )
             .Distinct();
 
-        foreach (var accountId in accountIds)
+        var invalid = await FindInvalidAccountAsync(fact.TenantId, fact.CompanyId, accountIds, ct);
+        if (invalid is { } rejected)
         {
-            var account = await _accountRepository.GetByIdAsync(
-                fact.TenantId,
-                fact.CompanyId,
-                accountId,
-                ct
-            );
-
-            if (account is null || !account.IsActive || !account.AllowsPosting)
-            {
-                LogRejection(fact, rule, accountId, account);
-                return Result<PostingRule>.ValidationFailure(
-                    "La regla de contabilización referencia una cuenta inválida para contabilizar "
-                        + "(inexistente, de otra empresa, inactiva o que no admite movimientos).",
-                    InvalidAccountCode
-                );
-            }
+            LogRejection(fact, rule, rejected.Id, rejected.Account);
+            return Result<PostingRule>.ValidationFailure(
+                "La regla de contabilización referencia una cuenta inválida para contabilizar "
+                    + "(inexistente, de otra empresa, inactiva o que no admite movimientos).", InvalidAccountCode);
         }
-
         return Result<PostingRule>.Success(rule);
+    }
+
+    public async Task<Result<bool>> EnsureAccountsPostableAsync(Guid tenantId, Guid companyId,
+        IEnumerable<Guid> accountIds, CancellationToken ct)
+    {
+        var invalid = await FindInvalidAccountAsync(tenantId, companyId, accountIds, ct);
+        return invalid is null ? Result<bool>.Success(true) : Result<bool>.ValidationFailure(
+            "La cuenta es inválida para contabilizar (inexistente, de otra empresa, inactiva o que no admite movimientos).",
+            InvalidAccountCode);
+    }
+
+    private async Task<(Guid Id, Account? Account)?> FindInvalidAccountAsync(Guid tenantId,
+        Guid companyId, IEnumerable<Guid> accountIds, CancellationToken ct)
+    {
+        foreach (var id in accountIds.Distinct())
+        {
+            var account = await _accountRepository.GetByIdAsync(tenantId, companyId, id, ct);
+            if (account is null || !account.IsActive || !account.AllowsPosting)
+                return (id, account);
+        }
+        return null;
     }
 
     private void LogRejection(

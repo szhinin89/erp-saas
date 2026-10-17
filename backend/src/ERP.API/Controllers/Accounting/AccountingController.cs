@@ -189,6 +189,7 @@ public sealed class AccountingController : ControllerBase
         [FromQuery] DateOnly? fromDate,
         [FromQuery] DateOnly? toDate,
         [FromQuery] string? sourceModule,
+        [FromQuery] bool? manual,
         CancellationToken ct
     ) =>
         this.ToOkOrBadRequest(
@@ -199,7 +200,8 @@ public sealed class AccountingController : ControllerBase
                     status,
                     fromDate,
                     toDate,
-                    sourceModule
+                    sourceModule,
+                    manual
                 ),
                 ct
             ),

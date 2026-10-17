@@ -1,3 +1,4 @@
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
@@ -24,12 +25,15 @@ const STATUS_OPTIONS = [
   { value: "Draft", label: "Borrador" },
   { value: "Posted", label: "Contabilizado" },
   { value: "Reversed", label: "Reversado" },
+  { value: "Discarded", label: "Descartado" },
 ];
 
 function statusBadge(status: string): { label: string; variant: "gray" | "green" | "red" } {
   switch (status) {
     case "Posted":
       return { label: "Contabilizado", variant: "green" };
+    case "Discarded":
+      return { label: "Descartado", variant: "gray" };
     case "Reversed":
       return { label: "Reversado", variant: "red" };
     default:
@@ -48,6 +52,8 @@ function statusBadge(status: string): { label: string; variant: "gray" | "green"
  */
 export function JournalEntriesPage() {
   const navigate = useNavigate();
+  const { canShow } = usePermissionsUi();
+  const [origin, setOrigin] = useState("");
   const { t } = useI18n();
   const [items, setItems] = useState<JournalEntryListItemDto[]>([]);
   const [total, setTotal] = useState(0);
@@ -60,6 +66,7 @@ export function JournalEntriesPage() {
     try {
       const r = await accountingApi.listJournalEntries(page, PAGE_SIZE, {
         status: status || undefined,
+        manual: origin === "" ? undefined : origin === "manual",
       });
       setItems(r.items);
       setTotal(r.totalCount);
@@ -72,7 +79,7 @@ export function JournalEntriesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, status]);
+  }, [page, status, origin]);
 
   useEffect(() => {
     void fetchList();
@@ -92,7 +99,7 @@ export function JournalEntriesPage() {
     {
       key: "sourceModule",
       header: "Origen",
-      render: (row) => sourceModuleLabel(t, row.sourceModule),
+      render: (row) => row.sourceEventType === "ManualJournalEntry" ? "Asiento manual" : sourceModuleLabel(t, row.sourceModule),
     },
     {
       key: "sourceDocumentType",
@@ -106,7 +113,7 @@ export function JournalEntriesPage() {
       key: "sourceDocumentNumber",
       header: "Número documento",
       render: (row) =>
-        row.sourceDocumentNumber ?? (
+        row.sourceEventType === "ManualJournalEntry" ? "—" : row.sourceDocumentNumber ?? (
           <code className="prd-sku" title={row.sourceEventId}>
             {row.sourceEventId.slice(0, 8)}…
           </code>
@@ -171,12 +178,16 @@ export function JournalEntriesPage() {
     <PageShell
       kicker="Contabilidad"
       title="Asientos contables"
-      subtitle="Consulta de asientos generados por el motor de contabilización"
+      subtitle="Libro contable: asientos manuales y automáticos"
+      action={canShow("accounting.manual.create") ? <ZHBtn onClick={() => navigate("/accounting/journal-entries/new")}>Nuevo asiento manual</ZHBtn> : undefined}
     >
       <ZHCard
         title="Listado"
         actions={
           <div className="zh-form-actions-row">
+            <ZhSelect aria-label="Origen del asiento" value={origin} onChange={e => { setPage(1); setOrigin(e.target.value); }}>
+              <option value="">Todos los orígenes</option><option value="manual">Manual</option><option value="automatic">Automático</option>
+            </ZhSelect>
             <ZhSelect
               value={status}
               onChange={(e) => {

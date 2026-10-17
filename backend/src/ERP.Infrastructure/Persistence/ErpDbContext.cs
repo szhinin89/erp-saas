@@ -333,6 +333,8 @@ public class ErpDbContext : DbContext
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<AccountingPeriod> AccountingPeriods => Set<AccountingPeriod>();
     public DbSet<AccountingPeriodAudit> AccountingPeriodAudits => Set<AccountingPeriodAudit>();
+    public DbSet<ManualJournalAttempt> ManualJournalAttempts => Set<ManualJournalAttempt>();
+    public DbSet<JournalEntryAudit> JournalEntryAudits => Set<JournalEntryAudit>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
     public DbSet<JournalEntrySequence> JournalEntrySequences => Set<JournalEntrySequence>();

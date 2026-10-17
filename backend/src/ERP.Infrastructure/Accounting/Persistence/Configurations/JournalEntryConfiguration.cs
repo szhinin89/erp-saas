@@ -22,8 +22,7 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
             .IsRequired();
         builder
             .Property(x => x.AccountingPeriodId)
-            .HasColumnName("accounting_period_id")
-            .IsRequired();
+            .HasColumnName("accounting_period_id");
         builder.Property(x => x.FiscalYear).HasColumnName("fiscal_year").IsRequired();
         builder
             .Property(x => x.SourceModule)
@@ -48,6 +47,12 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
             .IsRequired();
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.PostedAtUtc).HasColumnName("posted_at_utc");
+        builder.Ignore(x => x.IsManual);
+        builder.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(500);
+        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.DiscardedAtUtc).HasColumnName("discarded_at_utc");
+        builder.Property(x => x.DiscardedBy).HasColumnName("discarded_by");
+        builder.Property(x => x.DiscardReason).HasColumnName("discard_reason").HasMaxLength(500);
         builder.Property(x => x.EntryNumber).HasColumnName("entry_number");
         builder.Property(x => x.OriginalJournalEntryId).HasColumnName("original_journal_entry_id");
         builder.Property(x => x.ReverseJournalEntryId).HasColumnName("reverse_journal_entry_id");

@@ -20,7 +20,7 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | KEEP | ACCOUNTING-CONTINUITY-03: espejo histórico, original inmutable, fecha efectiva y período Open destino, idempotencia y obligación durable para los consumidores migrados |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-06: readiness único de completitud (cierre, pre-cierre y reportes), conciliación de orígenes, apertura/ASI, costo pendiente, cierre secuencial y gate Closed/Locked en el origen (§21) |
 | IMPLEMENTADO | ACCOUNTING-07: estructura temporal de períodos (contigüidad, orden frente a Closed/Locked, exclusión PostgreSQL de solape), ejercicios mensuales desde 2027 con generación manual, cierre solo después de `EndDate`, Locked auditivo irreversible, permisos dedicados, Entity Audit y pantalla de Períodos (§22) |
-| EXTEND | Manuales generales pendientes |
+| IMPLEMENTADO | ACCOUNTING-08: asientos manuales Draft/Posted/Discarded, edición versionada, publicación con intentos durables, reverso histórico común, permisos dedicados, Entity Audit y UI sobre el libro existente (§11) |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -347,11 +347,68 @@ de períodos y reportes. Usar las guardas comunes de Company, cuentas, balance,
 período, numeración, idempotencia y persistencia. No traducir una compra/venta ficticia
 ni exigir PostingRules de documentos para un asiento manual de líneas explícitas.
 
-No confundir el ASI de apertura existente con una capacidad general de asientos manuales.
-El flujo manual general es EXTEND pendiente, sin afirmar endpoints/UI inexistentes.
+La capacidad general de ACCOUNTING-08 es independiente del ASI de apertura existente.
 No habilitar desde un asiento manual cambios de stock, CxP/CxC, caja o documentos SRI.
 Su corrección no altera el origen operativo. No se añade workflow de aprobación,
 consolidación ni multimoneda en esta fase.
+
+**Identidad y estados.** El manual utiliza `SourceModule = Accounting`,
+`SourceEventType = ManualJournalEntry` y `SourceEventId = IdempotencyKey` de creación.
+No utiliza el código ASI ni una PostingRule documental. La unicidad existente es la autoridad
+de identidad. Repetir la creación devuelve la identidad y respuesta inicial sin sobrescribir datos.
+Se crea Draft sin número; `Version` empieza en 1 y aumenta al editar, publicar o descartar.
+La edición requiere la versión esperada; una versión vieja devuelve conflicto sin overwrite.
+No se limita al creador. Solo Manual + Draft admite edición/descarte/publicación.
+`Discarded` es terminal, histórico, con motivo/usuario/instante UTC; no tiene efecto contable
+ni bloquea el cierre. `Reversed` conserva su significado histórico existente: los reversos nuevos
+no cambian el estado ni ningún dato del original Posted.
+
+**Captura.** Fecha contable, concepto obligatorio (500), referencia opcional (500) y líneas
+cuenta/descripción/Debe/Haber. Draft admite fecha futura, menos de dos líneas y desbalance.
+Cada línea exige cuenta existente de Tenant + Company, importes no negativos y exactamente
+una cara positiva; no admite líneas vacías, escala excedida ni importes fuera de `numeric(18,2)`.
+Una cuenta no puede aparecer en ambos lados del asiento, aunque esté en líneas distintas;
+puede repetirse en el mismo lado. La precisión viene de la política canónica. Las validaciones
+de líneas, mínimo, exclusión de lados y balance tienen autoridad única en Domain, compartida
+con el pipeline automático, sin excepción para manuales.
+
+El período del Draft puede ser nulo cuando aún no existe uno para su fecha; no se inventa
+un período. Crear/editar/descartar no permite escribir sobre una fecha de período Closed/Locked.
+Editar verifica tanto la fecha anterior como la nueva. El cierre reconoce los manuales por
+fecha además del vínculo de período, de modo que un Draft anterior a la creación de su período
+también bloquea el cierre hasta publicarse o descartarse.
+
+**Publicación.** Bajo transacción propia, lock compartido Company y lock de mutación por identidad:
+Draft y versión esperada, `EntryDate <= ICompanyClock.TodayAsync`, Enabled en EntryDate,
+período que contiene la fecha Open, cuentas activas y habilitadas para movimiento, mínimo dos
+líneas y balance exacto. Reutiliza PostingAccountGuard/PostingPeriodGuard, Domain y
+JournalEntrySequenceRepository; no llama al motor basado en reglas documentales ni crea otro motor.
+Número, Posted, Entity Audit e intento exitoso se confirman atómicamente.
+
+**Intentos.** `ManualJournalAttempt` es la autoridad específica append-only de cada solicitud
+de publicación identificada: asiento, usuario/instante UTC, key, versión esperada, resultado,
+código/mensaje y snapshot lógico de respuesta. Un rechazo conserva Draft, sin número ni
+asiento parcial, y persiste el intento. Repetir key + versión devuelve el resultado durable;
+usar esa key con otra versión devuelve conflicto. Un nuevo intento explícito usa nueva key.
+Ante excepción de persistencia se revierte y limpia el contexto; otra transacción registra
+el fallo o recupera un resultado ya confirmado. Si tampoco puede persistirse ese resultado,
+la operación falla: no se afirma durabilidad inexistente. No hay retry automático.
+
+**Reverso y auditoría.** Solo manual Posted, con fecha efectiva y motivo obligatorio;
+reutiliza JournalEntryReversal y su unicidad/locks, período Open y numeración destino.
+No exige configuración actual de cuentas/reglas para reconstruir el espejo histórico.
+Entity Audit existente (`JournalEntryAudit`) conserva Created, Edited, Posted, Discarded y
+Reversed con snapshot de cabecera/líneas y actor/correlación; no hay auditoría paralela.
+
+**API/UI.** Bajo `/api/v1/accounting/manual-journal-entries`: POST de creación, PUT `/{id}`,
+POST `/{id}/post`, `/{id}/discard` y `/{id}/reverse`. Conserva los GET del libro; el detalle
+agrega referencia, versión, autoría, descarte e intentos para manuales. El listado admite filtro
+`manual=true/false` (incluye sus reversos en Manual). UI: listado existente con nuevo manual;
+editor `/accounting/journal-entries/new` y `/:id/edit`, inputs decimales canónicos, totales y
+diferencia, guardar/publicar; detalle con acciones, intentos y relación de reverso.
+Los manuales no muestran una advertencia de documento comercial faltante.
+Draft/Discarded quedan fuera de las consultas actuales de reportes; Posted y su reverso entran
+según sus fechas propias, sin una lógica de reportes nueva.
 
 ## 12. Outbox y mecanismos existentes
 
@@ -392,7 +449,10 @@ para sus consultas y administración, salvo Períodos (`accounting.periods.creat
 `accounting.periods.close`, §22); `accounting.settings.update` cambia el modo operativo,
 `accounting.postings.view` consulta obligaciones e intentos y `accounting.postings.reprocess`
 ejecuta el reproceso manual individual y en lote, también para el costo de ventas. La apertura usa sus
-permisos combinados existentes; aún no existe permiso de asientos manuales.
+permisos combinados existentes. ACCOUNTING-08 agrega `accounting.manual.create`,
+`accounting.manual.edit`, `accounting.manual.post`, `accounting.manual.reverse` y
+`accounting.manual.discard`, exigidos individualmente en servidor y registrados como acciones
+relacionadas del NavItem Asientos contables. La consulta conserva `accounting.view`.
 
 Auditar cambios de configuración y vigencia, creación/resolución/cancelación de obligación,
 cada intento manual (usuario, motivo/contexto, fecha UTC, resultado, error y correlación),

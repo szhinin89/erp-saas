@@ -7,6 +7,12 @@ namespace ERP.Domain.Kernel.Permissions;
 /// </summary>
 public static class AccountingPermissions
 {
+    public const string ManualCreate = "accounting.manual.create";
+    public const string ManualEdit = "accounting.manual.edit";
+    public const string ManualPost = "accounting.manual.post";
+    public const string ManualReverse = "accounting.manual.reverse";
+    public const string ManualDiscard = "accounting.manual.discard";
+
     public const string View = "accounting.view";
     public const string Create = "accounting.create";
     public const string Update = "accounting.update";

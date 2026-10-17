@@ -34,6 +34,9 @@ const CreditTermsPage = lazyNamedPage(
   () => import("../modules/finance/pages/CreditTermsPage"),
   "CreditTermsPage",
 );
+const ManualJournalEditorPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/ManualJournalEditorPage"), "ManualJournalEditorPage",
+);
 const JournalEntriesPage = lazyNamedPage(
   () => import("../modules/accounting/pages/JournalEntriesPage"),
   "JournalEntriesPage",
@@ -409,6 +412,8 @@ export const catalogRoutes = [
     path="/accounting/journal-entries"
     element={<JournalEntriesPage />}
   />,
+  <Route key="accounting-manual-new" path="/accounting/journal-entries/new" element={<ManualJournalEditorPage />} />,
+  <Route key="accounting-manual-edit" path="/accounting/journal-entries/:id/edit" element={<ManualJournalEditorPage />} />,
   <Route
     key="accounting-journal-entry-detail"
     path="/accounting/journal-entries/:id"

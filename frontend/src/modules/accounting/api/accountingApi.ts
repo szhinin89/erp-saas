@@ -76,7 +76,7 @@ export interface JournalEntryDetailDto {
   id: string;
   entryNumber: number | null;
   entryDate: string;
-  accountingPeriodId: string;
+  accountingPeriodId: string | null;
   fiscalYear: number;
   sourceModule: string;
   sourceEventType: string;
@@ -103,6 +103,7 @@ export interface JournalEntryDetailDto {
   sourcePartyName: string | null;
   sourceStatus: string | null;
   sourceRoute: string | null;
+  manual?: ManualJournalInfo | null;
 }
 
 export interface GetJournalEntriesResponse {
@@ -113,6 +114,7 @@ export interface GetJournalEntriesResponse {
 }
 
 export interface JournalEntriesFilter {
+  manual?: boolean;
   status?: string;
   fromDate?: string;
   toDate?: string;
@@ -421,7 +423,27 @@ export interface AccountingPeriodClosureReadinessDto {
   completeness: AccountingCompleteness | null;
 }
 
+export interface ManualJournalLine { accountId: string; description: string | null; debit: number; credit: number }
+export interface ManualJournalPayload { entryDate: string; concept: string; reference: string | null; lines: ManualJournalLine[] }
+export interface ManualJournalResult { id: string; status: string; version: number; entryNumber: number | null }
+export interface ManualJournalInfo {
+  reference: string | null; version: number; createdBy: string; updatedBy: string | null;
+  discardedAtUtc: string | null; discardedBy: string | null; discardReason: string | null;
+  attempts: { id: string; attemptedAtUtc: string; attemptedBy: string; success: boolean;
+    errorCode: string | null; errorMessage: string | null; idempotencyKey: string }[];
+}
+
 export const accountingApi = {
+  createManualJournal: (payload: ManualJournalPayload & { idempotencyKey: string }) =>
+    apiPost<ManualJournalResult>(`${BASE}/manual-journal-entries`, payload),
+  editManualJournal: (id: string, version: number, payload: ManualJournalPayload) =>
+    apiPut<ManualJournalResult>(`${BASE}/manual-journal-entries/${id}`, { ...payload, id, version }),
+  postManualJournal: (id: string, version: number, idempotencyKey: string) =>
+    apiPost<ManualJournalResult>(`${BASE}/manual-journal-entries/${id}/post`, { id, version, idempotencyKey }),
+  discardManualJournal: (id: string, version: number, reason: string) =>
+    apiPost<ManualJournalResult>(`${BASE}/manual-journal-entries/${id}/discard`, { id, version, reason }),
+  reverseManualJournal: (id: string, effectiveDate: string, reason: string) =>
+    apiPost<ManualJournalResult>(`${BASE}/manual-journal-entries/${id}/reverse`, { id, effectiveDate, reason }),
   listAccounts: () => apiGet<AccountDto[]>(`${BASE}/accounts`),
 
   getAccountById: (id: string) => apiGet<AccountDto>(`${BASE}/accounts/${id}`),
@@ -445,6 +467,7 @@ export const accountingApi = {
     const params = new URLSearchParams();
     params.set("pageNumber", String(page));
     params.set("pageSize", String(pageSize));
+    if (filter.manual !== undefined) params.set("manual", String(filter.manual));
     if (filter.status) params.set("status", filter.status);
     if (filter.fromDate) params.set("fromDate", filter.fromDate);
     if (filter.toDate) params.set("toDate", filter.toDate);

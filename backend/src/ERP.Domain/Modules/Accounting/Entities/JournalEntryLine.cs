@@ -39,6 +39,24 @@ public sealed class JournalEntryLine : IMustHaveTenant
         short sortOrder
     )
     {
+        EnsureValues(accountId, debit, credit);
+        return new JournalEntryLine
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            JournalEntryId = journalEntryId,
+            AccountId = accountId,
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+            Debit = debit,
+            Credit = credit,
+            SortOrder = sortOrder,
+        };
+    }
+
+    public void EnsureValid() => EnsureValues(AccountId, Debit, Credit);
+
+    private static void EnsureValues(Guid accountId, decimal debit, decimal credit)
+    {
         if (accountId == Guid.Empty)
             throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountId));
         if (debit < 0)
@@ -57,16 +75,5 @@ public sealed class JournalEntryLine : IMustHaveTenant
                 "Una línea de asiento debe tener un monto en Débito o en Crédito."
             );
 
-        return new JournalEntryLine
-        {
-            Id = Guid.NewGuid(),
-            TenantId = tenantId,
-            JournalEntryId = journalEntryId,
-            AccountId = accountId,
-            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
-            Debit = debit,
-            Credit = credit,
-            SortOrder = sortOrder,
-        };
     }
 }

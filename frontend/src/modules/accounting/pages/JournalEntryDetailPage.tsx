@@ -1,3 +1,4 @@
+import { ManualJournalActions } from "./ManualJournalActions";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
@@ -27,6 +28,8 @@ function statusBadge(status: string): { label: string; variant: "gray" | "green"
   switch (status) {
     case "Posted":
       return { label: "Contabilizado", variant: "green" };
+    case "Discarded":
+      return { label: "Descartado", variant: "gray" };
     case "Reversed":
       return { label: "Reversado", variant: "red" };
     default:
@@ -58,6 +61,7 @@ export function JournalEntryDetailPage() {
   const { t } = useI18n();
 
   const [entry, setEntry] = useState<JournalEntryDetailDto | null>(null);
+  const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,7 +83,7 @@ export function JournalEntryDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, navigate]);
+  }, [id, navigate, revision]);
 
   if (loading) {
     return (
@@ -110,13 +114,14 @@ export function JournalEntryDetailPage() {
       // de venta") para que no se confunda con el asiento hermano de costo de venta. El bloque
       // "Documento origen — técnico" más abajo (cuando no hay documento resuelto) sigue mostrando
       // el valor crudo a propósito — nunca se oculta el dato técnico, solo se traduce aquí.
-      subtitle={`${sourceModuleLabel(t, entry.sourceModule)} — ${factTypeLabel(t, entry.sourceEventType)}`}
+      subtitle={entry.manual ? "Asiento manual" : `${sourceModuleLabel(t, entry.sourceModule)} — ${factTypeLabel(t, entry.sourceEventType)}`}
       action={
         <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/journal-entries")}>
           Volver al listado
         </ZHBtn>
       }
     >
+      {entry.manual && <ManualJournalActions entry={entry} onChanged={() => setRevision(n => n + 1)} />}
       <ZHCard title="Datos generales" actions={<Badge label={badge.label} variant={badge.variant} />}>
         {/* ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: nombre entendible del hecho contable + su
             descripción corta opcional (solo para InvoiceIssued/CostOfGoodsSold por ahora) — evita
@@ -204,7 +209,7 @@ export function JournalEntryDetailPage() {
         </ZHCard>
       )}
 
-      <ZHCard title="Documento origen">
+      {!entry.manual && <ZHCard title="Documento origen">
         {entry.sourceDocumentNumber ? (
           <>
             <ZHInfoRow label={<InfoLabel>Tipo</InfoLabel>} value={<ZHDataValue>{entry.sourceDocumentType}</ZHDataValue>} />
@@ -244,9 +249,9 @@ export function JournalEntryDetailPage() {
             />
           </>
         )}
-      </ZHCard>
+      </ZHCard>}
 
-      {!entry.isBalanced && (
+      {!entry.isBalanced && entry.status !== "Discarded" && (
         <ZHPageNotice
           variant="error"
           message="Este asiento no está balanceado: el total Debe no coincide con el total Haber."

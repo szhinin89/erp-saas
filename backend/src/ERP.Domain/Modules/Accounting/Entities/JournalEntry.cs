@@ -16,19 +16,22 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// Trazabilidad histórica (<see cref="OriginalJournalEntryId"/>/<see cref="ReverseJournalEntryId"/>).
 /// </summary>
 /// <remarks>
-/// <c>Create()</c> no levanta ningún evento de dominio todavía — a diferencia de
-/// <see cref="Account"/>/<see cref="AccountingPeriod"/>/<see cref="PostingRule"/>, este
-/// aggregate no tiene aún un flujo de creación formal: el <c>Create()</c> actual es un
-/// placeholder de identidad, no la vía real por la que nacerán los asientos productivos (que
-/// llegarán vía el Posting Engine a partir de Domain Events de Sales/Purchases/Caja/Inventory,
-/// ADR-026 §3). Levantar un evento de creación ahora sería un evento sin productor real —
-/// se agrega junto con <c>Post()</c>/numeración cuando el flujo formal exista.
+/// El motor automático y los comandos manuales comparten este agregado. Los comandos manuales
+/// registran Entity Audit dentro de su transacción; no producen un hecho comercial ficticio.
 /// </remarks>
 public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public DateOnly EntryDate { get; private set; }
-    public Guid AccountingPeriodId { get; private set; }
+    public Guid? AccountingPeriodId { get; private set; }
+    public const string ManualModule = "Accounting";
+    public const string ManualFact = "ManualJournalEntry";
+    public bool IsManual => SourceModule == ManualModule && SourceEventType == ManualFact;
+    public string? Reference { get; private set; }
+    public int Version { get; private set; }
+    public DateTime? DiscardedAtUtc { get; private set; }
+    public Guid? DiscardedBy { get; private set; }
+    public string? DiscardReason { get; private set; }
 
     /// <summary>
     /// Ejercicio fiscal del período contable de este asiento (denormalizado desde
@@ -78,7 +81,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
         Guid tenantId,
         Guid companyId,
         DateOnly entryDate,
-        Guid accountingPeriodId,
+        Guid? accountingPeriodId,
         int fiscalYear,
         string sourceModule,
         string sourceEventType,
@@ -127,6 +130,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     /// </summary>
     public void AddLine(Guid accountId, string? description, decimal debit, decimal credit)
     {
+        EnsureDraft();
         var line = JournalEntryLine.Create(
             Id,
             TenantId,
@@ -140,9 +144,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     }
 
     /// <summary>
-    /// Invariante de partida doble a nivel de agregado (ADR-026 §6): Σ Debit == Σ Credit. Sin
-    /// consumidor todavía (ver remarks de la clase) — con <see cref="Lines"/> vacío (flujo actual
-    /// del Posting Engine, que no llama a <see cref="AddLine"/>) se cumple trivialmente (0 == 0).
+    /// Invariante exacto de balance. EnsurePostable agrega los requisitos de estructura y líneas.
     /// </summary>
     /// <summary>
     /// SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2 introdujo aquí una tolerancia temporal de
@@ -198,21 +200,113 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
                 "El número de asiento debe ser mayor a cero."
             );
 
-        EnsureBalanced();
+        EnsurePostable();
+        if (AccountingPeriodId is null || AccountingPeriodId == Guid.Empty)
+            throw new DomainRuleViolationException("El asiento requiere un período contable.");
 
         Status = JournalEntryStatus.Posted;
         PostedAtUtc = DateTime.UtcNow;
         EntryNumber = entryNumber;
+        if (IsManual) Version++;
         SetUpdated(postedBy);
+    }
+
+    public void EnsurePostable()
+    {
+        if (_lines.Count < 2)
+            throw new DomainRuleViolationException("El asiento debe tener al menos dos líneas.");
+        foreach (var line in _lines) line.EnsureValid();
+        EnsureAccountSides(_lines);
+        EnsureBalanced();
+    }
+
+    public static JournalEntry CreateManual(Guid tenantId, Guid companyId, Guid identity,
+        DateOnly date, Guid? periodId, int fiscalYear, string concept, string? reference,
+        IReadOnlyList<ManualJournalLine> lines, int decimals, Guid actor)
+    {
+        if (tenantId == Guid.Empty || companyId == Guid.Empty || identity == Guid.Empty)
+            throw new ArgumentException("La identidad y el ámbito son obligatorios.");
+        var entry = Create(tenantId, companyId, date, periodId, fiscalYear,
+            ManualModule, ManualFact, identity, concept, actor);
+        entry.ReplaceManual(date, periodId, fiscalYear, concept, reference, lines, decimals, actor);
+        return entry;
+    }
+
+    public void ReplaceManual(DateOnly date, Guid? periodId, int fiscalYear, string concept,
+        string? reference, IReadOnlyList<ManualJournalLine> lines, int decimals, Guid actor)
+    {
+        EnsureManualDraft();
+        if (date == default || string.IsNullOrWhiteSpace(concept) || concept.Trim().Length > DescriptionMaxLength
+            || reference?.Length > DescriptionMaxLength || lines.Count > short.MaxValue)
+            throw new ArgumentException("Fecha, concepto, referencia o líneas inválidos.");
+        // Validate the complete replacement before mutating the aggregate.
+        var replacement = lines.Select((l, index) =>
+        {
+            if (l.Description?.Length > DescriptionMaxLength || l.Debit > 9999999999999999.99m
+                || l.Credit > 9999999999999999.99m
+                || Math.Round(l.Debit, decimals, MidpointRounding.AwayFromZero) != l.Debit
+                || Math.Round(l.Credit, decimals, MidpointRounding.AwayFromZero) != l.Credit)
+                throw new ArgumentException("Importe o descripción fuera de la precisión/capacidad contable.");
+            return JournalEntryLine.Create(Id, TenantId, l.AccountId, l.Description, l.Debit, l.Credit, (short)index);
+        }).ToList();
+        EnsureAccountSides(replacement);
+        EntryDate = date;
+        AccountingPeriodId = periodId;
+        FiscalYear = fiscalYear;
+        Description = concept.Trim();
+        Reference = string.IsNullOrWhiteSpace(reference) ? null : reference.Trim();
+        _lines.Clear();
+        _lines.AddRange(replacement);
+        Version++;
+        SetUpdated(actor);
+    }
+
+    public void SetManualPostingPeriod(Guid periodId, int fiscalYear)
+    {
+        EnsureManualDraft();
+        AccountingPeriodId = periodId;
+        FiscalYear = fiscalYear;
+    }
+
+    public void Discard(Guid actor, string reason)
+    {
+        EnsureManualDraft();
+        if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length > ReverseReasonMaxLength)
+            throw new ArgumentException("El motivo es obligatorio y admite hasta 500 caracteres.");
+        Status = JournalEntryStatus.Discarded;
+        DiscardReason = reason.Trim();
+        DiscardedBy = actor;
+        DiscardedAtUtc = DateTime.UtcNow;
+        Version++;
+        SetUpdated(actor);
+    }
+
+    private void EnsureDraft()
+    {
+        if (Status != JournalEntryStatus.Draft)
+            throw new DomainRuleViolationException("Solo un asiento Draft puede modificarse.");
+    }
+
+    private static void EnsureAccountSides(IReadOnlyCollection<JournalEntryLine> lines)
+    {
+        var debitAccounts = lines.Where(l => l.Debit > 0).Select(l => l.AccountId).ToHashSet();
+        if (lines.Any(l => l.Credit > 0 && debitAccounts.Contains(l.AccountId)))
+            throw new DomainRuleViolationException("Una misma cuenta no puede recibir Débito y Crédito dentro del mismo asiento.");
+    }
+
+    private void EnsureManualDraft()
+    {
+        EnsureDraft();
+        if (!IsManual) throw new DomainRuleViolationException("Solo puede editarse un asiento manual.");
     }
 
     /// <summary>Crea el espejo histórico sin modificar este asiento ni sus líneas.</summary>
     public JournalEntry Reverse(Guid reversedBy, int reverseEntryNumber, string reason,
-        DateOnly effectiveDate, Guid destinationPeriodId, int destinationFiscalYear)
+        DateOnly effectiveDate, Guid? destinationPeriodId, int destinationFiscalYear)
     {
         if (Status != JournalEntryStatus.Posted)
             throw new DomainRuleViolationException("Solo un asiento Posted puede reversarse.");
-        if (effectiveDate == default || destinationPeriodId == Guid.Empty)
+        if (effectiveDate == default || destinationPeriodId is null || destinationPeriodId == Guid.Empty)
             throw new ArgumentException("La fecha efectiva y el período destino son obligatorios.");
         if (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length > ReverseReasonMaxLength)
             throw new ArgumentException("El motivo del reverso es obligatorio y admite hasta 500 caracteres.", nameof(reason));
@@ -232,3 +326,5 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
 
     private static string Truncate(string value, int max) => value.Length > max ? value[..max] : value;
 }
+
+public sealed record ManualJournalLine(Guid AccountId, string? Description, decimal Debit, decimal Credit);

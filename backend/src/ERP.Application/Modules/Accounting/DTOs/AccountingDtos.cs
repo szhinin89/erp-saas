@@ -94,7 +94,7 @@ public sealed record PostingRuleLineDto(
 public sealed record JournalEntryDto(
     Guid Id,
     DateOnly EntryDate,
-    Guid AccountingPeriodId,
+    Guid? AccountingPeriodId,
     int FiscalYear,
     string SourceModule,
     string SourceEventType,
@@ -188,7 +188,7 @@ public sealed record JournalEntryDetailDto(
     Guid Id,
     int? EntryNumber,
     DateOnly EntryDate,
-    Guid AccountingPeriodId,
+    Guid? AccountingPeriodId,
     int FiscalYear,
     string SourceModule,
     string SourceEventType,
@@ -214,7 +214,8 @@ public sealed record JournalEntryDetailDto(
     DateOnly? SourceDocumentDate,
     string? SourcePartyName,
     string? SourceStatus,
-    string? SourceRoute
+    string? SourceRoute,
+    ERP.Application.Modules.Accounting.UseCases.JournalEntries.ManualJournalInfoDto? Manual = null
 );
 
 // ── ACCOUNTING-REPORTS-09: Libro Diario / Libro Mayor / Balance de Comprobación ────────────

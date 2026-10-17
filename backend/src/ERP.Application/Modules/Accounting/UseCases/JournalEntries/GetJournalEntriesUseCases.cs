@@ -23,7 +23,8 @@ public sealed record GetJournalEntriesQuery(
     JournalEntryStatus? Status = null,
     DateOnly? FromDate = null,
     DateOnly? ToDate = null,
-    string? SourceModule = null
+    string? SourceModule = null,
+    bool? Manual = null
 ) : IRequest<Result<GetJournalEntriesResponse>>, ICompanyScopedRequest;
 
 public sealed record GetJournalEntryByIdQuery(Guid Id)
@@ -94,7 +95,7 @@ public sealed class GetJournalEntriesHandler
         CancellationToken ct
     )
     {
-        var filter = new JournalEntryListFilter(q.Status, q.FromDate, q.ToDate, q.SourceModule);
+        var filter = new JournalEntryListFilter(q.Status, q.FromDate, q.ToDate, q.SourceModule, q.Manual);
         var (items, totalCount) = await _repo.GetPageAsync(
             _t.TenantId,
             _c.CompanyId,
@@ -127,6 +128,7 @@ public sealed class GetJournalEntryByIdHandler
     private readonly IJournalEntryRepository _repo;
     private readonly IAccountRepository _accountRepo;
     private readonly IJournalEntrySourceResolver _sourceResolver;
+    private readonly IManualJournalRepository? _manual;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
 
@@ -135,9 +137,11 @@ public sealed class GetJournalEntryByIdHandler
         IAccountRepository accountRepo,
         IJournalEntrySourceResolver sourceResolver,
         ICurrentTenant t,
-        ICurrentCompany c
+        ICurrentCompany c,
+        IManualJournalRepository? manual = null
     )
     {
+        _manual = manual;
         _repo = repo;
         _accountRepo = accountRepo;
         _sourceResolver = sourceResolver;
@@ -193,9 +197,19 @@ public sealed class GetJournalEntryByIdHandler
                     : null
             );
 
-        return Result<JournalEntryDetailDto>.Success(
-            Map.ToDetailDto(entry, accountsById, source, originalEntry, reverseEntry)
-        );
+        if (source is null && originalEntry?.IsManual == true)
+            source = new JournalEntrySourceInfo("Reverso de asiento manual",
+                originalEntry.EntryNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "Sin numerar",
+                originalEntry.EntryDate, null, originalEntry.Status.ToString(),
+                $"/accounting/journal-entries/{originalEntry.Id}");
+
+        var dto = Map.ToDetailDto(entry, accountsById, source, originalEntry, reverseEntry);
+        if (entry.IsManual)
+            dto = dto with { Manual = new ManualJournalInfoDto(entry.Reference, entry.Version, entry.CreatedBy,
+                entry.UpdatedBy, entry.DiscardedAtUtc, entry.DiscardedBy, entry.DiscardReason,
+                _manual is null ? [] : (await _manual.ListAttemptsAsync(tenantId, companyId, entry.Id, ct))
+                    .Select(ManualJournalAttemptDto.From).ToList()) };
+        return Result<JournalEntryDetailDto>.Success(dto);
     }
 
     /// <summary>

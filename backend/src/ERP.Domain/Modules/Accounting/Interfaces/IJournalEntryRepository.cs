@@ -9,7 +9,8 @@ public sealed record JournalEntryListFilter(
     JournalEntryStatus? Status,
     DateOnly? FromDate,
     DateOnly? ToDate,
-    string? SourceModule
+    string? SourceModule,
+    bool? Manual = null
 );
 
 /// <summary>

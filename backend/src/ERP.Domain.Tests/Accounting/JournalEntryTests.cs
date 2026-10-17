@@ -215,16 +215,16 @@ public sealed class JournalEntryTests
     }
 
     [Fact]
-    public void Post_sin_lineas_no_lanza_por_balance_pero_publica_en_cero()
+    public void Post_sin_lineas_no_puede_publicarse_y_permanece_Draft_sin_numero()
     {
-        // Documenta el comportamiento actual: EnsureBalanced() con Lines vacío se cumple
-        // trivialmente (0 == 0) — la restricción de mínimo dos líneas la impone JournalValidator
-        // en el pipeline, no el aggregate. Post() en sí no exige líneas.
         var entry = CreateEntry();
 
-        entry.Post(CreatedBy, 1);
+        var act = () => entry.Post(CreatedBy, 1);
 
-        entry.Status.Should().Be(JournalEntryStatus.Posted);
+        act.Should().Throw<DomainRuleViolationException>();
+        entry.Status.Should().Be(JournalEntryStatus.Draft);
+        entry.EntryNumber.Should().BeNull();
+        entry.PostedAtUtc.Should().BeNull();
     }
 
     // Fase 5.3 — numeración definitiva: EntryNumber se asigna únicamente vía Post().

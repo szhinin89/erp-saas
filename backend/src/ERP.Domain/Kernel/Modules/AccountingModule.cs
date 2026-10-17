@@ -67,6 +67,9 @@ public static class AccountingModule
         LabelKey = "app.nav.item.accounting.journalEntries",
         SortOrder = 10,
         Id = "ac000000-0000-4000-9000-000000000001",
+        RelatedActionPermissionsCsv = AccountingPermissions.ManualCreate + "," + AccountingPermissions.ManualEdit
+            + "," + AccountingPermissions.ManualPost + "," + AccountingPermissions.ManualReverse
+            + "," + AccountingPermissions.ManualDiscard,
         ParentId = "405b951f-84c9-4520-a7be-53d1e52b0cf4"
     )]
     public const string JournalEntries = "/accounting/journal-entries";

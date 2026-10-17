@@ -387,6 +387,8 @@ public static class DependencyInjection
             ERP.Domain.Modules.Accounting.Interfaces.IAccountingPeriodRepository,
             ERP.Infrastructure.Accounting.Repositories.AccountingPeriodRepository
         >();
+        services.AddScoped<ERP.Domain.Modules.Accounting.Interfaces.IManualJournalRepository,
+            ERP.Infrastructure.Accounting.Repositories.ManualJournalRepository>();
         services.AddScoped<
             ERP.Domain.Modules.Accounting.Interfaces.IJournalEntryRepository,
             ERP.Infrastructure.Accounting.Repositories.JournalEntryRepository

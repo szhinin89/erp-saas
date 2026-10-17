@@ -53,6 +53,12 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         if (!string.IsNullOrWhiteSpace(filter.SourceModule))
             scoped = scoped.Where(x => x.SourceModule == filter.SourceModule);
 
+        if (filter.Manual is bool isManual)
+            scoped = scoped.Where(x => ((x.SourceModule == JournalEntry.ManualModule && x.SourceEventType == JournalEntry.ManualFact)
+                || (x.OriginalJournalEntryId != null && _context.JournalEntries.Any(o => o.Id == x.OriginalJournalEntryId
+                    && o.TenantId == tenantId && o.CompanyId == companyId
+                    && o.SourceModule == JournalEntry.ManualModule && o.SourceEventType == JournalEntry.ManualFact))) == isManual);
+
         var totalCount = await scoped.CountAsync(ct);
 
         var items = await scoped
@@ -154,10 +160,14 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         CancellationToken ct = default
     )
     {
+        var period = await _context.AccountingPeriods.AsNoTracking().FirstAsync(x =>
+            x.TenantId == tenantId && x.CompanyId == companyId && x.Id == accountingPeriodId, ct);
         var scoped = _context.JournalEntries.Where(x =>
-            x.TenantId == tenantId
-            && x.CompanyId == companyId
-            && x.AccountingPeriodId == accountingPeriodId
+            x.TenantId == tenantId && x.CompanyId == companyId
+            && (x.AccountingPeriodId == accountingPeriodId
+                || (x.SourceModule == JournalEntry.ManualModule && x.SourceEventType == JournalEntry.ManualFact
+                    && x.EntryDate >= period.StartDate && x.EntryDate <= period.EndDate))
+            && x.Status != JournalEntryStatus.Discarded
         );
 
         // Cada CountAsync se traduce a "SELECT COUNT(*)" — nunca materializa JournalEntry

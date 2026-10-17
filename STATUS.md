@@ -1,5 +1,23 @@
 # Project Status
 
+## ACCOUNTING-08 (2026-10-17)
+
+Implementación de asientos manuales sobre JournalEntry existente: Draft editable con versión,
+concepto/referencia y líneas explícitas; Posted inmutable y numerado; Discarded histórico sin
+efecto en reportes/cierre; reverso espejo común sin modificar el original. Cinco permisos
+`accounting.manual.*`, endpoints dedicados, editor y acciones en el listado/detalle existentes.
+Intentos de publicación durables e idempotentes, rollback de fallos y Entity Audit existente.
+BUG REAL: AddLine admitía modificar Posted; Post admitía vacío. Invariantes en Domain, sin
+excepción de misma cuenta en ambos lados ni modificación de las reglas automáticas.
+Migración `AccountingManual08`: período nullable para borradores sin período creado,
+referencia/versión/descarte, intentos y Entity Audit. Aplicada solo a PostgreSQL 16 aislado de pruebas.
+PASS 6/6 tests focales: dominio, Draft/edición/versión/scope/descarte, publicación/guards/rollback,
+concurrencia, permisos API/NavItem y reverso histórico idempotente con original Locked.
+TypeScript, ESLint focal, compilación backend y diff check PASS. Sin deuda funcional identificada
+en este alcance; aplicación al piloto y smoke visual de UI pendientes.
+Sin suites completas, npm build, architecture:check, staging, commit ni push.
+Contrato: [Accounting §11](docs/architecture/accounting.md#11-asientos-manuales-y-ajustes).
+
 ## ACCOUNTING-07 (2026-10-17)
 
 Implementado y validado focalmente (6 tests): períodos contables operables — estructura contigua sin

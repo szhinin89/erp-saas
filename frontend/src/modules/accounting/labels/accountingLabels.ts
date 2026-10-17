@@ -110,6 +110,7 @@ export function sourceModuleLabel(t: TFunction, value: string): string {
 }
 
 export function factTypeLabel(t: TFunction, value: string): string {
+  if (value === "ManualJournalEntry") return t("accounting.labels.factType.ManualJournalEntry", "Asiento manual");
   const [prefix, detail] = value.split(":", 2);
   if (prefix === "SupplierCreditRefunded" && detail) {
     return t("accounting.labels.factType.SupplierCreditRefunded", { destination: detail });
