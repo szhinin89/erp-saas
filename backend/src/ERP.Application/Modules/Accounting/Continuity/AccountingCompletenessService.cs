@@ -35,6 +35,9 @@ public static class AccountingCompletenessCodes
     public const string JournalEntriesWithoutNumber = "JOURNAL_ENTRIES_WITHOUT_NUMBER";
     public const string ReversalsIncomplete = "REVERSALS_INCOMPLETE";
     public const string PreviousPeriodOpen = "PREVIOUS_PERIOD_OPEN";
+
+    /// <summary>ACCOUNTING-12D — último período del ejercicio con cuentas de resultados todavía con saldo.</summary>
+    public const string YearEndClosingMissing = "YEAR_END_CLOSING_MISSING";
 }
 
 /// <summary>
@@ -79,7 +82,8 @@ public sealed class AccountingCompletenessService(
     IInventoryCostLedger costs,
     IAccountingRelevantFactsReader facts,
     IJournalEntryRepository journal,
-    IAccountingPeriodRepository periods
+    IAccountingPeriodRepository periods,
+    IAccountRepository accounts
 ) : IAccountingCompletenessEvaluator
 {
     public async Task<AccountingCompleteness> EvaluateAsync(
@@ -112,6 +116,22 @@ public sealed class AccountingCompletenessService(
             .Count(p => p.Id != period.Id && p.EndDate < period.StartDate && p.Status == PeriodStatus.Open);
         Add(reasons, AccountingCompletenessCodes.PreviousPeriodOpen, previousOpen);
 
+        // ACCOUNTING-12D: el último período del ejercicio exige el cierre anual Posted. Se evalúa por su
+        // efecto (cuentas de resultados del ejercicio en cero, cierre incluido): sin saldos que cerrar no
+        // hay bloqueo falso, y un cierre desactualizado por movimientos posteriores sigue bloqueando.
+        if (FiscalYearClosingRules.IsLastPeriodOfYear(period))
+        {
+            var nominal = FiscalYearClosingRules.NominalAccountIds(
+                await accounts.GetByCompanyAsync(tenantId, companyId, ct));
+            if (nominal.Count > 0)
+            {
+                var (from, to) = FiscalYearClosingRules.YearRange(period.FiscalYear);
+                var totals = await journal.GetAccountLineTotalsAsync(tenantId, companyId, from, to, nominal, ct);
+                Add(reasons, AccountingCompletenessCodes.YearEndClosingMissing,
+                    totals.Values.Any(t => t.TotalDebit != t.TotalCredit) ? 1 : 0);
+            }
+        }
+
         return Build(period.EndDate, reasons);
     }
 
@@ -131,7 +151,8 @@ public sealed class AccountingCompletenessService(
             ),
             HasPendingSaleCost: Has(AccountingCompletenessCodes.SaleCostPending),
             HasOriginsWithoutAccounting: Has(AccountingCompletenessCodes.OriginsWithoutAccounting),
-            HasPreviousOpenPeriod: Has(AccountingCompletenessCodes.PreviousPeriodOpen)
+            HasPreviousOpenPeriod: Has(AccountingCompletenessCodes.PreviousPeriodOpen),
+            HasYearEndClosingMissing: Has(AccountingCompletenessCodes.YearEndClosingMissing)
         );
     }
 

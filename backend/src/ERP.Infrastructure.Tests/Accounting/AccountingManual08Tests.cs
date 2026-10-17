@@ -3,6 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Queries;
+using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 using ERP.Domain.Audit;
 using ERP.Domain.Exceptions;
@@ -133,7 +134,7 @@ public sealed class AccountingManual08Tests : IClassFixture<AccountingManual08Fi
         // A draft exists before the period is closed; publication still performs its own gate.
         var closed = (await handler.Handle(book.Create(), Ct)).Value!;
         var period = await db.AccountingPeriods.SingleAsync(x => x.Id == book.PeriodId);
-        period.Close(book.UserId, new JournalEntryClosureReadiness(false, false, false, false, false, false, false, false));
+        period.Close(book.UserId, JournalEntryClosureReadiness.Ready);
         await db.SaveChangesAsync();
         (await handler.Handle(new PostManualJournalCommand(closed.Id, closed.Version, Guid.NewGuid()), Ct)).Code.Should().Be("PERIOD_NOT_OPEN");
         period.Lock(book.UserId); await db.SaveChangesAsync();
@@ -214,7 +215,7 @@ public sealed class AccountingManual08Tests : IClassFixture<AccountingManual08Fi
         var original = await db.JournalEntries.AsNoTracking().Include(e => e.Lines).SingleAsync();
         var snapshot = System.Text.Json.JsonSerializer.Serialize(original);
         var period = await db.AccountingPeriods.SingleAsync(x => x.Id == book.PeriodId);
-        period.Close(book.UserId, new JournalEntryClosureReadiness(false, false, false, false, false, false, false, false));
+        period.Close(book.UserId, JournalEntryClosureReadiness.Ready);
         period.Lock(book.UserId);
         var destination = AccountingPeriod.Create(book.TenantId, book.CompanyId, 2027, 1, new(2027, 1, 1), new(2027, 1, 31), book.UserId);
         db.AccountingPeriods.Add(destination); await db.SaveChangesAsync();
@@ -294,18 +295,34 @@ public sealed record ManualBook(AccountingManual08Fixture Fixture, Guid TenantId
     public ErpDbContext Db(IInterceptor? interceptor = null) => Fixture.Db(TenantId, CompanyId, interceptor);
     public IReadOnlyList<ManualJournalLine> Lines() => [new(DebitId, "debe", 100, 0), new(CreditId, "haber", 0, 100)];
     public CreateManualJournalCommand Create(DateOnly? date = null) => new(date ?? new(2026, 10, 1), "manual", "ref", Lines(), Guid.NewGuid());
-    public ManualJournalHandler Handler(ErpDbContext db)
+    public ManualJournalHandler Handler(ErpDbContext db, DateOnly? today = null)
     {
         var clock = new Mock<ICompanyClock>();
-        clock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(new DateOnly(2026, 10, 17));
+        clock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(today ?? new DateOnly(2026, 10, 17));
         return new(new UnitOfWork(db), new JournalEntryRepository(db), new ManualJournalRepository(db),
             new AccountingPeriodRepository(db), new AccountingOperationalPolicyRepository(db), new JournalEntrySequenceRepository(db),
             new AccountRepository(db), Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId && c.HasCompanyContext && c.IsAuthenticated),
             Mock.Of<ICurrentUser>(u => u.UserId == UserId), clock.Object, StandardPrecisionPolicyProvider.Instance,
             new AuditWriter(db), new AuditContext(TenantId, CompanyId, UserId), NullLogger<PostingEngine>.Instance,
-            NullLogger<ManualJournalHandler>.Instance);
+            NullLogger<ManualJournalHandler>.Instance, Closing(db, clock.Object));
     }
+    public FiscalYearClosingService Closing(ErpDbContext db, ICompanyClock clock) => new(new JournalEntryRepository(db),
+        new AccountRepository(db), new AccountingPeriodRepository(db), AccountingCompletenessTestSupport.Create(db, CompanyId),
+        new AccountingOperationalPolicyRepository(db), clock, StandardPrecisionPolicyProvider.Instance,
+        NullLogger<PostingEngine>.Instance);
+    public FiscalYearClosingService Closing(ErpDbContext db, DateOnly today) => Closing(db, Clock(today));
+    public ICompanyClock Clock(DateOnly today)
+    {
+        var clock = new Mock<ICompanyClock>();
+        clock.Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(today);
+        return clock.Object;
+    }
+    public GenerateFiscalYearClosingEntryHandler GenerateClosing(ErpDbContext db, DateOnly today) => new(new UnitOfWork(db),
+        new JournalEntryRepository(db), new AccountingOperationalPolicyRepository(db), Closing(db, today),
+        StandardPrecisionPolicyProvider.Instance, Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
+        Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId && c.HasCompanyContext && c.IsAuthenticated),
+        Mock.Of<ICurrentUser>(u => u.UserId == UserId), new AuditWriter(db), new AuditContext(TenantId, CompanyId, UserId));
     private sealed class AuditWriter(ErpDbContext db) : IAuditService
     {
         public Task RecordAsync<T>(T record, CancellationToken ct = default) where T : AuditRecordBase =>

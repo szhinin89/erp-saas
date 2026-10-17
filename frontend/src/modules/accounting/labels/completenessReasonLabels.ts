@@ -14,6 +14,7 @@ export const COMPLETENESS_REASON_LABELS: Record<string, string> = {
   JOURNAL_ENTRIES_WITHOUT_NUMBER: "Asientos sin número",
   REVERSALS_INCOMPLETE: "Reversos incompletos",
   PREVIOUS_PERIOD_OPEN: "Período anterior abierto",
+  YEAR_END_CLOSING_MISSING: "Asiento de cierre anual sin contabilizar",
 };
 
 export const completenessReasonLabel = (code: string): string =>

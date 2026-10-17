@@ -132,6 +132,18 @@ public sealed class AccountingController : ControllerBase
     public async Task<IActionResult> LockAccountingPeriod(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new LockAccountingPeriodCommand(id), ct));
 
+    // ACCOUNTING-12D — cierre anual: estado por ejercicio (accounting.view) y generación del Draft
+    // (accounting.periods.close, parte del cierre). La publicación usa el flujo de manuales (accounting.manual.post).
+    [HttpGet("accounting-periods/fiscal-year-closings")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
+    public async Task<IActionResult> GetFiscalYearClosings(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetFiscalYearClosingsQuery(), ct), "OK");
+
+    [HttpPost("accounting-periods/fiscal-years/{fiscalYear:int}/closing-entry")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PeriodsClose}")]
+    public async Task<IActionResult> GenerateFiscalYearClosingEntry(int fiscalYear, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GenerateFiscalYearClosingEntryCommand(fiscalYear), ct));
+
     // ══════════════════════════════════════════════════════════════════════
     // POSTING RULES
     // ══════════════════════════════════════════════════════════════════════

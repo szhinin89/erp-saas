@@ -50,7 +50,8 @@ public sealed class AccountingContinuity06Tests
             costs.Object,
             Mock.Of<IAccountingRelevantFactsReader>(),
             Mock.Of<IJournalEntryRepository>(),
-            Mock.Of<IAccountingPeriodRepository>());
+            Mock.Of<IAccountingPeriodRepository>(),
+            Mock.Of<IAccountRepository>());
 
         var result = await service.EvaluateAsync(TenantId, CompanyId, new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), default);
 

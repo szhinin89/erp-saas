@@ -28,6 +28,7 @@ import {
   type AccountingPeriodDto,
   type AccountingPeriodStatus,
 } from "../api/accountingApi";
+import { FiscalYearClosingCard } from "./FiscalYearClosingCard";
 import { completenessReasonLabel } from "../labels/completenessReasonLabels";
 import {
   accountingPeriodSchema,
@@ -364,6 +365,8 @@ export function AccountingPeriodsPage() {
           emptyMessage={t("accounting.periods.empty")}
         />
       </ZHCard>
+
+      <FiscalYearClosingCard canGenerate={canClose} refreshKey={periods} />
 
       <ZHModal
         open={createOpen}

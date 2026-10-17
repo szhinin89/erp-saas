@@ -38,6 +38,10 @@ namespace ERP.Domain.Modules.Accounting.ValueObjects;
 /// <param name="HasPreviousOpenPeriod">
 /// Existe un período anterior de la misma Company todavía Open (cierre secuencial).
 /// </param>
+/// <param name="HasYearEndClosingMissing">
+/// ACCOUNTING-12D: el período es el último del ejercicio y las cuentas de resultados del ejercicio
+/// conservan saldo — falta contabilizar (Posted) el asiento de cierre anual o quedó desactualizado.
+/// </param>
 public sealed record JournalEntryClosureReadiness(
     bool HasDraftOrNonFinalEntries,
     bool HasEntriesWithoutEntryNumber,
@@ -46,12 +50,13 @@ public sealed record JournalEntryClosureReadiness(
     bool HasUnresolvedOpening,
     bool HasPendingSaleCost,
     bool HasOriginsWithoutAccounting,
-    bool HasPreviousOpenPeriod
+    bool HasPreviousOpenPeriod,
+    bool HasYearEndClosingMissing
 )
 {
     /// <summary>Sin ningún bloqueo — explícito, para los llamadores que cierran un período listo.</summary>
     public static JournalEntryClosureReadiness Ready { get; } =
-        new(false, false, false, false, false, false, false, false);
+        new(false, false, false, false, false, false, false, false, false);
 
     public bool IsReady =>
         !HasDraftOrNonFinalEntries
@@ -61,7 +66,8 @@ public sealed record JournalEntryClosureReadiness(
         && !HasUnresolvedOpening
         && !HasPendingSaleCost
         && !HasOriginsWithoutAccounting
-        && !HasPreviousOpenPeriod;
+        && !HasPreviousOpenPeriod
+        && !HasYearEndClosingMissing;
 
     /// <summary>Motivos de bloqueo en español, listos para componer el mensaje de la excepción de dominio.</summary>
     public IEnumerable<string> BuildBlockingReasons()
@@ -82,5 +88,7 @@ public sealed record JournalEntryClosureReadiness(
             yield return "existen documentos sujetos a Contabilidad sin contabilización registrada";
         if (HasPreviousOpenPeriod)
             yield return "existe un período anterior todavía abierto";
+        if (HasYearEndClosingMissing)
+            yield return "falta contabilizar el asiento de cierre anual del ejercicio (las cuentas de resultados conservan saldo)";
     }
 }

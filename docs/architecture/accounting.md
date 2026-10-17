@@ -24,6 +24,7 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | IMPLEMENTADO | ACCOUNTING-11: catálogo único de hechos contables soportados, administración de reglas desde UI (`accounting.rules.manage`) y Balance General con resultados no cerrados calculados (§23) |
 | IMPLEMENTADO | ACCOUNTING-12A: Estado de Resultados con signo por sección (coincide con el Resultado del ejercicio del Balance) y contabilización de ajustes de inventario `Inventory/StockAdjustmentIn` y `StockAdjustmentOut` con cuenta del motivo (§24) |
 | IMPLEMENTADO | ACCOUNTING-12C: Caja contable — movimientos manuales con cuenta del motivo, depósito bancario explícito y diferencia de arqueo al cerrar (§25) |
+| IMPLEMENTADO | ACCOUNTING-12D: cierre anual — asiento de cierre generado en Draft desde Períodos, publicado con el flujo de manuales, y `YEAR_END_CLOSING_MISSING` en el último período (§26) |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -663,6 +664,7 @@ Cada motivo es `{ Code, Count }`, sin listar documentos:
 | `ORIGINS_WITHOUT_ACCOUNTING` | Rango ∩ ventanas Enabled desde la adopción | Documento sin `AccountingPosting` ni `JournalEntry` de su identidad (módulo + documento) |
 | `JOURNAL_ENTRIES_NOT_FINAL` / `JOURNAL_ENTRIES_WITHOUT_NUMBER` / `REVERSALS_INCOMPLETE` | Solo cierre | Asientos del período |
 | `PREVIOUS_PERIOD_OPEN` | Solo cierre | Período anterior de la misma Company todavía Open |
+| `YEAR_END_CLOSING_MISSING` | Solo cierre del último período del ejercicio | Cuentas de resultados del ejercicio con saldo (cierre anual no Posted o desactualizado, §26) |
 
 La apertura solo aplica si la fecha de apertura está sujeta y la Carga Inicial no está cerrada
 (`OpeningAccountingCompleteness`, compartido con las precondiciones de Disabled; allí el ASI ausente no
@@ -778,12 +780,13 @@ Reversed hasta `AsOfDate`, sin asiento ni persistencia: **Resultado del ejercici
 Gastos del 01-ene del año de `AsOfDate` a `AsOfDate` (ejercicio = año calendario, §22) y **Resultados no
 cerrados de ejercicios anteriores** = el mismo cálculo antes del 01-ene. `TotalEquity` las incluye e
 `IsBalanced` representa un descuadre real. Un asiento de cierre que deja las cuentas nominales en cero
-lleva esas filas a cero sin duplicar el patrimonio trasladado. Estado de Resultados y Balance de
-Comprobación no cambian; no existe cierre anual automático.
+lleva esas filas a cero sin duplicar el patrimonio trasladado. El cierre anual es un asiento generado a
+pedido del usuario y publicado por él (§26); no existe cierre automático.
 
 **Estado de Resultados (ACCOUNTING-12A).** Usa el mismo signo por sección que el Balance: Ingresos =
 Haber − Debe; Costos y Gastos = Debe − Haber, sin importar la naturaleza de la cuenta (una correctora resta
 dentro de su sección). Para el mismo rango, Utilidad neta = Resultado del ejercicio del Balance General.
+El asiento de cierre anual y su reverso se excluyen del Estado de Resultados (§26).
 
 ## 24. Ajustes de inventario ACCOUNTING-12A
 
@@ -857,3 +860,45 @@ idempotente por `ClientRequestId` (intención V1 propia). Crea `CashMovement` ti
 **Completitud.** `ORIGINS_WITHOUT_ACCOUNTING` incluye movimientos manuales con motivo, depósitos (día Company de
 `CreatedAt`) y sesiones Closed con diferencia (día Company de `ClosedAt`); también cuentan como hecho contablemente
 relevante para la elección de vigencia (§20). Sin backfill.
+
+## 26. Cierre anual ACCOUNTING-12D
+
+**Asiento.** `GenerateFiscalYearClosingEntry(FiscalYear)` (`POST accounting-periods/fiscal-years/{year}/closing-entry`,
+`accounting.periods.close`) crea un `JournalEntry` Draft con `SourceModule = Accounting`,
+`SourceEventType = FiscalYearClosing` e identidad nueva por generación, fecha 31-dic del ejercicio (año calendario,
+§22) y período = último período del ejercicio. Saldos acumulados del ejercicio de las cuentas Income/Cost/Expense,
+solo de asientos Posted (y Reversed históricos) del 01-ene al 31-dic, excluidos cierres anteriores y sus reversos:
+cada cuenta con saldo acreedor se debita y con saldo deudor se acredita por su saldo; la diferencia neta va a
+`3.1.03.001` Resultado del ejercicio del plan de la Company (Haber si hay utilidad, Debe si hay pérdida). Importes con
+`AccountingDecimals`; la contrapartida es la suma exacta de las líneas, así que el asiento balancea sin residuo y el
+Domain lo valida al crearlo. Sin saldos nominales no se genera (`YEAR_END_CLOSING_NOTHING_TO_CLOSE`). Participación de
+trabajadores e impuesto a la renta se registran antes como asientos manuales; no se calculan.
+
+**Precondiciones (fail-closed, en generación y otra vez al publicar).** Períodos del ejercicio que cubren 01-ene a
+31-dic; último período Open y todos los anteriores Closed/Locked; hoy (fecha Company) posterior al 31-dic; Accounting
+Enabled el 31-dic; readiness único del ejercicio completo (§21: obligaciones Pending/Failed, apertura, costo pendiente,
+orígenes sin contabilizar); ningún otro asiento Draft en el último período; cuenta de resultado existente, activa,
+imputable y de Patrimonio; cuentas de las líneas imputables (`PostingAccountGuard`). Duplicados: no se genera otro si
+existe un cierre del ejercicio Draft (`YEAR_END_CLOSING_DRAFT_EXISTS`) o Posted sin reverso
+(`YEAR_END_CLOSING_ALREADY_POSTED`); la resolución explícita es descartar el Draft o reversar el Posted. Generación y
+publicación se serializan con el lock compartido de Company y un advisory lock por Company + ejercicio.
+
+**Publicación.** Con el flujo de manuales (§11): `POST manual-journal-entries/{id}/post` (`accounting.manual.post`),
+versión, intentos durables, numeración, período Open y Entity Audit; descarte y reverso igual que un manual. El
+cierre no se edita (`YEAR_END_CLOSING_NOT_EDITABLE`). Al publicar se recalcula el cierre bajo el lock del ejercicio:
+si las líneas o la fecha difieren del cálculo vigente se rechaza `YEAR_END_CLOSING_OUTDATED` (descartar y regenerar).
+
+**Último período.** `CloseAccountingPeriod` agrega `YEAR_END_CLOSING_MISSING` cuando el período termina el 31-dic de su
+ejercicio y alguna cuenta nominal tiene saldo en el ejercicio contando el cierre Posted. Se evalúa por efecto: sin
+saldos que cerrar no bloquea, con el cierre Posted vigente las nominales quedan en cero y el período puede cerrarse, y
+un movimiento de resultados posterior al cierre vuelve a bloquear hasta reversar y regenerar.
+
+**Reportes.** Estado de Resultados excluye el cierre y su reverso (muestra el resultado del ejercicio). Balance General
+lo incluye: las nominales quedan en cero, la fila calculada Resultado del ejercicio vale cero y el resultado aparece una
+sola vez en `3.1.03.001`; los ejercicios siguientes no lo arrastran como no cerrado. Diario, Mayor y Balance de
+Comprobación lo muestran como un asiento más. Sin un segundo motor de reportes.
+
+**Pantalla.** Contabilidad › Períodos, tarjeta «Cierre anual» (`GET accounting-periods/fiscal-year-closings`,
+`accounting.view`): ejercicio, estado (Sin generar/Borrador/Contabilizado), asiento vinculado y resultado; acción
+«Generar asiento de cierre anual» con `accounting.periods.close` cuando el último período está Open; el Draft se
+revisa y publica en el detalle del asiento. La revisión de cierre explica `YEAR_END_CLOSING_MISSING`.

@@ -157,6 +157,33 @@ public interface IJournalEntryRepository
     );
 
     /// <summary>
+    /// ACCOUNTING-12D: igual que <see cref="GetAccountLineTotalsAsync"/> pero sin los asientos de cierre
+    /// anual ni sus reversos — fuente del Estado de Resultados (el cierre traslada el resultado a
+    /// patrimonio; no es un movimiento de resultados) y del cálculo del propio cierre.
+    /// </summary>
+    Task<
+        IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+    > GetAccountLineTotalsExcludingYearEndClosingAsync(
+        Guid tenantId,
+        Guid companyId,
+        DateOnly? fromDate,
+        DateOnly? toDate,
+        IReadOnlyCollection<Guid>? accountIds,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// ACCOUNTING-12D: asientos de cierre anual del ejercicio (cualquier estado), con <c>Lines</c>,
+    /// junto con la indicación de si ya tienen un reverso.
+    /// </summary>
+    Task<IReadOnlyList<(JournalEntry Entry, bool Reversed)>> GetFiscalYearClosingsAsync(
+        Guid tenantId,
+        Guid companyId,
+        int? fiscalYear,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// ACCOUNTING-REPORTS-09: detalle de movimientos Posted de UNA cuenta en un rango de fechas,
     /// ordenado por fecha/asiento — fuente del detalle de Libro Mayor. Proyecta directamente a
     /// <see cref="JournalEntryLineReportRow"/> (join contra el asiento padre) en vez de cargar

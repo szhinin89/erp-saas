@@ -197,14 +197,15 @@ public sealed class GetJournalEntryByIdHandler
                     : null
             );
 
-        if (source is null && originalEntry?.IsManual == true)
-            source = new JournalEntrySourceInfo("Reverso de asiento manual",
+        if (source is null && originalEntry?.IsUserPublished == true)
+            source = new JournalEntrySourceInfo(
+                originalEntry.IsFiscalYearClosing ? "Reverso de asiento de cierre anual" : "Reverso de asiento manual",
                 originalEntry.EntryNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "Sin numerar",
                 originalEntry.EntryDate, null, originalEntry.Status.ToString(),
                 $"/accounting/journal-entries/{originalEntry.Id}");
 
         var dto = Map.ToDetailDto(entry, accountsById, source, originalEntry, reverseEntry);
-        if (entry.IsManual)
+        if (entry.IsUserPublished)
             dto = dto with { Manual = new ManualJournalInfoDto(entry.Reference, entry.Version, entry.CreatedBy,
                 entry.UpdatedBy, entry.DiscardedAtUtc, entry.DiscardedBy, entry.DiscardReason,
                 _manual is null ? [] : (await _manual.ListAttemptsAsync(tenantId, companyId, entry.Id, ct))

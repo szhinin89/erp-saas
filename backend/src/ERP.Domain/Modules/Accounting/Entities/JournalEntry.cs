@@ -27,6 +27,16 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     public const string ManualModule = "Accounting";
     public const string ManualFact = "ManualJournalEntry";
     public bool IsManual => SourceModule == ManualModule && SourceEventType == ManualFact;
+
+    /// <summary>
+    /// ACCOUNTING-12D — asiento de cierre anual: generado por el sistema (líneas calculadas, no editables)
+    /// y publicado/descartado/reversado por el usuario con el mismo flujo de los manuales.
+    /// </summary>
+    public const string FiscalYearClosingFact = "FiscalYearClosing";
+    public bool IsFiscalYearClosing => SourceModule == ManualModule && SourceEventType == FiscalYearClosingFact;
+
+    /// <summary>Asientos cuya publicación decide un usuario (manual o cierre anual).</summary>
+    public bool IsUserPublished => IsManual || IsFiscalYearClosing;
     public string? Reference { get; private set; }
     public int Version { get; private set; }
     public DateTime? DiscardedAtUtc { get; private set; }
@@ -207,7 +217,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
         Status = JournalEntryStatus.Posted;
         PostedAtUtc = DateTime.UtcNow;
         EntryNumber = entryNumber;
-        if (IsManual) Version++;
+        if (IsUserPublished) Version++;
         SetUpdated(postedBy);
     }
 
@@ -232,10 +242,34 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
         return entry;
     }
 
+    /// <summary>
+    /// ACCOUNTING-12D — Draft del cierre anual con las líneas calculadas por Application. Debe poder
+    /// publicarse tal cual (balance, mínimo de líneas, lados), por eso se valida al crearlo.
+    /// </summary>
+    public static JournalEntry CreateFiscalYearClosing(Guid tenantId, Guid companyId, Guid identity,
+        DateOnly date, Guid periodId, int fiscalYear, string concept, IReadOnlyList<ManualJournalLine> lines,
+        int decimals, Guid actor)
+    {
+        if (tenantId == Guid.Empty || companyId == Guid.Empty || identity == Guid.Empty || periodId == Guid.Empty)
+            throw new ArgumentException("La identidad, el período y el ámbito son obligatorios.");
+        var entry = Create(tenantId, companyId, date, periodId, fiscalYear,
+            ManualModule, FiscalYearClosingFact, identity, concept, actor);
+        entry.ApplyDraft(date, periodId, fiscalYear, concept, null, lines, decimals, actor);
+        entry.EnsurePostable();
+        return entry;
+    }
+
     public void ReplaceManual(DateOnly date, Guid? periodId, int fiscalYear, string concept,
         string? reference, IReadOnlyList<ManualJournalLine> lines, int decimals, Guid actor)
     {
-        EnsureManualDraft();
+        EnsureDraft();
+        if (!IsManual) throw new DomainRuleViolationException("Solo puede editarse un asiento manual.");
+        ApplyDraft(date, periodId, fiscalYear, concept, reference, lines, decimals, actor);
+    }
+
+    private void ApplyDraft(DateOnly date, Guid? periodId, int fiscalYear, string concept,
+        string? reference, IReadOnlyList<ManualJournalLine> lines, int decimals, Guid actor)
+    {
         if (date == default || string.IsNullOrWhiteSpace(concept) || concept.Trim().Length > DescriptionMaxLength
             || reference?.Length > DescriptionMaxLength || lines.Count > short.MaxValue)
             throw new ArgumentException("Fecha, concepto, referencia o líneas inválidos.");
@@ -297,7 +331,7 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     private void EnsureManualDraft()
     {
         EnsureDraft();
-        if (!IsManual) throw new DomainRuleViolationException("Solo puede editarse un asiento manual.");
+        if (!IsUserPublished) throw new DomainRuleViolationException("Solo puede editarse un asiento manual.");
     }
 
     /// <summary>Crea el espejo histórico sin modificar este asiento ni sus líneas.</summary>

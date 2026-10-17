@@ -1,5 +1,19 @@
 # Project Status
 
+## ACCOUNTING-12D (2026-10-17)
+
+Cierre anual contable. `GenerateFiscalYearClosingEntry` crea en Draft el asiento de cierre (`Accounting/FiscalYearClosing`,
+31-dic, último período): nominales Income/Cost/Expense a cero con saldos Posted del ejercicio y contrapartida neta en
+`3.1.03.001` (Haber utilidad / Debe pérdida), balanceado con `AccountingDecimals`. Precondiciones fail-closed en generación y
+publicación: períodos anteriores cerrados, último Open, ejercicio terminado (fecha Company), Enabled, readiness del ejercicio
+completo, sin otros Draft en el último período, sin cierre Draft/Posted vigente (lock por ejercicio). Se publica, descarta o
+reversa con el flujo de manuales; no se edita; al publicar se rechaza si los saldos cambiaron (`YEAR_END_CLOSING_OUTDATED`).
+Readiness `YEAR_END_CLOSING_MISSING` en el último período (nominales con saldo). Estado de Resultados excluye el cierre y su
+reverso; Balance General sin doble resultado. UI: tarjeta «Cierre anual» en Períodos y detalle del asiento sin Editar. Sin
+migración. PASS 4/4 tests focales + clases afectadas (reportes, cierre de período, manuales). tsc -b y ESLint focal PASS. Sin
+suites, npm build, architecture:check, staging, commit ni push.
+Contrato: [Accounting §26](docs/architecture/accounting.md#26-cierre-anual-accounting-12d).
+
 ## ACCOUNTING-12C (2026-10-17)
 
 Caja contable. Hechos `Caja/ManualIncome|ManualExpense|Withdrawal|BankDeposit` (reglas habilitadoras, caja real de la

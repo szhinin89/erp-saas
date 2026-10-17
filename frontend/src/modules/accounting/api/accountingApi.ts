@@ -442,6 +442,25 @@ export interface AccountingPeriodClosureReadinessDto {
   completeness: AccountingCompleteness | null;
 }
 
+// ── ACCOUNTING-12D (espejo de FiscalYearClosingDto en ERP.Application) ──
+
+export type FiscalYearClosingStatus = "NotGenerated" | "Draft" | "Posted";
+
+/** Estado del cierre anual por ejercicio; `result` = Ingresos − Costos − Gastos trasladado a patrimonio. */
+export interface FiscalYearClosingDto {
+  fiscalYear: number;
+  status: FiscalYearClosingStatus;
+  journalEntryId: string | null;
+  entryNumber: number | null;
+  entryDate: string | null;
+  result: number | null;
+  lastPeriodId: string | null;
+  lastPeriodStatus: AccountingPeriodStatus | null;
+}
+
+/** Hecho del asiento de cierre anual (SourceEventType); se publica con el flujo de manuales. */
+export const FISCAL_YEAR_CLOSING_FACT = "FiscalYearClosing";
+
 export interface ManualJournalLine { accountId: string; description: string | null; debit: number; credit: number }
 export interface ManualJournalPayload { entryDate: string; concept: string; reference: string | null; lines: ManualJournalLine[] }
 export interface ManualJournalResult { id: string; status: string; version: number; entryNumber: number | null }
@@ -607,4 +626,8 @@ export const accountingApi = {
     apiPatch<AccountingPeriodDto>(`${BASE}/accounting-periods/${id}/close`, {}),
   lockPeriod: (id: string) =>
     apiPatch<AccountingPeriodDto>(`${BASE}/accounting-periods/${id}/lock`, {}),
+  listFiscalYearClosings: () =>
+    apiGet<FiscalYearClosingDto[]>(`${BASE}/accounting-periods/fiscal-year-closings`),
+  generateFiscalYearClosing: (fiscalYear: number) =>
+    apiPost<FiscalYearClosingDto>(`${BASE}/accounting-periods/fiscal-years/${fiscalYear}/closing-entry`, {}),
 };

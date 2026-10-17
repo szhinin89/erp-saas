@@ -4,6 +4,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 using ERP.Application.Modules.Companies;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -100,7 +101,8 @@ public sealed class ManualJournalHandler(
     IJournalEntrySequenceRepository sequences, IAccountRepository accounts,
     ICurrentTenant tenant, ICurrentCompany company, ICurrentUser user, ICompanyClock clock,
     ICompanyPrecisionPolicyProvider precision, IAuditService audit, IAuditContext auditContext,
-    ILogger<PostingEngine> postingLogger, ILogger<ManualJournalHandler> logger)
+    ILogger<PostingEngine> postingLogger, ILogger<ManualJournalHandler> logger,
+    FiscalYearClosingService closing)
     : IRequestHandler<CreateManualJournalCommand, Result<ManualJournalResultDto>>,
       IRequestHandler<EditManualJournalCommand, Result<ManualJournalResultDto>>,
       IRequestHandler<PostManualJournalCommand, Result<ManualJournalResultDto>>,
@@ -131,6 +133,10 @@ public sealed class ManualJournalHandler(
         TransactionAsync(cmd.Id, async () =>
         {
             var entry = await FindAsync(cmd.Id, ct);
+            if (entry is { IsFiscalYearClosing: true })
+                return Result<ManualJournalResultDto>.ValidationFailure(
+                    "El asiento de cierre anual se calcula desde Períodos y no se edita: descártelo y vuelva a generarlo.",
+                    FiscalYearClosingCodes.NotEditable);
             var check = CheckDraft(entry, cmd.Version);
             if (check is not null) return check;
             // Both old and new dates must remain writable; editing cannot move a closed entry out.
@@ -222,6 +228,18 @@ public sealed class ManualJournalHandler(
         if (period is null) return Result<ManualJournalResultDto>.ValidationFailure("No existe período para la fecha contable.", "PERIOD_NOT_OPEN");
         var gate = new PostingPeriodGuard().Ensure(period);
         if (!gate.IsSuccess) return Failure(gate);
+        if (entry.IsFiscalYearClosing)
+        {
+            // ACCOUNTING-12D: revalida todas las precondiciones del cierre bajo el lock del ejercicio y
+            // exige que las líneas sigan siendo exactamente el cálculo vigente (sin doble cierre ni saldos viejos).
+            await closing.AcquireLockAsync(company.CompanyId, entry.FiscalYear, ct);
+            var plan = await closing.PrepareAsync(tenant.TenantId, company.CompanyId, entry.FiscalYear, entry, ct);
+            if (!plan.IsSuccess) return Failure(plan);
+            if (plan.Value!.EntryDate != entry.EntryDate || !FiscalYearClosingRules.SameLines(entry.Lines, plan.Value.Lines))
+                return Result<ManualJournalResultDto>.ValidationFailure(
+                    "Los saldos del ejercicio cambiaron desde que se generó el asiento de cierre: descártelo y genere uno nuevo.",
+                    FiscalYearClosingCodes.Outdated);
+        }
         try { entry.EnsurePostable(); }
         catch (DomainRuleViolationException ex) { return Result<ManualJournalResultDto>.FromDomainRule(ex); }
         var accountGate = await new PostingAccountGuard(accounts, postingLogger)
@@ -256,7 +274,7 @@ public sealed class ManualJournalHandler(
     private async Task<JournalEntry?> FindAsync(Guid id, CancellationToken ct)
     {
         var entry = await journal.GetByIdAsync(tenant.TenantId, company.CompanyId, id, ct);
-        return entry?.IsManual == true ? entry : null;
+        return entry?.IsUserPublished == true ? entry : null;
     }
 
     private static Result<ManualJournalResultDto>? CheckDraft(JournalEntry? entry, int version) =>

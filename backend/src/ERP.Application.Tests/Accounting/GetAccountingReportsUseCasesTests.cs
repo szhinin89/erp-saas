@@ -324,7 +324,7 @@ public sealed class GetAccountingReportsUseCasesTests
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
-                r.GetAccountLineTotalsAsync(
+                r.GetAccountLineTotalsExcludingYearEndClosingAsync(
                     TenantId,
                     CompanyId,
                     It.IsAny<DateOnly>(),
@@ -382,7 +382,7 @@ public sealed class GetAccountingReportsUseCasesTests
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
-                r.GetAccountLineTotalsAsync(
+                r.GetAccountLineTotalsExcludingYearEndClosingAsync(
                     TenantId,
                     CompanyId,
                     It.IsAny<DateOnly>(),
@@ -794,7 +794,7 @@ public sealed class GetAccountingReportsUseCasesTests
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
-                r.GetAccountLineTotalsAsync(
+                r.GetAccountLineTotalsExcludingYearEndClosingAsync(
                     TenantId,
                     CompanyId,
                     new DateOnly(2026, 8, 1),
@@ -860,7 +860,7 @@ public sealed class GetAccountingReportsUseCasesTests
 
         var repo = new Mock<IJournalEntryRepository>();
         repo.Setup(r =>
-                r.GetAccountLineTotalsAsync(
+                r.GetAccountLineTotalsExcludingYearEndClosingAsync(
                     TenantId,
                     CompanyId,
                     It.IsAny<DateOnly>(),
@@ -924,6 +924,9 @@ public sealed class GetAccountingReportsUseCasesTests
         repo.Setup(r => r.GetAccountLineTotalsAsync(TenantId, CompanyId, null, new DateOnly(2025, 12, 31),
                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
+        repo.Setup(r => r.GetAccountLineTotalsExcludingYearEndClosingAsync(TenantId, CompanyId, It.IsAny<DateOnly?>(),
+                It.IsAny<DateOnly?>(), It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(totals);
         var accountRepo = new Mock<IAccountRepository>();
         accountRepo.Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Account> { sales, salesReturns, cogs, purchaseDiscounts, rent });

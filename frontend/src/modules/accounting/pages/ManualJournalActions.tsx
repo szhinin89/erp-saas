@@ -12,7 +12,7 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDateTime, todayIso } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
-import { accountingApi, type JournalEntryDetailDto } from "../api/accountingApi";
+import { accountingApi, FISCAL_YEAR_CLOSING_FACT, type JournalEntryDetailDto } from "../api/accountingApi";
 import { manualJournalReasonSchema } from "../schemas/manualJournalSchema";
 
 /** Extends the existing detail, reusing AccountingPeriodsPage's confirmation/modal pattern. */
@@ -29,6 +29,8 @@ export function ManualJournalActions({ entry, onChanged }: { entry: JournalEntry
   if (!entry.manual) return null;
   const manual = entry.manual;
   const draft = entry.status === "Draft";
+  // ACCOUNTING-12D: el cierre anual usa este mismo flujo, pero sus líneas las calcula el sistema (no se edita).
+  const yearEnd = entry.sourceEventType === FISCAL_YEAR_CLOSING_FACT;
 
   async function post() {
     if (!await message.confirm({ title: "Publicar asiento", message: "El asiento recibirá número definitivo y sus importes serán inmutables.", confirmLabel: "Publicar" })) return;
@@ -67,12 +69,13 @@ export function ManualJournalActions({ entry, onChanged }: { entry: JournalEntry
   });
 
   return <>
-    <ZHCard title="Asiento manual">
+    <ZHCard title={yearEnd ? "Asiento de cierre anual" : "Asiento manual"}>
       {error && <ZHPageNotice variant="error" message={error} />}
+      {yearEnd && draft && <ZHPageNotice variant="info" message="Generado desde Contabilidad › Períodos con los saldos contabilizados del ejercicio. Si los saldos cambian antes de publicarlo, la publicación se rechaza: descártelo y genere uno nuevo." />}
       <p>Creado por: {manual.createdBy} · {formatDateTime(entry.createdAt)}</p>
       <p>Referencia: {manual.reference || "—"}</p>
       {manual.discardedAtUtc && <p>Descartado por {manual.discardedBy} · {formatDateTime(manual.discardedAtUtc)} · {manual.discardReason}</p>}
-      {draft && canShow("accounting.manual.edit") && <ZHBtn variant="ghost" disabled={busy} onClick={() => navigate(`/accounting/journal-entries/${entry.id}/edit`)}>Editar borrador</ZHBtn>}
+      {draft && !yearEnd && canShow("accounting.manual.edit") && <ZHBtn variant="ghost" disabled={busy} onClick={() => navigate(`/accounting/journal-entries/${entry.id}/edit`)}>Editar borrador</ZHBtn>}
       {draft && canShow("accounting.manual.post") && <ZHBtn disabled={busy} onClick={() => void post()}>Publicar</ZHBtn>}
       {draft && canShow("accounting.manual.discard") && <ZHBtn variant="ghost" disabled={busy} onClick={() => { reset({ reason: "", effectiveDate: todayIso() }); setMode("discard"); }}>Descartar</ZHBtn>}
       {entry.status === "Posted" && !entry.reverseJournalEntryId && canShow("accounting.manual.reverse") &&

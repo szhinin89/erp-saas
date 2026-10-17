@@ -29,6 +29,7 @@ public static class AccountingCompletenessTestSupport
             new InventoryCostLedger(db),
             new AccountingRelevantFactsReader(db, new ERP.Infrastructure.Persistence.Services.CompanyClock(db)),
             new JournalEntryRepository(db),
-            new AccountingPeriodRepository(db)
+            new AccountingPeriodRepository(db),
+            new AccountRepository(db)
         );
 }

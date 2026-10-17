@@ -31,6 +31,8 @@ public static class DependencyInjection
         services.AddScoped<OpeningAccountingCompleteness>();
         services.AddScoped<AccountingCompletenessService>();
         services.AddScoped<IAccountingCompletenessEvaluator>(sp => sp.GetRequiredService<AccountingCompletenessService>());
+        // ACCOUNTING-12D — precondiciones y cálculo del cierre anual (generación y publicación).
+        services.AddScoped<ERP.Application.Modules.Accounting.UseCases.AccountingPeriods.FiscalYearClosingService>();
         services.AddScoped<AccountingPostingDispatchQueue>();
         services.AddScoped<AccountingPostingRecorder>();
         services.AddScoped<ERP.Application.Modules.Accounting.Posting.Translators.SaleCostPostingRecorder>();

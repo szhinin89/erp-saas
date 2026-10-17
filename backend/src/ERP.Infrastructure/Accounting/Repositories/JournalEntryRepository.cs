@@ -54,10 +54,11 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             scoped = scoped.Where(x => x.SourceModule == filter.SourceModule);
 
         if (filter.Manual is bool isManual)
-            scoped = scoped.Where(x => ((x.SourceModule == JournalEntry.ManualModule && x.SourceEventType == JournalEntry.ManualFact)
+            scoped = scoped.Where(x => ((x.SourceModule == JournalEntry.ManualModule
+                    && (x.SourceEventType == JournalEntry.ManualFact || x.SourceEventType == JournalEntry.FiscalYearClosingFact))
                 || (x.OriginalJournalEntryId != null && _context.JournalEntries.Any(o => o.Id == x.OriginalJournalEntryId
-                    && o.TenantId == tenantId && o.CompanyId == companyId
-                    && o.SourceModule == JournalEntry.ManualModule && o.SourceEventType == JournalEntry.ManualFact))) == isManual);
+                    && o.TenantId == tenantId && o.CompanyId == companyId && o.SourceModule == JournalEntry.ManualModule
+                    && (o.SourceEventType == JournalEntry.ManualFact || o.SourceEventType == JournalEntry.FiscalYearClosingFact)))) == isManual);
 
         var totalCount = await scoped.CountAsync(ct);
 
@@ -252,7 +253,7 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         return (items, totalCount);
     }
 
-    public async Task<
+    public Task<
         IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
     > GetAccountLineTotalsAsync(
         Guid tenantId,
@@ -261,20 +262,71 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         DateOnly? toDate,
         IReadOnlyCollection<Guid>? accountIds,
         CancellationToken ct = default
+    ) => LineTotalsAsync(tenantId, companyId, fromDate, toDate, accountIds, false, ct);
+
+    public Task<
+        IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+    > GetAccountLineTotalsExcludingYearEndClosingAsync(
+        Guid tenantId,
+        Guid companyId,
+        DateOnly? fromDate,
+        DateOnly? toDate,
+        IReadOnlyCollection<Guid>? accountIds,
+        CancellationToken ct = default
+    ) => LineTotalsAsync(tenantId, companyId, fromDate, toDate, accountIds, true, ct);
+
+    public async Task<IReadOnlyList<(JournalEntry Entry, bool Reversed)>> GetFiscalYearClosingsAsync(
+        Guid tenantId,
+        Guid companyId,
+        int? fiscalYear,
+        CancellationToken ct = default
+    )
+    {
+        var query = _context.JournalEntries.Include(x => x.Lines).Where(x =>
+            x.TenantId == tenantId && x.CompanyId == companyId
+            && x.SourceModule == JournalEntry.ManualModule
+            && x.SourceEventType == JournalEntry.FiscalYearClosingFact);
+        if (fiscalYear is not null)
+            query = query.Where(x => x.FiscalYear == fiscalYear);
+        var entries = await query.OrderBy(x => x.CreatedAt).ToListAsync(ct);
+        var ids = entries.Select(e => e.Id).ToList();
+        var reversed = await _context.JournalEntries
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId
+                && x.OriginalJournalEntryId != null && ids.Contains(x.OriginalJournalEntryId.Value))
+            .Select(x => x.OriginalJournalEntryId!.Value)
+            .ToListAsync(ct);
+        return entries.Select(e => (e, reversed.Contains(e.Id))).ToList();
+    }
+
+    private async Task<
+        IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+    > LineTotalsAsync(
+        Guid tenantId,
+        Guid companyId,
+        DateOnly? fromDate,
+        DateOnly? toDate,
+        IReadOnlyCollection<Guid>? accountIds,
+        bool excludeYearEndClosing,
+        CancellationToken ct
     )
     {
         // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — ver GetPostedEntriesPageAsync: un
         // Reversed conserva sus importes históricos, su reverso vive en un JournalEntry Posted
         // aparte — ambos deben sumar aquí para que el rango quede neto en cero, nunca solo uno.
-        var scoped = _context
-            .JournalEntries.Where(x =>
-                x.TenantId == tenantId
-                && x.CompanyId == companyId
-                && (
-                    x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed
-                )
-            )
-            .SelectMany(x => x.Lines, (entry, line) => new { entry.EntryDate, line });
+        var entries = _context.JournalEntries.Where(x =>
+            x.TenantId == tenantId
+            && x.CompanyId == companyId
+            && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
+        );
+        // ACCOUNTING-12D: el cierre anual y su eventual reverso se excluyen juntos, sin importar sus fechas.
+        if (excludeYearEndClosing)
+            entries = entries.Where(x =>
+                !(x.SourceModule == JournalEntry.ManualModule && x.SourceEventType == JournalEntry.FiscalYearClosingFact)
+                && !(x.OriginalJournalEntryId != null && _context.JournalEntries.Any(o =>
+                    o.Id == x.OriginalJournalEntryId && o.TenantId == tenantId && o.CompanyId == companyId
+                    && o.SourceModule == JournalEntry.ManualModule
+                    && o.SourceEventType == JournalEntry.FiscalYearClosingFact)));
+        var scoped = entries.SelectMany(x => x.Lines, (entry, line) => new { entry.EntryDate, line });
 
         if (fromDate is not null)
             scoped = scoped.Where(x => x.EntryDate >= fromDate);

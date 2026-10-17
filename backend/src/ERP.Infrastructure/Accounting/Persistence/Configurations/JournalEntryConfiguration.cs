@@ -48,6 +48,8 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.PostedAtUtc).HasColumnName("posted_at_utc");
         builder.Ignore(x => x.IsManual);
+        builder.Ignore(x => x.IsFiscalYearClosing);
+        builder.Ignore(x => x.IsUserPublished);
         builder.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(500);
         builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
         builder.Property(x => x.DiscardedAtUtc).HasColumnName("discarded_at_utc");

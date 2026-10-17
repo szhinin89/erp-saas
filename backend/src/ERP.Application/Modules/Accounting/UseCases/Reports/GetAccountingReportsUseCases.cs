@@ -562,7 +562,9 @@ public sealed class GetIncomeStatementReportHandler
             .OrderBy(a => a.Code.Value, AccountCodeComparer.Instance)
             .ToList();
 
-        var totals = await _repo.GetAccountLineTotalsAsync(
+        // ACCOUNTING-12D: el asiento de cierre anual (y su reverso) traslada el resultado a patrimonio;
+        // no es un movimiento de resultados, así que no anula el Estado de Resultados del ejercicio.
+        var totals = await _repo.GetAccountLineTotalsExcludingYearEndClosingAsync(
             tenantId,
             companyId,
             q.FromDate,

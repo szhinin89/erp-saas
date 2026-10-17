@@ -19,7 +19,7 @@ import {
   factTypeDescription,
   friendlyDescription,
 } from "../labels/accountingLabels";
-import { accountingApi, type JournalEntryDetailDto } from "../api/accountingApi";
+import { accountingApi, FISCAL_YEAR_CLOSING_FACT, type JournalEntryDetailDto } from "../api/accountingApi";
 // ACCOUNTING-DS-FULL-AUDIT-10F: sin este import, `.prd-sku`/`.prd-empty-row` no tienen estilo —
 // mismo root cause ya corregido en AccountingReportsPage.tsx/JournalEntriesPage.tsx.
 import "../../../styles/shared/items-catalog.css";
@@ -114,7 +114,7 @@ export function JournalEntryDetailPage() {
       // de venta") para que no se confunda con el asiento hermano de costo de venta. El bloque
       // "Documento origen — técnico" más abajo (cuando no hay documento resuelto) sigue mostrando
       // el valor crudo a propósito — nunca se oculta el dato técnico, solo se traduce aquí.
-      subtitle={entry.manual ? "Asiento manual" : `${sourceModuleLabel(t, entry.sourceModule)} — ${factTypeLabel(t, entry.sourceEventType)}`}
+      subtitle={entry.sourceEventType === FISCAL_YEAR_CLOSING_FACT ? "Asiento de cierre anual" : entry.manual ? "Asiento manual" : `${sourceModuleLabel(t, entry.sourceModule)} — ${factTypeLabel(t, entry.sourceEventType)}`}
       action={
         <ZHBtn type="button" variant="ghost" onClick={() => navigate("/accounting/journal-entries")}>
           Volver al listado
