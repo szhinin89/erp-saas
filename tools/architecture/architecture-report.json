@@ -1,0 +1,275 @@
+{
+  "generatedAt": "2026-10-06T20:15:27.560Z",
+  "passed": true,
+  "rawPassed": true,
+  "architectureScore": 58,
+  "status": "critical",
+  "driftRisk": "high",
+  "summary": {
+    "checks": 21,
+    "checksPassed": 21,
+    "checksFailed": 0,
+    "violations": 0,
+    "warnings": 21
+  },
+  "checks": [
+    {
+      "name": "pages-wrapper",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "import-boundaries",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "module-boundaries",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "css-prefixes",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "design-system",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "frontend-precision",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "frontend-datetime",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "no-cross-layer",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "platform-legacy-surface",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "frontend-subscriber-naming",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "frontend-http-access",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "backend-layering",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "backend-clean-architecture",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "backend-controller-thin",
+      "passed": true,
+      "violations": [],
+      "warnings": [
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/Accounting/AccountingController.cs",
+          "message": "controller has 213 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/AuthController.cs",
+          "message": "controller has 240 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/BusinessPartnerContactsController.cs",
+          "message": "controller has 199 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/BusinessPartnerLocationsController.cs",
+          "message": "controller has 199 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/BusinessPartnerRolesController.cs",
+          "message": "controller has 222 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/BusinessPartnersController.cs",
+          "message": "controller has 207 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/CashFundingRequestsController.cs",
+          "message": "controller has 156 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/CatalogController.cs",
+          "message": "controller has 156 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/CompanyProfileController.cs",
+          "message": "controller has 233 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/ElectronicInvoicingController.cs",
+          "message": "controller has 156 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/ExpensesController.cs",
+          "message": "controller has 240 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/ItemsController.cs",
+          "message": "controller has 175 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/PricingController.cs",
+          "message": "controller has 194 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/PurchaseCreditNoteController.cs",
+          "message": "controller has 284 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/PurchaseReturnController.cs",
+          "message": "controller has 255 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/Purchases/PurchaseReceptionController.cs",
+          "message": "controller has 222 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/PurchasesController.cs",
+          "message": "controller has 301 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/RetentionsController.cs",
+          "message": "controller has 163 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/SalesController.cs",
+          "message": "controller has 194 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/SalesReturnController.cs",
+          "message": "controller has 194 lines (warning threshold 150)"
+        },
+        {
+          "rule": "B-controller-warn",
+          "file": "backend/src/ERP.API/Controllers/SupplierCreditController.cs",
+          "message": "controller has 265 lines (warning threshold 150)"
+        }
+      ]
+    },
+    {
+      "name": "backend-subscriber-rules",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "permissions-authorization-rules",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "frontend-permissions-rules",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "duplicate-services",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "naming-conventions",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "i18n-keys",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    },
+    {
+      "name": "grandfather-integrity",
+      "passed": true,
+      "violations": [],
+      "warnings": []
+    }
+  ],
+  "ratchet": {
+    "passed": true,
+    "baselineViolations": 0,
+    "currentViolations": 0,
+    "historicalViolations": 0,
+    "newViolationCount": 0,
+    "resolvedViolationCount": 0,
+    "checks": {},
+    "historicalFindings": [],
+    "newViolations": [],
+    "resolvedViolations": []
+  },
+  "modules": {
+    "api-controllers": {
+      "violations": 0,
+      "warnings": 21
+    }
+  },
+  "adrs": [
+    "docs/adr/ADR-001-modular-monolith.md",
+    "docs/adr/ADR-002-no-erp-shared.md",
+    "docs/adr/ADR-003-pages-wrapper-only.md",
+    "docs/adr/ADR-004-clean-architecture-enforcement.md",
+    "docs/adr/ADR-005-multi-tenant-query-filters.md",
+    "docs/adr/ADR-006-multi-agent-governance.md"
+  ]
+}
