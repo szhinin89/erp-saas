@@ -7,11 +7,15 @@ import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { ZhSelect } from "../../../../components/zh/inputs/ZhSelect";
 import { ZhNumberInput } from "../../../../components/zh/inputs/ZhNumberInput";
 import type { AdjustmentReasonFormValues } from "../../../../schemas/inventory/adjustmentReasonSchema";
+import type { AccountDto } from "../../../accounting/facades/accountLookupFacade";
 
 type Props = {
   editingId: string | null;
   saving: boolean;
   saveError: string;
+  accounts: AccountDto[];
+  /** La empresa activa ya configuró una cuenta: solo puede reemplazarse, no quitarse. */
+  hasConfiguredAccount: boolean;
   register: UseFormRegister<AdjustmentReasonFormValues>;
   control: Control<AdjustmentReasonFormValues>;
   errors: FieldErrors<AdjustmentReasonFormValues>;
@@ -31,6 +35,8 @@ export function AdjustmentReasonFormTab({
   editingId,
   saving,
   saveError,
+  accounts,
+  hasConfiguredAccount,
   register,
   control,
   errors,
@@ -134,6 +140,32 @@ export function AdjustmentReasonFormTab({
             placeholder="0"
             {...register("sortOrder")}
           />
+        </ZHField>
+
+        <ZHField
+          label={t("inventory.adjustmentReasons.form.accountingAccount", "Cuenta contable")}
+          error={errors.accountingAccountId?.message}
+          hint={t(
+            "inventory.adjustmentReasons.form.accountingAccountHint",
+            "Cuenta de la empresa activa. Contrapartida del asiento: Haber en ingresos, Debe en egresos. Sin cuenta el ajuste se registra y su contabilización queda fallida hasta configurarla.",
+          )}
+        >
+          <ZhSelect
+            disabled={saving}
+            aria-label={t("inventory.adjustmentReasons.form.accountingAccount", "Cuenta contable")}
+            {...register("accountingAccountId")}
+          >
+            {!hasConfiguredAccount && (
+              <option value="">
+                {t("inventory.adjustmentReasons.form.accountingAccountNone", "Sin configurar")}
+              </option>
+            )}
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.code} - {a.name}
+              </option>
+            ))}
+          </ZhSelect>
         </ZHField>
 
         <div className="zh-col-span-2">

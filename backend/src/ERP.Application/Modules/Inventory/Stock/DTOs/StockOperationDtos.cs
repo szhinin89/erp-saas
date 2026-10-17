@@ -46,7 +46,8 @@ public sealed record InventoryAdjustmentReasonDto(
     string AllowedMovementType,
     bool RequiresNotes,
     bool IsActive,
-    int SortOrder
+    int SortOrder,
+    Guid? AccountingAccountId = null
 );
 
 public sealed record StockTransferDto(

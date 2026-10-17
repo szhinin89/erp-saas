@@ -7547,6 +7547,64 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("inventory_adjustment_reasons", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReasonAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_account_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("InventoryAdjustmentReasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_adjustment_reason_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingAccountId");
+
+                    b.HasIndex("InventoryAdjustmentReasonId");
+
+                    b.HasIndex("CompanyId", "InventoryAdjustmentReasonId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_inventory_adjustment_reason_accounts_company_reason");
+
+                    b.ToTable("inventory_adjustment_reason_accounts", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.InventoryCostPosting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -19613,6 +19671,27 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.InitialLoad.Entities.ImportBatch", null)
                         .WithMany()
                         .HasForeignKey("ImportBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReasonAccount", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReason", null)
+                        .WithMany()
+                        .HasForeignKey("InventoryAdjustmentReasonId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

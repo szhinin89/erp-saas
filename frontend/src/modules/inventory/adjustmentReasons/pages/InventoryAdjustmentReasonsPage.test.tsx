@@ -40,6 +40,7 @@ const MERMA: InventoryAdjustmentReasonDto = {
   requiresNotes: true,
   isActive: true,
   sortOrder: 1,
+  accountingAccountId: null,
 };
 
 const SOBRA: InventoryAdjustmentReasonDto = {
@@ -50,6 +51,7 @@ const SOBRA: InventoryAdjustmentReasonDto = {
   requiresNotes: false,
   isActive: false,
   sortOrder: 2,
+  accountingAccountId: null,
 };
 
 function grant(granted: string[] | "all" = "all") {

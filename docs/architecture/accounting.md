@@ -22,6 +22,7 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | IMPLEMENTADO | ACCOUNTING-07: estructura temporal de períodos (contigüidad, orden frente a Closed/Locked, exclusión PostgreSQL de solape), ejercicios mensuales desde 2027 con generación manual, cierre solo después de `EndDate`, Locked auditivo irreversible, permisos dedicados, Entity Audit y pantalla de Períodos (§22) |
 | IMPLEMENTADO | ACCOUNTING-08: asientos manuales Draft/Posted/Discarded, edición versionada, publicación con intentos durables, reverso histórico común, permisos dedicados, Entity Audit y UI sobre el libro existente (§11) |
 | IMPLEMENTADO | ACCOUNTING-11: catálogo único de hechos contables soportados, administración de reglas desde UI (`accounting.rules.manage`) y Balance General con resultados no cerrados calculados (§23) |
+| IMPLEMENTADO | ACCOUNTING-12A: Estado de Resultados con signo por sección (coincide con el Resultado del ejercicio del Balance) y contabilización de ajustes de inventario `Inventory/StockAdjustmentIn` y `StockAdjustmentOut` con cuenta del motivo (§24) |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -771,5 +772,39 @@ cerrados de ejercicios anteriores** = el mismo cálculo antes del 01-ene. `Total
 lleva esas filas a cero sin duplicar el patrimonio trasladado. Estado de Resultados y Balance de
 Comprobación no cambian; no existe cierre anual automático.
 
-**DEBT (siguiente fase).** El Estado de Resultados todavía suma cada cuenta por su naturaleza: una cuenta
-correctora de su sección se sumaría en vez de restar. Debe adoptar el mismo signo por sección que el Balance.
+**Estado de Resultados (ACCOUNTING-12A).** Usa el mismo signo por sección que el Balance: Ingresos =
+Haber − Debe; Costos y Gastos = Debe − Haber, sin importar la naturaleza de la cuenta (una correctora resta
+dentro de su sección). Para el mismo rango, Utilidad neta = Resultado del ejercicio del Balance General.
+
+## 24. Ajustes de inventario ACCOUNTING-12A
+
+**Hechos.** `Inventory/StockAdjustmentIn` (Debe Inventario / Haber cuenta del motivo) e
+`Inventory/StockAdjustmentOut` (Debe cuenta del motivo / Haber Inventario), en `PostingFactCatalog` con
+`GrandTotal` y lado dinámico (Haber en In, Debe en Out). El bootstrap siembra la línea fija `1.1.04.001`
+Inventario; la contrapartida llega como destino `InventoryAdjustmentReason` por identidad del motivo.
+
+**Importe y fecha.** Importe = suma del `TotalCost` real de los movimientos Kardex del ajuste
+(PositiveAdjust/NegativeAdjust), leídos ya persistidos y redondeados con `AccountingDecimals`; un movimiento
+sin costo conocido no movió el valor del Kardex y no aporta importe. Importe cero no genera obligación.
+Fecha contable y BusinessDate = fecha efectiva de ejecución, la misma `EffectiveDate` de los movimientos
+Kardex del ajuste (nunca la fecha de creación del borrador); el gate Closed/Locked (§21) se evalúa contra ella,
+así que un borrador creado en un período luego cerrado y ejecutado hoy contabiliza hoy. Identidad = ajuste;
+`SourceDocumentId` = ajuste.
+`ExecuteStockAdjustment` publica el hecho y `AccountingPostingRecorder` registra la obligación en la misma
+transacción; el saldo inicial de Carga Inicial (`PostInitialBalance`) no lo publica (tiene su propio hecho).
+
+**Cuenta del motivo.** Configuración Company-scoped `InventoryAdjustmentReasonAccount` (TenantId, CompanyId,
+motivo, cuenta; único CompanyId + motivo), mismo criterio que `PaymentMethodAccount`: el motivo puede ser
+tenant-wide y no guarda cuenta. Se administra desde la pantalla de motivos para la Company activa
+(`PUT inventory/adjustment-reasons/{id}/account`, Company del contexto autenticado; la cuenta debe ser de esa
+Company, activa e imputable; se reemplaza, no se quita). Se resuelve en cada intento con la Company del hecho,
+sin fallback: sin configuración → Failed `INVENTORY_ADJUSTMENT_ACCOUNT_NOT_CONFIGURED`; cuenta inactiva o no
+imputable → Failed `INVENTORY_ADJUSTMENT_ACCOUNT_INVALID`. El ajuste nunca se revierte; se corrige
+configurando la cuenta y reprocesando (§17).
+
+**Anulación.** Anular un ajuste ejecutado aplica el reverso histórico común (§7): Posted → espejo con la
+fecha del acto; Pending/Failed → Canceled.
+
+**Completitud.** `ORIGINS_WITHOUT_ACCOUNTING` incluye ajustes Executed/Cancelled con valor Kardex por la
+fecha efectiva de su movimiento Kardex de ejecución; también cuentan como hecho contablemente relevante para la elección de vigencia (§20).
+Sin backfill.

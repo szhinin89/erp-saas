@@ -21,6 +21,11 @@ export interface InventoryAdjustmentReasonDto {
   requiresNotes: boolean;
   isActive: boolean;
   sortOrder: number;
+  /**
+   * ACCOUNTING-12A — cuenta contable del motivo para la empresa ACTIVA (configuración por empresa,
+   * nunca del maestro tenant-wide); null = sin configurar (la contabilización queda fallida).
+   */
+  accountingAccountId: string | null;
 }
 
 /**
@@ -44,4 +49,9 @@ export interface UpdateInventoryAdjustmentReasonRequest {
   allowedMovementType: ReasonAllowedMovementType;
   requiresNotes: boolean;
   sortOrder: number;
+}
+
+/** ACCOUNTING-12A — PUT {id}/account: la empresa sale del contexto autenticado, nunca del body. */
+export interface SetInventoryAdjustmentReasonAccountRequest {
+  accountingAccountId: string;
 }

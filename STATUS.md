@@ -1,5 +1,19 @@
 # Project Status
 
+## ACCOUNTING-12A (2026-10-17)
+
+BUG REAL corregido: el Estado de Resultados sumaba por naturaleza de cuenta; ahora usa el signo por sección del
+Balance (correctora resta) y Utilidad neta = Resultado del ejercicio. Ajustes de inventario contabilizados:
+hechos `Inventory/StockAdjustmentIn|Out` en el catálogo y bootstrap (Inventario `1.1.04.001` fijo; contrapartida =
+cuenta del motivo), importe = `TotalCost` real del Kardex, fecha = fecha efectiva de ejecución (la del Kardex, nunca
+la de creación del borrador; Closed/Locked se evalúa contra ella), obligación durable común, reverso común al anular,
+conciliación en `ORIGINS_WITHOUT_ACCOUNTING`. Cuenta del motivo Company-scoped `InventoryAdjustmentReasonAccount`
+(migración `InventoryAdjustmentReasonAccounts12A`, único CompanyId + motivo), administrable en la pantalla de motivos
+para la empresa activa; el maestro tenant-wide no guarda cuenta. Sin configuración el ajuste opera y la obligación queda
+Failed reprocesable. PASS 3/3 tests focales (fecha de ejecución con borrador en período cerrado, mismo motivo en dos
+Companies, Company sin configuración + reproceso). tsc -b PASS. Sin suites, npm build, architecture:check, staging,
+commit ni push. Contrato: [Accounting §24](docs/architecture/accounting.md#24-ajustes-de-inventario-accounting-12a).
+
 ## ACCOUNTING-11 (2026-10-17)
 
 Reglas contables administrables desde UI y Balance General cuadrado durante el ejercicio.
@@ -11,8 +25,7 @@ permiso `accounting.rules.manage`. Pantalla: hechos sin regla, editor de líneas
 Balance General: filas calculadas Resultado del ejercicio y Resultados no cerrados de ejercicios anteriores; `IsBalanced`
 vuelve a indicar un descuadre real. BUG REAL latente corregido: el Balance sumaba por naturaleza de cuenta, así que
 una cuenta correctora (naturaleza opuesta a su sección) simulaba un descuadre; ahora suma con el signo de la sección.
-DEBT/BUG siguiente fase (sin corregir): el Estado de Resultados suma cada cuenta por su naturaleza, así que una cuenta
-correctora (p. ej. Ingreso con naturaleza Debe) se suma en vez de restar. Pendiente: migration squash; hasta entonces
+El signo del Estado de Resultados para cuentas correctoras se corrigió en ACCOUNTING-12A. Pendiente: migration squash; hasta entonces
 las BD existentes conservan esas tres columnas, nullable e ignoradas por el modelo.
 PASS 5/5 tests focales (edición de Lines + catálogo, permisos API/NavItem, Balance del año actual, dos ejercicios,
 corte/Draft/cierre sin doble conteo) + tests existentes adaptados al contrato nuevo. tsc -b y ESLint focal PASS.

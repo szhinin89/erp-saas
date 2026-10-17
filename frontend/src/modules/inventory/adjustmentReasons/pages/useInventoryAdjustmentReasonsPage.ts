@@ -12,6 +12,10 @@ import {
   type AdjustmentReasonFormValues,
 } from "../../../../schemas/inventory/adjustmentReasonSchema";
 import { inventoryAdjustmentReasonsService } from "../api/inventoryAdjustmentReasonsService";
+import {
+  accountLookupFacade,
+  type AccountDto,
+} from "../../../accounting/facades/accountLookupFacade";
 import type { InventoryAdjustmentReasonDto } from "../types";
 
 /**
@@ -38,6 +42,15 @@ export function useInventoryAdjustmentReasonsPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [toggling, setToggling] = useState(false);
+  const [accounts, setAccounts] = useState<AccountDto[]>([]);
+
+  // ACCOUNTING-12A — cuentas imputables para la contrapartida contable del motivo.
+  useEffect(() => {
+    accountLookupFacade
+      .listAccounts()
+      .then((rows) => setAccounts(rows.filter((a) => a.isActive && a.allowsPosting)))
+      .catch(() => setAccounts([]));
+  }, []);
 
   const form = useForm<AdjustmentReasonFormValues>({
     resolver: zodResolver(adjustmentReasonSchema),
@@ -98,6 +111,7 @@ export function useInventoryAdjustmentReasonsPage() {
         allowedMovementType: row.allowedMovementType,
         requiresNotes: row.requiresNotes,
         sortOrder: row.sortOrder,
+        accountingAccountId: row.accountingAccountId ?? "",
       });
       setPanelOpen(true);
     },
@@ -109,6 +123,17 @@ export function useInventoryAdjustmentReasonsPage() {
     setEditingId(null);
     setSaveError("");
   }, []);
+
+  // ACCOUNTING-12A — la cuenta es configuración de la empresa activa (endpoint propio): solo se envía
+  // si cambió; no existe "quitar" una cuenta configurada (sin borrado físico), solo reemplazarla.
+  const saveAccount = useCallback(
+    async (reasonId: string, accountingAccountId: string) => {
+      const current = items.find((x) => x.id === reasonId)?.accountingAccountId ?? "";
+      if (!accountingAccountId || accountingAccountId === current) return;
+      await inventoryAdjustmentReasonsService.setAccount(reasonId, { accountingAccountId });
+    },
+    [items],
+  );
 
   const save = form.handleSubmit(async (values) => {
     setSaveError("");
@@ -123,6 +148,7 @@ export function useInventoryAdjustmentReasonsPage() {
           requiresNotes: values.requiresNotes,
           sortOrder: values.sortOrder,
         });
+        await saveAccount(editingId, values.accountingAccountId);
         await fetchList();
         message.success(
           t(
@@ -139,6 +165,7 @@ export function useInventoryAdjustmentReasonsPage() {
           requiresNotes: values.requiresNotes,
           sortOrder: values.sortOrder,
         });
+        await saveAccount(created.id, values.accountingAccountId);
         await fetchList();
         setEditingId(created.id);
         message.success(
@@ -214,6 +241,8 @@ export function useInventoryAdjustmentReasonsPage() {
     saving,
     saveError,
     toggling,
+    accounts,
+    hasConfiguredAccount: !!items.find((x) => x.id === editingId)?.accountingAccountId,
     form,
     errors,
     fetchList,

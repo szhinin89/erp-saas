@@ -224,6 +224,26 @@ public sealed class InventoryAdjustmentsFlowFixture : IAsyncLifetime
 
         BasePackagingLevelId = item.PackagingLevels.Single(l => l.IsBaseUnit).Id;
         BoxPackagingLevelId = item.PackagingLevels.Single(l => l.UomCode == "BOX").Id;
+
+        // ACCOUNTING-12A — el ajuste ejecutado registra su obligación contable: la empresa declara
+        // su modo operativo (sin él la operación falla cerrada) y recibe el bootstrap contable
+        // oficial (plan de cuentas, reglas mínimas, períodos), igual que SalesReturnEndToEndTests.
+        db.AccountingOperationalPolicies.Add(
+            ERP.Domain.Modules.Accounting.Entities.AccountingOperationalPolicy.Create(
+                TenantId,
+                CompanyId,
+                ERP.Domain.Modules.Accounting.Enums.AccountingOperationalMode.Enabled,
+                new DateOnly(1900, 1, 1),
+                "Test",
+                _adminId
+            )
+        );
+        await db.SaveChangesAsync();
+        await new ERP.Infrastructure.Seeding.Steps.AccountingBootstrapStep(
+            db,
+            new AlwaysTodayCompanyClock(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ERP.Infrastructure.Seeding.Steps.AccountingBootstrapStep>.Instance
+        ).ExecuteAsync(new ERP.Application.Common.Interfaces.CompanyBootstrapContext(TenantId, CompanyId, _adminId));
     }
 
     /// <summary>
@@ -1395,6 +1415,142 @@ public sealed class InventoryAdjustmentsEndToEndTests
         var adminRestoreUserId = await _f.CreateUserWithBranchAccessAsync("Admin", null);
         _f.RestoreAdminContext(adminRestoreUserId);
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ACCOUNTING-12A — contabilización de ajustes
+    // ══════════════════════════════════════════════════════════════════════
+
+    private async Task<Guid> AccountIdAsync(string code)
+    {
+        using var scope = _f.CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var accounts = await db.Accounts.IgnoreQueryFilters().AsNoTracking()
+            .Where(a => a.TenantId == _f.TenantId && a.CompanyId == _f.CompanyId).ToListAsync();
+        return accounts.Single(a => a.Code.Value == code).Id;
+    }
+
+    /// <summary>Motivo tenant-wide (maestro sin cuenta) + cuenta de la Company activa vía su endpoint propio.</summary>
+    private async Task<Guid> CreateReasonWithAccountAsync(string allowedMovementType, Guid? accountId)
+    {
+        var (reasonId, _) = await CreateReasonAsync(allowedMovementType, codePrefix: "AC12");
+        if (accountId is { } id)
+            await SetReasonAccountAsync(reasonId, id);
+        return reasonId;
+    }
+
+    private async Task SetReasonAccountAsync(Guid reasonId, Guid accountId)
+    {
+        var response = await _f.Client.PutAsJsonAsync($"/api/v1/inventory/adjustment-reasons/{reasonId}/account",
+            new { accountingAccountId = accountId });
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+    }
+
+    private async Task<StockAdjustmentResponseDto> DraftAdjustmentAsync(
+        string movementType, Guid reasonId, decimal quantity, decimal? unitCost) =>
+        await CreateAdjustmentOkAsync(movementType, reasonId, notes: null, lines: new object[]
+        {
+            new { itemId = _f.ItemId, itemName = "Producto Ajustes E2E", packagingLevelId = (Guid?)null,
+                quantity, unitCostBase = unitCost, lineNotes = (string?)null },
+        });
+
+    private async Task<StockAdjustmentResponseDto> ExecutedAdjustmentAsync(
+        string movementType, Guid reasonId, decimal quantity, decimal? unitCost)
+    {
+        var draft = await DraftAdjustmentAsync(movementType, reasonId, quantity, unitCost);
+        var executed = await ExecuteAdjustmentAsync(draft.Id);
+        executed.StatusCode.Should().Be(HttpStatusCode.OK, await executed.Content.ReadAsStringAsync());
+        return draft;
+    }
+
+    private async Task<(decimal KardexTotal, List<DateOnly> KardexDates, ERP.Domain.Modules.Accounting.Entities.AccountingPosting? Posting,
+        ERP.Domain.Modules.Accounting.Entities.JournalEntry? Entry)> AccountingOfAsync(Guid adjustmentId)
+    {
+        using var scope = _f.CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var movements = await db.StockMovements.IgnoreQueryFilters().AsNoTracking()
+            .Where(m => m.TenantId == _f.TenantId && m.SourceDocId == adjustmentId && m.SourceDocType == "StockAdjustment")
+            .ToListAsync();
+        var posting = await db.AccountingPostings.IgnoreQueryFilters().AsNoTracking()
+            .SingleOrDefaultAsync(p => p.TenantId == _f.TenantId && p.SourceModule == "Inventory" && p.SourceEventId == adjustmentId);
+        var entry = await db.JournalEntries.IgnoreQueryFilters().AsNoTracking().Include(j => j.Lines)
+            .SingleOrDefaultAsync(j => j.TenantId == _f.TenantId && j.SourceModule == "Inventory" && j.SourceEventId == adjustmentId);
+        return (Math.Round(movements.Sum(m => m.TotalCost ?? 0m), 2, MidpointRounding.AwayFromZero),
+            movements.Select(m => m.EffectiveDate).Distinct().ToList(), posting, entry);
+    }
+
+    [Fact]
+    public async Task Accounting12A_Draft_de_fecha_en_periodo_cerrado_ejecutado_hoy_Kardex_y_asiento_usan_la_fecha_de_ejecucion()
+    {
+        var inventory = await AccountIdAsync("1.1.04.001");
+        var shrinkage = await AccountIdAsync("5.1.02.001");
+        var inReason = await CreateReasonWithAccountAsync(InventoryAdjustmentReason.Ingreso, await AccountIdAsync("4.2.01.001"));
+        var outReason = await CreateReasonWithAccountAsync(InventoryAdjustmentReason.Egreso, shrinkage);
+        await ExecutedAdjustmentAsync(InventoryAdjustmentReason.Ingreso, inReason, 7m, 3.35m);
+
+        // Borrador "creado" el 2025-06-30, en un período que luego se cerró.
+        var draft = await DraftAdjustmentAsync(InventoryAdjustmentReason.Egreso, outReason, 3m, null);
+        var oldDate = new DateOnly(2025, 6, 30);
+        using (var scope = _f.CreateDbScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE stock_adjustments SET adjustment_date = {oldDate} WHERE id = {draft.Id}");
+            if (!await db.AccountingPeriods.IgnoreQueryFilters().AnyAsync(p =>
+                    p.TenantId == _f.TenantId && p.CompanyId == _f.CompanyId && p.FiscalYear == 2025))
+            {
+                var closed = ERP.Domain.Modules.Accounting.Entities.AccountingPeriod.Create(_f.TenantId, _f.CompanyId,
+                    2025, 1, new DateOnly(2025, 1, 1), new DateOnly(2025, 12, 31), Guid.NewGuid());
+                closed.Close(Guid.NewGuid(), ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness.Ready);
+                db.AccountingPeriods.Add(closed);
+                await db.SaveChangesAsync();
+            }
+        }
+
+        var executed = await ExecuteAdjustmentAsync(draft.Id);
+        executed.StatusCode.Should().Be(HttpStatusCode.OK, await executed.Content.ReadAsStringAsync());
+
+        var (kardex, kardexDates, posting, entry) = await AccountingOfAsync(draft.Id);
+        var executionDate = kardexDates.Should().ContainSingle().Subject;
+        executionDate.Should().BeAfter(oldDate);
+        posting!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted, posting.ErrorCode);
+        posting.FactType.Should().Be("StockAdjustmentOut");
+        posting.EntryDate.Should().Be(executionDate);
+        posting.BusinessDate.Should().Be(executionDate);
+        entry!.EntryDate.Should().Be(executionDate);
+        kardex.Should().BeGreaterThan(0m);
+        entry.Lines.Should().HaveCount(2);
+        entry.Lines.Should().ContainSingle(l => l.AccountId == shrinkage && l.Debit == kardex);
+        entry.Lines.Should().ContainSingle(l => l.AccountId == inventory && l.Credit == kardex);
+    }
+
+    [Fact]
+    public async Task Accounting12A_Company_sin_cuenta_del_motivo_operacion_valida_posting_Failed_y_configurar_reprocesar_publica()
+    {
+        var inventory = await AccountIdAsync("1.1.04.001");
+        var surplus = await AccountIdAsync("4.2.01.001");
+        var reasonId = await CreateReasonWithAccountAsync(InventoryAdjustmentReason.Ingreso, null);
+        var qtyBefore = await GetCurrentQuantityAsync(_f.ItemId);
+
+        var entry = await ExecutedAdjustmentAsync(InventoryAdjustmentReason.Ingreso, reasonId, 4m, 2.50m);
+
+        (await GetCurrentQuantityAsync(_f.ItemId)).Should().Be(qtyBefore + 4m);
+        var (_, _, failed, noEntry) = await AccountingOfAsync(entry.Id);
+        failed!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+        failed.ErrorCode.Should().Be("INVENTORY_ADJUSTMENT_ACCOUNT_NOT_CONFIGURED");
+        noEntry.Should().BeNull();
+
+        await SetReasonAccountAsync(reasonId, surplus);
+        var reprocess = await _f.Client.PostAsJsonAsync($"/api/v1/accounting/postings/{failed.Id}/reprocess",
+            new { reason = "Cuenta del motivo configurada" });
+        reprocess.StatusCode.Should().Be(HttpStatusCode.OK, await reprocess.Content.ReadAsStringAsync());
+
+        var (kardex, _, posted, journal) = await AccountingOfAsync(entry.Id);
+        posted!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted, posted.ErrorCode);
+        kardex.Should().Be(10.00m);
+        journal!.Lines.Should().ContainSingle(l => l.AccountId == inventory && l.Debit == kardex);
+        journal.Lines.Should().ContainSingle(l => l.AccountId == surplus && l.Credit == kardex);
+    }
+
 }
 
 // ══════════════════════════════════════════════════════════════════════════

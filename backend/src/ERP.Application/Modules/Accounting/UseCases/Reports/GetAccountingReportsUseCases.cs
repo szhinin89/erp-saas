@@ -571,9 +571,11 @@ public sealed class GetIncomeStatementReportHandler
             ct
         );
 
-        var incomeLines = Map.ToStatementLines(relevantAccounts, totals, AccountType.Income);
-        var costLines = Map.ToStatementLines(relevantAccounts, totals, AccountType.Cost);
-        var expenseLines = Map.ToStatementLines(relevantAccounts, totals, AccountType.Expense);
+        // ACCOUNTING-12A — signo por sección, igual que el Balance General: una cuenta correctora
+        // (naturaleza opuesta) resta dentro de su sección y la utilidad neta = Map.NetResult.
+        var incomeLines = Map.ToSectionLines(relevantAccounts, totals, AccountType.Income, AccountNature.Credit);
+        var costLines = Map.ToSectionLines(relevantAccounts, totals, AccountType.Cost, AccountNature.Debit);
+        var expenseLines = Map.ToSectionLines(relevantAccounts, totals, AccountType.Expense, AccountNature.Debit);
 
         var totalIncome = incomeLines.Sum(l => l.Amount);
         var totalCost = costLines.Sum(l => l.Amount);
@@ -696,7 +698,10 @@ public sealed class GetBalanceSheetReportHandler
 
 file static class Map
 {
-    /// <summary>ACCOUNTING-11 — Balance General: monto con el signo de la sección (ver handler).</summary>
+    /// <summary>
+    /// ACCOUNTING-11/12A — Balance General y Estado de Resultados: monto con el signo de la sección,
+    /// nunca con la naturaleza de la cuenta (una correctora resta dentro de su sección).
+    /// </summary>
     public static IReadOnlyList<FinancialStatementLineDto> ToSectionLines(
         IReadOnlyList<Account> accounts,
         IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)> totals,
@@ -724,30 +729,4 @@ file static class Map
         totals
             .Where(t => nominalAccountIds.Contains(t.Key))
             .Sum(t => t.Value.TotalCredit - t.Value.TotalDebit);
-
-    /// <summary>
-    /// Filtra las cuentas del tipo pedido y convierte su Σ Debit/Σ Credit al monto en convención
-    /// natural según <see cref="Account.Nature"/> (Debit: TotalDebit − TotalCredit; Credit: al
-    /// revés) — mismo criterio ya usado en Libro Mayor/Balance de Comprobación. Cuentas sin
-    /// ningún movimiento en el rango se omiten (no aparecen en <paramref name="totals"/>), igual
-    /// que el default de Balance de Comprobación.
-    /// </summary>
-    public static IReadOnlyList<FinancialStatementLineDto> ToStatementLines(
-        IReadOnlyList<Account> accounts,
-        IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)> totals,
-        AccountType type
-    ) =>
-        accounts
-            .Where(a => a.AccountType == type)
-            .Where(a => totals.ContainsKey(a.Id))
-            .Select(a =>
-            {
-                var t = totals[a.Id];
-                var amount =
-                    a.Nature == AccountNature.Debit
-                        ? t.TotalDebit - t.TotalCredit
-                        : t.TotalCredit - t.TotalDebit;
-                return new FinancialStatementLineDto(a.Id, a.Code.Value, a.Name, amount);
-            })
-            .ToList();
 }

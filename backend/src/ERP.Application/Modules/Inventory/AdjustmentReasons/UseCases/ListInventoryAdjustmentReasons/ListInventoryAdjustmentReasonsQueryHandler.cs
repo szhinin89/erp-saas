@@ -14,14 +14,20 @@ public sealed class ListInventoryAdjustmentReasonsQueryHandler
 {
     private readonly IInventoryAdjustmentReasonRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
+    private readonly IInventoryAdjustmentReasonAccountRepository _accounts;
 
     public ListInventoryAdjustmentReasonsQueryHandler(
         IInventoryAdjustmentReasonRepository repo,
-        ICurrentTenant tenant
+        ICurrentTenant tenant,
+        ICurrentCompany company,
+        IInventoryAdjustmentReasonAccountRepository accounts
     )
     {
         _repo = repo;
         _tenant = tenant;
+        _company = company;
+        _accounts = accounts;
     }
 
     public async Task<Result<IReadOnlyList<InventoryAdjustmentReasonDto>>> Handle(
@@ -36,8 +42,13 @@ public sealed class ListInventoryAdjustmentReasonsQueryHandler
             ct
         );
 
+        // ACCOUNTING-12A — la cuenta contable es la configurada para la Company activa.
+        var accounts = await _accounts.GetMapAsync(_tenant.TenantId, _company.CompanyId, ct);
         return Result<IReadOnlyList<InventoryAdjustmentReasonDto>>.Success(
-            items.Select(StockAdjustmentMapper.ToDto).ToList()
+            items
+                .Select(r => StockAdjustmentMapper.ToDto(r,
+                    accounts.TryGetValue(r.Id, out var link) ? link.AccountingAccountId : null))
+                .ToList()
         );
     }
 }

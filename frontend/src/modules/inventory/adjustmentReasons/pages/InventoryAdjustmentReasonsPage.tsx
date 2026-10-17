@@ -148,6 +148,8 @@ export function InventoryAdjustmentReasonsPage() {
               editingId={page.editingId}
               saving={page.saving}
               saveError={page.saveError}
+              accounts={page.accounts}
+              hasConfiguredAccount={page.hasConfiguredAccount}
               register={page.form.register}
               control={page.form.control}
               errors={page.errors}

@@ -901,6 +901,49 @@ public sealed class GetAccountingReportsUseCasesTests
     // ── Balance General (ACCOUNTING-FINANCIAL-STATEMENTS-10) ──────────────
 
     [Fact]
+    public async Task IncomeStatement_correctora_resta_en_su_seccion_y_coincide_con_resultado_del_balance()
+    {
+        // ACCOUNTING-12A — correctoras creadas por el usuario con naturaleza opuesta a su sección.
+        var sales = NewAccount("4.1.01", "Ventas", AccountType.Income, AccountNature.Credit);
+        var salesReturns = NewAccount("4.1.03", "Devoluciones en ventas", AccountType.Income, AccountNature.Debit);
+        var cogs = NewAccount("5.1.01", "Costo de ventas", AccountType.Cost, AccountNature.Debit);
+        var purchaseDiscounts = NewAccount("5.1.09", "Descuentos en compras", AccountType.Cost, AccountNature.Credit);
+        var rent = NewAccount("6.1.01", "Arriendo", AccountType.Expense, AccountNature.Debit);
+        var totals = new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
+        {
+            [sales.Id] = (0m, 1000m),
+            [salesReturns.Id] = (100m, 0m),
+            [cogs.Id] = (600m, 0m),
+            [purchaseDiscounts.Id] = (0m, 50m),
+            [rent.Id] = (150m, 0m),
+        };
+        var repo = new Mock<IJournalEntryRepository>();
+        repo.Setup(r => r.GetAccountLineTotalsAsync(TenantId, CompanyId, It.IsAny<DateOnly?>(), It.IsAny<DateOnly>(),
+                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(totals);
+        repo.Setup(r => r.GetAccountLineTotalsAsync(TenantId, CompanyId, null, new DateOnly(2025, 12, 31),
+                It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>());
+        var accountRepo = new Mock<IAccountRepository>();
+        accountRepo.Setup(a => a.GetByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Account> { sales, salesReturns, cogs, purchaseDiscounts, rent });
+
+        var income = await new GetIncomeStatementReportHandler(repo.Object, accountRepo.Object, Tenant().Object,
+                Company().Object, CompleteAccounting.Instance)
+            .Handle(new GetIncomeStatementReportQuery(new DateOnly(2026, 1, 1), new DateOnly(2026, 8, 31)), CancellationToken.None);
+        var balance = await new GetBalanceSheetReportHandler(repo.Object, accountRepo.Object, Tenant().Object,
+                Company().Object, CompleteAccounting.Instance)
+            .Handle(new GetBalanceSheetReportQuery(new DateOnly(2026, 8, 31)), CancellationToken.None);
+
+        income.Value!.IncomeLines.Should().ContainSingle(l => l.AccountId == salesReturns.Id && l.Amount == -100m);
+        income.Value.CostLines.Should().ContainSingle(l => l.AccountId == purchaseDiscounts.Id && l.Amount == -50m);
+        income.Value.TotalIncome.Should().Be(900m);
+        income.Value.TotalCost.Should().Be(550m);
+        income.Value.NetProfit.Should().Be(200m);
+        balance.Value!.CurrentYearResult.Should().Be(income.Value.NetProfit);
+    }
+
+    [Fact]
     public async Task BalanceSheet_calcula_activos_pasivos_patrimonio_y_reporta_cuadre()
     {
         var cash = NewAccount("1.1.01", "Caja", AccountType.Asset, AccountNature.Debit);

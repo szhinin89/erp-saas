@@ -31,7 +31,9 @@ public sealed class AccountingPostingFactBuilderTests
             Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(),
             Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(),
             Mock.Of<ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodAccountRepository>(),
-            Mock.Of<IPostingRuleRepository>()
+            Mock.Of<IPostingRuleRepository>(),
+            Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonRepository>(),
+            Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository>()
         );
 
     private static AccountingPosting Obligation(AccountingPostingPayload payload, string module = "Expenses", string fact = "DocumentConfirmed") =>
@@ -170,5 +172,50 @@ public sealed class AccountingPostingFactBuilderTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(AccountingPostingFactBuilder.PayloadUnsupportedCode);
+    }
+
+    [Fact]
+    public async Task InventoryAdjustment_mismo_motivo_tenant_wide_cada_Company_resuelve_su_propia_cuenta()
+    {
+        // ACCOUNTING-12A — la cuenta del motivo es configuración Company-scoped; el maestro no la guarda.
+        var companyB = Guid.NewGuid();
+        var reason = ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReason.Create(
+            TenantId, null, "SOBRANTE", "Sobrante", "Ingreso", false, 1, UserId);
+        var accountA = Account.Create(TenantId, CompanyId, AccountCode.Create("4.2.01.001"), "Sobrantes A", null,
+            AccountType.Income, AccountNature.Credit, allowsPosting: true, createdBy: UserId);
+        var accountB = Account.Create(TenantId, companyB, AccountCode.Create("4.2.01.001"), "Sobrantes B", null,
+            AccountType.Income, AccountNature.Credit, allowsPosting: true, createdBy: UserId);
+        var reasons = new Mock<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonRepository>();
+        reasons.Setup(r => r.GetByIdAsync(TenantId, reason.Id, It.IsAny<CancellationToken>())).ReturnsAsync(reason);
+        var links = new Mock<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository>();
+        links.Setup(r => r.GetAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReasonAccount.Create(
+                TenantId, CompanyId, reason.Id, accountA.Id, UserId));
+        links.Setup(r => r.GetAsync(TenantId, companyB, reason.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReasonAccount.Create(
+                TenantId, companyB, reason.Id, accountB.Id, UserId));
+        _accounts.Setup(r => r.GetByIdAsync(TenantId, CompanyId, accountA.Id, It.IsAny<CancellationToken>())).ReturnsAsync(accountA);
+        _accounts.Setup(r => r.GetByIdAsync(TenantId, companyB, accountB.Id, It.IsAny<CancellationToken>())).ReturnsAsync(accountB);
+        var builder = new AccountingPostingFactBuilder(_categories.Object, _accounts.Object,
+            Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(),
+            Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(),
+            Mock.Of<ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodAccountRepository>(),
+            Mock.Of<IPostingRuleRepository>(), reasons.Object, links.Object);
+
+        AccountingPosting AdjustmentIn(Guid companyId) => AccountingPosting.CreatePending(TenantId, companyId,
+            "Inventory", "StockAdjustmentIn", Guid.NewGuid(), "AJ-1", new DateOnly(2026, 10, 17), new DateOnly(2026, 10, 17),
+            AccountingPostingPayload.CurrentVersion,
+            new AccountingPostingPayload(10m, 0m, 0m, 0m, 10m, Destinations:
+                [new AccountingPostingDestination(AccountingPostingDestination.InventoryAdjustmentReason, reason.Id, 10m, AccountNature.Credit)])
+                .Serialize(),
+            UserId, null);
+
+        var factA = await builder.BuildAsync(AdjustmentIn(CompanyId), CancellationToken.None);
+        var factB = await builder.BuildAsync(AdjustmentIn(companyB), CancellationToken.None);
+
+        factA.IsSuccess.Should().BeTrue(factA.Error);
+        factB.IsSuccess.Should().BeTrue(factB.Error);
+        factA.Value!.Allocations.Should().ContainSingle(a => a.AccountingAccountId == accountA.Id && a.Nature == AccountNature.Credit && a.Amount == 10m);
+        factB.Value!.Allocations.Should().ContainSingle(a => a.AccountingAccountId == accountB.Id && a.Nature == AccountNature.Credit && a.Amount == 10m);
     }
 }

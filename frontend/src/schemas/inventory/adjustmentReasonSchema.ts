@@ -19,6 +19,8 @@ export const adjustmentReasonSchema = z.object({
   allowedMovementType: z.enum(["Ingreso", "Egreso", "Ambos"]),
   requiresNotes: z.boolean(),
   sortOrder: z.coerce.number().int().min(0).max(9999),
+  /** ACCOUNTING-12A — "" = sin configurar; el backend valida empresa, estado e imputabilidad. */
+  accountingAccountId: z.string(),
 });
 
 export type AdjustmentReasonFormValues = z.infer<typeof adjustmentReasonSchema>;
@@ -29,4 +31,5 @@ export const defaultAdjustmentReasonValues: AdjustmentReasonFormValues = {
   allowedMovementType: "Ambos",
   requiresNotes: false,
   sortOrder: 0,
+  accountingAccountId: "",
 };

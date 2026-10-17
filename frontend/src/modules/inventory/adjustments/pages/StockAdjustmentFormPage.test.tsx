@@ -79,6 +79,7 @@ const REASON_INGRESO: InventoryAdjustmentReasonDto = {
   requiresNotes: false,
   isActive: true,
   sortOrder: 1,
+  accountingAccountId: null,
 };
 
 const REASON_EGRESO: InventoryAdjustmentReasonDto = {
@@ -89,6 +90,7 @@ const REASON_EGRESO: InventoryAdjustmentReasonDto = {
   requiresNotes: true,
   isActive: true,
   sortOrder: 2,
+  accountingAccountId: null,
 };
 
 const ITEM = {

@@ -810,6 +810,10 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryAdjustmentReasonRepository
         >();
         services.AddScoped<
+            ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository,
+            ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryAdjustmentReasonAccountRepository
+        >();
+        services.AddScoped<
             ERP.Domain.Modules.Inventory.Interfaces.IStockTransferRepository,
             ERP.Infrastructure.Persistence.Repositories.Inventory.StockTransferRepository
         >();

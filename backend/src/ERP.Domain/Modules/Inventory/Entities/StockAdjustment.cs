@@ -122,7 +122,21 @@ public sealed class StockAdjustment
         _lines.AddRange(lines);
     }
 
+    /// <summary>
+    /// Ejecuta un ajuste de inventario y publica su hecho económico (ACCOUNTING-12A). El saldo inicial
+    /// de Carga Inicial usa <see cref="ExecuteAsOpeningBalance"/>: su contabilidad es la de apertura.
+    /// </summary>
     public void Execute(Guid userId)
+    {
+        MarkExecuted(userId);
+        AddDomainEvent(new Events.StockAdjustmentExecutedEvent(TenantId, CompanyId, Id,
+            AdjustmentNumber, MovementType, ReasonId));
+    }
+
+    /// <summary>Saldo inicial (Carga Inicial): mismo estado, sin hecho de ajuste.</summary>
+    public void ExecuteAsOpeningBalance(Guid userId) => MarkExecuted(userId);
+
+    private void MarkExecuted(Guid userId)
     {
         if (Status != "Draft")
             throw new DomainRuleViolationException(
@@ -155,6 +169,8 @@ public sealed class StockAdjustment
         CancelledAt = DateTime.UtcNow;
         CancelledBy = userId;
         SetUpdated(userId);
+        AddDomainEvent(new Events.StockAdjustmentCancelledEvent(TenantId, CompanyId, Id,
+            MovementType, CancelledReason));
     }
 
     private void EnsureEditable()

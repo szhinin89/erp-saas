@@ -6,6 +6,7 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.Continuity;
@@ -29,6 +30,8 @@ public sealed class AccountingPostingFactBuilder
     public const string DestinationNotFoundCode = "FINANCIAL_DESTINATION_NOT_FOUND";
     public const string DestinationAccountNotConfiguredCode = "FINANCIAL_DESTINATION_ACCOUNT_NOT_CONFIGURED";
     public const string RuleLineNotConfiguredCode = "POSTING_RULE_LINE_NOT_CONFIGURED";
+    public const string AdjustmentAccountNotConfiguredCode = "INVENTORY_ADJUSTMENT_ACCOUNT_NOT_CONFIGURED";
+    public const string AdjustmentAccountInvalidCode = "INVENTORY_ADJUSTMENT_ACCOUNT_INVALID";
 
     private readonly IExpenseCategoryRepository _expenseCategories;
     private readonly IAccountRepository _accounts;
@@ -36,6 +39,8 @@ public sealed class AccountingPostingFactBuilder
     private readonly ICompanyBankAccountRepository _bankAccounts;
     private readonly IPaymentMethodAccountRepository _paymentMethodAccounts;
     private readonly IPostingRuleRepository _rules;
+    private readonly IInventoryAdjustmentReasonRepository _adjustmentReasons;
+    private readonly IInventoryAdjustmentReasonAccountRepository _adjustmentReasonAccounts;
 
     public AccountingPostingFactBuilder(
         IExpenseCategoryRepository expenseCategories,
@@ -43,9 +48,13 @@ public sealed class AccountingPostingFactBuilder
         ICashRegisterRepository cashRegisters,
         ICompanyBankAccountRepository bankAccounts,
         IPaymentMethodAccountRepository paymentMethodAccounts,
-        IPostingRuleRepository rules
+        IPostingRuleRepository rules,
+        IInventoryAdjustmentReasonRepository adjustmentReasons,
+        IInventoryAdjustmentReasonAccountRepository adjustmentReasonAccounts
     )
     {
+        _adjustmentReasons = adjustmentReasons;
+        _adjustmentReasonAccounts = adjustmentReasonAccounts;
         _expenseCategories = expenseCategories;
         _accounts = accounts;
         _cashRegisters = cashRegisters;
@@ -178,6 +187,27 @@ public sealed class AccountingPostingFactBuilder
                         DestinationAccountNotConfiguredCode
                     )
                     : Result<Guid>.Success(link.AccountingAccountId);
+
+            case AccountingPostingDestination.InventoryAdjustmentReason:
+                // ACCOUNTING-12A — sin fallback: motivo sin cuenta o cuenta inválida deja Failed y se
+                // corrige configurando el motivo y reprocesando.
+                var reason = await _adjustmentReasons.GetByIdAsync(posting.TenantId, destination.ReferenceId, ct);
+                if (reason is null || (reason.CompanyId is { } reasonCompany && reasonCompany != posting.CompanyId))
+                    return Result<Guid>.ValidationFailure("El motivo del ajuste no existe en esta empresa.", DestinationNotFoundCode);
+                // Cuenta de la Company del hecho (configuración Company-scoped, nunca del maestro tenant-wide).
+                var reasonLink = await _adjustmentReasonAccounts.GetAsync(posting.TenantId, posting.CompanyId, reason.Id, ct);
+                if (reasonLink?.AccountingAccountId is not { } reasonAccountId)
+                    return Result<Guid>.ValidationFailure(
+                        $"El motivo de ajuste '{reason.Name}' no tiene una cuenta contable configurada para esta empresa.",
+                        AdjustmentAccountNotConfiguredCode
+                    );
+                var reasonAccount = await _accounts.GetByIdAsync(posting.TenantId, posting.CompanyId, reasonAccountId, ct);
+                if (reasonAccount is null || !reasonAccount.IsActive || !reasonAccount.AllowsPosting)
+                    return Result<Guid>.ValidationFailure(
+                        $"La cuenta contable del motivo de ajuste '{reason.Name}' no existe en esta empresa, está inactiva o no es imputable.",
+                        AdjustmentAccountInvalidCode
+                    );
+                return Result<Guid>.Success(reasonAccount.Id);
 
             default:
                 return Result<Guid>.ValidationFailure($"Destino financiero no soportado ({destination.Kind}).", PayloadUnsupportedCode);

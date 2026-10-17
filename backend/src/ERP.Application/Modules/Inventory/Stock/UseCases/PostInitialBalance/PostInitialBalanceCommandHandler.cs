@@ -150,7 +150,7 @@ public sealed class PostInitialBalanceCommandHandler
             line.ApplyExecutionResult(0m, movement.ResultQuantity, line.UnitCostBase, precision.UnitCostDecimals);
         }
 
-        adj.Execute(_user.UserId);
+        adj.ExecuteAsOpeningBalance(_user.UserId);
         await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
 
         return Result<StockAdjustmentDto>.Success(StockAdjustmentMapper.ToDto(adj, reason.Name, isInitialBalance: true));

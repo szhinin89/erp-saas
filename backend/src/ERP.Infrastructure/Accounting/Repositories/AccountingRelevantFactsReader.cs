@@ -3,6 +3,7 @@ using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Finance.Enums;
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Sales.Enums;
@@ -37,8 +38,28 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
             || await db.SupplierPayments.AnyAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
                    && x.PaymentDate >= date, ct)
             || await db.Payments.AnyAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
-                   && x.Status != PaymentStatus.Draft && x.PaymentDate >= date, ct);
+                   && x.Status != PaymentStatus.Draft && x.PaymentDate >= date, ct)
+            || await ValuedStockAdjustments(tenantId, companyId, date, null).AnyAsync(ct);
     }
+
+    /// <summary>
+    /// ACCOUNTING-12A — ajuste ejecutado (o anulado después) con valor en el Kardex: algún movimiento
+    /// ORIGINAL (PositiveAdjust en Ingreso, NegativeAdjust en Egreso; la reversa de la anulación es del tipo
+    /// contrario) con TotalCost &gt; 0, fechado por su EffectiveDate — la fecha contable del hecho. Excluye
+    /// el saldo inicial (InitialBalance, contabilizado por Carga Inicial) y los ajustes sin valor.
+    /// </summary>
+    private IQueryable<ERP.Domain.Modules.Inventory.Entities.StockAdjustment> ValuedStockAdjustments(
+        Guid tenantId, Guid companyId, DateOnly? from, DateOnly? to) =>
+        db.StockAdjustments.Where(x => x.TenantId == tenantId && x.CompanyId == companyId
+            && (x.Status == "Executed" || x.Status == "Cancelled")
+            && db.StockMovements.Any(m => m.TenantId == tenantId && m.SourceDocId == x.Id
+                && m.SourceDocType == StockAdjustmentExecutedPostingTranslator.SourceDocType
+                && m.MovementType == (x.MovementType == ERP.Domain.Modules.Inventory.Entities.StockAdjustment.MovementTypeIngreso
+                    ? StockMovementType.PositiveAdjust
+                    : StockMovementType.NegativeAdjust)
+                && m.TotalCost > 0m
+                && (from == null || m.EffectiveDate >= from)
+                && (to == null || m.EffectiveDate <= to)));
 
     /// <remarks>
     /// Cada origen usa la fecha contable con la que su traductor registra la obligación y solo los estados
@@ -57,6 +78,7 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
     /// <item>Retentions/DocumentIssued — retención Issued o Cancelled (Cancel exige Issued); IssueDate.</item>
     /// <item>Payables/SupplierPaymentConfirmed — todo pago a proveedor (no hay borrador); PaymentDate.</item>
     /// <item>Finance/CollectionApplied — cobro (Collection) Applied o Reversed; PaymentDate.</item>
+    /// <item>Inventory/StockAdjustmentIn|Out — ajuste Executed o Cancelled con valor Kardex; EffectiveDate del movimiento Kardex de la ejecución.</item>
     /// </list>
     /// El costo de ventas no se concilia aquí: lo cubren sus obligaciones y SaleCostObligation pendiente.
     /// </remarks>
@@ -77,6 +99,7 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
         var supplierPayments = Accounted(SupplierPaymentConfirmedPostingTranslator.SourceModuleName);
         var collections = Accounted(CollectionAppliedPostingTranslator.SourceModuleName);
         var retentions = Accounted(RetentionDocumentIssuedPostingTranslator.SourceModuleName);
+        var adjustments = Accounted(StockAdjustmentExecutedPostingTranslator.SourceModuleName);
 
         // Orígenes fechados por el instante del acto: día de empresa [from, to] como rango UTC.
         var (fromUtc, toUtcExclusive) = await clock.DaysUtcRangeAsync(companyId, tenantId, from, to, ct);
@@ -115,6 +138,7 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
             + await db.Payments.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
                    && x.Direction == PaymentDirection.Collection
                    && (x.Status == PaymentStatus.Applied || x.Status == PaymentStatus.Reversed)
-                   && x.PaymentDate >= from && x.PaymentDate <= to && !collections.Contains(x.Id), ct);
+                   && x.PaymentDate >= from && x.PaymentDate <= to && !collections.Contains(x.Id), ct)
+            + await ValuedStockAdjustments(tenantId, companyId, from, to).CountAsync(x => !adjustments.Contains(x.Id), ct);
     }
 }

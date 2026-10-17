@@ -2,6 +2,7 @@ using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.CreateInventoryAdjustmentReason;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.ListInventoryAdjustmentReasons;
+using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.SetInventoryAdjustmentReasonAccount;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.ToggleInventoryAdjustmentReason;
 using ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.UpdateInventoryAdjustmentReason;
 using ERP.Application.Modules.Inventory.Stock.DTOs;
@@ -113,6 +114,27 @@ public sealed class InventoryAdjustmentReasonsController : ControllerBase
         );
         return this.ToOkOrBadRequest(result);
     }
+
+    /// <summary>
+    /// ACCOUNTING-12A — configura la cuenta contable del motivo para la Company activa (contrapartida
+    /// del asiento del ajuste). La Company sale del contexto autenticado, nunca del body.
+    /// </summary>
+    [HttpPut("{id:guid}/account")]
+    [Authorize(Policy = $"perm:{InventoryPermissions.AdjustmentReasonsManage}")]
+    [ProducesResponseType(
+        typeof(Contracts.ApiResponse<InventoryAdjustmentReasonDto>),
+        StatusCodes.Status200OK
+    )]
+    public async Task<IActionResult> SetAccount(
+        Guid id,
+        [FromBody] SetInventoryAdjustmentReasonAccountRequest request,
+        CancellationToken ct = default
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new SetInventoryAdjustmentReasonAccountCommand(id, request.AccountingAccountId), ct)
+        );
 }
 
 public sealed record ToggleInventoryAdjustmentReasonRequest(bool Activate);
+
+public sealed record SetInventoryAdjustmentReasonAccountRequest(Guid AccountingAccountId);

@@ -149,6 +149,22 @@ public static class PostingFactCatalog
         [PostingAmountKind.TaxVat, PostingAmountKind.GrandTotal],
         PostingDynamicSides.Debit
     );
+    /// <summary>
+    /// ACCOUNTING-12A — ajustes de inventario: la regla fija Inventario por el TotalCost del Kardex
+    /// (GrandTotal) y el origen aporta la contrapartida con la cuenta del motivo (lado dinámico).
+    /// </summary>
+    public static readonly PostingFactDefinition StockAdjustmentIn = new(
+        "Inventory",
+        "StockAdjustmentIn",
+        [PostingAmountKind.GrandTotal],
+        PostingDynamicSides.Credit
+    );
+    public static readonly PostingFactDefinition StockAdjustmentOut = new(
+        "Inventory",
+        "StockAdjustmentOut",
+        [PostingAmountKind.GrandTotal],
+        PostingDynamicSides.Debit
+    );
     public static readonly PostingFactDefinition OpeningInventory = new(
         OpeningBalancePostingFacts.SourceModule,
         OpeningBalancePostingFacts.OpeningInventory,
@@ -187,6 +203,8 @@ public static class PostingFactCatalog
         SupplierPaymentReversed,
         RetentionDocumentIssued,
         ExpenseDocumentConfirmed,
+        StockAdjustmentIn,
+        StockAdjustmentOut,
         OpeningInventory,
         OpeningReceivables,
         OpeningPayables,

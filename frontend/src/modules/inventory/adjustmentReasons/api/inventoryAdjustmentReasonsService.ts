@@ -2,6 +2,7 @@ import { apiGet, apiPost, apiPut } from "../../../lib/apiEnvelope";
 import type {
   CreateInventoryAdjustmentReasonRequest,
   InventoryAdjustmentReasonDto,
+  SetInventoryAdjustmentReasonAccountRequest,
   UpdateInventoryAdjustmentReasonRequest,
 } from "../types";
 
@@ -23,6 +24,10 @@ export const inventoryAdjustmentReasonsService = {
 
   update: (id: string, payload: UpdateInventoryAdjustmentReasonRequest) =>
     apiPut<InventoryAdjustmentReasonDto>(`${BASE}/${id}`, payload),
+
+  /** ACCOUNTING-12A — cuenta contable del motivo para la empresa activa. */
+  setAccount: (id: string, payload: SetInventoryAdjustmentReasonAccountRequest) =>
+    apiPut<InventoryAdjustmentReasonDto>(`${BASE}/${id}/account`, payload),
 
   toggle: (id: string, activate: boolean) =>
     apiPost<InventoryAdjustmentReasonDto>(`${BASE}/${id}/toggle`, { activate }),

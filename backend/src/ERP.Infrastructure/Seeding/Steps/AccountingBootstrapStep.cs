@@ -1117,6 +1117,16 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
+        // ACCOUNTING-12A — ajustes de inventario: Inventario por el TotalCost del Kardex; la
+        // contrapartida (Haber en Ingreso, Debe en Egreso) es la cuenta del motivo, dinámica.
+        new(
+            PostingFactCatalog.StockAdjustmentIn,
+            [new("1.1.04.001", AccountNature.Debit, PostingAmountKind.GrandTotal)]
+        ),
+        new(
+            PostingFactCatalog.StockAdjustmentOut,
+            [new("1.1.04.001", AccountNature.Credit, PostingAmountKind.GrandTotal)]
+        ),
         // IL-7A — apertura de la Carga Inicial: un asiento por ImportBatch confirmado
         // (SourceEventId = lote, EntryDate = Company.OpeningBalanceDate), GrandTotal = monto
         // confirmado del dominio ya redondeado. Contrapartida única: la cuenta puente
