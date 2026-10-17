@@ -375,6 +375,52 @@ export interface AccountingPostingDetailDto {
   attemptHistory: AccountingPostingAttemptDto[];
 }
 
+// ── ACCOUNTING-07 (espejo de AccountingPeriodDto/AccountingFiscalYearDto/
+// AccountingPeriodClosureReadinessDto en ERP.Application) ──
+
+export type AccountingPeriodStatus = "Open" | "Closed" | "Locked";
+
+export interface AccountingPeriodDto {
+  id: string;
+  fiscalYear: number;
+  periodNumber: number;
+  startDate: string;
+  endDate: string;
+  status: AccountingPeriodStatus;
+  closedAtUtc: string | null;
+  closedBy: string | null;
+  closedByName: string | null;
+  lockedAtUtc: string | null;
+  lockedBy: string | null;
+  lockedByName: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface CreateAccountingPeriodPayload {
+  fiscalYear: number;
+  periodNumber: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface AccountingFiscalYearDto {
+  fiscalYear: number;
+  createdCount: number;
+  periods: AccountingPeriodDto[];
+}
+
+/** Solo un período Open es elegible; `canClose` = elegible + terminado (fecha empresa) + completo. */
+export interface AccountingPeriodClosureReadinessDto {
+  periodId: string;
+  status: AccountingPeriodStatus;
+  isEligible: boolean;
+  hasEnded: boolean;
+  companyToday: string;
+  canClose: boolean;
+  completeness: AccountingCompleteness | null;
+}
+
 export const accountingApi = {
   listAccounts: () => apiGet<AccountDto[]>(`${BASE}/accounts`),
 
@@ -494,4 +540,17 @@ export const accountingApi = {
     apiPost<AccountingPostingDto>(`${BASE}/postings/${id}/reprocess`, { reason }),
   reprocessPostings: (ids: string[], reason: string) =>
     apiPost<AccountingPostingBatchReprocessDto>(`${BASE}/postings/reprocess`, { ids, reason }),
+
+  // ACCOUNTING-07 — períodos contables.
+  listPeriods: () => apiGet<AccountingPeriodDto[]>(`${BASE}/accounting-periods`),
+  createPeriod: (payload: CreateAccountingPeriodPayload) =>
+    apiPost<AccountingPeriodDto>(`${BASE}/accounting-periods`, payload),
+  generateFiscalYear: (fiscalYear: number) =>
+    apiPost<AccountingFiscalYearDto>(`${BASE}/accounting-periods/fiscal-years`, { fiscalYear }),
+  getPeriodClosureReadiness: (id: string) =>
+    apiGet<AccountingPeriodClosureReadinessDto>(`${BASE}/accounting-periods/${id}/closure-readiness`),
+  closePeriod: (id: string) =>
+    apiPatch<AccountingPeriodDto>(`${BASE}/accounting-periods/${id}/close`, {}),
+  lockPeriod: (id: string) =>
+    apiPatch<AccountingPeriodDto>(`${BASE}/accounting-periods/${id}/lock`, {}),
 };

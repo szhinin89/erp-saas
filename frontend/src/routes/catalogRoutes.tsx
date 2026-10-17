@@ -50,6 +50,10 @@ const AccountingOperationalModePage = lazyNamedPage(
   () => import("../modules/accounting/pages/AccountingOperationalModePage"),
   "AccountingOperationalModePage",
 );
+const AccountingPeriodsPage = lazyNamedPage(
+  () => import("../modules/accounting/pages/AccountingPeriodsPage"),
+  "AccountingPeriodsPage",
+);
 const AccountingPostingsPage = lazyNamedPage(
   () => import("../modules/accounting/pages/AccountingPostingsPage"),
   "AccountingPostingsPage",
@@ -435,6 +439,12 @@ export const catalogRoutes = [
     key="accounting-operational-mode"
     path="/accounting/configuration/operational-mode"
     element={<AccountingOperationalModePage />}
+  />,
+  // ACCOUNTING-07: períodos contables (crear/generar ejercicio, pre-cierre, cierre y bloqueo).
+  <Route
+    key="accounting-periods"
+    path="/accounting/configuration/periods"
+    element={<AccountingPeriodsPage />}
   />,
   <Route
     key="accounting-postings"

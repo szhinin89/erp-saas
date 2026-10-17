@@ -24,6 +24,8 @@ public sealed record AccountDto(
     DateTime? UpdatedAt
 );
 
+/// <param name="ClosedByName">ACCOUNTING-07: nombre de quien cerró (null si sigue abierto o el usuario ya no existe).</param>
+/// <param name="LockedByName">ACCOUNTING-07: nombre de quien bloqueó (null si no está bloqueado o el usuario ya no existe).</param>
 public sealed record AccountingPeriodDto(
     Guid Id,
     int FiscalYear,
@@ -33,8 +35,19 @@ public sealed record AccountingPeriodDto(
     string Status,
     DateTime? ClosedAtUtc,
     Guid? ClosedBy,
+    string? ClosedByName,
+    DateTime? LockedAtUtc,
+    Guid? LockedBy,
+    string? LockedByName,
     DateTime CreatedAt,
     DateTime? UpdatedAt
+);
+
+/// <summary>ACCOUNTING-07 — resultado de <c>GenerateAccountingFiscalYear</c>: los 12 períodos del ejercicio y cuántos se crearon ahora (0 = ya existía).</summary>
+public sealed record AccountingFiscalYearDto(
+    int FiscalYear,
+    int CreatedCount,
+    IReadOnlyList<AccountingPeriodDto> Periods
 );
 
 public sealed record PostingRuleDto(
@@ -347,4 +360,20 @@ public sealed record GetBalanceSheetReportResponse(
     decimal Difference,
     bool IsBalanced,
     AccountingCompleteness Completeness
+);
+
+/// <summary>
+/// ACCOUNTING-07 — pre-cierre de un período. Solo un período Open es elegible: Closed/Locked devuelven
+/// <c>IsEligible=false</c> sin <c>Completeness</c> (nunca un readiness engañoso). <c>HasEnded</c> =
+/// <c>EndDate &lt; CompanyToday</c> (fecha de la empresa, no UTC). <c>CanClose</c> resume las tres
+/// condiciones; el cierre real vuelve a evaluarlas bajo lock.
+/// </summary>
+public sealed record AccountingPeriodClosureReadinessDto(
+    Guid PeriodId,
+    string Status,
+    bool IsEligible,
+    bool HasEnded,
+    DateOnly CompanyToday,
+    bool CanClose,
+    AccountingCompleteness? Completeness
 );

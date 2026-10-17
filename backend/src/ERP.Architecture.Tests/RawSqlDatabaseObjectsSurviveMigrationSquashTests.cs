@@ -66,6 +66,13 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
             [
                 "CREATE INDEX IF NOT EXISTS ix_items_description_trgm ON items USING gin (description gin_trgm_ops)",
             ],
+            // ACCOUNTING-07: "sin períodos solapados por Company" — exclusión btree_gist (extensión
+            // modelada por EF con HasPostgresExtension); EF no modela EXCLUDE, vive solo como raw SQL.
+            ["ex_accounting_periods_company_no_overlap"] =
+            [
+                "ALTER TABLE accounting_periods ADD CONSTRAINT ex_accounting_periods_company_no_overlap EXCLUDE USING gist (",
+                "company_id WITH =, daterange(start_date, end_date, '[]') WITH &&",
+            ],
         };
 
     [Fact]

@@ -106,20 +106,29 @@ public sealed class AccountingController : ControllerBase
     public async Task<IActionResult> GetAccountingPeriodClosureReadiness(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetAccountingPeriodClosureReadinessQuery(id), ct));
 
+    // ACCOUNTING-07: permisos dedicados — crear/generar con accounting.periods.create y
+    // cerrar/bloquear con accounting.periods.close (ya no accounting.create/accounting.update).
     [HttpPost("accounting-periods")]
-    [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PeriodsCreate}")]
     public async Task<IActionResult> CreateAccountingPeriod(
         [FromBody] CreateAccountingPeriodCommand command,
         CancellationToken ct
     ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
 
+    [HttpPost("accounting-periods/fiscal-years")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PeriodsCreate}")]
+    public async Task<IActionResult> GenerateAccountingFiscalYear(
+        [FromBody] GenerateAccountingFiscalYearCommand command,
+        CancellationToken ct
+    ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct));
+
     [HttpPatch("accounting-periods/{id:guid}/close")]
-    [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PeriodsClose}")]
     public async Task<IActionResult> CloseAccountingPeriod(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new CloseAccountingPeriodCommand(id), ct));
 
     [HttpPatch("accounting-periods/{id:guid}/lock")]
-    [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.PeriodsClose}")]
     public async Task<IActionResult> LockAccountingPeriod(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new LockAccountingPeriodCommand(id), ct));
 

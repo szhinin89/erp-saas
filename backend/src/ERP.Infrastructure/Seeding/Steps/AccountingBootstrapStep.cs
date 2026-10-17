@@ -1,4 +1,5 @@
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.ValueObjects;
@@ -1384,16 +1385,30 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
 
         if (!hasPeriodForYear)
         {
-            var period = AccountingPeriod.Create(
-                tenantId,
-                companyId,
-                currentYear,
-                periodNumber: 1,
-                startDate: new DateOnly(currentYear, 1, 1),
-                endDate: new DateOnly(currentYear, 12, 31),
-                createdBy: actorId
-            );
-            _db.AccountingPeriods.Add(period);
+            // ACCOUNTING-07: desde el ejercicio AccountingPeriodStructure.MonthlyFromFiscalYear (2027) se
+            // siembran los 12 meses naturales (mismo layout que GenerateAccountingFiscalYear); antes, el
+            // período anual histórico — 2026 queda anual y nunca se divide retroactivamente.
+            IReadOnlyList<AccountingPeriodStructure.Slot> slots =
+                currentYear >= AccountingPeriodStructure.MonthlyFromFiscalYear
+                ? AccountingPeriodStructure.MonthlyLayout(currentYear)
+                : [new AccountingPeriodStructure.Slot(
+                    currentYear,
+                    1,
+                    new DateOnly(currentYear, 1, 1),
+                    new DateOnly(currentYear, 12, 31)
+                )];
+            foreach (var slot in slots)
+                _db.AccountingPeriods.Add(
+                    AccountingPeriod.Create(
+                        tenantId,
+                        companyId,
+                        slot.FiscalYear,
+                        slot.PeriodNumber,
+                        slot.StartDate,
+                        slot.EndDate,
+                        createdBy: actorId
+                    )
+                );
             await _db.SaveChangesAsync(cancellationToken);
             LogPeriodSeeded(currentYear, companyId);
         }

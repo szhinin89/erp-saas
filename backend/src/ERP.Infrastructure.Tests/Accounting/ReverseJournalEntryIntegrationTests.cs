@@ -244,6 +244,7 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         var close = new ERP.Application.Modules.Accounting.UseCases.AccountingPeriods.CloseAccountingPeriodHandler(
             new AccountingPeriodRepository(closeDb), ERP.Infrastructure.Tests.TestData.AccountingCompletenessTestSupport.Create(closeDb, _companyId),
             new AccountingOperationalPolicyRepository(closeDb), new UnitOfWork(closeDb),
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
             new FixedCurrentTenant(_tenantId), new FixedCurrentCompany(_companyId), new FixedCurrentUser(_createdBy));
         var closing = close.Handle(new(_accountingPeriodId), default);
         await WaitForBlockedLockAsync();

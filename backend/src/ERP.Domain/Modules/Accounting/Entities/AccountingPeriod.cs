@@ -12,10 +12,12 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// <see cref="Status"/> desde Application/Infrastructure (ADR-026 §6.1).
 /// </summary>
 /// <remarks>
-/// El invariante "no existen períodos solapados dentro de una Company" (ADR-026 §6.1) es
-/// cross-aggregate — no puede validarse dentro de una única instancia de
-/// <see cref="AccountingPeriod"/>. Queda pendiente para la capa de Application/Repository
-/// cuando se implemente persistencia (fase posterior), no es responsabilidad de este esqueleto.
+/// Los invariantes cross-aggregate (sin solape, contigüidad, orden frente a períodos cerrados,
+/// numeración dentro del ejercicio) viven en <c>AccountingPeriodStructure</c> (Application); el
+/// solape tiene además la exclusión PostgreSQL <c>ex_accounting_periods_company_no_overlap</c>
+/// como defensa final (ACCOUNTING-07, docs/architecture/accounting.md §8). Aquí solo se valida lo
+/// que una única instancia puede garantizar: rango, ejercicio = año calendario de ambas fechas y
+/// número 1..<see cref="MaxPeriodsPerFiscalYear"/>.
 /// </remarks>
 public sealed class AccountingPeriod
     : AuditableEntity,
@@ -30,6 +32,11 @@ public sealed class AccountingPeriod
     public PeriodStatus Status { get; private set; }
     public DateTime? ClosedAtUtc { get; private set; }
     public Guid? ClosedBy { get; private set; }
+    public DateTime? LockedAtUtc { get; private set; }
+    public Guid? LockedBy { get; private set; }
+
+    /// <summary>ACCOUNTING-07: el ejercicio es el año calendario y admite como máximo 12 períodos (mensual).</summary>
+    public const int MaxPeriodsPerFiscalYear = 12;
 
     private AccountingPeriod() { }
 
@@ -43,10 +50,20 @@ public sealed class AccountingPeriod
         Guid createdBy
     )
     {
-        if (endDate <= startDate)
+        if (endDate < startDate)
             throw new ArgumentException(
-                "La fecha de fin debe ser posterior a la fecha de inicio.",
+                "La fecha de fin no puede ser anterior a la fecha de inicio.",
                 nameof(endDate)
+            );
+        if (startDate.Year != fiscalYear || endDate.Year != fiscalYear)
+            throw new ArgumentException(
+                $"Las fechas del período deben pertenecer al ejercicio {fiscalYear}.",
+                nameof(fiscalYear)
+            );
+        if (periodNumber is < 1 or > MaxPeriodsPerFiscalYear)
+            throw new ArgumentException(
+                $"El número de período debe estar entre 1 y {MaxPeriodsPerFiscalYear}.",
+                nameof(periodNumber)
             );
 
         var period = new AccountingPeriod
@@ -61,7 +78,7 @@ public sealed class AccountingPeriod
             Status = PeriodStatus.Open,
         };
         period.SetCreated(createdBy);
-        period.RaiseDomainEvent(new AccountingPeriodCreatedEvent(tenantId, period.Id, companyId));
+        period.RaiseDomainEvent(new AccountingPeriodCreatedEvent(period));
         return period;
     }
 
@@ -83,7 +100,10 @@ public sealed class AccountingPeriod
     /// </summary>
     public void Close(Guid closedBy, JournalEntryClosureReadiness readiness)
     {
-        EnsureOpenForPosting();
+        if (Status != PeriodStatus.Open)
+            throw new DomainRuleViolationException(
+                $"El período {FiscalYear}-{PeriodNumber} ya no está abierto (estado {Status}): no puede cerrarse de nuevo."
+            );
 
         if (!readiness.IsReady)
         {
@@ -97,17 +117,25 @@ public sealed class AccountingPeriod
         ClosedAtUtc = DateTime.UtcNow;
         ClosedBy = closedBy;
         SetUpdated(closedBy);
-        RaiseDomainEvent(new AccountingPeriodClosedEvent(TenantId, Id, CompanyId));
+        RaiseDomainEvent(new AccountingPeriodClosedEvent(this));
     }
 
+    /// <summary>
+    /// ACCOUNTING-07: marca final administrativa/auditiva, irreversible. No cambia lo que el período
+    /// admite (Closed ya rechaza toda escritura); no existe reapertura ni desbloqueo.
+    /// </summary>
     public void Lock(Guid lockedBy)
     {
         if (Status != PeriodStatus.Closed)
             throw new DomainRuleViolationException(
-                "Solo un período en estado Closed puede pasar a Locked."
+                Status == PeriodStatus.Locked
+                    ? $"El período {FiscalYear}-{PeriodNumber} ya está bloqueado."
+                    : "Solo un período en estado Closed puede pasar a Locked."
             );
         Status = PeriodStatus.Locked;
+        LockedAtUtc = DateTime.UtcNow;
+        LockedBy = lockedBy;
         SetUpdated(lockedBy);
-        RaiseDomainEvent(new AccountingPeriodLockedEvent(TenantId, Id, CompanyId));
+        RaiseDomainEvent(new AccountingPeriodLockedEvent(this));
     }
 }

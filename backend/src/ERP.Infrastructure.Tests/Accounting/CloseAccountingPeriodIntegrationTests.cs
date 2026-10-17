@@ -188,10 +188,46 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
             Completeness(db, companyId),
             new AccountingOperationalPolicyRepository(db),
             new ERP.Infrastructure.Persistence.UnitOfWork(db),
+            new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
             new FixedCurrentTenant(tenantId),
             new FixedCurrentCompany(companyId),
             new FixedCurrentUser(userId)
         );
+
+    // ACCOUNTING-07: la exclusión ex_accounting_periods_company_no_overlap es la defensa final — dos
+    // inserciones concurrentes con rangos solapados y distinto (ejercicio, número): solo una persiste.
+    [Fact]
+    public async Task A07_PostgreSQL_impide_dos_periodos_solapados_concurrentes()
+    {
+        async Task<Exception?> InsertAsync(int number, DateOnly start, DateOnly end)
+        {
+            await using var db = CreateContext();
+            db.AccountingPeriods.Add(
+                AccountingPeriod.Create(_tenantId, _companyId, 2026, number, start, end, _createdBy)
+            );
+            try
+            {
+                await db.SaveChangesAsync();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex;
+            }
+        }
+
+        var results = await Task.WhenAll(
+            InsertAsync(8, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31)),
+            InsertAsync(9, new DateOnly(2026, 8, 20), new DateOnly(2026, 9, 30))
+        );
+
+        results.Count(r => r is null).Should().Be(1);
+        var failure = results.Single(r => r is not null)!;
+        (failure.InnerException as Npgsql.PostgresException ?? failure as Npgsql.PostgresException)!
+            .SqlState.Should().Be(Npgsql.PostgresErrorCodes.ExclusionViolation);
+        await using var verify = CreateContext();
+        (await verify.AccountingPeriods.CountAsync(p => p.CompanyId == _companyId)).Should().Be(1);
+    }
 
     [Fact]
     public async Task Cierre_correcto_cuando_todos_los_asientos_estan_Posted()

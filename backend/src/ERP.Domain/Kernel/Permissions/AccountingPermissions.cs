@@ -39,4 +39,17 @@ public static class AccountingPermissions
     /// Pending/Failed. El permiso del documento origen no concede esta capacidad.
     /// </summary>
     public const string PostingsReprocess = "accounting.postings.reprocess";
+
+    /// <summary>
+    /// ACCOUNTING-07 — crear un período manual o generar los 12 períodos mensuales de un ejercicio.
+    /// Dedicado: crear períodos sobre fechas pasadas reabre escrituras, no es una edición del plan
+    /// de cuentas (<see cref="Create"/>).
+    /// </summary>
+    public const string PeriodsCreate = "accounting.periods.create";
+
+    /// <summary>
+    /// ACCOUNTING-07 — cerrar y bloquear períodos (irreversibles). Nombre aprobado en
+    /// docs/architecture/accounting.md §21; reemplaza el uso transitorio de <see cref="Update"/>.
+    /// </summary>
+    public const string PeriodsClose = "accounting.periods.close";
 }

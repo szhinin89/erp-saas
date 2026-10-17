@@ -30,6 +30,8 @@ public sealed class AccountingPeriodConfiguration : IEntityTypeConfiguration<Acc
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<int>().IsRequired();
         builder.Property(x => x.ClosedAtUtc).HasColumnName("closed_at_utc");
         builder.Property(x => x.ClosedBy).HasColumnName("closed_by");
+        builder.Property(x => x.LockedAtUtc).HasColumnName("locked_at_utc");
+        builder.Property(x => x.LockedBy).HasColumnName("locked_by");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -48,11 +50,10 @@ public sealed class AccountingPeriodConfiguration : IEntityTypeConfiguration<Acc
             .IsUnique()
             .HasDatabaseName("uq_accounting_periods_company_year_period");
 
-        // NOTA — el invariante "no existen períodos solapados dentro de una Company" (ADR-026
-        // §6.1, ver <remarks> de AccountingPeriod.cs) NO está cubierto por este índice único:
-        // dos períodos con distinto (FiscalYear, PeriodNumber) pero rangos de fecha superpuestos
-        // pasarían esta constraint sin problema. Esa validación es cross-aggregate (requiere
-        // comparar StartDate/EndDate contra las demás filas de la Company) y queda
-        // explícitamente para Application/Repository, no para una constraint de BD en esta fase.
+        // ACCOUNTING-07 — "sin períodos solapados dentro de una Company" (ADR-026 §6.1) tiene defensa
+        // final en BD: EXCLUDE USING gist (company_id WITH =, daterange(start_date, end_date, '[]') WITH &&)
+        // = ex_accounting_periods_company_no_overlap (btree_gist), creada con SQL en la migración
+        // AccountingPeriods07 porque EF no modela exclusiones. AccountingPeriodStructure (Application)
+        // mantiene la validación previa para devolver un mensaje de UX.
     }
 }

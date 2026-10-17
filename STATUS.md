@@ -1,5 +1,16 @@
 # Project Status
 
+## ACCOUNTING-07 (2026-10-17)
+
+Implementado y validado focalmente (6 tests): períodos contables operables — estructura contigua sin
+huecos ni períodos detrás de Closed/Locked, exclusión PostgreSQL de solape, ejercicios mensuales desde
+2027 con generación manual idempotente, cierre solo después de `EndDate` (fecha empresa), Locked
+irreversible con `LockedAtUtc`/`LockedBy`, Entity Audit Created/Closed/Locked, permisos
+`accounting.periods.create`/`accounting.periods.close` y pantalla Contabilidad › Configuración ›
+Períodos contables. Migración `AccountingPeriods07` (requiere extensión `btree_gist`). Sin suites
+completas, build npm, staging, commit ni push.
+Reglas: [Accounting §22](docs/architecture/accounting.md#22-períodos-contables-accounting-07).
+
 ## ACCOUNTING-CONTINUITY-06 (2026-10-17)
 
 Implementado y validado focalmente (5 tests): readiness único de completitud contable que alimenta el
@@ -7,8 +18,7 @@ cierre de período, el pre-cierre (`GET accounting-periods/{id}/closure-readines
 los 5 reportes; apertura/ASI, costo pendiente, orígenes sin contabilización y cierre secuencial bloquean
 el cierre; los hechos sujetos con fecha en un período Closed/Locked se rechazan. La conciliación de
 orígenes cubre los 11 orígenes forward. Sin migración. Sin suites completas, staging, commit ni push.
-- DEBT: permiso `accounting.periods.close` (nombre aprobado) pendiente de la futura UI de Períodos;
-  mientras tanto cierre/bloqueo usan `accounting.update`.
+- Resuelto en ACCOUNTING-07: permiso `accounting.periods.close` con UI de Períodos.
 - DEBT: ~8 consultas de completitud por reporte; medir con volumen piloto y consolidar solo si hace falta.
 Reglas: [Accounting §21](docs/architecture/accounting.md#21-cierre-y-completitud-accounting-continuity-06).
 

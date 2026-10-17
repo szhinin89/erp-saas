@@ -20,6 +20,7 @@ namespace ERP.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "btree_gist");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("ERP.Domain.Access.Entities.AccessProfile", b =>
@@ -2909,6 +2910,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("fiscal_year");
 
+                    b.Property<DateTime?>("LockedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_at_utc");
+
+                    b.Property<Guid?>("LockedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("locked_by");
+
                     b.Property<int>("PeriodNumber")
                         .HasColumnType("integer")
                         .HasColumnName("period_number");
@@ -2940,6 +2949,94 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_accounting_periods_company_year_period");
 
                     b.ToTable("accounting_periods", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPeriodAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<int>("FiscalYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("fiscal_year");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<int>("PeriodNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("period_number");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("request_id");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EntityId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_accounting_period_audit_entity_occurred_at");
+
+                    b.HasIndex("TenantId", "UserId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_accounting_period_audit_user_occurred_at");
+
+                    b.HasIndex("TenantId", "CompanyId", "FiscalYear", "OccurredAtUtc")
+                        .HasDatabaseName("ix_accounting_period_audit_company_year_occurred_at");
+
+                    b.ToTable("accounting_period_audit", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPosting", b =>

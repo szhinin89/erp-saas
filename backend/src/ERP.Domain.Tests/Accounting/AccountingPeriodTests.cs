@@ -113,7 +113,7 @@ public sealed class AccountingPeriodTests
 
         act.Should()
             .Throw<DomainRuleViolationException>()
-            .WithMessage("*no admite contabilización*");
+            .WithMessage("*no puede cerrarse de nuevo*");
     }
 
     [Fact]

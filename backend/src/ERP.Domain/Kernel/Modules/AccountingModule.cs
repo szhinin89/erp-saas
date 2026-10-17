@@ -182,6 +182,21 @@ public static class AccountingModule
     )]
     public const string OperationalMode = "/accounting/configuration/operational-mode";
 
+    // ACCOUNTING-07: Períodos contables — lista, pre-cierre y estado con accounting.view; crear/
+    // generar ejercicio y cerrar/bloquear con sus permisos dedicados (asignables desde este ítem).
+    [NavItem(
+        "Períodos contables",
+        Permission = AccountingPermissions.View,
+        LabelKey = "app.nav.item.accounting.periods",
+        SortOrder = 3,
+        Id = "ac000000-0000-4000-9000-000000000009",
+        ParentId = "ac000000-0000-4000-9000-000000000006",
+        RelatedActionPermissionsCsv = AccountingPermissions.PeriodsCreate
+            + ","
+            + AccountingPermissions.PeriodsClose
+    )]
+    public const string Periods = "/accounting/configuration/periods";
+
     // DESTINOS-CONTABLES-COBROS-VENTAS-01: movido desde SettingsModule.PaymentMethods
     // (Configuración > Condiciones comerciales, ver PAYMENT-METHOD-ACCOUNT-UI-NAV-01) hacia
     // Contabilidad > Configuración > Destinos contables > Cobros de ventas — la asignación de

@@ -332,6 +332,7 @@ public class ErpDbContext : DbContext
     // ── Accounting BC (ADR-026 — fundamentos + Posting Engine, partida doble sin JournalFactory/JournalValidator reales) ─
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<AccountingPeriod> AccountingPeriods => Set<AccountingPeriod>();
+    public DbSet<AccountingPeriodAudit> AccountingPeriodAudits => Set<AccountingPeriodAudit>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
     public DbSet<JournalEntrySequence> JournalEntrySequences => Set<JournalEntrySequence>();
@@ -488,6 +489,8 @@ public class ErpDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // ACCOUNTING-07: exclusión "sin períodos solapados por Company" (uuid = + daterange &&).
+        modelBuilder.HasPostgresExtension("btree_gist");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
         EnterpriseQueryFilterConfigurator.Apply(modelBuilder, this);
         modelBuilder.Entity<ItemVariant>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));

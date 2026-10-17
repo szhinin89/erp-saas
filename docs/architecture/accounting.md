@@ -19,7 +19,8 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-04: Venta, devolución de venta, pago a proveedor, cobro, devolución de compra, NC compra Discount y aplicación/reembolso de saldo a favor registran la obligación durable; anulación de devolución de compra y reversas de aplicación/reembolso usan el reverso histórico común (§19) |
 | KEEP | ACCOUNTING-CONTINUITY-03: espejo histórico, original inmutable, fecha efectiva y período Open destino, idempotencia y obligación durable para los consumidores migrados |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-06: readiness único de completitud (cierre, pre-cierre y reportes), conciliación de orígenes, apertura/ASI, costo pendiente, cierre secuencial y gate Closed/Locked en el origen (§21) |
-| EXTEND | Manuales generales pendientes; permiso específico de cierre pendiente (§21) |
+| IMPLEMENTADO | ACCOUNTING-07: estructura temporal de períodos (contigüidad, orden frente a Closed/Locked, exclusión PostgreSQL de solape), ejercicios mensuales desde 2027 con generación manual, cierre solo después de `EndDate`, Locked auditivo irreversible, permisos dedicados, Entity Audit y pantalla de Períodos (§22) |
+| EXTEND | Manuales generales pendientes |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -227,7 +228,7 @@ operativas; esta regla no habilita el reverso genérico de una carga inicial.
 
 ## 8. Períodos y cierre
 
-Períodos no solapados por Company. Posting únicamente en un período abierto válido
+Períodos no solapados y contiguos por Company (estructura y periodicidad en §22). Posting únicamente en un período abierto válido
 para la fecha del hecho; un error de período de un posting normal deja obligación Failed,
 sin mover la fecha ni revertir el núcleo comercial. Para la reversión del apartado 7
 se aplica la precondición aprobada antes de anular.
@@ -387,7 +388,8 @@ El permiso del origen sigue gobernando el acto comercial y no concede administra
 de Accounting. DocumentFlowPolicy no es un permiso.
 
 Evidencia actual: AccountingController usa `AccountingPermissions.View/Create/Update/Delete`
-para sus consultas y administración; `accounting.settings.update` cambia el modo operativo,
+para sus consultas y administración, salvo Períodos (`accounting.periods.create` /
+`accounting.periods.close`, §22); `accounting.settings.update` cambia el modo operativo,
 `accounting.postings.view` consulta obligaciones e intentos y `accounting.postings.reprocess`
 ejecuta el reproceso manual individual y en lote, también para el costo de ventas. La apertura usa sus
 permisos combinados existentes; aún no existe permiso de asientos manuales.
@@ -617,9 +619,52 @@ su rango; Mayor y Balance de Comprobación, desde el inicio contable hasta `ToDa
 inicial); Balance General, desde el inicio hasta `AsOfDate`. El frontend solo muestra la advertencia de
 reporte provisional.
 
-**Permiso de cierre.** Nombre aprobado: `accounting.periods.close`. Se asignará desde la futura
-pantalla de Períodos (sin NavItem arbitrario ni otra vía de asignación); hasta entonces cierre y bloqueo
-usan `accounting.update`.
+**Permiso de cierre.** `accounting.periods.close` (cierre y bloqueo), asignable desde el NavItem
+Períodos contables (ACCOUNTING-07, §22); `accounting.update` ya no gobierna cierre ni bloqueo.
 
 **Performance (DEBT).** Cada reporte ejecuta ~8 consultas adicionales de completitud; medir con volumen
 piloto y consolidar después solo si hace falta, sin cache.
+
+## 22. Períodos contables ACCOUNTING-07
+
+**Periodicidad.** El ejercicio es el año calendario: `FiscalYear` = año de `StartDate` y de `EndDate`, y
+`PeriodNumber` 1..12. Los ejercicios anteriores a 2027 conservan el período anual sembrado (2026 no se
+divide retroactivamente); desde 2027 el ejercicio son 12 períodos mensuales naturales
+(`PeriodNumber` = mes). El bootstrap de una Company nueva siembra el año en curso con esa regla.
+
+**Generación del siguiente ejercicio.** Manual, desde la pantalla de Períodos
+(`POST accounting-periods/fiscal-years`, `GenerateAccountingFiscalYear`): crea los 12 meses naturales
+contiguos. Idempotente: completa los meses faltantes al final de un prefijo mensual exacto y no crea nada
+si ya están los 12; un ejercicio con otra estructura (p. ej. anual) se rechaza. No hay generación
+automática; la pantalla avisa desde el 1-dic si el ejercicio siguiente no existe y cuando hoy no tiene período.
+
+**Estructura (sin huecos).** Un período nuevo (manual o generado) no puede solaparse; si existe un
+anterior debe empezar exactamente al día siguiente de su `EndDate` y, si existe uno posterior, terminar
+el día previo a su inicio; nunca puede quedar antes de un período Closed/Locked. El número es
+correlativo dentro del ejercicio (anterior + 1; 1 al iniciar el ejercicio). Se admite un período de un
+solo día (`EndDate >= StartDate`). El solape tiene defensa final en PostgreSQL
+(`ex_accounting_periods_company_no_overlap`, exclusión `btree_gist` sobre Company y rango de fechas);
+la validación previa en Application solo da el mensaje de UX. Un período existente no se edita ni se elimina.
+
+**Cierre temporal.** Además del readiness (§21) y del cierre secuencial, un período solo se cierra si
+`EndDate` es anterior a hoy en la fecha de la empresa (`ICompanyClock`, nunca UTC). El pre-cierre solo
+evalúa períodos Open: Closed/Locked responden explícitamente no elegibles, sin readiness. La respuesta
+incluye `HasEnded`, `CompanyToday` y `CanClose` (Open + terminado + completo).
+
+**Locked.** Estado final administrativo/auditivo e irreversible, solo desde Closed; registra
+`LockedAtUtc`/`LockedBy`. No cambia lo que el período admite (Closed ya rechaza toda escritura). No
+existe reapertura ni desbloqueo.
+
+**Permisos.** Listado, detalle y pre-cierre: `accounting.view`. Crear período y generar ejercicio:
+`accounting.periods.create`. Cerrar y bloquear: `accounting.periods.close`. NavItem
+Contabilidad › Configuración › Períodos contables (`accounting.view`, acciones relacionadas
+`accounting.periods.create`, `accounting.periods.close`).
+
+**Auditoría.** Entity Audit (`AccountingPeriodAudit`) de Created, Closed y Locked con ejercicio, número
+y rango; `ClosedAtUtc`/`ClosedBy` y `LockedAtUtc`/`LockedBy` persisten en el período.
+
+**Pantalla.** `/accounting/configuration/periods`: lista (ejercicio, número, rango, estado, cerrado
+el/por), generación del ejercicio siguiente, creación manual prellenada con el rango contiguo,
+revisión de cierre con `{Code, Count}`, `AsOf` y refresco, cierre con confirmación de irreversibilidad y
+bloqueo. Cada motivo dirige a su pantalla (contabilizaciones, asientos, período anterior, carga inicial);
+`SALE_COST_PENDING` y `ORIGINS_WITHOUT_ACCOUNTING` solo se explican con su conteo (sin endpoint de detalle).

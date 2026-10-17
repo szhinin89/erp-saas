@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 using ERP.Application.Tests.Common;
@@ -38,6 +39,7 @@ public sealed class CloseAccountingPeriodHandlerTests
         public Mock<IAccountingCompletenessEvaluator> Completeness { get; } = new();
         public Mock<IAccountingOperationalPolicyRepository> AccountingLock { get; } = new();
         public Mock<IUnitOfWork> UnitOfWork { get; } = new();
+        public Mock<ICompanyClock> Clock { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
@@ -47,6 +49,9 @@ public sealed class CloseAccountingPeriodHandlerTests
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Company.Setup(c => c.CompanyId).Returns(CompanyId);
             User.Setup(u => u.UserId).Returns(CreatedBy);
+            Clock
+                .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DateOnly(2026, 8, 1));
         }
 
         public AccountingPeriod Seed(params string[] reasonCodes)
@@ -73,6 +78,7 @@ public sealed class CloseAccountingPeriodHandlerTests
                 Completeness.Object,
                 AccountingLock.Object,
                 UnitOfWork.Object,
+                Clock.Object,
                 Tenant.Object,
                 Company.Object,
                 User.Object
@@ -115,6 +121,32 @@ public sealed class CloseAccountingPeriodHandlerTests
         result.Error.Should().Contain(message);
         period.Status.Should().Be(PeriodStatus.Open);
         m.AccountingLock.Verify(l => l.AcquireExclusiveLockAsync(CompanyId, It.IsAny<CancellationToken>()), Times.Once);
+        m.Periods.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ACCOUNTING-07: EndDate >= hoy Company (ICompanyClock) rechaza antes de evaluar el readiness.
+    [Theory]
+    [InlineData(2026, 7, 31)]
+    [InlineData(2026, 7, 15)]
+    public async Task A07_no_cierra_periodo_cuya_EndDate_no_es_anterior_a_hoy_Company(int y, int mo, int d)
+    {
+        var m = new Mocks();
+        var period = m.Seed();
+        m.Clock
+            .Setup(c => c.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DateOnly(y, mo, d));
+
+        var result = await m.BuildHandler()
+            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        result.Error.Should().Contain("solo puede cerrarse a partir del día siguiente");
+        period.Status.Should().Be(PeriodStatus.Open);
+        m.Completeness.Verify(
+            e => e.EvaluateClosureAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<AccountingPeriod>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
         m.Periods.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
