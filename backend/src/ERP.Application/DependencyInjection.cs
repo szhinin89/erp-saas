@@ -24,12 +24,13 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
-        services.AddScoped<ERP.Application.Modules.Inventory.Costing.InventoryCostAccounting>();
         // ACCOUNTING-CONTINUITY-01 — obligación contable durable: decisión operativa, registro en
         // la transacción del núcleo, intento tras el commit (único ejecutor) y anulación común.
         services.AddScoped<AccountingOperationalDecision>();
+        services.AddScoped<AccountingModeChangePreconditions>();
         services.AddScoped<AccountingPostingDispatchQueue>();
         services.AddScoped<AccountingPostingRecorder>();
+        services.AddScoped<ERP.Application.Modules.Accounting.Posting.Translators.SaleCostPostingRecorder>();
         services.AddScoped<AccountingPostingFactBuilder>();
         services.AddScoped<AccountingPostingExecutor>();
         services.AddScoped<IAccountingPostingDispatcher>(sp =>

@@ -40,4 +40,15 @@ public sealed class SaleCostAllocation : AuditableEntity, ITenantScopedEntity, I
         result.SetCreated(origin.CreatedBy);
         return result;
     }
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — publica el delta de costo reconocido de la venta que produjo esta
+    /// asignación (<paramref name="sourceEventId"/>: movimiento en devoluciones, asignación en coberturas).
+    /// </summary>
+    public void RecognizeCost(Guid sourceEventId, decimal amount, DateOnly entryDate, decimal? recognizedCostTarget = null)
+    {
+        if (amount == 0m) return;
+        AddDomainEvent(new Events.SaleCostRecognizedEvent(TenantId, CompanyId, InvoiceId,
+            sourceEventId, amount, entryDate, Kind, recognizedCostTarget));
+    }
 }

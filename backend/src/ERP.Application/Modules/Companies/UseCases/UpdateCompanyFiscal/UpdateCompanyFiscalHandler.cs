@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -16,15 +17,18 @@ public sealed class UpdateCompanyFiscalHandler
     private readonly ICurrentUser _currentUser;
     private readonly IAccountingOperationalPolicyRepository _accountingPolicies;
     private readonly ICompanyClock _clock;
+    private readonly IUnitOfWork _unitOfWork;
 
     public UpdateCompanyFiscalHandler(
         ICompanyAccessGuard accessGuard,
         ICompanyRepository companies,
         ICurrentUser currentUser,
         IAccountingOperationalPolicyRepository accountingPolicies,
-        ICompanyClock clock
+        ICompanyClock clock,
+        IUnitOfWork unitOfWork
     )
     {
+        _unitOfWork = unitOfWork;
         _accessGuard = accessGuard;
         _companies = companies;
         _currentUser = currentUser;
@@ -41,11 +45,34 @@ public sealed class UpdateCompanyFiscalHandler
         if (!access.IsSuccess)
             return Result<CompanyProfileDto>.Failure(access.Error!, access.Code);
 
-        var entity = await _companies.GetTrackedByIdForTenantAsync(
-            access.Value!.CompanyId,
-            access.Value!.TenantId,
-            cancellationToken
-        );
+        // ACCOUNTING-CONTINUITY-05: mismo lock exclusivo de política que SetAccountingOperationalMode;
+        // la invariante Required ⇒ Enabled no puede romperse por dos cambios concurrentes.
+        await _unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await _accountingPolicies.AcquireExclusiveLockAsync(access.Value!.CompanyId, cancellationToken);
+            var result = await UpdateAsync(command, access.Value!.CompanyId, access.Value!.TenantId, cancellationToken);
+            if (result.IsSuccess)
+                await _unitOfWork.CommitAsync(cancellationToken);
+            else
+                await _unitOfWork.RollbackAsync(cancellationToken);
+            return result;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
+    private async Task<Result<CompanyProfileDto>> UpdateAsync(
+        UpdateCompanyFiscalCommand command,
+        Guid companyId,
+        Guid tenantId,
+        CancellationToken cancellationToken
+    )
+    {
+        var entity = await _companies.GetTrackedByIdForTenantAsync(companyId, tenantId, cancellationToken);
         if (entity is null)
             return Result<CompanyProfileDto>.Failure("Empresa no encontrada.");
 

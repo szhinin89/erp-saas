@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
@@ -36,6 +37,7 @@ public sealed partial class CloseInitialLoadCommandHandler
     private readonly IOpeningJournalEntryPostingRepository _openingJournal;
     private readonly ICompanyRepository _companies;
     private readonly IMediator _mediator;
+    private readonly OpeningAccountingGate _accountingGate;
     private readonly ILogger<CloseInitialLoadCommandHandler> _logger;
 
     public CloseInitialLoadCommandHandler(
@@ -44,6 +46,7 @@ public sealed partial class CloseInitialLoadCommandHandler
         IOpeningJournalEntryPostingRepository openingJournal,
         ICompanyRepository companies,
         IMediator mediator,
+        OpeningAccountingGate accountingGate,
         ILogger<CloseInitialLoadCommandHandler> logger
     )
     {
@@ -52,6 +55,7 @@ public sealed partial class CloseInitialLoadCommandHandler
         _openingJournal = openingJournal;
         _companies = companies;
         _mediator = mediator;
+        _accountingGate = accountingGate;
         _logger = logger;
     }
 
@@ -79,6 +83,12 @@ public sealed partial class CloseInitialLoadCommandHandler
                 return await RejectAsync(Result<InitialLoadClosureDto>.Failure(
                     reconciliation.Error ?? InternalErrorMessage, reconciliation.Code));
             var blockers = reconciliation.Value!.Blockers;
+            // ACCOUNTING-CONTINUITY-05 — apertura no sujeta (Disabled en la fecha de apertura): el cierre
+            // exige solo las condiciones operativas, sin asiento de lote, ASI ni puente.
+            if (await _accountingGate.ResolveAsync(ct) == AccountingApplicability.NotApplicable)
+                blockers = blockers
+                    .Where(b => GetOpeningBalanceReconciliationHandler.OperationalBlockerCodes.Contains(b.Code))
+                    .ToList();
             if (blockers.Count > 0)
                 return await RejectAsync(Result<InitialLoadClosureDto>.ValidationFailure(
                     "No se puede cerrar la carga inicial: " + string.Join(" · ", blockers.Select(b => b.Message)),

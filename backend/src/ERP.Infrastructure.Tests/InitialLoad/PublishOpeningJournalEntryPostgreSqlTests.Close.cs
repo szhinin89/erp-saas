@@ -89,6 +89,30 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests
         result.Error.Should().Be(Company.InitialLoadClosedMessage);
     }
 
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — fecha de apertura en vigencia Disabled: ni asiento de lote ni ASI, y el
+    /// cierre de la carga inicial exige solo las condiciones operativas.
+    /// </summary>
+    [Fact]
+    public async Task C05_apertura_en_Disabled_no_publica_asientos_y_permite_cerrar_la_carga_inicial()
+    {
+        (_company, _branch) = await NewCompanyAsync(ERP.Domain.Modules.Accounting.Enums.AccountingOperationalMode.Disabled);
+        var batch = await CompletedReceivablesBatchAsync();
+
+        var posted = await SendAsync(new PostOpeningBalanceCommand(batch));
+        posted.IsSuccess.Should().BeFalse();
+        posted.Code.Should().Be(OpeningAccountingGate.NotApplicableCode, posted.Error);
+        var asi = await PublishAsync(await ValidLinesAsync());
+        asi.IsSuccess.Should().BeFalse();
+        asi.Code.Should().Be(OpeningAccountingGate.NotApplicableCode, asi.Error);
+
+        var closed = await CloseAsync();
+        closed.IsSuccess.Should().BeTrue(closed.Error);
+        (await CompanyAsync()).IsInitialLoadClosed.Should().BeTrue();
+        (await QueryAsync(db => db.OpeningBalancePostings.AnyAsync(p => p.CompanyId == _company))).Should().BeFalse();
+        (await QueryAsync(db => db.JournalEntries.AnyAsync(e => e.CompanyId == _company))).Should().BeFalse();
+    }
+
     [Fact]
     public async Task Cierre_sin_blockers_es_definitivo_idempotente_y_visible_en_la_conciliacion()
     {

@@ -6,46 +6,88 @@ Decisiones arquitectónicas congeladas 2026-06-25. No modificar sin revisión ar
 
 ## Estándar de Precisión Numérica
 
-### PostgreSQL — Precisiones oficiales
+Aplica a toda implementación que cree, modifique, calcule, compare, redondee o persista valores
+numéricos de negocio: costos, precios, cantidades, importes, descuentos, impuestos, porcentajes,
+márgenes, COGS, inventario/Kardex, compras, ventas, contabilidad, reportes y exportes.
 
-| Tipo | Precision | Aplica a |
-|------|-----------|----------|
-| Montos/totales | `numeric(18,2)` | Subtotales, impuestos, grand total, pagos, CxC, CxP, asientos |
-| Cantidades | `numeric(18,4)` | Stock, qty líneas, movimientos, tipo de cambio |
-| Precios unitarios | `numeric(18,6)` | UnitPrice, LandedCost, DiscountAmount, costo promedio |
-| Porcentajes | `numeric(5,2)` | IVA, ICE, descuento %, retención %, margen % |
+### Autoridad única
 
-### Frontend
+Una sola política de precisión, leída siempre como `EffectivePrecisionPolicyDto`:
 
-- **Input obligatorio**: `ZhDecimalInput` para todo decimal, `ZhNumberInput` para enteros
-- **Separador**: solo punto (`.`) — coma prohibida
-- **Utilities**: `sanitizeDecimal()`, `parseDecimal()`, `formatMoney()` de `lib/sanitizers.ts`
-- **Decimales configurables**: `precisionPolicy.config.ts` carga desde `GET /api/v1/config/precision-policy` por empresa (`company_precision_policy`, SSOT; rangos/perfiles desde `/precision-policy/metadata`, sin defaults en frontend — reemplaza el legacy `GET/PUT /api/v1/config/decimals`, eliminado en COMPANY-PRECISION-POLICY-BACKEND-LEGACY-DECIMAL-CONFIG-CLEANUP-08)
+| Clase | Campos | Fuente | Configurable |
+|---|---|---|---|
+| Operativa por empresa | precio unitario de venta y de compra, cantidad, porcentaje operativo, costo unitario, costo promedio, factor de conversión, tolerancia de cuadre | `CompanyPrecisionPolicy` (tabla `company_precision_policy`); keys, rangos y perfiles solo en `PrecisionPolicyDefinitions` | Sí, por empresa, dentro de los rangos definidos |
+| Fija del sistema | dinero, impuestos, contabilidad (`numeric(18,2)`), porcentaje fiscal | `FiscalPrecision` | No (invariante fiscal) |
+| Contrato fijo de dominio | capacidad de bodega, % de cuota de crédito, peso de empaque | `WarehousePrecision`, `CreditTermsPrecision`, `ItemPrecision` | No |
+
+- Backend: `ICompanyPrecisionPolicyProvider.GetEffectiveAsync()` (empresa activa; fail-closed: sin
+  contexto de empresa o sin política lanza excepción, nunca un default silencioso).
+- Frontend: `GET /api/v1/config/precision-policy` y `/precision-policy/metadata` →
+  `precisionPolicy.config.ts`; ruta y guard en [frontend.md § Presentación numérica](frontend.md).
+- Prohibido crear otra política, servicio, configuración o regla de precisión (también por módulo,
+  p. ej. Accounting): todos los módulos consumen esta autoridad. Si no puede identificarse el campo
+  aplicable o existe más de una implementación para el mismo dato, se clasifica DEBT/FALTA antes de
+  introducir lógica nueva.
 
 ### Backend
 
-- **Domain**: solo `decimal`/`int`/`long` — prohibido string monetario
-- **Infrastructure**: `CultureInfo.InvariantCulture` obligatorio en todo parsing
-- **API**: JSON numbers nativos — prohibido strings numéricos
+- Application resuelve la política con `ICompanyPrecisionPolicyProvider` y pasa explícitamente a
+  Domain los dígitos que necesita. Domain no consulta configuración empresarial.
+- Los parámetros de Domain con valor por defecto `FiscalPrecision.*` para un campo configurable
+  (cantidad, costo unitario, factor…) son compatibilidad histórica: no agregar nuevos y pasar siempre
+  el valor de la política.
+- Redondeo funcional: `Math.Round(valor, política.<Campo>Decimals, MidpointRounding.AwayFromZero)`, sin
+  helpers ni escalas literales paralelas. Cálculo, comparación con cero y validación de signo usan la
+  misma precisión.
+- **Domain**: solo `decimal`/`int`/`long` — prohibido string monetario.
+- **Infrastructure**: `CultureInfo.InvariantCulture` obligatorio en todo parsing.
+- **API**: JSON numbers nativos — prohibido strings numéricos.
+
+### Frontend
+
+- **Input obligatorio**: `ZhDecimalInput` para todo decimal, `ZhNumberInput` para enteros.
+- **Separador**: solo punto (`.`) — coma prohibida.
+- **Utilities**: `sanitizeDecimal()`, `parseDecimal()`, `formatMoney()` de `lib/sanitizers.ts`.
+- **Decimales**: solo desde la política (sin defaults en frontend); el legacy `GET/PUT
+  /api/v1/config/decimals` fue eliminado (COMPANY-PRECISION-POLICY-BACKEND-LEGACY-DECIMAL-CONFIG-CLEANUP-08).
+
+### PostgreSQL — escalas técnicas
+
+La escala técnica de la columna es la capacidad de persistencia y debe cubrir el máximo configurable;
+la precisión funcional la decide la política. No confundir ambas.
+
+| Tipo | Escala técnica | Aplica a |
+|------|----------------|----------|
+| Montos/totales fiscales y contables | `numeric(18,2)` | Subtotales, impuestos, grand total, pagos, CxC, CxP, asientos |
+| Precios y costos unitarios configurables | `numeric(22,10)` | Precio unitario de compra/venta, costo unitario, `LandedUnitCost`, costo promedio, costos del Kardex/COGS, factor de conversión |
+| Factor y cantidad base de presentación | `numeric(18,10)` | Factor de presentación y cantidad base asociada |
+| Cantidades operativas | `numeric(20,6)` | Stock, cantidades de línea, movimientos, `QuantityInBaseUom` |
+| Valores derivados de escala fija | `numeric(18,6)` | `DiscountAmount`, `TotalLineCost`, costos totales, precios base y de lista |
+| Porcentajes operativos | `numeric(9,6)` | Descuento %, descuento máximo % |
+| Porcentajes fiscales | `numeric(5,2)` | IVA, ICE, retención % |
+| Escalas fijas de contrato | `numeric(18,4)` / `numeric(16,6)` / `numeric(10,3)` | Capacidad de bodega, tipo de cambio, metas de despacho / stock mínimo y máximo / peso de empaque |
 
 ### Gate para nuevas columnas decimales
 
 Cualquier nueva columna decimal debe justificar antes de implementar:
 
-1. **Tipo de dato** (monto, cantidad, precio, porcentaje)
-2. **Precisión** (18 o 5)
-3. **Escala** (2, 4 o 6)
+1. **Tipo de dato** (monto, cantidad, precio/costo, porcentaje operativo o fiscal)
+2. **Campo de la política** que gobierna su precisión funcional (o la constante fija que la define)
+3. **Escala técnica** según la tabla anterior
 4. **Motivo de negocio**
 
-Si no coincide con `numeric(18,2)`, `numeric(18,4)`, `numeric(18,6)` o `numeric(5,2)` → requiere revisión arquitectónica formal.
+Si no coincide con una fila de la tabla → requiere revisión arquitectónica formal.
 
 ### Prohibido en todo el sistema (precisión numérica)
 
+- Crear otra política de precisión o duplicar estas reglas
+- Hardcodear escalas funcionales (`2`, `4`, `6`, …) donde la política define la precisión
+- Resolver configuración de precisión desde Domain
 - `toLocaleString()` / `Intl.NumberFormat()` para montos
 - `<input type="number">` para campos decimales
 - `decimal.Parse` sin `InvariantCulture`
 - `Convert.ToDecimal` para datos financieros
-- Crear columnas decimales sin justificar tipo/precisión/escala/motivo
+- Crear columnas decimales sin justificar tipo/campo/escala/motivo
 
 ---
 

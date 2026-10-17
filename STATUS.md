@@ -1,5 +1,14 @@
 # Project Status
 
+## ACCOUNTING-CONTINUITY-05 (2026-10-17)
+
+Implementado y validado focalmente (6 tests): costo de ventas converge a la obligación contable
+durable (sin reintento implícito; retry masivo de costos retirado), apertura respeta el modo operativo
+y Accounting Disabled queda disponible con precondiciones. Migración `AccountingContinuity05` (columna
+`source_document_id` + migración de filas de `inventory_cost_postings`) solo en PostgreSQL aislado de
+pruebas. Sin suites completas, staging, commit ni push.
+Reglas: [Accounting §20](docs/architecture/accounting.md#20-costos-apertura-y-disabled-accounting-continuity-05).
+
 ## ACCOUNTING-CONTINUITY-04 (2026-10-16)
 
 Implementado y validado focalmente: 8 integraciones comerciales/financieras convergen a la
@@ -1290,7 +1299,7 @@ monitor y password reset.
 ### ERP-PRECISION-CAPACITY-05A / OPERATIONAL-05B (2026-09-21)
 
 - **05A (capacidad)**: máximos de `PrecisionPolicyDefinitions` alineados con la BD — venta 6; compra/costo/promedio/factor 10; cantidad 6; porcentaje 6 (migración `PrecisionCapacityAlignment05A`: columnas `numeric(22,10)`/`(18,10)`/`(20,6)`/`(16,6)`/`(9,6)`, normaliza `sales_unit_price_decimals > 6` a 6 y regenera los CHECK). `FiscalPrecision` y totales fiscales sin cambios.
-- **05B (operativo)**: Application resuelve `CompanyPrecisionPolicy` y pasa los dígitos a Domain (Domain no consulta configuración). Migrado: Pricing (precio unitario resuelto/simulación), Sales (cantidad base, factor, costo unitario del snapshot, precio lista), Purchases (cantidad base, `LandedUnitCost`, factor, devoluciones/NC), Inventory (ajustes: cantidad/costo/factor; costo promedio corrido del Kardex en `StockRepository`). Sin argumento, Domain conserva el comportamiento histórico. Con el perfil Estándar el precio unitario de venta pasa a 2 decimales (antes 6 fijo en Pricing).
+- **05B (operativo)**: consumidores migrados a la política de precisión (regla vigente en [data-standards.md § Estándar de Precisión Numérica](docs/architecture/data-standards.md#estándar-de-precisión-numérica)): Pricing (precio unitario resuelto/simulación), Sales (cantidad base, factor, costo unitario del snapshot, precio lista), Purchases (cantidad base, `LandedUnitCost`, factor, devoluciones/NC), Inventory (ajustes: cantidad/costo/factor; costo promedio corrido del Kardex en `StockRepository`). Con el perfil Estándar el precio unitario de venta pasa a 2 decimales (antes 6 fijo en Pricing).
 
 ### Pendientes no bloqueantes
 

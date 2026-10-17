@@ -164,6 +164,9 @@ public static class DependencyInjection
             ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningJournalEntryPostingRepository
         >();
         services.AddScoped<ERP.Application.Modules.InitialLoad.OpeningPosting.OpeningBalancePostingPreflight>();
+        services.AddScoped<ERP.Application.Modules.InitialLoad.OpeningPosting.OpeningAccountingGate>();
+        services.AddScoped<ERP.Application.Modules.Accounting.Continuity.IAccountingRelevantFactsReader,
+            ERP.Infrastructure.Accounting.Repositories.AccountingRelevantFactsReader>();
         services.AddScoped<
             IInitialReceivableImportSheetReader,
             ClosedXmlInitialReceivableImportSheetReader

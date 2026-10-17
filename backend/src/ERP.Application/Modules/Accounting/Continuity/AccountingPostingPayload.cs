@@ -38,7 +38,8 @@ public sealed record AccountingPostingPayload(
     decimal? CashApplied = null,
     decimal? PendingBalance = null,
     IReadOnlyList<AccountingPostingDestination>? Destinations = null,
-    IReadOnlyDictionary<string, Guid>? References = null
+    IReadOnlyDictionary<string, Guid>? References = null,
+    decimal? RecognizedCostTarget = null
 )
 {
     public const int CurrentVersion = 2;

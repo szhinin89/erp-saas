@@ -14,12 +14,12 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | Clasificación | Disponible / pendiente |
 |---|---|
 | KEEP | Core, plan de cuentas, reglas, períodos, motor de partida doble, idempotencia, numeración, lectura y reportes del libro implementados |
-| KEEP | Patrones durables específicos de costos de inventario y apertura implementados (convergencia pendiente, CONTINUITY-05) |
+| IMPLEMENTADO | ACCOUNTING-CONTINUITY-05: costo de ventas (reconocimiento, cobertura, devolución) sobre la obligación común; apertura bajo la política operativa con su modelo propio; Disabled operativo con precondiciones (§20) |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-01: política operativa versionada por Company, obligación contable durable común con historial de intentos, intento inicial posterior al commit y reproceso manual individual para Compra, Gasto (confirmación de borrador y creación directa) y Retención emitida; anulación común de esos orígenes; gate mínimo de cierre; `AccountingPostingMode` retirado |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-04: Venta, devolución de venta, pago a proveedor, cobro, devolución de compra, NC compra Discount y aplicación/reembolso de saldo a favor registran la obligación durable; anulación de devolución de compra y reversas de aplicación/reembolso usan el reverso histórico común (§19) |
 | KEEP | ACCOUNTING-CONTINUITY-03: espejo histórico, original inmutable, fecha efectiva y período Open destino, idempotencia y obligación durable para los consumidores migrados |
-| BUG REAL | El cierre exige obligaciones resueltas y asientos completos, pero no concilia orígenes sin obligación; costos puede reintentar Failed implícitamente |
-| EXTEND | Disabled operativo, integridad completa de cierre/reportes y manuales generales pendientes |
+| BUG REAL | El cierre exige obligaciones resueltas (incluida la apertura) y asientos completos, pero no concilia orígenes sin obligación |
+| EXTEND | Integridad completa de cierre/reportes y manuales generales pendientes |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -76,7 +76,8 @@ efectivas de la regla; no se resuelven desde campos legacy de débito/crédito p
 
 Un asiento debe balancear, tener líneas monetarias válidas y cuentas verificadas;
 en cada línea exactamente uno de Debe/Haber es positivo. No publicar encabezados
-vacíos ni asientos parciales. La precisión monetaria existente es de dos decimales.
+vacíos ni asientos parciales. La precisión monetaria es `AccountingDecimals` de la política única de precisión
+([data-standards.md](data-standards.md#estándar-de-precisión-numérica)).
 JournalEntrySequence reserva número por Company y ejercicio bajo lock transaccional
 PostgreSQL; no reutiliza punto de emisión ni secuencia de comprobante SRI.
 
@@ -106,10 +107,8 @@ Pending/Failed o hechos que aún deberían tener resolución. El cambio no exime
 ya contraídas ni permite suprimir el reverso de asientos existentes.
 
 Disabled no exige plan/reglas/cuentas para continuar la operación comercial y no genera
-obligaciones nuevas de posting automático durante su vigencia. Mientras costos de inventario y
-apertura no converjan a la obligación común (CONTINUITY-05) seleccionar Disabled se rechaza:
-un Disabled parcial dejaría el libro inconsistente. La lectura del historial
-se conserva. El uso voluntario de asientos manuales requiere activar Accounting.
+obligaciones nuevas de posting automático durante su vigencia (precondiciones y vigencia en §20).
+La lectura del historial se conserva. El uso voluntario de asientos manuales requiere activar Accounting.
 
 ## 4. Pipeline y frontera transaccional
 
@@ -285,8 +284,8 @@ saldo, inventario y SRI existentes se conservan. No se reabren módulos CLOSED.
 | Reversa cobro | Cobro reversado + saldos CxC/Caja/Banco | Reverso exacto si publicado | Pending/Failed; gate §7 | Reversado o bloqueado por precondición |
 | Retención emitida | Origen confirmado + documento tributario + CxP retenida | Obligación Retentions/DocumentIssued | Pending/Failed; no rollback por posting | Retención válida conservada |
 | Retención anulada | Anulación por origen + gate SRI + ReverseRetention | Reverso de lo realmente publicado | Pending/Failed; gate §7 | Retención anulada o bloqueo legítimo |
-| Costos inventario | Kardex + SaleCostObligation/Allocation; costo operativo resuelto | InventoryCostPosting como patrón; reconocimiento antes de ajustes | Failed durable; sin retry implícito | Operación y costo trazables |
-| Carga inicial | Lote de saldos + Inventario/CxC/CxP atómicos | Patrones OpeningBalancePosting/ASI; no reconstruir compras/ventas históricas | Failed sin deshacer lote | Apertura incompleta hasta conciliar; cierre propio protegido |
+| Costos inventario | Kardex + SaleCostObligation/Allocation; costo operativo resuelto | Obligación común por hecho de costo, anclada a la factura; reconocimiento antes de ajustes (§20) | Failed durable; sin retry implícito | Operación y costo trazables |
+| Carga inicial | Lote de saldos + Inventario/CxC/CxP atómicos | Modelo propio OpeningBalancePosting/ASI si la fecha de apertura está sujeta; no reconstruir compras/ventas históricas | Failed sin deshacer lote | Apertura incompleta hasta conciliar; cierre propio protegido |
 | Asiento manual | Solo libro, sin documento comercial ni saldo de submayor | Requiere Enabled; líneas explícitas y guardas comunes | No publicar asiento inválido; resultado durable del intento | Posted o Pending/Failed; no hay operación comercial que conservar |
 | Reembolso crédito proveedor / reversa | SupplierCredit + Caja/Banco y sus restricciones | Obligación o espejo exacto del publicado | Pending/Failed; gate §7 al reversar | Núcleo financiero conservado |
 | Movimiento de Caja/Banco con efecto contable | Movimiento financiero válido y saldo | Obligación del efecto propio, sin duplicar venta/pago/cobro | Pending/Failed | Movimiento operativo conservado |
@@ -362,12 +361,9 @@ republica eventos hacia Accounting ni garantiza recuperación del posting. Un me
 procesado no demuestra que exista JournalEntry. Los jobs de SRI y Communications
 tampoco son un pipeline de recuperación contable.
 
-`InventoryCostPosting` es KEEP como evidencia durable; `InventoryCostAccounting`
-actual puede recorrer Failed al procesar otro hecho de la factura. Esa recuperación
-implícita no cumple el reproceso exclusivamente manual aprobado y debe corregirse
-sin cambiar la valoración ni la prioridad de reconocimiento descritas en §10.
-No duplicar ciegamente su implementación. Preservar las evidencias de apertura y costo
-y resolver su convergencia técnica sin crear un segundo libro ni una cola paralela.
+El costo de ventas usa la obligación común (§20); `inventory_cost_postings` es histórico de solo
+lectura y la recuperación implícita de Failed se retiró. Apertura conserva su modelo propio
+(OpeningBalancePosting/ASI) como única autoridad de su efecto; no hay segundo libro ni cola paralela.
 
 ## 13. DocumentFlowPolicy.AccountingPostingMode
 
@@ -393,7 +389,7 @@ de Accounting. DocumentFlowPolicy no es un permiso.
 Evidencia actual: AccountingController usa `AccountingPermissions.View/Create/Update/Delete`
 para sus consultas y administración; `accounting.settings.update` cambia el modo operativo,
 `accounting.postings.view` consulta obligaciones e intentos y `accounting.postings.reprocess`
-ejecuta el reproceso manual individual y en lote. El retry de costos usa StockManage y la apertura sus
+ejecuta el reproceso manual individual y en lote, también para el costo de ventas. La apertura usa sus
 permisos combinados existentes; aún no existe permiso de asientos manuales.
 
 Auditar cambios de configuración y vigencia, creación/resolución/cancelación de obligación,
@@ -426,11 +422,11 @@ Rutas abreviadas desde `backend/src/`:
 | RESUELTO | ACCOUNTING-CONTINUITY-04: Venta, devoluciones, pagos, cobros, NC compra Discount y saldo a favor de proveedor dejaron de contabilizar en línea; los núcleos operativos ya no resuelven cuentas ni exigen líneas IRBPNR/anticipo |
 | KEEP | ACCOUNTING-CONTINUITY-03: JournalEntryReversal y JournalEntry.Reverse conservan el original y espejan el libro histórico en fecha/período/ejercicio destino; pago, cobro y anulaciones existentes adoptados |
 | BUG REAL | El cierre consulta asientos y obligaciones Pending/Failed, pero no concilia orígenes que deberían haber generado obligación |
-| BUG REAL | Application/Modules/Inventory/Costing/InventoryCostAccounting recorre Failed al procesar otros hechos de la factura |
+| RESUELTO | ACCOUNTING-CONTINUITY-05: InventoryCostAccounting, su evento y el retry masivo de costos retirados; costo de ventas en la obligación común |
 
 Cortes adoptados: Compra/Gasto + Retención (ACCOUNTING-CONTINUITY-01) y demás integraciones
-comerciales/financieras (ACCOUNTING-CONTINUITY-04). Siguientes cortes: convergencia de
-costos/apertura, integridad completa de cierre/reportes y manuales generales. ACCOUNTING-CONTINUITY-03 reemplaza el rollback por fallos posteriores
+comerciales/financieras (ACCOUNTING-CONTINUITY-04), costos/apertura/Disabled (ACCOUNTING-CONTINUITY-05).
+Siguientes cortes: integridad completa de cierre/reportes y manuales generales. ACCOUNTING-CONTINUITY-03 reemplaza el rollback por fallos posteriores
 al gate de período con una obligación durable en los consumidores migrados. Cada corte requiere
 reproducción, fix mínimo, tests focales y revisión de diff. No se autoriza un pipeline
 paralelo ni reabrir reglas operativas CLOSED por esta consolidación.
@@ -521,3 +517,56 @@ Sin backfill: no se crean obligaciones ni asientos para operaciones previas. El 
 cambios las devoluciones con asiento u obligación existente y, con `apply`, registra la obligación
 con el mismo hecho compuesto (fecha local de la autorización) y ejecuta su intento con el ejecutor
 común; el resto se resuelve con el reproceso manual de §17.
+
+## 20. Costos, apertura y Disabled ACCOUNTING-CONTINUITY-05
+
+**Costo de ventas.** Tres hechos con la identidad existente: reconocimiento (Sales/CostOfGoodsSold,
+factura, fecha de emisión, costo de los movimientos de la venta), cobertura de costo pendiente
+(asignación, fecha del movimiento que cubre) y devolución valorizada (movimiento, fecha de la
+devolución; factura sin valoración A2: obligación agregada por devolución, fecha Company). El signo
+fija CostOfGoodsSold/CostOfGoodsSoldReversed; importe cero no genera obligación. El Kardex publica el
+hecho (valoración operativa, independiente de Accounting); `AccountingPostingRecorder` registra la
+obligación en la transacción operativa y el intento corre después del commit. `SourceDocumentId` =
+factura agrupa sus obligaciones. Delta contable de una cobertura o de una devolución valorizada,
+resuelto en el intento: `costo objetivo reconocido − costo ya contabilizado`, donde el objetivo es el
+costo vigente de la factura redondeado tras la cobertura o la devolución (guardado en la obligación;
+`SaleCostObligation` es la autoridad de valoración y cantidad) y lo ya contabilizado es la suma con signo de
+los asientos de las obligaciones de costo Posted anteriores de la misma factura (Pending/Failed/Canceled
+no cuentan; la dependencia garantiza que todas las anteriores estén resueltas). El delta operativo solo
+fija el sentido del hecho: delta contable cero → Posted sin asiento (resolución de importe cero, sin
+reverso al anular); sentido contrario al hecho → Failed `COST_DELTA_SIGN_MISMATCH`.
+Costo objetivo, costo contabilizado, delta, comparación con cero y validación de signo usan
+`AccountingDecimals` de la política única de precisión ([data-standards.md](data-standards.md#estándar-de-precisión-numérica)).
+La aplicabilidad se ancla a la emisión de la factura (BusinessDate): venta nacida en Disabled → ni su
+costo ni sus coberturas/devoluciones generan obligación; venta sujeta → sus ajustes posteriores sí.
+`SaleCostObligation`/`SaleCostAllocation` son solo valoración. Un intento de costo con una obligación
+de costo anterior de la misma factura que no esté Posted/Canceled queda Failed
+`COST_DEPENDENCY_PENDING`; la anterior nunca se ejecuta implícitamente. Anular la factura aplica la
+anulación común a cada obligación de costo: Posted → reverso espejo con la fecha del acto;
+Pending/Failed → Canceled. El costo se consulta y reprocesa en Contabilizaciones (§17);
+`stock/costs/pending` solo informa incertidumbre operativa.
+
+Migración `AccountingContinuity05`: copia cada fila existente de `inventory_cost_postings` a la
+obligación común conservando identidad, estado, asiento y fechas (BusinessDate = emisión de la
+factura). Única excepción: filas con importe cero y sin asiento, en cualquier estado (Pending, Failed o
+Posted): no tienen efecto contable que preservar y una obligación de importe cero quedaría sin
+resolución posible; permanecen solo como evidencia legacy de solo lectura. Una fila con asiento se migra
+siempre. No crea obligaciones para hechos sin fila. La tabla legacy no recibe escrituras.
+
+**Apertura.** La decisión operativa se toma sobre `Company.OpeningBalanceDate`, bajo el lock
+compartido de política. Sujeta: se conservan OpeningBalancePosting/ASI y sus reglas especiales. No
+sujeta: no se publican asientos de lote ni ASI (`OPENING_ACCOUNTING_NOT_APPLICABLE`) y el cierre de la
+carga inicial exige solo fecha de apertura y ningún lote en curso. Sin modo elegido: fail-closed.
+El reverso/corrección del ASI toma el lock compartido y sigue permitido en Disabled. Un asiento de
+lote o ASI vigente Pending/Failed bloquea el cierre del período que contiene su fecha.
+
+**Disabled.** Toda versión nueva se valida bajo el lock exclusivo de política, que también toma
+`UpdateCompanyFiscal` (`IsAccountingReq` se lee dentro del lock). Enabled: desde hoy (fecha Company);
+una fecha pasada solo en la primera elección y solo si no existe ningún hecho contablemente relevante
+(venta, devolución de venta, compra, gasto, NC o devolución de compra, pago a proveedor, cobro/pago) con
+fecha igual o posterior; nunca se generan obligaciones históricas. Disabled:
+rechazado si la empresa es obligada, si la vigencia es anterior a hoy o no posterior a la última fecha
+contable de una obligación automática no cancelada, si existe alguna obligación Pending/Failed, si una
+venta sujeta conserva costo pendiente de resolver, o si la apertura sujeta no está cerrada y tiene lotes
+sin asiento Posted o ASI vigente no publicado. Los reversos de asientos de la era Enabled siguen
+generándose durante Disabled.

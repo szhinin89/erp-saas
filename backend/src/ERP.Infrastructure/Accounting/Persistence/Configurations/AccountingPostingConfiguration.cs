@@ -71,6 +71,8 @@ public sealed class AccountingPostingConfiguration : IEntityTypeConfiguration<Ac
             .HasColumnName("correlation_id")
             .HasMaxLength(AccountingPosting.CorrelationIdMaxLength);
 
+        builder.Property(x => x.SourceDocumentId).HasColumnName("source_document_id");
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
@@ -96,6 +98,10 @@ public sealed class AccountingPostingConfiguration : IEntityTypeConfiguration<Ac
                 x.EntryDate,
             })
             .HasDatabaseName("ix_accounting_postings_scope_status_entry_date");
+        builder
+            .HasIndex(x => new { x.TenantId, x.CompanyId, x.SourceDocumentId })
+            .HasDatabaseName("ix_accounting_postings_scope_source_document")
+            .HasFilter("source_document_id IS NOT NULL");
 
         builder
             .HasOne<JournalEntry>()

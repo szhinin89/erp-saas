@@ -63,6 +63,7 @@ public sealed partial class PostOpeningBalanceCommandHandler
     private readonly IOpeningBalancePostingRepository _postings;
     private readonly OpeningBalancePostingPreflight _preflight;
     private readonly IPostingEngine _postingEngine;
+    private readonly OpeningAccountingGate _accountingGate;
     private readonly ILogger<PostOpeningBalanceCommandHandler> _logger;
 
     public PostOpeningBalanceCommandHandler(
@@ -71,9 +72,11 @@ public sealed partial class PostOpeningBalanceCommandHandler
         IOpeningBalancePostingRepository postings,
         OpeningBalancePostingPreflight preflight,
         IPostingEngine postingEngine,
+        OpeningAccountingGate accountingGate,
         ILogger<PostOpeningBalanceCommandHandler> logger
     )
     {
+        _accountingGate = accountingGate;
         _ctx = ctx;
         _unitOfWork = unitOfWork;
         _postings = postings;
@@ -97,6 +100,14 @@ public sealed partial class PostOpeningBalanceCommandHandler
             {
                 await RollbackAsync();
                 return Result<OpeningBalancePostingDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
+            }
+            // ACCOUNTING-CONTINUITY-05 — política operativa sobre la fecha de apertura, bajo el lock
+            // compartido que serializa con el cierre de período y los cambios de modo.
+            await _accountingGate.AcquireSharedLockAsync(ct);
+            if (await _accountingGate.CheckPostableAsync(ct) is { } notPostable)
+            {
+                await RollbackAsync();
+                return Result<OpeningBalancePostingDto>.ValidationFailure(notPostable.Message, notPostable.Code);
             }
             var posting = await _postings.FindByBatchAsync(
                 _ctx.TenantId, _ctx.CompanyId, command.ImportBatchId, ct);

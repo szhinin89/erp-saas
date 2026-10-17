@@ -42,6 +42,12 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
     public Guid? JournalEntryId { get; private set; }
     public string? CorrelationId { get; private set; }
 
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — documento operativo que agrupa hechos dependientes (factura de
+    /// venta de las obligaciones de costo); null en los demás hechos.
+    /// </summary>
+    public Guid? SourceDocumentId { get; private set; }
+
     private AccountingPosting() { }
 
     public static AccountingPosting CreatePending(
@@ -56,7 +62,8 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
         int payloadVersion,
         string payload,
         Guid createdBy,
-        string? correlationId
+        string? correlationId,
+        Guid? sourceDocumentId = null
     )
     {
         if (tenantId == Guid.Empty)
@@ -89,6 +96,7 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
             Payload = payload,
             Status = AccountingPostingStatus.Pending,
             CorrelationId = Truncate(correlationId, CorrelationIdMaxLength),
+            SourceDocumentId = sourceDocumentId,
         };
         posting.SetCreated(createdBy);
         return posting;
@@ -121,6 +129,30 @@ public sealed class AccountingPosting : AuditableEntity, ITenantScopedEntity, IC
     }
 
     /// <summary>Resultado fallido de un intento: error durable, sin asiento.</summary>
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — resolución de importe cero expresamente justificada (§5): un ajuste de
+    /// costo cuyo objetivo ya está íntegramente contabilizado no tiene efecto que publicar. Queda Posted
+    /// sin asiento; su anulación no fabrica reverso.
+    /// </summary>
+    public AccountingPostingAttempt RecordPostedWithoutEntry(
+        AccountingPostingAttemptTrigger trigger,
+        Guid triggeredBy,
+        string? correlationId,
+        string? reason,
+        DateTime startedAtUtc,
+        DateTime finishedAtUtc
+    )
+    {
+        EnsureAttemptable();
+        var normalizedReason = NormalizeReason(trigger, reason);
+
+        Status = AccountingPostingStatus.Posted;
+        JournalEntryId = null;
+        ErrorCode = null;
+        ErrorMessage = null;
+        return RegisterAttempt(trigger, triggeredBy, correlationId, normalizedReason, startedAtUtc, finishedAtUtc, null, null);
+    }
+
     public AccountingPostingAttempt RecordFailed(
         string? errorCode,
         string? errorMessage,

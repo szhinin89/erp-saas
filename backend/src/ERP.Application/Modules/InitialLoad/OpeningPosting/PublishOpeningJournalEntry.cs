@@ -118,6 +118,7 @@ public sealed partial class PublishOpeningJournalEntryCommandHandler
     private readonly IJournalEntryRepository _journal;
     private readonly PostingPreflight _postingPreflight;
     private readonly IPostingEngine _postingEngine;
+    private readonly OpeningAccountingGate _accountingGate;
     private readonly ILogger<PublishOpeningJournalEntryCommandHandler> _logger;
 
     public PublishOpeningJournalEntryCommandHandler(
@@ -129,9 +130,11 @@ public sealed partial class PublishOpeningJournalEntryCommandHandler
         IJournalEntryRepository journal,
         PostingPreflight postingPreflight,
         IPostingEngine postingEngine,
+        OpeningAccountingGate accountingGate,
         ILogger<PublishOpeningJournalEntryCommandHandler> logger
     )
     {
+        _accountingGate = accountingGate;
         _ctx = ctx;
         _unitOfWork = unitOfWork;
         _postings = postings;
@@ -159,6 +162,13 @@ public sealed partial class PublishOpeningJournalEntryCommandHandler
             {
                 await RollbackAsync();
                 return Result<OpeningJournalEntryPostingDto>.ValidationFailure(closed, InitialLoadClosedGuard.Code);
+            }
+            // ACCOUNTING-CONTINUITY-05 — sin ASI si la fecha de apertura no está sujeta a Accounting.
+            await _accountingGate.AcquireSharedLockAsync(ct);
+            if (await _accountingGate.CheckPostableAsync(ct) is { } notPostable)
+            {
+                await RollbackAsync();
+                return Result<OpeningJournalEntryPostingDto>.ValidationFailure(notPostable.Message, notPostable.Code);
             }
             var posting = await _postings.FindCurrentAsync(tenantId, companyId, ct);
             if (posting?.Status == OpeningBalancePostingStatus.Posted)

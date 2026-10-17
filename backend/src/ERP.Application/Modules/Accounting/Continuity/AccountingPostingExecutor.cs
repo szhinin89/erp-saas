@@ -2,6 +2,7 @@ using ERP.Application.Audit;
 using ERP.Application.Modules.Accounting.UseCases.JournalEntries;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
+using ERP.Application.Modules.Companies;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -51,6 +52,8 @@ public sealed record AccountingPostingExecution(
 public sealed partial class AccountingPostingExecutor : IAccountingPostingDispatcher
 {
     public const string InternalErrorCode = "INTERNAL";
+    public const string CostDependencyPendingCode = "COST_DEPENDENCY_PENDING";
+    public const string CostDeltaSignMismatchCode = "COST_DELTA_SIGN_MISMATCH";
     public const string InternalErrorMessage = "Error interno del sistema al contabilizar.";
 
     private readonly JournalEntryReversal _reversal;
@@ -58,6 +61,7 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
     private readonly IAccountingOperationalPolicyRepository _policies;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAccountingPostingRepository _postings;
+    private readonly ICompanyPrecisionPolicyProvider _precision;
     private readonly AccountingPostingFactBuilder _factBuilder;
     private readonly IPostingEngine _engine;
     private readonly AccountingPostingDispatchQueue _queue;
@@ -80,9 +84,11 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
         ILogger<AccountingPostingExecutor> logger,
         JournalEntryReversal reversal,
         IJournalEntryRepository journal,
-        IAccountingOperationalPolicyRepository policies
+        IAccountingOperationalPolicyRepository policies,
+        ICompanyPrecisionPolicyProvider precision
     )
     {
+        _precision = precision;
         _unitOfWork = unitOfWork;
         _postings = postings;
         _factBuilder = factBuilder;
@@ -244,9 +250,33 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
                 ? posting.RecordPosted(result.Value!.Id, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow)
                 : posting.RecordFailed(result.Code, result.Error, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
         }
+        var predecessors = await CostPredecessorsAsync(posting, ct);
+        if (predecessors.LastOrDefault(p => !p.IsResolved) is { } blocking)
+            return posting.RecordFailed(CostDependencyPendingCode,
+                $"La contabilización previa del costo de la misma factura ({blocking.FactType}, {blocking.Status}) "
+                    + "debe publicarse antes que este ajuste.",
+                context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
+
         var fact = await _factBuilder.BuildAsync(posting, ct);
         if (!fact.IsSuccess)
             return posting.RecordFailed(fact.Code, fact.Error, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
+
+        // ACCOUNTING-CONTINUITY-05 — cobertura o devolución de costo: delta = costo objetivo − costo ya contabilizado
+        // (asientos de las obligaciones de costo Posted de la factura). Todas las anteriores están resueltas.
+        var costPayload = AccountingPostingPayload.Deserialize(posting.PayloadVersion, posting.Payload);
+        if (costPayload?.RecognizedCostTarget is { } target)
+        {
+            var decimals = (await _precision.GetEffectiveAsync(ct)).AccountingDecimals;
+            var delta = Math.Round(target - await PostedCostAsync(predecessors, ct), decimals, MidpointRounding.AwayFromZero);
+            if (delta == 0m)
+                return posting.RecordPostedWithoutEntry(context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
+            var increases = posting.FactType == Posting.Translators.SaleCostPostingRecorder.CostFactType;
+            if (delta > 0m != increases)
+                return posting.RecordFailed(CostDeltaSignMismatchCode,
+                    $"El costo ya contabilizado de la factura deja un ajuste de {delta:F2}, de sentido contrario a {posting.FactType}.",
+                    context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
+            fact = Result<PostingFact>.Success(fact.Value! with { HistoricalCostTotal = Math.Abs(delta) });
+        }
 
         // AlreadyProcessed también es éxito: el asiento de esta identidad ya existía (falló la
         // persistencia de un resultado previo) y se enlaza sin crear otro.
@@ -254,6 +284,37 @@ public sealed partial class AccountingPostingExecutor : IAccountingPostingDispat
         return outcome.IsSuccess
             ? posting.RecordPosted(outcome.Value!.JournalEntryId, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow)
             : posting.RecordFailed(outcome.Code, outcome.Error, context.Trigger, _user.UserId, context.CorrelationId, context.Reason, context.StartedAtUtc, DateTime.UtcNow);
+    }
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — obligaciones de costo anteriores de la misma factura (orden de creación).
+    /// Un ajuste no precede al reconocimiento que necesita: una anterior no resuelta bloquea el intento y
+    /// nunca se ejecuta desde aquí.
+    /// </summary>
+    private async Task<IReadOnlyList<AccountingPosting>> CostPredecessorsAsync(AccountingPosting posting, CancellationToken ct)
+    {
+        if (posting.SourceDocumentId is not { } documentId
+            || !Posting.Translators.SaleCostPostingRecorder.IsCostFact(posting.SourceModule, posting.FactType))
+            return [];
+        var siblings = await _postings.ListBySourceDocumentAsync(posting.TenantId, posting.CompanyId, documentId, ct);
+        return siblings
+            .Where(p => Posting.Translators.SaleCostPostingRecorder.IsCostFact(p.SourceModule, p.FactType))
+            .OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
+            .TakeWhile(p => p.Id != posting.Id)
+            .ToList();
+    }
+
+    /// <summary>Costo de ventas efectivamente contabilizado: asientos de las obligaciones Posted, con signo.</summary>
+    private async Task<decimal> PostedCostAsync(IReadOnlyList<AccountingPosting> predecessors, CancellationToken ct)
+    {
+        var total = 0m;
+        foreach (var posted in predecessors.Where(p => p.Status == AccountingPostingStatus.Posted && p.JournalEntryId.HasValue))
+        {
+            var entry = await _journal.GetByIdAsync(posted.TenantId, posted.CompanyId, posted.JournalEntryId!.Value, ct);
+            var amount = entry?.Lines.Sum(l => l.Debit) ?? 0m;
+            total += posted.FactType == Posting.Translators.SaleCostPostingRecorder.CostFactType ? amount : -amount;
+        }
+        return total;
     }
 
     private async Task<AccountingPostingExecution> RecordInternalFailureAsync(

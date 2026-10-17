@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Audit;
 using ERP.Application.Common.Services;
@@ -345,7 +346,8 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
             Mock.Of<IPostingEngine>(MockBehavior.Strict), new AccountingPostingDispatchQueue(),
             new FixedCurrentTenant(_tenantId), new FixedCurrentCompany(_companyId), new FixedCurrentUser(_createdBy),
             Mock.Of<IAuditContext>(), NullLogger<AccountingPostingExecutor>.Instance,
-            new JournalEntryReversal(journal, new AccountingPeriodRepository(db), sequences ?? new JournalEntrySequenceRepository(db), policies), journal, policies);
+            new JournalEntryReversal(journal, new AccountingPeriodRepository(db), sequences ?? new JournalEntrySequenceRepository(db), policies), journal, policies,
+            StandardPrecisionPolicyProvider.Instance);
     }
 
     private async Task WaitForBlockedLockAsync()

@@ -290,7 +290,11 @@ public sealed class StockRepository : IStockRepository
         // averageCostDecimals de la política de la empresa (con la columna ya ampliada a numeric(22,10)
         // ya no es la BD quien lo redondea). Fail-closed (05B1): el provider es obligatorio y lanza si
         // no hay contexto de empresa o política — nunca hay fallback silencioso a 6 decimales.
-        var averageCostDecimals = (await _precision.GetEffectiveAsync(ct)).AverageCostDecimals;
+        var precision = await _precision.GetEffectiveAsync(ct);
+        var averageCostDecimals = precision.AverageCostDecimals;
+        // ACCOUNTING-CONTINUITY-05: el costo de ventas reconocido usa la precisión contable de la
+        // empresa (SSOT de precisión), nunca una escala fija.
+        var accountingDecimals = precision.AccountingDecimals;
         var newRunningAverageCost =
             resultQty > 0m
                 ? Math.Round(
@@ -381,26 +385,27 @@ public sealed class StockRepository : IStockRepository
             {
                 var ledger = new InventoryCostLedger(_db);
                 await ledger.LockInvoiceAsync(r.TenantId, r.CompanyId, invoiceId, ct);
-                var postings = await ledger.GetInvoicePostingsAsync(r.TenantId, r.CompanyId, invoiceId, ct);
-                var priorRecognizedCost = postings.Where(p => p.Status != "Canceled")
-                    .Sum(p => p.FactType == "CostOfGoodsSold" ? p.Amount : -p.Amount);
+                // ACCOUNTING-CONTINUITY-05: el costo reconocido es operativo (valoración del Kardex),
+                // independiente de Accounting: costo vigente de la factura redondeado, antes y después.
+                var priorRecognizedCost = RoundRecognizedCost(
+                    await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, invoiceId, ct), accountingDecimals);
                 var allocation = original.Return(movement, r.Quantity);
                 _db.Set<SaleCostAllocation>().Add(allocation);
                 var remainingCost = await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, invoiceId, ct);
-                var returnedCost = priorRecognizedCost - Math.Round(remainingCost!.Value,
-                    InventoryCostPosting.AmountScale, MidpointRounding.AwayFromZero);
+                var returnedCost = priorRecognizedCost - RoundRecognizedCost(remainingCost, accountingDecimals);
                 if (returnedCost < 0m)
                     throw new ERP.Domain.Exceptions.DomainRuleViolationException("La devolución no tiene una base contable de costo consistente.");
                 totalCost = returnedCost == 0m && allocation.PreviousUnitCost is null
                     && allocation.ResolvedQuantity == 0m ? null : returnedCost;
                 newRunningStockValue = lastRunningValue + returnedCost;
-                // SALES-CANCEL-COLLECTION-CONCURRENCY-01: la anulación de la factura no notifica — su
-                // costo lo resuelve SalesInvoiceCancelledPostingTranslator (InventoryCostAccounting.CancelAsync
-                // cancela esta fila). Notificar postearía un asiento en la misma unidad de trabajo que
-                // CancelAsync intentaría reversar antes de persistirse ("Asiento contable no encontrado").
-                _db.Set<InventoryCostPosting>().Add(InventoryCostPosting.Create(r.TenantId, r.CompanyId,
-                    invoiceId, movement.Id, -returnedCost, r.EffectiveDate, "Return", r.ActorId,
-                    notify: r.SourceDocType == "SalesReturn"));
+                // Solo la devolución de venta es un hecho de costo nuevo. La anulación de la factura no
+                // publica delta: su costo contable se resuelve con el reverso espejo de lo publicado y la
+                // cancelación de lo pendiente (SalesInvoiceCancelledPostingTranslator).
+                // El importe contable se resuelve al contabilizar: nuevo costo objetivo tras la
+                // devolución − costo ya contabilizado (Posted) de la factura.
+                if (r.SourceDocType == "SalesReturn")
+                    allocation.RecognizeCost(movement.Id, -returnedCost, r.EffectiveDate,
+                        RoundRecognizedCost(remainingCost, accountingDecimals));
                 // Resolved returned units are a real-cost entry. They can cover another still-live
                 // sale deficit, without reopening the returned original units or changing historical rows.
                 if (allocation.ActualUnitCost.HasValue && allocation.ResolvedQuantity > 0m)
@@ -412,14 +417,14 @@ public sealed class StockRepository : IStockRepository
                         : allocation.ActualUnitCost.Value;
                     basis = returnedUnitCost;
                     newRunningStockValue -= await CoverPendingCostsAsync(r, movement,
-                        allocation.ResolvedQuantity, returnedUnitCost, ct);
+                        allocation.ResolvedQuantity, returnedUnitCost, accountingDecimals, ct);
                 }
             }
             // Legacy sales have no A2 obligations: their existing return behavior is preserved.
         }
         else if (r.Quantity > 0m && r.UnitCost.HasValue)
         {
-            newRunningStockValue -= await CoverPendingCostsAsync(r, movement, r.Quantity, r.UnitCost.Value, ct);
+            newRunningStockValue -= await CoverPendingCostsAsync(r, movement, r.Quantity, r.UnitCost.Value, accountingDecimals, ct);
         }
         var outstanding = (await GetCostObligationsAsync(r, ct)).Where(o => o.PendingQuantity > 0m).ToList();
         pendingCost = basis is null || outstanding.Count > 0;
@@ -498,7 +503,7 @@ public sealed class StockRepository : IStockRepository
     }
 
     private async Task<decimal> CoverPendingCostsAsync(PendingMovement r, StockMovement movement,
-        decimal quantity, decimal actualCost, CancellationToken ct)
+        decimal quantity, decimal actualCost, int accountingDecimals, CancellationToken ct)
     {
         var adjustment = 0m;
         var obligations = await GetCostObligationsAsync(r, ct);
@@ -507,6 +512,8 @@ public sealed class StockRepository : IStockRepository
             if (quantity <= 0m) break;
             var ledger = new InventoryCostLedger(_db);
             await ledger.LockInvoiceAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
+            var previousCost = RoundRecognizedCost(
+                await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct), accountingDecimals);
             var covered = Math.Min(quantity, obligation.PendingQuantity);
             var allocation = obligation.Cover(movement, covered, actualCost);
             _db.Set<SaleCostAllocation>().Add(allocation);
@@ -514,18 +521,18 @@ public sealed class StockRepository : IStockRepository
             if (allocation.CogsAdjustment != 0m)
             {
                 var costTarget = await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
-                var postings = await ledger.GetInvoicePostingsAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
-                var previousCost = postings.Where(p => p.Status != "Canceled")
-                    .Sum(p => p.FactType == "CostOfGoodsSold" ? p.Amount : -p.Amount);
-                var delta = Math.Round(costTarget!.Value, InventoryCostPosting.AmountScale, MidpointRounding.AwayFromZero) - previousCost;
-                _db.Set<InventoryCostPosting>().Add(InventoryCostPosting.Create(r.TenantId, r.CompanyId,
-                    obligation.InvoiceId, allocation.Id, delta, r.EffectiveDate,
-                    "Coverage", r.ActorId, notify: true));
+                // El delta operativo solo fija el sentido del hecho; el importe contable se resuelve al
+                // contabilizar: costo objetivo − costo ya contabilizado (Posted) de la factura.
+                var target = RoundRecognizedCost(costTarget, accountingDecimals);
+                allocation.RecognizeCost(allocation.Id, target - previousCost, r.EffectiveDate, target);
             }
             quantity -= covered;
         }
         return adjustment;
     }
+
+    private static decimal RoundRecognizedCost(decimal? cost, int accountingDecimals) =>
+        Math.Round(cost ?? 0m, accountingDecimals, MidpointRounding.AwayFromZero);
 
     private bool IsSequenceConflict(Exception ex)
     {
@@ -546,8 +553,6 @@ public sealed class StockRepository : IStockRepository
                 entry.State = EntityState.Detached;
 
         foreach (var entry in _db.ChangeTracker.Entries<SaleCostAllocation>().ToList())
-            if (entry.State == EntityState.Added) entry.State = EntityState.Detached;
-        foreach (var entry in _db.ChangeTracker.Entries<InventoryCostPosting>().ToList())
             if (entry.State == EntityState.Added) entry.State = EntityState.Detached;
         foreach (var entry in _db.ChangeTracker.Entries<SaleCostObligation>().ToList())
             if (entry.State == EntityState.Added) entry.State = EntityState.Detached;

@@ -1,3 +1,5 @@
+using ERP.Domain.Modules.InitialLoad.Entities;
+using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -132,24 +134,90 @@ public sealed class AccountingPostingRepository : IAccountingPostingRepository
             .OrderBy(x => x.AttemptNumber)
             .ToListAsync(ct);
 
-    public Task<bool> HasUnresolvedInRangeAsync(
+    /// <remarks>
+    /// ACCOUNTING-CONTINUITY-05 — incluye las obligaciones propias de la apertura (asiento de lote y
+    /// ASI vigente) Pending/Failed: solo existen cuando la fecha de apertura está sujeta a Accounting.
+    /// </remarks>
+    public async Task<bool> HasUnresolvedInRangeAsync(
         Guid tenantId,
         Guid companyId,
         DateOnly from,
         DateOnly to,
         CancellationToken ct = default
-    ) =>
-        Scoped(tenantId, companyId)
+    )
+    {
+        if (
+            await Scoped(tenantId, companyId)
+                .AnyAsync(
+                    x =>
+                        (
+                            x.Status == AccountingPostingStatus.Pending
+                            || x.Status == AccountingPostingStatus.Failed
+                        )
+                        && x.EntryDate >= from
+                        && x.EntryDate <= to,
+                    ct
+                )
+        )
+            return true;
+
+        if (
+            await _context
+                .Set<OpeningBalancePosting>()
+                .AnyAsync(
+                    x =>
+                        x.TenantId == tenantId
+                        && x.CompanyId == companyId
+                        && x.Status != OpeningBalancePostingStatus.Posted
+                        && x.EntryDate >= from
+                        && x.EntryDate <= to,
+                    ct
+                )
+        )
+            return true;
+
+        return await _context
+            .Set<OpeningJournalEntryPosting>()
             .AnyAsync(
                 x =>
-                    (
-                        x.Status == AccountingPostingStatus.Pending
-                        || x.Status == AccountingPostingStatus.Failed
-                    )
+                    x.TenantId == tenantId
+                    && x.CompanyId == companyId
+                    && x.IsCurrent
+                    && x.Status != OpeningBalancePostingStatus.Posted
                     && x.EntryDate >= from
                     && x.EntryDate <= to,
                 ct
             );
+    }
+
+    public async Task<IReadOnlyList<AccountingPosting>> ListBySourceDocumentAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid sourceDocumentId,
+        CancellationToken ct = default
+    ) =>
+        await Scoped(tenantId, companyId)
+            .Where(x => x.SourceDocumentId == sourceDocumentId)
+            .ToListAsync(ct);
+
+    public Task<bool> HasUnresolvedAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
+        Scoped(tenantId, companyId)
+            .AnyAsync(
+                x => x.Status == AccountingPostingStatus.Pending || x.Status == AccountingPostingStatus.Failed,
+                ct
+            );
+
+    public async Task<DateOnly?> GetLatestAutomaticEntryDateAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct = default
+    ) =>
+        await Scoped(tenantId, companyId)
+            .Where(x =>
+                x.Status != AccountingPostingStatus.Canceled
+                && !(x.SourceModule == "Accounting" && x.FactType == "Reversal")
+            )
+            .MaxAsync(x => (DateOnly?)x.EntryDate, ct);
 
     public async Task AddAsync(AccountingPosting posting, CancellationToken ct = default) =>
         await _context.AccountingPostings.AddAsync(posting, ct);

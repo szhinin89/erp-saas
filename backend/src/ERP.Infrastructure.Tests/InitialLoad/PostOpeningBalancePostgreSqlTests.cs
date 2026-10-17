@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Behaviors;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -104,6 +105,7 @@ public sealed class PostOpeningBalancePostgreSqlTests : IClassFixture<InitialLoa
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped<PostingPreflight>();
         services.AddScoped<OpeningBalancePostingPreflight>();
+        services.AddOpeningAccountingGate();
         _services = services.BuildServiceProvider();
     }
 
@@ -146,6 +148,7 @@ public sealed class PostOpeningBalancePostgreSqlTests : IClassFixture<InitialLoa
         // Plan de cuentas, período 2026 abierto y reglas (incluidas InitialLoad/*) por el bootstrap real.
         await new AccountingBootstrapStep(db, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance)
             .ExecuteAsync(new CompanyBootstrapContext(_tenant, _company, _user));
+        await OpeningAccountingTestSupport.SeedModeAsync(db, _tenant, _company, _user);
     }
 
     public async Task DisposeAsync() => await _services.DisposeAsync();

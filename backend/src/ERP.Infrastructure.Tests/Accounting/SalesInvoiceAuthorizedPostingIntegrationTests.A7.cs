@@ -205,9 +205,11 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
                 .SingleAsync(r => r.InvoiceId == invoice.Id);
             receivable.OriginalAmount.Should().Be(12m);
             receivable.Installments.Should().ContainSingle().Which.Amount.Should().Be(12m);
-            var postings = await verify.Set<InventoryCostPosting>().Where(p => p.InvoiceId == invoice.Id).ToListAsync();
+            var postings = await verify.AccountingPostings.Where(p => p.SourceDocumentId == invoice.Id).ToListAsync();
             var posting = postings.Should().ContainSingle().Subject;
-            posting.Status.Should().Be("Posted"); posting.Amount.Should().Be(4m);
+            posting.FactType.Should().Be("CostOfGoodsSold");
+            posting.Status.Should().Be(AccountingPostingStatus.Posted);
+            posting.Payload.Should().Contain("\"historicalCostTotal\":4");
             var entries = await verify.JournalEntries.Include(e => e.Lines).Where(e => e.SourceEventId == invoice.Id).ToListAsync();
             entries.Select(e => e.SourceEventType).Should().BeEquivalentTo(new[] { "InvoiceIssued", "CostOfGoodsSold" });
             entries.Should().OnlyContain(e => e.Status == JournalEntryStatus.Posted);
@@ -244,8 +246,6 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped<ERP.Application.Common.Persistence.IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
         services.AddScoped<IStockRepository, StockRepository>();
-        services.AddScoped<IInventoryCostLedger, InventoryCostLedger>();
-        services.AddScoped<InventoryCostAccounting>();
         services.AddAccountingContinuity();
         services.AddMediatR(c => c.RegisterServicesFromAssembly(typeof(AuthorizeSalesInvoiceHandler).Assembly));
         var provider = services.BuildServiceProvider();

@@ -124,7 +124,8 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             new ERP.Application.Modules.Accounting.UseCases.JournalEntries.JournalEntryReversal(
                 new JournalEntryRepository(db), new AccountingPeriodRepository(db),
                 new JournalEntrySequenceRepository(db), new AccountingOperationalPolicyRepository(db)),
-            new JournalEntryRepository(db), new AccountingOperationalPolicyRepository(db)
+            new JournalEntryRepository(db), new AccountingOperationalPolicyRepository(db),
+            StandardPrecisionPolicyProvider.Instance
         );
     }
 
@@ -343,6 +344,16 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
                 new CompanyRepository(db),
                 new CompanyClock(db)
             ),
+            new AccountingModeChangePreconditions(
+                new AccountingPostingRepository(db),
+                new ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryCostLedger(db),
+                new ERP.Infrastructure.InitialLoad.OpeningBalanceConstraintsReader(db, new TestCompany(companyId)),
+                new ERP.Infrastructure.Persistence.Repositories.InitialLoad.ImportBatchRepository(db),
+                new ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningBalancePostingRepository(db),
+                new ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningJournalEntryPostingRepository(db),
+                new AccountingRelevantFactsReader(db)
+            ),
+            new CompanyClock(db),
             new UnitOfWork(db),
             new TestTenant(_tenantId),
             new TestCompany(companyId),
@@ -373,17 +384,275 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         (await db.AccountingOperationalPolicies.CountAsync(p => p.CompanyId == _companyId)).Should().Be(1);
     }
 
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — Disabled solo procede sin obligaciones sin resolver y sin
+    /// retroactividad; resuelta la pendiente, la versión Disabled se registra.
+    /// </summary>
     [Fact]
-    public async Task Disabled_no_esta_disponible_mientras_existan_integraciones_sin_converger()
+    public async Task C05_Disabled_se_bloquea_por_pendientes_y_retroactividad_y_procede_al_resolverlas()
+    {
+        var pending = await SeedPendingAsync(_companyId);
+        DateOnly today;
+        await using (var db = CreateContext())
+            today = await new CompanyClock(db).TodayAsync(_companyId, _tenantId, CancellationToken.None);
+
+        await using (var db = CreateContext())
+        {
+            var retro = await SetModeHandler(db, _companyId).Handle(
+                new SetAccountingOperationalModeCommand(AccountingOperationalMode.Disabled, today.AddDays(-1), null),
+                CancellationToken.None);
+            retro.IsSuccess.Should().BeFalse();
+            retro.Error.Should().Contain("retroactiva");
+
+            var blocked = await SetModeHandler(db, _companyId).Handle(
+                new SetAccountingOperationalModeCommand(AccountingOperationalMode.Disabled, today, null),
+                CancellationToken.None);
+            blocked.IsSuccess.Should().BeFalse();
+            blocked.Error.Should().Contain("pendientes o fallidas");
+        }
+
+        await using (var db = CreateContext())
+        {
+            (await db.AccountingPostings.SingleAsync(p => p.Id == pending.Id)).Cancel(_userId);
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = CreateContext())
+        {
+            var ok = await SetModeHandler(db, _companyId).Handle(
+                new SetAccountingOperationalModeCommand(AccountingOperationalMode.Disabled, today, "Sin uso contable"),
+                CancellationToken.None);
+            ok.IsSuccess.Should().BeTrue(ok.Error);
+            ok.Value!.CurrentMode.Should().Be(AccountingOperationalMode.Disabled);
+        }
+
+        await using var verify = CreateContext();
+        var decision = new AccountingOperationalDecision(new AccountingOperationalPolicyRepository(verify));
+        (await decision.ResolveAsync(_tenantId, _companyId, today, CancellationToken.None))
+            .Should().Be(AccountingApplicability.NotApplicable, "hechos desde la vigencia Disabled no generan obligaciones");
+        (await decision.ResolveAsync(_tenantId, _companyId, today.AddDays(-1), CancellationToken.None))
+            .Should().Be(AccountingApplicability.Applicable, "la vigencia previa no cambia retroactivamente");
+    }
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — una cobertura de costo cuyo reconocimiento original sigue Failed
+    /// queda Failed COST_DEPENDENCY_PENDING; el original no se reintenta implícitamente.
+    /// </summary>
+    [Fact]
+    public async Task C05_cobertura_con_costo_original_Failed_no_lo_reintenta_y_queda_Failed_por_dependencia()
+    {
+        var invoiceId = Guid.NewGuid();
+        AccountingPosting Cost(Guid sourceId, string factType) => AccountingPosting.CreatePending(
+            _tenantId, _companyId, "Sales", factType, sourceId, "001-001-000000009", EntryDate, EntryDate,
+            AccountingPostingPayload.CurrentVersion,
+            new AccountingPostingPayload(0m, 0m, 0m, 0m, 0m, HistoricalCostTotal: 6m).Serialize(),
+            _userId, "seed", invoiceId);
+        var original = Cost(invoiceId, "CostOfGoodsSold");
+        await using (var db = CreateContext())
+        {
+            db.AccountingPostings.Add(original);
+            await db.SaveChangesAsync();
+        }
+        await using (var db = CreateContext())
+        {
+            // Sin regla Sales/CostOfGoodsSold: el intento inicial falla y queda durable.
+            var first = await Executor(db, _companyId)
+                .RunAsync(original.Id, AccountingPostingAttemptTrigger.Initial, null, null, CancellationToken.None);
+            first.Posting!.Status.Should().Be(AccountingPostingStatus.Failed);
+        }
+
+        var coverage = Cost(Guid.NewGuid(), "CostOfGoodsSold");
+        await using (var db = CreateContext())
+        {
+            db.AccountingPostings.Add(coverage);
+            await db.SaveChangesAsync();
+        }
+        await using (var db = CreateContext())
+        {
+            var attempt = await Executor(db, _companyId)
+                .RunAsync(coverage.Id, AccountingPostingAttemptTrigger.Initial, null, null, CancellationToken.None);
+            attempt.Posting!.Status.Should().Be(AccountingPostingStatus.Failed);
+            attempt.Posting.ErrorCode.Should().Be(AccountingPostingExecutor.CostDependencyPendingCode);
+        }
+
+        await using var verify = CreateContext();
+        var storedOriginal = await verify.AccountingPostings.SingleAsync(p => p.Id == original.Id);
+        storedOriginal.Status.Should().Be(AccountingPostingStatus.Failed);
+        storedOriginal.Attempts.Should().Be(1, "la cobertura no reintenta el reconocimiento original");
+        (await verify.JournalEntries.CountAsync(e => e.SourceEventId == invoiceId || e.SourceEventId == coverage.SourceEventId))
+            .Should().Be(0);
+    }
+
+    // ── ACCOUNTING-CONTINUITY-05 corrección final: delta de costo y Enabled retroactivo ──────────
+
+    private async Task<Guid> SeedCostRulesAndPeriodAsync()
     {
         await using var db = CreateContext();
-        var result = await SetModeHandler(db, _companyId).Handle(
-            new SetAccountingOperationalModeCommand(AccountingOperationalMode.Disabled, new DateOnly(2027, 1, 1), null),
-            CancellationToken.None
-        );
+        var cost = Account.Create(_tenantId, _companyId, AccountCode.Create($"5.9.{Guid.NewGuid():N}"[..8]),
+            "Costo de ventas", null, AccountType.Expense, AccountNature.Debit, allowsPosting: true, createdBy: _userId);
+        var inventory = Account.Create(_tenantId, _companyId, AccountCode.Create($"1.9.{Guid.NewGuid():N}"[..8]),
+            "Inventario", null, AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _userId);
+        var sold = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSold", null, null, null, _userId);
+        sold.AddLine(cost.Id, AccountNature.Debit, PostingAmountKind.HistoricalCost);
+        sold.AddLine(inventory.Id, AccountNature.Credit, PostingAmountKind.HistoricalCost);
+        var reversed = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSoldReversed", null, null, null, _userId);
+        reversed.AddLine(inventory.Id, AccountNature.Debit, PostingAmountKind.HistoricalCost);
+        reversed.AddLine(cost.Id, AccountNature.Credit, PostingAmountKind.HistoricalCost);
+        db.Accounts.AddRange(cost, inventory);
+        db.PostingRules.AddRange(sold, reversed);
+        db.AccountingPeriods.Add(AccountingPeriod.Create(_tenantId, _companyId, 2026, 7,
+            new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31), _userId));
+        await db.SaveChangesAsync();
+        return cost.Id;
+    }
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("aún no está disponible");
+    /// <summary>Crea y ejecuta (intento inicial) una obligación de costo de la factura.</summary>
+    private async Task<AccountingPostingDto> CostAttemptAsync(Guid invoiceId, Guid sourceId, decimal operationalAmount,
+        decimal? target = null)
+    {
+        var posting = AccountingPosting.CreatePending(_tenantId, _companyId, "Sales",
+            operationalAmount < 0m ? "CostOfGoodsSoldReversed" : "CostOfGoodsSold", sourceId, "001-001-000000010",
+            EntryDate, EntryDate, AccountingPostingPayload.CurrentVersion,
+            new AccountingPostingPayload(0m, 0m, 0m, 0m, 0m, HistoricalCostTotal: Math.Abs(operationalAmount),
+                RecognizedCostTarget: target).Serialize(),
+            _userId, "seed", invoiceId);
+        await using (var db = CreateContext())
+        {
+            db.AccountingPostings.Add(posting);
+            await db.SaveChangesAsync();
+        }
+        await using var run = CreateContext();
+        var attempt = await Executor(run, _companyId)
+            .RunAsync(posting.Id, AccountingPostingAttemptTrigger.Initial, null, null, CancellationToken.None);
+        return attempt.Posting!;
+    }
+
+    private async Task<decimal> CostOfSalesBalanceAsync(Guid costAccount)
+    {
+        await using var db = CreateContext();
+        return (await db.JournalEntries.Include(e => e.Lines).ToListAsync())
+            .SelectMany(e => e.Lines).Where(l => l.AccountId == costAccount).Sum(l => l.Debit - l.Credit);
+    }
+
+    private async Task<decimal> EntryDebitAsync(Guid entryId)
+    {
+        await using var db = CreateContext();
+        return (await db.JournalEntries.Include(e => e.Lines).SingleAsync(e => e.Id == entryId)).Lines.Sum(l => l.Debit);
+    }
+
+    /// <summary>
+    /// A — el costo contabilizado (5) difiere del operativo previo (6): con objetivo 9 la cobertura
+    /// contabiliza exactamente la diferencia restante 9 − 5 = 4, no el delta operativo 3.
+    /// </summary>
+    [Fact]
+    public async Task C05_cobertura_contabiliza_objetivo_menos_costo_Posted_cuando_el_historico_difiere()
+    {
+        var costAccount = await SeedCostRulesAndPeriodAsync();
+        var invoiceId = Guid.NewGuid();
+        (await CostAttemptAsync(invoiceId, invoiceId, 5m)).Status.Should().Be(AccountingPostingStatus.Posted);
+
+        var coverage = await CostAttemptAsync(invoiceId, Guid.NewGuid(), operationalAmount: 3m, target: 9m);
+
+        coverage.Status.Should().Be(AccountingPostingStatus.Posted, coverage.ErrorMessage);
+        (await EntryDebitAsync(coverage.JournalEntryId!.Value)).Should().Be(4m);
+        (await CostOfSalesBalanceAsync(costAccount)).Should().Be(9m);
+    }
+
+    /// <summary>
+    /// B — varias coberturas Posted: cada ajuste usa la suma ya contabilizada (sin duplicar) y un
+    /// objetivo ya alcanzado se resuelve sin asiento.
+    /// </summary>
+    [Fact]
+    public async Task C05_coberturas_sucesivas_usan_la_suma_contabilizada_sin_duplicar()
+    {
+        var costAccount = await SeedCostRulesAndPeriodAsync();
+        var invoiceId = Guid.NewGuid();
+        await CostAttemptAsync(invoiceId, invoiceId, 6m);
+
+        var first = await CostAttemptAsync(invoiceId, Guid.NewGuid(), 2m, target: 8m);
+        var second = await CostAttemptAsync(invoiceId, Guid.NewGuid(), 3m, target: 11m);
+        var reached = await CostAttemptAsync(invoiceId, Guid.NewGuid(), 1m, target: 11m);
+
+        (await EntryDebitAsync(first.JournalEntryId!.Value)).Should().Be(2m);
+        (await EntryDebitAsync(second.JournalEntryId!.Value)).Should().Be(3m);
+        reached.Status.Should().Be(AccountingPostingStatus.Posted);
+        reached.JournalEntryId.Should().BeNull("el objetivo ya estaba contabilizado: importe cero sin asiento");
+        (await CostOfSalesBalanceAsync(costAccount)).Should().Be(11m);
+    }
+
+    /// <summary>
+    /// Return A — el costo contabilizado (5) difiere del operativo previo (6): una devolución que deja el
+    /// costo objetivo en 4 contabiliza exactamente 5 − 4 = 1 (no el delta operativo 2).
+    /// </summary>
+    [Fact]
+    public async Task C05_devolucion_contabiliza_hasta_el_nuevo_objetivo_cuando_el_historico_difiere()
+    {
+        var costAccount = await SeedCostRulesAndPeriodAsync();
+        var invoiceId = Guid.NewGuid();
+        await CostAttemptAsync(invoiceId, invoiceId, 5m);
+
+        var returned = await CostAttemptAsync(invoiceId, Guid.NewGuid(), operationalAmount: -2m, target: 4m);
+
+        returned.Status.Should().Be(AccountingPostingStatus.Posted, returned.ErrorMessage);
+        returned.FactType.Should().Be("CostOfGoodsSoldReversed");
+        (await EntryDebitAsync(returned.JournalEntryId!.Value)).Should().Be(1m);
+        (await CostOfSalesBalanceAsync(costAccount)).Should().Be(4m);
+    }
+
+    /// <summary>
+    /// Return B — tras varias coberturas Posted (6 → 8 → 11), la devolución al objetivo 7 usa la suma
+    /// realmente contabilizada: reversa 4, ni duplica ni sobre-reversa el delta operativo 5.
+    /// </summary>
+    [Fact]
+    public async Task C05_devolucion_tras_coberturas_usa_la_suma_contabilizada_sin_sobre_reversar()
+    {
+        var costAccount = await SeedCostRulesAndPeriodAsync();
+        var invoiceId = Guid.NewGuid();
+        await CostAttemptAsync(invoiceId, invoiceId, 6m);
+        await CostAttemptAsync(invoiceId, Guid.NewGuid(), 2m, target: 8m);
+        await CostAttemptAsync(invoiceId, Guid.NewGuid(), 3m, target: 11m);
+
+        var returned = await CostAttemptAsync(invoiceId, Guid.NewGuid(), operationalAmount: -5m, target: 7m);
+
+        returned.Status.Should().Be(AccountingPostingStatus.Posted, returned.ErrorMessage);
+        (await EntryDebitAsync(returned.JournalEntryId!.Value)).Should().Be(4m);
+        (await CostOfSalesBalanceAsync(costAccount)).Should().Be(7m);
+    }
+
+    /// <summary>
+    /// D — primera elección de modo con vigencia Enabled pasada: rechazada si ya existe una operación
+    /// contablemente relevante desde esa fecha; no se crean versiones ni obligaciones históricas.
+    /// </summary>
+    [Fact]
+    public async Task C05_primera_eleccion_Enabled_retroactiva_con_operacion_existente_se_rechaza()
+    {
+        var effectiveFrom = new DateOnly(2026, 8, 1);
+        await using (var db = CreateContext(_tenantId, _otherCompanyId))
+        {
+            var partner = ERP.Domain.MasterData.Entities.BusinessPartner.Create(
+                _tenantId, "04", "1790016919001", null, "Cliente C05", _userId);
+            db.BusinessPartners.Add(partner);
+            await db.SaveChangesAsync();
+            var payment = ERP.Domain.Modules.Finance.Entities.Payment.Create(_tenantId, _otherCompanyId,
+                ERP.Domain.Modules.Finance.Enums.PaymentDirection.Collection, partner.Id, 10m,
+                effectiveFrom.AddDays(5), null, "C05", _userId);
+            db.Payments.Add(payment);
+            db.Entry(payment).Property(x => x.Status).CurrentValue = ERP.Domain.Modules.Finance.Enums.PaymentStatus.Applied;
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = CreateContext(_tenantId, _otherCompanyId))
+        {
+            var result = await SetModeHandler(db, _otherCompanyId).Handle(
+                new SetAccountingOperationalModeCommand(AccountingOperationalMode.Enabled, effectiveFrom, null),
+                CancellationToken.None);
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().Contain("retroactivamente");
+        }
+
+        await using var verify = CreateContext(_tenantId, _otherCompanyId);
+        (await verify.AccountingOperationalPolicies.AnyAsync(p => p.CompanyId == _otherCompanyId)).Should().BeFalse();
+        (await verify.AccountingPostings.AnyAsync(p => p.CompanyId == _otherCompanyId)).Should().BeFalse();
     }
 
     [Fact]
@@ -438,7 +707,8 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             new CompanyRepository(db),
             Mock.Of<ICurrentUser>(u => u.UserId == _userId),
             new AccountingOperationalPolicyRepository(db),
-            new CompanyClock(db)
+            new CompanyClock(db),
+            new UnitOfWork(db)
         );
     }
 

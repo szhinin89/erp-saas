@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.Posting;
@@ -127,6 +128,7 @@ public sealed class OpeningBalanceReconciliationTests
                 new AccountRepository(db), NullLogger<PostingEngine>.Instance));
         var handler = new PostOpeningBalanceCommandHandler(ctx.Object, new UnitOfWork(db),
             new OpeningBalancePostingRepository(db), preflight, _engine.Object,
+            OpeningAccountingTestSupport.Gate(db, ctx.Object, _companyId),
             NullLogger<PostOpeningBalanceCommandHandler>.Instance);
         return await handler.Handle(new PostOpeningBalanceCommand(batchId), CancellationToken.None);
     }
@@ -177,6 +179,7 @@ public sealed class OpeningBalanceReconciliationTests
         await using var seed = Db();
         await new AccountingBootstrapStep(seed, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance)
             .ExecuteAsync(new CompanyBootstrapContext(_tenant, _companyId, _actor));
+        await OpeningAccountingTestSupport.SeedModeAsync(seed, _tenant, _companyId, _actor);
     }
 
     private ImportBatch CompletedBatch(ImportType type, int rows)

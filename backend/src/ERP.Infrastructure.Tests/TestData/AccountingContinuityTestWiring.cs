@@ -62,6 +62,16 @@ public static class AccountingContinuityTestWiring
         services.AddScoped<ERP.Application.Modules.Accounting.UseCases.JournalEntries.JournalEntryReversal>();
         services.AddScoped<AccountingReversalRecorder>();
         services.AddScoped<IAccountingReversalRecorder>(sp => sp.GetRequiredService<AccountingReversalRecorder>());
+        // ACCOUNTING-CONTINUITY-05 — obligaciones de costo de ventas ancladas a la factura.
+        services.TryAddScoped<ERP.Domain.Modules.Sales.Interfaces.ISalesInvoiceRepository>(sp =>
+            new ERP.Infrastructure.Persistence.Repositories.Sales.SalesInvoiceRepository(
+                sp.GetRequiredService<ErpDbContext>(), sp.GetRequiredService<ICurrentCompany>()));
+        services.TryAddScoped<ERP.Domain.Modules.Inventory.Interfaces.IInventoryCostLedger>(sp =>
+            new ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryCostLedger(sp.GetRequiredService<ErpDbContext>()));
+        services.AddScoped<ERP.Application.Modules.Accounting.Posting.Translators.SaleCostPostingRecorder>();
+        // Precisión contable de la empresa (SSOT); los hosts que ya registran su proveedor lo conservan.
+        services.TryAddSingleton<ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider>(
+            StandardPrecisionPolicyProvider.Instance);
 
         return services;
     }

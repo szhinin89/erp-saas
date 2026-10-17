@@ -95,8 +95,8 @@ public sealed record AccountingOperationalPolicyVersionDto(
 /// <param name="IsConfigured">La Company ya eligió explícitamente su modo operativo.</param>
 /// <param name="CurrentMode">Modo vigente hoy (fecha de la empresa); null si ninguna versión cubre hoy.</param>
 /// <param name="DisabledAvailable">
-/// Disabled aún no puede seleccionarse: hay integraciones automáticas fuera de
-/// ACCOUNTING-CONTINUITY-01 que no convergieron a la obligación durable.
+/// Disabled puede seleccionarse (la empresa no está obligada a llevar contabilidad). Sus
+/// precondiciones de pendientes y vigencia se validan al registrar la versión (ACCOUNTING-CONTINUITY-05).
 /// </param>
 public sealed record AccountingOperationalPolicyDto(
     bool IsAccountingRequired,

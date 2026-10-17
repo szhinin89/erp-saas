@@ -1,0 +1,108 @@
+{
+  "$schemaNote": "Reglas B-PREC. SSOT única: docs/architecture/data-standards.md § Estándar de Precisión Numérica. Checks Node: tools/architecture/README.md. `excludeGlobs` solo para código sin valores de negocio (migraciones, binarios, métricas técnicas de caché). `exceptions` = deuda auditada existente o uso técnico justificado (archivo + regla + conteo exacto + reason); nunca wildcard. Superar el conteo → violación; quedar por debajo → aviso para bajar la excepción. Baseline inicial: BACKEND-PRECISION-GUARD 2026-10-17.",
+  "scanGlobs": [
+    "backend/src/ERP.Domain/**/*.cs",
+    "backend/src/ERP.Application/**/*.cs",
+    "backend/src/ERP.Infrastructure/**/*.cs",
+    "backend/src/ERP.API/**/*.cs"
+  ],
+  "excludeGlobs": [
+    "backend/src/**/Migrations/**",
+    "backend/src/**/bin/**",
+    "backend/src/**/obj/**",
+    "backend/src/ERP.Infrastructure/Caching/**",
+    "backend/src/ERP.Infrastructure/Access/Caching/**"
+  ],
+  "exceptions": [
+    {
+      "file": "backend/src/ERP.Application/Modules/Inventory/ItemMatching/Services/ItemMatchFinder.cs",
+      "rule": "B-PREC-literal-round",
+      "count": 1,
+      "reason": "Puntaje de similitud de coincidencia de ítems (0–100): métrica técnica de búsqueda, no valor de negocio."
+    },
+    {
+      "file": "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/XmlParsing/PurchaseCreditNoteXmlParser.cs",
+      "rule": "B-PREC-literal-round",
+      "count": 1,
+      "reason": "DEBT: % de descuento derivado del XML con escala literal 2 (y sin MidpointRounding) en vez de PercentageDecimals de la política."
+    },
+    {
+      "file": "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/XmlParsing/PurchaseXmlDraftParser.cs",
+      "rule": "B-PREC-literal-round",
+      "count": 1,
+      "reason": "DEBT: % de descuento derivado del XML con escala literal 2 en vez de PercentageDecimals de la política."
+    },
+    {
+      "file": "backend/src/ERP.Application/Modules/Sales/UseCases/SalesReturnDraftUseCases.cs",
+      "rule": "B-PREC-round-helper",
+      "count": 1,
+      "reason": "DEBT: helper Round2 propio (escala monetaria fija FiscalPrecision.TaxAmount); converger a la escala del DTO de precisión."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Expenses/Entities/ExpenseLine.cs",
+      "rule": "B-PREC-literal-round",
+      "count": 1,
+      "reason": "DEBT: % de descuento de línea de gasto con escala literal 2 en vez de la precisión de porcentaje recibida de Application."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/InitialLoad/Entities/OpeningBalancePosting.cs",
+      "rule": "B-PREC-round-helper",
+      "count": 1,
+      "reason": "DEBT: helper RoundAmount (escala monetaria fija FiscalPrecision.TaxAmount) reutilizado por la apertura; converger a la escala del DTO de precisión."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Inventory/Entities/StockAdjustmentLine.cs",
+      "rule": "B-PREC-fiscal-default",
+      "count": 3,
+      "reason": "DEBT: defaults FiscalPrecision.Quantity/UnitCost en parámetros de Domain (compatibilidad histórica 05B); Application ya pasa la política."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Payables/Entities/AccountsPayableInstallment.cs",
+      "rule": "B-PREC-literal-round",
+      "count": 1,
+      "reason": "DEBT: saldo pendiente de cuota con escala monetaria literal 2 en vez de la constante/escala monetaria nombrada."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
+      "rule": "B-PREC-round-helper",
+      "count": 1,
+      "reason": "DEBT: helper Round2 propio (escala monetaria fija FiscalPrecision.TaxAmount); converger a la escala del DTO de precisión."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
+      "rule": "B-PREC-literal-round",
+      "count": 1,
+      "reason": "DEBT: monto de cuota con escala literal 2 y sin MidpointRounding (ToEven) en vez de la escala monetaria nombrada con AwayFromZero."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
+      "rule": "B-PREC-fiscal-default",
+      "count": 2,
+      "reason": "DEBT: defaults FiscalPrecision.Quantity/UnitCost en parámetros de Domain (compatibilidad histórica 05B); Application ya pasa la política."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
+      "rule": "B-PREC-round-helper",
+      "count": 1,
+      "reason": "DEBT: helper Round2 propio (escala monetaria fija FiscalPrecision.TaxAmount); converger a la escala del DTO de precisión."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
+      "rule": "B-PREC-literal-round",
+      "count": 1,
+      "reason": "DEBT: monto de cuota con escala monetaria literal 2 en vez de la constante/escala monetaria nombrada."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
+      "rule": "B-PREC-fiscal-default",
+      "count": 1,
+      "reason": "DEBT: default FiscalPrecision.Quantity en parámetro de Domain (compatibilidad histórica 05B); Application ya pasa la política."
+    },
+    {
+      "file": "backend/src/ERP.Domain/Modules/Sales/Entities/SalesReturnDetail.cs",
+      "rule": "B-PREC-fiscal-default",
+      "count": 1,
+      "reason": "DEBT: default FiscalPrecision.Quantity en parámetro de Domain (compatibilidad histórica 05B); Application ya pasa la política."
+    }
+  ]
+}

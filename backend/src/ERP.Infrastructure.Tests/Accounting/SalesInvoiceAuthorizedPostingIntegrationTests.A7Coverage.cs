@@ -246,53 +246,30 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         session.Difference.Should().Be(0m);
     }
 
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — sin regla de costo de ventas la venta se autoriza igual: el costo queda
+    /// como obligación durable Failed (intento posterior al commit), sin asiento ni rollback comercial.
+    /// </summary>
     [Fact]
-    public async Task A7_concurrent_durable_cogs_redelivery_posts_failed_record_once()
+    public async Task C05_venta_sin_regla_COGS_se_autoriza_y_el_costo_queda_Failed()
     {
         var fixture = await SeedCoverageAsync(2m, 1, includeCogs: false);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var invoiceId = fixture.Invoices[0];
-        (await CoverageAttemptAsync(invoiceId, new CoverageObserver(), "A7-initial", timeout.Token)).Should().BeNull();
-        Guid rowId;
-        Guid[] outboxIds;
-        await using (var seed = CreateContext())
-        {
-            var row = await seed.Set<InventoryCostPosting>().SingleAsync(p => p.InvoiceId == invoiceId);
-            row.Status.Should().Be("Failed"); row.Attempts.Should().Be(1);
-            row.JournalEntryId.Should().BeNull(); rowId = row.Id;
-            (await seed.JournalEntries.CountAsync(e => e.SourceEventId == invoiceId)).Should().Be(1);
-            var rule = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSold", null, null, null, _createdBy);
-            rule.AddLine(fixture.CostAccount, AccountNature.Debit, PostingAmountKind.HistoricalCost);
-            rule.AddLine(fixture.InventoryAccount, AccountNature.Credit, PostingAmountKind.HistoricalCost);
-            seed.PostingRules.Add(rule);
-            await seed.SaveChangesAsync();
-            // Fixture rule creation has its own legitimate outbox event. Snapshot after it.
-            outboxIds = await seed.OutboxMessages.Select(m => m.Id).ToArrayAsync();
-        }
-        var name = $"A7-redelivery-{Guid.NewGuid():N}";
-        var overlap = new InventoryLockOverlap(_postgres.GetConnectionString(), name);
-        async Task ReplayAsync()
-        {
-            var (db, provider) = BuildA7Context(new CostLockOverlap(overlap), name);
-            using var disposeProvider = provider;
-            await using var disposeDb = db;
-            // Both deliveries start with the durable Failed state tracked before the lock.
-            (await db.Set<InventoryCostPosting>().SingleAsync(p => p.Id == rowId, timeout.Token)).Status.Should().Be("Failed");
-            await using var transaction = await db.Database.BeginTransactionAsync(timeout.Token);
-            await provider.GetRequiredService<IPublisher>().Publish(
-                new InventoryCostPostingRequestedEvent(_tenantId, _companyId, invoiceId), timeout.Token);
-            await db.SaveChangesAsync(timeout.Token);
-            await transaction.CommitAsync(timeout.Token);
-        }
-        await Task.WhenAll(ReplayAsync(), ReplayAsync());
-        overlap.Completed.Should().Be(2);
-        await AssertCoverageAsync(fixture, invoiceId);
+
+        (await CoverageAttemptAsync(invoiceId, new CoverageObserver(), "C05-no-cogs", timeout.Token)).Should().BeNull();
+
         await using var verify = CreateContext();
-        var posted = await verify.Set<InventoryCostPosting>().SingleAsync(p => p.InvoiceId == invoiceId);
-        posted.Id.Should().Be(rowId); posted.Attempts.Should().Be(2);
-        posted.JournalEntryId.Should().Be((await verify.JournalEntries.SingleAsync(e =>
-            e.SourceEventId == invoiceId && e.SourceEventType == "CostOfGoodsSold")).Id);
-        (await verify.OutboxMessages.Select(m => m.Id).ToArrayAsync()).Should().BeEquivalentTo(outboxIds);
+        (await verify.SalesInvoices.SingleAsync(i => i.Id == invoiceId)).Status.Should().Be(SalesInvoiceStatus.Authorized);
+        var cost = await verify.AccountingPostings.SingleAsync(p => p.SourceDocumentId == invoiceId);
+        cost.FactType.Should().Be("CostOfGoodsSold");
+        cost.SourceEventId.Should().Be(invoiceId);
+        cost.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+        cost.ErrorCode.Should().NotBeNullOrEmpty();
+        cost.JournalEntryId.Should().BeNull();
+        (await verify.JournalEntries.Where(e => e.SourceEventId == invoiceId).Select(e => e.SourceEventType).ToListAsync())
+            .Should().Equal("InvoiceIssued");
+        (await verify.Set<InventoryCostPosting>().AnyAsync()).Should().BeFalse("la tabla legacy ya no recibe escrituras");
     }
 
     private async Task AssertCoverageAsync(CoverageFixture fixture, Guid? winner)
@@ -335,9 +312,13 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
                 receivables.Single().OriginalAmount.Should().Be(12m);
                 receivables.Single().Installments.Should().ContainSingle().Which.Amount.Should().Be(12m);
             }
-            var costs = await db.Set<InventoryCostPosting>().Where(p => p.InvoiceId == id).ToListAsync();
+            var costs = await db.AccountingPostings.Where(p => p.SourceDocumentId == id).ToListAsync();
             costs.Should().HaveCount(success ? 1 : 0);
-            if (success) { costs.Single().Status.Should().Be("Posted"); costs.Single().Amount.Should().Be(2m); }
+            if (success)
+            {
+                costs.Single().Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted);
+                costs.Single().Payload.Should().Contain("\"historicalCostTotal\":2");
+            }
             var entries = await db.JournalEntries.Include(e => e.Lines).Where(e => e.SourceEventId == id).ToListAsync();
             entries.Should().HaveCount(success ? 2 : 0);
             if (success)
@@ -384,26 +365,6 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             {
                 _seen = true; Acquired.TrySetResult(true); await Release.Task.WaitAsync(ct);
             }
-            return result;
-        }
-    }
-    private sealed class CostLockOverlap(InventoryLockOverlap overlap) : DbCommandInterceptor
-    {
-        private DbCommand? _first;
-        private bool _completed;
-        public override async ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command,
-            CommandEventData eventData, InterceptionResult<int> result, CancellationToken ct = default)
-        {
-            if (_first is null && command.CommandText.Contains("pg_advisory_xact_lock") &&
-                command.Parameters.Cast<DbParameter>().Any(p => p.Value is string key && key.StartsWith("inventory-cost:", StringComparison.Ordinal)))
-            { _first = command; await overlap.BeforeAsync(ct); }
-            return result;
-        }
-        public override async ValueTask<int> NonQueryExecutedAsync(DbCommand command, CommandExecutedEventData eventData,
-            int result, CancellationToken ct = default)
-        {
-            if (!_completed && ReferenceEquals(_first, command))
-            { _completed = true; await overlap.AfterAsync(ct); }
             return result;
         }
     }

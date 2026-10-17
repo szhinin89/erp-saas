@@ -16,7 +16,8 @@ public sealed record AccountingPostingRequest(
     string? SourceDocumentNumber,
     DateOnly BusinessDate,
     DateOnly EntryDate,
-    AccountingPostingPayload Payload
+    AccountingPostingPayload Payload,
+    Guid? SourceDocumentId = null
 );
 
 /// <summary>
@@ -106,7 +107,8 @@ public sealed class AccountingPostingRecorder
             AccountingPostingPayload.CurrentVersion,
             request.Payload.Serialize(),
             _user.UserId,
-            _audit.Actor.CorrelationId
+            _audit.Actor.CorrelationId,
+            request.SourceDocumentId
         );
         await _postings.AddAsync(posting, ct);
         _queue.Enqueue(posting.Id);

@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Behaviors;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -111,6 +112,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests : IClassFi
         services.AddScoped<IPostingEngine, PostingEngine>();
         services.AddScoped<PostingPreflight>();
         services.AddScoped<OpeningBalancePostingPreflight>();
+        services.AddOpeningAccountingGate();
         services.AddScoped<ERP.Domain.Access.Interfaces.IAccessRepository, AccessRepository>();
         _services = services.BuildServiceProvider();
     }
@@ -138,7 +140,8 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests : IClassFi
     public async Task DisposeAsync() => await _services.DisposeAsync();
 
     /// <summary>Empresa con fecha de apertura, sucursal, plan de cuentas, período 2026 y reglas (bootstrap real).</summary>
-    private async Task<(Guid Company, Guid Branch)> NewCompanyAsync()
+    private async Task<(Guid Company, Guid Branch)> NewCompanyAsync(
+        ERP.Domain.Modules.Accounting.Enums.AccountingOperationalMode mode = ERP.Domain.Modules.Accounting.Enums.AccountingOperationalMode.Enabled)
     {
         var company = Company.CreateManaged(_tenant, Interlocked.Increment(ref _nextTaxNumber) + "001", "IL8A S.A.", createdBy: _user);
         company.SetOpeningBalanceDate(Cutoff, new OpeningBalanceDateConstraints(false, []), _user);
@@ -157,6 +160,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests : IClassFi
         await db.SaveChangesAsync();
         await new AccountingBootstrapStep(db, new AlwaysTodayCompanyClock(), NullLogger<AccountingBootstrapStep>.Instance)
             .ExecuteAsync(new CompanyBootstrapContext(_tenant, company.Id, _user));
+        await OpeningAccountingTestSupport.SeedModeAsync(db, _tenant, company.Id, _user, mode);
         _company = previous == Guid.Empty ? company.Id : previous;
         return (company.Id, branch.Id);
     }

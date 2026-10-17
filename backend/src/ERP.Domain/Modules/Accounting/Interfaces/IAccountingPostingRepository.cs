@@ -72,6 +72,27 @@ public interface IAccountingPostingRepository
         CancellationToken ct = default
     );
 
+    /// <summary>ACCOUNTING-CONTINUITY-05 — obligaciones agrupadas por documento operativo.</summary>
+    Task<IReadOnlyList<AccountingPosting>> ListBySourceDocumentAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid sourceDocumentId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>ACCOUNTING-CONTINUITY-05 — existe alguna obligación Pending/Failed en la Company.</summary>
+    Task<bool> HasUnresolvedAsync(Guid tenantId, Guid companyId, CancellationToken ct = default);
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — mayor fecha contable de las obligaciones automáticas no canceladas
+    /// (excluye reversos), o null si no hay ninguna.
+    /// </summary>
+    Task<DateOnly?> GetLatestAutomaticEntryDateAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(AccountingPosting posting, CancellationToken ct = default);
 
     Task AddAttemptAsync(AccountingPostingAttempt attempt, CancellationToken ct = default);

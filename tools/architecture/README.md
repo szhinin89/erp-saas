@@ -69,6 +69,7 @@ Ejemplo anotación GitHub:
 | `check-css-prefixes.mjs` | F-css | Prefijos por área; clases ambiguas |
 | `check-design-system.mjs` | F-04 | Design System único (grid/toggle/icon/modal/tabs/table/activity) |
 | `check-frontend-precision.mjs` | F-PREC | Ruta única de precisión (06): componente sin `precision`, cualquier `decimals` en JSX, formatter sin escala, `toFixed`/`Intl.NumberFormat`/lectura directa de policy locales y segundas tablas kind → `…Decimals`. Sin grandfather: solo excepciones justificadas que no deciden presentación (`config/frontend-precision.json`, archivo+regla+conteo+reason). Tests: `node --test tools/architecture/check-frontend-precision.test.mjs` |
+| `check-backend-precision.mjs` | B-PREC | Trinquete de precisión decimal en backend (SSOT: `docs/architecture/data-standards.md` § Estándar de Precisión Numérica): `Math.Round`/`decimal.Round` con escala literal, helpers de redondeo propios (`Round2`, `RoundAmount`, …) y parámetros con default `FiscalPrecision.Quantity`/`UnitCost`. Deuda existente auditada en `config/backend-precision.json` (archivo+regla+conteo exacto+reason); superarla falla, bajarla avisa. No detecta "faltó usar el provider". Tests: `node --test tools/architecture/check-backend-precision.test.mjs` |
 | `check-no-cross-layer.mjs` | F-cross-layer | Pages sin fetch/axios/api directo |
 
 ### Backend (heurístico, sin Roslyn)

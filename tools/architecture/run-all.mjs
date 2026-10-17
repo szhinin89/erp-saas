@@ -7,6 +7,7 @@ import { runCheckModuleBoundaries } from './check-module-boundaries.mjs';
 import { runCheckCssPrefixes } from './check-css-prefixes.mjs';
 import { runCheckDesignSystem } from './check-design-system.mjs';
 import { runCheckFrontendPrecision } from './check-frontend-precision.mjs';
+import { runCheckBackendPrecision } from './check-backend-precision.mjs';
 import { runCheckFrontendDateTime } from './check-frontend-datetime.mjs';
 import { runCheckNoCrossLayer } from './check-no-cross-layer.mjs';
 import { runCheckPlatformLegacySurface } from './check-platform-legacy-surface.mjs';
@@ -49,6 +50,7 @@ export const CHECKS = [
   { name: 'backend-clean-architecture', run: runCheckBackendCleanArchitecture },
   { name: 'backend-controller-thin', run: runCheckBackendControllerThin },
   { name: 'backend-subscriber-rules', run: runCheckBackendSubscriberRules },
+  { name: 'backend-precision', run: runCheckBackendPrecision },
   { name: 'permissions-authorization-rules', run: runCheckPermissionsAuthorizationRules },
   { name: 'frontend-permissions-rules', run: runCheckFrontendPermissionsRules },
   { name: 'duplicate-services', run: runCheckDuplicateServices },

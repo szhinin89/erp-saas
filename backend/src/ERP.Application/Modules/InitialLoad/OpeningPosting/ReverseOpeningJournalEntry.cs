@@ -79,6 +79,7 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOpeningJournalEntryPostingRepository _postings;
     private readonly IAccountingPeriodRepository _periods;
+    private readonly IAccountingOperationalPolicyRepository _policies;
     private readonly ICompanyClock _clock;
     private readonly IJournalEntryRepository _journal;
     private readonly JournalEntryReversal _reversal;
@@ -106,6 +107,7 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
         _periods = periods;
         _clock = clock;
         _reversal = new JournalEntryReversal(journal, periods, sequences, policies);
+        _policies = policies;
         _logger = logger;
     }
 
@@ -120,6 +122,9 @@ public sealed partial class ReverseOpeningJournalEntryCommandHandler
         try
         {
             await _postings.LockCompanyOpeningAsync(tenantId, companyId, includeBalanceBatches: true, ct);
+            // ACCOUNTING-CONTINUITY-05 — lock compartido de política antes de evaluar períodos: el
+            // reverso de un asiento ya publicado sigue permitido aunque la empresa esté en Disabled.
+            await _policies.AcquireSharedLockAsync(companyId, ct);
             // IL-8E — tras el cierre definitivo la apertura no se corrige por esta vía (ni reintentos).
             if (await InitialLoadClosedGuard.CheckOpenAsync(_openingBalance, ct) is { } closed)
                 return await RejectAsync(Fail(InitialLoadClosedGuard.Code, closed));

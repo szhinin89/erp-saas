@@ -118,7 +118,6 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
         public Task<ERP.Domain.Configuration.Interfaces.OperationalPreferences> ResolveAsync(Guid tenantId, Guid companyId, CancellationToken cancellationToken = default) => ResolveAsync(cancellationToken);
     }
 
-    private Guid _costAccount;
     private async Task<SalesInvoice> AuthorizeProductSale(Item item)
     {
         var date = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -202,138 +201,24 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
         var item = await Save(_companyA, "RETURN-UNKNOWN"); var invoice = await AuthorizeProductSale(item);
         var returned = await ReturnUnits(invoice, item, 1m);
         returned.TotalCost.Should().BeNull();
-        await SeedCostAccounting(); await Move(item, 5m, 3m); await ProcessCosts(invoice.Id); await ProcessCosts(invoice.Id);
+        await Move(item, 5m, 3m);
         await using var db = Context(_companyA);
-        (await db.JournalEntries.Include(e => e.Lines).ToListAsync()).SelectMany(e => e.Lines)
-            .Where(l => l.AccountId == _costAccount).Sum(l => l.Debit - l.Credit).Should().Be(6m);
         (await db.Set<SaleCostAllocation>().Where(a => a.Kind == "Coverage").SumAsync(a => a.PendingQuantity)).Should().Be(2m);
     }
 
     [Fact]
     public async Task A2_fractional_returns_conserve_recognized_cost_and_inventory_value()
     {
-        await SeedCostAccounting(); var item = await Save(_companyA, "FRACTIONAL"); await Move(item, 3m, 0.3333333333m);
-        var invoice = await AuthorizeProductSale(item); await ProcessCosts(invoice.Id, 1m);
+        var item = await Save(_companyA, "FRACTIONAL"); await Move(item, 3m, 0.3333333333m);
+        var invoice = await AuthorizeProductSale(item);
         var costs = new List<decimal>();
         for (var i = 0; i < 3; i++)
-        {
             costs.Add((await ReturnUnits(invoice, item, 1m)).TotalCost!.Value);
-            await ProcessCosts(invoice.Id);
-        }
         costs.Sum().Should().Be(1m);
         await using var db = Context(_companyA);
-        (await db.JournalEntries.Include(e => e.Lines).ToListAsync()).SelectMany(e => e.Lines)
-            .Where(l => l.AccountId == _costAccount).Sum(l => l.Debit - l.Credit).Should().Be(0m);
         var stock = await db.Set<CurrentStock>().SingleAsync(); stock.Quantity.Should().Be(3m); stock.TotalStockValue.Should().Be(1m);
         (await db.Set<SaleCostAllocation>().CountAsync()).Should().Be(3);
     }
-    private async Task SeedCostAccounting()
-    {
-        await using var db = Context(_companyA);
-        var inventory = Account.Create(_tenantId, _companyA, AccountCode.Create("1.1.01"), "Inventory", null,
-            AccountType.Asset, AccountNature.Debit, true, _actor);
-        var cogs = Account.Create(_tenantId, _companyA, AccountCode.Create("5.1.01"), "COGS", null,
-            AccountType.Expense, AccountNature.Debit, true, _actor);
-        _costAccount = cogs.Id;
-        db.Accounts.AddRange(inventory, cogs);
-        foreach (var reversed in new[] { false, true })
-        {
-            var rule = PostingRule.Create(_tenantId, _companyA, "Sales",
-                reversed ? "CostOfGoodsSoldReversed" : "CostOfGoodsSold", null, null, null, _actor);
-            rule.AddLine(cogs.Id, reversed ? AccountNature.Credit : AccountNature.Debit, PostingAmountKind.HistoricalCost);
-            rule.AddLine(inventory.Id, reversed ? AccountNature.Debit : AccountNature.Credit, PostingAmountKind.HistoricalCost);
-            db.PostingRules.Add(rule);
-        }
-        var date = DateOnly.FromDateTime(DateTime.UtcNow);
-        db.AccountingPeriods.Add(AccountingPeriod.Create(_tenantId, _companyA, date.Year, date.Month,
-            new(date.Year, date.Month, 1), new(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month)), _actor));
-        await db.SaveChangesAsync();
-    }
-
-    private InventoryCostAccounting Accounting(ErpDbContext db, InventoryCostLedger ledger)
-    {
-        var journals = new JournalEntryRepository(db);
-        var periods = new AccountingPeriodRepository(db);
-        var sequences = new JournalEntrySequenceRepository(db);
-        var engine = new PostingEngine(journals, new PostingRuleRepository(db), periods, sequences,
-            new AccountRepository(db), NullLogger<PostingEngine>.Instance);
-        var reverse = new ReverseJournalEntryCommandHandler(journals, periods, sequences,
-            new CurrentTenant(_tenantId), new CurrentCompany(_companyA), Mock.Of<ICurrentUser>(u => u.UserId == _actor), new UnitOfWork(db), new AccountingOperationalPolicyRepository(db));
-        var mediator = new Mock<IMediator>();
-        mediator.Setup(m => m.Send(It.IsAny<ReverseJournalEntryCommand>(), It.IsAny<CancellationToken>()))
-            .Returns((ReverseJournalEntryCommand c, CancellationToken ct) => reverse.Handle(c, ct));
-        return new(ledger, engine, mediator.Object);
-    }
-
-    private async Task ProcessCosts(Guid invoice, decimal? original = null)
-    {
-        await using var db = Context(_companyA);
-        var ledger = new InventoryCostLedger(db);
-        var service = Accounting(db, ledger);
-        if (original.HasValue)
-            await service.RecordAsync(_tenantId, _companyA, invoice, invoice, original.Value,
-                DateOnly.FromDateTime(DateTime.UtcNow), "Original", _actor, CancellationToken.None);
-        else await service.ProcessAsync(_tenantId, _companyA, invoice, CancellationToken.None);
-        await ledger.SaveAsync(CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task A2_real_COGS_provisional_adjustment_retry_and_cancel_have_no_residual()
-    {
-        await SeedCostAccounting();
-        var item = await Save(_companyA, "COGS"); await Move(item, 10m, 2m); await Move(item, -10m);
-        var invoice = Guid.NewGuid(); var line = Guid.NewGuid();
-        await Move(item, -3m, document: invoice, line: line); await ProcessCosts(invoice, 6m);
-        await Move(item, 5m, 3m); await ProcessCosts(invoice); await ProcessCosts(invoice);
-        await using (var read = Context(_companyA))
-        {
-            (await read.JournalEntries.CountAsync()).Should().Be(2);
-            (await read.JournalEntries.Include(e => e.Lines).ToListAsync()).SelectMany(e => e.Lines)
-                .Where(l => l.AccountId == _costAccount).Sum(l => l.Debit - l.Credit).Should().Be(9m);
-        }
-        await Move(item, 3m, type: StockMovementType.SaleReturn, document: invoice, line: line);
-        await using (var cancel = Context(_companyA))
-        {
-            var ledger = new InventoryCostLedger(cancel);
-            await Accounting(cancel, ledger).CancelAsync(_tenantId, _companyA, invoice, "A2 cancellation", CancellationToken.None);
-            await ledger.SaveAsync(CancellationToken.None);
-        }
-        await using var db = Context(_companyA);
-        (await db.JournalEntries.Include(e => e.Lines).ToListAsync()).SelectMany(e => e.Lines)
-            .Where(l => l.AccountId == _costAccount).Sum(l => l.Debit - l.Credit).Should().Be(0m);
-        (await db.Set<InventoryCostPosting>().Where(p => p.InvoiceId == invoice).ToListAsync()).Should().OnlyContain(p => p.Status == "Canceled");
-        (await db.Set<SaleCostObligation>().Where(o => o.InvoiceId == invoice).SingleAsync()).PendingQuantity.Should().Be(0m);
-    }
-
-    [Fact]
-    public async Task A2_real_COGS_unknown_waits_for_receipt_then_posts_once()
-    {
-        await SeedCostAccounting(); var item = await Save(_companyA, "PENDING-COGS"); var invoice = Guid.NewGuid();
-        await Move(item, -3m, document: invoice); await ProcessCosts(invoice, 0m);
-        await using (var read = Context(_companyA)) { (await read.JournalEntries.CountAsync()).Should().Be(0); }
-        await Move(item, 5m, 3m); await ProcessCosts(invoice); await ProcessCosts(invoice);
-        await using var db = Context(_companyA);
-        (await db.JournalEntries.CountAsync()).Should().Be(1);
-        (await db.JournalEntries.Include(e => e.Lines).SingleAsync()).Lines
-            .Where(l => l.AccountId == _costAccount).Sum(l => l.Debit).Should().Be(9m);
-    }
-
-    [Fact]
-    public async Task A2_posting_error_is_durable_and_retry_after_configuration_does_not_duplicate()
-    {
-        var invoice = Guid.NewGuid(); await ProcessCosts(invoice, 6m);
-        await using (var read = Context(_companyA))
-        {
-            var row = await read.Set<InventoryCostPosting>().SingleAsync();
-            row.Status.Should().Be("Failed"); row.ErrorCode.Should().NotBeNullOrEmpty();
-            (await read.JournalEntries.CountAsync()).Should().Be(0);
-        }
-        await SeedCostAccounting(); await ProcessCosts(invoice); await ProcessCosts(invoice);
-        await using var db = Context(_companyA);
-        (await db.JournalEntries.CountAsync()).Should().Be(1);
-        (await db.Set<InventoryCostPosting>().SingleAsync()).Status.Should().Be("Posted");
-    }
-
     private async Task<StockMovement> Move(Item item, decimal quantity, decimal? cost = null,
         bool allow = true, bool companyControl = true, Guid? warehouse = null,
         StockMovementType? type = null, Guid? document = null, Guid? line = null, string? sourceType = null)
@@ -346,12 +231,6 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
             movementType, quantity, "UNIT", DateOnly.FromDateTime(DateTime.UtcNow), "A2", document ?? Guid.NewGuid(),
             sourceType ?? (movementType == StockMovementType.PurchaseEntry ? "PurchaseInvoice" : "SalesInvoice"), _actor,
             cost, sourceDocLineId: line ?? Guid.NewGuid());
-        // Inventory-only scenarios stage the same durable original cost record that the sales
-        // authorization event creates in production; accounting tests then use the real engine.
-        if (movementType == StockMovementType.SaleExit && result.TotalCost > 0m)
-            db.Set<InventoryCostPosting>().Add(InventoryCostPosting.Create(_tenantId, _companyA,
-                result.SourceDocId!.Value, result.SourceDocId.Value, result.TotalCost.Value,
-                result.EffectiveDate, "Original", _actor));
         await repo.SaveChangesWithSequenceRetryAsync();
         return result;
     }
@@ -400,7 +279,6 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
         await using var db = Context(_companyA);
         (await db.Set<SaleCostAllocation>().SumAsync(a => a.CogsAdjustment)).Should().Be(difference);
         (await db.Set<SaleCostObligation>().SumAsync(o => o.PendingQuantity)).Should().Be(Math.Max(0, 3 - receipt));
-        (await db.Set<InventoryCostPosting>().Where(p => p.Kind == "Coverage").SumAsync(p => p.Amount)).Should().Be(difference);
     }
 
     [Fact]

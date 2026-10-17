@@ -3011,6 +3011,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("payload_version");
 
+                    b.Property<Guid?>("SourceDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_document_id");
+
                     b.Property<string>("SourceDocumentNumber")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -3053,6 +3057,10 @@ namespace ERP.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("JournalEntryId");
+
+                    b.HasIndex("TenantId", "CompanyId", "SourceDocumentId")
+                        .HasDatabaseName("ix_accounting_postings_scope_source_document")
+                        .HasFilter("source_document_id IS NOT NULL");
 
                     b.HasIndex("CompanyId", "SourceModule", "SourceEventId", "FactType")
                         .IsUnique()

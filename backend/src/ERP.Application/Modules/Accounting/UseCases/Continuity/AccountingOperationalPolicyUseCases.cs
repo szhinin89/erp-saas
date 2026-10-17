@@ -39,13 +39,6 @@ public sealed class SetAccountingOperationalModeCommandValidator
 /// <summary>Lectura compartida de la política vigente (query y respuesta del comando).</summary>
 public sealed class AccountingOperationalPolicyReader
 {
-    /// <summary>
-    /// Disabled no se habilita hasta que todas las integraciones automáticas converjan a la
-    /// obligación durable: costos de inventario y apertura aún usan sus patrones propios
-    /// (CONTINUITY-05) y un Disabled parcial dejaría un libro inconsistente.
-    /// </summary>
-    public const bool DisabledAvailable = false;
-
     private readonly IAccountingOperationalPolicyRepository _policies;
     private readonly ICompanyRepository _companies;
     private readonly ICompanyClock _clock;
@@ -78,7 +71,9 @@ public sealed class AccountingOperationalPolicyReader
             versions.Count > 0,
             versions.FirstOrDefault(v => v.Covers(today))?.Mode,
             today,
-            DisabledAvailable,
+            // ACCOUNTING-CONTINUITY-05: Disabled se ofrece siempre salvo empresa obligada; sus
+            // precondiciones (pendientes, vigencia) se validan al registrarlo.
+            !company.IsAccountingReq,
             versions.Select(AccountingOperationalPolicyVersionDto.From).ToList()
         );
     }
@@ -116,8 +111,9 @@ public sealed class GetAccountingOperationalPolicyHandler
 
 /// <summary>
 /// Crea una versión nueva de la política (append-only; la versión abierta se cierra el día previo).
-/// Activar no genera contabilización histórica. Disabled se rechaza siempre en esta fase y, por
-/// regla permanente, cuando la Company está obligada a llevar contabilidad.
+/// Activar no genera contabilización histórica. Bajo el lock exclusivo de política (compartido por el
+/// registro de obligaciones, el cierre y el cambio fiscal) se validan Required ⇒ Enabled, la vigencia
+/// no retroactiva y la ausencia de obligaciones/hechos sujetos sin resolver para Disabled.
 /// </summary>
 public sealed class SetAccountingOperationalModeHandler
     : IRequestHandler<SetAccountingOperationalModeCommand, Result<AccountingOperationalPolicyDto>>
@@ -125,6 +121,8 @@ public sealed class SetAccountingOperationalModeHandler
     private readonly IAccountingOperationalPolicyRepository _policies;
     private readonly ICompanyRepository _companies;
     private readonly AccountingOperationalPolicyReader _reader;
+    private readonly AccountingModeChangePreconditions _preconditions;
+    private readonly ICompanyClock _clock;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
@@ -134,6 +132,8 @@ public sealed class SetAccountingOperationalModeHandler
         IAccountingOperationalPolicyRepository policies,
         ICompanyRepository companies,
         AccountingOperationalPolicyReader reader,
+        AccountingModeChangePreconditions preconditions,
+        ICompanyClock clock,
         IUnitOfWork unitOfWork,
         ICurrentTenant tenant,
         ICurrentCompany company,
@@ -143,6 +143,8 @@ public sealed class SetAccountingOperationalModeHandler
         _policies = policies;
         _companies = companies;
         _reader = reader;
+        _preconditions = preconditions;
+        _clock = clock;
         _unitOfWork = unitOfWork;
         _tenant = tenant;
         _company = company;
@@ -157,27 +159,19 @@ public sealed class SetAccountingOperationalModeHandler
         var tenantId = _tenant.TenantId;
         var companyId = _company.CompanyId;
 
-        var company = await _companies.GetByIdForTenantAsync(companyId, tenantId, ct);
-        if (company is null)
-            return Result<AccountingOperationalPolicyDto>.NotFound("Empresa no encontrada.");
-
-        if (command.Mode == AccountingOperationalMode.Disabled)
-        {
-            if (company.IsAccountingReq)
-                return Result<AccountingOperationalPolicyDto>.ValidationFailure(
-                    "La empresa está obligada a llevar contabilidad: Contabilidad no puede deshabilitarse."
-                );
-            if (!AccountingOperationalPolicyReader.DisabledAvailable)
-                return Result<AccountingOperationalPolicyDto>.ValidationFailure(
-                    "Deshabilitar Contabilidad aún no está disponible: existen integraciones automáticas "
-                        + "que todavía no usan la contabilización durable."
-                );
-        }
-
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             await _policies.AcquireExclusiveLockAsync(companyId, ct);
+
+            // IsAccountingReq se lee dentro del lock: UpdateCompanyFiscal toma el mismo lock exclusivo.
+            var company = await _companies.GetByIdForTenantAsync(companyId, tenantId, ct);
+            if (company is null)
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return Result<AccountingOperationalPolicyDto>.NotFound("Empresa no encontrada.");
+            }
+
             var versions = await _policies.ListAsync(tenantId, companyId, ct);
             var open = versions.LastOrDefault(v => v.EffectiveTo is null);
             if (open is not null && open.Mode == command.Mode)
@@ -186,6 +180,23 @@ public sealed class SetAccountingOperationalModeHandler
                 return Result<AccountingOperationalPolicyDto>.ValidationFailure(
                     $"Contabilidad ya está en modo {command.Mode} desde el {open.EffectiveFrom:yyyy-MM-dd}."
                 );
+            }
+
+            var today = await _clock.TodayAsync(companyId, tenantId, ct);
+            var rejection = await _preconditions.CheckAsync(
+                tenantId,
+                companyId,
+                company.IsAccountingReq,
+                versions,
+                command.Mode,
+                command.EffectiveFrom,
+                today,
+                ct
+            );
+            if (rejection is not null)
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return Result<AccountingOperationalPolicyDto>.ValidationFailure(rejection);
             }
 
             open?.EndBefore(command.EffectiveFrom, _user.UserId);

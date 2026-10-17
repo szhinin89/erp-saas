@@ -195,6 +195,14 @@ public sealed class GetOpeningBalanceReconciliationHandler
     public const string OpeningAsiFailedCode = "OPENING_ASI_FAILED";
     public const string OpeningAsiPendingCode = "OPENING_ASI_PENDING";
     public const string OpeningBatchInProgressCode = "OPENING_BATCH_IN_PROGRESS";
+    public const string OpeningDateMissingCode = "OPENING_DATE_MISSING";
+
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-05 — bloqueos operativos del cierre de la carga inicial; los demás son
+    /// contables y se omiten cuando la fecha de apertura no está sujeta a Accounting.
+    /// </summary>
+    public static readonly IReadOnlySet<string> OperationalBlockerCodes =
+        new HashSet<string> { OpeningDateMissingCode, OpeningBatchInProgressCode };
 
     /// <summary>
     /// IL-8E — lotes de saldos en curso (con archivo, en validación, validados o confirmándose): podrían
@@ -492,7 +500,7 @@ public sealed class GetOpeningBalanceReconciliationHandler
     {
         var blockers = new List<OpeningReconciliationBlockerDto>();
         if (cutoff is null)
-            blockers.Add(new("OPENING_DATE_MISSING", "La empresa no tiene definida su fecha de apertura de saldos.", null));
+            blockers.Add(new(OpeningDateMissingCode, "La empresa no tiene definida su fecha de apertura de saldos.", null));
 
         foreach (var b in inProgress)
             blockers.Add(new(OpeningBatchInProgressCode,
