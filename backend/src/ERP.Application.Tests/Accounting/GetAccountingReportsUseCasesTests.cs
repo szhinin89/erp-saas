@@ -442,7 +442,7 @@ public sealed class GetAccountingReportsUseCasesTests
                 r.GetAccountLineTotalsAsync(
                     TenantId,
                     CompanyId,
-                    null,
+                    It.IsAny<DateOnly?>(),
                     It.IsAny<DateOnly>(),
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     It.IsAny<CancellationToken>()
@@ -922,8 +922,8 @@ public sealed class GetAccountingReportsUseCasesTests
                 r.GetAccountLineTotalsAsync(
                     TenantId,
                     CompanyId,
-                    null,
-                    new DateOnly(2026, 8, 31),
+                    It.IsAny<DateOnly?>(),
+                    It.IsAny<DateOnly>(),
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     It.IsAny<CancellationToken>()
                 )
@@ -979,7 +979,7 @@ public sealed class GetAccountingReportsUseCasesTests
                 r.GetAccountLineTotalsAsync(
                     TenantId,
                     CompanyId,
-                    null,
+                    It.IsAny<DateOnly?>(),
                     It.IsAny<DateOnly>(),
                     It.IsAny<IReadOnlyCollection<Guid>>(),
                     It.IsAny<CancellationToken>()
@@ -988,9 +988,9 @@ public sealed class GetAccountingReportsUseCasesTests
             .ReturnsAsync(
                 new Dictionary<Guid, (decimal TotalDebit, decimal TotalCredit)>
                 {
-                    // Caja aumentó 1000 por una venta (crédito fue a Ingresos, cuenta que
-                    // Balance General no consulta) — sin cierre contable, esto NO cuadra, y es
-                    // el comportamiento esperado documentado en GetBalanceSheetReportResponse.
+                    // Caja 1000 contra Capital 600 sin ninguna cuenta nominal que explique la
+                    // diferencia: descuadre real (ACCOUNTING-11 — el resultado no cerrado ya se
+                    // incluye como fila calculada, así que esto no es un estado esperado).
                     [cash.Id] = (1000m, 0m),
                     [capital.Id] = (0m, 600m),
                 }

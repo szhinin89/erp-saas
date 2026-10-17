@@ -3664,14 +3664,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<Guid?>("CreditAccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("credit_account_id");
-
-                    b.Property<Guid?>("DebitAccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("debit_account_id");
-
                     b.Property<string>("FactType")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -3687,11 +3679,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("source_module");
-
-                    b.Property<string>("TaxCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("tax_code");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")

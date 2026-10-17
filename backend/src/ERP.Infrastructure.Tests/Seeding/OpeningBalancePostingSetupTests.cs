@@ -303,7 +303,7 @@ public sealed class OpeningBalancePostingSetupTests
         await SeedLegacyCompanyAsync(
             (db, accounts) =>
             {
-                var rule = PostingRule.Create(_tenant, _companyId, "InitialLoad", "OpeningInventory", null, null, null, _actor);
+                var rule = PostingRule.Create(_tenant, _companyId, "InitialLoad", "OpeningInventory", _actor);
                 rule.AddLine(accounts["1.1.04.001"].Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
                 rule.AddLine(accounts["2.1.01.001"].Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
                 customRuleId = rule.Id;
@@ -327,7 +327,7 @@ public sealed class OpeningBalancePostingSetupTests
         await SeedLegacyCompanyAsync(
             (db, accounts) =>
             {
-                var rule = PostingRule.Create(_tenant, _companyId, "InitialLoad", "ASI", null, null, null, _actor);
+                var rule = PostingRule.Create(_tenant, _companyId, "InitialLoad", "ASI", _actor);
                 rule.AddLine(accounts["2.1.01.001"].Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
                 db.PostingRules.Add(rule);
             }

@@ -50,22 +50,40 @@ public sealed record AccountingFiscalYearDto(
     IReadOnlyList<AccountingPeriodDto> Periods
 );
 
+/// <summary>
+/// ACCOUNTING-11 — <c>IsSupported</c>: la clave figura en <c>PostingFactCatalog</c> (solo esas
+/// reglas se editan). Los campos planos legacy DebitAccountId/CreditAccountId/TaxCode salieron del
+/// contrato: el Posting Engine nunca los leyó.
+/// </summary>
 public sealed record PostingRuleDto(
     Guid Id,
     string SourceModule,
     string FactType,
-    Guid? DebitAccountId,
-    Guid? CreditAccountId,
-    string? TaxCode,
     bool IsActive,
+    bool IsSupported,
     IReadOnlyList<PostingRuleLineDto> Lines,
     DateTime CreatedAt,
     DateTime? UpdatedAt
 );
 
 /// <summary>
-/// Fase 5.6.2 — expone las líneas reales que consume JournalFactory (rule.Lines), a diferencia de
-/// los campos planos legacy DebitAccountId/CreditAccountId. <c>Nature</c> es la dirección
+/// ACCOUNTING-11 — un hecho de <c>PostingFactCatalog</c> y la regla de la Company para él
+/// (<c>RuleId</c> null = falta configurarla). <c>DynamicDebit</c>/<c>DynamicCredit</c>: lado que
+/// completa el origen con líneas dinámicas, sin línea fija obligatoria. Sin
+/// <c>AllowedAmountKinds</c> la regla es habilitadora y no admite líneas fijas.
+/// </summary>
+public sealed record PostingFactCatalogItemDto(
+    string SourceModule,
+    string FactType,
+    IReadOnlyList<string> AllowedAmountKinds,
+    bool DynamicDebit,
+    bool DynamicCredit,
+    Guid? RuleId,
+    bool? RuleIsActive
+);
+
+/// <summary>
+/// Fase 5.6.2 — expone las líneas reales que consume JournalFactory (rule.Lines). <c>Nature</c> es la dirección
 /// (Debit/Credit) de ESTA línea dentro del asiento — no confundir con
 /// <c>AccountNature</c>, la naturaleza contable propia de la cuenta referenciada (mismo criterio
 /// de resolución que <see cref="JournalEntryLineDto"/>: Account* se resuelve en Application
@@ -345,11 +363,11 @@ public sealed record GetIncomeStatementReportResponse(
 
 /// <summary>
 /// Balance General — saldo acumulado de cada cuenta de Activo/Pasivo/Patrimonio desde el inicio
-/// del historial Posted hasta <c>AsOfDate</c> inclusive. <c>IsBalanced</c> refleja el estado real
-/// del libro mayor — sin cierre contable (fuera de alcance, ver entregable) la utilidad/pérdida
-/// del ejercicio en curso todavía no se traslada a Patrimonio, así que puede legítimamente mostrar
-/// <c>false</c> mientras exista actividad de Ingresos/Costos/Gastos sin cerrar; eso es un estado
-/// esperado del sistema hoy, no un error de cálculo de este reporte.
+/// del historial Posted hasta <c>AsOfDate</c> inclusive. ACCOUNTING-11: Patrimonio incluye dos
+/// filas calculadas (no persistidas, sin asiento): <c>CurrentYearResult</c> = Ingresos − Costos −
+/// Gastos del 01-ene del año de <c>AsOfDate</c> a <c>AsOfDate</c>, y
+/// <c>PriorYearsUnclosedResult</c> = resultados de ejercicios anteriores que siguen en cuentas
+/// nominales. <c>TotalEquity</c> las incluye, así que <c>IsBalanced = false</c> es un descuadre real.
 /// </summary>
 public sealed record GetBalanceSheetReportResponse(
     IReadOnlyList<FinancialStatementLineDto> AssetLines,
@@ -357,6 +375,8 @@ public sealed record GetBalanceSheetReportResponse(
     IReadOnlyList<FinancialStatementLineDto> LiabilityLines,
     decimal TotalLiabilities,
     IReadOnlyList<FinancialStatementLineDto> EquityLines,
+    decimal CurrentYearResult,
+    decimal PriorYearsUnclosedResult,
     decimal TotalEquity,
     decimal Difference,
     bool IsBalanced,

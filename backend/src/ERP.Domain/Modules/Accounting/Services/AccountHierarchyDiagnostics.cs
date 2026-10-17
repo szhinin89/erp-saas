@@ -143,15 +143,7 @@ public static class AccountHierarchyDiagnostics
 
         if (postingRules is not null)
         {
-            var referencedAccountIds = new List<Guid>();
-            foreach (var rule in postingRules)
-            {
-                if (rule.DebitAccountId is { } debitId)
-                    referencedAccountIds.Add(debitId);
-                if (rule.CreditAccountId is { } creditId)
-                    referencedAccountIds.Add(creditId);
-                referencedAccountIds.AddRange(rule.Lines.Select(l => l.AccountId));
-            }
+            var referencedAccountIds = postingRules.SelectMany(r => r.Lines.Select(l => l.AccountId));
 
             foreach (var accountId in referencedAccountIds.Distinct())
             {

@@ -88,13 +88,13 @@ public sealed class AccountingContinuity04IntegrationTests : IAsyncLifetime
             db.Accounts.AddRange(cash, bank, advances, payables);
             (_cash, _bank, _advances, _payables) = (cash.Id, bank.Id, advances.Id, payables.Id);
 
-            var payment = PostingRule.Create(_tenantId, _companyId, "Payables", "SupplierPaymentConfirmed", null, null, null, _userId);
+            var payment = PostingRule.Create(_tenantId, _companyId, "Payables", "SupplierPaymentConfirmed", _userId);
             payment.AddLine(payables.Id, AccountNature.Debit, PostingAmountKind.AppliedToPayable);
             payment.AddLine(advances.Id, AccountNature.Debit, PostingAmountKind.SupplierCredit);
-            var applied = PostingRule.Create(_tenantId, _companyId, "Purchases", "SupplierCreditApplied", null, null, null, _userId);
+            var applied = PostingRule.Create(_tenantId, _companyId, "Purchases", "SupplierCreditApplied", _userId);
             applied.AddLine(payables.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
             applied.AddLine(advances.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
-            var refunded = PostingRule.Create(_tenantId, _companyId, "Purchases", "SupplierCreditRefunded", null, null, null, _userId);
+            var refunded = PostingRule.Create(_tenantId, _companyId, "Purchases", "SupplierCreditRefunded", _userId);
             refunded.AddLine(advances.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
             db.PostingRules.AddRange(payment, applied, refunded);
             db.AccountingPeriods.Add(AccountingPeriod.Create(_tenantId, _companyId, 2026, 10,

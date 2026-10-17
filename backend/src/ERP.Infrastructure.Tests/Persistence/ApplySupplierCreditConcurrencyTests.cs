@@ -902,9 +902,6 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
             _companyId,
             "Purchases",
             factType,
-            null,
-            null,
-            null,
             _userId
         );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

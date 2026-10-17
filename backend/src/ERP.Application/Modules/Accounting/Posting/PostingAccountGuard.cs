@@ -8,9 +8,8 @@ namespace ERP.Application.Modules.Accounting.Posting;
 /// <summary>
 /// ACCOUNTING-POSTING-RULES-AUDIT-03: última línea de defensa antes de que
 /// <see cref="JournalFactory"/> genere <c>JournalEntryLine</c> — resuelve cada cuenta referenciada
-/// por <c>rule.Lines</c> (única fuente real que <see cref="JournalFactory"/> consume; los campos
-/// legacy <c>PostingRule.DebitAccountId</c>/<c>CreditAccountId</c> nunca llegan a producir una
-/// línea de asiento, ver remarks de <see cref="JournalFactory"/>) y exige que exista, pertenezca a
+/// por <c>rule.Lines</c> (única configuración que <see cref="JournalFactory"/> consume) y exige
+/// que exista, pertenezca a
 /// la misma Company/Tenant, esté activa y admita movimiento (<c>AllowsPosting</c>).
 /// </summary>
 /// <remarks>

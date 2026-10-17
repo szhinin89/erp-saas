@@ -57,9 +57,6 @@ public sealed class JournalValidatorTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
 

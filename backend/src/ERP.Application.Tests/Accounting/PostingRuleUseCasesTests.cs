@@ -11,10 +11,9 @@ using Moq;
 namespace ERP.Application.Tests.Accounting;
 
 /// <summary>
-/// ACCOUNTING-POSTING-RULES-AUDIT-03 — validación de configuración al crear/editar PostingRule:
-/// toda cuenta referenciada (Lines o legacy DebitAccountId/CreditAccountId) debe existir, estar
-/// activa y admitir movimiento; una regla sin al menos 2 líneas efectivas se rechaza al guardar
-/// (nunca produciría un asiento, ver remarks de CreatePostingRuleCommand).
+/// ACCOUNTING-POSTING-RULES-AUDIT-03 / ACCOUNTING-11 — validación de configuración al crear/editar
+/// PostingRule: toda cuenta de Lines debe existir en la Company, estar activa y admitir movimiento;
+/// la forma de las líneas (cantidad, Debe/Haber, AmountKind) la define PostingFactCatalog.
 /// </summary>
 public sealed class PostingRuleUseCasesTests
 {
@@ -104,13 +103,7 @@ public sealed class PostingRuleUseCasesTests
         var handler = m.BuildCreateHandler();
 
         var result = await handler.Handle(
-            new CreatePostingRuleCommand(
-                "Sales",
-                "InvoiceIssued",
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                null
-            ),
+            new CreatePostingRuleCommand("Sales", "InvoiceIssued", []),
             CancellationToken.None
         );
 
@@ -133,15 +126,12 @@ public sealed class PostingRuleUseCasesTests
             new CreatePostingRuleCommand(
                 "Sales",
                 "InvoiceIssued",
-                null,
-                null,
-                null,
                 new[]
                 {
                     new PostingRuleLineInput(
                         account.Id,
                         AccountNature.Debit,
-                        PostingAmountKind.GrandTotal
+                        PostingAmountKind.PendingBalance
                     ),
                 }
             ),
@@ -170,15 +160,12 @@ public sealed class PostingRuleUseCasesTests
             new CreatePostingRuleCommand(
                 "Sales",
                 "InvoiceIssued",
-                null,
-                null,
-                null,
                 new[]
                 {
                     new PostingRuleLineInput(
                         inactive.Id,
                         AccountNature.Debit,
-                        PostingAmountKind.GrandTotal
+                        PostingAmountKind.PendingBalance
                     ),
                     new PostingRuleLineInput(
                         active.Id,
@@ -221,15 +208,12 @@ public sealed class PostingRuleUseCasesTests
             new CreatePostingRuleCommand(
                 "Sales",
                 "InvoiceIssued",
-                null,
-                null,
-                null,
                 new[]
                 {
                     new PostingRuleLineInput(
                         summary.Id,
                         AccountNature.Debit,
-                        PostingAmountKind.GrandTotal
+                        PostingAmountKind.PendingBalance
                     ),
                     new PostingRuleLineInput(
                         active.Id,
@@ -260,62 +244,15 @@ public sealed class PostingRuleUseCasesTests
             new CreatePostingRuleCommand(
                 "Sales",
                 "InvoiceIssued",
-                null,
-                null,
-                null,
                 new[]
                 {
                     new PostingRuleLineInput(
                         Guid.NewGuid(),
                         AccountNature.Debit,
-                        PostingAmountKind.GrandTotal
+                        PostingAmountKind.PendingBalance
                     ),
                     new PostingRuleLineInput(
                         active.Id,
-                        AccountNature.Credit,
-                        PostingAmountKind.Subtotal
-                    ),
-                }
-            ),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        m.PostingRules.Verify(
-            r => r.AddAsync(It.IsAny<PostingRule>(), It.IsAny<CancellationToken>()),
-            Times.Never
-        );
-    }
-
-    [Fact]
-    public async Task Create_con_cuenta_legacy_DebitAccountId_inactiva_es_rechazado()
-    {
-        var m = new Mocks();
-        var debitLegacy = PostableAccount("1.1.01");
-        debitLegacy.Disable(CreatedBy);
-        var l1 = PostableAccount("1.1.02");
-        var l2 = PostableAccount("4.1.01");
-        m.RegisterAccount(debitLegacy);
-        m.RegisterAccount(l1);
-        m.RegisterAccount(l2);
-        var handler = m.BuildCreateHandler();
-
-        var result = await handler.Handle(
-            new CreatePostingRuleCommand(
-                "Sales",
-                "InvoiceIssued",
-                debitLegacy.Id,
-                null,
-                null,
-                new[]
-                {
-                    new PostingRuleLineInput(
-                        l1.Id,
-                        AccountNature.Debit,
-                        PostingAmountKind.GrandTotal
-                    ),
-                    new PostingRuleLineInput(
-                        l2.Id,
                         AccountNature.Credit,
                         PostingAmountKind.Subtotal
                     ),
@@ -345,15 +282,12 @@ public sealed class PostingRuleUseCasesTests
             new CreatePostingRuleCommand(
                 "Sales",
                 "InvoiceIssued",
-                null,
-                null,
-                null,
                 new[]
                 {
                     new PostingRuleLineInput(
                         debit.Id,
                         AccountNature.Debit,
-                        PostingAmountKind.GrandTotal
+                        PostingAmountKind.PendingBalance
                     ),
                     new PostingRuleLineInput(
                         credit.Id,
@@ -373,91 +307,80 @@ public sealed class PostingRuleUseCasesTests
         );
     }
 
-    // ── Update ──────────────────────────────────────────────────────────────
+    // ── Update (ACCOUNTING-11) ───────────────────────────────────────────────
 
     [Fact]
-    public async Task Update_con_CreditAccountId_AllowsPosting_false_es_rechazado_y_no_persiste()
+    public async Task A11_Update_reemplaza_Lines_y_valida_forma_del_catalogo_y_cuentas()
     {
-        var debit = PostableAccount("1.1.01");
-        var credit = PostableAccount("4.1.01");
-        var rule = PostingRule.Create(
+        var cash = PostableAccount("1.1.01");
+        var receivable = PostableAccount("1.1.03");
+        var revenue = PostableAccount("4.1.01");
+        var otherCompany = Account.Create(
             TenantId,
-            CompanyId,
-            "Sales",
-            "InvoiceIssued",
-            debit.Id,
-            credit.Id,
-            null,
-            CreatedBy
-        );
-
-        var m = new Mocks();
-        m.PostingRules.Setup(r =>
-                r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>())
-            )
-            .ReturnsAsync(rule);
-
-        var newCredit = Account.Create(
-            TenantId,
-            CompanyId,
-            AccountCode.Create("4.1.02"),
-            "Cuenta resumen",
+            Guid.NewGuid(),
+            AccountCode.Create("4.9.01"),
+            "Otra empresa",
             null,
             AccountType.Income,
             AccountNature.Credit,
-            allowsPosting: false,
+            allowsPosting: true,
             CreatedBy
         );
-        m.RegisterAccount(newCredit);
-
-        var handler = m.BuildUpdateHandler();
-        var result = await handler.Handle(
-            new UpdatePostingRuleCommand(rule.Id, debit.Id, newCredit.Id, null),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        rule.CreditAccountId.Should()
-            .Be(credit.Id, because: "no debe mutarse si la validación falla");
-        m.PostingRules.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Update_con_cuentas_validas_actualiza_el_mapeo()
-    {
-        var debit = PostableAccount("1.1.01");
-        var credit = PostableAccount("4.1.01");
-        var rule = PostingRule.Create(
-            TenantId,
-            CompanyId,
-            "Sales",
-            "InvoiceIssued",
-            debit.Id,
-            credit.Id,
-            null,
-            CreatedBy
-        );
+        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", CreatedBy);
+        rule.AddLine(receivable.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
+        rule.AddLine(revenue.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();
-        m.PostingRules.Setup(r =>
-                r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>())
-            )
+        m.PostingRules.Setup(r => r.GetByIdAsync(TenantId, CompanyId, rule.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(rule);
-
-        var newDebit = PostableAccount("1.1.02");
-        m.RegisterAccount(newDebit);
-        m.RegisterAccount(credit);
-
+        m.RegisterAccount(cash);
+        m.RegisterAccount(receivable);
+        m.RegisterAccount(revenue);
         var handler = m.BuildUpdateHandler();
+        PostingRuleLineInput L(Account a, AccountNature n, PostingAmountKind k) => new(a.Id, n, k);
+
+        var invalid = new (string Because, PostingRuleLineInput[] Lines)[]
+        {
+            ("una sola línea", [L(revenue, AccountNature.Credit, PostingAmountKind.Subtotal)]),
+            ("sin Debe", [L(revenue, AccountNature.Credit, PostingAmountKind.Subtotal), L(cash, AccountNature.Credit, PostingAmountKind.TaxVat)]),
+            ("sin Haber", [L(cash, AccountNature.Debit, PostingAmountKind.CashApplied), L(receivable, AccountNature.Debit, PostingAmountKind.PendingBalance)]),
+            ("AmountKind fuera del catálogo del hecho", [L(cash, AccountNature.Debit, PostingAmountKind.HistoricalCost), L(revenue, AccountNature.Credit, PostingAmountKind.Subtotal)]),
+            ("cuenta de otra empresa", [L(cash, AccountNature.Debit, PostingAmountKind.CashApplied), L(otherCompany, AccountNature.Credit, PostingAmountKind.Subtotal)]),
+        };
+        foreach (var (because, lines) in invalid)
+        {
+            var rejected = await handler.Handle(new UpdatePostingRuleCommand(rule.Id, lines), CancellationToken.None);
+            rejected.IsSuccess.Should().BeFalse(because);
+        }
+        rule.Lines.Select(l => l.AccountId).Should().Equal([receivable.Id, revenue.Id], "una validación fallida no muta la regla");
+        m.PostingRules.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+
         var result = await handler.Handle(
-            new UpdatePostingRuleCommand(rule.Id, newDebit.Id, credit.Id, "TAX1"),
+            new UpdatePostingRuleCommand(
+                rule.Id,
+                [
+                    L(cash, AccountNature.Debit, PostingAmountKind.CashApplied),
+                    L(receivable, AccountNature.Debit, PostingAmountKind.PendingBalance),
+                    L(revenue, AccountNature.Credit, PostingAmountKind.Subtotal),
+                ]
+            ),
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeTrue();
-        rule.DebitAccountId.Should().Be(newDebit.Id);
-        rule.TaxCode.Should().Be("TAX1");
+        result.IsSuccess.Should().BeTrue(result.Error);
+        rule.Lines.OrderBy(l => l.SortOrder)
+            .Select(l => (l.AccountId, l.Nature, l.AmountKind))
+            .Should()
+            .Equal(
+                (cash.Id, AccountNature.Debit, PostingAmountKind.CashApplied),
+                (receivable.Id, AccountNature.Debit, PostingAmountKind.PendingBalance),
+                (revenue.Id, AccountNature.Credit, PostingAmountKind.Subtotal)
+            );
         m.PostingRules.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        var unsupported = await m.BuildCreateHandler()
+            .Handle(new CreatePostingRuleCommand("Sales", "FreeText", [L(cash, AccountNature.Debit, PostingAmountKind.CashApplied), L(revenue, AccountNature.Credit, PostingAmountKind.Subtotal)]), CancellationToken.None);
+        unsupported.IsSuccess.Should().BeFalse("solo claves del catálogo");
     }
 
     // ── Get (ACCOUNTING-POSTING-RULES-UI-12) ──────────────────────────────────
@@ -472,12 +395,9 @@ public sealed class PostingRuleUseCasesTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
-        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();
@@ -523,12 +443,9 @@ public sealed class PostingRuleUseCasesTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
-        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();
@@ -564,12 +481,9 @@ public sealed class PostingRuleUseCasesTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
-        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
+        rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();

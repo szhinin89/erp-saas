@@ -15,9 +15,9 @@ public sealed class PostingRuleLineConfiguration : IEntityTypeConfiguration<Post
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(x => x.PostingRuleId).HasColumnName("posting_rule_id").IsRequired();
 
-        // Columna plana, sin FK a Account — mismo criterio que PostingRule.DebitAccountId/
-        // CreditAccountId (ADR-026 §6.2): configuración de datos, existencia/pertenencia a la
-        // Company se valida en Application/Infrastructure al momento de resolver.
+        // Columna plana, sin FK a Account (ADR-026 §6.2): configuración de datos,
+        // existencia/pertenencia a la Company se valida en Application/Infrastructure al momento
+        // de resolver.
         builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
 
         builder.Property(x => x.Nature).HasColumnName("nature").HasConversion<int>().IsRequired();

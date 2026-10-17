@@ -88,9 +88,6 @@ public sealed class PurchaseReturnPostingAmountKindRemediationTests
             CompanyId,
             sourceModule,
             factType,
-            null,
-            null,
-            null,
             CreatedBy
         );
 

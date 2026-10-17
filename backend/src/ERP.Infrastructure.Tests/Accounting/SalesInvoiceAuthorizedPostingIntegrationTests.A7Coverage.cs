@@ -85,11 +85,11 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             var session = await seed.CashSessions.SingleAsync(s => s.Id == _cashSessionId);
             (await seed.CashRegisters.SingleAsync(r => r.Id == session.CashRegisterId))
                 .SetAccountingAccount(cashAccount.Id, _createdBy);
-            var issued = PostingRule.Create(_tenantId, _companyId, "Sales", "InvoiceIssued", null, null, null, _createdBy);
+            var issued = PostingRule.Create(_tenantId, _companyId, "Sales", "InvoiceIssued", _createdBy);
             issued.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.CashApplied);
             issued.AddLine(receivableAccount.Id, AccountNature.Debit, PostingAmountKind.PendingBalance);
             issued.AddLine(revenueAccount.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
-            var cogs = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSold", null, null, null, _createdBy);
+            var cogs = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSold", _createdBy);
             cogs.AddLine(cogsAccount.Id, AccountNature.Debit, PostingAmountKind.HistoricalCost);
             cogs.AddLine(inventoryAccount.Id, AccountNature.Credit, PostingAmountKind.HistoricalCost);
             seed.PostingRules.Add(issued); if (includeCogs) seed.PostingRules.Add(cogs);

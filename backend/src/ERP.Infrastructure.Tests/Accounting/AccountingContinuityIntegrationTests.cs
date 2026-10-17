@@ -136,7 +136,7 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             "Compras", null, AccountType.Expense, AccountNature.Debit, allowsPosting: true, createdBy: _userId);
         var credit = Account.Create(_tenantId, companyId, AccountCode.Create($"2.1.{Guid.NewGuid():N}"[..8]),
             "Cuentas por pagar", null, AccountType.Liability, AccountNature.Credit, allowsPosting: true, createdBy: _userId);
-        var rule = PostingRule.Create(_tenantId, companyId, "Purchases", "InvoiceReceived", null, null, null, _userId);
+        var rule = PostingRule.Create(_tenantId, companyId, "Purchases", "InvoiceReceived", _userId);
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.Subtotal);
         rule.AddLine(credit.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
         var period = AccountingPeriod.Create(_tenantId, companyId, 2026, 7,
@@ -494,10 +494,10 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             "Costo de ventas", null, AccountType.Expense, AccountNature.Debit, allowsPosting: true, createdBy: _userId);
         var inventory = Account.Create(_tenantId, _companyId, AccountCode.Create($"1.9.{Guid.NewGuid():N}"[..8]),
             "Inventario", null, AccountType.Asset, AccountNature.Debit, allowsPosting: true, createdBy: _userId);
-        var sold = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSold", null, null, null, _userId);
+        var sold = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSold", _userId);
         sold.AddLine(cost.Id, AccountNature.Debit, PostingAmountKind.HistoricalCost);
         sold.AddLine(inventory.Id, AccountNature.Credit, PostingAmountKind.HistoricalCost);
-        var reversed = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSoldReversed", null, null, null, _userId);
+        var reversed = PostingRule.Create(_tenantId, _companyId, "Sales", "CostOfGoodsSoldReversed", _userId);
         reversed.AddLine(inventory.Id, AccountNature.Debit, PostingAmountKind.HistoricalCost);
         reversed.AddLine(cost.Id, AccountNature.Credit, PostingAmountKind.HistoricalCost);
         db.Accounts.AddRange(cost, inventory);

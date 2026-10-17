@@ -184,9 +184,6 @@ public sealed class JournalFactoryCashReceivableSplitTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
 

@@ -82,9 +82,6 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
             _companyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debitAccountId, AccountNature.Debit, PostingAmountKind.Subtotal);
@@ -149,9 +146,6 @@ public sealed class PostingRuleLinePersistenceTests : IAsyncLifetime
             _companyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(Guid.NewGuid(), AccountNature.Debit, PostingAmountKind.Subtotal);

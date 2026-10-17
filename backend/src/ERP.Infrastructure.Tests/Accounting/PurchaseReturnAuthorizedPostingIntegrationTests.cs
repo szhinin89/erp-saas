@@ -328,9 +328,6 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             _companyId,
             "Purchases",
             "PurchaseReturn",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(

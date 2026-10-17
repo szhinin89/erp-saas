@@ -6,10 +6,18 @@ import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useI18n } from "../../../i18n/i18n";
 import { formatApiRequestError } from "../../lib/apiError";
 import { message } from "../../../lib/messages";
-import { accountingApi, type PostingRuleDto, type PostingRuleLineDto } from "../api/accountingApi";
+import {
+  accountingApi,
+  type AccountDto,
+  type PostingFactCatalogItemDto,
+  type PostingRuleDto,
+  type PostingRuleLineDto,
+} from "../api/accountingApi";
+import { PostingRuleEditorModal, type PostingRuleEditorState } from "./PostingRuleEditorModal";
 import {
   accountNatureLabel,
   accountTypeLabel,
@@ -22,21 +30,36 @@ import {
 
 import "../../../styles/shared/items-catalog.css";
 
+const MANAGE_PERMISSION = "accounting.rules.manage";
+
+const factKey = (sourceModule: string, factType: string) => `${sourceModule}/${factType}`;
+
 interface RuleProblem {
   label: string;
 }
 
-function findRuleProblems(rule: PostingRuleDto, t: TFunction): RuleProblem[] {
+function findRuleProblems(
+  rule: PostingRuleDto,
+  fact: PostingFactCatalogItemDto | undefined,
+  t: TFunction,
+): RuleProblem[] {
   const problems: RuleProblem[] = [];
-  if (rule.lines.length < 2) {
+  if (!fact) {
+    return [{ label: t("accounting.postingRules.problem.unsupported") }];
+  }
+  // ACCOUNTING-11: misma forma que valida el backend (PostingFactCatalog) — un lado dinámico lo
+  // completa el origen; una regla habilitadora no lleva líneas fijas.
+  if (fact.allowedAmountKinds.length === 0) return problems;
+  const hasDynamic = fact.dynamicDebit || fact.dynamicCredit;
+  if (!hasDynamic && rule.lines.length < 2) {
     problems.push({ label: t("accounting.postingRules.problem.lessThanTwoLines") });
   }
   const debitLines = rule.lines.filter((l) => l.nature === "Debit");
   const creditLines = rule.lines.filter((l) => l.nature === "Credit");
-  if (debitLines.length === 0) {
+  if (debitLines.length === 0 && !fact.dynamicDebit) {
     problems.push({ label: t("accounting.postingRules.problem.noDebitLines") });
   }
-  if (creditLines.length === 0) {
+  if (creditLines.length === 0 && !fact.dynamicCredit) {
     problems.push({ label: t("accounting.postingRules.problem.noCreditLines") });
   }
   const badAccounts = rule.lines.filter((l) => !l.accountIsActive || !l.accountAllowsPosting);
@@ -112,14 +135,25 @@ function createLineColumns(t: TFunction): ZHDataTableColumn<PostingRuleLineDto>[
   ];
 }
 
-function PostingRuleCard({ rule, t }: { rule: PostingRuleDto; t: TFunction }) {
+interface PostingRuleCardProps {
+  rule: PostingRuleDto;
+  fact: PostingFactCatalogItemDto | undefined;
+  canManage: boolean;
+  busy: boolean;
+  onEdit: (rule: PostingRuleDto) => void;
+  onToggle: (rule: PostingRuleDto) => void;
+  t: TFunction;
+}
+
+function PostingRuleCard({ rule, fact, canManage, busy, onEdit, onToggle, t }: PostingRuleCardProps) {
   const debitLines = rule.lines
     .filter((l) => l.nature === "Debit")
     .sort((a, b) => a.sortOrder - b.sortOrder);
   const creditLines = rule.lines
     .filter((l) => l.nature === "Credit")
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  const problems = findRuleProblems(rule, t);
+  const problems = findRuleProblems(rule, fact, t);
+  const editable = canManage && !!fact && fact.allowedAmountKinds.length > 0;
   const lineColumns = createLineColumns(t);
 
   return (
@@ -140,6 +174,22 @@ function PostingRuleCard({ rule, t }: { rule: PostingRuleDto; t: TFunction }) {
             variant={rule.isActive ? "green" : "gray"}
           />
           <Badge label={t("accounting.postingRules.linesCount", { count: rule.lines.length })} variant="blue" />
+          {editable && (
+            <ZHBtn variant="ghost" size="sm" type="button" disabled={busy} onClick={() => onEdit(rule)}>
+              {t("accounting.postingRules.action.edit")}
+            </ZHBtn>
+          )}
+          {canManage && (rule.isActive || fact) && (
+            <ZHBtn
+              variant={rule.isActive ? "destructive" : "ghost"}
+              size="sm"
+              type="button"
+              disabled={busy}
+              onClick={() => onToggle(rule)}
+            >
+              {rule.isActive ? t("accounting.postingRules.action.disable") : t("accounting.postingRules.action.enable")}
+            </ZHBtn>
+          )}
         </div>
       }
     >
@@ -149,6 +199,16 @@ function PostingRuleCard({ rule, t }: { rule: PostingRuleDto; t: TFunction }) {
           message={t("accounting.postingRules.problem.message")}
           detail={problems.map((p) => p.label).join(" · ")}
         />
+      )}
+
+      {fact?.allowedAmountKinds.length === 0 && (
+        <ZHPageNotice variant="info" message={t("accounting.postingRules.dynamic.enabling")} />
+      )}
+      {fact?.dynamicDebit && fact.allowedAmountKinds.length > 0 && (
+        <ZHPageNotice variant="info" message={t("accounting.postingRules.dynamic.debit")} />
+      )}
+      {fact?.dynamicCredit && fact.allowedAmountKinds.length > 0 && (
+        <ZHPageNotice variant="info" message={t("accounting.postingRules.dynamic.credit")} />
       )}
 
       <div className="zh-mb-16">
@@ -175,36 +235,44 @@ function PostingRuleCard({ rule, t }: { rule: PostingRuleDto; t: TFunction }) {
 }
 
 /**
- * Contabilidad → Reglas contables (ACCOUNTING-POSTING-RULES-UI-12). Auditoría de reutilización:
- * revisadas `ChartOfAccountsPage.tsx` (mismo módulo, filtros vía `ZHCard actions` para 2-3
- * campos) y `ElectronicDocumentsFilters.tsx` (referencia real de `ZHFilterBar`+`ZHField
- * density="compact"` para una barra de filtros con varios campos — usada aquí en vez del slot
- * `actions` de `ZHCard` porque son 3 filtros independientes). Reutiliza PageShell/ZHCard/
- * ZHFilterBar/ZHField/ZhSelect/ZHDataTable/Badge/ZHPageNotice — sin componentes nuevos. Solo
- * lectura: consume exclusivamente `GET /api/v1/accounting/posting-rules`
- * (ACCOUNTING-POSTING-RULES-SEED-11B ya sembró las reglas; esta pantalla no crea/edita/deshabilita
- * ninguna, aunque el endpoint ya lo admite — ver ticket, fuera de alcance). Pantalla principal,
- * accesible solo desde el menú (`AccountingModule.cs`) — sin botones cruzados hacia Asientos
- * contables/Plan de cuentas/Reportes (navegación duplicada del menú, mismo criterio de
- * ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C).
+ * Contabilidad → Reglas contables (ACCOUNTING-POSTING-RULES-UI-12; administración ACCOUNTING-11).
+ * Auditoría de reutilización: revisadas `ChartOfAccountsPage.tsx`, `AccountingPeriodsPage.tsx`
+ * (permiso por acción con `usePermissionsUi`, `ZHModal`, `message.confirm`) y
+ * `ManualJournalEditorPage.tsx` (editor de líneas RHF+Zod+useFieldArray). Reutiliza PageShell/
+ * ZHCard/ZHFilterBar/ZHField/ZhSelect/ZHDataTable/ZHModal/Badge/ZHPageNotice — sin componentes
+ * nuevos. Lectura con `accounting.view`; crear la regla de un hecho faltante del catálogo
+ * (`GET posting-rules/catalog`), reemplazar líneas y activar/desactivar con
+ * `accounting.rules.manage`. Nunca claves libres: solo hechos soportados. Accesible solo desde el
+ * menú (`AccountingModule.cs`), sin botones cruzados (ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C).
  */
 export function PostingRulesPage() {
   const { t } = useI18n();
+  const { canShow } = usePermissionsUi();
+  const canManage = canShow(MANAGE_PERMISSION);
   const [rules, setRules] = useState<PostingRuleDto[]>([]);
+  const [catalog, setCatalog] = useState<PostingFactCatalogItemDto[]>([]);
+  const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [editor, setEditor] = useState<PostingRuleEditorState | null>(null);
   const [sourceModule, setSourceModule] = useState("");
   const [factType, setFactType] = useState("");
   const [status, setStatus] = useState("");
 
-  const sourceModuleOptions = useMemo(
-    () => [
-      { value: "", label: t("accounting.postingRules.filter.allModules") },
-      { value: "Sales", label: sourceModuleLabel(t, "Sales") },
-      { value: "Purchases", label: sourceModuleLabel(t, "Purchases") },
-      { value: "Finance", label: sourceModuleLabel(t, "Finance") },
-    ],
-    [t],
+  const factsByKey = useMemo(
+    () => new Map(catalog.map((f) => [factKey(f.sourceModule, f.factType), f])),
+    [catalog],
   );
+  const missingFacts = useMemo(() => catalog.filter((f) => f.ruleId === null), [catalog]);
+
+  // ACCOUNTING-11: módulos derivados del catálogo y de las reglas existentes (SSOT dinámico), no una lista fija.
+  const sourceModuleOptions = useMemo(() => {
+    const modules = Array.from(new Set([...catalog, ...rules].map((r) => r.sourceModule))).sort();
+    return [
+      { value: "", label: t("accounting.postingRules.filter.allModules") },
+      ...modules.map((m) => ({ value: m, label: sourceModuleLabel(t, m) })),
+    ];
+  }, [catalog, rules, t]);
 
   const statusOptions = useMemo(
     () => [
@@ -218,8 +286,14 @@ export function PostingRulesPage() {
   const fetchRules = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await accountingApi.listPostingRules();
+      const [list, facts, accountList] = await Promise.all([
+        accountingApi.listPostingRules(),
+        accountingApi.getPostingFactCatalog(),
+        accountingApi.listAccounts(),
+      ]);
       setRules(list);
+      setCatalog(facts);
+      setAccounts(accountList);
     } catch (err: unknown) {
       message.error(
         formatApiRequestError(err, { generic: t("accounting.postingRules.error.load") }),
@@ -260,12 +334,83 @@ export function PostingRulesPage() {
     setStatus("");
   };
 
+  const handleEdit = (rule: PostingRuleDto) => {
+    const fact = factsByKey.get(factKey(rule.sourceModule, rule.factType));
+    if (fact) setEditor({ mode: "edit", fact, rule });
+  };
+
+  async function handleToggle(rule: PostingRuleDto) {
+    if (rule.isActive) {
+      const confirmed = await message.confirm({
+        title: t("accounting.postingRules.disable.confirmTitle"),
+        message: t("accounting.postingRules.disable.confirmMessage"),
+        confirmLabel: t("accounting.postingRules.action.disable"),
+        variant: "danger",
+      });
+      if (!confirmed) return;
+    }
+    setBusy(true);
+    try {
+      if (rule.isActive) await accountingApi.disablePostingRule(rule.id);
+      else await accountingApi.enablePostingRule(rule.id);
+      message.success(
+        rule.isActive ? t("accounting.postingRules.disable.done") : t("accounting.postingRules.enable.done"),
+      );
+      await fetchRules();
+    } catch (err: unknown) {
+      message.error(formatApiRequestError(err, { generic: t("accounting.postingRules.editor.error") }));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const missingColumns: ZHDataTableColumn<PostingFactCatalogItemDto>[] = [
+    {
+      key: "module",
+      header: t("accounting.postingRules.filter.sourceModule"),
+      render: (r) => sourceModuleLabel(t, r.sourceModule),
+    },
+    {
+      key: "fact",
+      header: t("accounting.postingRules.filter.factType"),
+      render: (r) => factTypeLabel(t, r.factType),
+    },
+    {
+      key: "actions",
+      header: t("common.actions"),
+      cellClassName: "zh-table-cell--actions",
+      render: (r) =>
+        canManage ? (
+          <ZHBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            disabled={busy}
+            onClick={() => setEditor({ mode: "create", fact: r })}
+          >
+            {t("accounting.postingRules.action.configure")}
+          </ZHBtn>
+        ) : null,
+    },
+  ];
+
   return (
     <PageShell
       kicker={t("app.nav.group.accounting")}
       title={t("accounting.postingRules.title")}
       subtitle={t("accounting.postingRules.subtitle")}
     >
+      {!loading && missingFacts.length > 0 && (
+        <ZHCard title={t("accounting.postingRules.missing.title")} className="zh-mb-16">
+          <ZHPageNotice variant="warning" message={t("accounting.postingRules.missing.message")} />
+          <ZHDataTable
+            columns={missingColumns}
+            rows={missingFacts}
+            rowKey={(r) => factKey(r.sourceModule, r.factType)}
+          />
+        </ZHCard>
+      )}
+
       <ZHCard title={t("accounting.postingRules.filtersTitle")}>
         <ZHFilterBar onClear={handleClearFilters} disabled={loading}>
           <div className="zh-filterbar__field">
@@ -328,8 +473,30 @@ export function PostingRulesPage() {
       )}
 
       {filteredRules.map((rule) => (
-        <PostingRuleCard key={rule.id} rule={rule} t={t} />
+        <PostingRuleCard
+          key={rule.id}
+          rule={rule}
+          fact={factsByKey.get(factKey(rule.sourceModule, rule.factType))}
+          canManage={canManage}
+          busy={busy}
+          onEdit={handleEdit}
+          onToggle={(r) => void handleToggle(r)}
+          t={t}
+        />
       ))}
+
+      {editor && (
+        <PostingRuleEditorModal
+          state={editor}
+          accounts={accounts}
+          onClose={() => setEditor(null)}
+          onSaved={() => {
+            setEditor(null);
+            void fetchRules();
+          }}
+          t={t}
+        />
+      )}
     </PageShell>
   );
 }

@@ -130,9 +130,6 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
                 _companyId,
                 "Retentions",
                 "DocumentIssued",
-                null,
-                null,
-                null,
                 _actorId
             );
             legacyRule.AddLine(payablesAccountId, AccountNature.Debit, PostingAmountKind.Retention);
@@ -230,9 +227,6 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
                 _companyId,
                 "Purchases",
                 "PurchaseCreditNoteAuthorized",
-                null,
-                null,
-                null,
                 _actorId
             );
             legacyRule.AddLine(
@@ -625,9 +619,6 @@ public sealed class AccountingChartBackfillServicePostingRuleTests
                 _companyId,
                 "Purchases",
                 "SupplierCreditRefunded:2200123456",
-                null,
-                null,
-                null,
                 _actorId
             );
             obsolete.AddLine(bankAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

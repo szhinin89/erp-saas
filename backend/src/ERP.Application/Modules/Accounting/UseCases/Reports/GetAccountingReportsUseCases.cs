@@ -502,8 +502,8 @@ public sealed record GetIncomeStatementReportQuery(DateOnly FromDate, DateOnly T
 /// <summary>
 /// ACCOUNTING-FINANCIAL-STATEMENTS-10: Balance General — saldo acumulado (desde el inicio del
 /// historial Posted) de cada cuenta de Asset/Liability/Equity hasta <see cref="AsOfDate"/>
-/// inclusive. Ver <see cref="GetBalanceSheetReportResponse"/> para la nota sobre por qué
-/// <c>IsBalanced</c> puede legítimamente ser <c>false</c> sin cierre contable.
+/// inclusive, más los resultados no cerrados calculados (ACCOUNTING-11, ver
+/// <see cref="GetBalanceSheetReportResponse"/>).
 /// </summary>
 public sealed record GetBalanceSheetReportQuery(DateOnly AsOfDate)
     : IRequest<Result<GetBalanceSheetReportResponse>>,
@@ -646,13 +646,34 @@ public sealed class GetBalanceSheetReportHandler
             ct
         );
 
-        var assetLines = Map.ToStatementLines(relevantAccounts, totals, AccountType.Asset);
-        var liabilityLines = Map.ToStatementLines(relevantAccounts, totals, AccountType.Liability);
-        var equityLines = Map.ToStatementLines(relevantAccounts, totals, AccountType.Equity);
+        // ACCOUNTING-11: signo de la sección (Activo Debe − Haber; Pasivo/Patrimonio Haber − Debe),
+        // no la naturaleza de cada cuenta — una cuenta correctora (p. ej. depreciación acumulada)
+        // resta dentro de su sección en vez de sumarse y fingir un descuadre.
+        var assetLines = Map.ToSectionLines(relevantAccounts, totals, AccountType.Asset, AccountNature.Debit);
+        var liabilityLines = Map.ToSectionLines(relevantAccounts, totals, AccountType.Liability, AccountNature.Credit);
+        var equityLines = Map.ToSectionLines(relevantAccounts, totals, AccountType.Equity, AccountNature.Credit);
+
+        // ACCOUNTING-11: resultados todavía presentes en cuentas nominales, calculados (nunca un
+        // asiento persistido) desde los asientos reales hasta AsOfDate. El ejercicio es el año
+        // calendario (accounting.md §22). Un asiento de cierre que deja las nominales en cero hace
+        // que estas filas valgan cero: el patrimonio queda en sus cuentas, sin duplicarse.
+        var nominalAccountIds = allAccounts
+            .Where(a => a.AccountType is AccountType.Income or AccountType.Cost or AccountType.Expense)
+            .Select(a => a.Id)
+            .ToList();
+        var fiscalYearStart = new DateOnly(q.AsOfDate.Year, 1, 1);
+        var currentYearResult = Map.NetResult(
+            await _repo.GetAccountLineTotalsAsync(tenantId, companyId, fiscalYearStart, q.AsOfDate, nominalAccountIds, ct),
+            nominalAccountIds
+        );
+        var priorYearsUnclosedResult = Map.NetResult(
+            await _repo.GetAccountLineTotalsAsync(tenantId, companyId, null, fiscalYearStart.AddDays(-1), nominalAccountIds, ct),
+            nominalAccountIds
+        );
 
         var totalAssets = assetLines.Sum(l => l.Amount);
         var totalLiabilities = liabilityLines.Sum(l => l.Amount);
-        var totalEquity = equityLines.Sum(l => l.Amount);
+        var totalEquity = equityLines.Sum(l => l.Amount) + currentYearResult + priorYearsUnclosedResult;
         var difference = totalAssets - (totalLiabilities + totalEquity);
 
         return Result<GetBalanceSheetReportResponse>.Success(
@@ -662,6 +683,8 @@ public sealed class GetBalanceSheetReportHandler
                 liabilityLines,
                 totalLiabilities,
                 equityLines,
+                currentYearResult,
+                priorYearsUnclosedResult,
                 totalEquity,
                 difference,
                 difference == 0m,
@@ -673,6 +696,35 @@ public sealed class GetBalanceSheetReportHandler
 
 file static class Map
 {
+    /// <summary>ACCOUNTING-11 — Balance General: monto con el signo de la sección (ver handler).</summary>
+    public static IReadOnlyList<FinancialStatementLineDto> ToSectionLines(
+        IReadOnlyList<Account> accounts,
+        IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)> totals,
+        AccountType type,
+        AccountNature sectionSign
+    ) =>
+        accounts
+            .Where(a => a.AccountType == type && totals.ContainsKey(a.Id))
+            .Select(a =>
+            {
+                var t = totals[a.Id];
+                var amount =
+                    sectionSign == AccountNature.Debit
+                        ? t.TotalDebit - t.TotalCredit
+                        : t.TotalCredit - t.TotalDebit;
+                return new FinancialStatementLineDto(a.Id, a.Code.Value, a.Name, amount);
+            })
+            .ToList();
+
+    /// <summary>ACCOUNTING-11 — Ingresos − Costos − Gastos = Σ(Haber − Debe) de las cuentas nominales.</summary>
+    public static decimal NetResult(
+        IReadOnlyDictionary<Guid, (decimal TotalDebit, decimal TotalCredit)> totals,
+        IReadOnlyCollection<Guid> nominalAccountIds
+    ) =>
+        totals
+            .Where(t => nominalAccountIds.Contains(t.Key))
+            .Sum(t => t.Value.TotalCredit - t.Value.TotalDebit);
+
     /// <summary>
     /// Filtra las cuentas del tipo pedido y convierte su Σ Debit/Σ Credit al monto en convención
     /// natural según <see cref="Account.Nature"/> (Debit: TotalDebit − TotalCredit; Credit: al

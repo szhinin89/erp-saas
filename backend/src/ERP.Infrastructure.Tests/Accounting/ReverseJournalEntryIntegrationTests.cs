@@ -307,8 +307,9 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         await using (var db = CreateContext())
         {
             // Configuration now contradicts the historical entry, and its old account is inactive.
-            var changed = PostingRule.Create(_tenantId, _companyId, module, fact,
-                _creditAccountId, _debitAccountId, null, _createdBy);
+            var changed = PostingRule.Create(_tenantId, _companyId, module, fact, _createdBy);
+            changed.AddLine(_creditAccountId, ERP.Domain.Modules.Accounting.Enums.AccountNature.Debit, ERP.Domain.Modules.Accounting.Enums.PostingAmountKind.GrandTotal);
+            changed.AddLine(_debitAccountId, ERP.Domain.Modules.Accounting.Enums.AccountNature.Credit, ERP.Domain.Modules.Accounting.Enums.PostingAmountKind.GrandTotal);
             db.PostingRules.Add(changed);
             (await db.Accounts.SingleAsync(x => x.Id == _debitAccountId)).Disable(_createdBy);
             await db.SaveChangesAsync();

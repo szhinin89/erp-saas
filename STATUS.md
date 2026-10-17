@@ -1,5 +1,24 @@
 # Project Status
 
+## ACCOUNTING-11 (2026-10-17)
+
+Reglas contables administrables desde UI y Balance General cuadrado durante el ejercicio.
+Catálogo único `PostingFactCatalog` de hechos soportados (validación Create/Update/Enable, `GET posting-rules/catalog`
+y bootstrap); Update reemplaza realmente `Lines`; campos heredados `DebitAccountId`/`CreditAccountId`/`TaxCode`
+eliminados del modelo activo (entidad, `Create`, EF y snapshot; sin migración incremental — la migración inicial del
+squash nace sin esas columnas);
+permiso `accounting.rules.manage`. Pantalla: hechos sin regla, editor de líneas, activar/desactivar con confirmación.
+Balance General: filas calculadas Resultado del ejercicio y Resultados no cerrados de ejercicios anteriores; `IsBalanced`
+vuelve a indicar un descuadre real. BUG REAL latente corregido: el Balance sumaba por naturaleza de cuenta, así que
+una cuenta correctora (naturaleza opuesta a su sección) simulaba un descuadre; ahora suma con el signo de la sección.
+DEBT/BUG siguiente fase (sin corregir): el Estado de Resultados suma cada cuenta por su naturaleza, así que una cuenta
+correctora (p. ej. Ingreso con naturaleza Debe) se suma en vez de restar. Pendiente: migration squash; hasta entonces
+las BD existentes conservan esas tres columnas, nullable e ignoradas por el modelo.
+PASS 5/5 tests focales (edición de Lines + catálogo, permisos API/NavItem, Balance del año actual, dos ejercicios,
+corte/Draft/cierre sin doble conteo) + tests existentes adaptados al contrato nuevo. tsc -b y ESLint focal PASS.
+Sin suites completas, npm build, architecture:check, staging, commit ni push.
+Contrato: [Accounting §23](docs/architecture/accounting.md#23-reglas-contables-y-balance-general-accounting-11).
+
 ## ACCOUNTING-10 (2026-10-17)
 
 Contabilización de `SalesReturn`. BUG REAL: no se sembraba la regla `Sales/SalesReturn`, por lo que

@@ -84,9 +84,6 @@ public sealed class PostingEngineTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
@@ -484,9 +481,6 @@ public sealed class PostingEngineTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

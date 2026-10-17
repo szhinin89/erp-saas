@@ -343,7 +343,7 @@ public sealed class AccountingContinuity04Tests
 
     private void RuleWith(string module, string fact, params PostingAmountKind[] kinds)
     {
-        var rule = PostingRule.Create(TenantId, CompanyId, module, fact, null, null, null, UserId);
+        var rule = PostingRule.Create(TenantId, CompanyId, module, fact, UserId);
         foreach (var kind in kinds)
             rule.AddLine(Guid.NewGuid(), AccountNature.Debit, kind);
         _rules.Setup(r => r.FindByKeyAsync(TenantId, CompanyId, module, fact, It.IsAny<CancellationToken>())).ReturnsAsync(rule);

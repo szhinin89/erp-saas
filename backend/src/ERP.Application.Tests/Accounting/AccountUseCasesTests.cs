@@ -358,16 +358,8 @@ public sealed class AccountUseCasesTests
     public async Task DisableAccount_bloqueado_si_regla_activa_la_referencia()
     {
         var account = NewAccount("4.1.01", "Ventas");
-        var rule = PostingRule.Create(
-            TenantId,
-            CompanyId,
-            "Sales",
-            "InvoiceIssued",
-            null,
-            account.Id,
-            null,
-            CreatedBy
-        );
+        var rule = PostingRule.Create(TenantId, CompanyId, "Sales", "InvoiceIssued", CreatedBy);
+        rule.AddLine(account.Id, AccountNature.Credit, PostingAmountKind.Subtotal);
 
         var m = new Mocks();
         m.Accounts.Setup(r =>

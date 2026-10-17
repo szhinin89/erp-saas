@@ -21,7 +21,7 @@ public sealed class PostingRuleRepository : IPostingRuleRepository
     // .Include(x => x.Lines) — mismo motivo ya documentado en FindByKeyAsync más abajo (PostingRule
     // no usa lazy loading, sealed, sin navegación virtual), pero nadie lo había notado porque hasta
     // ACCOUNTING-POSTING-RULES-UI-12 ningún consumidor real de estos dos métodos leía Lines (los
-    // handlers de administración solo tocaban DebitAccountId/CreditAccountId legacy). La pantalla
+    // handlers de administración solo tocaban los campos planos legacy, ya eliminados). La pantalla
     // de Reglas contables sí depende de Lines — sin este fix, GetPostingRulesQuery devolvía las 7
     // reglas con `lines: []` cada una (activas, con SourceModule/FactType correctos), así que la
     // pantalla no tenía nada real que mostrar en Debe/Haber aunque los 21/63 registros ya existían

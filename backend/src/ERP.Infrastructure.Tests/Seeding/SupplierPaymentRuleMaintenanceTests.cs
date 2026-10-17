@@ -72,7 +72,7 @@ public sealed class SupplierPaymentRuleMaintenanceTests
         Legacy,
         Canonical,
         CustomLines,
-        CustomHeader,
+        Inactive,
     }
 
     private async Task Seed(Shape shape, string? advanceState = null)
@@ -124,15 +124,14 @@ public sealed class SupplierPaymentRuleMaintenanceTests
                 company.Id,
                 "Payables",
                 factType,
-                null,
-                null,
-                shape == Shape.CustomHeader ? "CUSTOM" : null,
                 actor
             );
+            if (shape == Shape.Inactive)
+                rule.Disable(actor);
             switch (shape)
             {
                 case Shape.Legacy:
-                case Shape.CustomHeader:
+                case Shape.Inactive:
                     rule.AddLine(accounts["2.1.01.001"].Id, nature, PostingAmountKind.GrandTotal);
                     break;
                 case Shape.Canonical:
@@ -272,7 +271,7 @@ public sealed class SupplierPaymentRuleMaintenanceTests
 
     [Theory]
     [InlineData(Shape.CustomLines)]
-    [InlineData(Shape.CustomHeader)]
+    [InlineData(Shape.Inactive)]
     public async Task Regla_personalizada_no_se_sobrescribe_y_se_diagnostica(Shape shape)
     {
         await Seed(shape);

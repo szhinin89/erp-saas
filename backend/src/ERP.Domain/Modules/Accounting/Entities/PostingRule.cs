@@ -9,31 +9,21 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// Regla de contabilización — configuración de datos, nunca lógica condicional cerrada por
 /// tipo de documento (ADR-026 §6.2: prohibido <c>if (documentType == "Factura")</c> o
 /// equivalentes en el Posting Engine). <b>PostingRule almacena únicamente configuración de
-/// mapeo</b> (SourceModule/FactType/DebitAccountId/CreditAccountId/TaxCode/Lines) — la resolución
-/// de qué regla aplica a un hecho contable concreto y la generación del <c>JournalEntry</c>
-/// resultante pertenecen exclusivamente al Posting Engine (ADR-026 §8), nunca a este aggregate.
-/// <c>DebitAccountId</c>/<c>CreditAccountId</c>/<see cref="PostingRuleLine.AccountId"/> son
-/// identificadores planos (<c>Guid</c>/<c>Guid?</c>) — este aggregate no referencia la clase
-/// <c>Account</c> ni inyecta ningún repositorio; su existencia y pertenencia a la misma
-/// <c>Company</c> se validan en Application/Infrastructure al momento de resolver, igual que el
-/// resto de invariantes cross-aggregate ya diferidas en este módulo (ver <see cref="Account"/>,
-/// <see cref="AccountingPeriod"/>).
+/// mapeo</b> (SourceModule/FactType/Lines) — la resolución de qué regla aplica a un hecho
+/// contable concreto y la generación del <c>JournalEntry</c> resultante pertenecen
+/// exclusivamente al Posting Engine (ADR-026 §8), nunca a este aggregate.
+/// <see cref="PostingRuleLine.AccountId"/> es un identificador plano — este aggregate no
+/// referencia la clase <c>Account</c> ni inyecta ningún repositorio; su existencia y pertenencia
+/// a la misma <c>Company</c> se validan en Application al guardar y en el Posting Engine al
+/// resolver (ver <see cref="Account"/>, <see cref="AccountingPeriod"/>). ACCOUNTING-11: los campos
+/// planos heredados DebitAccountId/CreditAccountId/TaxCode se eliminaron — el motor nunca los
+/// leyó; <see cref="Lines"/> es la única configuración efectiva.
 /// </summary>
-/// <remarks>
-/// <see cref="Lines"/> (Fase 3.5.3, diseñado en Fase 3.5.1) coexiste con
-/// <see cref="DebitAccountId"/>/<see cref="CreditAccountId"/> durante la transición — ninguno de
-/// los dos modelos se retira todavía: <c>PostingRuleResolver</c>/<c>JournalFactory</c> (Posting
-/// Engine) siguen sin consumir <see cref="Lines"/> hasta una fase posterior. Retirar las dos
-/// columnas planas requiere que el Posting Engine migre primero a consumir <see cref="Lines"/>.
-/// </remarks>
 public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompanyOperationalEntity
 {
     public Guid CompanyId { get; private set; }
     public string SourceModule { get; private set; } = null!;
     public string FactType { get; private set; } = null!;
-    public Guid? DebitAccountId { get; private set; }
-    public Guid? CreditAccountId { get; private set; }
-    public string? TaxCode { get; private set; }
     public bool IsActive { get; private set; } = true;
 
     private readonly List<PostingRuleLine> _lines = new();
@@ -46,9 +36,6 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
         Guid companyId,
         string sourceModule,
         string factType,
-        Guid? debitAccountId,
-        Guid? creditAccountId,
-        string? taxCode,
         Guid createdBy
     )
     {
@@ -70,9 +57,6 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
             CompanyId = companyId,
             SourceModule = sourceModule.Trim(),
             FactType = factType.Trim(),
-            DebitAccountId = debitAccountId,
-            CreditAccountId = creditAccountId,
-            TaxCode = OptionalCode.Normalize(taxCode),
             IsActive = true,
         };
         rule.SetCreated(createdBy);
@@ -98,21 +82,20 @@ public sealed class PostingRule : AuditableEntity, ITenantScopedEntity, ICompany
     }
 
     /// <summary>
-    /// Actualiza la configuración de mapeo (ADR-026 §6.2) — nunca resuelve ni valida la
-    /// existencia de las cuentas referenciadas, eso es responsabilidad de Application/
-    /// Infrastructure al momento de resolver (ver remarks de la clase). No cambia
-    /// SourceModule/FactType (identidad de la regla) ni IsActive.
+    /// ACCOUNTING-11 — reemplaza por completo las líneas efectivas (lo único que lee el Posting
+    /// Engine). La forma y las cuentas se validan en Application contra el catálogo de hechos; aquí
+    /// solo se reconstruye la colección en el orden recibido. No cambia SourceModule/FactType
+    /// (identidad) ni IsActive, y no toca asientos ya contabilizados: solo afecta contabilizaciones
+    /// futuras.
     /// </summary>
-    public void UpdateMapping(
-        Guid? debitAccountId,
-        Guid? creditAccountId,
-        string? taxCode,
+    public void ReplaceLines(
+        IEnumerable<(Guid AccountId, AccountNature Nature, PostingAmountKind AmountKind)> lines,
         Guid updatedBy
     )
     {
-        DebitAccountId = debitAccountId;
-        CreditAccountId = creditAccountId;
-        TaxCode = OptionalCode.Normalize(taxCode);
+        _lines.Clear();
+        foreach (var (accountId, nature, amountKind) in lines)
+            AddLine(accountId, nature, amountKind);
         SetUpdated(updatedBy);
     }
 

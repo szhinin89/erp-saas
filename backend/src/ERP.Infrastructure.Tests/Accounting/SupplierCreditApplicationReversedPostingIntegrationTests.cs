@@ -308,9 +308,6 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
             _companyId,
             "Purchases",
             "SupplierCreditApplied",
-            null,
-            null,
-            null,
             _createdBy
         );
         appliedRule.AddLine(payableAcc.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

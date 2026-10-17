@@ -98,9 +98,6 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
             company.Id,
             "Test",
             "BoundaryFact",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debit.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

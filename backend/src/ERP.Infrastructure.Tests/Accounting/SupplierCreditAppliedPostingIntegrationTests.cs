@@ -303,9 +303,6 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             _companyId,
             "Purchases",
             "SupplierCreditApplied",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(payableAcc.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

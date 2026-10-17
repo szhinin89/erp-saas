@@ -162,13 +162,16 @@ public static class AccountingModule
 
     // MAPA-MENU-ERP-SSOT-01: reubicado desde "Plan contable" — mismo Id/permiso, nueva ruta
     // (antes /accounting/posting-rules, que queda como redirect en el frontend).
+    // ACCOUNTING-11: lectura con accounting.view; crear/editar/activar/desactivar con
+    // accounting.rules.manage (asignable desde este ítem).
     [NavItem(
         "Reglas contables",
         Permission = AccountingPermissions.View,
         LabelKey = "app.nav.item.accounting.postingRules",
         SortOrder = 5,
         Id = "ac000000-0000-4000-9000-000000000004",
-        ParentId = "ac000000-0000-4000-9000-000000000006"
+        ParentId = "ac000000-0000-4000-9000-000000000006",
+        RelatedActionPermissionsCsv = AccountingPermissions.RulesManage
     )]
     public const string PostingRules = "/accounting/configuration/posting-rules";
 

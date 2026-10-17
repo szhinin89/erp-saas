@@ -138,9 +138,6 @@ public sealed class AccountHierarchyDiagnosticsTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            debitAccountId: null,
-            creditAccountId: null,
-            taxCode: null,
             createdBy: ActorId
         );
         rule.AddLine(leafInactive.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
@@ -161,9 +158,6 @@ public sealed class AccountHierarchyDiagnosticsTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            debitAccountId: null,
-            creditAccountId: null,
-            taxCode: null,
             createdBy: ActorId
         );
         rule.AddLine(leaf.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

@@ -315,9 +315,6 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             _companyId,
             "Purchases",
             "InvoiceReceived",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.Subtotal);
@@ -390,9 +387,6 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             _companyId,
             "Purchases",
             "InvoiceReceived",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.Subtotal);
@@ -614,9 +608,6 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             _companyId,
             "Purchases",
             "InvoiceReceived",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.Subtotal);

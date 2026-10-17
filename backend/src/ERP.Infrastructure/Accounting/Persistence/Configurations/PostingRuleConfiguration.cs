@@ -22,13 +22,6 @@ public sealed class PostingRuleConfiguration : IEntityTypeConfiguration<PostingR
             .IsRequired();
         builder.Property(x => x.FactType).HasColumnName("fact_type").HasMaxLength(100).IsRequired();
 
-        // Columnas planas, sin FK a Account (ADR-026 §6.2 — PostingRule no referencia el
-        // aggregate Account; la existencia/pertenencia a la Company se valida en el Posting
-        // Engine, no aquí).
-        builder.Property(x => x.DebitAccountId).HasColumnName("debit_account_id");
-        builder.Property(x => x.CreditAccountId).HasColumnName("credit_account_id");
-        builder.Property(x => x.TaxCode).HasColumnName("tax_code").HasMaxLength(10);
-
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

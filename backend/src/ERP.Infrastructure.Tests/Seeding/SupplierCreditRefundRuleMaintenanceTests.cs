@@ -118,9 +118,6 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
                         company.Id,
                         "Purchases",
                         factType,
-                        null,
-                        null,
-                        null,
                         actor
                     );
                     rule.AddLine(
@@ -137,9 +134,6 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
                         company.Id,
                         "Purchases",
                         $"{factType}:2200123456",
-                        null,
-                        null,
-                        null,
                         actor
                     );
                     legacy.AddLine(accounts["9.9.99.999"].Id, nature, PostingAmountKind.GrandTotal);

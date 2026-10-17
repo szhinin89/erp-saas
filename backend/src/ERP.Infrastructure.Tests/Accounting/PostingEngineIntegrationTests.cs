@@ -142,9 +142,6 @@ public sealed class PostingEngineIntegrationTests : IAsyncLifetime
             _companyId,
             sourceModule,
             factType,
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

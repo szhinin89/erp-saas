@@ -31,8 +31,8 @@ public sealed class JournalEntryLineConfiguration : IEntityTypeConfiguration<Jou
 
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
 
-        // FK real a Account (a diferencia de PostingRule.DebitAccountId/CreditAccountId, que son
-        // configuración sin FK) — JournalEntryLine es el hecho contable ya persistido, no
+        // FK real a Account (a diferencia de PostingRuleLine.AccountId, que es configuración
+        // sin FK) — JournalEntryLine es el hecho contable ya persistido, no
         // configuración; integridad referencial real importa más aquí (ver diseño Fase 3.5.1).
         builder
             .HasOne<Account>()

@@ -310,9 +310,6 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
             _companyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
@@ -458,9 +455,6 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
             _companyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(debitAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

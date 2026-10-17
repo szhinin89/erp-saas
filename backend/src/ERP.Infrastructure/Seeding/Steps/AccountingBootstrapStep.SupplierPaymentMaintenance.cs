@@ -36,13 +36,8 @@ public sealed partial class AccountingBootstrapStep
         Dictionary<string, AccountSeedLookup> accounts
     )
     {
-        if (
-            !rule.IsActive
-            || rule.TaxCode is not null
-            || rule.DebitAccountId is not null
-            || rule.CreditAccountId is not null
-        )
-            return "Custom: inactive rule or customized header";
+        if (!rule.IsActive)
+            return "Custom: inactive rule";
 
         var canonical = MinimalPostingRules
             .Single(r => r.SourceModule == "Payables" && r.FactType == rule.FactType)

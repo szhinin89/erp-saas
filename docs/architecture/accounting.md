@@ -21,6 +21,7 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-06: readiness único de completitud (cierre, pre-cierre y reportes), conciliación de orígenes, apertura/ASI, costo pendiente, cierre secuencial y gate Closed/Locked en el origen (§21) |
 | IMPLEMENTADO | ACCOUNTING-07: estructura temporal de períodos (contigüidad, orden frente a Closed/Locked, exclusión PostgreSQL de solape), ejercicios mensuales desde 2027 con generación manual, cierre solo después de `EndDate`, Locked auditivo irreversible, permisos dedicados, Entity Audit y pantalla de Períodos (§22) |
 | IMPLEMENTADO | ACCOUNTING-08: asientos manuales Draft/Posted/Discarded, edición versionada, publicación con intentos durables, reverso histórico común, permisos dedicados, Entity Audit y UI sobre el libro existente (§11) |
+| IMPLEMENTADO | ACCOUNTING-11: catálogo único de hechos contables soportados, administración de reglas desde UI (`accounting.rules.manage`) y Balance General con resultados no cerrados calculados (§23) |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -62,7 +63,8 @@ No mantener simultáneamente dos obligaciones autoritativas para el mismo efecto
 ### Core y configuración contable
 
 `Account` tiene código, nombre, padre, tipo, naturaleza, estado activo y AllowsPosting.
-Los tipos son Asset, Liability, Equity, Income y Expense; no son catálogos tributarios
+Los tipos son Asset, Liability, Equity, Income, Cost y Expense (Cost = costo de ventas, separa
+utilidad bruta de neta); no son catálogos tributarios
 ni decisiones por tenant. Código/tipo/naturaleza se conservan tras crear. La jerarquía
 no admite ciclos ni padres de otra Company. El motor exige cuentas existentes, de la
 misma empresa, activas y con AllowsPosting. No se introduce aquí una regla nueva que
@@ -70,7 +72,8 @@ deduzca AllowsPosting exclusivamente de tener o no hijos. La baja es lógica y n
 líneas ni historia; los cambios de configuración solo afectan contabilizaciones nuevas.
 
 `PostingRule` es configuración por Company y tipo de hecho, con líneas de cuenta,
-naturaleza y componente monetario. El resolver trabaja por datos; el motor genérico
+naturaleza y componente monetario. Solo existen reglas para los hechos del catálogo único
+`PostingFactCatalog` (§23); se administran desde la UI. El resolver trabaja por datos; el motor genérico
 no agrega ramas por documento. Los traductores convierten hechos ya resueltos en
 PostingFact. Los montos, descuentos e impuestos provienen del origen y las líneas
 efectivas de la regla; no se resuelven desde campos legacy de débito/crédito planos.
@@ -255,6 +258,9 @@ original y el reverso según **sus respectivas fechas**. No excluir el original 
 haber sido reversado ni forzar neto cero en un rango que solo contiene uno de los dos.
 No reconstruir balances desde documentos operativos ni sumar las obligaciones como
 si ya fueran asientos.
+
+Balance General: Patrimonio incluye las filas calculadas de resultados no cerrados (§23), así que
+el cuadre Activo = Pasivo + Patrimonio se cumple durante el ejercicio y un descuadre es real.
 
 Mostrar advertencia de información incompleta si existen pendientes/fallidos, hechos
 sin resolución o incertidumbres relevantes en el alcance del reporte. Permitir consulta
@@ -446,7 +452,7 @@ de Accounting. DocumentFlowPolicy no es un permiso.
 
 Evidencia actual: AccountingController usa `AccountingPermissions.View/Create/Update/Delete`
 para sus consultas y administración, salvo Períodos (`accounting.periods.create` /
-`accounting.periods.close`, §22); `accounting.settings.update` cambia el modo operativo,
+`accounting.periods.close`, §22) y Reglas contables (`accounting.rules.manage`, §23); `accounting.settings.update` cambia el modo operativo,
 `accounting.postings.view` consulta obligaciones e intentos y `accounting.postings.reprocess`
 ejecuta el reproceso manual individual y en lote, también para el costo de ventas. La apertura usa sus
 permisos combinados existentes. ACCOUNTING-08 agrega `accounting.manual.create`,
@@ -728,3 +734,42 @@ el/por), generación del ejercicio siguiente, creación manual prellenada con el
 revisión de cierre con `{Code, Count}`, `AsOf` y refresco, cierre con confirmación de irreversibilidad y
 bloqueo. Cada motivo dirige a su pantalla (contabilizaciones, asientos, período anterior, carga inicial);
 `SALE_COST_PENDING` y `ORIGINS_WITHOUT_ACCOUNTING` solo se explican con su conteo (sin endpoint de detalle).
+
+## 23. Reglas contables y Balance General ACCOUNTING-11
+
+**Catálogo único.** `PostingFactCatalog` (Application, Posting Engine) es la autoridad runtime de los
+hechos que admiten PostingRule: clave (SourceModule, FactType), AmountKinds permitidos (los montos que el
+traductor del hecho aporta) y lados dinámicos (Debe y/o Haber completados por el origen con
+`Allocations`: cajas, bancos, medios de pago, categorías de gasto). Sin AmountKinds la regla es
+habilitadora y no admite líneas fijas (ASI de apertura). El mismo catálogo valida Create/Update/Enable,
+alimenta `GET posting-rules/catalog` y da la clave a cada regla del bootstrap, que además se omite (log)
+si sus líneas no cumplen la forma. Un hecho fuera del catálogo (p. ej. anulaciones que espejan el asiento
+histórico, §7) no se crea, edita ni reactiva; sus reglas antiguas solo se listan.
+
+**Validación (servidor).** Solo claves del catálogo, nunca texto libre. Líneas: AmountKind permitido por el
+hecho; sin repetir la misma dirección y tipo de monto; al menos 2 líneas, una al Debe y una al Haber,
+salvo en el lado dinámico (p. ej. pago a proveedor: el Haber lo aportan los medios de pago, así que basta
+el Debe); cada cuenta existe en la misma Company, activa y con AllowsPosting. Editar reemplaza todas las
+líneas y solo afecta contabilizaciones futuras; nunca modifica asientos publicados. Reactivar exige que la
+regla vuelva a cumplir la validación. Desactivar deja fail-closed (`RULE_NOT_FOUND`) toda operación futura
+de ese tipo hasta reactivar una regla válida. Los campos planos heredados DebitAccountId/CreditAccountId/TaxCode
+se eliminaron del modelo (el motor nunca los leyó); `Lines` es la única configuración de la regla.
+
+**Permisos.** Consulta (reglas y catálogo): `accounting.view`. Crear, editar, activar y desactivar:
+`accounting.rules.manage`, acción relacionada del NavItem Contabilidad › Configuración › Reglas contables.
+
+**Pantalla.** `/accounting/configuration/posting-rules`: hechos soportados sin regla (para que una empresa
+nueva los configure sin SQL), reglas con su diagnóstico según el catálogo, editor de líneas (cuenta,
+Debe/Haber, tipo de monto del catálogo) y desactivación con confirmación explícita.
+
+**Balance General.** Activo suma Debe − Haber y Pasivo/Patrimonio Haber − Debe por sección (una cuenta
+correctora resta dentro de su sección). Patrimonio agrega dos filas calculadas desde asientos Posted y
+Reversed hasta `AsOfDate`, sin asiento ni persistencia: **Resultado del ejercicio** = Ingresos − Costos −
+Gastos del 01-ene del año de `AsOfDate` a `AsOfDate` (ejercicio = año calendario, §22) y **Resultados no
+cerrados de ejercicios anteriores** = el mismo cálculo antes del 01-ene. `TotalEquity` las incluye e
+`IsBalanced` representa un descuadre real. Un asiento de cierre que deja las cuentas nominales en cero
+lleva esas filas a cero sin duplicar el patrimonio trasladado. Estado de Resultados y Balance de
+Comprobación no cambian; no existe cierre anual automático.
+
+**DEBT (siguiente fase).** El Estado de Resultados todavía suma cada cuenta por su naturaleza: una cuenta
+correctora de su sección se sumaría en vez de restar. Debe adoptar el mismo signo por sección que el Balance.

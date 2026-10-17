@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Application.Modules.Accounting.UseCases.Reports;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -672,6 +673,119 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
                     ERP.Application.Modules.Accounting.Queries.JournalEntrySourceInfo
                 >()
             );
+    }
+
+    // ── ACCOUNTING-11 — Balance General con resultados no cerrados (filas calculadas) ──
+
+    private int _a11EntryNumber;
+
+    private async Task<Guid> A11AccountAsync(string code, AccountType type, AccountNature nature)
+    {
+        var account = Account.Create(_tenantId, _companyId, AccountCode.Create(code), code, null, type, nature, true, _createdBy);
+        await using var db = CreateContext();
+        db.Accounts.Add(account);
+        await db.SaveChangesAsync();
+        return account.Id;
+    }
+
+    private readonly Dictionary<(int Year, int Month), Guid> _a11Periods = new();
+
+    /// <summary>Período mensual de la fecha (el fixture ya tiene 2026-08).</summary>
+    private async Task<Guid> A11PeriodAsync(DateOnly date)
+    {
+        if (date.Year == 2026 && date.Month == 8)
+            return _accountingPeriodId;
+        if (_a11Periods.TryGetValue((date.Year, date.Month), out var id))
+            return id;
+        var start = new DateOnly(date.Year, date.Month, 1);
+        var period = AccountingPeriod.Create(_tenantId, _companyId, date.Year, date.Month, start, start.AddMonths(1).AddDays(-1), _createdBy);
+        await using var db = CreateContext();
+        db.AccountingPeriods.Add(period);
+        await db.SaveChangesAsync();
+        return _a11Periods[(date.Year, date.Month)] = period.Id;
+    }
+
+    /// <summary>Asiento balanceado Debe <paramref name="debit"/> / Haber <paramref name="credit"/>.</summary>
+    private async Task A11EntryAsync(DateOnly date, Guid debit, Guid credit, decimal amount, bool post = true)
+    {
+        var periodId = await A11PeriodAsync(date);
+        var entry = JournalEntry.Create(_tenantId, _companyId, date, periodId, date.Year, "Sales", "InvoiceIssued", Guid.NewGuid(), "A11", _createdBy);
+        entry.AddLine(debit, null, amount, 0m);
+        entry.AddLine(credit, null, 0m, amount);
+        if (post)
+            entry.Post(_createdBy, ++_a11EntryNumber);
+        await using var db = CreateContext();
+        db.JournalEntries.Add(entry);
+        await db.SaveChangesAsync();
+    }
+
+    private Task<Result<GetBalanceSheetReportResponse>> A11BalanceSheetAsync(DateOnly asOf) =>
+        new GetBalanceSheetReportHandler(
+            new JournalEntryRepository(CreateContext()),
+            new AccountRepository(CreateContext()),
+            new FixedCurrentTenant(_tenantId),
+            new FixedCurrentCompany(_companyId),
+            CompleteAccounting.Instance
+        ).Handle(new GetBalanceSheetReportQuery(asOf), CancellationToken.None);
+
+    [Fact]
+    public async Task A11_BalanceSheet_anio_actual_incluye_resultado_I_menos_C_menos_G_y_cuadra()
+    {
+        var capital = await A11AccountAsync("3.1.01", AccountType.Equity, AccountNature.Credit);
+        var cost = await A11AccountAsync("5.1.01", AccountType.Cost, AccountNature.Debit);
+        var expense = await A11AccountAsync("6.1.01", AccountType.Expense, AccountNature.Debit);
+        await A11EntryAsync(new DateOnly(2026, 1, 2), _cashAccountId, capital, 500m);
+        await A11EntryAsync(new DateOnly(2026, 8, 5), _cashAccountId, _salesAccountId, 1000m);
+        await A11EntryAsync(new DateOnly(2026, 8, 5), cost, _cashAccountId, 600m);
+        await A11EntryAsync(new DateOnly(2026, 8, 6), expense, _cashAccountId, 100m);
+
+        var result = (await A11BalanceSheetAsync(new DateOnly(2026, 8, 31))).Value!;
+
+        result.TotalAssets.Should().Be(800m);
+        result.CurrentYearResult.Should().Be(300m, "1000 ingresos − 600 costos − 100 gastos");
+        result.PriorYearsUnclosedResult.Should().Be(0m);
+        result.TotalEquity.Should().Be(800m, "capital 500 + resultado calculado 300");
+        result.IsBalanced.Should().BeTrue();
+        result.EquityLines.Should().ContainSingle(l => l.AccountId == capital, "las filas calculadas no son cuentas");
+    }
+
+    [Fact]
+    public async Task A11_BalanceSheet_dos_ejercicios_separa_resultado_actual_de_anteriores_no_cerrados()
+    {
+        await A11EntryAsync(new DateOnly(2025, 11, 10), _cashAccountId, _salesAccountId, 200m);
+        await A11EntryAsync(new DateOnly(2026, 8, 5), _cashAccountId, _salesAccountId, 1000m);
+
+        var in2026 = (await A11BalanceSheetAsync(new DateOnly(2026, 8, 31))).Value!;
+        in2026.CurrentYearResult.Should().Be(1000m);
+        in2026.PriorYearsUnclosedResult.Should().Be(200m);
+        in2026.TotalEquity.Should().Be(1200m);
+        in2026.IsBalanced.Should().BeTrue();
+
+        var in2025 = (await A11BalanceSheetAsync(new DateOnly(2025, 12, 31))).Value!;
+        in2025.CurrentYearResult.Should().Be(200m);
+        in2025.PriorYearsUnclosedResult.Should().Be(0m);
+        in2025.IsBalanced.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A11_BalanceSheet_ignora_posteriores_y_Draft_y_cierre_existente_no_duplica_patrimonio()
+    {
+        var retained = await A11AccountAsync("3.1.02", AccountType.Equity, AccountNature.Credit);
+        await A11EntryAsync(new DateOnly(2025, 11, 10), _cashAccountId, _salesAccountId, 200m);
+        // Asiento de cierre 2025: deja la cuenta nominal en cero y traslada el resultado a Patrimonio.
+        await A11EntryAsync(new DateOnly(2025, 12, 31), _salesAccountId, retained, 200m);
+        await A11EntryAsync(new DateOnly(2026, 8, 5), _cashAccountId, _salesAccountId, 1000m);
+        await A11EntryAsync(new DateOnly(2026, 8, 6), _cashAccountId, _salesAccountId, 70m, post: false);
+        await A11EntryAsync(new DateOnly(2026, 9, 1), _cashAccountId, _salesAccountId, 30m);
+
+        var result = (await A11BalanceSheetAsync(new DateOnly(2026, 8, 31))).Value!;
+
+        result.CurrentYearResult.Should().Be(1000m, "Draft y movimientos posteriores a AsOfDate no cuentan");
+        result.PriorYearsUnclosedResult.Should().Be(0m, "el cierre dejó la nominal de 2025 en cero");
+        result.EquityLines.Should().ContainSingle(l => l.AccountId == retained).Which.Amount.Should().Be(200m);
+        result.TotalAssets.Should().Be(1200m);
+        result.TotalEquity.Should().Be(1200m);
+        result.IsBalanced.Should().BeTrue();
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

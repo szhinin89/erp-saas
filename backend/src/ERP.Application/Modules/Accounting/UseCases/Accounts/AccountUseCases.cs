@@ -373,14 +373,7 @@ public sealed class DisableAccountHandler
         // tocar el Posting Engine (fuera de alcance de este ticket). No bloquea por asientos ya
         // contabilizados (JournalEntryLine histórico) — eso es historial, no un riesgo futuro.
         var rules = await _postingRuleRepo.GetByCompanyAsync(tenantId, companyId, ct);
-        var usedByActiveRule = rules.Any(r =>
-            r.IsActive
-            && (
-                r.DebitAccountId == cmd.Id
-                || r.CreditAccountId == cmd.Id
-                || r.Lines.Any(l => l.AccountId == cmd.Id)
-            )
-        );
+        var usedByActiveRule = rules.Any(r => r.IsActive && r.Lines.Any(l => l.AccountId == cmd.Id));
         if (usedByActiveRule)
             return Result<AccountDto>.Conflict(
                 "No se puede desactivar: la cuenta está referenciada por una Regla de Contabilización activa."

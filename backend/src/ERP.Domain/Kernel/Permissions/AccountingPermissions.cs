@@ -58,4 +58,11 @@ public static class AccountingPermissions
     /// docs/architecture/accounting.md §21; reemplaza el uso transitorio de <see cref="Update"/>.
     /// </summary>
     public const string PeriodsClose = "accounting.periods.close";
+
+    /// <summary>
+    /// ACCOUNTING-11 — crear, editar, activar y desactivar reglas contables (PostingRule). Dedicado:
+    /// el mapeo de cuentas decide cómo se contabiliza toda operación futura y no es una edición del
+    /// plan de cuentas (<see cref="Create"/>/<see cref="Update"/>/<see cref="Delete"/>).
+    /// </summary>
+    public const string RulesManage = "accounting.rules.manage";
 }

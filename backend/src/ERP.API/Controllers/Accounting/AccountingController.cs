@@ -141,20 +141,26 @@ public sealed class AccountingController : ControllerBase
     public async Task<IActionResult> GetPostingRules(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new GetPostingRulesQuery(), ct), "OK");
 
+    // ACCOUNTING-11: hechos soportados (PostingFactCatalog) con la regla de la empresa para cada uno.
+    [HttpGet("posting-rules/catalog")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
+    public async Task<IActionResult> GetPostingFactCatalog(CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetPostingFactCatalogQuery(), ct), "OK");
+
     [HttpGet("posting-rules/{id:guid}")]
     [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
     public async Task<IActionResult> GetPostingRuleById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetPostingRuleByIdQuery(id), ct));
 
     [HttpPost("posting-rules")]
-    [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.RulesManage}")]
     public async Task<IActionResult> CreatePostingRule(
         [FromBody] CreatePostingRuleCommand command,
         CancellationToken ct
     ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
 
     [HttpPatch("posting-rules/{id:guid}")]
-    [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.RulesManage}")]
     public async Task<IActionResult> UpdatePostingRule(
         Guid id,
         [FromBody] UpdatePostingRuleCommand command,
@@ -167,12 +173,12 @@ public sealed class AccountingController : ControllerBase
     }
 
     [HttpPatch("posting-rules/{id:guid}/enable")]
-    [Authorize(Policy = $"perm:{AccountingPermissions.Update}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.RulesManage}")]
     public async Task<IActionResult> EnablePostingRule(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new EnablePostingRuleCommand(id), ct));
 
     [HttpPatch("posting-rules/{id:guid}/disable")]
-    [Authorize(Policy = $"perm:{AccountingPermissions.Delete}")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.RulesManage}")]
     public async Task<IActionResult> DisablePostingRule(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new DisablePostingRuleCommand(id), ct));
 

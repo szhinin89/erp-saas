@@ -109,11 +109,10 @@ public sealed class SalesInvoiceRuleMaintenanceTests
             company.Id,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            custom ? "CUSTOM" : null,
             actor
         );
+        if (custom)
+            rule.Disable(actor);
         var lines =
             count == 4
                 ? Canonical.Where(l =>
@@ -138,9 +137,6 @@ public sealed class SalesInvoiceRuleMaintenanceTests
             company.Id,
             "Sales",
             "Other",
-            null,
-            null,
-            null,
             actor
         );
         other.AddLine(accounts["1.1.03.001"].Id, AccountNature.Debit, PostingAmountKind.GrandTotal);

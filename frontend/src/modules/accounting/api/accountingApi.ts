@@ -142,13 +142,30 @@ export interface PostingRuleDto {
   id: string;
   sourceModule: string;
   factType: string;
-  debitAccountId: string | null;
-  creditAccountId: string | null;
-  taxCode: string | null;
   isActive: boolean;
+  /** ACCOUNTING-11: la clave figura en el catálogo de hechos soportados (solo esas reglas se editan). */
+  isSupported: boolean;
   lines: PostingRuleLineDto[];
   createdAt: string;
   updatedAt: string | null;
+}
+
+/** ACCOUNTING-11 — espejo de PostingFactCatalogItemDto: hecho soportado y la regla de la empresa (ruleId null = falta). */
+export interface PostingFactCatalogItemDto {
+  sourceModule: string;
+  factType: string;
+  /** Vacío = regla habilitadora: todas sus líneas las aporta el origen, no admite líneas fijas. */
+  allowedAmountKinds: string[];
+  dynamicDebit: boolean;
+  dynamicCredit: boolean;
+  ruleId: string | null;
+  ruleIsActive: boolean | null;
+}
+
+export interface PostingRuleLinePayload {
+  accountId: string;
+  nature: string;
+  amountKind: string;
 }
 
 // ── DTOs (espejo exacto de GeneralJournal/GeneralLedger/TrialBalance en ERP.Application — ACCOUNTING-REPORTS-09) ──
@@ -276,6 +293,10 @@ export interface GetBalanceSheetReportResponse {
   liabilityLines: FinancialStatementLineDto[];
   totalLiabilities: number;
   equityLines: FinancialStatementLineDto[];
+  /** ACCOUNTING-11 — filas calculadas (sin asiento): resultado del ejercicio y no cerrado de ejercicios anteriores. */
+  currentYearResult: number;
+  priorYearsUnclosedResult: number;
+  /** Incluye las dos filas calculadas. */
   totalEquity: number;
   difference: number;
   isBalanced: boolean;
@@ -291,10 +312,8 @@ export interface GetBalanceSheetReportResponse {
  * nunca recalcula, solo lee JournalEntry/JournalEntryLine ya contabilizados; desde
  * ACCOUNTING-FINANCIAL-STATEMENTS-10 el backend expone esas rutas vía
  * `AccountingReportsController` (split mecánico, misma ruta `api/v1/accounting/reports/*`).
- * `listPostingRules` (ACCOUNTING-POSTING-RULES-UI-12) consume `GET posting-rules` — el endpoint
- * ya admitía Create/Update/Enable/Disable (ACCOUNTING-POSTING-RULES-AUDIT-03), pero esta pantalla
- * es deliberadamente solo lectura: revisión/auditoría de las reglas sembradas por
- * ACCOUNTING-POSTING-RULES-SEED-11B, sin editor todavía.
+ * `posting-rules*` (ACCOUNTING-11): listado, catálogo de hechos soportados y administración
+ * (crear regla faltante, reemplazar líneas, activar/desactivar) con `accounting.rules.manage`.
  */
 // ── ACCOUNTING-CONTINUITY-01 (espejo de AccountingContinuityDtos.cs en ERP.Application) ──
 
@@ -462,6 +481,18 @@ export const accountingApi = {
   disableAccount: (id: string) => apiPatch<AccountDto>(`${BASE}/accounts/${id}/disable`, {}),
 
   listPostingRules: () => apiGet<PostingRuleDto[]>(`${BASE}/posting-rules`),
+
+  getPostingFactCatalog: () => apiGet<PostingFactCatalogItemDto[]>(`${BASE}/posting-rules/catalog`),
+
+  createPostingRule: (payload: { sourceModule: string; factType: string; lines: PostingRuleLinePayload[] }) =>
+    apiPost<PostingRuleDto>(`${BASE}/posting-rules`, payload),
+
+  updatePostingRule: (id: string, lines: PostingRuleLinePayload[]) =>
+    apiPatch<PostingRuleDto>(`${BASE}/posting-rules/${id}`, { id, lines }),
+
+  enablePostingRule: (id: string) => apiPatch<PostingRuleDto>(`${BASE}/posting-rules/${id}/enable`, {}),
+
+  disablePostingRule: (id: string) => apiPatch<PostingRuleDto>(`${BASE}/posting-rules/${id}/disable`, {}),
 
   listJournalEntries: (page = 1, pageSize = 20, filter: JournalEntriesFilter = {}) => {
     const params = new URLSearchParams();

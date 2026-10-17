@@ -1185,9 +1185,6 @@ public sealed class AccountingBootstrapStepTests
                 _companyId,
                 "Retentions",
                 "DocumentIssued",
-                null,
-                null,
-                null,
                 _actorId
             );
             legacyRule.AddLine(payablesAccountId, AccountNature.Debit, PostingAmountKind.Retention);
@@ -1364,9 +1361,6 @@ public sealed class AccountingBootstrapStepTests
                     _companyId,
                     "Payables",
                     factType,
-                    null,
-                    null,
-                    null,
                     _actorId
                 );
                 legacy.AddLine(payablesAccountId, nature, PostingAmountKind.GrandTotal);
@@ -1496,9 +1490,6 @@ public sealed class AccountingBootstrapStepTests
                 _companyId,
                 "Sales",
                 "InvoiceIssued",
-                null,
-                null,
-                null,
                 _actorId
             );
             legacyRule.AddLine(

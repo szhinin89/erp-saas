@@ -1,6 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.DTOs;
+using ERP.Application.Modules.Accounting.Posting;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -11,13 +13,7 @@ namespace ERP.Application.Modules.Accounting.UseCases.PostingRules;
 
 // ── Commands ────────────────────────────────────────────────────────────
 
-/// <summary>
-/// Fase 5.6.2 — línea real que consumirá JournalFactory (<c>PostingRule.Lines</c>). Antes de esta
-/// fase, <c>CreatePostingRuleCommand</c> solo poblaba los campos planos legacy
-/// (DebitAccountId/CreditAccountId), que JournalFactory ya no lee — cualquier regla creada sin
-/// líneas producía asientos con cero líneas en producción. <c>Lines</c> es opcional para no
-/// romper la forma anterior del comando, pero es la única vía real de dejar una regla funcional.
-/// </summary>
+/// <summary>Línea efectiva de una regla: lo único que <c>JournalFactory</c> lee para construir un asiento.</summary>
 public sealed record PostingRuleLineInput(
     Guid AccountId,
     AccountNature Nature,
@@ -25,39 +21,23 @@ public sealed record PostingRuleLineInput(
 );
 
 /// <summary>
-/// ACCOUNTING-POSTING-RULES-AUDIT-03 — decisión explícita sobre la convivencia de
-/// <c>DebitAccountId</c>/<c>CreditAccountId</c> (legacy) con <c>Lines</c>: <b>Lines es la única
-/// fuente que <see cref="Posting.JournalFactory"/> lee para construir un asiento</b> —
-/// DebitAccountId/CreditAccountId nunca producen una <c>JournalEntryLine</c> (ver remarks de
-/// <see cref="Posting.JournalFactory"/>). Por eso <see cref="CreatePostingRuleCommand"/> exige
-/// <c>Lines.Count &gt;= 2</c> ("líneas efectivas") — una regla con solo los campos legacy
-/// poblados y sin <c>Lines</c> se guardaría pero jamás produciría un asiento (fallaría en
-/// <c>JournalValidator</c> con "menos de 2 líneas" recién cuando llegue el primer hecho real,
-/// un error tardío y evitable). Los campos legacy siguen aceptándose y validándose (existencia/
-/// misma Company/activa/AllowsPosting) por compatibilidad de contrato — nunca se eliminan en este
-/// ticket sin auditoría (ver entregable) — pero son puramente informativos en tiempo de ejecución.
+/// ACCOUNTING-11 — crea la regla de un hecho de <see cref="PostingFactCatalog"/> (nunca una clave
+/// libre). Las líneas se validan contra la forma del hecho y las cuentas de la Company.
 /// </summary>
 public sealed record CreatePostingRuleCommand(
     string SourceModule,
     string FactType,
-    Guid? DebitAccountId,
-    Guid? CreditAccountId,
-    string? TaxCode,
-    IReadOnlyList<PostingRuleLineInput>? Lines = null
+    IReadOnlyList<PostingRuleLineInput> Lines
 ) : IRequest<Result<PostingRuleDto>>, ICompanyScopedRequest;
 
 /// <summary>
-/// No modifica <c>Lines</c> (sin consumidor todavía que edite líneas post-creación — fuera de
-/// alcance de ACCOUNTING-POSTING-RULES-AUDIT-03, que es auditoría/endurecimiento, no rediseño).
-/// Solo los campos legacy DebitAccountId/CreditAccountId se validan aquí (existencia/misma
-/// Company/activa/AllowsPosting) cuando se proveen — mismo criterio que Create.
+/// ACCOUNTING-11 — reemplaza por completo las líneas de la regla (agregar/quitar líneas, cuenta,
+/// dirección y tipo de monto). Solo afecta contabilizaciones futuras; los asientos ya publicados
+/// no se tocan.
 /// </summary>
-public sealed record UpdatePostingRuleCommand(
-    Guid Id,
-    Guid? DebitAccountId,
-    Guid? CreditAccountId,
-    string? TaxCode
-) : IRequest<Result<PostingRuleDto>>, ICompanyScopedRequest;
+public sealed record UpdatePostingRuleCommand(Guid Id, IReadOnlyList<PostingRuleLineInput> Lines)
+    : IRequest<Result<PostingRuleDto>>,
+        ICompanyScopedRequest;
 
 public sealed record EnablePostingRuleCommand(Guid Id)
     : IRequest<Result<PostingRuleDto>>,
@@ -75,6 +55,11 @@ public sealed record GetPostingRulesQuery()
 
 public sealed record GetPostingRuleByIdQuery(Guid Id)
     : IRequest<Result<PostingRuleDto>>,
+        ICompanyScopedRequest;
+
+/// <summary>ACCOUNTING-11 — hechos soportados y la regla de la Company para cada uno (faltantes con RuleId null).</summary>
+public sealed record GetPostingFactCatalogQuery()
+    : IRequest<Result<IReadOnlyList<PostingFactCatalogItemDto>>>,
         ICompanyScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
@@ -95,10 +80,8 @@ public sealed class CreatePostingRuleCommandValidator : AbstractValidator<Create
     {
         RuleFor(x => x.SourceModule).NotEmpty().MaximumLength(50);
         RuleFor(x => x.FactType).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.TaxCode).MaximumLength(10).When(x => x.TaxCode is not null);
-        RuleForEach(x => x.Lines)
-            .SetValidator(new PostingRuleLineInputValidator())
-            .When(x => x.Lines is not null);
+        RuleFor(x => x.Lines).NotNull();
+        RuleForEach(x => x.Lines).SetValidator(new PostingRuleLineInputValidator());
     }
 }
 
@@ -107,7 +90,8 @@ public sealed class UpdatePostingRuleCommandValidator : AbstractValidator<Update
     public UpdatePostingRuleCommandValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.TaxCode).MaximumLength(10).When(x => x.TaxCode is not null);
+        RuleFor(x => x.Lines).NotNull();
+        RuleForEach(x => x.Lines).SetValidator(new PostingRuleLineInputValidator());
     }
 }
 
@@ -159,56 +143,44 @@ public sealed class CreatePostingRuleHandler
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
+        var fact = PostingFactCatalog.Find(cmd.SourceModule, cmd.FactType);
+        if (fact is null)
+            return Result<PostingRuleDto>.ValidationFailure(
+                $"'{cmd.SourceModule}'/'{cmd.FactType}' no es un hecho contable soportado."
+            );
+
         // Pre-check: primera línea de defensa (no la única — ver uq_posting_rules_company_source_fact
         // + IDatabaseExceptionTranslator más abajo).
         var existing = await _repo.FindByKeyAsync(
             tenantId,
             companyId,
-            cmd.SourceModule,
-            cmd.FactType,
+            fact.SourceModule,
+            fact.FactType,
             ct
         );
         if (existing is not null)
             return Result<PostingRuleDto>.Conflict(
-                $"Ya existe una regla de contabilización para '{cmd.SourceModule}'/'{cmd.FactType}' en esta empresa."
+                $"Ya existe una regla de contabilización para '{fact.SourceModule}'/'{fact.FactType}' en esta empresa."
             );
 
-        // ACCOUNTING-POSTING-RULES-AUDIT-03: "líneas efectivas" — ver remarks de
-        // CreatePostingRuleCommand. Sin esto, una regla con solo DebitAccountId/CreditAccountId
-        // (legacy, nunca leídos por JournalFactory) se guardaría inservible.
-        if (cmd.Lines is null || cmd.Lines.Count < 2)
-            return Result<PostingRuleDto>.ValidationFailure(
-                "La regla necesita al menos 2 líneas (Lines) — es lo único que el Posting Engine "
-                    + "lee para construir un asiento; DebitAccountId/CreditAccountId son heredados "
-                    + "y no producen líneas de asiento."
-            );
-
-        var accountIds = cmd
-            .Lines.Select(l => l.AccountId)
-            .Concat(cmd.DebitAccountId is { } d ? new[] { d } : Array.Empty<Guid>())
-            .Concat(cmd.CreditAccountId is { } cr ? new[] { cr } : Array.Empty<Guid>())
-            .Distinct();
-
-        var accountError = await PostingRuleAccountValidation.ValidateAsync(
+        var error = await PostingRuleLinesValidation.ValidateAsync(
             _accountRepo,
             tenantId,
             companyId,
-            accountIds,
+            fact,
+            cmd.Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind)).ToList(),
             ct
         );
-        if (accountError is not null)
-            return Result<PostingRuleDto>.ValidationFailure(accountError);
+        if (error is not null)
+            return Result<PostingRuleDto>.ValidationFailure(error);
 
         try
         {
             var rule = PostingRule.Create(
                 tenantId,
                 companyId,
-                cmd.SourceModule,
-                cmd.FactType,
-                cmd.DebitAccountId,
-                cmd.CreditAccountId,
-                cmd.TaxCode,
+                fact.SourceModule,
+                fact.FactType,
                 _u.UserId
             );
 
@@ -229,7 +201,7 @@ public sealed class CreatePostingRuleHandler
         catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
         {
             return Result<PostingRuleDto>.Conflict(
-                $"Ya existe una regla de contabilización para '{cmd.SourceModule}'/'{cmd.FactType}' en esta empresa."
+                $"Ya existe una regla de contabilización para '{fact.SourceModule}'/'{fact.FactType}' en esta empresa."
             );
         }
     }
@@ -271,21 +243,25 @@ public sealed class UpdatePostingRuleHandler
         if (rule is null)
             return Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.");
 
-        var accountIds = (cmd.DebitAccountId is { } d ? new[] { d } : Array.Empty<Guid>())
-            .Concat(cmd.CreditAccountId is { } cr ? new[] { cr } : Array.Empty<Guid>())
-            .Distinct();
+        var fact = PostingFactCatalog.Find(rule.SourceModule, rule.FactType);
+        if (fact is null)
+            return Result<PostingRuleDto>.ValidationFailure(
+                $"'{rule.SourceModule}'/'{rule.FactType}' ya no es un hecho contable soportado; la regla no se edita."
+            );
 
-        var accountError = await PostingRuleAccountValidation.ValidateAsync(
+        var lines = cmd.Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind)).ToList();
+        var error = await PostingRuleLinesValidation.ValidateAsync(
             _accountRepo,
             tenantId,
             companyId,
-            accountIds,
+            fact,
+            lines,
             ct
         );
-        if (accountError is not null)
-            return Result<PostingRuleDto>.ValidationFailure(accountError);
+        if (error is not null)
+            return Result<PostingRuleDto>.ValidationFailure(error);
 
-        rule.UpdateMapping(cmd.DebitAccountId, cmd.CreditAccountId, cmd.TaxCode, _u.UserId);
+        rule.ReplaceLines(lines, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         var accounts = await _accountRepo.GetByCompanyAsync(tenantId, companyId, ct);
@@ -294,24 +270,30 @@ public sealed class UpdatePostingRuleHandler
 }
 
 /// <summary>
-/// ACCOUNTING-POSTING-RULES-AUDIT-03: validación de cuentas compartida por Create/Update — toda
-/// cuenta referenciada por una PostingRule (Lines o legacy DebitAccountId/CreditAccountId) debe
-/// existir, pertenecer a la misma Company/Tenant, estar activa y admitir movimiento
-/// (AllowsPosting). Misma regla que <see cref="Posting.PostingAccountGuard"/> aplica en tiempo de
-/// ejecución — esta es la validación de configuración (falla rápido al guardar en vez de recién
-/// cuando llegue el primer hecho contable real).
+/// ACCOUNTING-11 — validación única de Create/Update/Enable: forma de líneas según el hecho del
+/// catálogo y cuentas existentes en la misma Company/Tenant, activas y con AllowsPosting (misma
+/// regla que <see cref="Posting.PostingAccountGuard"/> aplica en tiempo de ejecución; aquí falla
+/// rápido al guardar).
 /// </summary>
-file static class PostingRuleAccountValidation
+file static class PostingRuleLinesValidation
 {
     public static async Task<string?> ValidateAsync(
         IAccountRepository accountRepo,
         Guid tenantId,
         Guid companyId,
-        IEnumerable<Guid> accountIds,
+        PostingFactDefinition fact,
+        IReadOnlyCollection<(Guid AccountId, AccountNature Nature, PostingAmountKind AmountKind)> lines,
         CancellationToken ct
     )
     {
-        foreach (var accountId in accountIds)
+        var shapeError = PostingFactCatalog.ValidateLineShape(
+            fact,
+            lines.Select(l => (l.Nature, l.AmountKind)).ToList()
+        );
+        if (shapeError is not null)
+            return shapeError;
+
+        foreach (var accountId in lines.Select(l => l.AccountId).Distinct())
         {
             var account = await accountRepo.GetByIdAsync(tenantId, companyId, accountId, ct);
             if (account is null)
@@ -358,7 +340,31 @@ public sealed class EnablePostingRuleHandler
         if (rule is null)
             return Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.");
 
-        rule.Enable(_u.UserId);
+        // ACCOUNTING-11 — solo se reactiva una regla válida: hecho soportado y líneas vigentes.
+        var fact = PostingFactCatalog.Find(rule.SourceModule, rule.FactType);
+        if (fact is null)
+            return Result<PostingRuleDto>.ValidationFailure(
+                $"'{rule.SourceModule}'/'{rule.FactType}' ya no es un hecho contable soportado; la regla no se reactiva."
+            );
+        var error = await PostingRuleLinesValidation.ValidateAsync(
+            _accountRepo,
+            _t.TenantId,
+            _c.CompanyId,
+            fact,
+            rule.Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind)).ToList(),
+            ct
+        );
+        if (error is not null)
+            return Result<PostingRuleDto>.ValidationFailure(error);
+
+        try
+        {
+            rule.Enable(_u.UserId);
+        }
+        catch (DomainRuleViolationException ex)
+        {
+            return Result<PostingRuleDto>.Conflict(ex.Message);
+        }
 
         await _repo.SaveChangesAsync(ct);
         var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
@@ -399,7 +405,14 @@ public sealed class DisablePostingRuleHandler
         if (rule is null)
             return Result<PostingRuleDto>.NotFound("Regla de contabilización no encontrada.");
 
-        rule.Disable(_u.UserId);
+        try
+        {
+            rule.Disable(_u.UserId);
+        }
+        catch (DomainRuleViolationException ex)
+        {
+            return Result<PostingRuleDto>.Conflict(ex.Message);
+        }
 
         await _repo.SaveChangesAsync(ct);
         var accounts = await _accountRepo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
@@ -479,6 +492,51 @@ public sealed class GetPostingRuleByIdHandler
     }
 }
 
+public sealed class GetPostingFactCatalogHandler
+    : IRequestHandler<GetPostingFactCatalogQuery, Result<IReadOnlyList<PostingFactCatalogItemDto>>>
+{
+    private readonly IPostingRuleRepository _repo;
+    private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
+
+    public GetPostingFactCatalogHandler(
+        IPostingRuleRepository repo,
+        ICurrentTenant t,
+        ICurrentCompany c
+    )
+    {
+        _repo = repo;
+        _t = t;
+        _c = c;
+    }
+
+    public async Task<Result<IReadOnlyList<PostingFactCatalogItemDto>>> Handle(
+        GetPostingFactCatalogQuery q,
+        CancellationToken ct
+    )
+    {
+        var rules = await _repo.GetByCompanyAsync(_t.TenantId, _c.CompanyId, ct);
+        var byKey = rules.ToDictionary(r => (r.SourceModule, r.FactType));
+        return Result<IReadOnlyList<PostingFactCatalogItemDto>>.Success(
+            PostingFactCatalog
+                .All.Select(f =>
+                {
+                    byKey.TryGetValue((f.SourceModule, f.FactType), out var rule);
+                    return new PostingFactCatalogItemDto(
+                        f.SourceModule,
+                        f.FactType,
+                        f.AllowedAmountKinds.Select(k => k.ToString()).ToList(),
+                        f.DynamicSides.HasFlag(PostingDynamicSides.Debit),
+                        f.DynamicSides.HasFlag(PostingDynamicSides.Credit),
+                        rule?.Id,
+                        rule?.IsActive
+                    );
+                })
+                .ToList()
+        );
+    }
+}
+
 // ── Mapping ─────────────────────────────────────────────────────────────
 
 /// <summary>
@@ -499,10 +557,8 @@ file static class Map
             r.Id,
             r.SourceModule,
             r.FactType,
-            r.DebitAccountId,
-            r.CreditAccountId,
-            r.TaxCode,
             r.IsActive,
+            PostingFactCatalog.Find(r.SourceModule, r.FactType) is not null,
             r.Lines.OrderBy(l => l.SortOrder).Select(l => ToLineDto(l, accountsById)).ToList(),
             r.CreatedAt,
             r.UpdatedAt

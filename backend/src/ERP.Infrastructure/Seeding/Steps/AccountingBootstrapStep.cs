@@ -1,4 +1,5 @@
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -861,11 +862,17 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         PostingAmountKind AmountKind
     );
 
+    // ACCOUNTING-11: la clave sale siempre de PostingFactCatalog (autoridad única de hechos
+    // soportados); este seed solo aporta las cuentas por defecto de RetailChart.
     private sealed record MinimalPostingRule(
         string SourceModule,
         string FactType,
         IReadOnlyList<MinimalPostingRuleLine> Lines
-    );
+    )
+    {
+        public MinimalPostingRule(PostingFactDefinition fact, IReadOnlyList<MinimalPostingRuleLine> lines)
+            : this(fact.SourceModule, fact.FactType, lines) { }
+    }
 
     private sealed record AccountSeedLookup(Guid Id, bool IsActive, bool AllowsPosting);
 
@@ -891,8 +898,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // exacto-o-nada que TryCorrectLegacyPurchaseCreditNoteAuthorizedRule) — nunca reescribe
         // asientos ya posteados, solo la configuración de la regla para autorizaciones futuras.
         new(
-            "Sales",
-            "InvoiceIssued",
+            PostingFactCatalog.SalesInvoiceIssued,
             [
                 new("1.1.01.001", AccountNature.Debit, PostingAmountKind.CashApplied),
                 new("1.1.03.001", AccountNature.Debit, PostingAmountKind.PendingBalance),
@@ -908,8 +914,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // CxC (PendingBalance); la línea en 0 se omite. El COGS revertido es otro hecho
         // (CostOfGoodsSoldReversed).
         new(
-            "Sales",
-            "SalesReturn",
+            PostingFactCatalog.SalesReturn,
             [
                 new("4.1.03.001", AccountNature.Debit, PostingAmountKind.Subtotal),
                 new("2.1.02.001", AccountNature.Debit, PostingAmountKind.TaxVat),
@@ -921,24 +926,21 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             ]
         ),
         new(
-            "Sales",
-            "CostOfGoodsSold",
+            PostingFactCatalog.CostOfGoodsSold,
             [
                 new("5.1.01.001", AccountNature.Debit, PostingAmountKind.HistoricalCost),
                 new("1.1.04.001", AccountNature.Credit, PostingAmountKind.HistoricalCost),
             ]
         ),
         new(
-            "Sales",
-            "CostOfGoodsSoldReversed",
+            PostingFactCatalog.CostOfGoodsSoldReversed,
             [
                 new("1.1.04.001", AccountNature.Debit, PostingAmountKind.HistoricalCost),
                 new("5.1.01.001", AccountNature.Credit, PostingAmountKind.HistoricalCost),
             ]
         ),
         new(
-            "Purchases",
-            "InvoiceReceived",
+            PostingFactCatalog.PurchaseInvoiceReceived,
             [
                 new("1.1.04.001", AccountNature.Debit, PostingAmountKind.Subtotal),
                 new("1.1.05.001", AccountNature.Debit, PostingAmountKind.TaxVat),
@@ -960,8 +962,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // TryCorrectLegacyPurchaseCreditNoteAuthorizedRule (mismo criterio exacto-o-nada que
         // TryCorrectLegacyRetentionsDocumentIssuedRule) — nunca reescribe asientos ya posteados.
         new(
-            "Purchases",
-            "PurchaseCreditNoteAuthorized",
+            PostingFactCatalog.PurchaseCreditNoteAuthorized,
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
                 new("4.2.01.002", AccountNature.Credit, PostingAmountKind.Subtotal),
@@ -987,8 +988,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // y "5.1.02.001 Mermas y faltantes de inventario"/"4.2.01.001 Ingresos por ajustes positivos
         // de inventario" para la variación de costo, mismo criterio ya usado por StockAdjustment.
         new(
-            "Purchases",
-            "PurchaseReturn",
+            PostingFactCatalog.PurchaseReturn,
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
                 new("1.1.03.004", AccountNature.Debit, PostingAmountKind.SupplierCredit),
@@ -1010,8 +1010,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // (se reduce el crédito a favor ya reconocido como activo — misma cuenta que
         // "Purchases"/"PurchaseReturn" usa para SupplierCredit).
         new(
-            "Purchases",
-            "SupplierCreditApplied",
+            PostingFactCatalog.SupplierCreditApplied,
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
                 new("1.1.03.004", AccountNature.Credit, PostingAmountKind.GrandTotal),
@@ -1025,16 +1024,14 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // tomada de CashRegister/CompanyBankAccount.AccountingAccountId) — nunca una regla por
         // caja/banco. Mismo patrón que "Payables"/"SupplierPaymentConfirmed".
         new(
-            "Purchases",
-            "SupplierCreditRefunded",
+            PostingFactCatalog.SupplierCreditRefunded,
             [new("1.1.03.004", AccountNature.Credit, PostingAmountKind.GrandTotal)]
         ),
         // ACCOUNTING-CONTINUITY-04 — "PurchaseReturnCancelled", "SupplierCreditApplicationReversed" y
         // "SupplierCreditRefundReversed" ya no se siembran: sus anulaciones espejan el asiento
         // histórico (Accounting/Reversal) sin PostingRule. Las reglas ya existentes no se borran.
         new(
-            "Finance",
-            "CollectionApplied",
+            PostingFactCatalog.CollectionApplied,
             [
                 new("1.1.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
                 new("1.1.03.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
@@ -1059,8 +1056,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // cuyo monto es 0 (pago sin remanente / pago sin CxP). La forma vieja (1 línea GrandTotal)
         // se corrige vía TryCorrectLegacySupplierPaymentRule.
         new(
-            "Payables",
-            "SupplierPaymentConfirmed",
+            PostingFactCatalog.SupplierPaymentConfirmed,
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
                 new("1.1.03.004", AccountNature.Debit, PostingAmountKind.SupplierCredit),
@@ -1071,8 +1067,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // PostingFact.Allocations en SupplierPaymentReversedPostingTranslator, mismo criterio que
         // la confirmación.
         new(
-            "Payables",
-            "SupplierPaymentReversed",
+            PostingFactCatalog.SupplierPaymentReversed,
             [
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.AppliedToPayable),
                 new("1.1.03.004", AccountNature.Credit, PostingAmountKind.SupplierCredit),
@@ -1096,8 +1091,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // company que ya tenía sembrada la forma vieja de 2 líneas (01H) se corrige a esta forma de
         // 3 líneas por el backfill, no solo las companies nuevas.
         new(
-            "Retentions",
-            "DocumentIssued",
+            PostingFactCatalog.RetentionDocumentIssued,
             [
                 new("2.1.01.001", AccountNature.Debit, PostingAmountKind.Retention),
                 new("2.1.02.002", AccountNature.Credit, PostingAmountKind.RetentionVat),
@@ -1117,8 +1111,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // empresa: Debe IVA crédito tributario (si el gasto tiene IVA; se omite en cero vía
         // JournalFactory) y Haber CxP proveedores por el total.
         new(
-            "Expenses",
-            "DocumentConfirmed",
+            PostingFactCatalog.ExpenseDocumentConfirmed,
             [
                 new("1.1.05.001", AccountNature.Debit, PostingAmountKind.TaxVat),
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
@@ -1129,24 +1122,21 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // confirmado del dominio ya redondeado. Contrapartida única: la cuenta puente
         // "Saldos de apertura". El traductor que publica estos hechos llega en IL-7B.
         new(
-            OpeningBalancePostingFacts.SourceModule,
-            OpeningBalancePostingFacts.OpeningInventory,
+            PostingFactCatalog.OpeningInventory,
             [
                 new("1.1.04.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
                 new(OpeningBalanceAccountCode, AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
         new(
-            OpeningBalancePostingFacts.SourceModule,
-            OpeningBalancePostingFacts.OpeningReceivables,
+            PostingFactCatalog.OpeningReceivables,
             [
                 new("1.1.03.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
                 new(OpeningBalanceAccountCode, AccountNature.Credit, PostingAmountKind.GrandTotal),
             ]
         ),
         new(
-            OpeningBalancePostingFacts.SourceModule,
-            OpeningBalancePostingFacts.OpeningPayables,
+            PostingFactCatalog.OpeningPayables,
             [
                 new(OpeningBalanceAccountCode, AccountNature.Debit, PostingAmountKind.GrandTotal),
                 new("2.1.01.001", AccountNature.Credit, PostingAmountKind.GrandTotal),
@@ -1156,8 +1146,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // (Debe/Haber dinámicos) viajan como PostingAllocation; el comando de publicación exige que
         // esta regla siga sin líneas fijas. Requiere la cuenta puente (no se siembra si hay conflicto).
         new(
-            OpeningBalancePostingFacts.SourceModule,
-            OpeningBalancePostingFacts.OpeningJournalEntry,
+            PostingFactCatalog.OpeningJournalEntry,
             []
         ),
     ];
@@ -1625,14 +1614,25 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 continue;
             }
 
+            // ACCOUNTING-11 — el seed respeta la misma forma que exige la administración desde UI.
+            var fact = PostingFactCatalog.Find(m.SourceModule, m.FactType);
+            var shapeError = fact is null
+                ? "fact not in PostingFactCatalog"
+                : PostingFactCatalog.ValidateLineShape(
+                    fact,
+                    m.Lines.Select(l => (l.Nature, l.AmountKind)).ToList()
+                );
+            if (shapeError is not null)
+            {
+                LogPostingRuleSkippedInvalidShape(m.SourceModule, m.FactType, shapeError, companyId);
+                continue;
+            }
+
             var rule = PostingRule.Create(
                 tenantId,
                 companyId,
                 m.SourceModule,
                 m.FactType,
-                debitAccountId: null,
-                creditAccountId: null,
-                taxCode: null,
                 createdBy: actorId
             );
 
@@ -1981,6 +1981,18 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         string sourceModule,
         string factType,
         string accountCode,
+        Guid companyId
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Skipped seeding posting rule {SourceModule}/{FactType} for company {CompanyId} — "
+            + "seed lines do not match PostingFactCatalog: {Reason}."
+    )]
+    private partial void LogPostingRuleSkippedInvalidShape(
+        string sourceModule,
+        string factType,
+        string reason,
         Guid companyId
     );
 

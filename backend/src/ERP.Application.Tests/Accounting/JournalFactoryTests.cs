@@ -60,9 +60,6 @@ public sealed class JournalFactoryTests
             CompanyId,
             "Sales",
             "InvoiceIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
 
@@ -404,9 +401,6 @@ public sealed class JournalFactoryTests
             CompanyId,
             "Retentions",
             "DocumentIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
         rule.AddLine(accountId, AccountNature.Debit, PostingAmountKind.Retention);
@@ -447,9 +441,6 @@ public sealed class JournalFactoryTests
             CompanyId,
             "Retentions",
             "DocumentIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
         rule.AddLine(accountsPayableAccount, AccountNature.Debit, PostingAmountKind.Retention);
@@ -540,9 +531,6 @@ public sealed class JournalFactoryTests
             CompanyId,
             "Retentions",
             "DocumentIssued",
-            null,
-            null,
-            null,
             CreatedBy
         );
         rule.AddLine(payablesAccount, AccountNature.Debit, PostingAmountKind.Retention);

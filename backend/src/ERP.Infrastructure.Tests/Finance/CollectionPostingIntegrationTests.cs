@@ -325,9 +325,6 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             _companyId,
             "Finance",
             "CollectionApplied",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
@@ -438,9 +435,6 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             _companyId,
             "Finance",
             "CollectionApplied",
-            null,
-            null,
-            null,
             _createdBy
         );
         appliedRule.AddLine(cashAccount.Id, AccountNature.Debit, PostingAmountKind.GrandTotal);
@@ -455,9 +449,6 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             _companyId,
             "Finance",
             "CollectionReversed",
-            null,
-            null,
-            null,
             _createdBy
         );
         reversedRule.AddLine(

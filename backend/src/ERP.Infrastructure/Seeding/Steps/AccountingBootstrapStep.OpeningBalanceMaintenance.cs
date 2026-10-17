@@ -202,9 +202,6 @@ public sealed partial class AccountingBootstrapStep
                 companyId,
                 canonical.SourceModule,
                 canonical.FactType,
-                null,
-                null,
-                null,
                 actorId
             );
             foreach (var line in canonical.Lines)
@@ -227,9 +224,6 @@ public sealed partial class AccountingBootstrapStep
     {
         if (
             !rule.IsActive
-            || rule.TaxCode is not null
-            || rule.DebitAccountId is not null
-            || rule.CreditAccountId is not null
             || rule.Lines.Count != canonical.Lines.Count
             || canonical.Lines.Any(l => !accounts.ContainsKey(l.AccountCode))
         )

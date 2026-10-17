@@ -47,13 +47,8 @@ public sealed partial class AccountingBootstrapStep
         Dictionary<string, AccountSeedLookup> accounts
     )
     {
-        if (
-            !rule.IsActive
-            || rule.TaxCode is not null
-            || rule.DebitAccountId is not null
-            || rule.CreditAccountId is not null
-        )
-            return "Custom: inactive rule or customized header";
+        if (!rule.IsActive)
+            return "Custom: inactive rule";
 
         var canonical = CanonicalSupplierCreditRefundRule(rule.FactType).Lines;
         if (
@@ -152,9 +147,6 @@ public sealed partial class AccountingBootstrapStep
                 companyId,
                 "Purchases",
                 factType,
-                null,
-                null,
-                null,
                 actorId
             );
             foreach (var line in canonical.Lines)

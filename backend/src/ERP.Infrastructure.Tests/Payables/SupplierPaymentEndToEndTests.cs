@@ -414,9 +414,6 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             _companyId,
             "Payables",
             "SupplierPaymentConfirmed",
-            null,
-            null,
-            null,
             _createdBy
         );
         rule.AddLine(_payablesAccountId, AccountNature.Debit, PostingAmountKind.GrandTotal);
@@ -507,9 +504,6 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             _companyId,
             "Payables",
             "SupplierPaymentConfirmed",
-            null,
-            null,
-            null,
             _createdBy
         );
         confirmedRule.AddLine(
@@ -523,9 +517,6 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             _companyId,
             "Payables",
             "SupplierPaymentReversed",
-            null,
-            null,
-            null,
             _createdBy
         );
         reversedRule.AddLine(
@@ -2236,9 +2227,6 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             _companyId,
             "Payables",
             "SupplierPaymentConfirmed",
-            null,
-            null,
-            null,
             _createdBy
         );
         confirmedRule.AddLine(
@@ -2256,9 +2244,6 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             _companyId,
             "Payables",
             "SupplierPaymentReversed",
-            null,
-            null,
-            null,
             _createdBy
         );
         reversedRule.AddLine(
