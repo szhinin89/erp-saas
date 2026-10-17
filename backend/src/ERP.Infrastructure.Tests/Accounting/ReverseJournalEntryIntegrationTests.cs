@@ -337,7 +337,11 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         var policies = new AccountingOperationalPolicyRepository(db);
         // A reversal must never invoke the rule-based engine or resolve configurable expense accounts.
         return new(new UnitOfWork(db), new AccountingPostingRepository(db),
-            new AccountingPostingFactBuilder(Mock.Of<IExpenseCategoryRepository>(MockBehavior.Strict), Mock.Of<IAccountRepository>(MockBehavior.Strict)),
+            new AccountingPostingFactBuilder(Mock.Of<IExpenseCategoryRepository>(MockBehavior.Strict), Mock.Of<IAccountRepository>(MockBehavior.Strict),
+                Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(MockBehavior.Strict),
+                Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(MockBehavior.Strict),
+                Mock.Of<ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodAccountRepository>(MockBehavior.Strict),
+                Mock.Of<IPostingRuleRepository>(MockBehavior.Strict)),
             Mock.Of<IPostingEngine>(MockBehavior.Strict), new AccountingPostingDispatchQueue(),
             new FixedCurrentTenant(_tenantId), new FixedCurrentCompany(_companyId), new FixedCurrentUser(_createdBy),
             Mock.Of<IAuditContext>(), NullLogger<AccountingPostingExecutor>.Instance,

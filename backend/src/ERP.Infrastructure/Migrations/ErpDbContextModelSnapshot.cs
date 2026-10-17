@@ -6454,12 +6454,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("AccountingAccountCodeSnapshot")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("accounting_account_code_snapshot");
 
-                    b.Property<Guid>("AccountingAccountId")
+                    b.Property<Guid?>("AccountingAccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("accounting_account_id");
 
@@ -19284,8 +19283,7 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Accounting.Entities.Account", null)
                         .WithMany()
                         .HasForeignKey("AccountingAccountId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERP.Domain.Modules.Caja.Entities.CashMovement", null)
                         .WithMany()

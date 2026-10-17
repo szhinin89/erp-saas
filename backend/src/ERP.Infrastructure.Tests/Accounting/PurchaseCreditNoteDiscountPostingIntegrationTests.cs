@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -69,6 +70,9 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
@@ -200,6 +204,7 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
             () => _companyId,
             Guid.NewGuid()
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(PurchaseCreditNoteAuthorizedPostingTranslator).Assembly
@@ -207,6 +212,8 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
         return (db, deferred);
     }
@@ -347,6 +354,7 @@ public sealed class PurchaseCreditNoteDiscountPostingIntegrationTests : IAsyncLi
 
         db.PurchaseCreditNotes.Add(creditNote);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb

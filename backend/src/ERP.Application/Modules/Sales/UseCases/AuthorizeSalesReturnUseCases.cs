@@ -1,10 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
-using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -82,7 +80,6 @@ public sealed class AuthorizeSalesReturnHandler
     private readonly IEstablishmentRepository _estRepo;
     private readonly IElectronicDocumentIssuer _edocIssuer;
     private readonly IUnitOfWork _uow;
-    private readonly IPostingEngine _postingEngine;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
@@ -101,7 +98,6 @@ public sealed class AuthorizeSalesReturnHandler
         IEstablishmentRepository estRepo,
         IElectronicDocumentIssuer edocIssuer,
         IUnitOfWork uow,
-        IPostingEngine postingEngine,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
@@ -120,7 +116,6 @@ public sealed class AuthorizeSalesReturnHandler
         _estRepo = estRepo;
         _edocIssuer = edocIssuer;
         _uow = uow;
-        _postingEngine = postingEngine;
         _t = t;
         _c = c;
         _b = b;
@@ -226,30 +221,6 @@ public sealed class AuthorizeSalesReturnHandler
                     SalesReturnRefundAllocation.Create(salesReturn.Id, tid, method, input.Amount),
                     uid
                 );
-            }
-
-            // ── Guard IRBPNR (TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E) — mismo criterio que
-            // ConfirmPurchaseUseCases STEP 0 / handlers de Compras: precondición antes de
-            // Authorize(), el posting nunca revierte una autorización ya persistida. ──
-            if (salesReturn.TotalIrbpnr > 0)
-            {
-                var irbpnrConfigured = await _postingEngine.IsAmountKindConfiguredAsync(
-                    tid,
-                    cid,
-                    "Sales",
-                    "SalesReturn",
-                    PostingAmountKind.TaxIrbpnr,
-                    ct
-                );
-                if (!irbpnrConfigured)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SalesReturnDto>.ValidationFailure(
-                        "Esta devolución contiene IRBPNR (impuesto código 5), pero no existe una regla de "
-                            + "contabilización (PostingRuleLine) configurada para IRBPNR en Devoluciones de Venta. "
-                            + "Configure la cuenta contable correspondiente antes de autorizar."
-                    );
-                }
             }
 
             // COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre reembolso-vs-total resuelta

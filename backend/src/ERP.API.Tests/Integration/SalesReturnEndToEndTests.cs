@@ -106,6 +106,18 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
             legalName: "Empresa SalesReturn S.A.",
             createdBy: _adminId
         );
+        // ACCOUNTING-CONTINUITY-04: la empresa declara su modo operativo (Enabled), igual que
+        // la migración para empresas existentes; sin él la autorización falla cerrada.
+        db.AccountingOperationalPolicies.Add(
+            ERP.Domain.Modules.Accounting.Entities.AccountingOperationalPolicy.Create(
+                TenantId,
+                company.Id,
+                ERP.Domain.Modules.Accounting.Enums.AccountingOperationalMode.Enabled,
+                new DateOnly(1900, 1, 1),
+                "Test",
+                _adminId
+            )
+        );
         db.Companies.Add(company);
         await db.SaveChangesAsync();
         CompanyId = company.Id;

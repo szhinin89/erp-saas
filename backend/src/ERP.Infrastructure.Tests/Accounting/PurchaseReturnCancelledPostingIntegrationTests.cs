@@ -137,6 +137,9 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         db.PaymentTerms.Add(paymentTerm);
@@ -233,6 +236,7 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             () => companyId,
             Guid.NewGuid()
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(PurchaseReturnAuthorizedPostingTranslator).Assembly
@@ -240,6 +244,8 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
 
         return (db, deferred);
@@ -349,45 +355,6 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             PostingAmountKind.CostVarianceCredit
         );
 
-        // Espejo exacto: mismas cuentas/AmountKind, naturaleza invertida — mismo criterio que
-        // MinimalPostingRules ("Purchases","PurchaseReturnCancelled") en AccountingBootstrapStep.
-        var cancelledRule = PostingRule.Create(
-            _tenantId,
-            _companyId,
-            "Purchases",
-            "PurchaseReturnCancelled",
-            null,
-            null,
-            null,
-            _createdBy
-        );
-        cancelledRule.AddLine(
-            appliedToPayableAcc.Id,
-            AccountNature.Credit,
-            PostingAmountKind.AppliedToPayable
-        );
-        cancelledRule.AddLine(
-            supplierCreditAcc.Id,
-            AccountNature.Credit,
-            PostingAmountKind.SupplierCredit
-        );
-        cancelledRule.AddLine(
-            costVarianceDebitAcc.Id,
-            AccountNature.Credit,
-            PostingAmountKind.CostVarianceDebit
-        );
-        cancelledRule.AddLine(
-            historicalCostAcc.Id,
-            AccountNature.Debit,
-            PostingAmountKind.HistoricalCost
-        );
-        cancelledRule.AddLine(returnedVatAcc.Id, AccountNature.Debit, PostingAmountKind.TaxVat);
-        cancelledRule.AddLine(
-            costVarianceCreditAcc.Id,
-            AccountNature.Debit,
-            PostingAmountKind.CostVarianceCredit
-        );
-
         var period = AccountingPeriod.Create(
             _tenantId,
             _companyId,
@@ -402,9 +369,10 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
             _createdBy
         );
 
-        db.PostingRules.AddRange(authorizedRule, cancelledRule);
+        db.PostingRules.Add(authorizedRule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
     }
 
     private async Task<PurchaseInvoice> SeedConfirmedInvoiceAsync(
@@ -565,6 +533,7 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         var ret = BuildAuthorizedReturn(inv, returnQuantity: 2);
         db.PurchaseReturns.Add(ret);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         // Confirma primero que el asiento de autorización sí existe — precondición del caso
         // reportado (PURCHASE-RETURN-CANCELLED-POSTING-RULE-01: "estado cambia a Cancelada, CxP
@@ -579,17 +548,21 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
 
         ret.Cancel("Ya no aplica", _createdBy, Guid.NewGuid(), "hash-cancel");
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var reversalEntry = await verifyDb
             .JournalEntries.Include(e => e.Lines)
             .FirstOrDefaultAsync(x =>
-                x.SourceEventId == ret.Id && x.SourceEventType == "PurchaseReturnCancelled"
+                x.SourceEventType == "Reversal"
+                && verifyDb.JournalEntries.Any(o =>
+                    o.Id == x.OriginalJournalEntryId && o.SourceEventId == ret.Id
+                )
             );
 
         reversalEntry.Should().NotBeNull();
         reversalEntry!.Status.Should().Be(JournalEntryStatus.Posted);
-        reversalEntry.SourceModule.Should().Be("Purchases");
+        reversalEntry.SourceModule.Should().Be("Accounting");
 
         var totalDebit = reversalEntry.Lines.Sum(l => l.Debit);
         var totalCredit = reversalEntry.Lines.Sum(l => l.Credit);
@@ -647,9 +620,11 @@ public sealed class PurchaseReturnCancelledPostingIntegrationTests : IAsyncLifet
         );
         db.PurchaseReturns.Add(ret);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         ret.Cancel("Ya no aplica", _createdBy, Guid.NewGuid(), "hash-cancel-draft");
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>

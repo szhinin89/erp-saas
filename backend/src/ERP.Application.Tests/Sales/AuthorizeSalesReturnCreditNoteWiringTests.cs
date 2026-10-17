@@ -251,7 +251,6 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
                 EstRepo.Object,
                 EdocIssuer.Object,
                 Uow.Object,
-                Mock.Of<IPostingEngine>(),
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),

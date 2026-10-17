@@ -1,7 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Finance;
-using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Common;
 using ERP.Domain.Configuration.Interfaces;
@@ -243,10 +242,6 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
             if (!cashRegister.IsActive)
                 return Result<PreparedPayment>.ValidationFailure(
                     $"La caja {cashRegisterId} no está activa."
-                );
-            if (cashRegister.AccountingAccountId is null)
-                return Result<PreparedPayment>.ValidationFailure(
-                    $"La caja {cashRegisterId} no tiene una cuenta contable configurada."
                 );
         }
 
@@ -512,11 +507,9 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
 
         try
         {
-            // SUPPLIER-PAYMENTS-POSTING-15D: SaveChangesAsync publica SupplierPaymentConfirmedEvent
-            // ANTES del commit (ErpDbContext.SaveChangesAsync, ADR-026 §8) —
-            // SupplierPaymentConfirmedPostingTranslator lanza SupplierPaymentPostingFailedException
-            // (nunca solo un warning) si el asiento no puede generarse. "No confirmar pago sin
-            // asiento": el llamador revierte la transacción completa ante este fallo.
+            // ACCOUNTING-CONTINUITY-04: SupplierPaymentConfirmedEvent registra la obligación
+            // contable durable en esta misma transacción; un fallo contable posterior queda Failed
+            // sin revertir el pago (accounting.md §4).
             await _supplierPayments.SaveChangesAsync(ct);
         }
         catch (Exception ex) when (ex.GetType().Name == "DbUpdateConcurrencyException")
@@ -524,10 +517,6 @@ public sealed class SupplierPaymentRegistrar : ISupplierPaymentRegistrar
             return Result<SupplierPaymentRegistration>.ValidationFailure(
                 "Una de las cuentas por pagar afectadas fue modificada concurrentemente. Intente nuevamente."
             );
-        }
-        catch (SupplierPaymentPostingFailedException ex)
-        {
-            return Result<SupplierPaymentRegistration>.ValidationFailure(ex.Message, ex.Code);
         }
 
         return Result<SupplierPaymentRegistration>.Success(

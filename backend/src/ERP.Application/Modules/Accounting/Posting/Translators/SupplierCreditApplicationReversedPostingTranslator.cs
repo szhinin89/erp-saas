@@ -1,67 +1,21 @@
-using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
 /// <summary>
-/// Traduce <see cref="SupplierCreditApplicationReversedEvent"/> (P0-02 Fase 7) al hecho contable
-/// reverso del de <see cref="SupplierCreditAppliedPostingTranslator"/> (§9.3) — mismo criterio: no
-/// crea <c>JournalEntry</c>, no resuelve cuentas, un único monto en <c>GrandTotal</c>. El
-/// <c>PostingRule</c> configurado para <c>FactType="SupplierCreditApplicationReversed"</c> es
-/// responsabilidad de administración contable (invierte débito/crédito respecto al de
-/// aplicación) — no de este traductor.
+/// Solicita el espejo exacto del asiento histórico de la aplicación original
+/// (Purchases/SupplierCreditApplied del movimiento revertido, ACCOUNTING-CONTINUITY-04); no
+/// interpreta reglas ni cuentas actuales. Pending/Failed sin asiento se cancela, sin espejo.
 /// </summary>
-public sealed class SupplierCreditApplicationReversedPostingTranslator
+public sealed class SupplierCreditApplicationReversedPostingTranslator(IAccountingReversalRecorder reversals)
     : INotificationHandler<SupplierCreditApplicationReversedEvent>
 {
-    private const string SourceModuleName = "Purchases";
-    private const string FactTypeName = "SupplierCreditApplicationReversed";
-
-    private readonly IPostingEngine _postingEngine;
-    private readonly ICompanyClock _companyClock;
-    private readonly ILogger<SupplierCreditApplicationReversedPostingTranslator> _logger;
-
-    public SupplierCreditApplicationReversedPostingTranslator(
-        IPostingEngine postingEngine,
-        ICompanyClock companyClock,
-        ILogger<SupplierCreditApplicationReversedPostingTranslator> logger
-    )
-    {
-        _postingEngine = postingEngine;
-        _companyClock = companyClock;
-        _logger = logger;
-    }
-
     public async Task Handle(SupplierCreditApplicationReversedEvent e, CancellationToken ct)
     {
-        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
-        var fact = new PostingFact(
-            e.TenantId!.Value,
-            e.CompanyId,
-            SourceModuleName,
-            FactTypeName,
-            e.SupplierCreditMovementId,
-            entryDate,
-            Subtotal: 0m,
-            TotalVat: 0m,
-            TotalIce: 0m,
-            TotalDiscount: 0m,
-            GrandTotal: e.Amount
-        );
-
-        var result = await _postingEngine.PostAsync(fact, ct);
-
-        if (!result.IsSuccess)
-        {
-            _logger.LogWarning(
-                "Posting failed for SupplierCredit {SupplierCreditId} reversal {MovementId}: {Code} — {Error}",
-                e.SupplierCreditId,
-                e.SupplierCreditMovementId,
-                result.Code,
-                result.Error
-            );
-        }
+        await reversals.RecordSourceAsync(e.TenantId!.Value, e.CompanyId,
+            SupplierCreditAppliedPostingTranslator.SourceModuleName, SupplierCreditAppliedPostingTranslator.FactTypeName,
+            e.ReversalOfMovementId, "Reversa de aplicación de saldo a favor de proveedor", e.OccurredOn, ct);
     }
 }

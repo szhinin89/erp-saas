@@ -1,19 +1,16 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
-using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Sales.DTOs;
-using ERP.Application.Modules.Sales.Exceptions;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
-using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Enums;
+using ERP.Domain.Modules.Sales.Events;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.Policies;
 using MediatR;
@@ -54,12 +51,9 @@ public sealed class AuthorizeSalesInvoiceHandler
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ISalesFiscalPolicyResolver _fiscalPolicyResolver;
     private readonly IPaymentMethodRepository _paymentMethodRepo;
-    private readonly IPaymentMethodAccountRepository _paymentMethodAccountRepo;
     private readonly ICompanyBankAccountRepository _bankAccountRepo;
     private readonly ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository _cashSessionRepo;
     private readonly ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository _cashRegisterRepo;
-    private readonly IAccountRepository _accountRepo;
-    private readonly IPostingEngine _postingEngine;
     private readonly ILogger<AuthorizeSalesInvoiceHandler> _logger;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
@@ -84,12 +78,9 @@ public sealed class AuthorizeSalesInvoiceHandler
         IBusinessPartnerRepository bpRepo,
         ISalesFiscalPolicyResolver fiscalPolicyResolver,
         IPaymentMethodRepository paymentMethodRepo,
-        IPaymentMethodAccountRepository paymentMethodAccountRepo,
         ICompanyBankAccountRepository bankAccountRepo,
         ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository cashSessionRepo,
         ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository cashRegisterRepo,
-        IAccountRepository accountRepo,
-        IPostingEngine postingEngine,
         ILogger<AuthorizeSalesInvoiceHandler> logger,
         ICurrentTenant t,
         ICurrentCompany c,
@@ -116,12 +107,9 @@ public sealed class AuthorizeSalesInvoiceHandler
         _bpRepo = bpRepo;
         _fiscalPolicyResolver = fiscalPolicyResolver;
         _paymentMethodRepo = paymentMethodRepo;
-        _paymentMethodAccountRepo = paymentMethodAccountRepo;
         _bankAccountRepo = bankAccountRepo;
         _cashSessionRepo = cashSessionRepo;
         _cashRegisterRepo = cashRegisterRepo;
-        _accountRepo = accountRepo;
-        _postingEngine = postingEngine;
         _logger = logger;
         _t = t;
         _c = c;
@@ -322,22 +310,17 @@ public sealed class AuthorizeSalesInvoiceHandler
                 physicalCashApplied += payment.Amount;
         }
 
-        // ── SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 ─────────────────────────
-        // Cada método de pago NO-Crédito resuelve la cuenta contable del asiento Sales/InvoiceIssued
-        // desde exactamente UNA fuente — nunca hay una segunda configuración posible ni fallback
-        // entre fuentes:
-        //   - Transferencia (DetailType.Transfer)  -> CompanyBankAccount.AccountingAccountId
-        //   - Efectivo      (DetailType.None)       -> CashRegister.AccountingAccountId (la caja de
-        //                                              la sesión de esta venta, inv.CashSessionId)
-        //   - Tarjeta/Cheque (DetailType.Card/Check) -> PaymentMethodAccount.AccountingAccountId
-        //   - Crédito (IsCreditAllowed)              -> ya excluido arriba (resuelve por CxC)
-        // Fail-closed incondicional: sin la cuenta correspondiente activa y postable, la
-        // autorización se bloquea antes de capturar secuencial/generar el asiento.
-        var companyAccountMap = await _paymentMethodAccountRepo.GetMapAsync(tid, cid, ct);
-        var cashByAccount = new Dictionary<Guid, decimal>();
-        var missingAccountMethodNames = new List<string>();
-        Guid? cashRegisterAccountingAccountId = null;
-        var cashRegisterResolved = false;
+        // ── Destinos de cobro (ACCOUNTING-CONTINUITY-04) ─────────────────────
+        // Cada método de pago NO-Crédito tiene exactamente UN destino financiero real:
+        //   - Transferencia (DetailType.Transfer)    -> CompanyBankAccount seleccionada
+        //   - Efectivo      (DetailType.None)         -> CashRegister de la sesión de esta venta
+        //   - Tarjeta/Cheque (DetailType.Card/Check)  -> el propio medio de pago
+        //   - Crédito (IsCreditAllowed)               -> ya excluido arriba (CxC)
+        // Aquí solo se valida el destino comercial (existencia, Company, estado). Su cuenta
+        // contable la resuelve Accounting en cada intento con la configuración vigente: una cuenta
+        // faltante o inválida deja la obligación Failed, nunca bloquea la venta (accounting.md §10).
+        var collectionDestinations = new List<SalesInvoiceCollectionDestination>();
+        Guid? cashRegisterId = null;
         foreach (var payment in inv.Payments)
         {
             if (
@@ -346,7 +329,7 @@ public sealed class AuthorizeSalesInvoiceHandler
             )
                 continue;
 
-            // ── Transferencia — SIEMPRE CompanyBankAccount.AccountingAccountId ───────
+            // ── Transferencia — cuenta bancaria destino activa de esta empresa ───────
             // No confía en el CompanyBankAccountId persistido en el borrador — lo revalida aquí
             // por si la cuenta fue desactivada después de crear el borrador (mismo criterio que
             // el re-chequeo de PaymentTerm).
@@ -369,53 +352,27 @@ public sealed class AuthorizeSalesInvoiceHandler
                             + "Edite el borrador y seleccione otra cuenta bancaria."
                     );
 
-                var bankAccountingAccount = await _accountRepo.GetByIdAsync(
-                    tid,
-                    cid,
-                    bankAccount.AccountingAccountId,
-                    ct
+                collectionDestinations.Add(
+                    new(SalesCollectionDestinationKind.BankAccount, bankAccount.Id, payment.Amount)
                 );
-                if (
-                    bankAccountingAccount is null
-                    || !bankAccountingAccount.IsActive
-                    || !bankAccountingAccount.AllowsPosting
-                )
-                    return Result<SalesInvoiceDto>.ValidationFailure(
-                        $"La cuenta contable de la cuenta bancaria seleccionada para '{method.Name}' "
-                            + "no es postable o está inactiva. Configúrela en Tesorería > Bancos > "
-                            + "Cuentas bancarias antes de emitir esta factura."
-                    );
-
-                cashByAccount.TryGetValue(
-                    bankAccount.AccountingAccountId,
-                    out var existingTransfer
-                );
-                cashByAccount[bankAccount.AccountingAccountId] = existingTransfer + payment.Amount;
                 continue;
             }
 
-            // ── Tarjeta/Cheque — SIEMPRE PaymentMethodAccount.AccountingAccountId ────
+            // ── Tarjeta/Cheque — el medio de pago es el destino ────
             if (
                 method.DetailType == PaymentMethodDetailType.Card
                 || method.DetailType == PaymentMethodDetailType.Check
             )
             {
-                if (!companyAccountMap.TryGetValue(payment.PaymentMethodId, out var link))
-                {
-                    if (!missingAccountMethodNames.Contains(method.Name))
-                        missingAccountMethodNames.Add(method.Name);
-                    continue;
-                }
-
-                cashByAccount.TryGetValue(link.AccountingAccountId, out var existingCard);
-                cashByAccount[link.AccountingAccountId] = existingCard + payment.Amount;
+                collectionDestinations.Add(
+                    new(SalesCollectionDestinationKind.PaymentMethod, payment.PaymentMethodId, payment.Amount)
+                );
                 continue;
             }
 
-            // ── Efectivo — SIEMPRE CashRegister.AccountingAccountId de la caja de esta venta ──
-            if (!cashRegisterResolved)
+            // ── Efectivo — la caja de la sesión de esta venta ──
+            if (cashRegisterId is null)
             {
-                cashRegisterResolved = true;
                 var session = await _cashSessionRepo.GetByIdAsync(tid, inv.CashSessionId, ct);
                 if (session is null)
                     return Result<SalesInvoiceDto>.ValidationFailure(
@@ -435,42 +392,12 @@ public sealed class AuthorizeSalesInvoiceHandler
                     return Result<SalesInvoiceDto>.ValidationFailure(
                         "La caja de esta venta está inactiva."
                     );
-                if (cashRegister.AccountingAccountId is not { } cashAccountId)
-                    return Result<SalesInvoiceDto>.ValidationFailure(
-                        "La caja de esta venta no tiene una cuenta contable configurada. "
-                            + "Configúrela en Cajas registradoras antes de emitir esta factura."
-                    );
 
-                var cashAccountingAccount = await _accountRepo.GetByIdAsync(
-                    tid,
-                    cid,
-                    cashAccountId,
-                    ct
-                );
-                if (
-                    cashAccountingAccount is null
-                    || !cashAccountingAccount.IsActive
-                    || !cashAccountingAccount.AllowsPosting
-                )
-                    return Result<SalesInvoiceDto>.ValidationFailure(
-                        "La cuenta contable de la caja de esta venta no es postable o está inactiva. "
-                            + "Configúrela en Cajas registradoras antes de emitir esta factura."
-                    );
-
-                cashRegisterAccountingAccountId = cashAccountId;
+                cashRegisterId = cashRegister.Id;
             }
 
-            var resolvedCashAccountId = cashRegisterAccountingAccountId!.Value;
-            cashByAccount.TryGetValue(resolvedCashAccountId, out var existingCash);
-            cashByAccount[resolvedCashAccountId] = existingCash + payment.Amount;
-        }
-
-        if (missingAccountMethodNames.Count > 0)
-        {
-            var methodsList = string.Join(", ", missingAccountMethodNames);
-            return Result<SalesInvoiceDto>.ValidationFailure(
-                $"El método de pago '{methodsList}' no tiene una cuenta contable configurada para esta empresa. "
-                    + "Configúrela en Ventas > Métodos de pago antes de emitir esta factura."
+            collectionDestinations.Add(
+                new(SalesCollectionDestinationKind.CashRegister, cashRegisterId.Value, payment.Amount)
             );
         }
 
@@ -556,29 +483,6 @@ public sealed class AuthorizeSalesInvoiceHandler
                             + "Reduce la cantidad, elige otra bodega, o realiza un ingreso de inventario antes de emitir."
                     );
             }
-        }
-
-        // ── Guard IRBPNR (TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E) — mismo criterio que
-        // ConfirmPurchaseUseCases STEP 0: el posting nunca revierte una autorización ya
-        // persistida (un Result fallido de IPostingEngine.PostAsync solo se registra en log), así
-        // que la única forma confiable de exigir configuración contable es esta precondición,
-        // antes de consumir el secuencial/Authorize(). ──
-        if (inv.TotalIrbpnr > 0)
-        {
-            var irbpnrConfigured = await _postingEngine.IsAmountKindConfiguredAsync(
-                tid,
-                cid,
-                "Sales",
-                "InvoiceIssued",
-                PostingAmountKind.TaxIrbpnr,
-                ct
-            );
-            if (!irbpnrConfigured)
-                return Result<SalesInvoiceDto>.ValidationFailure(
-                    "Esta factura contiene IRBPNR (impuesto código 5), pero no existe una regla de "
-                        + "contabilización (PostingRuleLine) configurada para IRBPNR en Ventas. "
-                        + "Configure la cuenta contable correspondiente antes de autorizar."
-                );
         }
 
         // ── Generar número secuencial SRI ───────────────────────────
@@ -682,7 +586,7 @@ public sealed class AuthorizeSalesInvoiceHandler
             uid,
             cashApplied,
             precision.SettlementToleranceAmount,
-            cashByAccount,
+            collectionDestinations,
             physicalCashApplied
         );
 
@@ -757,37 +661,10 @@ public sealed class AuthorizeSalesInvoiceHandler
             inv.GrandTotal
         );
 
-        try
-        {
-            // SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2: SaveChangesWithSequenceRetryAsync ->
-            // ErpDbContext.SaveChangesAsync publica SalesInvoiceAuthorizedEvent DENTRO de su propia
-            // transacción, ANTES del commit (ver remarks de ese método). Si
-            // SalesInvoiceAuthorizedPostingTranslator no puede generar el asiento obligatorio
-            // Sales/InvoiceIssued, lanza SalesInvoicePostingFailedException (en vez de solo un
-            // warning) — la transacción completa hace rollback: ni la factura, ni el movimiento de
-            // caja, ni el egreso de Kardex, ni el asiento de costo (mismo evento,
-            // SalesInvoiceCogsPostingTranslator) llegan a persistirse. El usuario reintenta la
-            // autorización. Mismo patrón ya usado por ConfirmExpenseDocumentHandler
-            // (ExpensePostingFailedException) y RegisterSupplierPaymentUseCases
-            // (SupplierPaymentPostingFailedException) — "no autorizar sin asiento".
-            await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
-        }
-        catch (SalesInvoicePostingFailedException ex)
-        {
-            _logger.LogWarning(
-                "Sales invoice {InvoiceNumber} ({InvoiceId}) authorization rolled back — posting failed: {Code} {Message}",
-                inv.InvoiceNumber,
-                inv.Id,
-                ex.Code,
-                ex.Message
-            );
-            return Result<SalesInvoiceDto>.ValidationFailure(
-                "No se pudo contabilizar la venta. La autorización fue revertida — intenta nuevamente "
-                    + "o contacta a soporte si el problema persiste. Detalle: "
-                    + ex.Message,
-                ex.Code
-            );
-        }
+        // ACCOUNTING-CONTINUITY-04: SalesInvoiceAuthorizedEvent registra la obligación contable
+        // durable en esta misma transacción; el intento ocurre después del commit y un fallo
+        // contable queda Failed sin revertir la venta (accounting.md §4).
+        await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
 
         _logger.LogInformation(
             "Sales invoice {InvoiceNumber} ({InvoiceId}) authorized successfully",

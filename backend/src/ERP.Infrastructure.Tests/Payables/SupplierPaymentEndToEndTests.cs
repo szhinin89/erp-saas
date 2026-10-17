@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
@@ -88,6 +89,9 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
     private Guid _bankAccountId;
     private Guid _payablesAccountId;
 
+    // Sin período Open en la fecha efectiva del reverso (precondición §7 de accounting.md).
+    private bool _withoutCurrentPeriod;
+
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
@@ -142,6 +146,9 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         await db.SaveChangesAsync();
@@ -385,6 +392,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         services.AddScoped<ICompanyBankAccountRepository, CompanyBankAccountRepository>();
         services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SupplierPaymentConfirmedPostingTranslator).Assembly
@@ -392,6 +400,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
 
         return (db, deferred);
@@ -428,6 +438,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         db.PostingRules.Add(rule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+        if (!_withoutCurrentPeriod)
+            await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
     }
 
     private RegisterSupplierPaymentCommandHandler BuildHandler(
@@ -539,6 +551,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         db.PostingRules.AddRange(confirmedRule, reversedRule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+        if (!_withoutCurrentPeriod)
+            await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -566,7 +580,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             ClientRequestId: Guid.NewGuid()
         );
 
-        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
+        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(because: result.Error);
         var dto = result.Value!;
@@ -649,7 +663,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             ClientRequestId: Guid.NewGuid()
         );
 
-        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
+        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(because: result.Error);
         var dto = result.Value!;
@@ -712,7 +726,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             ClientRequestId: Guid.NewGuid()
         );
 
-        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
+        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(because: result.Error);
         var dto = result.Value!;
@@ -784,7 +798,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             ClientRequestId: Guid.NewGuid()
         );
 
-        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
+        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(because: result.Error);
         var dto = result.Value!;
@@ -818,7 +832,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
     // ══════════════════════════════════════════════════════════════════════
 
     [Fact]
-    public async Task Si_falla_el_posting_no_queda_SupplierPayment_ni_saldos_alterados()
+    public async Task Si_falla_el_posting_el_pago_queda_confirmado_con_obligacion_Failed()
     {
         var paymentDate = new DateOnly(2026, 8, 28);
         var (db, _) = BuildWiredContext();
@@ -839,27 +853,21 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             ClientRequestId: Guid.NewGuid()
         );
 
-        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None);
+        var result = await BuildHandler(db).Handle(cmd, CancellationToken.None).ThenDispatchAsync(db);
 
-        result.IsSuccess.Should().BeFalse("un pago a proveedor nunca queda confirmado sin asiento");
+        // ACCOUNTING-CONTINUITY-04: un fallo exclusivamente contable no revierte el pago.
+        result.IsSuccess.Should().BeTrue(result.Error);
 
         await using var verifyDb = CreateContext();
-        var supplierPaymentCount = await verifyDb.SupplierPayments.CountAsync(x =>
-            x.SupplierId == _supplierId
-        );
+        (await verifyDb.SupplierPayments.CountAsync(x => x.Id == result.Value!.Id)).Should().Be(1);
         var installment = await verifyDb.AccountsPayableInstallments.FirstAsync(x =>
             x.Id == _purchaseInstallmentId
         );
-        var journalEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
-            x.SourceModule == "Payables"
-        );
-
-        supplierPaymentCount
-            .Should()
-            .Be(0, "el registro completo debe revertirse, no solo el asiento");
-        installment.PaidAmount.Should().Be(0m, "la cuota no debe quedar parcialmente pagada");
-        installment.OutstandingAmount.Should().Be(300m);
-        journalEntryCount.Should().Be(0);
+        installment.PaidAmount.Should().Be(300m);
+        var posting = await verifyDb.AccountingPostings.SingleAsync(x => x.SourceEventId == result.Value!.Id);
+        posting.Status.Should().Be(AccountingPostingStatus.Failed);
+        posting.ErrorCode.Should().Be("RULE_NOT_FOUND");
+        (await verifyDb.JournalEntries.CountAsync(x => x.SourceModule == "Payables")).Should().Be(0);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -897,7 +905,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
@@ -911,7 +919,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
 
         reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
         reverseResult.Value!.Status.Should().Be("Reversed");
@@ -936,10 +944,13 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var reversedEntry = await verifyDb
             .JournalEntries.Include(x => x.Lines)
             .FirstOrDefaultAsync(x =>
-                x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+                x.SourceEventType == "Reversal"
+                && verifyDb.JournalEntries.Any(o =>
+                    o.Id == x.OriginalJournalEntryId && o.SourceEventId == paymentId
+                )
             );
         reversedEntry.Should().NotBeNull();
-        reversedEntry!.SourceModule.Should().Be("Payables");
+        reversedEntry!.SourceModule.Should().Be("Accounting");
         reversedEntry.Status.Should().Be(JournalEntryStatus.Posted);
         reversedEntry
             .Lines.Should()
@@ -987,7 +998,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
@@ -1001,7 +1012,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
 
         reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
 
@@ -1057,7 +1068,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
@@ -1071,7 +1082,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
 
         reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
 
@@ -1079,7 +1090,10 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var reversedEntry = await verifyDb
             .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x =>
-                x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+                x.SourceEventType == "Reversal"
+                && verifyDb.JournalEntries.Any(o =>
+                    o.Id == x.OriginalJournalEntryId && o.SourceEventId == paymentId
+                )
             );
         reversedEntry
             .Lines.Should()
@@ -1120,7 +1134,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         var paymentId = registerResult.Value!.Id;
 
         var (dbFirstReverse, _) = BuildWiredContext();
@@ -1133,7 +1147,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbFirstReverse);
         firstReverse.IsSuccess.Should().BeTrue(because: firstReverse.Error);
 
         var (dbSecondReverse, _) = BuildWiredContext();
@@ -1146,7 +1160,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbSecondReverse);
 
         secondReverse
             .IsSuccess.Should()
@@ -1154,7 +1168,10 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
 
         await using var verifyDb = CreateContext();
         var reversedEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
-            x.SourceEventId == paymentId && x.SourceEventType == "SupplierPaymentReversed"
+            x.SourceEventType == "Reversal"
+            && verifyDb.JournalEntries.Any(o =>
+                o.Id == x.OriginalJournalEntryId && o.SourceEventId == paymentId
+            )
         );
         reversedEntryCount
             .Should()
@@ -1162,12 +1179,12 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Si_falla_el_posting_inverso_el_pago_sigue_Confirmed_y_los_saldos_no_cambian()
+    public async Task Sin_periodo_Open_para_el_reverso_el_pago_sigue_Confirmed_y_los_saldos_no_cambian()
     {
         var paymentDate = new DateOnly(2026, 8, 28);
         var (db, _) = BuildWiredContext();
-        // Solo siembra la regla de confirmación — la de reverso queda deliberadamente ausente
-        // para forzar RULE_NOT_FOUND en el Posting Engine al reversar.
+        // ACCOUNTING-CONTINUITY-03 §7: sin período Open en la fecha efectiva se bloquea la reversa.
+        _withoutCurrentPeriod = true;
         await SeedPostingRuleAndPeriodAsync(db, paymentDate);
 
         var registerResult = await BuildHandler(db)
@@ -1194,12 +1211,12 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
         var (dbReverse, _) = BuildWiredContext();
-        var reverseResult = await BuildReverseHandler(dbReverse)
+        var reverse = () => BuildReverseHandler(dbReverse)
             .Handle(
                 new ReverseSupplierPaymentCommand(
                     paymentId,
@@ -1208,11 +1225,10 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
 
-        reverseResult
-            .IsSuccess.Should()
-            .BeFalse("un reverso nunca debe quedar confirmado sin asiento inverso");
+        await reverse.Should().ThrowAsync<ERP.Domain.Exceptions.DomainRuleViolationException>()
+            .WithMessage("*período Open*");
 
         await using var verifyDb = CreateContext();
         var payment = await verifyDb.SupplierPayments.FirstAsync(x => x.Id == paymentId);
@@ -1226,10 +1242,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         installment.PaidAmount.Should().Be(300m, "el reverso fallido no debe liberar saldo");
         installment.OutstandingAmount.Should().Be(0m);
 
-        var reversedEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
-            x.SourceEventType == "SupplierPaymentReversed"
-        );
-        reversedEntryCount.Should().Be(0);
+        (await verifyDb.JournalEntries.CountAsync(x => x.OriginalJournalEntryId != null)).Should().Be(0);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1277,7 +1290,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
@@ -1336,7 +1349,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
@@ -1390,7 +1403,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
@@ -1404,7 +1417,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
         reverseResult.IsSuccess.Should().BeTrue(because: reverseResult.Error);
 
         await using var readDb = CreateContext();
@@ -1449,7 +1462,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(because: registerResult.Error);
         var paymentId = registerResult.Value!.Id;
 
@@ -1592,7 +1605,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         result.IsSuccess.Should().BeTrue(result.Error);
 
         await using var verifyDb = CreateContext();
@@ -1663,7 +1676,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(registerResult.Error);
         (await LoadSessionAsync())
             .CurrentBalance.Should()
@@ -1679,7 +1692,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(reverseDb);
         reverseResult.IsSuccess.Should().BeTrue(reverseResult.Error);
 
         var session = await LoadSessionAsync();
@@ -1705,7 +1718,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         await using var verifyDb = CreateContext();
         var entries = await verifyDb.JournalEntries.AsNoTracking().ToListAsync();
         entries.Should().HaveCount(2, "asiento de confirmación + asiento inverso, ninguno de Caja");
-        entries.Should().OnlyContain(e => e.SourceEventId == registerResult.Value.Id);
+        var original = entries.Single(e => e.SourceEventId == registerResult.Value.Id);
+        entries.Should().ContainSingle(e => e.OriginalJournalEntryId == original.Id);
     }
 
     [Fact]
@@ -1742,7 +1756,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         result.IsSuccess.Should().BeTrue(result.Error);
 
         await using var verifyDb = CreateContext();
@@ -1822,7 +1836,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeFalse();
         result
@@ -1889,7 +1903,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         var session = await LoadSessionAsync();
@@ -1973,14 +1987,14 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                 .Handle(
                     CashPaymentCommand(_purchaseInstallmentId, 70m, paymentDate),
                     CancellationToken.None
-                )
+                ).ThenDispatchAsync(dbA)
         );
         var paymentB = Task.Run(() =>
             BuildHandler(dbB)
                 .Handle(
                     CashPaymentCommand(_expenseInstallmentId, 70m, paymentDate),
                     CancellationToken.None
-                )
+                ).ThenDispatchAsync(dbB)
         );
 
         // Espera observable (no un sleep ciego): ambos backends bloqueados en el lock de fila.
@@ -2060,7 +2074,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 CashPaymentCommand(_purchaseInstallmentId, 100m, paymentDate),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("La caja seleccionada está siendo operada por otro usuario.");
@@ -2087,7 +2101,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 CashPaymentCommand(_purchaseInstallmentId, 100m, paymentDate),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(registerResult.Error);
 
         // Cierra el turno del que salió el efectivo y abre uno nuevo en la misma caja (mismo usuario).
@@ -2125,7 +2139,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     CashNotDeliveredConfirmed: true
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(reverseDb);
 
         result.IsSuccess.Should().BeFalse();
         result
@@ -2164,7 +2178,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 CashPaymentCommand(_purchaseInstallmentId, 100m, paymentDate),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue(registerResult.Error);
 
         var (reverseDb, _) = BuildWiredContext();
@@ -2176,7 +2190,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     CashNotDeliveredConfirmed: true
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(reverseDb);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         await using var verifyDb = CreateContext();
@@ -2274,6 +2288,8 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         db.PostingRules.AddRange(confirmedRule, reversedRule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+        if (!_withoutCurrentPeriod)
+            await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
         return advanceAccount.Id;
     }
 
@@ -2336,7 +2352,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 OverpaymentCommand(320m, 300m, paymentDate, confirm: true),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.AppliedAmount.Should().Be(300m);
@@ -2391,7 +2407,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 OverpaymentCommand(320m, 300m, paymentDate, confirm: false),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeFalse();
         await using var verifyDb = CreateContext();
@@ -2452,7 +2468,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         await using var verifyDb = CreateContext();
@@ -2520,7 +2536,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.AppliedAmount.Should().Be(0m);
@@ -2572,7 +2588,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeFalse();
         await using var verifyDb = CreateContext();
@@ -2624,7 +2640,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     ClientRequestId: Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result
             .IsSuccess.Should()
@@ -2634,7 +2650,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Regla_con_forma_previa_rechaza_pago_con_remanente_fail_closed()
+    public async Task Regla_con_forma_previa_deja_Failed_el_pago_con_remanente_sin_debitar_CxP()
     {
         var paymentDate = new DateOnly(2026, 8, 28);
         var (db, _) = BuildWiredContext();
@@ -2644,13 +2660,17 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 OverpaymentCommand(320m, 300m, paymentDate, confirm: true),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
-        result.IsSuccess.Should().BeFalse("nunca se debita CxP por dinero no aplicado");
+        // ACCOUNTING-CONTINUITY-04: el pago y su anticipo son válidos; nunca se debita CxP por
+        // dinero no aplicado — la falta de línea de anticipos deja la obligación Failed.
+        result.IsSuccess.Should().BeTrue(result.Error);
         await using var verifyDb = CreateContext();
-        (await verifyDb.SupplierPayments.AsNoTracking().CountAsync()).Should().Be(0);
-        (await verifyDb.SupplierCredits.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.SupplierPayments.AsNoTracking().CountAsync()).Should().Be(1);
+        (await verifyDb.SupplierCredits.AsNoTracking().CountAsync()).Should().Be(1);
         (await verifyDb.JournalEntries.AsNoTracking().CountAsync()).Should().Be(0);
+        (await verifyDb.AccountingPostings.AsNoTracking().SingleAsync()).ErrorCode
+            .Should().Be(ERP.Application.Modules.Accounting.Continuity.AccountingPostingFactBuilder.RuleLineNotConfiguredCode);
     }
 
     [Fact]
@@ -2663,7 +2683,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 OverpaymentCommand(320m, 300m, paymentDate, confirm: true),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         register.IsSuccess.Should().BeTrue(register.Error);
 
         var (reverseDb, _) = BuildWiredContext();
@@ -2675,7 +2695,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(reverseDb);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         await using var verifyDb = CreateContext();
@@ -2702,7 +2722,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         var reversal = await verifyDb
             .JournalEntries.AsNoTracking()
             .Include(x => x.Lines)
-            .SingleAsync(e => e.SourceEventType == "SupplierPaymentReversed");
+            .SingleAsync(e => e.SourceEventType == "Reversal");
         reversal.Lines.Single(l => l.AccountId == _payablesAccountId).Credit.Should().Be(300m);
         reversal.Lines.Single(l => l.AccountId == advanceAccountId).Credit.Should().Be(20m);
         reversal.Lines.Single(l => l.AccountId == _bankAccountId).Debit.Should().Be(320m);
@@ -2722,7 +2742,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 OverpaymentCommand(320m, 300m, paymentDate, confirm: true),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         register.IsSuccess.Should().BeTrue(register.Error);
 
         // El anticipo se usa (a nivel de agregado; los casos de uso de aplicar/reembolsar tienen su
@@ -2752,7 +2772,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
                     BankReversalReason: SupplierPaymentBankReversalReason.NotExecuted
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(reverseDb);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("anticipo");
@@ -2773,7 +2793,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         (
             await verifyDb
                 .JournalEntries.AsNoTracking()
-                .CountAsync(e => e.SourceEventType == "SupplierPaymentReversed")
+                .CountAsync(e => e.SourceEventType == "Reversal")
         )
             .Should()
             .Be(0);
@@ -2789,7 +2809,7 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
             .Handle(
                 OverpaymentCommand(320m, 300m, paymentDate, confirm: true),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         register.IsSuccess.Should().BeTrue(register.Error);
 
         await using var queryDb = CreateContext();

@@ -108,7 +108,11 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             new AccountingPostingRepository(db),
             new AccountingPostingFactBuilder(
                 new ExpenseCategoryRepository(db, company),
-                new AccountRepository(db)
+                new AccountRepository(db),
+                new ERP.Infrastructure.Persistence.Repositories.Caja.CashRegisterRepository(db, company),
+                new ERP.Infrastructure.Persistence.Repositories.Finance.CompanyBankAccountRepository(db, company),
+                new ERP.Infrastructure.Persistence.Repositories.Sales.PaymentMethodAccountRepository(db),
+                new PostingRuleRepository(db)
             ),
             engine ?? Engine(db),
             new AccountingPostingDispatchQueue(),

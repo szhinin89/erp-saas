@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -91,6 +92,10 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
         );
         db.Tenants.Add(tenant);
         db.Companies.AddRange(company, otherCompany);
+        db.AccountingOperationalPolicies.AddRange(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _userId),
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, otherCompany.Id, _userId)
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
@@ -232,13 +237,18 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
             () => _companyId,
             _userId
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SupplierCreditAppliedPostingTranslator).Assembly
             )
         );
 
-        deferred.Inner = services.BuildServiceProvider().GetRequiredService<IPublisher>();
+        var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
+
+        deferred.Inner = provider.GetRequiredService<IPublisher>();
         return db;
     }
 
@@ -500,7 +510,7 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
             .Handle(
                 new ApplySupplierCreditCommand(creditId, payableId, amount, Guid.NewGuid()),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
     }
 
     private async Task<Result<SupplierCreditDto>> ReverseAsync(
@@ -519,7 +529,7 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
                     Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
     }
 
     private async Task<(
@@ -562,6 +572,23 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
             .ToListAsync();
         entries.Should().ContainSingle($"exactamente un asiento {factType} por movimiento");
         return entries[0].Lines.Select(l => (l.AccountId, l.Debit, l.Credit)).ToList();
+    }
+
+    /// <summary>
+    /// Líneas del reverso común (ACCOUNTING-CONTINUITY-03/04): espejo Accounting/Reversal del único
+    /// asiento publicado para el movimiento original.
+    /// </summary>
+    private async Task<List<(Guid AccountId, decimal Debit, decimal Credit)>> ReversalLinesAsync(
+        Guid originalMovementId
+    )
+    {
+        await using var db = CreateContext();
+        var original = await db.JournalEntries.SingleAsync(j => j.SourceEventId == originalMovementId);
+        var mirror = await db
+            .JournalEntries.Include(j => j.Lines)
+            .SingleAsync(j => j.OriginalJournalEntryId == original.Id);
+        mirror.SourceEventType.Should().Be("Reversal");
+        return mirror.Lines.Select(l => (l.AccountId, l.Debit, l.Credit)).ToList();
     }
 
     private static Guid LastApplicationId(SupplierCreditDto dto) =>
@@ -692,7 +719,7 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
             }
         )
         {
-            (await JournalLinesAsync(reversal.Id, "SupplierCreditApplicationReversed"))
+            (await ReversalLinesAsync(reversal.ReversalOfMovementId!.Value))
                 .Should()
                 .BeEquivalentTo(
                     new[]

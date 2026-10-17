@@ -195,7 +195,6 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
                 ReceptionRepo.Object,
                 Uow.Object,
                 DbEx.Object,
-                PostingEngine.Object,
                 FixedTenant(),
                 FixedBranch(),
                 FixedUser()
@@ -247,7 +246,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
     // ── TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E ──────────────────────────
 
     [Fact]
-    public async Task Authorize_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    public async Task Authorize_con_IRBPNR_sin_PostingRuleLine_configurada_no_bloquea_la_NC()
     {
         var invoice = PurchaseInvoice.CreateDraft(
             TenantId,
@@ -355,10 +354,9 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("IRBPNR");
-        f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Draft);
-        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        // ACCOUNTING-CONTINUITY-04: configuración exclusivamente contable → obligación Failed.
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.CreditNote.Status.Should().Be(PurchaseCreditNoteStatus.Authorized);
     }
 
     // ── FLOW-READY-02C-R1.1: Authorize sobre tipo Return siempre falla ──
@@ -518,10 +516,8 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
     [Fact]
     public void Handler_no_depende_de_IStockRepository_ni_de_repositorios_de_JournalEntry()
     {
-        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — IPostingEngine es ahora una dependencia legítima
-        // y acotada (solo IsAmountKindConfiguredAsync, guard de solo lectura antes de Authorize()),
-        // mismo criterio que ConfirmPurchaseUseCases; el handler sigue sin crear JournalEntry ni
-        // tocar inventario — eso permanece exclusivo de los translators/PostingEngine.PostAsync.
+        // ACCOUNTING-CONTINUITY-04 — la NC no depende del motor contable: su obligación durable la
+        // registra el traductor y la configuración contable se valida en el intento.
         var ctor = typeof(AuthorizePurchaseCreditNoteHandler).GetConstructors().Single();
         var paramTypeNames = ctor.GetParameters().Select(p => p.ParameterType.Name).ToList();
 
@@ -529,7 +525,7 @@ public sealed class AuthorizePurchaseCreditNoteHandlerTests
         paramTypeNames
             .Should()
             .NotContain(n => n.Contains("JournalEntry", StringComparison.Ordinal));
-        paramTypeNames.Should().Contain("IPostingEngine");
+        paramTypeNames.Should().NotContain("IPostingEngine");
     }
 
     // ── Idempotencia ─────────────────────────────────────────────────────

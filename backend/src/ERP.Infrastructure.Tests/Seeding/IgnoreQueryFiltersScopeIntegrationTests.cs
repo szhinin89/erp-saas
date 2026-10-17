@@ -196,73 +196,8 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
                 _scopes[0].AlternateAccountId,
                 "the second read must preserve an account assigned after the initial scan"
             );
-
-        var shadowInCompanyB = JournalEntry.Create(
-            _scopes[1].TenantId,
-            _scopes[1].CompanyId,
-            _scopes[1].PeriodDate,
-            _scopes[1].AccountingPeriodId,
-            _scopes[1].PeriodDate.Year,
-            "Purchases",
-            "PurchaseReturn",
-            _scopes[0].PurchaseReturnId,
-            "Cross-company duplicate guard fixture",
-            _actorId
-        );
-        db.JournalEntries.Add(shadowInCompanyB);
-        await db.SaveChangesAsync();
-
-        var postingEngine = new PersistingPostingEngine(
-            db,
-            _scopes,
-            _actorId,
-            new CurrentTenantService(new HttpContextAccessor()),
-            new CurrentCompanyService(new HttpContextAccessor())
-        );
-        var remediation = new PurchaseReturnPostingRemediationService(
-            db,
-            postingEngine,
-            new AlwaysTodayCompanyClock(),
-            NullLogger<PurchaseReturnPostingRemediationService>.Instance
-        );
-
-        var dryRun = await remediation.RunAsync(apply: false);
-        dryRun.MissingCount.Should().Be(3);
-        postingEngine.Facts.Should().BeEmpty("dry-run must not post or write");
-
-        var apply = await remediation.RunAsync(apply: true);
-        apply.PostedNowCount.Should().Be(3);
-        apply.FailedCount.Should().Be(0);
-        postingEngine.Facts.Should().HaveCount(3);
-
-        foreach (var scope in _scopes)
-        {
-            var fact = postingEngine.Facts.Single(item =>
-                item.SourceEventId == scope.PurchaseReturnId
-            );
-            fact.TenantId.Should().Be(scope.TenantId);
-            fact.CompanyId.Should().Be(scope.CompanyId);
-        }
-
-        var returnAEntries = await db
-            .JournalEntries.IgnoreQueryFilters()
-            .Where(entry => entry.SourceEventId == _scopes[0].PurchaseReturnId)
-            .ToListAsync();
-        returnAEntries
-            .Should()
-            .Contain(entry =>
-                entry.TenantId == _scopes[0].TenantId && entry.CompanyId == _scopes[0].CompanyId
-            );
-        returnAEntries
-            .Should()
-            .Contain(entry =>
-                entry.TenantId == _scopes[1].TenantId && entry.CompanyId == _scopes[1].CompanyId
-            );
-
-        var secondApply = await remediation.RunAsync(apply: true);
-        secondApply.AlreadyPostedCount.Should().Be(3);
-        secondApply.PostedNowCount.Should().Be(0);
-        postingEngine.Facts.Should().HaveCount(3, "deduplication is scoped and idempotent");
+        // ACCOUNTING-CONTINUITY-04: la remediación de devoluciones ya no recorre el histórico; su
+        // convergencia al mecanismo durable se prueba en AccountingContinuity04IntegrationTests.
     }
 
     [Fact]
@@ -610,62 +545,6 @@ public sealed class IgnoreQueryFiltersScopeIntegrationTests : IAsyncLifetime
         Guid AccountingPeriodId,
         DateOnly PeriodDate
     );
-
-    private sealed class PersistingPostingEngine(
-        ErpDbContext db,
-        IReadOnlyList<CompanyScope> scopes,
-        Guid actorId,
-        ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany
-    ) : IPostingEngine
-    {
-        public List<PostingFact> Facts { get; } = [];
-
-        public Task<Result<PostingOutcomeDto>> PostAsync(
-            PostingFact fact,
-            CancellationToken cancellationToken = default
-        )
-        {
-            Facts.Add(fact);
-            var scope = scopes.Single(item => item.CompanyId == fact.CompanyId);
-            if (
-                scope.TenantId != fact.TenantId
-                || currentTenant.TenantId != fact.TenantId
-                || currentCompany.CompanyId != fact.CompanyId
-            )
-                throw new InvalidOperationException(
-                    "Posting fact escaped its tenant/company scope."
-                );
-            var entry = JournalEntry.Create(
-                fact.TenantId,
-                fact.CompanyId,
-                fact.EntryDate,
-                scope.AccountingPeriodId,
-                fact.EntryDate.Year,
-                fact.SourceModule,
-                fact.FactType,
-                fact.SourceEventId,
-                "Scope integration posting",
-                actorId
-            );
-            db.JournalEntries.Add(entry);
-            return Task.FromResult(
-                Result<PostingOutcomeDto>.Success(
-                    new PostingOutcomeDto(entry.Id, PostingOutcomeStatus.Created)
-                )
-            );
-        }
-
-        public Task<bool> IsAmountKindConfiguredAsync(
-            Guid tenantId,
-            Guid companyId,
-            string sourceModule,
-            string factType,
-            PostingAmountKind amountKind,
-            CancellationToken cancellationToken = default
-        ) => Task.FromResult(true);
-    }
-
     private sealed class AssignAccountAfterInitialCashScanInterceptor(
         string connectionString,
         Guid cashRegisterId,

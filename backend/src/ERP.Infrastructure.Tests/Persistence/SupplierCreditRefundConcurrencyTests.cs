@@ -584,7 +584,7 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
     // ── 6. Cuenta no postable ─────────────────────────────────────────────
 
     [Fact]
-    public async Task Punto6_Cuenta_no_postable_rechaza_SC_024()
+    public async Task Punto6_Cuenta_no_postable_no_rechaza_el_reembolso()
     {
         var creditId = await SeedCreditAsync(100m);
         await using (var db = CreateContext())
@@ -602,7 +602,12 @@ public sealed class SupplierCreditRefundConcurrencyTests : IAsyncLifetime
             10m,
             Guid.NewGuid()
         );
-        result.Success.Should().BeFalse();
+        // ACCOUNTING-CONTINUITY-04: la cuenta contable no bloquea el reembolso; su obligación
+        // queda Failed (cubierto con publicación real en SupplierCreditRefundPostingIntegrationTests).
+        result.Success.Should().BeTrue(result.Error);
+        await using var verify = CreateContext();
+        (await verify.Set<SupplierCredit>().AsNoTracking().FirstAsync(c => c.Id == creditId))
+            .AvailableAmount.Should().Be(90m);
     }
 
     // ── 8. Caja con sesión activa ─────────────────────────────────────────

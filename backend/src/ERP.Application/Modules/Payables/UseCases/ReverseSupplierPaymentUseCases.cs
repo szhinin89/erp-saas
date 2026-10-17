@@ -3,7 +3,6 @@ using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.Caja;
-using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -310,12 +309,8 @@ public sealed class ReverseSupplierPaymentCommandHandler
 
             try
             {
-                // SUPPLIER-PAYMENTS-REVERSE-16: SaveChangesAsync publica SupplierPaymentReversedEvent
-                // ANTES del commit (ErpDbContext.SaveChangesAsync, ADR-026 §8) —
-                // SupplierPaymentReversedPostingTranslator lanza SupplierPaymentPostingFailedException
-                // si el asiento inverso no puede generarse. El catch de abajo revierte la
-                // transacción completa: el pago sigue Confirmed, los saldos de
-                // AccountsPayableInstallment mutados arriba nunca llegan a persistirse.
+                // SupplierPaymentReversedEvent registra el reverso histórico en esta transacción;
+                // solo el gate de período Open bloquea la reversa (accounting.md §7).
                 await _supplierPayments.SaveChangesAsync(ct);
             }
             catch (Exception ex) when (ex.GetType().Name == "DbUpdateConcurrencyException")
@@ -324,11 +319,6 @@ public sealed class ReverseSupplierPaymentCommandHandler
                 return Result<SupplierPaymentDto>.ValidationFailure(
                     "El pago o una de las cuentas por pagar afectadas fue modificado concurrentemente. Intente nuevamente."
                 );
-            }
-            catch (SupplierPaymentPostingFailedException ex)
-            {
-                await _uow.RollbackAsync(ct);
-                return Result<SupplierPaymentDto>.ValidationFailure(ex.Message, ex.Code);
             }
 
             await _uow.CommitAsync(ct);

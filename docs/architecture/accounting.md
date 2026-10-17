@@ -16,7 +16,7 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | KEEP | Core, plan de cuentas, reglas, períodos, motor de partida doble, idempotencia, numeración, lectura y reportes del libro implementados |
 | KEEP | Patrones durables específicos de costos de inventario y apertura implementados (convergencia pendiente, CONTINUITY-05) |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-01: política operativa versionada por Company, obligación contable durable común con historial de intentos, intento inicial posterior al commit y reproceso manual individual para Compra, Gasto (confirmación de borrador y creación directa) y Retención emitida; anulación común de esos orígenes; gate mínimo de cierre; `AccountingPostingMode` retirado |
-| BUG REAL | Ventas, devoluciones/NC, pagos, cobros, créditos de proveedor y caja siguen contabilizando en línea (excepción o warning según traductor); falta convergencia a la obligación durable |
+| IMPLEMENTADO | ACCOUNTING-CONTINUITY-04: Venta, devolución de venta, pago a proveedor, cobro, devolución de compra, NC compra Discount y aplicación/reembolso de saldo a favor registran la obligación durable; anulación de devolución de compra y reversas de aplicación/reembolso usan el reverso histórico común (§19) |
 | KEEP | ACCOUNTING-CONTINUITY-03: espejo histórico, original inmutable, fecha efectiva y período Open destino, idempotencia y obligación durable para los consumidores migrados |
 | BUG REAL | El cierre exige obligaciones resueltas y asientos completos, pero no concilia orígenes sin obligación; costos puede reintentar Failed implícitamente |
 | EXTEND | Disabled operativo, integridad completa de cierre/reportes y manuales generales pendientes |
@@ -106,9 +106,9 @@ Pending/Failed o hechos que aún deberían tener resolución. El cambio no exime
 ya contraídas ni permite suprimir el reverso de asientos existentes.
 
 Disabled no exige plan/reglas/cuentas para continuar la operación comercial y no genera
-obligaciones nuevas de posting automático durante su vigencia. Mientras existan integraciones
-automáticas que contabilizan en línea (Ventas, Pagos, Cobros, Costos, …) seleccionar Disabled
-se rechaza: un Disabled parcial dejaría el libro inconsistente. La lectura del historial
+obligaciones nuevas de posting automático durante su vigencia. Mientras costos de inventario y
+apertura no converjan a la obligación común (CONTINUITY-05) seleccionar Disabled se rechaza:
+un Disabled parcial dejaría el libro inconsistente. La lectura del historial
 se conserva. El uso voluntario de asientos manuales requiere activar Accounting.
 
 ## 4. Pipeline y frontera transaccional
@@ -123,7 +123,7 @@ Hecho operativo válido + decisión efectiva por Company
   → recuperación posterior: únicamente reproceso manual autorizado
 ```
 
-Forma física (Compra, Gasto y Retención): el traductor del hecho registra la obligación
+Forma física (Compra, Gasto, Retención y los hechos de §19): el traductor del hecho registra la obligación
 Pending en la transacción del núcleo, bajo lock compartido por Company y el advisory lock de
 idempotencia de la identidad, sin invocar el motor. Tras el commit, el caso de uso ejecuta el
 intento inicial de las obligaciones que creó, cada una en su propia transacción (lock de fila,
@@ -147,6 +147,9 @@ fecha de negocio, fecha contable efectiva, tipo de hecho, importes/datos operati
 necesarios, estado, código/mensaje de error, intentos, último intento, autor/correlación
 y asiento generado si existe. Conservar referencias de destino caja/banco/medio de pago
 para resolver sus cuentas con configuración vigente; no congelar un error de mapeo.
+El payload es versionado (versión 2; la versión 1 se sigue leyendo) y contiene solo datos del
+hecho: importes y componentes, destinos financieros por identidad y referencias de origen,
+nunca cuentas ni reglas (salvo el asiento original de un reverso).
 
 | Estado | Significado y transición |
 |---|---|
@@ -171,8 +174,8 @@ ni una operación comercial posterior que vuelva a ejecutar Failed de forma impl
 La recuperación fiscal/SRI y Communications mantienen sus políticas propias.
 
 Reproceso individual y en bloque, siempre solicitado por usuario autorizado dentro
-de su Tenant/Company (individual implementado con el mismo ejecutor del intento inicial;
-en bloque pendiente). Cada obligación tiene aislamiento transaccional: un error no
+de su Tenant/Company (individual y por lote de IDs, §17, con el mismo ejecutor del intento inicial).
+Cada obligación tiene aislamiento transaccional: un error no
 detiene las demás. Cada intento ejecutado termina Posted o Failed; el lote informa
 resultados individuales, no un éxito global que esconda fallos. Las dependencias de
 costo se respetan: un ajuste no precede al reconocimiento que necesita; una dependencia
@@ -302,8 +305,9 @@ cobro posterior es otro hecho, sin volver a reconocer el ingreso de la venta.
   en Anticipos/SupplierCredit; Haber por los medios reales. El crédito creado desde
   el pago no genera otro asiento por el mismo anticipo. Aplicaciones, reembolsos y
   reversos son hechos separados; la reversa operativa exige anticipo aún íntegro.
-- Reembolso de crédito de proveedor: Debe Caja/Banco real y Haber Anticipos; reverso
-  con las mismas cuentas e importes intercambiados. No depende de una cuenta genérica.
+- Reembolso de crédito de proveedor: Debe Caja/Banco real y Haber Anticipos; su reversa
+  espeja el asiento publicado (§7). No depende de una cuenta genérica. La cuenta guardada en
+  la transacción de reembolso es solo referencia histórica opcional, no autoridad contable.
 - Inventory determina el costo por promedio ponderado y conserva la incertidumbre
   cuando no existe base conocida: null no significa cero. Sin costo conocido se
   mantiene SaleCostObligation; nunca inventar COGS desde el precio de venta. Con base
@@ -419,17 +423,14 @@ Rutas abreviadas desde `backend/src/`:
 
 | Clasificación | Evidencia actual |
 |---|---|
-| BUG REAL | Application/Modules/Accounting/Posting/Translators: SalesInvoiceAuthorized lanza excepción de posting (Compra, Gasto y Retención emitida convergieron a la obligación durable en ACCOUNTING-CONTINUITY-01) |
-| BUG REAL | PurchaseReturnAuthorized registra warning sin obligación genérica; CollectionApplied mezcla excepción con warning según destino |
-| BUG REAL | La autorización de venta resuelve cuentas antes de completar el núcleo (la prevalidación IRBPNR de Compra se retiró en ACCOUNTING-CONTINUITY-01) |
+| RESUELTO | ACCOUNTING-CONTINUITY-04: Venta, devoluciones, pagos, cobros, NC compra Discount y saldo a favor de proveedor dejaron de contabilizar en línea; los núcleos operativos ya no resuelven cuentas ni exigen líneas IRBPNR/anticipo |
 | KEEP | ACCOUNTING-CONTINUITY-03: JournalEntryReversal y JournalEntry.Reverse conservan el original y espejan el libro histórico en fecha/período/ejercicio destino; pago, cobro y anulaciones existentes adoptados |
 | BUG REAL | El cierre consulta asientos y obligaciones Pending/Failed, pero no concilia orígenes que deberían haber generado obligación |
 | BUG REAL | Application/Modules/Inventory/Costing/InventoryCostAccounting recorre Failed al procesar otros hechos de la factura |
 
-Corte Compra/Gasto + Retención adoptado (ACCOUNTING-CONTINUITY-01). Siguientes cortes:
-demás integraciones automáticas,
-convergencia de costos/apertura, integridad completa de cierre/reportes
-y manuales generales. ACCOUNTING-CONTINUITY-03 reemplaza el rollback por fallos posteriores
+Cortes adoptados: Compra/Gasto + Retención (ACCOUNTING-CONTINUITY-01) y demás integraciones
+comerciales/financieras (ACCOUNTING-CONTINUITY-04). Siguientes cortes: convergencia de
+costos/apertura, integridad completa de cierre/reportes y manuales generales. ACCOUNTING-CONTINUITY-03 reemplaza el rollback por fallos posteriores
 al gate de período con una obligación durable en los consumidores migrados. Cada corte requiere
 reproducción, fix mínimo, tests focales y revisión de diff. No se autoriza un pipeline
 paralelo ni reabrir reglas operativas CLOSED por esta consolidación.
@@ -477,5 +478,46 @@ Open. Pending/Failed sin asiento se cancela, sin espejo. El intento inicial post
 commit y el reproceso manual usan el mismo AccountingPostingExecutor y JournalEntryReversal;
 jamás PostingRules/cuentas actuales. Un fallo queda durable; no hay reintento automático.
 Apertura conserva fecha y restricciones propias; costos solo adapta la firma existente.
-No se corrigen reversos históricos previos ni se amplía a los demás flujos financieros.
+No se corrigen reversos históricos previos. ACCOUNTING-CONTINUITY-04 extiende este reverso a
+la anulación de devolución de compra y a las reversas de aplicación y reembolso de saldo a favor.
 Validación e inventario: [entrega](../agent/ACCOUNTING_CONTINUITY_03_DELIVERY.md).
+
+## 19. Integraciones durables ACCOUNTING-CONTINUITY-04
+
+Cada hecho registra su obligación con `AccountingPostingRecorder` dentro de la transacción
+operativa y su intento inicial corre después del commit con `AccountingPostingExecutor`; ningún
+flujo operativo invoca el motor. Se conservan las identidades contables existentes:
+
+| Hecho (SourceModule / FactType) | Identidad | Fecha | Datos persistidos |
+|---|---|---|---|
+| Sales / InvoiceIssued | Factura | IssueDate | Importes, IRBPNR, contado sin destino, saldo CxC, destino de cada cobro no-Crédito |
+| Sales / SalesReturn | Devolución | Fecha Company al autorizar | Importes, IRBPNR, factura de origen |
+| Payables / SupplierPaymentConfirmed | Pago | PaymentDate | Total, aplicado a CxP, remanente anticipo, caja/banco de cada medio |
+| Finance / CollectionApplied | Cobro | PaymentDate | Monto, caja o banco elegido (sustituye la cuenta Debe GrandTotal de la regla) |
+| Purchases / PurchaseReturn | Devolución | Fecha Company al autorizar | IVA/ICE/IRBPNR, CxP aplicada, saldo a favor, costo histórico, diferencia de costo Debe/Haber |
+| Purchases / PurchaseCreditNoteAuthorized | NC (solo Discount) | Fecha Company al autorizar | Subtotal, IVA, ICE, IRBPNR, total, CxP aplicada |
+| Purchases / SupplierCreditApplied | Movimiento de aplicación | Fecha Company al aplicar | Monto, saldo a favor y CxP destino |
+| Purchases / SupplierCreditRefunded | Movimiento de reembolso | Fecha efectiva | Monto, caja o banco que recibe |
+
+Destinos: Efectivo → caja de la sesión; Transferencia → cuenta bancaria; Tarjeta/Cheque → el
+medio de pago; Crédito → CxC por la regla. El intento resuelve la cuenta vigente del destino
+(caja y banco: su cuenta; tarjeta/cheque: `PaymentMethodAccount` de la Company), agrupada por
+cuenta y naturaleza; un destino inexistente en la Company o sin cuenta deja la obligación Failed.
+También fallan en el intento, nunca en el núcleo: IRBPNR > 0 sin línea IRBPNR en la regla,
+remanente de anticipo sin línea de anticipos, cuentas inválidas, regla o período. El núcleo
+operativo conserva sus bloqueos no contables: pertenencia Tenant/Company, integridad del
+documento, saldo, disponibilidad, destino comercial/financiero requerido y restricciones de Caja.
+
+El `SupplierCredit` creado por el remanente de un pago no genera asiento propio; la NC tipo
+Return no genera asiento (su efecto es el de la devolución). Reversos con el comando común de
+§18 sobre el asiento original: Purchases/PurchaseReturn al anular la devolución autorizada
+(desde Draft no hay hecho), Purchases/SupplierCreditApplied y Purchases/SupplierCreditRefunded
+del movimiento revertido. Los FactType de reverso por regla anteriores (PurchaseReturnCancelled,
+SupplierCreditApplicationReversed, SupplierCreditRefundReversed) ya no se generan ni se siembran;
+las reglas existentes se conservan sin uso, nunca se borran.
+
+Sin backfill: no se crean obligaciones ni asientos para operaciones previas. El comando
+`remediate-purchase-return-postings <id>... [apply]` es manual, exige IDs explícitos, informa sin
+cambios las devoluciones con asiento u obligación existente y, con `apply`, registra la obligación
+con el mismo hecho compuesto (fecha local de la autorización) y ejecuta su intento con el ejecutor
+común; el resto se resuelve con el reproceso manual de §17.

@@ -40,9 +40,9 @@ public sealed class SetAccountingOperationalModeCommandValidator
 public sealed class AccountingOperationalPolicyReader
 {
     /// <summary>
-    /// Disabled no se habilita hasta que todas las integraciones automáticas (Ventas, Pagos,
-    /// Cobros, Costos, …) converjan a la obligación durable: hoy algunas siguen contabilizando en
-    /// línea y un Disabled parcial dejaría un libro inconsistente.
+    /// Disabled no se habilita hasta que todas las integraciones automáticas converjan a la
+    /// obligación durable: costos de inventario y apertura aún usan sus patrones propios
+    /// (CONTINUITY-05) y un Disabled parcial dejaría un libro inconsistente.
     /// </summary>
     public const bool DisabledAvailable = false;
 

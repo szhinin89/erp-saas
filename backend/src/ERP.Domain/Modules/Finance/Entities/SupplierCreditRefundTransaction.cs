@@ -43,12 +43,11 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
     public Guid? CashRegisterId { get; private set; }
 
     /// <summary>
-    /// Cuenta contable realmente usada por esta transacción concreta — congelada al confirmar,
-    /// nunca resuelta de nuevo contra el destino (§6.4bis). Fuente autoritativa del asiento y de
-    /// todo reporte histórico, nunca <see cref="AccountingAccountCodeSnapshot"/> ni el
-    /// <c>AccountingAccountId</c> mutable actual de <c>CompanyBankAccount</c>/<c>CashRegister</c>.
+    /// Referencia histórica de la cuenta configurada en el destino al registrar (null si no tenía).
+    /// ACCOUNTING-CONTINUITY-04: no es autoridad contable — el asiento del reembolso resuelve la
+    /// cuenta vigente del destino en cada intento y su reverso espeja el asiento publicado.
     /// </summary>
-    public Guid AccountingAccountId { get; private set; }
+    public Guid? AccountingAccountId { get; private set; }
 
     public string PaymentMethodCode { get; private set; } = null!;
     public decimal Amount { get; private set; }
@@ -69,7 +68,7 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
 
     /// <summary>"BankAccount" o "CashRegister" — congelado al confirmar (mismos valores que antes usaba <c>legacy destination enum</c>).</summary>
     public string DestinationTypeSnapshot { get; private set; } = null!;
-    public string AccountingAccountCodeSnapshot { get; private set; } = null!;
+    public string? AccountingAccountCodeSnapshot { get; private set; }
 
     public Guid CreatedByUserId { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
@@ -91,8 +90,8 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
         Guid supplierCreditMovementId,
         Guid? companyBankAccountId,
         Guid? cashRegisterId,
-        Guid accountingAccountId,
-        string accountingAccountCodeSnapshot,
+        Guid? accountingAccountId,
+        string? accountingAccountCodeSnapshot,
         string destinationCodeSnapshot,
         string destinationNameSnapshot,
         string destinationTypeSnapshot,
@@ -122,11 +121,6 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
             throw new ArgumentException(
                 "La transacción no puede tener cuenta bancaria y caja destino a la vez.",
                 nameof(cashRegisterId)
-            );
-        if (accountingAccountId == Guid.Empty)
-            throw new ArgumentException(
-                "La cuenta contable es obligatoria.",
-                nameof(accountingAccountId)
             );
         if (string.IsNullOrWhiteSpace(paymentMethodCode))
             throw new ArgumentException(
@@ -161,7 +155,7 @@ public sealed class SupplierCreditRefundTransaction : ICompanyOperationalEntity
             CompanyBankAccountId = companyBankAccountId,
             CashRegisterId = cashRegisterId,
             AccountingAccountId = accountingAccountId,
-            AccountingAccountCodeSnapshot = accountingAccountCodeSnapshot.Trim(),
+            AccountingAccountCodeSnapshot = accountingAccountCodeSnapshot?.Trim(),
             DestinationCodeSnapshot = destinationCodeSnapshot.Trim(),
             DestinationNameSnapshot = destinationNameSnapshot.Trim(),
             DestinationTypeSnapshot = destinationTypeSnapshot.Trim(),

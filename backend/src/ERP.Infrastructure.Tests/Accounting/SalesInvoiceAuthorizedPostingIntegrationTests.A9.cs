@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
@@ -122,6 +123,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             "A9 Address", null, true, _createdBy);
         var register = CashRegister.Create(tenantId.Value, company.Id, branch.Id, "A9", "A9", _createdBy);
         db.Companies.Add(company); db.Branches.Add(branch); db.Establishments.Add(establishment);
+        db.AccountingOperationalPolicies.Add(AccountingContinuityTestWiring.EnabledPolicy(tenantId.Value, company.Id, _createdBy));
         db.CashRegisters.Add(register);
         await db.SaveChangesAsync();
         var ep = EmissionPoint.Create(tenantId.Value, company.Id, establishment.Id, "001", "A9",

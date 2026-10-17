@@ -1,5 +1,4 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
@@ -903,51 +902,6 @@ public sealed class RegisterSupplierPaymentUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Conflict);
-    }
-
-    /// <summary>
-    /// SUPPLIER-PAYMENTS-POSTING-15D — <c>SupplierPaymentConfirmedPostingTranslator</c> lanza
-    /// <see cref="SupplierPaymentPostingFailedException"/> dentro del <c>Publish()</c> interno de
-    /// <c>ErpDbContext.SaveChangesAsync</c> (ADR-026 §8) cuando el asiento no puede generarse — esa
-    /// excepción se propaga hacia arriba y sale por el mismo <c>_supplierPayments.SaveChangesAsync</c>
-    /// que este handler ya envuelve. Verifica el cableado de ese catch específico: rollback completo,
-    /// nunca commit, "no confirmar pago sin asiento".
-    /// </summary>
-    [Fact]
-    public async Task Fallo_de_posting_hace_rollback_completo_y_no_confirma_el_pago()
-    {
-        var m = BuildMocks();
-        var method = ActivePaymentMethod();
-        var destination = ActiveDestination(CompanyId);
-        var payable = CreatePayableWithInstallment(100m);
-        SetupMethodAndDestination(m, method, destination);
-        SetupPayable(m, payable);
-        m.SupplierPayments.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new SupplierPaymentPostingFailedException(
-                    "El destino financiero no tiene una cuenta contable configurada.",
-                    "POSTING_ACCOUNT_INVALID"
-                )
-            );
-
-        var handler = BuildHandler(m);
-        var cmd = new RegisterSupplierPaymentCommand(
-            SupplierId,
-            new DateOnly(2026, 8, 28),
-            100m,
-            null,
-            new[] { new SupplierPaymentMethodLineRequest(method.Id, null, destination.Id, 100m) },
-            new[] { new SupplierPaymentApplicationLineRequest(payable.Installments[0].Id, 100m) },
-            new[] { new SupplierPaymentAllocationLineRequest(0, 0, 100m) },
-            ClientRequestId: Guid.NewGuid()
-        );
-
-        var result = await handler.Handle(cmd, CancellationToken.None);
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("POSTING_ACCOUNT_INVALID");
-        m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ══════════════════════════════════════════════════════════════════════

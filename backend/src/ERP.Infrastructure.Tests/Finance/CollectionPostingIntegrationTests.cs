@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
@@ -133,6 +134,9 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(customer);
         db.Establishments.Add(establishment);
@@ -277,11 +281,14 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             ERP.Application.Common.Services.ICompanyClock,
             ERP.Infrastructure.Persistence.Services.CompanyClock
         >();
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(CollectionAppliedPostingTranslator).Assembly)
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
 
         return (db, deferred);
@@ -343,6 +350,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         db.PostingRules.Add(rule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
     }
 
     private static RegisterCollectionCommandHandler BuildHandler(
@@ -476,6 +484,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         db.PostingRules.AddRange(appliedRule, reversedRule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
     }
 
     [Theory]
@@ -483,7 +492,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
     [InlineData(true, true)]
     [InlineData(false, false)]
     [InlineData(true, false)]
-    public async Task Explicit_bank_or_cash_posts_selected_account_or_rolls_back(
+    public async Task Explicit_bank_or_cash_posts_selected_account_or_leaves_posting_Failed(
         bool cash,
         bool postable
     )
@@ -535,19 +544,21 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             CompanyBankAccountId = bankId,
             CashRegisterId = cashId,
         };
-        var act = () =>
-            BuildHandler(db, _tenantId, _companyId, _createdBy)
-                .Handle(command, CancellationToken.None);
+        var result = await BuildHandler(db, _tenantId, _companyId, _createdBy)
+            .Handle(command, CancellationToken.None).ThenDispatchAsync(db);
+        result.IsSuccess.Should().BeTrue(result.Error);
         if (!postable)
         {
-            await act.Should().ThrowAsync<DomainRuleViolationException>();
+            // ACCOUNTING-CONTINUITY-04: cuenta no postable → cobro válido + obligación Failed.
             await using var verify = CreateContext();
-            (await verify.Payments.CountAsync()).Should().Be(0);
-            (await verify.SalesReceivables.SingleAsync()).PaidAmount.Should().Be(0m);
+            (await verify.Payments.CountAsync()).Should().Be(1);
+            (await verify.SalesReceivables.SingleAsync()).PaidAmount.Should().Be(300m);
+            (await verify.JournalEntries.CountAsync()).Should().Be(0);
+            var posting = await verify.AccountingPostings.SingleAsync();
+            posting.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+            posting.ErrorCode.Should().Be("POSTING_ACCOUNT_INVALID");
             return;
         }
-        var result = await act();
-        result.IsSuccess.Should().BeTrue();
         await using var check = CreateContext();
         var entry = await check.JournalEntries.Include(e => e.Lines).SingleAsync();
         entry.Lines.Should().Contain(l => l.AccountId == account.Id && l.Debit == 300m);
@@ -566,7 +577,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue();
 
@@ -598,7 +609,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 120m, paymentDate, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbA);
         firstResult.IsSuccess.Should().BeTrue();
 
         await using (var midDb = CreateContext())
@@ -613,7 +624,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 180m, paymentDate, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbB);
         secondResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
@@ -638,7 +649,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeTrue();
 
@@ -667,7 +678,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result
             .IsSuccess.Should()
@@ -694,7 +705,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 300m, paymentDate, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         result.IsSuccess.Should().BeTrue();
         var paymentId = result.Value!.Id;
 
@@ -708,7 +719,13 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             300m,
             paymentDate
         );
-        await publisher.Publish(repeated, CancellationToken.None);
+        // Redelivery dentro de una transacción, como la publicación real en SaveChanges.
+        await using (var redelivery = await db.Database.BeginTransactionAsync())
+        {
+            await publisher.Publish(repeated, CancellationToken.None);
+            await db.SaveChangesAsync();
+            await redelivery.CommitAsync();
+        }
 
         await using var verifyDb = CreateContext();
         var journalEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
@@ -755,7 +772,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 300m, today, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
@@ -764,7 +781,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 new ReverseCollectionCommand(paymentId, "Error de digitación"),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
 
         reverseResult.IsSuccess.Should().BeTrue();
 
@@ -789,7 +806,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 300m, today, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
@@ -798,7 +815,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 new ReverseCollectionCommand(paymentId, "Error de digitación"),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
         reverseResult.IsSuccess.Should().BeTrue();
 
         await using var verifyDb = CreateContext();
@@ -808,14 +825,17 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
         var reversedEntry = await verifyDb
             .JournalEntries.Include(x => x.Lines)
             .FirstOrDefaultAsync(x =>
-                x.SourceEventId == paymentId && x.SourceEventType == "CollectionReversed"
+                x.SourceEventType == "Reversal"
+                && verifyDb.JournalEntries.Any(o =>
+                    o.Id == x.OriginalJournalEntryId && o.SourceEventId == paymentId
+                )
             );
 
         appliedEntry
             .Should()
             .NotBeNull(because: "el asiento original de aplicación no debe desaparecer");
         reversedEntry.Should().NotBeNull();
-        reversedEntry!.SourceModule.Should().Be("Finance");
+        reversedEntry!.SourceModule.Should().Be("Accounting");
         reversedEntry.Status.Should().Be(JournalEntryStatus.Posted);
         reversedEntry.Lines.Should().HaveCount(2);
         reversedEntry.Lines.Sum(l => l.Debit).Should().Be(reversedEntry.Lines.Sum(l => l.Credit));
@@ -833,7 +853,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 SingleLineCommand(_receivableId, 300m, today, _customerId),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
         registerResult.IsSuccess.Should().BeTrue();
         var paymentId = registerResult.Value!.Id;
 
@@ -842,7 +862,7 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             .Handle(
                 new ReverseCollectionCommand(paymentId, "Error de digitación"),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(dbReverse);
         reverseResult.IsSuccess.Should().BeTrue();
 
         // Republicación manual del mismo evento de reverso — simula un reintento de entrega;
@@ -855,11 +875,20 @@ public sealed class CollectionPostingIntegrationTests : IAsyncLifetime
             300m,
             "Error de digitación"
         );
-        await publisher.Publish(repeated, CancellationToken.None);
+        // Redelivery dentro de una transacción, como la publicación real en SaveChanges.
+        await using (var redelivery = await dbReverse.Database.BeginTransactionAsync())
+        {
+            await publisher.Publish(repeated, CancellationToken.None);
+            await dbReverse.SaveChangesAsync();
+            await redelivery.CommitAsync();
+        }
 
         await using var verifyDb = CreateContext();
         var reversedEntryCount = await verifyDb.JournalEntries.CountAsync(x =>
-            x.SourceEventId == paymentId && x.SourceEventType == "CollectionReversed"
+            x.SourceEventType == "Reversal"
+            && verifyDb.JournalEntries.Any(o =>
+                o.Id == x.OriginalJournalEntryId && o.SourceEventId == paymentId
+            )
         );
         var payment = await verifyDb.Payments.FirstAsync(x => x.Id == paymentId);
 

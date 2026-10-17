@@ -41,20 +41,13 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
     public decimal CashApplied { get; }
 
     /// <summary>
-    /// SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 — desglose de <see cref="CashApplied"/> por cuenta
-    /// contable real (Caja general / Bancos / etc.), agrupado por la cuenta configurada
-    /// (<c>PaymentMethodAccount</c>) del método de pago usado en cada línea de
-    /// <c>SalesInvoicePayment</c> no marcada <c>IsCreditAllowed</c>. Resuelto y validado por
-    /// Application (<c>AuthorizeSalesInvoiceHandler</c>) ANTES de llamar a <c>Authorize()</c> — el
-    /// dominio no conoce <c>PaymentMethodAccount</c> ni accede a repositorios, solo transporta el
-    /// resultado ya calculado (mismo criterio que <see cref="CashApplied"/>/<see cref="Subtotal"/>).
-    /// Suma de los valores == <see cref="CashApplied"/> siempre que se provea (garantizado por el
-    /// handler, que construye ambos del mismo recorrido de <c>Payments</c>). Vacío/null solo por
-    /// compatibilidad con callers/tests que no lo necesiten — <see cref="SalesInvoiceAuthorizedPostingTranslator"/>
-    /// (Accounting) lo usa para enrutar el Debe de "Sales/InvoiceIssued" a la cuenta real por método
-    /// de pago, en vez de la cuenta fija histórica ("Caja general" para cualquier método).
+    /// ACCOUNTING-CONTINUITY-04 — destino real de cada cobro no-Crédito (caja de la sesión,
+    /// cuenta bancaria de la transferencia o medio tarjeta/cheque), por identidad operativa.
+    /// Sales valida el destino comercial; Accounting resuelve su cuenta con la configuración
+    /// vigente en cada intento (nunca aquí). Suma de importes == <see cref="CashApplied"/> en el
+    /// flujo real; vacío solo para callers/tests que no lo necesitan.
     /// </summary>
-    public IReadOnlyDictionary<Guid, decimal> CashByAccount { get; }
+    public IReadOnlyList<SalesInvoiceCollectionDestination> CollectionDestinations { get; }
 
     /// <summary>
     /// CASH-SESSION-PHYSICAL-CASH-SSOT-01 — subconjunto de <see cref="CashApplied"/> cobrado con un
@@ -83,7 +76,7 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         decimal totalDiscount,
         decimal totalIrbpnr = 0m,
         decimal? cashApplied = null,
-        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null,
+        IReadOnlyList<SalesInvoiceCollectionDestination>? collectionDestinations = null,
         decimal? physicalCashApplied = null
     )
     {
@@ -104,7 +97,7 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         // parámetro nuevo (ninguno de dominio hoy) — el único caller real de producción
         // (SalesInvoice.Authorize) siempre lo pasa explícitamente con el cashApplied real.
         CashApplied = cashApplied ?? grandTotal;
-        CashByAccount = cashByAccount ?? new Dictionary<Guid, decimal>();
+        CollectionDestinations = collectionDestinations ?? [];
         // Default a CashApplied solo para no romper callers/tests preexistentes que no distinguen
         // forma de pago (mismo criterio que el default de CashApplied arriba) — el único caller
         // real de producción (AuthorizeSalesUseCases vía SalesInvoice.Authorize) siempre lo pasa
@@ -112,3 +105,18 @@ public sealed class SalesInvoiceAuthorizedEvent : BaseDomainEvent
         PhysicalCashApplied = physicalCashApplied ?? CashApplied;
     }
 }
+
+/// <summary>Tipo de destino financiero de un cobro de venta.</summary>
+public enum SalesCollectionDestinationKind
+{
+    CashRegister = 1,
+    BankAccount = 2,
+    PaymentMethod = 3,
+}
+
+/// <summary>Destino de un cobro de venta por identidad operativa (caja, banco o medio de pago).</summary>
+public sealed record SalesInvoiceCollectionDestination(
+    SalesCollectionDestinationKind Kind,
+    Guid ReferenceId,
+    decimal Amount
+);

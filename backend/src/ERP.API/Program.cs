@@ -479,41 +479,34 @@ if (args.Contains("backfill-accounting-chart-hierarchy"))
     return;
 }
 
-// Comando de una sola vez (PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01): remedia PurchaseReturn ya
-// Authorized antes de que MinimalPostingRules tuviera la clave ("Purchases","PurchaseReturn") —
-// esas devoluciones movieron Kardex/CxP/SupplierCredit con normalidad pero se quedaron sin
-// JournalEntry (posting fail-closed silencioso, solo un warning de log). Dry-run por defecto
-// (reporta qué crearía, sin escribir nada); agregar `-- apply` para postear de verdad. Cada
-// devolución se postea en su propia transacción — un fallo no afecta a las demás. No gateado por
-// IsProduction(): es una operación de despliegue explícita, igual que los comandos anteriores.
-// `dotnet run -- remediate-purchase-return-postings [apply]`. Sale sin iniciar el host web.
+// Remediación MANUAL (ACCOUNTING-CONTINUITY-04): devoluciones de compra Authorized sin asiento ni
+// obligación contable. Solo los IDs indicados (sin IDs no procesa nada: no hay backfill del
+// histórico). Converge a la obligación durable común + ejecutor común; nunca publica con el motor.
+// Dry-run por defecto; `apply` registra la obligación y ejecuta su intento.
+// `dotnet run -- remediate-purchase-return-postings <purchaseReturnId>... [apply]`. Sale sin iniciar el host web.
 if (args.Contains("remediate-purchase-return-postings"))
 {
     var apply = args.Contains("apply");
+    var ids = args.Select(a => Guid.TryParse(a, out var id) ? id : Guid.Empty).Where(id => id != Guid.Empty).ToList();
+    if (ids.Count == 0)
+    {
+        Console.WriteLine(
+            "[remediate-purchase-return-postings] Indique explícitamente los IDs de las devoluciones a remediar. Nada procesado."
+        );
+        return;
+    }
     using var remediationScope = app.Services.CreateScope();
     var remediationService =
         remediationScope.ServiceProvider.GetRequiredService<ERP.Infrastructure.Seeding.PurchaseReturnPostingRemediationService>();
-    var summary = await remediationService.RunAsync(apply);
+    var summary = await remediationService.RunAsync(apply, ids);
     Console.WriteLine(
-        $"[remediate-purchase-return-postings] Modo: {(apply ? "APPLY" : "DRY-RUN")}. "
-            + $"PurchaseReturn Authorized revisados: {summary.TotalAuthorizedReturns}. "
-            + $"Ya tenían asiento: {summary.AlreadyPostedCount}. "
-            + $"Sin asiento detectadas: {summary.MissingCount}. "
-            + $"Posteadas ahora: {summary.PostedNowCount}. "
-            + $"Con error: {summary.FailedCount}."
+        $"[remediate-purchase-return-postings] Modo: {(apply ? "APPLY" : "DRY-RUN")}. Devoluciones indicadas: {summary.Rows.Count}."
     );
-    foreach (var row in summary.Rows.Where(r => !r.AlreadyPosted))
-    {
-        var state =
-            row.Applied ? "POSTED"
-            : row.Error is not null ? "ERROR"
-            : "PENDING (dry-run)";
+    foreach (var row in summary.Rows)
         Console.WriteLine(
-            $"  - PurchaseReturn {row.PurchaseReturnId} ({row.ReturnNumber}) company={row.CompanyId} "
-                + $"AppliedToPayable={row.AppliedToPayableAmount} HistoricalCost={row.HistoricalCostTotal} [{state}]"
-                + (row.Error is not null ? $" — {row.Error}" : string.Empty)
+            $"  - PurchaseReturn {row.PurchaseReturnId} ({row.ReturnNumber}) company={row.CompanyId} [{row.State}]"
+                + (row.Detail is not null ? $" — {row.Detail}" : string.Empty)
         );
-    }
     return;
 }
 

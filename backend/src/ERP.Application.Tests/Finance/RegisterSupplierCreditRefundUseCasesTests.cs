@@ -267,7 +267,8 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
         result.IsSuccess.Should().BeTrue(result.Error);
         credit.AvailableAmount.Should().Be(60m);
         result.Value!.Amount.Should().Be(40m);
-        result.Value.AccountingAccountId.Should().Be(account.Id);
+        // Referencia histórica: la cuenta configurada en el destino (no autoridad contable).
+        result.Value.AccountingAccountId.Should().Be(AccountId);
         result.Value.CashSessionId.Should().BeNull();
     }
 
@@ -416,7 +417,7 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
     }
 
     [Fact]
-    public async Task Cuenta_no_postable_rechaza_SC_024()
+    public async Task Cuenta_no_postable_no_bloquea_el_reembolso()
     {
         var credit = BuildCredit();
         var m = new Mocks(credit);
@@ -433,12 +434,16 @@ public sealed class RegisterSupplierCreditRefundUseCasesTests
                 )
             )
             .ReturnsAsync(BuildAccount(allowsPosting: false));
+        m.PaymentMethodRepo.Setup(r =>
+                r.GetByCodeAsync(TenantId, "TRANSFER", It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(BuildPaymentMethod());
         var handler = m.BuildHandler();
 
         var result = await handler.Handle(BankCommand(credit.Id, 10m), CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("contabilización");
+        // ACCOUNTING-CONTINUITY-04: cuenta exclusivamente contable → obligación Failed, no rechazo.
+        result.IsSuccess.Should().BeTrue(result.Error);
     }
 
     [Fact]

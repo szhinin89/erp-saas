@@ -343,7 +343,6 @@ public sealed class AuthorizePurchaseReturnHandlerTests
                 CreditRepo.Object,
                 Uow.Object,
                 DbEx.Object,
-                PostingEngine.Object,
                 t.Object,
                 b.Object,
                 user ?? u.Object,
@@ -685,7 +684,7 @@ public sealed class AuthorizePurchaseReturnHandlerTests
     }
 
     [Fact]
-    public async Task Autorizacion_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    public async Task Autorizacion_con_IRBPNR_sin_PostingRuleLine_configurada_no_bloquea_la_devolucion()
     {
         // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — mismo criterio que el guard IRBPNR de
         // ConfirmPurchaseUseCases: si hay IRBPNR y no existe PostingRuleLine configurada, la
@@ -789,10 +788,9 @@ public sealed class AuthorizePurchaseReturnHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("IRBPNR");
-        f.Return.Status.Should().Be(PurchaseReturnStatus.Draft);
-        m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        // ACCOUNTING-CONTINUITY-04: configuración exclusivamente contable → obligación Failed.
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.Return.Status.Should().Be(PurchaseReturnStatus.Authorized);
     }
 
     [Fact]

@@ -65,10 +65,9 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             new DocumentSequenceRepository(db), new EmissionPointRepository(db), new EstablishmentRepository(db),
             new ElectronicDocumentRepository(db, clock.Object), Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
             clock.Object, new BusinessPartnerRepository(db), Mock.Of<ISalesFiscalPolicyResolver>(),
-            new PaymentMethodRepository(db), new PaymentMethodAccountRepository(db),
+            new PaymentMethodRepository(db),
             new CompanyBankAccountRepository(db, company), new CashSessionRepository(db, company),
-            new CashRegisterRepository(db, company), new AccountRepository(db),
-            provider.GetRequiredService<IPostingEngine>(), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
+            new CashRegisterRepository(db, company), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
             new FixedCurrentTenant(tenantId ?? _tenantId), company, Mock.Of<ICurrentBranch>(b => b.BranchId == (branchId ?? _branchId)),
             Mock.Of<ICurrentUser>(u => u.UserId == _createdBy), new A7Preferences(),
             StandardPrecisionPolicyProvider.Instance, new ItemRepository(db), new WarehouseRepository(db, company), new SalesAuthorizationRetryReader(new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options, new FixedCurrentTenant(tenantId ?? _tenantId), company, new NoOpPublisher(), new PostgresDatabaseExceptionTranslator()));
@@ -81,7 +80,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         var (db, provider) = BuildA7Context(observer ?? new A8NoOpInterceptor(), name ?? "A8");
         using var disposeProvider = provider;
         await using var disposeDb = db;
-        return await A8Authorize(db, provider, tenantId, companyId, branchId).Handle(new(id), CancellationToken.None);
+        return await A8Authorize(db, provider, tenantId, companyId, branchId).Handle(new(id), CancellationToken.None).ThenDispatchAsync(db);
     }
 
     [Fact]

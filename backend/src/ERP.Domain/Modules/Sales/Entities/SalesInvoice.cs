@@ -491,13 +491,13 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
     /// documento (el dominio no lee infraestructura). Si no se provee (compatibilidad con
     /// llamadores existentes/tests), cae al default histórico <see cref="SalesSettlementPolicy.Tolerance"/>.
     /// </param>
-    /// <param name="cashByAccount"></param>
+    /// <param name="collectionDestinations"></param>
     /// <param name="physicalCashApplied"></param>
     public void Authorize(
         Guid updatedBy,
         decimal? cashApplied = null,
         decimal? settlementTolerance = null,
-        IReadOnlyDictionary<Guid, decimal>? cashByAccount = null,
+        IReadOnlyList<SalesInvoiceCollectionDestination>? collectionDestinations = null,
         // CASH-SESSION-PHYSICAL-CASH-SSOT-01: subconjunto de cashApplied cobrado con un método
         // PaymentMethod.AffectsPhysicalCash = true — ver SalesInvoiceAuthorizedEvent.PhysicalCashApplied.
         decimal? physicalCashApplied = null
@@ -579,7 +579,7 @@ public sealed class SalesInvoice : AuditableEntity, ITenantScopedEntity, ICompan
                 TotalDiscount,
                 TotalIrbpnr,
                 cashApplied,
-                cashByAccount,
+                collectionDestinations,
                 physicalCashApplied
             )
         );

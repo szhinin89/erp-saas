@@ -24,7 +24,15 @@ public sealed class AccountingPostingFactBuilderTests
     private readonly Mock<IExpenseCategoryRepository> _categories = new();
     private readonly Mock<IAccountRepository> _accounts = new();
 
-    private AccountingPostingFactBuilder Builder => new(_categories.Object, _accounts.Object);
+    private AccountingPostingFactBuilder Builder =>
+        new(
+            _categories.Object,
+            _accounts.Object,
+            Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(),
+            Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(),
+            Mock.Of<ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodAccountRepository>(),
+            Mock.Of<IPostingRuleRepository>()
+        );
 
     private static AccountingPosting Obligation(AccountingPostingPayload payload, string module = "Expenses", string fact = "DocumentConfirmed") =>
         AccountingPosting.CreatePending(

@@ -17,9 +17,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace ERP.Infrastructure.Tests.Seeding;
 
 /// <summary>
-/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — reglas canónicas
-/// "Purchases"/"SupplierCreditRefunded"/"SupplierCreditRefundReversed": una empresa nueva nace con
-/// ambas; el comando de despliegue <c>backfill-supplier-credit-refund-posting-rules</c> (Production)
+/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — regla canónica "Purchases"/"SupplierCreditRefunded"
+/// (su reversa espeja el asiento histórico desde ACCOUNTING-CONTINUITY-04): una empresa nueva nace
+/// con ella; el comando de despliegue <c>backfill-supplier-credit-refund-posting-rules</c> (Production)
 /// solo CREA las faltantes con apply, es idempotente, nunca modifica una regla existente
 /// (personalizada o canónica) y reporta —sin borrar— las reglas obsoletas por destino.
 /// </summary>
@@ -106,7 +106,6 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
             var (factType, nature) in new[]
             {
                 ("SupplierCreditRefunded", AccountNature.Credit),
-                ("SupplierCreditRefundReversed", AccountNature.Debit),
             }
         )
         {
@@ -179,7 +178,6 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
             var (factType, nature) in new[]
             {
                 ("SupplierCreditRefunded", AccountNature.Credit),
-                ("SupplierCreditRefundReversed", AccountNature.Debit),
             }
         )
         {
@@ -196,7 +194,7 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
     }
 
     [Fact]
-    public async Task Empresa_nueva_nace_con_ambas_reglas_canonicas_y_no_necesita_backfill()
+    public async Task Empresa_nueva_nace_con_la_regla_canonica_y_no_necesita_backfill()
     {
         await using (var db = Db())
         {
@@ -226,7 +224,6 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
                 new[]
                 {
                     ("SupplierCreditRefunded", "Canonical"),
-                    ("SupplierCreditRefundReversed", "Canonical"),
                 }
             );
         (await Snapshot()).Should().Equal(before);
@@ -265,7 +262,7 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
 
         var rows = await Run(apply: true);
 
-        rows.Should().HaveCount(2).And.OnlyContain(r => r.Diagnostic.StartsWith("Custom"));
+        rows.Should().HaveCount(1).And.OnlyContain(r => r.Diagnostic.StartsWith("Custom"));
         (await Snapshot()).Should().Equal(before);
     }
 
@@ -277,7 +274,7 @@ public sealed class SupplierCreditRefundRuleMaintenanceTests
 
         var rows = await Run(apply: true);
 
-        rows.Should().Contain(r => r.Diagnostic.StartsWith("Obsolete per-destination rules: 2"));
+        rows.Should().Contain(r => r.Diagnostic.StartsWith("Obsolete per-destination rules: 1"));
         rows.Where(r => !r.FactType.Contains(':'))
             .Select(r => r.Diagnostic)
             .Should()

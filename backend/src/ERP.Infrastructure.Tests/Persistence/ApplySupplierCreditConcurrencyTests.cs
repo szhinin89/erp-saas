@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Accounting.Posting;
@@ -67,6 +68,9 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _userId)
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
@@ -700,7 +704,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         var result = await handler.HandleWithDomainRules(
             new ApplySupplierCreditCommand(creditId, payableId, 40m, Guid.NewGuid()),
             CancellationToken.None
-        );
+        ).ThenDispatchAsync(db);
         result.IsSuccess.Should().BeTrue(result.Error);
 
         await using var verify = CreateContext();
@@ -718,20 +722,20 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Revertir_aplicacion_genera_JournalEntry_via_SupplierCreditApplicationReversedPostingTranslator()
+    public async Task Revertir_aplicacion_genera_el_espejo_historico_del_asiento_de_aplicacion()
     {
         var creditId = await SeedSupplierCreditAsync(100m);
         var payableId = await SeedTargetPayableAsync(200m);
 
         var (db, _) = BuildWiredContext();
         await SeedRuleAsync(db, "SupplierCreditApplied");
-        await SeedRuleAsync(db, "SupplierCreditApplicationReversed");
+        await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _userId);
 
         var applyHandler = BuildWiredApplyHandler(db);
         var applyResult = await applyHandler.HandleWithDomainRules(
             new ApplySupplierCreditCommand(creditId, payableId, 40m, Guid.NewGuid()),
             CancellationToken.None
-        );
+        ).ThenDispatchAsync(db);
         applyResult.IsSuccess.Should().BeTrue(applyResult.Error);
         var movementId = applyResult
             .Value!.Movements.Single(m => m.AccountsPayableId == payableId)
@@ -754,21 +758,21 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
                 Guid.NewGuid()
             ),
             CancellationToken.None
-        );
-        reverseResult.IsSuccess.Should().BeTrue();
+        ).ThenDispatchAsync(db);
+        reverseResult.IsSuccess.Should().BeTrue(reverseResult.Error);
 
+        // ACCOUNTING-CONTINUITY-04: espejo exacto del asiento de la aplicación (CONTINUITY-03).
         await using var verify = CreateContext();
-        var reversalMovementId = reverseResult
-            .Value!.Movements.Single(m => m.ReversalOfMovementId == movementId)
-            .Id;
+        var original = await verify
+            .JournalEntries.Include(e => e.Lines)
+            .SingleAsync(x => x.SourceEventId == movementId);
         var entry = await verify
             .JournalEntries.Include(e => e.Lines)
-            .FirstOrDefaultAsync(x => x.SourceEventId == reversalMovementId);
+            .SingleAsync(x => x.OriginalJournalEntryId == original.Id);
 
-        entry.Should().NotBeNull();
-        entry!.SourceEventType.Should().Be("SupplierCreditApplicationReversed");
-        entry.Lines.Sum(l => l.Debit).Should().Be(40m);
-        entry.Lines.Sum(l => l.Credit).Should().Be(40m);
+        entry.SourceEventType.Should().Be("Reversal");
+        entry.Lines.Select(l => (l.AccountId, l.Debit, l.Credit)).Should().BeEquivalentTo(
+            original.Lines.Select(l => (l.AccountId, l.Credit, l.Debit)));
     }
 
     // ── Infraestructura de wiring real (Posting Engine + Application handler) ──
@@ -839,6 +843,7 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
                 new FixedCurrentCompany(() => _companyId)
             )
         );
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SupplierCreditAppliedPostingTranslator).Assembly
@@ -846,6 +851,8 @@ public sealed class ApplySupplierCreditConcurrencyTests : IAsyncLifetime
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<MediatR.IPublisher>();
 
         return (db, deferred);

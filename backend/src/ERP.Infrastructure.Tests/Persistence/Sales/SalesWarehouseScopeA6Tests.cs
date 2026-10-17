@@ -325,14 +325,12 @@ public sealed class SalesWarehouseA6Fixture : IAsyncLifetime
         terms.Setup(r => r.GetByIdAsync(TenantId, Term.Id, It.IsAny<CancellationToken>())).ReturnsAsync(Term);
         var clock = new Mock<ICompanyClock>();
         clock.Setup(r => r.TodayAsync(CompanyId, TenantId, It.IsAny<CancellationToken>())).ReturnsAsync(Today);
-        var maps = new Mock<IPaymentMethodAccountRepository>();
-        maps.Setup(r => r.GetMapAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())).ReturnsAsync(new Dictionary<Guid, PaymentMethodAccount>());
         return new(new SalesInvoiceRepository(db, Company), new SalesReceivableRepository(db, Company),
             new StockRepository(db, Company, new PostgresDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance, Preferences()),
             terms.Object, Tax().Object, sequences, new EmissionPointRepository(db), new EstablishmentRepository(db),
             Mock.Of<IElectronicDocumentRepository>(), emission, clock.Object, new BusinessPartnerRepository(db), Mock.Of<ISalesFiscalPolicyResolver>(),
-            new PaymentMethodRepository(db), maps.Object, Mock.Of<ICompanyBankAccountRepository>(), new ERP.Infrastructure.Persistence.Repositories.Caja.CashSessionRepository(db, Company),
-            new ERP.Infrastructure.Persistence.Repositories.Caja.CashRegisterRepository(db, Company), new AccountRepository(db), Mock.Of<IPostingEngine>(),
+            new PaymentMethodRepository(db), Mock.Of<ICompanyBankAccountRepository>(), new ERP.Infrastructure.Persistence.Repositories.Caja.CashSessionRepository(db, Company),
+            new ERP.Infrastructure.Persistence.Repositories.Caja.CashRegisterRepository(db, Company),
             NullLogger<AuthorizeSalesInvoiceHandler>.Instance, Tenant, Company, Branch, User, Preferences(), StandardPrecisionPolicyProvider.Instance,
             new ItemRepository(db), new WarehouseRepository(db, Company));
     }

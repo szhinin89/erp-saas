@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.Posting;
@@ -103,6 +104,10 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
         );
         db.Tenants.Add(tenant);
         db.Companies.AddRange(company, other);
+        db.AccountingOperationalPolicies.AddRange(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _cashier),
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, other.Id, _cashier)
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
@@ -309,12 +314,15 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
         ));
         services.AddScoped<ICashRegisterRepository>(_ => new CashRegisterRepository(db, company));
         services.AddScoped<IPostingEngine, PostingEngine>();
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SupplierPaymentConfirmedPostingTranslator).Assembly
             )
         );
-        deferred.Inner = services.BuildServiceProvider().GetRequiredService<IPublisher>();
+        var provider = services.BuildServiceProvider();
+        AccountingContinuityTestWiring.Register(db, provider);
+        deferred.Inner = provider.GetRequiredService<IPublisher>();
         return db;
     }
 
@@ -386,7 +394,7 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
             company,
             new FixedBranch(actor.BranchId),
             new FixedUser(actor.UserId)
-        ).Handle(new FulfillCashFundingRequestCommand(requestId), CancellationToken.None);
+        ).Handle(new FulfillCashFundingRequestCommand(requestId), CancellationToken.None).ThenDispatchAsync(db);
     }
 
     private async Task<Result<CashFundingRequestDto>> RejectAsync(
@@ -470,7 +478,7 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
             new FixedCurrentCompany(() => actor.CompanyId),
             new FixedBranch(actor.BranchId),
             new FixedUser(actor.UserId)
-        ).Handle(payment, CancellationToken.None);
+        ).Handle(payment, CancellationToken.None).ThenDispatchAsync(db);
     }
 
     // ── Datos ──────────────────────────────────────────────────────────────
@@ -919,7 +927,7 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
     }
 
     [Fact]
-    public async Task Fallo_de_posting_revierte_todo_y_la_solicitud_sigue_Pending()
+    public async Task Fallo_de_posting_no_revierte_la_atencion_y_deja_la_obligacion_Failed()
     {
         var id = await PendingAsync(30m);
         await using (var db = PlainContext())
@@ -933,11 +941,16 @@ public sealed partial class CashFundingRequestWorkflowIntegrationTests : IAsyncL
 
         var result = await FulfillAsync(Cashier, id);
 
-        result.IsSuccess.Should().BeFalse();
+        // ACCOUNTING-CONTINUITY-04: el pago y el egreso de caja son válidos; la obligación queda
+        // Failed recuperable, sin asiento.
+        result.IsSuccess.Should().BeTrue(result.Error);
         var state = await SnapshotAsync(id);
         (state.Status, state.Payments, state.CashMovements, state.Journals, state.Balance)
             .Should()
-            .Be((CashFundingRequestStatus.Pending, 0, 0, 0, 100m));
+            .Be((CashFundingRequestStatus.Fulfilled, 1, 1, 0, 70m));
+        await using var verify = PlainContext();
+        (await verify.AccountingPostings.SingleAsync()).Status
+            .Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
     }
 
     // ── Dobles ─────────────────────────────────────────────────────────────

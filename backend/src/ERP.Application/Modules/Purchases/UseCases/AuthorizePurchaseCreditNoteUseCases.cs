@@ -2,10 +2,8 @@ using System.Security.Cryptography;
 using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
-using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Purchases.DTOs;
 using ERP.Domain.Exceptions;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Enums;
@@ -59,7 +57,6 @@ public sealed class AuthorizePurchaseCreditNoteHandler
     private readonly IPurchaseReceptionDocumentRepository _receptionRepo;
     private readonly IUnitOfWork _uow;
     private readonly IDatabaseExceptionTranslator _dbEx;
-    private readonly IPostingEngine _postingEngine;
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
@@ -72,7 +69,6 @@ public sealed class AuthorizePurchaseCreditNoteHandler
         IPurchaseReceptionDocumentRepository receptionRepo,
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
-        IPostingEngine postingEngine,
         ICurrentTenant t,
         ICurrentBranch b,
         ICurrentUser u
@@ -85,7 +81,6 @@ public sealed class AuthorizePurchaseCreditNoteHandler
         _receptionRepo = receptionRepo;
         _uow = uow;
         _dbEx = dbEx;
-        _postingEngine = postingEngine;
         _t = t;
         _b = b;
         _u = u;
@@ -166,30 +161,6 @@ public sealed class AuthorizePurchaseCreditNoteHandler
 
             var balanceDueBeforeApplication = payable.OutstandingAmount;
             var authorizeHash = ComputeAuthorizePayloadHash(creditNote.Id, cmd.ClientRequestId);
-
-            // ── Guard IRBPNR (TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E) — mismo criterio que
-            // ConfirmPurchaseUseCases STEP 0 / AuthorizePurchaseReturnHandler: precondición antes
-            // de Authorize(), el posting nunca revierte una autorización ya persistida. ──
-            if (creditNote.IrbpnrAmount > 0)
-            {
-                var irbpnrConfigured = await _postingEngine.IsAmountKindConfiguredAsync(
-                    tid,
-                    creditNote.CompanyId,
-                    "Purchases",
-                    "PurchaseCreditNoteAuthorized",
-                    PostingAmountKind.TaxIrbpnr,
-                    ct
-                );
-                if (!irbpnrConfigured)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<PurchaseCreditNoteDto>.ValidationFailure(
-                        "Esta nota de crédito contiene IRBPNR (impuesto código 5), pero no existe una regla de "
-                            + "contabilización (PostingRuleLine) configurada para IRBPNR en Notas de Crédito de Compra. "
-                            + "Configure la cuenta contable correspondiente antes de autorizar."
-                    );
-                }
-            }
 
             // Ajuste obligatorio §4.2 del diseño: bloquea si TotalAmount > BalanceDue — nunca
             // trunca ni genera SupplierCredit. El dominio ya valida esto en Authorize().

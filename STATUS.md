@@ -1,5 +1,13 @@
 # Project Status
 
+## ACCOUNTING-CONTINUITY-04 (2026-10-16)
+
+Implementado y validado focalmente: 8 integraciones comerciales/financieras convergen a la
+obligación contable durable y 3 reversas al reverso histórico común; errores exclusivamente
+contables ya no bloquean la operación. Migración `AccountingContinuity04` solo en PostgreSQL
+aislado de pruebas. Sin suites completas, staging, commit ni push.
+Reglas: [Accounting §19](docs/architecture/accounting.md#19-integraciones-durables-accounting-continuity-04).
+
 ## ACCOUNTING-CONTINUITY-03 (2026-10-16)
 
 Implementado: reverso común histórico con original inmutable, fecha efectiva,

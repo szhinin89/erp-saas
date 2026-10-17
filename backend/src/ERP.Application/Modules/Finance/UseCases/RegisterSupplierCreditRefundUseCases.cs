@@ -25,7 +25,7 @@ public sealed record SupplierCreditRefundTransactionDto(
     Guid? OriginalTransactionId,
     Guid? CompanyBankAccountId,
     Guid? CashRegisterId,
-    Guid AccountingAccountId,
+    Guid? AccountingAccountId,
     string PaymentMethodCode,
     decimal Amount,
     string CurrencyCode,
@@ -207,8 +207,10 @@ public sealed class RegisterSupplierCreditRefundHandler
                 );
             }
 
-            // 3-4. Cargar y bloquear (FOR SHARE) CompanyBankAccount/CashRegister + validar.
-            Guid destinationAccountingAccountId;
+            // 3-4. Cargar y bloquear (FOR SHARE) CompanyBankAccount/CashRegister + validar destino.
+            // ACCOUNTING-CONTINUITY-04: su cuenta contable es solo referencia histórica opcional; el
+            // asiento la resuelve Accounting con la configuración vigente (accounting.md §10).
+            Guid? destinationAccountingAccountId;
             string destinationCodeSnapshot;
             string destinationNameSnapshot;
             string destinationTypeSnapshot;
@@ -267,38 +269,15 @@ public sealed class RegisterSupplierCreditRefundHandler
                         "La caja indicada no está activa."
                     );
                 }
-                if (
-                    cashRegisterForDestination.AccountingAccountId
-                    is not { } cashAccountingAccountId
-                )
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
-                        "La caja indicada no tiene una cuenta contable configurada."
-                    );
-                }
-
-                destinationAccountingAccountId = cashAccountingAccountId;
+                destinationAccountingAccountId = cashRegisterForDestination.AccountingAccountId;
                 destinationCodeSnapshot = cashRegisterForDestination.Code;
                 destinationNameSnapshot = cashRegisterForDestination.Name;
                 destinationTypeSnapshot = "CashRegister";
             }
 
-            // 5-6. Cargar y bloquear (FOR SHARE) Account + validar.
-            var account = await _accountRepo.GetByIdForShareAsync(
-                tid,
-                credit.CompanyId,
-                destinationAccountingAccountId,
-                ct
-            );
-            if (account is null || !account.IsActive || !account.AllowsPosting)
-            {
-                await _uow.RollbackAsync(ct);
-                // SC-024
-                return Result<SupplierCreditRefundTransactionDto>.ValidationFailure(
-                    "La cuenta contable del destino indicado no admite contabilización."
-                );
-            }
+            var account = destinationAccountingAccountId is { } accountId
+                ? await _accountRepo.GetByIdForShareAsync(tid, credit.CompanyId, accountId, ct)
+                : null;
 
             // 7. PaymentMethod activo + RequiresReference.
             var paymentMethod = await _paymentMethodRepo.GetByCodeAsync(
@@ -390,8 +369,8 @@ public sealed class RegisterSupplierCreditRefundHandler
                 movement.Id,
                 cmd.CompanyBankAccountId,
                 cmd.CashRegisterId,
-                account.Id,
-                account.Code.ToString(),
+                destinationAccountingAccountId,
+                account?.Code.ToString(),
                 destinationCodeSnapshot,
                 destinationNameSnapshot,
                 destinationTypeSnapshot,

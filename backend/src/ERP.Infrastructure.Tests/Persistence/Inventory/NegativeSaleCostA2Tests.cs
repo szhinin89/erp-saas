@@ -158,9 +158,8 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
             var handler = new AuthorizeSalesInvoiceHandler(new SalesInvoiceRepository(db, company), Mock.Of<ISalesReceivableRepository>(), stock,
                 termRepo.Object, tax.Object, Mock.Of<IDocumentSequenceRepository>(), Mock.Of<IEmissionPointRepository>(), Mock.Of<IEstablishmentRepository>(),
                 Mock.Of<ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository>(), Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
-                clock.Object, Mock.Of<IBusinessPartnerRepository>(), policy.Object, methods.Object, maps.Object,
-                Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(), sessions.Object, registers.Object,
-                new AccountRepository(db), Mock.Of<IPostingEngine>(), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
+                clock.Object, Mock.Of<IBusinessPartnerRepository>(), policy.Object, methods.Object,
+                Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(), sessions.Object, registers.Object, NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
                 new CurrentTenant(_tenantId), company, Mock.Of<ICurrentBranch>(b => b.BranchId == _branchId), Mock.Of<ICurrentUser>(u => u.UserId == _actor),
                 new Preferences(true), StandardPrecisionPolicyProvider.Instance, new ItemRepository(db), new ERP.Infrastructure.Persistence.Repositories.WarehouseRepository(db, company));
             (await handler.Handle(new(invoice.Id), CancellationToken.None)).IsSuccess.Should().BeTrue();

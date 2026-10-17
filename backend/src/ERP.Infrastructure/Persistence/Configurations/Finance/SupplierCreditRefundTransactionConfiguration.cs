@@ -49,7 +49,7 @@ public sealed class SupplierCreditRefundTransactionConfiguration
         builder
             .Property(x => x.AccountingAccountId)
             .HasColumnName("accounting_account_id")
-            .IsRequired();
+            .IsRequired(false);
         builder
             .Property(x => x.PaymentMethodCode)
             .HasColumnName("payment_method_code")
@@ -100,7 +100,7 @@ public sealed class SupplierCreditRefundTransactionConfiguration
             .Property(x => x.AccountingAccountCodeSnapshot)
             .HasColumnName("accounting_account_code_snapshot")
             .HasMaxLength(SupplierCreditRefundTransaction.SnapshotMaxLen)
-            .IsRequired();
+            .IsRequired(false);
 
         // ── Idempotencia (§6.4, §16.2) ──────────────────────────────────────
         builder.Property(x => x.ClientRequestId).HasColumnName("client_request_id").IsRequired();

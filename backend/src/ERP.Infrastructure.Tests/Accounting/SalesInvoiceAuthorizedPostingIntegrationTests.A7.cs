@@ -168,14 +168,13 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
                 new DocumentSequenceRepository(db), new EmissionPointRepository(db), new EstablishmentRepository(db),
                 new ElectronicDocumentRepository(db, clock.Object), Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
                 clock.Object, new BusinessPartnerRepository(db), Mock.Of<ISalesFiscalPolicyResolver>(),
-                new PaymentMethodRepository(db), new PaymentMethodAccountRepository(db),
+                new PaymentMethodRepository(db),
                 new CompanyBankAccountRepository(db, company), new CashSessionRepository(db, company),
-                new CashRegisterRepository(db, company), new AccountRepository(db),
-                provider.GetRequiredService<IPostingEngine>(), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
+                new CashRegisterRepository(db, company), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
                 new FixedCurrentTenant(_tenantId), company, Mock.Of<ICurrentBranch>(b => b.BranchId == _branchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == _createdBy), new A7Preferences(),
                 StandardPrecisionPolicyProvider.Instance, new ItemRepository(db), new WarehouseRepository(db, company));
-            var result = await handler.Handle(new(id), timeout.Token);
+            var result = await handler.Handle(new(id), timeout.Token).ThenDispatchAsync(db);
             result.IsSuccess.Should().BeTrue(result.Error);
         }
         await Task.WhenAll(invoices.Select(i => AuthorizeAsync(i.Id)));
@@ -247,8 +246,10 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         services.AddScoped<IStockRepository, StockRepository>();
         services.AddScoped<IInventoryCostLedger, InventoryCostLedger>();
         services.AddScoped<InventoryCostAccounting>();
+        services.AddAccountingContinuity();
         services.AddMediatR(c => c.RegisterServicesFromAssembly(typeof(AuthorizeSalesInvoiceHandler).Assembly));
         var provider = services.BuildServiceProvider();
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
         return (db, provider);
     }

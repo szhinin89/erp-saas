@@ -450,12 +450,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
-            paymentMethodAccountRepo.Object,
             bankAccountRepo.Object,
             cashSessionRepo.Object,
             cashRegisterRepo.Object,
-            accountRepo.Object,
-            postingEngine.Object,
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -607,12 +604,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
-            paymentMethodAccountRepo.Object,
             Mock.Of<ICompanyBankAccountRepository>(),
             cashSessionRepo.Object,
             cashRegisterRepo.Object,
-            accountRepo.Object,
-            Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -871,12 +865,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             bpRepo.Object,
             fiscalPolicyResolver.Object,
             paymentMethodRepo.Object,
-            paymentMethodAccountRepo.Object,
             Mock.Of<ICompanyBankAccountRepository>(),
             cashSessionRepo.Object,
             cashRegisterRepo.Object,
-            accountRepo.Object,
-            Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -932,12 +923,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             Mock.Of<IBusinessPartnerRepository>(),
             Mock.Of<ISalesFiscalPolicyResolver>(),
             Mock.Of<IPaymentMethodRepository>(),
-            Mock.Of<IPaymentMethodAccountRepository>(),
             Mock.Of<ICompanyBankAccountRepository>(),
             Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashSessionRepository>(),
             Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(),
-            Mock.Of<IAccountRepository>(),
-            Mock.Of<IPostingEngine>(),
             Mock.Of<ILogger<AuthorizeSalesInvoiceHandler>>(),
             tenant.Object,
             company.Object,
@@ -1179,11 +1167,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     }
 
     [Fact]
-    public async Task Factura_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    public async Task Factura_con_IRBPNR_sin_PostingRuleLine_configurada_no_bloquea_la_venta()
     {
-        // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — mismo criterio que el guard de Compras: si hay
-        // IRBPNR y no existe PostingRuleLine configurada, la autorización debe bloquear ANTES de
-        // capturar el secuencial SRI/persistir efectos.
+        // ACCOUNTING-CONTINUITY-04 — la línea IRBPNR de la regla es configuración exclusivamente
+        // contable: su ausencia deja la obligación Failed en el intento, nunca bloquea la venta.
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoice(issueDate: today, emissionType: EmissionType.Physical);
         var line = inv.Lines.Single();
@@ -1201,6 +1188,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                 SalesTaxSource.Calculated
             ),
         ]);
+        var cash = inv.Payments.Single();
+        inv.ReplacePayments(
+            [SalesInvoicePayment.Create(inv.Id, TenantId, cash.PaymentMethodId, cash.PaymentMethodCode, cash.PaymentMethodName, cash.Amount + 2m)],
+            UserId
+        );
 
         var (handler, _, _) = BuildHandler(inv, today, out var postingEngine);
         postingEngine
@@ -1221,9 +1213,8 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("IRBPNR");
-        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
     }
 
     [Fact]
@@ -2458,12 +2449,10 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     // ── SALES-TRANSFER-ACCOUNTING-CASH-VS-BANK-01 ──────────────────────────────────────────
 
     [Fact]
-    public async Task Tarjeta_sin_cuenta_configurada_bloquea_la_autorizacion_con_mensaje_claro()
+    public async Task Tarjeta_sin_cuenta_configurada_autoriza_y_transporta_el_medio_como_destino()
     {
-        // SALES-COLLECTION-ACCOUNT-SSOT-CLEANUP-01 — Tarjeta/Cheque son los ÚNICOS métodos que
-        // siguen resolviendo su cuenta contable vía PaymentMethodAccount; sin una fila configurada
-        // para la Company activa, la autorización debe rechazarse ANTES de capturar secuencial/
-        // tocar inventario — nunca contabilizar silenciosamente contra Efectivo/Caja general.
+        // ACCOUNTING-CONTINUITY-04 — la cuenta de Tarjeta/Cheque (PaymentMethodAccount) se resuelve
+        // en el intento contable: sin ella la obligación queda Failed, la venta se autoriza.
         var today = new DateOnly(2026, 7, 13);
         var inv = CreateDraftInvoiceWithHeaderSriCode(
             today,
@@ -2534,14 +2523,11 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Tarjeta de Crédito");
-        result.Error.Should().Contain("cuenta contable");
-        inv.Status.Should()
-            .Be(
-                Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft,
-                "no debe autorizarse ni consumir secuencial sin cuenta contable configurada para el método de pago"
-            );
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.DomainEvents.OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>().Single()
+            .CollectionDestinations.Should().ContainSingle()
+            .Which.Should().Be(new Domain.Modules.Sales.Events.SalesInvoiceCollectionDestination(
+                Domain.Modules.Sales.Events.SalesCollectionDestinationKind.PaymentMethod, cardMethodId, total));
     }
 
     [Fact]
@@ -2835,7 +2821,7 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
     }
 
     [Fact]
-    public async Task Transferencia_con_cuenta_contable_inactiva_bloquea_la_autorizacion()
+    public async Task Transferencia_con_cuenta_contable_inactiva_no_bloquea_la_autorizacion()
     {
         var today = new DateOnly(2026, 7, 13);
         var bank = ActiveBank();
@@ -2874,9 +2860,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("no es postable o está inactiva");
-        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+        // ACCOUNTING-CONTINUITY-04: cuenta contable inválida → obligación Failed, venta válida.
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
     }
 
     [Fact]
@@ -2943,9 +2929,9 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
         var authorizedEvent = inv
             .DomainEvents.OfType<Domain.Modules.Sales.Events.SalesInvoiceAuthorizedEvent>()
             .Single();
-        authorizedEvent.CashByAccount.Should().ContainSingle();
-        authorizedEvent.CashByAccount.Should().ContainKey(account.Id);
-        authorizedEvent.CashByAccount[account.Id].Should().Be(total);
+        authorizedEvent.CollectionDestinations.Should().ContainSingle()
+            .Which.Should().Be(new Domain.Modules.Sales.Events.SalesInvoiceCollectionDestination(
+                Domain.Modules.Sales.Events.SalesCollectionDestinationKind.BankAccount, bankAccount.Id, total));
     }
 
     // ── CASH-SESSION-PHYSICAL-CASH-SSOT-01 ──────────────────────────────

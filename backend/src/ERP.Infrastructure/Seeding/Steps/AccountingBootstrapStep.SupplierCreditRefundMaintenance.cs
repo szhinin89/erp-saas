@@ -6,8 +6,9 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding.Steps;
 
 /// <summary>
-/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — mantenimiento de las reglas canónicas
-/// "Purchases"/"SupplierCreditRefunded"/"SupplierCreditRefundReversed" en instalaciones existentes,
+/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — mantenimiento de la regla canónica
+/// "Purchases"/"SupplierCreditRefunded" en instalaciones existentes (su reversa espeja el asiento
+/// histórico desde ACCOUNTING-CONTINUITY-04 y ya no usa regla),
 /// incluida Production (el backfill automático de <c>AccountingChartBackfillService.EnsureAsync</c>
 /// no corre en Production). Mismo mecanismo que <see cref="MaintainSupplierPaymentRulesAsync"/>:
 /// diagnóstico por contenido; con <c>apply</c> solo CREA la regla canónica cuando falta por
@@ -23,7 +24,6 @@ public sealed partial class AccountingBootstrapStep
     internal static readonly string[] SupplierCreditRefundFactTypes =
     [
         "SupplierCreditRefunded",
-        "SupplierCreditRefundReversed",
     ];
 
     private static MinimalPostingRule CanonicalSupplierCreditRefundRule(string factType) =>
@@ -89,10 +89,7 @@ public sealed partial class AccountingBootstrapStep
                 r.TenantId == tenantId
                 && r.CompanyId == companyId
                 && r.SourceModule == "Purchases"
-                && (
-                    r.FactType.StartsWith("SupplierCreditRefunded")
-                    || r.FactType.StartsWith("SupplierCreditRefundReversed")
-                )
+                && r.FactType.StartsWith("SupplierCreditRefunded")
             )
             .ToListAsync(cancellationToken);
         var accounts = await _db

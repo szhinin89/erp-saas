@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Accounting.Posting.Translators;
@@ -132,6 +133,9 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(customer);
         db.Establishments.Add(establishment);
@@ -257,6 +261,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
             ERP.Domain.Modules.Inventory.Interfaces.IStockRepository,
             ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository
         >();
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SalesInvoiceAuthorizedPostingTranslator).Assembly
@@ -264,6 +269,8 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
 
         return (db, deferred);
@@ -534,6 +541,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var inv = BuildAuthorizableInvoiceWithIvaIceIrbpnr(issueDate, "001-001-000000010");
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         // Subtotal 100, ICE 10 (10% de 100), IVA 15% sobre (100+10)=110 → 16.5, IRBPNR fijo 0.30.
         inv.TotalIce.Should().Be(10m);
@@ -547,6 +555,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
 
         inv.Authorize(_createdBy);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         inv.GrandTotal.Should().Be(100m + 16.5m + 10m + 0.30m);
 
@@ -644,9 +653,11 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
 
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         inv.Authorize(_createdBy);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var persisted = await verifyDb.SalesInvoices.FirstAsync(x => x.Id == inv.Id);
@@ -683,9 +694,11 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000001");
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         inv.Authorize(_createdBy);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
@@ -700,41 +713,41 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         entry.SourceEventType.Should().Be("InvoiceIssued");
     }
 
-    // SALES-JOURNAL-ENTRY-SILENT-FAILURE-01 Lote 2 — este test documentaba el comportamiento
-    // ANTES del fix: un fallo del Posting Engine dejaba la factura Authorized sin ningún asiento
-    // (log-and-continue), exactamente el hallazgo real (facturas 001-001-000000001/000000002 en
-    // BD dev sin JournalEntry InvoiceIssued). Ahora SalesInvoiceAuthorizedPostingTranslator lanza
-    // SalesInvoicePostingFailedException, que ErpDbContext.SaveChangesAsync propaga y revierte —
-    // la factura permanece en Draft (rollback completo de esa transacción), sin asiento y sin
-    // quedar autorizada silenciosamente.
     [Fact]
-    public async Task Fallo_de_Posting_revierte_la_autorizacion_completa()
+    public async Task Fallo_contable_conserva_la_venta_autorizada_y_el_reproceso_manual_publica_una_vez()
     {
+        // ACCOUNTING-CONTINUITY-04: sin PostingRule la venta queda autorizada (stock/caja/CxC) y la
+        // obligación Failed recuperable; corregida la configuración, el reproceso manual publica.
         var issueDate = new DateOnly(2026, 7, 25);
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        // Sin PostingRule sembrada — fuerza RULE_NOT_FOUND dentro del pipeline.
 
-        var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000002");
+        var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000090");
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
-
         inv.Authorize(_createdBy);
-        var act = async () => await db.SaveChangesAsync();
+        await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
-        await act.Should()
-            .ThrowAsync<ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException>(
-                because: "el asiento Sales/InvoiceIssued es obligatorio — un fallo del Posting "
-                    + "Engine debe revertir la autorización completa, nunca dejarla a medias"
-            );
+        Guid postingId;
+        await using (var verifyFailed = CreateContext())
+        {
+            (await verifyFailed.SalesInvoices.SingleAsync(x => x.Id == inv.Id))
+                .Status.Should().Be(ERP.Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+            (await verifyFailed.Set<CashMovement>().CountAsync(m => m.ReferenceId == inv.Id)).Should().Be(1);
+            var posting = await verifyFailed.AccountingPostings.SingleAsync(p => p.SourceEventId == inv.Id);
+            posting.Status.Should().Be(AccountingPostingStatus.Failed);
+            posting.ErrorCode.Should().Be("RULE_NOT_FOUND");
+            (await verifyFailed.JournalEntries.AnyAsync(x => x.SourceEventId == inv.Id)).Should().BeFalse();
+            postingId = posting.Id;
+        }
 
-        await using var verifyDb = CreateContext();
-        var persisted = await verifyDb.SalesInvoices.FirstAsync(x => x.Id == inv.Id);
-        persisted.Status.Should().Be(ERP.Domain.Modules.Sales.Enums.SalesInvoiceStatus.Draft);
+        await SeedRuleAndPeriodAsync(db, issueDate);
+        (await AccountingContinuityTestWiring.ReprocessAsync(db, postingId, "Regla de ventas configurada"))
+            .Status.Should().Be(AccountingPostingStatus.Posted);
 
-        var entry = await verifyDb.JournalEntries.FirstOrDefaultAsync(x =>
-            x.SourceEventId == inv.Id
-        );
-        entry.Should().BeNull();
+        await using var verify = CreateContext();
+        (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id && x.SourceEventType == "InvoiceIssued"))
+            .Should().Be(1);
     }
 
     [Fact]
@@ -747,9 +760,11 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000003");
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         inv.Authorize(_createdBy);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         // Republicación manual del mismo evento — nunca se re-autoriza la factura (Authorize()
         // es de un solo uso), se simula un reintento de entrega del mismo Domain Event.
@@ -807,9 +822,11 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000004");
         seedDb.SalesInvoices.Add(inv);
         await seedDb.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(seedDb);
 
         inv.Authorize(_createdBy);
         await seedDb.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(seedDb);
 
         var evt = new SalesInvoiceAuthorizedEvent(
             inv.Id,
@@ -941,6 +958,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000301");
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
         var stock = RetryStockRepository(db);
         var staleStock = (await stock.GetStockAsync(_tenantId, warehouseId, productId))!;
         var staleXmin = db.Entry(staleStock).Property<uint>("xmin").OriginalValue;
@@ -1088,6 +1106,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000098");
         db.SalesInvoices.Add(inv);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         // Igual que AuthorizeSalesInvoiceHandler: la sesión queda trackeada antes de guardar…
         _ = await db.CashSessions.SingleAsync(x => x.Id == _cashSessionId);
@@ -1149,71 +1168,6 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
             .Be(105m, because: "5 del otro flujo + 100 de esta venta");
     }
 
-    /// <summary>
-    /// D — un fallo del posting ocurre DESPUÉS de publicar: el reintento de Kardex no lo repite
-    /// (LastSaveFailureIsRetryable) y la venta se revierte entera — Draft, sin Kardex, asiento,
-    /// movimiento de caja ni fila de outbox (sin estado parcial).
-    /// </summary>
-    [Fact]
-    public async Task Fallo_de_posting_tras_publicar_revierte_Kardex_caja_y_outbox()
-    {
-        var issueDate = new DateOnly(2026, 7, 25);
-        var warehouseId = await SeedWarehouseAsync();
-        var productId = await SeedInventoryProductAsync();
-        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
-        // Sin PostingRule sembrada — RULE_NOT_FOUND dentro del pipeline, después del lock de Caja.
-        var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000097");
-        db.SalesInvoices.Add(inv);
-        await db.SaveChangesAsync();
-
-        var stock = RetryStockRepository(db);
-        await stock.AppendMovementAsync(
-            _tenantId,
-            _companyId,
-            productId,
-            warehouseId,
-            ERP.Domain.Modules.Inventory.Enums.StockMovementType.PositiveAdjust,
-            10m,
-            "UNIT",
-            issueDate,
-            inv.InvoiceNumber,
-            inv.Id,
-            "SalesInvoice",
-            _createdBy,
-            unitCost: 1m
-        );
-        inv.Authorize(_createdBy);
-
-        var act = async () => await stock.SaveChangesWithSequenceRetryAsync();
-        await act.Should()
-            .ThrowAsync<ERP.Application.Modules.Sales.Exceptions.SalesInvoicePostingFailedException>();
-
-        await using var verify = CreateContext();
-        (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id))
-            .Status.ToString()
-            .Should()
-            .Be("Draft");
-        (
-            await verify
-                .Set<ERP.Domain.Modules.Inventory.Entities.StockMovement>()
-                .CountAsync(m => m.SourceDocId == inv.Id)
-        )
-            .Should()
-            .Be(0);
-        (await verify.JournalEntries.CountAsync(x => x.SourceEventId == inv.Id)).Should().Be(0);
-        (
-            await verify
-                .Set<ERP.Domain.Modules.Caja.Entities.CashMovement>()
-                .CountAsync(m => m.ReferenceId == inv.Id)
-        )
-            .Should()
-            .Be(0);
-        (await verify.OutboxMessages.CountAsync(m => m.Payload.Contains(inv.Id.ToString())))
-            .Should()
-            .Be(0);
-        (await SessionBalanceAsync(verify)).Should().Be(0m);
-    }
-
     private async Task<SalesInvoice> LoadInvoiceAsync(ErpDbContext db, Guid id) =>
         (
             await new ERP.Infrastructure.Persistence.Repositories.Sales.SalesInvoiceRepository(
@@ -1263,6 +1217,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
                     await go.Task.ConfigureAwait(false);
                     inv.Authorize(_createdBy);
                     await db.SaveChangesAsync();
+                    await AccountingContinuityTestWiring.DispatchPendingAsync(db);
                 });
 
             var tasks = ids.Select(AuthorizeAsync).ToArray();
@@ -1301,8 +1256,10 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var inv = BuildAuthorizableInvoice(issueDate, "001-001-000000096");
         seedDb.SalesInvoices.Add(inv);
         await seedDb.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(seedDb);
         inv.Authorize(_createdBy);
         await seedDb.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(seedDb);
 
         var evt = new SalesInvoiceAuthorizedEvent(
             inv.Id,
@@ -1358,6 +1315,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         var draft = BuildAuthorizableInvoice(issueDate, "001-001-000000095");
         seedDb.SalesInvoices.Add(draft);
         await seedDb.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(seedDb);
 
         var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         Task<Exception?> AuthorizeAsync() =>
@@ -1370,6 +1328,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
                 {
                     inv.Authorize(_createdBy);
                     await db.SaveChangesAsync();
+                    await AccountingContinuityTestWiring.DispatchPendingAsync(db);
                     return (Exception?)null;
                 }
                 catch (Exception ex)

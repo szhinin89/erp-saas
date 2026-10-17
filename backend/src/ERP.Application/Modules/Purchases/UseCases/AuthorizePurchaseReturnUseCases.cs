@@ -3,10 +3,8 @@ using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
-using ERP.Application.Modules.Accounting.Posting;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Purchases.DTOs;
-using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
@@ -61,7 +59,6 @@ public sealed class AuthorizePurchaseReturnHandler
     private readonly ISupplierCreditRepository _creditRepo;
     private readonly IUnitOfWork _uow;
     private readonly IDatabaseExceptionTranslator _dbEx;
-    private readonly IPostingEngine _postingEngine;
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
@@ -80,7 +77,6 @@ public sealed class AuthorizePurchaseReturnHandler
         ISupplierCreditRepository creditRepo,
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
-        IPostingEngine postingEngine,
         ICurrentTenant t,
         ICurrentBranch b,
         ICurrentUser u,
@@ -101,7 +97,6 @@ public sealed class AuthorizePurchaseReturnHandler
         _creditRepo = creditRepo;
         _uow = uow;
         _dbEx = dbEx;
-        _postingEngine = postingEngine;
         _t = t;
         _b = b;
         _u = u;
@@ -319,36 +314,6 @@ public sealed class AuthorizePurchaseReturnHandler
                     return Result<PurchaseReturnDto>.ValidationFailure(
                         $"Stock insuficiente en la bodega original para la línea (existencia: {availableQty}, "
                             + $"solicitado: {requiredBaseQty})."
-                    );
-                }
-            }
-
-            // ── Guard IRBPNR (TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E) — mismo criterio que
-            // ConfirmPurchaseUseCases STEP 0: el posting nunca revierte una autorización ya
-            // persistida (un Result fallido de IPostingEngine.PostAsync solo se registra en log),
-            // así que la única forma confiable de exigir configuración contable es esta
-            // precondición, antes de consumir el secuencial/Authorize(). ──
-            if (
-                originalLinesByDetailId.Values.Any(s =>
-                    s.Taxes.Any(t => t.TaxCode == SriTaxCategoryCodes.Irbpnr && t.TaxAmount > 0)
-                )
-            )
-            {
-                var irbpnrConfigured = await _postingEngine.IsAmountKindConfiguredAsync(
-                    tid,
-                    purchaseReturn.CompanyId,
-                    "Purchases",
-                    "PurchaseReturn",
-                    PostingAmountKind.TaxIrbpnr,
-                    ct
-                );
-                if (!irbpnrConfigured)
-                {
-                    await _uow.RollbackAsync(ct);
-                    return Result<PurchaseReturnDto>.ValidationFailure(
-                        "Esta devolución contiene IRBPNR (impuesto código 5), pero no existe una regla de "
-                            + "contabilización (PostingRuleLine) configurada para IRBPNR en Devoluciones de Compra. "
-                            + "Configure la cuenta contable correspondiente antes de autorizar."
                     );
                 }
             }

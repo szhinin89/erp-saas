@@ -1,71 +1,101 @@
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
 /// <summary>
-/// Traduce <see cref="PurchaseReturnAuthorizedEvent"/> (P0-02 Fase 6) al hecho compuesto
-/// balanceado de diseño §19.1bis e invoca <see cref="IPostingEngine"/> — no crea
-/// <c>JournalEntry</c>, no resuelve cuentas, no contiene lógica financiera (mismo criterio que
-/// <c>PurchaseInvoiceConfirmedPostingTranslator</c>/<c>SalesReturnAuthorizedPostingTranslator</c>,
-/// ADR-026 §8). Único hecho contable por autorización — nunca dos eventos paralelos para la misma
-/// devolución (§19.1bis, "un único hecho compuesto, nunca doble contabilización").
-///
-/// Usa los 5 campos de <see cref="PostingFact"/> agregados en la Remediación 01 de esta fase
-/// (<c>AppliedToPayableAmount</c>/<c>SupplierCreditAmount</c>/<c>CostVarianceDebitAmount</c>/
-/// <c>CostVarianceCreditAmount</c>/<c>HistoricalCostTotal</c>) + los campos ya existentes
-/// <c>TotalVat</c>/<c>TotalIce</c> para <c>ReturnedVatAmount</c>/<c>ReturnedIceAmount</c> — nunca
-/// reutiliza <c>Subtotal</c>/<c>Discount</c>/<c>GrandTotal</c> para estos conceptos (evita
-/// ambigüedad de trazabilidad contable).
+/// Traduce <see cref="PurchaseReturnAuthorizedEvent"/> al hecho compuesto Purchases/PurchaseReturn
+/// (§19.1bis) y lo registra como obligación durable en la transacción de la autorización
+/// (ACCOUNTING-CONTINUITY-04). Único hecho por devolución: la NC de compra tipo Return vinculada
+/// nunca genera otro asiento.
 /// </summary>
-public sealed class PurchaseReturnAuthorizedPostingTranslator
-    : INotificationHandler<PurchaseReturnAuthorizedEvent>
+public sealed class PurchaseReturnAuthorizedPostingTranslator(
+    AccountingPostingRecorder recorder,
+    ICompanyClock companyClock
+) : INotificationHandler<PurchaseReturnAuthorizedEvent>
 {
-    private readonly IPostingEngine _postingEngine;
-    private readonly ICompanyClock _companyClock;
-    private readonly ILogger<PurchaseReturnAuthorizedPostingTranslator> _logger;
-
-    public PurchaseReturnAuthorizedPostingTranslator(
-        IPostingEngine postingEngine,
-        ICompanyClock companyClock,
-        ILogger<PurchaseReturnAuthorizedPostingTranslator> logger
-    )
-    {
-        _postingEngine = postingEngine;
-        _companyClock = companyClock;
-        _logger = logger;
-    }
-
     public async Task Handle(PurchaseReturnAuthorizedEvent e, CancellationToken ct)
     {
-        var entryDate = await _companyClock.TodayAsync(e.CompanyId, e.TenantId!.Value, ct);
-        var fact = PurchaseReturnPostingFactBuilder.Build(
-            e.TenantId!.Value,
-            e.CompanyId,
-            e.PurchaseReturnId,
-            entryDate,
-            e.AuthorizedVatTotal,
-            e.AuthorizedIceTotal,
-            e.AuthorizedIrbpnrTotal,
-            e.AppliedToPayableAmount,
-            e.SupplierCreditAmount,
-            e.CostVarianceTotal,
-            e.HistoricalCostTotal
-        );
-
-        var result = await _postingEngine.PostAsync(fact, ct);
-
-        if (!result.IsSuccess)
-        {
-            _logger.LogWarning(
-                "Posting failed for PurchaseReturn {PurchaseReturnId} ({ReturnNumber}): {Code} — {Error}",
+        var tenantId = e.TenantId!.Value;
+        var entryDate = await companyClock.TodayAsync(e.CompanyId, tenantId, ct);
+        await recorder.RecordAsync(
+            PurchaseReturnPosting.Request(
+                tenantId,
+                e.CompanyId,
                 e.PurchaseReturnId,
                 e.ReturnNumber,
-                result.Code,
-                result.Error
-            );
-        }
+                entryDate,
+                e.AuthorizedVatTotal,
+                e.AuthorizedIceTotal,
+                e.AuthorizedIrbpnrTotal,
+                e.AppliedToPayableAmount,
+                e.SupplierCreditAmount,
+                e.CostVarianceTotal,
+                e.HistoricalCostTotal,
+                e.PurchaseInvoiceId,
+                e.SupplierCreditId
+            ),
+            ct
+        );
+    }
+}
+
+/// <summary>
+/// Hecho compuesto de la devolución de compra, compartido por la autorización y por la remediación
+/// manual por CLI: una sola definición de sus componentes (IVA/ICE/IRBPNR devueltos, CxP aplicada,
+/// saldo a favor, costo histórico retirado y diferencia de costo Debe/Haber mutuamente excluyentes).
+/// </summary>
+public static class PurchaseReturnPosting
+{
+    public const string SourceModuleName = "Purchases";
+    public const string FactTypeName = "PurchaseReturn";
+
+    public static AccountingPostingRequest Request(
+        Guid tenantId,
+        Guid companyId,
+        Guid purchaseReturnId,
+        string? returnNumber,
+        DateOnly entryDate,
+        decimal authorizedVatTotal,
+        decimal authorizedIceTotal,
+        decimal authorizedIrbpnrTotal,
+        decimal appliedToPayableAmount,
+        decimal supplierCreditAmount,
+        decimal costVarianceTotal,
+        decimal historicalCostTotal,
+        Guid purchaseInvoiceId,
+        Guid? supplierCreditId
+    )
+    {
+        var references = new Dictionary<string, Guid> { ["PurchaseInvoiceId"] = purchaseInvoiceId };
+        if (supplierCreditId is { } creditId)
+            references["SupplierCreditId"] = creditId;
+
+        return new AccountingPostingRequest(
+            tenantId,
+            companyId,
+            SourceModuleName,
+            FactTypeName,
+            purchaseReturnId,
+            returnNumber,
+            entryDate,
+            entryDate,
+            new AccountingPostingPayload(
+                0m,
+                authorizedVatTotal,
+                authorizedIceTotal,
+                0m,
+                0m,
+                TotalIrbpnr: authorizedIrbpnrTotal,
+                AppliedToPayableAmount: appliedToPayableAmount,
+                SupplierCreditAmount: supplierCreditAmount,
+                CostVarianceDebitAmount: Math.Max(costVarianceTotal, 0m),
+                CostVarianceCreditAmount: Math.Max(-costVarianceTotal, 0m),
+                HistoricalCostTotal: historicalCostTotal,
+                References: references
+            )
+        );
     }
 }

@@ -135,6 +135,9 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         db.PaymentTerms.Add(paymentTerm);
@@ -239,6 +242,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             () => companyId,
             Guid.NewGuid()
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(PurchaseReturnAuthorizedPostingTranslator).Assembly
@@ -246,6 +250,8 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
 
         return (db, deferred);
@@ -363,6 +369,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         db.PostingRules.Add(rule);
         db.AccountingPeriods.Add(period);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
     }
 
     /// <summary>Factura confirmada con una línea, lista para usarse como origen de una devolución.</summary>
@@ -581,6 +588,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         }
         db.PurchaseReturns.Add(ret);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb
@@ -627,6 +635,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         var (ret, _) = BuildAuthorizedReturn(inv, returnQuantity: 2, kardexUnitCost: 2.7272727273m);
         db.PurchaseReturns.Add(ret);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         ret.HistoricalCostTotal.Should().Be(5.45m);
         ret.CostVarianceTotal.Should().Be(5.45m - ret.AuthorizedSubtotal!.Value);
@@ -684,6 +693,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
         var (ret, _) = BuildAuthorizedReturn(inv, returnQuantity: 2);
         db.PurchaseReturns.Add(ret);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         var repeated = new ERP.Domain.Modules.Purchases.Events.PurchaseReturnAuthorizedEvent(
             ret.Id,
@@ -706,7 +716,7 @@ public sealed class PurchaseReturnAuthorizedPostingIntegrationTests : IAsyncLife
             null,
             ret.Reason
         );
-        await publisher.Publish(repeated, CancellationToken.None);
+        await AccountingContinuityTestWiring.RepublishAsync(db, publisher, repeated);
 
         await using var verifyDb = CreateContext();
         var count = await verifyDb.JournalEntries.CountAsync(x => x.SourceEventId == ret.Id);

@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -138,6 +139,9 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         db.PaymentTerms.Add(paymentTerm);
@@ -246,6 +250,7 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
             () => companyId,
             Guid.NewGuid()
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SupplierCreditApplicationReversedPostingTranslator).Assembly
@@ -253,6 +258,8 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
 
         return (db, deferred);
@@ -313,26 +320,7 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
             PostingAmountKind.GrandTotal
         );
 
-        // Espejo exacto: mismas cuentas/AmountKind, naturaleza invertida — mismo criterio que
-        // MinimalPostingRules ("Purchases","SupplierCreditApplicationReversed") en AccountingBootstrapStep.
-        var reversedRule = PostingRule.Create(
-            _tenantId,
-            _companyId,
-            "Purchases",
-            "SupplierCreditApplicationReversed",
-            null,
-            null,
-            null,
-            _createdBy
-        );
-        reversedRule.AddLine(
-            supplierCreditAcc.Id,
-            AccountNature.Debit,
-            PostingAmountKind.GrandTotal
-        );
-        reversedRule.AddLine(payableAcc.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
-
-        db.PostingRules.AddRange(appliedRule, reversedRule);
+        db.PostingRules.Add(appliedRule);
 
         var period = AccountingPeriod.Create(
             _tenantId,
@@ -350,6 +338,7 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         db.AccountingPeriods.Add(period);
 
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
         return (payableAcc.Id, supplierCreditAcc.Id);
     }
 
@@ -477,6 +466,7 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         var payable = BuildPayable(issueDate, "001-001-000000021", total: 100m);
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         var (credit, movementId) = BuildAndApplyCredit(
             payable,
@@ -486,6 +476,7 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         // Confirma primero que el asiento de aplicación sí existe — precondición del reverso.
         await using (var verifyBefore = CreateContext())
@@ -504,18 +495,21 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         );
         payable.ReverseSupplierCredit(30m, _createdBy);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var reversalEntry = await verifyDb
             .JournalEntries.Include(e => e.Lines)
             .SingleOrDefaultAsync(x =>
-                x.SourceEventId == reversalMovement.Id
-                && x.SourceEventType == "SupplierCreditApplicationReversed"
+                x.SourceEventType == "Reversal"
+                && verifyDb.JournalEntries.Any(o =>
+                    o.Id == x.OriginalJournalEntryId && o.SourceEventId == movementId
+                )
             );
 
         reversalEntry.Should().NotBeNull();
         reversalEntry!.Status.Should().Be(JournalEntryStatus.Posted);
-        reversalEntry.SourceModule.Should().Be("Purchases");
+        reversalEntry.SourceModule.Should().Be("Accounting");
         reversalEntry.Lines.Should().HaveCount(2);
 
         var totalDebit = reversalEntry.Lines.Sum(l => l.Debit);
@@ -558,6 +552,7 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         var payable = BuildPayable(issueDate, "001-001-000000023", total: 100m);
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         var (credit, movementId) = BuildAndApplyCredit(
             payable,
@@ -567,6 +562,7 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         var reversalMovement = credit.ReverseApplication(
             movementId,
@@ -576,11 +572,14 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
         );
         payable.ReverseSupplierCredit(20m, _createdBy);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var countDb1 = CreateContext();
         var countBefore = await countDb1.JournalEntries.CountAsync(x =>
-            x.SourceEventId == reversalMovement.Id
-            && x.SourceEventType == "SupplierCreditApplicationReversed"
+            x.SourceEventType == "Reversal"
+            && countDb1.JournalEntries.Any(o =>
+                o.Id == x.OriginalJournalEntryId && o.SourceEventId == movementId
+            )
         );
         countBefore.Should().Be(1);
 
@@ -598,12 +597,14 @@ public sealed class SupplierCreditApplicationReversedPostingIntegrationTests : I
                 credit.AvailableAmount,
                 _createdBy
             );
-        await publisher.Publish(replayedEvent);
+        await AccountingContinuityTestWiring.RepublishAsync(db, publisher, replayedEvent);
 
         await using var countDb2 = CreateContext();
         var countAfter = await countDb2.JournalEntries.CountAsync(x =>
-            x.SourceEventId == reversalMovement.Id
-            && x.SourceEventType == "SupplierCreditApplicationReversed"
+            x.SourceEventType == "Reversal"
+            && countDb2.JournalEntries.Any(o =>
+                o.Id == x.OriginalJournalEntryId && o.SourceEventId == movementId
+            )
         );
         countAfter
             .Should()

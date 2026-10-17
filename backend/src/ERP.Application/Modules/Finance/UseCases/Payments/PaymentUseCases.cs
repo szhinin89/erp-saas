@@ -252,10 +252,6 @@ public sealed class RegisterCollectionCommandHandler
                 return Result<PaymentDto>.ValidationFailure(
                     "La caja indicada no existe, no pertenece a esta empresa o está inactiva."
                 );
-            if (cashRegister.AccountingAccountId is null)
-                return Result<PaymentDto>.ValidationFailure(
-                    "La caja indicada no tiene una cuenta contable configurada. Configúrela en Cajas registradoras antes de registrar el cobro."
-                );
         }
 
         Payment payment;

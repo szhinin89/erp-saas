@@ -363,9 +363,6 @@ public sealed class PurchaseCreditNoteDiscountIntegrationTests : IAsyncLifetime
             ),
             new UnitOfWork(authDb),
             new RealDatabaseExceptionTranslator(),
-            // No se llama (IrbpnrAmount = 0 para esta NC) — descuento sin IRBPNR nunca evalúa el
-            // guard de PostingRule; cualquier implementación basta.
-            Mock.Of<ERP.Application.Modules.Accounting.Posting.IPostingEngine>(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(_branchId),
             new FixedCurrentUser(_userId)

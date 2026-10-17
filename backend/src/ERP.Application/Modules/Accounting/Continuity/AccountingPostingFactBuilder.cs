@@ -3,7 +3,10 @@ using ERP.Application.Modules.Accounting.Posting;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Expenses.Interfaces;
+using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.Continuity;
 
@@ -13,22 +16,42 @@ namespace ERP.Application.Modules.Accounting.Continuity;
 /// momento del intento (accounting.md §6). Nunca lanza por datos o configuración: cualquier
 /// carencia es un resultado fallido que el intento registra como Failed.
 /// </summary>
+/// <remarks>
+/// ACCOUNTING-CONTINUITY-04 — también resuelve aquí (y no en el núcleo operativo) las cuentas de
+/// los destinos financieros (caja, cuenta bancaria, medio tarjeta/cheque) y exige las líneas de
+/// regla que un importe no nulo necesita (IRBPNR, anticipo a proveedor).
+/// </remarks>
 public sealed class AccountingPostingFactBuilder
 {
     public const string PayloadUnsupportedCode = "ACCOUNTING_PAYLOAD_UNSUPPORTED";
     public const string ExpenseAccountNotConfiguredCode = "EXPENSE_ACCOUNT_NOT_CONFIGURED";
     public const string ExpenseAccountInvalidCode = "EXPENSE_ACCOUNT_INVALID";
+    public const string DestinationNotFoundCode = "FINANCIAL_DESTINATION_NOT_FOUND";
+    public const string DestinationAccountNotConfiguredCode = "FINANCIAL_DESTINATION_ACCOUNT_NOT_CONFIGURED";
+    public const string RuleLineNotConfiguredCode = "POSTING_RULE_LINE_NOT_CONFIGURED";
 
     private readonly IExpenseCategoryRepository _expenseCategories;
     private readonly IAccountRepository _accounts;
+    private readonly ICashRegisterRepository _cashRegisters;
+    private readonly ICompanyBankAccountRepository _bankAccounts;
+    private readonly IPaymentMethodAccountRepository _paymentMethodAccounts;
+    private readonly IPostingRuleRepository _rules;
 
     public AccountingPostingFactBuilder(
         IExpenseCategoryRepository expenseCategories,
-        IAccountRepository accounts
+        IAccountRepository accounts,
+        ICashRegisterRepository cashRegisters,
+        ICompanyBankAccountRepository bankAccounts,
+        IPaymentMethodAccountRepository paymentMethodAccounts,
+        IPostingRuleRepository rules
     )
     {
         _expenseCategories = expenseCategories;
         _accounts = accounts;
+        _cashRegisters = cashRegisters;
+        _bankAccounts = bankAccounts;
+        _paymentMethodAccounts = paymentMethodAccounts;
+        _rules = rules;
     }
 
     public async Task<Result<PostingFact>> BuildAsync(AccountingPosting posting, CancellationToken ct)
@@ -41,15 +64,49 @@ public sealed class AccountingPostingFactBuilder
             );
 
         var subtotal = payload.Subtotal;
-        IReadOnlyCollection<PostingAllocation>? allocations = null;
+        var allocations = new List<PostingAllocation>();
         if (payload.ExpenseLines is { } lines)
         {
             var resolved = await ResolveExpenseAllocationsAsync(posting, lines, ct);
             if (!resolved.IsSuccess)
                 return Result<PostingFact>.ValidationFailure(resolved.Error!, resolved.Code);
-            allocations = resolved.Value!;
-            subtotal = allocations.Sum(a => a.Amount);
+            allocations.AddRange(resolved.Value!);
+            subtotal = resolved.Value!.Sum(a => a.Amount);
         }
+
+        PostingAmountKind? overrideKind = null;
+        AccountNature? overrideNature = null;
+        Guid? overrideAccountId = null;
+        var destinationAllocations = new Dictionary<(Guid Account, AccountNature Nature), (decimal Amount, string? Description)>();
+        foreach (var destination in payload.Destinations ?? [])
+        {
+            if (destination.Amount <= 0m)
+                continue;
+            var account = await ResolveDestinationAccountAsync(posting, destination, ct);
+            if (!account.IsSuccess)
+                return Result<PostingFact>.ValidationFailure(account.Error!, account.Code);
+
+            if (destination.OverridesAmountKind is { } kind)
+            {
+                overrideKind = kind;
+                overrideNature = destination.Nature;
+                overrideAccountId = account.Value;
+                continue;
+            }
+
+            // Mismo criterio previo de Ventas: una línea por cuenta y naturaleza.
+            var key = (account.Value, destination.Nature);
+            destinationAllocations[key] = destinationAllocations.TryGetValue(key, out var current)
+                ? (current.Amount + destination.Amount, current.Description == destination.Description ? current.Description : null)
+                : (destination.Amount, destination.Description);
+        }
+        allocations.AddRange(
+            destinationAllocations.Select(d => new PostingAllocation(d.Key.Account, d.Value.Amount, d.Key.Nature, d.Value.Description))
+        );
+
+        var requiredLines = await EnsureRequiredRuleLinesAsync(posting, payload, ct);
+        if (!requiredLines.IsSuccess)
+            return Result<PostingFact>.ValidationFailure(requiredLines.Error!, requiredLines.Code);
 
         return Result<PostingFact>.Success(
             new PostingFact(
@@ -64,13 +121,98 @@ public sealed class AccountingPostingFactBuilder
                 payload.TotalIce,
                 payload.TotalDiscount,
                 payload.GrandTotal,
+                AppliedToPayableAmount: payload.AppliedToPayableAmount,
+                SupplierCreditAmount: payload.SupplierCreditAmount,
+                CostVarianceDebitAmount: payload.CostVarianceDebitAmount,
+                CostVarianceCreditAmount: payload.CostVarianceCreditAmount,
+                HistoricalCostTotal: payload.HistoricalCostTotal,
                 TotalIrbpnr: payload.TotalIrbpnr,
-                Allocations: allocations,
+                OverrideAmountKind: overrideKind,
+                OverrideAccountNature: overrideNature,
+                OverrideAccountId: overrideAccountId,
+                Allocations: allocations.Count > 0 ? allocations : null,
                 RetainedAmount: payload.RetainedAmount,
                 RetainedVatAmount: payload.RetainedVatAmount,
-                RetainedIncomeAmount: payload.RetainedIncomeAmount
+                RetainedIncomeAmount: payload.RetainedIncomeAmount,
+                CashApplied: payload.CashApplied,
+                PendingBalance: payload.PendingBalance
             )
         );
+    }
+
+    /// <summary>
+    /// Cuenta vigente del destino: caja → su cuenta; banco → su cuenta; tarjeta/cheque → la
+    /// configuración del medio por Company. Sin fallback. La validez de la cuenta (activa,
+    /// postable, misma Company) la exige después el motor.
+    /// </summary>
+    private async Task<Result<Guid>> ResolveDestinationAccountAsync(
+        AccountingPosting posting,
+        AccountingPostingDestination destination,
+        CancellationToken ct
+    )
+    {
+        switch (destination.Kind)
+        {
+            case AccountingPostingDestination.CashRegister:
+                var cash = await _cashRegisters.GetByIdAsync(posting.TenantId, destination.ReferenceId, ct);
+                if (cash is null || cash.CompanyId != posting.CompanyId)
+                    return Result<Guid>.ValidationFailure("La caja del hecho no existe en esta empresa.", DestinationNotFoundCode);
+                return cash.AccountingAccountId is { } cashAccount
+                    ? Result<Guid>.Success(cashAccount)
+                    : Result<Guid>.ValidationFailure(
+                        $"La caja '{cash.Name}' no tiene una cuenta contable configurada.",
+                        DestinationAccountNotConfiguredCode
+                    );
+
+            case AccountingPostingDestination.BankAccount:
+                var bank = await _bankAccounts.GetByIdAsync(posting.TenantId, destination.ReferenceId, ct);
+                return bank is null || bank.CompanyId != posting.CompanyId
+                    ? Result<Guid>.ValidationFailure("La cuenta bancaria del hecho no existe en esta empresa.", DestinationNotFoundCode)
+                    : Result<Guid>.Success(bank.AccountingAccountId);
+
+            case AccountingPostingDestination.PaymentMethod:
+                var link = await _paymentMethodAccounts.GetAsync(posting.TenantId, posting.CompanyId, destination.ReferenceId, ct);
+                return link is null
+                    ? Result<Guid>.ValidationFailure(
+                        "El método de pago no tiene una cuenta contable configurada para esta empresa.",
+                        DestinationAccountNotConfiguredCode
+                    )
+                    : Result<Guid>.Success(link.AccountingAccountId);
+
+            default:
+                return Result<Guid>.ValidationFailure($"Destino financiero no soportado ({destination.Kind}).", PayloadUnsupportedCode);
+        }
+    }
+
+    /// <summary>
+    /// Un importe sin línea propia en la regla no puede contabilizarse: IRBPNR quedaría sin
+    /// contrapartida y un anticipo se debitaría contra CxP. Sin regla, el motor informa su error.
+    /// </summary>
+    private async Task<Result<bool>> EnsureRequiredRuleLinesAsync(
+        AccountingPosting posting,
+        AccountingPostingPayload payload,
+        CancellationToken ct
+    )
+    {
+        var required = new List<(PostingAmountKind Kind, string Label)>();
+        if (payload.TotalIrbpnr > 0m)
+            required.Add((PostingAmountKind.TaxIrbpnr, "IRBPNR"));
+        if (payload.SupplierCreditAmount > 0m)
+            required.Add((PostingAmountKind.SupplierCredit, "anticipos/saldo a favor de proveedores"));
+        if (required.Count == 0)
+            return Result<bool>.Success(true);
+
+        var rule = await _rules.FindByKeyAsync(posting.TenantId, posting.CompanyId, posting.SourceModule, posting.FactType, ct);
+        if (rule is not { IsActive: true })
+            return Result<bool>.Success(true);
+
+        var missing = required.FirstOrDefault(r => rule.Lines.All(l => l.AmountKind != r.Kind));
+        return missing == default
+            ? Result<bool>.Success(true)
+            : Result<bool>.ValidationFailure(
+                $"La regla contable {posting.SourceModule}/{posting.FactType} no tiene configurada la línea de {missing.Label}.",
+                RuleLineNotConfiguredCode
+            );
     }
 
     /// <summary>

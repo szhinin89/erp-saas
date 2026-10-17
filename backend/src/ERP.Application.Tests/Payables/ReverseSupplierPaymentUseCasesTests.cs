@@ -1,6 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches;
-using ERP.Application.Modules.Payables.Exceptions;
 using ERP.Application.Modules.Payables.UseCases;
 using ERP.Application.Tests.Common;
 using ERP.Domain.Modules.Caja.Entities;
@@ -300,37 +299,6 @@ public sealed class ReverseSupplierPaymentUseCasesTests
 
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-    }
-
-    [Fact]
-    public async Task Fallo_de_posting_inverso_hace_rollback_completo_y_el_pago_sigue_Confirmed()
-    {
-        var m = BuildMocks();
-        var payable = CreatePayableWithInstallment(300m, out var installmentId);
-        var payment = CreateConfirmedPayment(payable, installmentId, 300m);
-        SetupPayment(m, payment);
-        SetupPayable(m, payable, installmentId);
-        m.SupplierPayments.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(
-                new SupplierPaymentPostingFailedException(
-                    "No existe regla de contabilización.",
-                    "RULE_NOT_FOUND"
-                )
-            );
-
-        var handler = BuildHandler(m);
-        var result = await handler.Handle(
-            ValidReversal(payment.Id, "Error de digitación"),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be("RULE_NOT_FOUND");
-        m.Uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        m.Uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
-        // El objeto en memoria refleja el intento (Reverse() ya corrió antes del SaveChanges
-        // fallido), pero como nada se persistió, la transacción de BD se revierte por completo —
-        // el rollback real ocurre a nivel de base de datos (ver ERP.Infrastructure.Tests E2E).
     }
 
     // ══════════════════════════════════════════════════════════════════════

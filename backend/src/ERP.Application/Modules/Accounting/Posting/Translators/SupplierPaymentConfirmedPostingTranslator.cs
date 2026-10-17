@@ -1,115 +1,59 @@
-using ERP.Application.Modules.Payables.Exceptions;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Caja.Interfaces;
-using ERP.Domain.Modules.Finance.Interfaces;
 using ERP.Domain.Modules.Payables.Events;
 using MediatR;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
 /// <summary>
-/// SUPPLIER-PAYMENTS-POSTING-15D — traduce <c>SupplierPaymentConfirmedEvent</c> (Payables) a
-/// <c>PostingFact</c> e invoca <c>IPostingEngine</c> — no crea <c>JournalEntry</c>, no contiene
-/// lógica financiera (ADR-026 §8), mismo criterio que el resto de traductores. Deliberadamente NO
-/// se llama <c>SupplierPaymentAppliedPostingTranslator</c> (nombre legacy bloqueado por
-/// <c>PaymentsLegacyCleanupTests</c>) ni consume <c>SupplierPaymentAppliedEvent</c> (Finance,
-/// pertenece al agregado <c>Payment</c> ya descartado) — este traductor es del agregado
-/// <c>SupplierPayment</c> independiente (SUPPLIER-PAYMENTS-AUDIT-15A).
-///
-/// Asiento estricto de un solo lado fijo: Debe Cuentas por Pagar por el total del pago (vía
-/// <c>PostingRule</c> normal, <c>PostingAmountKind.GrandTotal</c>) y un Haber por cada
-/// <c>SupplierPaymentMethodLine</c> (vía <see cref="PostingAllocation"/>, <c>AccountNature.Credit</c>,
-/// cardinalidad variable — 1 medio, 1 crédito; 2 medios, 2 créditos; nunca por cuota, el pago
-/// postea por medio de pago). Mismo criterio de "no warning silencioso" que
-/// <c>ExpenseDocumentConfirmedPostingTranslator</c>: si el posting falla, lanza
-/// <see cref="SupplierPaymentPostingFailedException"/> — nunca solo un log — para que la
-/// transacción completa del registro del pago se revierta (ADR-026 §8: Publish() ocurre dentro de
-/// <c>ErpDbContext.SaveChangesAsync</c>, antes del commit).
-///
-/// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — el Debe se separa en dos montos ya
-/// resueltos por Payables: <c>AppliedToPayableAmount</c> (Debe CxP proveedores, Σ aplicaciones) y
-/// <c>SupplierCreditAmount</c> (Debe "1.1.03.004 Anticipos a proveedores", remanente no aplicado),
-/// cada uno con su <c>PostingRuleLine</c> propia (<c>PostingAmountKind.AppliedToPayable</c>/
-/// <c>SupplierCredit</c>); el Haber por medio no cambia (Σ = total). <c>GrandTotal</c> sigue siendo
-/// el total para la forma de regla previa a 02C (1 línea GrandTotal), que solo es correcta cuando
-/// no hay remanente: si hay remanente y la regla de la empresa no declara la línea
-/// <c>SupplierCredit</c>, se rechaza fail-closed — nunca se debita CxP por dinero no aplicado.
-/// SupplierCredit NO postea al crearse: este es el único asiento financiero del anticipo.
+/// Traduce <c>SupplierPaymentConfirmedEvent</c> (Payables) al hecho Payables/SupplierPaymentConfirmed
+/// y lo registra como obligación durable en la transacción del pago (ACCOUNTING-CONTINUITY-04).
 /// </summary>
-public sealed class SupplierPaymentConfirmedPostingTranslator
+/// <remarks>
+/// Asiento: Debe CxP por lo aplicado (<c>AppliedToPayable</c>) + Debe anticipos por el remanente
+/// (<c>SupplierCredit</c>, ADR-035) y un Haber por cada medio contra la cuenta vigente de su caja o
+/// banco (allocation por identidad). El <c>SupplierCredit</c> creado por el remanente no genera otro
+/// asiento: este es su único reconocimiento. La línea de anticipos faltante en la regla, la cuenta
+/// de caja/banco faltante o inválida dejan la obligación Failed, nunca rechazan el pago.
+/// </remarks>
+public sealed class SupplierPaymentConfirmedPostingTranslator(AccountingPostingRecorder recorder)
     : INotificationHandler<SupplierPaymentConfirmedEvent>
 {
-    private const string SourceModuleName = "Payables";
-    private const string FactTypeName = "SupplierPaymentConfirmed";
+    public const string SourceModuleName = "Payables";
+    public const string FactTypeName = "SupplierPaymentConfirmed";
 
-    private readonly IPostingEngine _postingEngine;
-    private readonly ICompanyBankAccountRepository _bankAccounts;
-    private readonly ICashRegisterRepository _cashRegisters;
-
-    public SupplierPaymentConfirmedPostingTranslator(
-        IPostingEngine postingEngine,
-        ICompanyBankAccountRepository bankAccounts,
-        ICashRegisterRepository cashRegisters
-    )
-    {
-        _postingEngine = postingEngine;
-        _bankAccounts = bankAccounts;
-        _cashRegisters = cashRegisters;
-    }
-
-    public async Task Handle(SupplierPaymentConfirmedEvent e, CancellationToken ct)
-    {
-        var tenantId = e.TenantId!.Value;
-        var allocations = new List<PostingAllocation>();
-
-        foreach (var methodLine in e.MethodLines)
-        {
-            var accountId = await _bankAccounts.ResolveAccountingAccountIdAsync(
-                _cashRegisters,
-                tenantId,
+    public Task Handle(SupplierPaymentConfirmedEvent e, CancellationToken ct) =>
+        recorder.RecordAsync(
+            new AccountingPostingRequest(
+                e.TenantId!.Value,
                 e.CompanyId,
-                methodLine,
-                ct
-            );
-
-            allocations.Add(
-                new PostingAllocation(accountId, methodLine.Amount, AccountNature.Credit)
-            );
-        }
-
-        var fact = new PostingFact(
-            tenantId,
-            e.CompanyId,
-            SourceModuleName,
-            FactTypeName,
-            e.SupplierPaymentId,
-            e.PaymentDate,
-            Subtotal: 0m,
-            TotalVat: 0m,
-            TotalIce: 0m,
-            TotalDiscount: 0m,
-            GrandTotal: e.TotalAmount,
-            AppliedToPayableAmount: e.AppliedAmount,
-            SupplierCreditAmount: e.UnappliedAmount,
-            Allocations: allocations
-        );
-
-        await SupplierPaymentAdvancePostingGuard.EnsureAdvanceLineConfiguredAsync(
-            _postingEngine,
-            tenantId,
-            e.CompanyId,
-            SourceModuleName,
-            FactTypeName,
-            e.UnappliedAmount,
+                SourceModuleName,
+                FactTypeName,
+                e.SupplierPaymentId,
+                null,
+                e.PaymentDate,
+                e.PaymentDate,
+                new AccountingPostingPayload(
+                    0m,
+                    0m,
+                    0m,
+                    0m,
+                    e.TotalAmount,
+                    AppliedToPayableAmount: e.AppliedAmount,
+                    SupplierCreditAmount: e.UnappliedAmount,
+                    Destinations: e
+                        .MethodLines.Select(l =>
+                            AccountingPostingDestination.FromCashOrBank(
+                                l.CompanyBankAccountId,
+                                l.CashRegisterId,
+                                l.Amount,
+                                AccountNature.Credit
+                            )
+                        )
+                        .ToList(),
+                    References: new Dictionary<string, Guid> { ["SupplierId"] = e.SupplierId }
+                )
+            ),
             ct
         );
-
-        var result = await _postingEngine.PostAsync(fact, ct);
-
-        if (!result.IsSuccess)
-            throw new SupplierPaymentPostingFailedException(
-                result.Error ?? "No se pudo contabilizar el pago a proveedor.",
-                result.Code
-            );
-    }
 }

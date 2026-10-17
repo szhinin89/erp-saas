@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -138,6 +139,9 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
 
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _createdBy)
+        );
         db.Branches.Add(branch);
         db.BusinessPartners.Add(supplier);
         db.PaymentTerms.Add(paymentTerm);
@@ -245,6 +249,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             () => companyId,
             Guid.NewGuid()
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SupplierCreditAppliedPostingTranslator).Assembly
@@ -252,6 +257,8 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         );
 
         var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
         deferred.Inner = provider.GetRequiredService<IPublisher>();
 
         return (db, deferred);
@@ -321,6 +328,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         db.AccountingPeriods.Add(period);
 
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.EnsureCurrentPeriodsAsync(db, _tenantId, _companyId, _createdBy);
         return (payableAcc.Id, supplierCreditAcc.Id);
     }
 
@@ -448,6 +456,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         var payable = BuildPayable(issueDate, "001-001-000000010", total: 100m);
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         var (credit, movementId) = BuildAndApplyCredit(
             payable,
@@ -457,6 +466,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verifyDb = CreateContext();
         var entry = await verifyDb
@@ -505,6 +515,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         var payable = BuildPayable(issueDate, "001-001-000000011", total: 100m);
         db.AccountsPayables.Add(payable);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         var (credit, movementId) = BuildAndApplyCredit(
             payable,
@@ -514,6 +525,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
         );
         db.SupplierCredits.Add(credit);
         await db.SaveChangesAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var countDb1 = CreateContext();
         var countBefore = await countDb1.JournalEntries.CountAsync(x =>
@@ -533,7 +545,7 @@ public sealed class SupplierCreditAppliedPostingIntegrationTests : IAsyncLifetim
             credit.AvailableAmount,
             _createdBy
         );
-        await publisher.Publish(replayedEvent);
+        await AccountingContinuityTestWiring.RepublishAsync(db, publisher, replayedEvent);
 
         await using var countDb2 = CreateContext();
         var countAfter = await countDb2.JournalEntries.CountAsync(x =>

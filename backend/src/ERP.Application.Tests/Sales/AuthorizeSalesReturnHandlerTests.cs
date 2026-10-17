@@ -313,7 +313,6 @@ public sealed class AuthorizeSalesReturnHandlerTests
             Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
             Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
             uow.Object,
-            postingEngine.Object,
             TenantCtx(),
             CompanyCtx(),
             BranchCtx(),
@@ -372,7 +371,7 @@ public sealed class AuthorizeSalesReturnHandlerTests
     }
 
     [Fact]
-    public async Task Devolucion_con_IRBPNR_sin_PostingRuleLine_configurada_bloquea_con_mensaje_claro()
+    public async Task Devolucion_con_IRBPNR_sin_PostingRuleLine_configurada_no_bloquea_la_devolucion()
     {
         // TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — mismo criterio que el guard de Compras: si hay
         // IRBPNR y no existe PostingRuleLine configurada, la autorización debe bloquear ANTES de
@@ -412,9 +411,9 @@ public sealed class AuthorizeSalesReturnHandlerTests
             CancellationToken.None
         );
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("IRBPNR");
-        salesReturn.Status.Should().Be(SalesReturnStatus.Draft);
+        // ACCOUNTING-CONTINUITY-04: configuración exclusivamente contable → obligación Failed.
+        result.IsSuccess.Should().BeTrue(result.Error);
+        salesReturn.Status.Should().Be(SalesReturnStatus.Authorized);
     }
 
     [Fact]
@@ -717,7 +716,6 @@ public sealed class AuthorizeSalesReturnHandlerTests
             Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
             Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
             Mock.Of<IUnitOfWork>(),
-            Mock.Of<IPostingEngine>(),
             TenantCtx(),
             CompanyCtx(),
             BranchCtx(),
@@ -1122,7 +1120,6 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
                 Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
                 new UnitOfWork(db),
-                Mock.Of<IPostingEngine>(),
                 new FixedCurrentTenant(_tenantId),
                 new FixedCurrentCompany(_companyId),
                 new FixedCurrentBranch(_branchId),

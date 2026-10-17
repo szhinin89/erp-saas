@@ -1,3 +1,4 @@
+using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
@@ -91,6 +92,9 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        db.AccountingOperationalPolicies.Add(
+            AccountingContinuityTestWiring.EnabledPolicy(tenant.Id, company.Id, _userId)
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
@@ -311,13 +315,18 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
             () => _companyId,
             _userId
         ));
+        services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
                 typeof(SupplierCreditRefundedPostingTranslator).Assembly
             )
         );
 
-        deferred.Inner = services.BuildServiceProvider().GetRequiredService<IPublisher>();
+        var provider = services.BuildServiceProvider();
+
+        AccountingContinuityTestWiring.Register(db, provider);
+
+        deferred.Inner = provider.GetRequiredService<IPublisher>();
         return db;
     }
 
@@ -420,7 +429,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
                     Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
     }
 
     private async Task<Result<SupplierCreditRefundTransactionDto>> ReverseAsync(
@@ -439,7 +448,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
                     Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
     }
 
     private async Task<List<(Guid AccountId, decimal Debit, decimal Credit)>> JournalLinesAsync(
@@ -461,6 +470,23 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         return entries[0].Lines.Select(l => (l.AccountId, l.Debit, l.Credit)).ToList();
     }
 
+    /// <summary>
+    /// Líneas del reverso común (ACCOUNTING-CONTINUITY-03/04): espejo Accounting/Reversal del único
+    /// asiento publicado para el movimiento original.
+    /// </summary>
+    private async Task<List<(Guid AccountId, decimal Debit, decimal Credit)>> ReversalLinesAsync(
+        Guid originalMovementId
+    )
+    {
+        await using var db = CreateContext();
+        var original = await db.JournalEntries.SingleAsync(j => j.SourceEventId == originalMovementId);
+        var mirror = await db
+            .JournalEntries.Include(j => j.Lines)
+            .SingleAsync(j => j.OriginalJournalEntryId == original.Id);
+        mirror.SourceEventType.Should().Be("Reversal");
+        return mirror.Lines.Select(l => (l.AccountId, l.Debit, l.Credit)).ToList();
+    }
+
     private async Task<Guid> RefundMovementIdAsync(Guid refundTransactionId)
     {
         await using var db = CreateContext();
@@ -477,6 +503,28 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         return (
             await db.Set<SupplierCredit>().AsNoTracking().SingleAsync(c => c.Id == creditId)
         ).AvailableAmount;
+    }
+
+    [Fact]
+    public async Task Cuenta_del_banco_no_postable_conserva_el_reembolso_y_deja_la_obligacion_Failed()
+    {
+        // ACCOUNTING-CONTINUITY-04 (antes SC-024 rechazaba): configuración exclusivamente contable.
+        var creditId = await SeedAdvanceAsync(100m);
+        await using (var db = CreateContext())
+        {
+            (await db.Accounts.SingleAsync(a => a.Id == _bankLedgerAccountId)).Disable(_userId);
+            await db.SaveChangesAsync();
+        }
+
+        var result = await RefundAsync(creditId, 40m, cash: false);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        (await AvailableAsync(creditId)).Should().Be(60m);
+        await using var verify = CreateContext();
+        var posting = await verify.AccountingPostings.SingleAsync(p => p.FactType == "SupplierCreditRefunded");
+        posting.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
+        posting.ErrorCode.Should().Be("POSTING_ACCOUNT_INVALID");
+        (await verify.JournalEntries.AnyAsync(j => j.SourceEventType == "SupplierCreditRefunded")).Should().BeFalse();
     }
 
     [Fact]
@@ -590,10 +638,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         reversed.IsSuccess.Should().BeTrue(reversed.Error);
         (await AvailableAsync(creditId)).Should().Be(100m);
-        var lines = await JournalLinesAsync(
-            await RefundMovementIdAsync(reversed.Value!.Id),
-            "SupplierCreditRefundReversed"
-        );
+        var lines = await ReversalLinesAsync(await RefundMovementIdAsync(refund.Value!.Id));
         lines
             .Should()
             .BeEquivalentTo(
@@ -622,10 +667,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
         reversed.IsSuccess.Should().BeTrue(reversed.Error);
         reversed.Value!.CashSessionId.Should().Be(_cashSessionId);
         (await AvailableAsync(creditId)).Should().Be(100m);
-        var lines = await JournalLinesAsync(
-            await RefundMovementIdAsync(reversed.Value.Id),
-            "SupplierCreditRefundReversed"
-        );
+        var lines = await ReversalLinesAsync(await RefundMovementIdAsync(refund.Value!.Id));
         lines
             .Should()
             .BeEquivalentTo(
@@ -642,7 +684,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Posting_fallido_revierte_todo_sin_saldo_transaccion_caja_ni_asiento(bool cash)
+    public async Task Posting_fallido_conserva_el_reembolso_y_deja_la_obligacion_Failed(bool cash)
     {
         var creditId = await SeedAdvanceAsync(100m);
         await using (var db = CreateContext())
@@ -663,23 +705,25 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 
         var result = await RefundAsync(creditId, 40m, cash);
 
-        result.IsSuccess.Should().BeFalse("sin asiento no hay reembolso (fail-closed)");
+        // ACCOUNTING-CONTINUITY-04: un fallo contable no revierte el reembolso operativo.
+        result.IsSuccess.Should().BeTrue(result.Error);
         await using var verify = CreateContext();
         (await verify.Set<SupplierCredit>().AsNoTracking().SingleAsync(c => c.Id == creditId))
             .AvailableAmount.Should()
-            .Be(100m);
-        (await verify.Set<SupplierCreditMovement>().CountAsync(m => m.SupplierCreditId == creditId))
-            .Should()
-            .Be(0);
+            .Be(60m);
         (
             await verify.SupplierCreditRefundTransactions.CountAsync(t =>
                 t.SupplierCreditId == creditId
             )
         )
             .Should()
-            .Be(0);
-        (await verify.Set<CashMovement>().CountAsync()).Should().Be(cashMovementsBefore);
+            .Be(1);
+        (await verify.Set<CashMovement>().CountAsync()).Should().Be(cashMovementsBefore + (cash ? 1 : 0));
         (await verify.JournalEntries.CountAsync()).Should().Be(journalsBefore);
+        var posting = await verify.AccountingPostings.SingleAsync(p =>
+            p.FactType == "SupplierCreditRefunded"
+        );
+        posting.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Failed);
     }
 
     [Fact]
@@ -701,7 +745,7 @@ public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
                     Guid.NewGuid()
                 ),
                 CancellationToken.None
-            );
+            ).ThenDispatchAsync(db);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("efectivo físico");

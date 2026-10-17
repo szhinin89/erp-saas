@@ -1,63 +1,22 @@
-using ERP.Application.Modules.Finance.Exceptions;
-using ERP.Domain.Modules.Accounting.Enums;
-using ERP.Domain.Modules.Finance.Interfaces;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Domain.Modules.Purchases.Events;
 using MediatR;
 
 namespace ERP.Application.Modules.Accounting.Posting.Translators;
 
 /// <summary>
-/// Traduce <see cref="SupplierCreditRefundReversedEvent"/> (P0-02 Fase 8) al asiento espejo exacto
-/// del reembolso: Debe "1.1.03.004 Anticipos a proveedores" (el saldo a favor vuelve a existir),
-/// Haber la MISMA Caja/Banco del reembolso original.
-///
-/// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — FactType canónico único
-/// <c>"Purchases"/"SupplierCreditRefundReversed"</c> (antes uno por destino, sin regla sembrada).
-/// La cuenta de Caja/Banco sale de la transacción de reversa, que la HEREDA congelada del ingreso
-/// original (<c>SupplierCreditRefundTransaction.CreateReversal</c>, §6.4quinquies) — nunca se
-/// resuelve la cuenta vigente del destino. Fail-closed igual que
-/// <see cref="SupplierCreditRefundedPostingTranslator"/>.
+/// Solicita el espejo exacto del asiento histórico del reembolso original
+/// (Purchases/SupplierCreditRefunded del movimiento revertido, ACCOUNTING-CONTINUITY-04): mismas
+/// cuentas e importes, nunca la cuenta vigente de la caja/banco. Pending/Failed sin asiento se
+/// cancela, sin espejo.
 /// </summary>
-public sealed class SupplierCreditRefundReversedPostingTranslator
+public sealed class SupplierCreditRefundReversedPostingTranslator(IAccountingReversalRecorder reversals)
     : INotificationHandler<SupplierCreditRefundReversedEvent>
 {
-    internal const string FactTypeName = "SupplierCreditRefundReversed";
-
-    private readonly IPostingEngine _postingEngine;
-    private readonly ISupplierCreditRefundTransactionRepository _txRepo;
-
-    public SupplierCreditRefundReversedPostingTranslator(
-        IPostingEngine postingEngine,
-        ISupplierCreditRefundTransactionRepository txRepo
-    )
-    {
-        _postingEngine = postingEngine;
-        _txRepo = txRepo;
-    }
-
     public async Task Handle(SupplierCreditRefundReversedEvent e, CancellationToken ct)
     {
-        var tenantId = e.TenantId!.Value;
-        var transaction =
-            await _txRepo.GetBySupplierCreditMovementIdAsync(
-                tenantId,
-                e.SupplierCreditMovementId,
-                ct
-            )
-            ?? throw new SupplierCreditRefundPostingFailedException(
-                "No se encontró la transacción de la reversa del reembolso: no se puede contabilizar."
-            );
-
-        await SupplierCreditRefundPosting.PostAsync(
-            _postingEngine,
-            tenantId,
-            e.CompanyId,
-            FactTypeName,
-            e.SupplierCreditMovementId,
-            transaction,
-            destinationNature: AccountNature.Credit,
-            "No se pudo contabilizar la reversa del reembolso del saldo a favor del proveedor.",
-            ct
-        );
+        await reversals.RecordSourceAsync(e.TenantId!.Value, e.CompanyId,
+            SupplierCreditRefundedPostingTranslator.SourceModuleName, SupplierCreditRefundedPostingTranslator.FactTypeName,
+            e.ReversalOfMovementId, "Reversa de reembolso de saldo a favor de proveedor", e.OccurredOn, ct);
     }
 }

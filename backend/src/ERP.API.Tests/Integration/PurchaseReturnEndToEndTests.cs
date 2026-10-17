@@ -104,6 +104,17 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         );
         db.Tenants.Add(tenant);
         db.Companies.Add(company);
+        // ACCOUNTING-CONTINUITY-04: modo operativo explícito (Enabled), igual que la migración.
+        db.AccountingOperationalPolicies.Add(
+            AccountingOperationalPolicy.Create(
+                tenant.Id,
+                company.Id,
+                AccountingOperationalMode.Enabled,
+                new DateOnly(1900, 1, 1),
+                "Test",
+                _userId
+            )
+        );
         await db.SaveChangesAsync();
         _tenantId = tenant.Id;
         _companyId = company.Id;
@@ -454,7 +465,6 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
             new UnitOfWork(db),
             new RealDatabaseExceptionTranslator(),
-            BuildPostingEngine(db),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId),

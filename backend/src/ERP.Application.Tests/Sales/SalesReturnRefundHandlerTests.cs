@@ -409,7 +409,6 @@ public sealed class SalesReturnRefundHandlerTests
             Mock.Of<ERP.Domain.Modules.Company.Interfaces.IEstablishmentRepository>(),
             Mock.Of<ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer>(),
             uow.Object,
-            Mock.Of<IPostingEngine>(),
             tenant,
             company,
             branch,

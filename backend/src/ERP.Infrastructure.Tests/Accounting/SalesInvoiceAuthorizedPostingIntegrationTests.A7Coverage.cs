@@ -138,10 +138,9 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             new DocumentSequenceRepository(db), new EmissionPointRepository(db), new EstablishmentRepository(db),
             new ElectronicDocumentRepository(db, clock.Object), Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
             clock.Object, new BusinessPartnerRepository(db), Mock.Of<ISalesFiscalPolicyResolver>(),
-            new PaymentMethodRepository(db), new PaymentMethodAccountRepository(db),
+            new PaymentMethodRepository(db),
             new CompanyBankAccountRepository(db, company), new CashSessionRepository(db, company),
-            new CashRegisterRepository(db, company), new AccountRepository(db),
-            provider.GetRequiredService<IPostingEngine>(), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
+            new CashRegisterRepository(db, company), NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
             new FixedCurrentTenant(_tenantId), company, Mock.Of<ICurrentBranch>(b => b.BranchId == _branchId),
             Mock.Of<ICurrentUser>(u => u.UserId == _createdBy), new A7Preferences(),
             StandardPrecisionPolicyProvider.Instance, new ItemRepository(db), new WarehouseRepository(db, company));
@@ -154,7 +153,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         await using var disposeDb = db;
         try
         {
-            var result = await CoverageAuthorize(db, provider).Handle(new(id), ct);
+            var result = await CoverageAuthorize(db, provider).Handle(new(id), ct).ThenDispatchAsync(db);
             result.IsSuccess.Should().BeTrue(result.Error);
             return null;
         }

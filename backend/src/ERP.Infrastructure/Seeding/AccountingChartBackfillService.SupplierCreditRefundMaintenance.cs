@@ -10,8 +10,8 @@ public sealed partial class AccountingChartBackfillService
     /// <summary>
     /// ZH-SUPPLIER-CREDIT-REFUND-POSTING-02D-B — comando de despliegue explícito, disponible en
     /// Production, mismo patrón exacto que <see cref="RunSupplierPaymentRuleMaintenanceAsync"/>:
-    /// dry-run por defecto; con <paramref name="apply"/> solo crea las reglas canónicas
-    /// "Purchases"/"SupplierCreditRefunded"/"SupplierCreditRefundReversed" que falten por completo.
+    /// dry-run por defecto; con <paramref name="apply"/> solo crea la regla canónica
+    /// "Purchases"/"SupplierCreditRefunded" si falta por completo.
     /// Nunca modifica reglas existentes ni invoca el bootstrap general. Idempotente.
     /// </summary>
     public async Task<

@@ -91,7 +91,7 @@ export interface SupplierCreditRefundTransactionDto {
   originalTransactionId: string | null;
   companyBankAccountId: string | null;
   cashRegisterId: string | null;
-  accountingAccountId: string;
+  accountingAccountId: string | null;
   paymentMethodCode: string;
   amount: number;
   currencyCode: string;
