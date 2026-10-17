@@ -19,6 +19,9 @@ public static class InventoryPermissions
     public const string StockView = "inventory.stock.view";
     public const string StockManage = "inventory.stock.manage";
 
+    /// <summary>ACCOUNTING-12B: ventas con costo pendiente (permiso propio; inventory.stock.view es Kardex).</summary>
+    public const string PendingCostsView = "inventory.pending-costs.view";
+
     public const string AdjustmentsView = "inventory.adjustments.view";
     public const string AdjustmentsCreate = "inventory.adjustments.create";
     public const string AdjustmentsUpdate = "inventory.adjustments.update";

@@ -8,7 +8,11 @@ namespace ERP.Domain.Modules.Inventory.Interfaces;
 /// </summary>
 public interface IInventoryCostLedger
 {
-    Task<IReadOnlyList<SaleCostObligation>> GetPendingObligationsAsync(Guid tenantId, Guid companyId, CancellationToken ct);
+    /// <summary>
+    /// Obligaciones con costo pendiente y su contexto legible (factura, ítem, bodega). ACCOUNTING-12B:
+    /// solo lectura; la cobertura sigue siendo automática al ingresar costo válido.
+    /// </summary>
+    Task<IReadOnlyList<PendingSaleCostView>> GetPendingObligationsAsync(Guid tenantId, Guid companyId, CancellationToken ct);
 
     /// <summary>
     /// Fecha de emisión de cada factura con costo todavía pendiente de resolver (un elemento por
@@ -19,3 +23,9 @@ public interface IInventoryCostLedger
     Task LockInvoiceAsync(Guid tenantId, Guid companyId, Guid invoiceId, CancellationToken ct);
     Task<decimal?> GetCurrentInvoiceCostAsync(Guid tenantId, Guid companyId, Guid invoiceId, CancellationToken ct);
 }
+
+/// <summary>Proyección de lectura de una <see cref="SaleCostObligation"/> pendiente (ACCOUNTING-12B).</summary>
+public sealed record PendingSaleCostView(
+    Guid ObligationId, Guid InvoiceId, Guid InvoiceLineId, string? InvoiceNumber, DateOnly? IssueDate,
+    Guid ProductId, string? ItemSku, string? ItemName, Guid WarehouseId, string? WarehouseName,
+    decimal PendingQuantity, decimal? ProvisionalUnitCost);

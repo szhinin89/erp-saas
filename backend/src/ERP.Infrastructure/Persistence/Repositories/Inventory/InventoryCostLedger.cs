@@ -1,5 +1,6 @@
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,9 +8,24 @@ namespace ERP.Infrastructure.Persistence.Repositories.Inventory;
 
 public sealed class InventoryCostLedger(ErpDbContext db) : IInventoryCostLedger
 {
-    public async Task<IReadOnlyList<SaleCostObligation>> GetPendingObligationsAsync(Guid tenantId, Guid companyId, CancellationToken ct) =>
-        await db.Set<SaleCostObligation>().Where(p => p.TenantId == tenantId && p.CompanyId == companyId
-            && p.PendingQuantity > 0m).ToListAsync(ct);
+    public async Task<IReadOnlyList<PendingSaleCostView>> GetPendingObligationsAsync(Guid tenantId, Guid companyId, CancellationToken ct) =>
+        await (from o in db.Set<SaleCostObligation>()
+                where o.TenantId == tenantId && o.CompanyId == companyId && o.PendingQuantity > 0m
+                join i in db.Set<SalesInvoice>().Where(i => i.TenantId == tenantId && i.CompanyId == companyId)
+                    on o.InvoiceId equals i.Id into invoices
+                from i in invoices.DefaultIfEmpty()
+                join it in db.Set<Item>().Where(it => it.TenantId == tenantId && it.CompanyId == companyId)
+                    on o.ProductId equals it.Id into items
+                from it in items.DefaultIfEmpty()
+                join w in db.Set<Warehouse>().Where(w => w.TenantId == tenantId && w.CompanyId == companyId)
+                    on o.WarehouseId equals w.Id into warehouses
+                from w in warehouses.DefaultIfEmpty()
+                orderby o.SequenceNumber
+                select new PendingSaleCostView(o.Id, o.InvoiceId, o.InvoiceLineId,
+                    i == null ? null : i.InvoiceNumber, i == null ? null : (DateOnly?)i.IssueDate,
+                    o.ProductId, it == null ? null : it.Code.SKU, it == null ? null : it.Code.ShortName,
+                    o.WarehouseId, w == null ? null : w.Name, o.PendingQuantity, o.ProvisionalUnitCost))
+            .ToListAsync(ct);
 
     public async Task<IReadOnlyList<DateOnly>> GetPendingObligationInvoiceDatesAsync(Guid tenantId, Guid companyId, CancellationToken ct) =>
         await db.Set<SaleCostObligation>()

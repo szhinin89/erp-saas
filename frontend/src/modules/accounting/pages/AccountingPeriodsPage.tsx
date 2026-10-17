@@ -38,6 +38,7 @@ import "../../../styles/shared/items-catalog.css";
 
 const CREATE_PERMISSION = "accounting.periods.create";
 const CLOSE_PERMISSION = "accounting.periods.close";
+const PENDING_COSTS_PERMISSION = "inventory.pending-costs.view";
 
 const STATUS_VARIANT: Record<AccountingPeriodStatus, BadgeVariant> = {
   Open: "green",
@@ -78,7 +79,10 @@ function nextContiguous(periods: AccountingPeriodDto[]): Partial<AccountingPerio
   };
 }
 
-type ReasonTarget = { to: string } | { previousPeriod: true } | { explain: true };
+type ReasonTarget =
+  | { to: string; permission?: string }
+  | { previousPeriod: true }
+  | { explain: true };
 
 /** Destino para resolver cada motivo de bloqueo; los dos últimos solo se explican (sin detalle en A07). */
 function reasonTarget(code: string): ReasonTarget {
@@ -87,6 +91,8 @@ function reasonTarget(code: string): ReasonTarget {
     return { to: "/accounting/journal-entries" };
   if (code === "PREVIOUS_PERIOD_OPEN") return { previousPeriod: true };
   if (code.startsWith("OPENING_")) return { to: "/initial-load" };
+  if (code === "SALE_COST_PENDING")
+    return { to: "/inventory/pending-costs", permission: PENDING_COSTS_PERMISSION };
   return { explain: true };
 }
 
@@ -451,7 +457,7 @@ export function AccountingPeriodsPage() {
                   return (
                     <li key={reason.code}>
                       <strong>{completenessReasonLabel(reason.code)}</strong>: {reason.count}{" "}
-                      {"to" in target && (
+                      {"to" in target && (!target.permission || canShow(target.permission)) && (
                         <Link to={target.to}>{t("accounting.periods.review.resolve")}</Link>
                       )}
                       {"previousPeriod" in target && previousOpen && (

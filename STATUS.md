@@ -1,5 +1,16 @@
 # Project Status
 
+## ACCOUNTING-12B (2026-10-17)
+
+`SALE_COST_PENDING` visible y accionable por el usuario. `GET inventory/stock/costs/pending` ampliado con contexto
+legible (obligación, factura —número/fecha/línea—, ítem —SKU/nombre—, bodega —nombre—, cantidad pendiente, costo
+provisional, estado). Permiso propio `inventory.pending-costs.view` en endpoint, ruta, NavItem "Costos pendientes"
+(Inventario → Inventario) y enlace desde `SALE_COST_PENDING` en la revisión de cierre de Períodos. Pantalla
+`/inventory/pending-costs`: tabla, aviso de regularización automática, enlaces a Registrar compra (`purchases.create`) /
+ajuste positivo (`inventory.adjustments.create`) / Kardex, estado vacío; sin "Contabilizar" (la cobertura sigue
+automática). PASS 3/3 tests focales + 2/2 del ajuste de permiso. tsc -b PASS. Sin suites,
+npm build, architecture:check, staging, commit ni push. Contrato: [Accounting](docs/architecture/accounting.md).
+
 ## ACCOUNTING-12A (2026-10-17)
 
 BUG REAL corregido: el Estado de Resultados sumaba por naturaleza de cuenta; ahora usa el signo por sección del

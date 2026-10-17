@@ -613,7 +613,14 @@ de costo anterior de la misma factura que no esté Posted/Canceled queda Failed
 `COST_DEPENDENCY_PENDING`; la anterior nunca se ejecuta implícitamente. Anular la factura aplica la
 anulación común a cada obligación de costo: Posted → reverso espejo con la fecha del acto;
 Pending/Failed → Canceled. El costo se consulta y reprocesa en Contabilizaciones (§17);
-`stock/costs/pending` solo informa incertidumbre operativa.
+`stock/costs/pending` solo informa incertidumbre operativa (ACCOUNTING-12B: cada fila trae
+`ObligationId`, factura —Id, número, fecha de emisión, línea—, ítem —Id, SKU, nombre—, bodega —Id, nombre—,
+cantidad pendiente, costo provisional y estado `Provisional|CostPending`; permiso propio
+`inventory.pending-costs.view`, no `inventory.stock.view` que corresponde a Kardex). Pantalla
+`/inventory/pending-costs`, NavItem "Costos pendientes" en Inventario → Inventario con el mismo permiso: tabla
+de pendientes, enlaces a Registrar compra (`purchases.create`), ajuste positivo (`inventory.adjustments.create`)
+y Kardex del ítem, estado vacío. Sin acción "Contabilizar": la cobertura sigue siendo automática al ingresar
+costo válido (compra, ajuste positivo, carga inicial).
 
 Migración `AccountingContinuity05`: copia cada fila existente de `inventory_cost_postings` a la
 obligación común conservando identidad, estado, asiento y fechas (BusinessDate = emisión de la
@@ -733,8 +740,9 @@ y rango; `ClosedAtUtc`/`ClosedBy` y `LockedAtUtc`/`LockedBy` persisten en el per
 **Pantalla.** `/accounting/configuration/periods`: lista (ejercicio, número, rango, estado, cerrado
 el/por), generación del ejercicio siguiente, creación manual prellenada con el rango contiguo,
 revisión de cierre con `{Code, Count}`, `AsOf` y refresco, cierre con confirmación de irreversibilidad y
-bloqueo. Cada motivo dirige a su pantalla (contabilizaciones, asientos, período anterior, carga inicial);
-`SALE_COST_PENDING` y `ORIGINS_WITHOUT_ACCOUNTING` solo se explican con su conteo (sin endpoint de detalle).
+bloqueo. Cada motivo dirige a su pantalla (contabilizaciones, asientos, período anterior, carga inicial, costos pendientes);
+`SALE_COST_PENDING` enlaza a `/inventory/pending-costs` si el usuario tiene `inventory.pending-costs.view` (ACCOUNTING-12B); `ORIGINS_WITHOUT_ACCOUNTING` solo se
+explica con su conteo (sin endpoint de detalle).
 
 ## 23. Reglas contables y Balance General ACCOUNTING-11
 

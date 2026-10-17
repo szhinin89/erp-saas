@@ -178,6 +178,25 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
         (await verify.StockMovements.SingleAsync()).SourceDocLineId.Should().Be(invoice.Lines.Single().Id);
     }
 
+    [Fact]
+    public async Task Accounting12B_pending_costs_endpoint_returns_full_context()
+    {
+        var item = await Save(_companyA, "PENDING-CTX"); var invoice = await AuthorizeProductSale(item);
+        await using var db = Context(_companyA);
+        var obligation = await db.Set<SaleCostObligation>().SingleAsync();
+        var result = await new GetPendingInventoryCostsHandler(new InventoryCostLedger(db), new CurrentTenant(_tenantId),
+            new CurrentCompany(_companyA)).Handle(new(), CancellationToken.None);
+        var row = result.Value!.Should().ContainSingle().Subject;
+        row.Should().BeEquivalentTo(new
+        {
+            ObligationId = obligation.Id, InvoiceId = invoice.Id, invoice.InvoiceNumber, IssueDate = (DateOnly?)invoice.IssueDate,
+            InvoiceLineId = invoice.Lines.Single().Id, ProductId = item.Id, ItemSku = "PENDING-CTX", ItemName = "PENDING-CTX",
+            WarehouseId = _warehouse1, WarehouseName = "Warehouse 1", PendingQuantity = 3m, Status = "CostPending"
+        });
+        (await new GetPendingInventoryCostsHandler(new InventoryCostLedger(db), new CurrentTenant(_tenantId),
+            new CurrentCompany(_companyB)).Handle(new(), CancellationToken.None)).Value.Should().BeEmpty();
+    }
+
     private async Task<StockMovement> ReturnUnits(SalesInvoice invoice, Item item, decimal quantity)
     {
         var original = invoice.Lines.Single();

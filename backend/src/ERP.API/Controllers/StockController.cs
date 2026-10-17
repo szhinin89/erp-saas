@@ -29,7 +29,7 @@ public sealed class StockController : ControllerBase
     public StockController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet("costs/pending")]
-    [Authorize(Policy = $"perm:{InventoryPermissions.StockView}")]
+    [Authorize(Policy = $"perm:{InventoryPermissions.PendingCostsView}")]
     public async Task<IActionResult> GetPendingCosts(CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new ERP.Application.Modules.Inventory.Costing.GetPendingInventoryCostsQuery(), ct));
 

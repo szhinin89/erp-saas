@@ -25,6 +25,10 @@ const StockAdjustmentFormPage = lazyNamedPage(
   () => import("../modules/inventory/adjustments/pages/StockAdjustmentFormPage"),
   "StockAdjustmentFormPage",
 );
+const PendingSaleCostsPage = lazyNamedPage(
+  () => import("../modules/inventory/pendingCosts/pages/PendingSaleCostsPage"),
+  "PendingSaleCostsPage",
+);
 const ItemTypesPage = lazyNamedPage(
   () => import("../modules/items/pages/ItemTypesPage"),
   "ItemTypesPage",
@@ -163,6 +167,13 @@ export const mainRoutes = [
     key="inventory-kardex"
     path="/inventory/kardex"
     element={<KardexPage />}
+  />,
+  // ACCOUNTING-12B — NavItem "Costos pendientes" (InventoryModule.PendingCosts), permiso propio
+  // inventory.pending-costs.view; también enlazada desde SALE_COST_PENDING en Períodos contables.
+  <Route
+    key="inventory-pending-costs"
+    path="/inventory/pending-costs"
+    element={<PendingSaleCostsPage />}
   />,
   <Route
     key="inventory-transfers"

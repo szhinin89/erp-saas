@@ -25,6 +25,8 @@ public static class InventoryModule
             + InventoryPermissions.StockManage
             + ","
             + InventoryPermissions.AdjustmentsView
+            + ","
+            + InventoryPermissions.PendingCostsView
     )]
     public const string OperationGroup = "/inventory/operation-group";
 
@@ -81,6 +83,17 @@ public static class InventoryModule
         ParentId = "e2000000-0000-4000-9000-000000000010"
     )]
     public const string Transfers = "/inventory/transfers";
+
+    // ACCOUNTING-12B: ventas con costo pendiente (SaleCostObligation). Solo lectura: la
+    // regularización es automática; las acciones enlazan a Compras/Ajustes con sus propios permisos.
+    [NavItem(
+        "Costos pendientes",
+        Permission = InventoryPermissions.PendingCostsView,
+        LabelKey = "app.nav.item.inventory.pending-costs",
+        SortOrder = 50,
+        ParentId = "e2000000-0000-4000-9000-000000000010"
+    )]
+    public const string PendingCosts = "/inventory/pending-costs";
 
     // ── Configuración ────────────────────────────────────────────────
     [NavItem(

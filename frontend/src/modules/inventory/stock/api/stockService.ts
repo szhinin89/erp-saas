@@ -66,6 +66,26 @@ export type StockReportRowDto = {
   status: StockReportStatus;
 };
 
+/**
+ * ACCOUNTING-12B — venta con costo de ventas pendiente (`SaleCostObligation`). Solo lectura: la
+ * regularización es automática cuando el producto recibe costo válido (compra, ajuste, carga inicial).
+ */
+export type PendingSaleCostDto = {
+  obligationId: string;
+  invoiceId: string;
+  invoiceNumber: string | null;
+  issueDate: string | null;
+  invoiceLineId: string;
+  productId: string;
+  itemSku: string | null;
+  itemName: string | null;
+  warehouseId: string;
+  warehouseName: string | null;
+  pendingQuantity: number;
+  provisionalUnitCost: number | null;
+  status: "Provisional" | "CostPending";
+};
+
 const BASE = "/api/v1/inventory/stock";
 
 export const stockService = {
@@ -95,6 +115,8 @@ export const stockService = {
     apiGet<ItemWarehouseAvailabilityDto[]>(
       `${BASE}/items/${itemId}/warehouse-availability`,
     ),
+
+  getPendingCosts: () => apiGet<PendingSaleCostDto[]>(`${BASE}/costs/pending`),
 
   /** Reporte básico de stock actual por bodega. */
   getReport: (warehouseId?: string, search?: string) => {

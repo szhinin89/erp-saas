@@ -103,7 +103,7 @@ public sealed class StockApiSurfaceSnapshotTests : IAsyncLifetime
             .OrderBy(l => l, StringComparer.Ordinal)
             .ToList();
 
-        endpoints.Should().HaveCount(15);
+        endpoints.Should().HaveCount(14); // POST costs/retry retirado en ACCOUNTING-CONTINUITY-05
         MatchSnapshot("stock-routes.txt", string.Join("\n", endpoints) + "\n");
     }
 
