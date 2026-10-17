@@ -159,7 +159,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             (await db.AccountingPeriods.SingleAsync(p => p.CompanyId == _company))
-                .Close(_user, new JournalEntryClosureReadiness(false, false, false));
+                .Close(_user, JournalEntryClosureReadiness.Ready);
             await db.SaveChangesAsync();
         }
         var sequencesBefore = (await SequencesAsync()).Sum();
@@ -232,7 +232,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests
         QueryAsync(async db =>
         {
             (await db.AccountingPeriods.Where(p => p.CompanyId == _company).ToListAsync()).Single(which)
-                .Close(_user, new JournalEntryClosureReadiness(false, false, false));
+                .Close(_user, JournalEntryClosureReadiness.Ready);
             return await db.SaveChangesAsync();
         });
 

@@ -100,11 +100,11 @@ public interface IJournalEntryRepository
     Task SaveChangesAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Fase 5.5 (ADR-026 §6.1/§9): resuelve las precondiciones cross-aggregate para
-    /// <c>AccountingPeriod.Close</c> mediante consultas EXISTS — nunca materializa los
-    /// <c>JournalEntry</c> del período completo.
+    /// Fase 5.5 (ADR-026 §6.1/§9) / ACCOUNTING-CONTINUITY-06: cuenta los asientos del período que
+    /// bloquean <c>AccountingPeriod.Close</c> (consultas COUNT — nunca materializa los
+    /// <c>JournalEntry</c> del período completo).
     /// </summary>
-    Task<JournalEntryClosureReadiness> GetClosureReadinessAsync(
+    Task<JournalEntryClosureCounts> GetClosureCountsAsync(
         Guid tenantId,
         Guid companyId,
         Guid accountingPeriodId,

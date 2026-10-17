@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ReportCompletenessNotice } from "./ReportCompletenessNotice";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
@@ -11,7 +12,7 @@ import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { useI18n } from "../../../../i18n/i18n";
 import { sourceModuleLabel, factTypeLabel, friendlyDescription } from "../../labels/accountingLabels";
-import { accountingApi, type GeneralJournalLineDto } from "../../api/accountingApi";
+import { accountingApi, type AccountingCompleteness, type GeneralJournalLineDto } from "../../api/accountingApi";
 
 const PAGE_SIZE = 50;
 
@@ -41,6 +42,7 @@ export function GeneralJournalReportTab() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [lines, setLines] = useState<GeneralJournalLineDto[]>([]);
+  const [completeness, setCompleteness] = useState<AccountingCompleteness | null>(null);
   const [totalDebit, setTotalDebit] = useState(0);
   const [totalCredit, setTotalCredit] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -58,6 +60,7 @@ export function GeneralJournalReportTab() {
         pageSize: PAGE_SIZE,
       });
       setLines(r.lines);
+      setCompleteness(r.completeness);
       setTotalDebit(r.totalDebit);
       setTotalCredit(r.totalCredit);
       setTotalCount(r.totalCount);
@@ -168,6 +171,7 @@ export function GeneralJournalReportTab() {
           Buscar
         </ZHBtn>
       </ZHFilterBar>
+      <ReportCompletenessNotice completeness={completeness} />
 
       {totalDebit !== totalCredit && lines.length > 0 && (
         <ZHPageNotice

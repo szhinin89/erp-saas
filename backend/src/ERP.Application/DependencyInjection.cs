@@ -28,6 +28,9 @@ public static class DependencyInjection
         // la transacción del núcleo, intento tras el commit (único ejecutor) y anulación común.
         services.AddScoped<AccountingOperationalDecision>();
         services.AddScoped<AccountingModeChangePreconditions>();
+        services.AddScoped<OpeningAccountingCompleteness>();
+        services.AddScoped<AccountingCompletenessService>();
+        services.AddScoped<IAccountingCompletenessEvaluator>(sp => sp.GetRequiredService<AccountingCompletenessService>());
         services.AddScoped<AccountingPostingDispatchQueue>();
         services.AddScoped<AccountingPostingRecorder>();
         services.AddScoped<ERP.Application.Modules.Accounting.Posting.Translators.SaleCostPostingRecorder>();

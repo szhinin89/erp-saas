@@ -10,7 +10,10 @@ public interface IInventoryCostLedger
 {
     Task<IReadOnlyList<SaleCostObligation>> GetPendingObligationsAsync(Guid tenantId, Guid companyId, CancellationToken ct);
 
-    /// <summary>Fechas de emisión distintas de las facturas con costo todavía pendiente de resolver.</summary>
+    /// <summary>
+    /// Fecha de emisión de cada factura con costo todavía pendiente de resolver (un elemento por
+    /// factura; ACCOUNTING-CONTINUITY-06 las cuenta por período).
+    /// </summary>
     Task<IReadOnlyList<DateOnly>> GetPendingObligationInvoiceDatesAsync(Guid tenantId, Guid companyId, CancellationToken ct);
 
     Task LockInvoiceAsync(Guid tenantId, Guid companyId, Guid invoiceId, CancellationToken ct);

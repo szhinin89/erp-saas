@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Application.Modules.Accounting.Queries;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -95,13 +96,15 @@ public sealed class GetGeneralJournalReportHandler
     private readonly IJournalEntrySourceResolver _sourceResolver;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly IAccountingCompletenessEvaluator _completeness;
 
     public GetGeneralJournalReportHandler(
         IJournalEntryRepository repo,
         IAccountRepository accountRepo,
         IJournalEntrySourceResolver sourceResolver,
         ICurrentTenant t,
-        ICurrentCompany c
+        ICurrentCompany c,
+        IAccountingCompletenessEvaluator completeness
     )
     {
         _repo = repo;
@@ -109,6 +112,7 @@ public sealed class GetGeneralJournalReportHandler
         _sourceResolver = sourceResolver;
         _t = t;
         _c = c;
+        _completeness = completeness;
     }
 
     public async Task<Result<GetGeneralJournalReportResponse>> Handle(
@@ -182,7 +186,8 @@ public sealed class GetGeneralJournalReportHandler
             lines.Sum(l => l.Credit),
             q.PageNumber,
             q.PageSize,
-            totalCount
+            totalCount,
+            await _completeness.EvaluateAsync(_t.TenantId, _c.CompanyId, q.FromDate, q.ToDate, ct)
         );
         return Result<GetGeneralJournalReportResponse>.Success(response);
     }
@@ -196,13 +201,15 @@ public sealed class GetGeneralLedgerReportHandler
     private readonly IJournalEntrySourceResolver _sourceResolver;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly IAccountingCompletenessEvaluator _completeness;
 
     public GetGeneralLedgerReportHandler(
         IJournalEntryRepository repo,
         IAccountRepository accountRepo,
         IJournalEntrySourceResolver sourceResolver,
         ICurrentTenant t,
-        ICurrentCompany c
+        ICurrentCompany c,
+        IAccountingCompletenessEvaluator completeness
     )
     {
         _repo = repo;
@@ -210,6 +217,7 @@ public sealed class GetGeneralLedgerReportHandler
         _sourceResolver = sourceResolver;
         _t = t;
         _c = c;
+        _completeness = completeness;
     }
 
     public async Task<Result<GetGeneralLedgerReportResponse>> Handle(
@@ -256,7 +264,10 @@ public sealed class GetGeneralLedgerReportHandler
 
         if (targetAccounts.Count == 0)
             return Result<GetGeneralLedgerReportResponse>.Success(
-                new GetGeneralLedgerReportResponse(Array.Empty<GeneralLedgerAccountDto>())
+                new GetGeneralLedgerReportResponse(
+                    Array.Empty<GeneralLedgerAccountDto>(),
+                    await _completeness.EvaluateAsync(_t.TenantId, _c.CompanyId, null, q.ToDate, ct)
+                )
             );
 
         var accountIds = targetAccounts.Select(a => a.Id).ToList();
@@ -354,7 +365,10 @@ public sealed class GetGeneralLedgerReportHandler
         }
 
         return Result<GetGeneralLedgerReportResponse>.Success(
-            new GetGeneralLedgerReportResponse(accountDtos)
+            new GetGeneralLedgerReportResponse(
+                accountDtos,
+                await _completeness.EvaluateAsync(_t.TenantId, _c.CompanyId, null, q.ToDate, ct)
+            )
         );
     }
 }
@@ -366,18 +380,21 @@ public sealed class GetTrialBalanceReportHandler
     private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly IAccountingCompletenessEvaluator _completeness;
 
     public GetTrialBalanceReportHandler(
         IJournalEntryRepository repo,
         IAccountRepository accountRepo,
         ICurrentTenant t,
-        ICurrentCompany c
+        ICurrentCompany c,
+        IAccountingCompletenessEvaluator completeness
     )
     {
         _repo = repo;
         _accountRepo = accountRepo;
         _t = t;
         _c = c;
+        _completeness = completeness;
     }
 
     public async Task<Result<GetTrialBalanceReportResponse>> Handle(
@@ -462,7 +479,8 @@ public sealed class GetTrialBalanceReportHandler
             totalPeriodCredit,
             lines.Sum(l => l.ClosingDebit),
             lines.Sum(l => l.ClosingCredit),
-            totalPeriodDebit == totalPeriodCredit
+            totalPeriodDebit == totalPeriodCredit,
+            await _completeness.EvaluateAsync(_t.TenantId, _c.CompanyId, null, q.ToDate, ct)
         );
         return Result<GetTrialBalanceReportResponse>.Success(response);
     }
@@ -511,18 +529,21 @@ public sealed class GetIncomeStatementReportHandler
     private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly IAccountingCompletenessEvaluator _completeness;
 
     public GetIncomeStatementReportHandler(
         IJournalEntryRepository repo,
         IAccountRepository accountRepo,
         ICurrentTenant t,
-        ICurrentCompany c
+        ICurrentCompany c,
+        IAccountingCompletenessEvaluator completeness
     )
     {
         _repo = repo;
         _accountRepo = accountRepo;
         _t = t;
         _c = c;
+        _completeness = completeness;
     }
 
     public async Task<Result<GetIncomeStatementReportResponse>> Handle(
@@ -569,7 +590,8 @@ public sealed class GetIncomeStatementReportHandler
                 grossProfit,
                 expenseLines,
                 totalExpense,
-                netProfit
+                netProfit,
+                await _completeness.EvaluateAsync(_t.TenantId, _c.CompanyId, q.FromDate, q.ToDate, ct)
             )
         );
     }
@@ -582,18 +604,21 @@ public sealed class GetBalanceSheetReportHandler
     private readonly IAccountRepository _accountRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
+    private readonly IAccountingCompletenessEvaluator _completeness;
 
     public GetBalanceSheetReportHandler(
         IJournalEntryRepository repo,
         IAccountRepository accountRepo,
         ICurrentTenant t,
-        ICurrentCompany c
+        ICurrentCompany c,
+        IAccountingCompletenessEvaluator completeness
     )
     {
         _repo = repo;
         _accountRepo = accountRepo;
         _t = t;
         _c = c;
+        _completeness = completeness;
     }
 
     public async Task<Result<GetBalanceSheetReportResponse>> Handle(
@@ -639,7 +664,8 @@ public sealed class GetBalanceSheetReportHandler
                 equityLines,
                 totalEquity,
                 difference,
-                difference == 0m
+                difference == 0m,
+                await _completeness.EvaluateAsync(_t.TenantId, _c.CompanyId, null, q.AsOfDate, ct)
             )
         );
     }

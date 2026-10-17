@@ -1,5 +1,17 @@
 # Project Status
 
+## ACCOUNTING-CONTINUITY-06 (2026-10-17)
+
+Implementado y validado focalmente (5 tests): readiness único de completitud contable que alimenta el
+cierre de período, el pre-cierre (`GET accounting-periods/{id}/closure-readiness`) y la advertencia de
+los 5 reportes; apertura/ASI, costo pendiente, orígenes sin contabilización y cierre secuencial bloquean
+el cierre; los hechos sujetos con fecha en un período Closed/Locked se rechazan. La conciliación de
+orígenes cubre los 11 orígenes forward. Sin migración. Sin suites completas, staging, commit ni push.
+- DEBT: permiso `accounting.periods.close` (nombre aprobado) pendiente de la futura UI de Períodos;
+  mientras tanto cierre/bloqueo usan `accounting.update`.
+- DEBT: ~8 consultas de completitud por reporte; medir con volumen piloto y consolidar solo si hace falta.
+Reglas: [Accounting §21](docs/architecture/accounting.md#21-cierre-y-completitud-accounting-continuity-06).
+
 ## ACCOUNTING-CONTINUITY-05 (2026-10-17)
 
 Implementado y validado focalmente (6 tests): costo de ventas converge a la obligación contable

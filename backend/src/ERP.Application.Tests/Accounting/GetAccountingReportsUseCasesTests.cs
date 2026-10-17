@@ -120,7 +120,8 @@ public sealed class GetAccountingReportsUseCasesTests
             accountRepo.Object,
             EmptyResolver().Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -179,7 +180,8 @@ public sealed class GetAccountingReportsUseCasesTests
             accountRepo.Object,
             EmptyResolver().Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -237,7 +239,8 @@ public sealed class GetAccountingReportsUseCasesTests
             accountRepo.Object,
             EmptyResolver().Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -298,7 +301,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -349,7 +353,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -405,7 +410,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -462,7 +468,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -566,7 +573,8 @@ public sealed class GetAccountingReportsUseCasesTests
             accountRepo.Object,
             EmptyResolver().Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -636,7 +644,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -699,7 +708,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -754,7 +764,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -810,7 +821,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -873,7 +885,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -933,7 +946,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -991,7 +1005,8 @@ public sealed class GetAccountingReportsUseCasesTests
             repo.Object,
             accountRepo.Object,
             Tenant().Object,
-            Company().Object
+            Company().Object,
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(

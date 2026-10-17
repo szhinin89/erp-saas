@@ -168,6 +168,19 @@ export interface GeneralJournalLineDto {
   credit: number;
 }
 
+/** ACCOUNTING-CONTINUITY-06 — motivo de incompletitud contable del alcance consultado (sin listar documentos). */
+export interface AccountingCompletenessReason {
+  code: string;
+  count: number;
+}
+
+/** ACCOUNTING-CONTINUITY-06 — readiness único de completitud contable (mismo que el cierre de período). */
+export interface AccountingCompleteness {
+  isComplete: boolean;
+  asOf: string;
+  reasons: AccountingCompletenessReason[];
+}
+
 export interface GetGeneralJournalReportResponse {
   lines: GeneralJournalLineDto[];
   totalDebit: number;
@@ -175,6 +188,7 @@ export interface GetGeneralJournalReportResponse {
   pageNumber: number;
   pageSize: number;
   totalCount: number;
+  completeness: AccountingCompleteness;
 }
 
 export interface GeneralLedgerMovementDto {
@@ -205,6 +219,7 @@ export interface GeneralLedgerAccountDto {
 
 export interface GetGeneralLedgerReportResponse {
   accounts: GeneralLedgerAccountDto[];
+  completeness: AccountingCompleteness;
 }
 
 export interface TrialBalanceLineDto {
@@ -229,6 +244,7 @@ export interface GetTrialBalanceReportResponse {
   totalClosingDebit: number;
   totalClosingCredit: number;
   isBalanced: boolean;
+  completeness: AccountingCompleteness;
 }
 
 // ── DTOs (espejo exacto de FinancialStatementLineDto/GetIncomeStatementReportResponse/GetBalanceSheetReportResponse — ACCOUNTING-FINANCIAL-STATEMENTS-10) ──
@@ -249,6 +265,7 @@ export interface GetIncomeStatementReportResponse {
   expenseLines: FinancialStatementLineDto[];
   totalExpense: number;
   netProfit: number;
+  completeness: AccountingCompleteness;
 }
 
 export interface GetBalanceSheetReportResponse {
@@ -260,6 +277,7 @@ export interface GetBalanceSheetReportResponse {
   totalEquity: number;
   difference: number;
   isBalanced: boolean;
+  completeness: AccountingCompleteness;
 }
 
 /**

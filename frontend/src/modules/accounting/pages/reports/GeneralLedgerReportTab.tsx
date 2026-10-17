@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ReportCompletenessNotice } from "./ReportCompletenessNotice";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
@@ -15,6 +16,7 @@ import {
   type AccountDto,
   type GeneralLedgerAccountDto,
   type GeneralLedgerMovementDto,
+  type AccountingCompleteness,
 } from "../../api/accountingApi";
 import { useI18n } from "../../../../i18n/i18n";
 import { sourceModuleLabel, friendlyDescription } from "../../labels/accountingLabels";
@@ -33,6 +35,7 @@ export function GeneralLedgerReportTab() {
   const [accountId, setAccountId] = useState("");
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [ledgerAccounts, setLedgerAccounts] = useState<GeneralLedgerAccountDto[]>([]);
+  const [completeness, setCompleteness] = useState<AccountingCompleteness | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -51,6 +54,7 @@ export function GeneralLedgerReportTab() {
         accountId: accountId || undefined,
       });
       setLedgerAccounts(r.accounts);
+      setCompleteness(r.completeness);
     } catch (err: unknown) {
       message.error(
         formatApiRequestError(err, { generic: "No se pudo cargar el Libro Mayor." }),
@@ -127,6 +131,7 @@ export function GeneralLedgerReportTab() {
           Buscar
         </ZHBtn>
       </ZHFilterBar>
+      <ReportCompletenessNotice completeness={completeness} />
 
       {!accountId && (
         <ZHPageNotice

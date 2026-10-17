@@ -999,7 +999,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             var period = await db.AccountingPeriods.SingleAsync(p =>
                 p.CompanyId == _companyId && p.StartDate <= IssueDate && p.EndDate >= IssueDate
             );
-            period.Close(_userId, new ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness(false, false, false));
+            period.Close(_userId, ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness.Ready);
             await db.SaveChangesAsync();
         }
 

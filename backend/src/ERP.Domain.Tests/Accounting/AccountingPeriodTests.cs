@@ -17,11 +17,7 @@ public sealed class AccountingPeriodTests
     private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid CreatedBy = Guid.NewGuid();
 
-    private static readonly JournalEntryClosureReadiness Ready = new(
-        HasDraftOrNonFinalEntries: false,
-        HasEntriesWithoutEntryNumber: false,
-        HasIncompleteReversals: false
-    );
+    private static readonly JournalEntryClosureReadiness Ready = JournalEntryClosureReadiness.Ready;
 
     private static AccountingPeriod OpenPeriod() =>
         AccountingPeriod.Create(
@@ -90,11 +86,12 @@ public sealed class AccountingPeriodTests
     public void Close_falla_con_multiples_motivos_simultaneos_y_los_reporta_todos()
     {
         var period = OpenPeriod();
-        var readiness = new JournalEntryClosureReadiness(
-            HasDraftOrNonFinalEntries: true,
-            HasEntriesWithoutEntryNumber: true,
-            HasIncompleteReversals: true
-        );
+        var readiness = Ready with
+        {
+            HasDraftOrNonFinalEntries = true,
+            HasEntriesWithoutEntryNumber = true,
+            HasIncompleteReversals = true,
+        };
 
         var act = () => period.Close(CreatedBy, readiness);
 
@@ -126,5 +123,10 @@ public sealed class AccountingPeriodTests
         (Ready with { HasDraftOrNonFinalEntries = true }).IsReady.Should().BeFalse();
         (Ready with { HasEntriesWithoutEntryNumber = true }).IsReady.Should().BeFalse();
         (Ready with { HasIncompleteReversals = true }).IsReady.Should().BeFalse();
+        (Ready with { HasUnresolvedPostings = true }).IsReady.Should().BeFalse();
+        (Ready with { HasUnresolvedOpening = true }).IsReady.Should().BeFalse();
+        (Ready with { HasPendingSaleCost = true }).IsReady.Should().BeFalse();
+        (Ready with { HasOriginsWithoutAccounting = true }).IsReady.Should().BeFalse();
+        (Ready with { HasPreviousOpenPeriod = true }).IsReady.Should().BeFalse();
     }
 }

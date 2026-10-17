@@ -20,6 +20,9 @@ internal sealed class AccountingContinuityTestHarness
 
     public Mock<IAccountingOperationalPolicyRepository> Policies { get; } = new();
     public Mock<IAccountingPostingRepository> Postings { get; } = new();
+
+    /// <summary>Sin setup no hay período para la fecha: el gate Closed/Locked no aplica.</summary>
+    public Mock<IAccountingPeriodRepository> Periods { get; } = new();
     public AccountingPostingDispatchQueue Queue { get; } = new();
     public List<AccountingPosting> Added { get; } = [];
 
@@ -48,6 +51,7 @@ internal sealed class AccountingContinuityTestHarness
             new AccountingOperationalDecision(Policies.Object),
             Postings.Object,
             Mock.Of<IJournalEntryRepository>(),
+            Periods.Object,
             Queue,
             Mock.Of<ICurrentUser>(u => u.UserId == UserId),
             AuditContext()

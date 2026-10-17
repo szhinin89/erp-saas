@@ -1,7 +1,10 @@
+using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Application.Modules.Accounting.Posting.Translators;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Purchases.Enums;
+using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +15,13 @@ namespace ERP.Infrastructure.Accounting.Repositories;
 /// ACCOUNTING-CONTINUITY-05 — documentos que generan hechos contables (venta, devolución de venta,
 /// compra, gasto, NC y devolución de compra, pago a proveedor, cobro/pago financiero), excluidos
 /// borradores y descartes. Las devoluciones sin fecha de negocio propia se evalúan por su instante de
-/// registro en UTC (criterio conservador: puede rechazar un caso límite, nunca omitir uno).
+/// registro desde el inicio del día de negocio en la zona horaria de la empresa (<see cref="ICompanyClock"/>).
 /// </summary>
-public sealed class AccountingRelevantFactsReader(ErpDbContext db) : IAccountingRelevantFactsReader
+public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock clock) : IAccountingRelevantFactsReader
 {
     public async Task<bool> ExistsOnOrAfterAsync(Guid tenantId, Guid companyId, DateOnly date, CancellationToken ct)
     {
-        var instant = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var (instant, _) = await clock.DayUtcRangeAsync(companyId, tenantId, date, ct);
         return await db.SalesInvoices.AnyAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
                    && x.Status != SalesInvoiceStatus.Draft && x.IssueDate >= date, ct)
             || await db.SalesReturns.AnyAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
@@ -35,5 +38,83 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db) : IAccounting
                    && x.PaymentDate >= date, ct)
             || await db.Payments.AnyAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
                    && x.Status != PaymentStatus.Draft && x.PaymentDate >= date, ct);
+    }
+
+    /// <remarks>
+    /// Cada origen usa la fecha contable con la que su traductor registra la obligación y solo los estados
+    /// que realmente la generan (accounting.md §19/§21):
+    /// <list type="bullet">
+    /// <item>Sales/InvoiceIssued — factura Authorized o Cancelled (Cancel exige Authorized); IssueDate.</item>
+    /// <item>Sales/SalesReturn — devolución Authorized (Cancel solo desde Draft; Authorized es terminal);
+    /// día Company de UpdatedAt, que Authorize fija como última mutación.</item>
+    /// <item>Purchases/InvoiceReceived — compra Confirmed o Cancelled (Discarded = borrador); IssueDate.</item>
+    /// <item>Purchases/PurchaseReturn — devolución con AuthorizedAtUtc (Authorized o anulada después); día Company.</item>
+    /// <item>Purchases/PurchaseCreditNoteAuthorized — NC Discount con AuthorizedAtUtc; día Company. La NC Return
+    /// copia AuthorizedAtUtc de su devolución y se contabiliza solo como PurchaseReturn.</item>
+    /// <item>Purchases/SupplierCreditApplied — movimiento Application; día Company de CreatedAtUtc.</item>
+    /// <item>Purchases/SupplierCreditRefunded — transacción RefundReceived (identidad = movimiento); EffectiveDate.</item>
+    /// <item>Expenses/DocumentConfirmed — gasto Confirmed o Cancelled (Cancel exige Confirmed); AccountingDate.</item>
+    /// <item>Retentions/DocumentIssued — retención Issued o Cancelled (Cancel exige Issued); IssueDate.</item>
+    /// <item>Payables/SupplierPaymentConfirmed — todo pago a proveedor (no hay borrador); PaymentDate.</item>
+    /// <item>Finance/CollectionApplied — cobro (Collection) Applied o Reversed; PaymentDate.</item>
+    /// </list>
+    /// El costo de ventas no se concilia aquí: lo cubren sus obligaciones y SaleCostObligation pendiente.
+    /// </remarks>
+    public async Task<int> CountWithoutAccountingAsync(Guid tenantId, Guid companyId, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        // Identidades contables existentes (obligación en cualquier estado o asiento histórico) por módulo.
+        IQueryable<Guid> Accounted(string module) =>
+            db.AccountingPostings
+                .Where(p => p.TenantId == tenantId && p.CompanyId == companyId && p.SourceModule == module)
+                .Select(p => p.SourceEventId)
+                .Concat(db.JournalEntries
+                    .Where(j => j.TenantId == tenantId && j.CompanyId == companyId && j.SourceModule == module)
+                    .Select(j => j.SourceEventId));
+
+        var sales = Accounted(SalesInvoiceAuthorizedPostingTranslator.SourceModuleName);
+        var purchases = Accounted(PurchaseInvoiceConfirmedPostingTranslator.SourceModuleName);
+        var expenses = Accounted(ExpenseDocumentConfirmedPostingTranslator.SourceModuleName);
+        var supplierPayments = Accounted(SupplierPaymentConfirmedPostingTranslator.SourceModuleName);
+        var collections = Accounted(CollectionAppliedPostingTranslator.SourceModuleName);
+        var retentions = Accounted(RetentionDocumentIssuedPostingTranslator.SourceModuleName);
+
+        // Orígenes fechados por el instante del acto: día de empresa [from, to] como rango UTC.
+        var (fromUtc, toUtcExclusive) = await clock.DaysUtcRangeAsync(companyId, tenantId, from, to, ct);
+        var startUtc = fromUtc!.Value;
+        var endUtc = toUtcExclusive!.Value;
+
+        return await db.SalesInvoices.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && (x.Status == SalesInvoiceStatus.Authorized || x.Status == SalesInvoiceStatus.Cancelled)
+                   && x.IssueDate >= from && x.IssueDate <= to && !sales.Contains(x.Id), ct)
+            + await db.SalesReturns.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && x.Status == SalesReturnStatus.Authorized
+                   && x.UpdatedAt >= startUtc && x.UpdatedAt < endUtc && !sales.Contains(x.Id), ct)
+            + await db.PurchaseInvoices.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && (x.Status == PurchaseStatus.Confirmed || x.Status == PurchaseStatus.Cancelled)
+                   && x.IssueDate >= from && x.IssueDate <= to && !purchases.Contains(x.Id), ct)
+            + await db.PurchaseReturns.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && x.AuthorizedAtUtc >= startUtc && x.AuthorizedAtUtc < endUtc && !purchases.Contains(x.Id), ct)
+            + await db.PurchaseCreditNotes.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && x.ApplicationType == PurchaseCreditNoteApplicationType.Discount
+                   && x.AuthorizedAtUtc >= startUtc && x.AuthorizedAtUtc < endUtc && !purchases.Contains(x.Id), ct)
+            + await db.SupplierCreditMovements.CountAsync(m => m.TenantId == tenantId
+                   && m.MovementType == SupplierCreditMovementType.Application
+                   && db.SupplierCredits.Any(c => c.Id == m.SupplierCreditId && c.CompanyId == companyId)
+                   && m.CreatedAtUtc >= startUtc && m.CreatedAtUtc < endUtc && !purchases.Contains(m.Id), ct)
+            + await db.SupplierCreditRefundTransactions.CountAsync(t => t.TenantId == tenantId && t.CompanyId == companyId
+                   && t.TransactionTypeCode == RefundTransactionTypeCode.RefundReceived
+                   && t.EffectiveDate >= from && t.EffectiveDate <= to && !purchases.Contains(t.SupplierCreditMovementId), ct)
+            + await db.ExpenseDocuments.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && (x.Status == ExpenseStatus.Confirmed || x.Status == ExpenseStatus.Cancelled)
+                   && x.AccountingDate >= from && x.AccountingDate <= to && !expenses.Contains(x.Id), ct)
+            + await db.RetentionDocuments.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && (x.Status == RetentionStatus.Issued || x.Status == RetentionStatus.Cancelled)
+                   && x.IssueDate >= from && x.IssueDate <= to && !retentions.Contains(x.Id), ct)
+            + await db.SupplierPayments.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && x.PaymentDate >= from && x.PaymentDate <= to && !supplierPayments.Contains(x.Id), ct)
+            + await db.Payments.CountAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
+                   && x.Direction == PaymentDirection.Collection
+                   && (x.Status == PaymentStatus.Applied || x.Status == PaymentStatus.Reversed)
+                   && x.PaymentDate >= from && x.PaymentDate <= to && !collections.Contains(x.Id), ct);
     }
 }

@@ -69,7 +69,7 @@ public sealed class ReverseJournalEntryCommandHandlerTests
     {
         var f = new Fixture();
         var first = await f.Handler().Handle(new(f.Original.Id, "first", f.Date), default);
-        f.Destination.Close(f.User, new(false, false, false));
+        f.Destination.Close(f.User, ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness.Ready);
         var second = await f.Handler().Handle(new(f.Original.Id, "second", f.Date), default);
         second.Value!.Id.Should().Be(first.Value!.Id);
         f.Sequences.Verify(x => x.ReserveNextNumberAsync(f.Tenant, f.Company, 2027, It.IsAny<CancellationToken>()), Times.Once);
@@ -83,7 +83,7 @@ public sealed class ReverseJournalEntryCommandHandlerTests
     {
         var f = new Fixture();
         if (state == 0) f.Periods.Setup(x => x.FindContainingDateAsync(f.Tenant, f.Company, f.Date, It.IsAny<CancellationToken>())).ReturnsAsync((AccountingPeriod?)null);
-        else { f.Destination.Close(f.User, new(false, false, false)); if (state == 2) f.Destination.Lock(f.User); }
+        else { f.Destination.Close(f.User, ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness.Ready); if (state == 2) f.Destination.Lock(f.User); }
         var result = await f.Handler().Handle(new(f.Original.Id, "reason", f.Date), default);
         result.Code.Should().Be("PERIOD_NOT_OPEN");
         f.Captured.Should().BeNull();

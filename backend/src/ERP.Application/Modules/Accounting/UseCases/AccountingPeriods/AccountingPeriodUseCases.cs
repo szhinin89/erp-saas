@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -33,6 +34,14 @@ public sealed record GetAccountingPeriodsQuery()
 
 public sealed record GetAccountingPeriodByIdQuery(Guid Id)
     : IRequest<Result<AccountingPeriodDto>>,
+        ICompanyScopedRequest;
+
+/// <summary>
+/// ACCOUNTING-CONTINUITY-06 — pre-cierre de solo lectura: exactamente la misma evaluación que usa
+/// <see cref="CloseAccountingPeriodCommand"/> (sin lock: el resultado puede cambiar hasta el cierre).
+/// </summary>
+public sealed record GetAccountingPeriodClosureReadinessQuery(Guid Id)
+    : IRequest<Result<AccountingCompleteness>>,
         ICompanyScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
@@ -144,8 +153,7 @@ public sealed class CloseAccountingPeriodHandler
     : IRequestHandler<CloseAccountingPeriodCommand, Result<AccountingPeriodDto>>
 {
     private readonly IAccountingPeriodRepository _repo;
-    private readonly IJournalEntryRepository _journalEntryRepository;
-    private readonly IAccountingPostingRepository _postings;
+    private readonly IAccountingCompletenessEvaluator _completeness;
     private readonly IAccountingOperationalPolicyRepository _accountingLock;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentTenant _t;
@@ -154,8 +162,7 @@ public sealed class CloseAccountingPeriodHandler
 
     public CloseAccountingPeriodHandler(
         IAccountingPeriodRepository repo,
-        IJournalEntryRepository journalEntryRepository,
-        IAccountingPostingRepository postings,
+        IAccountingCompletenessEvaluator completeness,
         IAccountingOperationalPolicyRepository accountingLock,
         IUnitOfWork unitOfWork,
         ICurrentTenant t,
@@ -164,8 +171,7 @@ public sealed class CloseAccountingPeriodHandler
     )
     {
         _repo = repo;
-        _journalEntryRepository = journalEntryRepository;
-        _postings = postings;
+        _completeness = completeness;
         _accountingLock = accountingLock;
         _unitOfWork = unitOfWork;
         _t = t;
@@ -195,23 +201,12 @@ public sealed class CloseAccountingPeriodHandler
                 return Result<AccountingPeriodDto>.NotFound("Período contable no encontrado.");
             }
 
-            // Fase 5.5 (ADR-026 §6.1/§9): precondición cross-aggregate resuelta aquí (Application),
-            // nunca dentro de AccountingPeriod — el aggregate solo recibe el resumen ya calculado.
-            var readiness = await _journalEntryRepository.GetClosureReadinessAsync(
-                tenantId,
-                companyId,
-                period.Id,
-                ct
-            );
-            var hasUnresolvedPostings = await _postings.HasUnresolvedInRangeAsync(
-                tenantId,
-                companyId,
-                period.StartDate,
-                period.EndDate,
-                ct
-            );
+            // Fase 5.5 (ADR-026 §6.1/§9) / ACCOUNTING-CONTINUITY-06: precondición cross-aggregate
+            // resuelta aquí (Application) con el readiness único, nunca dentro de AccountingPeriod —
+            // el aggregate solo recibe el resumen ya calculado.
+            var completeness = await _completeness.EvaluateClosureAsync(tenantId, companyId, period, ct);
 
-            period.Close(_u.UserId, readiness with { HasUnresolvedPostings = hasUnresolvedPostings });
+            period.Close(_u.UserId, AccountingCompletenessService.ToClosureReadiness(completeness));
 
             await _repo.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -319,6 +314,41 @@ public sealed class GetAccountingPeriodByIdHandler
         return period is null
             ? Result<AccountingPeriodDto>.NotFound("Período contable no encontrado.")
             : Result<AccountingPeriodDto>.Success(Map.ToDto(period));
+    }
+}
+
+public sealed class GetAccountingPeriodClosureReadinessHandler
+    : IRequestHandler<GetAccountingPeriodClosureReadinessQuery, Result<AccountingCompleteness>>
+{
+    private readonly IAccountingPeriodRepository _repo;
+    private readonly IAccountingCompletenessEvaluator _completeness;
+    private readonly ICurrentTenant _t;
+    private readonly ICurrentCompany _c;
+
+    public GetAccountingPeriodClosureReadinessHandler(
+        IAccountingPeriodRepository repo,
+        IAccountingCompletenessEvaluator completeness,
+        ICurrentTenant t,
+        ICurrentCompany c
+    )
+    {
+        _repo = repo;
+        _completeness = completeness;
+        _t = t;
+        _c = c;
+    }
+
+    public async Task<Result<AccountingCompleteness>> Handle(
+        GetAccountingPeriodClosureReadinessQuery q,
+        CancellationToken ct
+    )
+    {
+        var period = await _repo.GetByIdAsync(_t.TenantId, _c.CompanyId, q.Id, ct);
+        return period is null
+            ? Result<AccountingCompleteness>.NotFound("Período contable no encontrado.")
+            : Result<AccountingCompleteness>.Success(
+                await _completeness.EvaluateClosureAsync(_t.TenantId, _c.CompanyId, period, ct)
+            );
     }
 }
 

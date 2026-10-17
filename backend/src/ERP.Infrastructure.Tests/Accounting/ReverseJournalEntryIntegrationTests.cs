@@ -187,7 +187,7 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         await using (var seed = CreateContext())
         {
             var oldPeriod = await seed.AccountingPeriods.SingleAsync(x => x.Id == _accountingPeriodId);
-            if (originalState > 0) oldPeriod.Close(_createdBy, new(false, false, false));
+            if (originalState > 0) oldPeriod.Close(_createdBy, ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness.Ready);
             if (originalState == 2) oldPeriod.Lock(_createdBy);
             var destination = AccountingPeriod.Create(_tenantId, _companyId, 2027, 1, new(2027, 1, 1), new(2027, 1, 31), _createdBy);
             seed.AccountingPeriods.Add(destination);
@@ -242,7 +242,7 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
             .Handle(new(id, "reason", new(2026, 7, 20)), default);
         result.IsSuccess.Should().BeTrue();
         var close = new ERP.Application.Modules.Accounting.UseCases.AccountingPeriods.CloseAccountingPeriodHandler(
-            new AccountingPeriodRepository(closeDb), new JournalEntryRepository(closeDb), new AccountingPostingRepository(closeDb),
+            new AccountingPeriodRepository(closeDb), ERP.Infrastructure.Tests.TestData.AccountingCompletenessTestSupport.Create(closeDb, _companyId),
             new AccountingOperationalPolicyRepository(closeDb), new UnitOfWork(closeDb),
             new FixedCurrentTenant(_tenantId), new FixedCurrentCompany(_companyId), new FixedCurrentUser(_createdBy));
         var closing = close.Handle(new(_accountingPeriodId), default);
@@ -262,7 +262,7 @@ public sealed class ReverseJournalEntryIntegrationTests : IAsyncLifetime
         await unit.BeginTransactionAsync();
         await new AccountingOperationalPolicyRepository(closeDb).AcquireExclusiveLockAsync(_companyId);
         var period = await closeDb.AccountingPeriods.SingleAsync(x => x.Id == _accountingPeriodId);
-        period.Close(_createdBy, new(false, false, false));
+        period.Close(_createdBy, ERP.Domain.Modules.Accounting.ValueObjects.JournalEntryClosureReadiness.Ready);
         await closeDb.SaveChangesAsync();
         // Preload Open in the other tracker: resolver must read fresh after waiting on the lock.
         await reversalDb.AccountingPeriods.SingleAsync(x => x.Id == _accountingPeriodId);

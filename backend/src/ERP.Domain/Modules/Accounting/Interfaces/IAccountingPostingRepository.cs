@@ -63,11 +63,14 @@ public interface IAccountingPostingRepository
         CancellationToken ct = default
     );
 
-    /// <summary>¿Existe una obligación Pending/Failed con EntryDate dentro de [from, to]?</summary>
-    Task<bool> HasUnresolvedInRangeAsync(
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-06 — obligaciones Pending/Failed con EntryDate dentro de
+    /// [<paramref name="from"/>, <paramref name="to"/>] (<paramref name="from"/> null = desde el inicio).
+    /// </summary>
+    Task<int> CountUnresolvedInRangeAsync(
         Guid tenantId,
         Guid companyId,
-        DateOnly from,
+        DateOnly? from,
         DateOnly to,
         CancellationToken ct = default
     );

@@ -147,7 +147,7 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
 
     public Task SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
 
-    public async Task<JournalEntryClosureReadiness> GetClosureReadinessAsync(
+    public async Task<JournalEntryClosureCounts> GetClosureCountsAsync(
         Guid tenantId,
         Guid companyId,
         Guid accountingPeriodId,
@@ -160,31 +160,29 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             && x.AccountingPeriodId == accountingPeriodId
         );
 
-        // Cada AnyAsync se traduce a "SELECT EXISTS(...)" — nunca materializa JournalEntry
-        // completos, ni siquiera para contar (ADR-026 §6.1/§9: cierre es cross-aggregate, pero
-        // no debe cargar el período entero para decidir).
-        var hasDraftOrNonFinal = await scoped.AnyAsync(
+        // Cada CountAsync se traduce a "SELECT COUNT(*)" — nunca materializa JournalEntry
+        // completos (ADR-026 §6.1/§9: cierre es cross-aggregate, pero no debe cargar el período
+        // entero para decidir).
+        var draftOrNonFinal = await scoped.CountAsync(
             x => x.Status != JournalEntryStatus.Posted && x.Status != JournalEntryStatus.Reversed,
             ct
         );
 
-        var hasWithoutEntryNumber = await scoped.AnyAsync(
+        var withoutEntryNumber = await scoped.CountAsync(
             x => x.Status != JournalEntryStatus.Draft && x.EntryNumber == null,
             ct
         );
 
-        var hasIncompleteReversals = await scoped.AnyAsync(
+        // El primer término solo aplica a datos previos a ACCOUNTING-CONTINUITY-03 (el original ya
+        // no se marca Reversed); el segundo, a un reverso que no quedó publicado.
+        var incompleteReversals = await scoped.CountAsync(
             x =>
                 (x.Status == JournalEntryStatus.Reversed && x.ReverseJournalEntryId == null)
                 || (x.OriginalJournalEntryId != null && x.Status != JournalEntryStatus.Posted),
             ct
         );
 
-        return new JournalEntryClosureReadiness(
-            hasDraftOrNonFinal,
-            hasWithoutEntryNumber,
-            hasIncompleteReversals
-        );
+        return new JournalEntryClosureCounts(draftOrNonFinal, withoutEntryNumber, incompleteReversals);
     }
 
     public async Task<(

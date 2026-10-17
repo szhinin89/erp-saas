@@ -18,8 +18,8 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-01: política operativa versionada por Company, obligación contable durable común con historial de intentos, intento inicial posterior al commit y reproceso manual individual para Compra, Gasto (confirmación de borrador y creación directa) y Retención emitida; anulación común de esos orígenes; gate mínimo de cierre; `AccountingPostingMode` retirado |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-04: Venta, devolución de venta, pago a proveedor, cobro, devolución de compra, NC compra Discount y aplicación/reembolso de saldo a favor registran la obligación durable; anulación de devolución de compra y reversas de aplicación/reembolso usan el reverso histórico común (§19) |
 | KEEP | ACCOUNTING-CONTINUITY-03: espejo histórico, original inmutable, fecha efectiva y período Open destino, idempotencia y obligación durable para los consumidores migrados |
-| BUG REAL | El cierre exige obligaciones resueltas (incluida la apertura) y asientos completos, pero no concilia orígenes sin obligación |
-| EXTEND | Integridad completa de cierre/reportes y manuales generales pendientes |
+| IMPLEMENTADO | ACCOUNTING-CONTINUITY-06: readiness único de completitud (cierre, pre-cierre y reportes), conciliación de orígenes, apertura/ASI, costo pendiente, cierre secuencial y gate Closed/Locked en el origen (§21) |
+| EXTEND | Manuales generales pendientes; permiso específico de cierre pendiente (§21) |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -241,9 +241,9 @@ el resultado financiero del período; un retry contable no fabrica una base de c
 
 El gate de cierre y la creación/publicación de obligaciones concurrentes deben
 serializarse en PostgreSQL, evitando cerrar entre la consulta y el commit de un hecho.
-Gate mínimo implementado: el cierre se rechaza si existe una obligación Pending/Failed con
-`EntryDate` dentro del período, bajo lock exclusivo por Company frente al lock compartido de
-la creación de obligaciones; la conciliación completa de orígenes sigue pendiente.
+Gate implementado (§21): el cierre evalúa el readiness único bajo lock exclusivo por Company
+frente al lock compartido de la creación de obligaciones. Un hecho sujeto cuya fecha contable
+pertenece a un período Closed/Locked se rechaza en el origen, antes de crear su obligación.
 Locked no puede eludir el gate de cierre. Closed/Locked no permiten nuevas escrituras
 en ese período ni edición, borrado o reescritura de lo ya registrado.
 
@@ -421,7 +421,7 @@ Rutas abreviadas desde `backend/src/`:
 |---|---|
 | RESUELTO | ACCOUNTING-CONTINUITY-04: Venta, devoluciones, pagos, cobros, NC compra Discount y saldo a favor de proveedor dejaron de contabilizar en línea; los núcleos operativos ya no resuelven cuentas ni exigen líneas IRBPNR/anticipo |
 | KEEP | ACCOUNTING-CONTINUITY-03: JournalEntryReversal y JournalEntry.Reverse conservan el original y espejan el libro histórico en fecha/período/ejercicio destino; pago, cobro y anulaciones existentes adoptados |
-| BUG REAL | El cierre consulta asientos y obligaciones Pending/Failed, pero no concilia orígenes que deberían haber generado obligación |
+| RESUELTO | ACCOUNTING-CONTINUITY-06: el cierre concilia orígenes sin obligación ni asiento, apertura/ASI y costo pendiente con el readiness único (§21) |
 | RESUELTO | ACCOUNTING-CONTINUITY-05: InventoryCostAccounting, su evento y el retry masivo de costos retirados; costo de ventas en la obligación común |
 
 Cortes adoptados: Compra/Gasto + Retención (ACCOUNTING-CONTINUITY-01) y demás integraciones
@@ -570,3 +570,56 @@ contable de una obligación automática no cancelada, si existe alguna obligaci�
 venta sujeta conserva costo pendiente de resolver, o si la apertura sujeta no está cerrada y tiene lotes
 sin asiento Posted o ASI vigente no publicado. Los reversos de asientos de la era Enabled siguen
 generándose durante Disabled.
+
+## 21. Cierre y completitud ACCOUNTING-CONTINUITY-06
+
+**Readiness único.** `AccountingCompletenessService` (`IAccountingCompletenessEvaluator`) es la única
+evaluación de completitud contable por Company y alcance; alimenta el cierre, el pre-cierre y los reportes.
+Cada motivo es `{ Code, Count }`, sin listar documentos:
+
+| Código | Alcance | Condición |
+|---|---|---|
+| `POSTINGS_UNRESOLVED` | Rango | Obligaciones Pending/Failed por `EntryDate` |
+| `OPENING_BATCHES_UNPOSTED` | Fecha de apertura en rango | Lotes de saldos Completed sin asiento Posted (sin estado, Pending o Failed) |
+| `OPENING_ASI_MISSING` / `OPENING_ASI_UNRESOLVED` | Fecha de apertura en rango | ASI vigente ausente / no Posted |
+| `SALE_COST_PENDING` | Rango | Facturas con `SaleCostObligation` pendiente cuya emisión está sujeta (Enabled) |
+| `ORIGINS_WITHOUT_ACCOUNTING` | Rango ∩ ventanas Enabled desde la adopción | Documento sin `AccountingPosting` ni `JournalEntry` de su identidad (módulo + documento) |
+| `JOURNAL_ENTRIES_NOT_FINAL` / `JOURNAL_ENTRIES_WITHOUT_NUMBER` / `REVERSALS_INCOMPLETE` | Solo cierre | Asientos del período |
+| `PREVIOUS_PERIOD_OPEN` | Solo cierre | Período anterior de la misma Company todavía Open |
+
+La apertura solo aplica si la fecha de apertura está sujeta y la Carga Inicial no está cerrada
+(`OpeningAccountingCompleteness`, compartido con las precondiciones de Disabled; allí el ASI ausente no
+bloquea). La adopción de una versión Enabled es la fecha Company de su alta: los documentos previos a la
+adopción contable y los de ventanas Disabled no se concilian. Orígenes conciliados (estado que genera
+la obligación; fecha contable): factura de venta Authorized/Cancelled (IssueDate); devolución de venta
+Authorized (día Company de su autorización: Authorized es terminal y Cancel solo procede desde Draft);
+compra Confirmed/Cancelled (IssueDate); devolución de compra y NC Discount con `AuthorizedAtUtc` (día
+Company); aplicación de saldo a favor (movimiento Application, día Company); reembolso de saldo a favor
+(transacción RefundReceived, EffectiveDate); gasto Confirmed/Cancelled (AccountingDate); retención
+Issued/Cancelled (IssueDate); pago a proveedor (PaymentDate); cobro Applied/Reversed (PaymentDate). Una
+obligación en cualquier estado o un asiento histórico de la misma identidad resuelve el origen. El costo
+de ventas se cubre con sus obligaciones y `SALE_COST_PENDING`.
+
+**Cierre.** `CloseAccountingPeriod` evalúa el readiness bajo el lock exclusivo y lo traduce a
+`JournalEntryClosureReadiness`, cuyas banderas son todas obligatorias. Cierre secuencial: no se cierra N
+con un período anterior Open; no se reabre ni modifica ningún período previo.
+`GET accounting-periods/{id}/closure-readiness` (solo lectura, `accounting.view`) devuelve el mismo
+resultado, sin lock.
+
+**Gate Closed/Locked.** `AccountingPostingRecorder`, bajo el lock compartido y solo si el hecho está
+sujeto, rechaza la operación (`ACCOUNTING_PERIOD_CLOSED`) cuando la fecha contable pertenece a un período
+Closed/Locked: no se mueve la fecha, no se crea Failed permanente y no se reabre. Sin período para la fecha
+no se rechaza (Failed recuperable). Los reversos conservan su propio gate Open (§7).
+
+**Reportes.** Diario, Mayor, Balance de Comprobación, Estado de Resultados y Balance General devuelven
+`Completeness { IsComplete, AsOf, Reasons[] }` del mismo readiness. Diario y Estado de Resultados evalúan
+su rango; Mayor y Balance de Comprobación, desde el inicio contable hasta `ToDate` (arrastran saldo
+inicial); Balance General, desde el inicio hasta `AsOfDate`. El frontend solo muestra la advertencia de
+reporte provisional.
+
+**Permiso de cierre.** Nombre aprobado: `accounting.periods.close`. Se asignará desde la futura
+pantalla de Períodos (sin NavItem arbitrario ni otra vía de asignación); hasta entonces cierre y bloqueo
+usan `accounting.update`.
+
+**Performance (DEBT).** Cada reporte ejecuta ~8 consultas adicionales de completitud; medir con volumen
+piloto y consolidar después solo si hace falta, sin cache.

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ReportCompletenessNotice } from "./ReportCompletenessNotice";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
@@ -8,7 +9,7 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
-import { accountingApi, type FinancialStatementLineDto } from "../../api/accountingApi";
+import { accountingApi, type AccountingCompleteness, type FinancialStatementLineDto } from "../../api/accountingApi";
 import { firstDayOfMonthIso, todayIso } from "../../../../lib/formatters/dateFormatters";
 
 const LINE_COLUMNS: ZHDataTableColumn<FinancialStatementLineDto>[] = [
@@ -40,12 +41,14 @@ export function IncomeStatementReportTab() {
     netProfit: number;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [completeness, setCompleteness] = useState<AccountingCompleteness | null>(null);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
       const r = await accountingApi.getIncomeStatementReport({ fromDate, toDate });
       setData(r);
+      setCompleteness(r.completeness);
     } catch (err: unknown) {
       message.error(
         formatApiRequestError(err, { generic: "No se pudo cargar el Estado de Resultados." }),
@@ -76,6 +79,7 @@ export function IncomeStatementReportTab() {
           Buscar
         </ZHBtn>
       </ZHFilterBar>
+      <ReportCompletenessNotice completeness={completeness} />
 
       {!data && !loading && (
         <ZHPageNotice variant="neutral" message="Seleccione un rango de fechas para calcular el Estado de Resultados." />

@@ -367,7 +367,8 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             new JournalEntryRepository(CreateContext()),
             new AccountRepository(CreateContext()),
             new FixedCurrentTenant(_tenantId),
-            new FixedCurrentCompany(_companyId)
+            new FixedCurrentCompany(_companyId),
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -425,7 +426,8 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             new JournalEntryRepository(CreateContext()),
             new AccountRepository(CreateContext()),
             new FixedCurrentTenant(_tenantId),
-            new FixedCurrentCompany(_companyId)
+            new FixedCurrentCompany(_companyId),
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -469,7 +471,8 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             new JournalEntryRepository(CreateContext()),
             new AccountRepository(CreateContext()),
             new FixedCurrentTenant(_tenantId),
-            new FixedCurrentCompany(_companyId)
+            new FixedCurrentCompany(_companyId),
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -554,7 +557,8 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             new JournalEntryRepository(CreateContext()),
             new AccountRepository(CreateContext()),
             new FixedCurrentTenant(_tenantId),
-            new FixedCurrentCompany(_companyId)
+            new FixedCurrentCompany(_companyId),
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(
@@ -626,7 +630,8 @@ public sealed class AccountingReportsRepositoryTests : IAsyncLifetime
             new AccountRepository(CreateContext()),
             new NoOpSourceResolver(),
             new FixedCurrentTenant(_tenantId),
-            new FixedCurrentCompany(_companyId)
+            new FixedCurrentCompany(_companyId),
+            CompleteAccounting.Instance
         );
 
         var result = await handler.Handle(

@@ -100,6 +100,12 @@ public sealed class AccountingController : ControllerBase
     public async Task<IActionResult> GetAccountingPeriodById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetAccountingPeriodByIdQuery(id), ct));
 
+    // ACCOUNTING-CONTINUITY-06 — pre-cierre de solo lectura: mismo readiness que el cierre.
+    [HttpGet("accounting-periods/{id:guid}/closure-readiness")]
+    [Authorize(Policy = $"perm:{AccountingPermissions.View}")]
+    public async Task<IActionResult> GetAccountingPeriodClosureReadiness(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetAccountingPeriodClosureReadinessQuery(id), ct));
+
     [HttpPost("accounting-periods")]
     [Authorize(Policy = $"perm:{AccountingPermissions.Create}")]
     public async Task<IActionResult> CreateAccountingPeriod(

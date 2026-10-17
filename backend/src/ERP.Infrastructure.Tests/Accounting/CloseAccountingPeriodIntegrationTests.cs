@@ -1,5 +1,9 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.UseCases.AccountingPeriods;
+using ERP.Application.Modules.Accounting.UseCases.Reports;
+using ERP.Domain.Modules.InitialLoad.Entities;
+using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Company.Entities;
@@ -16,9 +20,9 @@ namespace ERP.Infrastructure.Tests.Accounting;
 
 /// <summary>
 /// Suite de integración (PostgreSQL 16 real vía Testcontainers) para el cierre real de período
-/// (Fase 5.5, ADR-026 §6.1/§9). Cubre lo que un mock no puede: que
-/// IJournalEntryRepository.GetClosureReadinessAsync resuelva correctamente las 3 precondiciones
-/// (EXISTS, sin materializar entidades) contra datos reales de journal_entries. Requiere Docker.
+/// (Fase 5.5, ADR-026 §6.1/§9; ACCOUNTING-CONTINUITY-06). Cubre lo que un mock no puede: que el
+/// readiness único (<see cref="AccountingCompletenessService"/>) resuelva sus precondiciones contra
+/// datos reales (asientos, obligaciones, apertura, orígenes). Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
 public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
@@ -170,6 +174,9 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
         return entry;
     }
 
+    private static AccountingCompletenessService Completeness(ErpDbContext db, Guid companyId) =>
+        ERP.Infrastructure.Tests.TestData.AccountingCompletenessTestSupport.Create(db, companyId);
+
     private static CloseAccountingPeriodHandler BuildHandler(
         ErpDbContext db,
         Guid tenantId,
@@ -178,8 +185,7 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
     ) =>
         new(
             new AccountingPeriodRepository(db),
-            new JournalEntryRepository(db),
-            new AccountingPostingRepository(db),
+            Completeness(db, companyId),
             new AccountingOperationalPolicyRepository(db),
             new ERP.Infrastructure.Persistence.UnitOfWork(db),
             new FixedCurrentTenant(tenantId),
@@ -287,7 +293,7 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Cierre_correcto_con_un_asiento_reversado_completo()
+    public async Task Cierre_correcto_con_un_original_y_su_reverso_completo()
     {
         var period = await SeedPeriodAsync();
         var original = await SeedPostedEntryAsync(period);
@@ -315,12 +321,275 @@ public sealed class CloseAccountingPeriodIntegrationTests : IAsyncLifetime
         result
             .IsSuccess.Should()
             .BeTrue(
-                because: "un asiento Reversed con su reverso Posted y numerado es un cierre completo"
+                because: "el original sigue Posted (inmutable) y su reverso quedó Posted y numerado: el cierre está completo"
             );
 
         await using var verifyDb = CreateContext();
         var loaded = await verifyDb.AccountingPeriods.FirstAsync(x => x.Id == period.Id);
         loaded.Status.Should().Be(PeriodStatus.Closed);
+    }
+
+    // ── ACCOUNTING-CONTINUITY-06 ──────────────────────────────────────────
+
+    private static ImportBatch CompletedStockBatch(Guid tenantId, Guid companyId, Guid user)
+    {
+        var batch = ImportBatch.Create(tenantId, companyId, ImportType.InitialStock, user);
+        batch.AttachFile("x.xlsx", "x.xlsx", 1, user);
+        batch.MarkUploaded(user);
+        batch.BeginValidating(user);
+        batch.CompleteValidation(1, 1, 0, 0, user);
+        batch.BeginConfirming(user);
+        batch.CompleteConfirmation(1, anyRowsFailed: false, user);
+        return batch;
+    }
+
+    /// <summary>Política Enabled adoptada antes del período de prueba (julio 2026).</summary>
+    private async Task SeedEnabledAdoptedBeforeAsync(ErpDbContext db)
+    {
+        var policy = AccountingOperationalPolicy.Create(_tenantId, _companyId, AccountingOperationalMode.Enabled,
+            new DateOnly(1900, 1, 1), "test", _createdBy);
+        db.AccountingOperationalPolicies.Add(policy);
+        db.Entry(policy).Property(x => x.CreatedAt).CurrentValue = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task C06_apertura_sujeta_con_ASI_ausente_y_lote_sin_asiento_bloquea_el_cierre_del_periodo_de_apertura()
+    {
+        var period = await SeedPeriodAsync();
+        await using (var seed = CreateContext())
+        {
+            await SeedEnabledAdoptedBeforeAsync(seed);
+            var company = await seed.Companies.FirstAsync(c => c.Id == _companyId);
+            company.SetOpeningBalanceDate(new DateOnly(2026, 7, 1), new OpeningBalanceDateConstraints(false, []), _createdBy);
+            await seed.SaveChangesAsync();
+        }
+
+        await using (var db = CreateContext())
+        {
+            var asiOnly = await Completeness(db, _companyId).EvaluateClosureAsync(_tenantId, _companyId, period, default);
+            asiOnly.Reasons.Should().BeEquivalentTo([new AccountingCompletenessReason(AccountingCompletenessCodes.OpeningAsiMissing, 1)]);
+        }
+
+        await using (var seed = CreateContext())
+        {
+            seed.ImportBatches.Add(CompletedStockBatch(_tenantId, _companyId, _createdBy));
+            await seed.SaveChangesAsync();
+        }
+
+        await using var closeDb = CreateContext();
+        var readiness = await Completeness(closeDb, _companyId).EvaluateClosureAsync(_tenantId, _companyId, period, default);
+        readiness.Reasons.Should().Contain(new AccountingCompletenessReason(AccountingCompletenessCodes.OpeningBatchesUnposted, 1));
+        var result = await BuildHandler(closeDb, _tenantId, _companyId, _createdBy)
+            .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("apertura contable");
+        await using var verifyDb = CreateContext();
+        (await verifyDb.AccountingPeriods.FirstAsync(x => x.Id == period.Id)).Status.Should().Be(PeriodStatus.Open);
+    }
+
+    [Fact]
+    public async Task C06_origen_sujeto_sin_obligacion_ni_asiento_bloquea_el_cierre_hasta_tener_identidad_contable()
+    {
+        var period = await SeedPeriodAsync();
+        Guid paymentId;
+        await using (var seed = CreateContext())
+        {
+            await SeedEnabledAdoptedBeforeAsync(seed);
+            var partner = ERP.Domain.MasterData.Entities.BusinessPartner.Create(
+                _tenantId, "04", "1790016919001", null, "Cliente C06", _createdBy);
+            seed.BusinessPartners.Add(partner);
+            await seed.SaveChangesAsync();
+            var payment = ERP.Domain.Modules.Finance.Entities.Payment.Create(_tenantId, _companyId,
+                ERP.Domain.Modules.Finance.Enums.PaymentDirection.Collection, partner.Id, 10m,
+                new DateOnly(2026, 7, 10), null, "C06", _createdBy);
+            seed.Payments.Add(payment);
+            seed.Entry(payment).Property(x => x.Status).CurrentValue = ERP.Domain.Modules.Finance.Enums.PaymentStatus.Applied;
+            await seed.SaveChangesAsync();
+            paymentId = payment.Id;
+        }
+
+        await using (var db = CreateContext())
+        {
+            var blocked = await BuildHandler(db, _tenantId, _companyId, _createdBy)
+                .HandleWithDomainRules(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+            blocked.IsSuccess.Should().BeFalse();
+            blocked.Error.Should().Contain("sin contabilización registrada");
+        }
+
+        await using (var seed = CreateContext())
+        {
+            var canceled = AccountingPosting.CreatePending(_tenantId, _companyId, "Finance", "CollectionApplied",
+                paymentId, null, new DateOnly(2026, 7, 10), new DateOnly(2026, 7, 10), 2, "{}", _createdBy, null);
+            canceled.Cancel(_createdBy);
+            seed.AccountingPostings.Add(canceled);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var closeDb = CreateContext();
+        var closed = await BuildHandler(closeDb, _tenantId, _companyId, _createdBy)
+            .Handle(new CloseAccountingPeriodCommand(period.Id), CancellationToken.None);
+        closed.IsSuccess.Should().BeTrue(closed.Error);
+    }
+
+    [Fact]
+    public async Task C06_reporte_con_obligacion_Failed_es_incompleto_y_completo_al_resolverla()
+    {
+        await SeedPeriodAsync();
+        var posting = AccountingPosting.CreatePending(_tenantId, _companyId, "Purchases", "InvoiceReceived",
+            Guid.NewGuid(), null, new DateOnly(2026, 7, 20), new DateOnly(2026, 7, 20), 2, "{}", _createdBy, null);
+        posting.RecordFailed("RULE_NOT_FOUND", "Sin regla", AccountingPostingAttemptTrigger.Initial,
+            _createdBy, null, null, DateTime.UtcNow, DateTime.UtcNow);
+        await using (var seed = CreateContext())
+        {
+            seed.AccountingPostings.Add(posting);
+            await seed.SaveChangesAsync();
+        }
+        var query = new GetTrialBalanceReportQuery(new DateOnly(2026, 7, 1), new DateOnly(2026, 7, 31));
+
+        async Task<AccountingCompleteness> TrialBalanceCompletenessAsync()
+        {
+            await using var db = CreateContext();
+            var result = await new GetTrialBalanceReportHandler(
+                new JournalEntryRepository(db), new AccountRepository(db), new FixedCurrentTenant(_tenantId),
+                new FixedCurrentCompany(_companyId), Completeness(db, _companyId)).Handle(query, default);
+            return result.Value!.Completeness;
+        }
+
+        var incomplete = await TrialBalanceCompletenessAsync();
+        incomplete.IsComplete.Should().BeFalse();
+        incomplete.AsOf.Should().Be(new DateOnly(2026, 7, 31));
+        incomplete.Reasons.Should().BeEquivalentTo([new AccountingCompletenessReason(AccountingCompletenessCodes.PostingsUnresolved, 1)]);
+
+        await using (var resolve = CreateContext())
+        {
+            var tracked = await resolve.AccountingPostings.FirstAsync(x => x.Id == posting.Id);
+            tracked.Cancel(_createdBy);
+            await resolve.SaveChangesAsync();
+        }
+
+        (await TrialBalanceCompletenessAsync()).IsComplete.Should().BeTrue();
+    }
+
+    // ── ACCOUNTING-CONTINUITY-06: cobertura completa de orígenes ─────────
+
+    public enum OriginKind { PurchaseReturn, Retention, SupplierCreditRefund }
+
+    /// <summary>
+    /// Siembra el origen en el estado que genera contabilidad, con fecha en julio 2026, sin obligación ni
+    /// asiento. Solo la conciliación se prueba aquí: las FKs a documentos relacionados (factura, sucursal,
+    /// proveedor, punto de emisión) se omiten en esta sesión con <c>session_replication_role = replica</c>.
+    /// </summary>
+    private async Task SeedOriginWithoutAccountingAsync(OriginKind kind)
+    {
+        await using var db = CreateContext();
+        await db.Database.OpenConnectionAsync();
+        await db.Database.ExecuteSqlRawAsync("SET session_replication_role = replica");
+        switch (kind)
+        {
+            case OriginKind.PurchaseReturn:
+                var purchaseReturn = ERP.Domain.Modules.Purchases.Entities.PurchaseReturn.CreateDraft(
+                    _tenantId, _companyId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "C06",
+                    [new(Guid.NewGuid(), Guid.NewGuid(), 1m, Guid.NewGuid())],
+                    _createdBy, Guid.NewGuid(), "hash");
+                db.PurchaseReturns.Add(purchaseReturn);
+                db.Entry(purchaseReturn).Property(x => x.Status).CurrentValue =
+                    ERP.Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized;
+                db.Entry(purchaseReturn).Property(x => x.AuthorizedAtUtc).CurrentValue =
+                    new DateTime(2026, 7, 10, 15, 0, 0, DateTimeKind.Utc);
+                break;
+            case OriginKind.Retention:
+                var retention = ERP.Domain.Modules.Retentions.Entities.RetentionDocument.Create(
+                    _tenantId, _companyId, Guid.NewGuid(),
+                    ERP.Domain.Modules.Retentions.Enums.RetentionSourceDocumentType.ExpenseDocument,
+                    Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _createdBy);
+                db.RetentionDocuments.Add(retention);
+                db.Entry(retention).Property(x => x.Status).CurrentValue =
+                    ERP.Domain.Modules.Retentions.Enums.RetentionStatus.Issued;
+                db.Entry(retention).Property(x => x.IssueDate).CurrentValue = new DateOnly(2026, 7, 12);
+                break;
+            case OriginKind.SupplierCreditRefund:
+                db.SupplierCreditRefundTransactions.Add(
+                    ERP.Domain.Modules.Finance.Entities.SupplierCreditRefundTransaction.CreateReceived(
+                        _tenantId, _companyId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null,
+                        Guid.NewGuid(), null, null, "CAJA", "Caja", "CashRegister", "01", 10m, "USD",
+                        new DateOnly(2026, 7, 14), _createdBy, Guid.NewGuid(), "hash"));
+                break;
+        }
+        await db.SaveChangesAsync();
+    }
+
+    [Theory]
+    [InlineData(OriginKind.PurchaseReturn)]
+    [InlineData(OriginKind.Retention)]
+    [InlineData(OriginKind.SupplierCreditRefund)]
+    public async Task C06_origen_forward_sin_obligacion_ni_asiento_es_ORIGINS_WITHOUT_ACCOUNTING(OriginKind kind)
+    {
+        var period = await SeedPeriodAsync();
+        await using (var seed = CreateContext())
+            await SeedEnabledAdoptedBeforeAsync(seed);
+        await SeedOriginWithoutAccountingAsync(kind);
+
+        await using var db = CreateContext();
+        var result = await Completeness(db, _companyId).EvaluateAsync(_tenantId, _companyId, period.StartDate, period.EndDate, default);
+
+        result.Reasons.Should().BeEquivalentTo([new AccountingCompletenessReason(AccountingCompletenessCodes.OriginsWithoutAccounting, 1)]);
+    }
+
+    [Fact]
+    public async Task C06_mismos_origenes_en_Disabled_o_antes_de_la_adopcion_no_bloquean()
+    {
+        var period = await SeedPeriodAsync();
+        await using (var seed = CreateContext())
+        {
+            // Ventana sujeta = 11/07 (adopción) .. 12/07; desde el 13/07, Disabled.
+            var enabled = AccountingOperationalPolicy.Create(_tenantId, _companyId, AccountingOperationalMode.Enabled,
+                new DateOnly(1900, 1, 1), "test", _createdBy);
+            enabled.EndBefore(new DateOnly(2026, 7, 13), _createdBy);
+            var disabled = AccountingOperationalPolicy.Create(_tenantId, _companyId, AccountingOperationalMode.Disabled,
+                new DateOnly(2026, 7, 13), "test", _createdBy);
+            seed.AccountingOperationalPolicies.AddRange(enabled, disabled);
+            seed.Entry(enabled).Property(x => x.CreatedAt).CurrentValue = new DateTime(2026, 7, 11, 12, 0, 0, DateTimeKind.Utc);
+            await seed.SaveChangesAsync();
+        }
+        await SeedOriginWithoutAccountingAsync(OriginKind.PurchaseReturn);
+        await SeedOriginWithoutAccountingAsync(OriginKind.SupplierCreditRefund);
+
+        await using var db = CreateContext();
+        var result = await Completeness(db, _companyId).EvaluateAsync(_tenantId, _companyId, period.StartDate, period.EndDate, default);
+
+        result.IsComplete.Should().BeTrue(
+            "la devolución (10/07) es anterior a la adopción y el reembolso (14/07) cae en Disabled");
+    }
+
+    [Fact]
+    public async Task C06_reader_interpreta_la_fecha_de_negocio_en_la_zona_horaria_de_la_empresa()
+    {
+        // Empresa en America/Guayaquil (UTC−5): 01/08 02:00 UTC es todavía 31/07 21:00 en la empresa.
+        await using (var db = CreateContext())
+        {
+            (await db.Companies.SingleAsync(c => c.Id == _companyId)).Timezone.Should().Be("America/Guayaquil");
+            await db.Database.OpenConnectionAsync();
+            await db.Database.ExecuteSqlRawAsync("SET session_replication_role = replica");
+            var purchaseReturn = ERP.Domain.Modules.Purchases.Entities.PurchaseReturn.CreateDraft(
+                _tenantId, _companyId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "C06",
+                [new(Guid.NewGuid(), Guid.NewGuid(), 1m, Guid.NewGuid())], _createdBy, Guid.NewGuid(), "hash");
+            db.PurchaseReturns.Add(purchaseReturn);
+            db.Entry(purchaseReturn).Property(x => x.Status).CurrentValue =
+                ERP.Domain.Modules.Purchases.Enums.PurchaseReturnStatus.Authorized;
+            db.Entry(purchaseReturn).Property(x => x.CreatedAt).CurrentValue =
+                new DateTime(2026, 8, 1, 2, 0, 0, DateTimeKind.Utc);
+            await db.SaveChangesAsync();
+        }
+
+        await using var readDb = CreateContext();
+        var reader = new AccountingRelevantFactsReader(readDb, new ERP.Infrastructure.Persistence.Services.CompanyClock(readDb));
+
+        (await reader.ExistsOnOrAfterAsync(_tenantId, _companyId, new DateOnly(2026, 8, 1), default))
+            .Should().BeFalse("el hecho ocurrió el 31/07 en la zona horaria de la empresa");
+        (await reader.ExistsOnOrAfterAsync(_tenantId, _companyId, new DateOnly(2026, 7, 31), default))
+            .Should().BeTrue();
     }
 
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant

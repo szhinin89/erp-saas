@@ -1,3 +1,5 @@
+using ERP.Application.Modules.Accounting.Continuity;
+
 namespace ERP.Application.Modules.Accounting.DTOs;
 
 /// <summary>
@@ -232,7 +234,8 @@ public sealed record GetGeneralJournalReportResponse(
     decimal TotalCredit,
     int PageNumber,
     int PageSize,
-    int TotalCount
+    int TotalCount,
+    AccountingCompleteness Completeness
 );
 
 /// <summary>Libro Mayor — un movimiento individual dentro del detalle de una cuenta, con saldo acumulado (Kardex).</summary>
@@ -264,7 +267,8 @@ public sealed record GeneralLedgerAccountDto(
 );
 
 public sealed record GetGeneralLedgerReportResponse(
-    IReadOnlyList<GeneralLedgerAccountDto> Accounts
+    IReadOnlyList<GeneralLedgerAccountDto> Accounts,
+    AccountingCompleteness Completeness
 );
 
 /// <summary>
@@ -293,7 +297,8 @@ public sealed record GetTrialBalanceReportResponse(
     decimal TotalPeriodCredit,
     decimal TotalClosingDebit,
     decimal TotalClosingCredit,
-    bool IsBalanced
+    bool IsBalanced,
+    AccountingCompleteness Completeness
 );
 
 // ── ACCOUNTING-FINANCIAL-STATEMENTS-10: Estado de Resultados / Balance General ─────────────
@@ -320,7 +325,8 @@ public sealed record GetIncomeStatementReportResponse(
     decimal GrossProfit,
     IReadOnlyList<FinancialStatementLineDto> ExpenseLines,
     decimal TotalExpense,
-    decimal NetProfit
+    decimal NetProfit,
+    AccountingCompleteness Completeness
 );
 
 /// <summary>
@@ -339,5 +345,6 @@ public sealed record GetBalanceSheetReportResponse(
     IReadOnlyList<FinancialStatementLineDto> EquityLines,
     decimal TotalEquity,
     decimal Difference,
-    bool IsBalanced
+    bool IsBalanced,
+    AccountingCompleteness Completeness
 );

@@ -298,7 +298,7 @@ public sealed class PostOpeningBalancePostgreSqlTests : IClassFixture<InitialLoa
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             (await db.AccountingPeriods.SingleAsync(p => p.CompanyId == _company))
-                .Close(_user, new JournalEntryClosureReadiness(false, false, false));
+                .Close(_user, JournalEntryClosureReadiness.Ready);
             await db.SaveChangesAsync();
         }
 

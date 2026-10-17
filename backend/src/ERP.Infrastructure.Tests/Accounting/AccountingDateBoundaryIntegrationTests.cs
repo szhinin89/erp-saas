@@ -121,7 +121,7 @@ public sealed class AccountingDateBoundaryIntegrationTests : IAsyncLifetime
                 _createdBy
             );
             if (closed)
-                period.Close(_createdBy, new JournalEntryClosureReadiness(false, false, false));
+                period.Close(_createdBy, JournalEntryClosureReadiness.Ready);
             db.AccountingPeriods.Add(period);
             ids[(year, month)] = period.Id;
         }

@@ -15,8 +15,8 @@ public sealed class InventoryCostLedger(ErpDbContext db) : IInventoryCostLedger
         await db.Set<SaleCostObligation>()
             .Where(o => o.TenantId == tenantId && o.CompanyId == companyId && o.PendingQuantity > 0m)
             .Join(db.Set<SalesInvoice>().Where(i => i.TenantId == tenantId && i.CompanyId == companyId),
-                o => o.InvoiceId, i => i.Id, (o, i) => i.IssueDate)
-            .Distinct().ToListAsync(ct);
+                o => o.InvoiceId, i => i.Id, (o, i) => new { i.Id, i.IssueDate })
+            .Distinct().Select(x => x.IssueDate).ToListAsync(ct);
 
     /// <summary>Serializa la valoración del costo de una factura; requiere la transacción del llamador.</summary>
     public async Task LockInvoiceAsync(Guid tenantId, Guid companyId, Guid invoiceId, CancellationToken ct)

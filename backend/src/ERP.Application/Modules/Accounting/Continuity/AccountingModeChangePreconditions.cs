@@ -1,9 +1,6 @@
-using ERP.Application.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
-using ERP.Domain.Modules.InitialLoad.Enums;
-using ERP.Domain.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.Continuity;
@@ -17,15 +14,9 @@ namespace ERP.Application.Modules.Accounting.Continuity;
 public sealed class AccountingModeChangePreconditions(
     IAccountingPostingRepository postings,
     IInventoryCostLedger costs,
-    IOpeningBalanceConstraintsReader openingBalance,
-    IImportBatchRepository batches,
-    IOpeningBalancePostingRepository openingPostings,
-    IOpeningJournalEntryPostingRepository openingJournal,
+    OpeningAccountingCompleteness opening,
     IAccountingRelevantFactsReader facts)
 {
-    private static readonly ImportType[] BalanceImportTypes =
-        [ImportType.InitialStock, ImportType.InitialReceivables, ImportType.InitialPayables];
-
     /// <summary>Motivo de rechazo, o null si la versión nueva es válida.</summary>
     public async Task<string?> CheckAsync(
         Guid tenantId,
@@ -80,28 +71,14 @@ public sealed class AccountingModeChangePreconditions(
     private static bool IsSubject(IReadOnlyList<AccountingOperationalPolicy> versions, DateOnly date) =>
         versions.FirstOrDefault(v => v.Covers(date))?.Mode == AccountingOperationalMode.Enabled;
 
+    // El ASI ausente no impide deshabilitar (la carga sigue abierta y su cierre lo exigirá); sí lo
+    // impiden los lotes sin asiento y un ASI vigente no publicado.
     private async Task<bool> HasUnresolvedOpeningAsync(
         Guid tenantId,
         Guid companyId,
         IReadOnlyList<AccountingOperationalPolicy> versions,
         CancellationToken ct
-    )
-    {
-        var openingDate = await openingBalance.GetOpeningBalanceDateAsync(ct);
-        if (openingDate is not { } date || !IsSubject(versions, date))
-            return false;
-        if (await openingBalance.GetInitialLoadClosureAsync(ct) is not null)
-            return false;
-
-        var posted = (await openingPostings.ListByCompanyAsync(tenantId, companyId, ct))
-            .Where(p => p.Status == OpeningBalancePostingStatus.Posted)
-            .Select(p => p.ImportBatchId)
-            .ToHashSet();
-        var completed = await batches.ListAsync(tenantId, companyId, BalanceImportTypes, [ImportStatus.Completed], ct);
-        if (completed.Any(b => !posted.Contains(b.Id)))
-            return true;
-
-        var asi = await openingJournal.FindCurrentAsync(tenantId, companyId, ct);
-        return asi is not null && asi.Status != OpeningBalancePostingStatus.Posted;
-    }
+    ) =>
+        await opening.EvaluateAsync(tenantId, companyId, versions, ct) is { } status
+        && (status.UnpostedBatches > 0 || status.AsiUnresolved);
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useState } from "react";
+import { ReportCompletenessNotice } from "./ReportCompletenessNotice";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
@@ -8,7 +9,7 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
-import { accountingApi, type TrialBalanceLineDto } from "../../api/accountingApi";
+import { accountingApi, type AccountingCompleteness, type TrialBalanceLineDto } from "../../api/accountingApi";
 import { firstDayOfMonthIso, todayIso } from "../../../../lib/formatters/dateFormatters";
 
 /**
@@ -23,6 +24,7 @@ export function TrialBalanceReportTab() {
   const [toDate, setToDate] = useState(todayIso());
   const [includeZeroMovementAccounts, setIncludeZeroMovementAccounts] = useState(false);
   const [lines, setLines] = useState<TrialBalanceLineDto[]>([]);
+  const [completeness, setCompleteness] = useState<AccountingCompleteness | null>(null);
   const [totals, setTotals] = useState({
     openingDebit: 0,
     openingCredit: 0,
@@ -44,6 +46,7 @@ export function TrialBalanceReportTab() {
         includeZeroMovementAccounts,
       });
       setLines(r.lines);
+      setCompleteness(r.completeness);
       setTotals({
         openingDebit: r.totalOpeningDebit,
         openingCredit: r.totalOpeningCredit,
@@ -104,6 +107,7 @@ export function TrialBalanceReportTab() {
           Buscar
         </ZHBtn>
       </ZHFilterBar>
+      <ReportCompletenessNotice completeness={completeness} />
 
       {!totals.isBalanced && (
         <ZHPageNotice

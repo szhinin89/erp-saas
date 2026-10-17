@@ -257,7 +257,7 @@ public sealed class OpeningBalancePostingPreflightTests
         await using (var db = Db())
         {
             var period = await db.AccountingPeriods.SingleAsync();
-            period.Close(_actor, new JournalEntryClosureReadiness(false, false, false));
+            period.Close(_actor, JournalEntryClosureReadiness.Ready);
             await db.SaveChangesAsync();
         }
 

@@ -347,11 +347,13 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
             new AccountingModeChangePreconditions(
                 new AccountingPostingRepository(db),
                 new ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryCostLedger(db),
-                new ERP.Infrastructure.InitialLoad.OpeningBalanceConstraintsReader(db, new TestCompany(companyId)),
-                new ERP.Infrastructure.Persistence.Repositories.InitialLoad.ImportBatchRepository(db),
-                new ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningBalancePostingRepository(db),
-                new ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningJournalEntryPostingRepository(db),
-                new AccountingRelevantFactsReader(db)
+                new OpeningAccountingCompleteness(
+                    new ERP.Infrastructure.InitialLoad.OpeningBalanceConstraintsReader(db, new TestCompany(companyId)),
+                    new ERP.Infrastructure.Persistence.Repositories.InitialLoad.ImportBatchRepository(db),
+                    new ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningBalancePostingRepository(db),
+                    new ERP.Infrastructure.Persistence.Repositories.InitialLoad.OpeningJournalEntryPostingRepository(db)
+                ),
+                new AccountingRelevantFactsReader(db, new ERP.Infrastructure.Persistence.Services.CompanyClock(db))
             ),
             new CompanyClock(db),
             new UnitOfWork(db),

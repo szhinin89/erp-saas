@@ -2,6 +2,7 @@ using ERP.Application.Audit;
 using ERP.Application.Common;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.Continuity;
@@ -26,14 +27,19 @@ public sealed record AccountingPostingRequest(
 /// <c>ErpDbContext.SaveChangesAsync</c>). Nunca invoca el Posting Engine: el intento ocurre después
 /// del commit (<see cref="AccountingPostingExecutor"/>). Fail-closed si la Company no eligió modo
 /// operativo: sin decisión no puede saberse si la obligación es exigible, así que la operación no
-/// se confirma (docs/architecture/accounting.md §4).
+/// se confirma (docs/architecture/accounting.md §4). ACCOUNTING-CONTINUITY-06: único gate para
+/// hechos sujetos cuya fecha contable cae en un período Closed/Locked — la operación se rechaza antes
+/// de crear una obligación imposible de resolver (no se mueve la fecha ni se reabre el período).
 /// </summary>
 public sealed class AccountingPostingRecorder
 {
+    public const string PeriodClosedCode = "ACCOUNTING_PERIOD_CLOSED";
+
     private readonly IAccountingOperationalPolicyRepository _policies;
     private readonly AccountingOperationalDecision _decision;
     private readonly IAccountingPostingRepository _postings;
     private readonly IJournalEntryRepository _journalEntries;
+    private readonly IAccountingPeriodRepository _periods;
     private readonly AccountingPostingDispatchQueue _queue;
     private readonly ICurrentUser _user;
     private readonly IAuditContext _audit;
@@ -43,6 +49,7 @@ public sealed class AccountingPostingRecorder
         AccountingOperationalDecision decision,
         IAccountingPostingRepository postings,
         IJournalEntryRepository journalEntries,
+        IAccountingPeriodRepository periods,
         AccountingPostingDispatchQueue queue,
         ICurrentUser user,
         IAuditContext audit
@@ -52,6 +59,7 @@ public sealed class AccountingPostingRecorder
         _decision = decision;
         _postings = postings;
         _journalEntries = journalEntries;
+        _periods = periods;
         _queue = queue;
         _user = user;
         _audit = audit;
@@ -73,6 +81,21 @@ public sealed class AccountingPostingRecorder
             throw new DomainRuleViolationException(AccountingOperationalDecision.NotConfiguredMessage);
         if (applicability == AccountingApplicability.NotApplicable)
             return;
+
+        // Bajo el lock compartido: el cierre (exclusivo) no puede cambiar el estado del período entre
+        // esta lectura y el commit del núcleo. Sin período para la fecha no se rechaza: queda Failed
+        // recuperable creando el período y reprocesando.
+        var period = await _periods.FindContainingDateAsync(
+            request.TenantId,
+            request.CompanyId,
+            request.EntryDate,
+            ct
+        );
+        if (period is { Status: not PeriodStatus.Open })
+            throw new DomainRuleViolationException(
+                $"La fecha contable {request.EntryDate:yyyy-MM-dd} pertenece al período {period.FiscalYear}-{period.PeriodNumber} "
+                    + $"en estado {period.Status}: la operación no puede registrarse con esa fecha ({PeriodClosedCode})."
+            );
 
         // Mismo advisory lock de idempotencia que el Posting Engine para esta identidad: dos
         // registros concurrentes del mismo hecho se serializan y el segundo ve la obligación ya

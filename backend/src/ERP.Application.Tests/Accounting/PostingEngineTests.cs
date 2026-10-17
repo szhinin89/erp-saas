@@ -41,7 +41,7 @@ public sealed class PostingEngineTests
             CreatedBy
         );
 
-    private static readonly JournalEntryClosureReadiness ReadyForClosure = new(false, false, false);
+    private static readonly JournalEntryClosureReadiness ReadyForClosure = JournalEntryClosureReadiness.Ready;
 
     private static AccountingPeriod ClosedPeriod()
     {

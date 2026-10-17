@@ -1,5 +1,3 @@
-using ERP.Domain.Modules.InitialLoad.Entities;
-using ERP.Domain.Modules.InitialLoad.Enums;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -135,59 +133,26 @@ public sealed class AccountingPostingRepository : IAccountingPostingRepository
             .ToListAsync(ct);
 
     /// <remarks>
-    /// ACCOUNTING-CONTINUITY-05 — incluye las obligaciones propias de la apertura (asiento de lote y
-    /// ASI vigente) Pending/Failed: solo existen cuando la fecha de apertura está sujeta a Accounting.
+    /// ACCOUNTING-CONTINUITY-06 — solo la obligación común. La apertura (lotes/ASI) se evalúa con su
+    /// modelo propio en el readiness único (<c>OpeningAccountingCompleteness</c>), que además detecta
+    /// lotes sin estado contable.
     /// </remarks>
-    public async Task<bool> HasUnresolvedInRangeAsync(
+    public Task<int> CountUnresolvedInRangeAsync(
         Guid tenantId,
         Guid companyId,
-        DateOnly from,
+        DateOnly? from,
         DateOnly to,
         CancellationToken ct = default
     )
     {
-        if (
-            await Scoped(tenantId, companyId)
-                .AnyAsync(
-                    x =>
-                        (
-                            x.Status == AccountingPostingStatus.Pending
-                            || x.Status == AccountingPostingStatus.Failed
-                        )
-                        && x.EntryDate >= from
-                        && x.EntryDate <= to,
-                    ct
-                )
-        )
-            return true;
-
-        if (
-            await _context
-                .Set<OpeningBalancePosting>()
-                .AnyAsync(
-                    x =>
-                        x.TenantId == tenantId
-                        && x.CompanyId == companyId
-                        && x.Status != OpeningBalancePostingStatus.Posted
-                        && x.EntryDate >= from
-                        && x.EntryDate <= to,
-                    ct
-                )
-        )
-            return true;
-
-        return await _context
-            .Set<OpeningJournalEntryPosting>()
-            .AnyAsync(
-                x =>
-                    x.TenantId == tenantId
-                    && x.CompanyId == companyId
-                    && x.IsCurrent
-                    && x.Status != OpeningBalancePostingStatus.Posted
-                    && x.EntryDate >= from
-                    && x.EntryDate <= to,
-                ct
+        var query = Scoped(tenantId, companyId)
+            .Where(x =>
+                (x.Status == AccountingPostingStatus.Pending || x.Status == AccountingPostingStatus.Failed)
+                && x.EntryDate <= to
             );
+        if (from is { } f)
+            query = query.Where(x => x.EntryDate >= f);
+        return query.CountAsync(ct);
     }
 
     public async Task<IReadOnlyList<AccountingPosting>> ListBySourceDocumentAsync(
