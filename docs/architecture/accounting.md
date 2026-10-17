@@ -549,7 +549,7 @@ flujo operativo invoca el motor. Se conservan las identidades contables existent
 | Hecho (SourceModule / FactType) | Identidad | Fecha | Datos persistidos |
 |---|---|---|---|
 | Sales / InvoiceIssued | Factura | IssueDate | Importes, IRBPNR, contado sin destino, saldo CxC, destino de cada cobro no-Crédito |
-| Sales / SalesReturn | Devolución | Fecha Company al autorizar | Importes, IRBPNR, factura de origen |
+| Sales / SalesReturn | Devolución | Fecha Company al autorizar | Importes, IRBPNR, factura de origen, reembolso en Caja (`CashApplied`, caja de la sesión del `SaleRefund` sustituye la cuenta Haber de Caja) y crédito CxC (`PendingBalance`) desde `RefundAllocations`. Regla: Debe 4.1.03.001 Devoluciones en ventas/IVA/ICE/IRBPNR; Haber Descuentos/Caja/CxC |
 | Payables / SupplierPaymentConfirmed | Pago | PaymentDate | Total, aplicado a CxP, remanente anticipo, caja/banco de cada medio |
 | Finance / CollectionApplied | Cobro | PaymentDate | Monto, caja o banco elegido (sustituye la cuenta Debe GrandTotal de la regla) |
 | Purchases / PurchaseReturn | Devolución | Fecha Company al autorizar | IVA/ICE/IRBPNR, CxP aplicada, saldo a favor, costo histórico, diferencia de costo Debe/Haber |

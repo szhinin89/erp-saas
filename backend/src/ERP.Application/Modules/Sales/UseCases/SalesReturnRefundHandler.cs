@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
@@ -35,6 +36,29 @@ public sealed class SalesReturnRefundHandler
     }
 
     /// <summary>
+    /// ACCOUNTING-10 — sesión de caja ABIERTA actual (quien procesa la devolución) contra la que se
+    /// reembolsa el efectivo; <c>null</c> sin asignaciones <c>Cash</c>. Se resuelve una sola vez
+    /// para que el <c>SaleRefund</c> y la caja contable del evento sean la misma. Nunca la sesión
+    /// (probablemente ya cerrada) que originó la venta — a diferencia de SaleIncome, que sí usa
+    /// SalesInvoice.CashSessionId porque ocurre en la misma transacción de la venta.
+    /// </summary>
+    public async Task<(CashSession? Session, string? Error)> ResolveRefundCashSessionAsync(
+        SalesReturn salesReturn,
+        Guid tenantId,
+        CancellationToken ct
+    )
+    {
+        if (salesReturn.RefundAllocations.All(a => a.Method != SalesReturnRefundMethod.Cash))
+            return (null, null);
+
+        if (!_cashSession.HasOpenSession)
+            return (null, "No existe una caja abierta para procesar el reembolso en efectivo. Abra una sesión de caja antes de autorizar la devolución.");
+
+        var session = await _cashRepo.GetByIdAsync(tenantId, _cashSession.CashSessionId!.Value, ct);
+        return session is null ? (null, "La sesión de caja abierta no fue encontrada.") : (session, null);
+    }
+
+    /// <summary>
     /// Ejecuta cada <see cref="SalesReturn.RefundAllocations"/> ya presente en el agregado (Fase 5
     /// los agrega antes de llamar <c>Authorize()</c>). Devuelve <c>null</c> en éxito, o un mensaje
     /// de error listo para <c>Result.ValidationFailure</c> ante el primer fallo — el llamador es
@@ -47,17 +71,27 @@ public sealed class SalesReturnRefundHandler
         CancellationToken ct
     )
     {
+        var (session, sessionError) = await ResolveRefundCashSessionAsync(salesReturn, tenantId, ct);
+        return sessionError ?? await ExecuteAsync(salesReturn, session, tenantId, userId, ct);
+    }
+
+    /// <summary>
+    /// Igual que <see cref="ExecuteAsync(SalesReturn, Guid, Guid, CancellationToken)"/> con la
+    /// sesión ya resuelta por <see cref="ResolveRefundCashSessionAsync"/>.
+    /// </summary>
+    public async Task<string?> ExecuteAsync(
+        SalesReturn salesReturn,
+        CashSession? refundSession,
+        Guid tenantId,
+        Guid userId,
+        CancellationToken ct
+    )
+    {
         foreach (var allocation in salesReturn.RefundAllocations)
         {
             var error = allocation.Method switch
             {
-                SalesReturnRefundMethod.Cash => await ExecuteCashAsync(
-                    salesReturn,
-                    allocation,
-                    tenantId,
-                    userId,
-                    ct
-                ),
+                SalesReturnRefundMethod.Cash => ExecuteCash(salesReturn, allocation, refundSession, userId),
                 SalesReturnRefundMethod.ReceivableCredit => await ExecuteReceivableCreditAsync(
                     salesReturn,
                     allocation,
@@ -75,24 +109,15 @@ public sealed class SalesReturnRefundHandler
         return null;
     }
 
-    private async Task<string?> ExecuteCashAsync(
+    private static string? ExecuteCash(
         SalesReturn salesReturn,
         SalesReturnRefundAllocation allocation,
-        Guid tenantId,
-        Guid userId,
-        CancellationToken ct
+        CashSession? session,
+        Guid userId
     )
     {
-        // Reembolsa contra la sesión de caja ABIERTA actual (quien procesa la devolución), nunca
-        // contra la sesión (probablemente ya cerrada) que originó la venta — a diferencia de
-        // SaleIncome, que sí usa SalesInvoice.CashSessionId porque ocurre en la misma transacción
-        // de la venta.
-        if (!_cashSession.HasOpenSession)
-            return "No existe una caja abierta para procesar el reembolso en efectivo. Abra una sesión de caja antes de autorizar la devolución.";
-
-        var session = await _cashRepo.GetByIdAsync(tenantId, _cashSession.CashSessionId!.Value, ct);
         if (session is null)
-            return "La sesión de caja abierta no fue encontrada.";
+            return "No existe una caja abierta para procesar el reembolso en efectivo. Abra una sesión de caja antes de autorizar la devolución.";
 
         session.RecordMovement(
             CashMovementType.SaleRefund,

@@ -1308,66 +1308,172 @@ public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixt
     // CONTABILIDAD
     // ══════════════════════════════════════════════════════════════════════
 
+    // ACCOUNTING-10 — el bootstrap oficial (SalesReturnFlowFixture.SeedAsync) siembra
+    // ("Sales","SalesReturn"): la devolución se contabiliza con el destino de RefundAllocations.
+
     [Fact]
-    public async Task Escenario17_Autorizar_sin_PostingRule_configurada_no_genera_JournalEntry_ni_falla()
+    public async Task Escenario17_Devolucion_en_efectivo_acredita_la_caja_contable_de_la_sesion_del_reembolso()
     {
-        // API-TESTS-POSTING-RULE-NOT-FOUND-01: el fixture ahora corre el bootstrap contable
-        // oficial (AccountingBootstrapStep, ver SalesReturnFlowFixture.SeedAsync) para que
-        // CreateAndAuthorizeInvoiceAsync pueda autorizar la factura precondición — eso siembra
-        // MinimalPostingRules completo, incluyendo ("Sales","CostOfGoodsSoldReversed") (usada por
-        // SalesReturnCogsReversalPostingTranslator, un hecho contable DISTINTO e independiente de
-        // la propia devolución). Pero deliberadamente NUNCA siembra
-        // (SourceModule="Sales", FactType="SalesReturn") — comportamiento tolerante documentado
-        // (mismo criterio que SalesInvoiceAuthorizedPostingTranslator / confirmado por
-        // SalesReturnAuthorizedPostingTranslatorTests.Posting_failure_genera_warning_y_no_lanza_excepcion):
-        // el translator solo loguea warning, la autorización de la devolución NO se revierte. Por
-        // eso la aserción de abajo filtra por SourceEventType (=FactType) "SalesReturn"
-        // específicamente, no por el conteo total de JournalEntry del draft — el reverso de COGS
-        // sí debe generar su propio asiento, eso es correcto y esperado.
         var userId = await _f.CreateUserWithBranchAccessAsync();
         _f.SetActiveContext(userId);
-        await OpenCashSessionAsync();
+        var sessionId = await OpenCashSessionAsync();
 
         var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
             quantity: 1m,
             unitPrice: 10m
         );
-        var createResponse = await CreateDraftAsync(
-            invoiceId,
-            "Sin regla de contabilización",
-            (lineId, 1m)
-        );
-        var draft = (
-            await createResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
-                JsonOptions
-            )
-        )!.Data!;
 
-        var authorizeResponse = await AuthorizeReturnAsync(draft.Id, ("Cash", draft.GrandTotal));
-        authorizeResponse
+        // La caja del reembolso apunta a una cuenta distinta de la línea fija de la regla
+        // (1.1.01.001): el asiento debe usar la cuenta de ESA caja.
+        using (var setupScope = _f.CreateDbScope())
+        {
+            var setupDb = setupScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var registerId = await setupDb
+                .CashSessions.IgnoreQueryFilters()
+                .Where(s => s.Id == sessionId)
+                .Select(s => s.CashRegisterId)
+                .SingleAsync();
+            var register = await setupDb
+                .CashRegisters.IgnoreQueryFilters()
+                .SingleAsync(r => r.Id == registerId);
+            register.SetAccountingAccount(await AccountIdAsync(setupDb, "1.1.01.002"), userId);
+            await setupDb.SaveChangesAsync();
+        }
+
+        var draft = await CreateReturnDraftAsync(invoiceId, lineId);
+        var cogsReversedBefore = await CogsReversedCountAsync();
+        (await AuthorizeReturnAsync(draft.Id, ("Cash", draft.GrandTotal)))
             .StatusCode.Should()
-            .Be(
-                HttpStatusCode.OK,
-                "la falta de PostingRule no debe revertir la autorización de la devolución"
-            );
-        var authorized = (
-            await authorizeResponse.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
-                JsonOptions
-            )
-        )!.Data!;
-        authorized.Status.Should().Be("Authorized");
+            .Be(HttpStatusCode.OK);
 
+        var lines = await SalesReturnEntryAsync(draft.Id);
+        lines.Should().ContainKey("4.1.03.001").WhoseValue.Debit.Should().Be(draft.Subtotal);
+        lines["2.1.02.001"].Debit.Should().Be(draft.TotalVat);
+        lines["1.1.01.002"].Credit.Should().Be(draft.GrandTotal);
+        lines.Should().NotContainKey("1.1.01.001");
+        lines.Should().NotContainKey("1.1.03.001");
+
+        // El costo revertido sigue siendo un hecho propio (CostOfGoodsSoldReversed), nunca
+        // mezclado en el asiento de la devolución.
+        lines.Should().NotContainKey("5.1.01.001");
+        lines.Should().NotContainKey("1.1.04.001");
+        (await CogsReversedCountAsync()).Should().Be(cogsReversedBefore + 1);
+    }
+
+    private async Task<int> CogsReversedCountAsync()
+    {
         using var scope = _f.CreateDbScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var salesReturnJournalCount = await db.JournalEntries.CountAsync(j =>
-            j.SourceEventId == draft.Id && j.SourceEventType == "SalesReturn"
-        );
-        salesReturnJournalCount
-            .Should()
-            .Be(
-                0,
-                "sin PostingRule seedeada para (Sales, SalesReturn), el posting engine responde RULE_NOT_FOUND y el translator solo loguea warning"
+        return await db
+            .JournalEntries.IgnoreQueryFilters()
+            .CountAsync(j =>
+                j.CompanyId == _f.CompanyId && j.SourceEventType == "CostOfGoodsSoldReversed"
             );
+    }
+
+    [Fact]
+    public async Task Escenario17b_Devolucion_a_credito_CxC_acredita_cuentas_por_cobrar()
+    {
+        var userId = await _f.CreateUserWithBranchAccessAsync();
+        _f.SetActiveContext(userId);
+        await OpenCashSessionAsync();
+
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 2m,
+            unitPrice: 50m,
+            paymentTermId: _f.CreditPaymentTermId
+        );
+        var draft = await CreateReturnDraftAsync(invoiceId, lineId);
+        (await AuthorizeReturnAsync(draft.Id, ("ReceivableCredit", draft.GrandTotal)))
+            .StatusCode.Should()
+            .Be(HttpStatusCode.OK);
+
+        var lines = await SalesReturnEntryAsync(draft.Id);
+        lines["4.1.03.001"].Debit.Should().Be(draft.Subtotal);
+        lines["1.1.03.001"].Credit.Should().Be(draft.GrandTotal);
+        lines.Keys.Should().NotContain(k => k.StartsWith("1.1.01."));
+    }
+
+    [Fact]
+    public async Task Escenario17c_Devolucion_mixta_acredita_caja_y_CxC_por_su_asignacion()
+    {
+        var userId = await _f.CreateUserWithBranchAccessAsync();
+        _f.SetActiveContext(userId);
+        await OpenCashSessionAsync();
+
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(
+            quantity: 2m,
+            unitPrice: 50m,
+            paymentTermId: _f.CreditPaymentTermId
+        );
+        var draft = await CreateReturnDraftAsync(invoiceId, lineId);
+        const decimal cash = 20m;
+        (
+            await AuthorizeReturnAsync(
+                draft.Id,
+                ("Cash", cash),
+                ("ReceivableCredit", draft.GrandTotal - cash)
+            )
+        )
+            .StatusCode.Should()
+            .Be(HttpStatusCode.OK);
+
+        var lines = await SalesReturnEntryAsync(draft.Id);
+        lines["4.1.03.001"].Debit.Should().Be(draft.Subtotal);
+        lines["1.1.01.001"].Credit.Should().Be(cash);
+        lines["1.1.03.001"].Credit.Should().Be(draft.GrandTotal - cash);
+    }
+
+    private async Task<SalesReturnResponseDto> CreateReturnDraftAsync(Guid invoiceId, Guid lineId)
+    {
+        var response = await CreateDraftAsync(invoiceId, "Devolución contable", (lineId, 1m));
+        response
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+        return (
+            await response.Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(
+                JsonOptions
+            )
+        )!.Data!;
+    }
+
+    private async Task<Guid> AccountIdAsync(ErpDbContext db, string code) =>
+        await db
+            .Accounts.IgnoreQueryFilters()
+            .Where(a =>
+                a.TenantId == _f.TenantId
+                && a.CompanyId == _f.CompanyId
+                && a.Code == ERP.Domain.Modules.Accounting.ValueObjects.AccountCode.Create(code)
+            )
+            .Select(a => a.Id)
+            .SingleAsync();
+
+    /// <summary>
+    /// Asiento Posted de Sales/SalesReturn por código de cuenta; exige partida doble cuadrada.
+    /// </summary>
+    private async Task<
+        Dictionary<string, (decimal Debit, decimal Credit)>
+    > SalesReturnEntryAsync(Guid returnId)
+    {
+        using var scope = _f.CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var entry = await db
+            .JournalEntries.IgnoreQueryFilters()
+            .Include(j => j.Lines)
+            .SingleAsync(j => j.SourceEventId == returnId && j.SourceEventType == "SalesReturn");
+        entry
+            .Status.Should()
+            .Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
+        entry.Lines.Sum(l => l.Debit).Should().Be(entry.Lines.Sum(l => l.Credit));
+
+        var accountIds = entry.Lines.Select(l => l.AccountId).ToList();
+        var codes = await db
+            .Accounts.IgnoreQueryFilters()
+            .Where(a => accountIds.Contains(a.Id))
+            .ToDictionaryAsync(a => a.Id, a => a.Code.Value);
+        return entry
+            .Lines.GroupBy(l => codes[l.AccountId])
+            .ToDictionary(g => g.Key, g => (g.Sum(l => l.Debit), g.Sum(l => l.Credit)));
     }
 
     // ══════════════════════════════════════════════════════════════════════

@@ -1,5 +1,21 @@
 # Project Status
 
+## ACCOUNTING-10 (2026-10-17)
+
+Contabilización de `SalesReturn`. BUG REAL: no se sembraba la regla `Sales/SalesReturn`, por lo que
+toda devolución terminaba `Failed RULE_NOT_FOUND`. Ahora se siembra la cuenta `4.1.03.001 Devoluciones en ventas` y
+la regla espejo de `InvoiceIssued` (Debe Devoluciones/IVA/ICE/IRBPNR; Haber Descuentos/Caja/CxC).
+`RefundAllocations` (SSOT) viaja en el evento como `CashRefunded`/`ReceivableCredited`;
+la cuenta de Caja se toma de la caja de la sesión que registró el `SaleRefund` (destino `CashRegister` con
+override por identidad, resolver común). `CostOfGoodsSoldReversed`, reversos y continuidad no se modifican.
+Sin backfill, porque estamos en preproducción.
+Cierre de cuadre: `SalesReturn.Authorize()` exige ahora Σ `RefundAllocations` = GrandTotal exacto a 2 decimales,
+sin `SettlementToleranceAmount` (antes una devolución válida podía quedar `Failed` por descuadre). El schema
+del modal de autorización del frontend aplica la misma igualdad. Domain 2/2 y schema frontend 14/14 PASS.
+PASS 4/4 tests focales: E2E Cash (caja 1.1.01.002 y COGS independiente), CxC y mixto, todos balanceados;
+reglas del bootstrap. Sin suites, staging, commit ni push.
+Contrato: [Accounting](docs/architecture/accounting.md) (tabla de hechos).
+
 ## ACCOUNTING-08 (2026-10-17)
 
 Implementación de asientos manuales sobre JournalEntry existente: Draft editable con versión,

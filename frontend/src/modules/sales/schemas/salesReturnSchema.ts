@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { formatMoney } from "../../../lib/sanitizers";
+import { formatMoney, roundToDecimals } from "../../../lib/sanitizers";
 
 // ── Draft (crear/editar) ────────────────────────────────────────────────
 // Espejo de CreateSalesReturnDraftValidator/UpdateSalesReturnDraftValidator
@@ -45,8 +45,12 @@ export const refundAllocationSchema = z.object({
 
 export type RefundAllocationFormValues = z.infer<typeof refundAllocationSchema>;
 
+// ACCOUNTING-10 — igualdad EXACTA a precisión monetaria, sin tolerancia: espejo de
+// SalesReturn.Authorize() (FiscalPrecision.TaxAmount = 2, MidpointRounding.AwayFromZero).
+const REFUND_SETTLEMENT_DECIMALS = 2;
+
 // ZH-DESIGN-SYSTEM-PRECISION-04G — `moneyDecimals` solo decide la REPRESENTACIÓN de los montos del
-// mensaje (caller: usePrecisionDecimals("money")); la tolerancia de la regla no cambia.
+// mensaje (caller: usePrecisionDecimals("money")); la comparación de la regla no depende de ella.
 export function buildAuthorizeSalesReturnSchema(grandTotal: number, moneyDecimals: number) {
   return z
     .object({
@@ -56,7 +60,10 @@ export function buildAuthorizeSalesReturnSchema(grandTotal: number, moneyDecimal
     })
     .superRefine((data, ctx) => {
       const sum = data.refundAllocations.reduce((acc, a) => acc + (a.amount || 0), 0);
-      if (Math.abs(sum - grandTotal) > 0.01) {
+      if (
+        roundToDecimals(sum, REFUND_SETTLEMENT_DECIMALS) !==
+        roundToDecimals(grandTotal, REFUND_SETTLEMENT_DECIMALS)
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["refundAllocations"],

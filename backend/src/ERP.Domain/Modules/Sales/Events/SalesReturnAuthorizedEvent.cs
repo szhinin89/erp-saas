@@ -30,6 +30,19 @@ public sealed class SalesReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
     /// <summary>TAX-LINE-SSOT-ICE-IRBPNR-01 Fase 5E — ya resuelto por el dominio de <c>SalesReturn</c> (<c>SalesReturn.TotalIrbpnr</c>), Accounting lo consume tal cual, nunca lo recalcula (mismo criterio que <see cref="TotalVat"/>/<see cref="TotalIce"/>).</summary>
     public decimal TotalIrbpnr { get; }
 
+    /// <summary>
+    /// ACCOUNTING-10 — destino del reembolso, ya resuelto por el agregado desde
+    /// <c>RefundAllocations</c> (SSOT): Σ asignaciones <c>Cash</c> y Σ <c>ReceivableCredit</c>.
+    /// </summary>
+    public decimal CashRefunded { get; }
+    public decimal ReceivableCredited { get; }
+
+    /// <summary>
+    /// ACCOUNTING-10 — caja de la sesión donde se registró el <c>SaleRefund</c>; <c>null</c> sin
+    /// reembolso en efectivo. Su cuenta contable la resuelve Accounting en cada intento.
+    /// </summary>
+    public Guid? RefundCashRegisterId { get; }
+
     public string Reason { get; }
 
     Guid IAuditEvent.EntityId => SalesReturnId;
@@ -49,7 +62,10 @@ public sealed class SalesReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
         decimal totalIce,
         decimal totalDiscount,
         string reason,
-        decimal totalIrbpnr = 0m
+        decimal totalIrbpnr = 0m,
+        decimal cashRefunded = 0m,
+        decimal receivableCredited = 0m,
+        Guid? refundCashRegisterId = null
     )
     {
         SalesReturnId = salesReturnId;
@@ -65,5 +81,8 @@ public sealed class SalesReturnAuthorizedEvent : BaseDomainEvent, IAuditEvent
         TotalDiscount = totalDiscount;
         Reason = reason;
         TotalIrbpnr = totalIrbpnr;
+        CashRefunded = cashRefunded;
+        ReceivableCredited = receivableCredited;
+        RefundCashRegisterId = refundCashRegisterId;
     }
 }

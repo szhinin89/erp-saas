@@ -189,7 +189,7 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
         document.AddLine(detail, _actor);
         document.AddRefundAllocation(SalesReturnRefundAllocation.Create(document.Id, _tenantId,
             ERP.Domain.Modules.Sales.Enums.SalesReturnRefundMethod.Cash, document.GrandTotal), _actor);
-        document.Authorize(_actor, 0.01m);
+        document.Authorize(_actor);
         await using (var seed = Context(_companyA)) { seed.SalesReturns.Add(document); await seed.SaveChangesAsync(); }
         return await Move(item, quantity, type: StockMovementType.SaleReturn, document: document.Id,
             line: detail.Id, sourceType: "SalesReturn");

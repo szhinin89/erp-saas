@@ -256,7 +256,6 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId),
                 Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-                PrecisionPolicyTestDouble.Mock(),
                 Mock.Of<ICompanyClock>(c =>
                     c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
                     == Task.FromResult(new DateOnly(2026, 9, 17))

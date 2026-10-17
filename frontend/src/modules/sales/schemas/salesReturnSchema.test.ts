@@ -75,6 +75,19 @@ describe("buildAuthorizeSalesReturnSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rechaza una diferencia de 0.01 y acepta la suma exacta con decimales (ACCOUNTING-10)", () => {
+    const schema = buildAuthorizeSalesReturnSchema(4, 2);
+    expect(schema.safeParse({ refundAllocations: [{ method: "Cash", amount: 3.99 }] }).success).toBe(false);
+    expect(
+      schema.safeParse({
+        refundAllocations: [
+          { method: "Cash", amount: 3.99 },
+          { method: "ReceivableCredit", amount: 0.01 },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+
   it("rechaza sin ninguna asignación", () => {
     const schema = buildAuthorizeSalesReturnSchema(23, 2);
     const result = schema.safeParse({ refundAllocations: [] });
@@ -99,7 +112,7 @@ describe("buildAuthorizeSalesReturnSchema", () => {
 });
 
 // ZH-DESIGN-SYSTEM-PRECISION-04G — los montos del mensaje usan la escala money recibida; la regla
-// (tolerancia 0.01) no cambia.
+// (igualdad exacta a 2 decimales) no cambia.
 describe("buildAuthorizeSalesReturnSchema — representación del mensaje (04G)", () => {
   function message(decimals: number) {
     const r = buildAuthorizeSalesReturnSchema(23, decimals).safeParse({

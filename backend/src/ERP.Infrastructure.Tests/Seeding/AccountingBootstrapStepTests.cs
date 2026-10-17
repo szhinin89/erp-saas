@@ -62,8 +62,10 @@ public sealed class AccountingBootstrapStepTests
     /// ACCOUNTING-CONTINUITY-04: pasa de 20 a 17 — "PurchaseReturnCancelled",
     /// "SupplierCreditApplicationReversed" y "SupplierCreditRefundReversed" dejan de sembrarse (sus
     /// reversas espejan el asiento histórico, sin PostingRule).
+    ///
+    /// ACCOUNTING-10: pasa de 17 a 18 — se siembra "Sales"/"SalesReturn".
     /// </summary>
-    private const int ExpectedPostingRulesCount = 17;
+    private const int ExpectedPostingRulesCount = 18;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -405,6 +407,7 @@ public sealed class AccountingBootstrapStepTests
                 new[]
                 {
                     ("Sales", "InvoiceIssued"),
+                    ("Sales", "SalesReturn"),
                     ("Sales", "CostOfGoodsSold"),
                     ("Sales", "CostOfGoodsSoldReversed"),
                     ("Purchases", "InvoiceReceived"),

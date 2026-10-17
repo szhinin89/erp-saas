@@ -135,7 +135,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
     // (3.1.01/3.1.02/3.1.03/4.2.01/5.1.01/6.1.01/6.2.01/6.3.01/6.4.01/6.5.01), todas
     // AllowsPosting=false y ninguna referenciada por MinimalPostingRules.
     // IL-7A: 105 -> 107 — agrega 3.1.04/3.1.04.001 "Saldos de apertura".
-    public const int RetailChartAccountCount = 107;
+    // ACCOUNTING-10: 107 -> 109 — agrega 4.1.03/4.1.03.001 "Devoluciones en ventas".
+    public const int RetailChartAccountCount = 109;
 
     private static readonly IReadOnlyList<RetailAccount> RetailChart =
     [
@@ -522,6 +523,23 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             AccountNature.Credit,
             true
         ),
+        // ACCOUNTING-10 — contra-ingreso de Sales/SalesReturn (mismo patrón que 4.1.02).
+        new(
+            "4.1.03",
+            "Devoluciones en ventas",
+            "4.1",
+            AccountType.Income,
+            AccountNature.Credit,
+            false
+        ),
+        new(
+            "4.1.03.001",
+            "Devoluciones en ventas",
+            "4.1.03",
+            AccountType.Income,
+            AccountNature.Credit,
+            true
+        ),
         new("4.2", "Otros ingresos", "4", AccountType.Income, AccountNature.Credit, false),
         new(
             "4.2.01",
@@ -883,6 +901,23 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("2.1.02.001", AccountNature.Credit, PostingAmountKind.TaxVat),
                 new("2.1.03.001", AccountNature.Credit, PostingAmountKind.TaxIce),
                 new("2.1.03.002", AccountNature.Credit, PostingAmountKind.TaxIrbpnr),
+            ]
+        ),
+        // ACCOUNTING-10 — espejo de InvoiceIssued. Destino del reembolso desde RefundAllocations:
+        // Caja (CashApplied; la cuenta la sustituye la caja de la sesión del SaleRefund) y crédito
+        // CxC (PendingBalance); la línea en 0 se omite. El COGS revertido es otro hecho
+        // (CostOfGoodsSoldReversed).
+        new(
+            "Sales",
+            "SalesReturn",
+            [
+                new("4.1.03.001", AccountNature.Debit, PostingAmountKind.Subtotal),
+                new("2.1.02.001", AccountNature.Debit, PostingAmountKind.TaxVat),
+                new("2.1.03.001", AccountNature.Debit, PostingAmountKind.TaxIce),
+                new("2.1.03.002", AccountNature.Debit, PostingAmountKind.TaxIrbpnr),
+                new("4.1.02.001", AccountNature.Credit, PostingAmountKind.Discount),
+                new("1.1.01.001", AccountNature.Credit, PostingAmountKind.CashApplied),
+                new("1.1.03.001", AccountNature.Credit, PostingAmountKind.PendingBalance),
             ]
         ),
         new(

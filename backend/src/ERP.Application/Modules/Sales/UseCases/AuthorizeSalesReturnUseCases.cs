@@ -85,7 +85,6 @@ public sealed class AuthorizeSalesReturnHandler
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
     private readonly ILogger<AuthorizeSalesReturnHandler> _logger;
-    private readonly ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider _precisionPolicyProvider;
     private readonly ICompanyClock _companyClock;
 
     public AuthorizeSalesReturnHandler(
@@ -103,7 +102,6 @@ public sealed class AuthorizeSalesReturnHandler
         ICurrentBranch b,
         ICurrentUser u,
         ILogger<AuthorizeSalesReturnHandler> logger,
-        ERP.Application.Modules.Companies.ICompanyPrecisionPolicyProvider precisionPolicyProvider,
         ICompanyClock companyClock
     )
     {
@@ -121,7 +119,6 @@ public sealed class AuthorizeSalesReturnHandler
         _b = b;
         _u = u;
         _logger = logger;
-        _precisionPolicyProvider = precisionPolicyProvider;
         _companyClock = companyClock;
     }
 
@@ -223,10 +220,18 @@ public sealed class AuthorizeSalesReturnHandler
                 );
             }
 
-            // COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre reembolso-vs-total resuelta
-            // desde CompanyPrecisionPolicy de la empresa activa.
-            var precision = await _precisionPolicyProvider.GetEffectiveAsync(ct);
-            salesReturn.Authorize(uid, precision.SettlementToleranceAmount);
+            // ACCOUNTING-10 — la sesión del reembolso en efectivo se resuelve una sola vez: la misma
+            // registra el SaleRefund (paso 7) y define la caja contable del evento.
+            var (refundSession, refundSessionError) =
+                await _refundHandler.ResolveRefundCashSessionAsync(salesReturn, tid, ct);
+            if (refundSessionError is not null)
+            {
+                await _uow.RollbackAsync(ct);
+                return Result<SalesReturnDto>.ValidationFailure(refundSessionError);
+            }
+
+            // Σ RefundAllocations == GrandTotal exacto, sin tolerancia de liquidación (dominio).
+            salesReturn.Authorize(uid, refundSession?.CashRegisterId);
 
             // 6. Reversión de inventario (Kardex) — documento origen es la propia devolución,
             // nunca la factura (una factura puede tener múltiples devoluciones parciales en el
@@ -260,7 +265,13 @@ public sealed class AuthorizeSalesReturnHandler
             // 7. Ejecutar el reembolso (Fase 6) — completamente síncrono, dentro de la misma
             // transacción: si falla Caja o CxC, toda la autorización se revierte. Nunca un
             // INotificationHandler/evento asíncrono (decisión de arquitectura de esta fase).
-            var refundError = await _refundHandler.ExecuteAsync(salesReturn, tid, uid, ct);
+            var refundError = await _refundHandler.ExecuteAsync(
+                salesReturn,
+                refundSession,
+                tid,
+                uid,
+                ct
+            );
             if (refundError is not null)
             {
                 await _uow.RollbackAsync(ct);

@@ -2,7 +2,6 @@ using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Events;
-using ERP.Domain.Modules.Sales.Policies;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
@@ -174,12 +173,12 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
 
     // ── Authorize (final — immutable after this) ─────────────────────────
     /// <param name="updatedBy"></param>
-    /// <param name="settlementTolerance">
-    /// COMPANY-PRECISION-POLICY-SSOT-01: tolerancia de cuadre reembolso-vs-total resuelta por
-    /// Application desde CompanyPrecisionPolicy.SettlementToleranceAmount de la empresa del
-    /// documento. Si no se provee, cae al default histórico <see cref="SalesSettlementPolicy.Tolerance"/>.
+    /// <param name="refundCashRegisterId">
+    /// ACCOUNTING-10: caja de la sesión que ejecuta el reembolso en efectivo (resuelta por
+    /// Application, la misma donde se registra el <c>SaleRefund</c>); viaja en el evento para que
+    /// Accounting acredite la cuenta de esa caja.
     /// </param>
-    public void Authorize(Guid updatedBy, decimal? settlementTolerance = null)
+    public void Authorize(Guid updatedBy, Guid? refundCashRegisterId = null)
     {
         EnsureDraft();
         if (_lines.Count == 0)
@@ -205,18 +204,35 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
                 "No puedes autorizar esta devolución porque su total es $0 o negativo. Revisa las cantidades de las líneas antes de autorizar."
             );
 
-        // SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6B) — misma tolerancia única de
-        // SalesSettlementPolicy usada en SalesInvoice.Authorize(), en vez de un umbral 0.01m propio.
-        var allocationSum = _refundAllocations.Sum(a => a.Amount);
-        var effectiveTolerance = settlementTolerance ?? SalesSettlementPolicy.Tolerance;
-        if (Math.Abs(allocationSum - AuthorizedGrandTotal.Value) > effectiveTolerance)
+        // ACCOUNTING-10 — igualdad exacta a precisión monetaria (2 decimales), sin tolerancia de
+        // liquidación: cada asignación mueve dinero/crédito real (Caja/CxC) y el asiento de la
+        // devolución (Caja + CxC = GrandTotal) debe cuadrar sin diferencia.
+        var allocationSum = Math.Round(
+            _refundAllocations.Sum(a => a.Amount),
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
+        var grandTotal = Math.Round(
+            AuthorizedGrandTotal.Value,
+            FiscalPrecision.TaxAmount,
+            MidpointRounding.AwayFromZero
+        );
+        if (allocationSum != grandTotal)
             throw new DomainRuleViolationException(
-                $"El total de las asignaciones de reembolso (${allocationSum:F2}) no coincide con el total devuelto (${AuthorizedGrandTotal.Value:F2}). "
-                    + "Ajusta las asignaciones de reembolso hasta que coincidan con el total."
+                $"El total de las asignaciones de reembolso (${allocationSum:F2}) no coincide con el total devuelto (${grandTotal:F2}). "
+                    + "Ajusta las asignaciones de reembolso hasta que sumen exactamente el total."
             );
 
         Status = SalesReturnStatus.Authorized;
         SetUpdated(updatedBy);
+
+        // ACCOUNTING-10 — RefundAllocations es la SSOT del destino del reembolso.
+        var cashRefunded = _refundAllocations
+            .Where(a => a.Method == SalesReturnRefundMethod.Cash)
+            .Sum(a => a.Amount);
+        var receivableCredited = _refundAllocations
+            .Where(a => a.Method == SalesReturnRefundMethod.ReceivableCredit)
+            .Sum(a => a.Amount);
 
         RaiseDomainEvent(
             new SalesReturnAuthorizedEvent(
@@ -232,7 +248,10 @@ public sealed class SalesReturn : AuditableEntity, ITenantScopedEntity, ICompany
                 AuthorizedTotalIce!.Value,
                 AuthorizedTotalDiscount!.Value,
                 Reason,
-                AuthorizedTotalIrbpnr!.Value
+                AuthorizedTotalIrbpnr!.Value,
+                cashRefunded,
+                receivableCredited,
+                cashRefunded > 0m ? refundCashRegisterId : null
             )
         );
     }

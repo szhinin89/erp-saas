@@ -318,7 +318,6 @@ public sealed class AuthorizeSalesReturnHandlerTests
             BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-            PrecisionPolicyTestDouble.Mock(),
             CompanyClockCtx()
         );
 
@@ -721,7 +720,6 @@ public sealed class AuthorizeSalesReturnHandlerTests
             BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-            PrecisionPolicyTestDouble.Mock(),
             CompanyClockCtx()
         );
 
@@ -1125,7 +1123,6 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 new FixedCurrentBranch(_branchId),
                 new FixedCurrentUser(_createdBy),
                 Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-                PrecisionPolicyTestDouble.Mock(),
                 CompanyClockCtx()
             );
 

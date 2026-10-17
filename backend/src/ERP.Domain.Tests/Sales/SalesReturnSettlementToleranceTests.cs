@@ -6,10 +6,9 @@ using FluentAssertions;
 namespace ERP.Domain.Tests.Sales;
 
 /// <summary>
-/// SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01 (Fase 6B) — <see cref="SalesReturn.Authorize"/> tenía
-/// un segundo guard duplicado (allocationSum vs AuthorizedGrandTotal) con un umbral propio de
-/// 0.01m, independiente del usado por <see cref="SalesInvoice.Authorize"/> — unificado en
-/// <c>SalesSettlementPolicy.Tolerance</c> (0.02m) como única fuente de verdad.
+/// ACCOUNTING-10 — <see cref="SalesReturn.Authorize"/> NO usa tolerancia de liquidación: cada
+/// asignación mueve dinero/crédito real (Caja/CxC) y el asiento exige Caja + CxC = GrandTotal, así
+/// que Σ RefundAllocations debe igualar exactamente el total a 2 decimales.
 /// </summary>
 public sealed class SalesReturnSettlementToleranceTests
 {
@@ -57,9 +56,9 @@ public sealed class SalesReturnSettlementToleranceTests
     }
 
     [Fact]
-    public void Authorize_asignacion_dentro_de_tolerancia_0_02_se_autoriza()
+    public void Authorize_asignacion_exacta_al_total_se_autoriza()
     {
-        var ret = CreateDraftWithTotal(unitPrice: 4.00m, allocationAmount: 3.99m);
+        var ret = CreateDraftWithTotal(unitPrice: 4.00m, allocationAmount: 4.00m);
 
         ret.Authorize(UserId);
 
@@ -67,13 +66,13 @@ public sealed class SalesReturnSettlementToleranceTests
     }
 
     [Fact]
-    public void Authorize_asignacion_fuera_de_tolerancia_0_02_lanza()
+    public void Authorize_diferencia_de_0_01_se_rechaza()
     {
-        var ret = CreateDraftWithTotal(unitPrice: 4.00m, allocationAmount: 3.97m);
+        var ret = CreateDraftWithTotal(unitPrice: 4.00m, allocationAmount: 3.99m);
 
         var act = () => ret.Authorize(UserId);
 
-        act.Should().Throw<DomainRuleViolationException>();
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*sumen exactamente el total*");
         ret.Status.Should().Be(SalesReturnStatus.Draft);
     }
 }
