@@ -208,5 +208,5 @@ internal static class CajaMapper
         );
 
     public static CashMovementReasonDto ToDto(CashMovementReason r) =>
-        new(r.Id, r.Code, r.Name, r.MovementType.ToString(), r.IsActive, r.SortOrder);
+        new(r.Id, r.Code, r.Name, r.MovementType.ToString(), r.IsActive, r.SortOrder, r.AccountingAccountId);
 }

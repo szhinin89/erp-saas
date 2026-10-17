@@ -12,6 +12,10 @@ import {
   type CashMovementReasonAdminFormValues,
 } from "../schemas/cashMovementReasonAdminSchema";
 import { cajaService, type CashMovementReasonDto } from "../api/cajaService";
+import {
+  accountLookupFacade,
+  type AccountDto,
+} from "../../accounting/facades/accountLookupFacade";
 
 /**
  * TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03 — catálogo administrable de motivos de movimiento
@@ -38,6 +42,15 @@ export function useCashMovementReasonsAdminPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [toggling, setToggling] = useState(false);
+  const [accounts, setAccounts] = useState<AccountDto[]>([]);
+
+  // ACCOUNTING-12C — cuentas imputables para la contrapartida contable del motivo.
+  useEffect(() => {
+    accountLookupFacade
+      .listAccounts()
+      .then((rows) => setAccounts(rows.filter((a) => a.isActive && a.allowsPosting)))
+      .catch(() => setAccounts([]));
+  }, []);
 
   const form = useForm<CashMovementReasonAdminFormValues>({
     resolver: zodResolver(cashMovementReasonAdminSchema),
@@ -93,6 +106,7 @@ export function useCashMovementReasonsAdminPage() {
         name: row.name,
         movementType: row.movementType,
         sortOrder: row.sortOrder,
+        accountingAccountId: row.accountingAccountId ?? "",
       });
       setPanelOpen(true);
     },
@@ -104,6 +118,17 @@ export function useCashMovementReasonsAdminPage() {
     setEditingId(null);
     setSaveError("");
   }, []);
+
+  // ACCOUNTING-12C — la cuenta es configuración del motivo en la empresa activa (endpoint propio):
+  // solo se envía si cambió; una cuenta configurada se reemplaza, no se quita.
+  const saveAccount = useCallback(
+    async (reasonId: string, accountingAccountId: string) => {
+      const current = items.find((x) => x.id === reasonId)?.accountingAccountId ?? "";
+      if (!accountingAccountId || accountingAccountId === current) return;
+      await cajaService.setCashMovementReasonAccount(reasonId, accountingAccountId);
+    },
+    [items],
+  );
 
   const save = form.handleSubmit(async (values) => {
     setSaveError("");
@@ -118,6 +143,7 @@ export function useCashMovementReasonsAdminPage() {
           name: values.name.trim(),
           sortOrder: values.sortOrder,
         });
+        await saveAccount(editingId, values.accountingAccountId);
         await fetchList();
         message.success(t("caja.movementReasons.messages.updated", "Motivo actualizado correctamente."));
       } else {
@@ -128,6 +154,7 @@ export function useCashMovementReasonsAdminPage() {
           movementType: values.movementType,
           sortOrder: values.sortOrder,
         });
+        await saveAccount(created.id, values.accountingAccountId);
         await fetchList();
         setEditingId(created.id);
         message.success(t("caja.movementReasons.messages.created", "Motivo creado correctamente."));
@@ -184,6 +211,8 @@ export function useCashMovementReasonsAdminPage() {
     saving,
     saveError,
     toggling,
+    accounts,
+    hasConfiguredAccount: !!items.find((x) => x.id === editingId)?.accountingAccountId,
     form,
     errors,
     fetchList,

@@ -36,6 +36,8 @@ export interface CashMovementReasonDto {
   movementType: string;
   isActive: boolean;
   sortOrder: number;
+  /** ACCOUNTING-12C — contrapartida contable del motivo; null = sin configurar (la contabilización queda fallida). */
+  accountingAccountId: string | null;
 }
 
 export interface CashClosingCountDto {
@@ -239,6 +241,16 @@ export interface RecordMovementPayload {
   clientRequestId: string;
 }
 
+/** ACCOUNTING-12C — depósito del efectivo de la caja en una cuenta bancaria de la empresa. */
+export interface RecordBankDepositPayload {
+  companyBankAccountId: string;
+  amount: number;
+  description: string;
+  referenceNumber?: string;
+  /** Intención del usuario (useClientRequestId): una por operación, estable en reintentos. */
+  clientRequestId: string;
+}
+
 // ── TREASURY-CASH-MOVEMENT-REASONS-ADMIN-03 / 03A ───────────────────────
 // Payloads del CRUD administrable — Code y MovementType son inmutables tras crear (Update no los
 // incluye, igual que el backend); TenantId/CompanyId nunca se envían, el backend los resuelve de
@@ -377,6 +389,10 @@ export const cajaService = {
   recordMovement: (id: string, p: RecordMovementPayload) =>
     apiPost<CashMovementDto>(`${BASE}/${id}/movements`, p),
 
+  /** ACCOUNTING-12C — movimiento BankDeposit (Debe banco / Haber caja), nunca un Retiro con motivo. */
+  recordBankDeposit: (id: string, p: RecordBankDepositPayload) =>
+    apiPost<CashMovementDto>(`${BASE}/${id}/bank-deposits`, p),
+
   getCollectionSummary: (id: string) =>
     apiGet<CashSessionCollectionSummaryDto>(`${BASE}/${id}/collection-summary`),
 
@@ -405,4 +421,8 @@ export const cajaService = {
   /** El backend no recibe un estado deseado: Toggle siempre invierte IsActive del registro actual. */
   toggleCashMovementReason: (id: string) =>
     apiPost<CashMovementReasonDto>(`${REASONS_BASE}/${id}/toggle`, {}),
+
+  /** ACCOUNTING-12C — cuenta contable del motivo para la empresa activa (se reemplaza, no se quita). */
+  setCashMovementReasonAccount: (id: string, accountingAccountId: string) =>
+    apiPut<CashMovementReasonDto>(`${REASONS_BASE}/${id}/account`, { accountingAccountId }),
 };

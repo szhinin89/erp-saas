@@ -506,6 +506,7 @@ const manualIncomeReasons: CashMovementReasonDto[] = [
     movementType: "ManualIncome",
     isActive: true,
     sortOrder: 1,
+    accountingAccountId: null,
   },
 ];
 const manualExpenseReasons: CashMovementReasonDto[] = [
@@ -516,6 +517,7 @@ const manualExpenseReasons: CashMovementReasonDto[] = [
     movementType: "ManualExpense",
     isActive: true,
     sortOrder: 1,
+    accountingAccountId: null,
   },
 ];
 

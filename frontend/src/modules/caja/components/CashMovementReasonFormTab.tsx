@@ -4,6 +4,8 @@ import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZhNumberInput } from "../../../components/zh/inputs/ZhNumberInput";
+import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
+import type { AccountDto } from "../../accounting/facades/accountLookupFacade";
 import { manualCashMovementTypeOptions } from "../constants/cashMovementTypes";
 import type { CashMovementReasonAdminFormValues } from "../schemas/cashMovementReasonAdminSchema";
 
@@ -11,6 +13,9 @@ type Props = {
   editingId: string | null;
   saving: boolean;
   saveError: string;
+  accounts: AccountDto[];
+  /** La empresa activa ya configuró una cuenta: solo puede reemplazarse, no quitarse. */
+  hasConfiguredAccount: boolean;
   register: UseFormRegister<CashMovementReasonAdminFormValues>;
   errors: FieldErrors<CashMovementReasonAdminFormValues>;
   onSave: () => void;
@@ -33,6 +38,8 @@ export function CashMovementReasonFormTab({
   editingId,
   saving,
   saveError,
+  accounts,
+  hasConfiguredAccount,
   register,
   errors,
   onSave,
@@ -121,6 +128,32 @@ export function CashMovementReasonFormTab({
 
         <ZHField label={t("caja.movementReasons.form.sortOrder", "Orden")} error={errors.sortOrder?.message}>
           <ZhNumberInput positiveOnly disabled={saving} placeholder="0" {...register("sortOrder")} />
+        </ZHField>
+
+        <ZHField
+          label={t("caja.movementReasons.form.accountingAccount", "Cuenta contable")}
+          error={errors.accountingAccountId?.message}
+          hint={t(
+            "caja.movementReasons.form.accountingAccountHint",
+            "Contrapartida del asiento en la empresa activa: Haber en ingresos, Debe en egresos y retiros. Sin cuenta el movimiento se registra y su contabilización queda fallida hasta configurarla.",
+          )}
+        >
+          <ZhSelect
+            disabled={saving}
+            aria-label={t("caja.movementReasons.form.accountingAccount", "Cuenta contable")}
+            {...register("accountingAccountId")}
+          >
+            {!hasConfiguredAccount && (
+              <option value="">
+                {t("caja.movementReasons.form.accountingAccountNone", "Sin configurar")}
+              </option>
+            )}
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.code} - {a.name}
+              </option>
+            ))}
+          </ZhSelect>
         </ZHField>
       </ZHGrid>
 

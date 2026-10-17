@@ -38,6 +38,7 @@ const CAMBIO: CashMovementReasonDto = {
   movementType: "ManualIncome",
   isActive: true,
   sortOrder: 1,
+  accountingAccountId: null,
 };
 
 const DEPOSITO: CashMovementReasonDto = {
@@ -47,6 +48,7 @@ const DEPOSITO: CashMovementReasonDto = {
   movementType: "Withdrawal",
   isActive: false,
   sortOrder: 2,
+  accountingAccountId: null,
 };
 
 function grant(granted: string[] | "all" = "all") {

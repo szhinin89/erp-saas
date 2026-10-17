@@ -9,6 +9,7 @@ import type {
   CashSessionCollectionSummaryDto,
 } from "../api/cajaService";
 import { useManualCashMovementFlow } from "./useManualCashMovementFlow";
+import { useCashBankDepositFlow } from "./useCashBankDepositFlow";
 import {
   openCashSessionSchema,
   emptyOpenForm,
@@ -239,6 +240,16 @@ export function useCajaPage() {
     },
   });
 
+  // ── ACCOUNTING-12C — depósito bancario del efectivo de la caja (operación propia). ──
+  const bankDeposit = useCashBankDepositFlow({
+    cashSessionId: viewing?.id ?? null,
+    isSessionOpen: viewing?.status === "Open",
+    onRecorded: async () => {
+      if (viewing) await loadDetail(viewing.id);
+      fetchMySession();
+    },
+  });
+
   // ── Close session ──────────────────────────────────────────────────
   const startClose = useCallback(() => {
     closeForm.reset({ closingCounts: defaultClosingCounts(), closeNotes: "" });
@@ -368,6 +379,7 @@ export function useCajaPage() {
     // duplicara también en el banner superior de la página.
     movementSaving: manualMovement.saving,
     movementSaveError: manualMovement.saveError,
+    bankDeposit,
     closeForm,
     handleClose,
     startClose,

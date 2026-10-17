@@ -32,6 +32,8 @@ public sealed class AccountingPostingFactBuilder
     public const string RuleLineNotConfiguredCode = "POSTING_RULE_LINE_NOT_CONFIGURED";
     public const string AdjustmentAccountNotConfiguredCode = "INVENTORY_ADJUSTMENT_ACCOUNT_NOT_CONFIGURED";
     public const string AdjustmentAccountInvalidCode = "INVENTORY_ADJUSTMENT_ACCOUNT_INVALID";
+    public const string CashReasonAccountNotConfiguredCode = "CASH_MOVEMENT_REASON_ACCOUNT_NOT_CONFIGURED";
+    public const string CashReasonAccountInvalidCode = "CASH_MOVEMENT_REASON_ACCOUNT_INVALID";
 
     private readonly IExpenseCategoryRepository _expenseCategories;
     private readonly IAccountRepository _accounts;
@@ -41,6 +43,7 @@ public sealed class AccountingPostingFactBuilder
     private readonly IPostingRuleRepository _rules;
     private readonly IInventoryAdjustmentReasonRepository _adjustmentReasons;
     private readonly IInventoryAdjustmentReasonAccountRepository _adjustmentReasonAccounts;
+    private readonly ICashMovementReasonRepository _cashReasons;
 
     public AccountingPostingFactBuilder(
         IExpenseCategoryRepository expenseCategories,
@@ -50,9 +53,11 @@ public sealed class AccountingPostingFactBuilder
         IPaymentMethodAccountRepository paymentMethodAccounts,
         IPostingRuleRepository rules,
         IInventoryAdjustmentReasonRepository adjustmentReasons,
-        IInventoryAdjustmentReasonAccountRepository adjustmentReasonAccounts
+        IInventoryAdjustmentReasonAccountRepository adjustmentReasonAccounts,
+        ICashMovementReasonRepository cashReasons
     )
     {
+        _cashReasons = cashReasons;
         _adjustmentReasons = adjustmentReasons;
         _adjustmentReasonAccounts = adjustmentReasonAccounts;
         _expenseCategories = expenseCategories;
@@ -208,6 +213,25 @@ public sealed class AccountingPostingFactBuilder
                         AdjustmentAccountInvalidCode
                     );
                 return Result<Guid>.Success(reasonAccount.Id);
+
+            case AccountingPostingDestination.CashMovementReason:
+                // ACCOUNTING-12C — el motivo es Tenant+Company: se busca en la Company del hecho y su
+                // cuenta se resuelve con la configuración vigente, sin fallback.
+                var cashReason = await _cashReasons.GetByIdAsync(posting.TenantId, posting.CompanyId, destination.ReferenceId, ct);
+                if (cashReason is null)
+                    return Result<Guid>.ValidationFailure("El motivo del movimiento de caja no existe en esta empresa.", DestinationNotFoundCode);
+                if (cashReason.AccountingAccountId is not { } cashReasonAccountId)
+                    return Result<Guid>.ValidationFailure(
+                        $"El motivo de caja '{cashReason.Name}' no tiene una cuenta contable configurada.",
+                        CashReasonAccountNotConfiguredCode
+                    );
+                var cashReasonAccount = await _accounts.GetByIdAsync(posting.TenantId, posting.CompanyId, cashReasonAccountId, ct);
+                if (cashReasonAccount is null || !cashReasonAccount.IsActive || !cashReasonAccount.AllowsPosting)
+                    return Result<Guid>.ValidationFailure(
+                        $"La cuenta contable del motivo de caja '{cashReason.Name}' no existe en esta empresa, está inactiva o no es imputable.",
+                        CashReasonAccountInvalidCode
+                    );
+                return Result<Guid>.Success(cashReasonAccount.Id);
 
             default:
                 return Result<Guid>.ValidationFailure($"Destino financiero no soportado ({destination.Kind}).", PayloadUnsupportedCode);

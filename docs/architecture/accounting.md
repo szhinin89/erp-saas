@@ -23,6 +23,7 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | IMPLEMENTADO | ACCOUNTING-08: asientos manuales Draft/Posted/Discarded, edición versionada, publicación con intentos durables, reverso histórico común, permisos dedicados, Entity Audit y UI sobre el libro existente (§11) |
 | IMPLEMENTADO | ACCOUNTING-11: catálogo único de hechos contables soportados, administración de reglas desde UI (`accounting.rules.manage`) y Balance General con resultados no cerrados calculados (§23) |
 | IMPLEMENTADO | ACCOUNTING-12A: Estado de Resultados con signo por sección (coincide con el Resultado del ejercicio del Balance) y contabilización de ajustes de inventario `Inventory/StockAdjustmentIn` y `StockAdjustmentOut` con cuenta del motivo (§24) |
+| IMPLEMENTADO | ACCOUNTING-12C: Caja contable — movimientos manuales con cuenta del motivo, depósito bancario explícito y diferencia de arqueo al cerrar (§25) |
 
 El resto del documento define el contrato vigente aprobado, tanto lo implementado
 como las extensiones pendientes. No se presenta la continuidad uniforme como una
@@ -816,3 +817,43 @@ fecha del acto; Pending/Failed → Canceled.
 **Completitud.** `ORIGINS_WITHOUT_ACCOUNTING` incluye ajustes Executed/Cancelled con valor Kardex por la
 fecha efectiva de su movimiento Kardex de ejecución; también cuentan como hecho contablemente relevante para la elección de vigencia (§20).
 Sin backfill.
+
+## 25. Caja contable ACCOUNTING-12C
+
+**Hechos.** `Caja/ManualIncome` (Debe caja / Haber cuenta del motivo), `Caja/ManualExpense` y `Caja/Withdrawal`
+(Debe cuenta del motivo / Haber caja), `Caja/BankDeposit` (Debe cuenta contable del banco / Haber caja): reglas
+habilitadoras en `PostingFactCatalog` (sin AmountKinds, ambos lados dinámicos). `Caja/CashCountSurplus` (Debe caja /
+Haber `4.2.01.003` Diferencias positivas de caja) y `Caja/CashCountShortage` (Debe `6.5.01.001` Descuadres de caja /
+Haber caja): `GrandTotal` = |Difference|, la caja es el lado dinámico. El bootstrap siembra las seis reglas. La caja es
+siempre la cuenta vigente de la `CashRegister` de la sesión (destino `CashRegister`); el banco, la de la
+`CompanyBankAccount` elegida (destino `BankAccount`). Withdrawal es retiro genérico, nunca depósito bancario.
+
+**Orígenes.** Solo generan hecho los movimientos manuales con motivo elegido por el cajero
+(`CashSession.RecordManualMovement`), el depósito (`RecordBankDeposit`) y el cierre con `Difference ≠ 0`
+(`Close`); Difference = 0 no genera obligación ni asiento. Los demás movimientos de caja (apertura, ventas,
+devoluciones, pagos a proveedor y los ManualIncome/ManualExpense internos de reembolso de saldo a favor, sin motivo)
+los contabiliza su documento de origen; Posting nunca consume `CashMovement`/`CashSession`. Identidad = movimiento
+(sesión para la diferencia de arqueo); `SourceDocumentId` = sesión. Fecha contable y BusinessDate = día Company del
+instante del movimiento o del cierre. Importe redondeado con `AccountingDecimals`. La obligación se registra en la
+transacción operativa con `AccountingPostingRecorder`; una falla contable posterior nunca revierte el movimiento ni el
+cierre (se aplican los gates comunes: modo operativo no configurado y período Closed/Locked, §3/§21).
+
+**Cuenta del motivo.** `CashMovementReason.AccountingAccountId`: el motivo de caja ya es Tenant+Company obligatorio
+(nunca se comparte entre empresas), así que la cuenta vive en el propio motivo, mismo criterio que
+`CashRegister.AccountingAccountId`; no se usa una tabla puente como `InventoryAdjustmentReasonAccount` (cuyo motivo es
+tenant-wide). Se administra en la pantalla de motivos de caja (`PUT cash-movement-reasons/{id}/account`,
+`caja.manage`, Company del contexto; cuenta de esa Company, activa e imputable; se reemplaza, no se quita). Se resuelve
+en cada intento, sin fallback: sin cuenta → Failed `CASH_MOVEMENT_REASON_ACCOUNT_NOT_CONFIGURED`; cuenta inactiva o no
+imputable → Failed `CASH_MOVEMENT_REASON_ACCOUNT_INVALID`; se corrige configurando y reprocesando (§17).
+
+**Depósito bancario.** `POST cash-sessions/{id}/bank-deposits` (`caja.record`): sesión abierta y operada por su
+cajero, `CompanyBankAccountId` activa de la Company de la sesión, monto > 0, nota y referencia/papeleta opcional,
+idempotente por `ClientRequestId` (intención V1 propia). Crea `CashMovement` tipo `BankDeposit` (egreso de caja) con
+`ReferenceType = CompanyBankAccount` y `ReferenceId` = cuenta bancaria destino. El seed ya no crea el motivo
+"DEPOSITO_BANCARIO" de Withdrawal; los existentes se conservan.
+
+**Reversos.** Los movimientos de caja y el cierre no tienen anulación operativa: no aplica reverso.
+
+**Completitud.** `ORIGINS_WITHOUT_ACCOUNTING` incluye movimientos manuales con motivo, depósitos (día Company de
+`CreatedAt`) y sesiones Closed con diferencia (día Company de `ClosedAt`); también cuentan como hecho contablemente
+relevante para la elección de vigencia (§20). Sin backfill.

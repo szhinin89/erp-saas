@@ -21,6 +21,8 @@ export const cashMovementReasonAdminSchema = z.object({
     .max(100, "El nombre no puede superar 100 caracteres."),
   movementType: z.string().min(1, "Seleccione el tipo de movimiento."),
   sortOrder: z.coerce.number().int().min(0).max(9999),
+  /** ACCOUNTING-12C — "" = sin configurar; el backend valida empresa, estado e imputabilidad. */
+  accountingAccountId: z.string(),
 });
 
 export type CashMovementReasonAdminFormValues = z.infer<
@@ -32,4 +34,5 @@ export const defaultCashMovementReasonAdminValues: CashMovementReasonAdminFormVa
   name: "",
   movementType: "",
   sortOrder: 0,
+  accountingAccountId: "",
 };

@@ -1,6 +1,7 @@
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Accounting.Posting.Translators;
+using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Finance.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -39,8 +40,31 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
                    && x.PaymentDate >= date, ct)
             || await db.Payments.AnyAsync(x => x.TenantId == tenantId && x.CompanyId == companyId
                    && x.Status != PaymentStatus.Draft && x.PaymentDate >= date, ct)
-            || await ValuedStockAdjustments(tenantId, companyId, date, null).AnyAsync(ct);
+            || await ValuedStockAdjustments(tenantId, companyId, date, null).AnyAsync(ct)
+            || await AccountableCashMovements(tenantId, companyId).AnyAsync(m => m.CreatedAt >= instant, ct)
+            || await CashSessionsWithDifference(tenantId, companyId).AnyAsync(s => s.ClosedAt >= instant, ct);
     }
+
+    /// <summary>
+    /// ACCOUNTING-12C — movimientos de Caja con hecho contable propio: manuales con motivo elegido por el
+    /// cajero (ManualIncome/ManualExpense/Withdrawal; los internos de Finance no llevan motivo y los
+    /// contabiliza su documento) y depósitos bancarios. Se leen como hijos de la sesión (scope
+    /// Tenant+Company del agregado), nunca con una consulta directa de CashMovement.
+    /// </summary>
+    private IQueryable<ERP.Domain.Modules.Caja.Entities.CashMovement> AccountableCashMovements(Guid tenantId, Guid companyId) =>
+        db.CashSessions
+            .Where(s => s.TenantId == tenantId && s.CompanyId == companyId)
+            .SelectMany(s => s.Movements)
+            .Where(m => (m.ReasonId != null
+                    && (m.MovementType == CashMovementType.ManualIncome
+                        || m.MovementType == CashMovementType.ManualExpense
+                        || m.MovementType == CashMovementType.Withdrawal))
+                || m.MovementType == CashMovementType.BankDeposit);
+
+    /// <summary>ACCOUNTING-12C — sesiones cerradas con diferencia de arqueo (sobrante o faltante).</summary>
+    private IQueryable<ERP.Domain.Modules.Caja.Entities.CashSession> CashSessionsWithDifference(Guid tenantId, Guid companyId) =>
+        db.CashSessions.Where(s => s.TenantId == tenantId && s.CompanyId == companyId
+            && s.Status == CashSessionStatus.Closed && s.Difference != null && s.Difference != 0m);
 
     /// <summary>
     /// ACCOUNTING-12A — ajuste ejecutado (o anulado después) con valor en el Kardex: algún movimiento
@@ -79,6 +103,8 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
     /// <item>Payables/SupplierPaymentConfirmed — todo pago a proveedor (no hay borrador); PaymentDate.</item>
     /// <item>Finance/CollectionApplied — cobro (Collection) Applied o Reversed; PaymentDate.</item>
     /// <item>Inventory/StockAdjustmentIn|Out — ajuste Executed o Cancelled con valor Kardex; EffectiveDate del movimiento Kardex de la ejecución.</item>
+    /// <item>Caja/ManualIncome|ManualExpense|Withdrawal|BankDeposit — movimiento manual con motivo o depósito; día Company de CreatedAt.</item>
+    /// <item>Caja/CashCountSurplus|CashCountShortage — sesión Closed con Difference distinta de cero (identidad = sesión); día Company de ClosedAt.</item>
     /// </list>
     /// El costo de ventas no se concilia aquí: lo cubren sus obligaciones y SaleCostObligation pendiente.
     /// </remarks>
@@ -100,6 +126,7 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
         var collections = Accounted(CollectionAppliedPostingTranslator.SourceModuleName);
         var retentions = Accounted(RetentionDocumentIssuedPostingTranslator.SourceModuleName);
         var adjustments = Accounted(StockAdjustmentExecutedPostingTranslator.SourceModuleName);
+        var cash = Accounted(CashManualMovementPostingTranslator.SourceModuleName);
 
         // Orígenes fechados por el instante del acto: día de empresa [from, to] como rango UTC.
         var (fromUtc, toUtcExclusive) = await clock.DaysUtcRangeAsync(companyId, tenantId, from, to, ct);
@@ -139,6 +166,10 @@ public sealed class AccountingRelevantFactsReader(ErpDbContext db, ICompanyClock
                    && x.Direction == PaymentDirection.Collection
                    && (x.Status == PaymentStatus.Applied || x.Status == PaymentStatus.Reversed)
                    && x.PaymentDate >= from && x.PaymentDate <= to && !collections.Contains(x.Id), ct)
-            + await ValuedStockAdjustments(tenantId, companyId, from, to).CountAsync(x => !adjustments.Contains(x.Id), ct);
+            + await ValuedStockAdjustments(tenantId, companyId, from, to).CountAsync(x => !adjustments.Contains(x.Id), ct)
+            + await AccountableCashMovements(tenantId, companyId).CountAsync(m => m.CreatedAt >= startUtc
+                   && m.CreatedAt < endUtc && !cash.Contains(m.Id), ct)
+            + await CashSessionsWithDifference(tenantId, companyId).CountAsync(x => x.ClosedAt >= startUtc
+                   && x.ClosedAt < endUtc && !cash.Contains(x.Id), ct);
     }
 }

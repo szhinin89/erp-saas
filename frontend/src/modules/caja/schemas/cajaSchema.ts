@@ -36,6 +36,21 @@ export function emptyMovementForm(): RecordMovementFormValues {
   return { movementType: "", reasonId: "", amount: 0, description: "" };
 }
 
+// ── Bank deposit schema (ACCOUNTING-12C) ───────────────────────────────
+// La cuenta bancaria destino es obligatoria y explícita — nunca se deduce de un motivo.
+export const bankDepositSchema = (t: Translate) => z.object({
+  companyBankAccountId: z.string().min(1, t("caja.validation.bankAccount")),
+  amount: z.coerce.number({ invalid_type_error: t("caja.validation.number") }).positive(t("caja.validation.amount")),
+  referenceNumber: z.string().max(50, t("caja.validation.maxLength", { max: 50 })),
+  description: z.string().min(1, t("caja.validation.description")).max(300, t("caja.validation.maxLength", { max: 300 })),
+});
+
+export type BankDepositFormValues = z.infer<ReturnType<typeof bankDepositSchema>>;
+
+export function emptyBankDepositForm(description = ""): BankDepositFormValues {
+  return { companyBankAccountId: "", amount: 0, referenceNumber: "", description };
+}
+
 // ── Closing count schema ───────────────────────────────────────────────
 export const closingCountSchema = (t: Translate) => z.object({
   _key: z.number({ invalid_type_error: t("caja.validation.number") }),

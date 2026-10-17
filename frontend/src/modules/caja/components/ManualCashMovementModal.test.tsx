@@ -15,7 +15,7 @@ afterEach(() => cleanup());
 const movementTypes = manualCashMovementTypeOptions((key: string, fallback?: string) => fallback ?? key);
 
 const reasonsForIncome: CashMovementReasonDto[] = [
-  { id: "reason-1", code: "CAMBIO_CAJA", name: "Cambio de caja chica", movementType: "ManualIncome", isActive: true, sortOrder: 1 },
+  { id: "reason-1", code: "CAMBIO_CAJA", name: "Cambio de caja chica", movementType: "ManualIncome", isActive: true, sortOrder: 1, accountingAccountId: null },
 ];
 
 /**

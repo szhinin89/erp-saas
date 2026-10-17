@@ -33,7 +33,8 @@ public sealed class AccountingPostingFactBuilderTests
             Mock.Of<ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodAccountRepository>(),
             Mock.Of<IPostingRuleRepository>(),
             Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonRepository>(),
-            Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository>()
+            Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository>(),
+            Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashMovementReasonRepository>()
         );
 
     private static AccountingPosting Obligation(AccountingPostingPayload payload, string module = "Expenses", string fact = "DocumentConfirmed") =>
@@ -200,7 +201,8 @@ public sealed class AccountingPostingFactBuilderTests
             Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(),
             Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(),
             Mock.Of<ERP.Domain.Modules.Sales.Interfaces.IPaymentMethodAccountRepository>(),
-            Mock.Of<IPostingRuleRepository>(), reasons.Object, links.Object);
+            Mock.Of<IPostingRuleRepository>(), reasons.Object, links.Object,
+            Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashMovementReasonRepository>());
 
         AccountingPosting AdjustmentIn(Guid companyId) => AccountingPosting.CreatePending(TenantId, companyId,
             "Inventory", "StockAdjustmentIn", Guid.NewGuid(), "AJ-1", new DateOnly(2026, 10, 17), new DateOnly(2026, 10, 17),

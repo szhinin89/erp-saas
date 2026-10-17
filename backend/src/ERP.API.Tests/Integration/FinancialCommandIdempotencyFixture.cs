@@ -90,6 +90,18 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
             createdBy: _adminId
         );
         db.Companies.Add(company);
+        // ACCOUNTING-12C — los movimientos manuales/depósitos/cierres de caja registran obligación
+        // contable: la empresa declara su modo operativo (sin él la operación falla cerrada).
+        db.AccountingOperationalPolicies.Add(
+            AccountingOperationalPolicy.Create(
+                TenantId,
+                company.Id,
+                AccountingOperationalMode.Enabled,
+                new DateOnly(1900, 1, 1),
+                "Test",
+                _adminId
+            )
+        );
         await db.SaveChangesAsync();
         CompanyId = company.Id;
 

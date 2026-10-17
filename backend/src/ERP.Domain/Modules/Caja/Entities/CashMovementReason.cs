@@ -27,6 +27,17 @@ public sealed class CashMovementReason
     public CashMovementType MovementType { get; private set; }
     public int SortOrder { get; private set; }
 
+    /// <summary>
+    /// ACCOUNTING-12C — contrapartida contable de los movimientos con este motivo (Haber en
+    /// ManualIncome, Debe en ManualExpense/Withdrawal). El motivo ya es Tenant+Company (nunca se
+    /// comparte entre empresas), así que la cuenta vive aquí — mismo criterio que
+    /// <c>CashRegister.AccountingAccountId</c>; no hace falta una tabla puente por Company como
+    /// <c>InventoryAdjustmentReasonAccount</c> (cuyo motivo es tenant-wide). Null = sin configurar: el
+    /// movimiento opera y su obligación contable queda Failed hasta configurarla (sin fallback).
+    /// Solo se muta mediante <see cref="SetAccountingAccount"/>.
+    /// </summary>
+    public Guid? AccountingAccountId { get; private set; }
+
     private CashMovementReason() { }
 
     public static CashMovementReason Create(
@@ -90,6 +101,15 @@ public sealed class CashMovementReason
 
         Name = name.Trim();
         SortOrder = sortOrder;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>ACCOUNTING-12C — reemplaza la cuenta contable del motivo (no se quita una vez configurada).</summary>
+    public void SetAccountingAccount(Guid accountingAccountId, Guid updatedBy)
+    {
+        if (accountingAccountId == Guid.Empty)
+            throw new ArgumentException("La cuenta contable es obligatoria.", nameof(accountingAccountId));
+        AccountingAccountId = accountingAccountId;
         SetUpdated(updatedBy);
     }
 

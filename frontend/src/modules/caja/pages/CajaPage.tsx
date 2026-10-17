@@ -31,6 +31,7 @@ import type {
 } from "../api/cajaService";
 import { cashMovementTypeLabel } from "../constants/cashMovementTypes";
 import { ManualCashMovementModal } from "../components/ManualCashMovementModal";
+import { CashBankDepositModal } from "../components/CashBankDepositModal";
 import { CashFundingRequestsPendingNotice } from "../components/CashFundingRequestsPendingNotice";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
@@ -577,6 +578,16 @@ export function CajaPage() {
                       {t("caja.movements.recordButton")}
                     </ZHBtn>
                   )}
+                  {/* ACCOUNTING-12C — depósito bancario: operación propia con cuenta bancaria
+                      destino (no un Retiro con motivo); mismo permiso `caja.record`. */}
+                  {ctx.bankDeposit.canRecordBankDeposit && (
+                    <ZHBtn variant="secondary" onClick={ctx.bankDeposit.openModal}>
+                      <span className="material-symbols-outlined zh-icon-md">
+                        account_balance
+                      </span>{" "}
+                      {t("caja.bankDeposit.button")}
+                    </ZHBtn>
+                  )}
                   <ZHBtn variant="destructive" onClick={ctx.startClose}>
                     {t("caja.session.close")}
                   </ZHBtn>
@@ -765,6 +776,19 @@ export function CajaPage() {
                   onClose={ctx.closeMovementModal}
                 />
               )}
+            {ctx.viewing.status === "Open" && ctx.bankDeposit.canRecordBankDeposit && (
+              <CashBankDepositModal
+                open={ctx.bankDeposit.open}
+                saving={ctx.bankDeposit.saving}
+                saveError={ctx.bankDeposit.saveError}
+                register={ctx.bankDeposit.form.register}
+                errors={ctx.bankDeposit.form.formState.errors}
+                bankAccounts={ctx.bankDeposit.bankAccounts}
+                bankAccountsLoading={ctx.bankDeposit.bankAccountsLoading}
+                onSubmit={ctx.bankDeposit.handleSubmit}
+                onClose={ctx.bankDeposit.closeModal}
+              />
+            )}
           </div>
         )}
 

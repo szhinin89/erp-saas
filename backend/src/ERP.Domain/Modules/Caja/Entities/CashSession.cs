@@ -218,6 +218,63 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         return movement;
     }
 
+    /// <summary>
+    /// ACCOUNTING-12C — movimiento manual elegido por el cajero con su motivo (ManualIncome/
+    /// ManualExpense/Withdrawal) y publicación de su hecho económico. Los flujos internos que crean
+    /// esos mismos tipos sin motivo (Finance) siguen usando <see cref="RecordMovement"/>: su asiento lo
+    /// genera el documento de origen.
+    /// </summary>
+    public CashMovement RecordManualMovement(
+        CashMovementType movementType,
+        decimal amount,
+        string description,
+        Guid createdBy,
+        Guid reasonId,
+        string reasonName,
+        CashReferenceType referenceType = CashReferenceType.None,
+        Guid? referenceId = null,
+        string? referenceNumber = null
+    )
+    {
+        if (movementType is not (CashMovementType.ManualIncome or CashMovementType.ManualExpense or CashMovementType.Withdrawal))
+            throw new DomainRuleViolationException(
+                "Solo Ingreso manual, Egreso manual o Retiro se registran como movimiento manual."
+            );
+        if (reasonId == Guid.Empty)
+            throw new DomainRuleViolationException("El motivo es obligatorio.");
+
+        var movement = RecordMovement(movementType, amount, description, createdBy, referenceType,
+            referenceId, referenceNumber, reasonId, reasonName);
+        AddDomainEvent(new Events.CashManualMovementRecordedEvent(TenantId, CompanyId, Id, CashRegisterId,
+            movement.Id, movementType, movement.Amount, reasonId, movement.Description, movement.CreatedAt));
+        return movement;
+    }
+
+    /// <summary>
+    /// ACCOUNTING-12C — depósito del efectivo de esta caja en una cuenta bancaria de la empresa. Egreso
+    /// de caja con tipo propio (<see cref="CashMovementType.BankDeposit"/>); la cuenta bancaria destino
+    /// queda como referencia del movimiento.
+    /// </summary>
+    public CashMovement RecordBankDeposit(
+        Guid companyBankAccountId,
+        decimal amount,
+        string description,
+        Guid createdBy,
+        string? referenceNumber = null
+    )
+    {
+        if (companyBankAccountId == Guid.Empty)
+            throw new DomainRuleViolationException("La cuenta bancaria destino es obligatoria.");
+        if (amount <= 0m)
+            throw new DomainRuleViolationException("El monto del depósito debe ser mayor a cero.");
+
+        var movement = RecordMovement(CashMovementType.BankDeposit, amount, description, createdBy,
+            CashReferenceType.CompanyBankAccount, companyBankAccountId, referenceNumber);
+        AddDomainEvent(new Events.CashBankDepositRecordedEvent(TenantId, CompanyId, Id, CashRegisterId,
+            movement.Id, companyBankAccountId, movement.Amount, movement.ReferenceNumber, movement.CreatedAt));
+        return movement;
+    }
+
     public void Close(
         Guid closedBy,
         List<CashClosingCount> closingCounts,
@@ -246,6 +303,11 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
         Difference = totalCounted - expected;
 
         SetUpdated(closedBy);
+
+        // ACCOUNTING-12C — sobrante/faltante del arqueo: hecho económico con la fecha del cierre.
+        if (Difference != 0m)
+            AddDomainEvent(new Events.CashSessionClosedWithDifferenceEvent(TenantId, CompanyId, Id,
+                CashRegisterId, Difference.Value, ClosedAt.Value));
     }
 
     private void EnsureOpen()
@@ -265,5 +327,6 @@ public sealed class CashSession : AuditableEntity, ITenantScopedEntity, ICompany
             is CashMovementType.ManualExpense
                 or CashMovementType.Withdrawal
                 or CashMovementType.SaleRefund
-                or CashMovementType.SupplierPayment;
+                or CashMovementType.SupplierPayment
+                or CashMovementType.BankDeposit;
 }

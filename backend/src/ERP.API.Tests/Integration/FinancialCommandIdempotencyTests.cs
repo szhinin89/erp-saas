@@ -493,10 +493,13 @@ public sealed class FinancialCommandIdempotencyTests
         var after = await _f.CountEffectsAsync(sessionId: op.CashSessionId);
         (after.CashMovements - before.CashMovements).Should().Be(1);
         after.CashMovementsAmount.Should().Be(25m);
+        // ACCOUNTING-12C — el movimiento manual publica su hecho contable una sola vez (el replay no
+        // agrega evento); el motivo del fixture no tiene cuenta, así que su obligación queda Failed
+        // sin asiento.
         (after.JournalEntries - before.JournalEntries)
             .Should()
-            .Be(0, "un movimiento manual nunca postea");
-        (after.OutboxMessages - before.OutboxMessages).Should().Be(0);
+            .Be(0, "el motivo sin cuenta deja la obligación Failed, sin asiento");
+        (after.OutboxMessages - before.OutboxMessages).Should().Be(1);
     }
 
     [Fact]

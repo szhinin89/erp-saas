@@ -28,7 +28,10 @@ public sealed partial class CashMovementReasonsBootstrapStep : ICompanyBootstrap
         ("OTRO_INGRESO", "Otro ingreso", CashMovementType.ManualIncome, 2),
         ("COMPRA_INSUMOS_MENORES", "Compra de insumos menores", CashMovementType.ManualExpense, 1),
         ("OTRO_EGRESO", "Otro egreso", CashMovementType.ManualExpense, 2),
-        ("DEPOSITO_BANCARIO", "Depósito bancario", CashMovementType.Withdrawal, 1),
+        // ACCOUNTING-12C — el depósito bancario es una operación propia (BankDeposit con cuenta
+        // bancaria destino), nunca un Retiro con motivo: ya no se siembra "DEPOSITO_BANCARIO" como
+        // Withdrawal. Las empresas existentes conservan el motivo (no se borra); desactivarlo es
+        // decisión del administrador.
         ("RETIRO_EFECTIVO", "Retiro de efectivo", CashMovementType.Withdrawal, 2),
     ];
 

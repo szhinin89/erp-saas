@@ -1127,6 +1127,21 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             PostingFactCatalog.StockAdjustmentOut,
             [new("1.1.04.001", AccountNature.Credit, PostingAmountKind.GrandTotal)]
         ),
+        // ACCOUNTING-12C — Caja: movimientos manuales y depósito bancario son reglas habilitadoras
+        // (la caja real de la sesión, el motivo y el banco destino llegan como destinos dinámicos);
+        // la diferencia de arqueo fija la cuenta de diferencias y la caja es dinámica.
+        new(PostingFactCatalog.CashManualIncome, []),
+        new(PostingFactCatalog.CashManualExpense, []),
+        new(PostingFactCatalog.CashWithdrawal, []),
+        new(PostingFactCatalog.CashBankDeposit, []),
+        new(
+            PostingFactCatalog.CashCountSurplus,
+            [new("4.2.01.003", AccountNature.Credit, PostingAmountKind.GrandTotal)]
+        ),
+        new(
+            PostingFactCatalog.CashCountShortage,
+            [new("6.5.01.001", AccountNature.Debit, PostingAmountKind.GrandTotal)]
+        ),
         // IL-7A — apertura de la Carga Inicial: un asiento por ImportBatch confirmado
         // (SourceEventId = lote, EntryDate = Company.OpeningBalanceDate), GrandTotal = monto
         // confirmado del dominio ya redondeado. Contrapartida única: la cuenta puente

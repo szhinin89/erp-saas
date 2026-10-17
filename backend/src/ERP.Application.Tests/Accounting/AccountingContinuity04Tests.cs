@@ -322,7 +322,8 @@ public sealed class AccountingContinuity04Tests
         new(Mock.Of<IExpenseCategoryRepository>(), Mock.Of<IAccountRepository>(), _cash.Object, _banks.Object,
             _methods.Object, _rules.Object,
             Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonRepository>(),
-            Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository>());
+            Mock.Of<ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository>(),
+            Mock.Of<ERP.Domain.Modules.Caja.Interfaces.ICashMovementReasonRepository>());
 
     private static AccountingPosting Obligation(string module, string fact, AccountingPostingPayload payload) =>
         AccountingPosting.CreatePending(TenantId, CompanyId, module, fact, Guid.NewGuid(), null, Today, Today,

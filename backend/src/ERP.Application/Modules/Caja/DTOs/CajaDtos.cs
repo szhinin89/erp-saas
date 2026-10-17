@@ -106,7 +106,9 @@ public sealed record CashMovementReasonDto(
     string Name,
     string MovementType,
     bool IsActive,
-    int SortOrder
+    int SortOrder,
+    /// <summary>ACCOUNTING-12C — contrapartida contable del motivo; null = sin configurar.</summary>
+    Guid? AccountingAccountId = null
 );
 
 public sealed record CashClosingCountDto(

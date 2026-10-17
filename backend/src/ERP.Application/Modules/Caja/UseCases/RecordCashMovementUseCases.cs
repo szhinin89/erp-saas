@@ -255,16 +255,18 @@ public sealed class RecordCashMovementHandler
                 "El motivo seleccionado no corresponde a este tipo de movimiento."
             );
 
-        var movement = session.RecordMovement(
+        // ACCOUNTING-12C — publica el hecho económico del movimiento manual (su obligación contable
+        // se registra en esta misma transacción; una falla contable posterior nunca lo revierte).
+        var movement = session.RecordManualMovement(
             movementType,
             cmd.Amount,
             cmd.Description,
             _u.UserId,
+            reason.Id,
+            reason.Name,
             referenceType,
             cmd.ReferenceId,
-            cmd.ReferenceNumber,
-            reason.Id,
-            reason.Name
+            cmd.ReferenceNumber
         );
         movement.BindClientRequest(key);
 

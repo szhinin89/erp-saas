@@ -104,6 +104,18 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
             createdBy: _adminId
         );
         db.Companies.Add(company);
+        // ACCOUNTING-12C — movimientos manuales y cierres con diferencia registran obligación
+        // contable: la empresa declara su modo operativo (sin él la operación falla cerrada).
+        db.AccountingOperationalPolicies.Add(
+            ERP.Domain.Modules.Accounting.Entities.AccountingOperationalPolicy.Create(
+                TenantId,
+                company.Id,
+                ERP.Domain.Modules.Accounting.Enums.AccountingOperationalMode.Enabled,
+                new DateOnly(1900, 1, 1),
+                "Test",
+                _adminId
+            )
+        );
         await db.SaveChangesAsync();
         CompanyId = company.Id;
 

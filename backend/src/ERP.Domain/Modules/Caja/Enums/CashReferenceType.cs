@@ -17,4 +17,7 @@ public enum CashReferenceType
     /// como en el egreso compensatorio de su reversa (02A-CLOSE).
     /// </summary>
     SupplierCreditRefund = 4,
+
+    /// <summary>ACCOUNTING-12C — cuenta bancaria destino de un depósito (<c>CompanyBankAccount.Id</c>).</summary>
+    CompanyBankAccount = 5,
 }

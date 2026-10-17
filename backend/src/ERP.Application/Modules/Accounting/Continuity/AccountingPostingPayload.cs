@@ -87,6 +87,9 @@ public sealed record AccountingPostingDestination(
     /// <summary>ACCOUNTING-12A — contrapartida de un ajuste de inventario: la cuenta de su motivo.</summary>
     public const string InventoryAdjustmentReason = "InventoryAdjustmentReason";
 
+    /// <summary>ACCOUNTING-12C — contrapartida de un movimiento manual de Caja: la cuenta de su motivo.</summary>
+    public const string CashMovementReason = "CashMovementReason";
+
     /// <summary>Destino de un medio con caja o cuenta bancaria (exactamente uno).</summary>
     public static AccountingPostingDestination FromCashOrBank(
         Guid? companyBankAccountId,

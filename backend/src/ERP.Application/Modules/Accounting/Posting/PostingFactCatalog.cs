@@ -165,6 +165,51 @@ public static class PostingFactCatalog
         [PostingAmountKind.GrandTotal],
         PostingDynamicSides.Debit
     );
+    /// <summary>
+    /// ACCOUNTING-12C — movimientos manuales de Caja y depósito bancario: reglas habilitadoras. Ambos
+    /// lados los aporta el origen (la cuenta de la caja real de la sesión y la del motivo o la del
+    /// banco destino); no hay cuenta fija que la regla pueda fijar.
+    /// </summary>
+    public static readonly PostingFactDefinition CashManualIncome = new(
+        "Caja",
+        "ManualIncome",
+        [],
+        PostingDynamicSides.Both
+    );
+    public static readonly PostingFactDefinition CashManualExpense = new(
+        "Caja",
+        "ManualExpense",
+        [],
+        PostingDynamicSides.Both
+    );
+    public static readonly PostingFactDefinition CashWithdrawal = new(
+        "Caja",
+        "Withdrawal",
+        [],
+        PostingDynamicSides.Both
+    );
+    public static readonly PostingFactDefinition CashBankDeposit = new(
+        "Caja",
+        "BankDeposit",
+        [],
+        PostingDynamicSides.Both
+    );
+    /// <summary>
+    /// ACCOUNTING-12C — diferencia de arqueo al cerrar la sesión: la regla fija la cuenta de
+    /// diferencias (GrandTotal = |Difference|) y el origen aporta la caja real (lado dinámico).
+    /// </summary>
+    public static readonly PostingFactDefinition CashCountSurplus = new(
+        "Caja",
+        "CashCountSurplus",
+        [PostingAmountKind.GrandTotal],
+        PostingDynamicSides.Debit
+    );
+    public static readonly PostingFactDefinition CashCountShortage = new(
+        "Caja",
+        "CashCountShortage",
+        [PostingAmountKind.GrandTotal],
+        PostingDynamicSides.Credit
+    );
     public static readonly PostingFactDefinition OpeningInventory = new(
         OpeningBalancePostingFacts.SourceModule,
         OpeningBalancePostingFacts.OpeningInventory,
@@ -205,6 +250,12 @@ public static class PostingFactCatalog
         ExpenseDocumentConfirmed,
         StockAdjustmentIn,
         StockAdjustmentOut,
+        CashManualIncome,
+        CashManualExpense,
+        CashWithdrawal,
+        CashBankDeposit,
+        CashCountSurplus,
+        CashCountShortage,
         OpeningInventory,
         OpeningReceivables,
         OpeningPayables,

@@ -139,6 +139,8 @@ export function CashMovementReasonsAdminPage() {
               editingId={page.editingId}
               saving={page.saving}
               saveError={page.saveError}
+              accounts={page.accounts}
+              hasConfiguredAccount={page.hasConfiguredAccount}
               register={page.form.register}
               errors={page.errors}
               onSave={() => void page.save()}

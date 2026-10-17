@@ -1,5 +1,17 @@
 # Project Status
 
+## ACCOUNTING-12C (2026-10-17)
+
+Caja contable. Hechos `Caja/ManualIncome|ManualExpense|Withdrawal|BankDeposit` (reglas habilitadoras, caja real de la
+sesión + cuenta del motivo o del banco) y `Caja/CashCountSurplus|CashCountShortage` (`4.2.01.003` / `6.5.01.001` fijas,
+caja dinámica) en catálogo y bootstrap; obligación durable común, fecha = día Company del movimiento/cierre, Difference=0
+sin obligación. Cuenta del motivo en `CashMovementReason.AccountingAccountId` (el motivo ya es Company-scoped; migración
+`CashMovementReasonAccount12C`), administrable en Motivos de caja; sin cuenta → Failed reprocesable. Depósito bancario
+explícito `POST cash-sessions/{id}/bank-deposits` (tipo `BankDeposit`, `CompanyBankAccountId`, idempotente, `caja.record`)
+con modal en Caja. Completitud `ORIGINS_WITHOUT_ACCOUNTING` extendida. PASS 4/4 tests focales. tsc -b y ESLint focal
+PASS. Sin suites, npm build, architecture:check, staging, commit ni push.
+Contrato: [Accounting §25](docs/architecture/accounting.md#25-caja-contable-accounting-12c).
+
 ## ACCOUNTING-12B (2026-10-17)
 
 `SALE_COST_PENDING` visible y accionable por el usuario. `GET inventory/stock/costs/pending` ampliado con contexto

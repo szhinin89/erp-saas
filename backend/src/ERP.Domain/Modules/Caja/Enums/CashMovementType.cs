@@ -20,4 +20,11 @@ public enum CashMovementType
 
     /// <summary>Ingreso compensatorio por la reversa de un <see cref="SupplierPayment"/> (el original nunca se borra).</summary>
     SupplierPaymentReversal = 8,
+
+    /// <summary>
+    /// ACCOUNTING-12C — depósito del efectivo de la caja en una cuenta bancaria de la empresa
+    /// (<see cref="CashReferenceType.CompanyBankAccount"/>, ReferenceId = cuenta bancaria destino).
+    /// Operación semántica propia: nunca se registra como <see cref="Withdrawal"/>.
+    /// </summary>
+    BankDeposit = 9,
 }

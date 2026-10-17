@@ -34,6 +34,8 @@ export const CASH_MOVEMENT_TYPES: readonly CashMovementTypeInfo[] = [
   // ZH-SUPPLIER-PAYMENT-CASH-TRANSFER-HARDENING-02A — tipos de sistema generados por Pagos a Proveedores.
   { value: "SupplierPayment", labelKey: "caja.movementType.supplierPayment", fallbackLabel: "Pago a proveedor", manualEntry: false },
   { value: "SupplierPaymentReversal", labelKey: "caja.movementType.supplierPaymentReversal", fallbackLabel: "Reversa de pago a proveedor", manualEntry: false },
+  // ACCOUNTING-12C — operación propia con cuenta bancaria destino (flujo "Depósito bancario"), no un tipo manual con motivo.
+  { value: "BankDeposit", labelKey: "caja.movementType.bankDeposit", fallbackLabel: "Depósito bancario", manualEntry: false },
 ];
 
 const TYPE_BY_VALUE: ReadonlyMap<string, CashMovementTypeInfo> = new Map(

@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Caja.DTOs;
+using ERP.Domain.Modules.Accounting.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Enums;
 using ERP.Domain.Modules.Caja.Interfaces;
@@ -46,6 +47,14 @@ public sealed record ToggleCashMovementReasonCommand(Guid Id)
     : IRequest<Result<CashMovementReasonDto>>,
         ICompanyScopedRequest;
 
+/// <summary>
+/// ACCOUNTING-12C — configura la cuenta contable del motivo en la Company activa (contexto
+/// autenticado, nunca desde el body). Se reemplaza, no se quita.
+/// </summary>
+public sealed record SetCashMovementReasonAccountCommand(Guid Id, Guid AccountingAccountId)
+    : IRequest<Result<CashMovementReasonDto>>,
+        ICompanyScopedRequest;
+
 // ── Validators ──────────────────────────────────────────────────────────
 
 file static class MovementTypeValidation
@@ -78,6 +87,16 @@ public sealed class UpdateCashMovementReasonValidator
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(CashMovementReason.NameMaxLen);
+    }
+}
+
+public sealed class SetCashMovementReasonAccountValidator
+    : AbstractValidator<SetCashMovementReasonAccountCommand>
+{
+    public SetCashMovementReasonAccountValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.AccountingAccountId).NotEmpty().WithMessage("La cuenta contable es obligatoria.");
     }
 }
 
@@ -256,6 +275,40 @@ public sealed class ToggleCashMovementReasonHandler
             reason.Enable(_u.UserId);
         await _repo.SaveChangesAsync(ct);
 
+        return Result<CashMovementReasonDto>.Success(CajaMapper.ToDto(reason));
+    }
+}
+
+/// <summary>
+/// ACCOUNTING-12C — la cuenta debe ser de la Company activa, activa e imputable (mismo criterio que
+/// el motivo de ajuste de inventario). El intento contable la vuelve a validar con la configuración
+/// vigente: este chequeo es UX, no la única barrera.
+/// </summary>
+public sealed class SetCashMovementReasonAccountHandler(
+    ICashMovementReasonRepository repo,
+    IAccountRepository accounts,
+    ICurrentTenant tenant,
+    ICurrentCompany company,
+    ICurrentUser user
+) : IRequestHandler<SetCashMovementReasonAccountCommand, Result<CashMovementReasonDto>>
+{
+    public async Task<Result<CashMovementReasonDto>> Handle(
+        SetCashMovementReasonAccountCommand cmd,
+        CancellationToken ct
+    )
+    {
+        var reason = await repo.GetByIdAsync(tenant.TenantId, company.CompanyId, cmd.Id, ct);
+        if (reason is null)
+            return Result<CashMovementReasonDto>.NotFound("Motivo no encontrado.");
+
+        var account = await accounts.GetByIdAsync(tenant.TenantId, company.CompanyId, cmd.AccountingAccountId, ct);
+        if (account is not { IsActive: true, AllowsPosting: true })
+            return Result<CashMovementReasonDto>.ValidationFailure(
+                "La cuenta contable seleccionada no existe, no pertenece a esta empresa, está inactiva o no admite movimientos."
+            );
+
+        reason.SetAccountingAccount(account.Id, user.UserId);
+        await repo.SaveChangesAsync(ct);
         return Result<CashMovementReasonDto>.Success(CajaMapper.ToDto(reason));
     }
 }

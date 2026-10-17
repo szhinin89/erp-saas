@@ -1,3 +1,4 @@
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Caja.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -31,6 +32,13 @@ public sealed class CashMovementReasonConfiguration : IEntityTypeConfiguration<C
             .HasMaxLength(20)
             .IsRequired();
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
+        // ACCOUNTING-12C — cuenta contable del motivo (misma Company que el motivo; validada al configurar).
+        builder.Property(x => x.AccountingAccountId).HasColumnName("accounting_account_id");
+        builder
+            .HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(x => x.AccountingAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder
             .Property(x => x.IsSystemSeeded)

@@ -72,4 +72,21 @@ public sealed class CashMovementReasonsController : ControllerBase
     [Authorize(Policy = $"perm:{CajaPermissions.Manage}")]
     public async Task<IActionResult> Toggle(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new ToggleCashMovementReasonCommand(id), ct));
+
+    /// <summary>
+    /// ACCOUNTING-12C — cuenta contable del motivo (contrapartida del asiento del movimiento) para la
+    /// Company activa; la Company sale del contexto autenticado, nunca del body.
+    /// </summary>
+    [HttpPut("{id:guid}/account")]
+    [Authorize(Policy = $"perm:{CajaPermissions.Manage}")]
+    public async Task<IActionResult> SetAccount(
+        Guid id,
+        [FromBody] SetCashMovementReasonAccountRequest request,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new SetCashMovementReasonAccountCommand(id, request.AccountingAccountId), ct)
+        );
 }
+
+public sealed record SetCashMovementReasonAccountRequest(Guid AccountingAccountId);
