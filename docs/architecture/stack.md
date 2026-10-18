@@ -21,7 +21,7 @@ Cursor adapter: `.cursor/rules/stack-tools-source-of-truth.mdc`
 
 | Área | Herramienta |
 |------|-------------|
-| Backend | .NET 10 (`backend/src/global.json`) |
+| Backend | .NET 10 (`global.json` raíz) |
 | ORM | EF Core + Npgsql |
 | CQRS | MediatR |
 | Validación | FluentValidation |

@@ -122,7 +122,7 @@ Fuente de verdad para agentes: [`docs/architecture/stack.md`](architecture/stack
 
 | Área | Herramienta | Nota |
 |------|-------------|------|
-| Backend | .NET **10.0.201** | `backend/src/global.json` |
+| Backend | .NET SDK **≥ 10.0.204** (`rollForward: latestFeature`) | `global.json` (raíz) — fuente única, aplica a todo subdirectorio. CI: `setup-dotnet` con `global-json-file: global.json` (instala la última 10.0.x). `backend/Dockerfile`: `sdk:10.0.402` exacto; runtime `aspnet:10.0-noble` independiente |
 | ORM | EF Core + Npgsql | PostgreSQL |
 | CQRS | MediatR | |
 | Validación | FluentValidation | Pipeline MediatR |

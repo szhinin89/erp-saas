@@ -37,7 +37,7 @@ jobs:
       - name: Setup .NET SDK (global.json)
         uses: actions/setup-dotnet@v5
         with:
-          global-json-file: backend/src/global.json
+          global-json-file: global.json
           cache: true
           cache-dependency-path: backend/src/**/*.csproj
 

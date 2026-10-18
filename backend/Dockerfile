@@ -6,8 +6,10 @@
 # Ver docs/deployment/README.md.
 
 # ---- Stage 1: restore + publish ----
-# Versión exacta fijada por backend/global.json (rollForward: disable).
-FROM mcr.microsoft.com/dotnet/sdk:10.0.203 AS build
+# SDK: global.json (raíz) exige >= 10.0.204 (rollForward: latestFeature). Tag exacto
+# 10.0.402 = SDK que instala CI (setup-dotnet) hoy; builds reproducibles. El runtime
+# (stage 2) se versiona aparte y no sigue al SDK.
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402 AS build
 WORKDIR /src
 
 # Copiar solo los .csproj primero (cache de `dotnet restore` entre builds).
@@ -33,7 +35,7 @@ RUN dotnet publish src/ERP.API/ERP.API.csproj \
 # Ubuntu/noble (glibc, familia Debian) — no Alpine/musl. Para .NET 10, Microsoft ya
 # no publica tag "bookworm-slim" (mcr.microsoft.com/dotnet/aspnet:10.0-bookworm-slim
 # no existe); "noble" (Ubuntu 24.04) es la imagen glibc/apt-based equivalente y es el
-# tag base que usa "10.0"/"10.0.203" sin sufijo. QuestPDF/SkiaSharp requieren
+# tag base que usa "10.0" sin sufijo. QuestPDF/SkiaSharp requieren
 # librerías nativas de render que la imagen Alpine no trae de forma estable —
 # causaban crash nativo (SIGSEGV, exit 139) en el arranque bajo Coolify/Vultr.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
