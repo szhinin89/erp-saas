@@ -171,7 +171,7 @@ public sealed class GetJournalEntryByIdHandler
             ? await _repo.GetByIdAsync(tenantId, companyId, originalId, ct)
             : null;
         // ACCOUNTING-FINAL-FIX: el reverso se resuelve por la relación persistida OriginalJournalEntryId,
-        // nunca por el campo heredado ReverseJournalEntryId del original (ya no se escribe).
+        // única referencia del par (el original no guarda referencia inversa).
         var reverseEntry = await _repo.FindReversalOfAsync(tenantId, companyId, entry.Id, ct);
 
         var sourceRequests = new List<JournalEntrySourceRequest> { Map.ToSourceRequest(entry) };

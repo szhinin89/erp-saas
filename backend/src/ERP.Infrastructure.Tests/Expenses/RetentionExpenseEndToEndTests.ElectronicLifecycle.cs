@@ -115,11 +115,13 @@ public sealed partial class RetentionExpenseEndToEndTests
         var retentionEntry = await verify
             .JournalEntries.AsNoTracking()
             .SingleAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retentionId);
-        retentionEntry.Status.Should().NotBe(JournalEntryStatus.Reversed);
+        retentionEntry.Status.Should().Be(JournalEntryStatus.Posted);
+        (await verify.JournalEntries.AnyAsync(x => x.OriginalJournalEntryId == retentionEntry.Id)).Should().BeFalse();
         var expenseEntry = await verify
             .JournalEntries.AsNoTracking()
             .SingleAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId);
-        expenseEntry.Status.Should().NotBe(JournalEntryStatus.Reversed);
+        expenseEntry.Status.Should().Be(JournalEntryStatus.Posted);
+        (await verify.JournalEntries.AnyAsync(x => x.OriginalJournalEntryId == expenseEntry.Id)).Should().BeFalse();
         (await ReadRetentionElectronicAsync(retentionId))!
             .CurrentState.Should()
             .Be(ElectronicDocumentState.Authorized);

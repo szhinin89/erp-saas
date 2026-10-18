@@ -154,7 +154,6 @@ file static class Map
             e.EntryNumber,
             e.PostedAtUtc,
             e.OriginalJournalEntryId,
-            e.ReverseJournalEntryId,
             e.ReversedAtUtc,
             e.ReverseReason
         );

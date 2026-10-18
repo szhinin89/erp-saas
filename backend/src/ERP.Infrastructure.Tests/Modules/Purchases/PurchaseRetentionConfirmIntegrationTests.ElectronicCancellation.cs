@@ -174,7 +174,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         var accounting = await RetentionAccountingAsync(retentionId);
         accounting
             .IssuedStatus.Should()
-            .NotBe(JournalEntryStatus.Reversed, "el asiento de la retención no se revierte");
+            .Be(JournalEntryStatus.Posted, "el asiento de la retención no se revierte");
         accounting.Reversals.Should().Be(0);
         (await StockMovementCountAsync(invoiceId))
             .Should()

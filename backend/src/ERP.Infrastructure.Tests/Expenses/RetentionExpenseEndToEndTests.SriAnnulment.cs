@@ -119,7 +119,7 @@ public sealed partial class RetentionExpenseEndToEndTests
                 .SingleAsync(x => x.SourceModule == "Retentions" && x.SourceEventId == retentionId)
         )
             .Status.Should()
-            .NotBe(JournalEntryStatus.Reversed);
+            .Be(JournalEntryStatus.Posted);
         (await ReadRetentionElectronicAsync(retentionId))!
             .CurrentState.Should()
             .Be(ElectronicDocumentState.AnnulmentPending);
@@ -156,7 +156,7 @@ public sealed partial class RetentionExpenseEndToEndTests
                 .SingleAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId)
         )
             .Status.Should()
-            .Be(JournalEntryStatus.Reversed);
+            .Be(JournalEntryStatus.Posted);
         (await ReadRetentionElectronicAsync(retentionId))!
             .CurrentState.Should()
             .Be(ElectronicDocumentState.Cancelled);
@@ -197,7 +197,7 @@ public sealed partial class RetentionExpenseEndToEndTests
                 .SingleAsync(x => x.SourceModule == "Expenses" && x.SourceEventId == expenseId)
         )
             .Status.Should()
-            .NotBe(JournalEntryStatus.Reversed);
+            .Be(JournalEntryStatus.Posted);
     }
 
     [Fact]

@@ -282,7 +282,6 @@ public sealed class JournalEntryTests
         original.Status.Should().Be(JournalEntryStatus.Posted);
         original.ReversedAtUtc.Should().BeNull();
         original.ReverseReason.Should().BeNull();
-        original.ReverseJournalEntryId.Should().BeNull();
         reversal.ReverseReason.Should().Be("Error de digitación");
         reversal.ReversedAtUtc.Should().BeOnOrAfter(before);
     }
@@ -360,7 +359,6 @@ public sealed class JournalEntryTests
         var reversal = original.Reverse(CreatedBy, 2, "Ajuste", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         reversal.OriginalJournalEntryId.Should().Be(original.Id);
-        original.ReverseJournalEntryId.Should().BeNull();
     }
 
     [Fact]

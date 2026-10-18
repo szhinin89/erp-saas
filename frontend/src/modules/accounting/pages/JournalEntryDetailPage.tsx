@@ -24,14 +24,12 @@ import { accountingApi, FISCAL_YEAR_CLOSING_FACT, type JournalEntryDetailDto } f
 // mismo root cause ya corregido en AccountingReportsPage.tsx/JournalEntriesPage.tsx.
 import "../../../styles/shared/items-catalog.css";
 
-function statusBadge(status: string): { label: string; variant: "gray" | "green" | "red" } {
+function statusBadge(status: string): { label: string; variant: "gray" | "green" } {
   switch (status) {
     case "Posted":
       return { label: "Contabilizado", variant: "green" };
     case "Discarded":
       return { label: "Descartado", variant: "gray" };
-    case "Reversed":
-      return { label: "Reversado", variant: "red" };
     default:
       return { label: "Borrador", variant: "gray" };
   }

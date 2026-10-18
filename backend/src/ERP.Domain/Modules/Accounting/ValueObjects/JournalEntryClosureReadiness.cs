@@ -10,16 +10,14 @@ namespace ERP.Domain.Modules.Accounting.ValueObjects;
 /// </summary>
 /// <param name="HasDraftOrNonFinalEntries">
 /// Existe al menos un <c>JournalEntry</c> del período cuyo <c>Status</c> no es
-/// <c>Posted</c> ni <c>Reversed</c> (con el enum actual: Draft).
+/// <c>Posted</c> (con el enum actual: Draft).
 /// </param>
 /// <param name="HasEntriesWithoutEntryNumber">
 /// Existe un <c>JournalEntry</c> no-Draft cuyo <c>EntryNumber</c> es nulo — red de seguridad antes
 /// de un cierre irreversible (<c>Post</c> siempre asigna el número).
 /// </param>
 /// <param name="HasIncompleteReversals">
-/// Existe un reverso (<c>OriginalJournalEntryId</c> no nulo) que no quedó <c>Posted</c>, o un
-/// asiento histórico marcado <c>Reversed</c> sin <c>ReverseJournalEntryId</c> (solo datos previos a
-/// ACCOUNTING-CONTINUITY-03: desde entonces el original nunca se muta).
+/// Existe un reverso (<c>OriginalJournalEntryId</c> no nulo) que no quedó <c>Posted</c>.
 /// </param>
 /// <param name="HasUnresolvedPostings">
 /// Existe una obligación contable durable (<c>AccountingPosting</c>) Pending o Failed con

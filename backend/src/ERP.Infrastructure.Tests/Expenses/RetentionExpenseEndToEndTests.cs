@@ -481,7 +481,7 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
     /// mantenía para "Expenses"/"DocumentConfirmed" y "Retentions"/"DocumentIssued" (PostingRule +
     /// AccountingPeriod construidos a mano) por el seed/backfill oficial: el mismo
     /// <see cref="AccountingBootstrapStep"/> que <c>CompanyBootstrapOrchestrator</c> corre para toda
-    /// Company nueva del ERP, y que <c>AccountingChartBackfillServicePostingRuleTests</c>/
+    /// Company nueva del ERP, y que
     /// <c>ExpensesPostingRuleSeedIntegrationTests</c>/<c>RetentionsPostingRuleSeedIntegrationTests</c>
     /// ya verifican de forma aislada. Siembra el Plan de Cuentas retail completo, un
     /// AccountingPeriod anual (cubre cualquier fecha del año en curso, incluidas las fechas fijas de
@@ -1021,7 +1021,7 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var retentionEntry = await verifyDb.JournalEntries.FirstAsync(x =>
             x.SourceModule == "Retentions" && x.SourceEventId == retention.Id
         );
-        retentionEntry.Status.Should().Be(JournalEntryStatus.Reversed);
+        retentionEntry.Status.Should().Be(JournalEntryStatus.Posted, "el original nunca se muta");
         var retentionReversal = await verifyDb
             .JournalEntries.Include(x => x.Lines)
             .FirstAsync(x =>
@@ -1037,7 +1037,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var expenseEntry = await verifyDb.JournalEntries.FirstAsync(x =>
             x.SourceModule == "Expenses" && x.SourceEventId == expenseId
         );
-        expenseEntry.Status.Should().Be(JournalEntryStatus.Reversed);
+        expenseEntry.Status.Should().Be(JournalEntryStatus.Posted);
+        (await verifyDb.JournalEntries.CountAsync(x => x.OriginalJournalEntryId == expenseEntry.Id)).Should().Be(1);
     }
 
     // ── ZH-RETENTION-CANCELLATION-LIFECYCLE-01: misma semántica que Compras — la retención solo se
@@ -1080,7 +1081,7 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
                 && x.SourceEventType == "DocumentIssued"
                 && x.SourceEventId == retention.Id
             );
-        issued.Status.Should().Be(JournalEntryStatus.Reversed);
+        issued.Status.Should().Be(JournalEntryStatus.Posted);
         (
             await verifyDb
                 .JournalEntries.AsNoTracking()

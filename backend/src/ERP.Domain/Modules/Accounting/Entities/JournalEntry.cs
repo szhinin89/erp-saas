@@ -13,7 +13,7 @@ namespace ERP.Domain.Modules.Accounting.Entities;
 /// <c>JournalEntrySequence</c>). <see cref="Reverse"/> (Fase 5.4, ADR-026 §6/§9) nunca modifica
 /// los importes del asiento original — crea un asiento nuevo con las líneas invertidas y conserva
 /// referencia al original sin modificarlo; la relación inversa se consulta desde el reverso.
-/// Trazabilidad histórica (<see cref="OriginalJournalEntryId"/>/<see cref="ReverseJournalEntryId"/>).
+/// Trazabilidad: <see cref="OriginalJournalEntryId"/> en el reverso (único por original).
 /// </summary>
 /// <remarks>
 /// El motor automático y los comandos manuales comparten este agregado. Los comandos manuales
@@ -71,8 +71,6 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     /// </summary>
     public Guid? OriginalJournalEntryId { get; private set; }
 
-    /// <summary>Referencia inversa legacy. Los nuevos reversos se consultan por OriginalJournalEntryId.</summary>
-    public Guid? ReverseJournalEntryId { get; private set; }
     public DateTime? ReversedAtUtc { get; private set; }
     public string? ReverseReason { get; private set; }
 
@@ -189,9 +187,8 @@ public sealed class JournalEntry : AuditableEntity, ITenantScopedEntity, ICompan
     /// <summary>
     /// Publicación definitiva del asiento (Fase 5.2/5.3, ADR-026 §6/§7/§8): solo un asiento en
     /// <see cref="JournalEntryStatus.Draft"/> puede publicarse — impide tanto publicar un asiento
-    /// ya <see cref="JournalEntryStatus.Posted"/> como uno ya <see cref="JournalEntryStatus.Reversed"/>
-    /// (el reverso, cuando exista en una fase posterior, es la única vía para invalidar un asiento
-    /// publicado). Invoca <see cref="EnsureBalanced"/> antes de cambiar de estado — un asiento
+    /// ya <see cref="JournalEntryStatus.Posted"/> como uno <see cref="JournalEntryStatus.Discarded"/>
+    /// (el reverso es la única vía para invalidar un asiento publicado). Invoca <see cref="EnsureBalanced"/> antes de cambiar de estado — un asiento
     /// desbalanceado nunca llega a <see cref="JournalEntryStatus.Posted"/> ni recibe
     /// <paramref name="entryNumber"/>. <paramref name="entryNumber"/> debe provenir siempre de
     /// <c>IJournalEntrySequenceRepository.ReserveNextNumberAsync</c> — este método no genera

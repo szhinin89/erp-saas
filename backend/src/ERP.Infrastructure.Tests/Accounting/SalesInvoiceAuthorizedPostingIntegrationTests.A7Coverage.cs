@@ -269,7 +269,6 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         cost.JournalEntryId.Should().BeNull();
         (await verify.JournalEntries.Where(e => e.SourceEventId == invoiceId).Select(e => e.SourceEventType).ToListAsync())
             .Should().Equal("InvoiceIssued");
-        (await verify.Set<InventoryCostPosting>().AnyAsync()).Should().BeFalse("la tabla legacy ya no recibe escrituras");
     }
 
     private async Task AssertCoverageAsync(CoverageFixture fixture, Guid? winner)

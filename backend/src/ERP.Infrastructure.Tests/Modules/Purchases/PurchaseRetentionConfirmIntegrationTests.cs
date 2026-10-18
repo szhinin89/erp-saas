@@ -943,12 +943,11 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             );
         retentionEntry
             .Status.Should()
-            .Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
-        retentionEntry.ReverseJournalEntryId.Should().NotBeNull();
+            .Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted, "el original nunca se muta");
         var reverse = await verify
             .JournalEntries.AsNoTracking()
             .Include(e => e.Lines)
-            .SingleAsync(e => e.Id == retentionEntry.ReverseJournalEntryId);
+            .SingleAsync(e => e.OriginalJournalEntryId == retentionEntry.Id);
         reverse.Lines.Sum(l => l.Debit).Should().Be(4.5m);
         reverse.Lines.Sum(l => l.Credit).Should().Be(4.5m);
     }
@@ -984,7 +983,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         var retentionEntry = await verify.JournalEntries.SingleAsync(e =>
             e.SourceModule == "Retentions" && e.SourceEventType == "DocumentIssued" && e.SourceEventId == retention.Id
         );
-        retentionEntry.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
+        retentionEntry.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
+        (await verify.JournalEntries.CountAsync(e => e.OriginalJournalEntryId == retentionEntry.Id)).Should().Be(1);
         (await verify.AccountingPostings.SingleAsync(p => p.SourceEventId == retention.Id))
             .Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted);
     }
@@ -1109,7 +1109,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         var accounting = await RetentionAccountingAsync(retentionId);
         accounting
             .IssuedStatus.Should()
-            .Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
+            .Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
         accounting.Reversals.Should().Be(1);
     }
 

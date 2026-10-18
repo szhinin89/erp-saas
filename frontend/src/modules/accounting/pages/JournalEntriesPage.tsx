@@ -24,18 +24,15 @@ const STATUS_OPTIONS = [
   { value: "", label: "Todos los estados" },
   { value: "Draft", label: "Borrador" },
   { value: "Posted", label: "Contabilizado" },
-  { value: "Reversed", label: "Reversado" },
   { value: "Discarded", label: "Descartado" },
 ];
 
-function statusBadge(status: string): { label: string; variant: "gray" | "green" | "red" } {
+function statusBadge(status: string): { label: string; variant: "gray" | "green" } {
   switch (status) {
     case "Posted":
       return { label: "Contabilizado", variant: "green" };
     case "Discarded":
       return { label: "Descartado", variant: "gray" };
-    case "Reversed":
-      return { label: "Reversado", variant: "red" };
     default:
       return { label: "Borrador", variant: "gray" };
   }

@@ -1080,8 +1080,6 @@ public static class DependencyInjection
             ERP.Infrastructure.Seeding.Global.GlobalBootstrapOrchestrator
         >();
         services.AddScoped<ERP.Infrastructure.Seeding.E2E.E2ESeedService>();
-        services.AddScoped<ERP.Infrastructure.Seeding.AccountingChartBackfillService>();
-        services.AddScoped<ERP.Infrastructure.Seeding.PurchaseReturnPostingRemediationService>();
         services.AddScoped<ERP.Infrastructure.Seeding.ExpensesCatalogBackfillService>();
         services.AddScoped<ERP.Infrastructure.Seeding.DocumentFlowPolicyBackfillService>();
         services.AddScoped<

@@ -94,7 +94,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         payable.Status.Should().Be(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
         var original = await db.JournalEntries.SingleAsync(e => e.SourceEventId == a
             && e.SourceModule == "Purchases" && e.SourceEventType == "InvoiceReceived");
-        original.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Reversed);
+        original.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.JournalEntryStatus.Posted);
         (await db.JournalEntries.CountAsync(e => e.SourceEventType == "Reversal"
             && e.SourceEventId == original.Id)).Should().Be(1);
     }

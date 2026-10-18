@@ -30,7 +30,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests
     private Task<Result<OpeningJournalEntryReversalDto>> ReverseAsync(Guid postingId, string reason = "Cuenta de capital equivocada") =>
         SendAsync(new ReverseOpeningJournalEntryCommand(postingId, reason));
 
-    /// <summary>Saldo acreedor neto de la puente (Posted + Reversed, mismo criterio que Mayor).</summary>
+    /// <summary>Saldo acreedor neto de la puente (Posted, mismo criterio que Mayor).</summary>
     private async Task<decimal> NetBridgeBalanceAsync()
     {
         var bridge = await BridgeAsync();
@@ -38,7 +38,7 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests
         {
             var lines = await db.JournalEntries
                 .Where(e => e.CompanyId == _company
-                    && (e.Status == JournalEntryStatus.Posted || e.Status == JournalEntryStatus.Reversed))
+                    && e.Status == JournalEntryStatus.Posted)
                 .SelectMany(e => e.Lines).Where(l => l.AccountId == bridge).ToListAsync();
             return lines.Sum(l => l.Credit - l.Debit);
         });
@@ -74,7 +74,6 @@ public sealed partial class PublishOpeningJournalEntryPostgreSqlTests
             .SingleAsync(e => e.Id == v1.JournalEntryId));
         original.Status.Should().Be(JournalEntryStatus.Posted, "el original se conserva, nunca se edita ni borra");
         original.Lines.Sum(l => l.Debit).Should().Be(100m);
-        original.ReverseJournalEntryId.Should().BeNull();
         var reversal = (await ReversalsAsync()).Should().ContainSingle().Subject;
         reversal.Id.Should().Be(reversed.Value.ReversalJournalEntryId);
         reversal.OriginalJournalEntryId.Should().Be(original.Id);

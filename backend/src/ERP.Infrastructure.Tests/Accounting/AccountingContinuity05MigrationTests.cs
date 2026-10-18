@@ -22,6 +22,7 @@ namespace ERP.Infrastructure.Tests.Accounting;
 public sealed class AccountingContinuity05MigrationTests : IAsyncLifetime
 {
     private const string PreviousMigration = "20261016233910_AccountingContinuity04";
+    private const string TargetMigration = "20261017102331_AccountingContinuity05";
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -78,7 +79,8 @@ public sealed class AccountingContinuity05MigrationTests : IAsyncLifetime
         }
 
         await using (var db = CreateContext())
-            await db.Database.MigrateAsync();
+            // ACCOUNTING-SCHEMA-CLEANUP retira la tabla legacy después de C05: se verifica C05 aislada.
+            await db.GetService<IMigrator>().MigrateAsync(TargetMigration);
 
         await using var verify = CreateContext();
         var migrated = await verify.AccountingPostings.IgnoreQueryFilters()

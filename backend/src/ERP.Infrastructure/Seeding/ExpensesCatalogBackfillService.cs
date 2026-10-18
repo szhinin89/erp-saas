@@ -11,15 +11,13 @@ namespace ERP.Infrastructure.Seeding;
 /// <summary>
 /// EXPENSES-CATALOG-BOOTSTRAP-09-FIX: <see cref="ExpensesCatalogBootstrapStep"/> (registrado en
 /// <c>CompanyBootstrapOrchestrator</c>) solo corre para empresas NUEVAS. Este servicio cierra esa
-/// brecha exclusivamente fuera de Production, siguiendo el mismo patrón de
-/// <see cref="AccountingChartBackfillService"/>: en cada arranque de la API, para cada company
+/// brecha exclusivamente fuera de Production: en cada arranque de la API, para cada company
 /// activa (1) crea el catálogo de gastos si falta (reutilizando
 /// <see cref="ExpensesCatalogBootstrapStep.ExecuteAsync"/>, que ya es idempotente) y (2) corrige
 /// el <c>AccountingAccountId</c> de subcategorías del Template que fueron sembradas con el mapeo
 /// incorrecto anterior (vía <see cref="ExpensesCatalogBootstrapStep.CorrectAccountMappingsAsync"/>).
 /// Nunca toca subcategorías personalizadas fuera del Template, nunca borra ni desactiva nodos.
-/// Debe correr después de <see cref="AccountingChartBackfillService"/> porque depende de que las
-/// cuentas de gasto ya existan.
+/// Depende de que las cuentas de gasto ya existan (<see cref="AccountingBootstrapStep"/>).
 /// </summary>
 public sealed partial class ExpensesCatalogBackfillService
 {
@@ -53,7 +51,7 @@ public sealed partial class ExpensesCatalogBackfillService
             .ToListAsync(cancellationToken);
 
         // Actor de sistema: este backfill corre en el arranque de la API, fuera de cualquier
-        // request/usuario real — mismo criterio ya usado en AccountingChartBackfillService.
+        // request/usuario real — mismo criterio que CompanyProvisioningService.
         var systemActorId = Guid.NewGuid();
 
         foreach (var company in activeCompanies)

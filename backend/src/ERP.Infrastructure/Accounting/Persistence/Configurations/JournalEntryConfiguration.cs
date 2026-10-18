@@ -57,7 +57,6 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
         builder.Property(x => x.DiscardReason).HasColumnName("discard_reason").HasMaxLength(500);
         builder.Property(x => x.EntryNumber).HasColumnName("entry_number");
         builder.Property(x => x.OriginalJournalEntryId).HasColumnName("original_journal_entry_id");
-        builder.Property(x => x.ReverseJournalEntryId).HasColumnName("reverse_journal_entry_id");
         builder.Property(x => x.ReversedAtUtc).HasColumnName("reversed_at_utc");
         builder.Property(x => x.ReverseReason).HasColumnName("reverse_reason").HasMaxLength(500);
 
@@ -115,12 +114,6 @@ public sealed class JournalEntryConfiguration : IEntityTypeConfiguration<Journal
             .HasOne<JournalEntry>()
             .WithMany()
             .HasForeignKey(x => x.OriginalJournalEntryId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder
-            .HasOne<JournalEntry>()
-            .WithMany()
-            .HasForeignKey(x => x.ReverseJournalEntryId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder

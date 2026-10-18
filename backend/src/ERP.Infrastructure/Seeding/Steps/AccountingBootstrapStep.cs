@@ -58,20 +58,12 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// "2.1.02.002 Retenciones IVA por pagar" (<see cref="PostingAmountKind.RetentionVat"/>), Haber
 /// "2.1.02.003 Retenciones renta por pagar" (<see cref="PostingAmountKind.RetentionIncome"/>) —
 /// ambas cuentas ya existían sembradas en <c>RetailChart</c> desde antes de 01H, "2.1.02.003" solo
-/// estaba sin usar. Una company que ya tenía la forma vieja de 01H (2 líneas) la recibe corregida
-/// vía <see cref="TryCorrectLegacyRetentionsDocumentIssuedRule"/> (ver ese método para el criterio
-/// exacto: solo corrige una coincidencia EXACTA con la forma vieja conocida, nunca reglas ya
-/// editadas manualmente) — <c>AccountingChartBackfillService.EnsureAsync</c> detecta a esas
-/// companies comparando el conteo de líneas, no solo la existencia de la clave (ver
-/// <see cref="RequiredPostingRuleLineCounts"/>). Mismo mecanismo de idempotencia que el resto de
-/// <c>MinimalPostingRules</c> para companies nuevas o sin esta regla en absoluto.
+/// estaba sin usar.
 ///
 /// ERP-POSTING-RULES-EXPENSES-RETENTIONS-SEED-01: agrega la <c>PostingRule</c> mínima que faltaba
 /// por completo para <c>Expenses/DocumentConfirmed</c> — a diferencia del gap de 01H (regla
 /// incompleta), esta nunca tuvo entrada en <c>MinimalPostingRules</c>, detectado en preparación QA
-/// (RETENTIONS-SRI-SANDBOX-SEED-04F-1) al confirmar el primer gasto de una empresa de prueba. El
-/// mecanismo de detección/backfill existente (<see cref="RequiredPostingRuleKeys"/>) ya cubre esta
-/// clase de gap sin cambios adicionales: cualquier company activa sin esta clave vuelve a calificar.
+/// (RETENTIONS-SRI-SANDBOX-SEED-04F-1) al confirmar el primer gasto de una empresa de prueba.
 ///
 /// PURCHASE-RETURN-ACCOUNTING-NOT-GENERATED-01: mismo tipo de gap, ahora para
 /// <c>Purchases/PurchaseReturn</c> — <c>PurchaseReturnAuthorizedPostingTranslator</c> (P0-02 Fase 6)
@@ -79,8 +71,7 @@ namespace ERP.Infrastructure.Seeding.Steps;
 /// tuvo la clave correspondiente, así que toda autorización de devolución de compra, en toda
 /// company, fallaba fail-closed ("RULE_NOT_FOUND") de forma silenciosa (el traductor solo loguea
 /// un warning — <c>Authorize()</c> ya movió Kardex/CxP/SupplierCredit y no se revierte). Reportado
-/// en producción: devolución autorizada con Kardex movido pero sin JournalEntry. Mismo mecanismo de
-/// detección/backfill que el gap anterior — sin cambios adicionales al pipeline.
+/// en producción: devolución autorizada con Kardex movido pero sin JournalEntry.
 ///
 /// PURCHASE-SUPPLIER-CREDIT-APPLIED-POSTING-RULE-01: mismo tipo de gap, ahora para
 /// <c>Purchases/SupplierCreditApplied</c> — <c>SupplierCreditAppliedPostingTranslator</c> (P0-02
@@ -844,10 +835,6 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         ),
     ];
 
-    internal static readonly IReadOnlyCollection<string> RequiredRetailAccountCodes = RetailChart
-        .Select(a => a.Code)
-        .ToArray();
-
     static AccountingBootstrapStep()
     {
         if (RetailChart.Count != RetailChartAccountCount)
@@ -893,10 +880,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // abajo) y "1.1.03.001 Cuentas por cobrar clientes" por PendingBalance (saldo pendiente).
         // JournalFactory ya omite automáticamente la línea cuyo monto resuelto es 0 (mecanismo
         // existente, no nuevo) — una venta 100% contado nunca genera línea de CxC y una venta 100%
-        // crédito nunca genera línea de Caja. Una company con la forma vieja (1 línea Debe
-        // GrandTotal) se corrige vía TryCorrectLegacySalesInvoiceIssuedRule (mismo criterio
-        // exacto-o-nada que TryCorrectLegacyPurchaseCreditNoteAuthorizedRule) — nunca reescribe
-        // asientos ya posteados, solo la configuración de la regla para autorizaciones futuras.
+        // crédito nunca genera línea de Caja.
         new(
             PostingFactCatalog.SalesInvoiceIssued,
             [
@@ -958,9 +942,6 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // inventario. Ambas líneas pasan a "4.2.01.002 Descuentos obtenidos en compras" (mismo
         // AmountKind/Nature, solo cambia la cuenta) — TaxVat se mantiene en "1.1.05.001 IVA credito
         // tributario" (correcto: sí es una reversión de crédito tributario, no de inventario).
-        // Una company que ya tenía sembrada la forma vieja se corrige vía
-        // TryCorrectLegacyPurchaseCreditNoteAuthorizedRule (mismo criterio exacto-o-nada que
-        // TryCorrectLegacyRetentionsDocumentIssuedRule) — nunca reescribe asientos ya posteados.
         new(
             PostingFactCatalog.PurchaseCreditNoteAuthorized,
             [
@@ -1053,8 +1034,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // líneas: CxP por lo aplicado (AppliedToPayable) y "1.1.03.004 Anticipos a proveedores"
         // por el remanente no aplicado (SupplierCredit — misma cuenta/AmountKind que
         // "Purchases"/"PurchaseReturn" usa para el saldo a favor). JournalFactory omite la línea
-        // cuyo monto es 0 (pago sin remanente / pago sin CxP). La forma vieja (1 línea GrandTotal)
-        // se corrige vía TryCorrectLegacySupplierPaymentRule.
+        // cuyo monto es 0 (pago sin remanente / pago sin CxP).
         new(
             PostingFactCatalog.SupplierPaymentConfirmed,
             [
@@ -1077,10 +1057,6 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         // RetentionDocumentCancelledPostingTranslator no tiene entrada propia aquí — reversa el
         // mismo asiento vía ReverseJournalEntryCommand, no resuelve una PostingRule nueva (mismo
         // criterio que Purchases/PurchaseCreditNoteCancelled arriba).
-        //
-        // Ver LegacyRetentionsDocumentIssuedVatLine/CorrectLegacyPostingRulesAsync más abajo: una
-        // company que ya tenía sembrada la forma vieja de 2 líneas (01H) se corrige a esta forma de
-        // 3 líneas por el backfill, no solo las companies nuevas.
         new(
             PostingFactCatalog.RetentionDocumentIssued,
             [
@@ -1166,145 +1142,6 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             []
         ),
     ];
-
-    // RETENTIONS-TAX-COMPONENT-POSTING-02C — forma sembrada por RETENTIONS-POSTING-RULE-SEED-01H
-    // para "Retentions"/"DocumentIssued", antes de que esta fase separara IVA/Renta. Usada
-    // exclusivamente para reconocer con precisión (nunca adivinar) qué companies tienen esa forma
-    // vieja exacta y corregirlas — ver CorrectLegacyPostingRulesAsync. No se usa para nada más.
-    private static readonly IReadOnlyList<MinimalPostingRuleLine> LegacyRetentionsDocumentIssuedLines =
-    [
-        new("2.1.01.001", AccountNature.Debit, PostingAmountKind.Retention),
-        new("2.1.02.002", AccountNature.Credit, PostingAmountKind.Retention),
-    ];
-
-    // RETENTIONS-TAX-COMPONENT-POSTING-02C — línea vieja de esa forma que debe eliminarse
-    // (AmountKind Retention combinado) y las líneas nuevas que la reemplazan (RetentionVat +
-    // RetentionIncome). La línea de Debe (CxP proveedor) no cambia — se mantiene igual en ambas
-    // formas.
-    private static readonly MinimalPostingRuleLine LegacyRetentionsDocumentIssuedVatLine = new(
-        "2.1.02.002",
-        AccountNature.Credit,
-        PostingAmountKind.Retention
-    );
-
-    // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — forma vieja sembrada antes de esta fase
-    // para "Purchases"/"PurchaseCreditNoteAuthorized" (Subtotal/TaxIce acreditando por error
-    // "1.1.04.001 Inventario mercaderias"). Usada exclusivamente para reconocer con precisión (nunca
-    // adivinar) qué companies tienen esa forma vieja exacta y corregirlas — ver
-    // TryCorrectLegacyPurchaseCreditNoteAuthorizedRule. No se usa para nada más.
-    private static readonly IReadOnlyList<MinimalPostingRuleLine> LegacyPurchaseCreditNoteAuthorizedLines =
-    [
-        new("2.1.01.001", AccountNature.Debit, PostingAmountKind.AppliedToPayable),
-        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.Subtotal),
-        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
-        new("1.1.05.001", AccountNature.Credit, PostingAmountKind.TaxVat),
-    ];
-
-    // Las dos líneas viejas (Haber Inventario) que deben eliminarse y ser reemplazadas por las
-    // mismas dos líneas apuntando a "4.2.01.002 Descuentos obtenidos en compras" — mismo
-    // AmountKind/Nature, solo cambia la cuenta. AppliedToPayable/TaxVat no cambian.
-    private static readonly IReadOnlyList<MinimalPostingRuleLine> LegacyPurchaseCreditNoteAuthorizedInventoryLines =
-    [
-        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.Subtotal),
-        new("1.1.04.001", AccountNature.Credit, PostingAmountKind.TaxIce),
-    ];
-
-    // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — forma vieja exacta de
-    // "Sales"/"InvoiceIssued" (una sola línea de Debe, 100% GrandTotal a CxC, sin importar cuánto
-    // se cobró realmente). Usada exclusivamente para reconocer con precisión qué companies tienen
-    // esta forma vieja y corregirlas — ver TryCorrectLegacySalesInvoiceIssuedRule. No se usa para
-    // nada más. El resto de líneas (Subtotal/TaxVat/TaxIce, todas Credit) no cambia.
-    private static readonly MinimalPostingRuleLine LegacySalesInvoiceIssuedDebitLine = new(
-        "1.1.03.001",
-        AccountNature.Debit,
-        PostingAmountKind.GrandTotal
-    );
-
-    /// <summary>
-    /// SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — a diferencia del gap
-    /// de líneas de Retentions/DocumentIssued (detectable por conteo total), esta corrección AGREGA
-    /// una línea (4 → 5), así que <see cref="RequiredPostingRuleLineCounts"/> por sí solo ya la
-    /// detecta (4 &lt; 5) — este método existe para la detección PRECISA por contenido (mismo
-    /// criterio que <see cref="MatchesLegacyPurchaseCreditNoteAuthorizedForm"/>), evitando falsos
-    /// positivos si una company personalizó la regla a otra forma de 4 líneas distinta.
-    /// </summary>
-    internal static bool MatchesLegacySalesInvoiceIssuedForm(
-        IReadOnlyCollection<(
-            string AccountCode,
-            AccountNature Nature,
-            PostingAmountKind AmountKind
-        )> lines
-    )
-    {
-        var currentSet = lines.ToHashSet();
-        var legacySet = new HashSet<(
-            string AccountCode,
-            AccountNature Nature,
-            PostingAmountKind AmountKind
-        )>
-        {
-            ("1.1.03.001", AccountNature.Debit, PostingAmountKind.GrandTotal),
-            ("4.1.01.001", AccountNature.Credit, PostingAmountKind.Subtotal),
-            ("2.1.02.001", AccountNature.Credit, PostingAmountKind.TaxVat),
-            ("2.1.03.001", AccountNature.Credit, PostingAmountKind.TaxIce),
-        };
-
-        return lines.Count == legacySet.Count
-            && currentSet.Count == legacySet.Count
-            && currentSet.SetEquals(legacySet);
-    }
-
-    /// <summary>
-    /// PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — a diferencia del gap de líneas de
-    /// Retentions/DocumentIssued (2 → 3 líneas, detectable por conteo), esta corrección cambia la
-    /// CUENTA de 2 líneas existentes sin cambiar cuántas hay (sigue en 4) — <c>RequiredPostingRuleLineCounts</c>
-    /// nunca la detectaría. <see cref="AccountingChartBackfillService.EnsureAsync"/> usa este método
-    /// (por código de cuenta, no por Id — el backfill no necesariamente ya resolvió el Id de cada
-    /// cuenta) para decidir si una company activa con esta regla ya sembrada necesita re-ejecutar el
-    /// bootstrap (que aplicará <see cref="TryCorrectLegacyPurchaseCreditNoteAuthorizedRule"/>).
-    /// </summary>
-    internal static bool MatchesLegacyPurchaseCreditNoteAuthorizedForm(
-        IReadOnlyCollection<(
-            string AccountCode,
-            AccountNature Nature,
-            PostingAmountKind AmountKind
-        )> lines
-    )
-    {
-        var currentSet = lines.ToHashSet();
-        var legacySet = LegacyPurchaseCreditNoteAuthorizedLines
-            .Select(l => (l.AccountCode, l.Nature, l.AmountKind))
-            .ToHashSet();
-        return currentSet.Count == legacySet.Count && currentSet.SetEquals(legacySet);
-    }
-
-    // RETENTIONS-POSTING-RULE-SEED-01H: expone las claves (SourceModule, FactType) requeridas para
-    // que AccountingChartBackfillService pueda detectar con precisión si a una company activa ya
-    // seedeada le falta específicamente una regla nueva (p. ej. esta misma fase agregando
-    // Retentions/DocumentIssued a companies que ya tenían Expenses/Purchases/Sales/Payables) — antes
-    // de esto, el backfill solo verificaba "¿tiene AL MENOS UNA PostingRule?", lo que dejaba a esas
-    // companies fuera de cualquier backfill automático de reglas nuevas agregadas después de su
-    // primer seed.
-    internal static readonly IReadOnlyCollection<(
-        string SourceModule,
-        string FactType
-    )> RequiredPostingRuleKeys = MinimalPostingRules
-        .Select(r => (r.SourceModule, r.FactType))
-        .ToArray();
-
-    // RETENTIONS-TAX-COMPONENT-POSTING-02C — RequiredPostingRuleKeys (01H) detecta si a una
-    // company le falta una regla ENTERA, pero no si una regla existente quedó con menos líneas de
-    // las que su forma vigente en MinimalPostingRules declara hoy (exactamente lo que pasa con
-    // "Retentions"/"DocumentIssued": una company ya la tenía sembrada con 2 líneas, esta fase la
-    // amplía a 3). AccountingChartBackfillService.EnsureAsync compara el conteo real de
-    // PostingRuleLine contra este diccionario, no solo la existencia de la clave.
-    internal static readonly IReadOnlyDictionary<
-        (string SourceModule, string FactType),
-        int
-    > RequiredPostingRuleLineCounts = MinimalPostingRules.ToDictionary(
-        r => (r.SourceModule, r.FactType),
-        r => r.Lines.Count
-    );
 
     public async Task ExecuteAsync(
         CompanyBootstrapContext context,
@@ -1490,85 +1327,7 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             .Where(r => !(openingAccountConflict && IsOpeningBalanceRule(r)))
             .ToList();
 
-        // RETENTIONS-TAX-COMPONENT-POSTING-02C — una regla existente (clave ya en
-        // existingRuleKeySet, por lo tanto NUNCA en missingRules arriba) puede seguir teniendo
-        // menos líneas de las que su forma vigente declara hoy — el único caso conocido es
-        // "Retentions"/"DocumentIssued" sembrada por RETENTIONS-POSTING-RULE-SEED-01H con 2
-        // líneas. legacyRule es null si esa regla no existe o ya tiene la forma vigente (nada que
-        // corregir) — ver CorrectLegacyPostingRulesAsync.
-        var legacyRule = existingRuleKeySet.Contains(("Retentions", "DocumentIssued"))
-            ? await _db
-                .PostingRules.IgnoreQueryFilters()
-                .Include(r => r.Lines)
-                .FirstOrDefaultAsync(
-                    r =>
-                        r.TenantId == tenantId
-                        && r.CompanyId == companyId
-                        && r.SourceModule == "Retentions"
-                        && r.FactType == "DocumentIssued",
-                    cancellationToken
-                )
-            : null;
-
-        // PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — mismo criterio exacto que
-        // legacyRule/Retentions arriba: null si la regla no existe o ya tiene la forma vigente.
-        var legacyCreditNoteRule = existingRuleKeySet.Contains(
-            ("Purchases", "PurchaseCreditNoteAuthorized")
-        )
-            ? await _db
-                .PostingRules.IgnoreQueryFilters()
-                .Include(r => r.Lines)
-                .FirstOrDefaultAsync(
-                    r =>
-                        r.TenantId == tenantId
-                        && r.CompanyId == companyId
-                        && r.SourceModule == "Purchases"
-                        && r.FactType == "PurchaseCreditNoteAuthorized",
-                    cancellationToken
-                )
-            : null;
-
-        // SALES-CASH-VS-RECEIVABLE-POSTING-SPLIT-AND-CANCEL-REVERSAL-01 Lote 3 — mismo criterio
-        // exacto que legacyRule/Retentions y legacyCreditNoteRule arriba: null si la regla no
-        // existe o ya tiene la forma vigente (5 líneas, Caja+CxC condicionales).
-        var legacySalesInvoiceIssuedRule = existingRuleKeySet.Contains(("Sales", "InvoiceIssued"))
-            ? await _db
-                .PostingRules.IgnoreQueryFilters()
-                .Include(r => r.Lines)
-                .FirstOrDefaultAsync(
-                    r =>
-                        r.TenantId == tenantId
-                        && r.CompanyId == companyId
-                        && r.SourceModule == "Sales"
-                        && r.FactType == "InvoiceIssued",
-                    cancellationToken
-                )
-            : null;
-
-        // ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C — mismo criterio: null si la regla no existe.
-        var supplierPaymentRules = await _db
-            .PostingRules.IgnoreQueryFilters()
-            .Include(r => r.Lines)
-            .Where(r =>
-                r.TenantId == tenantId
-                && r.CompanyId == companyId
-                && r.SourceModule == "Payables"
-                && r.FactType == "SupplierPaymentConfirmed"
-            )
-            .ToListAsync(cancellationToken);
-        var legacySupplierPaymentConfirmedRule = supplierPaymentRules.FirstOrDefault(r =>
-            r.FactType == "SupplierPaymentConfirmed"
-        );
-
-        if (
-            missingRules.Count == 0
-            && legacyRule is null
-            && legacyCreditNoteRule is null
-            && legacySalesInvoiceIssuedRule is null
-            && !supplierPaymentRules.Any(r =>
-                r.Lines.Count == 1 && r.Lines.All(l => l.AmountKind == PostingAmountKind.GrandTotal)
-            )
-        )
+        if (missingRules.Count == 0)
         {
             LogPostingRulesSkipped(companyId);
             return;
@@ -1653,262 +1412,14 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             seededRulesCount++;
         }
 
-        var correctedLegacyRule = TryCorrectLegacyRetentionsDocumentIssuedRule(
-            legacyRule,
-            accountByCode,
-            companyId
-        );
-        var correctedLegacyCreditNoteRule = TryCorrectLegacyPurchaseCreditNoteAuthorizedRule(
-            legacyCreditNoteRule,
-            accountByCode,
-            companyId
-        );
-        var correctedLegacySalesInvoiceIssuedRule = TryCorrectLegacySalesInvoiceIssuedRule(
-            legacySalesInvoiceIssuedRule,
-            accountByCode,
-            companyId
-        );
-        var correctedSupplierPaymentConfirmedRule = TryCorrectLegacySupplierPaymentRule(
-            legacySupplierPaymentConfirmedRule,
-            AccountNature.Debit,
-            accountByCode,
-            companyId
-        );
-
-        if (
-            seededRulesCount == 0
-            && !correctedLegacyRule
-            && !correctedLegacyCreditNoteRule
-            && !correctedLegacySalesInvoiceIssuedRule
-            && !correctedSupplierPaymentConfirmedRule
-        )
+        if (seededRulesCount == 0)
         {
             LogPostingRulesSkipped(companyId);
             return;
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        if (seededRulesCount > 0)
-            LogPostingRulesSeeded(seededRulesCount, companyId);
-        if (correctedLegacyRule)
-            LogLegacyRetentionsRuleCorrected(companyId);
-        if (correctedLegacyCreditNoteRule)
-            LogLegacyPurchaseCreditNoteAuthorizedRuleCorrected(companyId);
-        if (correctedLegacySalesInvoiceIssuedRule)
-            LogLegacySalesInvoiceIssuedRuleCorrected(companyId);
-        if (correctedSupplierPaymentConfirmedRule)
-            LogLegacySupplierPaymentRulesCorrected(companyId);
-    }
-
-    /// <summary>
-    /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — corrige
-    /// "Payables"/"SupplierPaymentConfirmed" (<paramref name="nature"/> = Debit) desde la forma
-    /// previa exacta (UNA línea CxP
-    /// <see cref="PostingAmountKind.GrandTotal"/>) a la vigente: esa misma línea pasa a
-    /// <see cref="PostingAmountKind.AppliedToPayable"/> (conserva su Id, mismo criterio que
-    /// <see cref="TryCorrectLegacySalesInvoiceIssuedRule"/>) y se agrega "1.1.03.004 Anticipos a
-    /// proveedores" con <see cref="PostingAmountKind.SupplierCredit"/>. Para un pago sin remanente
-    /// ambas formas producen el mismo asiento. Reconocimiento único compartido con el comando de
-    /// despliegue de Production (<see cref="DiagnoseSupplierPaymentRule"/>): cualquier otra forma
-    /// (ya canónica o personalizada) se deja intacta — la personalizada queda registrada como
-    /// warning para revisión; si alguna cuenta canónica no está disponible, no toca nada (el
-    /// traductor rechazará fail-closed los pagos con remanente). Nunca toca asientos ya posteados.
-    /// </summary>
-    private bool TryCorrectLegacySupplierPaymentRule(
-        PostingRule? rule,
-        AccountNature nature,
-        Dictionary<string, AccountSeedLookup> accountByCode,
-        Guid companyId
-    )
-    {
-        if (rule is null)
-            return false;
-
-        var diagnostic = DiagnoseSupplierPaymentRule(rule, accountByCode);
-        if (diagnostic != SupplierPaymentRuleLegacy)
-        {
-            if (diagnostic != SupplierPaymentRuleCanonical)
-                _logger.LogWarning(
-                    "Payables/{FactType} company={CompanyId} rule={RuleId}: {Diagnostic} — requiere revisión manual; pagos con saldo no aplicado quedan bloqueados (fail-closed).",
-                    rule.FactType,
-                    companyId,
-                    rule.Id,
-                    diagnostic
-                );
-            return false;
-        }
-
-        var line = rule.Lines.Single();
-        _db.Entry(line).Property(l => l.AmountKind).CurrentValue =
-            PostingAmountKind.AppliedToPayable;
-        rule.AddLine(accountByCode["1.1.03.004"].Id, nature, PostingAmountKind.SupplierCredit);
-        return true;
-    }
-
-    /// <summary>
-    /// RETENTIONS-TAX-COMPONENT-POSTING-02C — corrige <paramref name="rule"/> de la forma vieja de
-    /// 01H (2 líneas, IVA+Renta combinados bajo <see cref="PostingAmountKind.Retention"/>) a la
-    /// forma vigente (3 líneas, IVA/Renta separados) SOLO si sus líneas actuales coinciden
-    /// EXACTAMENTE con <see cref="LegacyRetentionsDocumentIssuedLines"/> — cualquier otra forma
-    /// (ya corregida, o modificada manualmente por un admin) se deja intacta, nunca se adivina ni
-    /// se sobreescribe (mismo criterio que el resto de este seed: "nunca toca reglas ya editadas
-    /// por el admin"). Devuelve <c>false</c> sin tocar nada si <paramref name="rule"/> es
-    /// <c>null</c>, si no coincide con la forma vieja, o si la cuenta de Renta no está disponible
-    /// (inactiva/sin AllowsPosting) — en ese último caso el estado previo (2 líneas) se mantiene en
-    /// vez de dejar la regla a medio corregir.
-    /// </summary>
-    private bool TryCorrectLegacyRetentionsDocumentIssuedRule(
-        PostingRule? rule,
-        Dictionary<string, AccountSeedLookup> accountByCode,
-        Guid companyId
-    )
-    {
-        if (rule is null)
-            return false;
-
-        var currentLines = rule
-            .Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind))
-            .ToHashSet();
-        var legacyLines = LegacyRetentionsDocumentIssuedLines
-            .Select(l => (accountByCode[l.AccountCode].Id, l.Nature, l.AmountKind))
-            .ToHashSet();
-
-        if (currentLines.Count != legacyLines.Count || !currentLines.SetEquals(legacyLines))
-            return false;
-
-        var vatAccountCode = LegacyRetentionsDocumentIssuedVatLine.AccountCode;
-        if (
-            !accountByCode.TryGetValue("2.1.02.003", out var incomeAccount)
-            || !incomeAccount.IsActive
-            || !incomeAccount.AllowsPosting
-        )
-        {
-            LogPostingRuleSkippedInvalidAccount(
-                "Retentions",
-                "DocumentIssued",
-                "2.1.02.003",
-                companyId
-            );
-            return false;
-        }
-
-        var vatAccount = accountByCode[vatAccountCode];
-        rule.RemoveLine(
-            vatAccount.Id,
-            LegacyRetentionsDocumentIssuedVatLine.Nature,
-            LegacyRetentionsDocumentIssuedVatLine.AmountKind
-        );
-        rule.AddLine(vatAccount.Id, AccountNature.Credit, PostingAmountKind.RetentionVat);
-        rule.AddLine(incomeAccount.Id, AccountNature.Credit, PostingAmountKind.RetentionIncome);
-        return true;
-    }
-
-    /// <summary>
-    /// PURCHASE-CREDIT-NOTE-DISCOUNT-POSTING-ACCOUNT-01 — corrige <paramref name="rule"/> de la
-    /// forma vieja (Subtotal/TaxIce acreditando por error "1.1.04.001 Inventario mercaderias") a la
-    /// forma vigente (mismas líneas, cuenta "4.2.01.002 Descuentos obtenidos en compras") SOLO si
-    /// sus líneas actuales coinciden EXACTAMENTE con
-    /// <see cref="LegacyPurchaseCreditNoteAuthorizedLines"/> — cualquier otra forma (ya corregida,
-    /// o modificada manualmente por un admin) se deja intacta, nunca se adivina ni se sobreescribe
-    /// (mismo criterio que <see cref="TryCorrectLegacyRetentionsDocumentIssuedRule"/>). Nunca toca
-    /// JournalEntry ya posteados con la regla vieja — solo la configuración de la regla, para que
-    /// autorizaciones futuras usen la cuenta correcta. Devuelve <c>false</c> sin tocar nada si
-    /// <paramref name="rule"/> es <c>null</c>, si no coincide con la forma vieja, o si la cuenta
-    /// nueva no está disponible (inactiva/sin AllowsPosting).
-    /// </summary>
-    private bool TryCorrectLegacyPurchaseCreditNoteAuthorizedRule(
-        PostingRule? rule,
-        Dictionary<string, AccountSeedLookup> accountByCode,
-        Guid companyId
-    )
-    {
-        if (rule is null)
-            return false;
-
-        var currentLines = rule
-            .Lines.Select(l => (l.AccountId, l.Nature, l.AmountKind))
-            .ToHashSet();
-        var legacyLines = LegacyPurchaseCreditNoteAuthorizedLines
-            .Select(l => (accountByCode[l.AccountCode].Id, l.Nature, l.AmountKind))
-            .ToHashSet();
-
-        if (currentLines.Count != legacyLines.Count || !currentLines.SetEquals(legacyLines))
-            return false;
-
-        if (
-            !accountByCode.TryGetValue("4.2.01.002", out var discountAccount)
-            || !discountAccount.IsActive
-            || !discountAccount.AllowsPosting
-        )
-        {
-            LogPostingRuleSkippedInvalidAccount(
-                "Purchases",
-                "PurchaseCreditNoteAuthorized",
-                "4.2.01.002",
-                companyId
-            );
-            return false;
-        }
-
-        var inventoryAccount = accountByCode["1.1.04.001"];
-        foreach (var oldLine in LegacyPurchaseCreditNoteAuthorizedInventoryLines)
-        {
-            rule.RemoveLine(inventoryAccount.Id, oldLine.Nature, oldLine.AmountKind);
-            rule.AddLine(discountAccount.Id, oldLine.Nature, oldLine.AmountKind);
-        }
-        return true;
-    }
-
-    /// <summary>
-    /// Corrects only exact legacy 4/5-line Sales/InvoiceIssued rules to the canonical seven
-    /// lines after validating every required account. Preserves existing line IDs and never
-    /// touches posted entries. Shared by bootstrap and explicit Production maintenance.
-    /// </summary>
-    private bool TryCorrectLegacySalesInvoiceIssuedRule(
-        PostingRule? rule,
-        Dictionary<string, AccountSeedLookup> accountByCode,
-        Guid companyId
-    )
-    {
-        if (rule is null)
-            return false;
-
-        var status = DiagnoseSalesInvoiceRule(rule, accountByCode);
-        if (status != "Legacy4" && status != "Legacy5")
-        {
-            if (status != "Canonical7")
-                _logger.LogWarning(
-                    "Sales/InvoiceIssued company={CompanyId} rule={RuleId}: {Diagnostic}",
-                    companyId,
-                    rule.Id,
-                    status
-                );
-            return false;
-        }
-
-        if (status == "Legacy4")
-        {
-            // Keep the original receivable line ID and the three credit line IDs.
-            var receivable = rule.Lines.Single(l => l.AmountKind == PostingAmountKind.GrandTotal);
-            _db.Entry(receivable).Property(l => l.AmountKind).CurrentValue =
-                PostingAmountKind.PendingBalance;
-            rule.AddLine(
-                accountByCode["1.1.01.001"].Id,
-                AccountNature.Debit,
-                PostingAmountKind.CashApplied
-            );
-        }
-        rule.AddLine(
-            accountByCode["4.1.02.001"].Id,
-            AccountNature.Debit,
-            PostingAmountKind.Discount
-        );
-        rule.AddLine(
-            accountByCode["2.1.03.002"].Id,
-            AccountNature.Credit,
-            PostingAmountKind.TaxIrbpnr
-        );
-        return true;
+        LogPostingRulesSeeded(seededRulesCount, companyId);
     }
 
     [LoggerMessage(
@@ -1946,34 +1457,6 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
         Message = "Retail posting rules already complete for company {CompanyId}. Skipping."
     )]
     private partial void LogPostingRulesSkipped(Guid companyId);
-
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Corrected legacy Retentions/DocumentIssued posting rule (2 lines -> 3 lines, "
-            + "IVA/Renta separated) for company {CompanyId}."
-    )]
-    private partial void LogLegacyRetentionsRuleCorrected(Guid companyId);
-
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Corrected legacy Purchases/PurchaseCreditNoteAuthorized posting rule (Subtotal/TaxIce "
-            + "moved from Inventory to Purchase Discounts account) for company {CompanyId}."
-    )]
-    private partial void LogLegacyPurchaseCreditNoteAuthorizedRuleCorrected(Guid companyId);
-
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Corrected Sales/InvoiceIssued posting rule to current form "
-            + "(CashApplied/PendingBalance + sales Discount + IRBPNR) for company {CompanyId}."
-    )]
-    private partial void LogLegacySalesInvoiceIssuedRuleCorrected(Guid companyId);
-
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Corrected Payables/SupplierPayment posting rules to current form "
-            + "(AppliedToPayable + SupplierCredit advance line) for company {CompanyId}."
-    )]
-    private partial void LogLegacySupplierPaymentRulesCorrected(Guid companyId);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

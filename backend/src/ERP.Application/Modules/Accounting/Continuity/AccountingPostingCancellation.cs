@@ -64,7 +64,7 @@ public sealed class AccountingPostingCancellation
             ct
         );
         var original = candidates.FirstOrDefault(x =>
-            x.SourceEventType == factType && x.Status is JournalEntryStatus.Posted or JournalEntryStatus.Reversed
+            x.SourceEventType == factType && x.Status == JournalEntryStatus.Posted
         );
 
         if (original is not null)

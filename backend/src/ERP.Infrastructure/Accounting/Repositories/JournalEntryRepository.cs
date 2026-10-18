@@ -181,7 +181,7 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         // completos (ADR-026 §6.1/§9: cierre es cross-aggregate, pero no debe cargar el período
         // entero para decidir).
         var draftOrNonFinal = await scoped.CountAsync(
-            x => x.Status != JournalEntryStatus.Posted && x.Status != JournalEntryStatus.Reversed,
+            x => x.Status != JournalEntryStatus.Posted,
             ct
         );
 
@@ -190,12 +190,9 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             ct
         );
 
-        // El primer término solo aplica a datos previos a ACCOUNTING-CONTINUITY-03 (el original ya
-        // no se marca Reversed); el segundo, a un reverso que no quedó publicado.
+        // Un reverso que no quedó publicado.
         var incompleteReversals = await scoped.CountAsync(
-            x =>
-                (x.Status == JournalEntryStatus.Reversed && x.ReverseJournalEntryId == null)
-                || (x.OriginalJournalEntryId != null && x.Status != JournalEntryStatus.Posted),
+            x => x.OriginalJournalEntryId != null && x.Status != JournalEntryStatus.Posted,
             ct
         );
 
@@ -217,16 +214,13 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         CancellationToken ct = default
     )
     {
-        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — Posted Y Reversed, nunca solo Posted:
-        // un asiento Reversed nunca perdió su efecto contable histórico (JournalEntry.Reverse deja
-        // sus líneas/importes intactos, solo cambia Status), su reverso es un JournalEntry NUEVO,
-        // separado, en Posted — excluirlo de reportes dejaba visible solo la mitad del par contable
-        // (el reverso) y el neto del rango quedaba descuadrado en vez de en cero. Draft SÍ se
-        // excluye (nunca tuvo efecto contable real, nunca debe aparecer en un reporte histórico).
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — el original reversado sigue Posted con
+        // sus importes intactos y su reverso es otro JournalEntry Posted: ambos aparecen y el rango
+        // queda neto en cero. Draft/Discarded se excluyen (nunca tuvieron efecto contable).
         var scoped = _context.JournalEntries.Where(x =>
             x.TenantId == tenantId
             && x.CompanyId == companyId
-            && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
+            && x.Status == JournalEntryStatus.Posted
             && x.EntryDate >= fromDate
             && x.EntryDate <= toDate
         );
@@ -316,13 +310,12 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
         CancellationToken ct
     )
     {
-        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — ver GetPostedEntriesPageAsync: un
-        // Reversed conserva sus importes históricos, su reverso vive en un JournalEntry Posted
-        // aparte — ambos deben sumar aquí para que el rango quede neto en cero, nunca solo uno.
+        // ACCOUNTING-REPORTS-REVERSED-ENTRIES-NET-ZERO-01 — ver GetPostedEntriesPageAsync: original
+        // y reverso son Posted y suman ambos, el rango queda neto en cero.
         var entries = _context.JournalEntries.Where(x =>
             x.TenantId == tenantId
             && x.CompanyId == companyId
-            && (x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed)
+            && x.Status == JournalEntryStatus.Posted
         );
         // ACCOUNTING-12D: el cierre anual y su eventual reverso se excluyen juntos, sin importar sus fechas.
         if (excludeYearEndClosing)
@@ -367,9 +360,7 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
             .JournalEntries.Where(x =>
                 x.TenantId == tenantId
                 && x.CompanyId == companyId
-                && (
-                    x.Status == JournalEntryStatus.Posted || x.Status == JournalEntryStatus.Reversed
-                )
+                && x.Status == JournalEntryStatus.Posted
                 && x.EntryDate >= fromDate
                 && x.EntryDate <= toDate
             )

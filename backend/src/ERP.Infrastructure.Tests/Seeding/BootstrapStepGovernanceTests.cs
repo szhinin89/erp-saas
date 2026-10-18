@@ -131,7 +131,7 @@ public sealed class BootstrapStepGovernanceTests
 
         // ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 (hallazgo, no relacionado al ticket) —
         // AccountingBootstrapStep necesita exponerse también como su tipo concreto (consumido
-        // directamente por AccountingChartBackfillService), así que se registra vía factory
+        // directamente por los tests del step), así que se registra vía factory
         // delegate: AddScoped<InterfaceSimpleName>(sp => sp.GetRequiredService<ClassName>()).
         // El patrón directo de arriba no lo detecta — sin este segundo patrón, un registro
         // legítimo se reportaría como "step huérfano" (falso positivo).

@@ -122,7 +122,6 @@ public sealed record JournalEntryDto(
     int? EntryNumber,
     DateTime? PostedAtUtc,
     Guid? OriginalJournalEntryId,
-    Guid? ReverseJournalEntryId,
     DateTime? ReversedAtUtc,
     string? ReverseReason
 );
@@ -130,7 +129,7 @@ public sealed record JournalEntryDto(
 /// <summary>
 /// ACCOUNTING-LEDGER-VISIBILITY-01 — fila del listado de asientos (solo lectura). TotalDebit/
 /// TotalCredit se calculan a partir de <c>JournalEntry.Lines</c> (siempre balanceados en un
-/// asiento Posted/Reversed por invariante de dominio, ver EnsureBalanced); en un asiento Draft
+/// asiento Posted por invariante de dominio, ver EnsureBalanced); en un asiento Draft
 /// sin líneas aún ambos totales son 0.
 /// </summary>
 /// <summary>
@@ -200,7 +199,7 @@ public sealed record JournalEntryLineDto(
 /// ACCOUNTING-REVERSALS-05: OriginalJournalEntry*/ReverseJournalEntry* (Number/Date) resuelven el
 /// par de reverso para que el frontend pueda mostrar "Ver asiento relacionado" sin una segunda
 /// llamada — nunca se persisten en JournalEntry, se resuelven en Application contra
-/// OriginalJournalEntryId/ReverseJournalEntryId (ya existentes) en tiempo de lectura.
+/// OriginalJournalEntryId (del propio asiento o de su reverso, FindReversalOfAsync) en tiempo de lectura.
 /// </summary>
 public sealed record JournalEntryDetailDto(
     Guid Id,

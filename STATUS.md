@@ -1,5 +1,28 @@
 # Project Status
 
+## ACCOUNTING-SCHEMA-CLEANUP (2026-10-17)
+
+Pre-squash. Eliminado (sin lectores/escritores ni papel en instalación nueva, bootstrap u operación):
+`InventoryCostPosting`/`inventory_cost_postings`; `JournalEntry.ReverseJournalEntryId` (columna, FK, índice) y el
+estado `Reversed` (Draft=0, Posted=1, Discarded=3; el par de reverso solo por `OriginalJournalEntryId` único +
+`FindReversalOfAsync`, preservados); `TryCorrectLegacy*` y formas legacy del bootstrap; `AccountingChartBackfillService`
+(arranque fuera de Production + jerarquía); comandos `backfill-accounting-chart-hierarchy`,
+`backfill-sales-invoice-posting-rule`, `backfill-supplier-payment-posting-rules`,
+`backfill-supplier-credit-refund-posting-rules`, `backfill-opening-balance-posting-setup` y
+`remediate-purchase-return-postings`. Listado de asientos sin filtro «Reversado». Migración incremental
+`AccountingSchemaCleanup` fail-closed: aborta si queda una fila de costo con efecto sin obligación común o un
+`Reversed` sin reverso enlazado; si pasa, los `Reversed` heredados quedan Posted (sin cambio contable neto).
+Tests heredados que esperaban `Reversed` (ya incorrectos desde CONTINUITY-03) alineados al contrato vigente; tests
+de los comandos/backfills retirados eliminados.
+PASS 3/3: reversos e idempotencia (105 tests, incluye PostgreSQL con la migración); bootstrap de empresa nueva
+(35; se corrigió un conteo de reglas desactualizado desde 12A/12C, 16 → 21); EF sin cambios pendientes + migración
+aplicada a una copia de la BD local (3 `Reversed` → Posted, reversos intactos) y guard negativo que aborta sin
+escribir. DEBT: comandos `backfill-*` de otros módulos (bancos, clasificaciones, forma de pago SRI, cuenta de caja) y
+backfills de arranque de Gastos/DocumentFlowPolicy, fuera de alcance; las 3 columnas de `posting_rules` retiradas en
+ACCOUNTING-11 siguen en las BD existentes hasta el squash; runbooks `docs/operations` de los comandos retirados
+quedan obsoletos. Sin squash, suites, architecture:check, npm build, staging, commit ni push.
+Contrato: [Accounting §27](docs/architecture/accounting.md#27-limpieza-de-esquema-heredado-accounting-schema-cleanup).
+
 ## ACCOUNTING-FINAL-FIX (2026-10-17)
 
 Correcciones pre-squash de ACCOUNTING-FINAL-AUDIT. BUG REAL corregido: el reverso del cierre anual aceptaba

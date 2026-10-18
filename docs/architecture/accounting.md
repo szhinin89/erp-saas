@@ -58,8 +58,8 @@ No se crea una arquitectura contable paralela.
 | Costo operativo | Inventory/Kardex y obligaciones de valoración descritas en §10 |
 
 La obligación es un concepto de negocio durable, **no el nombre aprobado de una tabla
-nueva**. `InventoryCostPosting`, `OpeningBalancePosting` y `OpeningJournalEntryPosting`
-son evidencia reutilizable. La fase técnica determinará generalización o abstracción
+nueva**. `OpeningBalancePosting` y `OpeningJournalEntryPosting` son evidencia reutilizable
+(`InventoryCostPosting` se retiró en §27). La fase técnica determinará generalización o abstracción
 común, preservando una sola identidad y un solo pipeline conceptual por efecto.
 No mantener simultáneamente dos obligaciones autoritativas para el mismo efecto.
 
@@ -209,7 +209,8 @@ motivo/autor. No resolverlo mediante reglas vigentes, cuentas sustitutas o valor
 
 El original permanece **totalmente inmutable**, también en Open y en Closed/Locked, incluso
 su estado y metadatos persistidos. La relación inversa se consulta desde el nuevo reverso
-o evidencia append-only; no actualizar el original para marcarlo Reversed/enlazarlo.
+o evidencia append-only (`OriginalJournalEntryId`, único); el original no guarda estado ni
+referencia de reverso.
 El reverso se registra en el período Open que contiene la fecha efectiva de la
 anulación/reversión. No reabrir automáticamente ni elegir arbitrariamente otro período.
 Si no existe un período abierto válido para esa fecha, **se bloquea la anulación/reversión**
@@ -372,8 +373,8 @@ Se crea Draft sin número; `Version` empieza en 1 y aumenta al editar, publicar 
 La edición requiere la versión esperada; una versión vieja devuelve conflicto sin overwrite.
 No se limita al creador. Solo Manual + Draft admite edición/descarte/publicación.
 `Discarded` es terminal, histórico, con motivo/usuario/instante UTC; no tiene efecto contable
-ni bloquea el cierre. `Reversed` conserva su significado histórico existente: los reversos nuevos
-no cambian el estado ni ningún dato del original Posted.
+ni bloquea el cierre. No existe estado `Reversed` (§27): un original reversado sigue Posted y su
+reverso Posted lo referencia.
 
 **Captura.** Fecha contable, concepto obligatorio (500), referencia opcional (500) y líneas
 cuenta/descripción/Debe/Haber. Draft admite fecha futura, menos de dos líneas y desbalance.
@@ -431,8 +432,8 @@ republica eventos hacia Accounting ni garantiza recuperación del posting. Un me
 procesado no demuestra que exista JournalEntry. Los jobs de SRI y Communications
 tampoco son un pipeline de recuperación contable.
 
-El costo de ventas usa la obligación común (§20); `inventory_cost_postings` es histórico de solo
-lectura y la recuperación implícita de Failed se retiró. Apertura conserva su modelo propio
+El costo de ventas usa la obligación común (§20); `inventory_cost_postings` se retiró (§27) y la
+recuperación implícita de Failed también. Apertura conserva su modelo propio
 (OpeningBalancePosting/ASI) como única autoridad de su efecto; no hay segundo libro ni cola paralela.
 
 ## 13. DocumentFlowPolicy.AccountingPostingMode
@@ -588,11 +589,8 @@ las reglas existentes se conservan sin uso, nunca se borran. Lo mismo `Payables/
 (ACCOUNTING-FINAL-FIX): fuera de `PostingFactCatalog` y del bootstrap; la reversa del pago espeja el
 asiento de `Payables/SupplierPaymentConfirmed` (§18).
 
-Sin backfill: no se crean obligaciones ni asientos para operaciones previas. El comando
-`remediate-purchase-return-postings <id>... [apply]` es manual, exige IDs explícitos, informa sin
-cambios las devoluciones con asiento u obligación existente y, con `apply`, registra la obligación
-con el mismo hecho compuesto (fecha local de la autorización) y ejecuta su intento con el ejecutor
-común; el resto se resuelve con el reproceso manual de §17.
+Sin backfill: no se crean obligaciones ni asientos para operaciones previas; los fallos se resuelven
+con el reproceso manual de §17. (El comando `remediate-purchase-return-postings` se retiró en §27.)
 
 ## 20. Costos, apertura y Disabled ACCOUNTING-CONTINUITY-05
 
@@ -634,7 +632,7 @@ obligación común conservando identidad, estado, asiento y fechas (BusinessDate
 factura). Única excepción: filas con importe cero y sin asiento, en cualquier estado (Pending, Failed o
 Posted): no tienen efecto contable que preservar y una obligación de importe cero quedaría sin
 resolución posible; permanecen solo como evidencia legacy de solo lectura. Una fila con asiento se migra
-siempre. No crea obligaciones para hechos sin fila. La tabla legacy no recibe escrituras.
+siempre. No crea obligaciones para hechos sin fila. La tabla legacy se eliminó después (§27).
 
 **Apertura.** La decisión operativa se toma sobre `Company.OpeningBalanceDate`, bajo el lock
 compartido de política. Sujeta: se conservan OpeningBalancePosting/ASI y sus reglas especiales. No
@@ -780,8 +778,8 @@ nueva los configure sin SQL), reglas con su diagnóstico según el catálogo, ed
 Debe/Haber, tipo de monto del catálogo) y desactivación con confirmación explícita.
 
 **Balance General.** Activo suma Debe − Haber y Pasivo/Patrimonio Haber − Debe por sección (una cuenta
-correctora resta dentro de su sección). Patrimonio agrega dos filas calculadas desde asientos Posted y
-Reversed hasta `AsOfDate`, sin asiento ni persistencia: **Resultado del ejercicio** = Ingresos − Costos −
+correctora resta dentro de su sección). Patrimonio agrega dos filas calculadas desde asientos Posted hasta
+`AsOfDate`, sin asiento ni persistencia: **Resultado del ejercicio** = Ingresos − Costos −
 Gastos del 01-ene del año de `AsOfDate` a `AsOfDate` (ejercicio = año calendario, §22) y **Resultados no
 cerrados de ejercicios anteriores** = el mismo cálculo antes del 01-ene. `TotalEquity` las incluye e
 `IsBalanced` representa un descuadre real. Un asiento de cierre que deja las cuentas nominales en cero
@@ -872,7 +870,7 @@ relevante para la elección de vigencia (§20). Sin backfill.
 `accounting.periods.close`) crea un `JournalEntry` Draft con `SourceModule = Accounting`,
 `SourceEventType = FiscalYearClosing` e identidad nueva por generación, fecha 31-dic del ejercicio (año calendario,
 §22) y período = último período del ejercicio. Saldos acumulados del ejercicio de las cuentas Income/Cost/Expense,
-solo de asientos Posted (y Reversed históricos) del 01-ene al 31-dic, excluidos cierres anteriores y sus reversos:
+solo de asientos Posted del 01-ene al 31-dic, excluidos cierres anteriores y sus reversos:
 cada cuenta con saldo acreedor se debita y con saldo deudor se acredita por su saldo; la diferencia neta va a
 `3.1.03.001` Resultado del ejercicio del plan de la Company (Haber si hay utilidad, Debe si hay pérdida). Importes con
 `AccountingDecimals`; la contrapartida es la suma exacta de las líneas, así que el asiento balancea sin residuo y el
@@ -910,3 +908,27 @@ Comprobación lo muestran como un asiento más. Sin un segundo motor de reportes
 `accounting.view`): ejercicio, estado (Sin generar/Borrador/Contabilizado), asiento vinculado y resultado; acción
 «Generar asiento de cierre anual» con `accounting.periods.close` cuando el último período está Open; el Draft se
 revisa y publica en el detalle del asiento. La revisión de cierre explica `YEAR_END_CLOSING_MISSING`.
+
+## 27. Limpieza de esquema heredado ACCOUNTING-SCHEMA-CLEANUP
+
+Previo al squash de migraciones. Se retiró solo lo que no tenía lectores, escritores ni papel en una
+instalación nueva, el bootstrap vigente o la operación:
+
+- `InventoryCostPosting` / `inventory_cost_postings`: entidad, configuración EF y tabla. El costo de ventas
+  vive solo en la obligación común (§20).
+- `JournalEntry.ReverseJournalEntryId` (columna, FK e índice) y el estado `Reversed` de `JournalEntryStatus`.
+  Valores persistidos: Draft = 0, Posted = 1, Discarded = 3; el 2 no se reutiliza. El par de reverso se
+  resuelve solo por `OriginalJournalEntryId` (`uq_journal_entries_original_journal_entry_id`,
+  `FindReversalOfAsync`). Reportes, cierre y conciliación de apertura cuentan solo Posted: original y
+  reverso se netean igual que antes. El filtro de estado del listado ya no ofrece «Reversado».
+- Correcciones de reglas heredadas del bootstrap (`TryCorrectLegacy*`, formas legacy y sus
+  detectores), `AccountingChartBackfillService` (backfill de arranque fuera de Production y jerarquía) y
+  los comandos `backfill-accounting-chart-hierarchy`, `backfill-sales-invoice-posting-rule`,
+  `backfill-supplier-payment-posting-rules`, `backfill-supplier-credit-refund-posting-rules`,
+  `backfill-opening-balance-posting-setup` y `remediate-purchase-return-postings`. Una empresa nueva
+  recibe plan, período y reglas solo por `AccountingBootstrapStep`, que únicamente crea lo que falta.
+
+Migración `AccountingSchemaCleanup` (fail-closed): aborta si una fila de `inventory_cost_postings` con
+importe o asiento no tiene su obligación común, o si un asiento `Reversed` no tiene reverso enlazado
+por `OriginalJournalEntryId`. Si pasa, los `Reversed` heredados quedan Posted (líneas, número y fechas
+intactos) y se eliminan la tabla y la columna. `Down` restaura solo el esquema vacío.

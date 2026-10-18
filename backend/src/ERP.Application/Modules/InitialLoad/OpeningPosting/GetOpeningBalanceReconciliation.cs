@@ -158,7 +158,7 @@ public sealed record OpeningBalanceReconciliationDto(
 /// <c>InitialBalance</c>, CxC/CxP <c>InitialBalance</c> confirmadas; nunca staging/Excel), con el
 /// redondeo monetario de <see cref="OpeningBalancePosting.RoundAmount"/>.</item>
 /// <item>Monto contable por lote: líneas de la cuenta de control en los asientos
-/// <c>InitialLoad</c> del lote (Posted/Reversed, mismo criterio neto que Mayor/Balance).</item>
+/// <c>InitialLoad</c> del lote (Posted, mismo criterio neto que Mayor/Balance).</item>
 /// <item>Mayor por tipo y cuenta puente: <see cref="IJournalEntryRepository.GetAccountLineTotalsAsync"/>,
 /// la misma fuente de Libro Mayor / Balance de Comprobación.</item>
 /// </list>
@@ -310,7 +310,7 @@ public sealed class GetOpeningBalanceReconciliationHandler
 
             var entries = (await _journal.GetBySourceAsync(
                     tenantId, companyId, OpeningBalancePostingFacts.SourceModule, batch.Id, ct))
-                .Where(e => e.Status is JournalEntryStatus.Posted or JournalEntryStatus.Reversed)
+                .Where(e => e.Status == JournalEntryStatus.Posted)
                 .ToList();
             var lines = entries.SelectMany(e => e.Lines).ToList();
             var accounting = lines

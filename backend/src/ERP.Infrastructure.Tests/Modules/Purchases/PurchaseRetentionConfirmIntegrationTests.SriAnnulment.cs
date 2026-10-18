@@ -167,7 +167,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
             .Be(ERP.Domain.Modules.Payables.Enums.AccountsPayableStatus.Cancelled);
         payable.RetainedAmount.Should().Be(0m);
         var accounting = await RetentionAccountingAsync(retentionId);
-        accounting.IssuedStatus.Should().Be(JournalEntryStatus.Reversed);
+        accounting.IssuedStatus.Should().Be(JournalEntryStatus.Posted, "el original nunca se muta");
         accounting.Reversals.Should().Be(1, "el reverso contable ocurre exactamente una vez");
         (await StockMovementCountAsync(invoiceId))
             .Should()

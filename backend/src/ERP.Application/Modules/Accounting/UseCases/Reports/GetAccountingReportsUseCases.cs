@@ -491,7 +491,7 @@ public sealed class GetTrialBalanceReportHandler
 /// Credit por cuenta de Income/Cost/Expense en el rango (reutiliza
 /// <see cref="IJournalEntryRepository.GetAccountLineTotalsAsync"/>, mismo mecanismo ya probado
 /// para Libro Mayor/Balance de Comprobación — incluye reversos Posted como movimiento normal,
-/// excluye Draft/Reversed por el filtro `Status == Posted` ya aplicado dentro del repositorio).
+/// excluye Draft/Discarded por el filtro `Status == Posted` ya aplicado dentro del repositorio).
 /// Sin saldo inicial: a diferencia de Balance General, las cuentas de resultados no arrastran
 /// saldo entre rangos en este sistema.
 /// </summary>

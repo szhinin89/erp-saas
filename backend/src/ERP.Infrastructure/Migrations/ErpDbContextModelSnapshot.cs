@@ -3335,10 +3335,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("reference");
 
-                    b.Property<Guid?>("ReverseJournalEntryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("reverse_journal_entry_id");
-
                     b.Property<string>("ReverseReason")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -3392,8 +3388,6 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("OriginalJournalEntryId")
                         .IsUnique()
                         .HasDatabaseName("uq_journal_entries_original_journal_entry_id");
-
-                    b.HasIndex("ReverseJournalEntryId");
 
                     b.HasIndex("CompanyId", "FiscalYear", "EntryNumber")
                         .IsUnique()
@@ -7609,87 +7603,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("uq_inventory_adjustment_reason_accounts_company_reason");
 
                     b.ToTable("inventory_adjustment_reason_accounts", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.InventoryCostPosting", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric(22,10)");
-
-                    b.Property<int>("Attempts")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("EntryDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("ErrorCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("FactType")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)");
-
-                    b.Property<Guid>("InvoiceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("JournalEntryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<Guid>("SourceEventId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompanyId", "SourceEventId", "FactType")
-                        .IsUnique();
-
-                    b.HasIndex("TenantId", "CompanyId", "InvoiceId");
-
-                    b.ToTable("inventory_cost_postings", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.Lot", b =>
@@ -19176,11 +19089,6 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Accounting.Entities.JournalEntry", null)
                         .WithMany()
                         .HasForeignKey("OriginalJournalEntryId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Domain.Modules.Accounting.Entities.JournalEntry", null)
-                        .WithMany()
-                        .HasForeignKey("ReverseJournalEntryId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 

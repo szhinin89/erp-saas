@@ -84,8 +84,8 @@ public interface IJournalEntryRepository
 
     /// <summary>
     /// ACCOUNTING-FINAL-FIX — reverso de un asiento por la relación persistida
-    /// <c>OriginalJournalEntryId</c> (uq_journal_entries_original_journal_entry_id: a lo sumo uno). Nunca
-    /// se deduce del campo heredado <c>ReverseJournalEntryId</c> del original, que ya no se escribe.
+    /// <c>OriginalJournalEntryId</c> (uq_journal_entries_original_journal_entry_id: a lo sumo uno). El
+    /// original no guarda referencia inversa.
     /// </summary>
     Task<JournalEntry?> FindReversalOfAsync(
         Guid tenantId,
@@ -127,8 +127,8 @@ public interface IJournalEntryRepository
     /// <summary>
     /// ACCOUNTING-REPORTS-09: listado paginado de asientos Posted en un rango de fechas, con
     /// <c>Lines</c> incluidas — fuente única de Libro Diario. Nunca incluye Draft (aún no tuvo
-    /// efecto contable) ni Reversed (el asiento original queda inválido una vez reversado; su
-    /// reverso, que SÍ es Posted, aparece como un asiento normal más — ver
+    /// efecto contable) ni Discarded; un original reversado sigue Posted y su reverso aparece como
+    /// un asiento Posted más — ver
     /// <see cref="ERP.Domain.Modules.Accounting.Entities.JournalEntry.Reverse"/>). <paramref
     /// name="search"/> es opcional: compara contra <c>EntryNumber</c> (si es numérico) y
     /// <c>Description</c> (contains, case-insensitive) — no existe hoy una forma barata de buscar
