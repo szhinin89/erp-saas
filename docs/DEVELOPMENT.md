@@ -132,17 +132,29 @@ Fuente de verdad para agentes: [`docs/architecture/stack.md`](architecture/stack
 | Logs | Serilog | |
 | PDF | QuestPDF, RazorLight | |
 | Excel | ClosedXML | |
+| Códigos QR / barras | QRCoder, ZXing.Net + SkiaSharp | `SkiaSharp.NativeAssets.Linux.NoDependencies` aporta el nativo musl del runtime Docker Alpine |
+| HTTP saliente | `Microsoft.Extensions.Http` | `IHttpClientFactory` (cliente SOAP SRI) |
+| Redis directo | `StackExchange.Redis` | rate limiting distribuido / health probe |
 | API docs | Swashbuckle | `/swagger` |
 | BD | PostgreSQL **16** | Docker `postgreszh`, puerto **5435** |
 | Contenedores | Docker Compose | raíz repo |
 
 ### Frontend
 
-React 19, TypeScript, Vite, React Router v7, React Hook Form + Zod, Axios, Zustand, Recharts, i18next (`es`, `en`, `qu`), ESLint, Vitest, Playwright.
+React 19, TypeScript, Vite, React Router v7, React Hook Form + Zod, Axios, Zustand, Recharts, i18next (`es`, `en`, `qu`), ESLint, Vitest, Playwright, `decimal.js` (aritmética decimal de `lib/sanitizers.ts` y cálculos de compras/ventas). Tests unitarios: Vitest + `jsdom` + `@testing-library/react` (con su peer `@testing-library/dom`).
 
 ### Tests backend
 
-xUnit, Moq, FluentAssertions, `Microsoft.AspNetCore.Mvc.Testing`, EF InMemory cuando aplique.
+xUnit, Moq, FluentAssertions, `Microsoft.AspNetCore.Mvc.Testing`, EF InMemory cuando aplique, Testcontainers (PostgreSQL). ZXing.Net/SkiaSharp en `ERP.Infrastructure.Tests` solo para decodificar los QR/códigos generados.
+
+### Pins de seguridad transitivos
+
+Referencias directas sin consumo en código, que fijan una versión no vulnerable de una dependencia transitiva (`NU1902`/`NU1903` son error en `backend/Directory.Build.props`). Retirarlas solo cuando el paquete padre resuelva ya una versión segura:
+
+| Paquete | Proyecto(s) | Padre transitivo |
+|---------|-------------|------------------|
+| `Newtonsoft.Json` | `ERP.API` | `Hangfire.Core` (resuelve 11.0.1) |
+| `SSH.NET` | `*.Tests` | `Testcontainers` (resuelve 2024.2.0) |
 
 ### CI
 

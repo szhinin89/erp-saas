@@ -7,7 +7,7 @@ function newCorrelationId(): string {
   return `erp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-/** Id estable por pestaña para trazas (OpenTelemetry / Datadog / Sentry). */
+/** Id estable por pestaña para trazas (OpenTelemetry). */
 export function getCorrelationId(): string {
   if (typeof sessionStorage === "undefined") return newCorrelationId();
   let id = sessionStorage.getItem(CORRELATION_KEY);

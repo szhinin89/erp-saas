@@ -42,7 +42,7 @@ internal sealed partial class OutboxProcessor : IOutboxProcessor
                 // Future enhancements (add here, do NOT couple to domain):
                 //   Phase 4 — forward to analytics sink / read-model projector
                 //   Phase 5 — route to ERP.AI.Application event handlers
-                //   Phase 6 — publish to external message bus (Kafka, Service Bus)
+                //   Phase 6 — publish to external message bus (requires stack approval — docs/architecture/stack.md)
                 //
                 // The EventName and MetadataJson fields are already populated and stable
                 // for downstream routing once those phases are implemented.

@@ -34,6 +34,13 @@
     "System.Security.Cryptography.Xml",
     "RazorLight",
     "ClosedXML",
+    "QRCoder",
+    "ZXing.Net",
+    "SkiaSharp",
+    "SkiaSharp.NativeAssets.Linux.NoDependencies",
+    "StackExchange.Redis",
+    "Microsoft.Extensions.Http",
+    "Newtonsoft.Json",
     "xunit",
     "FluentAssertions",
     "Moq",
@@ -46,11 +53,13 @@
     "OpenTelemetry.Instrumentation.AspNetCore",
     "OpenTelemetry.Exporter.Prometheus.AspNetCore",
     "Testcontainers",
-    "Testcontainers.PostgreSql"
+    "Testcontainers.PostgreSql",
+    "SSH.NET"
   ],
   "npmAllowed": [
     "react",
     "react-dom",
+    "decimal.js",
     "typescript",
     "vite",
     "react-router-dom",
@@ -74,7 +83,10 @@
     "@dnd-kit/core",
     "@dnd-kit/sortable",
     "@dnd-kit/utilities",
-    "vitest"
+    "vitest",
+    "jsdom",
+    "@testing-library/react",
+    "@testing-library/dom"
   ],
   "dockerComposeServicesAllowed": [
     "postgres",
