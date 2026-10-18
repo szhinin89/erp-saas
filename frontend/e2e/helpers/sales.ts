@@ -169,9 +169,25 @@ export async function createInvoiceDraft(
   }
   const pricing = unwrap<{ unitPrice?: number; vatCode?: string; iceCode?: string }>(await pricingResponse.json());
   if (!pricing.vatCode) throw new Error("item pricing did not provide the required VAT code.");
+  const termsResponse = await request.get(`${API_BASE}/api/v1/master/payment-terms`, { headers });
+  if (!termsResponse.ok()) throw new Error(`payment terms failed: ${termsResponse.status()} ${await termsResponse.text()}`);
+  const terms: Array<{ id: string; code: string; isActive: boolean }> = await termsResponse.json();
+  const cashTerm = terms.find(term => term.code === "CONTADO" && term.isActive);
+  if (!cashTerm) throw new Error("The official active CONTADO payment term is required.");
+  const paymentMethods = await request.get(`${API_BASE}/api/v1/payment-methods?onlyActive=true`, { headers });
+  const sriMethods = await request.get(`${API_BASE}/api/v1/catalog/sri-payment-methods`, { headers });
+  if (!paymentMethods.ok() || !sriMethods.ok()) throw new Error("official payment catalogs failed.");
+  const methods: Array<{ id: string; code: string; isActive: boolean; affectsPhysicalCash: boolean; sriPaymentMethodCode: string | null }> = (await paymentMethods.json()).data;
+  const paymentMethod = methods.find(method => method.code === "EFECTIVO" && method.isActive && method.affectsPhysicalCash);
+  const sriCatalog: Array<{ code: string }> = (await sriMethods.json()).data;
+  if (!paymentMethod?.sriPaymentMethodCode || !sriCatalog.some(method => method.code === paymentMethod.sriPaymentMethodCode)) {
+    throw new Error("The official EFECTIVO method and its SRI mapping are required.");
+  }
   const draftPayload = {
       customerId: payload.customerId,
       issueDate: new Date().toISOString().slice(0, 10),
+      paymentTermId: cashTerm.id,
+      sriPaymentMethodCode: paymentMethod.sriPaymentMethodCode,
       lines: [
         { itemId: payload.productId, description: "Producto E2E Venta", quantity: payload.quantity, unitPrice: pricing.unitPrice ?? payload.unitPrice, vatCode: pricing.vatCode, iceCode: pricing.iceCode ?? null, warehouseId: payload.warehouseId },
       ],
@@ -187,13 +203,8 @@ export async function createInvoiceDraft(
   }
   const body = await res.json();
   const data = unwrap<{ id: string; grandTotal: number }>(body);
-  const paymentMethods = await request.get(`${API_BASE}/api/v1/payment-methods?onlyActive=true`, { headers });
-  const sriMethods = await request.get(`${API_BASE}/api/v1/catalog/sri-payment-methods`, { headers });
-  if (!paymentMethods.ok() || !sriMethods.ok()) throw new Error("official payment catalogs failed.");
-  const paymentMethod = (await paymentMethods.json()).data?.[0];
-  const sriMethod = (await sriMethods.json()).data?.[0];
-  if (!paymentMethod || !sriMethod) throw new Error("No active official E2E payment method.");
-  const updated = await request.put(`${API_BASE}/api/v1/sales/${data.id}`, { headers, data: { id: data.id, ...draftPayload, sriPaymentMethodCode: sriMethod.code, payments: [{ paymentMethodId: paymentMethod.id, amount: data.grandTotal, reference: "E2E" }] } });
+  // Use the server-calculated total, including taxes, to settle the valid draft.
+  const updated = await request.put(`${API_BASE}/api/v1/sales/${data.id}`, { headers, data: { id: data.id, ...draftPayload, payments: [{ paymentMethodId: paymentMethod.id, amount: data.grandTotal, reference: "E2E" }] } });
   if (!updated.ok()) throw new Error(`payment update failed: ${updated.status()} ${await updated.text()}`);
   return data.id;
 }

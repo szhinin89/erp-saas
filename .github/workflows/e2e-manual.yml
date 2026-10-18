@@ -60,6 +60,9 @@ jobs:
           echo "::add-mask::$E2E_PASSWORD"
           echo "E2E_USERNAME=e2e.admin" >> "$GITHUB_ENV"
           echo "E2E_PASSWORD=$E2E_PASSWORD" >> "$GITHUB_ENV"
+          E2E_JWT_SECRET="$(openssl rand -hex 32)"
+          echo "::add-mask::$E2E_JWT_SECRET"
+          echo "E2E_JWT_SECRET=$E2E_JWT_SECRET" >> "$GITHUB_ENV"
 
       - name: Restore & build API
         working-directory: backend/src
@@ -91,6 +94,7 @@ jobs:
         run: |
           export E2E__Username="$E2E_USERNAME"
           export E2E__Password="$E2E_PASSWORD"
+          export JWT__SECRETKEY="$E2E_JWT_SECRET"
           dotnet run --project ERP.API/ERP.API.csproj -c Release --no-build &
           echo $! > /tmp/erp-api.pid
           for i in $(seq 1 60); do

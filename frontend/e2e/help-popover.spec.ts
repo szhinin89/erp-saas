@@ -1,4 +1,19 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test as base, expect, type Page } from "@playwright/test";
+import { createServer } from "vite";
+
+// Start the transforming dev server only for workers running this source fixture.
+const test = base.extend<object, { helpServer: string }>({
+  helpServer: [async ({}, use) => {
+    const server = await createServer({ server: { host: "127.0.0.1", port: 4174, strictPort: true } });
+    try {
+      await server.listen();
+      await use("http://127.0.0.1:4174");
+    } finally {
+      await server.close();
+    }
+  }, { scope: "worker" }],
+  baseURL: async ({ helpServer }, use) => { await use(helpServer); },
+});
 const pageErrors = new WeakMap<Page, string[]>();
 async function inside(page: Page) {
   await expect.poll(() => page.locator(".zh-help-popover").evaluate(el => {

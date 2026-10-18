@@ -234,6 +234,9 @@ try {
     $env:E2E__SeedEnabled = "true"
     $env:E2E__Username = $env:E2E_USERNAME
     $env:E2E__Password = $env:E2E_PASSWORD
+    # Isolated HTTP authorization fixture; never reuse the development signing key.
+    $env:E2E_JWT_SECRET = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
+    $env:JWT__SECRETKEY = $env:E2E_JWT_SECRET
     $apiStdout = Join-Path $runnerLogDir "api.stdout.log"
     $apiStderr = Join-Path $runnerLogDir "api.stderr.log"
     Remove-Item -LiteralPath $apiStdout, $apiStderr -Force -ErrorAction SilentlyContinue
