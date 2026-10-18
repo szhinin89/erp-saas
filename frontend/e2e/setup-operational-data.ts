@@ -67,9 +67,30 @@ async function ensureCompanyOperationalData(
   }
   const headers = { ...companyContextHeaders, "X-Branch-Id": branch.id };
 
+  await ensureAccountingEnabled(api, headers);
   if (requiresOpenCashSession) await ensureOpenCashSession(api, headers);
   const item = await ensureItem(api, headers, itemDefinition);
   await ensureStock(api, headers, item, itemDefinition.name);
+}
+
+async function ensureAccountingEnabled(api: APIRequestContext, headers: Record<string, string>) {
+  const response = await api.get(`${API_BASE}/api/v1/accounting/operational-policy`, { headers });
+  if (!response.ok()) {
+    throw new Error(`accounting policy lookup failed: ${response.status()} ${await response.text()}`);
+  }
+  const policy = (await response.json()).data;
+  if (policy.currentMode === "Enabled" || policy.currentMode === 1) return;
+  // Do not overwrite an explicit policy or append versions on repeated setup runs.
+  if (policy.isConfigured) throw new Error("E2E accounting policy must be Enabled today.");
+  const effectiveFrom = policy.openingBalanceDate && policy.openingBalanceDate < policy.today
+    ? policy.openingBalanceDate : policy.today;
+  const configured = await api.put(`${API_BASE}/api/v1/accounting/operational-policy`, {
+    headers,
+    data: { mode: "Enabled", effectiveFrom, reason: "E2E operational accounting" },
+  });
+  if (!configured.ok()) {
+    throw new Error(`accounting policy configuration failed: ${configured.status()} ${await configured.text()}`);
+  }
 }
 
 async function ensureOpenCashSession(api: APIRequestContext, headers: Record<string, string>) {
@@ -148,10 +169,11 @@ async function ensureItem(
       brandId: brand.id,
       barcodes: [{ code: itemDefinition.sku, barcodeType: barcode.code, isPrimary: true }],
       saleVatCode: rate.code,
+      purchaseVatCode: rate.code,
       exciseTaxCode: null,
       baseSalePrice: 10,
       isForSale: true,
-      tracksStock: true,
+      stockControlEnabled: true,
     },
   });
   if (!created.ok()) {
@@ -187,6 +209,18 @@ async function ensureStock(
   if (stocks[0]?.availableQuantity > 0) return;
 
   const reasonId = await ensureIngresoAdjustmentReason(api, headers);
+  // The reason is tenant-wide; its posting counterpart belongs to the active Company.
+  const account = await api.get(`${API_BASE}/api/v1/accounting/accounts/by-code/4.2.01.001`, { headers });
+  if (!account.ok()) {
+    throw new Error(`adjustment account lookup failed: ${account.status()} ${await account.text()}`);
+  }
+  const configured = await api.put(`${API_BASE}/api/v1/inventory/adjustment-reasons/${reasonId}/account`, {
+    headers,
+    data: { accountingAccountId: (await account.json()).data.id },
+  });
+  if (!configured.ok()) {
+    throw new Error(`adjustment account configuration failed: ${configured.status()} ${await configured.text()}`);
+  }
 
   const draft = await api.post(`${API_BASE}/api/v1/inventory/stock/adjustments`, {
     headers,
