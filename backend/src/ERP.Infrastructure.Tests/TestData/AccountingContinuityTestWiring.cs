@@ -50,6 +50,14 @@ public static class AccountingContinuityTestWiring
         services.TryAddScoped<IPaymentMethodAccountRepository, PaymentMethodAccountRepository>();
         services.TryAddScoped<IPostingRuleRepository, PostingRuleRepository>();
         services.TryAddScoped<IAccountRepository, AccountRepository>();
+        // Resto de dependencias de AccountingPostingFactBuilder (motivos de ajuste/caja y su cuenta).
+        services.TryAddScoped<
+            ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonRepository,
+            ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryAdjustmentReasonRepository>();
+        services.TryAddScoped<
+            ERP.Domain.Modules.Inventory.Interfaces.IInventoryAdjustmentReasonAccountRepository,
+            ERP.Infrastructure.Persistence.Repositories.Inventory.InventoryAdjustmentReasonAccountRepository>();
+        services.TryAddScoped<ICashMovementReasonRepository, CashMovementReasonRepository>();
         services.AddScoped<AccountingOperationalDecision>();
         services.AddScoped<AccountingPostingDispatchQueue>();
         services.AddScoped<AccountingPostingRecorder>();
