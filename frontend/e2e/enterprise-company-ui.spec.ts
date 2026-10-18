@@ -54,6 +54,7 @@ test.describe("Enterprise company UI isolation", () => {
       await switchCompany(request, session.token, companies[0]!.companyId);
     }
 
+    await page.addInitScript(() => localStorage.setItem("zh.erp.locale", "es"));
     await page.goto("/login");
     await page
       .locator("#lp-username")
@@ -73,21 +74,25 @@ test.describe("Enterprise company UI isolation", () => {
 
     await page.goto("/masterdata/customers");
     await page.waitForLoadState("domcontentloaded");
+    await page.getByRole("tab", { name: /Listado/i }).click();
+    await expect(page.getByRole("tab", { name: /Listado/i })).toHaveAttribute("aria-selected", "true");
 
-    const switcher = page.locator(".company-switcher-select");
+    const switcher = page.getByRole("combobox", { name: "Cambiar empresa operativa" });
     await expect(switcher).toHaveCount(1, { timeout: 15_000 });
-    await expect(switcher.locator("option")).toHaveCount(2, {
+    await expect(switcher.getByRole("option")).toHaveCount(2, {
       timeout: 15_000,
     });
 
-    const beforeText = await page
-      .locator(".zh-entity-item-name")
-      .first()
-      .textContent()
-      .catch(() => "");
+    const customerRow = page.getByRole("table").getByRole("row").filter({
+      has: page.getByRole("cell", { name: "1791352688001", exact: true }),
+    });
+    const customerName = customerRow.getByRole("cell", { name: "Cliente E2E ZH", exact: true });
+    await expect(customerName).toBeVisible();
+    const beforeText = await customerName.textContent();
+    expect(beforeText?.trim()).toBeTruthy();
 
     const optionValues = await switcher
-      .locator("option")
+      .getByRole("option")
       .evaluateAll((opts) =>
         opts.map((o) => (o as HTMLOptionElement).value).filter(Boolean),
       );
@@ -100,15 +105,14 @@ test.describe("Enterprise company UI isolation", () => {
 
     await page.goto("/masterdata/customers");
     await page.waitForLoadState("domcontentloaded");
+    await expect(switcher).toHaveValue(other!);
+    // The previous Listado state must not survive the remount for the new Company.
+    await expect(page.getByRole("tab", { name: /Resumen/i })).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("tab", { name: /Listado/i }).click();
+    await expect(page.getByRole("tab", { name: /Listado/i })).toHaveAttribute("aria-selected", "true");
 
-    const afterCount = await page.locator(".zh-entity-item-name").count();
-    const afterText =
-      afterCount > 0
-        ? await page.locator(".zh-entity-item-name").first().textContent()
-        : "";
-
-    if (beforeText && afterText && beforeText !== afterText) {
-      expect(afterText).not.toBe(beforeText);
-    }
+    // BusinessPartner is tenant-wide: switching Company preserves customer identity.
+    await expect(customerName).toBeVisible();
+    await expect(customerName).toHaveText(beforeText!);
   });
 });
