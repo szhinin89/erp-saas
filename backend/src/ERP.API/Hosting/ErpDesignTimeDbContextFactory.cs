@@ -37,6 +37,9 @@ internal sealed class ErpDesignTimeDbContextFactory : IDesignTimeDbContextFactor
                     + "ConnectionStrings__DefaultConnection."
             );
 
+        if (args.Contains("--launcher-reset=true", StringComparer.Ordinal))
+            LauncherResetGuard.Confirm(connectionString, environment, Console.WriteLine, Console.ReadLine);
+
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(
                 connectionString,

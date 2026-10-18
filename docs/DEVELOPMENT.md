@@ -35,7 +35,7 @@ Reglas multi-tenant (`IgnoreQueryFilters()`, `company_id` del body, `ICurrentTen
 | Opción | Efecto |
 |--------|--------|
 | `[1] Iniciar ERP` | Docker up + migraciones + API + Vite (uso diario) |
-| `[2] Reset completo` | **Destructivo**: drop de `erp_zh_dev` + migraciones + first-run asistido |
+| `[2] Reset completo` | **Destructivo**: drop de `erp_zh_dev` + migraciones + alta first-run exclusivamente manual por el propietario |
 | `[3] Solo Backend API` | Migraciones + API |
 | `[4] Tests completos` | Suites backend/frontend |
 
@@ -52,7 +52,7 @@ npm run dev
 ```
 
 - First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`, token-gated)
-- Tras cambios de esquema (pre-producción): recrear BD local — `dotnet ef database drop --project backend/src/ERP.Infrastructure --startup-project backend/src/ERP.API -f` y luego `dotnet ef database update`
+- Reset local: usar exclusivamente la opcion `[2]` del launcher; valida el destino EF efectivo (Development, loopback:5435, `erp_zh_dev`) y exige confirmacion textual exacta antes del borrado. No sustituir la guarda por un drop directo.
 - `dotnet-ef` es herramienta local versionada en `.config/dotnet-tools.json` (alineada con EF Core del proyecto): ejecutar `dotnet tool restore` una vez tras clonar o al cambiar su versión. CI y los scripts (`dev-launcher.ps1`, `run-e2e.ps1`) lo hacen automáticamente.
 - `dotnet ef` siempre con `--startup-project ERP.API`: la factory de diseño (`ERP.API/Hosting/ErpDesignTimeDbContextFactory.cs`) usa las mismas fuentes que el runtime.
 
@@ -204,10 +204,11 @@ pwsh -File scripts/ci/run-e2e.ps1 -SkipDocker
 pwsh -File scripts/ci/run-e2e.ps1 -PlaywrightArgs "e2e/smoke.spec.ts"
 ```
 
-Primer usuario del sistema: `dev-launcher.ps1` detecta automáticamente `isInitialized = false`,
-recoge los datos del administrador inicial y llama a `POST /api/setup/admin` con el Setup Token
-que el backend genera e imprime en su consola al arrancar (single-use, expira a los 15 min).
-No existen credenciales sembradas por defecto ni tokens configurables vía appsettings/env.
+Primer usuario del sistema: el launcher solo consulta el estado de first-run. El propietario
+abre manualmente `/setup` en el frontend y completa el formulario existente, que llama a
+`POST /api/v1/setup/admin`. El token obligatorio se obtiene personalmente de la consola API;
+es temporal (15 minutos por defecto) y de un solo uso. El launcher no recoge datos ni realiza el alta.
+No existen credenciales administrativas predefinidas ni tokens configurables via appsettings/env.
 
 ---
 
@@ -229,3 +230,7 @@ No existen credenciales sembradas por defecto ni tokens configurables vía appse
 - Transactional outbox
 - Distributed locks para cuotas
 - Concurrencia optimista en agregados calientes
+
+### FIRST-RUN-SECURITY-01
+
+El launcher solo consulta el estado: no recoge tokens o credenciales, no crea administradores y no verifica login. El propietario completa manualmente el flujo existente con el token temporal obligatorio y de un solo uso de la consola API. La salida API no se copia a `.api-startup.log`. No autoriza a agentes a leer la consola ni completar el alta.

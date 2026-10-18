@@ -1,5 +1,10 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
+## FIRST-RUN-SECURITY-01 (2026-10-18)
+
+Implementado, pendiente de revision. BUG REAL: launcher capturaba token de logs y creaba admin con credenciales predefinidas; reset sin validacion del destino efectivo. Retirados alta/wizard/login y captura/log duplicado. Guard EF: Development + loopback:5435 + erp_zh_dev, destino visible y confirmacion exacta. KEEP: flujo first-run existente, token obligatorio temporal de un solo uso. Reglas de agentes en CLAUDE.md y security.md. PASS: PowerShell estatico, 13/13 tests focales sin conexion y diff check. Persistencia/concurrencia PostgreSQL no ejecutadas por restricciones; tampoco instalador, usuarios, migraciones, seeds, operaciones BD, suites, staging, commit o push. Modulos CLOSED intactos. Detalle y gate: docs/agent/FIRST_RUN_SECURITY_01_DELIVERY.md.
+
+
 ## BACKGROUND DEPLOYMENT — FASE D
 
 **Status: IMPLEMENTADO y validado focalmente (2026-10-15).** API/Worker separados

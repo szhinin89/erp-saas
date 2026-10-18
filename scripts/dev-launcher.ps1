@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+﻿#Requires -Version 7.0
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -462,9 +462,13 @@ function Invoke-DatabaseDrop {
 
     Write-Warn "Eliminando base de datos actual"
 
-    Push-Location $BackendPath
+    $previousAspNetEnvironment = $env:ASPNETCORE_ENVIRONMENT
+    $previousDotnetEnvironment = $env:DOTNET_ENVIRONMENT
+    Push-Location (Split-Path $ApiProject -Parent)
 
     try {
+        $env:ASPNETCORE_ENVIRONMENT = "Development"
+        $env:DOTNET_ENVIRONMENT = "Development"
 
         dotnet tool restore | Out-Null
         if ($LASTEXITCODE -ne 0) {
@@ -474,7 +478,8 @@ function Invoke-DatabaseDrop {
         dotnet ef database drop `
             --force `
             --project $InfrastructureProject `
-            --startup-project $ApiProject
+            --startup-project $ApiProject `
+            -- --launcher-reset=true
 
         if ($LASTEXITCODE -ne 0) {
             throw "Falló EF Database Drop"
@@ -483,6 +488,8 @@ function Invoke-DatabaseDrop {
         Write-Ok "Base de datos eliminada"
     }
     finally {
+        $env:ASPNETCORE_ENVIRONMENT = $previousAspNetEnvironment
+        $env:DOTNET_ENVIRONMENT = $previousDotnetEnvironment
         Pop-Location
     }
 }
@@ -510,214 +517,18 @@ function Get-SetupStatus {
 }
 
 
-function Read-WizardValue {
-
-    param(
-        [Parameter(Mandatory)]
-        [string]$Prompt,
-
-        [switch]$AsSecret
-    )
-
-    if ($AsSecret) {
-        $secure = Read-Host $Prompt -AsSecureString
-        return (ConvertFrom-SecureString -SecureString $secure -AsPlainText)
-    }
-
-    return Read-Host $Prompt
-}
-
-
-function Invoke-FirstRunWizard {
-
-    Write-Title "PRIMERA INSTALACIÓN — CREAR ADMINISTRADOR"
-
-    Write-Host ""
-    Write-Host "El backend imprimió un Setup Token en su propia consola al" -ForegroundColor Cyan
-    Write-Host "arrancar (ventana del API, bajo 'FIRST RUN DETECTADO')." -ForegroundColor Cyan
-    Write-Host "Cópielo aquí junto con los datos del administrador inicial." -ForegroundColor Cyan
-    Write-Host ""
-
-    $token     = Read-WizardValue "Setup Token"
-    $username  = Read-WizardValue "Usuario (username, 3-50 caracteres)"
-    $firstName = Read-WizardValue "Nombre"
-    $lastName  = Read-WizardValue "Apellido"
-    $email     = Read-WizardValue "Email"
-    $password  = Read-WizardValue "Contraseña (mín. 8, 1 mayúscula, 1 número)" -AsSecret
-
-    if ([string]::IsNullOrWhiteSpace($token) -or
-        [string]::IsNullOrWhiteSpace($username) -or
-        [string]::IsNullOrWhiteSpace($firstName) -or
-        [string]::IsNullOrWhiteSpace($lastName) -or
-        [string]::IsNullOrWhiteSpace($email) -or
-        [string]::IsNullOrWhiteSpace($password)) {
-
-        Write-Warn "Datos incompletos. Operación cancelada."
-        return $false
-    }
-
-    $body = @{
-        username   = $username.Trim()
-        firstName  = $firstName.Trim()
-        lastName   = $lastName.Trim()
-        email      = $email.Trim().ToLowerInvariant()
-        password   = $password
-        setupToken = $token.Trim()
-    }
-
-    Write-Step "Creando administrador inicial"
-
-    try {
-
-        $response = Invoke-RestMethod `
-            -Uri "$($Urls.Api)/api/v1/setup/admin" `
-            -Method Post `
-            -Body ($body | ConvertTo-Json -Depth 5) `
-            -ContentType "application/json" `
-            -TimeoutSec 30 `
-            -ErrorAction Stop
-    }
-    catch {
-
-        $reason = $_.Exception.Message
-        $detail = $_.ErrorDetails.Message
-
-        if ($detail) {
-            try   { $reason = ($detail | ConvertFrom-Json).message }
-            catch { $reason = $detail }
-        }
-
-        Write-Err "No se pudo crear el administrador: $reason"
-        return $false
-    }
-
-    Write-Ok "$($response.message)"
-
-    Write-Step "Verificando inicio de sesión"
-
-    try {
-
-        $loginBody = @{ username = $body.username; password = $password } | ConvertTo-Json
-
-        $loginResult = Invoke-RestMethod `
-            -Uri "$($Urls.Api)/api/v1/auth/login" `
-            -Method Post `
-            -Body $loginBody `
-            -ContentType "application/json" `
-            -TimeoutSec 30 `
-            -ErrorAction Stop
-
-        if ($loginResult.data.token) {
-
-            Write-Host ""
-            Write-Host "=================================================" -ForegroundColor Green
-            Write-Host " ADMINISTRADOR CREADO" -ForegroundColor Green
-            Write-Host "=================================================" -ForegroundColor Green
-            Write-Host " Usuario: $($body.username)"
-            Write-Host " Email: $($body.email)"
-            Write-Host " Login validado correctamente."
-            Write-Host "=================================================" -ForegroundColor Green
-            Write-Host ""
-        }
-        else {
-            Write-Warn "Login no devolvió token. Verifique manualmente."
-        }
-    }
-    catch {
-        Write-Warn "No se pudo verificar el login automáticamente: $($_.Exception.Message)"
-    }
-
-    return $true
-}
-
-
 function Confirm-SystemInitialized {
-
     $status = Get-SetupStatus
-
     if ($null -eq $status) {
-        Write-Warn "No se pudo consultar el estado de instalación (¿el API está corriendo?)"
+        Write-Warn "No se pudo consultar el estado de instalacion."
         return $false
     }
-
     if ($status.isInitialized -eq $true) {
-        Write-Ok "Sistema inicializado. Administrador: $($status.adminEmail)"
+        Write-Ok "Sistema inicializado."
         return $true
     }
-
-    Write-Step "Sistema no inicializado — intentando setup automático"
-
-    $token = Get-SetupTokenFromLog
-
-    if ($token) {
-        return (Invoke-AutoSetup $token)
-    }
-
-    Write-Warn "No se capturó el token automáticamente. Iniciando wizard manual."
-    return (Invoke-FirstRunWizard)
-}
-
-
-function Invoke-AutoSetup {
-
-    param([Parameter(Mandatory)][string]$Token)
-
-    $defaultUsername  = "admin"
-    $defaultEmail     = "admin@zh.local"
-    $defaultPassword  = "Admin2026!"
-    $defaultFirstName = "Admin"
-    $defaultLastName  = "ZH"
-
-    Write-Step "Creando administrador con datos por defecto"
-    Write-Host "  Usuario:  $defaultUsername" -ForegroundColor Gray
-    Write-Host "  Email:    $defaultEmail" -ForegroundColor Gray
-    Write-Host "  Password: $defaultPassword" -ForegroundColor Gray
-
-    $body = @{
-        username   = $defaultUsername
-        firstName  = $defaultFirstName
-        lastName   = $defaultLastName
-        email      = $defaultEmail
-        password   = $defaultPassword
-        setupToken = $Token
-    }
-
-    try {
-
-        Invoke-RestMethod `
-            -Uri "$($Urls.Api)/api/v1/setup/admin" `
-            -Method Post `
-            -Body ($body | ConvertTo-Json -Depth 5) `
-            -ContentType "application/json" `
-            -TimeoutSec 30 `
-            -ErrorAction Stop | Out-Null
-
-        Write-Host ""
-        Write-Host "=================================================" -ForegroundColor Green
-        Write-Host " ADMINISTRADOR CREADO AUTOMÁTICAMENTE" -ForegroundColor Green
-        Write-Host "=================================================" -ForegroundColor Green
-        Write-Host " Usuario:  $defaultUsername" -ForegroundColor White
-        Write-Host " Email:    $defaultEmail" -ForegroundColor White
-        Write-Host " Password: $defaultPassword" -ForegroundColor White
-        Write-Host "=================================================" -ForegroundColor Green
-        Write-Host ""
-
-        return $true
-    }
-    catch {
-
-        $reason = $_.Exception.Message
-        $detail = $_.ErrorDetails.Message
-
-        if ($detail) {
-            try   { $reason = ($detail | ConvertFrom-Json).message.user }
-            catch { $reason = $detail }
-        }
-
-        Write-Err "Auto-setup falló: $reason"
-        Write-Warn "Intentando wizard manual..."
-        return (Invoke-FirstRunWizard)
-    }
+    Write-Warn "Instalacion pendiente: solo el propietario debe crear manualmente el primer administrador en el flujo first-run existente."
+    return $false
 }
 
 
@@ -793,8 +604,6 @@ function Start-Backend {
 
     Write-Step "Iniciando ERP API"
 
-    $logFile = Join-Path $Root ".api-startup.log"
-    if (Test-Path $logFile) { Remove-Item $logFile -Force }
 
     # powershell.exe (Windows PowerShell clásico) en vez de pwsh: en este equipo pwsh solo
     # está instalado vía Microsoft Store, que corre en un AppContainer con PATH aislado del
@@ -803,48 +612,10 @@ function Start-Backend {
     Start-Process powershell -ArgumentList @(
         "-NoExit",
         "-Command",
-        "Set-Location '$BackendPath'; `$env:ASPNETCORE_ENVIRONMENT = 'Development'; `$env:DOTNET_ENVIRONMENT = 'Development'; dotnet run --project '$ApiProject' 2>&1 | Tee-Object -FilePath '$logFile'"
+        "Set-Location '$BackendPath'; `$env:ASPNETCORE_ENVIRONMENT = 'Development'; `$env:DOTNET_ENVIRONMENT = 'Development'; dotnet run --project '$ApiProject'"
     )
 
-    Write-Ok "Proceso de API iniciado (log: $logFile)"
-}
-
-
-function Get-SetupTokenFromLog {
-
-    $logFile = Join-Path $Root ".api-startup.log"
-
-    if (-not (Test-Path $logFile)) { return $null }
-
-    for ($i = 0; $i -lt 30; $i++) {
-
-        $content = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
-
-        if ($content -and $content -match "TOKEN DE INSTALACIÓN:") {
-
-            $lines = $content -split "`n"
-
-            for ($j = 0; $j -lt $lines.Count; $j++) {
-
-                if ($lines[$j] -match "TOKEN DE INSTALACIÓN:") {
-
-                    for ($k = $j + 1; $k -lt $lines.Count; $k++) {
-
-                        $candidate = $lines[$k].Trim()
-
-                        if ($candidate.Length -ge 32 -and $candidate -match '^[a-fA-F0-9]+$') {
-                            Write-Ok "Setup Token capturado automáticamente"
-                            return $candidate
-                        }
-                    }
-                }
-            }
-        }
-
-        Start-Sleep -Seconds 1
-    }
-
-    return $null
+    Write-Ok "Proceso de API iniciado"
 }
 
 
@@ -1007,7 +778,7 @@ function Invoke-FullReset {
     Write-Title "RESET COMPLETO DEL SISTEMA"
 
     Write-Warn "Esta operación ELIMINA la base de datos actual y todos sus datos."
-    Write-Warn "Se recreará desde las migraciones versionadas y con un nuevo administrador desde cero."
+    Write-Warn "Se recreará desde las migraciones versionadas y con alta manual del administrador por el propietario."
 
     $confirm = Read-Host "Escriba RESETEAR para confirmar"
 
@@ -1016,12 +787,11 @@ function Invoke-FullReset {
         return
     }
 
+    # EF resuelve, muestra y confirma el destino efectivo antes del drop.
+    Invoke-DatabaseDrop
     Stop-DevelopmentServices
-
-    # Limpia bin/obj antes de regenerar EF
     Invoke-Clean
     Invoke-DotnetRestore
-    Invoke-DatabaseDrop
     Invoke-DatabaseUpdate
     Invoke-BackendBuild
     Start-Backend
