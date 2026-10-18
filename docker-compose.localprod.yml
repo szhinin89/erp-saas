@@ -1,4 +1,0 @@
-# Canonical deployment; prod uses immutable images with up -d --no-build.
-name: erp-saas-localprod
-include:
-  - path: infrastructure/docker/compose.app.yml

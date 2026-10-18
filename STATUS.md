@@ -1,5 +1,41 @@
 # Project Status
 
+## ERP-CONFIG-CLEANUP (2026-10-17)
+
+**Estado: implementado (sin commit).** Configuración: `appsettings.json` sin connection strings; una sola cadena de
+fuentes (`ErpHostRegistration.AddErpConfigurationSources`) para API, worker y `dotnet ef`, con user-secrets **solo en
+Development** (antes también en Production); factory de diseño movida a `ERP.API/Hosting/ErpDesignTimeDbContextFactory.cs`
+(`--startup-project ERP.API` obligatorio); alias `DB_CONNECTION_STRING` y `appsettings.Development.json.example`
+retirados; guard Production sin chequeo de placeholder. Docker: `docker-compose.yml` (infra) y `docker-compose.app.yml`
+(stack app; reemplaza `localprod`/`prod`/`dev`, idénticos) con nombre de proyecto `erp-saas-localprod` conservado;
+plantilla `.env.app.example` (`erp_zh_test`, `ERP_TEST_`); `.env`/`.env.app` ahora sí ignorados por Git. Scripts:
+`app-stack.ps1` (reemplaza `docker-local.ps1`, que apuntaba a contenedores inexistentes; rechaza `erp_zh_dev`, exige
+Hangfire = `POSTGRES_DB` y base ociosa), `backup-restore.ps1` (unifica backup/restore-check, `-Database` obligatorio,
+`backups/<db>/`), `run-e2e.ps1` sobre `erp_zh_test` (Hangfire incluido, rechaza `erp_zh_dev`, base ociosa);
+`dev-greenfield-reset.ps1` retirado (reset completo de `dev-launcher.ps1`); allowlist con `scriptsAllowedRoots` y guard
+reparado (fallaba con `Platform.Contracts.csproj` sin `ItemGroup`). CI: `qa-regression` `erpsaas`→`erp_zh_test`; ambos
+workflows E2E con `Hangfire__StorageConnectionString` y sin claves muertas. Docs: deployment único
+(`docs/deployment/README.md`), `docs/operations/{BACKUP_RESTORE,DAILY_RUNBOOK,GO_LIVE_CHECKLIST}.md`; archivados en
+`docs/archive/operations/` los runbooks de backfills eliminados y el checklist Sumak 2026-08-08. Limpieza local
+autorizada: `backups/localprod`, `ERP.API/files` (certificados/XML/keyring), logs, `artifacts/il1`, SQL temporales Sumak
+y volumen `erp-saas-localprod_erp-api-files` (sin contenedores). PASS: fuentes runtime/design-time, `docker compose
+config`, guards de `app-stack.ps1`, aislamiento E2E, allowlist de scripts (0 violaciones), 22/22 tests focales.
+DEBT (preexistente): stack audit con 18 paquetes NuGet/npm fuera de inventario y 2 patrones (Kafka, Datadog).
+
+## DB-GREENFIELD-SETUP (2026-10-17)
+
+**Estado: implementado (sin commit).** Nombres oficiales de base: `erp_zh_dev` (desarrollo), `erp_zh_test` (pruebas
+manuales locales y servicio PostgreSQL del workflow E2E), `erp_zh_prod` (solo en su entorno; no existe en local).
+En `postgreszh` (PG 16.14, puerto 5435) se eliminaron `dberpsaas` y `erp_sumak_pilot` (pre-squash, sin datos de
+producción) y se crearon `erp_zh_dev`/`erp_zh_test`; volúmenes intactos. Referencias operativas actualizadas
+(compose base, `.env.docker.local.example`, appsettings + `.example`, scripts de backup/restore, E2E, runbooks,
+DEVELOPMENT/BACKUP docs); referencias históricas (ADRs, bitácoras, entradas antiguas de este archivo) se conservan.
+Verificado sobre `erp_zh_dev` vacía: API aplica solo `20261018014647_InitialProductionBaseline` (213 tablas),
+bootstrap global + token first-run, `POST /setup/admin` → tenant `Principal` + empresa con bootstrap contable
+(109 cuentas, 25 PostingRules/57 líneas, 1 período), login + `companies/current` 200. Worker (`--worker`) arrancado
+después de la API: Hangfire crea su esquema (v23), 4 servidores por cola, 7 recurring jobs, ejecuciones Succeeded.
+Sin cambios en la baseline ni migraciones nuevas. Cierra el "Pendiente: recrear" de MIGRATION-SQUASH.
+
 ## MIGRATION-SQUASH (2026-10-17)
 
 **Estado: implementado (sin commit).** Las 17 migraciones (`20261010184156_InitialProductionBaseline` … `20261018001810_AccountingSchemaCleanup`)
@@ -1450,7 +1486,7 @@ monitor y password reset.
 
 - **02A Gastos**: `authorizationDate` ya no acumula +5 h por edición (conversión única hora empresa ⇄ UTC).
 - **02B "Hoy"**: 9 usos de `toISOString().slice(0,10)` → `todayIso()` (hoy de `Company.Timezone`); vencimientos con `addDaysIso`.
-- **02C AuthorizationDate**: TXT SRI y `datetime-local` convierten hora Ecuador → UTC vía `ICompanyClock.CompanyLocalToUtcAsync`; `UtcDateTime.EnsureUtc` rechaza horas sin zona. Datos históricos **no** autocorregidos → [plan de remediación](docs/operations/AUTHORIZATION-DATE-REMEDIATION-PLAN-02.md) (66 recepciones solo-TXT en dev).
+- **02C AuthorizationDate**: TXT SRI y `datetime-local` convierten hora Ecuador → UTC vía `ICompanyClock.CompanyLocalToUtcAsync`; `UtcDateTime.EnsureUtc` rechaza horas sin zona. Datos históricos **no** autocorregidos → [plan de remediación](docs/archive/operations/AUTHORIZATION-DATE-REMEDIATION-PLAN-02.md) (66 recepciones solo-TXT en dev).
 - **02D Filtros**: Kardex, movimientos, Monitor SRI y ajustes filtran por `DateOnly`; día de empresa → `[inicioUtc, finUtc)` con `ICompanyClock.DayUtcRangeAsync`. Instantes por query exigen zona (`UtcInstantModelBinder`); JSON exige/emite `Z` (`UtcInstantJsonConverter`).
 - **02E Inventario**: `TransferDate`/`AdjustmentDate` → `DateOnly`/`date` (migración `TemporalContractInventoryBusinessDates02`, con guard de medianoche y reversible). `KardexSnapshot` eliminado (sin consumidores).
 - **02F**: `ElectronicDocumentData.IssueDate`, `Dashboard.AsOf` → `DateOnly`; `SriCatalogClock` unificado en `CompanyTimeZone`; `fechaEmision` de la NC de venta desde el día de empresa.

@@ -24,7 +24,8 @@ env:
   QA_FRONTEND_URL: http://localhost:4173
   QA_EMAIL: admin@erp.com
   QA_PASSWORD: Admin123!
-  ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=erpsaas;Username=postgres;Password=postgres
+  ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=erp_zh_test;Username=postgres;Password=postgres
+  Hangfire__StorageConnectionString: Host=localhost;Port=5432;Database=erp_zh_test;Username=postgres;Password=postgres
 
 jobs:
   qa-regression:
@@ -38,7 +39,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: erpsaas
+          POSTGRES_DB: erp_zh_test
         ports:
           - 5432:5432
         options: >-
@@ -127,10 +128,8 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: Development
           ASPNETCORE_URLS: http://0.0.0.0:5003
-          ConnectionStrings__Redis: localhost:6379
           Redis__ConnectionString: localhost:6379
           Jwt__SecretKey: ci-qa-regression-jwt-secret-min-32-chars
-          Development__SeedDemoTenant: "true"
         run: |
           dotnet run --project ERP.API/ERP.API.csproj -c Release --no-build &
           echo $! > /tmp/erp-api.pid

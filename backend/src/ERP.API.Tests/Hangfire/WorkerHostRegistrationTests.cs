@@ -33,7 +33,7 @@ public sealed class WorkerHostRegistrationTests
                 Args = args,
             }
         );
-        apiBuilder.Configuration.AddErpConfigurationSources(apiBuilder.Environment, args);
+        apiBuilder.Configuration.AddErpConfigurationSources(apiBuilder.Environment.EnvironmentName, args);
         apiBuilder.Services.AddErpHostCore(apiBuilder.Configuration, apiBuilder.Environment);
         using var api = apiBuilder.Services.BuildServiceProvider();
 

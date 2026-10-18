@@ -1,9 +1,9 @@
-# ERP.API — imagen única API/Worker para Compose localprod/prod
-# Build context: backend/  (docker compose -f docker-compose.localprod.yml build en la raíz del repo)
+# ERP.API — imagen única API/Worker del stack de aplicación (docker-compose.app.yml)
+# Build context: backend/  (.\scripts\app-stack.ps1 -Action Build desde la raíz del repo)
 #
 # Esta imagen NO incluye PostgreSQL ni Redis: se conecta a los contenedores
 # existentes (postgreszh / erp-saas-redis) vía la red Docker externa erp-saas_default.
-# Ver docs/DOCKER_LOCAL_PROD.md.
+# Ver docs/deployment/README.md.
 
 # ---- Stage 1: restore + publish ----
 # Versión exacta fijada por backend/global.json (rollForward: disable).

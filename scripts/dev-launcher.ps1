@@ -424,36 +424,14 @@ function Invoke-DatabaseUpdate {
 
     $previousAspNetEnvironment = $env:ASPNETCORE_ENVIRONMENT
     $previousDotnetEnvironment = $env:DOTNET_ENVIRONMENT
-    $previousConnection = $env:ConnectionStrings__DefaultConnection
 
-    # La factory de EF no carga user-secrets. Pasar la conexión solo por el
-    # entorno del proceso; nunca imprimirla ni escribirla en archivos.
+    # La factory de EF (ERP.API) usa las mismas fuentes que el runtime: en Development
+    # lee la conexión de los user-secrets de ERP.API (o de ConnectionStrings__DefaultConnection).
     Push-Location (Split-Path $ApiProject -Parent)
 
     try {
         $env:ASPNETCORE_ENVIRONMENT = "Development"
         $env:DOTNET_ENVIRONMENT = "Development"
-
-        $secretsOutput = dotnet user-secrets list --project $ApiProject --json 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            throw "No se pudieron leer los user-secrets de ERP.API."
-        }
-        $secretsJson = [regex]::Match(($secretsOutput -join "`n"), '(?s)\{.*\}').Value
-        if ([string]::IsNullOrWhiteSpace($secretsJson)) {
-            throw "La salida de user-secrets no contiene JSON válido."
-        }
-        $secrets = $secretsJson | ConvertFrom-Json -AsHashtable
-        $connection = $secrets['ConnectionStrings:DefaultConnection']
-        if (-not [string]::IsNullOrWhiteSpace($env:DB_CONNECTION_STRING)) {
-            # Mismo alias y precedencia que Program.cs.
-            $connection = $env:DB_CONNECTION_STRING
-        }
-        if (-not [string]::IsNullOrWhiteSpace($connection)) {
-            $env:ConnectionStrings__DefaultConnection = $connection
-        }
-        elseif ([string]::IsNullOrWhiteSpace($previousConnection)) {
-            throw "Configure DefaultConnection en user-secrets de ERP.API o en el entorno antes de migrar."
-        }
 
         dotnet ef database update `
             --project $InfrastructureProject `
@@ -469,7 +447,6 @@ function Invoke-DatabaseUpdate {
     finally {
         $env:ASPNETCORE_ENVIRONMENT = $previousAspNetEnvironment
         $env:DOTNET_ENVIRONMENT = $previousDotnetEnvironment
-        $env:ConnectionStrings__DefaultConnection = $previousConnection
         Pop-Location
     }
 }

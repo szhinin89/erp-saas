@@ -22,8 +22,6 @@ Desde la raíz del repo:
 
 ```powershell
 docker compose up -d
-# o
-docker compose -f docker-compose.dev.yml up -d
 ```
 
 Puertos por defecto: PostgreSQL **5435**, Redis **6379**.
@@ -31,7 +29,6 @@ Puertos por defecto: PostgreSQL **5435**, Redis **6379**.
 ## Compose
 
 - **Canónico raíz:** `docker-compose.yml` → incluye `docker/compose.base.yml`
-- **Dev:** `docker-compose.dev.yml`
-- **Aplicación localprod/prod:** `docker-compose.localprod.yml` y `docker-compose.prod.yml`
-  incluyen `docker/compose.app.yml` (API + Worker + Frontend). Dependencias existentes
-  por red externa; ver `docs/deployment/README.md`.
+- **Aplicación (ensayo local y producción):** `docker-compose.app.yml` incluye
+  `docker/compose.app.yml` (API + Worker + Frontend), operado con `scripts/app-stack.ps1`.
+  Dependencias existentes por red externa; ver `docs/deployment/README.md`.

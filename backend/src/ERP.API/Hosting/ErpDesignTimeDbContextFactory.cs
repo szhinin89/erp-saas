@@ -1,39 +1,40 @@
 using ERP.Application.Common;
+using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Configuration;
 
-namespace ERP.Infrastructure.Persistence;
+namespace ERP.API.Hosting;
 
 /// <summary>
-/// Permite a las herramientas EF Core (dotnet ef migrations add/remove)
-/// instanciar ErpDbContext sin necesitar el startup project ERP.API.
-/// Solo se usa en tiempo de diseño; no afecta el runtime.
-///
-/// Nunca hardcodear la connection string aquí (incluye password) — se lee de
-/// appsettings.Development.json (gitignored, junto a ERP.API) y/o de la variable
-/// de entorno ConnectionStrings__DefaultConnection, igual que en runtime.
+/// Contexto para las herramientas EF (<c>dotnet ef</c> con <c>--startup-project ERP.API</c>). Lee la
+/// conexión con las mismas fuentes que el runtime (<see cref="ErpHostRegistration.AddErpConfigurationSources"/>):
+/// appsettings, user-secrets en Development, <c>ConnectionStrings__DefaultConnection</c> y argumentos.
+/// Entorno por defecto Development, como las herramientas EF; otro entorno vía
+/// <c>ASPNETCORE_ENVIRONMENT</c>/<c>DOTNET_ENVIRONMENT</c>. Solo tiempo de diseño; no afecta el runtime.
 /// </summary>
-internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbContext>
+internal sealed class ErpDesignTimeDbContextFactory : IDesignTimeDbContextFactory<ErpDbContext>
 {
     public ErpDbContext CreateDbContext(string[] args)
     {
-        var apiProjectDir = FindApiProjectDirectory(Directory.GetCurrentDirectory());
+        var environment =
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? Environments.Development;
 
         var configuration = new ConfigurationBuilder()
-            .SetBasePath(apiProjectDir ?? Directory.GetCurrentDirectory())
+            .SetBasePath(FindApiProjectDirectory(Directory.GetCurrentDirectory()) ?? AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true)
-            .AddJsonFile("appsettings.Development.json", optional: true)
-            .AddEnvironmentVariables()
+            .AddJsonFile($"appsettings.{environment}.json", optional: true)
+            .AddErpConfigurationSources(environment, args)
             .Build();
 
-        var connectionString =
-            configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException(
-                "No se encontró ConnectionStrings:DefaultConnection para `dotnet ef`. "
-                    + "Configúrala en backend/src/ERP.API/appsettings.Development.json (gitignored) "
-                    + "o exporta ConnectionStrings__DefaultConnection antes de ejecutar el comando."
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException(
+                $"No se encontró ConnectionStrings:DefaultConnection para `dotnet ef` (entorno {environment}). "
+                    + "En Development configúrala en los user-secrets de ERP.API; en otro entorno exporta "
+                    + "ConnectionStrings__DefaultConnection."
             );
 
         var options = new DbContextOptionsBuilder<ErpDbContext>()

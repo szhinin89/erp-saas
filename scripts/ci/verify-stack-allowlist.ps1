@@ -35,7 +35,8 @@ $violations = New-Object 'System.Collections.Generic.List[object]'
 $csprojFiles = Get-ChildItem -Path (Join-Path $root "backend/src") -Recurse -Filter "*.csproj"
 foreach ($csproj in $csprojFiles) {
     [xml]$xml = Get-Content -Raw $csproj.FullName
-    foreach ($itemGroup in @($xml.Project.ItemGroup)) {
+    # SelectNodes: un csproj sin ItemGroup (p. ej. Platform.Contracts) no rompe StrictMode.
+    foreach ($itemGroup in @($xml.SelectNodes('/Project/ItemGroup'))) {
         if ($null -eq $itemGroup) { continue }
         if ($itemGroup.PSObject.Properties.Name -notcontains "PackageReference") { continue }
         foreach ($r in @($itemGroup.PackageReference)) {
@@ -157,6 +158,8 @@ if ($null -eq $allowedScripts -or $allowedScripts.Count -eq 0) {
 } else {
     $allowedSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach ($s in $allowedScripts) { [void]$allowedSet.Add($s.Replace('\', '/')) }
+    # Subsistemas con su propio pipeline (dashboard, print-agent): se admiten por carpeta raíz.
+    $allowedRoots = if ($allowlist.PSObject.Properties.Name -contains "scriptsAllowedRoots") { @($allowlist.scriptsAllowedRoots) } else { @() }
 
     $ps1Files = Get-ChildItem -Path $root -Recurse -Filter "*.ps1" -File -ErrorAction SilentlyContinue |
         Where-Object {
@@ -169,7 +172,8 @@ if ($null -eq $allowedScripts -or $allowedScripts.Count -eq 0) {
 
     foreach ($ps1 in $ps1Files) {
         $rel = $ps1.FullName.Replace($root + [IO.Path]::DirectorySeparatorChar, "").Replace('\', '/')
-        if (-not $allowedSet.Contains($rel)) {
+        $underRoot = @($allowedRoots | Where-Object { $rel.StartsWith($_.Replace('\', '/'), [StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
+        if (-not $allowedSet.Contains($rel) -and -not $underRoot) {
             Add-Violation -List $violations -File $rel -Line 1 -Detected $rel -Reason "Script .ps1 fuera del mapa canónico (scriptsAllowed)." -Suggestion "Eliminar el script o añadirlo a scripts/stack-allowlist.json y docs/DEVELOPMENT.md."
         }
     }

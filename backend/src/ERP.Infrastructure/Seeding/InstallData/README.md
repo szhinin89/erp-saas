@@ -29,7 +29,7 @@ Este `InstallDataBootstrapService` en sí mismo también corre como step
 - El script aplicado (`001`) es **inmutable** (si cambia su checksum, el arranque
   falla en BDs que ya lo ejecutaron).
 - Para BDs existentes con scripts viejos (`002`–`009` eliminados): hacer **reset
-  greenfield** (`scripts/db/dev-greenfield-reset.ps1`).
+  greenfield** (`scripts/dev-launcher.ps1`, opción de reset completo).
 - Scripts destructivos (`DELETE`, `TRUNCATE`, `DROP` o `-- @destructive`) bloqueados salvo confirmación explícita:
   - `InstallData:AllowDestructive = true`
   - `InstallData:ConfirmDestructive = CONFIRM_INSTALLDATA_DELETE`

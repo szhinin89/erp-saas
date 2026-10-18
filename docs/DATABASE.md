@@ -85,11 +85,8 @@ El model snapshot no los conoce: una baseline regenerada con `dotnet ef migratio
 | `ex_accounting_periods_company_no_overlap` | EXCLUDE gist | ACCOUNTING-07; sin períodos solapados por empresa (`btree_gist` sí está modelada) |
 | `background_job_progress` | Tabla | ADR-043; cursor durable de los jobs recurrentes (`BackgroundJobProgress`), sin entidad EF |
 
-Reset local recomendado:
-
-```powershell
-.\scripts\db\dev-greenfield-reset.ps1
-```
+Reset local recomendado: `scripts/dev-launcher.ps1` (reset completo: drop + migraciones + first-run
+sobre `erp_zh_dev`; la conexión sale de los user-secrets de ERP.API).
 
 ### SQL fuera de EF (mapa único)
 

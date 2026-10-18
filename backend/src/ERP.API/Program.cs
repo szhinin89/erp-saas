@@ -39,8 +39,8 @@ if (args.Contains("--worker", StringComparer.Ordinal))
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Fuentes de configuración comunes con el worker (precedencia y alias DB_CONNECTION_STRING).
-builder.Configuration.AddErpConfigurationSources(builder.Environment, args);
+// Fuentes de configuración comunes con el worker y las herramientas EF (ErpHostRegistration).
+builder.Configuration.AddErpConfigurationSources(builder.Environment.EnvironmentName, args);
 
 // Production guard: falla rápido si sigue el placeholder de appsettings.json en vez
 // de un valor real inyectado por env/secret store. Nunca loggear el valor, solo el
@@ -58,11 +58,9 @@ if (builder.Environment.IsProduction())
         );
     }
 
+    // appsettings.json no trae connection string: en Production solo llega del entorno.
     var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (
-        string.IsNullOrWhiteSpace(defaultConnection)
-        || defaultConnection.Contains("Password=CHANGE_ME", StringComparison.Ordinal)
-    )
+    if (string.IsNullOrWhiteSpace(defaultConnection))
     {
         throw new InvalidOperationException(
             "Production requires ConnectionStrings:DefaultConnection configured via environment variable or secret store."

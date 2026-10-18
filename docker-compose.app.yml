@@ -1,0 +1,7 @@
+# Stack de aplicación (API + Worker + Frontend) — único para ensayo local y producción.
+# PostgreSQL/Redis existentes en ERP_NETWORK; variables en .env.app (plantilla .env.app.example).
+# Operación: scripts/app-stack.ps1 · Contrato: docs/deployment/README.md
+# El nombre de proyecto se conserva: identifica los volúmenes existentes (erp-api-files, erp-api-logs).
+name: erp-saas-localprod
+include:
+  - path: infrastructure/docker/compose.app.yml

@@ -46,7 +46,7 @@ Stack permitido y auditoría: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md#stack-
 
 ```powershell
 docker compose up -d                    # Postgres :5435, Redis :6379
-.\scripts\dev\dev-restart.ps1           # atajo: Docker + migraciones + API + Vite
+.\scripts\dev-launcher.ps1            # menú: Docker + migraciones + first-run + API + Vite
 # Manual EF:
 cd backend/src && dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
 dotnet run --project ERP.API --launch-profile http   # http://localhost:5003
@@ -55,7 +55,7 @@ cd frontend && npm run dev                             # http://localhost:5173
 
 First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`)
 
-Config: copiar `backend/src/ERP.API/appsettings.Development.json.example` → `appsettings.Development.json`.
+Config: user-secrets de ERP.API (`erp_zh_dev`) — ver [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md#configuración-y-bases-por-entorno). Stack app: [`docs/deployment/README.md`](docs/deployment/README.md).
 
 ## Auth
 
@@ -82,7 +82,7 @@ Tag Git: **`architecture-v1.0`** — estructura y gobernanza congeladas. Evoluci
 | Problema | Acción |
 |----------|--------|
 | Puerto 5435 ocupado | `docker compose down` o cambiar puerto en compose |
-| Migraciones EF | `.\scripts\dev\dev-restart.ps1 -Doctor` |
+| Migraciones EF | `dotnet ef migrations list --project ERP.Infrastructure --startup-project ERP.API` (en `backend/src`) |
 | Refresh 401 tras F5 | Verificar cookie `Path=/api`; ver [`docs/IDENTITY.md`](docs/IDENTITY.md) |
 | CI stack audit falla | Revisar `scripts/stack-allowlist.json` |
 

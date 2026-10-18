@@ -47,23 +47,25 @@ erp-saas/
 └── .github/workflows/
 ```
 
-Compose: `docker-compose.yml` (include → `infrastructure/docker/compose.base.yml`).
+Compose: `docker-compose.yml` (infra local, include → `infrastructure/docker/compose.base.yml`) · `docker-compose.app.yml` (stack app, vía `scripts/app-stack.ps1`).
 
 ---
 
 ## Arranque local
 
-Atajo: **`.\scripts\dev\dev-restart.ps1`** · First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`)
+Atajo: **`.\scripts\dev-launcher.ps1`** · First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`)
 
 Manual: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 
 ---
 
-## Scripts y tooling (8 .ps1 canónicos)
+## Scripts y tooling (.ps1 canónicos — mapa completo en [`scripts/README.md`](./scripts/README.md))
 
 | Script | Rol |
 |--------|-----|
-| [`scripts/dev/dev-restart.ps1`](./scripts/dev/dev-restart.ps1) | Dev stack |
+| [`scripts/dev-launcher.ps1`](./scripts/dev-launcher.ps1) | Dev stack |
+| [`scripts/app-stack.ps1`](./scripts/app-stack.ps1) | Stack de aplicación |
+| [`scripts/backup-restore.ps1`](./scripts/backup-restore.ps1) | Backup / restore drill |
 | [`scripts/ci/run-e2e.ps1`](./scripts/ci/run-e2e.ps1) | Playwright E2E |
 | [`scripts/ci/verify-stack-allowlist.ps1`](./scripts/ci/verify-stack-allowlist.ps1) | CI stack audit |
 | [`tools/architecture/check-identity-guardrails.ps1`](./tools/architecture/check-identity-guardrails.ps1) | Auth legacy |

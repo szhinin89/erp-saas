@@ -1,6 +1,10 @@
 (empty)
 .aider*
 
+# Variables de entorno con secretos (las plantillas *.example sí se versionan)
+.env
+.env.app
+
 # .NET build artifacts
 **/bin/
 **/obj/

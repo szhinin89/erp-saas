@@ -24,7 +24,7 @@
 | Frontend | Vite preview / CDN | Static assets + `VITE_API_URL` |
 | Hangfire | Mismo proceso API | Worker dedicado + retry policy |
 
-Plantilla: `docker-compose.prod.yml` + `infrastructure/docker/compose.base.yml`.
+Plantilla: `docker-compose.app.yml` (stack app) + `infrastructure/docker/compose.base.yml` (infra local).
 
 ---
 

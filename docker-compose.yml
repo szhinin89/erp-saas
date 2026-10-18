@@ -1,9 +1,8 @@
-# ERP SaaS — Docker Compose (entrada canónica desde la raíz del repo)
-# Uso: docker compose up -d
-# Apagar: docker compose down  (datos persisten hasta docker compose down -v)
+# ERP SaaS — infraestructura local (PostgreSQL + Redis). Entrada única desde la raíz del repo.
+# Uso: docker compose up -d   ·   Apagar: docker compose down (nunca `down -v`: borra los datos)
 #
 # Definición de servicios: infrastructure/docker/compose.base.yml
-# Infra local: docker-compose.dev.yml. API/Worker: docker-compose.localprod.yml / prod.yml.
+# Stack de aplicación (API/Worker/Frontend): docker-compose.app.yml
 
 include:
   - path: infrastructure/docker/compose.base.yml

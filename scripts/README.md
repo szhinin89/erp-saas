@@ -1,14 +1,21 @@
 # Scripts — ERP SaaS
 
-Scripts PowerShell **canónicos** (lista en [`stack-allowlist.json`](stack-allowlist.json)). CI rechaza cualquier otro `.ps1`.
+Scripts PowerShell **canónicos**: lista explícita `scriptsAllowed` y subsistemas `scriptsAllowedRoots`
+en [`stack-allowlist.json`](stack-allowlist.json). CI rechaza cualquier otro `.ps1`.
 
 ## Mapa
 
 | Ruta | Rol |
 |------|-----|
-| [`dev/dev-restart.ps1`](dev/dev-restart.ps1) | Docker + EF + API + Vite |
-| [`ci/run-e2e.ps1`](ci/run-e2e.ps1) | Playwright E2E completo |
+| [`dev-launcher.ps1`](dev-launcher.ps1) | Entorno dev: Docker + EF + first-run + API + Vite, reset completo, tests (`erp_zh_dev`) |
+| [`app-stack.ps1`](app-stack.ps1) | Stack de aplicación `docker-compose.app.yml` (Config/Build/Up/Down/Status/Logs/Health); rechaza `erp_zh_dev` |
+| [`backup-restore.ps1`](backup-restore.ps1) | Backup + restore drill aislado (`-Action Backup\|RestoreCheck -Database <db>`) |
+| [`backend-check.ps1`](backend-check.ps1) / [`frontend-check.ps1`](frontend-check.ps1) | Revisión, compilación y pruebas locales por capa |
+| [`ci/run-e2e.ps1`](ci/run-e2e.ps1) | Playwright E2E completo sobre `erp_zh_test` |
 | [`ci/verify-stack-allowlist.ps1`](ci/verify-stack-allowlist.ps1) | Auditoría stack CI |
+| [`ci/check-pages-wrapper-rule.ps1`](ci/check-pages-wrapper-rule.ps1) | Regla de wrappers de páginas |
+| [`ds/`](ds/) | Auditoría y guard del Design System |
+| [`qa/diagnose-pos-warehouse.ps1`](qa/diagnose-pos-warehouse.ps1) | Diagnóstico POS/bodega |
 | [`db/import_inec_ecuador_geography.ps1`](db/import_inec_ecuador_geography.ps1) | SQL geografía INEC |
 | [`db/sql/`](db/sql/) | SQL excepcional documentado |
 
@@ -19,13 +26,11 @@ Scripts PowerShell **canónicos** (lista en [`stack-allowlist.json`](stack-allow
 | [`../tools/architecture/`](../tools/architecture/) | Guardrails arquitectura |
 | [`../tools/quality/`](../tools/quality/) | Handler size |
 | [`../tools/generators/`](../tools/generators/) | Scaffolding módulos |
-
-## Carpetas reservadas
-
-`deploy/`, `maintenance/`, `auth/` — runbooks futuros.
+| [`../tools/dashboard/`](../tools/dashboard/) | Pipeline ProgressDashboard (raíz admitida) |
+| [`../print-agent/scripts/`](../print-agent/scripts/) | Print Agent (raíz admitida) |
 
 ## Añadir script
 
-1. Ubicación coherente (`dev/`, `ci/`, `db/`, …)
+1. Ubicación coherente (`ci/`, `db/`, `ds/`, …)
 2. Entrada en `scriptsAllowed` en `stack-allowlist.json`
 3. Actualizar [`CONTEXT.md`](../CONTEXT.md) y [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md)

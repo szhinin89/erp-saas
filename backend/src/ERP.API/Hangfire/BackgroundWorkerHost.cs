@@ -12,7 +12,7 @@ public static class BackgroundWorkerHost
     public static IHost Build(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
-        builder.Configuration.AddErpConfigurationSources(builder.Environment, args);
+        builder.Configuration.AddErpConfigurationSources(builder.Environment.EnvironmentName, args);
         builder.Services.AddErpHostCore(builder.Configuration, builder.Environment);
         builder.Services.AddErpBackgroundProcessing(builder.Configuration);
         var host = builder.Build();

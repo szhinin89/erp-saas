@@ -33,11 +33,11 @@ services:
       # (gitignored; ver .env.example), nunca aquí. Así ningún compose *.prod.yml
       # puede heredar silenciosamente un password débil.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — copy .env.example to .env for local dev, or set it in your environment}
-      POSTGRES_DB: dberpsaas
+      POSTGRES_DB: erp_zh_dev
     volumes:
       - erp_saas_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d dberpsaas"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d erp_zh_dev"]
       interval: 5s
       timeout: 5s
       retries: 10

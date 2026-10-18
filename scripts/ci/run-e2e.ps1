@@ -3,8 +3,12 @@
     Entorno reproducible para Playwright E2E: Docker Postgres, migraciones, API :5003, preview :4173.
 .DESCRIPTION
     1. Levanta docker compose (Postgres + Redis) si no está corriendo.
-    2. Aplica migraciones EF contra localhost:5435.
-    3. Inicia ERP.API en http://localhost:5003 (Development + seed demo si está en appsettings).
+    2. Aplica migraciones EF sobre la base de pruebas (-Database, por defecto erp_zh_test; nunca
+       erp_zh_dev). Host y credenciales salen de ConnectionStrings__DefaultConnection o, si no está
+       definida, de los user-secrets de ERP.API; solo se reemplaza la base. Falla si la base tiene
+       conexiones ajenas (p. ej. el stack app en ensayo).
+    3. Inicia ERP.API en http://localhost:5003 (Development + seed E2E) contra esa misma base, también
+       para el storage de Hangfire.
     4. Espera /health/live.
     5. npm ci + build + playwright test (vite preview lo levanta playwright.config.ts).
 .PARAMETER SkipDocker
@@ -23,6 +27,8 @@ param(
     [switch] $SkipDocker,
     [switch] $SkipMigrations,
     [string] $PlaywrightArgs = "",
+    [ValidatePattern('^[a-z0-9_]+$')]
+    [string] $Database = "erp_zh_test",
     [string] $ApiUrl = "http://localhost:5003",
     [int]    $HealthTimeoutSec = 120,
     [int]    $MigrationTimeoutSec = 180,
@@ -137,6 +143,42 @@ function Stop-ApiIfStarted {
     }
 }
 
+function Resolve-E2eConnection {
+    if ($Database -ieq "erp_zh_dev") {
+        throw "El E2E no puede usar erp_zh_dev (base de desarrollo). Usa erp_zh_test."
+    }
+    $base = $env:ConnectionStrings__DefaultConnection
+    if ([string]::IsNullOrWhiteSpace($base)) {
+        $secretsOutput = dotnet user-secrets list --project $apiProject --json 2>$null
+        $secretsJson = [regex]::Match(($secretsOutput -join "`n"), '(?s)\{.*\}').Value
+        if (-not [string]::IsNullOrWhiteSpace($secretsJson)) {
+            $base = ($secretsJson | ConvertFrom-Json -AsHashtable)['ConnectionStrings:DefaultConnection']
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($base)) {
+        throw "Sin conexión base: define ConnectionStrings__DefaultConnection o los user-secrets de ERP.API."
+    }
+    if ($base -notmatch '(?i)(^|;)\s*Database\s*=') {
+        throw "La conexión base no declara Database=; no se puede redirigir a $Database."
+    }
+    # Solo cambia la base: host, puerto y credenciales se reutilizan sin imprimirse.
+    return [regex]::Replace($base, '(?i)((?:^|;)\s*Database\s*=\s*)[^;]*', "`${1}$Database")
+}
+
+function Assert-E2eDatabaseIdle {
+    & docker container inspect postgreszh *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-E2eLog "[db-idle] postgreszh no es un contenedor local; se omite la verificación." -Color ([ConsoleColor]::Yellow)
+        return
+    }
+    $sql = "SELECT count(*) FROM pg_stat_activity WHERE datname = '$Database' AND pid <> pg_backend_pid();"
+    $count = (docker exec postgreszh psql -U postgres -d postgres -At -c $sql).Trim()
+    if ($LASTEXITCODE -eq 0 -and [int]$count -gt 0) {
+        throw "[db-idle] La base '$Database' tiene $count conexión(es) activa(s) (p. ej. el stack app). Detén ese uso antes del E2E."
+    }
+    Write-E2eLog "[db-idle] $Database sin conexiones ajenas" -Color ([ConsoleColor]::Green)
+}
+
 $script:ApiProcess = $null
 Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Stop-ApiIfStarted } | Out-Null
 
@@ -166,15 +208,22 @@ try {
         }
     }
 
+    # Base de pruebas aislada: misma conexión para EF, API y storage de Hangfire.
+    $e2eConnection = Resolve-E2eConnection
+    $env:ConnectionStrings__DefaultConnection = $e2eConnection
+    $env:Hangfire__StorageConnectionString = $e2eConnection
+    Write-E2eLog "[db] base E2E=$Database"
+    Assert-E2eDatabaseIdle
+
     if (-not $SkipMigrations) {
         $migrationExit = Invoke-E2eProcess -Stage "migrations-no-build" -FilePath "dotnet" `
-            -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $infraProject, "--no-build") `
+            -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $apiProject, "--no-build") `
             -WorkingDirectory $backendRoot -TimeoutSec $MigrationTimeoutSec -AllowFailure
         if ($migrationExit -ne 0) {
-            $null = Invoke-E2eProcess -Stage "infrastructure-build-for-migrations" -FilePath "dotnet" `
-                -ArgumentList @("build", $infraProject, "-c", "Release") -WorkingDirectory $backendRoot -TimeoutSec $BuildTimeoutSec
+            $null = Invoke-E2eProcess -Stage "api-build-for-migrations" -FilePath "dotnet" `
+                -ArgumentList @("build", $apiProject, "-c", "Release") -WorkingDirectory $backendRoot -TimeoutSec $BuildTimeoutSec
             $null = Invoke-E2eProcess -Stage "migrations-after-build" -FilePath "dotnet" `
-                -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $infraProject) `
+                -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $apiProject) `
                 -WorkingDirectory $backendRoot -TimeoutSec $MigrationTimeoutSec
         }
     }

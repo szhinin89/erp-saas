@@ -28,18 +28,16 @@ Reglas multi-tenant (`IgnoreQueryFilters()`, `company_id` del body, `ICurrentTen
 ## Arranque local
 
 ```powershell
-# Recomendado: Docker + migraciones + API + Vite
-.\scripts\dev-restart.ps1
-
-# Solo Docker (Postgres + Redis)
-.\scripts\dev-restart.ps1 -DockerUp
-
-# Migraciones sin abrir ventanas
-.\scripts\dev-restart.ps1 -NoStart
-
-# Diagnóstico
-.\scripts\dev-restart.ps1 -Doctor
+# Recomendado: menú interactivo (Docker + migraciones + first-run + API + Vite, reset, tests)
+.\scripts\dev-launcher.ps1
 ```
+
+| Opción | Efecto |
+|--------|--------|
+| `[1] Iniciar ERP` | Docker up + migraciones + API + Vite (uso diario) |
+| `[2] Reset completo` | **Destructivo**: drop de `erp_zh_dev` + migraciones + first-run asistido |
+| `[3] Solo Backend API` | Migraciones + API |
+| `[4] Tests completos` | Suites backend/frontend |
 
 Manual:
 
@@ -55,44 +53,57 @@ npm run dev
 
 - First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`, token-gated)
 - Tras cambios de esquema (pre-producción): recrear BD local — `dotnet ef database drop --project backend/src/ERP.Infrastructure --startup-project backend/src/ERP.API -f` y luego `dotnet ef database update`
-- Copiar `appsettings.Development.json.example` → `appsettings.Development.json`
-- PostgreSQL: `Host=localhost;Port=5435;Database=dberpsaas`
+- `dotnet ef` siempre con `--startup-project ERP.API`: la factory de diseño (`ERP.API/Hosting/ErpDesignTimeDbContextFactory.cs`) usa las mismas fuentes que el runtime.
+
+### Configuración y bases por entorno
+
+| Entorno | Base | Fuente de la conexión |
+|---------|------|------------------------|
+| Desarrollo | `erp_zh_dev` (`postgreszh`, puerto 5435) | user-secrets de ERP.API: `ConnectionStrings:DefaultConnection` y `Hangfire:StorageConnectionString` (misma base) |
+| Tests automatizados | Testcontainers (efímera) | cada test |
+| E2E / ensayo del stack app | `erp_zh_test` | `run-e2e.ps1` (deriva la conexión y cambia solo la base) / `.env.app` |
+| Producción | `erp_zh_prod` (solo en su host; nunca se crea en local) | entorno / gestor de secretos |
+
+- `appsettings.json` no trae connection strings. Precedencia: appsettings < user-secrets (**solo Development**) < variables de entorno < línea de comandos. Contrato de entorno: `ConnectionStrings__DefaultConnection` (sin alias).
+- Configurar user-secrets (una vez):
+
+  ```powershell
+  cd backend/src/ERP.API
+  dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5435;Database=erp_zh_dev;Username=postgres;Password=<password>"
+  dotnet user-secrets set "Hangfire:StorageConnectionString" "Host=localhost;Port=5435;Database=erp_zh_dev;Username=postgres;Password=<password>"
+  ```
+- Infraestructura local: `docker-compose.yml` (PostgreSQL + Redis; `POSTGRES_PASSWORD` desde `.env`, plantilla `.env.example`). Stack de aplicación: `docker-compose.app.yml` vía `scripts/app-stack.ps1` — ver [`docs/deployment/README.md`](deployment/README.md).
 
 ---
 
 ## Scripts PowerShell (canónicos)
 
-Solo **8** scripts `.ps1` en el repo (+ `tools/architecture/architecture-grandfather.json`). CI los valida vía `scriptsAllowed` en [`scripts/stack-allowlist.json`](../scripts/stack-allowlist.json) (`scripts/ci/verify-stack-allowlist.ps1`).
+CI valida cada `.ps1` contra `scriptsAllowed` (lista explícita) y `scriptsAllowedRoots` (subsistemas `tools/dashboard/`, `print-agent/scripts/`) en [`scripts/stack-allowlist.json`](../scripts/stack-allowlist.json) (`scripts/ci/verify-stack-allowlist.ps1`).
 
 | Script | Uso |
 |--------|-----|
-| `scripts/dev/dev-restart.ps1` | Entorno dev (Docker, EF, API, Vite) |
-| `scripts/ci/run-e2e.ps1` | Playwright E2E |
+| `scripts/dev-launcher.ps1` | Entorno dev (Docker, EF, first-run, API, Vite, reset, tests) |
+| `scripts/app-stack.ps1` | Stack de aplicación `docker-compose.app.yml` (Config/Build/Up/Down/Status/Logs/Health); rechaza `erp_zh_dev` |
+| `scripts/backup-restore.ps1` | Backup y restore drill aislado (`-Action Backup\|RestoreCheck -Database <db>` obligatorio) |
+| `scripts/backend-check.ps1` / `scripts/frontend-check.ps1` | Revisión/compilación/pruebas locales por capa |
+| `scripts/ci/run-e2e.ps1` | Playwright E2E sobre `erp_zh_test` |
 | `scripts/ci/verify-stack-allowlist.ps1` | CI: NuGet, npm, Docker, Actions, patrones, **scripts** |
+| `scripts/ci/check-pages-wrapper-rule.ps1` | CI: regla de wrappers de páginas |
+| `scripts/ds/*.ps1` | Auditoría y guard del Design System |
+| `scripts/qa/diagnose-pos-warehouse.ps1` | Diagnóstico POS/bodega |
+| `scripts/db/import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC (ArcGIS → `geo_*`) |
 | `tools/architecture/check-identity-guardrails.ps1` | CI: sin referencias auth legacy `users` |
 | `tools/quality/check-handler-size.ps1` | CI: MediatR `Handle` ≤ 150 líneas |
 | `tools/architecture/check-architecture-guardrails.ps1` | CI: capas, patrones frontend, límites TSX, chunk Vite |
 | `tools/generators/new-master-module.ps1` | Scaffolding vertical módulo master |
-| `scripts/db/import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC (ArcGIS → `geo_*`) |
 
 Índice breve: [`scripts/README.md`](../scripts/README.md).
-
-### `dev-restart.ps1` — flags útiles
-
-| Flag | Efecto |
-|------|--------|
-| *(ninguno)* | Docker up + migraciones + ventanas API y Vite |
-| `-DockerUp` | Solo `docker compose up -d` |
-| `-SkipDocker` | Omite Docker (Postgres/Redis ya corriendo) |
-| `-NoStart` | Migraciones sin abrir ventanas |
-| `-NoMigrate` | Solo libera puertos y arranca apps |
-| `-Doctor` | Diagnóstico (puertos, toolchain, EF pending) |
-| `-StrictMigrate` | Falla si EF update falla |
 
 ### `run-e2e.ps1` — flags útiles
 
 | Flag | Efecto |
 |------|--------|
+| `-Database` | Base de pruebas (por defecto `erp_zh_test`; `erp_zh_dev` rechazada) |
 | `-SkipDocker` | Postgres ya en `:5435` |
 | `-SkipMigrations` | Omite `dotnet ef database update` |
 | `-PlaywrightArgs` | P. ej. `"e2e/smoke.spec.ts"` |

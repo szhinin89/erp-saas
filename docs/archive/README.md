@@ -11,6 +11,7 @@ Nivel 4 de la jerarquía documental (ver `/CLAUDE.md § Jerarquía documental`):
 | [`audits/`](./audits/) | Auditorías puntuales de un módulo o del sistema, ya cerradas |
 | [`plans/`](./plans/) | Planes de implementación por fases de una feature ya entregada |
 | [`designs/`](./designs/) | Documentos de diseño de una feature específica, ya implementada |
+| [`operations/`](./operations/) | Runbooks de procedimientos retirados (comandos de backfill eliminados) y el checklist del piloto Sumak al 2026-08-08 — retirados en ERP-CONFIG-CLEANUP (2026-10-17) |
 | [`archive-ai-rules/`](../decisions/archive-ai-rules/README.md) | *(vive en `docs/decisions/`, no aquí)* — snapshot del antiguo `AI-RULES/` archivado en el Bloque 16B |
 | Resto de archivos en `docs/archive/` (sin subcarpeta) | Releases selladas, modelos de scope históricos y otros snapshots previos a esta reorganización (Bloque 16C, 2026-08-07) |
 

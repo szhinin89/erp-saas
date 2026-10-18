@@ -1,4 +1,4 @@
-# Canonical API + Worker + Frontend; existing PostgreSQL/Redis in ERP_NETWORK.
+# Canonical API + Worker + Frontend; existing PostgreSQL/Redis in ERP_NETWORK (entry: docker-compose.app.yml).
 name: erp-saas-localprod
 
 services:
@@ -92,6 +92,6 @@ volumes:
   # Certificados P12, XML firmados/autorizados y RIDE (PDF) generados por erp-api.
   # Nombrado (no bind mount) para no depender de rutas del host — sobrevive a
   # `docker compose ... up -d --force-recreate erp-api`; solo se borra con `down -v`,
-  # que este proyecto nunca ejecuta contra este compose (ver docs/DOCKER_LOCAL_PROD.md).
+  # que este proyecto nunca ejecuta contra este compose (ver docs/deployment/README.md).
   erp-api-files:
   erp-api-logs:

@@ -16,26 +16,22 @@ namespace ERP.API.Hosting;
 public static class ErpHostRegistration
 {
     /// <summary>
-    /// Precedencia estándar: appsettings &lt; user-secrets &lt; environment variables &lt; command line
-    /// (user-secrets también fuera de Development; nunca en Testing). Alias de hosting
-    /// <c>DB_CONNECTION_STRING</c> → <c>ConnectionStrings:DefaultConnection</c>.
+    /// Fuentes únicas de API, worker y herramientas EF (<see cref="ErpDesignTimeDbContextFactory"/>):
+    /// appsettings &lt; user-secrets (solo Development) &lt; environment variables &lt; command line.
+    /// Fuera de Development la conexión llega solo del entorno (<c>ConnectionStrings__DefaultConnection</c>),
+    /// nunca de los secretos locales del desarrollador.
     /// </summary>
-    public static void AddErpConfigurationSources(
-        this IConfigurationManager configuration,
-        IHostEnvironment environment,
+    public static IConfigurationBuilder AddErpConfigurationSources(
+        this IConfigurationBuilder configuration,
+        string environmentName,
         string[] args
     )
     {
-        if (!environment.IsEnvironment("Testing"))
+        if (string.Equals(environmentName, Environments.Development, StringComparison.OrdinalIgnoreCase))
             configuration.AddUserSecrets(typeof(ErpHostRegistration).Assembly, optional: true);
         configuration.AddEnvironmentVariables();
         configuration.AddCommandLine(args);
-
-        var dbFromEnv = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
-        if (!string.IsNullOrWhiteSpace(dbFromEnv))
-            configuration.AddInMemoryCollection([
-                new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", dbFromEnv),
-            ]);
+        return configuration;
     }
 
     /// <summary>Redis si <c>Redis:ConnectionString</c> o <c>ConnectionStrings:Redis</c> está definida.</summary>

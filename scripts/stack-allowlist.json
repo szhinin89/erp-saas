@@ -105,13 +105,27 @@
     "Microsoft.Data.SqlClient"
   ],
   "scriptsAllowed": [
-    "scripts/dev/dev-restart.ps1",
+    "scripts/app-stack.ps1",
+    "scripts/backend-check.ps1",
+    "scripts/backup-restore.ps1",
+    "scripts/ci/check-pages-wrapper-rule.ps1",
     "scripts/ci/run-e2e.ps1",
     "scripts/ci/verify-stack-allowlist.ps1",
-    "tools/architecture/check-identity-guardrails.ps1",
-    "tools/quality/check-handler-size.ps1",
+    "scripts/db/import_inec_ecuador_geography.ps1",
+    "scripts/dev-launcher.ps1",
+    "scripts/ds/_ds-lib.ps1",
+    "scripts/ds/ds-audit.ps1",
+    "scripts/ds/ds-fix-known-patterns.ps1",
+    "scripts/ds/ds-guard.ps1",
+    "scripts/frontend-check.ps1",
+    "scripts/qa/diagnose-pos-warehouse.ps1",
     "tools/architecture/check-architecture-guardrails.ps1",
+    "tools/architecture/check-identity-guardrails.ps1",
     "tools/generators/new-master-module.ps1",
-    "scripts/db/import_inec_ecuador_geography.ps1"
+    "tools/quality/check-handler-size.ps1"
+  ],
+  "scriptsAllowedRoots": [
+    "tools/dashboard/",
+    "print-agent/scripts/"
   ]
 }

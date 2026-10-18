@@ -1,8 +1,8 @@
-# Frontend (React/Vite) — imagen production-like para docker-compose.localprod.yml
+# Frontend (React/Vite) — imagen del stack de aplicación (docker-compose.app.yml)
 # Build context: raíz del repo (npm run build invoca ../tools/ci/run-platform-guard.mjs,
 # por eso el build necesita ver frontend/ y tools/ en el mismo árbol).
 #
-#   docker compose -f docker-compose.localprod.yml build   (desde la raíz del repo)
+#   .\scripts\app-stack.ps1 -Action Build   (desde la raíz del repo)
 
 # ---- Stage 1: build ----
 FROM node:22-alpine AS build
