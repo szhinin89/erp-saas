@@ -216,16 +216,14 @@ try {
     Assert-E2eDatabaseIdle
 
     if (-not $SkipMigrations) {
-        $migrationExit = Invoke-E2eProcess -Stage "migrations-no-build" -FilePath "dotnet" `
-            -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $apiProject, "--no-build") `
-            -WorkingDirectory $backendRoot -TimeoutSec $MigrationTimeoutSec -AllowFailure
-        if ($migrationExit -ne 0) {
-            $null = Invoke-E2eProcess -Stage "api-build-for-migrations" -FilePath "dotnet" `
-                -ArgumentList @("build", $apiProject, "-c", "Release") -WorkingDirectory $backendRoot -TimeoutSec $BuildTimeoutSec
-            $null = Invoke-E2eProcess -Stage "migrations-after-build" -FilePath "dotnet" `
-                -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $apiProject) `
-                -WorkingDirectory $backendRoot -TimeoutSec $MigrationTimeoutSec
-        }
+        # dotnet-ef versionado en .config/dotnet-tools.json (idempotente).
+        $null = Invoke-E2eProcess -Stage "dotnet-tool-restore" -FilePath "dotnet" `
+            -ArgumentList @("tool", "restore") -WorkingDirectory $backendRoot -TimeoutSec $MigrationTimeoutSec
+        # Migración única: EF compila el código actual en Release (nunca binarios previos ni Debug);
+        # el build Release posterior de la API queda incremental.
+        $null = Invoke-E2eProcess -Stage "migrations" -FilePath "dotnet" `
+            -ArgumentList @("ef", "database", "update", "--project", $infraProject, "--startup-project", $apiProject, "--configuration", "Release") `
+            -WorkingDirectory $backendRoot -TimeoutSec ($BuildTimeoutSec + $MigrationTimeoutSec)
     }
 
     $null = Invoke-E2eProcess -Stage "api-release-build" -FilePath "dotnet" `

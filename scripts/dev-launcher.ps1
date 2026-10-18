@@ -433,6 +433,12 @@ function Invoke-DatabaseUpdate {
         $env:ASPNETCORE_ENVIRONMENT = "Development"
         $env:DOTNET_ENVIRONMENT = "Development"
 
+        # dotnet-ef versionado en .config/dotnet-tools.json (idempotente).
+        dotnet tool restore | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Falló dotnet tool restore (dotnet-ef)"
+        }
+
         dotnet ef database update `
             --project $InfrastructureProject `
             --startup-project $ApiProject `
@@ -459,6 +465,11 @@ function Invoke-DatabaseDrop {
     Push-Location $BackendPath
 
     try {
+
+        dotnet tool restore | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Falló dotnet tool restore (dotnet-ef)"
+        }
 
         dotnet ef database drop `
             --force `

@@ -69,10 +69,14 @@ jobs:
         working-directory: backend/src
         env:
           ConnectionStrings__DefaultConnection: Host=localhost;Port=5435;Database=erp_zh_test;Username=postgres;Password=ci_test_password
+        # dotnet-ef versionado en .config/dotnet-tools.json (SSOT); --configuration debe
+        # coincidir con el build previo porque --no-build usa Debug por defecto.
         run: |
+          dotnet tool restore
           dotnet ef database update \
             --project ERP.Infrastructure/ERP.Infrastructure.csproj \
             --startup-project ERP.API/ERP.API.csproj \
+            --configuration Release \
             --no-build
 
       - name: Start API (background)

@@ -53,6 +53,7 @@ npm run dev
 
 - First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`, token-gated)
 - Tras cambios de esquema (pre-producción): recrear BD local — `dotnet ef database drop --project backend/src/ERP.Infrastructure --startup-project backend/src/ERP.API -f` y luego `dotnet ef database update`
+- `dotnet-ef` es herramienta local versionada en `.config/dotnet-tools.json` (alineada con EF Core del proyecto): ejecutar `dotnet tool restore` una vez tras clonar o al cambiar su versión. CI y los scripts (`dev-launcher.ps1`, `run-e2e.ps1`) lo hacen automáticamente.
 - `dotnet ef` siempre con `--startup-project ERP.API`: la factory de diseño (`ERP.API/Hosting/ErpDesignTimeDbContextFactory.cs`) usa las mismas fuentes que el runtime.
 
 ### Configuración y bases por entorno

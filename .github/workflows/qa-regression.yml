@@ -98,12 +98,14 @@ jobs:
       # -------------------------
       - name: Run EF migrations
         working-directory: backend/src
+        # dotnet-ef versionado en .config/dotnet-tools.json (SSOT); --configuration debe
+        # coincidir con el build previo porque --no-build usa Debug por defecto.
         run: |
-          dotnet tool install --global dotnet-ef || true
-          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet tool restore
           dotnet ef database update \
             --project ERP.Infrastructure/ERP.Infrastructure.csproj \
             --startup-project ERP.API/ERP.API.csproj \
+            --configuration Release \
             --no-build
 
       # -------------------------
