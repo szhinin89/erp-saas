@@ -209,6 +209,18 @@ public sealed class ManualJournalHandler(
             if (entry.Status != JournalEntryStatus.Posted)
                 return Result<ManualJournalResultDto>.ValidationFailure("Solo un manual Posted puede reversarse.");
             var existing = await journal.FindByKeyAsync(tenant.TenantId, company.CompanyId, "Accounting", "Reversal", entry.Id, ct);
+            if (entry.IsFiscalYearClosing && existing is null)
+            {
+                // ACCOUNTING-FINAL-FIX: el reverso del cierre anual vive en el mismo ejercicio (31-dic, último
+                // período Open), serializado con la generación/publicación; nunca traslada el resultado al
+                // ejercicio siguiente. El gate Open/Closed/Locked lo aplica el reverso común.
+                await closing.AcquireLockAsync(company.CompanyId, entry.FiscalYear, ct);
+                if (cmd.EffectiveDate != entry.EntryDate)
+                    return Result<ManualJournalResultDto>.ValidationFailure(
+                        $"El asiento de cierre anual solo se reversa con su fecha original ({entry.EntryDate:yyyy-MM-dd}), "
+                            + "mientras el último período del ejercicio esté abierto.",
+                        FiscalYearClosingCodes.ReversalDateInvalid);
+            }
             var result = await new JournalEntryReversal(journal, periods, sequences, policies)
                 .ReverseAsync(entry, user.UserId, cmd.Reason, cmd.EffectiveDate, ct);
             if (!result.IsSuccess) return Failure(result);

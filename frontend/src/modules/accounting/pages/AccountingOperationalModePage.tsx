@@ -55,7 +55,9 @@ export function AccountingOperationalModePage() {
     try {
       const dto = await accountingApi.getOperationalPolicy();
       setPolicy(dto);
-      if (!form.getValues("effectiveFrom")) form.setValue("effectiveFrom", dto.today);
+      // ACCOUNTING-FINAL-FIX: la primera activación propone la fecha de apertura (debe cubrirla).
+      if (!form.getValues("effectiveFrom"))
+        form.setValue("effectiveFrom", !dto.isConfigured && dto.openingBalanceDate ? dto.openingBalanceDate : dto.today);
     } catch (err: unknown) {
       message.error(formatApiRequestError(err, { generic: t("accounting.continuity.mode.error.load") }));
     } finally {

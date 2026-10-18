@@ -31,6 +31,15 @@ public sealed class AccountingModeChangePreconditions(
     {
         if (mode == AccountingOperationalMode.Enabled)
         {
+            // ACCOUNTING-FINAL-FIX: la primera activación debe cubrir la fecha de apertura (en curso o ya
+            // cerrada); si no, la apertura quedaría no sujeta para siempre mientras las operaciones
+            // posteriores sí se contabilizan. Con versiones previas la activación nunca es retroactiva.
+            if (versions.Count == 0
+                && await opening.GetOpeningBalanceDateAsync(ct) is { } openingDate
+                && effectiveFrom > openingDate)
+                return $"La empresa tiene fecha de apertura {openingDate:yyyy-MM-dd}: la primera activación de "
+                    + "Contabilidad debe regir desde esa fecha o antes, para que los saldos iniciales de la Carga "
+                    + $"Inicial generen su asiento de apertura. Use como vigencia el {openingDate:yyyy-MM-dd} o una fecha anterior.";
             // Activar nunca vuelve sujetos hechos ya ocurridos: una vigencia pasada solo procede si
             // no existe ningún hecho contablemente relevante desde esa fecha (y nunca se generan
             // obligaciones históricas). Con versiones previas, la vigencia pasada se rechaza siempre.

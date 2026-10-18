@@ -83,6 +83,18 @@ public interface IJournalEntryRepository
     );
 
     /// <summary>
+    /// ACCOUNTING-FINAL-FIX — reverso de un asiento por la relación persistida
+    /// <c>OriginalJournalEntryId</c> (uq_journal_entries_original_journal_entry_id: a lo sumo uno). Nunca
+    /// se deduce del campo heredado <c>ReverseJournalEntryId</c> del original, que ya no se escribe.
+    /// </summary>
+    Task<JournalEntry?> FindReversalOfAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid originalJournalEntryId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Protege la clave natural de idempotencia del Posting Engine (CompanyId, SourceModule,
     /// SourceEventId, FactType) mediante un advisory lock transaccional de PostgreSQL — debe
     /// ejecutarse siempre antes de <see cref="FindByKeyAsync"/>. Utiliza la transacción ambiente

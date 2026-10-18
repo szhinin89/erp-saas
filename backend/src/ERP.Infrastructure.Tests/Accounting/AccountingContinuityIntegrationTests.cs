@@ -660,6 +660,65 @@ public sealed class AccountingContinuityIntegrationTests : IAsyncLifetime
         (await verify.AccountingPostings.AnyAsync(p => p.CompanyId == _otherCompanyId)).Should().BeFalse();
     }
 
+    /// <summary>
+    /// ACCOUNTING-FINAL-FIX (DEBT-1) — con fecha de apertura, la primera activación debe regir desde esa
+    /// fecha o antes, tanto con la Carga Inicial abierta como cerrada; una vigencia posterior se rechaza sin
+    /// crear versión. La lectura expone la fecha para que la UI la proponga.
+    /// </summary>
+    [Fact]
+    public async Task FinalFix_primera_activacion_posterior_a_la_apertura_se_rechaza_con_carga_abierta_o_cerrada()
+    {
+        var openingDate = new DateOnly(2026, 9, 30);
+        DateOnly today;
+        await using (var db = CreateContext(_tenantId, _otherCompanyId))
+        {
+            var company = await db.Companies.SingleAsync(c => c.Id == _otherCompanyId);
+            db.Entry(company).Property(c => c.OpeningBalanceDate).CurrentValue = openingDate;
+            await db.SaveChangesAsync();
+            today = await new CompanyClock(db).TodayAsync(_otherCompanyId, _tenantId, CancellationToken.None);
+        }
+        today.Should().BeAfter(openingDate);
+
+        async Task<Result<AccountingOperationalPolicyDto>> EnableAsync(DateOnly from)
+        {
+            await using var db = CreateContext(_tenantId, _otherCompanyId);
+            return await SetModeHandler(db, _otherCompanyId).Handle(
+                new SetAccountingOperationalModeCommand(AccountingOperationalMode.Enabled, from, null), CancellationToken.None);
+        }
+
+        // Carga Inicial en curso: hoy y el día siguiente a la apertura se rechazan.
+        foreach (var from in new[] { today, openingDate.AddDays(1) })
+        {
+            var rejected = await EnableAsync(from);
+            rejected.IsSuccess.Should().BeFalse();
+            rejected.Error.Should().Contain("fecha de apertura 2026-09-30").And.Contain("Use como vigencia el 2026-09-30");
+        }
+
+        // Carga Inicial cerrada: la regla se mantiene.
+        await using (var db = CreateContext(_tenantId, _otherCompanyId))
+        {
+            var company = await db.Companies.SingleAsync(c => c.Id == _otherCompanyId);
+            db.Entry(company).Property(c => c.InitialLoadClosedAt).CurrentValue = DateTime.UtcNow;
+            db.Entry(company).Property(c => c.InitialLoadClosedBy).CurrentValue = _userId;
+            await db.SaveChangesAsync();
+            var read = await new AccountingOperationalPolicyReader(new AccountingOperationalPolicyRepository(db),
+                new CompanyRepository(db), new CompanyClock(db)).ReadAsync(_tenantId, _otherCompanyId, CancellationToken.None);
+            read!.OpeningBalanceDate.Should().Be(openingDate);
+            read.IsConfigured.Should().BeFalse();
+        }
+        (await EnableAsync(today)).Error.Should().Contain("fecha de apertura 2026-09-30");
+        await using (var verify = CreateContext(_tenantId, _otherCompanyId))
+            (await verify.AccountingOperationalPolicies.AnyAsync(p => p.CompanyId == _otherCompanyId)).Should().BeFalse();
+
+        // Vigencia = fecha de apertura: procede y la apertura queda sujeta.
+        var ok = await EnableAsync(openingDate);
+        ok.IsSuccess.Should().BeTrue(ok.Error);
+        await using var check = CreateContext(_tenantId, _otherCompanyId);
+        (await new AccountingOperationalDecision(new AccountingOperationalPolicyRepository(check))
+            .ResolveAsync(_tenantId, _otherCompanyId, openingDate, CancellationToken.None))
+            .Should().Be(AccountingApplicability.Applicable);
+    }
+
     [Fact]
     public async Task Empresa_nueva_elige_Enabled_explicitamente_con_vigencia_y_sin_historia()
     {

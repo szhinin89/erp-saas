@@ -107,7 +107,10 @@ La activación tiene fecha efectiva; no genera asientos históricos automáticam
 Las empresas existentes al adoptar la política quedaron Enabled desde 1900-01-01. Una empresa
 nueva elige su modo explícitamente: sin ninguna versión la decisión no puede tomarse y la
 operación que generaría el hecho se rechaza (fail-closed); Accounting nunca se activa de forma
-automática. Marcar `IsAccountingReq = true` exige Enabled vigente hoy y ninguna versión
+automática. Si existe `Company.OpeningBalanceDate`, la primera versión Enabled debe regir desde esa
+fecha o antes (Carga Inicial abierta o cerrada); una vigencia posterior se rechaza, porque dejaría la
+apertura no sujeta mientras las operaciones posteriores sí se contabilizan. La pantalla propone la
+fecha de apertura cuando existe. Marcar `IsAccountingReq = true` exige Enabled vigente hoy y ninguna versión
 posterior Disabled; en otro caso el cambio fiscal se rechaza.
 Una desactivación no borra el libro ni resuelve pendientes; se rechaza si hay obligaciones
 Pending/Failed o hechos que aún deberían tener resolución. El cambio no exime obligaciones
@@ -581,7 +584,9 @@ Return no genera asiento (su efecto es el de la devolución). Reversos con el co
 (desde Draft no hay hecho), Purchases/SupplierCreditApplied y Purchases/SupplierCreditRefunded
 del movimiento revertido. Los FactType de reverso por regla anteriores (PurchaseReturnCancelled,
 SupplierCreditApplicationReversed, SupplierCreditRefundReversed) ya no se generan ni se siembran;
-las reglas existentes se conservan sin uso, nunca se borran.
+las reglas existentes se conservan sin uso, nunca se borran. Lo mismo `Payables/SupplierPaymentReversed`
+(ACCOUNTING-FINAL-FIX): fuera de `PostingFactCatalog` y del bootstrap; la reversa del pago espeja el
+asiento de `Payables/SupplierPaymentConfirmed` (§18).
 
 Sin backfill: no se crean obligaciones ni asientos para operaciones previas. El comando
 `remediate-purchase-return-postings <id>... [apply]` es manual, exige IDs explícitos, informa sin
@@ -885,7 +890,10 @@ publicación se serializan con el lock compartido de Company y un advisory lock 
 
 **Publicación.** Con el flujo de manuales (§11): `POST manual-journal-entries/{id}/post` (`accounting.manual.post`),
 versión, intentos durables, numeración, período Open y Entity Audit; descarte y reverso igual que un manual. El
-cierre no se edita (`YEAR_END_CLOSING_NOT_EDITABLE`). Al publicar se recalcula el cierre bajo el lock del ejercicio:
+cierre no se edita (`YEAR_END_CLOSING_NOT_EDITABLE`). Su reverso usa siempre la fecha original del cierre (31-dic) y
+el último período del ejercicio Open: otra fecha se rechaza (`YEAR_END_CLOSING_REVERSAL_DATE`) y con el período
+Closed/Locked el gate común lo rechaza (`PERIOD_NOT_OPEN`), sin escribir; así el resultado nunca se traslada al
+ejercicio siguiente. Se serializa con el lock del ejercicio; la UI precarga la fecha y no permite editarla. Al publicar se recalcula el cierre bajo el lock del ejercicio:
 si las líneas o la fecha difieren del cálculo vigente se rechaza `YEAR_END_CLOSING_OUTDATED` (descartar y regenerar).
 
 **Último período.** `CloseAccountingPeriod` agrega `YEAR_END_CLOSING_MISSING` cuando el período termina el 31-dic de su

@@ -68,6 +68,7 @@ public static class FiscalYearClosingCodes
     public const string ResultAccountInvalid = "YEAR_END_RESULT_ACCOUNT_INVALID";
     public const string Outdated = "YEAR_END_CLOSING_OUTDATED";
     public const string NotEditable = "YEAR_END_CLOSING_NOT_EDITABLE";
+    public const string ReversalDateInvalid = "YEAR_END_CLOSING_REVERSAL_DATE";
 }
 
 /// <summary>Asiento calculado del cierre: fecha (31-dic), período destino, líneas y resultado.</summary>

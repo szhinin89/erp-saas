@@ -1,5 +1,20 @@
 # Project Status
 
+## ACCOUNTING-FINAL-FIX (2026-10-17)
+
+Correcciones pre-squash de ACCOUNTING-FINAL-AUDIT. BUG REAL corregido: el reverso del cierre anual aceptaba
+cualquier fecha (UI: hoy, siempre en el ejercicio siguiente), trasladaba el resultado y permitía duplicar el
+cierre al regenerar; ahora exige la fecha original (31-dic) con el último período Open
+(`YEAR_END_CLOSING_REVERSAL_DATE` / `PERIOD_NOT_OPEN`), fecha precargada y no editable. La primera activación
+Enabled debe regir desde `OpeningBalanceDate` o antes (Carga Inicial abierta o cerrada); la UI la propone.
+`Payables/SupplierPaymentReversed` retirado del catálogo, bootstrap y mantenimiento (reglas existentes
+conservadas sin uso; el reverso espeja el asiento persistido). PASS 3/3 tests focales; clases afectadas PASS
+(bootstrap: conteo del seed alineado con 12A/12C, desactualizado desde esas entregas). tsc -b y ESLint focal PASS.
+Ajuste: «Reversar» y el detalle resuelven el reverso por la relación persistida `OriginalJournalEntryId`
+(`FindReversalOfAsync`), sin el campo heredado `ReverseJournalEntryId`; UI 2/2 PASS.
+Sin migración. Sin suites, npm build, architecture:check, staging, commit ni push.
+Contrato: [Accounting §3/§19/§26](docs/architecture/accounting.md).
+
 ## ACCOUNTING-12D (2026-10-17)
 
 Cierre anual contable. `GenerateFiscalYearClosingEntry` crea en Draft el asiento de cierre (`Accounting/FiscalYearClosing`,

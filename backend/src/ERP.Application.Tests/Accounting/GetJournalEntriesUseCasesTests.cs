@@ -287,7 +287,7 @@ public sealed class GetJournalEntriesUseCasesTests
         var reversal = original.Reverse(CreatedBy, 2, "Factura anulada", original.EntryDate, original.AccountingPeriodId, original.FiscalYear);
 
         var m = new Mocks();
-        m.JournalEntries.Setup(r => r.FindByKeyAsync(TenantId, CompanyId, "Accounting", "Reversal", original.Id,
+        m.JournalEntries.Setup(r => r.FindReversalOfAsync(TenantId, CompanyId, original.Id,
             It.IsAny<CancellationToken>())).ReturnsAsync(reversal);
         m.JournalEntries.Setup(r =>
                 r.GetByIdAsync(TenantId, CompanyId, original.Id, It.IsAny<CancellationToken>())

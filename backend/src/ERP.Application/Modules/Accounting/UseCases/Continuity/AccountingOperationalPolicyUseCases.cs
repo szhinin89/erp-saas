@@ -74,7 +74,8 @@ public sealed class AccountingOperationalPolicyReader
             // ACCOUNTING-CONTINUITY-05: Disabled se ofrece siempre salvo empresa obligada; sus
             // precondiciones (pendientes, vigencia) se validan al registrarlo.
             !company.IsAccountingReq,
-            versions.Select(AccountingOperationalPolicyVersionDto.From).ToList()
+            versions.Select(AccountingOperationalPolicyVersionDto.From).ToList(),
+            company.OpeningBalanceDate
         );
     }
 }

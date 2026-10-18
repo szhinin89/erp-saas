@@ -64,8 +64,14 @@ public sealed class AccountingBootstrapStepTests
     /// reversas espejan el asiento histórico, sin PostingRule).
     ///
     /// ACCOUNTING-10: pasa de 17 a 18 — se siembra "Sales"/"SalesReturn".
+    ///
+    /// ACCOUNTING-12A/12C: + 8 — "Inventory"/"StockAdjustmentIn|Out" y las seis reglas de "Caja" (el
+    /// conteo no se había actualizado en esas entregas).
+    ///
+    /// ACCOUNTING-FINAL-FIX: − 1 — "Payables"/"SupplierPaymentReversed" deja de sembrarse (la reversa
+    /// del pago espeja el asiento histórico, sin PostingRule). Total 25.
     /// </summary>
-    private const int ExpectedPostingRulesCount = 18;
+    private const int ExpectedPostingRulesCount = 25;
 
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _companyId = Guid.NewGuid();
@@ -365,19 +371,58 @@ public sealed class AccountingBootstrapStepTests
         edited.ParentAccountId.Should().BeNull();
     }
 
+    /// <summary>
+    /// ACCOUNTING-CONTINUITY-04 / ACCOUNTING-FINAL-FIX — los hechos de reverso sin consumidor productivo
+    /// (incluido "Payables"/"SupplierPaymentReversed") no están en el catálogo ni se siembran; una regla
+    /// existente se conserva intacta (nunca se borra ni se "corrige") y la reversa del pago sigue pidiendo
+    /// el espejo del asiento persistido del pago confirmado.
+    /// </summary>
     [Fact]
     public async Task No_siembra_reglas_de_reverso_reemplazadas_por_el_espejo_historico()
     {
-        // ACCOUNTING-CONTINUITY-04 — sin consumidor productivo: el reverso común espeja el asiento.
-        await using var db = NewDbContext(Guid.NewGuid().ToString());
-        await new AccountingBootstrapStep(
+        ERP.Application.Modules.Accounting.Posting.PostingFactCatalog.Find("Payables", "SupplierPaymentReversed")
+            .Should().BeNull();
+
+        var dbName = Guid.NewGuid().ToString();
+        AccountingBootstrapStep Step(ErpDbContext db) => new(
             db,
             new ERP.Infrastructure.Tests.Seeding.AlwaysTodayCompanyClock(),
             NullLogger<AccountingBootstrapStep>.Instance
-        ).ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+        );
+        await using (var db = NewDbContext(dbName))
+        {
+            await Step(db).ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+            (await db.PostingRules.Where(r => r.CompanyId == _companyId).Select(r => r.FactType).ToListAsync())
+                .Should().NotContain(["PurchaseReturnCancelled", "SupplierCreditApplicationReversed",
+                    "SupplierCreditRefundReversed", "SupplierPaymentReversed"]);
 
-        (await db.PostingRules.Where(r => r.CompanyId == _companyId).Select(r => r.FactType).ToListAsync())
-            .Should().NotContain(["PurchaseReturnCancelled", "SupplierCreditApplicationReversed", "SupplierCreditRefundReversed"]);
+            // Regla heredada (forma previa exacta) de una instalación anterior.
+            var payables = await db.Accounts.SingleAsync(a => a.CompanyId == _companyId && a.Code.Value == "2.1.01.001");
+            var legacy = ERP.Domain.Modules.Accounting.Entities.PostingRule.Create(
+                _tenantId, _companyId, "Payables", "SupplierPaymentReversed", _actorId);
+            legacy.AddLine(payables.Id, AccountNature.Credit, PostingAmountKind.GrandTotal);
+            db.PostingRules.Add(legacy);
+            await db.SaveChangesAsync();
+        }
+
+        await using (var db = NewDbContext(dbName))
+            await Step(db).ExecuteAsync(new CompanyBootstrapContext(_tenantId, _companyId, _actorId));
+
+        await using (var verify = NewDbContext(dbName))
+        {
+            var kept = await verify.PostingRules.Include(r => r.Lines)
+                .SingleAsync(r => r.CompanyId == _companyId && r.FactType == "SupplierPaymentReversed");
+            kept.Lines.Should().ContainSingle().Which.AmountKind.Should().Be(PostingAmountKind.GrandTotal);
+        }
+
+        var reversals = new Moq.Mock<ERP.Application.Modules.Accounting.Continuity.IAccountingReversalRecorder>();
+        var paymentId = Guid.NewGuid();
+        var reversedEvent = new ERP.Domain.Modules.Payables.Events.SupplierPaymentReversedEvent(
+            _tenantId, paymentId, _companyId, Guid.NewGuid(), 10m, new DateOnly(2026, 10, 1), "error de digitación", [], []);
+        await new ERP.Application.Modules.Accounting.Posting.Translators.SupplierPaymentReversedPostingTranslator(reversals.Object)
+            .Handle(reversedEvent, CancellationToken.None);
+        reversals.Verify(r => r.RecordSourceAsync(_tenantId, _companyId, "Payables", "SupplierPaymentConfirmed",
+            paymentId, "error de digitación", reversedEvent.OccurredOn, Moq.It.IsAny<CancellationToken>()), Moq.Times.Once);
     }
 
     [Fact]
@@ -414,7 +459,6 @@ public sealed class AccountingBootstrapStepTests
                     ("Purchases", "PurchaseCreditNoteAuthorized"),
                     ("Finance", "CollectionApplied"),
                     ("Payables", "SupplierPaymentConfirmed"),
-                    ("Payables", "SupplierPaymentReversed"),
                     ("Retentions", "DocumentIssued"),
                     ("Expenses", "DocumentConfirmed"),
                     ("Purchases", "PurchaseReturn"),
@@ -424,6 +468,14 @@ public sealed class AccountingBootstrapStepTests
                     ("InitialLoad", "OpeningReceivables"),
                     ("InitialLoad", "OpeningPayables"),
                     ("InitialLoad", "ASI"),
+                    ("Inventory", "StockAdjustmentIn"),
+                    ("Inventory", "StockAdjustmentOut"),
+                    ("Caja", "ManualIncome"),
+                    ("Caja", "ManualExpense"),
+                    ("Caja", "Withdrawal"),
+                    ("Caja", "BankDeposit"),
+                    ("Caja", "CashCountSurplus"),
+                    ("Caja", "CashCountShortage"),
                 }
             );
 
@@ -458,7 +510,12 @@ public sealed class AccountingBootstrapStepTests
         // IL-8A — el ASI de apertura es la única regla sin líneas fijas (todas son Allocations).
         var openingJournalRule = rules.Single(r => r.SourceModule == "InitialLoad" && r.FactType == "ASI");
         openingJournalRule.Lines.Should().BeEmpty();
-        rules.Except(refundRules).Except([openingJournalRule]).Should().OnlyContain(r => r.Lines.Count >= 2);
+        // ACCOUNTING-12A/12C — ajustes y arqueo fijan una línea (el otro lado es dinámico); los movimientos
+        // de caja son reglas habilitadoras sin líneas fijas.
+        var dynamicSideRules = rules.Where(r => r.SourceModule is "Inventory" or "Caja").ToList();
+        dynamicSideRules.Should().OnlyContain(r => r.Lines.Count <= 1);
+        rules.Except(refundRules).Except([openingJournalRule]).Except(dynamicSideRules)
+            .Should().OnlyContain(r => r.Lines.Count >= 2);
 
         async Task AssertSupplierPaymentRuleAsync(string factType, AccountNature nature)
         {
@@ -478,7 +535,6 @@ public sealed class AccountingBootstrapStepTests
         }
 
         await AssertSupplierPaymentRuleAsync("SupplierPaymentConfirmed", AccountNature.Debit);
-        await AssertSupplierPaymentRuleAsync("SupplierPaymentReversed", AccountNature.Credit);
 
         // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — "Finance"/"SupplierPaymentApplied" ya no se siembra
         // (sin RegisterPaymentCommand/traductor que lo dispare, sería configuración muerta).
@@ -1342,7 +1398,6 @@ public sealed class AccountingBootstrapStepTests
                 var (factType, nature) in new[]
                 {
                     ("SupplierPaymentConfirmed", AccountNature.Debit),
-                    ("SupplierPaymentReversed", AccountNature.Credit),
                 }
             )
             {
@@ -1390,7 +1445,6 @@ public sealed class AccountingBootstrapStepTests
             var (factType, nature) in new[]
             {
                 ("SupplierPaymentConfirmed", AccountNature.Debit),
-                ("SupplierPaymentReversed", AccountNature.Credit),
             }
         )
         {
@@ -1433,7 +1487,7 @@ public sealed class AccountingBootstrapStepTests
                 .CountAsync()
         )
             .Should()
-            .Be(4);
+            .Be(2);
     }
 
     [Fact]

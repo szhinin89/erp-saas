@@ -87,6 +87,7 @@ export interface JournalEntryDetailDto {
   originalJournalEntryId: string | null;
   originalJournalEntryNumber: number | null;
   originalJournalEntryDate: string | null;
+  /** Reverso resuelto en servidor por la relación persistida `OriginalJournalEntryId` (ACCOUNTING-FINAL-FIX). */
   reverseJournalEntryId: string | null;
   reverseJournalEntryNumber: number | null;
   reverseJournalEntryDate: string | null;
@@ -337,6 +338,8 @@ export interface AccountingOperationalPolicyDto {
   currentMode: AccountingOperationalMode | null;
   today: string;
   disabledAvailable: boolean;
+  /** Fecha de apertura: la primera activación debe regir desde esa fecha o antes. */
+  openingBalanceDate: string | null;
   versions: AccountingOperationalPolicyVersionDto[];
 }
 

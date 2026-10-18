@@ -204,6 +204,86 @@ public sealed class AccountingFiscalYearClosing12DTests : IClassFixture<Accounti
         nextYear.Value.TotalEquity.Should().Be(449.75m);
     }
 
+    /// <summary>
+    /// ACCOUNTING-FINAL-FIX (BUG-1): el reverso del cierre anual solo procede con su fecha original (31-dic)
+    /// y su último período Open. Reversar + regenerar no duplica el resultado, diciembre solo se cierra con
+    /// el cierre vigente, y con el período Closed/Locked el reverso se rechaza sin escribir.
+    /// </summary>
+    [Fact]
+    public async Task A12D_05_reverso_del_cierre_usa_su_fecha_y_regenerar_no_duplica_resultado()
+    {
+        var (book, result, _, _) = await ProfitBookAsync();
+        Guid firstId;
+        await using (var setup = book.Db())
+        {
+            setup.AccountingPeriods.Add(AccountingPeriod.Create(book.TenantId, book.CompanyId, 2027, 1,
+                new(2027, 1, 1), new(2027, 1, 31), book.UserId));
+            await setup.SaveChangesAsync();
+            var first = await book.GenerateClosing(setup, AfterYear).Handle(new GenerateFiscalYearClosingEntryCommand(2026), Ct);
+            (await book.Handler(setup, AfterYear).Handle(new PostManualJournalCommand(first.Value!.JournalEntryId!.Value, 1, Guid.NewGuid()), Ct))
+                .IsSuccess.Should().BeTrue();
+            firstId = first.Value.JournalEntryId.Value;
+        }
+
+        // Ajuste tardío de 2026: el cierre queda desactualizado y diciembre no puede cerrarse.
+        await PostAsync(book, new(2026, 11, 1), book.DebitId, book.CreditId, 10m, AfterYear);
+        await using var db = book.Db();
+        var handler = book.Handler(db, AfterYear);
+        var completeness = AccountingCompletenessTestSupport.Create(db, book.CompanyId);
+        var period = await db.AccountingPeriods.AsNoTracking().SingleAsync(p => p.Id == book.PeriodId);
+        (await completeness.EvaluateClosureAsync(book.TenantId, book.CompanyId, period, Ct)).Reasons
+            .Select(r => r.Code).Should().Contain(AccountingCompletenessCodes.YearEndClosingMissing);
+
+        // Fecha distinta del 31-dic (aunque enero 2027 esté Open): rechazo sin escribir.
+        var wrongDate = await handler.Handle(new ReverseManualJournalCommand(firstId, AfterYear, "ajuste tardío"), Ct);
+        wrongDate.Code.Should().Be(FiscalYearClosingCodes.ReversalDateInvalid);
+        (await db.JournalEntries.CountAsync(e => e.OriginalJournalEntryId == firstId)).Should().Be(0);
+
+        var reversed = await handler.Handle(new ReverseManualJournalCommand(firstId, YearEnd, "ajuste tardío"), Ct);
+        reversed.IsSuccess.Should().BeTrue(reversed.Error);
+        var reversal = await db.JournalEntries.AsNoTracking().SingleAsync(e => e.OriginalJournalEntryId == firstId);
+        reversal.EntryDate.Should().Be(YearEnd);
+        reversal.AccountingPeriodId.Should().Be(book.PeriodId);
+        (await new JournalEntryRepository(db).FindReversalOfAsync(book.TenantId, book.CompanyId, firstId, Ct))!.Id
+            .Should().Be(reversal.Id, "el detalle resuelve el reverso por OriginalJournalEntryId");
+        (await handler.Handle(new ReverseManualJournalCommand(firstId, YearEnd, "repetido"), Ct)).Value!.Id
+            .Should().Be(reversal.Id, "el reverso común es idempotente");
+        (await db.JournalEntryAudits.CountAsync(a => a.Action == "Reversed" && a.EntityId == reversal.Id)).Should().Be(1);
+
+        var regenerated = await book.GenerateClosing(db, AfterYear).Handle(new GenerateFiscalYearClosingEntryCommand(2026), Ct);
+        regenerated.Value!.Result.Should().Be(459.75m, "el cierre anterior y su reverso se excluyen del cálculo");
+        (await handler.Handle(new PostManualJournalCommand(regenerated.Value.JournalEntryId!.Value, 1, Guid.NewGuid()), Ct))
+            .IsSuccess.Should().BeTrue();
+
+        var journal = new JournalEntryRepository(db);
+        var accounts = new AccountRepository(db);
+        var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == book.TenantId);
+        var company = Mock.Of<ICurrentCompany>(c => c.CompanyId == book.CompanyId && c.HasCompanyContext && c.IsAuthenticated);
+        var user = Mock.Of<ICurrentUser>(u => u.UserId == book.UserId);
+        (await new GetIncomeStatementReportHandler(journal, accounts, tenant, company, completeness)
+            .Handle(new GetIncomeStatementReportQuery(new(2026, 1, 1), YearEnd), Ct)).Value!.NetProfit.Should().Be(459.75m);
+        var balance = await new GetBalanceSheetReportHandler(journal, accounts, tenant, company, completeness)
+            .Handle(new GetBalanceSheetReportQuery(new(2027, 1, 31)), Ct);
+        balance.Value!.CurrentYearResult.Should().Be(0m, "el resultado de 2026 no se traslada a 2027");
+        balance.Value.PriorYearsUnclosedResult.Should().Be(0m);
+        balance.Value.EquityLines.Single(l => l.AccountId == result).Amount.Should().Be(459.75m);
+        balance.Value.IsBalanced.Should().BeTrue();
+
+        var periods = new AccountingPeriodRepository(db);
+        var clock = book.Clock(AfterYear);
+        (await new CloseAccountingPeriodHandler(periods, completeness, new AccountingOperationalPolicyRepository(db),
+            new UnitOfWork(db), clock, tenant, company, user).Handle(new CloseAccountingPeriodCommand(book.PeriodId), Ct))
+            .IsSuccess.Should().BeTrue();
+
+        // Closed y luego Locked: el reverso del cierre vigente se rechaza sin escribir.
+        var currentId = regenerated.Value.JournalEntryId.Value;
+        (await handler.Handle(new ReverseManualJournalCommand(currentId, YearEnd, "tarde"), Ct)).Code.Should().Be("PERIOD_NOT_OPEN");
+        (await new LockAccountingPeriodHandler(periods, tenant, company, user)
+            .Handle(new LockAccountingPeriodCommand(book.PeriodId), Ct)).IsSuccess.Should().BeTrue();
+        (await handler.Handle(new ReverseManualJournalCommand(currentId, YearEnd, "tarde"), Ct)).Code.Should().Be("PERIOD_NOT_OPEN");
+        (await db.JournalEntries.CountAsync(e => e.OriginalJournalEntryId == currentId)).Should().Be(0);
+    }
+
     /// <summary>Ventas 1000, costo 400, gasto 150.25 → utilidad 449.75.</summary>
     private async Task<(ManualBook Book, Guid Result, Guid Cost, Guid Expense)> ProfitBookAsync()
     {

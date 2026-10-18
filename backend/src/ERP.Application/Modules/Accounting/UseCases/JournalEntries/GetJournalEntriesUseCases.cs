@@ -170,7 +170,9 @@ public sealed class GetJournalEntryByIdHandler
         var originalEntry = entry.OriginalJournalEntryId is { } originalId
             ? await _repo.GetByIdAsync(tenantId, companyId, originalId, ct)
             : null;
-        var reverseEntry = await _repo.FindByKeyAsync(tenantId, companyId, "Accounting", "Reversal", entry.Id, ct);
+        // ACCOUNTING-FINAL-FIX: el reverso se resuelve por la relación persistida OriginalJournalEntryId,
+        // nunca por el campo heredado ReverseJournalEntryId del original (ya no se escribe).
+        var reverseEntry = await _repo.FindReversalOfAsync(tenantId, companyId, entry.Id, ct);
 
         var sourceRequests = new List<JournalEntrySourceRequest> { Map.ToSourceRequest(entry) };
         if (originalEntry is not null)
@@ -399,7 +401,7 @@ file static class Map
             e.OriginalJournalEntryId,
             originalEntry?.EntryNumber,
             originalEntry?.EntryDate,
-            reverseEntry?.Id ?? e.ReverseJournalEntryId,
+            reverseEntry?.Id,
             reverseEntry?.EntryNumber,
             reverseEntry?.EntryDate,
             reverseEntry?.ReversedAtUtc ?? e.ReversedAtUtc,

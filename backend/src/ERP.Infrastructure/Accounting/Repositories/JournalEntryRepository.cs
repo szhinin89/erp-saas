@@ -103,6 +103,12 @@ public sealed class JournalEntryRepository : IJournalEntryRepository
                 && x.SourceEventType == factType && x.SourceEventId == sourceEventId, ct);
     }
 
+    public Task<JournalEntry?> FindReversalOfAsync(Guid tenantId, Guid companyId,
+        Guid originalJournalEntryId, CancellationToken ct = default) =>
+        _context.JournalEntries.AsNoTracking().FirstOrDefaultAsync(x =>
+            x.TenantId == tenantId && x.CompanyId == companyId
+            && x.OriginalJournalEntryId == originalJournalEntryId, ct);
+
     public async Task AcquireIdempotencyLockAsync(
         Guid companyId,
         string sourceModule,

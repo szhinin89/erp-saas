@@ -33,6 +33,10 @@ public sealed class OpeningAccountingCompleteness(
     private static readonly ImportType[] BalanceImportTypes =
         [ImportType.InitialStock, ImportType.InitialReceivables, ImportType.InitialPayables];
 
+    /// <summary><c>Company.OpeningBalanceDate</c> de la empresa operativa (null si aún no se definió).</summary>
+    public Task<DateOnly?> GetOpeningBalanceDateAsync(CancellationToken ct) =>
+        openingBalance.GetOpeningBalanceDateAsync(ct);
+
     public async Task<OpeningAccountingStatus?> EvaluateAsync(
         Guid tenantId,
         Guid companyId,

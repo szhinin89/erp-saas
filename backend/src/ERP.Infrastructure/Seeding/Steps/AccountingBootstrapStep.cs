@@ -1062,17 +1062,8 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 new("1.1.03.004", AccountNature.Debit, PostingAmountKind.SupplierCredit),
             ]
         ),
-        // SUPPLIER-PAYMENTS-REVERSE-16 — asiento inverso exacto: única línea fija (Haber CxP por
-        // el total reversado); el Debe por cada medio de pago original es dinámico vía
-        // PostingFact.Allocations en SupplierPaymentReversedPostingTranslator, mismo criterio que
-        // la confirmación.
-        new(
-            PostingFactCatalog.SupplierPaymentReversed,
-            [
-                new("2.1.01.001", AccountNature.Credit, PostingAmountKind.AppliedToPayable),
-                new("1.1.03.004", AccountNature.Credit, PostingAmountKind.SupplierCredit),
-            ]
-        ),
+        // ACCOUNTING-FINAL-FIX — "SupplierPaymentReversed" ya no se siembra: la reversa del pago espeja el
+        // asiento histórico (Accounting/Reversal, §18) sin PostingRule. Las reglas existentes no se borran.
         // RETENTIONS-POSTING-RULE-SEED-01H / RETENTIONS-TAX-COMPONENT-POSTING-02C —
         // "Retentions"/"DocumentIssued" reclasifica el monto retenido: Debe CxP proveedor (se
         // reduce lo exigible por el total retenido), Haber Retenciones IVA por pagar (solo el
@@ -1562,17 +1553,11 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
                 r.TenantId == tenantId
                 && r.CompanyId == companyId
                 && r.SourceModule == "Payables"
-                && (
-                    r.FactType == "SupplierPaymentConfirmed"
-                    || r.FactType == "SupplierPaymentReversed"
-                )
+                && r.FactType == "SupplierPaymentConfirmed"
             )
             .ToListAsync(cancellationToken);
         var legacySupplierPaymentConfirmedRule = supplierPaymentRules.FirstOrDefault(r =>
             r.FactType == "SupplierPaymentConfirmed"
-        );
-        var legacySupplierPaymentReversedRule = supplierPaymentRules.FirstOrDefault(r =>
-            r.FactType == "SupplierPaymentReversed"
         );
 
         if (
@@ -1689,12 +1674,6 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             accountByCode,
             companyId
         );
-        var correctedSupplierPaymentReversedRule = TryCorrectLegacySupplierPaymentRule(
-            legacySupplierPaymentReversedRule,
-            AccountNature.Credit,
-            accountByCode,
-            companyId
-        );
 
         if (
             seededRulesCount == 0
@@ -1702,7 +1681,6 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             && !correctedLegacyCreditNoteRule
             && !correctedLegacySalesInvoiceIssuedRule
             && !correctedSupplierPaymentConfirmedRule
-            && !correctedSupplierPaymentReversedRule
         )
         {
             LogPostingRulesSkipped(companyId);
@@ -1718,14 +1696,14 @@ public sealed partial class AccountingBootstrapStep : ICompanyBootstrapStep
             LogLegacyPurchaseCreditNoteAuthorizedRuleCorrected(companyId);
         if (correctedLegacySalesInvoiceIssuedRule)
             LogLegacySalesInvoiceIssuedRuleCorrected(companyId);
-        if (correctedSupplierPaymentConfirmedRule || correctedSupplierPaymentReversedRule)
+        if (correctedSupplierPaymentConfirmedRule)
             LogLegacySupplierPaymentRulesCorrected(companyId);
     }
 
     /// <summary>
     /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C (ADR-035) — corrige
-    /// "Payables"/"SupplierPaymentConfirmed" (<paramref name="nature"/> = Debit) o
-    /// "SupplierPaymentReversed" (Credit) desde la forma previa exacta (UNA línea CxP
+    /// "Payables"/"SupplierPaymentConfirmed" (<paramref name="nature"/> = Debit) desde la forma
+    /// previa exacta (UNA línea CxP
     /// <see cref="PostingAmountKind.GrandTotal"/>) a la vigente: esa misma línea pasa a
     /// <see cref="PostingAmountKind.AppliedToPayable"/> (conserva su Id, mismo criterio que
     /// <see cref="TryCorrectLegacySalesInvoiceIssuedRule"/>) y se agrega "1.1.03.004 Anticipos a

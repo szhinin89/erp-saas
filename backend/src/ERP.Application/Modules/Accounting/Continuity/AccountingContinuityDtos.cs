@@ -94,6 +94,10 @@ public sealed record AccountingOperationalPolicyVersionDto(
 
 /// <param name="IsConfigured">La Company ya eligió explícitamente su modo operativo.</param>
 /// <param name="CurrentMode">Modo vigente hoy (fecha de la empresa); null si ninguna versión cubre hoy.</param>
+/// <param name="OpeningBalanceDate">
+/// Fecha de apertura de la empresa: la primera activación debe regir desde esa fecha o antes
+/// (ACCOUNTING-FINAL-FIX); la UI la propone como vigencia.
+/// </param>
 /// <param name="DisabledAvailable">
 /// Disabled puede seleccionarse (la empresa no está obligada a llevar contabilidad). Sus
 /// precondiciones de pendientes y vigencia se validan al registrar la versión (ACCOUNTING-CONTINUITY-05).
@@ -104,5 +108,6 @@ public sealed record AccountingOperationalPolicyDto(
     AccountingOperationalMode? CurrentMode,
     DateOnly Today,
     bool DisabledAvailable,
-    IReadOnlyList<AccountingOperationalPolicyVersionDto> Versions
+    IReadOnlyList<AccountingOperationalPolicyVersionDto> Versions,
+    DateOnly? OpeningBalanceDate = null
 );

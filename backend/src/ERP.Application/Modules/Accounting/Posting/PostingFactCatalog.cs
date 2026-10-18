@@ -128,12 +128,6 @@ public static class PostingFactCatalog
         PayableSplitKinds,
         PostingDynamicSides.Credit
     );
-    public static readonly PostingFactDefinition SupplierPaymentReversed = new(
-        "Payables",
-        "SupplierPaymentReversed",
-        PayableSplitKinds,
-        PostingDynamicSides.Debit
-    );
     public static readonly PostingFactDefinition RetentionDocumentIssued = new(
         "Retentions",
         "DocumentIssued",
@@ -245,7 +239,6 @@ public static class PostingFactCatalog
         SupplierCreditRefunded,
         CollectionApplied,
         SupplierPaymentConfirmed,
-        SupplierPaymentReversed,
         RetentionDocumentIssued,
         ExpenseDocumentConfirmed,
         StockAdjustmentIn,

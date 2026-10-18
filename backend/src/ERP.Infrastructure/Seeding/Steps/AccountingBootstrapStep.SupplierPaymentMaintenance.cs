@@ -8,7 +8,7 @@ namespace ERP.Infrastructure.Seeding.Steps;
 
 /// <summary>
 /// ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C-PROD-CLOSE (ADR-035) — mantenimiento de las reglas
-/// canónicas "Payables"/"SupplierPaymentConfirmed"/"SupplierPaymentReversed" en instalaciones
+/// canónicas "Payables"/"SupplierPaymentConfirmed" en instalaciones
 /// existentes, incluida Production. Mismo mecanismo exacto que
 /// <c>SALES-INVOICE-POSTING-RULE-PROD-BACKFILL-02</c> (<see cref="MaintainSalesInvoiceRuleAsync"/>):
 /// diagnóstico por contenido, y solo la forma canónica anterior exacta se actualiza.
@@ -18,11 +18,9 @@ public sealed partial class AccountingBootstrapStep
     internal const string SupplierPaymentRuleCanonical = "Canonical";
     internal const string SupplierPaymentRuleLegacy = "Legacy";
 
-    internal static readonly string[] SupplierPaymentFactTypes =
-    [
-        "SupplierPaymentConfirmed",
-        "SupplierPaymentReversed",
-    ];
+    // ACCOUNTING-FINAL-FIX: "SupplierPaymentReversed" se retiró del catálogo (la reversa espeja el
+    // asiento histórico); su regla existente se conserva sin uso y no se mantiene.
+    internal static readonly string[] SupplierPaymentFactTypes = ["SupplierPaymentConfirmed"];
 
     /// <summary>
     /// "Canonical" (forma vigente de <see cref="MinimalPostingRules"/>), "Legacy" (forma canónica
