@@ -264,9 +264,8 @@ try {
     $env:E2E_BASE_URL = "http://127.0.0.1:4173"
     $env:CI = "true"
 
-    $setupExit = Invoke-E2eProcess -Stage "operational-e2e-setup" -FilePath "npx.cmd" -ArgumentList @("playwright", "test", "e2e/operational-data.setup.spec.ts") -WorkingDirectory $frontendRoot -TimeoutSec $PlaywrightTimeoutSec -AllowFailure
-    if ($setupExit -ne 0) { exit $setupExit }
-
+    # El setup de datos operativos es el proyecto Playwright `setup` (dependencia de la suite en
+    # playwright.config.ts): corre una vez y primero, también con -PlaywrightArgs.
     if ([string]::IsNullOrWhiteSpace($PlaywrightArgs)) {
         $playExit = Invoke-E2eProcess -Stage "playwright" -FilePath "npx.cmd" -ArgumentList @("playwright", "test") -WorkingDirectory $frontendRoot -TimeoutSec $PlaywrightTimeoutSec -AllowFailure
     } else {

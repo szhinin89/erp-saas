@@ -51,6 +51,16 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      # Contrato E2E (mismo que scripts/ci/run-e2e.ps1): E2ESeedService provisiona usuario/tenant/
+      # empresas bajo E2E:SeedEnabled. La contraseña es efímera por corrida (base de servicio
+      # desechable): nunca se almacena en el repositorio y se enmascara en los logs.
+      - name: E2E credentials
+        run: |
+          E2E_PASSWORD="E2e!$(openssl rand -hex 16)"
+          echo "::add-mask::$E2E_PASSWORD"
+          echo "E2E_USERNAME=e2e.admin" >> "$GITHUB_ENV"
+          echo "E2E_PASSWORD=$E2E_PASSWORD" >> "$GITHUB_ENV"
+
       - name: Restore & build API
         working-directory: backend/src
         run: dotnet build ERP.API/ERP.API.csproj -c Release
@@ -73,7 +83,10 @@ jobs:
           ConnectionStrings__DefaultConnection: Host=localhost;Port=5435;Database=erp_zh_test;Username=postgres;Password=ci_test_password
           Hangfire__StorageConnectionString: Host=localhost;Port=5435;Database=erp_zh_test;Username=postgres;Password=ci_test_password
           HealthChecks__EnableRedis: "false"
+          E2E__SeedEnabled: "true"
         run: |
+          export E2E__Username="$E2E_USERNAME"
+          export E2E__Password="$E2E_PASSWORD"
           dotnet run --project ERP.API/ERP.API.csproj -c Release --no-build &
           echo $! > /tmp/erp-api.pid
           for i in $(seq 1 60); do

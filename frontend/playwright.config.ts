@@ -17,7 +17,17 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173",
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Datos operativos E2E: proyecto `setup` del que depende la suite — corre una única vez y antes
+  // de cualquier spec (también al filtrar specs por CLI).
+  projects: [
+    { name: "setup", testMatch: /\.setup\.spec\.ts$/ },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /\.setup\.spec\.ts$/,
+      dependencies: ["setup"],
+    },
+  ],
   // API E2E: E2E_API_URL (default http://localhost:5003). Helpers poll GET /health/live. See scripts/ci/run-e2e.ps1.
   webServer: {
     command: "npm run preview -- --host 127.0.0.1 --port 4173 --strictPort",

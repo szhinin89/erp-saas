@@ -1,5 +1,16 @@
 # Project Status
 
+## QA-STABILIZATION-02 — E2E SEED (2026-10-17)
+
+**Estado: implementado (sin commit).** `e2e-manual.yml` usaba `Development__SeedDemoTenant` (sin consumidor) y nunca
+pasaba credenciales a Playwright: ahora aplica el contrato real de `E2ESeedService` (`E2E__SeedEnabled/Username/
+Password`), con contraseña efímera por corrida enmascarada (sin secret en el repo). Setup de datos operativos: proyecto
+Playwright `setup` del que depende `chromium` (`playwright.config.ts`); se retiraron las invocaciones explícitas de
+`operational-data.setup.spec.ts` en el workflow y en `run-e2e.ps1`, que lo ejecutaban dos veces. PASS: API real sobre
+`erp_zh_test` vacía → migraciones, seed (usuario, tenant, 2 empresas, membresías y sucursales) y login `e2e.admin`;
+`erp_zh_dev` sin datos E2E; `playwright --list` muestra el setup una vez (suite completa y spec filtrado). Pendiente:
+corrida del workflow en GitHub Actions (manual, requiere push).
+
 ## ERP-CONFIG-CLEANUP (2026-10-17)
 
 **Estado: implementado (sin commit).** Configuración: `appsettings.json` sin connection strings; una sola cadena de
