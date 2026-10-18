@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Reflection;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
@@ -193,21 +192,6 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
         (await repository.CountPendingRetriesAsync(_tenantId, _companyId)).Should().Be(0);
         ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Resolve(
             await repository.GetRetryMaximumSettingAsync(_tenantId, _companyId)).Should().Be(expected);
-    }
-
-    [Fact]
-    public async Task Legacy_notification_rows_are_removed_by_migration()
-    {
-        await using var db = NewDbContext(_tenantId, _companyId);
-        var migrator = db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
-        await migrator.MigrateAsync("20261015000000_BackgroundJobProgress");
-        db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(_tenantId, _companyId,
-            ERP.Domain.Configuration.Enums.OrgScope.Company, _companyId,
-            "communications.sales_invoice_authorized.enabled", "false",
-            ERP.Domain.Configuration.Enums.SettingDataType.Bool, _userId));
-        await db.SaveChangesAsync();
-        await migrator.MigrateAsync();
-        (await db.OrgSettings.AsNoTracking().CountAsync()).Should().Be(0);
     }
 
     private async Task<int> CountPendingRetriesAsync()

@@ -41,7 +41,7 @@ Fuera de `SriCatalogs` pero relacionados: `DocTypeSriMap` (mapa tipo interno →
 | Mecanismo | Uso hoy para `sri_*` | Evidencia |
 |---|---|---|
 | `HasData` en `IEntityTypeConfiguration` | **Única fuente** de las filas de los 15 catálogos | `SriCatalogs/*Configuration.cs` |
-| Migraciones EF | Materializan el `HasData`: la baseline `20261010184156_InitialProductionBaseline` (DB-BASELINE-01) crea y siembra todo con el estado final de cada catálogo (incluidos flags `is_active`/`is_electronic` de ADR-042 y el versionado de retenciones) | `Migrations/*.cs` |
+| Migraciones EF | Materializan el `HasData`: la baseline `20261018014647_InitialProductionBaseline` (MIGRATION-SQUASH; sucede a DB-BASELINE-01) crea y siembra todo con el estado final de cada catálogo (incluidos flags `is_active`/`is_electronic` de ADR-042 y el versionado de retenciones) | `Migrations/*.cs` |
 | Evolución previa a la baseline | Editar `HasData` → EF genera `InsertData`/`UpdateData` en la siguiente migración (p. ej. IRBPNR + `CalculationType`, commit `ef6b7d86`) | git history |
 | Seeding steps (`Seeding/Steps/*`) | **No escriben** `sri_*`; solo leen (`ElectronicDocumentsBootstrapStep`, `SalesBootstrapStep`) | `Seeding/Steps/` |
 | `PaymentMethodSriMappingBackfillService` (startup) | No escribe catálogo; rellena `PaymentMethod.SriPaymentMethodCode` de tenants contra el catálogo | `Program.cs:480-490` |

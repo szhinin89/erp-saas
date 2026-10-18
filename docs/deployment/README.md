@@ -30,7 +30,7 @@ No se inspeccionó ni modificó Coolify activo. Antes de ejecutar:
 4. Detener todos los workers antiguos y API antiguas con Server.Enabled=true.
    No dejar procesos viejos sincronizando recurring jobs durante la transición.
 5. Desplegar primero API con Server.Enabled=false; confirmar migraciones/bootstrap
-   completos y `/health/ready` healthy (BD/Redis). Verificar migración BackgroundJobProgress.
+   completos y `/health/ready` healthy (BD/Redis). Verificar la tabla `background_job_progress` (baseline `20261018014647_InitialProductionBaseline`).
 6. Desplegar Worker con `--worker`, Server.Enabled=true y exactamente la imagen de API.
    En Compose depende de API healthy; si la plataforma no respeta esa dependencia,
    ejecutar estos pasos secuencialmente antes de habilitar el servicio Worker.

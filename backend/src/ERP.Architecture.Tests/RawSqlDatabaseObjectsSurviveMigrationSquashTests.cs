@@ -36,13 +36,13 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
             [
                 "CREATE UNIQUE INDEX IF NOT EXISTS uq_mbp_identification ON master_business_partners (tenant_id, identification_type, identification_number)",
             ],
-            // Exclusividad Compra↔Gasto por AccessKey — versión vigente que ignora Cancelled
-            // (ReceptionReprocessAfterCancelStandard); la original sin filtro de status bloqueaba
-            // para siempre tras anular.
+            // Exclusividad Compra↔Gasto por AccessKey — versión vigente (PURCHASE-DISCARDED-STATE):
+            // solo compras activas (Draft = 1, Confirmed = 2) bloquean; Cancelled y Discarded no.
+            // Los gastos siguen ignorando Cancelled (ExpenseStatus.Cancelled = 2).
             ["enforce_purchase_expense_exclusivity"] =
             [
                 "CREATE OR REPLACE FUNCTION enforce_purchase_expense_exclusivity() RETURNS trigger",
-                "WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key AND status <> 3",
+                "WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key AND status IN (1, 2)",
                 "WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key AND status <> 2",
                 "CONSTRAINT = 'uq_purchase_expense_access_key'",
             ],
@@ -72,6 +72,12 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
             [
                 "ALTER TABLE accounting_periods ADD CONSTRAINT ex_accounting_periods_company_no_overlap EXCLUDE USING gist (",
                 "company_id WITH =, daterange(start_date, end_date, '[]') WITH &&",
+            ],
+            // ADR-043: cursor durable de los jobs recurrentes (BackgroundJobProgress). Tabla sin
+            // entidad EF; solo existe como raw SQL.
+            ["background_job_progress"] =
+            [
+                "CREATE TABLE background_job_progress ( stream text PRIMARY KEY, candidate_id uuid NOT NULL, candidate_created_at timestamptz NOT NULL );",
             ],
         };
 
@@ -141,7 +147,7 @@ public sealed partial class RawSqlDatabaseObjectsSurviveMigrationSquashTests
     }
 
     [GeneratedRegex(
-        @"(?:CREATE (?:OR REPLACE )?(?:UNIQUE )?(?:MATERIALIZED )?(?:INDEX|FUNCTION|TRIGGER|EXTENSION|VIEW|SEQUENCE|PROCEDURE|POLICY|TYPE|DOMAIN|RULE) (?:CONCURRENTLY )?(?:IF NOT EXISTS )?|ADD CONSTRAINT )(?:public\.)?(?<name>[A-Za-z_][A-Za-z0-9_]*)"
+        @"(?:CREATE (?:OR REPLACE )?(?:UNIQUE )?(?:MATERIALIZED )?(?:INDEX|FUNCTION|TRIGGER|EXTENSION|VIEW|SEQUENCE|PROCEDURE|POLICY|TYPE|DOMAIN|RULE|TABLE) (?:CONCURRENTLY )?(?:IF NOT EXISTS )?|ADD CONSTRAINT )(?:public\.)?(?<name>[A-Za-z_][A-Za-z0-9_]*)"
     )]
     private static partial Regex CreatedObject();
 

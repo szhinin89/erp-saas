@@ -248,6 +248,92 @@ public sealed class RawSqlDatabaseObjectsBaselineIntegrationTests : IAsyncLifeti
         matches.Should().ContainSingle().Which.Sku.Should().Be("SKU-LECHE");
     }
 
+    [Fact]
+    public async Task Exclusion_de_periodos_contables_existe_con_su_definicion()
+    {
+        await using var db = CreateContext(Guid.Empty);
+
+        var definition = await db
+            .Database.SqlQuery<string>(
+                $"""
+                SELECT pg_get_constraintdef(c.oid) AS "Value"
+                  FROM pg_constraint c
+                 WHERE c.conname = 'ex_accounting_periods_company_no_overlap'
+                   AND c.conrelid = 'public.accounting_periods'::regclass AND c.contype = 'x'
+                """
+            )
+            .SingleAsync();
+
+        definition
+            .Should()
+            .Be("EXCLUDE USING gist (company_id WITH =, daterange(start_date, end_date, '[]'::text) WITH &&)");
+    }
+
+    [Fact]
+    public async Task Tabla_background_job_progress_existe_con_su_estructura()
+    {
+        await using var db = CreateContext(Guid.Empty);
+
+        var columns = await db
+            .Database.SqlQuery<string>(
+                $"""
+                SELECT string_agg(column_name || ' ' || data_type || ' ' || is_nullable, ', ' ORDER BY ordinal_position) AS "Value"
+                  FROM information_schema.columns
+                 WHERE table_schema = 'public' AND table_name = 'background_job_progress'
+                """
+            )
+            .SingleAsync();
+        var primaryKey = await db
+            .Database.SqlQuery<string>(
+                $"""
+                SELECT pg_get_constraintdef(c.oid) AS "Value"
+                  FROM pg_constraint c
+                 WHERE c.conrelid = 'public.background_job_progress'::regclass AND c.contype = 'p'
+                """
+            )
+            .SingleAsync();
+
+        columns
+            .Should()
+            .Be("stream text NO, candidate_id uuid NO, candidate_created_at timestamp with time zone NO");
+        primaryKey.Should().Be("PRIMARY KEY (stream)");
+    }
+
+    /// <summary>
+    /// Definición vigente (espacios normalizados: el fin de línea del archivo de migración no altera
+    /// la semántica plpgsql). Detecta una consolidación que copie una versión obsoleta, como la
+    /// exclusividad que ignoraba solo Cancelled (status &lt;&gt; 3) en lugar de Draft/Confirmed.
+    /// </summary>
+    [Theory]
+    [InlineData(
+        "enforce_purchase_expense_exclusivity",
+        """BEGIN IF NEW.access_key IS NULL THEN RETURN NEW; END IF; PERFORM pg_advisory_xact_lock(hashtextextended( 'purchase-expense:' || NEW.tenant_id::text || ':' || NEW.access_key, 0)); IF TG_TABLE_NAME = 'expense_documents' THEN IF EXISTS (SELECT 1 FROM purchase_invoices WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key AND status IN (1, 2)) THEN RAISE EXCEPTION 'La factura ya fue registrada como compra.' USING ERRCODE = '23505', CONSTRAINT = 'uq_purchase_expense_access_key'; END IF; ELSE IF EXISTS (SELECT 1 FROM expense_documents WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key AND status <> 2) THEN RAISE EXCEPTION 'La factura ya fue registrada como gasto.' USING ERRCODE = '23505', CONSTRAINT = 'uq_purchase_expense_access_key'; END IF; END IF; RETURN NEW; END;"""
+    )]
+    [InlineData(
+        "a1_item_barcode_unique",
+        """DECLARE barcode_value text; BEGIN IF TG_TABLE_NAME='item_variant_barcodes' THEN barcode_value=NEW.code; ELSE barcode_value=NEW.barcode; END IF; IF barcode_value IS NULL THEN RETURN NEW; END IF; PERFORM pg_advisory_xact_lock(hashtextextended(NEW.tenant_id::text || NEW.company_id::text || barcode_value, 0)); IF EXISTS(SELECT 1 FROM item_variant_barcodes b WHERE b.tenant_id=NEW.tenant_id AND b.company_id=NEW.company_id AND b.code=barcode_value AND (TG_TABLE_NAME<>'item_variant_barcodes' OR b.id<>NEW.id)) OR EXISTS(SELECT 1 FROM item_packaging_levels p WHERE p.tenant_id=NEW.tenant_id AND p.company_id=NEW.company_id AND p.barcode=barcode_value AND (TG_TABLE_NAME<>'item_packaging_levels' OR p.id<>NEW.id)) THEN RAISE EXCEPTION 'Barcode already belongs to this Company' USING ERRCODE='23505', CONSTRAINT='uq_item_barcode_tenant_company'; END IF; RETURN NEW; END"""
+    )]
+    [InlineData(
+        "a1_inventory_product_scope",
+        """BEGIN IF NOT EXISTS(SELECT 1 FROM items i WHERE i.id=NEW.product_id AND i.tenant_id=NEW.tenant_id AND i.company_id=NEW.company_id AND i.nature='Product') THEN RAISE EXCEPTION 'Inventory requires a Product owned by this Company' USING ERRCODE='23514', CONSTRAINT='ck_inventory_item_nature_scope'; END IF; RETURN NEW; END"""
+    )]
+    public async Task Funcion_raw_tiene_su_definicion_vigente(string functionName, string expectedBody)
+    {
+        await using var db = CreateContext(Guid.Empty);
+
+        var body = await db
+            .Database.SqlQuery<string>(
+                $"""
+                SELECT btrim(regexp_replace(p.prosrc, '\s+', ' ', 'g')) AS "Value"
+                  FROM pg_proc p
+                 WHERE p.proname = {functionName} AND p.prorettype = 'trigger'::regtype
+                """
+            )
+            .SingleAsync();
+
+        body.Should().Be(expectedBody);
+    }
+
     private static async Task<int> Scalar(ErpDbContext db, string sql) =>
 #pragma warning disable EF1002 // SQL constante del test, sin entrada externa.
         await db.Database.SqlQueryRaw<int>(sql).SingleAsync();

@@ -20,6 +20,9 @@ namespace ERP.Infrastructure.Migrations
             migrationBuilder.EnsureSchema(
                 name: "access");
 
+            migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:PostgresExtension:btree_gist", ",,");
+
             migrationBuilder.CreateTable(
                 name: "access_profile_permissions",
                 columns: table => new
@@ -59,6 +62,54 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "accounting_operational_policies",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    mode = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    effective_from = table.Column<DateOnly>(type: "date", nullable: false),
+                    effective_to = table.Column<DateOnly>(type: "date", nullable: true),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_accounting_operational_policies", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "accounting_period_audit",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    fiscal_year = table.Column<int>(type: "integer", nullable: false),
+                    period_number = table.Column<int>(type: "integer", nullable: false),
+                    start_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    end_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    action = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
+                    occurred_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    request_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    source = table.Column<int>(type: "integer", nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_accounting_period_audit", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "accounting_periods",
                 columns: table => new
                 {
@@ -71,6 +122,8 @@ namespace ERP.Infrastructure.Migrations
                     status = table.Column<int>(type: "integer", nullable: false),
                     closed_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     closed_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    locked_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    locked_by = table.Column<Guid>(type: "uuid", nullable: true),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -187,29 +240,6 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_brands", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "cash_movement_reasons",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    movement_type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    sort_order = table.Column<int>(type: "integer", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    is_system_seeded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_cash_movement_reasons", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -657,35 +687,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "inventory_cost_postings",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
-                    InvoiceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SourceEventId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FactType = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
-                    EntryDate = table.Column<DateOnly>(type: "date", nullable: false),
-                    Kind = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    ErrorCode = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    ErrorMessage = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    JournalEntryId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Attempts = table.Column<int>(type: "integer", nullable: false),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    UpdatedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_inventory_cost_postings", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "inventory_lots",
                 columns: table => new
                 {
@@ -828,6 +829,29 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_item_types", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "journal_entry_audit",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    snapshot_json = table.Column<string>(type: "jsonb", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    entity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    action = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_name = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
+                    occurred_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    request_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    source = table.Column<int>(type: "integer", nullable: false),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_journal_entry_audit", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -1203,9 +1227,6 @@ namespace ERP.Infrastructure.Migrations
                     company_id = table.Column<Guid>(type: "uuid", nullable: false),
                     source_module = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     fact_type = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    debit_account_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    credit_account_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    tax_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -1610,6 +1631,19 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_security_admin_scope_assignments", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "sri_annulment_policy",
+                schema: "global",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    code = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_sri_annulment_policy", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -2077,7 +2111,12 @@ namespace ERP.Infrastructure.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     company_id = table.Column<Guid>(type: "uuid", nullable: false),
                     entry_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    accounting_period_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    accounting_period_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    reference = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    version = table.Column<int>(type: "integer", nullable: false),
+                    discarded_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    discarded_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    discard_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     fiscal_year = table.Column<int>(type: "integer", nullable: false),
                     source_module = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     source_event_type = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -2087,7 +2126,6 @@ namespace ERP.Infrastructure.Migrations
                     posted_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     entry_number = table.Column<int>(type: "integer", nullable: true),
                     original_journal_entry_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    reverse_journal_entry_id = table.Column<Guid>(type: "uuid", nullable: true),
                     reversed_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     reverse_reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2111,10 +2149,34 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "journal_entries",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "cash_movement_reasons",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    movement_type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    sort_order = table.Column<int>(type: "integer", nullable: false),
+                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    is_system_seeded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_cash_movement_reasons", x => x.id);
                     table.ForeignKey(
-                        name: "FK_journal_entries_journal_entries_reverse_journal_entry_id",
-                        column: x => x.reverse_journal_entry_id,
-                        principalTable: "journal_entries",
+                        name: "FK_cash_movement_reasons_accounts_accounting_account_id",
+                        column: x => x.accounting_account_id,
+                        principalTable: "accounts",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -2251,7 +2313,6 @@ namespace ERP.Infrastructure.Migrations
                     requires_supplier = table.Column<bool>(type: "boolean", nullable: false),
                     requires_due_date = table.Column<bool>(type: "boolean", nullable: false),
                     payable_generation_mode = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    accounting_posting_mode = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     inventory_impact_mode = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     notification_mode = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2658,6 +2719,41 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "sri_annulment_policy_version",
+                schema: "global",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    policy_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    valid_from = table.Column<DateOnly>(type: "date", nullable: true),
+                    valid_until = table.Column<DateOnly>(type: "date", nullable: true),
+                    day_of_following_month = table.Column<int>(type: "integer", nullable: true),
+                    days_after_issue = table.Column<int>(type: "integer", nullable: true),
+                    extend_to_next_business_day = table.Column<bool>(type: "boolean", nullable: false),
+                    normative_source_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_sri_annulment_policy_version", x => x.id);
+                    table.CheckConstraint("ck_sri_annulment_policy_dates", "valid_from IS NULL OR valid_until IS NULL OR valid_from <= valid_until");
+                    table.CheckConstraint("ck_sri_annulment_policy_deadline", "COALESCE((day_of_following_month BETWEEN 1 AND 28 AND days_after_issue IS NULL) OR (day_of_following_month IS NULL AND days_after_issue > 0), FALSE)");
+                    table.ForeignKey(
+                        name: "FK_sri_annulment_policy_version_sri_annulment_policy_policy_id",
+                        column: x => x.policy_id,
+                        principalSchema: "global",
+                        principalTable: "sri_annulment_policy",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_sri_annulment_policy_version_sri_normative_source_normative~",
+                        column: x => x.normative_source_id,
+                        principalSchema: "global",
+                        principalTable: "sri_normative_source",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "sri_retention_code_version",
                 schema: "global",
                 columns: table => new
@@ -2849,6 +2945,46 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "accounting_postings",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    source_module = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    fact_type = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    source_event_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    source_document_number = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    business_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    entry_date = table.Column<DateOnly>(type: "date", nullable: false),
+                    payload_version = table.Column<int>(type: "integer", nullable: false),
+                    payload = table.Column<string>(type: "jsonb", nullable: false),
+                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    error_code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    error_message = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    attempts = table.Column<int>(type: "integer", nullable: false),
+                    last_attempt_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    journal_entry_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    source_document_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_accounting_postings", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_accounting_postings_journal_entries_journal_entry_id",
+                        column: x => x.journal_entry_id,
+                        principalTable: "journal_entries",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "journal_entry_lines",
                 columns: table => new
                 {
@@ -2876,6 +3012,36 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "journal_entries",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "manual_journal_attempts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    journal_entry_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    attempted_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    attempted_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    idempotency_key = table.Column<Guid>(type: "uuid", nullable: false),
+                    success = table.Column<bool>(type: "boolean", nullable: false),
+                    error_code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    error_message = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    expected_version = table.Column<int>(type: "integer", nullable: false),
+                    result_version = table.Column<int>(type: "integer", nullable: false),
+                    result_status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    entry_number = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_manual_journal_attempts", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_manual_journal_attempts_journal_entries_journal_entry_id",
+                        column: x => x.journal_entry_id,
+                        principalTable: "journal_entries",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -3273,6 +3439,44 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "inventory_adjustment_reason_accounts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    inventory_adjustment_reason_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_inventory_adjustment_reason_accounts", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_inventory_adjustment_reason_accounts_accounts_accounting_ac~",
+                        column: x => x.accounting_account_id,
+                        principalTable: "accounts",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_inventory_adjustment_reason_accounts_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_inventory_adjustment_reason_accounts_inventory_adjustment_r~",
+                        column: x => x.inventory_adjustment_reason_id,
+                        principalTable: "inventory_adjustment_reasons",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "items",
                 columns: table => new
                 {
@@ -3377,6 +3581,41 @@ namespace ERP.Infrastructure.Migrations
                         name: "FK_payment_method_accounts_payment_methods_payment_method_id",
                         column: x => x.payment_method_id,
                         principalTable: "payment_methods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "accounting_posting_attempts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    accounting_posting_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    attempt_number = table.Column<int>(type: "integer", nullable: false),
+                    trigger = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    triggered_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    correlation_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    reason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    started_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    finished_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    outcome = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    error_code = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    error_message = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    journal_entry_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_accounting_posting_attempts", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_accounting_posting_attempts_accounting_postings_accounting_~",
+                        column: x => x.accounting_posting_id,
+                        principalTable: "accounting_postings",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -4482,6 +4721,9 @@ namespace ERP.Infrastructure.Migrations
                     due_date = table.Column<DateOnly>(type: "date", nullable: true),
                     notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     status = table.Column<int>(type: "integer", nullable: false),
+                    retention_intent_applies = table.Column<bool>(type: "boolean", nullable: true),
+                    retention_intent_emission_point_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    retention_intent_issue_date = table.Column<DateOnly>(type: "date", nullable: true),
                     confirmed_subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
                     confirmed_total_tax = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
                     confirmed_total_discount = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
@@ -4709,6 +4951,8 @@ namespace ERP.Infrastructure.Migrations
                     base_uom_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false, defaultValue: "UNIT"),
                     conversion_factor = table.Column<decimal>(type: "numeric(22,10)", nullable: false, defaultValue: 1m),
                     quantity_in_base_uom = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
+                    xml_origin_packaging_level_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    xml_origin_factor = table.Column<decimal>(type: "numeric(22,10)", nullable: true),
                     quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: false),
                     unit_price = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
                     discount_pct = table.Column<decimal>(type: "numeric(9,6)", nullable: false),
@@ -5635,7 +5879,7 @@ namespace ERP.Infrastructure.Migrations
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     expense_document_id = table.Column<Guid>(type: "uuid", nullable: false),
                     expense_subcategory_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    snapshot_accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    snapshot_accounting_account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     snapshot_accounting_account_code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     snapshot_accounting_account_name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     description = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
@@ -6409,7 +6653,7 @@ namespace ERP.Infrastructure.Migrations
                     original_transaction_id = table.Column<Guid>(type: "uuid", nullable: true),
                     company_bank_account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     cash_register_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    accounting_account_id = table.Column<Guid>(type: "uuid", nullable: true),
                     payment_method_code = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     currency_code = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
@@ -6421,7 +6665,7 @@ namespace ERP.Infrastructure.Migrations
                     destination_code_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     destination_name_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     destination_type_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    accounting_account_code_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    accounting_account_code_snapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     created_by_user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     client_request_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -6543,6 +6787,12 @@ namespace ERP.Infrastructure.Migrations
                     { 2, true, "Sociedad Privada", "PRIVATE" },
                     { 3, true, "Institución Pública", "PUBLIC" }
                 });
+
+            migrationBuilder.InsertData(
+                schema: "global",
+                table: "sri_annulment_policy",
+                columns: new[] { "id", "code" },
+                values: new object[] { new Guid("41000000-0000-0000-0000-000000000001"), "ELECTRONIC_DOCUMENT_ONLINE_ANNULMENT" });
 
             migrationBuilder.InsertData(
                 schema: "global",
@@ -6700,7 +6950,9 @@ namespace ERP.Infrastructure.Migrations
                 {
                     { new Guid("40000000-0000-0000-0000-000000000001"), "FICHA_TECNICA_OFFLINE", "7333aebfbdf2cb3ba83f9fc67a7a7f0346ca59506480a260cc42f96dbdfc13c9", "InitialProductionBaseline", "Porcentaje → codigoRetencion: 10%→9, 20%→10, 30%→1, 50%→11, 70%→2, 100%→3, en cero→7, no procede→8. La tabla no define 15% (concepto 728 sin representación). Sin fecha de inicio confirmada: las versiones se registran sin límite inferior (ValidFrom null).", new DateOnly(2026, 7, 27), "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%cc%81CNICA%20COMPROBANTES%20ELECTRO%cc%81NICOS%20ESQUEMA%20OFFLINE%20Versio%cc%81n%202.34.pdf", "§9.15 Tabla 20 — Retención del IVA (incluye retención en cero y no procede)", "2.34" },
                     { new Guid("40000000-0000-0000-0000-000000000002"), "CATALOGO_ATS", null, "InitialProductionBaseline", "PENDIENTE DE VERIFICACIÓN (ADR-037 DR-4). El XML usa el mismo código del catálogo, como en el ejemplo oficial de la Ficha v2.34 Anexo 1 (codigoRetencion 323B1). Porcentajes no verificados: las versiones de Renta no fijan Percentage y no se exige coincidencia.", null, "http://www.sri.gob.ec/web/guest/formularios-e-instructivos1", "Retención en la fuente de Impuesto a la Renta (referido por Ficha v2.34 §9.15)", null },
-                    { new Guid("40000000-0000-0000-0000-000000000003"), "CATALOGO_ATS", "bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e", "InitialProductionBaseline", "Descargado el 2026-10-02 desde https://www.sri.gob.ec/formularios-e-instructivos1. Fecha de actualización = inicio del bloque (06/08/2026). Tarifas no numéricas (\"12 o 14\", \"1 /0 según resolución…\") se registran como regla condicional, nunca como porcentaje.", new DateOnly(2026, 8, 6), "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/e6a826af-b22c-40bb-8752-d711f293b8f9/Catalogo_ATS.xls", "Hoja TABLAS RETENCIONES — Tabla 3.10 Conceptos de retención en la fuente de IR (AIR), bloque DESDE 06/AGOSTO/2026", "2026-08-06" }
+                    { new Guid("40000000-0000-0000-0000-000000000003"), "CATALOGO_ATS", "bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e", "InitialProductionBaseline", "Descargado el 2026-10-02 desde https://www.sri.gob.ec/formularios-e-instructivos1. Fecha de actualización = inicio del bloque (06/08/2026). Tarifas no numéricas (\"12 o 14\", \"1 /0 según resolución…\") se registran como regla condicional, nunca como porcentaje.", new DateOnly(2026, 8, 6), "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/e6a826af-b22c-40bb-8752-d711f293b8f9/Catalogo_ATS.xls", "Hoja TABLAS RETENCIONES — Tabla 3.10 Conceptos de retención en la fuente de IR (AIR), bloque DESDE 06/AGOSTO/2026", "2026-08-06" },
+                    { new Guid("40000000-0000-0000-0000-000000000004"), "NAC-DGERCGC16-00000092", null, "InitialProductionBaseline", "Historia por fecha de emisión, hasta 2025-07-31; no se reinterpreta evidencia fiscal persistida.", new DateOnly(2016, 2, 22), "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/c97242e6-c271-4eb8-8f6a-f687313118ba/Guia%20para%20contribuyentes%20de%20anulaci%C3%B3n%20de%20comprobantes%20electr%C3%B3nicos.pdf", "Art. 7 — anulación en línea, 90 días", null },
+                    { new Guid("40000000-0000-0000-0000-000000000005"), "NAC-DGERCGC25-00000017", null, "InitialProductionBaseline", "Firmada 2025-07-29. Día 7 del mes siguiente para emisión desde 2025-08-01; extensión por descanso obligatorio/feriado nacional o local según art. 3 reformado. No aplica excepción ISD al dominio IVA/Renta.", null, "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=e98fc8a6-299e-4ea9-8de7-2f6c70dbb4f5&nombre=NAC-DGERCGC25-00000017.pdf", "Art. 1 a), transitoria primera; reforma NAC-DGERCGC25-00000014 art. 3", null }
                 });
 
             migrationBuilder.InsertData(
@@ -6861,6 +7113,16 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 schema: "global",
+                table: "sri_annulment_policy_version",
+                columns: new[] { "id", "day_of_following_month", "days_after_issue", "extend_to_next_business_day", "normative_source_id", "policy_id", "valid_from", "valid_until" },
+                values: new object[,]
+                {
+                    { new Guid("42000000-0000-0000-0000-000000000001"), null, 90, false, new Guid("40000000-0000-0000-0000-000000000004"), new Guid("41000000-0000-0000-0000-000000000001"), new DateOnly(2016, 2, 22), new DateOnly(2025, 7, 31) },
+                    { new Guid("42000000-0000-0000-0000-000000000002"), 7, null, true, new Guid("40000000-0000-0000-0000-000000000005"), new Guid("41000000-0000-0000-0000-000000000001"), new DateOnly(2025, 8, 1), null }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "global",
                 table: "sri_id_type_usage",
                 columns: new[] { "Id", "IdTypeCode", "IsActive", "UsageType" },
                 values: new object[,]
@@ -6938,9 +7200,68 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_accounting_operational_policies_scope",
+                table: "accounting_operational_policies",
+                columns: new[] { "tenant_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_accounting_operational_policies_company_from",
+                table: "accounting_operational_policies",
+                columns: new[] { "company_id", "effective_from" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_accounting_period_audit_company_year_occurred_at",
+                table: "accounting_period_audit",
+                columns: new[] { "tenant_id", "company_id", "fiscal_year", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_accounting_period_audit_entity_occurred_at",
+                table: "accounting_period_audit",
+                columns: new[] { "tenant_id", "entity_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_accounting_period_audit_user_occurred_at",
+                table: "accounting_period_audit",
+                columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
                 name: "uq_accounting_periods_company_year_period",
                 table: "accounting_periods",
                 columns: new[] { "company_id", "fiscal_year", "period_number" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_accounting_posting_attempts_scope",
+                table: "accounting_posting_attempts",
+                columns: new[] { "tenant_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_accounting_posting_attempts_posting_number",
+                table: "accounting_posting_attempts",
+                columns: new[] { "accounting_posting_id", "attempt_number" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_accounting_postings_journal_entry_id",
+                table: "accounting_postings",
+                column: "journal_entry_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_accounting_postings_scope_source_document",
+                table: "accounting_postings",
+                columns: new[] { "tenant_id", "company_id", "source_document_id" },
+                filter: "source_document_id IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_accounting_postings_scope_status_entry_date",
+                table: "accounting_postings",
+                columns: new[] { "tenant_id", "company_id", "status", "entry_date" });
+
+            migrationBuilder.CreateIndex(
+                name: "uq_accounting_postings_company_source_event_fact",
+                table: "accounting_postings",
+                columns: new[] { "company_id", "source_module", "source_event_id", "fact_type" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7127,6 +7448,11 @@ namespace ERP.Infrastructure.Migrations
                 table: "cash_funding_requests",
                 columns: new[] { "tenant_id", "client_request_id" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_cash_movement_reasons_accounting_account_id",
+                table: "cash_movement_reasons",
+                column: "accounting_account_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_cash_movement_reasons_tenant_company_type_active",
@@ -7863,21 +8189,26 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "tenant_id", "company_id", "import_type", "status" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_inventory_adjustment_reason_accounts_accounting_account_id",
+                table: "inventory_adjustment_reason_accounts",
+                column: "accounting_account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_inventory_adjustment_reason_accounts_inventory_adjustment_r~",
+                table: "inventory_adjustment_reason_accounts",
+                column: "inventory_adjustment_reason_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_inventory_adjustment_reason_accounts_company_reason",
+                table: "inventory_adjustment_reason_accounts",
+                columns: new[] { "company_id", "inventory_adjustment_reason_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "uq_inventory_adjustment_reasons_tenant_code",
                 table: "inventory_adjustment_reasons",
                 columns: new[] { "tenant_id", "code" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_inventory_cost_postings_CompanyId_SourceEventId_FactType",
-                table: "inventory_cost_postings",
-                columns: new[] { "CompanyId", "SourceEventId", "FactType" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_inventory_cost_postings_TenantId_CompanyId_InvoiceId",
-                table: "inventory_cost_postings",
-                columns: new[] { "TenantId", "CompanyId", "InvoiceId" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_inv_lots_tenant_company_item",
@@ -8019,7 +8350,8 @@ namespace ERP.Infrastructure.Migrations
                 name: "uq_item_supplier_codes_tenant_company_supplier_code",
                 table: "item_supplier_codes",
                 columns: new[] { "tenant_id", "company_id", "supplier_id", "code" },
-                unique: true);
+                unique: true,
+                filter: "is_active = true");
 
             migrationBuilder.CreateIndex(
                 name: "ix_item_types_tenant_active",
@@ -8129,11 +8461,6 @@ namespace ERP.Infrastructure.Migrations
                 column: "accounting_period_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_journal_entries_reverse_journal_entry_id",
-                table: "journal_entries",
-                column: "reverse_journal_entry_id");
-
-            migrationBuilder.CreateIndex(
                 name: "uq_journal_entries_company_fiscal_year_entry_number",
                 table: "journal_entries",
                 columns: new[] { "company_id", "fiscal_year", "entry_number" },
@@ -8150,6 +8477,16 @@ namespace ERP.Infrastructure.Migrations
                 table: "journal_entries",
                 column: "original_journal_entry_id",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_journal_entry_audit_entity_occurred_at",
+                table: "journal_entry_audit",
+                columns: new[] { "tenant_id", "entity_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_journal_entry_audit_user_occurred_at",
+                table: "journal_entry_audit",
+                columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_journal_entry_lines_account_id",
@@ -8171,6 +8508,17 @@ namespace ERP.Infrastructure.Migrations
                 table: "journal_entry_sequences",
                 columns: new[] { "tenant_id", "company_id", "fiscal_year" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_manual_journal_attempts_company_id_journal_entry_id_idempot~",
+                table: "manual_journal_attempts",
+                columns: new[] { "company_id", "journal_entry_id", "idempotency_key" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_manual_journal_attempts_journal_entry_id",
+                table: "manual_journal_attempts",
+                column: "journal_entry_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_master_banks_tenant",
@@ -9029,14 +9377,14 @@ namespace ERP.Infrastructure.Migrations
                 table: "purchase_invoices",
                 columns: new[] { "tenant_id", "access_key" },
                 unique: true,
-                filter: "access_key IS NOT NULL AND status <> 3");
+                filter: "access_key IS NOT NULL AND status IN (1, 2)");
 
             migrationBuilder.CreateIndex(
                 name: "uq_purchase_invoices_tenant_company_supplier_number",
                 table: "purchase_invoices",
                 columns: new[] { "tenant_id", "company_id", "supplier_id", "invoice_number" },
                 unique: true,
-                filter: "\"status\" <> 3");
+                filter: "\"status\" IN (1, 2)");
 
             migrationBuilder.CreateIndex(
                 name: "ix_purchase_line_pvp_audit_invoice_occurred_at",
@@ -9731,6 +10079,27 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_sri_annulment_policy_code",
+                schema: "global",
+                table: "sri_annulment_policy",
+                column: "code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_sri_annulment_policy_version_normative_source_id",
+                schema: "global",
+                table: "sri_annulment_policy_version",
+                column: "normative_source_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_sri_annulment_policy_version_policy_id_valid_from",
+                schema: "global",
+                table: "sri_annulment_policy_version",
+                columns: new[] { "policy_id", "valid_from" },
+                unique: true)
+                .Annotation("Npgsql:NullsDistinct", false);
+
+            migrationBuilder.CreateIndex(
                 name: "uq_sri_id_type_usage",
                 schema: "global",
                 table: "sri_id_type_usage",
@@ -10278,8 +10647,8 @@ namespace ERP.Infrastructure.Migrations
                 filter: "is_main = true");
 
             // ── Objetos de BD fuera del modelo EF (raw SQL) ─────────────────────────────
-            // DB-BASELINE-01: el model snapshot no los conoce; al regenerar una línea base desaparecen
-            // en silencio. Registrados en ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests
+            // DB-BASELINE-01 / MIGRATION-SQUASH-IMPLEMENT: el model snapshot no los conoce; al regenerar
+            // una línea base desaparecen en silencio. Registrados en ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests
             // y verificados físicamente en ERP.Infrastructure.Tests/Persistence/RawSqlDatabaseObjectsBaselineIntegrationTests.
             // Al consolidar de nuevo, copiarlos aquí sin cambios.
 
@@ -10295,8 +10664,8 @@ namespace ERP.Infrastructure.Migrations
 
             // Exclusividad Compra↔Gasto por AccessKey: una factura SRI no puede estar activa como
             // compra y como gasto a la vez (trigger cruzado entre dos tablas; EF no lo modela).
-            // Ignora documentos Cancelled (PurchaseStatus.Cancelled = 3, ExpenseStatus.Cancelled = 2)
-            // para permitir el reproceso tras anular. SQLSTATE 23505 + CONSTRAINT
+            // Solo bloquean compras activas (PurchaseStatus Draft = 1, Confirmed = 2) y gastos no
+            // anulados (ExpenseStatus.Cancelled = 2): Cancelled/Discarded permiten el reproceso. SQLSTATE 23505 + CONSTRAINT
             // 'uq_purchase_expense_access_key' los traducen PurchaseDraftUseCases y
             // ExpenseDocumentDraftUseCases a su mensaje de UX.
             migrationBuilder.Sql(
@@ -10310,7 +10679,7 @@ namespace ERP.Infrastructure.Migrations
                     IF TG_TABLE_NAME = 'expense_documents' THEN
                         IF EXISTS (SELECT 1 FROM purchase_invoices
                             WHERE tenant_id = NEW.tenant_id AND access_key = NEW.access_key
-                                AND status <> 3) THEN
+                                AND status IN (1, 2)) THEN
                             RAISE EXCEPTION 'La factura ya fue registrada como compra.'
                                 USING ERRCODE = '23505', CONSTRAINT = 'uq_purchase_expense_access_key';
                         END IF;
@@ -10396,6 +10765,32 @@ namespace ERP.Infrastructure.Migrations
                 CREATE TRIGGER a1_movement_product_scope BEFORE INSERT OR UPDATE ON stock_movements FOR EACH ROW EXECUTE FUNCTION a1_inventory_product_scope();
                 """
             );
+
+            // ACCOUNTING-07 — defensa final del invariante "sin períodos solapados por Company"
+            // (ADR-026 §6.1). Rango de fechas cerrado [start_date, end_date]; btree_gist (extensión
+            // modelada con HasPostgresExtension) aporta la igualdad de company_id. EF no modela EXCLUDE.
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE accounting_periods
+                    ADD CONSTRAINT ex_accounting_periods_company_no_overlap
+                    EXCLUDE USING gist (
+                        company_id WITH =,
+                        daterange(start_date, end_date, '[]') WITH &&
+                    );
+                """
+            );
+
+            // ADR-043 — cursor durable de los jobs recurrentes (BackgroundJobProgress): un registro por
+            // stream de procesamiento. Sin entidad EF; se lee y escribe con SQL parametrizado.
+            migrationBuilder.Sql(
+                """
+                CREATE TABLE background_job_progress (
+                    stream text PRIMARY KEY,
+                    candidate_id uuid NOT NULL,
+                    candidate_created_at timestamptz NOT NULL
+                );
+                """
+            );
         }
 
         /// <inheritdoc />
@@ -10404,6 +10799,8 @@ namespace ERP.Infrastructure.Migrations
             // Raw SQL en orden inverso al Up (bloque final del Up).
             migrationBuilder.Sql(
                 """
+                DROP TABLE IF EXISTS background_job_progress;
+                ALTER TABLE accounting_periods DROP CONSTRAINT IF EXISTS ex_accounting_periods_company_no_overlap;
                 DROP TRIGGER IF EXISTS a1_movement_product_scope ON stock_movements;
                 DROP TRIGGER IF EXISTS a1_stock_product_scope ON current_stocks;
                 DROP FUNCTION IF EXISTS a1_inventory_product_scope();
@@ -10427,6 +10824,15 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "access_profiles");
+
+            migrationBuilder.DropTable(
+                name: "accounting_operational_policies");
+
+            migrationBuilder.DropTable(
+                name: "accounting_period_audit");
+
+            migrationBuilder.DropTable(
+                name: "accounting_posting_attempts");
 
             migrationBuilder.DropTable(
                 name: "app_features");
@@ -10521,7 +10927,7 @@ namespace ERP.Infrastructure.Migrations
                 name: "import_batch_rows");
 
             migrationBuilder.DropTable(
-                name: "inventory_cost_postings");
+                name: "inventory_adjustment_reason_accounts");
 
             migrationBuilder.DropTable(
                 name: "inventory_lots");
@@ -10558,10 +10964,16 @@ namespace ERP.Infrastructure.Migrations
                 name: "item_variant_barcodes");
 
             migrationBuilder.DropTable(
+                name: "journal_entry_audit");
+
+            migrationBuilder.DropTable(
                 name: "journal_entry_lines");
 
             migrationBuilder.DropTable(
                 name: "journal_entry_sequences");
+
+            migrationBuilder.DropTable(
+                name: "manual_journal_attempts");
 
             migrationBuilder.DropTable(
                 name: "master_bp_carrier_configs");
@@ -10729,6 +11141,10 @@ namespace ERP.Infrastructure.Migrations
                 name: "security_admin_scope_assignments");
 
             migrationBuilder.DropTable(
+                name: "sri_annulment_policy_version",
+                schema: "global");
+
+            migrationBuilder.DropTable(
                 name: "sri_emission_type",
                 schema: "global");
 
@@ -10812,6 +11228,9 @@ namespace ERP.Infrastructure.Migrations
                 name: "user_sessions");
 
             migrationBuilder.DropTable(
+                name: "accounting_postings");
+
+            migrationBuilder.DropTable(
                 name: "attribute_groups");
 
             migrationBuilder.DropTable(
@@ -10846,9 +11265,6 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "item_variants");
-
-            migrationBuilder.DropTable(
-                name: "journal_entries");
 
             migrationBuilder.DropTable(
                 name: "master_bp_locations");
@@ -10887,6 +11303,10 @@ namespace ERP.Infrastructure.Migrations
                 name: "sales_return_details");
 
             migrationBuilder.DropTable(
+                name: "sri_annulment_policy",
+                schema: "global");
+
+            migrationBuilder.DropTable(
                 name: "sri_id_type",
                 schema: "global");
 
@@ -10923,7 +11343,7 @@ namespace ERP.Infrastructure.Migrations
                 name: "refresh_tokens");
 
             migrationBuilder.DropTable(
-                name: "accounting_periods");
+                name: "journal_entries");
 
             migrationBuilder.DropTable(
                 name: "purchase_credit_notes");
@@ -10960,6 +11380,9 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "payment_methods");
+
+            migrationBuilder.DropTable(
+                name: "accounting_periods");
 
             migrationBuilder.DropTable(
                 name: "items");

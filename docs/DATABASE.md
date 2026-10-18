@@ -49,7 +49,19 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ### Baseline EF (pre-producción)
 
-Una sola migración: `20261010184156_InitialProductionBaseline` (consolidación DB-BASELINE-01, 2026-10-10; reemplaza a `InitialEnterpriseBaseline` y a las 19 migraciones forward posteriores). Una instalación nueva aplica solo esa migración; no existe upgrade-path desde cadenas anteriores (no había producción; las BD de desarrollo/demo se recrearon). Verificada contra un oráculo (BD vacía + cadena anterior completa): esquema, constraints, índices, triggers, funciones, extensiones y datos sembrados idénticos, salvo 4 DEFAULT residuales que la cadena anterior dejaba por `AddColumn(defaultValue:)` y el modelo no declara (`communication_outbox.resend_sequence`, `current_stocks.cost_pending`, `stock_movements.cost_pending`, `retention_annulment_requests.sri_check_count`).
+Una sola migración: `20261018014647_InitialProductionBaseline` (MIGRATION-SQUASH, 2026-10-17; reemplaza a la baseline DB-BASELINE-01 `20261010184156_InitialProductionBaseline` y a las 16 migraciones forward posteriores). Una instalación nueva aplica solo esa migración; no existe upgrade-path desde cadenas anteriores: toda BD creada con la cadena previa (incluidas `dberpsaas` y `erp_sumak_pilot`) se recrea. El ID es nuevo a propósito: una BD vieja falla de forma explícita en `MigrateAsync` (tablas ya existentes) en lugar de darse por actualizada con un esquema distinto.
+
+Verificada contra un oráculo (PostgreSQL 16 vacío + cadena anterior completa de 17 migraciones) vs PostgreSQL 16 vacío + baseline: catálogo (columnas, constraints, índices, triggers, funciones, extensiones, secuencias), `pg_dump --schema-only` y hash de datos de las 212 tablas (independiente del orden de filas y columnas). Diferencias aceptadas, todas a favor del modelo vigente:
+
+| Diferencia | Cadena anterior | Baseline | Motivo |
+|------------|-----------------|----------|--------|
+| `global.sri_normative_source.introduced_in_migration` (2 filas, fuentes de anulación SRI) | `SriAnnulmentPolicyVersioning` | `InitialProductionBaseline` | La trazabilidad normativa debe nombrar una migración existente (`SriCatalogComplianceTests`) |
+| `posting_rules.debit_account_id`, `credit_account_id`, `tax_code` | Existen (nullable) | No existen | Retiradas del modelo en ACCOUNTING-11 sin migración incremental, a la espera de este squash; sin lectores ni escritores |
+| `journal_entries.version` | `DEFAULT 0` | Sin default | Residuo de `AddColumn(defaultValue: 0)` (AccountingManual08) para filas existentes; el modelo no lo declara y EF siempre inserta `Version` |
+| Cuerpo de `enforce_purchase_expense_exclusivity()` | Fines de línea CRLF | LF | Mismo texto con espacios normalizados; la cadena anterior heredó CRLF del working tree |
+| Orden físico de columnas (9 tablas) | `AddColumn` al final | Orden del modelo | Sin efecto: ningún acceso depende del ordinal |
+
+La baseline DB-BASELINE-01 ya había aceptado 4 DEFAULT residuales del mismo tipo (`communication_outbox.resend_sequence`, `current_stocks.cost_pending`, `stock_movements.cost_pending`, `retention_annulment_requests.sri_check_count`); siguen ausentes.
 
 Cambios de schema posteriores: solo migraciones forward con `dotnet ef migrations add`. No regenerar la baseline desde el modelo para "limpiar historial" sin copiar antes el raw SQL (tabla siguiente). Las transformaciones de datos históricas (backfills, desactivación de defaults de retención, resolución de dueño de Items A1, `DROP DEFAULT` transitorios) no forman parte de la baseline: solo aplicaban a BD con datos previos.
 
@@ -57,12 +69,12 @@ Los archivos de migración se guardan con LF (`.gitattributes`): los raw string 
 
 #### Objetos raw SQL (fuera del modelo EF)
 
-El model snapshot no los conoce: una baseline regenerada con `dotnet ef migrations add` los omite en silencio. Viven al final del `Up` de la baseline (el `Down` los elimina en orden inverso) y los vigilan `ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests` (existen en las migraciones, y todo objeto raw —`CREATE …` o `ALTER TABLE … ADD CONSTRAINT`— está registrado) y `ERP.Infrastructure.Tests/Persistence/RawSqlDatabaseObjectsBaselineIntegrationTests` (existen físicamente, con su definición, en una BD recién migrada).
+El model snapshot no los conoce: una baseline regenerada con `dotnet ef migrations add` los omite en silencio. Viven al final del `Up` de la baseline (el `Down` los elimina en orden inverso) y los vigilan `ERP.Architecture.Tests/RawSqlDatabaseObjectsSurviveMigrationSquashTests` (existen en las migraciones, y todo objeto raw —`CREATE …` (incluido `CREATE TABLE`) o `ALTER TABLE … ADD CONSTRAINT`— está registrado) y `ERP.Infrastructure.Tests/Persistence/RawSqlDatabaseObjectsBaselineIntegrationTests` (existen físicamente, con su definición —cuerpo vigente de cada función incluido—, en una BD recién migrada). Al consolidar: copiar la **versión vigente** de cada objeto (la última `CREATE OR REPLACE`), no la de su primera migración.
 
 | Objeto | Tipo | Motivo |
 |--------|------|--------|
 | `uq_mbp_identification` | Índice único | ADR-BP-03; columna del owner + owned type, EF no lo expresa |
-| `enforce_purchase_expense_exclusivity()` | Función plpgsql | Exclusividad Compra↔Gasto por AccessKey (ignora Cancelled) |
+| `enforce_purchase_expense_exclusivity()` | Función plpgsql | Exclusividad Compra↔Gasto por AccessKey (bloquean solo compras Draft/Confirmed y gastos no Cancelled) |
 | `tr_expense_purchase_exclusivity` / `tr_purchase_expense_exclusivity` | Triggers | Invocan la función en `expense_documents` / `purchase_invoices` |
 | `pg_trgm` | Extensión | `EF.Functions.TrigramsSimilarity` en Item Matching |
 | `ix_items_short_name_trgm` / `ix_items_description_trgm` | Índices GIN trigram | Item Matching por similitud |
@@ -70,6 +82,8 @@ El model snapshot no los conoce: una baseline regenerada con `dotnet ef migratio
 | `ck_items_nature` | CHECK | A1; `nature IN ('Product','Service')` (string en el modelo) |
 | `a1_item_barcode_unique()` + `a1_variant_barcode_unique` / `a1_packaging_barcode_unique` | Función plpgsql + triggers | A1; barcode único por empresa entre variantes y empaques (advisory lock) |
 | `a1_inventory_product_scope()` + `a1_stock_product_scope` / `a1_movement_product_scope` | Función plpgsql + triggers | A1; inventario solo acepta Products de la misma empresa |
+| `ex_accounting_periods_company_no_overlap` | EXCLUDE gist | ACCOUNTING-07; sin períodos solapados por empresa (`btree_gist` sí está modelada) |
+| `background_job_progress` | Tabla | ADR-043; cursor durable de los jobs recurrentes (`BackgroundJobProgress`), sin entidad EF |
 
 Reset local recomendado:
 

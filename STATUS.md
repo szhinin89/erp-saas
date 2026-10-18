@@ -1,5 +1,31 @@
 # Project Status
 
+## MIGRATION-SQUASH (2026-10-17)
+
+**Estado: implementado (sin commit).** Las 17 migraciones (`20261010184156_InitialProductionBaseline` … `20261018001810_AccountingSchemaCleanup`)
+se reemplazan por una sola `20261018014647_InitialProductionBaseline` (ID nuevo: una BD con la cadena anterior falla
+explícitamente en `MigrateAsync` en lugar de darse por actualizada). Snapshot regenerado por EF; respecto al anterior
+solo cambia `IntroducedInMigration` de las 2 fuentes normativas de anulación SRI (→ `InitialProductionBaseline`).
+Raw SQL preservado en su versión vigente: `uq_mbp_identification`, exclusividad Compra↔Gasto (`status IN (1, 2)`) +
+2 triggers, `pg_trgm` + 2 índices GIN, `uq_items_tenant_company_sku`, `ck_items_nature`, funciones/triggers A1,
+`ex_accounting_periods_company_no_overlap` y `background_job_progress`. Sin backfills ni UPDATE históricos.
+Guard `RawSqlDatabaseObjectsSurviveMigrationSquashTests`: exigía la versión obsoleta de la exclusividad (`status <> 3`)
+y no detectaba `CREATE TABLE`; corregido y `background_job_progress` registrada. `RawSqlDatabaseObjectsBaselineIntegrationTests`
+verifica además EXCLUDE, estructura de `background_job_progress` y el cuerpo vigente de las 3 funciones. Eliminados los
+tests solo históricos (`AccountingContinuity04/05MigrationTests`, `Legacy_notification_rows_are_removed_by_migration`,
+2 casos de migración de `PurchaseExpenseReprocessAfterCancelConstraintsTests`).
+Oráculo PostgreSQL 16 (cadena anterior) vs baseline: catálogo, `pg_dump` y hash de datos de 212 tablas idénticos salvo
+diferencias aceptadas a favor del modelo (`introduced_in_migration` ×2; columnas `posting_rules` de ACCOUNTING-11
+ausentes; sin `DEFAULT 0` residual en `journal_entries.version`; función en LF; orden físico de columnas) —
+detalle en [docs/DATABASE.md § Baseline EF](docs/DATABASE.md#baseline-ef-pre-producción). Comportamiento idéntico en
+ambas (EXCLUDE, upsert de `background_job_progress`, plan con índice trgm).
+PASS: architecture focal 22/22; Infrastructure focal 230/234 (raw SQL, exclusividad, A1, BP, períodos, documentos
+electrónicos, comunicaciones, catálogos SRI, bootstrap); `has-pending-model-changes` antes y después.
+DEBT (preexistente, reproducido en `HEAD`): 4 tests de `Expenses/RetentionsPostingRuleSeedIntegrationTests` fallan por
+DI (`IInventoryAdjustmentReasonRepository` no registrado en su contenedor manual desde 12A). Pendiente: recrear
+`dberpsaas` y `erp_sumak_pilot` (no tocadas). Cierra el "pendiente: migration squash" de ACCOUNTING-11 y
+ACCOUNTING-SCHEMA-CLEANUP. Sin suites, architecture:check, npm build, dashboard, staging, commit ni push.
+
 ## ACCOUNTING-SCHEMA-CLEANUP (2026-10-17)
 
 Pre-squash. Eliminado (sin lectores/escritores ni papel en instalación nueva, bootstrap u operación):
