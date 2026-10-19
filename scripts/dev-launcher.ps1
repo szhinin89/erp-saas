@@ -29,7 +29,10 @@ $script:Config = @{
     ApiPort           = 5003
     FrontendPort      = 5173
     ApiTimeoutSeconds = 45
+    FrontendTimeoutSeconds = 45
 }
+$script:ApiLaunch = $null
+$script:FrontendLaunch = $null
 
 
 # =============================================================================
@@ -229,9 +232,18 @@ function Stop-ApiProcess {
 
     $connections = Get-NetTCPConnection `
         -LocalPort $Config.ApiPort `
+        -State Listen `
         -ErrorAction SilentlyContinue
 
     if ($connections) {
+
+        # Validate all listeners before stopping anything. Never kill an unrelated port owner.
+        foreach ($ownerId in @($connections.OwningProcess | Select-Object -Unique)) {
+            $info = Get-CimInstance Win32_Process -Filter "ProcessId = $ownerId" -ErrorAction Stop
+            if (-not (Test-ApiExecutable $info)) {
+                throw "Puerto $($Config.ApiPort) ocupado por un proceso ajeno (PID=$ownerId). No se detuvo."
+            }
+        }
 
         $connections |
             Select-Object -ExpandProperty OwningProcess -Unique |
@@ -246,7 +258,7 @@ function Stop-ApiProcess {
                     Write-Ok "Proceso detenido PID=$_"
                 }
                 catch {
-                    Write-Warn "No se pudo detener PID=$_"
+                    throw "No se pudo detener el proceso API. Inicio cancelado: $($_.Exception.Message)"
                 }
             }
     }
@@ -257,37 +269,71 @@ function Stop-ApiProcess {
 
 
 function Stop-FrontendProcess {
-
     Write-Step "Verificando puerto Frontend"
-
-    $connections = Get-NetTCPConnection `
-        -LocalPort $Config.FrontendPort `
-        -ErrorAction SilentlyContinue
-
-
-    if ($connections) {
-
-        $connections |
-            Select-Object -ExpandProperty OwningProcess -Unique |
-            ForEach-Object {
-
-                try {
-
-                    Stop-Process `
-                        -Id $_ `
-                        -Force `
-                        -ErrorAction Stop
-
-                    Write-Ok "Frontend detenido PID=$_"
-                }
-                catch {
-                    Write-Warn "No se pudo detener PID=$_"
-                }
-            }
-    }
-    else {
+    $listeners = @(Get-NetTCPConnection -State Listen -ErrorAction Stop |
+        Where-Object LocalPort -eq $Config.FrontendPort)
+    if ($listeners.Count -eq 0) {
         Write-Ok "No existe Frontend ejecutándose"
+        return
     }
+    if ($null -eq $script:FrontendLaunch) {
+        throw "Puerto $($Config.FrontendPort) sin propiedad del launcher. No se detuvo."
+    }
+
+    $owned = @()
+    try {
+        # Retain native handles before inspecting identity; never terminate by a reusable PID.
+        foreach ($ownerId in @($listeners.OwningProcess | Select-Object -Unique)) {
+            $process = Get-Process -Id $ownerId -ErrorAction Stop
+            $owned += $process
+            $null = $process.Handle
+            if (-not (Test-FrontendListenerOwnership $script:FrontendLaunch $process)) {
+                throw "Propiedad frontend no verificable (PID=$ownerId). No se detuvo."
+            }
+        }
+        $current = @(Get-NetTCPConnection -State Listen -ErrorAction Stop |
+            Where-Object LocalPort -eq $Config.FrontendPort)
+        if ($current.Count -eq 0 -or
+            @(Compare-Object @($listeners.OwningProcess | Sort-Object -Unique) @($current.OwningProcess | Sort-Object -Unique)).Count -gt 0) {
+            throw "El listener frontend cambio. No se detuvo."
+        }
+        foreach ($process in $owned) {
+            if (-not (Test-FrontendListenerOwnership $script:FrontendLaunch $process)) {
+                throw "La identidad frontend cambio. No se detuvo."
+            }
+        }
+        foreach ($process in $owned) {
+            $process.Kill()
+            Write-Ok "Frontend detenido PID=$($process.Id)"
+        }
+    }
+    finally {
+        foreach ($process in $owned) { $process.Dispose() }
+    }
+}
+
+function Test-FrontendListenerOwnership {
+    param($Launch, $Process)
+
+    $Launch.Process.Refresh()
+    $Process.Refresh()
+    if ($Launch.Process.HasExited -or $Process.HasExited) { return $false }
+    $current = Get-CimInstance Win32_Process -Filter "ProcessId = $($Process.Id)" -ErrorAction Stop
+    if ($null -eq $current -or $current.Name -ine 'node.exe' -or
+        [string]::IsNullOrWhiteSpace($current.ExecutablePath) -or
+        [IO.Path]::GetFullPath($current.ExecutablePath) -ine $Launch.NodePath -or
+        [Math]::Abs(($current.CreationDate.ToUniversalTime() - $Process.StartTime.ToUniversalTime()).TotalMilliseconds) -gt 1) {
+        return $false
+    }
+    for ($depth = 0; $depth -lt 32 -and $null -ne $current; $depth++) {
+        if ($current.ProcessId -eq $Launch.Process.Id) {
+            return [Math]::Abs(($current.CreationDate.ToUniversalTime() - $Launch.StartTimeUtc).TotalMilliseconds) -le 1
+        }
+        $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($current.ParentProcessId)" -ErrorAction Stop
+        if ($null -eq $parent -or $parent.CreationDate -gt $current.CreationDate) { return $false }
+        $current = $parent
+    }
+    return $false
 }
 
 
@@ -496,7 +542,7 @@ function Invoke-DatabaseDrop {
 
 
 # =============================================================================
-# FIRST RUN — asistente de creación del administrador inicial
+# FIRST RUN — consulta de estado (ver docs/architecture/first-run.md)
 # =============================================================================
 
 function Get-SetupStatus {
@@ -564,7 +610,37 @@ function Invoke-BackendBuild {
 # HEALTH CHECK API
 # =============================================================================
 
+function Test-ApiExecutable {
+    param($ProcessInfo)
+
+    if ($null -eq $ProcessInfo) { return $false }
+    $apiName = [IO.Path]::GetFileNameWithoutExtension($ApiProject)
+    $binPath = [IO.Path]::GetFullPath((Join-Path (Split-Path $ApiProject -Parent) 'bin')) + [IO.Path]::DirectorySeparatorChar
+    if ($ProcessInfo.Name -ine "$apiName.exe" -or [string]::IsNullOrWhiteSpace($ProcessInfo.ExecutablePath)) {
+        return $false
+    }
+    return [IO.Path]::GetFullPath($ProcessInfo.ExecutablePath).StartsWith($binPath, [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Test-ApiListenerOwnership {
+    param($Launch, [int]$OwnerId)
+
+    $current = Get-CimInstance Win32_Process -Filter "ProcessId = $OwnerId" -ErrorAction Stop
+    if (-not (Test-ApiExecutable $current)) { return $false }
+    for ($depth = 0; $depth -lt 32 -and $null -ne $current; $depth++) {
+        if ($current.ProcessId -eq $Launch.Process.Id) {
+            # The retained process handle plus creation time prevents accepting a reused PID.
+            return [Math]::Abs(($current.CreationDate.ToUniversalTime() - $Launch.StartTimeUtc).TotalMilliseconds) -le 1
+        }
+        $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($current.ParentProcessId)" -ErrorAction Stop
+        if ($null -eq $parent -or $parent.CreationDate -gt $current.CreationDate) { return $false }
+        $current = $parent
+    }
+    return $false
+}
+
 function Wait-ApiReady {
+    param([Parameter(Mandatory)]$Launch)
 
     Write-Step "Esperando disponibilidad del API"
 
@@ -574,18 +650,58 @@ function Wait-ApiReady {
 
         try {
 
+            $Launch.Process.Refresh()
+            if ($Launch.Process.HasExited) {
+                Write-Warn "El proceso API lanzado termino antes de estar disponible (codigo=$($Launch.Process.ExitCode))."
+                return $false
+            }
+            $listeners = @(Get-NetTCPConnection -LocalPort $Config.ApiPort -State Listen -ErrorAction SilentlyContinue)
+            foreach ($listener in $listeners) {
+                if (-not (Test-ApiListenerOwnership $Launch $listener.OwningProcess)) {
+                    Write-Warn "Puerto $($Config.ApiPort) ocupado por otro proceso. Inicio rechazado."
+                    return $false
+                }
+            }
+            if ($listeners.Count -eq 0) { Start-Sleep -Seconds 1; continue }
+
+        }
+        catch {
+            Write-Warn "No se pudo verificar la identidad del proceso API: $($_.Exception.Message)"
+            return $false
+        }
+        $httpResponded = $false
+        try {
             Invoke-RestMethod `
                 -Uri $healthUrl `
                 -TimeoutSec 2 `
                 -ErrorAction Stop |
                 Out-Null
+            $httpResponded = $true
 
+            # Re-check after HTTP: a successful response alone cannot prove process identity.
+            $Launch.Process.Refresh()
+            if ($Launch.Process.HasExited) {
+                Write-Warn "El proceso API termino durante la comprobacion HTTP."
+                return $false
+            }
+            $listeners = @(Get-NetTCPConnection -LocalPort $Config.ApiPort -State Listen -ErrorAction SilentlyContinue)
+            if ($listeners.Count -eq 0) { continue }
+            foreach ($listener in $listeners) {
+                if (-not (Test-ApiListenerOwnership $Launch $listener.OwningProcess)) {
+                    Write-Warn "La identidad del listener cambio durante la comprobacion HTTP."
+                    return $false
+                }
+            }
             Write-Ok "API disponible después de $i segundos"
 
             return $true
         }
         catch {
 
+            if ($httpResponded) {
+                Write-Warn "No se pudo confirmar la identidad del proceso despues del HTTP: $($_.Exception.Message)"
+                return $false
+            }
             Start-Sleep -Seconds 1
         }
     }
@@ -609,13 +725,25 @@ function Start-Backend {
     # está instalado vía Microsoft Store, que corre en un AppContainer con PATH aislado del
     # resto del sistema — las ventanas abiertas con Start-Process pwsh no ven dotnet/npm
     # aunque la sesión que las lanza sí los vea. powershell.exe no tiene ese problema.
-    Start-Process powershell -ArgumentList @(
-        "-NoExit",
-        "-Command",
-        "Set-Location '$BackendPath'; `$env:ASPNETCORE_ENVIRONMENT = 'Development'; `$env:DOTNET_ENVIRONMENT = 'Development'; dotnet run --project '$ApiProject'"
-    )
-
-    Write-Ok "Proceso de API iniciado"
+    $script:ApiLaunch = $null
+    if (@(Get-NetTCPConnection -LocalPort $Config.ApiPort -State Listen -ErrorAction SilentlyContinue).Count -gt 0) {
+        throw "Puerto $($Config.ApiPort) ocupado. No se inicio otro proceso API."
+    }
+    $backendLiteral = $BackendPath.Replace("'", "''")
+    $projectLiteral = $ApiProject.Replace("'", "''")
+    try {
+        # Exit with dotnet: keeping an idle shell alive would conceal premature API termination.
+        $process = Start-Process powershell -PassThru -ErrorAction Stop -ArgumentList @(
+            "-NoProfile", "-Command",
+            "`$ErrorActionPreference = 'Stop'; try { Set-Location -LiteralPath '$backendLiteral'; `$env:ASPNETCORE_ENVIRONMENT = 'Development'; `$env:DOTNET_ENVIRONMENT = 'Development'; & dotnet run --project '$projectLiteral'; exit `$LASTEXITCODE } catch { Write-Error `$_ -ErrorAction Continue; exit 1 }"
+        )
+        $null = $process.Handle
+        $script:ApiLaunch = [pscustomobject]@{ Process = $process; StartTimeUtc = $process.StartTime.ToUniversalTime() }
+    }
+    catch {
+        throw "No se pudo iniciar el proceso API: $($_.Exception.Message)"
+    }
+    Write-Ok "Proceso de API lanzado (PID=$($process.Id)); esperando disponibilidad."
 }
 
 
@@ -627,14 +755,72 @@ function Start-Frontend {
 
     Write-Step "Iniciando Frontend React"
 
+    if (@(Get-NetTCPConnection -State Listen -ErrorAction Stop |
+        Where-Object LocalPort -eq $Config.FrontendPort).Count -gt 0) {
+        throw "Puerto $($Config.FrontendPort) ocupado. No se inicio otro frontend."
+    }
+    if ($null -ne $script:FrontendLaunch) {
+        $script:FrontendLaunch.Process.Refresh()
+        if (-not $script:FrontendLaunch.Process.HasExited) {
+            throw "El frontend anterior aun esta activo. No se inicio otro."
+        }
+        $script:FrontendLaunch.Process.Dispose()
+        $script:FrontendLaunch = $null
+    }
+    $nodePath = [IO.Path]::GetFullPath((Get-Command node.exe -ErrorAction Stop).Source)
+    $frontendLiteral = $FrontendPath.Replace("'", "''")
     # Ver comentario en Start-Backend: powershell.exe evita el sandbox de pwsh (Store).
-    Start-Process powershell -ArgumentList @(
-        "-NoExit",
-        "-Command",
-        "Set-Location '$FrontendPath'; npm run dev"
+    $process = Start-Process powershell -PassThru -ErrorAction Stop -ArgumentList @(
+        '-NoProfile', '-Command',
+        "`$ErrorActionPreference = 'Stop'; try { Set-Location -LiteralPath '$frontendLiteral'; & npm.cmd run dev -- --strictPort; exit `$LASTEXITCODE } catch { Write-Error `$_ -ErrorAction Continue; exit 1 }"
     )
+    $null = $process.Handle
+    $script:FrontendLaunch = [pscustomobject]@{
+        Process = $process; StartTimeUtc = $process.StartTime.ToUniversalTime(); NodePath = $nodePath
+    }
 
     Write-Ok "Proceso Frontend iniciado"
+}
+
+function Assert-FrontendListeners {
+    param([Parameter(Mandatory)]$Launch)
+    $Launch.Process.Refresh()
+    if ($Launch.Process.HasExited) { throw 'FAIL frontend: proceso lanzado terminado.' }
+    $listeners = @(Get-NetTCPConnection -State Listen -ErrorAction Stop |
+        Where-Object LocalPort -eq $Config.FrontendPort)
+    foreach ($listener in $listeners) {
+        $process = Get-Process -Id $listener.OwningProcess -ErrorAction Stop
+        try {
+            $null = $process.Handle
+            if (-not (Test-FrontendListenerOwnership $Launch $process)) {
+                throw 'FAIL frontend: listener sin propiedad verificable.'
+            }
+        }
+        finally { $process.Dispose() }
+    }
+    return ($listeners.Count -gt 0)
+}
+
+function Wait-FrontendReady {
+    param([Parameter(Mandatory)]$Launch)
+    Write-Step 'Esperando disponibilidad del Frontend'
+    for ($i = 0; $i -lt $Config.FrontendTimeoutSeconds; $i++) {
+        if (Assert-FrontendListeners $Launch) {
+            $response = $null
+            try {
+                $response = Invoke-WebRequest -Uri "$($Urls.Frontend)/@vite/client" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+            }
+            catch { } # HTTP can be unavailable while Vite starts; ownership errors are never retried.
+            $owned = Assert-FrontendListeners $Launch
+            if ($owned -and $null -ne $response -and $response.StatusCode -eq 200 -and
+                $response.Content -match 'vite') {
+                Write-Ok 'Frontend disponible: proceso, propiedad y HTTP verificados.'
+                return
+            }
+        }
+        Start-Sleep -Seconds 1
+    }
+    throw 'FAIL frontend: timeout esperando Vite HTTP en el puerto configurado.'
 }
 
 
@@ -758,16 +944,18 @@ function Start-ErpDev {
     Invoke-BackendBuild
     Start-Backend
 
-    if (Wait-ApiReady) {
+    if (Wait-ApiReady -Launch $script:ApiLaunch) {
 
-        Confirm-SystemInitialized | Out-Null
+        $initialized = Confirm-SystemInitialized
 
         Start-Frontend
-        Start-Sleep -Seconds 3
+        Wait-FrontendReady -Launch $script:FrontendLaunch
 
-        Open-Chrome $Urls.Frontend
+        if ($initialized) { Open-Chrome $Urls.Frontend }
+        else { Open-Chrome "$($Urls.Frontend)/setup" }
         Open-Chrome $Urls.Swagger
     }
+    else { Write-Warn "ERP no iniciado: API no disponible o proceso rechazado."; return }
 
     Write-Ok "ERP iniciado correctamente."
 }
@@ -795,17 +983,19 @@ function Invoke-FullReset {
     Invoke-DatabaseUpdate
     Invoke-BackendBuild
     Start-Backend
-    if (Wait-ApiReady) {
+    if (Wait-ApiReady -Launch $script:ApiLaunch) {
 
-        Confirm-SystemInitialized | Out-Null
+        $initialized = Confirm-SystemInitialized
 
         Ensure-FrontendDependencies
         Start-Frontend
-        Start-Sleep -Seconds 3
+        Wait-FrontendReady -Launch $script:FrontendLaunch
 
-        Open-Chrome $Urls.Frontend
+        if ($initialized) { Open-Chrome $Urls.Frontend }
+        else { Open-Chrome "$($Urls.Frontend)/setup" }
         Open-Chrome $Urls.Swagger
     }
+    else { Write-Warn "Reset sin arranque confirmado de API."; return }
 
     Write-Ok "Reset completo finalizado."
 }
@@ -819,9 +1009,10 @@ function Start-BackendOnly {
     Invoke-BackendBuild
     Start-Backend
 
-    if (Wait-ApiReady) {
+    if (Wait-ApiReady -Launch $script:ApiLaunch) {
         Open-Chrome $Urls.Swagger
     }
+    else { Write-Warn "Backend API no iniciado: disponibilidad no confirmada."; return }
 
     Write-Ok "Backend API iniciado correctamente."
 }
