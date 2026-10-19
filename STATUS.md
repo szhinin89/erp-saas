@@ -268,7 +268,7 @@ Reglas: [Accounting §19](docs/architecture/accounting.md#19-integraciones-durab
 Implementado: reverso común histórico con original inmutable, fecha efectiva,
 período Open y numeración destino; pago/cobro y anulaciones existentes adoptados.
 Obligación durable y reproceso manual existentes; sin otro motor ni retry automático.
-Validación focal e inventario: [accounting.md § 18](docs/architecture/accounting.md#18-reverso-común-accounting-continuity-03).
+Contrato: [accounting.md § 18](docs/architecture/accounting.md#18-reverso-común-accounting-continuity-03).
 Sin staging, migración, commit ni push.
 
 ## ACCOUNTING-CONTINUITY-02 (2026-10-16)

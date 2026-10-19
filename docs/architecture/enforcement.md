@@ -8,24 +8,46 @@
 
 ### SSOT por módulo
 
-Antes de crear, modificar o documentar una regla funcional, técnica o arquitectónica,
-identificar la SSOT vigente del módulo. Cada módulo tiene una única fuente funcional
-vigente en `docs/architecture/<modulo>.md` o en el archivo canónico definido para su
-dominio. Para conocer cómo funciona actualmente un módulo debe bastar leer esa SSOT.
+**Principio:** el código funcional vigente, respaldado por sus pruebas, determina el
+comportamiento real del ERP. Cada módulo tiene un único documento SSOT
+(`docs/architecture/<modulo>.md` o el archivo canónico definido para su dominio) que
+describe exclusivamente ese comportamiento. Para saber cómo funciona hoy un módulo debe
+bastar leer su SSOT.
 
 | Documento | Responsabilidad |
 |-----------|-----------------|
-| SSOT del módulo | Especificación completa de las reglas vigentes y extensiones aprobadas, distinguiendo su estado de implementación |
-| `STATUS.md` | Estado y avance; no define reglas |
-| `FEATURES.md` | Resumen de alcance y capacidades; no define políticas |
-| ADR | Motivo de la decisión; no duplica la especificación funcional |
-| QA, roadmaps, entregas y notas de agente | Cobertura, planificación o evidencia; nunca autoridad de reglas vigentes |
-| Documentación de otros módulos | Referencia a la SSOT o explicación breve necesaria para la integración; no otra especificación del mismo módulo |
+| SSOT del módulo | Única especificación del comportamiento implementado y comprobado |
+| `CLAUDE.md`, `FEATURES.md`, `STATUS.md`, README y documentos generales | Enlazan a la SSOT; no copian sus reglas |
+| ADR | Motivo de la decisión arquitectónica; no compite con la SSOT funcional |
+| QA, roadmaps, entregas y notas de agente | Cobertura, planificación o evidencia temporal; nunca fuente funcional |
+| Documentación de otros módulos | Enlace a la SSOT o explicación breve necesaria para la integración |
 
-Antes de escribir una regla nueva, comprobar si ya existe una SSOT que deba ampliarse;
-no crear otro documento para el mismo contrato. Si cambia una regla, actualizar primero
-la SSOT y después retirar duplicaciones y limpiar referencias o contradicciones.
-En preproducción no conservar reglas funcionales antiguas por compatibilidad histórica.
+Reglas estrictas:
+
+1. **SSOT único:** prohibida la documentación funcional paralela o duplicada de un módulo.
+2. **Solo funcionalidad actual:** documentar lo implementado y comprobado. Diseños antiguos,
+   propuestas o funcionalidades pendientes no se presentan como operativos.
+3. **Sin documentación obsoleta:** eliminar documentos sustituidos, reglas antiguas y
+   contradicciones. En preproducción no se conservan reglas por compatibilidad histórica.
+4. **Referencias, no duplicaciones:** los documentos generales enlazan a la SSOT.
+5. **Actualización obligatoria:** toda modificación funcional actualiza la SSOT
+   correspondiente dentro de la misma fase.
+6. **Sin enlaces rotos:** antes de cerrar una fase, verificar que los enlaces modificados,
+   sus anclas y los documentos referenciados existen.
+7. **Sin rutas paralelas:** no conservar implementaciones antiguas, fallbacks ni adaptadores
+   de compatibilidad ya reemplazados y sin dependencia vigente.
+8. **Sin documentos de entrega redundantes:** los informes temporales del agente no se
+   convierten en otra fuente funcional permanente.
+9. **Una única verdad:** ante una contradicción entre documentos, contrastar con código y
+   pruebas vigentes, corregir la SSOT y eliminar la contradicción.
+10. **Gate documental:** cada fase verifica unicidad de la SSOT, referencias vigentes,
+    ausencia de contradicciones y `git diff --check`.
+
+**Condición de cierre:** una fase no puede declararse CLOSED si deja documentación
+funcional duplicada, referencias rotas o reglas vigentes contradictorias.
+
+**Prohibido:** documentación por fase que replique el comportamiento del módulo,
+historiales operativos innecesarios o especificaciones que ya no corresponden al sistema.
 
 | ✅ Correcto | ❌ Incorrecto |
 |------------|---------------|

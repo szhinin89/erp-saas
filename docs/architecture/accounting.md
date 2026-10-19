@@ -1,17 +1,17 @@
 # Accounting — SSOT operativa
 
-Única especificación funcional de Accounting. Incluye el contrato aprobado, sus
-extensiones aprobadas pendientes y el estado real de implementación. No requiere
-consultar ADRs ni otros documentos para determinar qué regla contable aplica.
-Toda decisión funcional posterior se incorpora aquí; los ADRs solo registran razones
-arquitectónicas y los documentos de avance solo resumen estado.
+Única especificación funcional de Accounting. Describe exclusivamente el comportamiento
+implementado y respaldado por pruebas
+([regla SSOT](enforcement.md#ssot-por-módulo)). No requiere consultar ADRs ni otros
+documentos para determinar qué regla contable aplica. Toda modificación funcional se
+incorpora aquí en la misma fase; los ADRs solo registran razones arquitectónicas y los
+documentos de avance solo resumen estado.
 
-El sistema está en preproducción. La aprobación de este contrato **no significa que
-el código ya lo cumpla**. No existe compatibilidad con políticas contables anteriores.
+El sistema está en preproducción. No existe compatibilidad con políticas contables anteriores.
 
 ## Estado real de implementación
 
-| Clasificación | Disponible / pendiente |
+| Clasificación | Implementado |
 |---|---|
 | KEEP | Core, plan de cuentas, reglas, períodos, motor de partida doble, idempotencia, numeración, lectura y reportes del libro implementados |
 | IMPLEMENTADO | ACCOUNTING-CONTINUITY-05: costo de ventas (reconocimiento, cobertura, devolución) sobre la obligación común; apertura bajo la política operativa con su modelo propio; Disabled operativo con precondiciones (§20) |
@@ -26,9 +26,8 @@ el código ya lo cumpla**. No existe compatibilidad con políticas contables ant
 | IMPLEMENTADO | ACCOUNTING-12C: Caja contable — movimientos manuales con cuenta del motivo, depósito bancario explícito y diferencia de arqueo al cerrar (§25) |
 | IMPLEMENTADO | ACCOUNTING-12D: cierre anual — asiento de cierre generado en Draft desde Períodos, publicado con el flujo de manuales, y `YEAR_END_CLOSING_MISSING` en el último período (§26) |
 
-El resto del documento define el contrato vigente aprobado, tanto lo implementado
-como las extensiones pendientes. No se presenta la continuidad uniforme como una
-capacidad ya entregada.
+El resto del documento define el contrato vigente de lo implementado. Las prohibiciones
+(§15) y los límites de alcance describen lo que el sistema no hace; no son capacidades pendientes.
 
 ## 1. Propósito y límites
 
@@ -57,11 +56,10 @@ No se crea una arquitectura contable paralela.
 | Numeración | `JournalEntrySequence`; no secuencia fiscal SRI |
 | Costo operativo | Inventory/Kardex y obligaciones de valoración descritas en §10 |
 
-La obligación es un concepto de negocio durable, **no el nombre aprobado de una tabla
-nueva**. `OpeningBalancePosting` y `OpeningJournalEntryPosting` son evidencia reutilizable
-(`InventoryCostPosting` se retiró en §27). La fase técnica determinará generalización o abstracción
-común, preservando una sola identidad y un solo pipeline conceptual por efecto.
-No mantener simultáneamente dos obligaciones autoritativas para el mismo efecto.
+La obligación durable común es `AccountingPosting`, con su historial de intentos en
+`AccountingPostingAttempt`. La apertura conserva su modelo propio
+(`OpeningBalancePosting` y `OpeningJournalEntryPosting`); `InventoryCostPosting` se retiró (§27).
+Cada efecto tiene una sola identidad y una sola obligación autoritativa.
 
 ### Core y configuración contable
 
@@ -467,11 +465,16 @@ permisos combinados existentes. ACCOUNTING-08 agrega `accounting.manual.create`,
 `accounting.manual.discard`, exigidos individualmente en servidor y registrados como acciones
 relacionadas del NavItem Asientos contables. La consulta conserva `accounting.view`.
 
-Auditar cambios de configuración y vigencia, creación/resolución/cancelación de obligación,
-cada intento manual (usuario, motivo/contexto, fecha UTC, resultado, error y correlación),
-asiento asociado, reverso y cierre/bloqueo. Conservar historia y ámbito; utilizar la
-infraestructura de Entity Audit existente sin rediseñar contratos CLOSED. La futura
-forma de registrar intentos debe ser durable, no solo telemetría ni logs.
+Trazabilidad implementada, sin rediseñar contratos CLOSED:
+
+| Elemento | Registro durable |
+|---|---|
+| Asientos (manuales, reversos) | Entity Audit `JournalEntryAudit` (§11) |
+| Períodos (creación, cierre, bloqueo) | Entity Audit `AccountingPeriodAudit` (§22) |
+| Uso operativo y vigencia | Versiones append-only de `AccountingOperationalPolicy` con autor (§3) |
+| Obligación (creación, resolución, cancelación) | `AccountingPosting` con autor y asiento asociado |
+| Intentos inicial y manual | `AccountingPostingAttempt`: usuario, motivo, instante UTC, resultado, error y correlación (§17); manuales en `ManualJournalAttempt` (§11) |
+| Cuentas y reglas contables | Campos de auditoría de creación/última modificación (`AuditableEntity`); sin historial Entity Audit |
 
 ## 15. Reglas no permitidas
 
@@ -487,9 +490,9 @@ forma de registrar intentos debe ser durable, no solo telemetría ni logs.
 - Cerrar con pendientes, omisiones o inconsistencias; presentar reportes incompletos como definitivos.
 - Asumir que Outbox/SRI/Communications recuperan Accounting o crear otro pipeline paralelo.
 
-## 16. Adopción pendiente y evidencia
+## 16. Adopción y evidencia
 
-Esta sección registra diferencias de implementación; no introduce otra política.
+Esta sección registra los cortes de adopción ya implementados; no introduce otra política.
 Rutas abreviadas desde `backend/src/`:
 
 | Clasificación | Evidencia actual |
@@ -500,11 +503,10 @@ Rutas abreviadas desde `backend/src/`:
 | RESUELTO | ACCOUNTING-CONTINUITY-05: InventoryCostAccounting, su evento y el retry masivo de costos retirados; costo de ventas en la obligación común |
 
 Cortes adoptados: Compra/Gasto + Retención (ACCOUNTING-CONTINUITY-01) y demás integraciones
-comerciales/financieras (ACCOUNTING-CONTINUITY-04), costos/apertura/Disabled (ACCOUNTING-CONTINUITY-05).
-Siguientes cortes: integridad completa de cierre/reportes y manuales generales. ACCOUNTING-CONTINUITY-03 reemplaza el rollback por fallos posteriores
-al gate de período con una obligación durable en los consumidores migrados. Cada corte requiere
-reproducción, fix mínimo, tests focales y revisión de diff. No se autoriza un pipeline
-paralelo ni reabrir reglas operativas CLOSED por esta consolidación.
+comerciales/financieras (ACCOUNTING-CONTINUITY-04), costos/apertura/Disabled (ACCOUNTING-CONTINUITY-05),
+integridad de cierre/reportes (ACCOUNTING-CONTINUITY-06, §21) y asientos manuales (ACCOUNTING-08, §11).
+ACCOUNTING-CONTINUITY-03 reemplaza el rollback por fallos posteriores al gate de período con una
+obligación durable en los consumidores migrados. No existe pipeline paralelo.
 
 PostgreSQL real es obligatorio para verificar transacciones, concurrencia, scope,
 locks e invariantes de persistencia; no sustituir por SQLite, memoria o mocks.
@@ -551,7 +553,6 @@ jamás PostingRules/cuentas actuales. Un fallo queda durable; no hay reintento a
 Apertura conserva fecha y restricciones propias; costos solo adapta la firma existente.
 No se corrigen reversos históricos previos. ACCOUNTING-CONTINUITY-04 extiende este reverso a
 la anulación de devolución de compra y a las reversas de aplicación y reembolso de saldo a favor.
-Validación e inventario: [entrega](../agent/ACCOUNTING_CONTINUITY_03_DELIVERY.md).
 
 ## 19. Integraciones durables ACCOUNTING-CONTINUITY-04
 
