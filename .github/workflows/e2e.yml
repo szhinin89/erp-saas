@@ -10,4 +10,4 @@ permissions:
 jobs:
   e2e:
     name: Playwright E2E
-    uses: ./.github/workflows/frontend-ci.yml
+    uses: ./.github/workflows/e2e-manual.yml

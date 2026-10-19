@@ -201,6 +201,17 @@ dotnet test ERP.API.Tests
 
 Requisitos: Docker, .NET SDK, Node 22+, `npx playwright install chromium`.
 
+En GitHub Actions, ejecutar manualmente **E2E Manual** (`e2e-manual.yml`) o
+**E2E (manual)** (`e2e.yml`), que reutiliza el mismo flujo completo. Este inicia
+PostgreSQL 16, aplica migraciones, prepara credenciales efímeras y arranca la API
+con seed E2E; exige `/health/live` disponible antes de ejecutar toda la suite
+Playwright y su proyecto `setup`. Un fallo de disponibilidad o de Playwright
+falla el job; no se omiten pruebas por falta de API.
+
+`ci.yml` ejecuta lint, build y guardrails mediante `frontend-ci.yml`, sin
+Playwright ni dependencia de API. El E2E completo permanece manual, fuera del
+gate obligatorio de push/PR.
+
 ```powershell
 pwsh -File scripts/ci/run-e2e.ps1
 pwsh -File scripts/ci/run-e2e.ps1 -SkipDocker

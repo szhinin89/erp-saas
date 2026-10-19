@@ -68,9 +68,10 @@ Orquestador: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 |----------|-----|
 | `architecture.yml` | Stack allowlist + guardrails |
 | `backend-ci.yml` | `dotnet test` |
-| `frontend-ci.yml` | lint, build, Playwright |
+| `frontend-ci.yml` | lint, build y guardrails frontend (sin API ni E2E) |
 | `security.yml` | Identity guardrails (reusable) |
-| `e2e.yml` | E2E manual dispatch |
+| `e2e.yml` | Entrada manual que reutiliza `e2e-manual.yml` |
+| `e2e-manual.yml` | E2E completo: PostgreSQL, migraciones, seed, API disponible y Playwright |
 
 ## Baseline arquitectura
 

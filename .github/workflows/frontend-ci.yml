@@ -46,9 +46,3 @@ jobs:
       - name: Architecture guardrails (frontend chunk)
         shell: pwsh
         run: ./tools/architecture/check-architecture-guardrails.ps1 -FrontendChunkOnly
-      - name: Install Playwright (Chromium + system deps)
-        working-directory: frontend
-        run: npx playwright install --with-deps chromium
-      - name: E2E smoke (Playwright)
-        working-directory: frontend
-        run: npm run test:e2e
