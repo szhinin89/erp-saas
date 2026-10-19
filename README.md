@@ -32,8 +32,7 @@ erp-saas/
 ├── docs/              # Documentación producto + ADRs + security
 ├── scripts/           # dev/, ci/, db/
 ├── tools/             # Guardrails, generators, quality
-├── qa-engine/         # Motor QA black-box (gate CI: auth, permisos, aislamiento tenant)
-└── .github/workflows/ # CI modular (architecture, backend, frontend, qa-regression)
+└── .github/workflows/ # CI modular (architecture, backend, frontend, e2e, security)
 ```
 
 ## Stack
@@ -46,14 +45,14 @@ Stack permitido y auditoría: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md#stack-
 
 ```powershell
 docker compose up -d                    # Postgres :5435, Redis :6379
-.\scripts\dev-launcher.ps1            # menú: Docker + migraciones + first-run + API + Vite
+.\scripts\dev-launcher.ps1            # menú: migraciones + API + Vite + estado First Run
 # Manual EF:
 cd backend/src && dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
 dotnet run --project ERP.API --launch-profile http   # http://localhost:5003
 cd frontend && npm run dev                             # http://localhost:5173
 ```
 
-First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`)
+First Run (alta del primer administrador): [`docs/architecture/first-run.md`](docs/architecture/first-run.md)
 
 Config: user-secrets de ERP.API (`erp_zh_dev`) — ver [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md#configuración-y-bases-por-entorno). Stack app: [`docs/deployment/README.md`](docs/deployment/README.md).
 

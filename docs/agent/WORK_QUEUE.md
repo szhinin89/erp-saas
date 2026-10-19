@@ -1,8 +1,13 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
-## FIRST-RUN-SECURITY-01 (2026-10-18)
+## AUTH - SENSITIVE LOGGING FIX (2026-10-19)
 
-Implementado, pendiente de revision. BUG REAL: launcher capturaba token de logs y creaba admin con credenciales predefinidas; reset sin validacion del destino efectivo. Retirados alta/wizard/login y captura/log duplicado. Guard EF: Development + loopback:5435 + erp_zh_dev, destino visible y confirmacion exacta. KEEP: flujo first-run existente, token obligatorio temporal de un solo uso. Reglas de agentes en CLAUDE.md y security.md. PASS: PowerShell estatico, 13/13 tests focales sin conexion y diff check. Persistencia/concurrencia PostgreSQL no ejecutadas por restricciones; tampoco instalador, usuarios, migraciones, seeds, operaciones BD, suites, staging, commit o push. Modulos CLOSED intactos. Detalle y gate: docs/agent/FIRST_RUN_SECURITY_01_DELIVERY.md.
+BUG REAL corregido: evento de auditoria de rotacion refresh_success registraba successorHash (SHA-256 del refresh token sucesor, clave de busqueda en BD) por parametro explicito del template LoggerMessage de RefreshTokenService (no serializacion automatica ni configuracion). Eliminado successorHash de mensajes y campos estructurados; trazabilidad conservada por familyId, tokenId y successorId. Sin cambios de logica de autenticacion, rotacion ni persistencia. PASS: RefreshTokenServiceTests 21/21 (19 existentes + 2 nuevos con CapturingLogger: rotacion, reuso benigno/sospechoso y token inexistente sin tokens ni hashes en logs); los 2 nuevos fallan contra el codigo previo. Logs historicos previos al fix pueden contener hashes. Sin suites completas, commit ni push.
+
+
+## FIRST RUN - CONSOLIDACION SSOT (2026-10-19)
+
+Cerrado. Flujo vigente: launcher -> API/frontend -> `/setup` si no esta inicializado -> alta inicial manual -> ERP operativo. Contrato, seguridad, operacion y gate de pruebas: [docs/architecture/first-run.md](../architecture/first-run.md). Documentos historicos `docs/agent/FIRST_RUN_*` retirados. QA obsoleto retirado: `qa-engine/`, `qa-bot/` y workflow `qa-regression.yml` dependian de endpoints Platform/no versionados inexistentes. `IsFirstRun` se conserva (redundante; retirarlo exige migracion sobre el baseline aplicado).
 
 
 ## BACKGROUND DEPLOYMENT — FASE D

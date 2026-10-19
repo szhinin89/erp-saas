@@ -1,5 +1,9 @@
 # Features — ERP SaaS
 
+## Instalacion inicial manual
+
+First Run (instalación inicial por `/setup` y `/api/v1/setup/admin`): ver [SSOT First Run](docs/architecture/first-run.md).
+
 ## ACCOUNTING-CONTINUITY-04
 
 Ventas, devoluciones, pagos a proveedor, cobros, NC de compra por descuento y saldo a favor de
@@ -65,7 +69,7 @@ conservada y fecha resuelta en UI. [Entrega](docs/agent/PURCHASE_CANCELLATION_DE
 | Feature | Ruta | Notas |
 |---------|------|-------|
 | Empresas | `/companies`, `/api/companies` | Sin UUID en URL (sessionStorage `erp.saas.*`) |
-| Tenant / onboarding | `Modules/Tenants`, `/api/setup` | Contrato SaaS — ver [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#jerarquía-multiempresa) |
+| Tenant / onboarding | `Modules/Tenants`, `/api/v1/setup` ([First Run](docs/architecture/first-run.md)) | Contrato SaaS — ver [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#jerarquía-multiempresa) |
 
 > La capa de planes/billing/entitlements descrita en versiones anteriores de este documento fue **eliminada en FASE 1 — ERP Kernel Cleanup** (2026-06-05). No existen rutas `/superadmin/*` ni `/api/saas/*` activas — ver [`STATUS.md`](STATUS.md) y [`docs/archive/SAAS-COMMERCIAL.md`](docs/archive/SAAS-COMMERCIAL.md) (histórico).
 

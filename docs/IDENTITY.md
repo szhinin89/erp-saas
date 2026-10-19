@@ -32,7 +32,7 @@ Entidad `IdentityUser` (`ERP.Domain.Access.Entities`):
 |-----------|---------|
 | Sesión | JWT (`sub`, `tenant_id`, `role`, opcional `tenant_ids`) |
 | Refresh | `refresh_tokens`, `POST /api/auth/refresh` |
-| First-run | `GET /api/setup/status` + `POST /api/setup/admin` (banner consola en arranque API, token-gated) |
+| First-run | `GET /api/v1/setup/status` + `POST /api/v1/setup/admin` — ver [first-run.md](architecture/first-run.md) |
 | Login ERP | `POST /api/auth/login` → membership + `companyId` en `AuthResponseDto` (no en el JWT) |
 
 ### Endpoints (`AuthController`, base `/api/auth`)
@@ -48,11 +48,11 @@ Entidad `IdentityUser` (`ERP.Domain.Access.Entities`):
 | POST | `/api/auth/switch-company` | Cambiar empresa activa |
 
 **Fase S1 (hardening, 2026-07-17) — eliminados permanentemente:**
-- `POST /api/auth/register` (creaba un usuario con `TenantId`/`Role` arbitrarios del body, sin autenticación — permitía crear un Admin en cualquier tenant existente). El alta del primer usuario/tenant vive únicamente en el flujo First-run (`POST /api/setup/admin`), que nunca acepta `TenantId`/`Role` del cliente y requiere el token de instalación de un solo uso.
+- `POST /api/auth/register` (creaba un usuario con `TenantId`/`Role` arbitrarios del body, sin autenticación — permitía crear un Admin en cualquier tenant existente). El alta del primer usuario/tenant vive únicamente en el flujo First-run (`POST /api/v1/setup/admin`), que nunca acepta `TenantId`/`Role` del cliente y requiere el token de instalación de un solo uso.
 - `POST /api/auth/password-reset` (cambiaba la contraseña de cualquier usuario solo con `TenantId`+`Email`, sin contraseña actual, token ni OTP). El reset de contraseña queda únicamente vía `forgot-password`+`reset-password` (token por email, de un solo uso).
 - Guardado como regresión permanente por `ERP.Architecture.Tests.AuthAttackSurfaceGuardTests`.
 
-Sesión runtime: menú `GET /api/me/menu` (`IRequiresCompanyContext` — requiere empresa activa validada por `CompanyScopeBehavior`, ver [Flujo login multi-empresa](#flujo-login-multi-empresa)); permisos `GET /api/admin/iam/me/permissions`; first-run `GET /api/setup/status`, `POST /api/setup/admin`.
+Sesión runtime: menú `GET /api/me/menu` (`IRequiresCompanyContext` — requiere empresa activa validada por `CompanyScopeBehavior`, ver [Flujo login multi-empresa](#flujo-login-multi-empresa)); permisos `GET /api/admin/iam/me/permissions`; first-run `GET /api/v1/setup/status`, `POST /api/v1/setup/admin`.
 
 Servicios: `IAccessTokenService`, `IRefreshTokenService`, `IPasswordHasher` (BCrypt).
 

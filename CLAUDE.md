@@ -30,7 +30,7 @@ Onboarding rápido y fuente principal de reglas globales del proyecto. Cuerpo no
 
 ## Antes de actuar
 
-- **First-run y credenciales:** ningún agente puede leer, extraer ni consumir tokens first-run, crear administradores o restablecer credenciales sin autorización expresa del propietario para esa operación. El launcher nunca crea administradores ni solicita sus credenciales; solo el propietario completa manualmente el flujo first-run existente. No obtener tokens desde logs. Las operaciones destructivas requieren mostrar servidor, base y entorno efectivos, bloquear destinos no autorizados y exigir confirmación explícita del propietario.
+- **First-run y credenciales:** ningún agente puede leer, extraer ni consumir tokens first-run, crear administradores o restablecer credenciales sin autorización expresa del propietario para esa operación. El launcher nunca crea administradores ni solicita sus credenciales; solo el propietario completa manualmente el flujo first-run existente ([SSOT First Run](docs/architecture/first-run.md)). No obtener tokens desde logs. Las operaciones destructivas requieren mostrar servidor, base y entorno efectivos, bloquear destinos no autorizados y exigir confirmación explícita del propietario.
 
 1. Identificar la SSOT vigente del módulo ([regla global](docs/architecture/enforcement.md#ssot-por-módulo)) y verificar si el archivo **ya existe** → editar, no regenerar.
 2. Seguir el [flujo jerárquico de implementación](docs/architecture/architecture.md#flujo-jerárquico-implementar-una-feature).
@@ -72,6 +72,7 @@ Actualizar docs de avance → [docs/architecture/enforcement.md § sincronizaci�
 |-----------|-----------|
 | Reglas backend | [`/backend/CLAUDE.md`](backend/CLAUDE.md) |
 | Reglas frontend | [`/frontend/CLAUDE.md`](frontend/CLAUDE.md) |
+| Instalación inicial (First Run) | [`docs/architecture/first-run.md`](docs/architecture/first-run.md) |
 | Estado de delivery | [`STATUS.md`](STATUS.md) |
 | Módulos del producto | [`FEATURES.md`](FEATURES.md) |
 | Índice normativo completo | [`docs/architecture/README.md`](docs/architecture/README.md) |

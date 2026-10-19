@@ -165,7 +165,7 @@ Registro: [`ERP.Application/DependencyInjection.cs`](../backend/src/ERP.Applicat
 |------|------|------------|
 | Auth | `/api/auth` | `AuthController` |
 | Sesión actual | `/api/me` | `MeController` |
-| Setup / first-run | `/api/setup` | `SetupController` |
+| Setup / first-run | `/api/v1/setup` | `SetupController` — [first-run.md](architecture/first-run.md) |
 | Companies | `/api/companies` | `CompaniesController` |
 | Branches / settings | `/api/settings/branches`, `/api/settings/geography` | `BranchesController`, `GeographyController` |
 | Master data — Business Partners | `/api/master/business-partners*` | `BusinessPartnersController` y relacionados |

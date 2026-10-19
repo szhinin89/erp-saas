@@ -14,3 +14,6 @@ backend/src/ERP.API/files/
 backend/src/ERP.API/logs/
 
 backend/src/.vs/
+
+# Artefactos locales del desarrollador (harness, datos de prueba): nunca versionar
+/.local/

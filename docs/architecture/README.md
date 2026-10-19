@@ -18,6 +18,7 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 | [backend.md](./backend.md) | .NET, CQRS, API envelope, multi-tenant backend, AI/Analytics prohibiciones, tarifas SRI |
 | [frontend.md](./frontend.md) | React, ZH Form, Design System, tabs, i18n, CSS, navegación UI |
 | [security.md](./security.md) | Auth, JWT, tokens, aislamiento tenant, **SaaS — IDs sensibles fuera de la URL** |
+| [first-run.md](./first-run.md) | Instalación inicial: token de un solo uso, propietario exclusivo, alta inicial, `/setup`, launcher y reset local |
 | [stack.md](./stack.md) | Herramientas permitidas (detalle en `docs/DEVELOPMENT.md`) |
 | [naming.md](./naming.md) | Convenciones de nombres (BD, código, i18n, CSS) |
 | [pr-rules-catalog.md](./pr-rules-catalog.md) | Catálogo normativo B-xx / F-xx (bloqueante PR) |

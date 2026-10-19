@@ -28,14 +28,14 @@ Reglas multi-tenant (`IgnoreQueryFilters()`, `company_id` del body, `ICurrentTen
 ## Arranque local
 
 ```powershell
-# Recomendado: menú interactivo (Docker + migraciones + first-run + API + Vite, reset, tests)
+# Recomendado: menú interactivo (migraciones + API + Vite + estado First Run, reset, tests)
 .\scripts\dev-launcher.ps1
 ```
 
 | Opción | Efecto |
 |--------|--------|
-| `[1] Iniciar ERP` | Docker up + migraciones + API + Vite (uso diario) |
-| `[2] Reset completo` | **Destructivo**: drop de `erp_zh_dev` + migraciones + alta first-run exclusivamente manual por el propietario |
+| `[1] Iniciar ERP` | Migraciones + API + Vite; abre `/setup` si la instalación está pendiente (uso diario) |
+| `[2] Reset completo` | **Destructivo**: drop guardado de `erp_zh_dev` + migraciones + arranque; alta inicial manual por el propietario |
 | `[3] Solo Backend API` | Migraciones + API |
 | `[4] Tests completos` | Suites backend/frontend |
 
@@ -51,8 +51,8 @@ cd ../../../frontend
 npm run dev
 ```
 
-- First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`, token-gated)
-- Reset local: usar exclusivamente la opcion `[2]` del launcher; valida el destino EF efectivo (Development, loopback:5435, `erp_zh_dev`) y exige confirmacion textual exacta antes del borrado. No sustituir la guarda por un drop directo.
+- First Run (instalación inicial, launcher y reset local): [`docs/architecture/first-run.md`](architecture/first-run.md). PostgreSQL debe estar en marcha (`docker compose up -d`); el launcher no lo inicia.
+- Reset local: usar exclusivamente la opción `[2]` del launcher ([Reset local](architecture/first-run.md#reset-local)).
 - `dotnet-ef` es herramienta local versionada en `.config/dotnet-tools.json` (alineada con EF Core del proyecto): ejecutar `dotnet tool restore` una vez tras clonar o al cambiar su versión. CI y los scripts (`dev-launcher.ps1`, `run-e2e.ps1`) lo hacen automáticamente.
 - `dotnet ef` siempre con `--startup-project ERP.API`: la factory de diseño (`ERP.API/Hosting/ErpDesignTimeDbContextFactory.cs`) usa las mismas fuentes que el runtime.
 
@@ -204,11 +204,7 @@ pwsh -File scripts/ci/run-e2e.ps1 -SkipDocker
 pwsh -File scripts/ci/run-e2e.ps1 -PlaywrightArgs "e2e/smoke.spec.ts"
 ```
 
-Primer usuario del sistema: el launcher solo consulta el estado de first-run. El propietario
-abre manualmente `/setup` en el frontend y completa el formulario existente, que llama a
-`POST /api/v1/setup/admin`. El token obligatorio se obtiene personalmente de la consola API;
-es temporal (15 minutos por defecto) y de un solo uso. El launcher no recoge datos ni realiza el alta.
-No existen credenciales administrativas predefinidas ni tokens configurables via appsettings/env.
+Primer usuario del sistema: ver [First Run](architecture/first-run.md).
 
 ---
 
@@ -230,7 +226,3 @@ No existen credenciales administrativas predefinidas ni tokens configurables via
 - Transactional outbox
 - Distributed locks para cuotas
 - Concurrencia optimista en agregados calientes
-
-### FIRST-RUN-SECURITY-01
-
-El launcher solo consulta el estado: no recoge tokens o credenciales, no crea administradores y no verifica login. El propietario completa manualmente el flujo existente con el token temporal obligatorio y de un solo uso de la consola API. La salida API no se copia a `.api-startup.log`. No autoriza a agentes a leer la consola ni completar el alta.

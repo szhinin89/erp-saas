@@ -141,8 +141,6 @@ Tarifas SRI: ver [backend.md#tarifas-sri](./backend.md).
 
 Item exige empresa del contexto autenticado y no tiene BranchId. Sin empresa válida, root y colecciones hijas no son visibles. Variantes, atributos, barcodes, imágenes, conversiones, sustitutos, packaging, códigos de proveedor, impuestos especiales y auditoría heredan aislamiento del Item. Sustitutos exigen ambos Items dentro del scope. Pricing y las operaciones resuelven el mismo Item de la empresa actual. BusinessPartner permanece tenant-wide. Constraints PostgreSQL respaldan las unicidades por empresa. Véase [ADR-040](../decisions/ADR-040-item-company-scope-inventory-nature.md).
 
-## First-run manual y reset local (FIRST-RUN-SECURITY-01)
+## First Run
 
-El primer administrador lo crea manualmente el propietario por el endpoint first-run existente, con token obligatorio, temporal y de un solo uso. El launcher no solicita credenciales, consume tokens ni crea administradores; no hay credenciales administrativas predefinidas ni rutas alternativas. Ning?n agente puede extraer o consumir tokens first-run, crear administradores ni restablecer credenciales sin autorizaci?n expresa para la operaci?n.
-
-El reset del launcher valida la conexi?n efectiva en la factory EF antes de construir el contexto: solo Development, host loopback, puerto 5435 y base erp_zh_dev. Muestra servidor/puerto/base/entorno y exige confirmaci?n textual exacta. No muestra la cadena de conexi?n ni sus credenciales.
+Instalación inicial (token de un solo uso, propietario exclusivo por base, alta inicial, launcher y reset local): SSOT en [first-run.md](./first-run.md).

@@ -53,7 +53,7 @@ Compose: `docker-compose.yml` (infra local, include → `infrastructure/docker/c
 
 ## Arranque local
 
-Atajo: **`.\scripts\dev-launcher.ps1`** · First-run admin: banner en consola API (`GET /api/setup/status` + `POST /api/setup/admin`)
+Atajo: **`.\scripts\dev-launcher.ps1`** · First Run: [`docs/architecture/first-run.md`](./docs/architecture/first-run.md)
 
 Manual: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 

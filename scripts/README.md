@@ -7,7 +7,7 @@ en [`stack-allowlist.json`](stack-allowlist.json). CI rechaza cualquier otro `.p
 
 | Ruta | Rol |
 |------|-----|
-| [`dev-launcher.ps1`](dev-launcher.ps1) | Entorno dev: Docker + EF + first-run + API + Vite, reset completo, tests (`erp_zh_dev`) |
+| [`dev-launcher.ps1`](dev-launcher.ps1) | Entorno dev: EF + API + Vite + estado [First Run](../docs/architecture/first-run.md), reset completo, tests (`erp_zh_dev`) |
 | [`app-stack.ps1`](app-stack.ps1) | Stack de aplicación `docker-compose.app.yml` (Config/Build/Up/Down/Status/Logs/Health); rechaza `erp_zh_dev` |
 | [`backup-restore.ps1`](backup-restore.ps1) | Backup + restore drill aislado (`-Action Backup\|RestoreCheck -Database <db>`) |
 | [`backend-check.ps1`](backend-check.ps1) / [`frontend-check.ps1`](frontend-check.ps1) | Revisión, compilación y pruebas locales por capa |
