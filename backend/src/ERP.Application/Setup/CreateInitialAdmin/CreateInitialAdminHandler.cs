@@ -21,6 +21,7 @@ public sealed class CreateInitialAdminHandler
     private readonly IPasswordHasher _hasher;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IFirstRunSession _session;
 
     public CreateInitialAdminHandler(
         ISystemSetupRepository setupRepo,
@@ -30,7 +31,8 @@ public sealed class CreateInitialAdminHandler
         ICompanyUserBranchRepository companyUserBranches,
         IPasswordHasher hasher,
         ICompanyProvisioningService companyProvisioning,
-        IUnitOfWork unitOfWork
+        IUnitOfWork unitOfWork,
+        IFirstRunSession session
     )
     {
         _setupRepo = setupRepo;
@@ -41,15 +43,27 @@ public sealed class CreateInitialAdminHandler
         _hasher = hasher;
         _companyProvisioning = companyProvisioning;
         _unitOfWork = unitOfWork;
+        _session = session;
     }
 
-    public async Task<Result<string>> Handle(
+    public Task<Result<string>> Handle(
         CreateInitialAdminCommand cmd,
         CancellationToken cancellationToken
-    )
+    ) => _session.RunInstallationAsync(ct => HandleOwnedAsync(cmd, ct), cancellationToken);
+
+    private async Task<Result<string>> HandleOwnedAsync(CreateInitialAdminCommand cmd, CancellationToken cancellationToken)
     {
-        // ── Precondiciones — se resuelven todas ANTES de tocar el UnitOfWork; ninguna entidad
-        // se crea ni se marca como Added hasta que este bloque completo pase. ──────────────────
+        Result<string>? result = null;
+        await _unitOfWork.ExecuteInTransactionAsync(async ct =>
+        {
+            result = await ValidateAndCreateAsync(cmd, ct);
+        }, cancellationToken);
+        return result!;
+    }
+
+    private async Task<Result<string>> ValidateAndCreateAsync(CreateInitialAdminCommand cmd, CancellationToken cancellationToken)
+    {
+        // Re-read state and validate inside the existing transaction on the owner session.
         var state = await _setupRepo.GetAsync(cancellationToken);
         if (state is null)
             return Result<string>.Failure(
@@ -85,93 +99,73 @@ public sealed class CreateInitialAdminHandler
         if (email is not null && await _access.AnyUserWithEmailAsync(email, cancellationToken))
             return Result<string>.Failure("Ya existe un usuario con ese email.");
 
-        // ── Única unidad atómica: tenant + empresa (+ bootstrap completo) + usuario + membership +
-        // flag de inicialización quedan todos persistidos o ninguno. ExecuteInTransactionAsync abre
-        // la transacción (envuelta en el ExecutionStrategy de EF Core), corre este delegate y hace
-        // un único SaveChangesAsync al final — commit si todo salió bien, rollback total si algo
-        // lanza, sin dejar nunca un tenant/empresa huérfanos. Las entidades se construyen DENTRO del
-        // delegate (no antes) para que, si el ExecutionStrategy alguna vez reintenta por una falla
-        // transitoria de conexión, cada intento parta de instancias frescas.
-        //
-        // No se agrega ningún SaveChangesAsync adicional aquí: _companyProvisioning.EnsureDefaultCompanyAsync
-        // (y el CompanyBootstrapOrchestrator que dispara) hace sus propios SaveChangesAsync internos
-        // por cada paso de bootstrap — eso es una necesidad técnica preexistente de ese subsistema, no
-        // algo que este handler deba reimplementar. Como todo corre bajo la MISMA transacción abierta
-        // aquí, esos flush intermedios nunca comprometen los datos por sí solos: si cualquier paso
-        // posterior falla, el rollback deshace también lo que esos SaveChanges internos ya escribieron.
-        await _unitOfWork.ExecuteInTransactionAsync(
-            async ct =>
-            {
-                var bootstrapId = Guid.NewGuid();
-                // "Principal"/"principal" es el único tenant que este flujo puede crear — First Run solo
-                // corre una vez (bloqueado por state.IsInitialized) y, gracias a esta transacción, un
-                // intento fallido nunca deja el slug ocupado para el siguiente — no hace falta generarlo
-                // dinámicamente ni reutilizar uno existente (ver Regla 5: no introducir idempotencia aquí,
-                // la atomicidad ya impide el estado parcial que la idempotencia intentaría reparar).
-                var tenant = Tenant.Create("Principal", "principal", bootstrapId);
-                var passwordHash = _hasher.HashPassword(cmd.Password);
-                var user = IdentityUser.Create(
-                    username,
-                    cmd.FirstName.Trim(),
-                    cmd.LastName.Trim(),
-                    email,
-                    passwordHash,
-                    bootstrapId
-                );
-
-                await _tenants.AddAsync(tenant, ct);
-
-                var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
-                var membership = CompanyUserMembership.Create(
-                    company.Id,
-                    user.Id,
-                    role: SecurityRoles.Admin,
-                    profileId: null,
-                    createdBy: bootstrapId
-                );
-
-                await _access.AddUserAsync(user, ct);
-                await _access.AddCompanyUserMembershipAsync(membership, ct);
-                var globalRole = GlobalUserRole.Create(user.Id, SecurityRoles.Admin, bootstrapId);
-
-                await _access.AddGlobalUserRoleAsync(globalRole, ct);
-                // ERP-CORE-CLOSEOUT-06: sin esto, el admin inicial queda con CompanyUserMembership
-                // pero CERO CompanyUserBranch — BranchAccessGuard lo bloquea en toda operación
-                // branch-scoped (venta/compra/caja) y el modal de selección de sucursal del
-                // frontend no se puede cerrar sin una sucursal autorizada, dejándolo sin forma de
-                // recuperarse desde la propia app. El bootstrap (EnsureDefaultCompanyAsync, arriba)
-                // ya creó y persistió la sucursal principal — la buscamos y autorizamos aquí, dentro
-                // de la misma transacción, igual patrón que E2ESeedService.SeedAdminAccessAsync.
-                var mainBranch = (
-                    await _branches.GetByCompanyAsync(
-                        tenant.Id,
-                        company.Id,
-                        activeFilter: true,
-                        cancellationToken: ct
-                    )
-                ).FirstOrDefault(b => b.IsMainBranch);
-                if (mainBranch is not null)
-                {
-                    await _companyUserBranches.AddAsync(
-                        CompanyUserBranch.Create(
-                            tenant.Id,
-                            company.Id,
-                            membership.Id,
-                            mainBranch.Id,
-                            bootstrapId
-                        ),
-                        ct
-                    );
-                }
-
-                // Single-use: invalidate el setup token permanentemente. `state` ya está trackeado por
-                // el DbContext (vino de una query sin AsNoTracking) — este cambio se persiste en el
-                // mismo SaveChangesAsync final del wrapper, no requiere su propio SaveChanges.
-                state.MarkInitialized(username);
-            },
-            cancellationToken
+        // Preserve the existing atomic provisioning flow and its intermediate flushes.
+        var bootstrapId = Guid.NewGuid();
+        // "Principal"/"principal" es el único tenant que este flujo puede crear — First Run solo
+        // corre una vez (bloqueado por state.IsInitialized) y, gracias a esta transacción, un
+        // intento fallido nunca deja el slug ocupado para el siguiente — no hace falta generarlo
+        // dinámicamente ni reutilizar uno existente (ver Regla 5: no introducir idempotencia aquí,
+        // la atomicidad ya impide el estado parcial que la idempotencia intentaría reparar).
+        var tenant = Tenant.Create("Principal", "principal", bootstrapId);
+        var passwordHash = _hasher.HashPassword(cmd.Password);
+        var user = IdentityUser.Create(
+            username,
+            cmd.FirstName.Trim(),
+            cmd.LastName.Trim(),
+            email,
+            passwordHash,
+            bootstrapId
         );
 
+        await _tenants.AddAsync(tenant, cancellationToken);
+
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            role: SecurityRoles.Admin,
+            profileId: null,
+            createdBy: bootstrapId
+        );
+
+        await _access.AddUserAsync(user, cancellationToken);
+        await _access.AddCompanyUserMembershipAsync(membership, cancellationToken);
+        var globalRole = GlobalUserRole.Create(user.Id, SecurityRoles.Admin, bootstrapId);
+
+        await _access.AddGlobalUserRoleAsync(globalRole, cancellationToken);
+        // ERP-CORE-CLOSEOUT-06: sin esto, el admin inicial queda con CompanyUserMembership
+        // pero CERO CompanyUserBranch — BranchAccessGuard lo bloquea en toda operación
+        // branch-scoped (venta/compra/caja) y el modal de selección de sucursal del
+        // frontend no se puede cerrar sin una sucursal autorizada, dejándolo sin forma de
+        // recuperarse desde la propia app. El bootstrap (EnsureDefaultCompanyAsync, arriba)
+        // ya creó y persistió la sucursal principal — la buscamos y autorizamos aquí, dentro
+        // de la misma transacción, igual patrón que E2ESeedService.SeedAdminAccessAsync.
+        var mainBranch = (
+            await _branches.GetByCompanyAsync(
+                tenant.Id,
+                company.Id,
+                activeFilter: true,
+                cancellationToken: cancellationToken
+            )
+        ).FirstOrDefault(b => b.IsMainBranch);
+        if (mainBranch is not null)
+        {
+            await _companyUserBranches.AddAsync(
+                CompanyUserBranch.Create(
+                    tenant.Id,
+                    company.Id,
+                    membership.Id,
+                    mainBranch.Id,
+                    bootstrapId
+                ),
+                cancellationToken
+            );
+        }
+
+        // Single-use: invalidate el setup token permanentemente. `state` ya está trackeado por
+        // el DbContext (vino de una query sin AsNoTracking) — este cambio se persiste en el
+        // mismo SaveChangesAsync final del wrapper, no requiere su propio SaveChanges.
+        state.MarkInitialized(username);
         return Result<string>.Success("Admin inicial creado. Inicie sesión con sus credenciales.");
     }
 }

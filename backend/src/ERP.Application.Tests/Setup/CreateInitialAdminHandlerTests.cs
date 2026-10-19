@@ -14,7 +14,7 @@ using Moq;
 namespace ERP.Application.Tests.Setup;
 
 /// <summary>
-/// Fase S1 (hardening 5A). No modifica CreateInitialAdminHandler — cubre que el flujo alternativo
+/// Fase S1 (hardening 5A). Cubre que el flujo existente
 /// seguro sigue funcionando después de eliminar POST /auth/register (anónimo, TenantId/Role
 /// arbitrarios del cliente). A diferencia del endpoint eliminado, este flujo: nunca acepta
 /// TenantId ni Role del cliente (siempre crea un tenant nuevo con rol Admin fijo), exige un token
@@ -86,8 +86,15 @@ public sealed class CreateInitialAdminHandlerTests
                 CompanyUserBranchRepo.Object,
                 Hasher.Object,
                 CompanyProvisioning.Object,
-                UnitOfWork.Object
+                UnitOfWork.Object,
+                new IsolatedSession()
             );
+    }
+
+    private sealed class IsolatedSession : IFirstRunSession
+    {
+        public Task RunStartupAsync(Func<CancellationToken, Task> operation, CancellationToken ct) => operation(ct);
+        public Task<T> RunInstallationAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken ct) => operation(ct);
     }
 
     private static CreateInitialAdminCommand ValidCommand(string token = RawToken) =>

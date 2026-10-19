@@ -345,7 +345,7 @@ export function SetupPage() {
                     className="zh-auth-input"
                     id="setup-token"
                     type="password"
-                    placeholder="Token de appsettings.json"
+                    placeholder="Token de la consola API"
                     {...register("setupToken")}
                   />
                 </div>

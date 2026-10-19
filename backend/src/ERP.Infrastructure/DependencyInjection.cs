@@ -71,6 +71,11 @@ public static class DependencyInjection
         services.AddScoped<DbCommandTenantInterceptor>();
         services.AddScoped<NewChildEntityTrackingInterceptor>();
         services.AddScoped<UtcDateTimeGuardInterceptor>();
+        services.AddSingleton<ERP.Infrastructure.Setup.FirstRunOwnershipCoordinator>();
+        services.AddHostedService(sp => sp.GetRequiredService<ERP.Infrastructure.Setup.FirstRunOwnershipCoordinator>());
+        services.AddSingleton<ERP.Infrastructure.Setup.FirstRunConnectionGuard>();
+        services.AddSingleton<ERP.Infrastructure.Setup.FirstRunCommandGuard>();
+        services.AddScoped<ERP.Application.Setup.IFirstRunSession, ERP.Infrastructure.Setup.FirstRunSession>();
         services.AddDbContext<ErpDbContext>(
             (sp, options) =>
                 options
@@ -88,6 +93,8 @@ public static class DependencyInjection
                         )
                     )
                     .AddInterceptors(
+                        sp.GetRequiredService<ERP.Infrastructure.Setup.FirstRunConnectionGuard>(),
+                        sp.GetRequiredService<ERP.Infrastructure.Setup.FirstRunCommandGuard>(),
                         sp.GetRequiredService<PostgreSqlSessionContextInterceptor>(),
                         sp.GetRequiredService<CompanyTenantInterceptor>(),
                         sp.GetRequiredService<DbCommandTenantInterceptor>(),

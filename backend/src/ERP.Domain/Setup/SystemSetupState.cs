@@ -4,7 +4,7 @@ namespace ERP.Domain.Setup;
 
 /// <summary>
 /// Singleton row (Id = 1) that guards the first-run initialization gate.
-/// Once IsInitialized = true, POST /api/setup/admin returns 409.
+/// Once IsInitialized = true, POST /api/v1/setup/admin returns 409.
 /// </summary>
 public sealed class SystemSetupState
 {

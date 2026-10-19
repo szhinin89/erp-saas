@@ -19,19 +19,25 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
     private readonly ISystemSetupRepository _repo;
     private readonly IConfiguration _config;
     private readonly ILogger<FirstRunSetupService> _logger;
+    private readonly IFirstRunSession _session;
 
     public FirstRunSetupService(
         ISystemSetupRepository repo,
         IConfiguration config,
-        ILogger<FirstRunSetupService> logger
+        ILogger<FirstRunSetupService> logger,
+        IFirstRunSession session
     )
     {
         _repo = repo;
         _config = config;
         _logger = logger;
+        _session = session;
     }
 
-    public async Task EnsureSetupTokenAsync(CancellationToken cancellationToken = default)
+    public Task EnsureSetupTokenAsync(CancellationToken cancellationToken = default) =>
+        _session.RunStartupAsync(EnsureOwnedTokenAsync, cancellationToken);
+
+    private async Task EnsureOwnedTokenAsync(CancellationToken cancellationToken)
     {
         var state = await _repo.GetAsync(cancellationToken);
         if (state is null)
@@ -44,8 +50,7 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
             return;
 
         var now = DateTime.UtcNow;
-        if (state.HasActiveSetupToken(now))
-            return;
+        // Every API startup replaces the previous token: only its hash survives a restart.
 
         var expiryMinutes = _config.GetValue("Setup:TokenExpiryMinutes", DefaultExpiryMinutes);
         var rawToken = SetupTokenCrypto.CreateRawToken();
@@ -54,6 +59,7 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
         state.IssueSetupToken(SetupTokenCrypto.Hash(rawToken), expiryUtc);
         await _repo.SaveChangesAsync(cancellationToken);
 
+        cancellationToken.ThrowIfCancellationRequested();
         PrintBanner(rawToken, expiryMinutes);
     }
 

@@ -44,6 +44,13 @@ Frontend          → Axios (transporte puro)
 
 `code`, `severity`, `message.user`, `meta.correlationId`, `meta.timestamp` son siempre obligatorios. `message.dev` solo se serializa en Development. `data.errors` es mapa `campo→mensajes` para `Validation`, arreglo plano para el resto, ausente si no aplica.
 
+La validacion automatica de `[ApiController]` conserva su filtro MVC. En `Program.cs`,
+`InvalidModelStateResponseFactory` adapta sus rechazos mediante
+`ResponseFactory.ValidationError` y `ApiErrorStatus.For(VALIDATION_ERROR)` (422),
+sin otra tabla HTTP ni envelope. Los campos siguen camelCase (`_` para errores
+sin campo); la correlacion se obtiene de la fabrica oficial. Las excepciones de
+binding usan el mensaje publico del catalogo, sin exponer detalles tecnicos.
+
 ## Categorías → HTTP (única tabla, ningún módulo la reimplementa)
 
 | Categoría | HTTP |

@@ -11,6 +11,7 @@ using ERP.API.Health;
 using ERP.API.Middleware;
 using ERP.API.Services;
 using ERP.Application;
+using ERP.Application.Common;
 using ERP.Domain.Kernel.Security;
 using ERP.Infrastructure;
 using ERP.Infrastructure.Caching;
@@ -101,6 +102,34 @@ builder
         );
         // ZH-TEMPORAL-CONTRACT-02: DateTime en JSON = instante UTC ("...Z"); DateOnly = "YYYY-MM-DD".
         opts.JsonSerializerOptions.Converters.Add(new ERP.API.Temporal.UtcInstantJsonConverter());
+    })
+    .ConfigureApiBehaviorOptions(opts =>
+    {
+        opts.InvalidModelStateResponseFactory = context =>
+        {
+            var code = ApiResponseCodes.Common.ValidationError;
+            var fieldErrors = context.ModelState
+                .Where(entry => entry.Value is { Errors.Count: > 0 })
+                .GroupBy(entry => string.IsNullOrWhiteSpace(entry.Key)
+                    ? "_"
+                    : char.ToLowerInvariant(entry.Key[0]) + entry.Key[1..])
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.SelectMany(entry => entry.Value!.Errors)
+                        .Select(error => error.Exception is null && !string.IsNullOrWhiteSpace(error.ErrorMessage)
+                            ? error.ErrorMessage
+                            : MessageCatalog.Resolve(code).User)
+                        .ToArray());
+            var response = ResponseFactory.ValidationError(
+                context.HttpContext,
+                context.HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>(),
+                code,
+                fieldErrors);
+            return new Microsoft.AspNetCore.Mvc.ObjectResult(response)
+            {
+                StatusCode = ApiErrorStatus.For(code),
+            };
+        };
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerWithJwt();
@@ -355,7 +384,7 @@ builder.Services.AddAuthorization(options =>
     options.DefaultPolicy = options.GetPolicy("Session")!;
 });
 
-var app = builder.Build();
+await using var app = builder.Build();
 
 // Ensure schema is up to date before any startup queries. Migraciones + HasData() son
 // prerrequisito del bootstrap global (igual que crear la Company lo es del bootstrap de
