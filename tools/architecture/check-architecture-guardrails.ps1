@@ -109,7 +109,11 @@ $indexMaxKb = [int]$grandfather.frontendIndexChunkMaxKb
 
 if ($FrontendChunkOnly) {
     Test-FrontendIndexChunkSize -Root $Root -IndexMaxKb $indexMaxKb -DistAssetsPath $DistAssetsPath -Violations $violations
-    if ($violations.Count -gt 0) { exit 1 }
+    if ($violations.Count -gt 0) {
+        Write-Host "`nFrontend chunk guardrail FAILED ($($violations.Count)):" -ForegroundColor Red
+        $violations | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+        exit 1
+    }
     Write-Host 'Frontend chunk guardrail OK.' -ForegroundColor Green
     exit 0
 }

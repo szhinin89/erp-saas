@@ -1,5 +1,14 @@
 # Project Status
 
+## FRONTEND-P01-BUNDLE — Carga diferida del inglés (2026-10-19, sin commit)
+
+CI #970 (`c4880eb13`) fallaba en `Architecture guardrails (frontend chunk)` sin mensaje: el chunk `index-*.js` medía 739,5 KB (límite P-01 650 KB) y `-FrontendChunkOnly` salía 1 sin imprimir la violación. Causa del tamaño: `i18n/dictionaries.ts` importaba estáticamente `es.json` y `en.json` (556,7 KB, 75 % del chunk).
+
+- **Guardrail:** `-FrontendChunkOnly` imprime las violaciones P-01 antes de salir (fixture nueva).
+- **Bundle:** `en` se descarga bajo demanda (`ensureLocaleLoaded`); `es` sigue estático. Chunk principal 739,5 KB → 468,9 KB; `en` en chunk propio (271 KB). Idioma guardado cargado antes del primer render (un intento, sin reintentos automáticos); descarga fallida → UI y `formatApiError` en `es` vía `getDictionary` (antes `formatApiError` caía al texto fijo en inglés) y la preferencia guardada se conserva hasta una elección explícita; solo la última selección se aplica. JSON de traducciones, límite y módulos CLOSED/FROZEN sin cambios.
+- **PASS local:** lint (0 errores), `tsc -b`, build, chunk P-01 en pwsh 7 y Windows PowerShell 5.1, `architecture:check` 140/140, guardrail completo, `git diff --check`, vitest i18n 14/14; navegador real (preview): arranque `es` sin descargar `en`, recarga con `en` sin destello, regreso a `es`, descarga bloqueada → `es`.
+- **Preexistente (no corregido):** vitest completo 3086/3090 — 4 fallos idénticos sobre HEAD sin estos cambios (`cajaI18n.test.ts`: literal `account_balance` en `CajaPage.tsx`; `JournalEntryDetailPage.test.tsx` ×3: no renderiza la tabla). CI no ejecuta vitest.
+
 ## LOCAL-ERP-READINESS-01B.1 / 01B.2 — Patrones frontend y raíz JSON grandfather (2026-10-19)
 
 Contexto: `check-architecture-guardrails.ps1` salía en handler-size antes de la sección frontend; al pasar C-03 (ADR-046, `fa3bf3781`) quedaron visibles 39 hallazgos frontend preexistentes.

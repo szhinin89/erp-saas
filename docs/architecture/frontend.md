@@ -413,6 +413,7 @@ Clases frecuentes (no recrear): `.pg-page`, `.table`, `.badge`, `.zh-status`, `.
 - Locales soportados: **`es`** y **`en`**.
 - Claves nuevas: **siempre** `es.json` y `en.json`.
 - `es.json` es la fuente de verdad y el gate arquitectónico valida paridad con `en.json`.
+- Carga (P-01): `es` viaja en el bundle inicial; `en` se descarga bajo demanda con `ensureLocaleLoaded` (`i18n/dictionaries.ts`). `main.tsx` carga el idioma guardado antes del primer render (un intento, sin reintentos automáticos). Si la descarga falla, toda lectura de textos (UI y `formatApiError`, vía `getDictionary`) usa `es` y la preferencia guardada se conserva hasta que el usuario elija otro idioma; solo la última selección se aplica. Nunca importar `en.json` estáticamente fuera de tests.
 - Prohibido texto duro visible al usuario.
 
 ---

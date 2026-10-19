@@ -69,6 +69,25 @@ test('JSON inválido o archivo inexistente → código distinto de cero', () => 
   }
 });
 
+test('-FrontendChunkOnly: chunk index sobre el límite → FAIL que nombra P-01, tamaño y límite; dentro → PASS', () => {
+  const bigDist = path.join(scratch, 'dist-big');
+  fs.mkdirSync(bigDist);
+  fs.writeFileSync(path.join(bigDist, 'index-big.js'), Buffer.alloc(651 * 1024, 0x20));
+  for (const runShell of shells) {
+    const config = path.join(scratch, `grandfather-${sequence++}.json`);
+    fs.writeFileSync(config, '{"frontendIndexChunkMaxKb":650}');
+    const result = spawnSync(runShell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script,
+      '-FrontendChunkOnly', '-DistAssetsPath', bigDist, '-GrandfatherPath', config], { encoding: 'utf8', timeout: 60000 });
+    if (result.error) throw result.error;
+    const output = result.stdout + result.stderr;
+    assert.notEqual(result.status, 0, output);
+    assert.match(output, /P-01: chunk index-big\.js = 651KB \(max 650KB\)/, `${runShell}\n${output}`);
+    const ok = run('{"frontendIndexChunkMaxKb":650}', runShell);
+    assert.equal(ok.code, 0, ok.output);
+    assert.match(ok.output, /Frontend chunk guardrail OK/);
+  }
+});
+
 /**
  * ADR-047 — PR-7 (TSX > 500 líneas no vacías) con techos individuales. Fixtures en un repositorio
  * temporal: los scripts reales se copian; ningún archivo del ERP se lee ni se modifica.

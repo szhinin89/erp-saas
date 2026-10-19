@@ -1,14 +1,13 @@
 import { isAxiosError } from "axios";
 import {
-  dictionaries,
   defaultLocale,
+  getDictionary,
   safeGetStoredLocale,
   type Locale,
 } from "../../i18n/dictionaries";
 
 function dict(locale: Locale, key: string, fallback: string): string {
-  const d = dictionaries[locale] ?? dictionaries[defaultLocale];
-  return d[key] ?? fallback;
+  return getDictionary(locale)[key] ?? fallback;
 }
 
 function currentLocale(): Locale {

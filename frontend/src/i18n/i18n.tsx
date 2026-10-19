@@ -5,11 +5,14 @@ import React, {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
-  dictionaries,
   defaultLocale,
+  ensureLocaleLoaded,
+  getDictionary,
+  isLocaleLoaded,
   safeGetStoredLocale,
   storageKey,
   type Locale,
@@ -32,7 +35,7 @@ function translate(
   key: string,
   fallbackOrParams?: string | TParams,
 ): string {
-  const dict = dictionaries[locale] ?? dictionaries[defaultLocale];
+  const dict = getDictionary(locale);
   let text =
     dict[key] ??
     (typeof fallbackOrParams === "string" ? fallbackOrParams : undefined) ??
@@ -46,13 +49,29 @@ function translate(
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() =>
-    safeGetStoredLocale(),
-  );
+  // main.tsx descarga el idioma guardado antes del primer render (un solo intento). Si falló, se
+  // muestra el idioma por defecto (también en formatApiError, vía getDictionary) y se conserva la
+  // preferencia guardada: es la elección del usuario, no se sobrescribe por un fallo de red.
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    const stored = safeGetStoredLocale();
+    return isLocaleLoaded(stored) ? stored : defaultLocale;
+  });
+  // Solo la última selección se aplica: una descarga lenta no pisa un cambio posterior.
+  const lastRequest = useRef(0);
 
   const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    localStorage.setItem(storageKey, next);
+    const request = ++lastRequest.current;
+    const apply = () => {
+      if (request !== lastRequest.current) return;
+      setLocaleState(next);
+      localStorage.setItem(storageKey, next);
+    };
+    if (isLocaleLoaded(next)) {
+      apply();
+      return;
+    }
+    // Si la descarga falla se conserva el idioma actual y no se guarda la preferencia.
+    ensureLocaleLoaded(next).then(apply, () => {});
   }, []);
 
   const t = useCallback<TFunction>(

@@ -17,7 +17,7 @@ export default defineConfig({
   },
   test: {
     include: ["src/**/*.test.{ts,tsx}"],
-    setupFiles: ["src/test/setupPrecisionPolicy.ts"],
+    setupFiles: ["src/test/setupPrecisionPolicy.ts", "src/test/setupI18n.ts"],
     exclude: ["e2e/**", "node_modules/**"],
   },
   server: {
