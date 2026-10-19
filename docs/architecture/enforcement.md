@@ -301,7 +301,7 @@ Las reglas críticas de frontend **no dependen únicamente** de prompts IA.
 
 Si un agente (Cursor, Claude, futuro) sugiere código que viola un check, **el CI fallará** aunque el agente no haya leído el adaptador.
 
-Detalle por check: [§ Guardrails automatizados](#guardrails-automatizados-node--frontend--backend) más arriba · [`tools/architecture/README.md`](../../tools/architecture/README.md)
+Detalle por check: [§ Guardrails automatizados](#guardrails-automatizados) más arriba · [`tools/architecture/README.md`](../../tools/architecture/README.md)
 
 ## CI Authority
 
