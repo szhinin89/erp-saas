@@ -15,6 +15,9 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 | [enforcement.md](./enforcement.md) | Anti-drift, validación 4 capas, docs sync, CI, guardrails automatizados, **jerarquía y precedencia**, **compatibilidad multi-agente** |
 | [architecture.md](./architecture.md) | Monorepo, capas, Branch Ownership Rule, frontera ERP↔Platform, **Canonical Model Map** (scopes GLOBAL/COMPANY, B-08–B-11), flujo de feature, patrón Accounting |
 | [accounting.md](./accounting.md) | Core, uso por Company, obligaciones durables, continuidad, reproceso manual, reversos, períodos, reportes y matriz de atomicidad |
+| [items.md](./items.md) | SSOT funcional de Ítems: alcance Company, naturaleza, unicidad, configuración, variantes y empaques |
+| [inventory.md](./inventory.md) | SSOT funcional de Inventario: bodegas, Kardex, valoración, disponibilidad, ajustes, transferencias y saldo inicial |
+| [purchases.md](./purchases.md) | SSOT funcional de Compras: recepción, conciliación de ítems, compra, anulación, devolución, NC y saldo a favor |
 | [backend.md](./backend.md) | .NET, CQRS, API envelope, multi-tenant backend, AI/Analytics prohibiciones, tarifas SRI |
 | [frontend.md](./frontend.md) | React, ZH Form, Design System, tabs, i18n, CSS, navegación UI |
 | [security.md](./security.md) | Auth, JWT, tokens, aislamiento tenant, **SaaS — IDs sensibles fuera de la URL** |

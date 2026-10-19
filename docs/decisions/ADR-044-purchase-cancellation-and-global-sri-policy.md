@@ -108,4 +108,4 @@ hardcode fiscal en handler/UI; configuración por empresa paralela; alterar devo
 - No se encontró mecanismo de ventana interna de anulación por Company. No se crea
   en esta fase. Una futura restricción interna solo podrá acortar el límite legal.
 
-Validación y comandos: [entrega focal](../agent/PURCHASE_CANCELLATION_DELIVERY.md).
+Reglas vigentes: [purchases.md § 5](../architecture/purchases.md#5-anulación-confirmed--cancelled).

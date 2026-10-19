@@ -14,14 +14,14 @@ contabilización fallida, recuperable por reproceso manual. Alcance: [Accounting
 
 Reverso histórico común implementado para pago proveedor, cobro cliente y
 anulaciones existentes de Compra/Gasto/Retención, con adaptación mínima de Venta/NC.
-Estado y validación: [entrega](docs/agent/ACCOUNTING_CONTINUITY_03_DELIVERY.md).
+Estado y validación: [accounting.md § 18](docs/architecture/accounting.md#18-reverso-común-accounting-continuity-03).
 
 ## ACCOUNTING-CONTINUITY-02
 
 EXTEND: Contabilizaciones permite seleccionar hasta 100 obligaciones Pending/Failed,
 introducir motivo obligatorio, confirmar y consultar resultados individuales del lote.
 El reproceso individual también exige motivo. Se reutiliza accounting.postings.reprocess.
-[Entrega](docs/agent/ACCOUNTING_CONTINUITY_02_DELIVERY.md).
+[accounting.md § 17](docs/architecture/accounting.md#17-reproceso-manual-accounting-continuity-02).
 
 Accounting: contrato documental consolidado; implementación parcial. Reglas y capacidades aprobadas únicamente en [Accounting](docs/architecture/accounting.md).
 
@@ -29,11 +29,7 @@ Accounting: contrato documental consolidado; implementación parcial. Reglas y c
 
 ## Módulos producto (scope: empresa — `company_id`)
 
-**BUG REAL de anulación de compra (2026-10-16):** Cancel informa bloqueo funcional
-tras cualquier salida posterior del producto/bodega, incluso revertida, orientando
-a devolución o nota de crédito. Entradas posteriores solas no lo bloquean.
-Plazo ordinario SRI de retenciones desde política global por vigencia, con historia
-conservada y fecha resuelta en UI. [Entrega](docs/agent/PURCHASE_CANCELLATION_DELIVERY.md).
+**Anulación de compra (2026-10-16):** bloqueo por salidas posteriores y política SRI global. Reglas: [purchases.md § 5](docs/architecture/purchases.md#5-anulación-confirmed--cancelled).
 
 **Cierre funcional 2026-09-12 — LISTO / CERRADO:** Compras (normal/XML, presentación e inventario, costos/Kardex, NC por devolución/descuento), Gastos (manual/XML, catálogos SRI reales, CxP y anulación), CxP y Pagos proveedor (parcial/total, reversa, bloqueo con pagos activos y aislamiento por empresa). Alcance, evidencia, commits, guardrails y pendientes no bloqueantes: [STATUS — cierre funcional](STATUS.md#close-purchases-expenses-payables-ready-01--cierre-funcional-2026-09-12); [matriz QA](docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md). No implica cierre contable global ni implementación de ampliaciones SRI fuera del alcance.
 
@@ -47,12 +43,11 @@ conservada y fecha resuelta en UI. [Entrega](docs/agent/PURCHASE_CANCELLATION_DE
 | Carga Inicial — Cuentas por Pagar (IL-6) — **EN CURSO (IL-6C)** | `/initial-load/initial-payables`, `/api/v1/initial-load/*` | Saldos NETOS pendientes al corte, nunca compras/gastos/pagos/retenciones históricas: `AccountsPayable` con origen `InitialBalance` (tipo SRI real del documento, número normalizado y lote propios, una cuota por el saldo, `OriginId` = fila del lote). IL-6A: modelo + migración, plantilla, validación y preview (proveedor existente con rol Proveedor, tipo SRI activo y de deuda, duplicados normalizados contra CxP de cualquier origen, emisión ≤ corte ≤ hoy, solo USD, corte = `Company.OpeningBalanceDate`, sucursal activa). IL-6B: confirmación todo-o-nada en una transacción con revalidación; saldo a favor de proveedor aplicable a la CxP inicial; la CxP inicial confirmada protege la fecha de apertura; listado/detalle muestran "Saldo inicial". IL-6C: idempotente y seguro ante concurrencia/retry/cancelación. Sin retención |
 | Carga Inicial — Cuentas por Cobrar (IL-5) — **CLOSED** | `/initial-load/initial-receivables`, `/api/v1/initial-load/*` | Saldos pendientes al corte, nunca ventas históricas: `SalesReceivable` con origen `InitialBalance` (sin factura; número, emisión, sucursal y lote propios; una cuota por el saldo). IL-5A: plantilla, validación y preview (cliente existente con rol Cliente, duplicados normalizados contra CxC de factura y saldo inicial, emisión ≤ corte ≤ hoy, moneda obligatoria solo USD, corte único e igual a `Company.OpeningBalanceDate`). IL-5B: confirmación todo-o-nada en una transacción con revalidación; listado CxC muestra el saldo inicial con número, cliente, sucursal y emisión propios. IL-5C: idempotente y seguro ante concurrencia/retry/cancelación. |
 | Carga Inicial — Apertura contable | `/initial-load` | Posting por lote, ASI y conciliación implementados en sus fases; adopción del contrato uniforme pendiente. Reglas contables exclusivamente en [Accounting](docs/architecture/accounting.md) |
-| Catálogo / Ítems | `/api/v1/catalog/*`, `/api/v1/items/*` | 14 entidades, 56 endpoints, CRUD completo, variantes, atributos, SRI lookups. Empaques con presentación base obligatoria para inventariables, validación de factor, bloqueo de empaques usados y advertencias visuales sin inferencia automática. FROZEN v2.0 (rediseño flujo de creación, 2026-07-02) + auditoría por fases 1-9 (2026-07-02) |
+| Catálogo / Ítems | `/api/v1/items`, `/api/v1/catalog`, `/api/v1/item-types` | Catálogo por empresa, naturaleza Product/Service, variantes, empaques, códigos de proveedor. FROZEN. Reglas: [items.md](docs/architecture/items.md) |
 | Motor de Pricing v2 | — (consumido internamente vía `IPricingResolver`) | `Item.BaseSalePrice` SSOT + `PricingRule` (reemplaza `ItemPrice`) + `PriceList` con regla general opcional. CLOSED (ADR-021, 2026-07-05) — ver `STATUS.md` |
-| Tipos de Ítem | `/api/v1/item-types`, `/inventory/item-types` | Catálogo tenant-editable (reemplaza enum fijo); `items.item_type_id` FK por Guid; sin flags de comportamiento. FROZEN |
-| Inventario | `/api/inventory/*` (categorías, líneas, tipos, marcas, tarifas) | Company isolation FROZEN |
-| Compras | `Modules/Purchases` | Compra XML con checklist previo a confirmación, bloqueo fail-closed de líneas inventariables sin presentación, asociación proveedor+código+presentación y alerta de costo base extremo contra último/promedio. FASE 5 (2026-10-12): Cantidad/Costo de línea siempre en unidad base con frase "Se registrarán X a $Y c/u", estado de la compra (incompleto/listo/confirmada/anulada), Guardar permanece en la compra, listado con Proveedor/Total y búsqueda por proveedor/RUC. |
-| Compras — mixtas y costos capitalizables (FASE 4) — **FUTURE** | Sin endpoints nuevos — auditoría 2026-10-11, sin cambios de código | **No implementar ahora; no es blocker del piloto.** Soportado hoy: solo el flujo manual existente — la línea de servicio/flete se elimina de las líneas operativas y su valor se distribuye entre los productos (`FreightAllocated`/`OtherCostsAllocated` → `TotalLineCost`/`LandedUnitCost`, costo en unidad base). Fuera de soporte completo: factura XML mixta productos + servicios capitalizables. Riesgos conocidos y detalle en `STATUS.md` § FUTURE — Compras mixtas. Evolución futura: servicio normal vs capitalizable; 1..N servicios capitalizables por factura; trazabilidad de asignación línea origen → línea destino; costo proveedor separado del costo de adquisición (landed cost); integración contable según [Accounting](docs/architecture/accounting.md). |
+| Inventario | `/api/v1/inventory/{stock,kardex,warehouses,adjustment-reasons}` | Bodegas, Kardex con promedio ponderado, ajustes, transferencias, saldo inicial. Reglas: [inventory.md](docs/architecture/inventory.md) |
+| Compras | `/api/v1/purchases`, `/api/v1/purchases/{reception,returns,credit-notes}` | Recepción electrónica y conciliación de ítems, compra, anulación, devolución, NC de proveedor. Reglas: [purchases.md](docs/architecture/purchases.md) |
+| Compras — mixtas y costos capitalizables — **FUTURE** | — | No implementado; no es blocker del piloto. Ver [purchases.md § 8](docs/architecture/purchases.md#8-pendiente-no-operativo) |
 | Pagos a proveedor — anticipo por remanente (ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C, ADR-035) | `POST /api/v1/supplier-payments` (+`confirmUnappliedAmount`), `GET /api/v1/supplier-payments/policy`, `GET /api/v1/finance/supplier-credits*` (origen generalizado) | Pago mayor que la deuda o sin CxP (si la empresa activa `payables.allow_supplier_payment_without_payable`): el remanente, con confirmación explícita, queda como `SupplierCredit` de origen SupplierPayment (mismo libro de saldo que las devoluciones; aplicar/reembolsar sin cambios). La reversa solo procede si el anticipo sigue íntegro. |
 | Saldos a favor de proveedor — reembolso | `/api/v1/finance/supplier-credits/*` | Reembolso/reversa operativos implementados con continuidad contable durable; contrato en [Accounting](docs/architecture/accounting.md) |
 | Ventas | `/api/v1/sales/*`, `/sales` | SalesInvoice + Detail; Draft→Authorize→Cancel; snapshot fiscal IVA/ICE; DocumentSequence SRI; facturación electrónica. FROZEN |
@@ -76,7 +71,3 @@ conservada y fecha resuelta en UI. [Entrega](docs/agent/PURCHASE_CANCELLATION_DE
 ## i18n
 
 Español e Inglés.
-
-### A1 — Items por empresa y naturaleza operativa
-
-Catálogo aislado por Tenant + Company, sin ownership de Branch. SKU, variantes, barcode y códigos de proveedor permiten los mismos valores entre empresas. Product siempre registra inventario; Service no lo utiliza. Control general de Company e individual de Item gobiernan la validación de disponibilidad. Tipos de Ítem siguen siendo clasificación pura. [ADR-040](docs/decisions/ADR-040-item-company-scope-inventory-nature.md).

@@ -1,5 +1,9 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
+## QA-INVENTORY-INFRA-SUITES-01 (2026-10-19)
+
+CLOSED. Resuelto en `509ac6d75`; PostgreSQL 39/39 PASS. Regla: [inventory.md § 2](../architecture/inventory.md#2-participación-y-alcance). Sin bloqueadores.
+
 ## AUTH - SENSITIVE LOGGING FIX (2026-10-19)
 
 BUG REAL corregido: evento de auditoria de rotacion refresh_success registraba successorHash (SHA-256 del refresh token sucesor, clave de busqueda en BD) por parametro explicito del template LoggerMessage de RefreshTokenService (no serializacion automatica ni configuracion). Eliminado successorHash de mensajes y campos estructurados; trazabilidad conservada por familyId, tokenId y successorId. Sin cambios de logica de autenticacion, rotacion ni persistencia. PASS: RefreshTokenServiceTests 21/21 (19 existentes + 2 nuevos con CapturingLogger: rotacion, reuso benigno/sospechoso y token inexistente sin tokens ni hashes en logs); los 2 nuevos fallan contra el codigo previo. Logs historicos previos al fix pueden contener hashes. Sin suites completas, commit ni push.
@@ -23,14 +27,14 @@ pendiente de inspección/transición según runbook. Sin suites completas, commi
 **Status: CORREGIDO y validado focalmente (2026-10-15).** Índices/trigger de activos
 antes del backfill; regresiones de ambas claves únicas. PostgreSQL PASS 6/6 + 2/2
 trigger, reproducción previa FAIL 4/4 por 23505. Reaplicación al piloto pendiente.
-Sin suites completas, commit/push. [Entrega](PURCHASES_PHASE_B_DELIVERY.md).
+Sin suites completas, commit/push. [purchases.md](../architecture/purchases.md).
 
 ## PURCHASES LEGACY / DOMAIN — FASE B
 
 **Status: IMPLEMENTADO y validado focalmente (2026-10-15).** Sin commit/push.
 SSOT PurchaseState + PurchaseId y Discarded=4 persistido; sin flags legacy.
 Pruebas focales PASS, incluida migración/índices en PostgreSQL real. Aplicación
-al piloto pendiente de despliegue. [Entrega](PURCHASES_PHASE_B_DELIVERY.md).
+al piloto pendiente de despliegue. [purchases.md](../architecture/purchases.md).
 
 ## A9 — Commercial → ElectronicDocument recovery
 

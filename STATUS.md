@@ -268,7 +268,7 @@ Reglas: [Accounting §19](docs/architecture/accounting.md#19-integraciones-durab
 Implementado: reverso común histórico con original inmutable, fecha efectiva,
 período Open y numeración destino; pago/cobro y anulaciones existentes adoptados.
 Obligación durable y reproceso manual existentes; sin otro motor ni retry automático.
-Validación focal e inventario: [entrega](docs/agent/ACCOUNTING_CONTINUITY_03_DELIVERY.md).
+Validación focal e inventario: [accounting.md § 18](docs/architecture/accounting.md#18-reverso-común-accounting-continuity-03).
 Sin staging, migración, commit ni push.
 
 ## ACCOUNTING-CONTINUITY-02 (2026-10-16)
@@ -277,7 +277,7 @@ EXTEND: reproceso manual individual y por lote de IDs (hasta 100), con motivo
 persistido, permiso existente, correlación común y resultados independientes.
 BUG REAL: aislamiento del contexto entre intentos sin alterar reservas dentro de
 una misma transacción. Sin retry automático, workers ni tabla Batch.
-Validación y archivos: [entrega](docs/agent/ACCOUNTING_CONTINUITY_02_DELIVERY.md).
+Validación y archivos: [accounting.md § 17](docs/architecture/accounting.md#17-reproceso-manual-accounting-continuity-02).
 Migración AccountingContinuity02 solo en PostgreSQL aislado de pruebas; piloto pendiente.
 Sin suites completas, gates amplios, staging, commit ni push.
 
@@ -295,7 +295,7 @@ PASS: PostgreSQL 10/10 casos distintos, Application 24/24, Domain 25/25, contrat
 TypeScript, build frontend, lint focal y diff check. Sin suites generales ni commit/push.
 Migración solo en PostgreSQL aislado de pruebas, no en piloto. STRUCTURAL DEBT:
 calendario oficial y ventana interna Company. [ADR-044](docs/decisions/ADR-044-purchase-cancellation-and-global-sri-policy.md),
-[entrega y comandos](docs/agent/PURCHASE_CANCELLATION_DELIVERY.md).
+[purchases.md § 5](docs/architecture/purchases.md#5-anulación-confirmed--cancelled).
 
 ## BACKGROUND DEPLOYMENT — FASE D (2026-10-15)
 
@@ -322,7 +322,7 @@ Reproducción PostgreSQL: FAIL 4/4 antes (23505, dos casos por cada índice).
 Fix PASS 6/6 (cuatro regresiones, backfill/evidencia y reproceso de recepción),
 trigger PASS 2/2; diff review/check PASS. Solo pruebas focales, PostgreSQL 16 real.
 Fix no reaplicado al piloto; sin suites completas, commit ni push.
-Detalle: [entrega Fase B](docs/agent/PURCHASES_PHASE_B_DELIVERY.md).
+Reglas: [purchases.md](docs/architecture/purchases.md).
 
 ## PURCHASES LEGACY / DOMAIN — FASE B (2026-10-15)
 
@@ -341,7 +341,7 @@ reversos y liberando la recepción vinculada. Activos = Draft/Confirmed; histór
   guard de arquitectura (0 nuevas violaciones) y diff check.
 - Migración validada únicamente en PostgreSQL 16 de pruebas, no aplicada al piloto.
   Sin deuda funcional pendiente dentro del alcance. Sin suites completas.
-- Inventario de archivos, validación y límites: [entrega](docs/agent/PURCHASES_PHASE_B_DELIVERY.md).
+- Reglas vigentes: [purchases.md](docs/architecture/purchases.md).
 
 ## ZH BACKGROUND SSOT CLEANUP - FASE A: DOBLES VERDADES (2026-10-15)
 
@@ -634,12 +634,12 @@ Evolución futura:
 - **Documento de apertura** no se anula con la anulación genérica de ajustes (discriminador: movimientos InitialBalance).
 - **Gates PASS:** unitarios 267/267 (InitialLoad/Inventario); PostgreSQL real 18/18 Inventario Inicial (InitialLoad 117/117, incluye 201 filas); arquitectura 143/143; gate UI negativo y positivo; verificación real SKU 10001204 / WH-E686E280: stock 10, costo 2.50, valor 25.00, InitialBalance al 2026-09-30, sin PositiveAdjust, 1 documento.
 
-## Pendiente antes del piloto — QA-INVENTORY-INFRA-SUITES-01 (registrado 2026-10-09)
+## QA-INVENTORY-INFRA-SUITES-01 — Suites PostgreSQL de Kardex/costo/compras (2026-10-19)
 
-**Estado: ABIERTO — no investigado.** Detectado durante IL-4B; no lo causa IL-4.
+**Estado: CLOSED.** Resuelto en `509ac6d75`. No era un bug de producción: los fixtures usaban productos inexistentes y la regla A1 rechazaba el seeding. Regla vigente: [inventory.md § 2](docs/architecture/inventory.md#2-participación-y-alcance).
 
-- Síntoma principal: `StockRepository.AppendMovementAsync` lanza "El ítem no es un producto de la empresa actual." desde el seeding de las suites.
-- Riesgo: esas suites cubren Kardex, costo promedio y confirmación/anulación de compras; mientras fallen no protegen esos flujos. Resolver (causa raíz: datos de prueba vs. regla real) antes del piloto.
+- Evidencia: PostgreSQL 39/39 PASS en `HEAD` (las 5 suites registradas); antes del fix, 3/3 FAIL reproducidos con el error original. `ItemCompanyScopeA1Tests` 16/16 PASS.
+- Bloqueadores vigentes: ninguno.
 
 ## IL-3 — Carga Inicial de Proveedores (2026-10-09)
 
@@ -2313,16 +2313,8 @@ SMTP real (Zoho u otro) · impresora térmica física + Print Agent instalado po
 - Dashboard unificado
 - ERP Core congelado
 - Items Module FROZEN v1.0 (2026-06-17)
-- **Items Module — Rediseño flujo de creación: FROZEN v2.0 (2026-07-02)** — reemplaza v1.0: código de barras obligatorio (mínimo 1, exactamente 1 principal), códigos de proveedor opcionales (`ItemSupplierCode`, 0..N, FK a `BusinessPartner`), categoría y marca obligatorias en creación, eliminación de flags booleanos de impuesto (`AppliesVatOnSale/Purchase/ExciseTax` — el código tributario es la única fuente de verdad, alineado con la Infraestructura Tributaria CLOSED), precio inicial creado atómicamente junto con el ítem (`ItemPrice` contra lista DEFAULT/PVP)
-- **Items Module — Auditoría por fases, Fase 1 (Información Base del Item): COMPLETADA (2026-07-02)** — SKU editable y único por tenant (índice BD), marca/categoría con FK real e integridad activa validada, breadcrumb de categoría, profundidad máxima del árbol de categorías configurable por empresa (`OrgSettings`, default 3). Detalle completo: [`docs/items/PHASE1-ITEM-IDENTITY.md`](items/PHASE1-ITEM-IDENTITY.md)
-- **Items Module — Auditoría por fases, Fase 2 (Identificación del Item): COMPLETADA (2026-07-02)** — código de barras único globalmente por tenant (antes solo por ítem), código de proveedor único por `(tenant_id, supplier_id, code)`, proveedor obligatorio por cada entrada de código de proveedor. Detalle completo: [`docs/items/PHASE2-ITEM-IDENTIFICATION.md`](items/PHASE2-ITEM-IDENTIFICATION.md)
-- **Items Module — Auditoría por fases, Fase 4 (Comercial del Item): COMPLETADA (2026-07-02)** — confirmado: precio inicial siempre a la lista de precios predeterminada, sin selector en el formulario; corregido símbolo de moneda hardcodeado (`$`) en `PricingTab.tsx`, ahora refleja `PriceList.CurrencyCode` real. Sin cambios de backend. Detalle completo: [`docs/items/PHASE4-ITEM-COMMERCIAL.md`](items/PHASE4-ITEM-COMMERCIAL.md)
-- **Items Module — Auditoría por fases, Fase 5 (Inventario y Venta del Item): COMPLETADA (2026-07-02)** — confirmado: la configuración de Inventario/Venta (`TracksStock`, lotes, series, decimales, disponibilidad POS/Web/Mobile) es intencionalmente independiente del `ItemType`, sin restricciones ni defaults condicionados por tipo. Sin cambios de código. Detalle completo: [`docs/items/PHASE5-ITEM-INVENTORY-SALE.md`](items/PHASE5-ITEM-INVENTORY-SALE.md)
-- **Items Module — Auditoría por fases, Fase 6 (Variantes del Item): COMPLETADA (2026-07-02)** — SKU de variante único globalmente por tenant (antes solo por ítem), consistente con SKU de ítem (Fase 1) y barcode/código de proveedor (Fase 2). Detalle completo: [`docs/items/PHASE6-ITEM-VARIANTS.md`](items/PHASE6-ITEM-VARIANTS.md)
-- **Items Module — Auditoría por fases, Fase 7 (Pricing del Item): COMPLETADA (2026-07-02)** — corregida violación de la regla "no eliminar registros": `RemoveItemPriceCommand` ahora deshabilita el precio en vez de hacer `DELETE` físico; historial de cambios de precio registrado en `UserActivity` (auditoría existente, append-only), no en tabla propia. Detalle completo: [`docs/items/PHASE7-ITEM-PRICING.md`](items/PHASE7-ITEM-PRICING.md)
-- **Motor de Pricing v2 — Dominio Items+Pricing: CLOSED (2026-07-05)** — reemplaza el modelo de Fase 7: `Item.BaseSalePrice` es el SSOT del precio base; `ItemPrice` fue eliminado y reemplazado por `PricingRule` (regla de ajuste, no precio absoluto, sin quiebres de cantidad — eso pertenece al futuro módulo Promotions); `PriceList` gana una regla general opcional; `IPricingResolver` centraliza la resolución de precio (antes duplicada en 4 lugares) como única API pública que el resto del ERP debe consumir. Reabre parcialmente el freeze de Items v1.0 y de Fase 7 solo en lo referente a precios — ambos quedan reemplazados por este ADR en ese punto. Integración con Ventas/Compras/POS/Facturación (consumo real de `IPricingResolver`) queda pendiente como trabajo de esos módulos, sin reabrir este dominio. Detalle completo: [`docs/decisions/ADR-021-pricing-engine-ssot.md`](adr/ADR-021-pricing-engine-ssot.md)
-- **Items Module — Auditoría por fases, Fase 8 (Compras): COMPLETADA (2026-07-02)** — Compras migrado para resolver el código de proveedor vía `ItemSupplierCode` (Fase 2) según el proveedor real de la factura, con fallback al campo legacy `Item.Code.PurchaseCode`; corregido defecto preexistente que impedía cargar `Item.SupplierCodes` en cualquier lectura del agregado (`.Include()` faltante). Detalle completo: [`docs/items/PHASE8-ITEM-PURCHASES.md`](items/PHASE8-ITEM-PURCHASES.md)
-- **Items Module — Auditoría por fases, Fase 9 (Arquitectura — revisión transversal): COMPLETADA (2026-07-02)** — revisión de duplicación/acoplamientos/cumplimiento de infraestructuras FROZEN en las Fases 1-8; único hallazgo (duplicación menor de resolución de código de proveedor introducida en Fase 8) corregido con un helper compartido en `PurchaseDraftUseCases.cs`. **Cierra la auditoría completa del módulo Items (Fases 1-9).** Detalle completo: [`docs/items/PHASE9-ARCHITECTURE.md`](items/PHASE9-ARCHITECTURE.md)
+- **Items Module** — rediseño de creación v2.0 y auditoría por fases 1–9 completados (2026-07-02); A1 CLOSED (2026-10-05). Reglas vigentes: [items.md](docs/architecture/items.md).
+- **Motor de Pricing v2 — Dominio Items+Pricing: CLOSED (2026-07-05)** — reemplaza el modelo de Fase 7: `Item.BaseSalePrice` es el SSOT del precio base; `ItemPrice` fue eliminado y reemplazado por `PricingRule` (regla de ajuste, no precio absoluto, sin quiebres de cantidad — eso pertenece al futuro módulo Promotions); `PriceList` gana una regla general opcional; `IPricingResolver` centraliza la resolución de precio (antes duplicada en 4 lugares) como única API pública que el resto del ERP debe consumir. Reabre parcialmente el freeze de Items v1.0 y de Fase 7 solo en lo referente a precios — ambos quedan reemplazados por este ADR en ese punto. Integración con Ventas/Compras/POS/Facturación (consumo real de `IPricingResolver`) queda pendiente como trabajo de esos módulos, sin reabrir este dominio. Detalle completo: [`docs/decisions/ADR-021-pricing-engine-ssot.md`](docs/decisions/ADR-021-pricing-engine-ssot.md)
 - Customer Module FROZEN (2026-06-17)
 - Compras: auditoría UX + SSOT completada (2026-06-24)
 - Sales Invoice + Detail: módulo cerrado (2026-06-24)
@@ -2338,8 +2330,8 @@ SMTP real (Zoho u otro) · impresora térmica física + Print Agent instalado po
 - **Infraestructura Org Config Jerárquica (OrgSetting / 5 scopes): CLOSED (2026-07-01)** — `org_settings`, `IOrgSettingsRepository`, `OrgSettingKeys`; 10 endpoints GET/PUT por scope; UI en Company Settings Hub
 - **Infraestructura Master Configuration UI: CLOSED (2026-07-02)** — Patrón oficial de tabs para módulos de configuración; `ConfigTabsLayout` + `items-catalog.css`; implementado en Branches, Establishments, Emission Points, Warehouses; prohibido crear variantes sin decisión arquitectónica global
 - **Infraestructura de Auditoría por Dominio (Entity Audit): CLOSED (2026-07-07) — ADR-022** — contratos comunes (`AuditRecordBase`/`IAuditWriter`/`IAuditReader`/`IAuditService`/`IAuditContext`) reutilizables por todo dominio futuro; pilotos `PricingRuleAudit`/`PriceListItemAudit`; Process Audit (procesos sin `EntityId` único) queda diseñado en `docs/architecture/audit-infrastructure.md`, sin implementar
-- **Contexto Operativo del Usuario (UserSession): implementado y estabilizado (2026-07-17)** — registro de sesión operativa (empresa/sucursal/terminal) integrado a Login/SwitchCompany, expiración automática vía Hangfire, dashboard administrativo en `/admin/access/sessions` (`AdminUserSessionController`, única API pública del dominio). Detalle: [`docs/IDENTITY.md#usersession-contexto-operativo-del-usuario`](IDENTITY.md#usersession-contexto-operativo-del-usuario). Hardening Fase 12: eliminado `UserSessionController` self-service (IDOR + cero consumidores reales) en vez de endurecerlo
-- **CompanyUserPreferences (preferencias de login: sucursal por defecto + modo de ingreso): ciclo cerrado (2026-07-17)** — única fuente de verdad de `DefaultBranchId`/`LoginMode`; escritura vía `UpsertCompanyUserMembershipHandler` (alta/edición de membresía) y `PUT /api/v1/admin/iam/company-users/{companyUserId}/preferences`; lectura centralizada en `CompanyUserPreferencesLoginResolver` (Login/SwitchCompany) y `GET` del mismo endpoint; `CompanyUserBranch` sigue siendo la única fuente de sucursales autorizadas (nunca se le agregó comportamiento). Auditoría de cierre (Fase H) corrigió que una sucursal desactivada podía aceptarse como `DefaultBranchId`. UI en `SecuritySettingsPage` (`/admin/security`), sin CRUD propio. Sin cambios de JWT en todo el ciclo. Detalle: [`docs/IDENTITY.md#companyuserpreferences-preferencias-operativas-de-login`](IDENTITY.md#companyuserpreferences-preferencias-operativas-de-login)
+- **Contexto Operativo del Usuario (UserSession): implementado y estabilizado (2026-07-17)** — registro de sesión operativa (empresa/sucursal/terminal) integrado a Login/SwitchCompany, expiración automática vía Hangfire, dashboard administrativo en `/admin/access/sessions` (`AdminUserSessionController`, única API pública del dominio). Detalle: [`docs/IDENTITY.md#usersession-contexto-operativo-del-usuario`](docs/IDENTITY.md#usersession-contexto-operativo-del-usuario). Hardening Fase 12: eliminado `UserSessionController` self-service (IDOR + cero consumidores reales) en vez de endurecerlo
+- **CompanyUserPreferences (preferencias de login: sucursal por defecto + modo de ingreso): ciclo cerrado (2026-07-17)** — única fuente de verdad de `DefaultBranchId`/`LoginMode`; escritura vía `UpsertCompanyUserMembershipHandler` (alta/edición de membresía) y `PUT /api/v1/admin/iam/company-users/{companyUserId}/preferences`; lectura centralizada en `CompanyUserPreferencesLoginResolver` (Login/SwitchCompany) y `GET` del mismo endpoint; `CompanyUserBranch` sigue siendo la única fuente de sucursales autorizadas (nunca se le agregó comportamiento). Auditoría de cierre (Fase H) corrigió que una sucursal desactivada podía aceptarse como `DefaultBranchId`. UI en `SecuritySettingsPage` (`/admin/security`), sin CRUD propio. Sin cambios de JWT en todo el ciclo. Detalle: [`docs/IDENTITY.md#companyuserpreferences-preferencias-operativas-de-login`](docs/IDENTITY.md#companyuserpreferences-preferencias-operativas-de-login)
 - **Access/IAM — Fase I-A (wiring administrativo de CompanyUserMembership): backend completado (2026-07-17)** — expone `POST /api/v1/admin/iam/memberships` (alta/edición de rol, perfil y sucursales autorizadas) y `POST /api/v1/admin/iam/memberships/revoke` (`CompanyUserMembershipsController`), que hasta esta fase no existían pese a que `UpsertCompanyUserMembershipHandler`/`RevokeCompanyUserMembershipHandler` (Fase D) estaban implementados y probados sin ningún consumidor de producción. TenantId/CompanyId nunca viajan en el request — cada Admin command (`UpsertCompanyUserMembershipAdminCommand`/`RevokeCompanyUserMembershipAdminCommand`) los resuelve del contexto autenticado (`ICurrentTenant`/`ICurrentCompany`) y delega íntegramente vía MediatR en los handlers de Fase D, sin reimplementar su lógica. `CompanyUserMembership` sigue siendo la única fuente de verdad de la relación usuario-empresa, `Role`, `ProfileId` e `IsActive` de membresía; `CompanyUserBranch` sigue siendo la única fuente de autorización de sucursal; `CompanyUserPreferences` no se modificó. Reutiliza el permiso `access.company_user_memberships.view` (mismo criterio que `AccessProfilesController`/`CompanyUserPreferencesController`) — no se introdujo un permiso `.manage` nuevo en esta fase. Sin frontend, sin invitaciones, sin cambios a `IdentityUser` ni a su `IsActive` global.
 - **Access/IAM — Fase I-B (administración de CompanyUserBranch): backend completado (2026-07-17)** — expone `GET`/`PUT /api/v1/admin/iam/memberships/{membershipId}/branches` (`CompanyUserBranchesController`). `GetCompanyUserBranchesAdminQuery` proyecta las sucursales activas de la empresa de la membresía marcando cuáles están autorizadas (`{branchId, branchName, authorized}`), pensado para que un futuro selector de frontend lo consuma directamente. `UpdateCompanyUserBranchesAdminCommand` reemplaza la autorización completa todo-o-nada (ninguna escritura ocurre si cualquier `BranchId` es inválido): reactiva/crea las solicitadas, desactiva el resto — `CompanyUserBranch` sigue siendo la única fuente de verdad de sucursales autorizadas, nunca se copia a `Membership`/`Preferences`/`IdentityUser`. Hallazgo de auditoría: `IBranchRepository.GetAsync`/`GetByIdAsync` solo filtran por `TenantId` (no por `CompanyId`, a diferencia de entidades con `ForOperationalScope`) — ambos handlers filtran/comparan `Branch.CompanyId` manualmente contra la empresa de la membresía antes de aceptar cualquier sucursal, y usan el mismo mensaje para "no existe" y "pertenece a otra empresa" (mismo criterio anti-enumeración que `GetCompanyUserPreferencesAdminHandler`). Decisión documentada: lista vacía es un valor válido (revoca todas las sucursales sin desactivar la membresía) — es seguro porque `CompanyUserPreferencesLoginResolver` (Fase E) ya revalida `DefaultBranchId` en cada login y falla con `ValidationFailure` controlado si dejó de estar autorizado, nunca asumió que hubiera siempre al menos una sucursal activa. Reutiliza `access.company_user_memberships.view` — sin permiso nuevo. Sin frontend, sin cambios a `CompanyUserPreferences`/`IdentityUser`/JWT.
 - **Access/IAM — Fase I-C (pantalla administrativa de usuarios empresariales): completado (2026-07-17)** — reemplaza el placeholder `/admin/users` (antes un `<Navigate>` a `/admin/roles`) por `UsersPage` (`frontend/src/modules/access/users/`), que administra `CompanyUserMembership` end-to-end: tabla principal (Usuario/Email/Perfil/Role/Estado/Sucursales autorizadas/Modo de ingreso/Acciones), modal de alta/edición de membership (`membershipService.upsertMembership`, nunca crea `IdentityUser`), modal de sucursales autorizadas (`branchAssignmentService`, Fase I-B — el frontend nunca valida pertenencia/activa/autorización previa, solo envía los `BranchId` marcados), modal de preferencias de login (reutiliza 100% el schema/servicio de Fase G, sin extraer un componente compartido con `SecuritySettingsPage` para no tocar ese ciclo ya cerrado) y revocación con confirmación vía `message.confirm` (`lib/messages`, API pública oficial). Bloqueo real detectado y resuelto: no existía ningún endpoint que listara `CompanyUserMembership` con inactivas + `ProfileName` (`GET /api/v1/security/admin-matrix`, Fase B, solo devuelve `IdentityUser` activos sin perfil) — se agregó `GET /api/v1/admin/iam/memberships` (`GetCompanyUserMembershipsAdminQuery`, solo lectura, junta `CompanyUserMembership`+`IdentityUser`+`AccessProfile`, todos ya expuestos individualmente) reutilizando `access.company_user_memberships.view`, sin permiso nuevo. Limitación conocida y documentada en código: "Sucursales autorizadas"/"Modo de ingreso" por fila se resuelven con `Promise.allSettled` por membership (sin endpoint de resumen agregado) — aceptable al volumen típico de usuarios por empresa, candidato a un endpoint agregado en una fase futura si escala. Sin invitaciones, sin cambios a `IdentityUser`/JWT/`CompanyUserPreferences`.
@@ -2359,7 +2351,7 @@ SMTP real (Zoho u otro) · impresora térmica física + Print Agent instalado po
   - **Backlog técnico no bloqueante** (detalle completo en la sección homónima de `P0-01_SALES_RETURN_IMPLEMENTATION_PLAN.md`): wiring de React Hook Form + Zod en el formulario Draft de `SalesReturnFormPage`; unificación de `formatApiError`/`formatApiRequestError` en `SalesReturnCreditNoteSection`; evaluación de la ubicación REST de `GET .../returnable-lines`; consolidación de fixtures de test repetidas en `ERP.Application.Tests/Sales`; constante propia (no heredada de `SalesInvoice`) para la longitud de `CreditNoteDocumentNumber`. Ninguno bloquea el cierre — todos fueron evaluados y descartados de corrección inmediata en la auditoría de hardening previa por implicar refactor o riesgo de cambio de comportamiento fuera de ese alcance.
 
 **Futuro (no implementado, fuera del ERP actual)**
-- Plataforma externa — ver [`docs/future-platform/`](./future-platform/)
+- Plataforma externa — ver [`docs/future-platform/`](docs/future-platform/)
 
 ---
 
@@ -2381,7 +2373,7 @@ SMTP real (Zoho u otro) · impresora térmica física + Print Agent instalado po
 
 ## ERP CORE FREEZE — GOVERNANCE LOCK ACTIVE (2026-06-08)
 
-> **ERP Core está oficialmente congelado como producto independiente.** Acta completa, módulos incluidos/excluidos, frontera de integración (`/api/integration/v1/*`, [ADR-ERP-002](adr/ADR-ERP-002-platform-separation.md)) y reglas obligatorias (*ERP never depends on Platform* / *Platform may consume ERP APIs only*) en [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md).
+> **ERP Core está oficialmente congelado como producto independiente.** Acta completa, módulos incluidos/excluidos, frontera de integración (`/api/integration/v1/*`, [ADR-ERP-002](docs/decisions/ADR-ERP-002-platform-separation.md)) y reglas obligatorias (*ERP never depends on Platform* / *Platform may consume ERP APIs only*) en [`ERP_CORE_FREEZE.md`](ERP_CORE_FREEZE.md).
 
 ## ERP CORE BASELINE v1.0 — FROZEN 2026-06-05
 
@@ -2438,18 +2430,18 @@ No se aceptan cambios estructurales sin una ADR aprobada.
 | **Sucursales** | 2026-06-16 | — | Entidad organizativa (no fiscal); CRUD + soft-disable; ruta `/settings/branches` |
 | **Establecimientos SRI** | 2026-06-16 | — | Código SRI único por empresa; BranchId opcional; disable bloqueado si tiene PEs activos; ruta `/settings/establishments` |
 | **Puntos de Emisión** | 2026-06-16 | — | Código único por Establecimiento; DocumentSequence automático; ruta `/settings/emission-points` |
-| **Items / Catálogo v1.0** | 2026-06-17 | A1 CLOSED 2026-10-05 | 14 entidades, 56 endpoints, 20 validators; catálogo Tenant + Company, compartido entre sucursales de su empresa; ItemNature Product/Service independiente de clasificación y control de existencias (A1 / ADR-040); 6 catálogos CRUD (Brand, Family, Category, Subcategory, AttributeGroup, AttributeDefinition); Detail page con Variants, Images, Conversions, Substitutes, Packaging; SRI lookups (UOM, VAT, ICE); [informe A1](docs/items/A1-COMPANY-SCOPE-INVENTORY-NATURE.md) |
+| **Items / Catálogo v1.0** | 2026-06-17 | A1 CLOSED 2026-10-05 | 14 entidades, 56 endpoints, 20 validators; catálogo Tenant + Company, compartido entre sucursales de su empresa; ItemNature Product/Service independiente de clasificación y control de existencias (A1 / ADR-040); 6 catálogos CRUD (Brand, Family, Category, Subcategory, AttributeGroup, AttributeDefinition); Detail page con Variants, Images, Conversions, Substitutes, Packaging; SRI lookups (UOM, VAT, ICE); [items.md](docs/architecture/items.md) |
 | **Sales Invoice + Detail** | 2026-06-24 | — | Aggregate root SalesInvoice + SalesInvoiceDetail; lifecycle Draft→Authorized→Cancelled; freeze contract irreversible (IsFrozen + EnsureDraft); snapshot fiscal (VAT/ICE rates + amounts + names); computed totals no persistidos (LineSubtotal, TaxableBase, TaxInclusiveTotal); AuthorizedSubtotal/GrandTotal congelados al autorizar; ReplaceLines único mutator; DocumentSequence SRI; facturación electrónica (AccessKey, AuthorizationNumber); frontend preview-only (salesCalc.ts); 4 use cases (Draft CRUD, Authorize, Discount, Cancel); FluentValidation; company-scoped + tenant-scoped |
 | **Payment Methods + Formas de Cobro** | 2026-06-24 | — | PaymentMethod catálogo dinámico (CRUD+Toggle, multi-tenant, seed 5 métodos). SalesInvoicePayment entidad hija (N pagos por factura, snapshot Code+Name, Amount>0, Reference condicional). Authorize() valida ≥1 pago + Sum==GrandTotal. Sin enums, sin JSONB, sin auto-default. Base definitiva para CxC/Cobros/Caja/Contabilidad |
 | **Sales Receivable (CxC deuda)** | 2026-06-25 | — | SalesReceivable + SalesReceivableInstallment. Solo crédito (CreditTermDays>0 o Installments>1). PaidAmount=0 (sin cobros). Cancel cascada desde factura. 2 tablas, 6 índices, 2 endpoints GET. Módulo pasivo: registra deuda, no cobra |
-| **Estándar de Precisión Numérica** | 2026-06-25 | — | CLOSED. 73/73 columnas auditadas, 100% compliance. Reglas: [`docs/architecture/data-standards.md`](architecture/data-standards.md) |
-| **Estándar de Fechas y Horas** | 2026-06-25 | — | CLOSED. Reglas: [`docs/architecture/data-standards.md`](architecture/data-standards.md) |
+| **Estándar de Precisión Numérica** | 2026-06-25 | — | CLOSED. 73/73 columnas auditadas, 100% compliance. Reglas: [`docs/architecture/data-standards.md`](docs/architecture/data-standards.md) |
+| **Estándar de Fechas y Horas** | 2026-06-25 | — | CLOSED. Reglas: [`docs/architecture/data-standards.md`](docs/architecture/data-standards.md) |
 | **Infraestructura de Mensajes Visuales** | 2026-06-29 | `docs/decisions/ADR-018-message-infrastructure.md` | API pública `message.*` congelada. Store interno encapsulado. Cola FIFO + deduplicación. 22 tests. ESLint gate activo. |
-| **Infraestructura de Secuencias Documentales** | 2026-06-29 | `docs/decisions/ADR-019-document-sequence-infrastructure.md` | CLOSED. 4 gates CI-bloqueantes, suite concurrente 8/8 passing (PostgreSQL 16 real, 500 req simultáneas, 0 duplicados). Reglas: [`docs/architecture/frozen-infrastructure.md`](architecture/frozen-infrastructure.md) |
-| **Infraestructura de Entity Tracking (EF Core Change Tracking)** | 2026-06-30 | `docs/decisions/ADR-020-entity-tracking-infrastructure.md` | CLOSED. `ATT-GATE-01` gate CI-bloqueante, 6/6 tests de integración passing (PostgreSQL 16 real, Testcontainers). Reglas: [`docs/architecture/frozen-infrastructure.md`](architecture/frozen-infrastructure.md) |
-| **Infraestructura de Valores por Defecto de Facturación** | 2026-07-01 | — | CLOSED. Migrado a `org_settings` (Phase 8, 2026-07-01) — ya no `SriSettings`. Reglas: [`docs/architecture/frozen-infrastructure.md`](architecture/frozen-infrastructure.md) |
-| **Infraestructura Tributaria (Tax Infrastructure)** | 2026-07-01 | — | CLOSED. Motor único `ISriTaxResolver`/`sriLookupService.*Rates()`. Reglas: [`docs/architecture/frozen-infrastructure.md`](architecture/frozen-infrastructure.md) |
-| **Tipos de Ítem (Item Types)** | 2026-07-04 | — | CLOSED. `ItemTypeDefinition` catálogo tenant-editable, reemplaza el enum fijo `Physical/Service/Digital/Kit/Bundle`. Reglas: [`docs/architecture/frozen-infrastructure.md`](architecture/frozen-infrastructure.md) |
+| **Infraestructura de Secuencias Documentales** | 2026-06-29 | `docs/decisions/ADR-019-document-sequence-infrastructure.md` | CLOSED. 4 gates CI-bloqueantes, suite concurrente 8/8 passing (PostgreSQL 16 real, 500 req simultáneas, 0 duplicados). Reglas: [`docs/architecture/frozen-infrastructure.md`](docs/architecture/frozen-infrastructure.md) |
+| **Infraestructura de Entity Tracking (EF Core Change Tracking)** | 2026-06-30 | `docs/decisions/ADR-020-entity-tracking-infrastructure.md` | CLOSED. `ATT-GATE-01` gate CI-bloqueante, 6/6 tests de integración passing (PostgreSQL 16 real, Testcontainers). Reglas: [`docs/architecture/frozen-infrastructure.md`](docs/architecture/frozen-infrastructure.md) |
+| **Infraestructura de Valores por Defecto de Facturación** | 2026-07-01 | — | CLOSED. Migrado a `org_settings` (Phase 8, 2026-07-01) — ya no `SriSettings`. Reglas: [`docs/architecture/frozen-infrastructure.md`](docs/architecture/frozen-infrastructure.md) |
+| **Infraestructura Tributaria (Tax Infrastructure)** | 2026-07-01 | — | CLOSED. Motor único `ISriTaxResolver`/`sriLookupService.*Rates()`. Reglas: [`docs/architecture/frozen-infrastructure.md`](docs/architecture/frozen-infrastructure.md) |
+| **Tipos de Ítem (Item Types)** | 2026-07-04 | — | CLOSED. `ItemTypeDefinition` catálogo tenant-editable, reemplaza el enum fijo `Physical/Service/Digital/Kit/Bundle`. Reglas: [`docs/architecture/frozen-infrastructure.md`](docs/architecture/frozen-infrastructure.md) |
 | **Items Administration** | 2026-07-07 | — | Item CRUD (14 entidades hijas: variantes, códigos de proveedor, barcodes, imágenes, conversiones, sustitutos, packaging), pricing base (`Item.BaseSalePrice` SSOT), catálogo de Tipos de Ítem tenant-editable, `ItemAudit` (Entity Audit) sobre `ItemCreatedEvent`/`ItemUpdatedEvent`/`ItemPriceChangedEvent`/`ItemEnabledEvent`/`ItemDisabledEvent`. Deuda técnica documentada (no bloqueante): `ItemVariantAddedEvent`/`ItemVariantDisabledEvent` no implementan `IAuditEvent` — cubrirlos requiere modificar las clases de evento, decisión explícita futura |
 | **Pricing Administration** | 2026-07-07 | — | `PriceList` (contenedor + regla general opcional), `PriceListItem` (asignación administrativa ítem↔lista, sin reglas ni precios), `PricingRule` (excepción por ítem, override de la regla general). `PricingResolver`/`PricingCalculation` como única API de resolución de precio neto. Auditoría de dominio completa vía Domain Events: `PriceListAudit` (creación/actualización/activación/desactivación), `PriceListItemAudit` (asignación/activación/desactivación), `PricingRuleAudit` (creación/actualización/activación/desactivación, con old/new tipados). Invariante `PricingRule` requiere `PriceListItem` activa (validado en `SetPricingRuleHandler`/`EnablePricingRuleHandler`) — no existen reglas huérfanas. Pricing no calcula impuestos (frontera con `ISriTaxResolver`/`sriLookupService`). Pricing no soporta `ItemVariantId` (retirado deliberadamente 2026-07-07, ver `PricingRule.cs`). Endpoint legacy `/api/v1/pricing/item-prices` queda explícitamente fuera de este freeze — pendiente del cierre de Compras |
 | **Infraestructura de Auditoría por Dominio (Entity Audit)** | 2026-07-07 | `docs/decisions/ADR-022-audit-infrastructure-entity-vs-process.md` | Contratos comunes `AuditRecordBase`/`AuditActor`/`AuditSource`/`IAuditEvent` (Domain) + `IAuditWriter<T>`/`IAuditReader<T>`/`IAuditContext`/`IAuditService` (Application) + `EfAuditWriter<T>`/`EfAuditReader<T>`/`HttpAuditContext`/`AuditService` genéricos (Infrastructure, open-generic en DI). Dispatcher reutiliza domain events + Outbox ya FROZEN (ADR-007/008). Pilotos: `PricingRuleAudit`, `PriceListItemAudit`, `PriceListAudit` (tablas `pricing_rule_audit`, `price_list_item_audit`, `price_list_audit`). Cada dominio nuevo agrega solo su entidad + eventos + handler, sin tocar la infraestructura común. `UserActivity` queda reservada al feed liviano, no a auditoría de negocio tipada. Process Audit (auditoría de procesos sin `EntityId` único — recálculos masivos, cierres, ETL, jobs) queda diseñado y documentado en `docs/architecture/audit-infrastructure.md`, sin implementar: reutilizará el `EntityId` como `ProcessRunId` sintético, sin modificar ningún contrato FROZEN. `UserName` resuelto 2026-07-07: snapshot histórico obligatorio en `AuditActor` (no-nullable, fallback `"Unknown"`), poblado desde claims JWT (`ClaimTypes.Email`/`ClaimTypes.Name`) embebidas al emitir el token en `AccessTokenService` — no de una consulta en vivo. Corregido el mismo día un error de claim (`GivenName` representa solo el nombre, no el nombre completo; se corrigió a `ClaimTypes.Name`, con fallback transitorio de compatibilidad en `CurrentUserService`). `AuditActor` confirmado como único modelo oficial del actor (ampliado additive con `FullName`/`Email`/`RoleName` opcionales) — regla Open/Closed nueva: prohibido agregar columnas de identidad del usuario en las entidades de auditoría de cada dominio. Columna `user_name` migrada a `NOT NULL` (`MakeAuditUserNameRequired`). Deuda técnica restante (no bloquea el freeze del contrato): `Source` hardcodeado a `UserAction` en `HttpAuditContext` (falta contexto para jobs/sistema), `CorrelationId`/`RequestId` sin truncado antes de persistir en `varchar(100)`. |
@@ -2517,7 +2509,7 @@ Auditoría completa del formulario de Compras. Build: **0 errores frontend + bac
 | Tenant / Company / Membership model (`SubscriberId → TenantId` consolidado FASE 4) | ✅ |
 | `CompanyScopeBehavior` (pipeline MediatR) | ✅ |
 | Wave 1 `company_id` (inventory core) | ✅ (in baseline) |
-| PostgreSQL RLS (enterprise tables) | ❌ no implementado — ver [DATABASE.md#rls](DATABASE.md#rls) |
+| PostgreSQL RLS (enterprise tables) | ❌ no implementado — ver [DATABASE.md#rls](docs/DATABASE.md#rls) |
 | Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
 | **Frontend architecture checks (Node ESM)** | ✅ 12/12, score 100/100 (2026-05-24) — controllers backend ≤150 líneas |
 | **Architecture governance v2** (ADRs, backend Node checks, score, PR annotations) | ✅ (2026-05-21) |
@@ -2532,7 +2524,7 @@ Auditoría completa del formulario de Compras. Build: **0 errores frontend + bac
 | Post-audit wave 6 (handlers C-03, lazy routes, grandfather vacío) | ✅ (2026-05-21) |
 | **docs/architecture/ multi-agent governance** (`docs/architecture/*` canonical; `CLAUDE.md`/`backend/CLAUDE.md`/`frontend/CLAUDE.md` + `.mdc` adapters) | ✅ (2026-05-21, reorganizado 2026-08-07) |
 
-Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
+Details: [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DATABASE.md](docs/DATABASE.md).
 
 ### Post-audit remediation (2026-05-21)
 
@@ -2602,7 +2594,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 ## SaaS platform y ERP backend (snapshot histórico — pre FASE 1)
 
-> ⚠️ **Snapshot pre-refactor (2026-05-23/24).** Las dos tablas siguientes describen el estado **anterior** a "FASE 1 — ERP Kernel Cleanup" (2026-06-05, ver banner al inicio de este documento), que eliminó por completo Billing domain, Subscriptions domain, Platform entities, Commercial plans y Entitlements, y a "FASE 4" (consolidación `SubscriberId → TenantId` + BP V2). Items como *Billing governance*, *Entitlements snapshot*, *Commercial limits*, *Sales/Accounting/Cash* descritos abajo **ya no existen** como módulos activos del backend — ver el inventario real de módulos en [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md#bounded-contexts) y el estado vigente en "ERP CORE BASELINE v1.0" arriba. Se conservan como registro histórico de delivery, no como estado actual.
+> ⚠️ **Snapshot pre-refactor (2026-05-23/24).** Las dos tablas siguientes describen el estado **anterior** a "FASE 1 — ERP Kernel Cleanup" (2026-06-05, ver banner al inicio de este documento), que eliminó por completo Billing domain, Subscriptions domain, Platform entities, Commercial plans y Entitlements, y a "FASE 4" (consolidación `SubscriberId → TenantId` + BP V2). Items como *Billing governance*, *Entitlements snapshot*, *Commercial limits*, *Sales/Accounting/Cash* descritos abajo **ya no existen** como módulos activos del backend — ver el inventario real de módulos en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#bounded-contexts) y el estado vigente en "ERP CORE BASELINE v1.0" arriba. Se conservan como registro histórico de delivery, no como estado actual.
 
 | Component (histórico) | Status (al 2026-05-23) |
 |-----------|--------|
@@ -2663,7 +2655,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 |------|--------|
 | Schema from single baseline | ✅ |
 | Naming `_subscriber_` on indexes/FK | ✅ |
-| RLS enabled (inventory, sales core) | ❌ no implementado — ver [DATABASE.md#rls](DATABASE.md#rls) |
+| RLS enabled (inventory, sales core) | ❌ no implementado — ver [DATABASE.md#rls](docs/DATABASE.md#rls) |
 | Session vars via interceptor | ✅ |
 | Company scope on operational entities | ✅ (baseline + query filters) |
 
@@ -2676,7 +2668,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Permission policies | ✅ |
 | Company isolation (app layer) | ✅ |
 | SRI certificate password encryption (Data Protection) | ✅ |
-| RLS (DB layer) | ❌ no implementado — ver [DATABASE.md#rls](DATABASE.md#rls) |
+| RLS (DB layer) | ❌ no implementado — ver [DATABASE.md#rls](docs/DATABASE.md#rls) |
 | Platform operator bypass (JWT global) | ✅ controlled |
 | Permissions cache in handler hot path | ⏳ service exists, wiring partial |
 | SPA session cleanup (`fullLogout`) | ✅ frontend |
@@ -2729,7 +2721,7 @@ Flujo canónico: **Cotización → Aprobar → Pedido → Confirmar → Factura 
 2. Billing + retenciones UI gaps
 3. Playwright enterprise E2E con API en CI (smoke ya verde)
 
-See [ROADMAP.md](./ROADMAP.md) for prioritized backlog.
+See [ROADMAP.md](docs/ROADMAP.md) for prioritized backlog.
 
 ### Enterprise hardening — MasterData + security (2026-05-23)
 
@@ -2741,7 +2733,7 @@ See [ROADMAP.md](./ROADMAP.md) for prioritized backlog.
 | Security metrics wired (refresh, 403, dual-write, namespace fallback) | ✅ |
 | MasterData reconciliation (READ-ONLY) + health + Hangfire job | ✅ |
 | SRI foundation (`SupplierProfile` retention defaults) | ✅ |
-| Docs: [security/MULTI-TENANT-HARDENING.md](./security/MULTI-TENANT-HARDENING.md), [observability/METRICS.md](./observability/METRICS.md) | ✅ |
+| Docs: [security/MULTI-TENANT-HARDENING.md](docs/security/MULTI-TENANT-HARDENING.md), [observability/METRICS.md](docs/observability/METRICS.md) | ✅ |
 
 ## Risks
 
@@ -2766,5 +2758,5 @@ First Run (alta del primer administrador): [docs/architecture/first-run.md](docs
 
 ## Related
 
-- [ROADMAP.md](./ROADMAP.md) — what’s next
-- [DEVELOPMENT.md](./DEVELOPMENT.md) — how to contribute safely
+- [ROADMAP.md](docs/ROADMAP.md) — what’s next
+- [DEVELOPMENT.md](docs/DEVELOPMENT.md) — how to contribute safely

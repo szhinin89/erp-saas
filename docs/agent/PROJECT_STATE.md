@@ -1,5 +1,9 @@
 # PROJECT_STATE.md — Estado vigente del proyecto
 
+## QA-INVENTORY-INFRA-SUITES-01 (2026-10-19)
+
+CLOSED. Resuelto en `509ac6d75` (fixtures con productos inexistentes; no era un bug de producción). PostgreSQL 39/39 PASS. Regla: [inventory.md § 2](../architecture/inventory.md#2-participación-y-alcance). Sin bloqueadores.
+
 ## AUTH - SENSITIVE LOGGING FIX (2026-10-19)
 
 BUG REAL corregido: evento de auditoria de rotacion refresh_success registraba successorHash (SHA-256 del refresh token sucesor, clave de busqueda en BD) por parametro explicito del template LoggerMessage de RefreshTokenService (no serializacion automatica ni configuracion). Eliminado successorHash de mensajes y campos estructurados; trazabilidad conservada por familyId, tokenId y successorId. Sin cambios de logica de autenticacion, rotacion ni persistencia. PASS: RefreshTokenServiceTests 21/21 (19 existentes + 2 nuevos con CapturingLogger: rotacion, reuso benigno/sospechoso y token inexistente sin tokens ni hashes en logs); los 2 nuevos fallan contra el codigo previo. Logs historicos previos al fix pueden contener hashes. Sin suites completas, commit ni push.
@@ -15,7 +19,7 @@ Cerrado. Flujo vigente: launcher -> API/frontend -> `/setup` si no esta iniciali
 Implementado; gate conservador de salidas posteriores bajo lock y política SRI
 global versionada. Validación focal PASS. Sin suites generales, commit/push ni
 migración al piloto. Calendario oficial y ventana interna Company: STRUCTURAL DEBT.
-[Entrega](PURCHASE_CANCELLATION_DELIVERY.md), [ADR-044](../decisions/ADR-044-purchase-cancellation-and-global-sri-policy.md).
+[purchases.md § 5](../architecture/purchases.md#5-anulación-confirmed--cancelled), [ADR-044](../decisions/ADR-044-purchase-cancellation-and-global-sri-policy.md).
 
 ## BACKGROUND DEPLOYMENT — FASE D (2026-10-15)
 
@@ -29,7 +33,7 @@ completas, commit ni push. Transición real pendiente. [Entrega](BACKGROUND_DEPL
 Corregido el 23505 de históricos con claves reutilizadas: ambos índices de activos
 y función del trigger se actualizan antes del backfill. Reproducción FAIL 4/4;
 fix PostgreSQL PASS 6/6 y trigger PASS 2/2. Sin reaplicar al piloto, suites completas,
-commit ni push. [Detalle](PURCHASES_PHASE_B_DELIVERY.md).
+commit ni push. [purchases.md](../architecture/purchases.md).
 
 ## PURCHASES LEGACY / DOMAIN — FASE B (2026-10-15)
 
@@ -38,7 +42,7 @@ PurchaseId; Discarded=4 es estado persistido propio, sin inferencias por totales
 booleanos legacy. Activos Draft/Confirmed, históricos Cancelled/Discarded.
 Application 51/51, Infrastructure 41/41 + migración PostgreSQL 1/1, frontend 90/90;
 build/TypeScript/lint focal/arquitectura/diff PASS. Migración al piloto pendiente.
-Detalle e inventario: [entrega](PURCHASES_PHASE_B_DELIVERY.md).
+Reglas: [purchases.md](../architecture/purchases.md).
 
 ## ZH BACKGROUND PROCESSING — STRUCTURAL DEBT (2026-10-15)
 

@@ -440,23 +440,6 @@ dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj
 Guardrails: [ENFORCEMENT.md](./enforcement.md).
 
 
-## Anulacion completa de compra y politica global SRI (ADR-044)
+## Compras, Inventario e Ítems
 
-`PurchaseCancellationEligibility` concentra las precondiciones operativas de Cancel:
-estado Confirmed, pagos/devoluciones/creditos y salidas efectivas posteriores.
-Una salida persistida con Quantity < 0 y secuencia posterior a la entrada original
-del mismo Tenant + Company + Item + Warehouse bloquea definitivamente Cancel,
-incluso tras una reversa. Entradas posteriores solas no bloquean. No se atribuyen
-unidades a compras bajo promedio ponderado. Los mismos advisory locks de inventario
-protegen comprobacion y reverso en la transaccion unica existente, antes de efectos.
-El codigo publico vive en ApiResponseCodes.Purchases y MessageCatalog (ADR-027).
-
-El gate fiscal de RetentionCanceller sigue siendo unico. Cancel local de una compra
-recibida no anula ante SRI la factura emitida por el proveedor. Para nuestra retencion
-emitida se conserva ADR-036. ISriCatalogResolver resuelve la version global de
-sri_annulment_policy_version por fecha de emision, con fuente sri_normative_source;
-0 o varias versiones fallan cerrado. HasData + migraciones EF son el unico canal.
-OrdinaryDeadline se captura como snapshot sin reinterpretar solicitudes historicas.
-La extension al dia habil esta representada; sin calendario oficial nacional/local,
-el plazo ordinario sigue siendo informativo y el efectivo se verifica en SRI en Linea.
-No existe ventana interna por Company ni se agrega una configuracion paralela.
+Reglas funcionales: [purchases.md](./purchases.md), [inventory.md](./inventory.md), [items.md](./items.md).
