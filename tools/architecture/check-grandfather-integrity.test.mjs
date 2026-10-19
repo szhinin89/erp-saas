@@ -148,3 +148,22 @@ test('present known lists must be arrays; scalar configuration and legacy lists 
   }
   assert.deepEqual(run({ frontendIndexChunkMaxKb: 650, $schemaNote: 'metadata' }), []);
 });
+
+test('raíz no objeto → GF-invalid-root, aunque traiga una excepción C-03 con techo', () => {
+  const roots = [
+    null,
+    [],
+    [{ handlerHandleMaxLines150: [] }],
+    [{ handlerHandleMaxLines150: [CEILING] }],
+    [{ handlerHandleMaxLines150: [] }, { handlerHandleMaxLines150: [] }],
+    'handlerHandleMaxLines150',
+    650,
+    true,
+  ];
+  for (const root of roots) {
+    const findings = run(root);
+    assert.equal(findings.length, 1, JSON.stringify(root));
+    assert.equal(findings[0].rule, 'GF-invalid-root');
+  }
+  assert.deepEqual(run({ handlerHandleMaxLines150: [CEILING] }), []);
+});

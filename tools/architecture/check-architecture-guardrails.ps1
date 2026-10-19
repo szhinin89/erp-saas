@@ -99,7 +99,12 @@ $violations = New-Object System.Collections.Generic.List[string]
 if (-not (Test-Path $GrandfatherPath)) {
     Write-Error "Falta $GrandfatherPath"
 }
-$grandfather = Get-Content -Raw -Path $GrandfatherPath | ConvertFrom-Json
+$grandfatherRaw = [string](Get-Content -Raw -Path $GrandfatherPath)
+$grandfather = $grandfatherRaw | ConvertFrom-Json
+# Misma guarda que check-handler-size.ps1: pwsh 7 desenvuelve una raiz [ {...} ] de un elemento.
+if (-not $grandfatherRaw.TrimStart().StartsWith('{') -or $grandfather -isnot [System.Management.Automation.PSCustomObject]) {
+    throw "La raiz de $GrandfatherPath debe ser un objeto JSON."
+}
 $indexMaxKb = [int]$grandfather.frontendIndexChunkMaxKb
 
 if ($FrontendChunkOnly) {

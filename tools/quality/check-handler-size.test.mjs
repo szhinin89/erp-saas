@@ -55,9 +55,9 @@ function fixture(entries = [], files = { [handler]: source(150) }) {
   write(adr, '# Fixture ADR\n');
   write('tools/architecture/architecture-grandfather.json', JSON.stringify({ handlerHandleMaxLines150: entries }));
   for (const [name, text] of Object.entries(files)) write(name, text);
-  return { dir, write, run(extra = []) {
+  return { dir, write, run(extra = [], runShell = shell) {
     // The script, sources, config and Git objects all live in the isolated fixture.
-    const result = spawnSync(shell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(dir, script), ...extra], {
+    const result = spawnSync(runShell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(dir, script), ...extra], {
       cwd: dir, env: { ...process.env, GIT_DIR: gitDir }, encoding: 'utf8', timeout: 30000,
     });
     if (result.error) throw result.error;
@@ -170,4 +170,25 @@ test('JSON invalid, missing list, non-array and missing configuration fail close
     expect(f.run(), false);
   }
   expect(fixture().run(['-GrandfatherPath', path.join(scratch, 'missing.json')]), false);
+});
+// pwsh 7 unwraps a one-element root array; Windows PowerShell 5.1 does not. Both must reject it.
+const shells = [shell, ...(process.platform === 'win32' && shell !== 'powershell' ? ['powershell'] : [])];
+test('non-object JSON roots fail closed in every available shell, even carrying an exception', () => {
+  const exception = JSON.stringify(entry());
+  const cases = [
+    `[{"handlerHandleMaxLines150":[]}]`,
+    `[{"handlerHandleMaxLines150":[${exception}]}]`,
+    `[{"handlerHandleMaxLines150":[]},{"handlerHandleMaxLines150":[]}]`,
+    'null',
+    '"handlerHandleMaxLines150"',
+  ];
+  for (const runShell of shells) {
+    const valid = fixture([entry()], { [handler]: source(155) });
+    expect(valid.run([], runShell), true, /ceiling=160/);
+    for (const config of cases) {
+      const f = fixture([], { [handler]: source(155) });
+      f.write('tools/architecture/architecture-grandfather.json', config);
+      expect(f.run([], runShell), false, /raiz de architecture-grandfather\.json debe ser un objeto JSON/);
+    }
+  }
 });

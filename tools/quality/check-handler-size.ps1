@@ -94,8 +94,12 @@ function Assert-ExactFile {
     if (-not (Test-Path -LiteralPath $current -PathType Leaf)) { throw "No es archivo: $Relative" }
 }
 
-$json = Get-Content -Raw -LiteralPath $GrandfatherPath | ConvertFrom-Json
-if ($json -isnot [pscustomobject] -or $json.handlerHandleMaxLines150 -isnot [Array]) { throw 'handlerHandleMaxLines150 debe ser una lista dentro de un objeto.' }
+$rawJson = [string](Get-Content -Raw -LiteralPath $GrandfatherPath)
+$json = $rawJson | ConvertFrom-Json
+# pwsh 7 desenvuelve una raiz [ {...} ] de un elemento y [pscustomobject] acepta cualquier PSObject:
+# se exige texto que abra con '{' y el tipo exacto, igual en Windows PowerShell 5.1 y en pwsh 7.
+if (-not $rawJson.TrimStart().StartsWith('{') -or $json -isnot [System.Management.Automation.PSCustomObject]) { throw 'La raiz de architecture-grandfather.json debe ser un objeto JSON.' }
+if ($json.handlerHandleMaxLines150 -isnot [Array]) { throw 'handlerHandleMaxLines150 debe ser una lista dentro de un objeto.' }
 $grandfather = [System.Collections.Generic.Dictionary[string,object]]::new([StringComparer]::Ordinal)
 foreach ($entry in $json.handlerHandleMaxLines150) {
     if ($null -eq $entry -or $entry -isnot [pscustomobject]) { throw 'Excepcion C-03 debe ser objeto, no ruta legacy.' }

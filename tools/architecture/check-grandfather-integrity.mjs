@@ -107,6 +107,12 @@ export function findGrandfatherIntegrityViolations(grandfather, { specs, fileExi
   const found = [];
   const report = (rule, message) => found.push({ rule, file: GRANDFATHER_FILE, message });
 
+  // Una raíz arreglo pasaría por Object.entries con claves "0", "1"… que ninguna spec reconoce.
+  if (grandfather === null || typeof grandfather !== 'object' || Array.isArray(grandfather)) {
+    report('GF-invalid-root', 'La raíz de architecture-grandfather.json debe ser un objeto JSON.');
+    return found;
+  }
+
   for (const [list, value] of Object.entries(grandfather)) {
     const spec = specs[list];
     if (list.startsWith('$')) continue;
