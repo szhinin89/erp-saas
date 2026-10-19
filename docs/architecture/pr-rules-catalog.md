@@ -726,8 +726,9 @@ Archivos >800 líneas bloquearon code-splitting y revisión humana.
 `AccountingPage.tsx` (layout + tabs) + `AccountingAccountsTab.tsx` + `useAccountingAccounts.ts`.
 
 ### ENFORCEMENT
-- **BLOQUEANTE PR:** `wc -l` > 500 en `frontend/src/**/*.tsx`.
-- Warning CI: > 400 líneas.
+- **BLOQUEANTE PR:** > 500 líneas **no vacías** (`Measure-Object -Line`, no `wc -l`) en `frontend/src/**/*.tsx`, incluidas pruebas `*.test.tsx` y rutas `.tsx`; los `.ts` quedan fuera.
+- Warning CI: > 400 líneas (no implementado en el verificador).
+- Deuda histórica aprobada: [ADR-047](../decisions/ADR-047-historical-tsx-size-debt.md). Solo 36 excepciones con techo individual en `tsxMaxLines500`; crecimiento y excepciones obsoletas fallan. El límite general permanece en 500.
 
 ---
 
@@ -1076,7 +1077,7 @@ Un PR **falla** si contiene cualquiera de:
 | PR-4 | Command/Query persistido sin FluentValidation |
 | PR-5 | Nuevo servicio o schema en raíz `frontend/src/services` o `schemas` (no adapter) |
 | PR-6 | Página nueva > 15 líneas en `frontend/src/pages/` (no wrapper) |
-| PR-7 | Componente `.tsx` > 500 líneas |
+| PR-7 | Componente `.tsx` > 500 líneas (R-01; deuda histórica con techos: ADR-047) |
 | PR-8 | Logout sin `fullLogout()` |
 | PR-9 | Nuevo `localStorage`/`sessionStorage` con token, refresh o bootstrap persistente |
 | PR-10 | `?tenantId=` / UUID sensible en URL nueva |

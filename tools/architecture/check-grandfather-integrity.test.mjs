@@ -14,6 +14,7 @@ import { CHECKS } from './run-all.mjs';
  */
 const EXISTING = new Set([
   'docs/decisions/ADR-046-historical-handler-size-debt.md',
+  'docs/decisions/ADR-047-historical-tsx-size-debt.md',
   'backend/src/ERP.Application/Modules/Sales/UseCases/CreateSale/CreateSaleHandler.cs',
   'backend/src/ERP.API/Controllers/SalesController.cs',
   'frontend/src/modules/sales/pages/SalesPage.tsx',
@@ -22,6 +23,8 @@ const EXISTING = new Set([
 ]);
 const HANDLER = 'backend/src/ERP.Application/Modules/Sales/UseCases/CreateSale/CreateSaleHandler.cs';
 const CEILING = { file: HANDLER, maxHandleLines: 160, baselineCommit: '9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77', adr: 'docs/decisions/ADR-046-historical-handler-size-debt.md' };
+const TSX = 'frontend/src/modules/sales/pages/SalesPage.tsx';
+const TSX_CEILING = { file: TSX, maxLines: 773, baselineCommit: 'e38a0a682d6339ec7f230c5b890c4278f3464d10', adr: 'docs/decisions/ADR-047-historical-tsx-size-debt.md' };
 const CONTROLLER = 'backend/src/ERP.API/Controllers/SalesController.cs';
 const DEAD = 'backend/src/ERP.Application/Modules/Ventas/UseCases/CrearVenta/CrearVentaHandler.cs';
 
@@ -49,7 +52,7 @@ test('archivo existente dentro del alcance → PASS', () => {
       namingConventionsGrandfathered: [HANDLER],
       handlerHandleMaxLines150: [CEILING],
       backendControllerMaxLines: [CONTROLLER],
-      tsxMaxLines500: ['frontend/src/modules/sales/pages/SalesPage.tsx'],
+      tsxMaxLines500: [TSX_CEILING],
       designSystemGrandfathered: [
         { file: 'frontend/src/modules/sales/pages/SalesPage.tsx', rules: ['F-04-btn'] },
         { file: 'frontend/src/modules/sales/sales.css', rules: ['F-04-color', 'F-04-token'] },
@@ -134,6 +137,22 @@ test('C-03 rechaza cadenas, duplicados y metadatos invalidos', () => {
   assert.ok(run({ handlerHandleMaxLines150: [CEILING, CEILING] }).some(v => /duplicada/.test(v.message)));
   assert.ok(run({ handlerHandleMaxLines150: [{ ...CEILING, file: DEAD }] }).some(v => v.rule === 'GF-dead-entry'));
   assert.ok(run({ handlerHandleMaxLines150: [{ ...CEILING, file: CONTROLLER }] }).some(v => v.rule === 'GF-out-of-scope'));
+});
+
+test('PR-7 (ADR-047) rechaza cadenas, duplicados y metadatos invalidos', () => {
+  const invalid = [TSX, null, {}, { ...TSX_CEILING, maxLines: 500 },
+    { ...TSX_CEILING, maxLines: 773.5 }, { ...TSX_CEILING, maxLines: '773' },
+    { ...TSX_CEILING, maxHandleLines: 773 }, { file: TSX, maxHandleLines: 773, baselineCommit: TSX_CEILING.baselineCommit, adr: TSX_CEILING.adr },
+    { ...TSX_CEILING, baselineCommit: 'main' }, { ...TSX_CEILING, adr: 'docs/decisions/ADR-047-missing.md' },
+    { ...TSX_CEILING, file: TSX.replaceAll('/', '\\') }, { ...TSX_CEILING, file: '../' + TSX }, { ...TSX_CEILING, extra: true }];
+  for (const entry of invalid) assert.ok(run({ tsxMaxLines500: [entry] }).length, JSON.stringify(entry));
+  assert.ok(run({ tsxMaxLines500: [TSX_CEILING, TSX_CEILING] }).some(v => /duplicada/.test(v.message)));
+  assert.ok(run({ tsxMaxLines500: [{ ...TSX_CEILING, file: 'frontend/src/modules/legacy/OldPage.tsx' }] }).some(v => v.rule === 'GF-dead-entry'));
+  assert.ok(run({ tsxMaxLines500: [{ ...TSX_CEILING, file: 'frontend/src/lib/formatters/dateFormatters.ts' }] }).some(v => v.rule === 'GF-out-of-scope'));
+  // Un objeto C-03 no es válido en la lista PR-7 ni a la inversa.
+  assert.ok(run({ tsxMaxLines500: [CEILING] }).length);
+  assert.ok(run({ handlerHandleMaxLines150: [TSX_CEILING] }).length);
+  assert.deepEqual(run({ tsxMaxLines500: [TSX_CEILING] }), []);
 });
 
 test('present known lists must be arrays; scalar configuration and legacy lists retain their contract', () => {

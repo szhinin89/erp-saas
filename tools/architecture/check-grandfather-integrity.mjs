@@ -18,9 +18,10 @@ const GRANDFATHER_FILE = 'tools/architecture/architecture-grandfather.json';
 /**
  * @typedef {{
  *   consumer: string,
- *   shape: 'path' | 'fileRules' | 'handlerCeiling',
+ *   shape: 'path' | 'fileRules' | 'ceiling',
  *   inScope: (rel: string) => boolean,
  *   rulesFor?: (rel: string) => Set<string>,
+ *   ceiling?: { rule: string, key: string, floor: number },
  * }} GrandfatherListSpec
  */
 
@@ -41,13 +42,15 @@ export function defaultListSpecs() {
     },
     handlerHandleMaxLines150: {
       consumer: 'tools/quality/check-handler-size.ps1',
-      shape: 'handlerCeiling',
+      shape: 'ceiling',
+      ceiling: { rule: 'C-03', key: 'maxHandleLines', floor: 150 },
       inScope: (rel) =>
         rel.startsWith('backend/src/ERP.Application/') && /Handler[^/]*\.cs$/.test(rel),
     },
     tsxMaxLines500: {
       consumer: 'check-architecture-guardrails.ps1',
-      shape: 'path',
+      shape: 'ceiling',
+      ceiling: { rule: 'PR-7', key: 'maxLines', floor: 500 },
       inScope: (rel) => matchGlob('frontend/src/**/*.tsx', rel),
     },
     tsxPageWrapperMaxLines15: {
@@ -129,17 +132,18 @@ export function findGrandfatherIntegrityViolations(grandfather, { specs, fileExi
       continue;
     }
 
-    // Las listas legacy toleran duplicados; C-03 los rechaza por contrato ADR-046.
+    // Las listas legacy toleran duplicados; las de techo individual (C-03 ADR-046, PR-7 ADR-047) los rechazan.
     const seen = new Set();
     for (const item of value) {
-      if (spec.shape === 'handlerCeiling') {
+      if (spec.shape === 'ceiling') {
+        const { rule, key, floor } = spec.ceiling;
         const canonical = (s) => typeof s === 'string' && /^[A-Za-z0-9_-]+(?:[./][A-Za-z0-9_-]+)*$/.test(s) && !s.includes('..');
         if (!item || Array.isArray(item) || typeof item !== 'object' ||
-            Object.keys(item).sort().join(',') !== 'adr,baselineCommit,file,maxHandleLines' ||
-            !canonical(item.file) || !Number.isInteger(item.maxHandleLines) || item.maxHandleLines <= 150 || item.maxHandleLines > 2147483647 ||
+            Object.keys(item).sort().join(',') !== ['adr', 'baselineCommit', 'file', key].sort().join(',') ||
+            !canonical(item.file) || !Number.isInteger(item[key]) || item[key] <= floor || item[key] > 2147483647 ||
             typeof item.baselineCommit !== 'string' || !/^[0-9a-f]{40}$/.test(item.baselineCommit) ||
             typeof item.adr !== 'string' || !/^docs\/decisions\/ADR-[0-9]+-[a-z0-9-]+\.md$/.test(item.adr) || !fileExists(item.adr)) {
-          report('GF-invalid-entry', `Lista "${list}": objeto C-03 invalido ${JSON.stringify(item)}.`);
+          report('GF-invalid-entry', `Lista "${list}": objeto ${rule} invalido ${JSON.stringify(item)}.`);
           continue;
         }
         if (seen.has(item.file)) {
@@ -147,7 +151,7 @@ export function findGrandfatherIntegrityViolations(grandfather, { specs, fileExi
           continue;
         }
       }
-      const raw = spec.shape === 'fileRules' || spec.shape === 'handlerCeiling' ? item?.file : item;
+      const raw = spec.shape === 'fileRules' || spec.shape === 'ceiling' ? item?.file : item;
       if (typeof raw !== 'string' || raw.trim() === '') {
         report('GF-invalid-entry', `Lista "${list}": entrada inválida ${JSON.stringify(item)} — se esperaba ${spec.shape === 'fileRules' ? '{ file, rules }' : 'una ruta repo-relativa'}.`);
         continue;

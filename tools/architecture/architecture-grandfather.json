@@ -51,7 +51,224 @@
       "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
     }
   ],
-  "tsxMaxLines500": [],
+  "tsxMaxLines500": [
+    {
+      "file": "frontend/src/components/ReportPageTemplate.tsx",
+      "maxLines": 546,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
+      "maxLines": 652,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/components/items/ItemEditorModal/ItemEditorModal.test.tsx",
+      "maxLines": 682,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/components/zh/inputs/ZhDecimalInput.test.tsx",
+      "maxLines": 787,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/access/users/pages/UserConfigPage.test.tsx",
+      "maxLines": 723,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/accounting/pages/AccountingPostingsPage.tsx",
+      "maxLines": 507,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/accounting/pages/ChartOfAccountsPage.tsx",
+      "maxLines": 588,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/branches/components/BranchGeneralSection.tsx",
+      "maxLines": 550,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
+      "maxLines": 1390,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/caja/pages/CajaPage.tsx",
+      "maxLines": 886,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx",
+      "maxLines": 568,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/configuracion/empresa/sections/BrandingSettingsSection.tsx",
+      "maxLines": 585,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
+      "maxLines": 503,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+      "maxLines": 514,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.tsx",
+      "maxLines": 692,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/initialLoad/components/OpeningReconciliationCard.test.tsx",
+      "maxLines": 533,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
+      "maxLines": 518,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/items/catalog/wizard/TreeEditor.tsx",
+      "maxLines": 506,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/items/detail/components/CollectionSection.tsx",
+      "maxLines": 923,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/masterData/components/MasterDataPartnerWizard.test.tsx",
+      "maxLines": 809,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/masterData/components/MasterDataPartnerWizard.tsx",
+      "maxLines": 647,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/masterData/pages/MasterDataBusinessPartnerDetailPage.tsx",
+      "maxLines": 1221,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/masterData/pages/MasterDataSuppliersPage.tsx",
+      "maxLines": 811,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
+      "maxLines": 568,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/pricing/pages/PriceListsPage.tsx",
+      "maxLines": 501,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
+      "maxLines": 558,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
+      "maxLines": 737,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
+      "maxLines": 667,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
+      "maxLines": 599,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+      "maxLines": 3616,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/sales/components/PaymentMethodsSection.tsx",
+      "maxLines": 504,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+      "maxLines": 582,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
+      "maxLines": 597,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
+      "maxLines": 533,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/modules/sales/pages/SalesPage.tsx",
+      "maxLines": 773,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    },
+    {
+      "file": "frontend/src/routes/catalogRoutes.tsx",
+      "maxLines": 602,
+      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
+      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
+    }
+  ],
   "tsxPageWrapperMaxLines15": [],
   "modulesLegacyRootServiceImports": [],
   "backendControllerMaxLines": [],

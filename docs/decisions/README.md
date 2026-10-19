@@ -50,6 +50,7 @@
 | [ADR-044](./ADR-044-purchase-cancellation-and-global-sri-policy.md) | Anulación de compra: bloqueo permanente tras salida efectiva; política global SRI versionada | Accepted |
 | [ADR-045](./ADR-045-accounting-operational-continuity.md) | Consolidación arquitectónica de Accounting | Accepted |
 | [ADR-046](./ADR-046-historical-handler-size-debt.md) | Excepción temporal C-03 para ocho handlers históricos con techos individuales y prohibición de crecimiento | Accepted — implementación controlada del guardrail |
+| [ADR-047](./ADR-047-historical-tsx-size-debt.md) | Excepción temporal PR-7 para 36 archivos TSX históricos con techos individuales y prohibición de crecimiento | Accepted — implementación controlada del guardrail |
 
 Seguimiento de migración de ADRs aceptados con implementación pendiente: [`docs/architecture/ARCHITECTURE-BACKLOG.md`](../architecture/ARCHITECTURE-BACKLOG.md) (iniciativas `GOV-xxx`).
 

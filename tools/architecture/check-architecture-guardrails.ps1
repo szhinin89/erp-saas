@@ -114,7 +114,38 @@ if ($FrontendChunkOnly) {
     exit 0
 }
 
-$gfTsx500 = @($grandfather.tsxMaxLines500 | ForEach-Object { $_.Replace('\', '/') })
+function Assert-ExactRepoFile {
+    param([string]$Relative)
+    if ($Relative -cnotmatch '^[A-Za-z0-9_-]+(?:[./][A-Za-z0-9_-]+)*$' -or $Relative.Contains('..')) {
+        throw "Ruta invalida: $Relative"
+    }
+    $current = $Root
+    foreach ($part in $Relative.Split('/')) {
+        $entry = @(Get-ChildItem -LiteralPath $current -Force | Where-Object { $_.Name -ceq $part })
+        if ($entry.Count -ne 1 -or ($entry[0].Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw "Ruta inexistente, caso incorrecto o enlace: $Relative" }
+        $current = $entry[0].FullName
+    }
+    if (-not (Test-Path -LiteralPath $current -PathType Leaf)) { throw "No es archivo: $Relative" }
+}
+
+# PR-7 (ADR-047): excepciones con techo individual; se valida toda la configuracion antes de contar, en cualquier modo.
+if ($grandfather.tsxMaxLines500 -isnot [Array]) { throw 'tsxMaxLines500 debe ser una lista dentro de un objeto.' }
+$gfTsx500 = [System.Collections.Generic.Dictionary[string,object]]::new([StringComparer]::Ordinal)
+foreach ($entry in $grandfather.tsxMaxLines500) {
+    if ($null -eq $entry -or $entry -isnot [pscustomobject]) { throw 'Excepcion PR-7 debe ser objeto, no ruta legacy.' }
+    $fields = @($entry.PSObject.Properties.Name | Sort-Object)
+    if (($fields -join ',') -cne 'adr,baselineCommit,file,maxLines') { throw 'Metadatos PR-7 incompletos o desconocidos.' }
+    if ($entry.file -isnot [string] -or $entry.file -cnotmatch '^frontend/src/(?:[^/]+/)*[^/]+\.tsx$') { throw 'Ruta PR-7 fuera de alcance.' }
+    Assert-ExactRepoFile $entry.file
+    if ($gfTsx500.ContainsKey($entry.file)) { throw "Excepcion PR-7 duplicada: $($entry.file)" }
+    if (($entry.maxLines -isnot [int] -and $entry.maxLines -isnot [long]) -or $entry.maxLines -le 500 -or $entry.maxLines -gt [int]::MaxValue) { throw 'Techo PR-7 debe ser entero mayor que 500.' }
+    if ($entry.baselineCommit -isnot [string] -or $entry.baselineCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Commit base PR-7 invalido.' }
+    $commitCheck = git -C $Root cat-file -t $entry.baselineCommit 2>&1
+    if ($LASTEXITCODE -ne 0 -or "$commitCheck" -ne 'commit') { throw 'Commit base PR-7 inexistente o no es commit.' }
+    if ($entry.adr -isnot [string] -or $entry.adr -cnotmatch '^docs/decisions/ADR-[0-9]+-[a-z0-9-]+\.md$') { throw 'Referencia ADR PR-7 invalida.' }
+    Assert-ExactRepoFile $entry.adr
+    $gfTsx500.Add($entry.file, $entry)
+}
 $gfPages15 = @($grandfather.tsxPageWrapperMaxLines15 | ForEach-Object { $_.Replace('\', '/') })
 $gfServiceImports = @($grandfather.modulesLegacyRootServiceImports | ForEach-Object { $_.Replace('\', '/') })
 
@@ -137,6 +168,8 @@ if (Test-Path $controllersRoot) {
 
 # --- Handler size (delegado) ---
 $handlerScript = Join-Path (Split-Path $PSScriptRoot -Parent) 'quality/check-handler-size.ps1'
+# Sin un comando nativo previo $LASTEXITCODE es $null y "exit $null" saldria 0 omitiendo el resto (fail-open).
+$global:LASTEXITCODE = 0
 & $handlerScript -GrandfatherPath $GrandfatherPath
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
@@ -191,11 +224,20 @@ Get-ChildItem -Path $frontendSrc -Recurse -File -Filter '*.tsx' | ForEach-Object
     $rel = Normalize-RelativePath -Path $_.FullName -Root $Root
     if ($changedMode -and ($changed -notcontains $rel)) { return }
     $lineCount = (Get-Content -Path $_.FullName | Measure-Object -Line).Lines
-    if ($lineCount -le 500) { return }
-    if ($gfTsx500 -contains $rel) {
-        Write-Host "WARN (grandfather): $rel has $lineCount lines" -ForegroundColor Yellow
+    if ($gfTsx500.ContainsKey($rel)) {
+        $entry = $gfTsx500[$rel]
+        if ($lineCount -le 500) {
+            Add-Violation $violations "PR-7: $rel excepcion obsoleta: $lineCount lines (max 500); retirar entrada; ADR=$($entry.adr)"
+        }
+        elseif ($lineCount -gt $entry.maxLines) {
+            Add-Violation $violations "PR-7: $rel has $lineCount lines, exceeds ceiling=$($entry.maxLines); ADR=$($entry.adr)"
+        }
+        else {
+            Write-Host "WARN (grandfather): $rel lines=$lineCount ceiling=$($entry.maxLines) ADR=$($entry.adr)" -ForegroundColor Yellow
+        }
         return
     }
+    if ($lineCount -le 500) { return }
     Add-Violation $violations "PR-7: $rel has $lineCount lines (max 500)"
 }
 

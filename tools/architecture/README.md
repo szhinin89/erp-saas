@@ -116,6 +116,8 @@ Estados: `healthy` (≥90), `warning` (≥70), `critical` (<70). Warnings no fal
 
 C-03: `handlerHandleMaxLines150` contiene objetos `{file, maxHandleLines, baselineCommit, adr}` ([ADR-046](../../docs/decisions/ADR-046-historical-handler-size-debt.md)). El script real PowerShell impide superar cada techo y exige retirar entradas al alcanzar 150 líneas; el checker Node valida su integridad. Fixtures: `node --test tools/quality/check-handler-size.test.mjs` desde la raíz, incluidas en `npm run architecture:check`. Requieren PowerShell (`pwsh` en Linux; Windows PowerShell 5.1 como alternativa en Windows) y Git local, sin servicios externos.
 
+PR-7: `tsxMaxLines500` contiene objetos `{file, maxLines, baselineCommit, adr}` ([ADR-047](../../docs/decisions/ADR-047-historical-tsx-size-debt.md)). `check-architecture-guardrails.ps1` impide superar cada techo (líneas no vacías) y exige retirar entradas al alcanzar 500; el checker Node valida su integridad. Fixtures en `check-architecture-guardrails.test.mjs` (incluido en `npm run architecture:check`; se ejecuta en `pwsh` y, en Windows, también en Windows PowerShell 5.1). Activación inicial: `node --test tools/architecture/check-architecture-guardrails.pr7.initial.mjs`.
+
 ## Estructura
 
 ```

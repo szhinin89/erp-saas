@@ -247,6 +247,8 @@ Grandfather legacy: `tools/architecture/architecture-grandfather.json`
 
 C-03: `handlerHandleMaxLines150` usa objetos `{file, maxHandleLines, baselineCommit, adr}` según [ADR-046](../decisions/ADR-046-historical-handler-size-debt.md); no admite rutas sin techo. El guardrail PowerShell valida configuración, crecimiento y retirada de excepciones obsoletas. Sus fixtures reales se ejecutan dentro de `npm run architecture:check`.
 
+PR-7: `tsxMaxLines500` usa objetos `{file, maxLines, baselineCommit, adr}` según [ADR-047](../decisions/ADR-047-historical-tsx-size-debt.md); no admite rutas sin techo. `check-architecture-guardrails.ps1` valida la configuración en cualquier modo, falla por crecimiento sobre el techo o por excepción obsoleta (≤ 500 líneas no vacías) y mantiene 500 para el resto. Fixtures en `check-architecture-guardrails.test.mjs`, dentro de `npm run architecture:check`.
+
 **Integridad del grandfather (bloqueante):** `check-grandfather-integrity.mjs` hace fallar `architecture:check` si una entrada apunta a un archivo inexistente (mayúsculas exactas), queda fuera del alcance de la regla que la consume (p. ej. regla F-04 que no aplica al tipo de archivo), está malformada o pertenece a una lista sin checker consumidor registrado. El mensaje identifica lista + ruta. Listas vacías son válidas. Al corregir o mover un archivo grandfathered, eliminar su entrada en el mismo PR. Toda lista nueva se registra con su consumidor en `defaultListSpecs()`.
 
 Ramas y CI: ver [architecture.md § CI y ramas](./architecture.md#ci-y-ramas) (cuerpo normativo único — no duplicado aquí).
