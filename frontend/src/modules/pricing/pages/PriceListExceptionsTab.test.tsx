@@ -15,7 +15,7 @@ import { message } from "../../../lib/messages";
 
 /**
  * CRITICAL-CONFIRMATIONS-CLEANUP-07 — residuo encontrado en el barrido: "Eliminar excepción"
- * usaba window.confirm (diálogo nativo prohibido). Se reemplaza por message.confirm y se agrega
+ * usaba el confirm nativo del navegador (diálogo prohibido). Se reemplaza por message.confirm y se agrega
  * message.success tras la eliminación real. No cambia el pricing engine ni el payload de
  * pricingRuleService.remove.
  */

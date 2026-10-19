@@ -13,6 +13,10 @@ import {
 } from "../../../schemas/companyManagementSchema";
 import { companyRegistrationFacade } from "../../company-management/facades/companyRegistrationFacade";
 import { adminCoreService } from "../api/adminCoreService";
+import {
+  clearCompanyCreateTenantHint,
+  readCompanyCreateTenantHint,
+} from "../utils/companyCreateTenantHint";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { logoutSession } from "../../../lib/session/logoutSession";
@@ -33,12 +37,13 @@ const defaults = (): CompanyManagementFormValues => ({
  * redirige — muestra éxito con 3 acciones.
  *
  * El tenant destino se elige por nombre (select), nunca escribiendo el GUID a mano — se deriva
- * de GET /api/v1/admin-core/companies vía adminCoreService.listTenants(). Admite
- * ?tenantId=<guid> en la URL para llegar preseleccionado desde el dashboard global.
+ * de GET /api/v1/admin-core/companies vía adminCoreService.listTenants(). Desde el dashboard global
+ * llega preseleccionado por un hint de un solo uso en sessionStorage (SEC-02, nunca en la URL),
+ * que solo se aplica si el tenant figura en ese listado.
  */
 export function AdminCoreCompanyCreatePage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
@@ -60,15 +65,15 @@ export function AdminCoreCompanyCreatePage() {
 
   useEffect(() => {
     let cancelled = false;
+    const tenantHint = readCompanyCreateTenantHint();
     (async () => {
       try {
         const rows = await adminCoreService.listTenants();
         if (cancelled) return;
         setTenants(rows);
 
-        const tenantIdFromQuery = searchParams.get("tenantId");
-        if (tenantIdFromQuery && rows.some((t) => t.tenantId === tenantIdFromQuery)) {
-          setValue("tenantId", tenantIdFromQuery);
+        if (tenantHint && rows.some((t) => t.tenantId === tenantHint)) {
+          setValue("tenantId", tenantHint);
         } else if (rows.length === 1) {
           setValue("tenantId", rows[0].tenantId);
         }
@@ -81,7 +86,11 @@ export function AdminCoreCompanyCreatePage() {
             }),
           );
       } finally {
-        if (!cancelled) setLoadingTenants(false);
+        if (!cancelled) {
+          // Consumo único: aplicado, rechazado por la API o con error de carga, no se reutiliza.
+          clearCompanyCreateTenantHint();
+          setLoadingTenants(false);
+        }
       }
     })();
     return () => {
@@ -89,6 +98,14 @@ export function AdminCoreCompanyCreatePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // SEC-02: enlaces legacy con el tenant en la URL — se quita sin usarlo como preselección.
+  useEffect(() => {
+    if (!searchParams.has("tenantId")) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete("tenantId");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const onSubmit = handleSubmit(async (values) => {
     setError("");

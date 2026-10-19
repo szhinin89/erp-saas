@@ -9,6 +9,7 @@ import {
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { adminCoreService } from "../api/adminCoreService";
+import { saveCompanyCreateTenantHint } from "../utils/companyCreateTenantHint";
 import { globalAdminAuthFacade } from "../../auth/facades/globalAdminAuthFacade";
 import { useAuthStore } from "../../../store/authStore";
 import { formatApiRequestError } from "../../lib/apiError";
@@ -276,7 +277,10 @@ export function AdminCoreDashboardPage() {
             key={group.tenantId}
             title={`${group.tenantName}${group.tenantIsActive ? "" : " (tenant inactivo)"}`}
             actions={
-              <Link to={`/admin-core/companies/new?tenantId=${group.tenantId}`}>
+              <Link
+                to="/admin-core/companies/new"
+                onClick={() => saveCompanyCreateTenantHint(group.tenantId)}
+              >
                 <ZHBtn variant="ghost" size="sm" type="button">
                   Crear empresa en este tenant
                 </ZHBtn>

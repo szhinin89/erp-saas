@@ -12,6 +12,10 @@ import { useAuthStore } from "../../../store/authStore";
 import { adminCoreService } from "../api/adminCoreService";
 import { AdminCoreLayout } from "../components/AdminCoreLayout";
 import { AdminCoreDashboardPage } from "./AdminCoreDashboardPage";
+import {
+  COMPANY_CREATE_TENANT_HINT_KEY,
+  readCompanyCreateTenantHint,
+} from "../utils/companyCreateTenantHint";
 import { globalAdminAuthFacade } from "../../auth/facades/globalAdminAuthFacade";
 
 // Espías del shell operativo (auth/session) — se configuran o se verifica que NO se
@@ -61,6 +65,7 @@ function renderDashboard() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
   useAuthStore.setState({
     user: {
       userId: "admin-1",
@@ -112,7 +117,7 @@ describe("AdminCoreDashboardPage", () => {
     expect(shellSpies.sessionService.getContext).not.toHaveBeenCalled();
   });
 
-  it("cada grupo de tenant tiene una acción 'Crear empresa en este tenant' hacia /admin-core/companies/new con el tenantId", async () => {
+  it("cada grupo de tenant tiene una acción 'Crear empresa en este tenant' hacia /admin-core/companies/new sin tenantId en la URL (SEC-02)", async () => {
     vi.mocked(adminCoreService.listCompanies).mockResolvedValue([
       {
         tenantId: "tenant-a",
@@ -132,9 +137,12 @@ describe("AdminCoreDashboardPage", () => {
     const link = screen.getByRole("link", {
       name: "Crear empresa en este tenant",
     });
-    expect(link.getAttribute("href")).toBe(
-      "/admin-core/companies/new?tenantId=tenant-a",
-    );
+    expect(link.getAttribute("href")).toBe("/admin-core/companies/new");
+    expect(sessionStorage.getItem(COMPANY_CREATE_TENANT_HINT_KEY)).toBeNull();
+
+    fireEvent.click(link);
+
+    expect(readCompanyCreateTenantHint()).toBe("tenant-a");
   });
 
   it("operate-company navega a /dashboard operativo", async () => {

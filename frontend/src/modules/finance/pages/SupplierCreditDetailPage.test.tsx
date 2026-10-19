@@ -10,7 +10,7 @@ import { message } from "../../../lib/messages";
 
 /**
  * CRITICAL-CONFIRMATIONS-CLEANUP-07 — residuo encontrado en el barrido: "Revertir reembolso"
- * usaba window.prompt (diálogo nativo prohibido) para pedir el motivo. Se reemplaza por
+ * usaba el prompt nativo del navegador (diálogo prohibido) para pedir el motivo. Se reemplaza por
  * message.prompt. No cambia el payload enviado a reverseRefund (reason/effectiveDate/
  * clientRequestId), ni la lógica de reversa.
  */

@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { adminCoreService } from "../api/adminCoreService";
+import {
+  COMPANY_CREATE_TENANT_HINT_KEY,
+  COMPANY_CREATE_TENANT_HINT_TTL_MS,
+  saveCompanyCreateTenantHint,
+} from "../utils/companyCreateTenantHint";
 import { AdminCoreCompanyCreatePage } from "./AdminCoreCompanyCreatePage";
 import { companyRegistrationFacade } from "../../company-management/facades/companyRegistrationFacade";
 
@@ -33,9 +38,15 @@ vi.mock("../../session/api/sessionService", () => ({ sessionService: shellSpies.
 const TENANT_A = { tenantId: "tenant-a", tenantName: "Tenant A", tenantIsActive: true };
 const TENANT_B = { tenantId: "tenant-b", tenantName: "Tenant B", tenantIsActive: true };
 
+function LocationProbe() {
+  const location = useLocation();
+  return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
+}
+
 function renderPage(initialPath = "/admin-core/companies/new") {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
+      <LocationProbe />
       <Routes>
         <Route path="/admin-core/companies/new" element={<AdminCoreCompanyCreatePage />} />
         <Route path="/admin-core/dashboard" element={<div>ADMIN_CORE_DASHBOARD</div>} />
@@ -47,6 +58,7 @@ function renderPage(initialPath = "/admin-core/companies/new") {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
 });
 
 afterEach(() => {
@@ -89,7 +101,81 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
     await waitFor(() => expect(select.value).toBe("tenant-a"));
   });
 
-  it("preselecciona el tenant recibido por querystring ?tenantId=", async () => {
+  it("preselecciona el tenant del hint de navegación y lo consume (un solo uso)", async () => {
+    vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A, TENANT_B]);
+    saveCompanyCreateTenantHint("tenant-b");
+
+    renderPage();
+
+    const select = (await screen.findByLabelText("Tenant / grupo destino", {
+      exact: false,
+    })) as HTMLSelectElement;
+    await waitFor(() => expect(select.value).toBe("tenant-b"));
+    expect(sessionStorage.getItem(COMPANY_CREATE_TENANT_HINT_KEY)).toBeNull();
+  });
+
+  it("ignora y limpia un hint cuyo tenant no figura en el listado de la API", async () => {
+    vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A, TENANT_B]);
+    saveCompanyCreateTenantHint("tenant-ajeno");
+
+    renderPage();
+
+    const select = (await screen.findByLabelText("Tenant / grupo destino", {
+      exact: false,
+    })) as HTMLSelectElement;
+    await waitFor(() =>
+      expect(sessionStorage.getItem(COMPANY_CREATE_TENANT_HINT_KEY)).toBeNull(),
+    );
+    expect(select.value).toBe("");
+  });
+
+  it("ignora y limpia un hint vencido", async () => {
+    vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A, TENANT_B]);
+    sessionStorage.setItem(
+      COMPANY_CREATE_TENANT_HINT_KEY,
+      JSON.stringify({
+        tenantId: "tenant-b",
+        savedAtMs: Date.now() - COMPANY_CREATE_TENANT_HINT_TTL_MS - 1,
+      }),
+    );
+
+    renderPage();
+
+    const select = (await screen.findByLabelText("Tenant / grupo destino", {
+      exact: false,
+    })) as HTMLSelectElement;
+    await waitFor(() =>
+      expect(sessionStorage.getItem(COMPANY_CREATE_TENANT_HINT_KEY)).toBeNull(),
+    );
+    expect(select.value).toBe("");
+  });
+
+  it("ignora y limpia un hint malformado", async () => {
+    vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A, TENANT_B]);
+    sessionStorage.setItem(COMPANY_CREATE_TENANT_HINT_KEY, "{no-es-json");
+
+    renderPage();
+
+    const select = (await screen.findByLabelText("Tenant / grupo destino", {
+      exact: false,
+    })) as HTMLSelectElement;
+    expect(sessionStorage.getItem(COMPANY_CREATE_TENANT_HINT_KEY)).toBeNull();
+    expect(select.value).toBe("");
+  });
+
+  it("limpia el hint aunque falle la carga de tenants", async () => {
+    vi.mocked(adminCoreService.listTenants).mockRejectedValue(new Error("boom"));
+    saveCompanyCreateTenantHint("tenant-b");
+
+    renderPage();
+
+    await waitFor(() => expect(adminCoreService.listTenants).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(sessionStorage.getItem(COMPANY_CREATE_TENANT_HINT_KEY)).toBeNull(),
+    );
+  });
+
+  it("SEC-02: un enlace legacy con tenant en la URL no preselecciona y la URL queda limpia", async () => {
     vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A, TENANT_B]);
 
     renderPage("/admin-core/companies/new?tenantId=tenant-b");
@@ -97,7 +183,10 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
     const select = (await screen.findByLabelText("Tenant / grupo destino", {
       exact: false,
     })) as HTMLSelectElement;
-    await waitFor(() => expect(select.value).toBe("tenant-b"));
+    await waitFor(() =>
+      expect(screen.getByTestId("location").textContent).toBe("/admin-core/companies/new"),
+    );
+    expect(select.value).toBe("");
   });
 
   it("si no hay tenants, muestra el mensaje controlado y no renderiza el formulario", async () => {
