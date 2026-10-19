@@ -3,10 +3,12 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Security;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
+using ERP.API.Tests.Support;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -480,9 +482,86 @@ public sealed class RefreshTokenServiceTests
         RefreshTokenService.Hash("test-token").Should().Be(RefreshTokenService.Hash("test-token"));
     }
 
+    // ── Logging sensible (AUTH-SENSITIVE-LOGGING) ─────────────────────────
+
+    [Fact]
+    public async Task Logs_de_rotacion_no_contienen_tokens_ni_hashes_y_conservan_correlacion()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var logger = new CapturingLogger<RefreshTokenService>();
+        var service = Build(repo, logger: logger);
+
+        var (raw, _) = await service.CreateAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            RefreshUserType.Identity
+        );
+        var original = repo.Stored[0];
+        var result = await service.ValidateAndRotateAsync(raw);
+        result.IsValid.Should().BeTrue(result.Error);
+        var successor = repo.Stored.Single(t => t.Id != original.Id);
+
+        // Reuso inmediato (benigno) del token ya rotado: también pasa por LogAudit.
+        await service.ValidateAndRotateAsync(raw);
+
+        var logs = logger.AllText();
+        logs.Should().Contain(RefreshTokenAuditEvents.RefreshSuccess);
+        logs.Should().Contain(RefreshTokenAuditEvents.RefreshReuseBenign);
+        AssertSinSecretos(logs, raw, result.NewToken!, original.TokenHash, successor.TokenHash);
+        logs.Should().NotContainEquivalentOf("hash");
+        logs.Should().Contain($"successorId={successor.Id}");
+        logs.Should().Contain($"familyId={original.FamilyId}");
+        logs.Should().Contain($"tokenId={original.Id}");
+    }
+
+    [Fact]
+    public async Task Logs_de_reuso_sospechoso_y_token_inexistente_no_contienen_tokens_ni_hashes()
+    {
+        var repo = new FakeRefreshTokenRepository();
+        var logger = new CapturingLogger<RefreshTokenService>();
+        var service = Build(repo, logger: logger);
+
+        var revocado = RefreshToken.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            null,
+            RefreshUserType.Legacy,
+            RefreshTokenService.Hash("raw-sospechoso"),
+            DateTime.UtcNow.AddMinutes(480),
+            DateTime.UtcNow.AddMinutes(480)
+        );
+        revocado.Revoke("Test");
+        repo.Stored.Add(revocado);
+        repo.SetupHash("raw-sospechoso", revocado);
+
+        await service.ValidateAndRotateAsync("raw-sospechoso");
+        await service.ValidateAndRotateAsync("raw-inexistente");
+
+        var logs = logger.AllText();
+        logs.Should().Contain(RefreshTokenAuditEvents.RefreshReuseSuspicious);
+        logs.Should().Contain(RefreshTokenAuditEvents.RefreshRotationFailed);
+        AssertSinSecretos(
+            logs,
+            "raw-sospechoso",
+            "raw-inexistente",
+            revocado.TokenHash,
+            RefreshTokenService.Hash("raw-inexistente")
+        );
+        logs.Should().NotContainEquivalentOf("hash");
+        logs.Should().Contain($"familyId={revocado.FamilyId}");
+    }
+
+    private static void AssertSinSecretos(string logs, params string[] secretos)
+    {
+        foreach (var secreto in secretos)
+            logs.Should().NotContain(secreto);
+    }
+
     private static RefreshTokenService Build(
         FakeRefreshTokenRepository repo,
-        AuthOptions? authOptions = null
+        AuthOptions? authOptions = null,
+        ILogger<RefreshTokenService>? logger = null
     )
     {
         var cache = new MemoryDistributedCache(
@@ -499,7 +578,7 @@ public sealed class RefreshTokenServiceTests
             rateLimiter,
             options,
             new NoOpSecurityMetrics(),
-            NullLogger<RefreshTokenService>.Instance
+            logger ?? NullLogger<RefreshTokenService>.Instance
         );
     }
 

@@ -128,7 +128,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
                 RefreshTokenAuditEvents.RefreshRotationFailed,
                 null,
                 null,
-                null,
                 "Token no encontrado"
             );
             _metrics.RecordJwtRefreshRevoked(RefreshTags(null, null, "invalid_token"));
@@ -144,7 +143,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
                 RefreshTokenAuditEvents.RefreshRotationFailed,
                 stored,
                 null,
-                null,
                 "Sesión expirada (límite absoluto)"
             );
             return RefreshTokenValidationResult.Fail("Sesión expirada. Inicia sesión nuevamente.");
@@ -152,7 +150,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
 
         if (!stored.IsActive)
         {
-            LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, stored, null, null, "Expirado");
+            LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, stored, null, "Expirado");
             return RefreshTokenValidationResult.Fail(
                 "Refresh token expirado. Inicia sesión nuevamente."
             );
@@ -202,7 +200,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
                 RefreshTokenAuditEvents.RefreshRotationFailed,
                 stored,
                 null,
-                null,
                 "Rotación concurrente"
             );
             return RefreshTokenValidationResult.Fail(
@@ -210,13 +207,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             );
         }
 
-        LogAudit(
-            RefreshTokenAuditEvents.RefreshSuccess,
-            previous ?? stored,
-            successor.Id,
-            successor.TokenHash,
-            null
-        );
+        LogAudit(RefreshTokenAuditEvents.RefreshSuccess, previous ?? stored, successor.Id, null);
 
         return RefreshTokenValidationResult.Ok(
             stored.UserId,
@@ -274,7 +265,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
                 RefreshTokenAuditEvents.RefreshReuseBenign,
                 stored,
                 null,
-                null,
                 "Reuso inmediato post-rotación"
             );
             return RefreshTokenValidationResult.Fail(
@@ -285,7 +275,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         LogAudit(
             RefreshTokenAuditEvents.RefreshReuseSuspicious,
             stored,
-            null,
             null,
             "Reuso tardío — posible robo"
         );
@@ -392,7 +381,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         );
         if (!userOk)
         {
-            LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, null, "user");
+            LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, "user");
             return false;
         }
 
@@ -404,7 +393,7 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         );
         if (!familyOk)
         {
-            LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, null, "family");
+            LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, "family");
             return false;
         }
 
@@ -445,7 +434,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         string eventName,
         RefreshToken? token,
         Guid? successorId,
-        string? successorHash,
         string? detail
     )
     {
@@ -456,7 +444,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
             token?.FamilyId,
             token?.Id,
             successorId,
-            successorHash,
             token?.RotationDepth,
             detail
         );
@@ -512,10 +499,12 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
     )]
     private partial void LogFamilyRevokedByFamily(Guid familyId, int count, string reason);
 
+    // Nunca incluir el token crudo ni su hash (TokenHash/ReplacedByTokenHash): el hash es la
+    // clave de búsqueda en BD. La correlación se hace por familyId/tokenId/successorId.
     [LoggerMessage(
         Level = LogLevel.Information,
         Message = "{Event} userId={UserId} tenantId={TenantId} familyId={FamilyId} tokenId={TokenId} "
-            + "successorId={SuccessorId} successorHash={SuccessorHash} depth={Depth} detail={Detail}"
+            + "successorId={SuccessorId} depth={Depth} detail={Detail}"
     )]
     private partial void LogAuditEvent(
         string @event,
@@ -524,7 +513,6 @@ public sealed partial class RefreshTokenService : IRefreshTokenService
         Guid? familyId,
         Guid? tokenId,
         Guid? successorId,
-        string? successorHash,
         int? depth,
         string? detail
     );
