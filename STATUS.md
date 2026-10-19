@@ -1,5 +1,13 @@
 # Project Status
 
+## LOCAL-ERP-READINESS-01B.1 / 01B.2 — Patrones frontend y raíz JSON grandfather (2026-10-19)
+
+Contexto: `check-architecture-guardrails.ps1` salía en handler-size antes de la sección frontend; al pasar C-03 (ADR-046, `fa3bf3781`) quedaron visibles 39 hallazgos frontend preexistentes.
+
+- **01B.1 (`dddbad4de`):** SEC-02/PR-10 corregido — el dashboard admin-core ya no pone el UUID del tenant en la URL; hint de un solo uso `erp.saas.adminCore.companyCreate.tenantHint` (TTL 5 min), aplicado solo si el tenant figura en el listado de la API, nunca como autoridad; `?tenantId=` legacy se elimina con `replace`. Dos falsos positivos `window.(confirm|prompt)(` en comentarios de pruebas reformulados (incluye un comentario en Pricing CLOSED, autorizado). PASS local: vitest focal 52/52.
+- **01B.2 (`031f4274f`):** BUG REAL fail-open — con pwsh 7 una raíz JSON arreglo de un elemento era aceptada (y concedía una excepción C-03); el validador Node también la ignoraba. Los tres verificadores rechazan raíces no objeto (`GF-invalid-root` en Node), en Windows PowerShell 5.1 y pwsh 7. PASS local: `architecture:check` 132/132; las pruebas nuevas fallan contra el código previo.
+- **Pendiente:** el guardrail completo sigue fallando con las 36 infracciones PR-7 (TSX > 500 líneas; deuda histórica, 22 en módulos CLOSED/FROZEN). Sin decisión ni ADR todavía. Estado de CI no verificado en esta nota.
+
 ## AUTH - SENSITIVE LOGGING FIX (2026-10-19)
 
 BUG REAL corregido: evento de auditoria de rotacion refresh_success registraba successorHash (SHA-256 del refresh token sucesor, clave de busqueda en BD) por parametro explicito del template LoggerMessage de RefreshTokenService (no serializacion automatica ni configuracion). Eliminado successorHash de mensajes y campos estructurados; trazabilidad conservada por familyId, tokenId y successorId. Sin cambios de logica de autenticacion, rotacion ni persistencia. PASS: RefreshTokenServiceTests 21/21 (19 existentes + 2 nuevos con CapturingLogger: rotacion, reuso benigno/sospechoso y token inexistente sin tokens ni hashes en logs); los 2 nuevos fallan contra el codigo previo. Logs historicos previos al fix pueden contener hashes. Sin suites completas, commit ni push.
