@@ -81,6 +81,8 @@ npm run dev
 
 CI valida cada `.ps1` contra `scriptsAllowed` (lista explícita) y `scriptsAllowedRoots` (subsistemas `tools/dashboard/`, `print-agent/scripts/`) en [`scripts/stack-allowlist.json`](../scripts/stack-allowlist.json) (`scripts/ci/verify-stack-allowlist.ps1`).
 
+Los artefactos no versionados de `/.local/` (directorio ignorado por Git) quedan fuera del mapa; sus archivos versionados siguen sujetos al control.
+
 | Script | Uso |
 |--------|-----|
 | `scripts/dev-launcher.ps1` | Entorno dev (Docker, EF, first-run, API, Vite, reset, tests) |
@@ -90,6 +92,7 @@ CI valida cada `.ps1` contra `scriptsAllowed` (lista explícita) y `scriptsAllow
 | `scripts/ci/run-e2e.ps1` | Playwright E2E sobre `erp_zh_test` |
 | `scripts/ci/verify-stack-allowlist.ps1` | CI: NuGet, npm, Docker, Actions, patrones, **scripts** |
 | `scripts/ci/check-pages-wrapper-rule.ps1` | CI: regla de wrappers de páginas |
+| `scripts/tests/first-run-security.tests.ps1`, `scripts/tests/frontend-process-ownership.tests.ps1`, `scripts/tests/frontend-readiness.tests.ps1`, `scripts/tests/launcher-startup.tests.ps1` | Pruebas focales del launcher: [First Run](architecture/first-run.md) |
 | `scripts/ds/*.ps1` | Auditoría y guard del Design System |
 | `scripts/qa/diagnose-pos-warehouse.ps1` | Diagnóstico POS/bodega |
 | `scripts/db/import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC (ArcGIS → `geo_*`) |

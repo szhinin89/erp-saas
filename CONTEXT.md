@@ -68,6 +68,7 @@ Manual: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 | [`scripts/backup-restore.ps1`](./scripts/backup-restore.ps1) | Backup / restore drill |
 | [`scripts/ci/run-e2e.ps1`](./scripts/ci/run-e2e.ps1) | Playwright E2E |
 | [`scripts/ci/verify-stack-allowlist.ps1`](./scripts/ci/verify-stack-allowlist.ps1) | CI stack audit |
+| [`scripts/tests/`](./scripts/tests/) | Cuatro pruebas focales del launcher: [First Run](./docs/architecture/first-run.md) |
 | [`tools/architecture/check-identity-guardrails.ps1`](./tools/architecture/check-identity-guardrails.ps1) | Auth legacy |
 | [`tools/quality/check-handler-size.ps1`](./tools/quality/check-handler-size.ps1) | Handler size |
 | [`tools/architecture/check-architecture-guardrails.ps1`](./tools/architecture/check-architecture-guardrails.ps1) | Architecture |

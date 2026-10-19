@@ -1,7 +1,7 @@
 # Scripts — ERP SaaS
 
 Scripts PowerShell **canónicos**: lista explícita `scriptsAllowed` y subsistemas `scriptsAllowedRoots`
-en [`stack-allowlist.json`](stack-allowlist.json). CI rechaza cualquier otro `.ps1`.
+en [`stack-allowlist.json`](stack-allowlist.json). CI rechaza cualquier otro `.ps1`, salvo artefactos no versionados de `/.local/` (ver [alcance del auditor](../docs/DEVELOPMENT.md#scripts-powershell-canónicos)).
 
 ## Mapa
 
@@ -14,6 +14,7 @@ en [`stack-allowlist.json`](stack-allowlist.json). CI rechaza cualquier otro `.p
 | [`ci/run-e2e.ps1`](ci/run-e2e.ps1) | Playwright E2E completo sobre `erp_zh_test` |
 | [`ci/verify-stack-allowlist.ps1`](ci/verify-stack-allowlist.ps1) | Auditoría stack CI |
 | [`ci/check-pages-wrapper-rule.ps1`](ci/check-pages-wrapper-rule.ps1) | Regla de wrappers de páginas |
+| [`tests/`](tests/) | Cuatro pruebas focales del launcher: [First Run](../docs/architecture/first-run.md) |
 | [`ds/`](ds/) | Auditoría y guard del Design System |
 | [`qa/diagnose-pos-warehouse.ps1`](qa/diagnose-pos-warehouse.ps1) | Diagnóstico POS/bodega |
 | [`db/import_inec_ecuador_geography.ps1`](db/import_inec_ecuador_geography.ps1) | SQL geografía INEC |

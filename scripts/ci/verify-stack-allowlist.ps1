@@ -161,9 +161,18 @@ if ($null -eq $allowedScripts -or $allowedScripts.Count -eq 0) {
     # Subsistemas con su propio pipeline (dashboard, print-agent): se admiten por carpeta raíz.
     $allowedRoots = if ($allowlist.PSObject.Properties.Name -contains "scriptsAllowedRoots") { @($allowlist.scriptsAllowedRoots) } else { @() }
 
+    # /.local/ es solo para artefactos del desarrollador (.gitignore).
+    # Un archivo forzado al índice conserva el control del mapa canónico.
+    $trackedLocalScripts = @(git -C $root ls-files -- .local/)
+    if ($LASTEXITCODE -ne 0) { throw 'No se pudo verificar el índice Git de /.local/.' }
+
     $ps1Files = Get-ChildItem -Path $root -Recurse -Filter "*.ps1" -File -ErrorAction SilentlyContinue |
         Where-Object {
             $full = $_.FullName
+            $relative = $full.Substring($root.Length + 1).Replace('\', '/')
+            if ($relative.StartsWith('.local/', [StringComparison]::OrdinalIgnoreCase) -and $trackedLocalScripts -notcontains $relative) {
+                return $false
+            }
             if ($full -match '[\\/]node_modules[\\/]|[\\/]bin[\\/]|[\\/]obj[\\/]|[\\/]\.git[\\/]|[\\/]dist[\\/]|[\\/]build[\\/]|[\\/]_verify_build_out[\\/]') {
                 return $false
             }
