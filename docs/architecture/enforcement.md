@@ -245,6 +245,8 @@ Auto-emite en CI cuando `GITHUB_ACTIONS=true` (integrado en `run-all.mjs`).
 
 Grandfather legacy: `tools/architecture/architecture-grandfather.json`
 
+C-03: `handlerHandleMaxLines150` usa objetos `{file, maxHandleLines, baselineCommit, adr}` según [ADR-046](../decisions/ADR-046-historical-handler-size-debt.md); no admite rutas sin techo. El guardrail PowerShell valida configuración, crecimiento y retirada de excepciones obsoletas. Sus fixtures reales se ejecutan dentro de `npm run architecture:check`.
+
 **Integridad del grandfather (bloqueante):** `check-grandfather-integrity.mjs` hace fallar `architecture:check` si una entrada apunta a un archivo inexistente (mayúsculas exactas), queda fuera del alcance de la regla que la consume (p. ej. regla F-04 que no aplica al tipo de archivo), está malformada o pertenece a una lista sin checker consumidor registrado. El mensaje identifica lista + ruta. Listas vacías son válidas. Al corregir o mover un archivo grandfathered, eliminar su entrada en el mismo PR. Toda lista nueva se registra con su consumidor en `defaultListSpecs()`.
 
 Ramas y CI: ver [architecture.md § CI y ramas](./architecture.md#ci-y-ramas) (cuerpo normativo único — no duplicado aquí).

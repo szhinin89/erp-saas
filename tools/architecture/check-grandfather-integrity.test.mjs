@@ -13,6 +13,7 @@ import { CHECKS } from './run-all.mjs';
  * un archivo existente y dentro del alcance de la regla que la consume.
  */
 const EXISTING = new Set([
+  'docs/decisions/ADR-046-historical-handler-size-debt.md',
   'backend/src/ERP.Application/Modules/Sales/UseCases/CreateSale/CreateSaleHandler.cs',
   'backend/src/ERP.API/Controllers/SalesController.cs',
   'frontend/src/modules/sales/pages/SalesPage.tsx',
@@ -20,6 +21,7 @@ const EXISTING = new Set([
   'frontend/src/lib/formatters/dateFormatters.ts',
 ]);
 const HANDLER = 'backend/src/ERP.Application/Modules/Sales/UseCases/CreateSale/CreateSaleHandler.cs';
+const CEILING = { file: HANDLER, maxHandleLines: 160, baselineCommit: '9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77', adr: 'docs/decisions/ADR-046-historical-handler-size-debt.md' };
 const CONTROLLER = 'backend/src/ERP.API/Controllers/SalesController.cs';
 const DEAD = 'backend/src/ERP.Application/Modules/Ventas/UseCases/CrearVenta/CrearVentaHandler.cs';
 
@@ -45,7 +47,7 @@ test('archivo existente dentro del alcance → PASS', () => {
   assert.deepEqual(
     run({
       namingConventionsGrandfathered: [HANDLER],
-      handlerHandleMaxLines150: [HANDLER],
+      handlerHandleMaxLines150: [CEILING],
       backendControllerMaxLines: [CONTROLLER],
       tsxMaxLines500: ['frontend/src/modules/sales/pages/SalesPage.tsx'],
       designSystemGrandfathered: [
@@ -120,4 +122,29 @@ test('fileExistsExactCase distingue mayúsculas y rechaza directorios', () => {
 test('grandfather real del repo pasa y el check corre dentro de architecture:check', () => {
   assert.deepEqual(runCheckGrandfatherIntegrity().violations, []);
   assert.ok(CHECKS.some((c) => c.name === 'grandfather-integrity'));
+});
+
+test('C-03 rechaza cadenas, duplicados y metadatos invalidos', () => {
+  const invalid = [HANDLER, null, {}, { ...CEILING, maxHandleLines: 150 },
+    { ...CEILING, maxHandleLines: 160.5 }, { ...CEILING, maxHandleLines: '160' },
+    { ...CEILING, baselineCommit: 'main' }, { ...CEILING, adr: 'docs/decisions/ADR-046-missing.md' },
+    { ...CEILING, file: HANDLER.replaceAll('/', '\\') },
+    { ...CEILING, file: '../' + HANDLER }, { ...CEILING, extra: true }];
+  for (const entry of invalid) assert.ok(run({ handlerHandleMaxLines150: [entry] }).length, JSON.stringify(entry));
+  assert.ok(run({ handlerHandleMaxLines150: [CEILING, CEILING] }).some(v => /duplicada/.test(v.message)));
+  assert.ok(run({ handlerHandleMaxLines150: [{ ...CEILING, file: DEAD }] }).some(v => v.rule === 'GF-dead-entry'));
+  assert.ok(run({ handlerHandleMaxLines150: [{ ...CEILING, file: CONTROLLER }] }).some(v => v.rule === 'GF-out-of-scope'));
+});
+
+test('present known lists must be arrays; scalar configuration and legacy lists retain their contract', () => {
+  for (const list of Object.keys(specs)) {
+    for (const value of [null, {}, 'invalid']) {
+      const findings = run({ [list]: value });
+      assert.equal(findings.length, 1);
+      assert.equal(findings[0].rule, 'GF-invalid-list');
+      assert.ok(findings[0].message.includes(list));
+    }
+    assert.deepEqual(run({ [list]: [] }), []);
+  }
+  assert.deepEqual(run({ frontendIndexChunkMaxKb: 650, $schemaNote: 'metadata' }), []);
 });

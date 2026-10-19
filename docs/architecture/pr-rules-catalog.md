@@ -430,6 +430,7 @@ Handler de 400 líneas con create + email + SRI + contabilidad inline.
 ### ENFORCEMENT
 - **BLOQUEANTE PR:** handler `Handle` > 150 líneas sin justificación en descripción PR.
 - Script: `tools/quality/check-handler-size.ps1` (propuesto en sección Guardrails).
+- Deuda histórica aprobada: [ADR-046](../decisions/ADR-046-historical-handler-size-debt.md). Solo ocho excepciones con techo individual en `handlerHandleMaxLines150`; crecimiento y excepciones obsoletas fallan. El límite general permanece en 150.
 
 ---
 

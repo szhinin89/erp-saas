@@ -18,7 +18,7 @@ const GRANDFATHER_FILE = 'tools/architecture/architecture-grandfather.json';
 /**
  * @typedef {{
  *   consumer: string,
- *   shape: 'path' | 'fileRules',
+ *   shape: 'path' | 'fileRules' | 'handlerCeiling',
  *   inScope: (rel: string) => boolean,
  *   rulesFor?: (rel: string) => Set<string>,
  * }} GrandfatherListSpec
@@ -41,7 +41,7 @@ export function defaultListSpecs() {
     },
     handlerHandleMaxLines150: {
       consumer: 'tools/quality/check-handler-size.ps1',
-      shape: 'path',
+      shape: 'handlerCeiling',
       inScope: (rel) =>
         rel.startsWith('backend/src/ERP.Application/') && /Handler[^/]*\.cs$/.test(rel),
     },
@@ -108,9 +108,13 @@ export function findGrandfatherIntegrityViolations(grandfather, { specs, fileExi
   const report = (rule, message) => found.push({ rule, file: GRANDFATHER_FILE, message });
 
   for (const [list, value] of Object.entries(grandfather)) {
-    if (list.startsWith('$') || !Array.isArray(value) || value.length === 0) continue;
-
     const spec = specs[list];
+    if (list.startsWith('$')) continue;
+    if (spec && !Array.isArray(value)) {
+      report('GF-invalid-list', `Lista "${list}": se esperaba un array.`);
+      continue;
+    }
+    if (!Array.isArray(value) || value.length === 0) continue;
     if (!spec) {
       report(
         'GF-unknown-list',
@@ -119,10 +123,25 @@ export function findGrandfatherIntegrityViolations(grandfather, { specs, fileExi
       continue;
     }
 
-    // Duplicados se toleran (los consumidores usan Set/some); se reporta una vez por ruta.
+    // Las listas legacy toleran duplicados; C-03 los rechaza por contrato ADR-046.
     const seen = new Set();
     for (const item of value) {
-      const raw = spec.shape === 'fileRules' ? item?.file : item;
+      if (spec.shape === 'handlerCeiling') {
+        const canonical = (s) => typeof s === 'string' && /^[A-Za-z0-9_-]+(?:[./][A-Za-z0-9_-]+)*$/.test(s) && !s.includes('..');
+        if (!item || Array.isArray(item) || typeof item !== 'object' ||
+            Object.keys(item).sort().join(',') !== 'adr,baselineCommit,file,maxHandleLines' ||
+            !canonical(item.file) || !Number.isInteger(item.maxHandleLines) || item.maxHandleLines <= 150 || item.maxHandleLines > 2147483647 ||
+            typeof item.baselineCommit !== 'string' || !/^[0-9a-f]{40}$/.test(item.baselineCommit) ||
+            typeof item.adr !== 'string' || !/^docs\/decisions\/ADR-[0-9]+-[a-z0-9-]+\.md$/.test(item.adr) || !fileExists(item.adr)) {
+          report('GF-invalid-entry', `Lista "${list}": objeto C-03 invalido ${JSON.stringify(item)}.`);
+          continue;
+        }
+        if (seen.has(item.file)) {
+          report('GF-invalid-entry', `Lista "${list}": ruta duplicada "${item.file}".`);
+          continue;
+        }
+      }
+      const raw = spec.shape === 'fileRules' || spec.shape === 'handlerCeiling' ? item?.file : item;
       if (typeof raw !== 'string' || raw.trim() === '') {
         report('GF-invalid-entry', `Lista "${list}": entrada inválida ${JSON.stringify(item)} — se esperaba ${spec.shape === 'fileRules' ? '{ file, rules }' : 'una ruta repo-relativa'}.`);
         continue;

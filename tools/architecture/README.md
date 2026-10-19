@@ -114,6 +114,8 @@ Estados: `healthy` (≥90), `warning` (≥70), `critical` (<70). Warnings no fal
 
 **Excepciones:** preferir refactor. Si inevitable: `exemptions` o grandfather + ADR.
 
+C-03: `handlerHandleMaxLines150` contiene objetos `{file, maxHandleLines, baselineCommit, adr}` ([ADR-046](../../docs/decisions/ADR-046-historical-handler-size-debt.md)). El script real PowerShell impide superar cada techo y exige retirar entradas al alcanzar 150 líneas; el checker Node valida su integridad. Fixtures: `node --test tools/quality/check-handler-size.test.mjs` desde la raíz, incluidas en `npm run architecture:check`. Requieren PowerShell (`pwsh` en Linux; Windows PowerShell 5.1 como alternativa en Windows) y Git local, sin servicios externos.
+
 ## Estructura
 
 ```

@@ -8,7 +8,7 @@
   JSON con rutas legacy permitidas (tools/architecture/architecture-grandfather.json).
 #>
 param(
-    [int]$MaxHandleLines = 150,
+    [ValidateSet(150)][int]$MaxHandleLines = 150,
     [string]$GrandfatherPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'architecture/architecture-grandfather.json')
 )
 
@@ -24,15 +24,34 @@ function Resolve-RepoRoot {
 }
 
 function Get-AllHandleMethodLineCounts {
-    param([string[]]$Lines)
+    param([string[]]$Lines, [switch]$RequireComplete)
+    # Recognition only: mask comments/literals while preserving offsets and newlines.
+    # Body sizes below still use the original physical lines and brace counter.
+    $text = $Lines -join "`n"
+    $literalPattern = @'
+//[^\r\n]*|/\*[\s\S]*?\*/|"{3,}[\s\S]*?"{3,}|(?:\$?@|@\$)"(?:""|[^"])*"|\$?"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'
+'@
+    $masked = [regex]::Replace($text, $literalPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) [regex]::Replace($m.Value, '[^\r\n]', ' ') })
+    $handleName = '\bHandle\s*(?:<[^(){};]+>\s*)?\('
+    $declaration = '(?m)^[ \t]*(?:(?:public|protected|internal|private|static|virtual|override|sealed|new|async|unsafe|extern|partial|readonly)\s+)+[\w<>,\[\].?: \t\r\n]+?\s+Handle\s*(?:<[^(){};]+>\s*)?\('
+    $methods = @([regex]::Matches($masked, $declaration))
+    if ($RequireComplete) {
+        # Calls or unsupported signatures are ambiguous: never silently grant a waiver.
+        $candidates = @([regex]::Matches($masked, $handleName) | Where-Object {
+            # Unambiguous expression forwarding, including the existing HandleAsync wrapper.
+            $prefix = $masked.Substring(0, $_.Index)
+            $prefix -notmatch '(?:=>|\breturn|\bawait)\s*$'
+        })
+        if ($candidates.Count -ne $methods.Count) { throw 'Handle ambiguo: firma o invocacion no reconocida con seguridad.' }
+        if ($methods.Count -ne 1) { throw 'Excepcion exige exactamente un Handle detectable.' }
+    }
     $results = @()
-    for ($i = 0; $i -lt $Lines.Count; $i++) {
-        if ($Lines[$i] -notmatch '^\s*(public|protected)\s+(async\s+)?[\w<>,\[\]\.?]+\s+Handle\s*\(') {
-            continue
-        }
+    foreach ($method in $methods) {
+        $i = ([regex]::Matches($masked.Substring(0, $method.Index), "`n")).Count
         $brace = 0
         $started = $false
         $count = 0
+        $completed = $false
         for ($j = $i; $j -lt $Lines.Count; $j++) {
             foreach ($ch in $Lines[$j].ToCharArray()) {
                 if ($ch -eq '{') { $brace++; $started = $true }
@@ -41,9 +60,11 @@ function Get-AllHandleMethodLineCounts {
             if ($started) { $count++ }
             if ($started -and $brace -eq 0) {
                 $results += $count
+                $completed = $true
                 break
             }
         }
+        if ($RequireComplete -and -not $completed) { throw 'Handle no contable: cuerpo incompleto.' }
     }
     return $results
 }
@@ -59,24 +80,59 @@ if (-not (Test-Path $applicationRoot)) {
     Write-Error "No se encontró $applicationRoot"
 }
 
-$grandfather = @()
-if (Test-Path $GrandfatherPath) {
-    $json = Get-Content -Raw -Path $GrandfatherPath | ConvertFrom-Json
-    $grandfather = @($json.handlerHandleMaxLines150 | ForEach-Object { $_.Replace('\', '/') })
+function Assert-ExactFile {
+    param([string]$Relative)
+    if ($Relative -cnotmatch '^[A-Za-z0-9_-]+(?:[./][A-Za-z0-9_-]+)*$' -or $Relative.Contains('..')) {
+        throw "Ruta invalida: $Relative"
+    }
+    $current = $root
+    foreach ($part in $Relative.Split('/')) {
+        $entry = @(Get-ChildItem -LiteralPath $current -Force | Where-Object { $_.Name -ceq $part })
+        if ($entry.Count -ne 1 -or ($entry[0].Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw "Ruta inexistente, caso incorrecto o enlace: $Relative" }
+        $current = $entry[0].FullName
+    }
+    if (-not (Test-Path -LiteralPath $current -PathType Leaf)) { throw "No es archivo: $Relative" }
+}
+
+$json = Get-Content -Raw -LiteralPath $GrandfatherPath | ConvertFrom-Json
+if ($json -isnot [pscustomobject] -or $json.handlerHandleMaxLines150 -isnot [Array]) { throw 'handlerHandleMaxLines150 debe ser una lista dentro de un objeto.' }
+$grandfather = [System.Collections.Generic.Dictionary[string,object]]::new([StringComparer]::Ordinal)
+foreach ($entry in $json.handlerHandleMaxLines150) {
+    if ($null -eq $entry -or $entry -isnot [pscustomobject]) { throw 'Excepcion C-03 debe ser objeto, no ruta legacy.' }
+    $fields = @($entry.PSObject.Properties.Name | Sort-Object)
+    if (($fields -join ',') -cne 'adr,baselineCommit,file,maxHandleLines') { throw 'Metadatos C-03 incompletos o desconocidos.' }
+    if ($entry.file -isnot [string] -or $entry.file -cnotmatch '^backend/src/ERP\.Application/(?:[^/]+/)*[^/]*Handler[^/]*\.cs$') { throw 'Ruta C-03 fuera de alcance.' }
+    Assert-ExactFile $entry.file
+    if ($grandfather.ContainsKey($entry.file)) { throw "Excepcion duplicada: $($entry.file)" }
+    if (($entry.maxHandleLines -isnot [int] -and $entry.maxHandleLines -isnot [long]) -or $entry.maxHandleLines -le 150 -or $entry.maxHandleLines -gt [int]::MaxValue) { throw 'Techo C-03 debe ser entero mayor que 150.' }
+    if ($entry.baselineCommit -isnot [string] -or $entry.baselineCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Commit base invalido.' }
+    $commitCheck = git -C $root cat-file -t $entry.baselineCommit 2>&1
+    if ($LASTEXITCODE -ne 0 -or "$commitCheck" -ne 'commit') { throw 'Commit base inexistente o no es commit.' }
+    if ($entry.adr -isnot [string] -or $entry.adr -cnotmatch '^docs/decisions/ADR-[0-9]+-[a-z0-9-]+\.md$') { throw 'Referencia ADR invalida.' }
+    Assert-ExactFile $entry.adr
+    $grandfather.Add($entry.file, $entry)
 }
 
 $violations = New-Object System.Collections.Generic.List[string]
 Get-ChildItem -Path $applicationRoot -Recurse -Filter '*Handler*.cs' -File | ForEach-Object {
     $relative = Normalize-RelativePath -Path $_.FullName -Root $root
     $lines = Get-Content -Path $_.FullName
-    $handleCounts = Get-AllHandleMethodLineCounts -Lines $lines
+    $handleCounts = @(Get-AllHandleMethodLineCounts -Lines $lines -RequireComplete:($grandfather.ContainsKey($relative)))
     $maxHandle = ($handleCounts | Measure-Object -Maximum).Maximum
-    if ($null -eq $maxHandle -or $maxHandle -le $MaxHandleLines) { return }
-
-    if ($grandfather -contains $relative) {
-        Write-Host "WARN (grandfather): $relative Handle=$maxHandle > $MaxHandleLines" -ForegroundColor Yellow
+    if ($grandfather.ContainsKey($relative)) {
+        $entry = $grandfather[$relative]
+        if ($handleCounts.Count -ne 1) {
+            $violations.Add("$relative - excepcion exige exactamente un Handle contable")
+        } elseif ($maxHandle -le 150) {
+            $violations.Add("$relative - excepcion obsoleta: Handle=$maxHandle; retirar entrada")
+        } elseif ($maxHandle -gt $entry.maxHandleLines) {
+            $violations.Add("$relative - Handle=$maxHandle exceeds ceiling=$($entry.maxHandleLines); ADR=$($entry.adr)")
+        } else {
+            Write-Host "WARN (grandfather): $relative Handle=$maxHandle ceiling=$($entry.maxHandleLines) ADR=$($entry.adr)" -ForegroundColor Yellow
+        }
         return
     }
+    if ($null -eq $maxHandle -or $maxHandle -le $MaxHandleLines) { return }
 
     $violations.Add("$relative - Handle=$maxHandle lines (max $MaxHandleLines)")
 }
