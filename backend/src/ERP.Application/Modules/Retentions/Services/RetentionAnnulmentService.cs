@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.MasterData.Interfaces;
@@ -112,6 +113,7 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
     private readonly ISriDocumentStatusQuery _statusQuery;
     private readonly ISriSettingsRepository _sriSettings;
     private readonly ICompanyClock _clock;
+    private readonly IAccountingPostingDispatcher _accountingPostings;
     private readonly ILogger<RetentionAnnulmentService> _logger;
 
     public RetentionAnnulmentService(
@@ -124,9 +126,11 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         ISriDocumentStatusQuery statusQuery,
         ISriSettingsRepository sriSettings,
         ICompanyClock clock,
+        IAccountingPostingDispatcher accountingPostings,
         ILogger<RetentionAnnulmentService> logger
     )
     {
+        _accountingPostings = accountingPostings;
         _requests = requests;
         _retentions = retentions;
         _sriAnnulment = sriAnnulment;
@@ -427,6 +431,13 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
                 outcome.Error ?? "Error desconocido.",
                 ct
             );
+
+        // ACCOUNTING-CONTINUITY-01 — el flujo oficial del origen ya comiteó sus reversos como
+        // obligaciones Pending: intento inicial aquí, post-commit, para cualquier llamador (el job no pasa
+        // por AccountingPostingDispatchBehavior; desde MediatR la cola queda vacía y el behavior no
+        // repite). Antes de marcar la finalización: una carrera sobre ese marcador no deja reversos
+        // sin intento. Un fallo contable queda Failed sin afectar la anulación operativa.
+        await _accountingPostings.DispatchPendingAsync(ct);
 
         request = await _requests.GetByIdAsync(tenantId, companyId, requestId, ct);
         request!.MarkFinalized(userId);

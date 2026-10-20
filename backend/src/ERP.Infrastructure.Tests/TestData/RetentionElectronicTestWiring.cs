@@ -403,6 +403,7 @@ public static class RetentionElectronicTestWiring
             sriStatus,
             SriSettings(company.CompanyId),
             new CompanyClock(db),
+            AccountingContinuityTestWiring.DispatcherFor(db),
             NullLogger<RetentionAnnulmentService>.Instance
         );
 

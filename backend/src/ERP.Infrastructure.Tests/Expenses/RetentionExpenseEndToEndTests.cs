@@ -414,7 +414,9 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
     /// <summary>Mismo mecanismo de producción (AddMediatR con escaneo de ensamblado) que
     /// SupplierPaymentEndToEndTests — confirma que los posting translators de Expenses/Retentions
     /// se registran automáticamente como INotificationHandler.</summary>
-    private (ErpDbContext db, IPublisher publisher) BuildWiredContext()
+    private (ErpDbContext db, IPublisher publisher) BuildWiredContext(
+        Action<IServiceCollection>? configure = null
+    )
     {
         var deferred = new DeferredPublisher();
         var options = new DbContextOptionsBuilder<ErpDbContext>()
@@ -468,6 +470,7 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
                 typeof(ExpenseDocumentConfirmedPostingTranslator).Assembly
             )
         );
+        configure?.Invoke(services);
 
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();

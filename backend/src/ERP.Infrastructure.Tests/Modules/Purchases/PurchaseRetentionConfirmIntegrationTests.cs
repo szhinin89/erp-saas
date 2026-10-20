@@ -286,7 +286,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         );
 
     /// <summary>DbContext con el fan-out real de producción (AddMediatR por escaneo de ensamblado): traductores de posting de compra/retención y auditoría.</summary>
-    private ErpDbContext CreateWiredContext()
+    private ErpDbContext CreateWiredContext(Action<IServiceCollection>? configure = null)
     {
         var deferred = new DeferredPublisher();
         var db = new ErpDbContext(
@@ -327,6 +327,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 typeof(PurchaseInvoiceConfirmedPostingTranslator).Assembly
             )
         );
+        configure?.Invoke(services);
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
         _wiredProviders.AddOrUpdate(db, provider);

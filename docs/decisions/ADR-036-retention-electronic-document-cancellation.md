@@ -707,6 +707,7 @@ Con PENDIENTE DE ANULAR, NO AUTORIZADO o sin una consulta exitosa no se puede, p
 - Cada solicitud se procesa en su scope bajo `JobExecutionContext`, por el **mismo** `VerifyWithSriAsync` (usuario `Guid.Empty`).
 - Es idempotente: verificaciones concurrentes (job + UI) producen una sola aceptación y una sola finalización (test 8). Ninguna transacción queda abierta durante el SOAP.
 - `Rejected` y `Expired` quedan reservados: ninguna transición los alcanza desde 01B.
+- **Corrección 2026-10-20 (reverso contable en la finalización por job):** el job no pasa por `AccountingPostingDispatchBehavior` (MediatR), así que los reversos que registraba el flujo oficial del origen quedaban `Pending` sin el intento inicial que exige [accounting.md §4](../architecture/accounting.md). `FinalizeAsync` ejecuta ahora `IAccountingPostingDispatcher.DispatchPendingAsync` después del commit del flujo del origen y antes de marcar la finalización, para cualquier llamador. Desde MediatR la cola ya queda vacía (un solo intento). Un fallo contable deja la obligación `Failed` sin revertir la anulación y se recupera solo con reproceso manual (§6, sin reintento automático). Pruebas: `*.SriAnnulmentJobAccounting.cs` (Compras y Gastos).
 
 ### 25.7 Decision Required — `NO AUTORIZADO` sobre un comprobante ya autorizado
 

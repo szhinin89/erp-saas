@@ -165,6 +165,16 @@ public static class AccountingContinuityTestWiring
         return result.Value ?? throw new InvalidOperationException(result.Error);
     }
 
+    /// <summary>
+    /// Dispatcher del contenedor cableado de <paramref name="db"/> (misma cola que llenan sus
+    /// traductores), para servicios construidos a mano que despachan por sí mismos; inerte si el
+    /// contexto no está cableado.
+    /// </summary>
+    public static IAccountingPostingDispatcher DispatcherFor(ErpDbContext db) =>
+        Providers.TryGetValue(db, out var provider)
+            ? provider.GetRequiredService<IAccountingPostingDispatcher>()
+            : Moq.Mock.Of<IAccountingPostingDispatcher>();
+
     /// <summary>Completa la operación y luego ejecuta el intento inicial post-commit.</summary>
     public static async Task<T> ThenDispatchAsync<T>(this Task<T> operation, ErpDbContext db)
     {
