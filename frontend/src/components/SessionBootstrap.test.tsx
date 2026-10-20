@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { SessionBootstrap } from "./SessionBootstrap";
 import { useAuthStore } from "../store/authStore";
 import { useSessionStore } from "../store/sessionStore";
@@ -8,7 +8,10 @@ import { useElectronicInvoicingStatusStore } from "../store/electronicInvoicingS
 import { setAccessToken, clearAccessToken } from "../lib/session/authTokenMemory";
 import { sessionService } from "../modules/session/api/sessionService";
 import { electronicInvoicingService } from "../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
-import { loadPrecisionPolicy } from "../lib/config/precisionPolicy.config";
+import { apiGet } from "../modules/lib/apiEnvelope";
+import { TEST_PRECISION_POLICY } from "../test/precisionPolicyFixture";
+import { usePrecisionPolicy } from "../hooks/usePrecisionPolicy";
+import { getPrecisionPolicySnapshot, loadPrecisionPolicy } from "../lib/config/precisionPolicy.config";
 
 // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: el bootstrap global de sesión no debe
 // disparar el ping externo al SRI (el que produce el ruido SocketException 10054 en logs al
@@ -26,10 +29,11 @@ vi.mock(
   }),
 );
 
-vi.mock("../lib/config/precisionPolicy.config", () => ({
-  loadPrecisionPolicy: vi.fn().mockResolvedValue({}),
-  clearPrecisionPolicy: vi.fn(),
-}));
+vi.mock("../modules/lib/apiEnvelope", () => ({ apiGet: vi.fn() }));
+vi.mock("../lib/config/precisionPolicy.config", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../lib/config/precisionPolicy.config")>();
+  return { ...actual, loadPrecisionPolicy: vi.fn(actual.loadPrecisionPolicy) };
+});
 
 vi.mock("../lib/session/authRefreshManager", () => ({
   initializeAuthBroadcastListener: vi.fn(),
@@ -45,6 +49,7 @@ function resetStores() {
 beforeEach(() => {
   vi.clearAllMocks();
   resetStores();
+  vi.mocked(apiGet).mockResolvedValue(TEST_PRECISION_POLICY);
   vi.mocked(sessionService.getContext).mockResolvedValue({
     identity: { userId: "u1", fullName: "Test", email: "t@t.com" },
     tenant: { id: "t1", displayName: "Tenant", logo: null, timezone: "America/Guayaquil" },
@@ -145,4 +150,33 @@ describe("SessionBootstrap — política de precisión (fail-closed)", () => {
     );
     await findByText("app");
   });
+});
+
+// El mismo consumidor fail-closed que usa DashboardPage; no sustituye la policy por un mock.
+function OperationalDashboard() {
+  const policy = usePrecisionPolicy();
+  return <div>dashboard:{policy.quantityDecimals}</div>;
+}
+function ModeScreen() {
+  const companyId = useAuthStore((s) => s.user?.companyId);
+  return companyId ? <OperationalDashboard /> : <div>admin global</div>;
+}
+
+it.each(["c1", "c2"])("BUG REAL: global / c1 / global / %s sin F5 espera una nueva policy", async (targetCompany) => {
+  setAccessToken("fake-token");
+  useAuthStore.setState({ hasHydrated: true, isAuthenticated: true, user: { companyId: null } as never });
+  const view = render(<SessionBootstrap><ModeScreen /></SessionBootstrap>);
+  await view.findByText("admin global");
+  await act(async () => { useAuthStore.setState({ user: { companyId: "c1" } as never }); });
+  await view.findByText(`dashboard:${TEST_PRECISION_POLICY.quantityDecimals}`);
+  await act(async () => { useAuthStore.setState({ user: { companyId: null } as never }); });
+  await view.findByText("admin global");
+  expect(getPrecisionPolicySnapshot().loaded).toBe(false);
+
+  let resolvePolicy!: (value: typeof TEST_PRECISION_POLICY) => void;
+  vi.mocked(apiGet).mockReturnValueOnce(new Promise((resolve) => { resolvePolicy = resolve; }));
+  await act(async () => { useAuthStore.setState({ user: { companyId: targetCompany } as never }); });
+  expect(view.queryByText(/^dashboard:/)).toBeNull();
+  await act(async () => { resolvePolicy({ ...TEST_PRECISION_POLICY, quantityDecimals: 3 }); });
+  await view.findByText("dashboard:3");
 });

@@ -88,6 +88,9 @@ export function SessionBootstrap({ children }: Props) {
   useEffect(() => {
     if (!ready) return;
     if (!needsPolicy) {
+      // Salir a modo global invalida también el resultado: reingresar a la misma
+      // empresa debe esperar una carga nueva, aunque coincida su companyId.
+      setPolicyResult(null);
       clearPrecisionPolicy();
       return;
     }
