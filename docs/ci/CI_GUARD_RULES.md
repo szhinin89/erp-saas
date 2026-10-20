@@ -64,7 +64,7 @@ Prefijos permitidos en `platform-guard-config.json` → `allowedApiPrefixes`:
 |----------|------|
 | `architecture.yml` | `npm run platform:guard` (hard-gate) |
 | `frontend-ci.yml` | `npm run platform:guard` + incluido en `npm run build` |
-| `backend-ci.yml` | `dotnet test` + `npm run platform:guard` |
+| `backend-ci.yml` | [Pruebas por proyecto/grupo, TRX y tiempos](BACKEND_TESTS.md); Platform guard cubierto por los dos workflows anteriores |
 
 ## Principio
 

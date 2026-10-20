@@ -197,6 +197,13 @@ dotnet test ERP.Application.Tests
 dotnet test ERP.API.Tests
 ```
 
+En CI, los cuatro proyectos Domain/Application/Architecture/API se ejecutan completos en
+jobs Ubuntu independientes. Infrastructure se distribuye mediante clases explícitas en
+ocho grupos Ubuntu y las seis pruebas golden RIDE se ejecutan en Windows. Cada grupo
+publica TRX, inventario, logs y tiempos; una prueba sin asignar o un resultado incompleto
+falla el gate. Distribución, comandos y validación pendiente: [Backend CI](ci/BACKEND_TESTS.md).
+`build-and-deploy.yml` publica después de los gates de `ci.yml`, sin repetir la suite.
+
 ### E2E (Playwright)
 
 Requisitos: Docker, .NET SDK, Node 22+, `npx playwright install chromium`.

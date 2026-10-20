@@ -44,3 +44,14 @@ jobs:
   security:
     needs: architecture
     uses: ./.github/workflows/security.yml
+
+  publish:
+    needs: [backend, frontend, security]
+    # Keep the previous publication branches and PR target.
+    if: >-
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')) ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+      github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/build-and-deploy.yml
+    secrets:
+      AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

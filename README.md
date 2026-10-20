@@ -67,7 +67,8 @@ Orquestador: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 | Workflow | Job |
 |----------|-----|
 | `architecture.yml` | Stack allowlist + guardrails |
-| `backend-ci.yml` | `dotnet test` |
+| `backend-ci.yml` | 4 proyectos completos + 8 grupos Infrastructure + 6 golden en Windows; TRX y tiempos |
+| `build-and-deploy.yml` | Publicación tras los gates de CI; sin repetir pruebas |
 | `frontend-ci.yml` | lint, build y guardrails frontend (sin API ni E2E) |
 | `security.yml` | Identity guardrails (reusable) |
 | `e2e.yml` | Entrada manual que reutiliza `e2e-manual.yml` |

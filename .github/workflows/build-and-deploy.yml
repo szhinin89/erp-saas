@@ -1,21 +1,18 @@
-# HITO 1 — Build, test y despliegue opcional a Azure App Service
+# Publicación tras CI y despliegue opcional a Azure App Service
 # Despliegue (job deploy-azure): definir variable de repo AZURE_WEBAPP_NAME y el secreto AZURE_WEBAPP_PUBLISH_PROFILE (XML del perfil).
 # Si AZURE_WEBAPP_NAME no está definida, el job de despliegue no se ejecuta (evita fallos en forks sin Azure).
 
-name: Build, Test & Deploy
+name: Build & Deploy
 
 permissions:
   contents: read
 
+# Called only after CI gates pass; never starts a second full test suite.
 on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_call:
+    secrets:
+      AZURE_WEBAPP_PUBLISH_PROFILE:
+        required: false
 
 concurrency:
   group: deploy-${{ github.workflow }}-${{ github.ref }}
@@ -26,8 +23,8 @@ env:
   DOTNET_NOLOGO: 1
 
 jobs:
-  build-test-publish:
-    name: Backend — restore, test, publish
+  publish-api:
+    name: Backend — publish verified API
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -41,9 +38,8 @@ jobs:
           cache: true
           cache-dependency-path: backend/src/**/*.csproj
 
-      - name: Restore, test, publish API
+      - name: Publish API
         run: |
-          dotnet test backend/src/ERP.slnx -c Release --verbosity minimal
           dotnet publish backend/src/ERP.API/ERP.API.csproj -c Release -o "${{ github.workspace }}/publish" --no-self-contained
 
       - name: Upload artifact (API)
@@ -55,7 +51,7 @@ jobs:
   deploy-azure:
     name: Deploy — Azure Web App
     runs-on: ubuntu-latest
-    needs: build-test-publish
+    needs: publish-api
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AZURE_WEBAPP_NAME != ''
 
     steps:
