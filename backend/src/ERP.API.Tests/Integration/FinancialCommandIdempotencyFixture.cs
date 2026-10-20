@@ -461,7 +461,7 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         return company.Id;
     }
 
-    /// <summary>Caja activa SIN cuenta contable (un cobro que la elige se rechaza) — para probar que un fallo no consume la intención.</summary>
+    /// <summary>Caja activa sin cuenta: cobro aceptado y posting fallido recuperable.</summary>
     public async Task<Guid> CreateCashRegisterWithoutAccountAsync()
     {
         using var scope = Factory.Services.CreateScope();
@@ -479,6 +479,16 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         db.CashRegisters.Add(register);
         await db.SaveChangesAsync();
         return register.Id;
+    }
+
+    public async Task SetCashRegisterActiveAsync(Guid cashRegisterId, bool active)
+    {
+        using var scope = CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var register = await db.CashRegisters.IgnoreQueryFilters().SingleAsync(r => r.Id == cashRegisterId);
+        if (active) register.Enable(_adminId);
+        else register.Disable(_adminId);
+        await db.SaveChangesAsync();
     }
 
     public async Task SetCashRegisterAccountAsync(Guid cashRegisterId)

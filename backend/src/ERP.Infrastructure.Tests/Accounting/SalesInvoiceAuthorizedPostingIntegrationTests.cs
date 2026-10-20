@@ -1,3 +1,6 @@
+using ERP.Application.Audit;
+using ERP.Infrastructure.Audit;
+using FixedAuditContext = ERP.Infrastructure.Tests.Audit.FixedAuditContext;
 using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -194,6 +197,45 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         );
     }
 
+    [Fact]
+    public async Task Audit_wiring_persists_with_company_scope_and_rolls_back_with_the_period()
+    {
+        var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
+        await using var wired = db;
+        var rolledBack = AccountingPeriod.Create(_tenantId, _companyId, 2040, 1,
+            new DateOnly(2040, 1, 1), new DateOnly(2040, 1, 31), _createdBy);
+        await using (var transaction = await db.Database.BeginTransactionAsync())
+        {
+            db.AccountingPeriods.Add(rolledBack);
+            await db.SaveChangesAsync();
+            (await db.AccountingPeriodAudits.CountAsync(a => a.EntityId == rolledBack.Id)).Should().Be(1);
+            await using var outside = CreateContext();
+            (await outside.AccountingPeriodAudits.AnyAsync(a => a.EntityId == rolledBack.Id)).Should().BeFalse();
+            await transaction.RollbackAsync();
+        }
+        db.ChangeTracker.Clear();
+        var committed = AccountingPeriod.Create(_tenantId, _companyId, 2041, 1,
+            new DateOnly(2041, 1, 1), new DateOnly(2041, 1, 31), _createdBy);
+        db.AccountingPeriods.Add(committed);
+        await db.SaveChangesAsync();
+
+        await using var verify = CreateContext();
+        var audit = await verify.AccountingPeriodAudits.SingleAsync(a => a.EntityId == committed.Id);
+        audit.CompanyId.Should().Be(_companyId);
+        audit.TenantId.Should().Be(_tenantId);
+        audit.UserId.Should().NotBeEmpty();
+        (await verify.AccountingPeriodAudits.AnyAsync(a => a.EntityId == rolledBack.Id)).Should().BeFalse();
+        (await verify.AccountingPeriods.AnyAsync(p => p.Id == rolledBack.Id)).Should().BeFalse();
+
+        var otherCompany = Company.CreateManaged(_tenantId, "1790012345002", "Other audit company", createdBy: _createdBy);
+        verify.Companies.Add(otherCompany);
+        await verify.SaveChangesAsync();
+        await using var otherScope = new ErpDbContext(
+            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(otherCompany.Id));
+        (await otherScope.AccountingPeriodAudits.AnyAsync(a => a.EntityId == committed.Id)).Should().BeFalse();
+    }
+
     /// <summary>Construye un contenedor DI real (mismo mecanismo de producción: AddMediatR con
     /// escaneo de ensamblado) apuntando siempre a la misma instancia de ErpDbContext, para que
     /// el Translator y el handler de Caja operen dentro de la misma transacción/SaveChanges.</summary>
@@ -261,6 +303,10 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
             ERP.Domain.Modules.Inventory.Interfaces.IStockRepository,
             ERP.Infrastructure.Persistence.Repositories.Inventory.StockRepository
         >();
+        // Match the production audit fan-out discovered by MediatR.
+        services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => tenantId, () => companyId, Guid.NewGuid()));
         services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(
@@ -998,6 +1044,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         inv.Authorize(_createdBy);
 
         await stock.SaveChangesWithSequenceRetryAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verify = CreateContext();
         (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id))
@@ -1136,6 +1183,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         inv.Authorize(_createdBy);
 
         await stock.SaveChangesWithSequenceRetryAsync();
+        await AccountingContinuityTestWiring.DispatchPendingAsync(db);
 
         await using var verify = CreateContext();
         (await verify.SalesInvoices.AsNoTracking().SingleAsync(x => x.Id == inv.Id))
@@ -1312,12 +1360,19 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
         await AccountingContinuityTestWiring.DispatchPendingAsync(seedDb);
 
         var go = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Barrera: ambos contextos cargan la factura en Draft antes de autorizar; si no, el perdedor
+        // podría cargarla ya autorizada y fallar en EnsureDraft en vez de chocar por xmin.
+        var bothLoaded = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var loadedCount = 0;
+        var barrierTimeout = TimeSpan.FromSeconds(30);
         Task<Exception?> AuthorizeAsync() =>
             Task.Run(async () =>
             {
                 var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
                 var inv = await LoadInvoiceAsync(db, draft.Id);
-                await go.Task.ConfigureAwait(false);
+                if (Interlocked.Increment(ref loadedCount) == 2)
+                    bothLoaded.TrySetResult(true);
+                await go.Task.WaitAsync(barrierTimeout).ConfigureAwait(false);
                 try
                 {
                     inv.Authorize(_createdBy);
@@ -1332,6 +1387,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests : IAsy
             });
         var a = AuthorizeAsync();
         var b = AuthorizeAsync();
+        await bothLoaded.Task.WaitAsync(barrierTimeout);
         go.SetResult(true);
         var outcomes = await Task.WhenAll(a, b);
 

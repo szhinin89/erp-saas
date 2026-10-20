@@ -1046,7 +1046,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
     {
         var inv = await SeedConfirmedInvoiceAsync(unitPrice: 100m, quantity: 10m, paidAmount: 0m);
 
-        async Task<(Guid ReturnId, bool Success, string? Error)> CreateAndAuthorize(decimal qty)
+        async Task<Guid> CreateDraft(decimal qty)
         {
             await using var dbDraft = CreateContext();
             var draftHandler = new CreatePurchaseReturnDraftHandler(
@@ -1069,19 +1069,26 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             );
             draft.IsSuccess.Should().BeTrue(draft.Error);
 
+            return draft.Value!.Id;
+        }
+
+        async Task<(Guid ReturnId, bool Success, string? Error)> Authorize(Guid returnId)
+        {
             await using var dbAuth = CreateContext();
             var authHandler = BuildAuthorizeHandler(dbAuth);
             var result = await authHandler.Handle(
-                new AuthorizePurchaseReturnCommand(draft.Value!.Id, Guid.NewGuid()),
+                new AuthorizePurchaseReturnCommand(returnId, Guid.NewGuid()),
                 CancellationToken.None
             );
-            return (draft.Value.Id, result.IsSuccess, result.IsSuccess ? null : result.Error);
+            return (returnId, result.IsSuccess, result.IsSuccess ? null : result.Error);
         }
 
         // Dos devoluciones de 6 unidades cada una sobre una factura de 10 — juntas exceden el
         // remanente; deben serializarse por Lock A, nunca las dos autorizar con éxito.
-        var task1 = CreateAndAuthorize(6m);
-        var task2 = CreateAndAuthorize(6m);
+        var firstDraft = await CreateDraft(6m);
+        var secondDraft = await CreateDraft(6m);
+        var task1 = Authorize(firstDraft);
+        var task2 = Authorize(secondDraft);
         var results = await Task.WhenAll(task1, task2);
 
         results
@@ -1090,6 +1097,25 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             .Be(1, "el remanente combinado (12) excede las 10 unidades disponibles");
         var loser = results.Single(r => !r.Success);
         loser.Error.Should().Contain("remanente");
+        await using var verify = CreateContext();
+        var returns = await verify.PurchaseReturns.AsNoTracking()
+            .Where(r => r.Id == firstDraft || r.Id == secondDraft).ToListAsync();
+        returns.Should().HaveCount(2);
+        returns.Single(r => r.Id == loser.ReturnId).Status.Should().Be(PurchaseReturnStatus.Draft);
+        returns.Single(r => r.Id == loser.ReturnId).HistoricalCostTotal.Should().BeNull();
+        returns.Single(r => r.Id == results.Single(x => x.Success).ReturnId).Status
+            .Should().Be(PurchaseReturnStatus.Authorized);
+        (await verify.StockMovements.AsNoTracking().CountAsync(m => m.SourceDocId == loser.ReturnId))
+            .Should().Be(0);
+        (await verify.SupplierCredits.AsNoTracking().CountAsync(c => c.SourcePurchaseReturnId == loser.ReturnId))
+            .Should().Be(0);
+        (await verify.AccountingPostings.AsNoTracking().CountAsync(p => p.SourceEventId == loser.ReturnId))
+            .Should().Be(0);
+        var winnerId = results.Single(x => x.Success).ReturnId;
+        var exits = await verify.StockMovements.AsNoTracking()
+            .Where(m => m.SourceDocId == winnerId).ToListAsync();
+        exits.Should().ContainSingle();
+        exits.Single().Quantity.Should().Be(-6m);
     }
 
     // ── Escenario 11 — Devolución y pago simultáneos ─────────────────────

@@ -116,6 +116,10 @@ public sealed class DocSeqConcurrencyFixture : IAsyncLifetime
 /// Valida que <c>CaptureNextAsync</c> es correcto bajo concurrencia extrema.
 /// Requiere Docker.
 /// </summary>
+[CollectionDefinition("DocumentSequenceConcurrency", DisableParallelization = true)]
+public sealed class DocumentSequenceConcurrencyCollection;
+
+[Collection("DocumentSequenceConcurrency")]
 [Trait("Category", "PostgreSql")]
 [Trait("Category", "Concurrency")]
 public sealed class DocumentSequenceConcurrencyTests : IClassFixture<DocSeqConcurrencyFixture>
@@ -147,6 +151,22 @@ public sealed class DocumentSequenceConcurrencyTests : IClassFixture<DocSeqConcu
 
         AssertNoDuplicates(results, n);
         await AssertFinalSeqAsync(epId, n);
+
+        // New scopes must still rent and return connections after the concurrent burst.
+        for (var probe = 0; probe < 3; probe++)
+        {
+            await using var scope = _f.Services.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            await db.Database.OpenConnectionAsync();
+            await using (var command = db.Database.GetDbConnection().CreateCommand())
+            {
+                command.CommandText = "SELECT 1";
+                (await command.ExecuteScalarAsync()).Should().Be(1);
+            }
+            await db.Database.CloseConnectionAsync();
+            db.Database.GetDbConnection().State.Should().Be(System.Data.ConnectionState.Closed);
+        }
+
         PrintMetrics(n, results.Metrics);
     }
 

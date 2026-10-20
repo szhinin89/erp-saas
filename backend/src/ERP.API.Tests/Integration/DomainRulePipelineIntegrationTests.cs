@@ -251,6 +251,7 @@ public sealed class DomainRulePipelineIntegrationTests : IAsyncLifetime
                 typeof(BranchScopeBehavior<,>),
                 typeof(DomainRuleBehavior<,>),
                 typeof(CachingBehavior<,>),
+                typeof(AccountingPostingDispatchBehavior<,>),
                 typeof(InnerTraceBehavior<,>)
             );
 

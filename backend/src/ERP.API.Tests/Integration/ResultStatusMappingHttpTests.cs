@@ -125,22 +125,22 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
 
     // ── Cambian ──────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// ResolveItemQuery devuelve VALIDATION_ERROR para un código en blanco (antes ToOkOrNotFound lo
-    /// habría convertido en 404; ahora sería 422, cubierto en ResultStatusMappingTests), pero por HTTP
-    /// es inalcanzable: [ApiController] rechaza el {code} en blanco en el model binding con 400
-    /// ProblemDetails antes de llegar a Application. Contrato real, sin cambios.
-    /// </summary>
+    /// <summary>El model binding usa el contrato Validation del ERP (ADR-027).</summary>
     [Fact]
-    public async Task Items_resolve_con_codigo_en_blanco_lo_rechaza_el_model_binding_con_400()
+    public async Task Items_resolve_con_codigo_en_blanco_responde_422_VALIDATION_ERROR()
     {
         var response = await _client.GetAsync("/api/v1/items/resolve/%20");
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await response.Content.ReadAsStringAsync())
-            .Should()
-            .Contain("\"errors\"")
-            .And.Contain("code");
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var envelope = json.RootElement;
+        envelope.GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
+        var errors = envelope.GetProperty("data").GetProperty("errors");
+        errors.ValueKind.Should().Be(JsonValueKind.Object);
+        var codeErrors = errors.GetProperty("code");
+        codeErrors.ValueKind.Should().Be(JsonValueKind.Array);
+        codeErrors.EnumerateArray().Should().NotBeEmpty();
+        codeErrors.EnumerateArray().Should().OnlyContain(e => !string.IsNullOrWhiteSpace(e.GetString()));
     }
 
     [Theory]

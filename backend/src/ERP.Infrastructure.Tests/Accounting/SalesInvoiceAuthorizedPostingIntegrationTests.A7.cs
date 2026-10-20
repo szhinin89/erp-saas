@@ -209,7 +209,8 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             var posting = postings.Should().ContainSingle().Subject;
             posting.FactType.Should().Be("CostOfGoodsSold");
             posting.Status.Should().Be(AccountingPostingStatus.Posted);
-            posting.Payload.Should().Contain("\"historicalCostTotal\":4");
+            using (var payload = System.Text.Json.JsonDocument.Parse(posting.Payload))
+                payload.RootElement.GetProperty("historicalCostTotal").GetDecimal().Should().Be(4m);
             var entries = await verify.JournalEntries.Include(e => e.Lines).Where(e => e.SourceEventId == invoice.Id).ToListAsync();
             entries.Select(e => e.SourceEventType).Should().BeEquivalentTo(new[] { "InvoiceIssued", "CostOfGoodsSold" });
             entries.Should().OnlyContain(e => e.Status == JournalEntryStatus.Posted);

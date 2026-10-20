@@ -1,5 +1,12 @@
+using ERP.Application;
 using ERP.Application.Common;
+using ERP.Application.Setup;
+using ERP.Application.Setup.CreateInitialAdmin;
+using ERP.Domain.Setup;
+using ERP.Infrastructure;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Seeding.Global;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -35,12 +42,23 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
 
     public string ConnectionString => _postgres.GetConnectionString();
 
-    public async Task InitializeAsync() => await _postgres.StartAsync();
+    internal const string InitialOwnerUsername = "fixture.initial.owner";
+
+    public async Task InitializeAsync()
+    {
+        await _postgres.StartAsync();
+        try { await MigrateAsync(); }
+        catch
+        {
+            await _postgres.DisposeAsync();
+            throw;
+        }
+    }
 
     public new async Task DisposeAsync()
     {
-        await _postgres.DisposeAsync();
-        await base.DisposeAsync();
+        try { await base.DisposeAsync(); }
+        finally { await _postgres.DisposeAsync(); }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -50,7 +68,6 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
         builder.UseSetting("Hangfire:Server:Enabled", "false");
         builder.UseSetting("Hangfire:StorageConnectionString", ConnectionString);
         builder.UseSetting("HealthChecks:EnableRedis", "false");
-        builder.UseSetting("Testing:SkipFirstRunSetup", "true");
         builder.UseSetting("Testing:SkipCommercialPlansBootstrap", "true");
 
         builder.ConfigureAppConfiguration(
@@ -150,8 +167,63 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
 
     public async Task MigrateAsync()
     {
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        await db.Database.MigrateAsync();
+        // Never access Services here: it starts the first web host. Prepare a complete,
+        // installed test ERP before either that host or a WithWebHostBuilder clone starts.
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnection"] = ConnectionString,
+            ["InstallData:Enabled"] = "false",
+            ["Snowflake:WorkerId"] = "17",
+        }).Build();
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(config);
+        services.AddLogging();
+        services.AddDistributedMemoryCache();
+        services.AddSingleton<IHostApplicationLifetime, PreparationLifetime>();
+        services.AddInfrastructure(config);
+        services.AddApplication();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using (var migrationScope = provider.CreateAsyncScope())
+        {
+            var db = migrationScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            await db.Database.MigrateAsync();
+            var repository = migrationScope.ServiceProvider.GetRequiredService<ISystemSetupRepository>();
+            if ((await repository.GetAsync())?.IsInitialized == true)
+                return;
+            await migrationScope.ServiceProvider.GetRequiredService<IGlobalBootstrapOrchestrator>().RunAsync();
+        }
+
+        // Synthetic credentials belong only to this disposable database. Issue the test
+        // token on the real owner session without printing/capturing the console banner.
+        var token = SetupTokenCrypto.CreateRawToken();
+        await using (var tokenScope = provider.CreateAsyncScope())
+        {
+            var repository = tokenScope.ServiceProvider.GetRequiredService<ISystemSetupRepository>();
+            await tokenScope.ServiceProvider.GetRequiredService<IFirstRunSession>().RunStartupAsync(async ct =>
+            {
+                var state = await repository.GetAsync(ct);
+                if (state is null)
+                {
+                    state = SystemSetupState.CreateNew();
+                    await repository.AddAsync(state, ct);
+                }
+                state.IssueSetupToken(SetupTokenCrypto.Hash(token), DateTime.UtcNow.AddMinutes(15));
+                await repository.SaveChangesAsync(ct);
+            }, default);
+        }
+        await using var installationScope = provider.CreateAsyncScope();
+        var result = await installationScope.ServiceProvider.GetRequiredService<IMediator>().Send(
+            new CreateInitialAdminCommand(InitialOwnerUsername, "Fixture", "Owner",
+                "fixture.owner@example.invalid", "SyntheticFixtureInstall1!", token));
+        if (!result.IsSuccess)
+            throw new InvalidOperationException("Isolated test ERP installation failed.");
+    }
+
+    private sealed class PreparationLifetime : IHostApplicationLifetime
+    {
+        public CancellationToken ApplicationStarted => CancellationToken.None;
+        public CancellationToken ApplicationStopping => CancellationToken.None;
+        public CancellationToken ApplicationStopped => CancellationToken.None;
+        public void StopApplication() { }
     }
 }

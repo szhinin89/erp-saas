@@ -1,3 +1,6 @@
+using ERP.Application.Audit;
+using ERP.Infrastructure.Audit;
+using FixedAuditContext = ERP.Infrastructure.Tests.Audit.FixedAuditContext;
 using ERP.Infrastructure.Tests.TestData;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Posting;
@@ -357,6 +360,45 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         );
     }
 
+    [Fact]
+    public async Task Audit_wiring_persists_with_company_scope_and_rolls_back_with_the_period()
+    {
+        var (db, _) = BuildWiredContext();
+        await using var wired = db;
+        var rolledBack = AccountingPeriod.Create(_tenantId, _companyId, 2040, 1,
+            new DateOnly(2040, 1, 1), new DateOnly(2040, 1, 31), _createdBy);
+        await using (var transaction = await db.Database.BeginTransactionAsync())
+        {
+            db.AccountingPeriods.Add(rolledBack);
+            await db.SaveChangesAsync();
+            (await db.AccountingPeriodAudits.CountAsync(a => a.EntityId == rolledBack.Id)).Should().Be(1);
+            await using var outside = CreateContext();
+            (await outside.AccountingPeriodAudits.AnyAsync(a => a.EntityId == rolledBack.Id)).Should().BeFalse();
+            await transaction.RollbackAsync();
+        }
+        db.ChangeTracker.Clear();
+        var committed = AccountingPeriod.Create(_tenantId, _companyId, 2041, 1,
+            new DateOnly(2041, 1, 1), new DateOnly(2041, 1, 31), _createdBy);
+        db.AccountingPeriods.Add(committed);
+        await db.SaveChangesAsync();
+
+        await using var verify = CreateContext();
+        var audit = await verify.AccountingPeriodAudits.SingleAsync(a => a.EntityId == committed.Id);
+        audit.CompanyId.Should().Be(_companyId);
+        audit.TenantId.Should().Be(_tenantId);
+        audit.UserId.Should().NotBeEmpty();
+        (await verify.AccountingPeriodAudits.AnyAsync(a => a.EntityId == rolledBack.Id)).Should().BeFalse();
+        (await verify.AccountingPeriods.AnyAsync(p => p.Id == rolledBack.Id)).Should().BeFalse();
+
+        var otherCompany = Company.CreateManaged(_tenantId, "1790012345002", "Other audit company", createdBy: _createdBy);
+        verify.Companies.Add(otherCompany);
+        await verify.SaveChangesAsync();
+        await using var otherScope = new ErpDbContext(
+            new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options,
+            new FixedCurrentTenant(_tenantId), new NoOpPublisher(), new FixedCurrentCompany(otherCompany.Id));
+        (await otherScope.AccountingPeriodAudits.AnyAsync(a => a.EntityId == committed.Id)).Should().BeFalse();
+    }
+
     /// <summary>Mismo mecanismo de producción (AddMediatR con escaneo de ensamblado) que
     /// CollectionPostingIntegrationTests — confirma que SupplierPaymentConfirmedPostingTranslator
     /// se registra automáticamente como INotificationHandler&lt;SupplierPaymentConfirmedEvent&gt;.</summary>
@@ -392,6 +434,10 @@ public sealed class SupplierPaymentEndToEndTests : IAsyncLifetime
         services.AddScoped<ICompanyBankAccountRepository, CompanyBankAccountRepository>();
         services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
         services.AddScoped<IPostingEngine, PostingEngine>();
+        // Match the production audit fan-out discovered by MediatR.
+        services.AddScoped(typeof(IAuditWriter<>), typeof(EfAuditWriter<>));
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IAuditContext>(_ => new FixedAuditContext(() => _tenantId, () => _companyId, _createdBy));
         services.AddAccountingContinuity();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(

@@ -1,3 +1,7 @@
+using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -435,17 +439,18 @@ public sealed class FinancialCommandIdempotencyTests
     {
         var op = await _f.CreateOperatorAsync();
         var receivable = await _f.CreateReceivableAsync(300m);
-        var register = await _f.CreateCashRegisterWithoutAccountAsync();
+        var register = op.CashRegisterId;
+        await _f.SetCashRegisterActiveAsync(register, false);
         var client = _f.CreateClient(op.UserId);
         var body = Collection(receivable, 100m, Guid.NewGuid(), cashRegisterId: register);
         var before = await _f.CountEffectsAsync(receivableId: receivable);
 
-        (await PostAsync(client, CollectionsUrl, body))
-            .Status.Should()
-            .NotBe(HttpStatusCode.Created);
+        var rejected = await PostAsync(client, CollectionsUrl, body);
+        rejected.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
+        rejected.Code.Should().Be("VALIDATION_ERROR");
         (await _f.CountEffectsAsync(receivableId: receivable)).Should().Be(before);
 
-        await _f.SetCashRegisterAccountAsync(register);
+        await _f.SetCashRegisterActiveAsync(register, true);
         var retried = await PostAsync(client, CollectionsUrl, body);
         var replay = await PostAsync(client, CollectionsUrl, body);
 
@@ -454,6 +459,57 @@ public sealed class FinancialCommandIdempotencyTests
         var after = await _f.CountEffectsAsync(receivableId: receivable);
         after.Collections.Should().Be(1);
         after.ReceivablePaid.Should().Be(100m);
+    }
+
+    [Fact]
+    public async Task Cobro_aceptado_con_posting_Failed_se_reprocesa_sin_duplicar_efectos()
+    {
+        var op = await _f.CreateOperatorAsync();
+        var receivable = await _f.CreateReceivableAsync(300m);
+        var register = await _f.CreateCashRegisterWithoutAccountAsync();
+        var client = _f.CreateClient(op.UserId);
+        var body = Collection(receivable, 100m, Guid.NewGuid(), cashRegisterId: register);
+        var before = await _f.CountEffectsAsync(receivableId: receivable);
+        var first = await PostAsync(client, CollectionsUrl, body);
+        first.Status.Should().Be(HttpStatusCode.Created);
+        first.Id.Should().NotBeNull();
+        Guid postingId;
+        using (var scope = _f.CreateDbScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var posting = await db.AccountingPostings.IgnoreQueryFilters().AsNoTracking()
+                .SingleAsync(p => p.SourceModule == "Finance" && p.SourceEventId == first.Id);
+            posting.Status.Should().Be(AccountingPostingStatus.Failed);
+            posting.ErrorCode.Should().Be("FINANCIAL_DESTINATION_ACCOUNT_NOT_CONFIGURED");
+            postingId = posting.Id;
+            (await db.JournalEntries.IgnoreQueryFilters().CountAsync(j => j.SourceModule == "Finance" && j.SourceEventId == first.Id))
+                .Should().Be(0);
+        }
+        var failedEffects = await _f.CountEffectsAsync(receivableId: receivable);
+        failedEffects.Collections.Should().Be(1);
+        failedEffects.ReceivablePaid.Should().Be(100m);
+        failedEffects.JournalEntries.Should().Be(before.JournalEntries);
+        (await PostAsync(client, CollectionsUrl, body)).Id.Should().Be(first.Id);
+        (await _f.CountEffectsAsync(receivableId: receivable)).Should().Be(failedEffects);
+        await _f.SetCashRegisterAccountAsync(register);
+        var reprocess = await client.PostAsJsonAsync($"/api/v1/accounting/postings/{postingId}/reprocess",
+            new { reason = "Cuenta de caja configurada" });
+        reprocess.StatusCode.Should().Be(HttpStatusCode.OK, await reprocess.Content.ReadAsStringAsync());
+        using (var scope = _f.CreateDbScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var posting = await db.AccountingPostings.IgnoreQueryFilters().AsNoTracking().SingleAsync(p => p.Id == postingId);
+            posting.Status.Should().Be(AccountingPostingStatus.Posted, posting.ErrorMessage);
+            var entry = await db.JournalEntries.IgnoreQueryFilters().AsNoTracking().Include(j => j.Lines)
+                .SingleAsync(j => j.SourceModule == "Finance" && j.SourceEventId == first.Id);
+            entry.Lines.Sum(l => l.Debit).Should().Be(100m);
+            entry.Lines.Sum(l => l.Credit).Should().Be(100m);
+            entry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Debit == 100m);
+        }
+        var after = await _f.CountEffectsAsync(receivableId: receivable);
+        after.Should().Be(failedEffects with { JournalEntries = failedEffects.JournalEntries + 1 });
+        (await PostAsync(client, CollectionsUrl, body)).Id.Should().Be(first.Id);
+        (await _f.CountEffectsAsync(receivableId: receivable)).Should().Be(after);
     }
 
     [Fact]

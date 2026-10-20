@@ -316,7 +316,8 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             if (success)
             {
                 costs.Single().Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted);
-                costs.Single().Payload.Should().Contain("\"historicalCostTotal\":2");
+                using var payload = System.Text.Json.JsonDocument.Parse(costs.Single().Payload);
+                payload.RootElement.GetProperty("historicalCostTotal").GetDecimal().Should().Be(2m);
             }
             var entries = await db.JournalEntries.Include(e => e.Lines).Where(e => e.SourceEventId == id).ToListAsync();
             entries.Should().HaveCount(success ? 2 : 0);

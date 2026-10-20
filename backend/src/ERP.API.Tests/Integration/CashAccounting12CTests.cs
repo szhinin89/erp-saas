@@ -1,3 +1,4 @@
+using ERP.Application.Common.Services;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -76,35 +77,70 @@ public sealed class CashAccounting12CTests : IClassFixture<FinancialCommandIdemp
         return (posting, entry);
     }
 
-    [Fact]
-    public async Task ManualIncome_y_ManualExpense_con_cuenta_asientan_contra_la_caja_real_y_la_cuenta_del_motivo()
+    private async Task<string> SetCompanyTimezoneAsync(string timezone)
     {
-        var op = await _f.CreateOperatorAsync();
-        var client = _f.CreateClient(op.UserId);
-        var incomeAccount = await AccountIdAsync("4.2.01.001");
-        var expenseAccount = await AccountIdAsync("6.4.01.002");
-        var incomeReason = await CreateReasonAsync(CashMovementType.ManualIncome);
-        var expenseReason = await CreateReasonAsync(CashMovementType.ManualExpense);
-        await SetReasonAccountAsync(client, incomeReason, incomeAccount);
-        await SetReasonAccountAsync(client, expenseReason, expenseAccount);
+        using var scope = _f.CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var company = await db.Companies.IgnoreQueryFilters().SingleAsync(c => c.Id == _f.CompanyId);
+        var previous = company.Timezone;
+        company.Timezone = timezone;
+        await db.SaveChangesAsync();
+        return previous;
+    }
 
-        var incomeId = await RecordMovementAsync(client, op.CashSessionId, "ManualIncome", incomeReason, 25.40m);
-        var expenseId = await RecordMovementAsync(client, op.CashSessionId, "ManualExpense", expenseReason, 7.15m);
+    private async Task<DateOnly> ExpectedCompanyDateAsync(Guid sourceId, bool closed = false)
+    {
+        using var scope = _f.CreateDbScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var timezone = await db.Companies.IgnoreQueryFilters().Where(c => c.Id == _f.CompanyId)
+            .Select(c => c.Timezone).SingleAsync();
+        var instant = closed
+            ? (await db.Set<CashSession>().IgnoreQueryFilters().AsNoTracking().SingleAsync(s => s.Id == sourceId)).ClosedAt!.Value
+            : (await db.CashMovements.IgnoreQueryFilters().AsNoTracking().SingleAsync(m => m.Id == sourceId)).CreatedAt;
+        return CompanyTimeZone.LocalDate(instant, CompanyTimeZone.Resolve(timezone));
+    }
 
-        var (income, incomeEntry) = await AccountingOfAsync(incomeId);
-        income!.Status.Should().Be(AccountingPostingStatus.Posted, income.ErrorMessage);
-        income.FactType.Should().Be("ManualIncome");
-        income.EntryDate.Should().Be(_f.Today);
-        incomeEntry!.Lines.Should().HaveCount(2);
-        incomeEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Debit == 25.40m);
-        incomeEntry.Lines.Should().ContainSingle(l => l.AccountId == incomeAccount && l.Credit == 25.40m);
+    [Theory]
+    [InlineData("America/Guayaquil")]
+    [InlineData("Etc/GMT+12")]
+    [InlineData("Pacific/Kiritimati")]
+    public async Task ManualIncome_y_ManualExpense_con_cuenta_asientan_contra_la_caja_real_y_la_cuenta_del_motivo(string timezone)
+    {
+        var previousTimezone = await SetCompanyTimezoneAsync(timezone);
+        try
+        {
+            var op = await _f.CreateOperatorAsync();
+            var client = _f.CreateClient(op.UserId);
+            var incomeAccount = await AccountIdAsync("4.2.01.001");
+            var expenseAccount = await AccountIdAsync("6.4.01.002");
+            var incomeReason = await CreateReasonAsync(CashMovementType.ManualIncome);
+            var expenseReason = await CreateReasonAsync(CashMovementType.ManualExpense);
+            await SetReasonAccountAsync(client, incomeReason, incomeAccount);
+            await SetReasonAccountAsync(client, expenseReason, expenseAccount);
 
-        var (expense, expenseEntry) = await AccountingOfAsync(expenseId);
-        expense!.Status.Should().Be(AccountingPostingStatus.Posted, expense.ErrorMessage);
-        expense.FactType.Should().Be("ManualExpense");
-        expenseEntry!.Lines.Should().HaveCount(2);
-        expenseEntry.Lines.Should().ContainSingle(l => l.AccountId == expenseAccount && l.Debit == 7.15m);
-        expenseEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Credit == 7.15m);
+            var incomeId = await RecordMovementAsync(client, op.CashSessionId, "ManualIncome", incomeReason, 25.40m);
+            var expenseId = await RecordMovementAsync(client, op.CashSessionId, "ManualExpense", expenseReason, 7.15m);
+
+            var (income, incomeEntry) = await AccountingOfAsync(incomeId);
+            income!.Status.Should().Be(AccountingPostingStatus.Posted, income.ErrorMessage);
+            income.FactType.Should().Be("ManualIncome");
+            income.EntryDate.Should().Be(await ExpectedCompanyDateAsync(incomeId));
+            incomeEntry!.Lines.Should().HaveCount(2);
+            incomeEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Debit == 25.40m);
+            incomeEntry.Lines.Should().ContainSingle(l => l.AccountId == incomeAccount && l.Credit == 25.40m);
+
+            var (expense, expenseEntry) = await AccountingOfAsync(expenseId);
+            expense!.Status.Should().Be(AccountingPostingStatus.Posted, expense.ErrorMessage);
+            expense.FactType.Should().Be("ManualExpense");
+            expense.EntryDate.Should().Be(await ExpectedCompanyDateAsync(expenseId));
+            expenseEntry!.Lines.Should().HaveCount(2);
+            expenseEntry.Lines.Should().ContainSingle(l => l.AccountId == expenseAccount && l.Debit == 7.15m);
+            expenseEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Credit == 7.15m);
+        }
+        finally
+        {
+            await SetCompanyTimezoneAsync(previousTimezone);
+        }
     }
 
     [Fact]
@@ -184,45 +220,57 @@ public sealed class CashAccounting12CTests : IClassFixture<FinancialCommandIdemp
         entry.Lines.Should().NotContain(l => l.AccountId == otherBankAccount);
     }
 
-    [Fact]
-    public async Task Cierre_faltante_sobrante_y_sin_diferencia()
+    [Theory]
+    [InlineData("America/Guayaquil")]
+    [InlineData("Etc/GMT+12")]
+    [InlineData("Pacific/Kiritimati")]
+    public async Task Cierre_faltante_sobrante_y_sin_diferencia(string timezone)
     {
-        var surplusAccount = await AccountIdAsync("4.2.01.003");
-        var shortageAccount = await AccountIdAsync("6.5.01.001");
-
-        async Task<Guid> CloseAsync(decimal opening, decimal counted)
+        var previousTimezone = await SetCompanyTimezoneAsync(timezone);
+        try
         {
-            var op = await _f.CreateOperatorAsync(opening);
-            var client = _f.CreateClient(op.UserId);
-            var response = await client.PostAsJsonAsync($"/api/v1/cash-sessions/{op.CashSessionId}/close", new
+            var surplusAccount = await AccountIdAsync("4.2.01.003");
+            var shortageAccount = await AccountIdAsync("6.5.01.001");
+
+            async Task<Guid> CloseAsync(decimal opening, decimal counted)
             {
-                closingCounts = new[] { new { denominationValue = counted, denominationLabel = "Total", quantity = 1 } },
-                closeNotes = "Arqueo 12C",
-            });
-            response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
-            return op.CashSessionId;
+                var op = await _f.CreateOperatorAsync(opening);
+                var client = _f.CreateClient(op.UserId);
+                var response = await client.PostAsJsonAsync($"/api/v1/cash-sessions/{op.CashSessionId}/close", new
+                {
+                    closingCounts = new[] { new { denominationValue = counted, denominationLabel = "Total", quantity = 1 } },
+                    closeNotes = "Arqueo 12C",
+                });
+                response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+                return op.CashSessionId;
+            }
+
+            var shortageSession = await CloseAsync(100m, 90m);
+            var (shortage, shortageEntry) = await AccountingOfAsync(shortageSession);
+            shortage!.Status.Should().Be(AccountingPostingStatus.Posted, shortage.ErrorMessage);
+            shortage.FactType.Should().Be("CashCountShortage");
+            shortage.EntryDate.Should().Be(await ExpectedCompanyDateAsync(shortageSession, closed: true));
+            shortageEntry!.Lines.Should().HaveCount(2);
+            shortageEntry.Lines.Should().ContainSingle(l => l.AccountId == shortageAccount && l.Debit == 10m);
+            shortageEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Credit == 10m);
+
+            var surplusSession = await CloseAsync(100m, 112.50m);
+            var (surplus, surplusEntry) = await AccountingOfAsync(surplusSession);
+            surplus!.Status.Should().Be(AccountingPostingStatus.Posted, surplus.ErrorMessage);
+            surplus.FactType.Should().Be("CashCountSurplus");
+            surplus.EntryDate.Should().Be(await ExpectedCompanyDateAsync(surplusSession, closed: true));
+            surplusEntry!.Lines.Should().HaveCount(2);
+            surplusEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Debit == 12.50m);
+            surplusEntry.Lines.Should().ContainSingle(l => l.AccountId == surplusAccount && l.Credit == 12.50m);
+
+            var evenSession = await CloseAsync(100m, 100m);
+            var (none, noEntry) = await AccountingOfAsync(evenSession);
+            none.Should().BeNull();
+            noEntry.Should().BeNull();
         }
-
-        var shortageSession = await CloseAsync(100m, 90m);
-        var (shortage, shortageEntry) = await AccountingOfAsync(shortageSession);
-        shortage!.Status.Should().Be(AccountingPostingStatus.Posted, shortage.ErrorMessage);
-        shortage.FactType.Should().Be("CashCountShortage");
-        shortage.EntryDate.Should().Be(_f.Today);
-        shortageEntry!.Lines.Should().HaveCount(2);
-        shortageEntry.Lines.Should().ContainSingle(l => l.AccountId == shortageAccount && l.Debit == 10m);
-        shortageEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Credit == 10m);
-
-        var surplusSession = await CloseAsync(100m, 112.50m);
-        var (surplus, surplusEntry) = await AccountingOfAsync(surplusSession);
-        surplus!.Status.Should().Be(AccountingPostingStatus.Posted, surplus.ErrorMessage);
-        surplus.FactType.Should().Be("CashCountSurplus");
-        surplusEntry!.Lines.Should().HaveCount(2);
-        surplusEntry.Lines.Should().ContainSingle(l => l.AccountId == _f.CashAccountId && l.Debit == 12.50m);
-        surplusEntry.Lines.Should().ContainSingle(l => l.AccountId == surplusAccount && l.Credit == 12.50m);
-
-        var evenSession = await CloseAsync(100m, 100m);
-        var (none, noEntry) = await AccountingOfAsync(evenSession);
-        none.Should().BeNull();
-        noEntry.Should().BeNull();
+        finally
+        {
+            await SetCompanyTimezoneAsync(previousTimezone);
+        }
     }
 }
