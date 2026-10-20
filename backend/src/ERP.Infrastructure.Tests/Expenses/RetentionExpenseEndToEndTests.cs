@@ -472,6 +472,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
         _wiredProvider = provider;
+        // Permite el intento post-commit de AccountingPostingDispatchBehavior (los tests invocan handlers sin MediatR).
+        AccountingContinuityTestWiring.Register(db, provider);
 
         return (db, deferred);
     }
@@ -998,7 +1000,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             .Handle(
                 new CancelExpenseDocumentCommand(expenseId, "RETQA cancelacion de prueba"),
                 CancellationToken.None
-            );
+            )
+            .ThenDispatchAsync(dbCancel);
 
         cancelResult.IsSuccess.Should().BeTrue(because: cancelResult.Error);
 
@@ -1053,7 +1056,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
                 .Handle(
                     new CancelExpenseDocumentCommand(expenseId, "RETQA anulacion"),
                     CancellationToken.None
-                );
+                )
+                .ThenDispatchAsync(db);
             return (result.IsSuccess, result.Error);
         }
         catch (DbUpdateException ex)
@@ -1176,7 +1180,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             .Handle(
                 new CancelExpenseDocumentCommand(expenseId, "RETQA cancelacion bloqueada"),
                 CancellationToken.None
-            );
+            )
+            .ThenDispatchAsync(dbCancel);
 
         cancelResult.IsSuccess.Should().BeFalse("la CxP ya tiene un pago aplicado");
 
@@ -1258,7 +1263,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
             .Handle(
                 new CancelExpenseDocumentCommand(expenseId, "RETQA regresion cancelacion"),
                 CancellationToken.None
-            );
+            )
+            .ThenDispatchAsync(dbCancel);
         cancelResult.IsSuccess.Should().BeTrue(because: cancelResult.Error);
 
         await using var verifyDb2 = CreateContext();
@@ -1308,7 +1314,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
         // Anular el gasto con su obligación Failed (sin asiento) la cancela; no fabrica reversos.
         var (dbCancel, _) = BuildWiredContext();
         var cancel = await BuildCancelHandler(dbCancel)
-            .Handle(new CancelExpenseDocumentCommand(expenseId, "CONT anulación"), CancellationToken.None);
+            .Handle(new CancelExpenseDocumentCommand(expenseId, "CONT anulación"), CancellationToken.None)
+            .ThenDispatchAsync(dbCancel);
         cancel.IsSuccess.Should().BeTrue(because: cancel.Error);
         await using var verifyCancel = CreateContext();
         (await verifyCancel.AccountingPostings.SingleAsync(x => x.SourceEventId == expenseId))

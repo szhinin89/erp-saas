@@ -63,6 +63,11 @@ public sealed class RideDependencyInjectionTests
         services.AddScoped<ICurrentCompany>(_ => new FixedCurrentCompany(Guid.NewGuid));
         services.AddScoped<ICurrentUser>(_ => new FixedCurrentUser(Guid.NewGuid));
         services.AddScoped<IElectronicDocumentRepository, ElectronicDocumentRepository>();
+        // Registrado por ERP.Application.DependencyInjection; ElectronicDocumentRideSourceXmlProvider lo consume.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentInternalReader,
+            ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentInternalReader
+        >();
         services.AddScoped<
             ERP.Domain.Modules.Company.Interfaces.ICompanyRepository,
             ERP.Infrastructure.Persistence.Repositories.CompanyRepository

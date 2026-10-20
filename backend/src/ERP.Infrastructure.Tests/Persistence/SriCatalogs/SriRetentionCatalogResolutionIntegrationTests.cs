@@ -134,7 +134,9 @@ public sealed class SriRetentionCatalogResolutionIntegrationTests
         )
             .Should()
             .Be(32, "22 del slice IVA + 10 versiones de Renta del Catálogo ATS 06/08/2026");
-        (await db.SriNormativeSources.CountAsync()).Should().Be(3);
+        (await db.SriNormativeSources.CountAsync())
+            .Should()
+            .Be(5, "3 fuentes de retención (Ficha v2.34, ATS, ATS 06/08/2026) + 2 de la política global de anulación SRI");
     }
 
     // ── 7-9. Separación Selectable / ForDate / Historical ────────────────────────────────────────────

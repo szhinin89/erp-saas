@@ -70,7 +70,8 @@ public sealed partial class RetentionExpenseEndToEndTests
             .Handle(
                 new CancelExpenseDocumentCommand(expenseId, "RETQA anulacion electronica"),
                 CancellationToken.None
-            );
+            )
+            .ThenDispatchAsync(db);
     }
 
     [Fact]

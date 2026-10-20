@@ -577,11 +577,23 @@ public sealed class PostingEngineIntegrationTests : IAsyncLifetime
             allowsPosting: true,
             createdBy: _createdBy
         );
+        // Una misma cuenta no puede recibir Débito y Crédito dentro del mismo asiento.
+        var counterAccount = Account.Create(
+            _tenantId,
+            _companyId,
+            AccountCode.Create($"4.1.{Guid.NewGuid():N}"[..8]),
+            "Ventas",
+            null,
+            AccountType.Income,
+            AccountNature.Credit,
+            allowsPosting: true,
+            createdBy: _createdBy
+        );
 
         await using (var seedDb = CreateContext())
         {
             seedDb.AccountingPeriods.Add(period);
-            seedDb.Accounts.Add(account);
+            seedDb.Accounts.AddRange(account, counterAccount);
             await seedDb.SaveChangesAsync();
         }
 
@@ -601,7 +613,7 @@ public sealed class PostingEngineIntegrationTests : IAsyncLifetime
             _createdBy
         );
         entryA.AddLine(account.Id, null, 100m, 0m);
-        entryA.AddLine(account.Id, null, 0m, 100m);
+        entryA.AddLine(counterAccount.Id, null, 0m, 100m);
         entryA.Post(_createdBy, 1);
 
         var entryB = JournalEntry.Create(
@@ -617,7 +629,7 @@ public sealed class PostingEngineIntegrationTests : IAsyncLifetime
             _createdBy
         );
         entryB.AddLine(account.Id, null, 50m, 0m);
-        entryB.AddLine(account.Id, null, 0m, 50m);
+        entryB.AddLine(counterAccount.Id, null, 0m, 50m);
         entryB.Post(_createdBy, 1);
 
         await using (var dbA = CreateContext())

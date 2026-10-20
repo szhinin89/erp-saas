@@ -50,7 +50,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
             .Handle(
                 new CancelPurchaseCommand(invoiceId, AnnulmentReason, RequestSriAnnulment: true),
                 CancellationToken.None
-            );
+            )
+            .ThenDispatchAsync(db);
     }
 
     private IRetentionAnnulmentService Annulments(
@@ -104,7 +105,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     {
         await using var db = CreateWiredContext();
         return await Annulments(db, sriStatus)
-            .VerifyWithSriAsync(_tenantId, _companyId, requestId, userId ?? _userId);
+            .VerifyWithSriAsync(_tenantId, _companyId, requestId, userId ?? _userId)
+            .ThenDispatchAsync(db);
     }
 
     private async Task<Result<RetentionAnnulmentRequest>> VerifyAnnulledAsync(Guid requestId)
@@ -751,7 +753,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
         try
         {
             await using var db = CreateWiredContext();
-            await Annulments(db).FinalizeAsync(_tenantId, _companyId, requestId, _userId);
+            await Annulments(db)
+                .FinalizeAsync(_tenantId, _companyId, requestId, _userId)
+                .ThenDispatchAsync(db);
         }
         catch (DbUpdateException)
         {

@@ -330,6 +330,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         var provider = services.BuildServiceProvider();
         deferred.Inner = provider.GetRequiredService<IPublisher>();
         _wiredProviders.AddOrUpdate(db, provider);
+        // Permite el intento post-commit de AccountingPostingDispatchBehavior (los tests invocan handlers sin MediatR).
+        AccountingContinuityTestWiring.Register(db, provider);
         return db;
     }
 
@@ -922,7 +924,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 .Handle(
                     new CancelPurchaseCommand(invoiceId, "Error de digitación"),
                     CancellationToken.None
-                );
+                )
+                .ThenDispatchAsync(db);
 
         cancel.IsSuccess.Should().BeTrue(cancel.Error);
         var s = await ReadAsync(invoiceId);
@@ -1003,9 +1006,14 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             await db.SaveChangesAsync();
         }
 
-        var cancel = await CancelPurchaseAsync(invoiceId);
+        // Regla de dominio (DomainRuleBehavior la traduce a 422 en la API); la transacción no se confirma.
+        var cancel = () => CancelPurchaseAsync(invoiceId);
 
-        cancel.IsSuccess.Should().BeFalse("el período del asiento está cerrado: el reverso falla");
+        await cancel
+            .Should()
+            .ThrowAsync<ERP.Domain.Exceptions.DomainRuleViolationException>(
+                "el período del asiento está cerrado: el reverso falla"
+            );
         var s = await ReadAsync(invoiceId);
         s.Status.Should().Be(PurchaseStatus.Confirmed);
         s.Retentions.Should().ContainSingle().Which.Status.Should().Be(RetentionStatus.Issued);
@@ -1024,10 +1032,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     {
         await using var db = CreateWiredContext();
         var handler = CancelHandler(db, branchId);
-        return await handler.Handle(
-            new CancelPurchaseCommand(invoiceId, "Error de digitación"),
-            CancellationToken.None
-        );
+        return await handler
+            .Handle(new CancelPurchaseCommand(invoiceId, "Error de digitación"), CancellationToken.None)
+            .ThenDispatchAsync(db);
     }
 
     private async Task<(bool Success, string? Error)> TryCancelPurchaseAsync(Guid invoiceId)

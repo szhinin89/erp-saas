@@ -59,7 +59,8 @@ public sealed partial class RetentionExpenseEndToEndTests
                     RequestSriAnnulment: true
                 ),
                 CancellationToken.None
-            );
+            )
+            .ThenDispatchAsync(db);
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Code.Should().Be(ApiResponseCodes.Retentions.AnnulmentRequested);
 
@@ -91,7 +92,9 @@ public sealed partial class RetentionExpenseEndToEndTests
             .IsSuccess.Should()
             .BeTrue();
         _expenseSriStatus.FiscalStatus = sriSays;
-        return await service.VerifyWithSriAsync(_tenantId, _companyId, requestId, _createdBy);
+        return await service
+            .VerifyWithSriAsync(_tenantId, _companyId, requestId, _createdBy)
+            .ThenDispatchAsync(db);
     }
 
     [Fact]
@@ -142,7 +145,9 @@ public sealed partial class RetentionExpenseEndToEndTests
             SriFiscalStatus.Annulled
         );
         var (db, _) = BuildWiredContext();
-        await ExpenseAnnulments(db).FinalizeAsync(_tenantId, _companyId, request.Id, _createdBy);
+        await ExpenseAnnulments(db)
+            .FinalizeAsync(_tenantId, _companyId, request.Id, _createdBy)
+            .ThenDispatchAsync(db);
 
         resolved.Code.Should().Be(ApiResponseCodes.Retentions.AnnulmentFinalized);
         await AssertRetentionReversedOnceAsync(expenseId);
