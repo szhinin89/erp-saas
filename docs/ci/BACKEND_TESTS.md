@@ -11,17 +11,17 @@ Clasificación: STRUCTURAL DEBT. Implementación local; pendiente de validar la 
 | application | Ubuntu | ERP.Application.Tests completo | Sin filtro |
 | architecture | Ubuntu | ERP.Architecture.Tests completo | Sin filtro |
 | api | Ubuntu | ERP.API.Tests completo | Sin filtro |
-| infrastructure-01 | Ubuntu | 19 clases explícitas | 167 |
-| infrastructure-02 | Ubuntu | 20 clases explícitas | 167 |
-| infrastructure-03 | Ubuntu | 21 clases explícitas | 167 |
-| infrastructure-04 | Ubuntu | 22 clases explícitas | 167 |
-| infrastructure-05 | Ubuntu | 21 clases explícitas | 166 |
-| infrastructure-06 | Ubuntu | 23 clases explícitas | 167 |
-| infrastructure-07 | Ubuntu | 34 clases explícitas | 332 |
+| infrastructure-01 | Ubuntu | 20 clases explícitas | 174 |
+| infrastructure-02 | Ubuntu | 21 clases explícitas | 173 |
+| infrastructure-03 | Ubuntu | 22 clases explícitas | 207 |
+| infrastructure-04 | Ubuntu | 24 clases explícitas | 171 |
+| infrastructure-05 | Ubuntu | 23 clases explícitas | 179 |
+| infrastructure-06 | Ubuntu | 25 clases explícitas | 169 |
+| infrastructure-07 | Ubuntu | 34 clases explícitas | 334 |
 | infrastructure-08 | Ubuntu | 35 clases explícitas | 332 |
 | ride-golden | Windows | RideGoldenFileTests completo | 6 |
 
-Inventario local Debug: **1671 casos / 196 clases Infrastructure**, distribuidos sin solapamiento.
+Inventario local Debug: **1745 casos / 205 clases Infrastructure**, distribuidos sin solapamiento.
 Las cantidades son una observación, no una allowlist de casos: nuevos métodos de clases existentes
 se incluyen automáticamente; clases nuevas requieren asignación explícita. Los grupos se equilibraron
 inicialmente por casos descubiertos, dando mayor peso a clases con PostgreSQL/fixtures asíncronas.
@@ -49,6 +49,14 @@ los recursos efímeros de Testcontainers; no se suministran conexiones de desarr
 Los golden existentes se conservan byte a byte. Diagnóstico CI #972: Windows 6/6 PASS y Linux 6/6
 FAIL con el mismo ensamblado; las diferencias son de métricas de fuentes/posiciones de glifos del
 render nativo, reproducibles por plataforma, no de fechas normalizadas ni texto documental.
+
+## CI #978 — BUG REAL (2026-10-21)
+
+Reproducido el inventario con nueve clases SriCatalogs sin asignar y ninguna obsoleta.
+Asignadas en el manifiesto existente a los grupos 01–06; 07–08 conservan su carga.
+La clase `SriIceTable18CatalogTests` aporta 40 casos y permanece indivisible en 03.
+Validación focal: 17/17 pruebas del distribuidor y descubrimiento/filtros de los ocho
+grupos Infrastructure, sin ejecutar pruebas funcionales; `unassigned=[]`, `obsolete=[]`.
 
 ## Evidencia por job
 
