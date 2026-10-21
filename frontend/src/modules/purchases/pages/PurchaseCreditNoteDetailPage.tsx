@@ -37,21 +37,6 @@ import {
 } from "../utils/purchaseReturnStatus";
 import "../styles/purchase-credit-note.css";
 
-/**
- * Detalle de una nota de crédito de compra: edición del borrador, autorización y cancelación
- * (descuento/promoción, v1) — mismo patrón de página que `PurchaseReturnDetailPage.tsx`. Nunca
- * muestra ni pide item/bodega/cantidad para editar (§0.1/§2.2 del diseño — esta entidad nunca
- * mueve inventario). El bloqueo por excedente de saldo es siempre responsabilidad del backend;
- * aquí solo se muestra una advertencia preventiva si ya se conoce `invoiceBalanceDue`.
- *
- * PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — UX only: para NC tipo Devolución, esta pantalla
- * es la única parada de revisión (Recepción XML ingresa/procesa, aquí se revisa). Muestra en una
- * sola pantalla los datos ya resueltos por el backend de la `PurchaseReturn` vinculada (N.º,
- * estado, total autorizado, producto/bodega reales de cada línea) para que el usuario no necesite
- * abrir `/purchases/returns/{id}` — el enlace sigue existiendo solo como referencia secundaria.
- * Solo lectura/composición visual: no cambia autorización, cancelación, Kardex, CxP, contabilidad
- * ni la lógica de `PurchaseReturn`.
- */
 export function PurchaseCreditNoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -421,13 +406,9 @@ export function PurchaseCreditNoteDetailPage() {
         </div>
         {!isDiscountType && (
           <>
-            <ZHPageNotice
-              variant="info"
-              message={t(
-                "purchases.creditNote.notices.returnTypeInfo",
-                "Esta nota de crédito es de tipo Devolución: se aplica mediante la devolución de compra vinculada, no se autoriza aquí.",
-              )}
-            />
+            <ZHPageNotice variant="info" message={editing.linkedPurchaseReturnStatus === "Authorized" && isDraft
+              ? "La autorización completará solo la vinculación histórica, sin repetir efectos."
+              : "Los efectos de devolución se gestionan desde esta nota de crédito."} />
             {editing.linkedPurchaseReturnId && (
               <>
                 {/* PURCHASE-CREDIT-NOTE-SINGLE-REVIEW-SCREEN-01 — datos ya resueltos por el
@@ -480,7 +461,7 @@ export function PurchaseCreditNoteDetailPage() {
             )}
           </>
         )}
-        {isDraft && exceedsBalance && (
+        {isDraft && isDiscountType && exceedsBalance && (
           <ZHPageNotice
             variant="warning"
             message={t(
@@ -628,14 +609,14 @@ export function PurchaseCreditNoteDetailPage() {
         </ZHCard>
       )}
 
-      {(isDraft || isAuthorized) && isDiscountType && (
+      {(isDraft || isAuthorized) && (
         <ZHCard title={t("purchases.creditNote.actions.title", "Acciones")}>
           {!cancelling ? (
             <div className="pcn-actions-row">
               <ZHBtn type="button" variant="destructive" onClick={() => setCancelling(true)}>
                 {t("purchases.creditNote.actions.cancel", "Cancelar nota de crédito")}
               </ZHBtn>
-              {isDraft && isDiscountType && (
+              {isDraft && (
                 <ZHBtn
                   type="button"
                   variant="primary"
@@ -679,7 +660,7 @@ export function PurchaseCreditNoteDetailPage() {
       {isCancelled && editing.cancellationReason && (
         <ZHPageNotice
           variant="info"
-          message={t("purchases.creditNote.status.cancelled", "Nota de crédito cancelada")}
+          message={t("purchases.creditNote.cancel.internalNotice", "Cancelación interna del ERP; no acredita anulación tributaria ante el SRI.")}
           detail={editing.cancellationReason}
         />
       )}

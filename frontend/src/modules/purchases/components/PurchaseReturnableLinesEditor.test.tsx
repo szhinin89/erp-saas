@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { I18nProvider } from "../../../i18n/i18n";
 import { PurchaseReturnableLinesEditor } from "./PurchaseReturnableLinesEditor";
-import type { PurchaseReturnDraftFormValues } from "../schemas/purchaseReturnSchema";
+import { emptyPurchaseCreditNoteDraftForm, type PurchaseCreditNoteDraftFormValues } from "../schemas/purchaseCreditNoteSchema";
 import type { PurchaseLineDto } from "../api/purchaseService";
 import { purchaseReturnPreview } from "../utils/purchaseReturnPreview";
 
@@ -12,8 +12,8 @@ const source = { id: "line-1", quantity: 10, unitPrice: 100, discountAmount: 100
   vatAmount: 148.5, iceAmount: 90, irbpnrAmount: 1, snapshotWarehouseCode: "B01" } as PurchaseLineDto;
 
 function Wrapper() {
-  const { control } = useForm<PurchaseReturnDraftFormValues>({ defaultValues: { reason: "", lines: [] } });
-  const { fields, append, remove } = useFieldArray({ control, name: "lines" });
+  const { control } = useForm<PurchaseCreditNoteDraftFormValues>({ defaultValues: emptyPurchaseCreditNoteDraftForm() });
+  const { fields, append, remove } = useFieldArray({ control, name: "returnLines" });
   return <I18nProvider><PurchaseReturnableLinesEditor
     returnableLines={[{ invoiceDetailId: "line-1", itemId: "item-1", description: "Producto 1",
       originalQuantity: 10, returnedQuantity: 7, remainingQuantity: 3, warehouseId: "warehouse-1" }]}

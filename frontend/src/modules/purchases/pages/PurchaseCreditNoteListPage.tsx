@@ -133,9 +133,13 @@ export function PurchaseCreditNoteListPage() {
 
   return (
     <PageShell
-      title="Notas de Crédito de Compra"
+      title="Notas de crédito del proveedor"
       subtitle="Notas de crédito recibidas del proveedor sobre facturas de compra confirmadas"
       action={
+        <>
+        <ZHBtn type="button" variant="ghost" onClick={() => navigate("/purchases/returns")}>
+          Consultar historial de devoluciones
+        </ZHBtn>
         <ZHBtn
           type="button"
           variant="primary"
@@ -143,6 +147,7 @@ export function PurchaseCreditNoteListPage() {
         >
           Nueva
         </ZHBtn>
+        </>
       }
     >
       <ZHCard

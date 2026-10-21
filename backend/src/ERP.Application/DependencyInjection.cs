@@ -24,6 +24,11 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
+        services.AddScoped<Modules.Purchases.UseCases.PurchaseCreditNoteReprocessingGuard>();
+        services.AddScoped<Modules.Purchases.UseCases.AuthorizePurchaseReturnHandler>();
+        services.AddScoped<Modules.Purchases.UseCases.CancelPurchaseReturnHandler>();
+        services.AddScoped<Modules.Purchases.UseCases.IPurchaseCreditNoteReturnMotor,
+            Modules.Purchases.UseCases.PurchaseCreditNoteReturnMotor>();
         // ACCOUNTING-CONTINUITY-01 — obligación contable durable: decisión operativa, registro en
         // la transacción del núcleo, intento tras el commit (único ejecutor) y anulación común.
         services.AddScoped<AccountingOperationalDecision>();

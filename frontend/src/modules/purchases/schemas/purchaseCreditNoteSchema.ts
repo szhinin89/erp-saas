@@ -41,8 +41,9 @@ export const purchaseCreditNoteDraftSchema = z.object({
   creditNoteNumber: z
     .string()
     .min(1, "El número de nota de crédito es obligatorio.")
+    .regex(/^[0-9]{3}-[0-9]{3}-[0-9]{9}$/, "Use establecimiento-punto de emisión-secuencial: 001-001-000000001.")
     .max(17, "El número no puede superar 17 caracteres."),
-  accessKey: z.string().max(49, "La clave de acceso no puede superar 49 caracteres.").optional(),
+  accessKey: z.string().regex(/^(?:[0-9]{49})?$/, "La clave de acceso debe contener 49 dígitos.").optional(),
   authorizationNumber: z
     .string()
     .max(49, "El número de autorización no puede superar 49 caracteres.")

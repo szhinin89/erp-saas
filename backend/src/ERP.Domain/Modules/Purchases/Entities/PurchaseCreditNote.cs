@@ -579,10 +579,13 @@ public sealed class PurchaseCreditNote
         CancelledAtUtc = purchaseReturn.CancelledAtUtc;
         CancelledByUserId = userId;
         CancellationReason = purchaseReturn.CancellationReason;
+        CancelClientRequestId = purchaseReturn.CancelClientRequestId;
+        CancelRequestPayloadHash = purchaseReturn.CancelRequestPayloadHash;
         SetUpdated(userId);
     }
 
-    public void CompleteLinkedReturn(PurchaseReturn purchaseReturn, Guid userId)
+    public void CompleteLinkedReturn(PurchaseReturn purchaseReturn, Guid userId,
+        Guid? clientRequestId = null, string? payloadHash = null)
     {
         EnsureDraft();
         if (
@@ -590,13 +593,22 @@ public sealed class PurchaseCreditNote
             || LinkedPurchaseReturnId != purchaseReturn.Id
             || purchaseReturn.Status != PurchaseReturnStatus.Authorized
             || purchaseReturn.AuthorizedGrandTotal != TotalAmount
+            || purchaseReturn.CompanyId != CompanyId || purchaseReturn.BranchId != BranchId
+            || purchaseReturn.PurchaseInvoiceId != PurchaseInvoiceId || purchaseReturn.SupplierId != SupplierId
+            || Lines.Count != purchaseReturn.Lines.Count
+            || Lines.Any(l => !purchaseReturn.Lines.Any(r =>
+                r.OriginalInvoiceDetailId == l.PurchaseInvoiceDetailId && r.Quantity == l.Quantity
+                && r.ReturnedSubtotal == l.Subtotal && r.ReturnedVatAmount == l.VatAmount
+                && (r.ReturnedIceAmount ?? 0m) == l.IceAmount && r.IrbpnrAmount == l.IrbpnrAmount))
         )
             throw new DomainRuleViolationException(
                 "La devolución autorizada no coincide con la nota de crédito."
             );
         Status = PurchaseCreditNoteStatus.Authorized;
         AppliedToPayableAmount = purchaseReturn.AppliedToPayableAmount;
-        AuthorizedAtUtc = purchaseReturn.AuthorizedAtUtc;
+        AuthorizeClientRequestId = clientRequestId;
+        AuthorizeRequestPayloadHash = payloadHash;
+        AuthorizedAtUtc = DateTime.UtcNow;
         AuthorizedByUserId = userId;
         SetUpdated(userId);
     }

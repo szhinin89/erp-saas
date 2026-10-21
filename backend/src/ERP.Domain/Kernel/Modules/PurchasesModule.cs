@@ -43,11 +43,7 @@ public static class PurchasesModule
     )]
     public const string Reception = "/purchases/reception";
 
-    // PURCHASE-RETURNS-REMOVE-FROM-MAIN-MENU-01 — la devolución de mercadería es un flujo dentro
-    // de "Notas de crédito de compra" (tipo Return), no un módulo principal para el usuario; ya no
-    // es un ítem de menú (se quita el atributo [NavItem], nunca la ruta/lógica de PurchaseReturn:
-    // /purchases/returns y /purchases/returns/{id} siguen existiendo y funcionando como rutas
-    // técnicas/secundarias, ej. el botón "Ver devolución vinculada" desde el detalle de NC).
+    // Historial de solo consulta. La operación física pertenece exclusivamente a la NC Return.
     public const string Returns = "/purchases/returns";
 
     // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — antes solo se llegaba a
@@ -56,7 +52,7 @@ public static class PurchasesModule
     // apunta al LISTADO (PurchaseCreditNoteListPage), nunca directo a /new — "Nueva" es un botón
     // dentro de esa pantalla que abre el mismo formulario en modo manual.
     [NavItem(
-        "Notas de crédito de compra",
+        "Notas de crédito del proveedor",
         Permission = PurchasePermissions.View,
         LabelKey = "app.nav.item.purchases.creditNotes",
         SortOrder = 30,

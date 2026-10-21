@@ -17,14 +17,8 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 // ── Command ─────────────────────────────────────────────────────────────
 
 /// <summary>
-/// FLOW-READY-02C.2 — autoriza una <c>PurchaseCreditNote</c> (descuento/promoción) en <c>Draft</c>:
-/// bajo Lock A (reutiliza <see cref="IPurchaseReturnRepository.AcquireFinancialLockAsync"/>, mismo
-/// namespace "PurchaseInvoice.FinancialLock" que ya usa <c>ApplySupplierCreditUseCases</c> —
-/// precedente de reutilización cross-módulo del mismo advisory lock), aplica
-/// <c>PurchasePayable.ApplyCreditNote</c> (bloquea si excede el saldo — nunca trunca ni genera
-/// <c>SupplierCredit</c>, ajuste obligatorio del diseño §4.2), congela el snapshot financiero y, si
-/// hay <c>ReceptionDocumentId</c>, marca el documento de recepción como procesado. Nunca mueve
-/// inventario ni genera <c>PostingFact</c>. Idempotente por <c>ClientRequestId</c>.
+/// Autoriza la NC desde la entrada única. Discount aplica su ajuste financiero; Return utiliza
+/// el motor interno o completa exclusivamente una vinculación histórica. SSOT: purchases.md.
 /// </summary>
 public sealed record AuthorizePurchaseCreditNoteCommand(
     Guid PurchaseCreditNoteId,
@@ -60,6 +54,8 @@ public sealed class AuthorizePurchaseCreditNoteHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
+    private readonly IPurchaseCreditNoteReturnMotor? _returnMotor;
+    private readonly PurchaseCreditNoteReprocessingGuard? _reprocessing;
 
     public AuthorizePurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
@@ -71,7 +67,9 @@ public sealed class AuthorizePurchaseCreditNoteHandler
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
         ICurrentBranch b,
-        ICurrentUser u
+        ICurrentUser u,
+        IPurchaseCreditNoteReturnMotor? returnMotor = null,
+        PurchaseCreditNoteReprocessingGuard? reprocessing = null
     )
     {
         _creditNoteRepo = creditNoteRepo;
@@ -84,6 +82,8 @@ public sealed class AuthorizePurchaseCreditNoteHandler
         _t = t;
         _b = b;
         _u = u;
+        _returnMotor = returnMotor;
+        _reprocessing = reprocessing;
     }
 
     public async Task<Result<PurchaseCreditNoteDto>> Handle(
@@ -94,6 +94,20 @@ public sealed class AuthorizePurchaseCreditNoteHandler
         var tid = _t.TenantId;
         var uid = _u.UserId;
 
+        if (_reprocessing is not null)
+        {
+            var candidate = await _creditNoteRepo.GetByIdAsync(tid, cmd.PurchaseCreditNoteId, ct);
+            if (candidate is null || candidate.BranchId != _b.BranchId)
+                return Result<PurchaseCreditNoteDto>.NotFound("Nota de crédito no encontrada.");
+            if (candidate.Status == PurchaseCreditNoteStatus.Draft)
+            {
+                var blocker = await _reprocessing.CheckAsync(tid, candidate.CompanyId, candidate.SupplierId,
+                    candidate.CreditNoteNumber, candidate.AccessKey, candidate.ReceptionDocumentId, ct);
+                if (blocker is not null) return Result<PurchaseCreditNoteDto>.ValidationFailure(blocker);
+            }
+            // La consulta SRI se realiza fuera de transacción; recargar después del lock financiero.
+            _uow.ClearChangeTracker();
+        }
         await _uow.BeginTransactionAsync(ct);
         try
         {
@@ -111,7 +125,7 @@ public sealed class AuthorizePurchaseCreditNoteHandler
             await _lockRepo.AcquireFinancialLockAsync(tid, purchaseInvoiceId.Value, ct);
 
             var creditNote = await _creditNoteRepo.GetByIdAsync(tid, cmd.PurchaseCreditNoteId, ct);
-            if (creditNote is null)
+            if (creditNote is null || creditNote.BranchId != _b.BranchId)
             {
                 await _uow.RollbackAsync(ct);
                 return Result<PurchaseCreditNoteDto>.NotFound("Nota de crédito no encontrada.");
@@ -135,6 +149,62 @@ public sealed class AuthorizePurchaseCreditNoteHandler
                 return Result<PurchaseCreditNoteDto>.ValidationFailure(
                     "Esta nota de crédito ya fue cancelada."
                 );
+            }
+
+            if (creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return)
+            {
+                if (creditNote.LinkedPurchaseReturnId is not { } returnId)
+                    throw new DomainRuleViolationException("La NC por devolución requiere su motor interno vinculado.");
+                var purchaseReturn = await _lockRepo.GetByIdAsync(tid, returnId, ct);
+                if (purchaseReturn is null || purchaseReturn.BranchId != _b.BranchId
+                    || purchaseReturn.CompanyId != creditNote.CompanyId
+                    || purchaseReturn.PurchaseInvoiceId != creditNote.PurchaseInvoiceId
+                    || purchaseReturn.SupplierId != creditNote.SupplierId)
+                    throw new DomainRuleViolationException("La devolución vinculada no corresponde a esta NC.");
+                if (purchaseReturn.Status == PurchaseReturnStatus.Draft)
+                {
+                    // El motor existente toma el lock y controla una única transacción completa.
+                    await _uow.RollbackAsync(ct);
+                    _uow.ClearChangeTracker();
+                    var applied = await _returnMotor!.AuthorizeAsync(returnId, cmd.ClientRequestId, ct);
+                    if (!applied.IsSuccess)
+                        return Result<PurchaseCreditNoteDto>.Failure(applied.Error!, applied.Code);
+                    return Result<PurchaseCreditNoteDto>.Success(CreditNoteMap.ToDto(
+                        (await _creditNoteRepo.GetByIdAsync(tid, cmd.PurchaseCreditNoteId, ct))!));
+                }
+
+                // Históricos: solo completar el vínculo fiscal, sin llamar al motor financiero.
+                if (purchaseReturn.Status != PurchaseReturnStatus.Authorized
+                    || purchaseReturn.FiscalStatus != PurchaseReturnFiscalStatus.PendingSupplierCreditNote
+                    || purchaseReturn.SupplierCreditNoteDocumentId is not null)
+                    throw new DomainRuleViolationException("La devolución histórica ya no está autorizada y pendiente de NC.");
+                var sourceInvoice = await _invoiceRepo.GetByIdAsync(tid, creditNote.PurchaseInvoiceId, ct);
+                if (sourceInvoice is null)
+                    throw new DomainRuleViolationException("Factura de compra no encontrada.");
+                if (creditNote.IssueDate < sourceInvoice.IssueDate)
+                    throw new DomainRuleViolationException("La NC no puede ser anterior a la factura afectada.");
+                if (creditNote.ReceptionDocumentId is { } historicalReceptionId)
+                {
+                    var reception = await _receptionRepo.GetByIdAsync(tid, historicalReceptionId, ct);
+                    if (reception is null || reception.CompanyId != creditNote.CompanyId
+                        || reception.BranchId != creditNote.BranchId
+                        || reception.SourceDocType != Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionSourceDocType.CreditNote
+                        || reception.Status != Domain.Modules.Purchases.PurchaseReception.Enums.PurchaseReceptionDocumentStatus.Verified
+                        || reception.PurchaseId is not null || reception.AccessKey != creditNote.AccessKey
+                        || reception.TotalAmount != creditNote.TotalAmount
+                        || !string.Equals(reception.SupplierRuc.Trim(), sourceInvoice.SupplierTaxId.Trim(), StringComparison.OrdinalIgnoreCase)
+                        || !string.Equals(reception.CurrencyCode, sourceInvoice.CurrencyCode, StringComparison.OrdinalIgnoreCase)
+                        || (!string.IsNullOrWhiteSpace(reception.ModifiedDocumentNumber)
+                            && !string.Equals(reception.ModifiedDocumentNumber.Trim(), sourceInvoice.InvoiceNumber.Trim(), StringComparison.OrdinalIgnoreCase)))
+                        throw new DomainRuleViolationException("El documento recibido no es compatible con la devolución histórica.");
+                    reception.MarkProcessed(sourceInvoice.Id, uid);
+                }
+                creditNote.CompleteLinkedReturn(purchaseReturn, uid, cmd.ClientRequestId,
+                    ComputeAuthorizePayloadHash(creditNote.Id, cmd.ClientRequestId));
+                purchaseReturn.RegisterLinkedCreditNote(creditNote, uid);
+                await _uow.SaveChangesAsync(ct);
+                await _uow.CommitAsync(ct);
+                return Result<PurchaseCreditNoteDto>.Success(CreditNoteMap.ToDto(creditNote));
             }
 
             var invoice = await _invoiceRepo.GetByIdAsync(tid, creditNote.PurchaseInvoiceId, ct);

@@ -7,6 +7,12 @@ namespace ERP.Domain.Modules.Purchases.Interfaces;
 /// </summary>
 public interface IPurchaseReturnRepository
 {
+    Task<IReadOnlyList<PurchaseReturn>> GetPendingCreditNoteByInvoiceAsync(
+        Guid tenantId, Guid branchId, Guid purchaseInvoiceId, CancellationToken ct = default);
+
+    Task<bool> HasRegisteredSupplierDocumentAsync(Guid tenantId, Guid supplierId,
+        string creditNoteNumber, string? accessKey, CancellationToken ct = default);
+
     Task<PurchaseReturn?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     /// <summary>

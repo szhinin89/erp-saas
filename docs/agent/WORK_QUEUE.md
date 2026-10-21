@@ -1,5 +1,9 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
+## PURCHASE-CREDIT-NOTE-UNIFICATION — EXTEND (2026-10-21)
+
+Implementado y validado; decisiones de vínculo histórico y reproceso resueltas por el propietario. Validación focal PASS; guardrail general limitado por PR-7 preexistente de Gastos, sin tocarlo. Sin GLOBAL ni operaciones sobre bases de negocio, push o deploy. [Entrega y archivos](PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md); SSOT único: [purchases.md](../architecture/purchases.md).
+
 ## QA-INVENTORY-INFRA-SUITES-01 (2026-10-19)
 
 CLOSED. Resuelto en `509ac6d75`; PostgreSQL 39/39 PASS. Regla: [inventory.md § 2](../architecture/inventory.md#2-participación-y-alcance). Sin bloqueadores.

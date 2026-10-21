@@ -114,8 +114,8 @@ export function PurchaseReturnListPage() {
 
   return (
     <PageShell
-      title="Devoluciones de Compra"
-      subtitle="Devoluciones sobre facturas de compra confirmadas"
+      title="Historial de devoluciones de compra"
+      subtitle="Solo consulta. Las operaciones se realizan desde Nota de crédito."
     >
       <ZHCard
         title="Listado"

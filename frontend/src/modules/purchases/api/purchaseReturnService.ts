@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
+import { apiGet } from "../../lib/apiEnvelope";
 
 const BASE = "/api/v1/purchases/returns";
 
@@ -78,63 +78,7 @@ export interface ReturnableLineDto {
   warehouseId: string;
 }
 
-export interface SupplierCreditNoteLinkDto {
-  purchaseReturnId: string;
-  fiscalStatus: string;
-  supplierCreditNoteDocumentId: string;
-  accessKey: string;
-  invoiceNumber: string;
-  totalAmount: number;
-  currencyCode: string;
-}
-
-// ── Payloads ────────────────────────────────────────────────────────────
-
-export interface PurchaseReturnLineInput {
-  originalInvoiceDetailId: string;
-  quantity: number;
-}
-
-export interface CreatePurchaseReturnDraftPayload {
-  clientRequestId: string;
-  purchaseInvoiceId: string;
-  reason: string;
-  lines: PurchaseReturnLineInput[];
-}
-
-export interface UpdatePurchaseReturnDraftPayload {
-  reason: string;
-  lines: PurchaseReturnLineInput[];
-}
-
-export interface CancelPurchaseReturnPayload {
-  reason: string;
-  clientRequestId: string;
-}
-
-export interface LinkSupplierCreditNotePayload {
-  accessKey: string;
-  supplierRuc: string;
-  supplierName: string;
-  invoiceNumber: string;
-  issueDate: string;
-  subtotal: number;
-  vatAmount: number;
-  totalAmount: number;
-  currencyCode: string;
-  clientRequestId: string;
-}
-
-// ── Service ─────────────────────────────────────────────────────────────
-
-/**
- * Consume exclusivamente los endpoints ya implementados de
- * `PurchaseReturnController` (ERP.API, Fase 11) — sin lógica de negocio
- * propia, mismo patrón que `salesReturnService.ts` (envelope
- * `apiGet/apiPost/apiPut`, nunca axios directo). El backend no admite filtro
- * por texto libre (`GetPurchaseReturnListQuery` solo acepta `status`) — a
- * diferencia de `salesReturnService.list`, no expone parámetro `search`.
- */
+// Solo consultas del motor y del historial.
 export const purchaseReturnService = {
   list: (status?: string, page = 1, pageSize = 25) => {
     const params = new URLSearchParams();
@@ -151,18 +95,4 @@ export const purchaseReturnService = {
       `/api/v1/purchases/invoices/${invoiceId}/returnable-lines`,
     ),
 
-  createDraft: (payload: CreatePurchaseReturnDraftPayload) =>
-    apiPost<PurchaseReturnDto>(BASE, payload),
-
-  updateDraft: (id: string, payload: UpdatePurchaseReturnDraftPayload) =>
-    apiPut<PurchaseReturnDto>(`${BASE}/${id}`, payload),
-
-  authorize: (id: string, clientRequestId: string) =>
-    apiPost<PurchaseReturnDto>(`${BASE}/${id}/authorize`, { clientRequestId }),
-
-  cancel: (id: string, payload: CancelPurchaseReturnPayload) =>
-    apiPost<PurchaseReturnDto>(`${BASE}/${id}/cancel`, payload),
-
-  linkCreditNote: (id: string, payload: LinkSupplierCreditNotePayload) =>
-    apiPost<SupplierCreditNoteLinkDto>(`${BASE}/${id}/credit-note`, payload),
 };

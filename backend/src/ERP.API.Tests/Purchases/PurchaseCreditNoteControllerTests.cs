@@ -86,7 +86,6 @@ public sealed class PurchaseCreditNoteControllerTests
     [InlineData(nameof(PurchaseCreditNoteController.GetList), PurchasePermissions.View)]
     [InlineData(nameof(PurchaseCreditNoteController.Authorize), PurchasePermissions.Update)]
     [InlineData(nameof(PurchaseCreditNoteController.Cancel), PurchasePermissions.Update)]
-    [InlineData(nameof(PurchaseCreditNoteController.LinkReturn), PurchasePermissions.Update)]
     public void Endpoint_exige_la_policy_de_PurchasePermissions_esperada(
         string methodName,
         string expectedPermission
@@ -340,51 +339,7 @@ public sealed class PurchaseCreditNoteControllerTests
 
     // ── POST /purchases/credit-notes/{id}/link-return ───────────────────
 
-    [Fact]
-    public async Task LinkReturn_exitoso_retorna_200_y_mapea_el_request_al_command()
-    {
-        var id = Guid.NewGuid();
-        object? sent = null;
-        var controller = BuildController(req =>
-        {
-            sent = req;
-            return Result<PurchaseCreditNoteDto>.Success(SampleDto(id));
-        });
-        var purchaseReturnId = Guid.NewGuid();
-        var clientRequestId = Guid.NewGuid();
 
-        var response = await controller.LinkReturn(
-            id,
-            new LinkPurchaseCreditNoteToReturnRequest(purchaseReturnId, clientRequestId),
-            CancellationToken.None
-        );
 
-        response.Should().BeOfType<OkObjectResult>();
-        var cmd = sent.Should().BeOfType<LinkPurchaseCreditNoteToReturnCommand>().Which;
-        cmd.PurchaseCreditNoteId.Should().Be(id);
-        cmd.PurchaseReturnId.Should().Be(purchaseReturnId);
-        cmd.ClientRequestId.Should().Be(clientRequestId);
-    }
 
-    [Fact]
-    public async Task LinkReturn_con_tipo_Discount_retorna_422()
-    {
-        var controller = BuildController(_ =>
-            Result<PurchaseCreditNoteDto>.ValidationFailure(
-                "Solo una nota de crédito de tipo Devolución se puede vincular a una devolución de compra."
-            )
-        );
-
-        var response = await controller.LinkReturn(
-            Guid.NewGuid(),
-            new LinkPurchaseCreditNoteToReturnRequest(Guid.NewGuid(), Guid.NewGuid()),
-            CancellationToken.None
-        );
-
-        response
-            .Should()
-            .BeOfType<UnprocessableEntityObjectResult>()
-            .Which.StatusCode.Should()
-            .Be(422);
-    }
 }

@@ -62,7 +62,7 @@ namespace ERP.API.Tests.Integration;
 /// autorización de devoluciones (PR-006, Escenario 9).
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
+public sealed partial class PurchaseReturnEndToEndTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -325,7 +325,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
-    private ErpDbContext CreateContext()
+    private ErpDbContext CreateContext(MediatR.IPublisher? publisher = null)
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
@@ -336,7 +336,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
         return new ErpDbContext(
             options,
             new FixedCurrentTenant(() => _tenantId),
-            new NoOpPublisher(),
+            publisher ?? new NoOpPublisher(),
             new FixedCurrentCompany(() => _companyId)
         );
     }
@@ -449,7 +449,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
 
     // ── Handler builders (mismo patrón de Fase 6-10) ─────────────────────
 
-    private AuthorizePurchaseReturnHandler BuildAuthorizeHandler(ErpDbContext db) =>
+    private AuthorizePurchaseReturnHandler BuildAuthorizeHandler(ErpDbContext db, bool linkedCreditNote = false) =>
         new(
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -469,7 +469,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new FixedCurrentBranch(() => _branchId),
             new FixedCurrentUser(_userId),
             new AlwaysTodayCompanyClock(),
-            ERP.API.Tests.Support.StandardPrecisionPolicyProvider.Instance
+            ERP.API.Tests.Support.StandardPrecisionPolicyProvider.Instance,
+            linkedCreditNote ? new PurchaseCreditNoteRepository(db, new FixedCurrentCompany(() => _companyId)) : null,
+            linkedCreditNote ? new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)) : null
         );
 
     private static PostingEngine BuildPostingEngine(ErpDbContext db) =>
@@ -482,7 +484,7 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             NullLogger<PostingEngine>.Instance
         );
 
-    private CancelPurchaseReturnHandler BuildCancelReturnHandler(ErpDbContext db) =>
+    private CancelPurchaseReturnHandler BuildCancelReturnHandler(ErpDbContext db, bool linkedCreditNote = false) =>
         new(
             new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
             new PurchaseInvoiceRepository(db, new FixedCurrentCompany(() => _companyId)),
@@ -498,7 +500,9 @@ public sealed class PurchaseReturnEndToEndTests : IAsyncLifetime
             new RealDatabaseExceptionTranslator(),
             new FixedCurrentTenant(() => _tenantId),
             new FixedCurrentUser(_userId),
-            new AlwaysTodayCompanyClock()
+            new AlwaysTodayCompanyClock(),
+            linkedCreditNote ? new PurchaseCreditNoteRepository(db, new FixedCurrentCompany(() => _companyId)) : null,
+            linkedCreditNote ? new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(() => _companyId)) : null
         );
 
     private ApplySupplierCreditHandler BuildApplyHandler(ErpDbContext db) =>

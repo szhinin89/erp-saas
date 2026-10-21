@@ -149,10 +149,6 @@ const PurchaseReturnListPage = lazyNamedPage(
   () => import("../modules/purchases/pages/PurchaseReturnListPage"),
   "PurchaseReturnListPage",
 );
-const PurchaseReturnFormPage = lazyNamedPage(
-  () => import("../modules/purchases/pages/PurchaseReturnFormPage"),
-  "PurchaseReturnFormPage",
-);
 const PurchaseReturnDetailPage = lazyNamedPage(
   () => import("../modules/purchases/pages/PurchaseReturnDetailPage"),
   "PurchaseReturnDetailPage",
@@ -306,11 +302,6 @@ export const catalogRoutes = [
     key="purchase-returns"
     path="/purchases/returns"
     element={<PurchaseReturnListPage />}
-  />,
-  <Route
-    key="purchase-returns-new"
-    path="/purchases/returns/new"
-    element={<PurchaseReturnFormPage />}
   />,
   <Route
     key="purchase-returns-detail"

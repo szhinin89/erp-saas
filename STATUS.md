@@ -1,5 +1,11 @@
 # Project Status
 
+## PURCHASE-CREDIT-NOTE-UNIFICATION — EXTEND (2026-10-21)
+
+Implementado para revisión: entrada única NC del proveedor, dos modalidades, vínculo histórico sin repetir efectos y reproceso sujeto a reversas verificables y vigencia SRI. KEEP: documentos y relaciones anteriores consultables. SSOT: [purchases.md](docs/architecture/purchases.md). [Archivos y validación](docs/agent/PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md).
+
+PASS: PostgreSQL 21/21 (SRI simulado), contratos API 24/24, Application 79/79, contabilización PostgreSQL 6/6, frontend 35/35; compilación API, TypeScript, lint (0 errores), build y gate de arquitectura (0 violaciones nuevas). Guardrail completo: PR-7 preexistente en `ExpenseDocumentFormPage.retention.test.tsx` (516 > 514), sin modificar por estar fuera de alcance. Sin cambios en GLOBAL, migraciones propias, bases de negocio, push ni deploy.
+
 ## ZH-RETENTION-SRI-ANNULMENT — Reverso contable en finalizaciones del job (2026-10-20)
 
 BUG REAL corregido: cuando `RetentionElectronicRecoveryJob` finalizaba una anulación SRI (ANULADO), la Compra o el Gasto quedaban anulados, pero los reversos contables (asiento del origen y de la retención) quedaban como `AccountingPosting` `Pending`, con 0 intentos y sin asiento. El job no pasa por `AccountingPostingDispatchBehavior` (MediatR) y la cola de despacho es por scope; nada automático atendía esas obligaciones. Contradecía [accounting.md §4](docs/architecture/accounting.md) (intento inicial tras el commit).

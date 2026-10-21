@@ -1,449 +1,56 @@
 import { useEffect, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate, useParams } from "react-router-dom";
-import { PageShell, Badge } from "../../../components/PageShell";
-import { useI18n } from "../../../i18n/i18n";
+import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { ZHBtn, ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
-import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
-import { ZhTextarea } from "../../../components/zh/inputs";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
-import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
-import { applyServerErrors } from "../../lib/validationErrors";
-import { PurchaseReturnableLinesEditor } from "../components/PurchaseReturnableLinesEditor";
-import { PurchaseReturnCreditNoteSection } from "../components/PurchaseReturnCreditNoteSection";
-import { purchaseService, type PurchaseInvoiceDto } from "../api/purchaseService";
-import {
-  purchaseReturnService,
-  type PurchaseReturnDto,
-  type ReturnableLineDto,
-} from "../api/purchaseReturnService";
-import {
-  purchaseReturnDraftSchema,
-  cancelPurchaseReturnSchema,
-  type PurchaseReturnDraftFormValues,
-  type CancelPurchaseReturnFormValues,
-} from "../schemas/purchaseReturnSchema";
-import {
-  getPurchaseReturnStatusLabel,
-  getPurchaseReturnFiscalStatusLabel,
-  PURCHASE_RETURN_STATUS_BADGE as STATUS_BADGE,
-} from "../utils/purchaseReturnStatus";
+import { purchaseReturnService, type PurchaseReturnDto, type PurchaseReturnDetailDto } from "../api/purchaseReturnService";
+import { getPurchaseReturnStatusLabel, getPurchaseReturnFiscalStatusLabel } from "../utils/purchaseReturnStatus";
+import { useI18n } from "../../../i18n/i18n";
 
-/**
- * Detalle de una devolución de compra: edición del borrador (Draft),
- * autorización, cancelación (con reversa completa si estaba Authorized) y
- * vínculo de Nota de Crédito del proveedor — todo en una sola página, mismo
- * criterio que `SalesReturnFormPage.tsx` para el modo "consulta/edición"
- * (aquí separado de la creación por decisión explícita del plan Fase 12).
- * React Hook Form + Zod en ambos formularios internos (edición de Draft y
- * cancelación) — F-V1/F-V2.
- */
+/** Historial íntegro, exclusivamente de consulta. */
 export function PurchaseReturnDetailPage() {
-  const { t } = useI18n();
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
-
-  const [editing, setEditing] = useState<PurchaseReturnDto | null>(null);
-  const [invoice, setInvoice] = useState<PurchaseInvoiceDto | null>(null);
-  const [returnableLines, setReturnableLines] = useState<ReturnableLineDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [authorizing, setAuthorizing] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
-
-  const draftForm = useForm<PurchaseReturnDraftFormValues>({
-    resolver: zodResolver(purchaseReturnDraftSchema),
-    defaultValues: { reason: "", lines: [] },
-  });
-  const { fields, append, remove } = useFieldArray({
-    control: draftForm.control,
-    name: "lines",
-  });
-  const selectedLines = draftForm.watch("lines");
-
-  const cancelForm = useForm<CancelPurchaseReturnFormValues>({
-    resolver: zodResolver(cancelPurchaseReturnSchema),
-    defaultValues: { reason: "" },
-  });
-
+  const { t } = useI18n();
+  const [document, setDocument] = useState<PurchaseReturnDto | null>(null);
+  const [error, setError] = useState("");
   useEffect(() => {
+    let active = true;
     if (!id) return;
-    let cancelled = false;
-    setLoading(true);
-    purchaseReturnService
-      .getById(id)
-      .then(async (dto) => {
-        if (cancelled) return;
-        setEditing(dto);
-        draftForm.reset({
-          reason: dto.reason,
-          lines: dto.lines.map((l) => ({
-            originalInvoiceDetailId: l.originalInvoiceDetailId,
-            quantity: l.quantity,
-          })),
-        });
-        try {
-          const inv = await purchaseService.getById(dto.purchaseInvoiceId);
-          if (cancelled) return;
-          setInvoice(inv);
-        } catch {
-          // La factura pudo no cargarse (p. ej. permisos) — no bloquea la vista de la devolución.
-        }
-        if (dto.status === "Draft") {
-          const lines = await purchaseReturnService.getReturnableLines(
-            dto.purchaseInvoiceId,
-          );
-          if (cancelled) return;
-          setReturnableLines(lines);
-        }
-      })
-      .catch((err: unknown) => {
-        message.error(
-          formatApiRequestError(err, { generic: "No se pudo cargar la devolución." }),
-        );
-        navigate("/purchases/returns");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, navigate]);
-
-  const anyLineExceedsRemaining = returnableLines.some((line) => {
-    const selected = selectedLines.find(
-      (l) => l.originalInvoiceDetailId === line.invoiceDetailId,
-    );
-    return (selected?.quantity ?? 0) > line.remainingQuantity;
-  });
-
-  const handleSaveDraft = async (values: PurchaseReturnDraftFormValues) => {
-    if (!editing) return;
-    try {
-      const dto = await purchaseReturnService.updateDraft(editing.id, values);
-      setEditing(dto);
-      message.success("Borrador actualizado correctamente.");
-    } catch (err: unknown) {
-      const applied = applyServerErrors(err, draftForm.setError, (msg) =>
-        message.error(msg),
-      );
-      if (!applied) {
-        message.error(
-          formatApiRequestError(err, {
-            generic: "No se pudieron guardar los cambios del borrador.",
-          }),
-        );
-      }
-    }
-  };
-
-  const handleAuthorize = async () => {
-    if (!editing || authorizing) return;
-
-    const confirmed = await message.confirm({
-      title: "Autorizar devolución de compra",
-      message: (
-        <>
-          <p className="zh-confirm-message">
-            Al autorizar, la devolución pasa a estado <strong>Autorizada</strong> y ya no podrá
-            editarse. Esta acción puede afectar el inventario/Kardex, la cuenta por pagar o el
-            crédito del proveedor, y puede generar un asiento contable.
-          </p>
-          <p className="zh-confirm-message">
-            N.º devolución: <strong>{editing.returnNumber ?? "(borrador)"}</strong>
-            <br />
-            Proveedor: <strong>{invoice?.supplierName ?? "—"}</strong>
-            <br />
-            Fecha: <strong>{formatDateTime(editing.createdAt)}</strong>
-            <br />
-            Estado actual: <strong>{getPurchaseReturnStatusLabel(editing.status, t)}</strong>
-          </p>
-        </>
-      ),
-      variant: "warning",
-      confirmLabel: "Autorizar devolución",
-      cancelLabel: "Cancelar",
-    });
-    if (!confirmed) return;
-
-    setAuthorizing(true);
-    try {
-      await purchaseReturnService.authorize(editing.id, crypto.randomUUID());
-      // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — vuelve a pedir el detalle en vez de usar
-      // directamente la respuesta de authorize: solo GetPurchaseReturnByIdQuery resuelve
-      // SKU/nombre de producto y nombre de bodega para las líneas recién visibles.
-      const dto = await purchaseReturnService.getById(editing.id);
-      setEditing(dto);
-      message.success("Devolución autorizada correctamente.");
-    } catch (err: unknown) {
-      message.error(
-        formatApiRequestError(err, { generic: "No se pudo autorizar la devolución." }),
-      );
-    } finally {
-      setAuthorizing(false);
-    }
-  };
-
-  const handleCancel = async (values: CancelPurchaseReturnFormValues) => {
-    if (!editing) return;
-    const confirmed = await message.confirm({
-      title: "Cancelar devolución",
-      message:
-        editing.status === "Authorized"
-          ? `¿Cancelar la devolución ${editing.returnNumber}? Se reversará el inventario, la cuenta por pagar y el crédito de proveedor si aplica. Esta acción no se puede deshacer.`
-          : `¿Cancelar el borrador ${editing.returnNumber ?? ""}? Esta acción no se puede deshacer.`,
-      variant: "danger",
-      confirmLabel: "Cancelar devolución",
-    });
-    if (!confirmed) return;
-    try {
-      await purchaseReturnService.cancel(editing.id, {
-        reason: values.reason,
-        clientRequestId: crypto.randomUUID(),
-      });
-      // PURCHASE-RETURN-DETAIL-DISPLAY-NAMES-01 — mismo criterio que handleAuthorize: solo
-      // GetPurchaseReturnByIdQuery resuelve SKU/nombre de producto y nombre de bodega.
-      const dto = await purchaseReturnService.getById(editing.id);
-      setEditing(dto);
-      setCancelling(false);
-      message.success("Devolución cancelada.");
-    } catch (err: unknown) {
-      const applied = applyServerErrors(err, cancelForm.setError, (msg) =>
-        message.error(msg),
-      );
-      if (!applied) {
-        message.error(
-          formatApiRequestError(err, { generic: "No se pudo cancelar la devolución." }),
-        );
-      }
-    }
-  };
-
-  if (loading) {
-    return (
-      <PageShell title="Devolución de compra" subtitle="Cargando...">
-        <ZHCard>
-          <p>Cargando devolución...</p>
-        </ZHCard>
-      </PageShell>
-    );
-  }
-
-  if (!editing) {
-    return (
-      <PageShell title="Devolución de compra">
-        <ZHPageNotice variant="error" message="Devolución no encontrada" />
-      </PageShell>
-    );
-  }
-
-  const isDraft = editing.status === "Draft";
-  const isAuthorized = editing.status === "Authorized";
-  const isCancelled = editing.status === "Cancelled";
-
-  const returnedLineColumns: ZHDataTableColumn<PurchaseReturnDto["lines"][number]>[] = [
-    {
-      key: "product",
-      header: "Producto",
-      render: (line) =>
-        line.itemName
-          ? `${line.itemSku ? `${line.itemSku} — ` : ""}${line.itemName}`
-          : line.itemId,
-    },
-    { key: "quantity", header: "Cantidad", align: "right", cellClassName: "zh-table-cell--num", render: (line) => line.quantity },
+    purchaseReturnService.getById(id).then((dto) => { if (active) setDocument(dto); })
+      .catch((err: unknown) => { if (active) setError(formatApiRequestError(err, { generic: "No se pudo consultar la devolución." })); });
+    return () => { active = false; };
+  }, [id]);
+  const columns: ZHDataTableColumn<PurchaseReturnDetailDto>[] = [
+    { key: "product", header: "Producto", render: (line) => line.itemName ?? line.itemId },
+    { key: "quantity", header: "Cantidad", align: "right", render: (line) => line.quantity },
     { key: "warehouse", header: "Bodega", render: (line) => line.warehouseName ?? line.warehouseId },
   ];
-
-  return (
-    <PageShell
-      title={`Devolución ${editing.returnNumber ?? "(borrador)"}`}
-      subtitle={
-        invoice
-          ? `Factura origen: ${invoice.invoiceNumber} — ${invoice.supplierName}`
-          : `Factura origen: ${editing.purchaseInvoiceId}`
-      }
-      action={
-        <ZHBtn type="button" variant="ghost" onClick={() => navigate("/purchases/returns")}>
-          Volver al listado
-        </ZHBtn>
-      }
-    >
-      <ZHCard
-        title="Datos generales"
-        actions={
-          <Badge
-            label={getPurchaseReturnStatusLabel(editing.status, t)}
-            variant={STATUS_BADGE[editing.status] ?? "gray"}
-          />
-        }
-      >
-        <div className="zh-summary-grid">
-          <div>
-            <span className="zh-summary-grid__label">N.º Devolución</span>
-            <span className="zh-summary-grid__value">{editing.returnNumber ?? "—"}</span>
-          </div>
-          <div>
-            <span className="zh-summary-grid__label">Estado fiscal</span>
-            <span className="zh-summary-grid__value">
-              {getPurchaseReturnFiscalStatusLabel(editing.fiscalStatus, t)}
-            </span>
-          </div>
-          <div>
-            <span className="zh-summary-grid__label">Creada</span>
-            <span className="zh-summary-grid__value">{formatDateTime(editing.createdAt)}</span>
-          </div>
-          {editing.authorizedGrandTotal !== null && (
-            <div>
-              <span className="zh-summary-grid__label">Total autorizado</span>
-              <span className="zh-summary-grid__value">
-                <ZHMoneyValue precision="money" value={editing.authorizedGrandTotal} currencySymbol="" />
-              </span>
-            </div>
-          )}
-          {editing.supplierCreditId && (
-            <div>
-              <span className="zh-summary-grid__label">Saldo a favor generado</span>
-              <span className="zh-summary-grid__value">
-                <ZHMoneyValue precision="money" value={editing.supplierCreditAmount ?? 0} />{" "}
-                <ZHBtn
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(`/suppliers/credits/${editing.supplierCreditId}`)}
-                >
-                  Ver saldo
-                </ZHBtn>
-              </span>
-            </div>
-          )}
-        </div>
+  return <PageShell title={`Historial de devolución ${document?.returnNumber ?? ""}`}
+    action={<ZHBtn variant="ghost" onClick={() => navigate("/purchases/credit-notes")}>Volver a notas de crédito</ZHBtn>}>
+    <ZHPageNotice variant="info" message="Solo consulta. Las operaciones se realizan desde Nota de crédito." />
+    {error && <ZHPageNotice variant="error" message={error} />}
+    {!document && !error && <p>Cargando...</p>}
+    {document && <>
+      <ZHCard title="Datos generales">
+        <p>Factura origen: {document.purchaseInvoiceNumber ?? document.purchaseInvoiceId}</p>
+        <p>Estado: {getPurchaseReturnStatusLabel(document.status, t)}</p>
+        <p>Estado fiscal: {getPurchaseReturnFiscalStatusLabel(document.fiscalStatus, t)}</p>
+        <p>Creada: {formatDateTime(document.createdAt)}</p>
+        <p>{document.reason}</p>
+        {document.authorizedGrandTotal !== null && <ZHMoneyValue precision="money" value={document.authorizedGrandTotal} />}
+        {document.supplierCreditNoteInvoiceNumber && <p>NC recibida: {document.supplierCreditNoteInvoiceNumber}</p>}
+        {document.supplierCreditNoteAccessKey && <p>Clave de acceso: {document.supplierCreditNoteAccessKey}</p>}
+        {document.linkedPurchaseCreditNoteId && <ZHBtn variant="ghost" onClick={() => navigate(`/purchases/credit-notes/${document.linkedPurchaseCreditNoteId}`)}>Ver nota de crédito</ZHBtn>}
+        {document.supplierCreditId && <ZHBtn variant="ghost" onClick={() => navigate(`/suppliers/credits/${document.supplierCreditId}`)}>Ver saldo a favor</ZHBtn>}
       </ZHCard>
-
-      <ZHCard title="Motivo">
-        {isDraft ? (
-          <ZHField
-            label="Motivo de la devolución"
-            required
-            fieldError={draftForm.formState.errors.reason?.message}
-          >
-            <ZhTextarea
-              className="zh-input"
-              rows={3}
-              maxLength={500}
-              {...draftForm.register("reason")}
-            />
-          </ZHField>
-        ) : (
-          <p className="zh-readonly-text">{editing.reason}</p>
-        )}
-      </ZHCard>
-
-      {isDraft && (
-        <ZHCard title="Líneas a devolver">
-          <PurchaseReturnableLinesEditor
-            returnableLines={returnableLines}
-            selected={fields}
-            append={append}
-            remove={remove}
-            disabled={draftForm.formState.isSubmitting}
-          />
-          <ZHFormActions
-            hideCancel
-            onSave={() => void draftForm.handleSubmit(handleSaveDraft)()}
-            hideDraft
-            disableSave={
-              draftForm.formState.isSubmitting ||
-              anyLineExceedsRemaining ||
-              fields.length === 0
-            }
-            labels={{
-              save: draftForm.formState.isSubmitting ? "Guardando..." : "Guardar cambios",
-            }}
-          />
-        </ZHCard>
-      )}
-
-      {!isDraft && (
-        <ZHCard title="Líneas devueltas">
-          <ZHDataTable
-            columns={returnedLineColumns}
-            rows={editing.lines}
-            rowKey={(line) => line.id}
-            tableClassName="table--compact table--neutral"
-          />
-        </ZHCard>
-      )}
-
-      {isAuthorized && (
-        <PurchaseReturnCreditNoteSection purchaseReturn={editing} onLinked={setEditing} />
-      )}
-
-      {(isDraft || isAuthorized) && (
-        <ZHCard title="Acciones">
-          {!cancelling ? (
-            <div className="zh-form-actions-row zh-form-actions-row--end zh-form-actions-row--flush">
-              <ZHBtn
-                type="button"
-                variant="destructive"
-                onClick={() => setCancelling(true)}
-              >
-                Cancelar devolución
-              </ZHBtn>
-              {isDraft && (
-                <ZHBtn
-                  type="button"
-                  variant="primary"
-                  onClick={() => void handleAuthorize()}
-                  disabled={authorizing || editing.lines.length === 0}
-                >
-                  {authorizing ? "Autorizando..." : "Autorizar devolución"}
-                </ZHBtn>
-              )}
-            </div>
-          ) : (
-            <form onSubmit={(e) => void cancelForm.handleSubmit(handleCancel)(e)}>
-              <ZHField
-                label="Motivo de la cancelación"
-                required
-                fieldError={cancelForm.formState.errors.reason?.message}
-              >
-                <ZhTextarea
-                  className="zh-input"
-                  rows={3}
-                  maxLength={500}
-                  {...cancelForm.register("reason")}
-                />
-              </ZHField>
-              <ZHFormActions
-                onCancel={() => setCancelling(false)}
-                onSave={() => void cancelForm.handleSubmit(handleCancel)()}
-                hideDraft
-                disableSave={cancelForm.formState.isSubmitting}
-                labels={{
-                  cancel: "Volver",
-                  save: cancelForm.formState.isSubmitting
-                    ? "Cancelando..."
-                    : "Confirmar cancelación",
-                }}
-              />
-            </form>
-          )}
-        </ZHCard>
-      )}
-
-      {isCancelled && editing.cancellationReason && (
-        <ZHPageNotice
-          variant="info"
-          message="Devolución cancelada"
-          detail={editing.cancellationReason}
-        />
-      )}
-    </PageShell>
-  );
+      <ZHCard title="Líneas registradas"><ZHDataTable columns={columns} rows={document.lines} rowKey={(line) => line.id} /></ZHCard>
+      {document.cancellationReason && <ZHPageNotice variant="info" message="Devolución cancelada" detail={document.cancellationReason} />}
+    </>}
+  </PageShell>;
 }

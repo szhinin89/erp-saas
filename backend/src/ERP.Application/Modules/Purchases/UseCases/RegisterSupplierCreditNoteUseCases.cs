@@ -13,7 +13,7 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 
 // ── DTO ─────────────────────────────────────────────────────────────────
 
-public sealed record SupplierCreditNoteLinkDto(
+internal sealed record SupplierCreditNoteLinkDto(
     Guid PurchaseReturnId,
     string FiscalStatus,
     Guid SupplierCreditNoteDocumentId,
@@ -35,7 +35,7 @@ public sealed record SupplierCreditNoteLinkDto(
 /// <c>uq_purchase_returns_tenant_link_credit_note_client_request_id</c>) + el <c>xmin</c> de
 /// <c>PurchaseReturn</c>.
 /// </summary>
-public sealed record RegisterAndLinkSupplierCreditNoteCommand(
+internal sealed record RegisterAndLinkSupplierCreditNoteCommand(
     Guid PurchaseReturnId,
     string AccessKey,
     string SupplierRuc,
@@ -47,9 +47,9 @@ public sealed record RegisterAndLinkSupplierCreditNoteCommand(
     decimal TotalAmount,
     string CurrencyCode,
     Guid ClientRequestId
-) : IRequest<Result<SupplierCreditNoteLinkDto>>, ICompanyScopedRequest;
+);
 
-public sealed class RegisterAndLinkSupplierCreditNoteValidator
+internal sealed class RegisterAndLinkSupplierCreditNoteValidator
     : AbstractValidator<RegisterAndLinkSupplierCreditNoteCommand>
 {
     public RegisterAndLinkSupplierCreditNoteValidator()
@@ -69,8 +69,7 @@ public sealed class RegisterAndLinkSupplierCreditNoteValidator
 
 // ── Handler ─────────────────────────────────────────────────────────────
 
-public sealed class RegisterAndLinkSupplierCreditNoteHandler
-    : IRequestHandler<RegisterAndLinkSupplierCreditNoteCommand, Result<SupplierCreditNoteLinkDto>>
+internal sealed class RegisterAndLinkSupplierCreditNoteHandler
 {
     private const decimal Tolerance = 0.01m;
 

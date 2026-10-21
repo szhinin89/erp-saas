@@ -13,7 +13,7 @@ import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
-import { ZhTextarea } from "../../../components/zh/inputs";
+import { ZhTextarea, ZhSelect } from "../../../components/zh/inputs";
 import { ZhDateInput } from "../../../components/zh/inputs/ZhDateInput";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
@@ -30,7 +30,7 @@ import {
   purchaseCreditNoteService,
   type PurchaseCreditNoteApplicationType,
 } from "../api/purchaseCreditNoteService";
-import { purchaseReturnService, type ReturnableLineDto } from "../api/purchaseReturnService";
+import { purchaseReturnService, type ReturnableLineDto, type PurchaseReturnDto } from "../api/purchaseReturnService";
 import { purchaseReturnPreview } from "../utils/purchaseReturnPreview";
 import { PurchaseReturnableLinesEditor } from "../components/PurchaseReturnableLinesEditor";
 import { PurchaseCreditNoteTaxSummaryLinesEditor } from "../components/PurchaseCreditNoteTaxSummaryLinesEditor";
@@ -46,7 +46,6 @@ import "../styles/purchase-credit-note.css";
 
 type CreditNoteType = PurchaseCreditNoteApplicationType;
 
-/** Espejo de ERP.Domain.Common.SriTaxCalculator — solo vista previa, el backend recalcula autoritativamente. */
 function computeTaxPreview(taxableBase: number, vatRate: number, iceRate: number) {
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
   const ice = iceRate > 0 ? round2((taxableBase * iceRate) / 100) : 0;
@@ -55,18 +54,6 @@ function computeTaxPreview(taxableBase: number, vatRate: number, iceRate: number
   return { ice, vat };
 }
 
-/**
- * PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — una sola pantalla de ingreso para dos
- * orígenes: (1) Recepción XML/SRI → "Procesar NC" abre esta misma ruta con `?invoiceId=` (y
- * `?receptionDocumentId=` para precargar datos fiscales del XML); (2) menú "Notas de Crédito de
- * Compra → Nueva" abre la MISMA ruta sin parámetros — modo manual: el usuario elige proveedor y
- * factura `Confirmed` primero (`SupplierSearchSelect` + `PurchaseInvoicePicker`, reutilizados/extendidos,
- * ningún picker paralelo) y a partir de ahí el resto del formulario, la validación de cantidades y
- * el guardado son EXACTAMENTE el mismo código que el modo XML (mismo estado, mismo efecto de carga,
- * mismo `onSubmitFiscal`) — nunca un formulario ni un motor duplicado. El modo se decide una sola
- * vez al montar (según si `invoiceId` llegó por URL); cuando no llegó, `manualInvoiceId` alimenta la
- * misma variable `invoiceId` que dispara el effect de carga ya existente.
- */
 export function PurchaseCreditNoteFormPage() {
   const moneyDecimals = usePrecisionDecimals("money"); // mensaje de cuadre (06)
   const [searchParams] = useSearchParams();
@@ -88,6 +75,9 @@ export function PurchaseCreditNoteFormPage() {
   const [creditNoteType, setCreditNoteType] = useState<CreditNoteType | null>(null);
   const [returnableLines, setReturnableLines] = useState<ReturnableLineDto[]>([]);
   const [returnLoadError, setReturnLoadError] = useState("");
+  const [historicalReturns, setHistoricalReturns] = useState<PurchaseReturnDto[]>([]);
+  const [historicalReturnId, setHistoricalReturnId] = useState("");
+  const historicalReturn = historicalReturns.find((r) => r.id === historicalReturnId);
   const [receivedTotal, setReceivedTotal] = useState<number | null>(null);
   const [clientRequestId] = useState(() => crypto.randomUUID());
 
@@ -118,7 +108,7 @@ export function PurchaseCreditNoteFormPage() {
     return { base: totals.base + preview.base, vat: totals.vat + preview.vat,
       ice: totals.ice + preview.ice, irbpnr: totals.irbpnr + preview.irbpnr, total: totals.total + preview.total };
   }, { base: 0, vat: 0, ice: 0, irbpnr: 0, total: 0 });
-  const invalidReturn = returnLines.some((line) => {
+  const invalidReturn = !historicalReturn && returnLines.some((line) => {
     const source = returnableLines.find((l) => l.invoiceDetailId === line.originalInvoiceDetailId);
     return !source || line.quantity <= 0 || line.quantity > source.remainingQuantity;
   });
@@ -138,10 +128,10 @@ export function PurchaseCreditNoteFormPage() {
     { subtotal: 0, ice: 0, vat: 0 },
   );
 
-  const subtotal = isDiscount ? taxSummaryTotals.subtotal : returnTotals.base;
-  const iceAmount = isDiscount ? taxSummaryTotals.ice : returnTotals.ice;
-  const vatAmount = isDiscount ? taxSummaryTotals.vat : returnTotals.vat;
-  const totalAmount = subtotal + iceAmount + vatAmount + (isDiscount ? 0 : returnTotals.irbpnr);
+  const subtotal = isDiscount ? taxSummaryTotals.subtotal : historicalReturn?.authorizedSubtotal ?? returnTotals.base;
+  const iceAmount = isDiscount ? taxSummaryTotals.ice : historicalReturn?.authorizedIceTotal ?? returnTotals.ice;
+  const vatAmount = isDiscount ? taxSummaryTotals.vat : historicalReturn?.authorizedVatTotal ?? returnTotals.vat;
+  const totalAmount = !isDiscount && historicalReturn ? historicalReturn.authorizedGrandTotal ?? 0 : subtotal + iceAmount + vatAmount + (isDiscount ? 0 : returnTotals.irbpnr);
   const xmlMismatch = !isDiscount && receivedTotal !== null && Math.abs(totalAmount - receivedTotal) > 0.0100001;
 
   const anyTaxSummaryLineExceeds = taxSummaryLines.some((l) => {
@@ -161,12 +151,15 @@ export function PurchaseCreditNoteFormPage() {
     }
     let cancelled = false;
     setLoading(true);
+    setHistoricalReturnId("");
+    setHistoricalReturns([]);
     Promise.all([purchaseService.getById(invoiceId), purchaseService.getTaxSummaries(invoiceId), purchaseReturnService.getReturnableLines(invoiceId).catch(() => {
       if (!cancelled) setReturnLoadError("No se pudieron cargar las cantidades disponibles para devolución.");
       return [];
     }),
-      receptionDocumentId ? purchaseReceptionService.getXmlView(receptionDocumentId) : Promise.resolve(null)])
-      .then(([inv, summaries, returnable, reception]) => {
+      receptionDocumentId ? purchaseReceptionService.getXmlView(receptionDocumentId) : Promise.resolve(null),
+      purchaseCreditNoteService.historicalReturns(invoiceId)])
+      .then(([inv, summaries, returnable, reception, historical]) => {
         if (cancelled) return;
         if (reception) {
           if (reception.documentType !== "CREDIT_NOTE") throw new Error("El documento recibido no es una nota de crédito.");
@@ -178,6 +171,7 @@ export function PurchaseCreditNoteFormPage() {
           setValue("authorizationDate", reception.authorizationDate ?? "");
           setValue("reason", reception.modificationReason ?? "");
         }
+        setHistoricalReturns(historical);
         setReturnableLines(returnable);
         setInvoice(inv);
         setTaxSummaries(summaries);
@@ -204,7 +198,7 @@ export function PurchaseCreditNoteFormPage() {
 
   const onSubmitFiscal = async (values: PurchaseCreditNoteDraftFormValues) => {
     if (!invoice || !creditNoteType) return;
-    if (creditNoteType === "Return" && (invalidReturn || xmlMismatch || returnLines.length === 0)) return;
+    if (creditNoteType === "Return" && (invalidReturn || xmlMismatch || (!historicalReturn && returnLines.length === 0))) return;
     try {
       const dto = await purchaseCreditNoteService.createDraft({
         clientRequestId,
@@ -218,7 +212,8 @@ export function PurchaseCreditNoteFormPage() {
         issueDate: values.issueDate,
         reason: values.reason,
         lines: [],
-        returnLines: creditNoteType === "Return" ? values.returnLines : [],
+        historicalPurchaseReturnId: creditNoteType === "Return" ? historicalReturnId || null : null,
+        returnLines: creditNoteType === "Return" && !historicalReturn ? values.returnLines : [],
         taxSummaryLines:
           creditNoteType === "Discount"
             ? values.taxSummaryLines.map((l) => ({
@@ -236,8 +231,8 @@ export function PurchaseCreditNoteFormPage() {
         return;
       }
 
-      message.success("Nota de crédito y borrador de devolución creados.");
-      navigate(`/purchases/returns/${dto.linkedPurchaseReturnId}`, { replace: true });
+      message.success("Borrador de nota de crédito creado correctamente.");
+      navigate(`/purchases/credit-notes/${dto.id}`, { replace: true });
     } catch (err: unknown) {
       const applied = applyServerErrors(err, setError, (msg) => message.error(msg));
       if (!applied) {
@@ -336,7 +331,7 @@ export function PurchaseCreditNoteFormPage() {
   }
 
   const showFiscalForm = creditNoteType !== null;
-  const linesCount = creditNoteType === "Discount" ? taxSummaryFields.length : returnFields.length;
+  const linesCount = creditNoteType === "Discount" ? taxSummaryFields.length : historicalReturn ? 1 : returnFields.length;
 
   return (
     <PageShell
@@ -506,8 +501,16 @@ export function PurchaseCreditNoteFormPage() {
           ) : (
             <ZHCard title="Productos a devolver">
               {returnLoadError && <ZHPageNotice variant="error" message={returnLoadError} />}
-              <PurchaseReturnableLinesEditor returnableLines={returnableLines} invoiceLines={invoice.lines}
-                selected={returnFields} append={appendReturn} remove={removeReturn} disabled={isSubmitting} />
+              {historicalReturns.length > 0 && <ZHField label="Devolución histórica pendiente de NC">
+                <ZhSelect value={historicalReturnId} disabled={isSubmitting} onChange={(e) => setHistoricalReturnId(e.target.value)}>
+                  <option value="">Nueva devolución con esta NC</option>
+                  {historicalReturns.map((r) => <option key={r.id} value={r.id}>{r.returnNumber} — {formatMoney(r.authorizedGrandTotal ?? 0, moneyDecimals)}</option>)}
+                </ZhSelect>
+              </ZHField>}
+              {historicalReturn ? <ZHPageNotice variant="info" message="Se vinculará la NC a esta devolución histórica. No se repetirán inventario, CxP, saldo a favor ni asientos." /> :
+                <PurchaseReturnableLinesEditor returnableLines={returnableLines} invoiceLines={invoice.lines}
+                  selected={returnFields} append={appendReturn} remove={removeReturn} disabled={isSubmitting} />}
+
               {xmlMismatch && <ZHPageNotice variant="error" message={`El total a devolver debe coincidir con la NC/XML recibido (${receivedTotal == null ? "" : formatMoney(receivedTotal, moneyDecimals)}).`} />}
             </ZHCard>
           )}
@@ -563,7 +566,7 @@ export function PurchaseCreditNoteFormPage() {
                   {t("purchases.creditNote.summary.movesInventory", "Mueve inventario")}
                 </span>
                 <span className="zh-summary-grid__value">
-                  {creditNoteType === "Return" ? t("common.yes", "Sí") : t("common.no", "No")}
+                  {creditNoteType === "Return" && !historicalReturn ? t("common.yes", "Sí") : t("common.no", "No")}
                 </span>
               </div>
               <div>
@@ -571,12 +574,7 @@ export function PurchaseCreditNoteFormPage() {
                   {t("purchases.creditNote.summary.accounting", "Contabilidad")}
                 </span>
                 <span className="zh-summary-grid__value">
-                  {creditNoteType === "Return"
-                    ? t(
-                        "purchases.creditNote.summary.accountingGeneratedByReturn",
-                        "Se genera automáticamente (flujo de devolución existente)",
-                      )
-                    : t("purchases.creditNote.summary.noAccountingYet", "No se genera en esta fase")}
+                  {historicalReturn && !isDiscount ? "Sin nuevos asientos (vinculación histórica)" : "Al autorizar la nota de crédito"}
                 </span>
               </div>
             </div>

@@ -11,13 +11,14 @@ const api = vi.hoisted(() => ({
   reception: vi.fn(),
   create: vi.fn(),
   list: vi.fn(),
+  historical: vi.fn(),
 }));
 vi.mock("../api/purchaseService", () => ({
   purchaseService: { getById: api.invoice, getTaxSummaries: api.summaries, list: api.list },
 }));
 vi.mock("../api/purchaseReturnService", () => ({ purchaseReturnService: { getReturnableLines: api.returnable } }));
 vi.mock("../api/purchaseReceptionService", () => ({ purchaseReceptionService: { getXmlView: api.reception } }));
-vi.mock("../api/purchaseCreditNoteService", () => ({ purchaseCreditNoteService: { createDraft: api.create } }));
+vi.mock("../api/purchaseCreditNoteService", () => ({ purchaseCreditNoteService: { createDraft: api.create, historicalReturns: api.historical } }));
 vi.mock("../../../lib/messages", () => ({ message: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("../../masterData/api/businessPartnerFacade", () => ({
   businessPartnerFacade: {
@@ -37,6 +38,7 @@ vi.mock("../../masterData/api/businessPartnerFacade", () => ({
 import { PurchaseCreditNoteFormPage } from "./PurchaseCreditNoteFormPage";
 
 beforeEach(() => {
+  api.historical.mockResolvedValue([]);
   api.invoice.mockResolvedValue({ id: "invoice-1", supplierName: "Proveedor", supplierTaxId: "123",
     invoiceNumber: "001-001-000000001", issueDate: "2026-09-09", grandTotal: 1150,
     lines: [{ id: "line-1", description: "Producto A", itemId: "item-1", quantity: 10, unitPrice: 100,
@@ -46,7 +48,7 @@ beforeEach(() => {
   api.returnable.mockResolvedValue([{ invoiceDetailId: "line-1", itemId: "item-1", description: "Producto A",
     originalQuantity: 10, returnedQuantity: 7, remainingQuantity: 3, warehouseId: "warehouse-1" }]);
   api.reception.mockResolvedValue({ documentType: "CREDIT_NOTE", documentNumber: "001-001-000000099",
-    accessKey: "123", issueDate: "2026-09-09", modificationReason: "Productos dañados", totalAmount: 345 });
+    accessKey: "2110202604179135268800110010010000000991234567810", issueDate: "2026-09-09", modificationReason: "Productos dañados", totalAmount: 345 });
   api.create.mockResolvedValue({ id: "note-1", linkedPurchaseReturnId: "return-1" });
   api.list.mockResolvedValue({
     items: [{ id: "invoice-1", invoiceNumber: "001-001-000000001", issueDate: "2026-09-09",
@@ -59,7 +61,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 function renderPage() {
   render(<I18nProvider><MemoryRouter initialEntries={["/new?invoiceId=invoice-1&receptionDocumentId=reception-1"]}>
     <Routes><Route path="/new" element={<PurchaseCreditNoteFormPage />} />
-      <Route path="/purchases/returns/return-1" element={<div>Devolución creada</div>} />
+      <Route path="/purchases/credit-notes/note-1" element={<div>Nota de crédito creada</div>} />
       <Route path="/purchases/credit-notes" element={<div>Listado NC</div>} /></Routes>
   </MemoryRouter></I18nProvider>);
 }
@@ -67,7 +69,7 @@ function renderPage() {
 function renderManualPage() {
   render(<I18nProvider><MemoryRouter initialEntries={["/new"]}>
     <Routes><Route path="/new" element={<PurchaseCreditNoteFormPage />} />
-      <Route path="/purchases/returns/return-1" element={<div>Devolución creada</div>} />
+      <Route path="/purchases/credit-notes/note-1" element={<div>Nota de crédito creada</div>} />
       <Route path="/purchases/credit-notes" element={<div>Listado NC</div>} /></Routes>
   </MemoryRouter></I18nProvider>);
 }
@@ -83,7 +85,7 @@ it("captura productos antes de guardar y envía solo referencias y cantidades al
   await waitFor(() => expect(api.create).toHaveBeenCalledOnce());
   expect(api.create.mock.calls[0][0]).toMatchObject({ applicationType: "Return", lines: [], taxSummaryLines: [],
     returnLines: [{ originalInvoiceDetailId: "line-1", quantity: 3 }], receptionDocumentId: "reception-1" });
-  expect(await screen.findByText("Devolución creada")).toBeTruthy();
+  expect(await screen.findByText("Nota de crédito creada")).toBeTruthy();
 });
 
 it("bloquea un exceso y un importe distinto del XML sin enviar la NC", async () => {
@@ -98,6 +100,21 @@ it("bloquea un exceso y un importe distinto del XML sin enviar la NC", async () 
     fireEvent.click(save);
   }
   expect(api.create).not.toHaveBeenCalled();
+});
+
+it("vincula el histórico desde Nota de crédito sin enviar productos para una nueva devolución", async () => {
+  api.historical.mockResolvedValue([{ id: "old-return", returnNumber: "DEV-HIST",
+    authorizedSubtotal: 300, authorizedVatTotal: 45, authorizedIceTotal: 0, authorizedGrandTotal: 345 }]);
+  renderPage();
+  fireEvent.click(await screen.findByLabelText("Devolución de productos"));
+  fireEvent.change(screen.getByLabelText("Devolución histórica pendiente de NC"), { target: { value: "old-return" } });
+  expect(screen.queryByLabelText("Cantidad a devolver: Producto A")).toBeNull();
+  expect(screen.getByText(/No se repetirán inventario/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /Guardar nota de crédito fiscal/i }));
+  await waitFor(() => expect(api.create).toHaveBeenCalledOnce());
+  expect(api.create.mock.calls[0][0]).toMatchObject({ applicationType: "Return",
+    historicalPurchaseReturnId: "old-return", returnLines: [], taxSummaryLines: [], lines: [] });
+  expect(await screen.findByText("Nota de crédito creada")).toBeTruthy();
 });
 
 // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — misma ruta/pantalla, sin `?invoiceId=`
@@ -202,7 +219,7 @@ describe("PurchaseCreditNoteFormPage — modo manual (sin parámetros)", () => {
       creditNoteNumber: "001-001-000000050",
       returnLines: [{ originalInvoiceDetailId: "line-1", quantity: 3 }],
     });
-    expect(await screen.findByText("Devolución creada")).toBeTruthy();
+    expect(await screen.findByText("Nota de crédito creada")).toBeTruthy();
   });
 });
 

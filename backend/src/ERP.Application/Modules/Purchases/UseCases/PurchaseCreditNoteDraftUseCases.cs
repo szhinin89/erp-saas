@@ -60,7 +60,8 @@ public sealed record CreateDraftPurchaseCreditNoteCommand(
     string Reason,
     IReadOnlyList<PurchaseCreditNoteDraftLineInput> Lines,
     IReadOnlyList<PurchaseCreditNoteTaxSummaryLineInput>? TaxSummaryLines = null,
-    IReadOnlyList<PurchaseReturnDraftLineInput>? ReturnLines = null
+    IReadOnlyList<PurchaseReturnDraftLineInput>? ReturnLines = null,
+    Guid? HistoricalPurchaseReturnId = null
 ) : IRequest<Result<PurchaseCreditNoteDto>>, IBranchScopedRequest;
 
 /// <summary>FLOW-READY-02C.2 — reemplaza por completo los datos fiscales/motivo/líneas de una <c>PurchaseCreditNote</c> en <c>Draft</c>. Sin idempotencia (no es una operación financiera).</summary>
@@ -97,7 +98,11 @@ public sealed class CreateDraftPurchaseCreditNoteValidator
         RuleFor(x => x.CreditNoteNumber)
             .NotEmpty()
             .WithMessage("El número de nota de crédito es obligatorio.")
+            .Must(PurchaseCreditNoteFiscalIdentity.IsNumber)
+            .WithMessage("Use establecimiento-punto de emisión-secuencial: 001-001-000000001.")
             .MaximumLength(PurchaseCreditNote.CreditNoteNumberMaxLen);
+        RuleFor(x => x).Must(x => PurchaseCreditNoteFiscalIdentity.IsCompatible(x.CreditNoteNumber, x.AccessKey))
+            .WithMessage("La clave de acceso no corresponde al tipo y número de la nota de crédito.");
         RuleFor(x => x.AccessKey).MaximumLength(PurchaseCreditNote.AccessKeyMaxLen);
         RuleFor(x => x.AuthorizationNumber)
             .MaximumLength(PurchaseCreditNote.AuthorizationNumberMaxLen);
@@ -111,6 +116,7 @@ public sealed class CreateDraftPurchaseCreditNoteValidator
                 x.Lines.Count > 0
                 || (x.TaxSummaryLines?.Count ?? 0) > 0
                 || (x.ReturnLines?.Count ?? 0) > 0
+                || x.HistoricalPurchaseReturnId.HasValue
             )
             .WithMessage("Debe incluir al menos una línea o un resumen fiscal aplicado.");
         RuleForEach(x => x.Lines)
@@ -155,7 +161,11 @@ public sealed class UpdatePurchaseCreditNoteDraftValidator
         RuleFor(x => x.CreditNoteNumber)
             .NotEmpty()
             .WithMessage("El número de nota de crédito es obligatorio.")
+            .Must(PurchaseCreditNoteFiscalIdentity.IsNumber)
+            .WithMessage("Use establecimiento-punto de emisión-secuencial: 001-001-000000001.")
             .MaximumLength(PurchaseCreditNote.CreditNoteNumberMaxLen);
+        RuleFor(x => x).Must(x => PurchaseCreditNoteFiscalIdentity.IsCompatible(x.CreditNoteNumber, x.AccessKey))
+            .WithMessage("La clave de acceso no corresponde al tipo y número de la nota de crédito.");
         RuleFor(x => x.AccessKey).MaximumLength(PurchaseCreditNote.AccessKeyMaxLen);
         RuleFor(x => x.AuthorizationNumber)
             .MaximumLength(PurchaseCreditNote.AuthorizationNumberMaxLen);
@@ -210,6 +220,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
     private readonly ICurrentUser _u;
     private readonly IPurchaseReturnRepository? _returnRepo;
     private readonly ICompanyPrecisionPolicyProvider _precision;
+    private readonly PurchaseCreditNoteReprocessingGuard? _reprocessing;
 
     public CreateDraftPurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
@@ -222,7 +233,8 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
         ICurrentBranch b,
         ICurrentUser u,
         ICompanyPrecisionPolicyProvider precision,
-        IPurchaseReturnRepository? returnRepo = null
+        IPurchaseReturnRepository? returnRepo = null,
+        PurchaseCreditNoteReprocessingGuard? reprocessing = null
     )
     {
         _precision = precision;
@@ -236,6 +248,7 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
         _b = b;
         _u = u;
         _returnRepo = returnRepo;
+        _reprocessing = reprocessing;
     }
 
     public async Task<Result<PurchaseCreditNoteDto>> Handle(
@@ -268,22 +281,6 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
                 "Solo se pueden registrar notas de crédito sobre facturas de compra confirmadas."
             );
 
-        var payable = await _payableRepo.GetByOriginAsync(
-            tid,
-            _c.CompanyId,
-            AccountsPayableOriginType.PurchaseInvoice,
-            invoice.Id,
-            ct
-        );
-        if (payable is null)
-            return Result<PurchaseCreditNoteDto>.NotFound(
-                "Cuenta por pagar de la factura de compra no encontrada."
-            );
-        if (payable.OutstandingAmount <= 0)
-            return Result<PurchaseCreditNoteDto>.ValidationFailure(
-                "La factura afectada no tiene saldo pendiente."
-            );
-
         Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionDocument? receptionDoc =
             null;
         if (cmd.ReceptionDocumentId is { } receptionDocumentId)
@@ -297,8 +294,11 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
             if (validation.Error is not null)
                 return validation.Error;
             receptionDoc = validation.Document;
-            cmd = cmd with { AccessKey = receptionDoc!.AccessKey };
+            cmd = cmd with { AccessKey = receptionDoc!.AccessKey, CreditNoteNumber = receptionDoc.InvoiceNumber };
         }
+
+        if (PurchaseCreditNoteFiscalIdentity.HasDifferentIssuer(cmd.AccessKey, invoice.SupplierTaxId))
+            return Result<PurchaseCreditNoteDto>.ValidationFailure("El emisor de la clave de acceso no coincide con el proveedor.");
 
         if (
             !string.IsNullOrWhiteSpace(cmd.AccessKey)
@@ -321,7 +321,33 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
                 "Ya existe una nota de crédito con este número para este proveedor."
             );
 
+        if (_reprocessing is not null)
+        {
+            var blocker = await _reprocessing.CheckAsync(tid, _c.CompanyId, invoice.SupplierId,
+                cmd.CreditNoteNumber, cmd.AccessKey, cmd.ReceptionDocumentId, ct);
+            if (blocker is not null) return Result<PurchaseCreditNoteDto>.ValidationFailure(blocker);
+        }
+        var payable = await _payableRepo.GetByOriginAsync(
+            tid,
+            _c.CompanyId,
+            AccountsPayableOriginType.PurchaseInvoice,
+            invoice.Id,
+            ct
+        );
+        if (payable is null)
+            return Result<PurchaseCreditNoteDto>.NotFound(
+                "Cuenta por pagar de la factura de compra no encontrada."
+            );
+        if (cmd.ApplicationType == PurchaseCreditNoteApplicationType.Discount && payable.OutstandingAmount <= 0)
+            return Result<PurchaseCreditNoteDto>.ValidationFailure(
+                "La factura afectada no tiene saldo pendiente."
+            );
+
         var requestedTaxSummaryLines = cmd.TaxSummaryLines ?? [];
+        if (_returnRepo is not null && await _returnRepo.HasRegisteredSupplierDocumentAsync(
+            tid, invoice.SupplierId, cmd.CreditNoteNumber.Trim(), cmd.AccessKey?.Trim(), ct))
+            return Result<PurchaseCreditNoteDto>.ValidationFailure(
+                "Este comprobante ya está vinculado a una devolución histórica.");
         if (
             cmd.ApplicationType == PurchaseCreditNoteApplicationType.Return
             && requestedTaxSummaryLines.Count > 0
@@ -352,7 +378,30 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
             .ToList();
 
         PurchaseReturn? purchaseReturn = null;
-        if (cmd.ApplicationType == PurchaseCreditNoteApplicationType.Return)
+        if (cmd.HistoricalPurchaseReturnId is { } historicalId)
+        {
+            if (cmd.ApplicationType != PurchaseCreditNoteApplicationType.Return
+                || cmd.Lines.Count > 0 || (cmd.ReturnLines?.Count ?? 0) > 0
+                || requestedTaxSummaryLines.Count > 0)
+                return Result<PurchaseCreditNoteDto>.ValidationFailure("La vinculación histórica no permite nuevas líneas ni descuentos.");
+            purchaseReturn = await _returnRepo!.GetByIdAsync(tid, historicalId, ct);
+            if (purchaseReturn is null || purchaseReturn.BranchId != _b.BranchId
+                || purchaseReturn.CompanyId != _c.CompanyId
+                || purchaseReturn.PurchaseInvoiceId != invoice.Id
+                || purchaseReturn.SupplierId != invoice.SupplierId
+                || purchaseReturn.Status != PurchaseReturnStatus.Authorized
+                || purchaseReturn.FiscalStatus != PurchaseReturnFiscalStatus.PendingSupplierCreditNote
+                || purchaseReturn.SupplierCreditNoteDocumentId is not null
+                || await _creditNoteRepo.ExistsByLinkedPurchaseReturnIdAsync(tid, historicalId, null, ct))
+                return Result<PurchaseCreditNoteDto>.ValidationFailure("La devolución histórica no está autorizada, pendiente de NC o no corresponde a esta factura.");
+            lines = purchaseReturn.Lines.Select(l => new PurchaseCreditNote.DraftLineInput(
+                invoice.Lines.Single(s => s.Id == l.OriginalInvoiceDetailId).Description,
+                l.ReturnedSubtotal!.Value, l.VatCode, l.VatRate, l.ReturnedVatAmount!.Value,
+                l.OriginalInvoiceDetailId, l.Quantity, l.ReturnedIceAmount ?? 0m, l.IrbpnrAmount)).ToList();
+            if (receptionDoc is not null && receptionDoc.TotalAmount != purchaseReturn.AuthorizedGrandTotal)
+                return Result<PurchaseCreditNoteDto>.ValidationFailure("El documento recibido no coincide con el total de la devolución histórica.");
+        }
+        else if (cmd.ApplicationType == PurchaseCreditNoteApplicationType.Return)
         {
             if (cmd.Lines.Count > 0)
                 return Result<PurchaseCreditNoteDto>.ValidationFailure(
@@ -428,7 +477,8 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
         if (purchaseReturn is not null)
         {
             creditNote.LinkPurchaseReturn(purchaseReturn.Id, _u.UserId);
-            await _returnRepo!.AddAsync(purchaseReturn, ct);
+            if (cmd.HistoricalPurchaseReturnId is null)
+                await _returnRepo!.AddAsync(purchaseReturn, ct);
         }
         // Both aggregates share the scoped DbContext: this single SaveChanges is atomic.
         await _creditNoteRepo.AddAsync(creditNote, ct);
@@ -600,6 +650,8 @@ public sealed class CreateDraftPurchaseCreditNoteHandler
                     )
             )
         );
+        if (cmd.HistoricalPurchaseReturnId is { } historicalId)
+            canonical += "\u0001HistoricalReturn:" + historicalId.ToString("D");
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
         return Convert.ToHexString(bytes);
     }
@@ -691,6 +743,7 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
+    private readonly PurchaseCreditNoteReprocessingGuard? _reprocessing;
 
     public UpdatePurchaseCreditNoteDraftHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
@@ -699,7 +752,8 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
         ICurrentCompany c,
-        ICurrentUser u
+        ICurrentUser u,
+        PurchaseCreditNoteReprocessingGuard? reprocessing = null
     )
     {
         _creditNoteRepo = creditNoteRepo;
@@ -709,6 +763,7 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
         _t = t;
         _c = c;
         _u = u;
+        _reprocessing = reprocessing;
     }
 
     public async Task<Result<PurchaseCreditNoteDto>> Handle(
@@ -724,7 +779,7 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
 
         if (creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return)
             return Result<PurchaseCreditNoteDto>.ValidationFailure(
-                "Edite los productos desde la devolución vinculada; la NC se actualiza junto con ella."
+                "El detalle de productos de esta NC ya está fijado; cancele el borrador desde Nota de crédito para corregirlo."
             );
 
         // La clave fiscal copiada desde recepción no puede ser reemplazada al editar el borrador.
@@ -762,6 +817,14 @@ public sealed class UpdatePurchaseCreditNoteDraftHandler
         if (invoice is null)
             return Result<PurchaseCreditNoteDto>.NotFound("Factura de compra no encontrada.");
 
+        if (PurchaseCreditNoteFiscalIdentity.HasDifferentIssuer(cmd.AccessKey, invoice.SupplierTaxId))
+            return Result<PurchaseCreditNoteDto>.ValidationFailure("El emisor de la clave de acceso no coincide con el proveedor.");
+        if (_reprocessing is not null)
+        {
+            var blocker = await _reprocessing.CheckAsync(tid, _c.CompanyId, invoice.SupplierId,
+                cmd.CreditNoteNumber, cmd.AccessKey, creditNote.ReceptionDocumentId, ct);
+            if (blocker is not null) return Result<PurchaseCreditNoteDto>.ValidationFailure(blocker);
+        }
         var requestedTaxSummaryLines = cmd.TaxSummaryLines ?? [];
         if (
             creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return

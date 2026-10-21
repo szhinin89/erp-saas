@@ -1,5 +1,7 @@
 import { apiGet, apiPost, apiPut } from "../../lib/apiEnvelope";
 
+import type { PurchaseReturnDto } from "./purchaseReturnService";
+
 const BASE = "/api/v1/purchases/credit-notes";
 
 // ── DTOs (mismo contrato que PurchaseCreditNoteDto/PurchaseCreditNoteDetailDto en ERP.API,
@@ -135,6 +137,7 @@ export interface CreatePurchaseCreditNoteDraftPayload {
   issueDate: string;
   reason: string;
   lines: PurchaseCreditNoteDraftLineInput[];
+  historicalPurchaseReturnId?: string | null;
   returnLines?: { originalInvoiceDetailId: string; quantity: number }[];
   taxSummaryLines?: PurchaseCreditNoteTaxSummaryLineInput[];
 }
@@ -152,12 +155,6 @@ export interface UpdatePurchaseCreditNoteDraftPayload {
 
 export interface CancelPurchaseCreditNotePayload {
   reason: string;
-  clientRequestId: string;
-}
-
-/** FLOW-READY-02C-R1.1 — cuerpo de POST /{id}/link-return. */
-export interface LinkPurchaseCreditNoteToReturnPayload {
-  purchaseReturnId: string;
   clientRequestId: string;
 }
 
@@ -206,7 +203,6 @@ export const purchaseCreditNoteService = {
   cancel: (id: string, payload: CancelPurchaseCreditNotePayload) =>
     apiPost<PurchaseCreditNoteDto>(`${BASE}/${id}/cancel`, payload),
 
-  /** FLOW-READY-02C-R1.1 — vincula una nota de crédito tipo Devolución al PurchaseReturn que la aplica. */
-  linkReturn: (id: string, payload: LinkPurchaseCreditNoteToReturnPayload) =>
-    apiPost<PurchaseCreditNoteDto>(`${BASE}/${id}/link-return`, payload),
+  historicalReturns: (invoiceId: string) =>
+    apiGet<PurchaseReturnDto[]>(`${BASE}/historical-returns?${new URLSearchParams({ invoiceId })}`),
 };

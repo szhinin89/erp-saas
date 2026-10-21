@@ -27,13 +27,13 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 /// (secuencia + inventario + CxP + crédito de proveedor condicional + contabilidad + auditoría),
 /// bajo Lock A, idempotente (diseño §16.1/§16.2, fila <c>Authorize</c>).
 /// </summary>
-public sealed record AuthorizePurchaseReturnCommand(Guid PurchaseReturnId, Guid ClientRequestId)
+internal sealed record AuthorizePurchaseReturnCommand(Guid PurchaseReturnId, Guid ClientRequestId)
     : IRequest<Result<PurchaseReturnDto>>,
         IBranchScopedRequest;
 
 // ── Validator ───────────────────────────────────────────────────────────
 
-public sealed class AuthorizePurchaseReturnValidator
+internal sealed class AuthorizePurchaseReturnValidator
     : AbstractValidator<AuthorizePurchaseReturnCommand>
 {
     public AuthorizePurchaseReturnValidator()
@@ -47,7 +47,7 @@ public sealed class AuthorizePurchaseReturnValidator
 
 // ── Handler ─────────────────────────────────────────────────────────────
 
-public sealed class AuthorizePurchaseReturnHandler
+internal sealed class AuthorizePurchaseReturnHandler
     : IRequestHandler<AuthorizePurchaseReturnCommand, Result<PurchaseReturnDto>>
 {
     private readonly IPurchaseReturnRepository _returnRepo;
@@ -469,7 +469,8 @@ public sealed class AuthorizePurchaseReturnHandler
 
             if (creditNote is not null)
             {
-                creditNote.CompleteLinkedReturn(purchaseReturn, uid);
+                creditNote.CompleteLinkedReturn(purchaseReturn, uid, cmd.ClientRequestId,
+                    AuthorizePurchaseCreditNoteHandler.ComputeAuthorizePayloadHash(creditNote.Id, cmd.ClientRequestId));
                 purchaseReturn.RegisterLinkedCreditNote(creditNote, uid);
                 reception?.MarkProcessed(invoice.Id, uid);
             }

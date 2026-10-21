@@ -1,5 +1,9 @@
 # PROJECT_STATE.md — Estado vigente del proyecto
 
+## PURCHASE-CREDIT-NOTE-UNIFICATION — EXTEND (2026-10-21)
+
+Implementado y validado focalmente: NC única (devolución o descuento/bonificación), vínculo histórico sin repetir efectos y reproceso condicionado. PostgreSQL 21/21 + contabilización 6/6, API 24/24, Application 79/79, frontend 35/35; build/lint/TypeScript y gate de arquitectura PASS. Guardrail general pendiente por PR-7 preexistente de Gastos (516 > 514), fuera de alcance. Sin GLOBAL, migraciones propias, datos de negocio, push ni deploy. [Entrega](PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md); única regla funcional: [purchases.md](../architecture/purchases.md).
+
 ## QA-INVENTORY-INFRA-SUITES-01 (2026-10-19)
 
 CLOSED. Resuelto en `509ac6d75` (fixtures con productos inexistentes; no era un bug de producción). PostgreSQL 39/39 PASS. Regla: [inventory.md § 2](../architecture/inventory.md#2-participación-y-alcance). Sin bloqueadores.

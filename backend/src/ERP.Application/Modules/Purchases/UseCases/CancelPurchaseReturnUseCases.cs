@@ -25,7 +25,7 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 /// contabilidad, todo o nada). Bajo Lock A siempre, Lock B solo si existe <c>SupplierCredit</c>
 /// asociado (§15.4). Idempotente (diseño §16.1/§16.2, fila <c>Cancel</c>).
 /// </summary>
-public sealed record CancelPurchaseReturnCommand(
+internal sealed record CancelPurchaseReturnCommand(
     Guid PurchaseReturnId,
     string Reason,
     Guid ClientRequestId
@@ -33,7 +33,7 @@ public sealed record CancelPurchaseReturnCommand(
 
 // ── Validator ───────────────────────────────────────────────────────────
 
-public sealed class CancelPurchaseReturnValidator : AbstractValidator<CancelPurchaseReturnCommand>
+internal sealed class CancelPurchaseReturnValidator : AbstractValidator<CancelPurchaseReturnCommand>
 {
     public CancelPurchaseReturnValidator()
     {
@@ -49,7 +49,7 @@ public sealed class CancelPurchaseReturnValidator : AbstractValidator<CancelPurc
 
 // ── Handler ─────────────────────────────────────────────────────────────
 
-public sealed class CancelPurchaseReturnHandler
+internal sealed class CancelPurchaseReturnHandler
     : IRequestHandler<CancelPurchaseReturnCommand, Result<PurchaseReturnDto>>
 {
     private readonly IPurchaseReturnRepository _returnRepo;

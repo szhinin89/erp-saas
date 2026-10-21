@@ -30,8 +30,28 @@ public sealed class PurchaseReturnRepository : IPurchaseReturnRepository
     ) =>
         _db
             .PurchaseReturns.ForOperationalScope(tenantId, _company)
-            .Include(x => x.Lines)
+            .Include(x => x.Lines).ThenInclude(x => x.Taxes)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public async Task<IReadOnlyList<PurchaseReturn>> GetPendingCreditNoteByInvoiceAsync(
+        Guid tenantId, Guid branchId, Guid purchaseInvoiceId, CancellationToken ct = default) =>
+        await _db.PurchaseReturns.ForOperationalScope(tenantId, _company)
+            .AsNoTracking().Include(x => x.Lines)
+            .Where(x => x.BranchId == branchId && x.PurchaseInvoiceId == purchaseInvoiceId
+                && x.Status == PurchaseReturnStatus.Authorized
+                && x.FiscalStatus == PurchaseReturnFiscalStatus.PendingSupplierCreditNote
+                && x.SupplierCreditNoteDocumentId == null
+                && !_db.PurchaseCreditNotes.Any(n => n.TenantId == tenantId && n.LinkedPurchaseReturnId == x.Id))
+            .OrderBy(x => x.AuthorizedAtUtc).ToListAsync(ct);
+
+    public Task<bool> HasRegisteredSupplierDocumentAsync(Guid tenantId, Guid supplierId,
+        string creditNoteNumber, string? accessKey, CancellationToken ct = default) =>
+        _db.PurchaseReturns.ForOperationalScope(tenantId, _company)
+            .AnyAsync(r => r.SupplierCreditNoteDocumentId != null
+                && _db.PurchaseReceptionDocuments.Any(d => d.TenantId == tenantId
+                    && d.Id == r.SupplierCreditNoteDocumentId
+                    && ((accessKey != null && d.AccessKey == accessKey)
+                        || (r.SupplierId == supplierId && d.InvoiceNumber == creditNoteNumber))), ct);
 
     public async Task AcquireFinancialLockAsync(
         Guid tenantId,

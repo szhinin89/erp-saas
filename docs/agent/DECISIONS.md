@@ -4,7 +4,7 @@
 
 - **Ítems:** alcance Company, naturaleza Product/Service, unicidad y catálogo → [items.md](../architecture/items.md).
 - **Inventario:** Kardex, valoración, disponibilidad, stock negativo autorizado, ajustes y transferencias → [inventory.md](../architecture/inventory.md).
-- **Compras:** estados (incl. Discarded), recepción, confirmación, anulación y política SRI global, devolución, NC y saldo a favor → [purchases.md](../architecture/purchases.md).
+- **Compras:** estados (incl. Discarded), recepción, confirmación, anulación; entrada única NC del proveedor (devolución o descuento/bonificación), vinculación histórica, reproceso con reversa verificable y saldo a favor → [purchases.md](../architecture/purchases.md).
 - **Costo de inventario y COGS en contabilidad:** → [accounting.md § Importes de pagos, costos y apertura](../architecture/accounting.md#importes-de-pagos-costos-y-apertura).
 
 - **BusinessPartner es tenant-wide.** (ADR-017 "subscriber-scoped", confirmado como tenant-wide por ADR-040.)

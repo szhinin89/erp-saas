@@ -25,32 +25,30 @@ public sealed record PurchaseReturnDraftLineInput(Guid OriginalInvoiceDetailId, 
 /// §5.2, mismo patrón que <c>PurchaseDraftUseCases.cs</c>). Idempotente (diseño §16.2/§16.2bis) —
 /// <c>ClientRequestId</c> obligatorio.
 /// </summary>
-public sealed record CreatePurchaseReturnDraftCommand(
+internal sealed record CreatePurchaseReturnDraftCommand(
     Guid ClientRequestId,
     Guid PurchaseInvoiceId,
     string Reason,
     IReadOnlyList<PurchaseReturnDraftLineInput> Lines
-) : IRequest<Result<PurchaseReturnDto>>, IBranchScopedRequest;
+);
 
 /// <summary>P0-02 Fase 5 — reemplaza por completo motivo y líneas de un <c>PurchaseReturn</c> en <c>Draft</c>. Sin idempotencia (no forma parte de las 8 operaciones de §16.2).</summary>
-public sealed record UpdatePurchaseReturnDraftCommand(
+internal sealed record UpdatePurchaseReturnDraftCommand(
     Guid Id,
     string Reason,
     IReadOnlyList<PurchaseReturnDraftLineInput> Lines
-) : IRequest<Result<PurchaseReturnDto>>, IBranchScopedRequest;
+);
 
 /// <summary>
 /// P0-02 Fase 5 — cancela un <c>PurchaseReturn</c> todavía en <c>Draft</c> (sin reversas). La
 /// cancelación de una devolución ya <c>Authorized</c> (con reversas) es <c>CancelPurchaseReturn</c>,
 /// Fase 10 — este comando rechaza esa transición con <c>PR-009</c>.
 /// </summary>
-public sealed record CancelPurchaseReturnDraftCommand(Guid Id, Guid ClientRequestId, string Reason)
-    : IRequest<Result<PurchaseReturnDto>>,
-        IBranchScopedRequest;
+internal sealed record CancelPurchaseReturnDraftCommand(Guid Id, Guid ClientRequestId, string Reason);
 
 // ── Validators ──────────────────────────────────────────────────────────
 
-public sealed class CreatePurchaseReturnDraftValidator
+internal sealed class CreatePurchaseReturnDraftValidator
     : AbstractValidator<CreatePurchaseReturnDraftCommand>
 {
     public CreatePurchaseReturnDraftValidator()
@@ -79,7 +77,7 @@ public sealed class CreatePurchaseReturnDraftValidator
     }
 }
 
-public sealed class UpdatePurchaseReturnDraftValidator
+internal sealed class UpdatePurchaseReturnDraftValidator
     : AbstractValidator<UpdatePurchaseReturnDraftCommand>
 {
     public UpdatePurchaseReturnDraftValidator()
@@ -103,7 +101,7 @@ public sealed class UpdatePurchaseReturnDraftValidator
     }
 }
 
-public sealed class CancelPurchaseReturnDraftValidator
+internal sealed class CancelPurchaseReturnDraftValidator
     : AbstractValidator<CancelPurchaseReturnDraftCommand>
 {
     public CancelPurchaseReturnDraftValidator()
@@ -121,8 +119,7 @@ public sealed class CancelPurchaseReturnDraftValidator
 
 // ── Handlers ────────────────────────────────────────────────────────────
 
-public sealed class CreatePurchaseReturnDraftHandler
-    : IRequestHandler<CreatePurchaseReturnDraftCommand, Result<PurchaseReturnDto>>
+internal sealed class CreatePurchaseReturnDraftHandler
 {
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
@@ -333,8 +330,7 @@ public sealed class CreatePurchaseReturnDraftHandler
     );
 }
 
-public sealed class UpdatePurchaseReturnDraftHandler
-    : IRequestHandler<UpdatePurchaseReturnDraftCommand, Result<PurchaseReturnDto>>
+internal sealed class UpdatePurchaseReturnDraftHandler
 {
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
@@ -480,8 +476,7 @@ public sealed class UpdatePurchaseReturnDraftHandler
     }
 }
 
-public sealed class CancelPurchaseReturnDraftHandler
-    : IRequestHandler<CancelPurchaseReturnDraftCommand, Result<PurchaseReturnDto>>
+internal sealed class CancelPurchaseReturnDraftHandler
 {
     private readonly IPurchaseReturnRepository _returnRepo;
     private readonly ICurrentTenant _t;

@@ -8,6 +8,12 @@ namespace ERP.Domain.Modules.Purchases.Interfaces;
 /// </summary>
 public interface IPurchaseCreditNoteRepository
 {
+    Task<IReadOnlyList<PurchaseCreditNote>> GetCancelledByIdentityAsync(Guid tenantId,
+        Guid supplierId, string number, string? accessKey, Guid? receptionId, CancellationToken ct = default);
+
+    Task<(decimal ReturnCredit, decimal DiscountCredit)> GetRecognizedCreditsAsync(
+        Guid tenantId, Guid purchaseInvoiceId, CancellationToken ct = default);
+
     Task<PurchaseCreditNote?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     Task<PurchaseCreditNote?> GetByLinkedPurchaseReturnIdAsync(

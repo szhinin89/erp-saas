@@ -18,15 +18,15 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 /// solo consulta <see cref="IPurchaseReturnRepository.GetByIdAsync"/> (ya existente) para validar
 /// consistencia (misma factura/proveedor/empresa/sucursal).
 /// </summary>
-public sealed record LinkPurchaseCreditNoteToReturnCommand(
+internal sealed record LinkPurchaseCreditNoteToReturnCommand(
     Guid PurchaseCreditNoteId,
     Guid PurchaseReturnId,
     Guid ClientRequestId
-) : IRequest<Result<PurchaseCreditNoteDto>>, IBranchScopedRequest;
+);
 
 // ── Validator ───────────────────────────────────────────────────────────
 
-public sealed class LinkPurchaseCreditNoteToReturnValidator
+internal sealed class LinkPurchaseCreditNoteToReturnValidator
     : AbstractValidator<LinkPurchaseCreditNoteToReturnCommand>
 {
     public LinkPurchaseCreditNoteToReturnValidator()
@@ -41,8 +41,7 @@ public sealed class LinkPurchaseCreditNoteToReturnValidator
 
 // ── Handler ─────────────────────────────────────────────────────────────
 
-public sealed class LinkPurchaseCreditNoteToReturnHandler
-    : IRequestHandler<LinkPurchaseCreditNoteToReturnCommand, Result<PurchaseCreditNoteDto>>
+internal sealed class LinkPurchaseCreditNoteToReturnHandler
 {
     private readonly IPurchaseCreditNoteRepository _creditNoteRepo;
     private readonly IPurchaseReturnRepository _returnRepo;

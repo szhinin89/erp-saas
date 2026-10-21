@@ -691,11 +691,11 @@
       "name": "Public"
     },
     {
-      "description": "FLOW-READY-02C.2 \u2014 expone los casos de uso de \u0060PurchaseCreditNote\u0060 (nota de cr\u00E9dito de\r\ncompra por descuento/promoci\u00F3n, v1). Sin permisos nuevos: reutiliza ERP.Domain.Kernel.Permissions.PurchasePermissions,\r\nmismo criterio que ERP.API.Controllers.PurchaseReturnController. Controller delgado: solo mapea\r\nHTTP \u2192 MediatR \u2192 \u0060Result\u0060. La devoluci\u00F3n f\u00EDsica de productos sigue siendo responsabilidad\r\nexclusiva de \u0060/api/v1/purchases/returns\u0060 (ERP.API.Controllers.PurchaseReturnController) \u2014 este\r\ncontroller nunca la reimplementa (decisi\u00F3n de arquitectura, dise\u00F1o FLOW-READY-02C \u00A70.1).",
+      "description": "Entrada \u00FAnica de NC del proveedor: devoluci\u00F3n de productos o descuento/bonificaci\u00F3n. SSOT: purchases.md.",
       "name": "PurchaseCreditNote"
     },
     {
-      "description": "P0-02 Fase 11 \u2014 expone los casos de uso ya implementados de \u0060PurchaseReturn\u0060/\r\n\u0060SupplierCredit\u0060 v\u00EDnculo de NC (Fases 5, 6, 9, 10) \u2014 sin permisos nuevos: reutiliza\r\nERP.Domain.Kernel.Permissions.PurchasePermissions (mismo criterio ya resuelto en dise\u00F1o \u00A720.2, id\u00E9ntico al\r\nusado por ERP.API.Controllers.SalesReturnController para \u0060SalesReturn\u0060). Controller delgado:\r\nsolo mapea HTTP \u2192 MediatR \u2192 \u0060Result\u0060; toda la l\u00F3gica de negocio (locks, reversas,\r\nidempotencia) vive en los handlers ya construidos, reutilizados sin cambios. La aplicaci\u00F3n/\r\nreembolso de \u0060SupplierCredit\u0060 vive en ERP.API.Controllers.SupplierCreditController (separaci\u00F3n\r\nde riesgo Compras/Finance, dise\u00F1o \u00A720.2) \u2014 este controller nunca muta cr\u00E9dito financiero.",
+      "description": "Consulta del historial. Las operaciones se realizan exclusivamente desde Nota de cr\u00E9dito.",
       "name": "PurchaseReturn"
     },
     {

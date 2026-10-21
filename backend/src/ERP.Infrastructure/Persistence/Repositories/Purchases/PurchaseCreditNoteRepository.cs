@@ -18,6 +18,25 @@ public sealed class PurchaseCreditNoteRepository : IPurchaseCreditNoteRepository
         _company = company;
     }
 
+    public async Task<IReadOnlyList<PurchaseCreditNote>> GetCancelledByIdentityAsync(Guid tenantId,
+        Guid supplierId, string number, string? accessKey, Guid? receptionId, CancellationToken ct = default) =>
+        await _db.PurchaseCreditNotes.ForOperationalScope(tenantId, _company).AsNoTracking()
+            .Where(n => n.Status == PurchaseCreditNoteStatus.Cancelled
+                && ((n.SupplierId == supplierId && n.CreditNoteNumber == number)
+                    || (accessKey != null && n.AccessKey == accessKey)
+                    || (receptionId != null && n.ReceptionDocumentId == receptionId)))
+            .ToListAsync(ct);
+
+    public async Task<(decimal ReturnCredit, decimal DiscountCredit)> GetRecognizedCreditsAsync(
+        Guid tenantId, Guid purchaseInvoiceId, CancellationToken ct = default) => (
+        await _db.PurchaseReturns.ForOperationalScope(tenantId, _company)
+            .Where(r => r.PurchaseInvoiceId == purchaseInvoiceId && r.Status == PurchaseReturnStatus.Authorized)
+            .SumAsync(r => r.AppliedToPayableAmount ?? 0m, ct),
+        await _db.PurchaseCreditNotes.ForOperationalScope(tenantId, _company)
+            .Where(n => n.PurchaseInvoiceId == purchaseInvoiceId && n.Status == PurchaseCreditNoteStatus.Authorized
+                && n.ApplicationType == PurchaseCreditNoteApplicationType.Discount)
+            .SumAsync(n => n.AppliedToPayableAmount ?? 0m, ct));
+
     public Task<PurchaseCreditNote?> GetByIdAsync(
         Guid tenantId,
         Guid id,

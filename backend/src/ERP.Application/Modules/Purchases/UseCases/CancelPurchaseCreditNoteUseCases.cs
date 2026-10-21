@@ -16,27 +16,10 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 // ── Command ─────────────────────────────────────────────────────────────
 
 /// <summary>
-/// FLOW-READY-02C.2 — cancela una <c>PurchaseCreditNote</c> en <c>Draft</c> (sin reversas) o
-/// <c>Authorized</c> (reversa de <c>PurchasePayable.CreditNoteAppliedAmount</c> vía
-/// <see cref="Domain.Modules.Purchases.Entities.PurchasePayable.ReverseCreditNote"/>). Nunca mueve
-/// inventario ni toca contabilidad. Bajo Lock A (mismo mecanismo reutilizado que
-/// <see cref="AuthorizePurchaseCreditNoteHandler"/>). Idempotente por <c>ClientRequestId</c>.
+/// Cancelación interna desde Nota de crédito. Return utiliza su motor para las reversas;
+/// Discount revierte su ajuste. No acredita anulación SRI ni garantiza la publicación
+/// de un reverso contable pendiente. SSOT: purchases.md.
 /// </summary>
-/// <remarks>
-/// PURCHASE-CREDIT-NOTE-DISCOUNT-CANCEL-RELEASES-RECEPTION-01 — si la NC estaba <c>Authorized</c>
-/// y tenía un <c>ReceptionDocumentId</c> vinculado, ese <c>PurchaseReceptionDocument</c> ya fue
-/// marcado <c>Processed</c> al autorizar (<see cref="AuthorizePurchaseCreditNoteHandler"/>). Al
-/// cancelar, se revierte con <c>PurchaseReceptionDocument.UnmarkProcessed</c> (vuelve a
-/// <c>Verified</c>, limpia <c>PurchaseId</c>) — el documento queda libre para "Procesar NC" de
-/// nuevo, sin borrar el XML ni la NC cancelada (que permanece como historial). Este método YA
-/// existía (agregado por PURCHASE-RECEPTION-CREDIT-NOTE-CANCELLED-REPROCESS-01 para el camino
-/// Return, invocado desde <c>CancelPurchaseReturnUseCases</c>) — este handler es el único que
-/// cancela una NC tipo <c>Discount</c> directamente (el tipo <c>Return</c> ya vinculado a un
-/// <c>PurchaseReturn</c> se rechaza más abajo, redirigiendo a cancelar la devolución), así que antes
-/// de esta fase el camino Discount nunca liberaba su documento de recepción. Draft nunca llega a
-/// marcar <c>Processed</c> (eso solo ocurre en Authorize), así que solo se revierte cuando
-/// <c>wasAuthorized</c> es verdadero — cancelar un Draft no necesita ni puede revertir nada.
-/// </remarks>
 public sealed record CancelPurchaseCreditNoteCommand(
     Guid PurchaseCreditNoteId,
     string Reason,
@@ -74,6 +57,7 @@ public sealed class CancelPurchaseCreditNoteHandler
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
+    private readonly IPurchaseCreditNoteReturnMotor? _returnMotor;
 
     public CancelPurchaseCreditNoteHandler(
         IPurchaseCreditNoteRepository creditNoteRepo,
@@ -84,7 +68,8 @@ public sealed class CancelPurchaseCreditNoteHandler
         IUnitOfWork uow,
         IDatabaseExceptionTranslator dbEx,
         ICurrentTenant t,
-        ICurrentUser u
+        ICurrentUser u,
+        IPurchaseCreditNoteReturnMotor? returnMotor = null
     )
     {
         _creditNoteRepo = creditNoteRepo;
@@ -96,6 +81,7 @@ public sealed class CancelPurchaseCreditNoteHandler
         _dbEx = dbEx;
         _t = t;
         _u = u;
+        _returnMotor = returnMotor;
     }
 
     public async Task<Result<PurchaseCreditNoteDto>> Handle(
@@ -139,7 +125,9 @@ public sealed class CancelPurchaseCreditNoteHandler
                         "Esta nota de crédito ya está cancelada."
                     );
 
-                var expectedHash = ComputeCancelPayloadHash(
+                var expectedHash = creditNote.ApplicationType == PurchaseCreditNoteApplicationType.Return
+                    ? CancelPurchaseReturnHandler.ComputeCancelPayloadHash(creditNote.LinkedPurchaseReturnId!.Value, cmd.ClientRequestId, cmd.Reason)
+                    : ComputeCancelPayloadHash(
                     creditNote.Id,
                     cmd.ClientRequestId,
                     cmd.Reason
@@ -157,9 +145,13 @@ public sealed class CancelPurchaseCreditNoteHandler
             )
             {
                 await _uow.RollbackAsync(ct);
-                return Result<PurchaseCreditNoteDto>.ValidationFailure(
-                    "Cancele la devolución vinculada para revertir la NC y sus movimientos."
-                );
+                _uow.ClearChangeTracker();
+                var cancelled = await _returnMotor!.CancelAsync(
+                    creditNote.LinkedPurchaseReturnId.Value, cmd.Reason, cmd.ClientRequestId, ct);
+                if (!cancelled.IsSuccess)
+                    return Result<PurchaseCreditNoteDto>.Failure(cancelled.Error!, cancelled.Code);
+                return Result<PurchaseCreditNoteDto>.Success(CreditNoteMap.ToDto(
+                    (await _creditNoteRepo.GetByIdAsync(tid, cmd.PurchaseCreditNoteId, ct))!));
             }
 
             var wasAuthorized = creditNote.Status == PurchaseCreditNoteStatus.Authorized;
