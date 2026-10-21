@@ -44,5 +44,6 @@
         <None Update="TestData\FacturaEjemplo.xml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Update="TestData\NotaCreditoSinDescuento.xml" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>

@@ -1,4 +1,8 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurchaseReceptionXmlView;
+using ERP.Domain.Modules.Purchases.Interfaces;
+using Moq;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
@@ -398,6 +402,107 @@ public sealed class PurchaseReceptionDocumentRepositoryTests : IAsyncLifetime
             new FixedCurrentCompany(otherCompany.Id)
         );
         (await ownerRepo.ExistsByAccessKeyAsync(otherTenant.Id, accessKey)).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Credit_note_without_usable_lines_persists_verified_xml_and_failed_processing(
+        bool invalidDetail)
+    {
+        await using var db = CreateContext();
+        var repo = new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(_companyId));
+        var document = PurchaseReceptionDocument.Create(
+            _tenantId, _companyId, _branchId, PurchaseReceptionSourceDocType.CreditNote,
+            "1791352688001", "Proveedor", null,
+            "0107202604179135268800120150270001617400016174011", "015-027-000161740",
+            new DateOnly(2026, 7, 1), DateTime.UtcNow, 10m, 1.5m, 11.5m, _createdBy);
+        await repo.AddAsync(document);
+        await repo.SaveChangesAsync();
+        var detail = invalidDetail ? """
+            <detalle><descripcion>Descuento</descripcion><cantidad>0</cantidad><precioUnitario>10</precioUnitario>
+            <descuento>0</descuento><precioTotalSinImpuesto>10</precioTotalSinImpuesto>
+            <impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15</tarifa>
+            <baseImponible>10</baseImponible><valor>1.5</valor></impuesto></impuestos></detalle>
+            """ : "";
+        var xml = $$"""
+            <notaCredito><infoTributaria><codDoc>04</codDoc><claveAcceso>{{document.AccessKey}}</claveAcceso>
+            <ruc>{{document.SupplierRuc}}</ruc><razonSocial>Proveedor</razonSocial>
+            <estab>015</estab><ptoEmi>027</ptoEmi><secuencial>000161740</secuencial></infoTributaria>
+            <infoNotaCredito><fechaEmision>01/07/2026</fechaEmision><numDocModificado>001-001-000000001</numDocModificado>
+            <motivo>Descuento</motivo><totalSinImpuestos>10</totalSinImpuestos><valorModificacion>11.5</valorModificacion></infoNotaCredito>
+            <detalles>{{detail}}</detalles></notaCredito>
+            """;
+        var parsed = PurchaseCreditNoteXmlParser.Parse(xml, document.Id, _tenantId).Detail;
+        var authorizedAt = DateTime.UtcNow;
+        document.AttachSriAuthorization(document.AccessKey, authorizedAt, xml, authorizedAt,
+            parsed.Lines, _createdBy, parsed.DocTypeCode, parsed.SriPaymentMethodCode, parsed.Processing);
+        await repo.SaveChangesAsync();
+
+        await using var verifyDb = CreateContext();
+        var verifyRepo = new PurchaseReceptionDocumentRepository(verifyDb, new FixedCurrentCompany(_companyId));
+        var stored = (await verifyRepo.GetByIdAsync(_tenantId, document.Id))!;
+        stored.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        stored.SourceDocType.Should().Be(PurchaseReceptionSourceDocType.CreditNote);
+        stored.DocTypeCode.Should().Be("04");
+        stored.XmlContent.Should().Be(xml);
+        stored.AuthorizationNumber.Should().Be(document.AccessKey);
+        stored.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Failed);
+        stored.LinesDetectedCount.Should().Be(invalidDetail ? 1 : 0);
+        stored.LinesProcessedCount.Should().Be(0);
+        stored.ProcessingNotes.Should().NotBeNullOrWhiteSpace();
+        stored.Lines.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Alpina_credit_note_without_discount_persists_full_line_and_view_balances()
+    {
+        var xml = await File.ReadAllTextAsync(
+            Path.Combine(AppContext.BaseDirectory, "TestData", "NotaCreditoSinDescuento.xml"));
+        var header = PurchaseCreditNoteXmlParser.Parse(xml, Guid.NewGuid(), _tenantId);
+        var document = PurchaseReceptionDocument.Create(
+            _tenantId, _companyId, _branchId, PurchaseReceptionSourceDocType.CreditNote,
+            header.SupplierRuc, header.SupplierName, null, header.AccessKey, header.DocumentNumber,
+            header.IssueDate, DateTime.UtcNow, 0.86m, 0m, 0.86m, _createdBy,
+            modifiedDocumentNumber: header.ModifiedDocumentNumber);
+        await using (var db = CreateContext())
+        {
+            var repo = new PurchaseReceptionDocumentRepository(db, new FixedCurrentCompany(_companyId));
+            await repo.AddAsync(document);
+            await repo.SaveChangesAsync();
+            var detail = PurchaseCreditNoteXmlParser.Parse(xml, document.Id, _tenantId).Detail;
+            document.AttachSriAuthorization(document.AccessKey, DateTime.UtcNow, xml, DateTime.UtcNow,
+                detail.Lines, _createdBy, detail.DocTypeCode, detail.SriPaymentMethodCode, detail.Processing);
+            await repo.SaveChangesAsync();
+        }
+
+        await using var verifyDb = CreateContext();
+        var verifyRepo = new PurchaseReceptionDocumentRepository(verifyDb, new FixedCurrentCompany(_companyId));
+        var stored = (await verifyRepo.GetByIdAsync(_tenantId, document.Id))!;
+        stored.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed, stored.ProcessingNotes);
+        stored.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        stored.XmlContent.Should().Be(xml);
+        stored.LinesDetectedCount.Should().Be(1);
+        stored.LinesProcessedCount.Should().Be(1);
+        var line = stored.Lines.Should().ContainSingle().Subject;
+        line.SupplierCode.Should().Be("5523");
+        line.Description.Should().Be("BY BLCK VASO 165G");
+        line.Quantity.Should().Be(1m);
+        line.UnitPrice.Should().Be(0.86m);
+        line.Discount.Should().Be(0m);
+        line.LineSubtotal.Should().Be(0.86m);
+        line.TotalLine.Should().Be(0.86m);
+        line.Taxes.Should().ContainSingle().Which.TaxAmount.Should().Be(0m);
+
+        var view = await new GetPurchaseReceptionXmlViewHandler(verifyRepo,
+            Mock.Of<IPurchaseInvoiceRepository>(), new FixedCurrentTenant(_tenantId))
+            .Handle(new GetPurchaseReceptionXmlViewQuery(document.Id), CancellationToken.None);
+        view.IsSuccess.Should().BeTrue();
+        view.Value!.Lines.Should().ContainSingle().Which.MainCode.Should().Be("5523");
+        view.Value.TotalAmount.Should().Be(0.86m);
+        view.Value.LineCalculatedTotal.Should().Be(0.86m);
+        view.Value.RoundingDifference.Should().Be(0m);
+        verifyDb.ChangeTracker.HasChanges().Should().BeFalse();
     }
 
     private static bool IsUniqueViolation(Exception? inner) =>

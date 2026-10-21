@@ -54,7 +54,9 @@ public static class PurchaseCreditNoteXmlParser
                 var ice = taxes.FirstOrDefault(t => t.TaxCode == "3");
                 var quantity = Decimal(d, "cantidad");
                 var price = Decimal(d, "precioUnitario");
-                var discount = Decimal(d, "descuento");
+                // SRI notaCredito 1.0.0/1.1.0: descuento tiene minOccurs=0.
+                // Solo su ausencia representa cero; un valor presente inválido sigue fallando.
+                var discount = d.Element("descuento") is null ? 0m : Decimal(d, "descuento");
                 var subtotal = Decimal(d, "precioTotalSinImpuesto");
                 lines.Add(
                     PurchaseReceptionLine.Create(
@@ -91,8 +93,13 @@ public static class PurchaseCreditNoteXmlParser
             }
         }
 
+        if (details.Count == 0)
+            warnings.Add("La nota de crédito no contiene líneas de detalle.");
+
         var processing = new PurchaseReceptionProcessingOutcome(
-            warnings.Count > 0
+            lines.Count == 0
+                ? PurchaseReceptionProcessingStatus.Failed
+                : warnings.Count > 0
                 ? PurchaseReceptionProcessingStatus.ProcessedWithWarnings
                 : PurchaseReceptionProcessingStatus.Processed,
             details.Count,

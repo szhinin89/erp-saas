@@ -26,4 +26,8 @@
     <ItemGroup>
         <Using Include="Xunit" />
     </ItemGroup>
+    <ItemGroup>
+        <None Include="..\ERP.Infrastructure.Tests\TestData\NotaCreditoSinDescuento.xml"
+              Link="TestData\NotaCreditoSinDescuento.xml" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>

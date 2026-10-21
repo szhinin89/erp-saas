@@ -21,6 +21,8 @@ Código: `ERP.Domain/Modules/Purchases`, `ERP.Application/Modules/Purchases`, `E
 ## 3. Recepción electrónica y conciliación de ítems
 
 - Importar el TXT del SRI crea un `PurchaseReceptionDocument` por comprobante en la sucursal activa. Descargar el XML autorizado solo opera sobre documentos Imported; si falla, el documento conserva su estado. Al descargarlo se persisten sus líneas con la conciliación automática.
+- La NC se interpreta con su parser propio, sin Item Matching de factura. Si el XML autorizado no tiene líneas utilizables, se conserva como `Verified` con procesamiento `Failed`, conteos y diagnóstico; `Processed`/`ProcessedWithWarnings` requieren al menos una línea procesada. Una descarga repetida sobre `Verified` se rechaza sin volver a consultar SRI ni reemplazar el snapshot. La NC continúa por la entrada única de §6.
+- En el detalle de NC, `descuento` es opcional según los XSD SRI 1.0.0/1.1.0 existentes: su ausencia representa cero descuento y no descarta la línea. Si el elemento está presente, su valor debe ser válido. Se conservan los importes e impuestos del XML, incluido IVA 0 %.
 - "Actualizar estados" recalcula el estado de compra, gasto y documento sin reimportar, guardar ni consultar al SRI. La recepción refleja la compra por `PurchaseState` (None/Draft/Confirmed/Cancelled/Discarded) + `PurchaseId`.
 - "Crear compra" desde la recepción precarga el formulario a partir del XML guardado y la conciliación persistida. La compra se crea solo al guardar el borrador. Una recepción puede generar compra o gasto, nunca ambos.
 - Conciliación (`ItemMatchStatus`: Pending, NeedsReview, AutoMatched, ManuallyMatched):

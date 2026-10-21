@@ -1,5 +1,19 @@
 # Project Status
 
+## Recepción XML de NC — BUG REAL (2026-10-21)
+
+Corregida la clasificación del parser de NC: cero líneas utilizables produce `Failed`, nunca
+`Processed`/`ProcessedWithWarnings`. XML autorizado conservado como `Verified`, con diagnóstico;
+dominio y entrada única de NC intactos. Reproducida la excepción original en dos casos antes del fix.
+Caso Alpina `012-100-000449576`: reproducida además la omisión de una línea IVA 0 % por exigir
+`descuento`, opcional en los XSD SRI. Parser corregido para admitir su ausencia como cero,
+manteniendo el rechazo de valores presentes inválidos. Fixture mínimo compartido; descarga y visor
+cuadran 0,86 contra 0,86 con la línea `5523`, sin modificar registros existentes.
+PASS focal actualizado: Application 37/37 (parser NC, descarga, visor, factura real y repetición segura),
+PostgreSQL efímero 4/4; invariantes de dominio 2/2 de la validación anterior conservadas.
+Sin bases existentes, timeout SRI, migraciones, commit/push/deploy.
+SSOT: [Compras §3](docs/architecture/purchases.md#3-recepción-electrónica-y-conciliación-de-ítems).
+
 ## GREENFIELD-INSTALL — Instalación inicial única ERP ZH V1 (2026-10-21)
 
 Implementado y validado; cierre en commits locales. Baseline única `20261021162651_InitialProductionBaseline` (absorbe la baseline anterior y

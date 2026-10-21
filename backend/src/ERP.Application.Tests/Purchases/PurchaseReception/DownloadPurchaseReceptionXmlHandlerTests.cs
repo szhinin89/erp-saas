@@ -1,7 +1,11 @@
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
+using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
+using ERP.Application.Modules.Inventory.ItemMatching.Services;
+using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.DownloadPurchaseReceptionXml;
+using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.GetPurchaseReceptionXmlView;
 using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
@@ -60,7 +64,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         Mock<IBusinessPartnerRepository> bpRepo,
         Mock<ISriReceptionXmlProvider> provider,
         Mock<IPurchaseReceptionDetailProcessor> detailProcessor
-    ) BuildHandler()
+    ) BuildHandler(bool useRealInvoiceProcessor = false)
     {
         var repo = new Mock<IPurchaseReceptionDocumentRepository>();
         var purchaseRepo = new Mock<IPurchaseInvoiceRepository>();
@@ -89,6 +93,11 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         var user = new Mock<ICurrentUser>();
         user.Setup(u => u.UserId).Returns(UserId);
         var logger = new Mock<ILogger<DownloadPurchaseReceptionXmlHandler>>();
+        var matchFinder = new Mock<IItemMatchFinder>();
+        matchFinder.Setup(m => m.FindCandidatesAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string?>(), It.IsAny<string?>(),
+            It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         var handler = new DownloadPurchaseReceptionXmlHandler(
             repo.Object,
@@ -96,7 +105,12 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
             Mock.Of<ERP.Domain.Modules.Expenses.Interfaces.IExpenseDocumentRepository>(),
             bpRepo.Object,
             provider.Object,
-            detailProcessor.Object,
+            useRealInvoiceProcessor
+                ? new PurchaseReceptionDetailProcessor(
+                    new PurchaseXmlDraftParser(), Mock.Of<IItemRepository>(),
+                    matchFinder.Object,
+                    Mock.Of<ILogger<PurchaseReceptionDetailProcessor>>())
+                : detailProcessor.Object,
             tenant.Object,
             company.Object,
             user.Object,
@@ -147,8 +161,17 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Fact]
-    public async Task Handle_credit_note_uses_own_parser_and_preserves_verified_xml_and_lines()
+    [Theory]
+    [InlineData("valid", PurchaseReceptionProcessingStatus.Processed, 1, 1)]
+    [InlineData("empty", PurchaseReceptionProcessingStatus.Failed, 0, 0)]
+    [InlineData("invalid", PurchaseReceptionProcessingStatus.Failed, 1, 0)]
+    [InlineData("mixed", PurchaseReceptionProcessingStatus.ProcessedWithWarnings, 2, 1)]
+    public async Task Handle_credit_note_uses_own_parser_and_preserves_verified_xml_and_lines(
+        string detailCase,
+        PurchaseReceptionProcessingStatus expectedStatus,
+        int detected,
+        int processed
+    )
     {
         var document = SampleDocument(sourceDocType: PurchaseReceptionSourceDocType.CreditNote);
         var (handler, repo, _, _, provider, invoiceProcessor) = BuildHandler();
@@ -161,6 +184,19 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
             <descuento>0</descuento><precioTotalSinImpuesto>10</precioTotalSinImpuesto><impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje>
             <tarifa>15</tarifa><baseImponible>10</baseImponible><valor>1.5</valor></impuesto></impuestos></detalle></detalles></notaCredito>
             """;
+        var tree = System.Xml.Linq.XDocument.Parse(xml);
+        var details = tree.Root!.Element("detalles")!;
+        if (detailCase == "empty")
+            details.RemoveNodes();
+        else if (detailCase == "invalid")
+            details.Element("detalle")!.Element("cantidad")!.Value = "0";
+        else if (detailCase == "mixed")
+        {
+            var invalid = new System.Xml.Linq.XElement(details.Element("detalle")!);
+            invalid.Element("cantidad")!.Value = "0";
+            details.Add(invalid);
+        }
+        xml = tree.ToString();
         repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
         provider
@@ -183,9 +219,26 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         document.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
         document.DocTypeCode.Should().Be("04");
         document.XmlContent.Should().Be(xml);
-        document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed);
-        document.Lines.Should().ContainSingle().Which.SupplierCode.Should().Be("NC-1");
-        document.Lines.Single().TotalLine.Should().Be(11.5m);
+        document.ProcessingStatus.Should().Be(expectedStatus);
+        document.LinesDetectedCount.Should().Be(detected);
+        document.LinesProcessedCount.Should().Be(processed);
+        document.Lines.Should().HaveCount(processed);
+        if (processed > 0)
+        {
+            document.Lines.Single().SupplierCode.Should().Be("NC-1");
+            document.Lines.Single().TotalLine.Should().Be(11.5m);
+        }
+        if (detailCase != "valid")
+            document.ProcessingNotes.Should().NotBeNullOrWhiteSpace();
+
+        var retry = await handler.Handle(
+            new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+        retry.IsSuccess.Should().BeFalse();
+        document.ProcessingStatus.Should().Be(expectedStatus);
+        document.XmlContent.Should().Be(xml);
+        document.Lines.Should().HaveCount(processed);
+        provider.Verify(p => p.GetAuthorizedXmlAsync(
+            TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()), Times.Once);
         invoiceProcessor.Verify(
             p =>
                 p.ProcessAsync(
@@ -197,6 +250,83 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
                 ),
             Times.Never
         );
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_downloads_Alpina_credit_note_without_discount_and_view_balances()
+    {
+        var xml = PurchaseCreditNoteXmlParserTests.MinimalAlpinaXml;
+        var parsed = PurchaseCreditNoteXmlParser.Parse(xml, Guid.NewGuid(), TenantId);
+        var document = PurchaseReceptionDocument.Create(
+            TenantId, CompanyId, BranchId, PurchaseReceptionSourceDocType.CreditNote,
+            parsed.SupplierRuc, parsed.SupplierName, null, parsed.AccessKey, parsed.DocumentNumber,
+            parsed.IssueDate, DateTime.UtcNow, 0.86m, 0m, 0.86m, UserId,
+            modifiedDocumentNumber: parsed.ModifiedDocumentNumber);
+        var (handler, repo, purchaseRepo, _, provider, invoiceProcessor) = BuildHandler();
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        provider.Setup(p => p.GetAuthorizedXmlAsync(
+            TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SriReceptionXmlQueryResult(
+                true, document.AccessKey, DateTime.UtcNow, xml, null));
+
+        var result = await handler.Handle(
+            new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed,
+            document.ProcessingNotes);
+        document.Lines.Should().ContainSingle().Which.SupplierCode.Should().Be("5523");
+        document.XmlContent.Should().Be(xml);
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var view = await new GetPurchaseReceptionXmlViewHandler(repo.Object, purchaseRepo.Object, tenant.Object)
+            .Handle(new GetPurchaseReceptionXmlViewQuery(document.Id), CancellationToken.None);
+        view.IsSuccess.Should().BeTrue();
+        view.Value!.ModifiedDocumentNumber.Should().Be("012-004-004230851");
+        view.Value.Lines.Should().ContainSingle().Which.MainCode.Should().Be("5523");
+        view.Value.TotalAmount.Should().Be(0.86m);
+        view.Value.LineCalculatedTotal.Should().Be(0.86m);
+        view.Value.RoundingDifference.Should().Be(0m);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        invoiceProcessor.Verify(p => p.ProcessAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+            It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_normal_invoice_uses_real_parser_and_processes_its_line()
+    {
+        var document = SampleDocument();
+        var (handler, repo, _, _, provider, _) = BuildHandler(useRealInvoiceProcessor: true);
+        const string xml = """
+            <factura><infoTributaria><codDoc>01</codDoc><ruc>1791352688001</ruc>
+            <razonSocial>Proveedor</razonSocial><estab>015</estab><ptoEmi>027</ptoEmi>
+            <secuencial>000161740</secuencial></infoTributaria>
+            <infoFactura><fechaEmision>01/07/2026</fechaEmision></infoFactura>
+            <detalles><detalle><codigoPrincipal>INV-1</codigoPrincipal><descripcion>Producto</descripcion>
+            <cantidad>1</cantidad><precioUnitario>10</precioUnitario><descuento>0</descuento>
+            <precioTotalSinImpuesto>10</precioTotalSinImpuesto><impuestos><impuesto>
+            <codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15</tarifa>
+            <baseImponible>10</baseImponible><valor>1.5</valor></impuesto></impuestos>
+            </detalle></detalles></factura>
+            """;
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+        provider.Setup(p => p.GetAuthorizedXmlAsync(
+            TenantId, CompanyId, document.AccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SriReceptionXmlQueryResult(
+                true, document.AccessKey, DateTime.UtcNow, xml, null));
+
+        var result = await handler.Handle(
+            new DownloadPurchaseReceptionXmlCommand(document.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        document.Status.Should().Be(PurchaseReceptionDocumentStatus.Verified);
+        document.DocTypeCode.Should().Be("01");
+        document.ProcessingStatus.Should().Be(PurchaseReceptionProcessingStatus.Processed);
+        document.LinesDetectedCount.Should().Be(1);
+        document.LinesProcessedCount.Should().Be(1);
+        document.Lines.Should().ContainSingle().Which.TotalLine.Should().Be(11.5m);
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

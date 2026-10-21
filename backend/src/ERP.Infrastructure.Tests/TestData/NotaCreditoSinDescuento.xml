@@ -1,0 +1,25 @@
+<notaCredito id="comprobante" version="1.1.0">
+  <infoTributaria>
+    <razonSocial>ALPINA</razonSocial>
+    <ruc>1791352688001</ruc>
+    <claveAcceso>0107202604179135268800120121000004495760016174011</claveAcceso>
+    <codDoc>04</codDoc><estab>012</estab><ptoEmi>100</ptoEmi><secuencial>000449576</secuencial>
+  </infoTributaria>
+  <infoNotaCredito>
+    <fechaEmision>01/07/2026</fechaEmision>
+    <codDocModificado>01</codDocModificado><numDocModificado>012-004-004230851</numDocModificado>
+    <totalSinImpuestos>0.86</totalSinImpuestos><valorModificacion>0.86</valorModificacion>
+    <totalConImpuestos><totalImpuesto><codigo>2</codigo><codigoPorcentaje>0</codigoPorcentaje>
+      <baseImponible>0.86</baseImponible><valor>0.00</valor>
+    </totalImpuesto></totalConImpuestos>
+    <motivo>Devolución</motivo>
+  </infoNotaCredito>
+  <detalles><detalle>
+    <codigoInterno>5523</codigoInterno><descripcion>BY BLCK VASO 165G</descripcion>
+    <cantidad>1.0</cantidad><precioUnitario>0.86</precioUnitario>
+    <precioTotalSinImpuesto>0.86</precioTotalSinImpuesto>
+    <impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>0</codigoPorcentaje>
+      <tarifa>0.00</tarifa><baseImponible>0.86</baseImponible><valor>0.00</valor>
+    </impuesto></impuestos>
+  </detalle></detalles>
+</notaCredito>
