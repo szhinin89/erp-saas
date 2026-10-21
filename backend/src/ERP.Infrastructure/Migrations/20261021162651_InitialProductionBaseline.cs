@@ -1653,6 +1653,7 @@ namespace ERP.Infrastructure.Migrations
                 {
                     code = table.Column<string>(type: "character(3)", fixedLength: true, maxLength: 3, nullable: false),
                     iso2 = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: false),
+                    sri_code = table.Column<string>(type: "character(3)", fixedLength: true, maxLength: 3, nullable: true),
                     name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     phone_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
@@ -1707,23 +1708,6 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_sri_error_code", x => x.code);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "sri_ice_rate",
-                schema: "global",
-                columns: table => new
-                {
-                    code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    percentage = table.Column<decimal>(type: "numeric(8,4)", precision: 8, scale: 4, nullable: true),
-                    unit_value = table.Column<decimal>(type: "numeric(10,4)", precision: 10, scale: 4, nullable: true),
-                    calculation_type = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_sri_ice_rate", x => x.code);
                 });
 
             migrationBuilder.CreateTable(
@@ -2654,8 +2638,9 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    country_id = table.Column<string>(type: "character(10)", maxLength: 10, nullable: false),
-                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false)
+                    country_id = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: false),
+                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -2701,17 +2686,17 @@ namespace ERP.Infrastructure.Migrations
                 schema: "global",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    IdTypeCode = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
-                    UsageType = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id_type_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
+                    usage_type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_sri_id_type_usage", x => x.Id);
+                    table.PrimaryKey("PK_sri_id_type_usage", x => x.id);
                     table.ForeignKey(
-                        name: "FK_sri_id_type_usage_sri_id_type_IdTypeCode",
-                        column: x => x.IdTypeCode,
+                        name: "FK_sri_id_type_usage_sri_id_type_id_type_code",
+                        column: x => x.id_type_code,
                         principalSchema: "global",
                         principalTable: "sri_id_type",
                         principalColumn: "code",
@@ -2746,6 +2731,36 @@ namespace ERP.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_sri_annulment_policy_version_sri_normative_source_normative~",
+                        column: x => x.normative_source_id,
+                        principalSchema: "global",
+                        principalTable: "sri_normative_source",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "sri_ice_rate",
+                schema: "global",
+                columns: table => new
+                {
+                    code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    percentage = table.Column<decimal>(type: "numeric(8,4)", precision: 8, scale: 4, nullable: true),
+                    unit_value = table.Column<decimal>(type: "numeric(10,4)", precision: 10, scale: 4, nullable: true),
+                    specific_unit = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    normative_source_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    valid_from = table.Column<DateOnly>(type: "date", nullable: true),
+                    valid_until = table.Column<DateOnly>(type: "date", nullable: true),
+                    calculation_type = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_sri_ice_rate", x => x.code);
+                    table.CheckConstraint("ck_sri_ice_mixed_catalog_only", "calculation_type <> 3 OR (percentage IS NOT NULL AND unit_value IS NOT NULL AND specific_unit IS NOT NULL AND length(trim(specific_unit)) > 0 AND normative_source_id IS NOT NULL AND is_active = false)");
+                    table.CheckConstraint("ck_sri_ice_rate_validity", "valid_from IS NULL OR valid_until IS NULL OR valid_from <= valid_until");
+                    table.ForeignKey(
+                        name: "FK_sri_ice_rate_sri_normative_source_normative_source_id",
                         column: x => x.normative_source_id,
                         principalSchema: "global",
                         principalTable: "sri_normative_source",
@@ -3200,7 +3215,8 @@ namespace ERP.Infrastructure.Migrations
                 {
                     id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     province_id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false)
+                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -3693,7 +3709,8 @@ namespace ERP.Infrastructure.Migrations
                 {
                     id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
                     canton_id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false)
+                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -6797,38 +6814,38 @@ namespace ERP.Infrastructure.Migrations
             migrationBuilder.InsertData(
                 schema: "global",
                 table: "sri_country",
-                columns: new[] { "code", "is_active", "iso2", "name", "phone_code" },
+                columns: new[] { "code", "is_active", "iso2", "name", "phone_code", "sri_code" },
                 values: new object[,]
                 {
-                    { "ARG", true, "AR", "ARGENTINA", "+54" },
-                    { "AUS", true, "AU", "AUSTRALIA", "+61" },
-                    { "BOL", true, "BO", "BOLIVIA", "+591" },
-                    { "BRA", true, "BR", "BRASIL", "+55" },
-                    { "CAN", true, "CA", "CANADÁ", "+1" },
-                    { "CHL", true, "CL", "CHILE", "+56" },
-                    { "CHN", true, "CN", "CHINA", "+86" },
-                    { "COL", true, "CO", "COLOMBIA", "+57" },
-                    { "CRI", true, "CR", "COSTA RICA", "+506" },
-                    { "DEU", true, "DE", "ALEMANIA", "+49" },
-                    { "DOM", true, "DO", "REPÚBLICA DOMINICANA", "+1" },
-                    { "ECU", true, "EC", "ECUADOR", "+593" },
-                    { "ESP", true, "ES", "ESPAÑA", "+34" },
-                    { "FRA", true, "FR", "FRANCIA", "+33" },
-                    { "GBR", true, "GB", "REINO UNIDO", "+44" },
-                    { "GTM", true, "GT", "GUATEMALA", "+502" },
-                    { "HND", true, "HN", "HONDURAS", "+504" },
-                    { "IND", true, "IN", "INDIA", "+91" },
-                    { "ITA", true, "IT", "ITALIA", "+39" },
-                    { "JPN", true, "JP", "JAPÓN", "+81" },
-                    { "MEX", true, "MX", "MÉXICO", "+52" },
-                    { "NIC", true, "NI", "NICARAGUA", "+505" },
-                    { "PAN", true, "PA", "PANAMÁ", "+507" },
-                    { "PER", true, "PE", "PERÚ", "+51" },
-                    { "PRY", true, "PY", "PARAGUAY", "+595" },
-                    { "SLV", true, "SV", "EL SALVADOR", "+503" },
-                    { "URY", true, "UY", "URUGUAY", "+598" },
-                    { "USA", true, "US", "ESTADOS UNIDOS", "+1" },
-                    { "VEN", true, "VE", "VENEZUELA", "+58" }
+                    { "ARG", true, "AR", "ARGENTINA", "+54", "101" },
+                    { "AUS", true, "AU", "AUSTRALIA", "+61", "501" },
+                    { "BOL", true, "BO", "BOLIVIA", "+591", "102" },
+                    { "BRA", true, "BR", "BRASIL", "+55", "103" },
+                    { "CAN", true, "CA", "CANADÁ", "+1", "104" },
+                    { "CHL", true, "CL", "CHILE", "+56", "108" },
+                    { "CHN", true, "CN", "CHINA", "+86", "331" },
+                    { "COL", true, "CO", "COLOMBIA", "+57", "105" },
+                    { "CRI", true, "CR", "COSTA RICA", "+506", "106" },
+                    { "DEU", true, "DE", "ALEMANIA", "+49", "202" },
+                    { "DOM", true, "DO", "REPÚBLICA DOMINICANA", "+1", "122" },
+                    { "ECU", true, "EC", "ECUADOR", "+593", "593" },
+                    { "ESP", true, "ES", "ESPAÑA", "+34", "209" },
+                    { "FRA", true, "FR", "FRANCIA", "+33", "211" },
+                    { "GBR", true, "GB", "REINO UNIDO", "+44", "213" },
+                    { "GTM", true, "GT", "GUATEMALA", "+502", "111" },
+                    { "HND", true, "HN", "HONDURAS", "+504", "113" },
+                    { "IND", true, "IN", "INDIA", "+91", "309" },
+                    { "ITA", true, "IT", "ITALIA", "+39", "219" },
+                    { "JPN", true, "JP", "JAPÓN", "+81", "314" },
+                    { "MEX", true, "MX", "MÉXICO", "+52", "116" },
+                    { "NIC", true, "NI", "NICARAGUA", "+505", "117" },
+                    { "PAN", true, "PA", "PANAMÁ", "+507", "118" },
+                    { "PER", true, "PE", "PERÚ", "+51", "120" },
+                    { "PRY", true, "PY", "PARAGUAY", "+595", "119" },
+                    { "SLV", true, "SV", "EL SALVADOR", "+503", "123" },
+                    { "URY", true, "UY", "URUGUAY", "+598", "125" },
+                    { "USA", true, "US", "ESTADOS UNIDOS", "+1", "110" },
+                    { "VEN", true, "VE", "VENEZUELA", "+58", "126" }
                 });
 
             migrationBuilder.InsertData(
@@ -6838,15 +6855,15 @@ namespace ERP.Infrastructure.Migrations
                 values: new object[,]
                 {
                     { "01", true, true, "FACTURA", "FACTURA" },
-                    { "02", false, true, "NOTA DE VENTA- RISE", "NV_RISE" },
+                    { "02", false, false, "Nota o boleta de venta", "NOTA_VENTA" },
                     { "03", true, true, "Liquidación de Compra de Bienes y Prestación de Servicios", "LIQ_COMPRA" },
                     { "04", true, true, "Nota de Crédito", "N_CREDITO" },
                     { "05", true, true, "Nota de Débito", "N_DEBITO" },
                     { "06", true, true, "Guía de Remisión", "G_REMISION" },
                     { "07", true, true, "Comprobante de Retención", "retention" },
-                    { "08", false, false, "Tiquete de Máquina Registradora", "TIQUETE" },
-                    { "09", false, false, "Tiquete de Caja Registradora", "CAJA_REG" },
-                    { "18", false, false, "Documento Electrónico de Importación", "DEI" }
+                    { "08", false, false, "Boletos o entradas a espectáculos públicos", "BOLETO" },
+                    { "09", false, false, "Tiquetes o vales emitidos por máquinas registradoras", "CAJA_REG" },
+                    { "18", false, false, "Documentos autorizados utilizados en ventas excepto N/C N/D", "DOC_AUT_VENTA" }
                 });
 
             migrationBuilder.InsertData(
@@ -6865,6 +6882,9 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "code", "description", "error_type", "is_active", "name" },
                 values: new object[,]
                 {
+                    { "10", "No se autorizará comprobantes si el establecimiento emisor ha sido clausurado, automáticamente se habilitará el servicio una vez concluido la clausura.", "ERROR", true, "ESTABLECIMIENTO DEL EMISOR SE ENCUENTRA CLAUSURADO" },
+                    { "2", "Verificar que el número de RUC se encuentre en estado ACTIVO", "ERROR", true, "RUC DEL EMISOR SE ENCUENTRA NO ACTIVO" },
+                    { "26", "Tamaño del archivo supera lo establecido", "ERROR", true, "TAMAÑO MÁXIMO SUPERADO" },
                     { "27", null, "ERROR", true, "CLASE NO PERMITIDO" },
                     { "28", null, "ERROR", true, "ACUERDO DE MEDIOS ELECTRÓNICOS NO ACEPTADO" },
                     { "34", null, "ERROR", true, "COMPROBANTE NO AUTORIZADO" },
@@ -6902,28 +6922,6 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 schema: "global",
-                table: "sri_ice_rate",
-                columns: new[] { "code", "calculation_type", "is_active", "name", "percentage", "unit_value" },
-                values: new object[,]
-                {
-                    { "3011", 1, true, "Cigarrillos rubios importados", 150.00m, null },
-                    { "3021", 1, true, "Cigarrillos negros nacionales", 150.00m, null },
-                    { "3041", 1, true, "Bebidas gaseosas con azúcar añadida", 10.00m, null },
-                    { "3051", 1, true, "Bebidas energizantes", 10.00m, null },
-                    { "3053", 2, true, "Bebidas gaseosas con alto contenido de azúcar", null, null },
-                    { "3071", 1, true, "Perfumes y aguas de tocador", 20.00m, null },
-                    { "3072", 1, true, "Videojuegos", 35.00m, null },
-                    { "3073", 1, true, "Armas de fuego deportivas", 300.00m, null },
-                    { "3081", 1, true, "Vehículos ≤3.5t (hasta USD 30k)", 5.00m, null },
-                    { "3082", 1, true, "Vehículos ≤3.5t (USD 30k–40k)", 10.00m, null },
-                    { "3083", 1, true, "Vehículos ≤3.5t (más de USD 40k)", 15.00m, null },
-                    { "3091", 1, true, "Aviones / helicópteros de uso privado", 15.00m, null },
-                    { "3101", 1, true, "Servicios de televisión pagada", 15.00m, null },
-                    { "3111", 1, true, "Bebidas alcohólicas (incl. cerveza)", 75.00m, null }
-                });
-
-            migrationBuilder.InsertData(
-                schema: "global",
                 table: "sri_id_type",
                 columns: new[] { "code", "digits", "name" },
                 values: new object[,]
@@ -6952,7 +6950,12 @@ namespace ERP.Infrastructure.Migrations
                     { new Guid("40000000-0000-0000-0000-000000000002"), "CATALOGO_ATS", null, "InitialProductionBaseline", "PENDIENTE DE VERIFICACIÓN (ADR-037 DR-4). El XML usa el mismo código del catálogo, como en el ejemplo oficial de la Ficha v2.34 Anexo 1 (codigoRetencion 323B1). Porcentajes no verificados: las versiones de Renta no fijan Percentage y no se exige coincidencia.", null, "http://www.sri.gob.ec/web/guest/formularios-e-instructivos1", "Retención en la fuente de Impuesto a la Renta (referido por Ficha v2.34 §9.15)", null },
                     { new Guid("40000000-0000-0000-0000-000000000003"), "CATALOGO_ATS", "bd3f7834f2cd31187af39cd2f4c685a646d7e49316e92ee493da5f2dd9776e3e", "InitialProductionBaseline", "Descargado el 2026-10-02 desde https://www.sri.gob.ec/formularios-e-instructivos1. Fecha de actualización = inicio del bloque (06/08/2026). Tarifas no numéricas (\"12 o 14\", \"1 /0 según resolución…\") se registran como regla condicional, nunca como porcentaje.", new DateOnly(2026, 8, 6), "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/e6a826af-b22c-40bb-8752-d711f293b8f9/Catalogo_ATS.xls", "Hoja TABLAS RETENCIONES — Tabla 3.10 Conceptos de retención en la fuente de IR (AIR), bloque DESDE 06/AGOSTO/2026", "2026-08-06" },
                     { new Guid("40000000-0000-0000-0000-000000000004"), "NAC-DGERCGC16-00000092", null, "InitialProductionBaseline", "Historia por fecha de emisión, hasta 2025-07-31; no se reinterpreta evidencia fiscal persistida.", new DateOnly(2016, 2, 22), "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/c97242e6-c271-4eb8-8f6a-f687313118ba/Guia%20para%20contribuyentes%20de%20anulaci%C3%B3n%20de%20comprobantes%20electr%C3%B3nicos.pdf", "Art. 7 — anulación en línea, 90 días", null },
-                    { new Guid("40000000-0000-0000-0000-000000000005"), "NAC-DGERCGC25-00000017", null, "InitialProductionBaseline", "Firmada 2025-07-29. Día 7 del mes siguiente para emisión desde 2025-08-01; extensión por descanso obligatorio/feriado nacional o local según art. 3 reformado. No aplica excepción ISD al dominio IVA/Renta.", null, "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=e98fc8a6-299e-4ea9-8de7-2f6c70dbb4f5&nombre=NAC-DGERCGC25-00000017.pdf", "Art. 1 a), transitoria primera; reforma NAC-DGERCGC25-00000014 art. 3", null }
+                    { new Guid("40000000-0000-0000-0000-000000000005"), "NAC-DGERCGC25-00000017", null, "InitialProductionBaseline", "Firmada 2025-07-29. Día 7 del mes siguiente para emisión desde 2025-08-01; extensión por descanso obligatorio/feriado nacional o local según art. 3 reformado. No aplica excepción ISD al dominio IVA/Renta.", null, "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=e98fc8a6-299e-4ea9-8de7-2f6c70dbb4f5&nombre=NAC-DGERCGC25-00000017.pdf", "Art. 1 a), transitoria primera; reforma NAC-DGERCGC25-00000014 art. 3", null },
+                    { new Guid("40000000-0000-0000-0000-000000000006"), "NAC-DGERCGC25-00000040", null, "InitialProductionBaseline", "Firmada 2025-12-29; aplicable 2026-01-01 a 2026-12-31 (período fiscal 2026). Cigarrillos USD 0,16 por unidad; alcohol (uso distinto a bebidas alcohólicas y farmacéuticos) y bebidas alcohólicas USD 10,41, cerveza artesanal USD 1,56 y cerveza industrial USD 13,62 por litro de alcohol puro; bebidas no alcohólicas y gaseosas con más de 25 g de azúcar por litro, excepto energizantes, USD 0,18 por 100 g de azúcar añadida; fundas plásticas USD 0,08 por funda. Ad valorem 75% de bebidas alcohólicas y cerveza: LRTI art. 82 grupo IV. Códigos: Ficha técnica offline 2.34, Tabla 18; no usar sus columnas de 2023 como tarifa 2026. Las filas ICE activas de base física no comercial conservan UnitValue nulo. Cálculo mixto y condiciones de aplicación no implementados.", null, "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=c5a91b7c-c7ff-45c2-9b0d-ca0670fb8723&nombre=NAC-DGERCGC25-00000040.pdf", "Artículo único — tarifas específicas ICE período fiscal 2026", "2026" },
+                    { new Guid("40000000-0000-0000-0000-000000000007"), "FICHA_TECNICA_OFFLINE", "7333aebfbdf2cb3ba83f9fc67a7a7f0346ca59506480a260cc42f96dbdfc13c9", "InitialProductionBaseline", "Fuente de identidad de los códigos ICE (pp. 30-32). Sus tarifas corresponden a enero y febrero-diciembre de 2023; la propia tabla remite a la normativa vigente. Un código histórico ausente de la tabla queda no seleccionable sin inferir equivalencias.", new DateOnly(2026, 7, 27), "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%cc%81CNICA%20COMPROBANTES%20ELECTRO%cc%81NICOS%20ESQUEMA%20OFFLINE%20Versio%cc%81n%202.34.pdf", "§9.13 Tabla 18 — Tarifa del ICE (códigos y conceptos)", "2.34" },
+                    { new Guid("40000000-0000-0000-0000-000000000008"), "LRTI", "a0f2bfcb8b68a45a5c3aa6e3cab21b1471ec8b01bb0312287544024bf213cb6e", "InitialProductionBaseline", "Codificación publicada por el SRI, última reforma Suplemento RO 525, 25-III-2024; consultada 2026-10-21. Fecha de inicio de cada tarifa no verificada (ValidFrom nulo). Rige sobre la columna de Tabla 18 cuando difieren (televisión pagada 15%, clubes 30%). Las filas reformadas por el D.E. 645 se rigen por la fuente 40000000-0000-0000-0000-000000000009.", null, "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/7da8c609-4299-4597-8825-29446242c63b/LEY_DE_REGIMEN_TRIBUTARIO_INTERNO_-_LRTI.pdf", "Art. 82 — grupos I, II y III (tarifa ad valorem); grupo IV ad valorem 75%", "RO 525 2024-03-25" },
+                    { new Guid("40000000-0000-0000-0000-000000000009"), "SRI-NAC-DNJ-2024-0042-OF", null, "InitialProductionBaseline", "Oficio SRI de 2024-05-29 reproducido por SENAE: desde 2024-05-21 tabaco calentado y líquidos con nicotina 150%, armas de fuego, deportivas y municiones 300%, aviones, avionetas, helicópteros, motos acuáticas, tricares, cuadrones, yates y barcos de recreo 15%. Armas: el D.E. 302 (2024-06-12) reduciría a 30% desde 2024-07-01; texto oficial y alcance no verificados, por lo que 3630/3730 no son seleccionables.", new DateOnly(2024, 5, 30), "https://www.aduana.gob.ec/gaceta-boletin/tarifas-ad-valorem-del-impuesto-a-los-consumos-especiales-ice-que-rigen-por-la-derogacion-del-decreto-ejecutivo-no-645-de-10-de-enero-de-2023/", "Tarifas ad valorem ICE que rigen por la nulidad del D.E. 645 (SENAE Boletín 88-2024)", null },
+                    { new Guid("40000000-0000-0000-0000-00000000000a"), "SRI_MATRIZ_RESUMEN_ICE", "ea9e054e96b1b052109d6786690944ebf0c3c185233b1c8c776e5c10faf1c31f", "InitialProductionBaseline", "Enlazada desde https://www.sri.gob.ec/impuesto-consumos-especiales; consultada 2026-10-21. Frente a la hoja 2021 ya no grava videojuegos, calefones a gas ni telefonía, y declara exentos los vehículos eléctricos e híbridos. Sus tarifas reformadas por el D.E. 645 no rigen desde 2024-05-21.", null, "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/3ba17b2c-6e81-4383-8d3e-ec6f7ee1160e/Tabla%20Resumen%20ICE%20.xlsx", "Hoja 2024 — bienes y servicios gravados, exenciones y beneficios", "2024" }
                 });
 
             migrationBuilder.InsertData(
@@ -6999,7 +7002,7 @@ namespace ERP.Infrastructure.Migrations
                     { new Guid("20000000-0000-0000-0000-000000000011"), "SUPPLIER", "342", false, "Otras retenciones aplicables al 1%", 1.00m, "RENTA" },
                     { new Guid("20000000-0000-0000-0000-000000000012"), "SUPPLIER", "343", true, "Otras retenciones aplicables el 1% (incluye régimen RIMPE - Emprendedores, para este caso aplica con cualquier forma de pago inclusive los pagos que deban realizar las tarjetas de crédito/débito)", 1.00m, "RENTA" },
                     { new Guid("20000000-0000-0000-0000-000000000013"), "SUPPLIER", "344", false, "Otras retenciones aplicables al 2.75%", 2.75m, "RENTA" },
-                    { new Guid("30000000-0000-0000-0000-000000000001"), "SUPPLIER", "4580", true, "ISD – Impuesto a la Salida de Divisas", 5.00m, "ISD" }
+                    { new Guid("30000000-0000-0000-0000-000000000001"), "SUPPLIER", "4580", false, "ISD – Impuesto a la Salida de Divisas", 5.00m, "ISD" }
                 });
 
             migrationBuilder.InsertData(
@@ -7019,9 +7022,9 @@ namespace ERP.Infrastructure.Migrations
                 values: new object[,]
                 {
                     { "01", "GENERAL", true, "Régimen General" },
-                    { "02", "RIMPE_ME", true, "RIMPE – Régimen de Microempresas" },
+                    { "02", "RIMPE_ME", true, "RIMPE – Emprendedor" },
                     { "03", "RIMPE_NP", true, "RIMPE – Negocio Popular" },
-                    { "04", "ESP", true, "Contribuyente Especial" }
+                    { "04", "ESP", false, "Contribuyente Especial" }
                 });
 
             migrationBuilder.InsertData(
@@ -7030,26 +7033,27 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "code", "is_active", "name" },
                 values: new object[,]
                 {
-                    { "01", true, "Crédito Tributario para declaración de IVA" },
-                    { "02", true, "Costo o Gasto para declaración del IR" },
-                    { "03", true, "Activo Fijo – Crédito Tributario IVA" },
-                    { "04", true, "Activo Fijo – Costo o Gasto IR" },
-                    { "05", true, "Liquidación Gastos de Viaje, Hospedaje y Alimentación" },
-                    { "06", true, "Retención en la Fuente" },
-                    { "07", true, "Distribución de Dividendos, Beneficios o Ganancias" },
-                    { "08", true, "Impuesto a los Activos en el Exterior" },
-                    { "09", true, "Retención del IVA 30%" },
-                    { "10", true, "Retención del IVA 70%" },
-                    { "11", true, "Retención del IVA 100%" },
-                    { "12", true, "Exportación de Bienes" },
-                    { "13", true, "No aplica" },
-                    { "14", true, "Exportación de servicios con domicilio en el exterior" },
-                    { "15", true, "Proveedor directo de exportador de bienes" },
-                    { "16", true, "Provisiones de cuentas incobrables" },
-                    { "17", true, "Nota de crédito deducible" },
-                    { "18", true, "Importaciones" },
-                    { "19", true, "Reembolso de gastos" },
-                    { "20", true, "Notas de crédito por devoluciones" }
+                    { "00", false, "Casos especiales cuyo sustento no aplica en las opciones anteriores" },
+                    { "01", true, "Crédito Tributario para declaración de IVA (servicios y bienes distintos de inventarios y activos fijos)" },
+                    { "02", true, "Costo o Gasto para declaración de IR (servicios y bienes distintos de inventarios y activos fijos)" },
+                    { "03", true, "Activo Fijo - Crédito Tributario para declaración de IVA" },
+                    { "04", true, "Activo Fijo - Costo o Gasto para declaración de IR" },
+                    { "05", true, "Liquidación Gastos de Viaje, hospedaje y alimentación Gastos IR (a nombre de empleados y no de la empresa)" },
+                    { "06", true, "Inventario - Crédito Tributario para declaración de IVA" },
+                    { "07", true, "Inventario - Costo o Gasto para declaración de IR" },
+                    { "08", true, "Valor pagado para solicitar Reembolso de Gasto (intermediario)" },
+                    { "09", true, "Reembolso por Siniestros" },
+                    { "10", true, "Distribución de Dividendos, Beneficios o Utilidades" },
+                    { "11", true, "Convenios de débito o recaudación para IFI´s" },
+                    { "12", true, "Impuestos y retenciones presuntivos" },
+                    { "13", true, "Valores reconocidos por entidades del sector público a favor de sujetos pasivos" },
+                    { "14", true, "Valores facturados por socios a operadoras de transporte (que no constituyen gasto de dicha operadora)" },
+                    { "15", true, "Pagos efectuados por consumos propios y de terceros de servicios digitales" },
+                    { "16", false, "Provisiones de cuentas incobrables" },
+                    { "17", false, "Nota de crédito deducible" },
+                    { "18", false, "Importaciones" },
+                    { "19", false, "Reembolso de gastos" },
+                    { "20", false, "Notas de crédito por devoluciones" }
                 });
 
             migrationBuilder.InsertData(
@@ -7123,8 +7127,93 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 schema: "global",
+                table: "sri_ice_rate",
+                columns: new[] { "code", "calculation_type", "is_active", "name", "normative_source_id", "percentage", "specific_unit", "unit_value", "valid_from", "valid_until" },
+                values: new object[,]
+                {
+                    { "3011", 2, true, "ICE Cigarrillos Rubios", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por unidad de cigarrillo", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3021", 2, true, "ICE Cigarrillos Negros", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por unidad de cigarrillo", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3023", 1, true, "ICE Productos del Tabaco y Sucedáneos del Tabaco excepto Cigarrillos", new Guid("40000000-0000-0000-0000-000000000008"), 150m, null, null, null, null },
+                    { "3031", 3, false, "ICE Bebidas Alcohólicas", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 10.41m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3033", 3, false, "ICE Alcohol", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 10.41m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3041", 3, false, "ICE Cerveza Industrial", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 13.62m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3043", 3, false, "ICE Cerveza Artesanal", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 1.56m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3051", 1, false, "Bebidas energizantes", new Guid("40000000-0000-0000-0000-000000000007"), 10m, null, null, null, null },
+                    { "3053", 2, true, "ICE Bebidas Gaseosas con Alto Contenido de Azúcar", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por 100 gramos de azúcar añadida", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3054", 1, true, "ICE Bebidas Gaseosas con Bajo Contenido de Azúcar", new Guid("40000000-0000-0000-0000-000000000008"), 10m, null, null, null, null },
+                    { "3071", 1, false, "Perfumes y aguas de tocador", new Guid("40000000-0000-0000-0000-000000000007"), 20m, null, null, null, null },
+                    { "3072", 1, false, "Videojuegos", new Guid("40000000-0000-0000-0000-000000000007"), 35m, null, null, null, null },
+                    { "3073", 1, true, "ICE Vehículos Motorizados cuyo PVP sea hasta de 20000 USD", new Guid("40000000-0000-0000-0000-000000000008"), 5m, null, null, null, null },
+                    { "3075", 1, true, "ICE Vehículos Motorizados PVP entre 30000 y 40000", new Guid("40000000-0000-0000-0000-000000000008"), 15m, null, null, null, null },
+                    { "3077", 1, true, "ICE Vehículos Motorizados cuyo PVP superior USD 40.000 hasta 50.000", new Guid("40000000-0000-0000-0000-000000000008"), 20m, null, null, null, null },
+                    { "3078", 1, true, "ICE Vehículos Motorizados cuyo PVP superior USD 50.000 hasta 60.000", new Guid("40000000-0000-0000-0000-000000000008"), 25m, null, null, null, null },
+                    { "3079", 1, true, "ICE Vehículos Motorizados cuyo PVP superior USD 60.000 hasta 70.000", new Guid("40000000-0000-0000-0000-000000000008"), 30m, null, null, null, null },
+                    { "3080", 1, true, "ICE Vehículos Motorizados cuyo PVP superior USD 70.000", new Guid("40000000-0000-0000-0000-000000000008"), 35m, null, null, null, null },
+                    { "3081", 1, true, "ICE Aviones, Tricars, yates, Barcos de Recreo", new Guid("40000000-0000-0000-0000-000000000009"), 15m, null, null, new DateOnly(2024, 5, 21), null },
+                    { "3082", 1, false, "Vehículos ≤3.5t (USD 30k–40k)", new Guid("40000000-0000-0000-0000-000000000007"), 10m, null, null, null, null },
+                    { "3083", 1, false, "Vehículos ≤3.5t (más de USD 40k)", new Guid("40000000-0000-0000-0000-000000000007"), 15m, null, null, null, null },
+                    { "3091", 1, false, "Aviones / helicópteros de uso privado", new Guid("40000000-0000-0000-0000-000000000007"), 15m, null, null, null, null },
+                    { "3092", 1, true, "ICE Servicios de Televisión Prepagada", new Guid("40000000-0000-0000-0000-000000000008"), 15m, null, null, null, null },
+                    { "3093", 1, false, "ICE Servicios Telefonía Sociedades", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3101", 1, true, "ICE Bebidas Energizantes", new Guid("40000000-0000-0000-0000-000000000008"), 10m, null, null, null, null },
+                    { "3111", 2, true, "ICE Bebidas No Alcohólicas", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por 100 gramos de azúcar añadida", null, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3532", 3, false, "ICE Import. alcohol SENAE", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 10.41m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3533", 3, false, "ICE Import. Bebidas Alcohólicas", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 10.41m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3541", 3, false, "ICE Cerveza Industrial CAE", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 13.62m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3542", 2, false, "ICE Cigarrillos Rubios CAE", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por unidad de cigarrillo", 0.16m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3543", 2, false, "ICE Cigarrillos Negros CAE", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por unidad de cigarrillo", 0.16m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3544", 1, true, "ICE Productos del Tabaco y Sucedáneos del Tabaco Excepto Cigarrillos CAE", new Guid("40000000-0000-0000-0000-000000000008"), 150m, null, null, null, null },
+                    { "3545", 3, false, "ICE cerveza artesanal SENAE", new Guid("40000000-0000-0000-0000-000000000006"), 75m, "USD por litro de alcohol puro", 1.56m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3552", 2, false, "ICE bebidas gaseosas con alto contenido de azúcar SENAE", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por 100 gramos de azúcar añadida", 0.18m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3553", 1, true, "ICE bebidas gaseosas con bajo contenido de azúcar SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 10m, null, null, null, null },
+                    { "3581", 1, true, "ICE Aeronaves CAE", new Guid("40000000-0000-0000-0000-000000000009"), 15m, null, null, new DateOnly(2024, 5, 21), null },
+                    { "3582", 1, true, "ICE Aviones, Avionetas y Helicópteros Exct. Aquellos destinados Al Trans. CAE", new Guid("40000000-0000-0000-0000-000000000009"), 15m, null, null, new DateOnly(2024, 5, 21), null },
+                    { "3601", 1, true, "ICE Bebidas Energizantes SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 10m, null, null, null, null },
+                    { "3602", 2, false, "ICE bebidas no alcohólicas SENAE", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por 100 gramos de azúcar añadida", 0.18m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3610", 1, true, "ICE Perfumes y Aguas de Tocador", new Guid("40000000-0000-0000-0000-000000000008"), 20m, null, null, null, null },
+                    { "3620", 1, false, "ICE Videojuegos", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3630", 1, false, "ICE Armas de Fuego, Armas deportivas y Municiones", new Guid("40000000-0000-0000-0000-000000000009"), 30.00m, null, null, null, null },
+                    { "3640", 1, true, "ICE Focos Incandescentes", new Guid("40000000-0000-0000-0000-000000000008"), 100m, null, null, null, null },
+                    { "3660", 1, true, "ICE Cuotas Membresías Afiliaciones Acciones", new Guid("40000000-0000-0000-0000-000000000008"), 30m, null, null, null, null },
+                    { "3671", 1, false, "ICE calefones y sistemas de calentamiento de agua a gas SRI", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3680", 2, false, "ICE fundas plásticas", new Guid("40000000-0000-0000-0000-000000000006"), null, "USD por funda plástica", 0.08m, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31) },
+                    { "3681", 1, false, "ICE servicios de telefonía móvil personas naturales", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3682", 1, true, "ICE consumibles tabaco calentado y líquidos con nicotina SRI", new Guid("40000000-0000-0000-0000-000000000009"), 150m, null, null, new DateOnly(2024, 5, 21), null },
+                    { "3683", 1, true, "ICE consumibles tabaco calentado y líquidos con nicotina SENAE", new Guid("40000000-0000-0000-0000-000000000009"), 150m, null, null, new DateOnly(2024, 5, 21), null },
+                    { "3684", 1, true, "ICE vehículos motorizados camionetas y de rescate cuyo PVP sea hasta DE 30.000 USD", new Guid("40000000-0000-0000-0000-000000000008"), 5m, null, null, null, null },
+                    { "3685", 1, true, "ICE vehículos motorizados camionetas y de rescate PVP sea hasta DE 30.000 USD SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 5m, null, null, null, null },
+                    { "3686", 1, true, "ICE vehículos motorizados excepto camionetas y de rescate cuyo PVP sea superior USD 20.000 hasta DE 30.000", new Guid("40000000-0000-0000-0000-000000000008"), 10m, null, null, null, null },
+                    { "3687", 1, true, "ICE vehículos motorizados excepto camionetas y de rescate cuyo PVP sea superior USD 20.000 hasta de 30.000 SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 10m, null, null, null, null },
+                    { "3688", 1, false, "ICE vehículos híbridos cuyo PVP sea de hasta USD. 35.000", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3689", 1, false, "ICE vehículos híbridos cuyo PVP sea de hasta USD. 35.000 SENAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3690", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 35.000 hasta 40.000 SENAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3691", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 35.000 hasta 40.000", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3692", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 40.000 hasta 50.000", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3693", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 40.000 hasta 50.000 SENAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3694", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 50.000 hasta 60.000 SENAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3695", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 50.000 hasta 60.000", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3696", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 60.000 hasta 70.000", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3697", 1, false, "ICE vehículos híbridos cuyo PVP superior USD. 60.000 hasta 70.000 SENAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3698", 1, false, "ICE vehículos híbridos cuyo PVP superior a USD 70.000", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3699", 1, false, "ICE vehículos híbridos cuyo PVP superior a USD 70.000 SENAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3710", 1, true, "ICE Perfumes Aguas de Tocador Cae", new Guid("40000000-0000-0000-0000-000000000008"), 20m, null, null, null, null },
+                    { "3720", 1, false, "ICE Video Juegos CAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3730", 1, false, "ICE Importaciones Armas de Fuego, Armas deportivas y Municiones CAE", new Guid("40000000-0000-0000-0000-000000000009"), null, null, null, null, null },
+                    { "3740", 1, true, "ICE Focos Incandescentes CAE", new Guid("40000000-0000-0000-0000-000000000008"), 100m, null, null, null, null },
+                    { "3771", 1, false, "ICE calefones y sistemas de calentamiento de agua a gas SENAE", new Guid("40000000-0000-0000-0000-00000000000a"), null, null, null, null, null },
+                    { "3871", 1, true, "ICE-vehículos motorizados cuyo PVP SEA hasta de 20000 USD SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 5m, null, null, null, null },
+                    { "3873", 1, true, "ICE-vehículos motorizados PVP entre 30000 Y 40000 SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 15m, null, null, null, null },
+                    { "3874", 1, true, "ICE-vehículos motorizados cuyo PVP superior USD 40.000 hasta 50.000 SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 20m, null, null, null, null },
+                    { "3875", 1, true, "ICE-vehículos motorizados cuyo PVP superior USD 50.000 hasta 60.000 SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 25m, null, null, null, null },
+                    { "3876", 1, true, "ICE-vehículos motorizados cuyo PVP superior USD 60.000 hasta 70.000 SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 30m, null, null, null, null },
+                    { "3877", 1, true, "ICE-vehículos motorizados cuyo PVP superior USD 70.000 SENAE", new Guid("40000000-0000-0000-0000-000000000008"), 35m, null, null, null, null },
+                    { "3878", 1, true, "ICE-Aviones, Tricars, Yates, Barcos de Rec SENAE", new Guid("40000000-0000-0000-0000-000000000009"), 15m, null, null, new DateOnly(2024, 5, 21), null }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "global",
                 table: "sri_id_type_usage",
-                columns: new[] { "Id", "IdTypeCode", "IsActive", "UsageType" },
+                columns: new[] { "id", "id_type_code", "is_active", "usage_type" },
                 values: new object[,]
                 {
                     { new Guid("a0000001-0000-4000-9000-000000000001"), "04", true, "Customer" },
@@ -7138,8 +7227,8 @@ namespace ERP.Infrastructure.Migrations
                     { new Guid("a0000001-0000-4000-9000-000000000009"), "07", true, "Customer" },
                     { new Guid("a0000001-0000-4000-9000-00000000000a"), "08", true, "Customer" },
                     { new Guid("a0000001-0000-4000-9000-00000000000b"), "08", true, "Supplier" },
-                    { new Guid("a0000001-0000-4000-9000-00000000000c"), "09", true, "Customer" },
-                    { new Guid("a0000001-0000-4000-9000-00000000000d"), "09", true, "Carrier" }
+                    { new Guid("a0000001-0000-4000-9000-00000000000c"), "09", false, "Customer" },
+                    { new Guid("a0000001-0000-4000-9000-00000000000d"), "09", false, "Carrier" }
                 });
 
             migrationBuilder.InsertData(
@@ -10100,10 +10189,23 @@ namespace ERP.Infrastructure.Migrations
                 .Annotation("Npgsql:NullsDistinct", false);
 
             migrationBuilder.CreateIndex(
+                name: "uq_sri_country_sri_code",
+                schema: "global",
+                table: "sri_country",
+                column: "sri_code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_sri_ice_rate_normative_source_id",
+                schema: "global",
+                table: "sri_ice_rate",
+                column: "normative_source_id");
+
+            migrationBuilder.CreateIndex(
                 name: "uq_sri_id_type_usage",
                 schema: "global",
                 table: "sri_id_type_usage",
-                columns: new[] { "IdTypeCode", "UsageType" },
+                columns: new[] { "id_type_code", "usage_type" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

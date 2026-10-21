@@ -3,7 +3,7 @@
 > **Naturaleza:** auditoría + diseño (2026-10-02, commit `2b8b5a70`). La decisión vinculante está en
 > [ADR-038](../decisions/ADR-038-sri-electronic-compliance-architecture.md); este documento aporta la evidencia y el
 > diseño detallado. Bases: [SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md](SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md),
-> [SRI-GLOBAL-CATALOG-ARCHITECTURE.md](SRI-GLOBAL-CATALOG-ARCHITECTURE.md) / ADR-037, ADR-023, ADR-024, ADR-025, ADR-031,
+> [architecture.md § GLOBAL IMMUTABLE](../architecture/architecture.md#global-immutable-schema-global) / ADR-037, ADR-023, ADR-024, ADR-025, ADR-031,
 > ADR-034, ADR-036. **No se modificó código, tablas, migraciones, XML, catálogos ni frontend.** Los contratos C#
 > de este documento son **conceptuales**: no existen en el código hasta que el ticket de su fase los implemente.
 

@@ -1263,6 +1263,7 @@
   "settings.company.logo.sizeError": "The file exceeds the maximum size of 5 MB.",
   "settings.company.fiscal.title": "Tax configuration",
   "settings.company.fiscal.taxRegime": "Tax regime",
+  "settings.company.fiscal.taxRegimeNotSelectable": "not selectable",
   "settings.company.fiscal.isAccountingReq": "Required to keep accounting records",
   "settings.company.fiscal.specialTaxpayerNo": "Special taxpayer number",
   "settings.company.fiscal.isForeignTrade": "Engages in foreign trade",

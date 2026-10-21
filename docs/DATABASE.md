@@ -47,23 +47,24 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ## Migraciones
 
-### Baseline EF (pre-producción)
+### Baseline EF (ERP ZH V1, GREENFIELD)
 
-Una sola migración: `20261018014647_InitialProductionBaseline` (MIGRATION-SQUASH, 2026-10-17; reemplaza a la baseline DB-BASELINE-01 `20261010184156_InitialProductionBaseline` y a las 16 migraciones forward posteriores). Una instalación nueva aplica solo esa migración; no existe upgrade-path desde cadenas anteriores: toda BD creada con la cadena previa (incluidas `dberpsaas` y `erp_sumak_pilot`) se recrea. El ID es nuevo a propósito: una BD vieja falla de forma explícita en `MigrateAsync` (tablas ya existentes) en lugar de darse por actualizada con un esquema distinto.
+Una sola migración: `20261021162651_InitialProductionBaseline`, la definición inicial vigente de todo el esquema,
+incluidos los catálogos GLOBAL con todas sus correcciones SRI (`HasData`) y los objetos raw SQL de la tabla siguiente.
+La geografía INEC llega aparte, por el único script de `Seeding/InstallData` (CGE 2026). No existe upgrade-path:
+una BD creada con una baseline anterior (p. ej. `20261018014647_…`) falla de forma explícita en `MigrateAsync`
+(tablas ya existentes) y se recrea con autorización del propietario.
 
-Verificada contra un oráculo (PostgreSQL 16 vacío + cadena anterior completa de 17 migraciones) vs PostgreSQL 16 vacío + baseline: catálogo (columnas, constraints, índices, triggers, funciones, extensiones, secuencias), `pg_dump --schema-only` y hash de datos de las 212 tablas (independiente del orden de filas y columnas). Diferencias aceptadas, todas a favor del modelo vigente:
+Verificada contra un oráculo (PostgreSQL 16 desechable: baseline anterior + sus 6 migraciones GLOBAL del
+2026-10-21 frente a la baseline nueva): `pg_dump --schema-only` y hash de datos de las 212 tablas (independiente del
+orden de filas y columnas). Única diferencia de datos: `sri_normative_source.introduced_in_migration` nombra la
+baseline en las 10 fuentes (la trazabilidad debe nombrar una migración existente, `SriCatalogComplianceTests`).
+Diferencia de esquema: orden físico de columnas en `sri_country` y `sri_ice_rate`, sin efecto.
 
-| Diferencia | Cadena anterior | Baseline | Motivo |
-|------------|-----------------|----------|--------|
-| `global.sri_normative_source.introduced_in_migration` (2 filas, fuentes de anulación SRI) | `SriAnnulmentPolicyVersioning` | `InitialProductionBaseline` | La trazabilidad normativa debe nombrar una migración existente (`SriCatalogComplianceTests`) |
-| `posting_rules.debit_account_id`, `credit_account_id`, `tax_code` | Existen (nullable) | No existen | Retiradas del modelo en ACCOUNTING-11 sin migración incremental, a la espera de este squash; sin lectores ni escritores |
-| `journal_entries.version` | `DEFAULT 0` | Sin default | Residuo de `AddColumn(defaultValue: 0)` (AccountingManual08) para filas existentes; el modelo no lo declara y EF siempre inserta `Version` |
-| Cuerpo de `enforce_purchase_expense_exclusivity()` | Fines de línea CRLF | LF | Mismo texto con espacios normalizados; la cadena anterior heredó CRLF del working tree |
-| Orden físico de columnas (9 tablas) | `AddColumn` al final | Orden del modelo | Sin efecto: ningún acceso depende del ordinal |
-
-La baseline DB-BASELINE-01 ya había aceptado 4 DEFAULT residuales del mismo tipo (`communication_outbox.resend_sequence`, `current_stocks.cost_pending`, `stock_movements.cost_pending`, `retention_annulment_requests.sri_check_count`); siguen ausentes.
-
-Cambios de schema posteriores: solo migraciones forward con `dotnet ef migrations add`. No regenerar la baseline desde el modelo para "limpiar historial" sin copiar antes el raw SQL (tabla siguiente). Las transformaciones de datos históricas (backfills, desactivación de defaults de retención, resolución de dueño de Items A1, `DROP DEFAULT` transitorios) no forman parte de la baseline: solo aplicaban a BD con datos previos.
+Mientras no exista una instalación publicada, un cambio de esquema o de catálogo se consolida en la baseline
+(regenerarla con `dotnet ef migrations add` y copiar sin cambios el raw SQL de la tabla siguiente). Tras la primera
+instalación publicada: solo migraciones forward. Las transformaciones de datos de bases previas (backfills,
+`DROP DEFAULT` transitorios, guards de referencias) nunca forman parte de la baseline.
 
 Los archivos de migración se guardan con LF (`.gitattributes`): los raw string literals de C# trasladan el fin de línea al cuerpo de las funciones plpgsql.
 
@@ -93,11 +94,8 @@ sobre `erp_zh_dev`; la conexión sale de los user-secrets de ERP.API).
 | Ubicación | Rol |
 |-----------|-----|
 | `Migrations/*.cs` | Schema oficial (incluye `HasData()` de catálogos SRI globales) |
-| `Seeding/Global/GlobalBootstrapOrchestrator.cs` + `Seeding/Global/Steps/*BootstrapStep.cs` | Único orquestador del bootstrap global (una vez por instalación, en cada arranque): `NavigationBootstrapStep` (navegación/permisos del Platform Kernel desde `KernelRegistry.cs`) e `InstallDataBootstrapStep` (geografía INEC inmutable, `Seeding/InstallData/001_*.sql`) |
+| `Seeding/Global/GlobalBootstrapOrchestrator.cs` + `Seeding/Global/Steps/*BootstrapStep.cs` | Único orquestador del bootstrap global (una vez por instalación, en cada arranque): `NavigationBootstrapStep` (navegación/permisos del Platform Kernel desde `KernelRegistry.cs`) e `InstallDataBootstrapStep` (geografía INEC CGE 2026, `Seeding/InstallData/001_inec_cge_2026_geography.sql`) |
 | `Seeding/CompanyBootstrapOrchestrator.cs` + `Seeding/Steps/*BootstrapStep.cs` | Único orquestador del bootstrap por empresa nueva, un step por dominio (Organización, Documentos Electrónicos, Inventario, Ventas, Caja, Accesos) |
-| `scripts/db/sql/002_unified_documents_*.sql` | Migración opcional documentos (`Documents:UseUnifiedSchema`) |
-
-Detalle operativo: [`scripts/db/sql/README.md`](../scripts/db/sql/README.md).
 
 ### Naming schema
 

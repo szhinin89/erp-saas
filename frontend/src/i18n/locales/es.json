@@ -1332,6 +1332,7 @@
   "settings.company.logo.sizeError": "El archivo supera el tamaño máximo de 5 MB.",
   "settings.company.fiscal.title": "Configuración tributaria",
   "settings.company.fiscal.taxRegime": "Régimen tributario",
+  "settings.company.fiscal.taxRegimeNotSelectable": "no seleccionable",
   "settings.company.fiscal.isAccountingReq": "Obligado a llevar contabilidad",
   "settings.company.fiscal.specialTaxpayerNo": "N° de contribuyente especial",
   "settings.company.fiscal.isForeignTrade": "Realiza comercio exterior",

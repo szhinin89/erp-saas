@@ -12,4 +12,6 @@ public enum SriTaxCalculationType
 {
     Percentage = 1,
     Specific = 2,
+    /// <summary>Catálogo: componentes ad valorem y específico simultáneos. No habilita cálculo operativo.</summary>
+    Mixed = 3,
 }

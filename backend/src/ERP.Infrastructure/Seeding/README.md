@@ -50,9 +50,8 @@ de `Program.cs` que no pase por el orquestador correspondiente.
    constantes correspondiente (`CompanyBootstrapStepOrder`/`GlobalBootstrapStepOrder`),
    nunca un literal. Convención: incrementos de 10 para insertar un step nuevo entre dos
    existentes sin renumerar los demás.
-5. **Resiliencia propia si aplica**: el orquestador nunca decide qué step puede fallar
-   sin bloquear el arranque — esa decisión (ver `InstallDataBootstrapStep`, que captura
-   sus propios errores) vive dentro del step.
+5. **Datos obligatorios**: los fallos de la carga INEC se propagan y bloquean el arranque.
+   El orquestador no ignora errores de los steps.
 
 ## Cómo agregar un nuevo `BootstrapStep`
 
@@ -73,7 +72,7 @@ de `Program.cs` que no pase por el orquestador correspondiente.
 | `ERP.Infrastructure.Tests/Seeding/CompanyBootstrapOrchestratorTests.cs` | Orden de ejecución, ejecución completa, tolerancia a cero steps, idempotencia del orquestador |
 | `ERP.Infrastructure.Tests/Seeding/GlobalBootstrapOrchestratorTests.cs` | Ídem, a nivel global |
 | `ERP.Infrastructure.Tests/Seeding/BootstrapStepGovernanceTests.cs` | Órdenes únicos, todo step registrado en DI (y viceversa), ausencia de acoplamiento directo entre steps |
-| `ERP.Infrastructure.Tests/Seeding/InstallDataBootstrapStepTests.cs` | Comportamiento no bloqueante específico de `InstallDataBootstrapStep` |
+| `ERP.Infrastructure.Tests/Seeding/InstallDataBootstrapStepTests.cs` | Propagación del fallo de carga obligatoria y delegación de `InstallDataBootstrapStep` |
 
 ## Ver también
 

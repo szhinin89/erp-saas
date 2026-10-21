@@ -30,6 +30,21 @@ public sealed class BusinessPartnerRoleConfigHttpContractTests : IAsyncLifetime
     private Guid _companyId;
     private readonly Guid _adminId = Guid.NewGuid();
 
+    [Fact]
+    public async Task Catalogo_sustento_HTTP_solo_ofrece_tabla_5_vigente()
+    {
+        var response = await _client.GetAsync("/api/v1/catalog/sri-tax-support-codes");
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var rows = json.GetProperty("data").EnumerateArray().ToArray();
+        rows.Select(x => x.GetProperty("code").GetString()).Should()
+            .Equal(Enumerable.Range(1, 15).Select(x => x.ToString("D2")));
+        rows.Single(x => x.GetProperty("code").GetString() == "06").GetProperty("name").GetString()
+            .Should().Be("Inventario - Crédito Tributario para declaración de IVA");
+        rows.Single(x => x.GetProperty("code").GetString() == "07").GetProperty("name").GetString()
+            .Should().Be("Inventario - Costo o Gasto para declaración de IR");
+    }
+
     public async Task InitializeAsync()
     {
         Environment.SetEnvironmentVariable("JWT__SECRETKEY", IntegrationTestConstants.JwtSecretKey);

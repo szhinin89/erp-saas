@@ -95,7 +95,6 @@ Los artefactos no versionados de `/.local/` (directorio ignorado por Git) quedan
 | `scripts/tests/first-run-security.tests.ps1`, `scripts/tests/frontend-process-ownership.tests.ps1`, `scripts/tests/frontend-readiness.tests.ps1`, `scripts/tests/launcher-startup.tests.ps1` | Pruebas focales del launcher: [First Run](architecture/first-run.md) |
 | `scripts/ds/*.ps1` | Auditoría y guard del Design System |
 | `scripts/qa/diagnose-pos-warehouse.ps1` | Diagnóstico POS/bodega |
-| `scripts/db/import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC (ArcGIS → `geo_*`) |
 | `tools/architecture/check-identity-guardrails.ps1` | CI: sin referencias auth legacy `users` |
 | `tools/quality/check-handler-size.ps1` | CI: MediatR `Handle` ≤ 150 líneas |
 | `tools/architecture/check-architecture-guardrails.ps1` | CI: capas, patrones frontend, límites TSX, chunk Vite |
@@ -112,7 +111,7 @@ Los artefactos no versionados de `/.local/` (directorio ignorado por Git) quedan
 | `-SkipMigrations` | Omite `dotnet ef database update` |
 | `-PlaywrightArgs` | P. ej. `"e2e/smoke.spec.ts"` |
 
-Scripts SQL puntuales: [`scripts/db/sql/`](../scripts/db/sql/) (ver [`scripts/db/sql/README.md`](../scripts/db/sql/README.md)). Datos de instalación inmutables: `InstallData/*.sql` — ver [DATABASE.md](./DATABASE.md).
+Datos de instalación: `InstallData/*.sql` — ver [DATABASE.md](./DATABASE.md).
 
 **Regla:** no crear `.ps1` adicionales sin ampliar `scriptsAllowed`, este mapa y [`CONTEXT.md`](../CONTEXT.md).
 

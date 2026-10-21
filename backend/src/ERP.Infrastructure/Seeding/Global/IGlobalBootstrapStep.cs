@@ -16,9 +16,8 @@ namespace ERP.Infrastructure.Seeding.Global;
 /// Reglas de un step (idénticas en espíritu a <c>ICompanyBootstrapStep</c>):
 ///   - Solo es responsable de su propio mecanismo (nunca duplica lo que ya cubre otro step).
 ///   - Es idempotente: seguro de ejecutar en cada arranque.
-///   - Si un step debe tolerar fallos sin bloquear el arranque de la API (como hoy
-///     <c>InstallDataBootstrapStep</c>), esa resiliencia vive dentro del propio step — el
-///     orquestador nunca decide selectivamente qué error ignorar.
+///   - Los fallos de datos obligatorios, incluido INEC, se propagan y bloquean el arranque;
+///     el orquestador nunca decide selectivamente qué error ignorar.
 /// </summary>
 public interface IGlobalBootstrapStep
 {

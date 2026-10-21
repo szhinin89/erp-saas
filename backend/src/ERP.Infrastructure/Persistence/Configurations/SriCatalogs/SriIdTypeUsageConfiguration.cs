@@ -12,9 +12,16 @@ public sealed class SriIdTypeUsageConfiguration : IEntityTypeConfiguration<SriId
         builder.ToTable("sri_id_type_usage", schema: "global");
 
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.IdTypeCode).HasMaxLength(5).IsRequired();
-        builder.Property(x => x.UsageType).HasConversion<string>().HasMaxLength(20).IsRequired();
-        builder.Property(x => x.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.IdTypeCode).HasColumnName("id_type_code").HasMaxLength(5).IsRequired();
+        builder
+            .Property(x => x.UsageType)
+            .HasColumnName("usage_type")
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+        // ValueGeneratedNever: conserva false con DEFAULT true (ADR-042).
+        builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired().HasDefaultValue(true).ValueGeneratedNever();
 
         builder
             .HasOne<SriIdType>()
@@ -100,18 +107,21 @@ public sealed class SriIdTypeUsageConfiguration : IEntityTypeConfiguration<SriId
                 IdTypeCode = "08",
                 UsageType = IdentificationUsageType.Supplier,
             },
-            // 09 Placa → Customer, Carrier
+            // 09 Placa: no figura en la Tabla 6 de la ficha 2.34 y los XSD de factura y guía solo
+            // admiten [0][4-8]. Se conserva el uso histórico, no seleccionable.
             new SriIdTypeUsage
             {
                 Id = Guid.Parse("a0000001-0000-4000-9000-00000000000c"),
                 IdTypeCode = "09",
                 UsageType = IdentificationUsageType.Customer,
+                IsActive = false,
             },
             new SriIdTypeUsage
             {
                 Id = Guid.Parse("a0000001-0000-4000-9000-00000000000d"),
                 IdTypeCode = "09",
                 UsageType = IdentificationUsageType.Carrier,
+                IsActive = false,
             }
         );
     }

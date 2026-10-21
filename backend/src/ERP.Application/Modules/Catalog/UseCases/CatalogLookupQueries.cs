@@ -14,7 +14,9 @@ public sealed record SriUomDto(string Code, string Name, string? Abbrev);
 
 public sealed record SriVatRateDto(string Code, string Name, decimal Percentage);
 
-public sealed record SriIceRateDto(string Code, string Name, decimal? Percentage);
+public sealed record SriIceRateDto(
+    string Code, string Name, decimal? Percentage, decimal? UnitValue = null,
+    string CalculationType = nameof(SriTaxCalculationType.Percentage), string? SpecificUnit = null);
 
 public sealed record SriRetentionCodeDto(
     Guid Id,
@@ -169,7 +171,8 @@ public sealed class GetSriIceRatesQueryHandler
     {
         var items = await _repo.GetActiveIceRatesAsync(cancellationToken);
         return Result<IReadOnlyList<SriIceRateDto>>.Success(
-            items.Select(r => new SriIceRateDto(r.Code, r.Name, r.Percentage)).ToList()
+            items.Select(r => new SriIceRateDto(r.Code, r.Name, r.Percentage,
+                r.UnitValue, r.CalculationType.ToString(), r.SpecificUnit)).ToList()
         );
     }
 }

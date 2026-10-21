@@ -44,6 +44,7 @@ Actualizar docs de avance → [docs/architecture/enforcement.md § sincronizaci�
 
 ## Reglas globales (resumen — cuerpo normativo en `docs/architecture/*`)
 
+- **ERP ZH V1 es una única primera versión oficial (GREENFIELD).** Una sola fuente de verdad vigente por dominio y una instalación inicial consolidada. No mantener código, rutas, funcionalidades, migraciones, seeds, scripts, ADR ni documentación paralela u obsoleta de versiones nunca publicadas; backend, frontend, base de datos, contratos, pruebas y SSOT deben reflejar exactamente el funcionamiento actual. La depuración de lo obsoleto nunca autoriza operaciones destructivas sobre datos existentes ni relaja las reglas de seguridad: se aplica sobre código/docs, preservando datos y con confirmación del propietario para cualquier acción irreversible.
 - **No romper funcionalidades existentes.** Verificar impacto antes de modificar código compartido o infraestructura CLOSED.
 - **Monolito modular + Clean Architecture**: `ERP.API → ERP.Application → ERP.Domain ← ERP.Infrastructure`. No existe `ERP.Shared`. Detalle: [docs/architecture/architecture.md](docs/architecture/architecture.md), [docs/architecture/backend.md](docs/architecture/backend.md).
 - **Multi-tenant fail-closed**: toda query de datos de tenant filtra por `TenantId`; sin filtro válido → 0 filas, nunca fuga cross-tenant. Detalle: [docs/architecture/security.md](docs/architecture/security.md).

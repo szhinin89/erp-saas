@@ -265,7 +265,8 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 // desde 06/08/2026): retirado de operaciones nuevas; se conserva para históricos.
                 IsActive = false,
             },
-            // ISD
+            // ISD — 5% vigente desde 2024-04-01 (ficha 2.34 Tabla 20). Sin versión y no seleccionable:
+            // el comprobante del ERP no emite el impuesto 6 (Tabla 19; RetentionTaxType solo IVA/Renta).
             new SriRetentionCode
             {
                 Id = Guid.Parse("30000000-0000-0000-0000-000000000001"),
@@ -273,6 +274,7 @@ public class SriRetentionCodeConfiguration : IEntityTypeConfiguration<SriRetenti
                 Code = "4580",
                 Name = "ISD – Impuesto a la Salida de Divisas",
                 Percentage = 5.00m,
+                IsActive = false,
             }
         );
     }

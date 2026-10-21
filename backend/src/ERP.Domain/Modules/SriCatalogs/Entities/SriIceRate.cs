@@ -8,8 +8,14 @@ public class SriIceRate
     public string Name { get; set; } = null!;
     public decimal? Percentage { get; set; }
     public decimal? UnitValue { get; set; }
+    /// <summary>Unidad física y moneda publicadas para la tarifa específica, sin inferir conversiones.</summary>
+    public string? SpecificUnit { get; set; }
+    public Guid? NormativeSourceId { get; set; }
+    /// <summary>Vigencia comprobada de los componentes registrados (inclusiva); null = no comprobada o sin límite.</summary>
+    public DateOnly? ValidFrom { get; set; }
+    public DateOnly? ValidUntil { get; set; }
 
-    /// <summary>FLOW-READY-02F.1 — tipo de cálculo de la tarifa (percent vs. monto fijo).</summary>
+    /// <summary>Representación de los componentes publicados; Mixed permanece no seleccionable.</summary>
     public SriTaxCalculationType CalculationType { get; set; } = SriTaxCalculationType.Percentage;
     public bool IsActive { get; set; } = true;
 }

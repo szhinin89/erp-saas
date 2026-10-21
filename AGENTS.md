@@ -8,6 +8,10 @@
 - `docs/agent/WORK_QUEUE.md`
 - `docs/agent/DECISIONS.md`
 
+## Reglas globales
+
+`CLAUDE.md` es obligatorio también para Codex y prevalece sobre este archivo; incluye la regla **ERP ZH V1 GREENFIELD** (una única versión oficial, sin código/migraciones/seeds/scripts/ADR/docs paralelos u obsoletos, preservando datos y sin operaciones destructivas).
+
 ## Regla de CLOSED
 
 - **CLOSED = no reauditar ni rediseñar salvo BUG REAL.**

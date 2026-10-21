@@ -73,7 +73,6 @@ Manual: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 | [`tools/quality/check-handler-size.ps1`](./tools/quality/check-handler-size.ps1) | Handler size |
 | [`tools/architecture/check-architecture-guardrails.ps1`](./tools/architecture/check-architecture-guardrails.ps1) | Architecture |
 | [`tools/generators/new-master-module.ps1`](./tools/generators/new-master-module.ps1) | Scaffolding |
-| [`scripts/db/import_inec_ecuador_geography.ps1`](./scripts/db/import_inec_ecuador_geography.ps1) | Geografía INEC |
 
 Grandfather JSON: [`tools/architecture/architecture-grandfather.json`](./tools/architecture/architecture-grandfather.json)
 
@@ -105,7 +104,6 @@ Copilot: [`.github/INSTRUCCIONES-COPILOT.md`](./.github/INSTRUCCIONES-COPILOT.md
 | Tipo | Dónde |
 |------|--------|
 | Reglas Cursor | `.cursor/rules/*.mdc` |
-| SQL auxiliar | `scripts/db/sql/` |
 | Ops postgres | `infrastructure/postgres/` |
 | Spec SRI PDF | `docs/*.pdf` |
 

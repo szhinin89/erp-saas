@@ -14,6 +14,7 @@ import {
 import { emissionPointLookupFacade } from "../../emissionPoints/facades/emissionPointLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { message } from "../../../lib/messages";
+import { sriLookupFacade } from "../../items/facades/sriLookupFacade";
 
 /**
  * Retención de Compras en el hook de la página. ZH-PURCHASE-RETENTION-CONFIRM-01: la retención se
@@ -587,4 +588,16 @@ describe("usePurchasesPage — anulación ante el SRI de una retención autoriza
     expect(result.current.sriAnnulmentReason).toBeNull();
     expect(result.current.editing?.id).toBe("purchase-1");
   });
+});
+
+
+it("loads global ATS inventory support codes and preserves the stored code", async () => {
+  const options = [
+    { code: "06", name: "Inventario - Crédito Tributario para declaración de IVA" },
+    { code: "07", name: "Inventario - Costo o Gasto para declaración de IR" },
+  ];
+  vi.mocked(sriLookupFacade.taxSupportCodes).mockResolvedValue(options);
+  const result = await setupWithLoadedInvoice({ taxSupportCode: "19" });
+  await waitFor(() => expect(result.current.sriTaxSupports).toEqual(options));
+  expect(result.current.formWatch.taxSupportCode).toBe("19");
 });

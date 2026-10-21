@@ -49,6 +49,7 @@ export function FiscalSettingsSection() {
   const [taxRegimes, setTaxRegimes] = useState<SriTaxRegimeLookup[]>([]);
 
   const profileState = useAsync(() => companyProfileService.getProfile());
+  const savedTaxRegimeCode = profileState.data?.taxRegimeCode ?? "";
   const policyState = useAsync(() => companyProfileService.getFiscalPolicy());
 
   const [policySaving, setPolicySaving] = useState(false);
@@ -231,6 +232,14 @@ export function FiscalSettingsSection() {
                   {...register("taxRegimeCode")}
                 >
                   <option value="">Sin especificar</option>
+                  {/* A saved regime that is no longer selectable stays visible so saving never clears it. */}
+                  {savedTaxRegimeCode &&
+                    !taxRegimes.some((r) => r.code === savedTaxRegimeCode) && (
+                      <option value={savedTaxRegimeCode}>
+                        {savedTaxRegimeCode} —{" "}
+                        {t("settings.company.fiscal.taxRegimeNotSelectable")}
+                      </option>
+                    )}
                   {taxRegimes.map((regime) => (
                     <option key={regime.code} value={regime.code}>
                       {regime.code} — {regime.name}

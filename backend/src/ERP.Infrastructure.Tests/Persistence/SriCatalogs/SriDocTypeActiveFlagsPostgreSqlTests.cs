@@ -20,6 +20,14 @@ public sealed class SriDocTypeActiveFlagsPostgreSqlTests : IClassFixture<SriRete
     public SriDocTypeActiveFlagsPostgreSqlTests(SriRetentionCatalogDatabaseFixture db) => _db = db;
 
     [Fact]
+    public async Task Tipos_electronicos_coinciden_con_tabla_3_de_ficha_234()
+    {
+        await using var db = _db.CreateContext();
+        (await db.SriDocTypes.AsNoTracking().Where(d => d.IsElectronic).Select(d => d.Code).ToListAsync())
+            .Should().BeEquivalentTo(["01", "03", "04", "05", "06", "07"]);
+    }
+
+    [Fact]
     public async Task Los_flags_persistidos_coinciden_con_el_seed_declarado()
     {
         var declared = DeclaredSeed();

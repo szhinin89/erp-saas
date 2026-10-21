@@ -43,10 +43,11 @@ public class SriDocTypeConfiguration : IEntityTypeConfiguration<SriDocType>
             },
             new SriDocType
             {
+                // 02/08/09/18: Catálogo ATS 06/08/2026, Tabla 4; no son tipos electrónicos (ficha 2.34 Tabla 3).
                 Code = "02",
-                Name = "NOTA DE VENTA- RISE",
-                ShortName = "NV_RISE",
-                IsElectronic = true,
+                Name = "Nota o boleta de venta",
+                ShortName = "NOTA_VENTA",
+                IsElectronic = false,
                 IsActive = false,
             },
             new SriDocType
@@ -92,15 +93,15 @@ public class SriDocTypeConfiguration : IEntityTypeConfiguration<SriDocType>
             new SriDocType
             {
                 Code = "08",
-                Name = "Tiquete de Máquina Registradora",
-                ShortName = "TIQUETE",
+                Name = "Boletos o entradas a espectáculos públicos",
+                ShortName = "BOLETO",
                 IsElectronic = false,
                 IsActive = false,
             },
             new SriDocType
             {
                 Code = "09",
-                Name = "Tiquete de Caja Registradora",
+                Name = "Tiquetes o vales emitidos por máquinas registradoras",
                 ShortName = "CAJA_REG",
                 IsElectronic = false,
                 IsActive = false,
@@ -108,8 +109,8 @@ public class SriDocTypeConfiguration : IEntityTypeConfiguration<SriDocType>
             new SriDocType
             {
                 Code = "18",
-                Name = "Documento Electrónico de Importación",
-                ShortName = "DEI",
+                Name = "Documentos autorizados utilizados en ventas excepto N/C N/D",
+                ShortName = "DOC_AUT_VENTA",
                 IsElectronic = false,
                 IsActive = false,
             }

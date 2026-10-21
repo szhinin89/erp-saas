@@ -10,6 +10,15 @@ namespace ERP.Infrastructure.Persistence.Configurations.SriCatalogs;
 /// </summary>
 public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNormativeSource>
 {
+    public static readonly Guid IceSpecific2026Id = Guid.Parse("40000000-0000-0000-0000-000000000006");
+    /// <summary>Ficha técnica offline 2.34 — Tabla 18: códigos y conceptos ICE (sus columnas de tarifa son de 2023).</summary>
+    public static readonly Guid FichaV234Table18Id = Guid.Parse("40000000-0000-0000-0000-000000000007");
+    /// <summary>LRTI art. 82 — tarifas ad valorem de los grupos I, II y III.</summary>
+    public static readonly Guid LrtiArticle82Id = Guid.Parse("40000000-0000-0000-0000-000000000008");
+    /// <summary>Tarifas ad valorem restablecidas desde 2024-05-21 por la nulidad del D.E. 645.</summary>
+    public static readonly Guid IceRestored20240521Id = Guid.Parse("40000000-0000-0000-0000-000000000009");
+    /// <summary>Matriz resumen ICE del SRI: bienes y servicios gravados, exenciones y no gravados.</summary>
+    public static readonly Guid IceSriSummaryMatrixId = Guid.Parse("40000000-0000-0000-0000-00000000000a");
     /// <summary>Ficha Técnica Comprobantes Electrónicos Esquema Offline v2.34 — Tabla 20 (retención del IVA).</summary>
     public static readonly Guid FichaV234Table20Id = Guid.Parse(
         "40000000-0000-0000-0000-000000000001"
@@ -21,8 +30,8 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
     );
 
     /// <summary>
-    /// Migración que siembra todas las fuentes normativas actuales: la baseline consolidada (MIGRATION-SQUASH-IMPLEMENT).
-    /// Una fuente nueva nombra la migración incremental que la incorpora.
+    /// Migración que siembra todas las fuentes normativas: la baseline única de ERP ZH V1 (GREENFIELD).
+    /// Una fuente posterior a la primera instalación publicada nombra la migración incremental que la incorpora.
     /// </summary>
     public const string IntroducedInMigration = "InitialProductionBaseline";
 
@@ -72,6 +81,52 @@ public class SriNormativeSourceConfiguration : IEntityTypeConfiguration<SriNorma
             .HasMaxLength(SriNormativeSource.NotesMaxLen);
 
         builder.HasData(
+            new SriNormativeSource
+            {
+                Id = IceSpecific2026Id, Document = "NAC-DGERCGC25-00000040", Version = "2026",
+                Section = "Artículo único — tarifas específicas ICE período fiscal 2026",
+                PublishedOn = null,
+                ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=c5a91b7c-c7ff-45c2-9b0d-ca0670fb8723&nombre=NAC-DGERCGC25-00000040.pdf",
+                IntroducedInMigration = IntroducedInMigration,
+                Notes = "Firmada 2025-12-29; aplicable 2026-01-01 a 2026-12-31 (período fiscal 2026). Cigarrillos USD 0,16 por unidad; alcohol (uso distinto a bebidas alcohólicas y farmacéuticos) y bebidas alcohólicas USD 10,41, cerveza artesanal USD 1,56 y cerveza industrial USD 13,62 por litro de alcohol puro; bebidas no alcohólicas y gaseosas con más de 25 g de azúcar por litro, excepto energizantes, USD 0,18 por 100 g de azúcar añadida; fundas plásticas USD 0,08 por funda. Ad valorem 75% de bebidas alcohólicas y cerveza: LRTI art. 82 grupo IV. Códigos: Ficha técnica offline 2.34, Tabla 18; no usar sus columnas de 2023 como tarifa 2026. Las filas ICE activas de base física no comercial conservan UnitValue nulo. Cálculo mixto y condiciones de aplicación no implementados.",
+            },
+            new SriNormativeSource
+            {
+                Id = FichaV234Table18Id, Document = "FICHA_TECNICA_OFFLINE", Version = "2.34",
+                Section = "§9.13 Tabla 18 — Tarifa del ICE (códigos y conceptos)",
+                PublishedOn = new DateOnly(2026, 7, 27),
+                ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%cc%81CNICA%20COMPROBANTES%20ELECTRO%cc%81NICOS%20ESQUEMA%20OFFLINE%20Versio%cc%81n%202.34.pdf",
+                DocumentSha256 = "7333aebfbdf2cb3ba83f9fc67a7a7f0346ca59506480a260cc42f96dbdfc13c9",
+                IntroducedInMigration = IntroducedInMigration,
+                Notes = "Fuente de identidad de los códigos ICE (pp. 30-32). Sus tarifas corresponden a enero y febrero-diciembre de 2023; la propia tabla remite a la normativa vigente. Un código histórico ausente de la tabla queda no seleccionable sin inferir equivalencias.",
+            },
+            new SriNormativeSource
+            {
+                Id = LrtiArticle82Id, Document = "LRTI", Version = "RO 525 2024-03-25",
+                Section = "Art. 82 — grupos I, II y III (tarifa ad valorem); grupo IV ad valorem 75%",
+                ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/7da8c609-4299-4597-8825-29446242c63b/LEY_DE_REGIMEN_TRIBUTARIO_INTERNO_-_LRTI.pdf",
+                DocumentSha256 = "a0f2bfcb8b68a45a5c3aa6e3cab21b1471ec8b01bb0312287544024bf213cb6e",
+                IntroducedInMigration = IntroducedInMigration,
+                Notes = "Codificación publicada por el SRI, última reforma Suplemento RO 525, 25-III-2024; consultada 2026-10-21. Fecha de inicio de cada tarifa no verificada (ValidFrom nulo). Rige sobre la columna de Tabla 18 cuando difieren (televisión pagada 15%, clubes 30%). Las filas reformadas por el D.E. 645 se rigen por la fuente 40000000-0000-0000-0000-000000000009.",
+            },
+            new SriNormativeSource
+            {
+                Id = IceRestored20240521Id, Document = "SRI-NAC-DNJ-2024-0042-OF",
+                Section = "Tarifas ad valorem ICE que rigen por la nulidad del D.E. 645 (SENAE Boletín 88-2024)",
+                PublishedOn = new DateOnly(2024, 5, 30),
+                ReferenceUrl = "https://www.aduana.gob.ec/gaceta-boletin/tarifas-ad-valorem-del-impuesto-a-los-consumos-especiales-ice-que-rigen-por-la-derogacion-del-decreto-ejecutivo-no-645-de-10-de-enero-de-2023/",
+                IntroducedInMigration = IntroducedInMigration,
+                Notes = "Oficio SRI de 2024-05-29 reproducido por SENAE: desde 2024-05-21 tabaco calentado y líquidos con nicotina 150%, armas de fuego, deportivas y municiones 300%, aviones, avionetas, helicópteros, motos acuáticas, tricares, cuadrones, yates y barcos de recreo 15%. Armas: el D.E. 302 (2024-06-12) reduciría a 30% desde 2024-07-01; texto oficial y alcance no verificados, por lo que 3630/3730 no son seleccionables.",
+            },
+            new SriNormativeSource
+            {
+                Id = IceSriSummaryMatrixId, Document = "SRI_MATRIZ_RESUMEN_ICE", Version = "2024",
+                Section = "Hoja 2024 — bienes y servicios gravados, exenciones y beneficios",
+                ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/3ba17b2c-6e81-4383-8d3e-ec6f7ee1160e/Tabla%20Resumen%20ICE%20.xlsx",
+                DocumentSha256 = "ea9e054e96b1b052109d6786690944ebf0c3c185233b1c8c776e5c10faf1c31f",
+                IntroducedInMigration = IntroducedInMigration,
+                Notes = "Enlazada desde https://www.sri.gob.ec/impuesto-consumos-especiales; consultada 2026-10-21. Frente a la hoja 2021 ya no grava videojuegos, calefones a gas ni telefonía, y declara exentos los vehículos eléctricos e híbridos. Sus tarifas reformadas por el D.E. 645 no rigen desde 2024-05-21.",
+            },
             new SriNormativeSource
             {
                 Id = SriAnnulmentPolicyVersionConfiguration.LegacySourceId,

@@ -1,7 +1,7 @@
 # ADR-037 — Gobernanza de catálogos globales SRI
 
 **Status:** Proposed · **Fecha:** 2026-10-02 · **Ticket:** ZH-SRI-GLOBAL-CATALOG-ARCHITECTURE-01
-**Evidencia y diseño detallado:** [`docs/sri/SRI-GLOBAL-CATALOG-ARCHITECTURE.md`](../sri/SRI-GLOBAL-CATALOG-ARCHITECTURE.md)
+**Evidencia y diseño detallado:** [`docs/archive/sri/SRI-GLOBAL-CATALOG-ARCHITECTURE.md`](../archive/sri/SRI-GLOBAL-CATALOG-ARCHITECTURE.md) (histórico; vigente: [architecture.md § GLOBAL IMMUTABLE](../architecture/architecture.md#global-immutable-schema-global))
 **Base:** [`docs/sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md`](../sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md) (hallazgo P0 R24)
 **Complementa:** `docs/architecture/architecture.md § Catálogos y datos configurables (SSOT dinámico)`; ADR-034 (fecha de negocio); ADR-023/ADR-036 (no los modifica).
 

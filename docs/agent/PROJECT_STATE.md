@@ -1,8 +1,24 @@
 # PROJECT_STATE.md — Estado vigente del proyecto
 
+## GREENFIELD-INSTALL — Instalación inicial única ERP ZH V1 (2026-10-21)
+
+Una sola migración vigente: `20261021162651_InitialProductionBaseline`, con todos los catálogos GLOBAL y sus
+correcciones SRI (sustentos ATS Tabla 5, ICE Tabla 18 y mixto, tipo `02`, identificación, régimen, errores, países).
+Geografía: único script `InstallData/001_inec_cge_2026_geography.sql` (INEC CGE 2026). Verificado contra oráculo
+PostgreSQL desechable; suite backend 7371/7372; el único fallo (snapshot OpenAPI de Compras/NC desactualizado) corregido, 3/3 PASS.
+Validación manual del propietario en `erp_zh_dev`: instalación limpia 25/224/1048 INEC 2026, baseline única y SRI cargados.
+Cierre final BUG REAL: `InstallData.Enabled = true` confirmado; fallo INEC bloquea el arranque. Regresión previa
+reproducida y pruebas focalizadas 6/6 PASS. Sin recrear bases ni repetir auditorías; `scripts/db/` eliminado (sin consumidores).
+Definición y pendientes únicos: [SSOT GLOBAL](../architecture/architecture.md#global-immutable-schema-global).
+Cierre en commits locales; sin push/deploy.
+
 ## PURCHASE-CREDIT-NOTE-UNIFICATION — EXTEND (2026-10-21)
 
 Implementado y validado focalmente: NC única (devolución o descuento/bonificación), vínculo histórico sin repetir efectos y reproceso condicionado. PostgreSQL 21/21 + contabilización 6/6, API 24/24, Application 79/79, frontend 35/35; build/lint/TypeScript y gate de arquitectura PASS. Guardrail general pendiente por PR-7 preexistente de Gastos (516 > 514), fuera de alcance. Sin GLOBAL, migraciones propias, datos de negocio, push ni deploy. [Entrega](PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md); única regla funcional: [purchases.md](../architecture/purchases.md).
+
+## SRI-TAX-SUPPORT-TABLE5 — BUG REAL P1 (2026-10-20)
+
+Implementado y validado, sin push ni migración a bases de negocio. Seed global 01–15 alineado con Tabla 5 ATS 06/08/2026; 00 y 16–20 conservados, no seleccionables; consolidado en la baseline única. PASS: Infrastructure PostgreSQL/seed 5/5, HTTP 1/1 y frontend focal 46/46. [Evidencia y límites](../archive/sri/SRI-TAX-SUPPORT-TABLE5-CORRECTION.md).
 
 ## QA-INVENTORY-INFRA-SUITES-01 (2026-10-19)
 

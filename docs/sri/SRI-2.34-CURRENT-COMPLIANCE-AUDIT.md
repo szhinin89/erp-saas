@@ -225,19 +225,9 @@ No existe hoy un `SriIssuerFiscalProfile`. **Pieza a evolucionar:** `Company` (+
 
 ## M. Catálogos
 
-| Catálogo | Fuente ficha | ERP | Estado |
-|---|---|---|---|
-| Tipos de comprobante | Tabla 3 | `sri_doc_types` + `SriDocumentTypeCodes` | ✅ |
-| Tipos de identificación | Tabla 6 | `sri_id_types` (04–09) | ✅ |
-| Impuesto (IVA 2, ICE 3, IRBPNR 5) | Tabla 16 | `SriTaxCategoryCodes` + `SriTaxCategoryCodeResolver` | ✅ |
-| Tarifas IVA (0,2,3,4,5,6,7,8,10) | Tabla 17 | `sri_vat_rate` (mismos 9 códigos) | ✅ |
-| ICE | Tabla 18 | `sri_ice_rate` (14 códigos) | 🟡 parcial; **sin 3740 fundas plásticas** |
-| Impuesto a retener (1,2,6) | Tabla 19 | `SriRetentionTaxTypeCodes` (1,2) | 🟡 ISD no soportado |
-| Retención IVA (XML) | Tabla 20 | `sri_retention_codes` usa 721–728 | 🔴 (ver I) |
-| Retención ISD 4580 / 4586 | Tabla 20 | 4580 (5%) | 🟡 sectorial |
-| Formas de pago | Tabla 24 | `sri_payment_methods` (01,15–21) | ✅ |
-| Errores SRI | §11 | `sri_error_code` (33) incl. 43/45/70/82/92 | ✅ |
-| UOM / sustento tributario | ATS | `sri_uom` (22), `sri_tax_support` (20) | ✅ (fuera de ficha) |
+Estado de cada catálogo al 2026-10-02 sustituido por la definición vigente en
+[architecture.md § GLOBAL IMMUTABLE](../architecture/architecture.md#global-immutable-schema-global)
+(retención IVA Tabla 20, ICE Tabla 18, sustentos, tipos documentales, identificación, régimen, errores, países y geografía).
 
 Hardcodes: no se encontraron literales SRI sueltos en builders/providers; los códigos legítimamente constantes están centralizados en Domain (`SriDocumentTypeCodes`, `SriRetentionTaxTypeCodes`, `SriTaxCategoryCodes`). La excepción es el texto RIMPE (triplicado).
 
@@ -254,10 +244,10 @@ Hallazgos:
 
 ## O. Fundas plásticas (Anexo 18)
 
-- **Regla:** establecimientos de comercio con **3 o más establecimientos abiertos**, o franquiciador/franquiciados (sin importar el número), que entreguen fundas tipo acarreo/camiseta → agregar en `<detalles>` una línea por tipo: `ICE-FPN-01` (normal), `ICE-FPR-02` (rebaja 50%, biodegradables/compostables), `ICE-FPE-03` (exenta, ≥50% reciclado); cantidad = número de fundas; ICE = tarifa específica × cantidad (Tabla 18, código 3740); el ICE forma parte de la base del IVA.
-- **Datos que necesitaría el ERP:** ítems con SKU exacto `ICE-FPN-01/02/03`, ICE específico 3740 en el catálogo, y la condición de aplicabilidad (número de establecimientos abiertos de la empresa).
+- **Regla:** establecimientos de comercio con **3 o más establecimientos abiertos**, o franquiciador/franquiciados (sin importar el número), que entreguen fundas tipo acarreo/camiseta → agregar en `<detalles>` una línea por tipo: `ICE-FPN-01` (normal), `ICE-FPR-02` (rebaja 50%, biodegradables/compostables), `ICE-FPE-03` (exenta, ≥50% reciclado); cantidad = número de fundas; ICE = tarifa específica × cantidad (Tabla 18, código 3680); el ICE forma parte de la base del IVA.
+- **Datos que necesitaría el ERP:** ítems con SKU exacto `ICE-FPN-01/02/03`, ICE específico 3680 en el catálogo, y la condición de aplicabilidad (número de establecimientos abiertos de la empresa).
 - **Existe hoy:** motor de ICE por línea (`SalesInvoiceDetail.Taxes`, cálculo específico/ad valorem), `codigoPrincipal` = SKU → un ítem con SKU `ICE-FPN-01` saldría correcto.
-- **Falta:** código **3740** en `sri_ice_rate`; validación/guía de configuración.
+- **Falta:** habilitar **3680** (registrado no seleccionable, ver [SSOT GLOBAL](../architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias)); validación/guía de configuración. La identificación anterior como 3740 era incorrecta (3740 corresponde a focos incandescentes CAE en Tabla 18); no se crea una equivalencia entre ambos.
 - **Aplicabilidad:** depende de que la empresa piloto tenga ≥3 establecimientos o sea franquicia → **P1 PILOTO si se cumple; P2 SECTORIAL si no** (DECISION REQUIRED: dato de negocio).
 
 ## P. Reglas sectoriales (inventario, sin implementar)
@@ -313,7 +303,7 @@ Ninguna debe contaminar los flujos Retail.
 | R25 | Retención versión 1.0.0 vs ATS 2.0.0 | Anexos 1 y 10 | 07 | ⚠️ | Builder | `RetentionXmlBuilder.cs:40` | Vigencia no confirmada | Medio | P1 | DECISION + prueba celcer |
 | R26 | % Renta según catálogo ATS | Tabla 20 (remite a ATS) | 07 | ⚠️ | `sri_retention_codes` | `312 = 1.00%` | No confirmable con ficha | Medio | P1 | Verificar fuente ATS |
 | R27 | IVA/ICE/IRBPNR, tarifas IVA | Tablas 16-17 | 01/04 | ✅ | catálogos | `SriVatRateConfiguration.cs` | — | — | — | NO ACTION |
-| R28 | ICE fundas 3740 | Tabla 18, Anexo 18 | 01 | 🔴 | `sri_ice_rate` | no sembrado | Falta código | Depende | P1/P2 | DECISION aplicabilidad |
+| R28 | ICE fundas 3680 | Tabla 18, Anexo 18 | 01 | 🟡 | `sri_ice_rate` | registrado, no seleccionable | Rebaja 50%/exenta con el mismo código | Depende | P1/P2 | DECISION aplicabilidad |
 | R29 | Formas de pago | Tabla 24 | 01 | ✅ | `sri_payment_methods` | — | — | — | — | NO ACTION |
 | R30 | Envío al receptor por correo | §4.7 | Todos | 🟡 | Communications | solo `SalesInvoiceAuthorizedCommunicationHandler.cs:63` (Invoice) | NC y Retención no se envían | Medio | P1 | EXTEND |
 | R31 | Retry automático operativo | §5.12 (obligación de verificar AUT) | Todos | 🔴 | `ElectronicDocumentRetryJob` | `ElectronicDocumentRetryJob.cs:55` vs `:96` | 0 candidatos | Medio | P1 | Fix job |
@@ -382,7 +372,7 @@ Ninguna debe contaminar los flujos Retail.
 | `ElectronicDocumentData.Issuer` | **EXTEND** | Futuro perfil fiscal del emisor |
 | `SystemProviderSettings` | **KEEP / EXTEND** | SSOT del RUC Proveedor |
 | `EmbeddedXmlSchemaProvider` + `manifest.json` | **KEEP** | Revisar XSD oficiales vigentes (patrón RIMPE) |
-| Catálogos `sri_*` | **KEEP / EXTEND** | Corregir códigos IVA de retención; agregar 3740 si aplica |
+| Catálogos `sri_*` | **KEEP / EXTEND** | Corregir códigos IVA de retención; habilitar 3680 si aplica |
 | RIDE (parsers + QuestPDF) | **KEEP** | Ya muestra `campoAdicional` genéricamente |
 | `docs/FICHA … Versio232.pdf` | **LEGACY** | Referencia obsoleta |
 
@@ -455,7 +445,7 @@ ROLLBACK;
 | 4 | `ZH-SRI-ISSUER-FISCAL-PROFILE-01` | P1 | Sin `agenteRetencion`/Gran Contribuyente; texto RIMPE NP; lógica RIMPE triplicada | §L, R20–R22 | Datos en Company (no entidad paralela), traducción única al modelo común; verificar XSD oficiales vigentes | Bajo | Perfil fiscal real del piloto (DECISION) |
 | 5 | `ZH-EDOC-REJECTION-RECOVERY-01` | P1 | NAT/DEVUELTA terminal sin corrección; código 50 como rechazo; `FirstOrDefault` en autorizaciones | §F, R12–R14 | Clasificar DEVUELTA transitoria vs definitiva; elegir AUT entre varias autorizaciones; diseñar corrección con misma clave | Medio (toca Issuer CLOSED) | ADR |
 
-**Backlog:** decisión retención 1.0.0→2.0.0 (R25) · % Renta vs catálogo ATS (R26) · preflight 320 KB (R16) · correo de NC/Retención (R30) · detector de factura/NC sin ED (§H) · P-2 con ConsultaComprobante (R32) · RucValidator (§N) · fundas 3740 (R28, si aplica) · contribuyente especial en factura/NC (R23) · centralizar clave/infoAdicional (P3) · `manifest.json` · ND/Guía/Liquidación y anexos sectoriales.
+**Backlog:** decisión retención 1.0.0→2.0.0 (R25) · % Renta vs catálogo ATS (R26) · preflight 320 KB (R16) · correo de NC/Retención (R30) · detector de factura/NC sin ED (§H) · P-2 con ConsultaComprobante (R32) · RucValidator (§N) · fundas 3680 (R28, si aplica) · contribuyente especial en factura/NC (R23) · centralizar clave/infoAdicional (P3) · `manifest.json` · ND/Guía/Liquidación y anexos sectoriales.
 
 ## W. Qué NO debe tocarse
 

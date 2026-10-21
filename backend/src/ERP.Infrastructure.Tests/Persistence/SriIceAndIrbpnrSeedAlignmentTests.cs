@@ -46,15 +46,17 @@ public sealed class SriIceAndIrbpnrSeedAlignmentTests
     }
 
     [Fact]
-    public void Todos_los_codigos_ICE_historicos_siguen_activos_como_Percentage()
+    public void Ningun_codigo_ICE_historico_desaparece_del_seed()
     {
-        // Regresión — agregar CalculationType/3053 no debe alterar los 13 códigos existentes.
+        // Las claves existentes se conservan aunque cambien su definición oficial o su
+        // disponibilidad. El contenido vigente se verifica en SriIceTable18CatalogTests.
         string[] historicos =
         [
             "3011",
             "3021",
             "3041",
             "3051",
+            "3053",
             "3071",
             "3072",
             "3073",
@@ -67,14 +69,7 @@ public sealed class SriIceAndIrbpnrSeedAlignmentTests
         ];
 
         foreach (var code in historicos)
-        {
-            var seed = GetSeededIceRate(code);
-            seed.Should().NotBeNull($"el código histórico {code} no debe desaparecer del seed");
-            ((SriTaxCalculationType)seed!["CalculationType"]!)
-                .Should()
-                .Be(SriTaxCalculationType.Percentage);
-            ((decimal?)seed["Percentage"]).Should().NotBeNull();
-        }
+            GetSeededIceRate(code).Should().NotBeNull($"el código histórico {code} no debe desaparecer del seed");
     }
 
     private static IDictionary<string, object?>? GetSeededIceRate(string code)

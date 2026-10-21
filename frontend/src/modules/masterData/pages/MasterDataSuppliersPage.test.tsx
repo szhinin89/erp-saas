@@ -50,7 +50,7 @@ vi.mock("../api/useSriPaymentMethods", () => ({
 
 vi.mock("../api/useSriTaxSupportCodes", () => ({
   useSriTaxSupportCodes: () => ({
-    options: [{ code: "01", name: "Crédito Tributario" }],
+    options: [{ code: "01", name: "Crédito Tributario" }, { code: "06", name: "Inventario - Crédito Tributario para declaración de IVA" }, { code: "07", name: "Inventario - Costo o Gasto para declaración de IR" }],
     loading: false,
     error: null,
   }),
@@ -507,4 +507,15 @@ describe("MasterDataSuppliersPage — sin diálogos nativos", () => {
     promptSpy.mockRestore();
     alertSpy.mockRestore();
   });
+});
+
+
+it("offers global ATS inventory codes in supplier defaults", async () => {
+  renderPage();
+  await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+  fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+  await waitFor(() => expect(getSelectByFieldLabel("Sustento tributario predeterminado")).toBeTruthy());
+  const options = Array.from(getSelectByFieldLabel("Sustento tributario predeterminado").options);
+  expect(options.find(x => x.value === "06")?.textContent).toContain("Inventario - Crédito Tributario para declaración de IVA");
+  expect(options.find(x => x.value === "07")?.textContent).toContain("Inventario - Costo o Gasto para declaración de IR");
 });

@@ -27,6 +27,31 @@ public class SriErrorCodeConfiguration : IEntityTypeConfiguration<SriErrorCode>
         // números — se eliminaron por no ser códigos reales del SRI (catálogo no admite datos
         // fabricados, mismo criterio ya aplicado a los XSD embebidos).
         builder.HasData(
+            // Ficha 2.34 §11, p. 36: códigos 2, 10 y 26 (texto literal de descripción y motivo).
+            new SriErrorCode
+            {
+                Code = "2",
+                ErrorType = "ERROR",
+                Name = "RUC DEL EMISOR SE ENCUENTRA NO ACTIVO",
+                Description = "Verificar que el número de RUC se encuentre en estado ACTIVO",
+                IsActive = true,
+            },
+            new SriErrorCode
+            {
+                Code = "10",
+                ErrorType = "ERROR",
+                Name = "ESTABLECIMIENTO DEL EMISOR SE ENCUENTRA CLAUSURADO",
+                Description = "No se autorizará comprobantes si el establecimiento emisor ha sido clausurado, automáticamente se habilitará el servicio una vez concluido la clausura.",
+                IsActive = true,
+            },
+            new SriErrorCode
+            {
+                Code = "26",
+                ErrorType = "ERROR",
+                Name = "TAMAÑO MÁXIMO SUPERADO",
+                Description = "Tamaño del archivo supera lo establecido",
+                IsActive = true,
+            },
             new SriErrorCode
             {
                 Code = "27",

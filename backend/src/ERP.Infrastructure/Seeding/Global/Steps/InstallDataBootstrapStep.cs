@@ -4,12 +4,9 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding.Global.Steps;
 
 /// <summary>
-/// Ejecuta los scripts embebidos de datos globales inmutables (geografía, país). Delega
-/// íntegramente en <see cref="IInstallDataBootstrapService"/> (sin cambios). A diferencia de
-/// <see cref="NavigationBootstrapStep"/>, un fallo aquí NO debe bloquear el arranque de la API —
-/// se captura y registra dentro de este step (mismo comportamiento que tenía el bloque try/catch
-/// en <c>Program.cs</c> antes de este refactor). El orquestador nunca decide qué step es
-/// tolerante a fallos; esa decisión es responsabilidad de cada step.
+/// Ejecuta la carga obligatoria INEC mediante <see cref="IInstallDataBootstrapService"/>.
+/// Un fallo se registra y propaga: la API no puede completar el arranque con una
+/// instalación incompleta.
 /// </summary>
 public sealed partial class InstallDataBootstrapStep : IGlobalBootstrapStep
 {
@@ -36,12 +33,13 @@ public sealed partial class InstallDataBootstrapStep : IGlobalBootstrapStep
         catch (Exception ex)
         {
             LogInstallDataFailed(ex);
+            throw;
         }
     }
 
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "InstallData failed at startup. Continuing without blocking API startup."
+        Message = "Mandatory InstallData failed. API startup aborted."
     )]
     private partial void LogInstallDataFailed(Exception ex);
 }

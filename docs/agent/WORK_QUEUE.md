@@ -1,8 +1,47 @@
 # WORK_QUEUE.md — Cola de tareas controladas
 
+## GREENFIELD-INSTALL — BUG REAL (2026-10-21)
+
+Cierre final implementado: configuración oficial habilitada, fallo INEC bloqueante, baseline y script únicos conservados.
+Regresión reproducida antes del fix; pruebas focalizadas 6/6 PASS. Instalación limpia en `erp_zh_dev` validada manualmente
+por el propietario (25/224/1048 y SRI cargados). Sin recrear bases, auditorías adicionales, push/deploy.
+SSOT: [Geografía INEC](../architecture/architecture.md#geografía-inec).
+
+## GLOBAL–OFFICIAL-ALIGNMENT — BUG REAL P2/P3 (2026-10-21)
+
+Hallazgos P2/P3 de GLOBAL consolidados en la baseline única y el único script INEC CGE 2026.
+PASS focal 190/190 Infrastructure, 9/9 API, 2/2 frontend.
+Pendientes con dependencia fuera de GLOBAL y única definición vigente: [SSOT GLOBAL](../architecture/architecture.md#pendientes-global-dependencias-fuera-de-global).
+Cierre en commits locales; sin push/deploy.
+
+## GLOBAL–ICE-TABLE18 — BUG REAL (2026-10-21)
+
+Implementado para revisión: catálogo ICE alineado con la Tabla 18 y las tarifas 2026. Migraciones consolidadas en
+la baseline única (GREENFIELD-INSTALL). Pendientes: verificar el D.E. 302 (armas), decidir la habilitación de `3680` y
+dar soporte operativo a mixtos y específicos de base física. Detalle único: [SSOT GLOBAL](../architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias).
+Cierre en commits locales; sin push/deploy.
+
+## GLOBAL–ICE-MIXED — EXTEND (2026-10-21)
+
+Representación GLOBAL implementada y consolidada en la baseline única; PASS focal 65/65,
+API Release, snapshot y diff. La integración de cálculo queda detenida con el impacto documentado
+en [SSOT GLOBAL](../architecture/architecture.md#ice-mixto-representación-global-y-límite-operativo).
+Sin cambios de cálculo ni migraciones a bases de negocio, push/deploy.
+
+## GLOBAL–SRI — BUG REAL (2026-10-21)
+
+Implementadas correcciones focales de ICE `3073`/`3630` y flag electrónico de `02`; PASS 58/58
+(PostgreSQL/seed/compliance), API Release y snapshot. Migraciones consolidadas en la baseline única (GREENFIELD-INSTALL);
+inventario local READ ONLY sin referencias ICE 3073. Detalle único: [SSOT GLOBAL](../architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias).
+Representación GLOBAL ampliada en GLOBAL–ICE-MIXED; integración operativa detenida. Cierre en commits locales; sin push/deploy.
+
 ## PURCHASE-CREDIT-NOTE-UNIFICATION — EXTEND (2026-10-21)
 
 Implementado y validado; decisiones de vínculo histórico y reproceso resueltas por el propietario. Validación focal PASS; guardrail general limitado por PR-7 preexistente de Gastos, sin tocarlo. Sin GLOBAL ni operaciones sobre bases de negocio, push o deploy. [Entrega y archivos](PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md); SSOT único: [purchases.md](../architecture/purchases.md).
+
+## SRI-TAX-SUPPORT-TABLE5 — BUG REAL P1 (2026-10-20)
+
+Implementado y validado, sin push ni migración a bases de negocio. Seed global 01–15 alineado con Tabla 5 ATS 06/08/2026; 00 y 16–20 conservados, no seleccionables. Consolidado en la baseline única, sin remapear documentos/defaults/snapshots. PASS: Infrastructure PostgreSQL/seed 5/5, HTTP 1/1 y frontend focal 46/46. [Evidencia y límites](../archive/sri/SRI-TAX-SUPPORT-TABLE5-CORRECTION.md).
 
 ## QA-INVENTORY-INFRA-SUITES-01 (2026-10-19)
 

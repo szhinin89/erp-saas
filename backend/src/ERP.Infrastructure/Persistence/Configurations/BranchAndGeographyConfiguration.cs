@@ -16,9 +16,11 @@ public class GeoProvinceConfiguration : IEntityTypeConfiguration<GeoProvince>
         builder
             .Property(x => x.CountryId)
             .HasColumnName("country_id")
-            .HasMaxLength(10)
+            .HasMaxLength(2)
+            .IsFixedLength()
             .IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
+        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true).ValueGeneratedNever();
 
         builder.HasIndex(x => x.CountryId).HasDatabaseName("ix_geo_provinces_country_id");
 
@@ -44,6 +46,7 @@ public class GeoCantonConfiguration : IEntityTypeConfiguration<GeoCanton>
             .HasMaxLength(10)
             .IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
+        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true).ValueGeneratedNever();
 
         builder.HasIndex(x => x.ProvinceId).HasDatabaseName("ix_geo_cantons_province_id");
 
@@ -64,6 +67,7 @@ public class GeoParishConfiguration : IEntityTypeConfiguration<GeoParish>
         builder.Property(x => x.Id).HasColumnName("id").HasMaxLength(10);
         builder.Property(x => x.CantonId).HasColumnName("canton_id").HasMaxLength(10).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
+        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true).ValueGeneratedNever();
 
         builder.HasIndex(x => x.CantonId).HasDatabaseName("ix_geo_parishes_canton_id");
 

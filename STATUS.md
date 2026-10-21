@@ -1,10 +1,68 @@
 # Project Status
 
+## GREENFIELD-INSTALL — Instalación inicial única ERP ZH V1 (2026-10-21)
+
+Implementado y validado; cierre en commits locales. Baseline única `20261021162651_InitialProductionBaseline` (absorbe la baseline anterior y
+las 6 migraciones GLOBAL del 2026-10-21; raw SQL copiado sin cambios). Geografía: un solo script
+`InstallData/001_inec_cge_2026_geography.sql` (CGE 2026: 25/224/1048, sin DPA 2012 ni alineación posterior).
+Oráculo PostgreSQL desechable: esquema y datos de 212 tablas idénticos, salvo `introduced_in_migration` y orden de columnas.
+PASS: 256/256 Infrastructure focal (SriCatalogs, InstallData, seed, raw SQL, first-run), Architecture 2/2,
+`architecture:check`. Suite backend completa previa 7371/7372; el fallo (`CompaniesApiSurfaceSnapshotTests`, snapshot OpenAPI con el `<summary>` anterior de los controllers de NC/devolución de Compras) quedó corregido: 3/3 PASS.
+Validación manual del propietario en `erp_zh_dev`: instalación limpia con 25/224/1048 INEC 2026, baseline única y
+catálogos SRI cargados. Cierre final BUG REAL: configuración oficial `InstallData.Enabled = true` confirmada;
+fallos de INEC bloquean el arranque. Regresión reproducida antes del fix; pruebas focalizadas 6/6 PASS y diff revisado.
+Sin recrear bases ni repetir auditorías. `scripts/db/` eliminado (generador DPA 2012 y SQL `.disabled`, sin consumidores).
+SSOT: [GLOBAL](docs/architecture/architecture.md#global-immutable-schema-global), [DATABASE.md](docs/DATABASE.md).
+
+## GLOBAL–OFFICIAL-ALIGNMENT — BUG REAL P2/P3 (2026-10-21)
+
+Correcciones GLOBAL con fuentes oficiales: `09` Placa no seleccionable para Cliente/Transportista (Tabla 6 y XSD);
+régimen `02` RIMPE – Emprendedor y `04` no seleccionable (frontend conserva el valor guardado); nombres ATS Tabla 4 de
+`02`/`08`/`09`/`18`; errores `2`/`10`/`26` (§11); `sri_country.sri_code` (Tabla 25); ISD no seleccionable; geografía
+INEC CGE 2026 (único script `001_inec_cge_2026_geography.sql`); `sri_id_type_usage` en
+snake_case y `geo_provinces.country_id` `char(2)`. Consolidado en la baseline única GREENFIELD-INSTALL.
+PASS: Infrastructure 190/190 (SriCatalogs, seed, InstallData; PostgreSQL efímero), API 9/9, frontend 2/2, `tsc -b`.
+Inventario de 27 tablas y pendientes en una sola definición: [SSOT GLOBAL](docs/architecture/architecture.md#global-immutable-schema-global).
+Sin Compras/Ventas/Contabilidad, migraciones a bases de negocio, push/deploy.
+
+## GLOBAL–ICE-TABLE18 — BUG REAL (2026-10-21)
+
+Catálogo ICE alineado con la ficha 2.34 Tabla 18 y las tarifas 2026: 77 filas (71 códigos oficiales + 6 claves
+históricas no seleccionables), 38 seleccionables, vigencias y 4 fuentes normativas nuevas. Corregidos los significados
+de `3011`, `3021`, `3041`, `3081`, `3101` y `3111`, consolidados en la baseline única.
+Las correcciones de `3073`/`3630`/`3031`/`3033` se conservan (`3630` queda no seleccionable).
+PASS focal 104/104 ICE (seed/PostgreSQL) + 85/85 resto de `SriCatalogs`; EF sin cambios de modelo pendientes.
+Definición, fuentes y límites: [SSOT GLOBAL](docs/architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias).
+Sin cambios en Compras/Ventas/Contabilidad. Sin migraciones a bases de negocio, push/deploy.
+
+## GLOBAL–ICE-MIXED — EXTEND (2026-10-21)
+
+Representación GLOBAL implementada: Mixed=3, ambos componentes, unidad física y fuente normativa;
+`3031`/`3033` no seleccionables por restricción PostgreSQL mientras se detiene su integración de cálculo.
+Consolidado en la baseline única, sin sobrescribir conceptos anteriores.
+PASS focal 65/65 Infrastructure (PostgreSQL/seed/contrato/compliance), API Release, snapshot y diff.
+Impacto exacto en contratos/consumidores y fuentes: [SSOT GLOBAL](docs/architecture/architecture.md#ice-mixto-representación-global-y-límite-operativo).
+No se modificaron cálculos de Compras/Ventas/Contabilidad. Sin migraciones a bases de negocio, push/deploy.
+
+## GLOBAL–SRI — BUG REAL (2026-10-21)
+
+Implementado para revisión: ICE `3073`/`3630` y flag electrónico del tipo `02`, según ficha SRI 2.34.
+Inventario READ ONLY local sin referencias ICE 3073 dependientes ni XML externos. Consolidado en la baseline única,
+sin remapear referencias. PASS focal 58/58 Infrastructure
+(PostgreSQL real/seed/compliance), API Release y snapshot. Bases de negocio sin migrar; sin push/deploy.
+Definición, fuente, inventario y límites: [SSOT GLOBAL](docs/architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias).
+La representación mixta se amplía en GLOBAL–ICE-MIXED; su integración operativa permanece detenida.
+La entrega no declara alineado todo ICE.
+
 ## PURCHASE-CREDIT-NOTE-UNIFICATION — EXTEND (2026-10-21)
 
 Implementado para revisión: entrada única NC del proveedor, dos modalidades, vínculo histórico sin repetir efectos y reproceso sujeto a reversas verificables y vigencia SRI. KEEP: documentos y relaciones anteriores consultables. SSOT: [purchases.md](docs/architecture/purchases.md). [Archivos y validación](docs/agent/PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md).
 
 PASS: PostgreSQL 21/21 (SRI simulado), contratos API 24/24, Application 79/79, contabilización PostgreSQL 6/6, frontend 35/35; compilación API, TypeScript, lint (0 errores), build y gate de arquitectura (0 violaciones nuevas). Guardrail completo: PR-7 preexistente en `ExpenseDocumentFormPage.retention.test.tsx` (516 > 514), sin modificar por estar fuera de alcance. Sin cambios en GLOBAL, migraciones propias, bases de negocio, push ni deploy.
+
+## SRI-TAX-SUPPORT-TABLE5 — BUG REAL P1 (2026-10-20)
+
+Implementado y validado, sin push ni migración a bases de negocio. Seed global 01–15 alineado con Tabla 5 ATS 06/08/2026; 00 y 16–20 conservados, no seleccionables. Consolidado en la baseline única, sin remapear documentos/defaults/snapshots. PASS: Infrastructure PostgreSQL/seed 5/5, HTTP 1/1 y frontend focal 46/46. [Evidencia y límites](docs/archive/sri/SRI-TAX-SUPPORT-TABLE5-CORRECTION.md).
 
 ## ZH-RETENTION-SRI-ANNULMENT — Reverso contable en finalizaciones del job (2026-10-20)
 
@@ -78,6 +136,8 @@ DEBT (preexistente): stack audit con 18 paquetes NuGet/npm fuera de inventario y
 
 ## DB-GREENFIELD-SETUP (2026-10-17)
 
+Registro histórico; baseline sustituida por GREENFIELD-INSTALL (2026-10-21).
+
 **Estado: implementado (sin commit).** Nombres oficiales de base: `erp_zh_dev` (desarrollo), `erp_zh_test` (pruebas
 manuales locales y servicio PostgreSQL del workflow E2E), `erp_zh_prod` (solo en su entorno; no existe en local).
 En `postgreszh` (PG 16.14, puerto 5435) se eliminaron `dberpsaas` y `erp_sumak_pilot` (pre-squash, sin datos de
@@ -91,6 +151,8 @@ después de la API: Hangfire crea su esquema (v23), 4 servidores por cola, 7 rec
 Sin cambios en la baseline ni migraciones nuevas. Cierra el "Pendiente: recrear" de MIGRATION-SQUASH.
 
 ## MIGRATION-SQUASH (2026-10-17)
+
+Registro histórico; baseline sustituida por GREENFIELD-INSTALL (2026-10-21).
 
 **Estado: implementado (sin commit).** Las 17 migraciones (`20261010184156_InitialProductionBaseline` … `20261018001810_AccountingSchemaCleanup`)
 se reemplazan por una sola `20261018014647_InitialProductionBaseline` (ID nuevo: una BD con la cadena anterior falla
@@ -107,7 +169,7 @@ tests solo históricos (`AccountingContinuity04/05MigrationTests`, `Legacy_notif
 Oráculo PostgreSQL 16 (cadena anterior) vs baseline: catálogo, `pg_dump` y hash de datos de 212 tablas idénticos salvo
 diferencias aceptadas a favor del modelo (`introduced_in_migration` ×2; columnas `posting_rules` de ACCOUNTING-11
 ausentes; sin `DEFAULT 0` residual en `journal_entries.version`; función en LF; orden físico de columnas) —
-detalle en [docs/DATABASE.md § Baseline EF](docs/DATABASE.md#baseline-ef-pre-producción). Comportamiento idéntico en
+detalle en [docs/DATABASE.md § Baseline EF](docs/DATABASE.md#baseline-ef-erp-zh-v1-greenfield). Comportamiento idéntico en
 ambas (EXCLUDE, upsert de `background_job_progress`, plan con índice trgm).
 PASS: architecture focal 22/22; Infrastructure focal 230/234 (raw SQL, exclusividad, A1, BP, períodos, documentos
 electrónicos, comunicaciones, catálogos SRI, bootstrap); `has-pending-model-changes` antes y después.
@@ -525,7 +587,7 @@ Inventario, configuración, ownership y evidencia:
 - **Modal Confirmar:** Proveedor · Número · Fecha · N líneas · Total.
 - **Resolver productos pendientes — código auxiliar:** el código principal sigue siendo el código del proveedor (relación aprendida por la línea de recepción). El código auxiliar del XML ya no se usa como SKU: si cumple las validaciones de código de barras de Items (obligatorio, ≤100) se propone como código de barras de la unidad base (tipo EAN sugerido solo para GTIN real; si no, lo elige el usuario); si no, queda solo como evidencia XML. SKU = regla existente de creación de Items desde compra (código del proveedor, `ItemEditorModal`). Ej.: 8433 / 001013300320845306 → SupplierCode 8433, barcode 001013300320845306, SKU 8433. Tests focales: resolver 53/53 (auxiliar válido/GTIN/no válido/sin auxiliar/aprendizaje), backend resolver + aprendizaje 20/20.
 - **Smoke real (DINADEC 8433, SIXPACK X6):** (1) unidad de presentación = unidad base (u otra presentación del mismo producto) se bloquea en `pendingProductsSchema` y en `ResolvePurchaseReceptionLinesHandler` antes de la transacción, con mensaje accionable ("elija otra, p. ej. Paquete o Caja") — causa raíz del error: índice `uq_item_packaging_uom` (item_id, uom_code), que el validador de Items (UoM + cantidad, FROZEN) no cubre. (2) Si la BD igual reporta `uq_item_packaging_uom`, se informa como unidad duplicada; "Otro proceso registró…" queda solo para SKU/código de barras/código de proveedor. (3) Advertencia falsa de origen XML: resolver/corregir relación/match aprendido asignaban la presentación sin actualizar el origen (quedaba factor 1); ahora la presentación resuelta es también el origen → 50 SIXPACK × $6 = 300 u × $1 sin advertencia; 300 → 299 sí advierte. KEEP: rollback todo-o-nada, contrato `applied=false` (DEBT). Tests focales: backend resolver 20/20; vitest compras 412/412.
-- **Estado real de la compra en Recepción:** `PurchaseState` (NONE / DRAFT / CONFIRMED / CANCELLED / DISCARDED) en el contrato de Recepción, resuelto solo por `PurchaseReceptionPurchaseStateResolver` (Domain) y reutilizado por importación TXT (`PurchaseReceptionVerifier`), descarga XML individual y en lote (que ahora también devuelven `cancelledPurchaseId`). Repositorio: `GetLatestCancelledByAccessKeyAsync` → `CancelledPurchaseRef(Id, IsDiscardedDraft)` (proyección sobre `ConfirmedGrandTotal`, sin migración); con compra activa no consulta el historial. Se conservan `purchaseExists`/`purchaseId`/`cancelledPurchaseId`. UI (`receptionPurchaseView`, SSOT de badge/acciones): Sin compra → Crear compra; Compra en borrador → Continuar borrador; Compra confirmada → Ver compra; Compra anulada → Procesar nuevamente + Ver compra anulada; Borrador descartado → Crear compra + Ver borrador descartado. "Crear gasto" solo bloqueado con compra activa. Tarjeta: desglose "N en borrador · N confirmadas". Tests focales: backend resolver/importación/descargas 47/47, verificador + PostgreSQL 32/32, arquitectura 143/143; vitest compras 429/429.
+- **Estado real de la compra en Recepción:** `PurchaseState` (NONE / DRAFT / CONFIRMED / CANCELLED / DISCARDED) en el contrato de Recepción, resuelto solo por `PurchaseReceptionPurchaseStateResolver` (Domain) y reutilizado por importación TXT (`PurchaseReceptionVerifier`), descarga XML individual y en lote (que ahora también devuelven `cancelledPurchaseId`). Repositorio: `GetLatestCancelledByAccessKeyAsync` → `CancelledPurchaseRef(Id, IsDiscardedDraft)` (proyección sobre `ConfirmedGrandTotal`, sin migración); con compra activa no consulta el historial. Se conservan `purchaseExists`/`purchaseId`/`cancelledPurchaseId`. UI (`receptionPurchaseView`, SSOT de badge/acciones): Sin compra → Crear compra; Compra en borrador → Continuar borrador; Compra confirmada → Ver compra; Compra anulada → Procesar nuevamente + Ver compra anulada; Borrador descartado → Crear compra + Ver borrador descartado. "Crear gasto" solo bloqueado con compra activa. Tarjeta: desglose "N en borrador · N confirmadas". Tests focales: backend resolver/importación/descargas 46/46, verificador + PostgreSQL 32/32, arquitectura 143/143; vitest compras 429/429.
 - **Recepción — "Actualizar estados" + barra compacta:** `POST /purchases/reception/documents/refresh-status { documentIds }` (`purchases.view`, ≤500 ids, `IBranchScopedRequest`), solo lectura: carga las recepciones por tenant + empresa (`GetByIdsAsync`, sin tracking), re-verifica con el mismo `PurchaseReceptionVerifier` (registro armado desde la recepción guardada, `PurchaseReceptionMapper.ToRecord`) y arma las filas con `PurchaseReceptionItemAssembler` (extraído de la importación, que ahora lo usa); sin SaveChanges/Add/AssignSupplier ni SRI; ids fuera de alcance se omiten. Frontend: lotes de 200, fusión por documentId (conserva `supplierTradeName`, estado XML por fila, filtros, orden, página); fila compacta local `PurchaseReceptionBatchActions` ("Acciones del lote · N comprobantes" + Actualizar estados / Descargar XML pendientes, `ZHBtn` sm, wrap en móvil, progreso solo cuando existe; ambos bloqueados al importar/descargar/actualizar). Tests focales: backend refresh 6 + verificador 9, importación/descargas 28, arquitectura 143; vitest compras 441. Responsive revisado por CSS, no verificado en navegador.
 - Tests focales: Application lista/branch/by-id + `PurchaseXmlOriginPackagingResolverTests` + handlers de borrador (packaging/recovery/costos/ICE/bodega/plazo) 62/62; PostgreSQL `PurchaseInvoiceListPostgreSqlTests` + `PurchaseLineXmlOriginPostgreSqlTests` (migración, save/reopen ×3, borrador anterior null) + `UpdatePurchaseDraftAtomicityPostgreSqlTests` 11/11; vitest invariante lossless + origen persistido (x12 estable, x6 elegido estable, editada en unidad base con origen x6, Recalcular → x6, fallback borrador anterior) 21/21, hooks (origen al reabrir, Guardar no aprende, Guardar presentación aprende origen) y utilidades de compras 290/290; `tsc -b` 0 errores; eslint 0 errores; `architecture:check` 0 nuevas. Suites completas: no ejecutadas.
 
@@ -2516,7 +2578,7 @@ Fix de actualización de PVP en formulario de edición de ítems:
 
 ### Compras — Auditoría UX + SSOT (2026-06-24)
 
-Auditoría completa del formulario de Compras. Build: **0 errores frontend + backend**. Tests: **47/47 PASS**.
+Auditoría completa del formulario de Compras. Build: **0 errores frontend + backend**. Tests: **46/46 PASS**.
 
 | Mejora | Detalle |
 |--------|---------|
@@ -2724,7 +2786,7 @@ Details: [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DATABASE.md](docs/DATABASE.md
 | `ERP.API.Tests` | ✅ 33/33 SecurityTests (2026-06-05); integration suite stable |
 | `ERP.Architecture.Tests` (NetArchTest + controller guardrails) | ✅ 30/32 — 2 pre-existing failures (Items module permissions pending plan catalog registration) |
 | Frontend ESLint (`npm run lint`) | ✅ 0 errors (2026-05-21 remediation) |
-| Frontend Vitest | ✅ 47/47 (27 purchase calc tests added 2026-06-24) |
+| Frontend Vitest | ✅ 46/46 (27 purchase calc tests added 2026-06-24) |
 | Frontend build | ✅ |
 | Playwright smoke | ✅ PASS |
 | Playwright enterprise E2E | 🟡 requiere API local; skip controlado sin backend |

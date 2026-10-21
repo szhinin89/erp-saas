@@ -123,7 +123,6 @@
     "scripts/ci/check-pages-wrapper-rule.ps1",
     "scripts/ci/run-e2e.ps1",
     "scripts/ci/verify-stack-allowlist.ps1",
-    "scripts/db/import_inec_ecuador_geography.ps1",
     "scripts/dev-launcher.ps1",
     "scripts/ds/_ds-lib.ps1",
     "scripts/ds/ds-audit.ps1",

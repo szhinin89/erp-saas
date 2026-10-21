@@ -1,8 +1,11 @@
 # SRI — Arquitectura de catálogos globales (ZH-SRI-GLOBAL-CATALOG-ARCHITECTURE-01)
 
+> **HISTÓRICO (archivado 2026-10-21).** No es fuente vigente. La definición vigente de GLOBAL está en
+> [docs/architecture/architecture.md § GLOBAL IMMUTABLE](../../architecture/architecture.md#global-immutable-schema-global).
+
 > **Naturaleza:** auditoría + diseño (2026-10-02, commit `787971ab`). La decisión vinculante está en
-> [ADR-037](../decisions/ADR-037-sri-global-catalog-governance.md); este documento aporta la evidencia y el
-> diseño detallado. Base: [SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md](SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md).
+> [ADR-037](../../decisions/ADR-037-sri-global-catalog-governance.md); este documento aporta la evidencia y el
+> diseño detallado. Base: [SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md](../../sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md).
 > No se modificó código, seeds, tablas ni migraciones.
 >
 > **Corrección de nomenclatura respecto a la auditoría 2.34:** los nombres reales de tabla son **singulares** y
@@ -21,7 +24,7 @@ Todas las entidades viven en `ERP.Domain/Modules/SriCatalogs/Entities/` y su con
 | `sri_doc_type` | `Code` | Code, Name, ShortName, IsElectronic, IsActive | 10 | No | 2 (`DocumentSequence`, `DocTypeSriMap`) | `SriCatalogLookupRepository`, `SriDocTypeCatalogResolver`, `ElectronicDocumentsBootstrapStep` |
 | `sri_emission_type` | `Code` (short) | Code, Name | 2 | No | 0 | **ninguno** |
 | `sri_error_code` | `Code` | Code, ErrorType, Name, Description, IsActive | 33 | No | 0 | **ninguno** (solo seed) |
-| `sri_ice_rate` | `Code` | Code, Name, Percentage, UnitValue, CalculationType, IsActive | 14 | **No** (la tarifa cambia por normativa) | 0 (referencia por string) | `SriCatalogResolver`, `SriCatalogLookupRepository`, `SriTaxResolver`, `SriGlobalRateReader` |
+| `sri_ice_rate` | `Code` | Code, Name, Percentage, UnitValue, SpecificUnit, NormativeSourceId, ValidFrom, ValidUntil, CalculationType, IsActive | Catálogo, fuentes y disponibilidad vigentes: [SSOT GLOBAL](../../architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias) | Parcial: `ValidFrom/ValidUntil` comprobados en la fila, sin versión hija ni resolución por fecha | 0 (referencia por string) | `SriCatalogResolver`, `SriCatalogLookupRepository`, `SriTaxResolver`, `SriGlobalRateReader` |
 | `sri_id_type` | `Code` | Code, Name, Digits | 6 | No | 1 (`sri_id_type_usage`) | `SriCatalogLookupRepository` |
 | `sri_id_type_usage` | `Id` (Guid) | Id, IdTypeCode, UsageType, IsActive | 13 | No | — | `SriCatalogLookupRepository`, `IdentificationUsageValidator` |
 | `sri_irbpnr_rate` | `Code` | igual que ICE | 1 | No | 0 | `SriTaxResolver` |

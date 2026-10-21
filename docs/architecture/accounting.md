@@ -634,7 +634,7 @@ factura). Única excepción: filas con importe cero y sin asiento, en cualquier 
 Posted): no tienen efecto contable que preservar y una obligación de importe cero quedaría sin
 resolución posible; permanecen solo como evidencia legacy de solo lectura. Una fila con asiento se migra
 siempre. No crea obligaciones para hechos sin fila. La tabla legacy se eliminó después (§27). Histórico:
-la migración quedó consolidada en `20261018014647_InitialProductionBaseline` (MIGRATION-SQUASH); una
+la migración quedó consolidada en la baseline única `20261021162651_InitialProductionBaseline`; una
 instalación nueva nace sin `inventory_cost_postings` y sin nada que copiar.
 
 **Apertura.** La decisión operativa se toma sobre `Company.OpeningBalanceDate`, bajo el lock
@@ -935,5 +935,5 @@ Migración `AccountingSchemaCleanup` (fail-closed): aborta si una fila de `inven
 importe o asiento no tiene su obligación común, o si un asiento `Reversed` no tiene reverso enlazado
 por `OriginalJournalEntryId`. Si pasa, los `Reversed` heredados quedan Posted (líneas, número y fechas
 intactos) y se eliminan la tabla y la columna. `Down` restaura solo el esquema vacío. Histórico: consolidada
-en `20261018014647_InitialProductionBaseline` (MIGRATION-SQUASH), que nace sin la tabla, sin la columna y sin
+en la baseline única `20261021162651_InitialProductionBaseline`, que nace sin la tabla, sin la columna y sin
 el estado `Reversed`.

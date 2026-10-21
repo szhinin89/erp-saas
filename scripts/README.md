@@ -17,8 +17,6 @@ en [`stack-allowlist.json`](stack-allowlist.json). CI rechaza cualquier otro `.p
 | [`tests/`](tests/) | Cuatro pruebas focales del launcher: [First Run](../docs/architecture/first-run.md) |
 | [`ds/`](ds/) | Auditoría y guard del Design System |
 | [`qa/diagnose-pos-warehouse.ps1`](qa/diagnose-pos-warehouse.ps1) | Diagnóstico POS/bodega |
-| [`db/import_inec_ecuador_geography.ps1`](db/import_inec_ecuador_geography.ps1) | SQL geografía INEC |
-| [`db/sql/`](db/sql/) | SQL excepcional documentado |
 
 ## Tooling (no operación)
 

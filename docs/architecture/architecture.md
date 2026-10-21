@@ -304,13 +304,10 @@ Si la feature es solo frontend o solo API, aplicar las capas que correspondan (p
 
 ---
 
-## ICE (Impuesto a Consumos Especiales) — diferido
+## ICE (Impuesto a Consumos Especiales)
 
-No implementar hasta requerimiento del cliente. Base en dominio:
-
-- `Product.AppliesExciseTax` + `Product.ExciseTaxId`
-- `TaxRateType.Excise`
-- Cuando se implemente: `IceCode`, `IcePercentage`, `IceAmount` en `SalesBillLine`/`SalesNoteLine`; XML SRI `<impuesto><codigo>3</codigo>`.
+Catálogo vigente, fuentes y disponibilidad: [§ ICE: definición oficial](#ice-definición-oficial-y-corrección-de-referencias).
+Límite del cálculo mixto: [§ ICE mixto](#ice-mixto-representación-global-y-límite-operativo).
 
 ---
 
@@ -368,30 +365,228 @@ El sistema tiene **3 scopes** con responsabilidades exclusivas. Ningún scope pu
 
 ## GLOBAL IMMUTABLE (schema `global`)
 
-**Propósito:** Catálogos regulatorios y estándares externos. Sin tenant scope.
+**Propósito:** catálogos regulatorios, estándares externos y catálogos internos de sistema, sin `tenant_id`
+ni `company_id` y sin lógica de negocio. Esta sección es la **única definición vigente** de GLOBAL; los
+documentos de `docs/sri/` son auditorías fechadas y las decisiones de origen están en ADR-037/ADR-042.
 
-| Tabla | Concepto canónico |
+**Reglas (ADR-037 D1–D14, ADR-042):**
+
+- Un catálogo = una tabla y una entidad tipadas. Canal único de datos: `HasData` materializado por la baseline EF
+  única de ERP ZH V1 (`20261021162651_InitialProductionBaseline`, GREENFIELD: incluye todas las correcciones SRI),
+  salvo la geografía INEC, que llega por el único script `Seeding/InstallData` (ver § Geografía INEC). Tras la
+  primera instalación publicada, cada cambio es una migración incremental. Sin CRUD, UI de edición ni escrituras
+  desde Application/API.
+- `is_active` es **disponibilidad operativa** para operaciones nuevas, no validez normativa. Las resoluciones por
+  Id o código de documentos existentes leen también filas no seleccionables. Ningún catálogo usa `HasQueryFilter`.
+  Los flags `bool` con DEFAULT true se configuran con `ValueGeneratedNever` (ADR-042).
+- No se borran filas: un código obsoleto queda no seleccionable y conserva sus referencias. Tras la primera
+  instalación publicada, toda corrección de significado revisa referencias antes de escribir y aborta si encuentra
+  alguna; el rollback automático se rechaza.
+- Cada dato normativo cita su fuente: en `sri_normative_source` cuando el catálogo tiene vigencia; en esta sección
+  para los catálogos estables. Ninguna tarifa, código o regla se infiere sin fuente oficial.
+
+**Inventario (27 tablas).** OF = catálogo oficial SRI · INT = interna relacionada con SRI · ERP = propia del ERP.
+
+| Tabla | Clase | Fuente oficial | Definición vigente |
+|---|---|---|---|
+| `sri_ice_rate` | OF | Ficha 2.34 Tabla 18; LRTI art. 82; NAC-DGERCGC25-00000040 | § ICE |
+| `sri_irbpnr_rate` | OF | Ficha 2.34 Tabla 16 (`5001`, USD 0,02 por botella) | KEEP |
+| `sri_vat_rate` | OF | Ficha 2.34 Tabla 17 | KEEP códigos; vigencia histórica del 12% diferida (§ Pendientes) |
+| `sri_retention_code` | OF | Ficha 2.34 Tabla 20; Catálogo ATS 06/08/2026 Tabla 3.10 | § Retenciones e ISD |
+| `sri_retention_code_version` | OF | idem | § Retenciones e ISD |
+| `sri_payment_method` | OF | Ficha 2.34 Tabla 24 / ATS Tabla 13 | KEEP (01, 15–21) |
+| `sri_tax_support` | OF | Catálogo ATS 06/08/2026 Tabla 5 | § Sustentos tributarios |
+| `sri_supplier_type` | OF | Ficha 2.34 Tabla 26 / ATS Tabla 14 | KEEP (01, 02) |
+| `sri_doc_type` | OF | Ficha 2.34 Tabla 3 (electrónicos) / ATS Tabla 4 | § Tipos documentales |
+| `sri_id_type` | OF | Ficha 2.34 Tabla 6 | § Identificación |
+| `sri_error_code` | OF | Ficha 2.34 §11 | § Errores |
+| `sri_emission_type` | OF | Ficha 2.34 Tabla 2 | `1` emisión normal; `2` histórica (no existe en offline), sin consumidores |
+| `sri_id_type_usage` | INT | Notas de la Tabla 6 y XSD | § Identificación |
+| `sri_tax_regime` | INT | Ficha 2.34 Anexo 22 (leyendas RIMPE) | § Régimen tributario |
+| `sri_country` | INT | ISO-3166 + Ficha 2.34 Tabla 25 / ATS Tabla 16 | § Países |
+| `sri_uom` | INT | Sin catálogo SRI codificado (`unidadMedida` es texto libre) | Catálogo interno de unidades |
+| `sri_normative_source` | INT | — | Registro de fuentes; sin `is_active` |
+| `sri_annulment_policy` / `sri_annulment_policy_version` | INT | NAC-DGERCGC16-00000092; NAC-DGERCGC25-00000017 | Plazo de anulación por fecha de emisión |
+| `doc_type_sri_map` | INT | — | Mapa tipo interno → `sri_doc_type` (sin consumidor en runtime) |
+| `legal_entity_type` | INT | Tercer dígito del RUC | Natural / sociedad privada / institución pública |
+| `doc_type` | ERP | — | Tipos de documento/proceso internos |
+| `barcode_types` | ERP | — | Tipos de código de barras |
+| `item_margin_statuses` | ERP | — | Estados de margen de ítems (presentación) |
+| `geo_provinces` / `geo_cantons` / `geo_parishes` | ERP (estándar INEC) | INEC Clasificador Geográfico Estadístico 2026 | § Geografía INEC |
+
+No existe tabla de ambientes: el ambiente (1 pruebas, 2 producción; Tabla 4) es la constante estructural
+`SriEnvironmentCodes`, con espejo de validación en frontend.
+
+### ICE: definición oficial y corrección de referencias
+
+Definición vigente del catálogo ICE. `global.sri_ice_rate` mantiene una sola fila por código, cargada por
+`HasData` (`SriIceRateConfiguration`) en la baseline; cada fila referencia su fuente en
+`global.sri_normative_source` y registra `valid_from`/`valid_until` (inclusivos) solo cuando la vigencia fue comprobada.
+
+**Fuentes (consultadas el 2026-10-21):**
+
+- Identidad de códigos y conceptos: [Ficha técnica SRI offline 2.34](https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%CC%81CNICA%20COMPROBANTES%20ELECTRO%CC%81NICOS%20ESQUEMA%20OFFLINE%20Versio%CC%81n%202.34.pdf),
+  julio de 2026, §9.13, Tabla 18, pp. 30–32 (71 códigos únicos). Sus columnas de tarifa son de enero y
+  febrero-diciembre de 2023: no son vigencias ni tarifas de 2026.
+- Tarifas específicas 2026: [NAC-DGERCGC25-00000040](https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=c5a91b7c-c7ff-45c2-9b0d-ca0670fb8723&nombre=NAC-DGERCGC25-00000040.pdf),
+  aplicable 2026-01-01 a 2026-12-31: cigarrillos USD 0,16 por unidad; alcohol y bebidas alcohólicas USD 10,41,
+  cerveza artesanal USD 1,56 y cerveza industrial USD 13,62 por litro de alcohol puro; bebidas no alcohólicas
+  y gaseosas con más de 25 g de azúcar por litro (excepto energizantes) USD 0,18 por 100 g de azúcar añadida;
+  fundas plásticas USD 0,08 por funda.
+- Tarifas ad valorem: [LRTI art. 82](https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/7da8c609-4299-4597-8825-29446242c63b/LEY_DE_REGIMEN_TRIBUTARIO_INTERNO_-_LRTI.pdf)
+  (codificación SRI, última reforma RO 525 del 2024-03-25), con ad valorem 75% para bebidas alcohólicas y cerveza
+  (grupo IV). Prevalece sobre la columna de la Tabla 18: televisión pagada `3092` 15% (no 0%), clubes `3660` 30% (no 35%).
+- Reformas del D.E. 645 sin efecto desde 2024-05-21 ([Oficio SRI-NAC-DNJ-2024-0042-OF, SENAE Boletín 88-2024](https://www.aduana.gob.ec/gaceta-boletin/tarifas-ad-valorem-del-impuesto-a-los-consumos-especiales-ice-que-rigen-por-la-derogacion-del-decreto-ejecutivo-no-645-de-10-de-enero-de-2023/)):
+  tabaco calentado y líquidos con nicotina 150%; aviones, avionetas, helicópteros, motos acuáticas, tricares,
+  cuadrones, yates y barcos de recreo 15%.
+- Gravados, exenciones y no gravados: [matriz resumen ICE del SRI](https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/3ba17b2c-6e81-4383-8d3e-ec6f7ee1160e/Tabla%20Resumen%20ICE%20.xlsx), hoja 2024.
+
+**Catálogo (77 filas, 38 seleccionables):**
+
+| Clase | Códigos | Representación | Seleccionable |
+|---|---|---|---|
+| Mixta, grupo IV | `3031`, `3033`, `3041`, `3043`, `3532`, `3533`, `3541`, `3545` | 75% + específica 2026 por litro de alcohol puro | No (ver ICE mixto) |
+| Específica con referencias o importación XML existente | `3011`, `3021`, `3053`, `3111` | `Specific`, `unit_value` nulo, unidad y vigencia 2026 | Sí |
+| Específica nueva | `3542`, `3543`, `3552`, `3602`, `3680` | `Specific` con tarifa 2026 completa | No |
+| Ad valorem (art. 82) | tabaco `3023`/`3544`; gaseosas ≤25 g y energizantes `3054`/`3553`/`3101`/`3601`; perfumes `3610`/`3710`; focos `3640`/`3740`; vehículos `3073`, `3075`, `3077`–`3080`, `3684`–`3687`, `3871`, `3873`–`3877`; `3092`; `3660` | `Percentage`, `valid_from` nulo (inicio no comprobado) | Sí |
+| Restablecida desde 2024-05-21 | `3682`/`3683` 150%; `3081`/`3878`/`3581`/`3582` 15% | `Percentage`, `valid_from` 2024-05-21 | Sí |
+| Tarifa 2026 no verificada | `3630` (conserva 30%), `3730` (sin tarifa) | `Percentage` | No |
+| Sin gravamen vigente | videojuegos `3620`/`3720`; calefones `3671`/`3771`; telefonía `3093`/`3681`; híbridos `3688`–`3699` (exentos) | sin tarifa | No |
+| Clave histórica ausente de Tabla 18 | `3051`, `3071`, `3072`, `3082`, `3083`, `3091` | valores anteriores conservados | No |
+
+**Disponibilidad (`is_active`):** una fila es seleccionable solo si todos los consumidores operativos la calculan
+correctamente. Ventas y las líneas manuales de Compras multiplican `unit_value` por la cantidad en UoM base, lo que
+no equivale a cigarrillos dentro de un paquete, gramos de azúcar ni litros de alcohol puro. Por eso las específicas
+seleccionables mantienen `unit_value` nulo: Compras conserva el monto exacto del XML del proveedor y deshabilitarlas
+rompería esa importación. Las tarifas siguen registradas en su fuente. `3680` no es seleccionable porque el
+Anexo 18 usa el mismo código para fundas normales, con rebaja del 50% y exentas.
+
+**Significados corregidos antes de la primera versión:** `3073` era armas y `3011`/`3021` ad valorem 150%;
+`3041` era gaseosas, `3081` vehículos, `3101` televisión y `3111` bebidas alcohólicas. La baseline nace con los
+significados de la Tabla 18; no hay referencias que remapear.
+
+### Tipos documentales electrónicos
+
+Electrónicos (ficha 2.34, §5.4, Tabla 3): exclusivamente `01`, `03`, `04`, `05`, `06` y `07`.
+`02`, `08`, `09` y `18` son tipos del Catálogo ATS 06/08/2026, Tabla 4, no electrónicos y no seleccionables:
+`02` Nota o boleta de venta, `08` Boletos o entradas a espectáculos públicos, `09` Tiquetes o vales emitidos por
+máquinas registradoras, `18` Documentos autorizados utilizados en ventas excepto N/C N/D. La ATS Tabla 4 tiene más
+códigos (11, 12, 15, 41…) que no se cargan mientras ningún flujo los use; no se infieren.
+`02` nace con `is_electronic = false` y `02`/`08`/`18` con los nombres y `short_name` de la Tabla 4.
+
+### ICE mixto: representación GLOBAL y límite operativo
+
+EXTEND aprobado por el propietario el 2026-10-21: `SriTaxCalculationType` conserva `Percentage = 1`
+y `Specific = 2`, y añade `Mixed = 3`. La misma fila de `global.sri_ice_rate` conserva simultáneamente
+`Percentage` y `UnitValue`; no se suman ni se convierten a un porcentaje equivalente. `SpecificUnit`
+declara la moneda/base física publicada y `NormativeSourceId` referencia el registro normativo existente.
+`SpecificUnit` y `NormativeSourceId` son opcionales para las filas no mixtas.
+
+Fuentes consultadas el 2026-10-21:
+
+- Ficha técnica offline SRI 2.34, julio de 2026, Tabla 18, páginas 30–31: códigos `3031` (bebidas
+  alcohólicas), `3033` (alcohol) y componente ad valorem 75%. Sus columnas de tarifa específica son de 2023;
+  no se extrapolan a 2026.
+- [NAC-DGERCGC25-00000040](https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=c5a91b7c-c7ff-45c2-9b0d-ca0670fb8723&nombre=NAC-DGERCGC25-00000040.pdf),
+  firmada el 2025-12-29, artículo único, período fiscal 2026, aplicable desde 2026-01-01: USD 10,41 por
+  litro de alcohol puro para alcohol (uso distinto a bebidas alcohólicas y farmacéuticos) y bebidas alcohólicas.
+  `PublishedOn` queda nulo: la fecha de firma no se presenta como fecha de publicación en Registro Oficial.
+
+No se incorporan otros conceptos mixtos sin comprobar sus componentes y condiciones normativas.
+
+Los conceptos mixtos quedan `IsActive = false` por disponibilidad **operativa**, no por invalidez normativa.
+`ck_sri_ice_mixed_catalog_only` exige ambos componentes, unidad no vacía, fuente y deshabilitación;
+impide activarlos mientras no exista soporte operativo aprobado. `ValueGeneratedNever` conserva el false por EF
+con el DEFAULT true (ADR-042). La habilitación futura necesita una migración revisada que sustituya
+ese bloqueo junto con la implementación y validación operativa. No existe CRUD de catálogo.
+
+| Contrato / consumidor directo | Estado e impacto |
 |---|---|
-| `global.sri_vat_rate` | Tarifas IVA Ecuador (SRI) |
-| `global.sri_ice_rate` | Tarifas ICE Ecuador (SRI) |
-| `global.sri_retention_code` | Códigos de retención SRI |
-| `global.sri_uom` | Unidades de medida SRI |
-| `global.sri_doc_type` | Tipos de comprobante SRI |
-| `global.sri_id_type` | Tipos de identificación SRI |
-| `global.sri_payment_method` | Formas de pago SRI |
-| `global.sri_tax_support` | Sustentos tributarios SRI |
-| `global.sri_tax_regime` | Regímenes tributarios SRI |
-| `global.sri_error_code` | Códigos de error SRI |
-| `global.sri_environment` | Ambientes SRI |
-| `global.sri_emission_type` | Tipos de emisión SRI |
-| `global.sri_country` | Países (ISO) |
-| `global.geo_provinces` | Provincias Ecuador (INEC) |
-| `global.geo_cantons` | Cantones Ecuador (INEC) |
-| `global.geo_parishes` | Parroquias Ecuador (INEC) |
+| `SriIceRate` / `SriTaxCalculationType` | EXTEND: componentes simultáneos y metadata, sin cambiar los valores persistidos 1/2. |
+| `SriIceRateDto` / `GetSriIceRatesQueryHandler` | EXTEND aditivo: `unitValue`, `calculationType`, `specificUnit`; conserva `code`, `name`, `percentage`. El endpoint sigue ofreciendo solo activos. |
+| `SriTaxCatalogEntry` / `SriTaxResolver` | KEEP: la proyección ya admite ambos importes y el enum; los métodos operativos no resuelven mixtos deshabilitados. No se habilita una fórmula nueva. |
+| `SriCatalogLookupRepository`, `SriCatalogResolver`, `SriGlobalRateReader` | KEEP: filtran disponibilidad; los mixtos no alcanzan selects ni proyecciones escalares de porcentaje. |
+| Compras: `PurchaseDraftUseCases`, `ConfirmPurchaseUseCases`, `PurchaseCostUseCases`, `PurchaseInvoiceDetail` | STRUCTURAL DEBT: discriminan `Specific` frente a porcentual; con Mixed activo omitirían el componente específico o recalcularían un importe XML. Requiere aprobar captura/snapshot de ambos componentes, bases y conservación del total XML; parte detenida sin modificar esos archivos. |
+| Ventas: `SalesDraftUseCases`, `AuthorizeSalesUseCases`, `SalesReturnDraftUseCases`, `SalesInvoiceDetail` | STRUCTURAL DEBT: requiere resolver componentes sobre bases distintas y conservarlos en recálculo/devolución. `QuantityInBaseUom` no demuestra litros de alcohol puro. Condiciones de aplicación, cantidades físicas y snapshot requieren alcance propio; parte detenida. |
+| Frontend `purchaseCalc.ts`, `salesCalc.ts` y mapas de tarifas de sus hooks | STRUCTURAL DEBT: los mapas `Record<string, number>` solo representan porcentaje. Requieren contratos completos y reglas concordantes con backend; sin modificar sus cálculos. |
+| Contabilidad | DO NOT TOUCH: no se identificó consumo directo del modo Mixed; consume importes documentales. No se modifican traductores, cuentas, reglas ni eventos. |
 
-**Geografía (restricción vigente):** `geo_*` solo contiene la DPA INEC de Ecuador (`country_id = 'EC'`, ISO-3166 alpha-2). La dirección de ubicaciones de socios de negocio (`PhysicalAddress`) no tiene país: guarda códigos INEC con FK a `geo_*`, así que su país de catálogo es Ecuador por diseño, no un default configurable. En frontend ese valor vive una sola vez en el owner (`masterData/constants/physicalAddressGeography.ts`) y se consume vía `branches/facades/geographyLookupFacade` (único cliente HTTP: `branchService`); ningún consumidor pasa un país literal a `provinces()` (guard `geographyClientSingleSource.test.ts`). `BusinessPartner.countryCode` es el país del socio, no el de la dirección. Admitir direcciones fuera de Ecuador requiere agregar país a `PhysicalAddress` y cargar su DPA — decisión funcional pendiente, no implícita.
+La representación GLOBAL queda implementada; el **cálculo y la selección operativos** de ICE mixto permanecen
+detenidos conforme al alcance autorizado. Los demás conceptos mixtos (`3041`, `3043`, `3532`, `3533`, `3541`, `3545`)
+siguen el mismo límite; el catálogo completo está en § ICE: definición oficial. No se reinterpretan documentos anteriores.
 
-**Regla GLOBAL:** Sin `tenant_id`. Sin `company_id`. Sin lógica de negocio. Referencia histórica (Control Plane SaaS, no vigente): [docs/archive/SUBSCRIBER-SCOPE-SEALED.md](../archive/SUBSCRIBER-SCOPE-SEALED.md)
+### Identificación
+
+`sri_id_type` mantiene `04`–`08` de la ficha 2.34, Tabla 6, y la clave histórica `09` (Placa), que no está en la
+Tabla 6 y que los XSD de factura y guía de remisión rechazan (`[0][4-8]`). `sri_id_type_usage` gobierna la
+disponibilidad por contexto: los usos `09/Customer` y `09/Carrier` quedan no seleccionables. Efecto:
+`IdentificationUsageValidator` impide asignar esos roles, y la actualización de un socio existente con `09` y ese
+rol devuelve un error explícito en vez de producir un XML que el SRI rechazaría. Columnas en snake_case
+(`id`, `id_type_code`, `usage_type`, `is_active`).
+
+### Régimen tributario
+
+`01` Régimen General; `02` RIMPE – Emprendedor y `03` RIMPE – Negocio Popular, según la ficha 2.34
+(historial 2.22 y Anexo 22, que fija las leyendas `CONTRIBUYENTE RÉGIMEN RIMPE` y
+`CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE`). `Abbrev` (`RIMPE_ME`, `RIMPE_NP`) es clave interna y no cambia.
+`04` Contribuyente Especial no es un régimen: la ficha lo emite como número de resolución
+(`contribuyenteEspecial`, `Company.SpecialTaxpayerNo`), así que queda no seleccionable. Una empresa que lo tenga
+guardado lo conserva; Configuración › Fiscal lo muestra como "no seleccionable" y no lo vacía al guardar.
+
+### Errores
+
+`sri_error_code` contiene los códigos de la ficha 2.34 §11, incluidos `2` (RUC del emisor no activo),
+`10` (establecimiento clausurado) y `26` (tamaño máximo superado), con descripción y motivo literales. Es un
+catálogo de referencia sin consumidores operativos.
+
+### Países
+
+`sri_country` es el catálogo ISO-3166 (`code` alpha-3, `iso2` alpha-2) con el código SRI numérico `sri_code`
+(ficha 2.34 Tabla 25, igual a Catálogo ATS Tabla 16; único) para sus 29 países, p. ej. ECU 593, USA 110,
+CHN 331 (China Popular). `geo_provinces.country_id` es `char(2)` como `iso2`. La fila ECU viene solo del
+`HasData` (nombre `ECUADOR`); el script de geografía no la escribe.
+
+### Sustentos tributarios
+
+`sri_tax_support` sigue el Catálogo ATS 06/08/2026, Tabla 5 (SHA-256 `bd3f7834…6e3e`): `01`–`15` seleccionables
+con su descripción literal; `00` y `16`–`20` no seleccionables.
+
+### Retenciones e ISD
+
+IVA: conceptos con versión y `xml_code` de la ficha 2.34 Tabla 20 (10%→9, 20%→10, 30%→1, 50%→11, 70%→2, 100%→3,
+cero→7, no procede→8); `728` (15%) conservado sin representación oficial. Renta: Catálogo ATS 06/08/2026,
+Tabla 3.10. ISD `4580`: 5% vigente desde 2024-04-01 (Tabla 20), deliberadamente sin versión para que cualquier
+resolución falle cerrada, y no seleccionable porque el comprobante del ERP no emite el impuesto `6` (Tabla 19;
+`RetentionTaxType` solo IVA/Renta). La historia de porcentajes ISD de la Tabla 20 omite enero de 2023 y no se carga.
+
+### Geografía INEC
+
+`geo_*` contiene la DPA de Ecuador según el Clasificador Geográfico Estadístico 2026 del INEC
+(`CLASIFICADOR_GEOGRAFICO_2026.zip`, SHA-256 `9a2962bc…a2c`; hojas PROVINCIAS, CANTONES y CODIGOS):
+25 provincias (incluida `90` Zona en estudio), 224 cantones y 1048 parroquias (cabecera cantonal `XX50` y rurales).
+Carga única: `Seeding/InstallData/001_inec_cge_2026_geography.sql`, aplicado una vez por checksum por
+`InstallDataBootstrapService`; todas las filas nacen activas. Los códigos 2012 que el CGE 2026 recodificó
+(La Concordia `0808` → `2302`, El Carmen de Pijilí `011551` → `010852`, Sevilla Don Bosco `140157` → cantón `1413`,
+zonas no delimitadas `9001`/`9003`/`9004` → `9006`/`9009`) o suprimió (Tiputini `220254`) no se cargan. Un código
+retirado por una revisión INEC posterior a la primera instalación publicada queda `is_active = false`, sin borrarse.
+La configuración oficial habilita la carga obligatoria (`InstallData:Enabled = true`, también por defecto en
+`InstallDataOptions`). Si la carga INEC falla, el bootstrap propaga el error y la API no completa el arranque;
+la instalación no se declara exitosa con geografía incompleta.
+
+**Restricción vigente:** `geo_*` solo contiene Ecuador (`country_id = 'EC'`). `PhysicalAddress` no tiene país:
+guarda códigos INEC con FK a `geo_*`, así que su país de catálogo es Ecuador por diseño. En frontend ese valor
+vive una sola vez en `masterData/constants/physicalAddressGeography.ts` y se consume vía
+`branches/facades/geographyLookupFacade` (único cliente HTTP: `branchService`; guard
+`geographyClientSingleSource.test.ts`). `BusinessPartner.countryCode` es el país del socio, no el de la dirección.
+Admitir direcciones fuera de Ecuador requiere agregar país a `PhysicalAddress`: decisión funcional pendiente.
+
+### Pendientes GLOBAL (dependencias fuera de GLOBAL)
+
+| Pendiente | Dependencia |
+|---|---|
+| ICE específico con `unit_value` nulo calcula 0 sin aviso en Ventas (`SalesDraftUseCases`) y en líneas manuales de Compras (`PurchaseDraftUseCases`): `UnitValue ?? 0 × QuantityInBaseUom` | Ventas y Compras deben rechazar o pedir el monto explícito; corregirlo en el resolvedor compartido rompería la importación XML de Compras |
+| Cálculo ICE mixto, `3680` fundas y tarifa 2026 de armas (`3630`/`3730`) | § ICE |
+| Historia del IVA 12% (2017-06-01 a 2024-03-31) | Modelo concepto + versión de ADR-037 en los resolvedores que usan Compras, Ventas y Gastos (ADR-042) |
 
 ## COMPANY (ERP Operativo)
 
@@ -429,7 +624,7 @@ El sistema tiene **3 scopes** con responsabilidades exclusivas. Ningún scope pu
 
 **Ejemplos — puede ser enum:** `Draft`/`Authorized`/`Cancelled`, `Pending`/`Processing`/`Failed`, `AuditSource`, `MediaType`, resultados internos de cómputo, flags técnicos no configurables.
 
-Catálogos SRI ya persistidos (schema `global`, ver tabla arriba): `sri_payment_method`, `sri_id_type`, `sri_doc_type`, `sri_uom`, `sri_vat_rate`, `sri_ice_rate`, `sri_retention_code`, `sri_tax_support`, `sri_tax_regime`, `sri_supplier_type`. Constantes frontend que repliquen códigos de estos catálogos (p. ej. para validación Zod síncrona) son válidas solo como espejo de validación — nunca como fuente para poblar selects/listas (eso siempre es API).
+Catálogos SRI ya persistidos: ver el inventario de [GLOBAL IMMUTABLE](#global-immutable-schema-global). Constantes frontend que repliquen códigos de estos catálogos (p. ej. para validación Zod síncrona) son válidas solo como espejo de validación — nunca como fuente para poblar selects/listas (eso siempre es API).
 
 ## REGLA FUNDAMENTAL: 1 CONCEPTO = 1 IMPLEMENTACIÓN
 
@@ -599,7 +794,7 @@ Si cualquier checkbox es "SÍ" (hay violación) → **BLOQUEAR PR**.
 | Subscriber scope (histórico, archivado) | [docs/archive/SUBSCRIBER-SCOPE-SEALED.md](../archive/SUBSCRIBER-SCOPE-SEALED.md) |
 | Política legacy pre-prod | [§ Política de compatibilidad legacy](#política-de-compatibilidad-legacy) más arriba en este documento |
 | Reglas bloqueantes PR | [pr-rules-catalog.md](./pr-rules-catalog.md) (B-07 a B-11) |
-| Catálogos globales | Schema `global` — 16 tablas SRI + INEC |
+| Catálogos globales | Schema `global` — 27 tablas (inventario en GLOBAL IMMUTABLE) |
 | Ítems (alcance Company, naturaleza, catálogo) | [items.md](./items.md) |
 | Inventario (Kardex, valoración, ajustes, transferencias) | [inventory.md](./inventory.md) |
 | Compras (recepción, compra, devolución, NC, saldo a favor) | [purchases.md](./purchases.md) |

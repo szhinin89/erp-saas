@@ -1531,6 +1531,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("id");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -1564,6 +1569,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("canton_id");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -1587,9 +1597,15 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("CountryId")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character(10)")
-                        .HasColumnName("country_id");
+                        .HasMaxLength(2)
+                        .HasColumnType("character(2)")
+                        .HasColumnName("country_id")
+                        .IsFixedLength();
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -15765,7 +15781,17 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("phone_code");
 
+                    b.Property<string>("SriCode")
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("sri_code")
+                        .IsFixedLength();
+
                     b.HasKey("Code");
+
+                    b.HasIndex("SriCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_sri_country_sri_code");
 
                     b.ToTable("sri_country", "global");
 
@@ -15776,7 +15802,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "EC",
                             Name = "ECUADOR",
-                            PhoneCode = "+593"
+                            PhoneCode = "+593",
+                            SriCode = "593"
                         },
                         new
                         {
@@ -15784,7 +15811,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "US",
                             Name = "ESTADOS UNIDOS",
-                            PhoneCode = "+1"
+                            PhoneCode = "+1",
+                            SriCode = "110"
                         },
                         new
                         {
@@ -15792,7 +15820,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "CO",
                             Name = "COLOMBIA",
-                            PhoneCode = "+57"
+                            PhoneCode = "+57",
+                            SriCode = "105"
                         },
                         new
                         {
@@ -15800,7 +15829,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "PE",
                             Name = "PERÚ",
-                            PhoneCode = "+51"
+                            PhoneCode = "+51",
+                            SriCode = "120"
                         },
                         new
                         {
@@ -15808,7 +15838,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "BO",
                             Name = "BOLIVIA",
-                            PhoneCode = "+591"
+                            PhoneCode = "+591",
+                            SriCode = "102"
                         },
                         new
                         {
@@ -15816,7 +15847,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "CL",
                             Name = "CHILE",
-                            PhoneCode = "+56"
+                            PhoneCode = "+56",
+                            SriCode = "108"
                         },
                         new
                         {
@@ -15824,7 +15856,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "AR",
                             Name = "ARGENTINA",
-                            PhoneCode = "+54"
+                            PhoneCode = "+54",
+                            SriCode = "101"
                         },
                         new
                         {
@@ -15832,7 +15865,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "BR",
                             Name = "BRASIL",
-                            PhoneCode = "+55"
+                            PhoneCode = "+55",
+                            SriCode = "103"
                         },
                         new
                         {
@@ -15840,7 +15874,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "MX",
                             Name = "MÉXICO",
-                            PhoneCode = "+52"
+                            PhoneCode = "+52",
+                            SriCode = "116"
                         },
                         new
                         {
@@ -15848,7 +15883,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "VE",
                             Name = "VENEZUELA",
-                            PhoneCode = "+58"
+                            PhoneCode = "+58",
+                            SriCode = "126"
                         },
                         new
                         {
@@ -15856,7 +15892,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "PA",
                             Name = "PANAMÁ",
-                            PhoneCode = "+507"
+                            PhoneCode = "+507",
+                            SriCode = "118"
                         },
                         new
                         {
@@ -15864,7 +15901,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "CR",
                             Name = "COSTA RICA",
-                            PhoneCode = "+506"
+                            PhoneCode = "+506",
+                            SriCode = "106"
                         },
                         new
                         {
@@ -15872,7 +15910,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "GT",
                             Name = "GUATEMALA",
-                            PhoneCode = "+502"
+                            PhoneCode = "+502",
+                            SriCode = "111"
                         },
                         new
                         {
@@ -15880,7 +15919,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "HN",
                             Name = "HONDURAS",
-                            PhoneCode = "+504"
+                            PhoneCode = "+504",
+                            SriCode = "113"
                         },
                         new
                         {
@@ -15888,7 +15928,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "NI",
                             Name = "NICARAGUA",
-                            PhoneCode = "+505"
+                            PhoneCode = "+505",
+                            SriCode = "117"
                         },
                         new
                         {
@@ -15896,7 +15937,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "SV",
                             Name = "EL SALVADOR",
-                            PhoneCode = "+503"
+                            PhoneCode = "+503",
+                            SriCode = "123"
                         },
                         new
                         {
@@ -15904,7 +15946,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "DO",
                             Name = "REPÚBLICA DOMINICANA",
-                            PhoneCode = "+1"
+                            PhoneCode = "+1",
+                            SriCode = "122"
                         },
                         new
                         {
@@ -15912,7 +15955,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "UY",
                             Name = "URUGUAY",
-                            PhoneCode = "+598"
+                            PhoneCode = "+598",
+                            SriCode = "125"
                         },
                         new
                         {
@@ -15920,7 +15964,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "PY",
                             Name = "PARAGUAY",
-                            PhoneCode = "+595"
+                            PhoneCode = "+595",
+                            SriCode = "119"
                         },
                         new
                         {
@@ -15928,7 +15973,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "ES",
                             Name = "ESPAÑA",
-                            PhoneCode = "+34"
+                            PhoneCode = "+34",
+                            SriCode = "209"
                         },
                         new
                         {
@@ -15936,7 +15982,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "DE",
                             Name = "ALEMANIA",
-                            PhoneCode = "+49"
+                            PhoneCode = "+49",
+                            SriCode = "202"
                         },
                         new
                         {
@@ -15944,7 +15991,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "IT",
                             Name = "ITALIA",
-                            PhoneCode = "+39"
+                            PhoneCode = "+39",
+                            SriCode = "219"
                         },
                         new
                         {
@@ -15952,7 +16000,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "FR",
                             Name = "FRANCIA",
-                            PhoneCode = "+33"
+                            PhoneCode = "+33",
+                            SriCode = "211"
                         },
                         new
                         {
@@ -15960,7 +16009,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "GB",
                             Name = "REINO UNIDO",
-                            PhoneCode = "+44"
+                            PhoneCode = "+44",
+                            SriCode = "213"
                         },
                         new
                         {
@@ -15968,7 +16018,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "JP",
                             Name = "JAPÓN",
-                            PhoneCode = "+81"
+                            PhoneCode = "+81",
+                            SriCode = "314"
                         },
                         new
                         {
@@ -15976,7 +16027,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "CN",
                             Name = "CHINA",
-                            PhoneCode = "+86"
+                            PhoneCode = "+86",
+                            SriCode = "331"
                         },
                         new
                         {
@@ -15984,7 +16036,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "IN",
                             Name = "INDIA",
-                            PhoneCode = "+91"
+                            PhoneCode = "+91",
+                            SriCode = "309"
                         },
                         new
                         {
@@ -15992,7 +16045,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "CA",
                             Name = "CANADÁ",
-                            PhoneCode = "+1"
+                            PhoneCode = "+1",
+                            SriCode = "104"
                         },
                         new
                         {
@@ -16000,7 +16054,8 @@ namespace ERP.Infrastructure.Migrations
                             IsActive = true,
                             Iso2 = "AU",
                             Name = "AUSTRALIA",
-                            PhoneCode = "+61"
+                            PhoneCode = "+61",
+                            SriCode = "501"
                         });
                 });
 
@@ -16050,9 +16105,9 @@ namespace ERP.Infrastructure.Migrations
                         {
                             Code = "02",
                             IsActive = false,
-                            IsElectronic = true,
-                            Name = "NOTA DE VENTA- RISE",
-                            ShortName = "NV_RISE"
+                            IsElectronic = false,
+                            Name = "Nota o boleta de venta",
+                            ShortName = "NOTA_VENTA"
                         },
                         new
                         {
@@ -16099,15 +16154,15 @@ namespace ERP.Infrastructure.Migrations
                             Code = "08",
                             IsActive = false,
                             IsElectronic = false,
-                            Name = "Tiquete de Máquina Registradora",
-                            ShortName = "TIQUETE"
+                            Name = "Boletos o entradas a espectáculos públicos",
+                            ShortName = "BOLETO"
                         },
                         new
                         {
                             Code = "09",
                             IsActive = false,
                             IsElectronic = false,
-                            Name = "Tiquete de Caja Registradora",
+                            Name = "Tiquetes o vales emitidos por máquinas registradoras",
                             ShortName = "CAJA_REG"
                         },
                         new
@@ -16115,8 +16170,8 @@ namespace ERP.Infrastructure.Migrations
                             Code = "18",
                             IsActive = false,
                             IsElectronic = false,
-                            Name = "Documento Electrónico de Importación",
-                            ShortName = "DEI"
+                            Name = "Documentos autorizados utilizados en ventas excepto N/C N/D",
+                            ShortName = "DOC_AUT_VENTA"
                         });
                 });
 
@@ -16187,6 +16242,30 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("sri_error_code", "global");
 
                     b.HasData(
+                        new
+                        {
+                            Code = "2",
+                            Description = "Verificar que el número de RUC se encuentre en estado ACTIVO",
+                            ErrorType = "ERROR",
+                            IsActive = true,
+                            Name = "RUC DEL EMISOR SE ENCUENTRA NO ACTIVO"
+                        },
+                        new
+                        {
+                            Code = "10",
+                            Description = "No se autorizará comprobantes si el establecimiento emisor ha sido clausurado, automáticamente se habilitará el servicio una vez concluido la clausura.",
+                            ErrorType = "ERROR",
+                            IsActive = true,
+                            Name = "ESTABLECIMIENTO DEL EMISOR SE ENCUENTRA CLAUSURADO"
+                        },
+                        new
+                        {
+                            Code = "26",
+                            Description = "Tamaño del archivo supera lo establecido",
+                            ErrorType = "ERROR",
+                            IsActive = true,
+                            Name = "TAMAÑO MÁXIMO SUPERADO"
+                        },
                         new
                         {
                             Code = "27",
@@ -16434,7 +16513,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("calculation_type");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
@@ -16445,131 +16523,779 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
+                    b.Property<Guid?>("NormativeSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("normative_source_id");
+
                     b.Property<decimal?>("Percentage")
                         .HasPrecision(8, 4)
                         .HasColumnType("numeric(8,4)")
                         .HasColumnName("percentage");
+
+                    b.Property<string>("SpecificUnit")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("specific_unit");
 
                     b.Property<decimal?>("UnitValue")
                         .HasPrecision(10, 4)
                         .HasColumnType("numeric(10,4)")
                         .HasColumnName("unit_value");
 
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateOnly?>("ValidUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_until");
+
                     b.HasKey("Code");
 
-                    b.ToTable("sri_ice_rate", "global");
+                    b.HasIndex("NormativeSourceId");
+
+                    b.ToTable("sri_ice_rate", "global", t =>
+                        {
+                            t.HasCheckConstraint("ck_sri_ice_mixed_catalog_only", "calculation_type <> 3 OR (percentage IS NOT NULL AND unit_value IS NOT NULL AND specific_unit IS NOT NULL AND length(trim(specific_unit)) > 0 AND normative_source_id IS NOT NULL AND is_active = false)");
+
+                            t.HasCheckConstraint("ck_sri_ice_rate_validity", "valid_from IS NULL OR valid_until IS NULL OR valid_from <= valid_until");
+                        });
 
                     b.HasData(
                         new
                         {
-                            Code = "3011",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Cigarrillos rubios importados",
-                            Percentage = 150.00m
+                            Code = "3031",
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE Bebidas Alcohólicas",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 10.41m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3021",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Cigarrillos negros nacionales",
-                            Percentage = 150.00m
+                            Code = "3033",
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE Alcohol",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 10.41m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
                             Code = "3041",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Bebidas gaseosas con azúcar añadida",
-                            Percentage = 10.00m
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE Cerveza Industrial",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 13.62m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3051",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Bebidas energizantes",
-                            Percentage = 10.00m
+                            Code = "3043",
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE Cerveza Artesanal",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 1.56m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3071",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Perfumes y aguas de tocador",
-                            Percentage = 20.00m
+                            Code = "3532",
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE Import. alcohol SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 10.41m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3072",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Videojuegos",
-                            Percentage = 35.00m
+                            Code = "3533",
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE Import. Bebidas Alcohólicas",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 10.41m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3073",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Armas de fuego deportivas",
-                            Percentage = 300.00m
+                            Code = "3541",
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE Cerveza Industrial CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 13.62m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3081",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Vehículos ≤3.5t (hasta USD 30k)",
-                            Percentage = 5.00m
+                            Code = "3545",
+                            CalculationType = 3,
+                            IsActive = false,
+                            Name = "ICE cerveza artesanal SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Percentage = 75m,
+                            SpecificUnit = "USD por litro de alcohol puro",
+                            UnitValue = 1.56m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3082",
-                            CalculationType = 1,
+                            Code = "3011",
+                            CalculationType = 2,
                             IsActive = true,
-                            Name = "Vehículos ≤3.5t (USD 30k–40k)",
-                            Percentage = 10.00m
+                            Name = "ICE Cigarrillos Rubios",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por unidad de cigarrillo",
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
-                            Code = "3083",
-                            CalculationType = 1,
+                            Code = "3021",
+                            CalculationType = 2,
                             IsActive = true,
-                            Name = "Vehículos ≤3.5t (más de USD 40k)",
-                            Percentage = 15.00m
-                        },
-                        new
-                        {
-                            Code = "3091",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Aviones / helicópteros de uso privado",
-                            Percentage = 15.00m
-                        },
-                        new
-                        {
-                            Code = "3101",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Servicios de televisión pagada",
-                            Percentage = 15.00m
-                        },
-                        new
-                        {
-                            Code = "3111",
-                            CalculationType = 1,
-                            IsActive = true,
-                            Name = "Bebidas alcohólicas (incl. cerveza)",
-                            Percentage = 75.00m
+                            Name = "ICE Cigarrillos Negros",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por unidad de cigarrillo",
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
                         },
                         new
                         {
                             Code = "3053",
                             CalculationType = 2,
                             IsActive = true,
-                            Name = "Bebidas gaseosas con alto contenido de azúcar"
+                            Name = "ICE Bebidas Gaseosas con Alto Contenido de Azúcar",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por 100 gramos de azúcar añadida",
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
+                        },
+                        new
+                        {
+                            Code = "3111",
+                            CalculationType = 2,
+                            IsActive = true,
+                            Name = "ICE Bebidas No Alcohólicas",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por 100 gramos de azúcar añadida",
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
+                        },
+                        new
+                        {
+                            Code = "3542",
+                            CalculationType = 2,
+                            IsActive = false,
+                            Name = "ICE Cigarrillos Rubios CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por unidad de cigarrillo",
+                            UnitValue = 0.16m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
+                        },
+                        new
+                        {
+                            Code = "3543",
+                            CalculationType = 2,
+                            IsActive = false,
+                            Name = "ICE Cigarrillos Negros CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por unidad de cigarrillo",
+                            UnitValue = 0.16m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
+                        },
+                        new
+                        {
+                            Code = "3552",
+                            CalculationType = 2,
+                            IsActive = false,
+                            Name = "ICE bebidas gaseosas con alto contenido de azúcar SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por 100 gramos de azúcar añadida",
+                            UnitValue = 0.18m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
+                        },
+                        new
+                        {
+                            Code = "3602",
+                            CalculationType = 2,
+                            IsActive = false,
+                            Name = "ICE bebidas no alcohólicas SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por 100 gramos de azúcar añadida",
+                            UnitValue = 0.18m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
+                        },
+                        new
+                        {
+                            Code = "3680",
+                            CalculationType = 2,
+                            IsActive = false,
+                            Name = "ICE fundas plásticas",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000006"),
+                            SpecificUnit = "USD por funda plástica",
+                            UnitValue = 0.08m,
+                            ValidFrom = new DateOnly(2026, 1, 1),
+                            ValidUntil = new DateOnly(2026, 12, 31)
+                        },
+                        new
+                        {
+                            Code = "3023",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Productos del Tabaco y Sucedáneos del Tabaco excepto Cigarrillos",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 150m
+                        },
+                        new
+                        {
+                            Code = "3544",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Productos del Tabaco y Sucedáneos del Tabaco Excepto Cigarrillos CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 150m
+                        },
+                        new
+                        {
+                            Code = "3054",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Bebidas Gaseosas con Bajo Contenido de Azúcar",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3553",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE bebidas gaseosas con bajo contenido de azúcar SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3101",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Bebidas Energizantes",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3601",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Bebidas Energizantes SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3610",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Perfumes y Aguas de Tocador",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 20m
+                        },
+                        new
+                        {
+                            Code = "3710",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Perfumes Aguas de Tocador Cae",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 20m
+                        },
+                        new
+                        {
+                            Code = "3640",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Focos Incandescentes",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 100m
+                        },
+                        new
+                        {
+                            Code = "3740",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Focos Incandescentes CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 100m
+                        },
+                        new
+                        {
+                            Code = "3073",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Vehículos Motorizados cuyo PVP sea hasta de 20000 USD",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 5m
+                        },
+                        new
+                        {
+                            Code = "3871",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE-vehículos motorizados cuyo PVP SEA hasta de 20000 USD SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 5m
+                        },
+                        new
+                        {
+                            Code = "3684",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE vehículos motorizados camionetas y de rescate cuyo PVP sea hasta DE 30.000 USD",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 5m
+                        },
+                        new
+                        {
+                            Code = "3685",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE vehículos motorizados camionetas y de rescate PVP sea hasta DE 30.000 USD SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 5m
+                        },
+                        new
+                        {
+                            Code = "3686",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE vehículos motorizados excepto camionetas y de rescate cuyo PVP sea superior USD 20.000 hasta DE 30.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3687",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE vehículos motorizados excepto camionetas y de rescate cuyo PVP sea superior USD 20.000 hasta de 30.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3075",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Vehículos Motorizados PVP entre 30000 y 40000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 15m
+                        },
+                        new
+                        {
+                            Code = "3873",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE-vehículos motorizados PVP entre 30000 Y 40000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 15m
+                        },
+                        new
+                        {
+                            Code = "3077",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Vehículos Motorizados cuyo PVP superior USD 40.000 hasta 50.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 20m
+                        },
+                        new
+                        {
+                            Code = "3874",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE-vehículos motorizados cuyo PVP superior USD 40.000 hasta 50.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 20m
+                        },
+                        new
+                        {
+                            Code = "3078",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Vehículos Motorizados cuyo PVP superior USD 50.000 hasta 60.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 25m
+                        },
+                        new
+                        {
+                            Code = "3875",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE-vehículos motorizados cuyo PVP superior USD 50.000 hasta 60.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 25m
+                        },
+                        new
+                        {
+                            Code = "3079",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Vehículos Motorizados cuyo PVP superior USD 60.000 hasta 70.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 30m
+                        },
+                        new
+                        {
+                            Code = "3876",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE-vehículos motorizados cuyo PVP superior USD 60.000 hasta 70.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 30m
+                        },
+                        new
+                        {
+                            Code = "3080",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Vehículos Motorizados cuyo PVP superior USD 70.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 35m
+                        },
+                        new
+                        {
+                            Code = "3877",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE-vehículos motorizados cuyo PVP superior USD 70.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 35m
+                        },
+                        new
+                        {
+                            Code = "3092",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Servicios de Televisión Prepagada",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 15m
+                        },
+                        new
+                        {
+                            Code = "3660",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Cuotas Membresías Afiliaciones Acciones",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Percentage = 30m
+                        },
+                        new
+                        {
+                            Code = "3682",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE consumibles tabaco calentado y líquidos con nicotina SRI",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Percentage = 150m,
+                            ValidFrom = new DateOnly(2024, 5, 21)
+                        },
+                        new
+                        {
+                            Code = "3683",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE consumibles tabaco calentado y líquidos con nicotina SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Percentage = 150m,
+                            ValidFrom = new DateOnly(2024, 5, 21)
+                        },
+                        new
+                        {
+                            Code = "3081",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Aviones, Tricars, yates, Barcos de Recreo",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Percentage = 15m,
+                            ValidFrom = new DateOnly(2024, 5, 21)
+                        },
+                        new
+                        {
+                            Code = "3878",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE-Aviones, Tricars, Yates, Barcos de Rec SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Percentage = 15m,
+                            ValidFrom = new DateOnly(2024, 5, 21)
+                        },
+                        new
+                        {
+                            Code = "3581",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Aeronaves CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Percentage = 15m,
+                            ValidFrom = new DateOnly(2024, 5, 21)
+                        },
+                        new
+                        {
+                            Code = "3582",
+                            CalculationType = 1,
+                            IsActive = true,
+                            Name = "ICE Aviones, Avionetas y Helicópteros Exct. Aquellos destinados Al Trans. CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Percentage = 15m,
+                            ValidFrom = new DateOnly(2024, 5, 21)
+                        },
+                        new
+                        {
+                            Code = "3630",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE Armas de Fuego, Armas deportivas y Municiones",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Percentage = 30.00m
+                        },
+                        new
+                        {
+                            Code = "3730",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE Importaciones Armas de Fuego, Armas deportivas y Municiones CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000009")
+                        },
+                        new
+                        {
+                            Code = "3620",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE Videojuegos",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3720",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE Video Juegos CAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3671",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE calefones y sistemas de calentamiento de agua a gas SRI",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3771",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE calefones y sistemas de calentamiento de agua a gas SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3093",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE Servicios Telefonía Sociedades",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3681",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE servicios de telefonía móvil personas naturales",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3688",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP sea de hasta USD. 35.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3689",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP sea de hasta USD. 35.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3690",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 35.000 hasta 40.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3691",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 35.000 hasta 40.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3692",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 40.000 hasta 50.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3693",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 40.000 hasta 50.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3694",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 50.000 hasta 60.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3695",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 50.000 hasta 60.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3696",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 60.000 hasta 70.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3697",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior USD. 60.000 hasta 70.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3698",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior a USD 70.000",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3699",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "ICE vehículos híbridos cuyo PVP superior a USD 70.000 SENAE",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-00000000000a")
+                        },
+                        new
+                        {
+                            Code = "3051",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "Bebidas energizantes",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3071",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "Perfumes y aguas de tocador",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Percentage = 20m
+                        },
+                        new
+                        {
+                            Code = "3072",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "Videojuegos",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Percentage = 35m
+                        },
+                        new
+                        {
+                            Code = "3082",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "Vehículos ≤3.5t (USD 30k–40k)",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Percentage = 10m
+                        },
+                        new
+                        {
+                            Code = "3083",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "Vehículos ≤3.5t (más de USD 40k)",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Percentage = 15m
+                        },
+                        new
+                        {
+                            Code = "3091",
+                            CalculationType = 1,
+                            IsActive = false,
+                            Name = "Aviones / helicópteros de uso privado",
+                            NormativeSourceId = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Percentage = 15m
                         });
                 });
 
@@ -16633,22 +17359,25 @@ namespace ERP.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("IdTypeCode")
                         .IsRequired()
                         .HasMaxLength(5)
-                        .HasColumnType("character varying(5)");
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("id_type_code");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
 
                     b.Property<string>("UsageType")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("usage_type");
 
                     b.HasKey("Id");
 
@@ -16740,14 +17469,14 @@ namespace ERP.Infrastructure.Migrations
                         {
                             Id = new Guid("a0000001-0000-4000-9000-00000000000c"),
                             IdTypeCode = "09",
-                            IsActive = true,
+                            IsActive = false,
                             UsageType = "Customer"
                         },
                         new
                         {
                             Id = new Guid("a0000001-0000-4000-9000-00000000000d"),
                             IdTypeCode = "09",
-                            IsActive = true,
+                            IsActive = false,
                             UsageType = "Carrier"
                         });
                 });
@@ -16855,6 +17584,60 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("sri_normative_source", "global");
 
                     b.HasData(
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Document = "NAC-DGERCGC25-00000040",
+                            IntroducedInMigration = "InitialProductionBaseline",
+                            Notes = "Firmada 2025-12-29; aplicable 2026-01-01 a 2026-12-31 (período fiscal 2026). Cigarrillos USD 0,16 por unidad; alcohol (uso distinto a bebidas alcohólicas y farmacéuticos) y bebidas alcohólicas USD 10,41, cerveza artesanal USD 1,56 y cerveza industrial USD 13,62 por litro de alcohol puro; bebidas no alcohólicas y gaseosas con más de 25 g de azúcar por litro, excepto energizantes, USD 0,18 por 100 g de azúcar añadida; fundas plásticas USD 0,08 por funda. Ad valorem 75% de bebidas alcohólicas y cerveza: LRTI art. 82 grupo IV. Códigos: Ficha técnica offline 2.34, Tabla 18; no usar sus columnas de 2023 como tarifa 2026. Las filas ICE activas de base física no comercial conservan UnitValue nulo. Cálculo mixto y condiciones de aplicación no implementados.",
+                            ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar?id=c5a91b7c-c7ff-45c2-9b0d-ca0670fb8723&nombre=NAC-DGERCGC25-00000040.pdf",
+                            Section = "Artículo único — tarifas específicas ICE período fiscal 2026",
+                            Version = "2026"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Document = "FICHA_TECNICA_OFFLINE",
+                            DocumentSha256 = "7333aebfbdf2cb3ba83f9fc67a7a7f0346ca59506480a260cc42f96dbdfc13c9",
+                            IntroducedInMigration = "InitialProductionBaseline",
+                            Notes = "Fuente de identidad de los códigos ICE (pp. 30-32). Sus tarifas corresponden a enero y febrero-diciembre de 2023; la propia tabla remite a la normativa vigente. Un código histórico ausente de la tabla queda no seleccionable sin inferir equivalencias.",
+                            PublishedOn = new DateOnly(2026, 7, 27),
+                            ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/f8d9bb36-5632-4f96-b463-b9265b55338c/FICHA%20TE%cc%81CNICA%20COMPROBANTES%20ELECTRO%cc%81NICOS%20ESQUEMA%20OFFLINE%20Versio%cc%81n%202.34.pdf",
+                            Section = "§9.13 Tabla 18 — Tarifa del ICE (códigos y conceptos)",
+                            Version = "2.34"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000008"),
+                            Document = "LRTI",
+                            DocumentSha256 = "a0f2bfcb8b68a45a5c3aa6e3cab21b1471ec8b01bb0312287544024bf213cb6e",
+                            IntroducedInMigration = "InitialProductionBaseline",
+                            Notes = "Codificación publicada por el SRI, última reforma Suplemento RO 525, 25-III-2024; consultada 2026-10-21. Fecha de inicio de cada tarifa no verificada (ValidFrom nulo). Rige sobre la columna de Tabla 18 cuando difieren (televisión pagada 15%, clubes 30%). Las filas reformadas por el D.E. 645 se rigen por la fuente 40000000-0000-0000-0000-000000000009.",
+                            ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/7da8c609-4299-4597-8825-29446242c63b/LEY_DE_REGIMEN_TRIBUTARIO_INTERNO_-_LRTI.pdf",
+                            Section = "Art. 82 — grupos I, II y III (tarifa ad valorem); grupo IV ad valorem 75%",
+                            Version = "RO 525 2024-03-25"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000009"),
+                            Document = "SRI-NAC-DNJ-2024-0042-OF",
+                            IntroducedInMigration = "InitialProductionBaseline",
+                            Notes = "Oficio SRI de 2024-05-29 reproducido por SENAE: desde 2024-05-21 tabaco calentado y líquidos con nicotina 150%, armas de fuego, deportivas y municiones 300%, aviones, avionetas, helicópteros, motos acuáticas, tricares, cuadrones, yates y barcos de recreo 15%. Armas: el D.E. 302 (2024-06-12) reduciría a 30% desde 2024-07-01; texto oficial y alcance no verificados, por lo que 3630/3730 no son seleccionables.",
+                            PublishedOn = new DateOnly(2024, 5, 30),
+                            ReferenceUrl = "https://www.aduana.gob.ec/gaceta-boletin/tarifas-ad-valorem-del-impuesto-a-los-consumos-especiales-ice-que-rigen-por-la-derogacion-del-decreto-ejecutivo-no-645-de-10-de-enero-de-2023/",
+                            Section = "Tarifas ad valorem ICE que rigen por la nulidad del D.E. 645 (SENAE Boletín 88-2024)"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-00000000000a"),
+                            Document = "SRI_MATRIZ_RESUMEN_ICE",
+                            DocumentSha256 = "ea9e054e96b1b052109d6786690944ebf0c3c185233b1c8c776e5c10faf1c31f",
+                            IntroducedInMigration = "InitialProductionBaseline",
+                            Notes = "Enlazada desde https://www.sri.gob.ec/impuesto-consumos-especiales; consultada 2026-10-21. Frente a la hoja 2021 ya no grava videojuegos, calefones a gas ni telefonía, y declara exentos los vehículos eléctricos e híbridos. Sus tarifas reformadas por el D.E. 645 no rigen desde 2024-05-21.",
+                            ReferenceUrl = "https://www.sri.gob.ec/o/sri-portlet-biblioteca-alfresco-internet/descargar/3ba17b2c-6e81-4383-8d3e-ec6f7ee1160e/Tabla%20Resumen%20ICE%20.xlsx",
+                            Section = "Hoja 2024 — bienes y servicios gravados, exenciones y beneficios",
+                            Version = "2024"
+                        },
                         new
                         {
                             Id = new Guid("40000000-0000-0000-0000-000000000004"),
@@ -17261,7 +18044,7 @@ namespace ERP.Infrastructure.Migrations
                             Id = new Guid("30000000-0000-0000-0000-000000000001"),
                             AppliesTo = "SUPPLIER",
                             Code = "4580",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "ISD – Impuesto a la Salida de Divisas",
                             Percentage = 5.00m,
                             TaxType = "ISD"
@@ -17689,7 +18472,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("abbrev");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
@@ -17717,7 +18499,7 @@ namespace ERP.Infrastructure.Migrations
                             Code = "02",
                             Abbrev = "RIMPE_ME",
                             IsActive = true,
-                            Name = "RIMPE – Régimen de Microempresas"
+                            Name = "RIMPE – Emprendedor"
                         },
                         new
                         {
@@ -17730,7 +18512,7 @@ namespace ERP.Infrastructure.Migrations
                         {
                             Code = "04",
                             Abbrev = "ESP",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "Contribuyente Especial"
                         });
                 });
@@ -17743,7 +18525,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("code");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
@@ -17761,122 +18542,128 @@ namespace ERP.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
+                            Code = "00",
+                            IsActive = false,
+                            Name = "Casos especiales cuyo sustento no aplica en las opciones anteriores"
+                        },
+                        new
+                        {
                             Code = "01",
                             IsActive = true,
-                            Name = "Crédito Tributario para declaración de IVA"
+                            Name = "Crédito Tributario para declaración de IVA (servicios y bienes distintos de inventarios y activos fijos)"
                         },
                         new
                         {
                             Code = "02",
                             IsActive = true,
-                            Name = "Costo o Gasto para declaración del IR"
+                            Name = "Costo o Gasto para declaración de IR (servicios y bienes distintos de inventarios y activos fijos)"
                         },
                         new
                         {
                             Code = "03",
                             IsActive = true,
-                            Name = "Activo Fijo – Crédito Tributario IVA"
+                            Name = "Activo Fijo - Crédito Tributario para declaración de IVA"
                         },
                         new
                         {
                             Code = "04",
                             IsActive = true,
-                            Name = "Activo Fijo – Costo o Gasto IR"
+                            Name = "Activo Fijo - Costo o Gasto para declaración de IR"
                         },
                         new
                         {
                             Code = "05",
                             IsActive = true,
-                            Name = "Liquidación Gastos de Viaje, Hospedaje y Alimentación"
+                            Name = "Liquidación Gastos de Viaje, hospedaje y alimentación Gastos IR (a nombre de empleados y no de la empresa)"
                         },
                         new
                         {
                             Code = "06",
                             IsActive = true,
-                            Name = "Retención en la Fuente"
+                            Name = "Inventario - Crédito Tributario para declaración de IVA"
                         },
                         new
                         {
                             Code = "07",
                             IsActive = true,
-                            Name = "Distribución de Dividendos, Beneficios o Ganancias"
+                            Name = "Inventario - Costo o Gasto para declaración de IR"
                         },
                         new
                         {
                             Code = "08",
                             IsActive = true,
-                            Name = "Impuesto a los Activos en el Exterior"
+                            Name = "Valor pagado para solicitar Reembolso de Gasto (intermediario)"
                         },
                         new
                         {
                             Code = "09",
                             IsActive = true,
-                            Name = "Retención del IVA 30%"
+                            Name = "Reembolso por Siniestros"
                         },
                         new
                         {
                             Code = "10",
                             IsActive = true,
-                            Name = "Retención del IVA 70%"
+                            Name = "Distribución de Dividendos, Beneficios o Utilidades"
                         },
                         new
                         {
                             Code = "11",
                             IsActive = true,
-                            Name = "Retención del IVA 100%"
+                            Name = "Convenios de débito o recaudación para IFI´s"
                         },
                         new
                         {
                             Code = "12",
                             IsActive = true,
-                            Name = "Exportación de Bienes"
+                            Name = "Impuestos y retenciones presuntivos"
                         },
                         new
                         {
                             Code = "13",
                             IsActive = true,
-                            Name = "No aplica"
+                            Name = "Valores reconocidos por entidades del sector público a favor de sujetos pasivos"
                         },
                         new
                         {
                             Code = "14",
                             IsActive = true,
-                            Name = "Exportación de servicios con domicilio en el exterior"
+                            Name = "Valores facturados por socios a operadoras de transporte (que no constituyen gasto de dicha operadora)"
                         },
                         new
                         {
                             Code = "15",
                             IsActive = true,
-                            Name = "Proveedor directo de exportador de bienes"
+                            Name = "Pagos efectuados por consumos propios y de terceros de servicios digitales"
                         },
                         new
                         {
                             Code = "16",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "Provisiones de cuentas incobrables"
                         },
                         new
                         {
                             Code = "17",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "Nota de crédito deducible"
                         },
                         new
                         {
                             Code = "18",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "Importaciones"
                         },
                         new
                         {
                             Code = "19",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "Reembolso de gastos"
                         },
                         new
                         {
                             Code = "20",
-                            IsActive = true,
+                            IsActive = false,
                             Name = "Notas de crédito por devoluciones"
                         });
                 });
@@ -20956,6 +21743,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("PolicyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriIceRate", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriNormativeSource", null)
+                        .WithMany()
+                        .HasForeignKey("NormativeSourceId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriIdTypeUsage", b =>

@@ -13,7 +13,8 @@ public class SriTaxRegimeConfiguration : IEntityTypeConfiguration<SriTaxRegime>
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(5);
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
         builder.Property(x => x.Abbrev).HasColumnName("abbrev").HasMaxLength(20);
-        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        // ValueGeneratedNever: conserva false con DEFAULT true (ADR-042).
+        builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true).ValueGeneratedNever();
 
         builder.HasData(
             new SriTaxRegime
@@ -26,7 +27,8 @@ public class SriTaxRegimeConfiguration : IEntityTypeConfiguration<SriTaxRegime>
             new SriTaxRegime
             {
                 Code = "02",
-                Name = "RIMPE – Régimen de Microempresas",
+                // Ficha 2.34, historial 2.22 y Anexo 22: RIMPE Emprendedor. Abbrev conserva la clave interna.
+                Name = "RIMPE – Emprendedor",
                 Abbrev = "RIMPE_ME",
                 IsActive = true,
             },
@@ -39,10 +41,12 @@ public class SriTaxRegimeConfiguration : IEntityTypeConfiguration<SriTaxRegime>
             },
             new SriTaxRegime
             {
+                // Calificación, no régimen: la ficha 2.34 la emite como número de resolución
+                // (contribuyenteEspecial, Company.SpecialTaxpayerNo). Se conserva para referencias.
                 Code = "04",
                 Name = "Contribuyente Especial",
                 Abbrev = "ESP",
-                IsActive = true,
+                IsActive = false,
             }
         );
     }
