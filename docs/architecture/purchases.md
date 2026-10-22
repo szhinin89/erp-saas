@@ -13,7 +13,8 @@ Código: `ERP.Domain/Modules/Purchases`, `ERP.Application/Modules/Purchases`, `E
 ## 2. Borrador
 
 - Requiere un proveedor activo con configuración SRI y una condición de pago (cuotas ≥ 1). Desde una recepción solo una factura genera compra; la NC sigue su propio flujo.
-- Líneas: la bodega debe pertenecer a la sucursal de la compra; el Item debe ser de la empresa; la presentación debe pertenecer al Item y estar activa; el factor de conversión debe ser representable con `ConversionFactorDecimals`; los códigos IVA/ICE deben estar activos en el catálogo SRI. Si el XML trae un impuesto que no está en el catálogo, se rechaza.
+- Líneas: la bodega debe pertenecer a la sucursal de la compra; el Item debe ser de la empresa; la presentación debe pertenecer al Item y estar activa; el factor de conversión debe ser representable con `ConversionFactorDecimals`; los códigos IVA/ICE seleccionados manualmente deben estar activos en el catálogo SRI. Si el XML trae un impuesto que no está en el catálogo, se rechaza.
+- ICE: el snapshot fiscal de una línea de recepción conserva la tarifa, la base y el importe declarados en el XML (`Source=Xml`); recálculos, prorrateos, confirmación y reapertura no los alteran. Un código ICE inactivo se reconoce solo como dato del XML, nunca como selección manual. La selección manual admite únicamente ICE porcentual activo; ICE específico o mixto sin importe XML se rechaza (`PURCHASE_ICE_DATA_REQUIRED`) y nunca se calcula $0 ni se deriva de la cantidad comercial. No existe cálculo operativo de ICE mixto. Editar cantidad, precio o descuento (de línea o global) de una línea XML con ICE específico, mixto o inactivo se rechaza (`PURCHASE_ICE_XML_EDIT_BLOCKED`) por falta de bases físicas verificables; con ICE porcentual activo la línea pasa a cálculo por tarifa. Las devoluciones prorratean cada fila del snapshot (tarifa conservada).
 - Costos: descuento global 0–100. Flete y otros costos ≥ 0 se prorratean según la base imponible de cada línea (equitativo si la base es 0) y la última línea absorbe el residuo. "Distribuir flete/gasto" suma un monto > 0 solo a las líneas elegidas (con cantidad base > 0).
 - Las cuotas manuales del borrador se guardan solo con validación estructural (número ≥ 1 sin duplicados, monto > 0).
 - Descartar: Draft → Discarded, con motivo opcional (`Borrador descartado.` por defecto). Sin reversos; libera la clave de acceso, el número y la recepción de origen.
@@ -91,6 +92,8 @@ En una sola transacción, todo o nada:
 - No existe calendario oficial de días hábiles: el plazo SRI ordinario es informativo y se verifica en SRI en Línea. No existe ventana interna de anulación por empresa.
 
 ## 9. Evidencia
+
+ICE en Compras (2026-10-21): `PurchaseIceSnapshotTests`, `PurchaseIceSpecificResolutionTests`, `PurchaseInvoiceDetailXmlTaxSnapshotTests`, `PurchaseReturnTests` (prorrateo ICE XML) y `PurchaseIceXmlSnapshotPostgreSqlTests` (PostgreSQL real 5/5: persistencia, reapertura, recálculo y descuento bloqueado); frontend `purchaseLineReadiness.test.ts`. Sin migración ni ejecución sobre datos existentes.
 
 Unificación de NC (2026-10-21): `PurchaseReturnEndToEndTests.UnifiedCreditNotes.cs` y `.Reprocessing.cs`, PostgreSQL real 21/21 con SRI simulado; contratos API 24/24; Application focal 79/79; contabilización PostgreSQL de devolución/descuento 6/6; frontend focal 32/32. Cubren salida única, descuento sin inventario, idempotencia, concurrencia, vínculo histórico sin efectos, duplicados, cancelación interna, reversas incompletas y SRI anulado/pendiente/no verificable. Build/lint/TypeScript y gate de arquitectura PASS; límite externo del guardrail general en [entrega](../agent/PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md). Sin migración ni ejecución sobre datos de negocio.
 

@@ -32,6 +32,45 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
             uomCode: "UNIT"
         );
 
+    [Theory]
+    [InlineData(SriTaxCalculationType.Percentage, 9.87)]
+    [InlineData(SriTaxCalculationType.Specific, 0)]
+    [InlineData(SriTaxCalculationType.Mixed, 18.55)]
+    public void Xml_snapshot_preserves_rate_base_and_explicit_amount_after_recalculation(
+        SriTaxCalculationType mode, double amount)
+    {
+        var line = CreateLine(1, 100m, "4");
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(line.Id, TenantId, "3", "3031", "ICE", 0.18m,
+                mode, 35.81m, (decimal)amount, PurchaseTaxSource.Xml),
+            PurchaseInvoiceDetailTax.Create(line.Id, TenantId, "2", "4", "IVA", 12m,
+                SriTaxCalculationType.Percentage, 118.55m, 14.23m, PurchaseTaxSource.Xml),
+        ]);
+
+        line.ApplyTaxes("4", 15m, "IVA", "3031", 75m, "ICE", mode, 999m);
+        line.SetFreightAllocated(5m);
+        line.ApplyTaxes("4", 15m, "IVA", "3031", 75m, "ICE", mode, 999m);
+
+        var ice = line.Taxes.Single(t => t.TaxCode == "3");
+        ice.Rate.Should().Be(0.18m);
+        ice.TaxableBase.Should().Be(35.81m);
+        ice.TaxAmount.Should().Be((decimal)amount);
+        var vat = line.Taxes.Single(t => t.TaxCode == "2");
+        vat.Rate.Should().Be(12m);
+        vat.TaxableBase.Should().Be(118.55m);
+        vat.TaxAmount.Should().Be(14.23m);
+    }
+
+    [Fact]
+    public void Manual_mixed_ICE_without_XML_snapshot_is_rejected_instead_of_calculated()
+    {
+        var line = CreateLine(1, 100m, "4");
+
+        var act = () => line.ApplyTaxes("4", 15m, "IVA", "3031", 75m, "ICE", SriTaxCalculationType.Mixed);
+
+        act.Should().Throw<ERP.Domain.Exceptions.DomainRuleViolationException>().WithMessage("*mixto*XML*");
+    }
+
     [Fact]
     public void ApplyTaxes_prevalece_el_monto_exacto_de_IVA_del_XML_sobre_el_recalculo_por_tarifa()
     {

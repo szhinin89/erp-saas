@@ -16,12 +16,12 @@ Clasificación: STRUCTURAL DEBT. Implementación local; pendiente de validar la 
 | infrastructure-03 | Ubuntu | 22 clases explícitas | 207 |
 | infrastructure-04 | Ubuntu | 24 clases explícitas | 171 |
 | infrastructure-05 | Ubuntu | 23 clases explícitas | 179 |
-| infrastructure-06 | Ubuntu | 25 clases explícitas | 169 |
+| infrastructure-06 | Ubuntu | 26 clases explícitas | 174 |
 | infrastructure-07 | Ubuntu | 34 clases explícitas | 334 |
 | infrastructure-08 | Ubuntu | 35 clases explícitas | 332 |
 | ride-golden | Windows | RideGoldenFileTests completo | 6 |
 
-Inventario local Debug: **1745 casos / 205 clases Infrastructure**, distribuidos sin solapamiento.
+Inventario local Debug: **1750 casos / 206 clases Infrastructure**, distribuidos sin solapamiento.
 Las cantidades son una observación, no una allowlist de casos: nuevos métodos de clases existentes
 se incluyen automáticamente; clases nuevas requieren asignación explícita. Los grupos se equilibraron
 inicialmente por casos descubiertos, dando mayor peso a clases con PostgreSQL/fixtures asíncronas.

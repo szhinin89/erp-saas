@@ -101,6 +101,15 @@ public sealed class SriTaxResolver : ISriTaxResolver, PurchasesTaxResolver
             );
     }
 
+    public async Task<SriTaxCatalogEntry?> GetXmlIceCatalogEntryAsync(
+        string iceCode, CancellationToken ct = default)
+    {
+        var rate = await _db.SriIceRates.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Code == iceCode, ct);
+        return rate is null ? null : new SriTaxCatalogEntry(
+            rate.Code, rate.Name, rate.Percentage, rate.UnitValue, rate.CalculationType);
+    }
+
     public async Task<SriTaxCatalogEntry?> GetIrbpnrCatalogEntryAsync(
         string irbpnrCode,
         CancellationToken ct = default

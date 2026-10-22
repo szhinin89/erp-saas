@@ -1048,7 +1048,7 @@ public sealed class CreatePurchaseDraftHandler
     /// FLOW-READY-02F.1 — si la línea viene de Recepción Electrónica Y esa recepción capturó taxes
     /// genéricas (esta fase en adelante), se resuelve IVA/ICE/IRBPNR fiel al XML. En cualquier otro
     /// caso (línea manual, o recepción de antes de esta fase sin taxes capturadas) se mantiene el
-    /// comportamiento histórico exacto (<see cref="TaxHelper.ResolveTaxesAsync"/>).
+    /// comportamiento histórico exacto (<see cref="PurchaseTaxHelper.ResolveTaxesAsync"/>).
     /// </summary>
     private async Task<Result<PurchaseInvoiceDto>?> ResolveLineTaxesAsync(
         PurchaseInvoiceDetail line,
@@ -1075,7 +1075,7 @@ public sealed class CreatePurchaseDraftHandler
                     ct
                 );
         }
-        return await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+        return await PurchaseTaxHelper.ResolveTaxesAsync(line, _tax, ct);
     }
 
     private sealed record LinesBuildResult(
@@ -1453,11 +1453,11 @@ public sealed class UpdatePurchaseDraftHandler
                         ct
                     );
                 else
-                    taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+                    taxResult = await PurchaseTaxHelper.ResolveTaxesAsync(line, _tax, ct);
             }
             else
             {
-                taxResult = await TaxHelper.ResolveTaxesAsync(line, _tax, ct);
+                taxResult = await PurchaseTaxHelper.ResolveTaxesAsync(line, _tax, ct);
             }
             if (taxResult is not null)
                 return taxResult;
@@ -1494,7 +1494,7 @@ file sealed class PurchaseDraftRejectionException(Result<PurchaseInvoiceDto> rej
     public Result<PurchaseInvoiceDto> Rejection { get; } = rejection;
 }
 
-file static class TaxHelper
+internal static class PurchaseTaxHelper
 {
     public static async Task<Result<PurchaseInvoiceDto>?> ResolveTaxesAsync(
         PurchaseInvoiceDetail line,
@@ -1507,6 +1507,19 @@ file static class TaxHelper
             return Result<PurchaseInvoiceDto>.ValidationFailure(
                 $"Código IVA '{line.VatCode}' no encontrado o inactivo."
             );
+
+        var xmlIce = line.Taxes.FirstOrDefault(t => t.TaxCode == SriTaxCategoryCodes.Ice && t.Source == PurchaseTaxSource.Xml);
+        if (xmlIce is not null)
+        {
+            var entry = await tax.GetIceCatalogEntryAsync(xmlIce.TaxRateCode, ct)
+                ?? await tax.GetXmlIceCatalogEntryAsync(xmlIce.TaxRateCode, ct);
+            if (entry is null)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"Línea '{line.Description}': código ICE {xmlIce.TaxRateCode} ausente del catálogo GLOBAL.");
+            line.ApplyTaxes(line.VatCode, vatResult.Rate, vatResult.Name, xmlIce.TaxRateCode,
+                xmlIce.Rate ?? 0m, xmlIce.TaxName, xmlIce.CalculationType, xmlIce.TaxAmount);
+            return null;
+        }
 
         decimal iceRate = 0;
         string? iceName = null;
@@ -1524,21 +1537,15 @@ file static class TaxHelper
                 );
             iceName = iceEntry.Name;
             iceCalculationType = iceEntry.CalculationType;
-            if (iceEntry.CalculationType == SriTaxCalculationType.Specific)
-            {
-                // Línea manual (sin XML): el monto específico se deriva del valor unitario del
-                // catálogo (UnitValue, USD por unidad/base física) por la cantidad en UoM base —
-                // única fuente disponible cuando no hay un monto exacto declarado en un documento.
-                iceExactAmount = Math.Round(
-                    (iceEntry.UnitValue ?? 0m) * line.QuantityInBaseUom,
-                    ERP.Domain.Common.FiscalPrecision.TaxAmount,
-                    MidpointRounding.AwayFromZero
-                );
-            }
-            else
-            {
-                iceRate = iceEntry.Percentage ?? 0m;
-            }
+            if (iceEntry.CalculationType != SriTaxCalculationType.Percentage)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"Línea '{line.Description}': ICE {line.IceCode} requiere tarifa y base física verificadas. Conserve el importe declarado en el XML SRI.",
+                    "PURCHASE_ICE_DATA_REQUIRED");
+            if (!iceEntry.Percentage.HasValue)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"Línea '{line.Description}': falta la tarifa ICE {line.IceCode}.",
+                    "PURCHASE_ICE_DATA_REQUIRED");
+            iceRate = iceEntry.Percentage.Value;
         }
 
         line.ApplyTaxes(
@@ -1560,9 +1567,9 @@ file static class TaxHelper
 /// SRI no reconocido) capturado desde el XML de Recepción Electrónica, contra los catálogos SRI
 /// globales. Solo se usa cuando la línea viene de Recepción y esa línea sí tiene taxes capturadas
 /// (<see cref="ReceptionTaxLookup"/>) — si no, el caller cae de vuelta a
-/// <see cref="TaxHelper.ResolveTaxesAsync"/> (líneas manuales o recepciones anteriores a esta fase).
+/// <see cref="PurchaseTaxHelper.ResolveTaxesAsync"/> (líneas manuales o recepciones anteriores a esta fase).
 /// </summary>
-file static class ReceptionTaxHelper
+internal static class ReceptionTaxHelper
 {
     private const string SriVatTaxCode = SriTaxCategoryCodes.Vat;
     private const string SriIceTaxCode = SriTaxCategoryCodes.Ice;
@@ -1609,7 +1616,7 @@ file static class ReceptionTaxHelper
                         t.TaxCode,
                         t.TaxRateCode,
                         $"Impuesto SRI (código {t.TaxCode})",
-                        null,
+                        t.Tarifa,
                         SriTaxCalculationType.Percentage,
                         t.TaxableBase,
                         t.TaxAmount,
@@ -1619,9 +1626,13 @@ file static class ReceptionTaxHelper
                 continue;
             }
 
+            var activeIce = t.TaxCode == SriIceTaxCode
+                ? await tax.GetIceCatalogEntryAsync(t.TaxRateCode, ct)
+                : null;
             var entry =
                 t.TaxCode == SriVatTaxCode ? await tax.GetVatCatalogEntryAsync(t.TaxRateCode, ct)
-                : t.TaxCode == SriIceTaxCode ? await tax.GetIceCatalogEntryAsync(t.TaxRateCode, ct)
+                : t.TaxCode == SriIceTaxCode ? (activeIce
+                    ?? await tax.GetXmlIceCatalogEntryAsync(t.TaxRateCode, ct))
                 : await tax.GetIrbpnrCatalogEntryAsync(t.TaxRateCode, ct);
 
             if (entry is null)
@@ -1635,6 +1646,19 @@ file static class ReceptionTaxHelper
             // ApplyTaxes→RecalcTaxes los recalcula por tarifa (SriTaxCalculator), igual que el
             // frontend. ICE específico e IRBPNR son montos fijos del XML y se conservan (sin tarifa
             // proporcional en la regla vigente).
+            if (t.TaxCode == SriIceTaxCode && !matchesXmlDocument
+                && entry.CalculationType != SriTaxCalculationType.Percentage)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"Línea '{line.Description}': no se puede modificar cantidad, precio o descuento del XML con ICE específico o mixto sin bases físicas verificadas.",
+                    "PURCHASE_ICE_XML_EDIT_BLOCKED");
+
+            // Un código ICE inactivo solo se reconoce tal como lo declaró el XML; editar la línea
+            // lo convertiría en selección calculada, que exige código activo.
+            if (t.TaxCode == SriIceTaxCode && activeIce is null && !matchesXmlDocument)
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    $"Línea '{line.Description}': el código ICE {t.TaxRateCode} está inactivo; solo se acepta con los valores declarados en el XML SRI.",
+                    "PURCHASE_ICE_XML_EDIT_BLOCKED");
+
             var isRateBased =
                 t.TaxCode == SriVatTaxCode
                 || (
@@ -1652,7 +1676,7 @@ file static class ReceptionTaxHelper
                     t.TaxCode,
                     t.TaxRateCode,
                     entry.Name,
-                    entry.Percentage ?? entry.UnitValue,
+                    source == PurchaseTaxSource.Xml ? t.Tarifa : entry.Percentage,
                     entry.CalculationType,
                     t.TaxableBase,
                     t.TaxAmount,

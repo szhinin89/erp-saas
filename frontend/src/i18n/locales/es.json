@@ -3326,6 +3326,8 @@
   "purchases.lineReadiness.missingWarehouseDetail": "Asigne una bodega global o una bodega para esta línea.",
   "purchases.lineReadiness.invalidTax": "Impuesto no reconocido",
   "purchases.lineReadiness.invalidTaxDetail": "Revise el código IVA/ICE de la línea antes de guardar.",
+  "purchases.lineReadiness.iceXmlEditBlocked": "ICE del XML no recalculable",
+  "purchases.lineReadiness.iceXmlEditBlockedDetail": "El ICE específico, mixto o inactivo del XML no se recalcula sin bases físicas verificadas. Restablezca cantidad, precio y descuento del XML.",
   "purchases.lineReadiness.ready": "Producto listo",
   "purchases.lineReadiness.readyDetail": "La línea tiene los datos operativos necesarios para continuar.",
   "purchases.lineReadiness.action.selectItem": "Seleccionar producto",

@@ -734,8 +734,10 @@ export function usePurchasesPage() {
     sriLookupFacade
       .iceRates()
       .then((rates) => {
+        // Solo ICE porcentual es calculable/seleccionable en Compras; específico y mixto exigen
+        // el importe declarado en el XML (backend PURCHASE_ICE_DATA_REQUIRED).
         const map: Record<string, number> = {};
-        for (const r of rates) map[r.code] = r.percentage;
+        for (const r of rates) if (r.calculationType === "Percentage") map[r.code] = r.percentage;
         setIceRatesMap(map);
       })
       .catch(() => {});

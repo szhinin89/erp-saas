@@ -156,6 +156,63 @@ describe("purchaseLineReadiness", () => {
     expect(readiness.status).toBe("INVALID_TAX");
   });
 
+  describe("ICE del XML", () => {
+    // iceRates solo contiene ICE porcentual activo; "3031" (mixto o inactivo) no está.
+    const options = {
+      precisionPolicy: TEST_PRECISION_POLICY,
+      vatRates: { "2": 15 },
+      iceRates: { "3011": 10 },
+    };
+    const xmlIceLine = (overrides: Partial<PurchaseLineFormValues> = {}) =>
+      line({
+        itemId: "item-1",
+        packagingLevelId: "box-1",
+        iceCode: "3031",
+        xmlQuantity: 1,
+        xmlUnitPrice: 1,
+        xmlDiscountPct: 0,
+        xmlIceAmount: 18.55,
+        ...overrides,
+      });
+
+    it("reconoce un codigo ICE inactivo o no porcentual tal como lo declaro el XML", () => {
+      const readiness = getPurchaseLineReadiness(xmlIceLine(), options);
+
+      expect(readiness.status).toBe("READY");
+      expect(getPurchaseLineSaveBlockingReasons([xmlIceLine()], options)).toHaveLength(0);
+    });
+
+    it.each([
+      ["cantidad", { quantity: 2 }],
+      ["precio", { unitPrice: 1.5 }],
+      ["descuento", { discountPct: 5 }],
+    ])("bloquea guardar y confirmar al editar %s con ICE no recalculable", (_field, edit) => {
+      const edited = xmlIceLine(edit);
+      const readiness = getPurchaseLineReadiness(edited, options);
+
+      expect(readiness.status).toBe("ICE_XML_EDIT_BLOCKED");
+      expect(readiness.blocking).toBe(true);
+      expect(getPurchaseLineSaveBlockingReasons([edited], options)).toHaveLength(1);
+    });
+
+    it("permite editar una linea XML con ICE porcentual activo (se recalcula por tarifa)", () => {
+      const readiness = getPurchaseLineReadiness(xmlIceLine({ iceCode: "3011", quantity: 2 }), options);
+
+      expect(readiness.status).toBe("READY");
+    });
+
+    it("una linea manual no puede seleccionar ICE especifico, mixto o inactivo", () => {
+      const manual = line({
+        itemId: "item-1",
+        purchaseReceptionLineId: undefined,
+        xmlSupplierCode: undefined,
+        iceCode: "3031",
+      });
+
+      expect(getPurchaseLineReadiness(manual, options).status).toBe("INVALID_TAX");
+    });
+  });
+
   it("PURCHASE-LINE-PACKAGING-SUSPICIOUS-COST-GUARD-01 — bloquea presentacion con margen extremo (< -50%)", () => {
     const suspiciousLine = line({
       itemId: "item-1",

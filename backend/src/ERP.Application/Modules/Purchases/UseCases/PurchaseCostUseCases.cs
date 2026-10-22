@@ -118,6 +118,11 @@ public sealed class ApplyGlobalDiscountHandler
         if (inv.Lines.Count == 0)
             return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
 
+        var blockedLine = inv.Lines.FirstOrDefault(l => l.BlocksXmlDiscount(cmd.DiscountPct));
+        if (blockedLine is not null)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(
+                $"Línea '{blockedLine.Description}': no se puede modificar el descuento del XML con ICE específico o mixto sin bases físicas verificadas.",
+                "PURCHASE_ICE_XML_EDIT_BLOCKED");
         inv.ApplyGlobalDiscount(cmd.DiscountPct, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
@@ -215,59 +220,9 @@ public sealed class RecalculatePurchaseHandler
 
         foreach (var line in inv.Lines)
         {
-            var vatResult = await _tax.GetVatRateWithNameAsync(line.VatCode, ct);
-            if (vatResult is null)
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    $"Código IVA '{line.VatCode}' no encontrado."
-                );
-
-            decimal iceRate = 0;
-            string? iceName = null;
-            var iceCalculationType = ERP.Domain
-                .Modules
-                .SriCatalogs
-                .Enums
-                .SriTaxCalculationType
-                .Percentage;
-            decimal? iceExactAmount = null;
-            if (!string.IsNullOrWhiteSpace(line.IceCode))
-            {
-                // FLOW-READY-02F.1 — catalog-aware (no el legacy GetIceRateWithNameAsync, que exige
-                // Percentage y por eso nunca resuelve ICE "específico" como el código 3053). Mismo
-                // criterio que ConfirmPurchaseUseCases.
-                var iceEntry = await _tax.GetIceCatalogEntryAsync(line.IceCode, ct);
-                if (iceEntry is null)
-                    return Result<PurchaseInvoiceDto>.ValidationFailure(
-                        $"Código ICE '{line.IceCode}' no encontrado."
-                    );
-                iceName = iceEntry.Name;
-                iceCalculationType = iceEntry.CalculationType;
-                if (
-                    iceEntry.CalculationType
-                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific
-                )
-                {
-                    // El monto ya fue fijado al valor exacto (XML o catálogo) al crear/actualizar
-                    // la línea — Recalculate lo preserva, igual que Confirm, nunca lo recalcula
-                    // desde una tarifa porcentual.
-                    iceExactAmount = line.IceAmount;
-                }
-                else
-                {
-                    iceRate = iceEntry.Percentage ?? 0m;
-                }
-            }
-
-            line.ApplyTaxes(
-                line.VatCode,
-                vatResult.Rate,
-                vatResult.Name,
-                line.IceCode,
-                iceRate,
-                iceName,
-                iceCalculationType,
-                iceExactAmount
-            );
+            var taxError = await PurchaseTaxHelper.ResolveTaxesAsync(line, _tax, ct);
+            if (taxError is not null)
+                return taxError;
         }
 
         inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);

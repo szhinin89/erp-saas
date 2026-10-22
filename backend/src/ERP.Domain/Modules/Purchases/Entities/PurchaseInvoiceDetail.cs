@@ -324,10 +324,10 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         // Create/Update/Confirm/DistributeCost por igual, sin tocar esos call sites.
         var xmlVatAmount = XmlVatAmount;
         var xmlIceAmount =
-            iceCalculationType == SriTaxCalculationType.Percentage ? XmlIceAmount : null;
+            XmlIceAmount;
 
         VatCode = vatCode.Trim();
-        VatRate = vatRate;
+        VatRate = _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode && t.Source == PurchaseTaxSource.Xml)?.Rate ?? vatRate;
         SnapshotVatName = vatName?.Trim();
 
         var normalizedIceCode = OptionalCode.Normalize(iceCode);
@@ -336,11 +336,15 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
             ?? PurchaseTaxSource.Calculated;
         if (!string.IsNullOrWhiteSpace(normalizedIceCode))
         {
+            // ICE mixto sin snapshot XML no tiene cálculo operativo: nunca se degrada a porcentual.
+            if (iceCalculationType == SriTaxCalculationType.Mixed && iceSource != PurchaseTaxSource.Xml)
+                throw new DomainRuleViolationException(
+                    "ICE mixto requiere el importe declarado en el XML SRI.");
             // ICE "específico" (p. ej. código 3053) no se recalcula desde una tarifa porcentual — se
             // fija aquí al monto exacto del XML; RecalcTaxes lo preserva y solo recalcula VatAmount
             // sobre él.
             var initialIceAmount =
-                iceCalculationType == SriTaxCalculationType.Specific ? (iceExactAmount ?? 0m) : 0m;
+                iceCalculationType == SriTaxCalculationType.Specific ? (iceExactAmount ?? throw new DomainRuleViolationException("Falta el importe ICE específico explícito.")) : 0m;
             UpsertTaxRow(
                 IceSriTaxCode,
                 normalizedIceCode,
@@ -394,11 +398,27 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     }
 
     // ── Discount ────────────────────────────────────────────────────────
+    public bool BlocksXmlDiscount(decimal pct) => pct != DiscountPct
+        && _taxes.Any(t => t.TaxCode == IceSriTaxCode && t.Source == PurchaseTaxSource.Xml
+            && t.CalculationType != SriTaxCalculationType.Percentage);
+
     public void ApplyDiscount(decimal pct)
     {
         EnsureNotFrozen();
         if (pct is < 0 or > 100)
             throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(pct));
+        if (BlocksXmlDiscount(pct))
+            throw new DomainRuleViolationException("No se puede modificar el descuento del XML con ICE específico o mixto sin bases físicas verificadas.");
+        if (pct != DiscountPct)
+        {
+            var recalculated = _taxes.Select(t => t.Source == PurchaseTaxSource.Xml
+                && (t.TaxCode == VatSriTaxCode || (t.TaxCode == IceSriTaxCode
+                    && t.CalculationType == SriTaxCalculationType.Percentage))
+                ? PurchaseInvoiceDetailTax.Create(Id, TenantId, t.TaxCode, t.TaxRateCode,
+                    t.TaxName, t.Rate, t.CalculationType, t.TaxableBase, t.TaxAmount,
+                    PurchaseTaxSource.Calculated) : t).ToList();
+            ReplaceTaxes(recalculated);
+        }
         DiscountPct = pct;
         RecalcDiscount();
         RecalcTaxes();
@@ -532,7 +552,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         var iceCalculationType = iceRow?.CalculationType ?? SriTaxCalculationType.Percentage;
         decimal iceAmount;
 
-        if (iceCalculationType == SriTaxCalculationType.Specific)
+        if (iceRow?.Source == PurchaseTaxSource.Xml || iceCalculationType == SriTaxCalculationType.Specific)
         {
             // El monto exacto ya quedó fijado (en ApplyTaxes, o en la fila ya existente) al valor
             // del XML — un impuesto específico (p. ej. ICE código 3053, USD por cada 100g de azúcar)
@@ -604,6 +624,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         PurchaseTaxSource source
     )
     {
+        if (_taxes.Any(t => t.TaxCode == taxCode && t.Source == PurchaseTaxSource.Xml))
+            return;
         _taxes.RemoveAll(t => t.TaxCode == taxCode);
         _taxes.Add(
             PurchaseInvoiceDetailTax.Create(

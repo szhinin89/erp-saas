@@ -179,6 +179,7 @@
         "ERP.Infrastructure.Tests.Ids.SnowflakeIdGeneratorTests",
         "ERP.Infrastructure.Tests.InitialLoad.ClosedXmlInitialStockImportSheetReaderTests",
         "ERP.Infrastructure.Tests.InitialLoad.PostOpeningBalanceCommandTests",
+        "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseIceXmlSnapshotPostgreSqlTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception.GetPurchaseReceptionXmlViewAffectedInvoiceIntegrationTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception.ResolvePurchaseReceptionLinesIntegrationTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception.SriReceptionXmlProviderTests",

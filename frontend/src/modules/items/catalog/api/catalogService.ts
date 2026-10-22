@@ -50,6 +50,7 @@ export interface SriIceRateLookup {
   code: string;
   name: string;
   percentage: number;
+  calculationType: "Percentage" | "Specific" | "Mixed";
 }
 export interface SriRetentionCodeLookup {
   id: string;

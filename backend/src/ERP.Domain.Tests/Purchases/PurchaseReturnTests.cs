@@ -330,6 +330,55 @@ public sealed class PurchaseReturnTests
         purchaseReturn.AuthorizedGrandTotal.Should().Be(336.30m); // 300 (subtotal) + 36 (VAT) + 0.30 (IRBPNR)
     }
 
+    [Theory]
+    [InlineData(SriTaxCalculationType.Specific)]
+    [InlineData(SriTaxCalculationType.Mixed)]
+    public void Authorize_prorratea_ICE_XML_desde_el_snapshot_sin_recalcular_tarifa(SriTaxCalculationType mode)
+    {
+        var originalDetailId = Guid.NewGuid();
+        var purchaseReturn = CreateDraft(lines: new[] { Line(originalDetailId, quantity: 3m) });
+        var original = new Dictionary<Guid, PurchaseReturn.OriginalLineSnapshot>
+        {
+            [originalDetailId] = new(
+                OriginalQuantity: 10m,
+                LineSubtotal: 100m,
+                DiscountAmount: 0m,
+                VatAmount: 14.23m,
+                IceAmount: 18.55m,
+                VatCode: "4",
+                VatRate: 12m,
+                IceCode: "3031",
+                IceRate: 0.18m,
+                Taxes:
+                [
+                    new PurchaseReturn.OriginalLineTaxSnapshot("2", "4", "IVA", 12m,
+                        SriTaxCalculationType.Percentage, 118.55m, 14.23m),
+                    new PurchaseReturn.OriginalLineTaxSnapshot("3", "3031", "ICE", 0.18m,
+                        mode, 35.81m, 18.55m),
+                ]
+            ),
+        };
+
+        purchaseReturn.Authorize(
+            "00000001",
+            original,
+            balanceDueBeforeApplication: 132.78m,
+            currencyCode: "USD",
+            hasIssuedRetention: false,
+            UserId,
+            Guid.NewGuid(),
+            "hash-authorize-ice-xml",
+            inventoryExitByLineId: purchaseReturn.Lines.ToDictionary(l => l.Id, l => new PurchaseReturn.InventoryExitValuation(10m, l.Quantity * 10m))
+        );
+
+        var ice = purchaseReturn.Lines.Single().Taxes.Single(t => t.TaxCode == "3");
+        ice.Rate.Should().Be(0.18m);
+        ice.CalculationType.Should().Be(mode);
+        ice.TaxableBase.Should().Be(10.74m); // 35.81 × 0.3
+        ice.TaxAmount.Should().Be(5.57m); // 18.55 × 0.3 = 5.565 → AwayFromZero
+        purchaseReturn.AuthorizedIceTotal.Should().Be(5.57m);
+    }
+
     [Fact]
     public void Authorize_sin_IRBPNR_en_Taxes_no_genera_IRBPNR_falso()
     {

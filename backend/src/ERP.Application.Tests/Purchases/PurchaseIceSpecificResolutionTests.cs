@@ -160,7 +160,7 @@ public sealed class PurchaseIceSpecificResolutionTests
     // ── Caso 1: create manual con ICE específico ────────────────────────────
 
     [Fact]
-    public async Task CreateDraft_linea_manual_con_ICE_especifico_calcula_IceAmount_no_cero()
+    public async Task CreateDraft_linea_manual_con_ICE_especifico_sin_base_fisica_se_rechaza()
     {
         var repo = new Mock<IPurchaseInvoiceRepository>();
         var tax = BuildTaxResolver();
@@ -185,10 +185,11 @@ public sealed class PurchaseIceSpecificResolutionTests
 
         var result = await handler.Handle(cmd, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue(result.Error);
-        var line = result.Value!.Lines[0];
-        // UnitValue (0.02) * QuantityInBaseUom (10, sin empaque) = 0.20 — nunca 0.
-        line.IceAmount.Should().Be(0.20m);
+        // Sin bases físicas verificables (p. ej. gramos de azúcar) no se calcula ICE específico:
+        // ni $0 silencioso ni UnitValue × cantidad comercial.
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be("PURCHASE_ICE_DATA_REQUIRED");
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         tax.Verify(
             t => t.GetIceRateWithNameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -291,6 +292,11 @@ public sealed class PurchaseIceSpecificResolutionTests
             "UNIT",
             iceCode: IceSpecificCode
         );
+        line.ReplaceTaxes([
+            PurchaseInvoiceDetailTax.Create(line.Id, TenantId, "3", IceSpecificCode,
+                "ICE Bebidas Azucaradas", null, SriTaxCalculationType.Specific, 50m, 0.20m,
+                ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml),
+        ]);
         line.ApplyTaxes(
             "10",
             15m,

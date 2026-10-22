@@ -3257,6 +3257,8 @@
   "purchases.lineReadiness.missingWarehouseDetail": "Assign a global warehouse or a warehouse for this line.",
   "purchases.lineReadiness.invalidTax": "Unrecognized tax",
   "purchases.lineReadiness.invalidTaxDetail": "Review the VAT/ICE code on the line before saving.",
+  "purchases.lineReadiness.iceXmlEditBlocked": "XML ICE cannot be recalculated",
+  "purchases.lineReadiness.iceXmlEditBlockedDetail": "Specific, mixed or inactive ICE from the XML is not recalculated without verified physical bases. Restore the XML quantity, price and discount.",
   "purchases.lineReadiness.ready": "Product ready",
   "purchases.lineReadiness.readyDetail": "The line has the operational data needed to continue.",
   "purchases.lineReadiness.action.selectItem": "Select product",

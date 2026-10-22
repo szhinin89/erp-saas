@@ -311,6 +311,8 @@ public sealed class PurchaseInvoice
         EnsureDraft();
         if (pct is < 0 or > 100)
             throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(pct));
+        if (_lines.Any(l => l.BlocksXmlDiscount(pct)))
+            throw new DomainRuleViolationException("No se puede modificar el descuento del XML con ICE específico o mixto sin bases físicas verificadas.");
         foreach (var line in _lines)
             line.ApplyDiscount(pct);
 

@@ -5,6 +5,7 @@ import type { PurchaseItemContextDto } from "../api/purchaseService";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import { buildPurchaseDraftPayload } from "./purchaseDraftPayload";
 import { applyResolvedReceptionLines } from "./pendingProductsResolution";
+import { resolveLineTaxes } from "./purchaseCalc";
 import {
   applyRegisteredQuantity,
   applyRegisteredUnitCost,
@@ -483,5 +484,80 @@ describe("FASE 5 — advertencia de origen XML solo con cambio económico real",
     const edited = { ...line, ...applyRegisteredUnitCost(line, 6, 0.95)! };
 
     expect(vmOf(edited).registration.originDiffers).toBe(true);
+  });
+});
+
+// BUG REAL — factura 029-001-001341832, línea 13490: el subtotal de producto ($39.52) se comparaba
+// contra la base IVA del XML ($45.93, incluye ICE), así que el aviso de origen nunca se limpiaba.
+describe("XML con ICE específico + IRBPNR: restaurar limpia el aviso de origen", () => {
+  const xmlIceLine = (): PurchaseLineFormValues =>
+    manualLine({
+      quantity: 4,
+      unitPrice: 9.88113,
+      vatCode: "4",
+      iceCode: "3053",
+      packagingLevelId: "unit-1",
+      conversionFactor: 1,
+      purchaseReceptionLineId: "rx-13490",
+      xmlSupplierCode: "13490",
+      xmlQuantity: 4,
+      xmlUnitPrice: 9.88113,
+      xmlDiscountPct: 0,
+      xmlDiscount: 0,
+      xmlLineSubtotal: 39.52,
+      xmlTaxableBase: 45.93,
+      xmlTaxValue: 6.89,
+      xmlIceAmount: 6.4,
+      xmlIrbpnrAmount: 1.44,
+      xmlTotalLine: 54.25,
+    });
+
+  it("XML intacto no muestra aviso aunque la base IVA difiera del subtotal de producto", () => {
+    expect(vmOf(xmlIceLine()).registration.originDiffers).toBe(false);
+  });
+
+  it("cambiar 4 → 3 avisa; volver a 4 o «Recalcular desde XML» lo limpia sin redondear el precio", () => {
+    const original = xmlIceLine();
+    const edited = { ...original, ...applyRegisteredQuantity(original, 1, 3)! };
+    expect(vmOf(edited).registration.originDiffers).toBe(true);
+
+    const typedBack = { ...edited, ...applyRegisteredQuantity(edited, 1, 4)! };
+    expect(vmOf(typedBack).registration.originDiffers).toBe(false);
+
+    const reset = { ...edited, ...resetLineToSupplierOrigin(edited, 1)! };
+    expect(reset.unitPrice).toBe(9.88113);
+    expect(reset.quantity).toBe(4);
+    expect(vmOf(reset).registration.originDiffers).toBe(false);
+    // Importes documentales del XML, sin tocar ninguna base del snapshot.
+    expect(resolveLineTaxes(reset)).toEqual({ vat: 6.89, ice: 6.4, irbpnr: 1.44 });
+    expect(reset.xmlTaxableBase).toBe(45.93);
+    expect(reset.xmlLineSubtotal).toBe(39.52);
+  });
+
+  it("4 → 3 → «Recalcular desde XML»: el input de cantidad remonta y coincide con lo que se registrará", () => {
+    const original = xmlIceLine();
+    const edited = { ...original, ...applyRegisteredQuantity(original, 1, 3)! };
+    const reset = { ...edited, ...resetLineToSupplierOrigin(edited, 1)! };
+    const editedVm = vmOf(edited);
+    const resetVm = vmOf(reset);
+
+    // Mientras está editada, cantidad efectiva y resumen dicen 3.
+    expect(editedVm.inventory.baseQuantityValue).toBe(3);
+    expect(editedVm.registration.sentence).toMatch(/^Se registrarán 3(\.0+)? /);
+    // La acción restaura la línea completa: cantidad efectiva 4 y resumen 4…
+    expect(resetVm.inventory.baseQuantityValue).toBe(4);
+    expect(resetVm.registration.sentence).toMatch(/^Se registrarán 4(\.0+)? /);
+    // …y el input no controlado (defaultValue) remonta para mostrar 4, no el 3 obsoleto. Misma
+    // presentación, factor y costo: sin el valor en la key, React reusaba el nodo con 3.
+    expect(headerInputKey("qty", resetVm, reset.packagingLevelId)).not.toBe(
+      headerInputKey("qty", editedVm, edited.packagingLevelId),
+    );
+    expect(headerInputKey("cost", resetVm, reset.packagingLevelId)).toBe(
+      headerInputKey("cost", editedVm, edited.packagingLevelId),
+    );
+  });
+
+  it("un descuento sobre la línea XML sigue avisando", () => {
+    expect(vmOf({ ...xmlIceLine(), discountPct: 5 }).registration.originDiffers).toBe(true);
   });
 });

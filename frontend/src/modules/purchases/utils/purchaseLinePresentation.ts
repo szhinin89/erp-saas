@@ -389,12 +389,18 @@ export function buildPurchaseLinePresentation(
     ctx?.packagingLevels?.find(
       (p) => p.id === (line.xmlOriginPackagingLevelId ?? line.packagingLevelId),
     )?.name ?? "";
+  // Base imponible IVA del XML (puede incluir ICE): solo informativa, nunca se compara.
   const originTaxableBase =
     line.xmlTaxableBase ?? originQuantity * originUnitPrice - (line.xmlDiscount ?? 0);
+  // Subtotal neto de producto del XML (sin impuestos): es lo comparable con la línea editable.
+  const originProductNet = roundTo(
+    (line.xmlLineSubtotal ?? originQuantity * originUnitPrice) - (line.xmlDiscount ?? 0),
+    2,
+  );
   const originDiffers =
     hasOriginSnapshot &&
     (isXmlLineEditedFromOrigin(line, conversionFactor) ||
-      Math.abs(editableTaxableBase - originTaxableBase) > 0.005);
+      Math.abs(roundTo(editableTaxableBase, 2) - originProductNet) > 0.005);
   const originBaseText = formatMoney(originQuantity * originFactor, decimals.quantityDecimals);
   const originQuantityText = [
     formatMoney(originQuantity, decimals.quantityDecimals),
@@ -746,7 +752,10 @@ export function buildMissingSalePriceForMarginWarning(
  * Costo de cabecera con el valor de la presentación anterior mientras Margen (que sí lee del
  * view-model en cada render) ya reflejaba la nueva. Incluir `packagingLevelId` + el factor de
  * conversión efectivo fuerza el remount exactamente cuando la presentación cambia — nunca en cada
- * tecla/blur de edición manual, porque esos campos no tocan ninguno de los dos valores.
+ * tecla de edición manual (el estado de la línea solo cambia al blur).
+ * El valor efectivo del propio campo también forma parte de la key: una acción que cambia la línea
+ * sin cambiar presentación ni costo («Recalcular desde XML» tras 4 → 3) debe remontar el input,
+ * o mostraría una cantidad distinta a la que se registrará.
  */
 export function headerInputKey(
   field: "qty" | "cost",
@@ -756,7 +765,8 @@ export function headerInputKey(
   const mode = vm.inventory.hasPresentation ? "base" : "invoice";
   // FASE 5 PURCHASE-UX — Costo de cabecera es el costo unitario base (incluye flete/gastos
   // asignados): al distribuir flete el input no controlado debe remontar con el valor nuevo.
-  return `${field}-${mode}-${packagingLevelId ?? "none"}-${vm.inventory.conversionFactorValue}-${vm.inventory.baseUnitCostValue}`;
+  const fieldValue = field === "qty" ? `-${vm.inventory.baseQuantityValue}` : "";
+  return `${field}-${mode}-${packagingLevelId ?? "none"}-${vm.inventory.conversionFactorValue}-${vm.inventory.baseUnitCostValue}${fieldValue}`;
 }
 
 /** Tolerancia de punto flotante para comparar valores ya en la misma escala. */

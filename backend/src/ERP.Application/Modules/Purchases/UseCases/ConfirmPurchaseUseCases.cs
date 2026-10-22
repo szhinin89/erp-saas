@@ -225,57 +225,9 @@ public sealed class ConfirmPurchaseHandler
         // ── STEP 1: Recalcular impuestos con nombres ────────────────────
         foreach (var line in inv.Lines)
         {
-            var vatResult = await _tax.GetVatRateWithNameAsync(line.VatCode, ct);
-            if (vatResult is null)
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    $"Código IVA '{line.VatCode}' no encontrado."
-                );
-
-            decimal iceRate = 0;
-            string? iceName = null;
-            var iceCalculationType = ERP.Domain
-                .Modules
-                .SriCatalogs
-                .Enums
-                .SriTaxCalculationType
-                .Percentage;
-            decimal? iceExactAmount = null;
-            if (!string.IsNullOrWhiteSpace(line.IceCode))
-            {
-                // FLOW-READY-02F.1 — usa el catálogo completo (no el legacy GetIceRateWithNameAsync,
-                // que exige Percentage y por eso nunca resuelve ICE "específico" como el código 3053)
-                // para poder re-resolver también líneas con ICE de monto fijo sin romper Confirm.
-                var iceEntry = await _tax.GetIceCatalogEntryAsync(line.IceCode, ct);
-                if (iceEntry is null)
-                    return Result<PurchaseInvoiceDto>.ValidationFailure(
-                        $"Código ICE '{line.IceCode}' no encontrado."
-                    );
-                iceName = iceEntry.Name;
-                iceCalculationType = iceEntry.CalculationType;
-                if (
-                    iceEntry.CalculationType
-                    == ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific
-                )
-                {
-                    // El monto ya fue fijado al valor exacto del XML al crear/actualizar el borrador
-                    // — Confirm lo preserva, nunca lo recalcula desde una tarifa porcentual.
-                    iceExactAmount = line.IceAmount;
-                }
-                else
-                {
-                    iceRate = iceEntry.Percentage ?? 0m;
-                }
-            }
-            line.ApplyTaxes(
-                line.VatCode,
-                vatResult.Rate,
-                vatResult.Name,
-                line.IceCode,
-                iceRate,
-                iceName,
-                iceCalculationType,
-                iceExactAmount
-            );
+            var taxError = await PurchaseTaxHelper.ResolveTaxesAsync(line, _tax, ct);
+            if (taxError is not null)
+                return taxError;
         }
         var xmlError = await _xmlGuard.ValidateAsync(inv, ct);
         if (xmlError is not null)
