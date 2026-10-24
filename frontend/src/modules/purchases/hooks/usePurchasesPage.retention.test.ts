@@ -124,6 +124,7 @@ vi.mock("../../items/facades/sriLookupFacade", () => ({
 vi.mock("../../../lib/messages", () => ({
   message: {
     success: vi.fn(),
+    info: vi.fn(),
     error: vi.fn(),
     confirm: vi.fn(),
   },
@@ -581,7 +582,7 @@ describe("usePurchasesPage — anulación ante el SRI de una retención autoriza
     });
 
     expect(purchaseService.cancel).toHaveBeenLastCalledWith("purchase-1", "Proveedor facturó mal", true);
-    expect(message.success).toHaveBeenCalledWith(
+    expect(message.info).toHaveBeenCalledWith(
       "Se registró la solicitud de anulación ante el SRI. La compra sigue vigente hasta que el SRI confirme ANULADO.",
     );
     expect(message.success).not.toHaveBeenCalledWith("Compra anulada correctamente.");

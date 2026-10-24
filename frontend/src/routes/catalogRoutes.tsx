@@ -122,7 +122,8 @@ const SupplierPaymentDetailPage = lazyNamedPage(
   "SupplierPaymentDetailPage",
 );
 const PurchasesPage = lazyNamedPage(
-  () => import("../modules/purchases/pages/PurchasesPage"),
+  // El módulo también exporta PurchaseLineCard (pruebas de la línea): solo se expone la página.
+  () => import("../modules/purchases/pages/PurchasesPage").then(({ PurchasesPage }) => ({ PurchasesPage })),
   "PurchasesPage",
 );
 const PurchaseReceptionPage = lazyNamedPage(

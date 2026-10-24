@@ -1,3 +1,11 @@
+import { PurchaseFormFeedback } from "../components/PurchaseFormFeedback";
+import { buildPurchaseLineIssues } from "../utils/purchaseLineIssues";
+import { PurchaseActionReason } from "../components/PurchaseActionReason";
+import { PurchaseSearchFeedback } from "../components/PurchaseSearchFeedback";
+import { PurchaseFieldError } from "../components/PurchaseFieldError";
+import { purchaseFieldErrors } from "../utils/purchaseFieldErrors";
+import { PurchaseLineBreakdownModal } from "../components/PurchaseLineBreakdownModal";
+import { canBreakDown } from "../utils/purchaseXmlBreakdown";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
@@ -24,6 +32,7 @@ import {
   RetentionElectronicStatusBadge,
 } from "../../retentions/facades/purchaseRetentionFacade";
 import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
+import { PurchaseLineIssuesTag } from "../components/PurchaseLineIssuesTag";
 import { CorrectSupplierMatchModal } from "../components/CorrectSupplierMatchModal";
 import { ProductPicker } from "../components/ProductPicker";
 import type { ProductProfile } from "../components/ProductPicker";
@@ -39,7 +48,7 @@ import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
 import { usePrecisionDecimals, usePrecisionPolicy } from "../../../hooks/usePrecisionPolicy";
 import { resolvePrecisionDecimals } from "../../../lib/config/precisionPolicy.config";
 import { formatMoney, formatMoneyWithSymbol } from "../../../lib/sanitizers";
-import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
+import { formatDate } from "../../../lib/formatters/dateFormatters";
 import {
   ZHConfirmModal,
   ZHPromptModal,
@@ -47,11 +56,7 @@ import {
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
-import { ZHCompactNotice } from "../../../components/zh/notices";
-import { buildNotice, type NoticeSeverity } from "../../../notices";
 import {
-  lineNet,
-  resolveLineTaxes,
   calcVatBreakdown,
   roundToTotalAmount,
   buildCostDistributionInputFromPersistedLines,
@@ -71,19 +76,17 @@ import {
   isUnchangedAtPrecision,
   resetLineToSupplierOrigin,
   resolvePackagingChange,
-  type LineStatusTone,
+  type LineMarginState,
 } from "../utils/purchaseLinePresentation";
 import {
   buildPurchaseItemProfile,
   resolvePurchaseItemSelection,
 } from "../utils/purchaseItemProfile";
 import type { PurchaseLineReadinessAction } from "../utils/purchaseLineReadiness";
-import type {
-  PurchaseDocumentState,
-  PurchaseDocumentStateKind,
-  PurchaseDocumentStateReason,
-} from "../utils/purchaseDocumentState";
 import { canDiscardDraft, purchaseStatusBadge } from "../utils/purchaseDocumentState";
+import { buildConfirmChecklist, buildConfirmCommercialRisk, buildConfirmLineWarnings } from "../utils/purchaseConfirmChecklist";
+import { buildPurchaseCancelMessage } from "../utils/purchaseCancelMessage";
+import { PurchaseConfirmChecklist } from "../components/PurchaseConfirmChecklist";
 import "../../../styles/shared/items-catalog.css";
 import "../../../styles/shared/erp-form-core.css";
 import "../styles/purchases-invoice.css";
@@ -95,7 +98,7 @@ export function PurchasesPage() {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const openedFromParam = useRef(false);
-  const xmlConfirmChecklist = buildXmlConfirmChecklist(
+  const xmlConfirmChecklist = buildConfirmChecklist(
     ctx.lines,
     ctx.editing?.lines ?? [],
     ctx.vatRatesMap,
@@ -103,6 +106,14 @@ export function PurchasesPage() {
     t,
     moneyDecimals,
   );
+  const precisionPolicy = usePrecisionPolicy();
+  // Solo se calcula con el modal abierto; mismas incidencias que las tarjetas de línea.
+  const confirmLineWarnings = ctx.modalConfirm
+    ? buildConfirmLineWarnings(ctx.lines, ctx.lineReadinessByKey, precisionPolicy, ctx.vatRatesMap, ctx.iceRatesMap, t)
+    : [];
+  const confirmCommercialRisk = ctx.modalConfirm
+    ? buildConfirmCommercialRisk(ctx.lines, ctx.lineReadinessByKey, t)
+    : null;
 
   // Entrada cruzada desde el Kardex ("Ver documento origen"): abre la factura referida.
   // Entrada cruzada desde Recepción Electrónica ("Crear compra"): precarga un borrador desde el XML.
@@ -221,6 +232,7 @@ export function PurchasesPage() {
       />
 
       {/* ══════════════════════════════════════════════════════════ LISTADO */}
+      {ctx.tab !== "nuevo" && ctx.saveError && <ZHPageNotice variant="error" message={ctx.saveError} detail={ctx.saveErrorDetails.join("\n")} />}
       {ctx.tab === "listado" && (
         <div className="prd-section">
           <div className="pg-table-controls zh-mb-16">
@@ -303,143 +315,12 @@ export function PurchasesPage() {
       {/* ══════════════════════════════════════════════════════════ NUEVO / EDITAR */}
       {ctx.tab === "nuevo" && (
         <div>
-          {/* Error/Validation Banners */}
-          {ctx.saveError && (
-            <ZHPageNotice
-              variant="error"
-              message={ctx.saveError}
-              detail={
-                ctx.saveErrorDetails.length > 0
-                  ? ctx.saveErrorDetails.map((err) => `- ${err}`).join("\n")
-                  : null
-              }
-              className={
-                ctx.saveErrorDetails.length > 0
-                  ? "pf-validation-summary"
-                  : undefined
-              }
-            />
-          )}
-          {ctx.receptionProcessingNotice && (
-            <ZHPageNotice
-              variant="warning"
-              message={ctx.receptionProcessingNotice}
-            />
-          )}
-          {ctx.isDuplicateAccessKeyBlocking && (
-            <div>
-              <ZHPageNotice
-                variant="error"
-                message={ctx.duplicateAccessKeyTitle}
-                detail={ctx.duplicateAccessKeyDetail}
-              />
-              {ctx.duplicateAccessKey?.purchaseId && (
-                <ZHBtn
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    const purchaseId = ctx.duplicateAccessKey?.purchaseId;
-                    if (!purchaseId) return;
-                    ctx.requestLeave(() => {
-                      navigate(`/purchases?invoiceId=${purchaseId}`);
-                      void ctx.loadForEdit(purchaseId);
-                    });
-                  }}
-                >
-                  <span className="material-symbols-outlined zh-icon-md">
-                    open_in_new
-                  </span>
-                  {t(
-                    "purchases.duplicate.viewExisting",
-                    "Ver compra existente",
-                  )}
-                </ZHBtn>
-              )}
-            </div>
-          )}
-          {ctx.isSupplierInactiveBlocking && (
-            <ZHPageNotice
-              variant="error"
-              message={ctx.supplierInactiveMessage}
-              detail={ctx.supplierInactiveDetail}
-            />
-          )}
-          {ctx.hasLineReadinessBlockers &&
-            !ctx.saveError &&
-            !ctx.isDuplicateAccessKeyBlocking &&
-            !ctx.isSupplierInactiveBlocking && (
-              <ZHPageNotice
-                variant="warning"
-                message={ctx.lineReadinessBlockedTitle}
-                detail={ctx.lineReadinessBlockerDetails.join("\n")}
-              />
-            )}
-          {ctx.errors.supplierId && (
-            <ZHPageNotice
-              variant="error"
-              message={ctx.errors.supplierId.message ?? ""}
-            />
-          )}
-          {ctx.errors.lines && (
-            <ZHPageNotice
-              variant="error"
-              message={
-                ctx.errors.lines.message ?? ctx.errors.lines.root?.message ?? ""
-              }
-            />
-          )}
-          {ctx.sriDocTypesUnavailable && (
-            <ZHPageNotice
-              variant="error"
-              message={t(
-                "purchases.validation.sriDocTypesUnavailableTitle",
-                "No se puede guardar la compra.",
-              )}
-              detail={t(
-                "purchases.validation.sriDocTypesUnavailableDetail",
-                "El catálogo SRI de tipos de documento no está disponible. Recargue la página o inténtelo nuevamente.",
-              )}
-            />
-          )}
-
-          {ctx.readOnly && ctx.editing?.status === "Discarded" && (
-            <ZHPageNotice
-              variant="neutral"
-              message={t("purchases.notices.discardedReadOnly", {
-                date: formatDateTime(ctx.editing.cancelledAt),
-                reason:
-                  ctx.editing.cancelReason ?? t("purchases.notices.noReason", "Sin motivo"),
-              })}
-            />
-          )}
-          {ctx.readOnly && ctx.editing?.status !== "Discarded" && (
-            <ZHPageNotice
-              variant={
-                ctx.editing?.status === "Cancelled" ? "error" : "success"
-              }
-              message={
-                ctx.editing?.status === "Cancelled"
-                  ? t("purchases.notices.cancelledReadOnly", {
-                      date: formatDateTime(ctx.editing.cancelledAt),
-                      reason:
-                        ctx.editing.cancelReason ??
-                        t("purchases.notices.noReason", "Sin motivo"),
-                    })
-                  : t(
-                      "purchases.notices.confirmedReadOnly",
-                      "Compra confirmada — solo lectura.",
-                    )
-              }
-            />
-          )}
-
-          {/* FASE 5 PURCHASE-UX — estado de la COMPRA (no de los productos). */}
-          <PurchaseDocumentStateStrip state={ctx.documentState} />
+          <PurchaseFormFeedback ctx={ctx} />
 
           {/* ── SECTION 1: Header Cards ── */}
           <div className="pf-header-cards-row">
             {/* Datos del Proveedor */}
-            <div className="pf-mini-card">
+            <div className="pf-mini-card" id="purchase-supplier" tabIndex={-1}>
               <h4 className="pf-mini-card__title">
                 <span className="material-symbols-outlined pf-mini-card__icon">
                   storefront
@@ -451,6 +332,7 @@ export function PurchasesPage() {
                 <ZHField
                   density="compact"
                   label={t("purchases.supplier.searchLabel", "RUC o nombre")}
+                  fieldError={ctx.errors.supplierId?.message || (ctx.isSupplierInactiveBlocking ? `${ctx.supplierInactiveMessage} ${ctx.supplierInactiveDetail}` : undefined)}
                   required
                 >
                   <SupplierSearchSelect
@@ -518,22 +400,14 @@ export function PurchasesPage() {
                         }
                       />
                     )}
-                    {!ctx.supplierProfile.isActive && (
-                      <Badge
-                        variant="warning"
-                        label={t(
-                          "purchases.supplier.inactiveBadge",
-                          "Proveedor inactivo",
-                        )}
-                      />
-                    )}
+
                   </div>
                 )}
               </div>
             </div>
 
             {/* Datos del Documento */}
-            <div className="pf-mini-card">
+            <div className="pf-mini-card" id="purchase-document" tabIndex={-1}>
               <h4 className="pf-mini-card__title">
                 <span className="material-symbols-outlined pf-mini-card__icon">
                   description
@@ -545,7 +419,7 @@ export function PurchasesPage() {
                   density="compact"
                   label={t("purchases.document.docType", "Tipo de documento")}
                   required
-                  fieldError={ctx.errors.docTypeCode?.message}
+                  fieldError={ctx.sriDocTypesUnavailable ? t("purchases.validation.sriDocTypesUnavailableDetail") : ctx.errors.docTypeCode?.message}
                 >
                   <ZhSelect
                     value={ctx.formWatch.docTypeCode}
@@ -860,6 +734,8 @@ export function PurchasesPage() {
                       inventory_2
                     </span>
                     {t("purchases.lines.title", "Detalle de productos")}
+                    {ctx.xmlLinesSummary.total > 0 && <ZHDataValue variant="muted">{t("purchases.pendingProducts.summary.total", { count: ctx.xmlLinesSummary.total })}</ZHDataValue>}
+                    {ctx.xmlLinesSummary.warnings > 0 && <Badge variant="warning" label={t("purchases.pendingProducts.summary.warnings", { count: ctx.xmlLinesSummary.warnings })} />}
                   </h4>
                   <div className="pdl-search__wrap" ref={ctx.globalSearchRef}>
                     <div className="pdl-search__input-wrap">
@@ -887,14 +763,9 @@ export function PurchasesPage() {
                     </div>
                     {ctx.globalOpen && ctx.globalQuery.length >= 2 && (
                       <div className="pdl-search__dropdown">
-                        {ctx.globalResults.length === 0 ? (
-                          <div className="pdl-search__empty">
-                            {t("purchases.lines.noResults", {
-                              query: ctx.globalQuery,
-                            })}
-                          </div>
-                        ) : (
-                          ctx.globalResults.map((item, i) => (
+                        <PurchaseSearchFeedback status={ctx.globalSearchStatus} empty={ctx.globalResults.length === 0}
+                          query={ctx.globalQuery} onRetry={ctx.retryGlobalSearch} />
+                        {ctx.globalResults.map((item, i) => (
                             <ZHPickerResultItem
                               key={item.id}
                               selected={i === ctx.globalFocusIdx}
@@ -930,8 +801,7 @@ export function PurchasesPage() {
                                 </div>
                               }
                             />
-                          ))
-                        )}
+                          ))}
                       </div>
                     )}
                   </div>
@@ -955,13 +825,14 @@ export function PurchasesPage() {
                     variant="secondary"
                     onClick={() => ctx.setModalDistributeCost(true)}
                     disabled={!!ctx.distributeCostDisabledReason}
-                    title={ctx.distributeCostDisabledReason ?? undefined}
                   >
                     <span className="material-symbols-outlined zh-icon-md">
                       local_shipping
                     </span>
                     {t("purchases.distributeCost.trigger", "Distribuir flete/gasto")}
                   </ZHBtn>
+                  <PurchaseActionReason reason={ctx.distributeCostDisabledReason}
+                    action={t("purchases.distributeCost.trigger", "Distribuir flete/gasto")} />
                   {ctx.pendingProductSources.length > 0 && !ctx.fieldDisabled && (
                     <ZHBtn
                       type="button"
@@ -978,38 +849,9 @@ export function PurchasesPage() {
                   )}
                 </div>
 
-                {/* COMPRAS-METODO-ZH-01B — resumen orientado a excepciones de las líneas XML. */}
-                {ctx.xmlLinesSummary.total > 0 && (
-                  <div className="prl-summary" aria-live="polite">
-                    <Badge
-                      variant="neutral"
-                      label={t("purchases.pendingProducts.summary.total", {
-                        count: ctx.xmlLinesSummary.total,
-                      })}
-                    />
-                    <Badge
-                      variant="success"
-                      label={t("purchases.pendingProducts.summary.resolved", {
-                        count: ctx.xmlLinesSummary.resolved,
-                      })}
-                    />
-                    <Badge
-                      variant={ctx.xmlLinesSummary.pending > 0 ? "error" : "neutral"}
-                      label={t("purchases.pendingProducts.summary.pending", {
-                        count: ctx.xmlLinesSummary.pending,
-                      })}
-                    />
-                    <Badge
-                      variant={ctx.xmlLinesSummary.warnings > 0 ? "warning" : "neutral"}
-                      label={t("purchases.pendingProducts.summary.warnings", {
-                        count: ctx.xmlLinesSummary.warnings,
-                      })}
-                    />
-                  </div>
-                )}
-
                 {/* Line Cards */}
-                <div className="pdl-lines">
+                <div className="pdl-lines" id="purchase-lines" tabIndex={-1}>
+                  {(ctx.errors.lines?.message || ctx.errors.lines?.root?.message) && <ZHPageNotice variant="error" message={ctx.errors.lines.message ?? ctx.errors.lines.root?.message ?? ""} />}
                   {ctx.lines.map((l, idx) => (
                     <PurchaseLineCard
                       key={l._key}
@@ -1091,24 +933,6 @@ export function PurchasesPage() {
             </div>
           </div>
 
-          {ctx.editing &&
-            ctx.editing.status === "Draft" &&
-            ctx.pendingReceptionItems.length > 0 && (
-              <ZHPageNotice
-                variant="warning"
-                message={t(
-                  "purchases.validation.pendingReceptionItemsTitle",
-                  "No se puede confirmar la compra: productos pendientes de vinculación",
-                )}
-                detail={ctx.pendingReceptionItems.join(", ")}
-              />
-            )}
-
-          {/* PILOT-PURCHASE-UI-FIX-01 — Confirmar usa la versión guardada del borrador. */}
-          {ctx.hasUnsavedFormChanges && (
-            <ZHPageNotice variant="warning" message={ctx.unsavedChangesMessage} />
-          )}
-
           {/* Footer Actions */}
           <div className="pf-footer">
             <ZHBtn
@@ -1129,6 +953,7 @@ export function PurchasesPage() {
             {/* FASE 5 PURCHASE-UX — una compra confirmada/anulada es solo lectura: sin Guardar. */}
             {!ctx.readOnly && (
             <ZHBtn
+              id="purchase-save"
               type="button"
               variant="primary"
               onClick={ctx.handleSave}
@@ -1168,7 +993,7 @@ export function PurchasesPage() {
                 {t("purchases.actions.discardDraft", "Descartar borrador")}
               </ZHBtn>
             )}
-            {ctx.editing && ctx.editing.status === "Draft" && (
+            {ctx.editing && ctx.editing.status === "Draft" && (<>
               <ZHBtn
                 type="button"
                 variant="primary"
@@ -1180,8 +1005,14 @@ export function PurchasesPage() {
                   ctx.scheduleBlocksConfirm ||
                   ctx.hasUnsavedFormChanges
                 }
-                title={
-                  ctx.pendingReceptionItems.length > 0
+
+              >
+                <span className="material-symbols-outlined zh-icon-md">
+                  check_circle
+                </span>
+                {t("purchases.actions.confirm", "Confirmar compra")}
+              </ZHBtn>
+              <PurchaseActionReason reason={ctx.pendingReceptionItems.length > 0
                     ? t(
                         "purchases.validation.resolvePendingItemsBeforeConfirm",
                         "Resuelva los productos pendientes de vinculación antes de confirmar.",
@@ -1192,15 +1023,8 @@ export function PurchasesPage() {
                         ? ctx.scheduleMismatchConfirmMessage
                         : ctx.hasUnsavedFormChanges
                         ? ctx.unsavedChangesMessage
-                        : undefined
-                }
-              >
-                <span className="material-symbols-outlined zh-icon-md">
-                  check_circle
-                </span>
-                {t("purchases.actions.confirm", "Confirmar compra")}
-              </ZHBtn>
-            )}
+                        : undefined} action={t("purchases.actions.confirm", "Confirmar compra")} />
+            </>)}
             {ctx.editing && ctx.editing.status === "Confirmed" && (
               <ZHBtn
                 type="button"
@@ -1249,7 +1073,19 @@ export function PurchasesPage() {
         onClose={ctx.closePendingProducts}
         onResolved={(result) => void ctx.applyResolvedLines(result)}
       />
+      {ctx.breakdownSourceId && ctx.lines.find(l => l.purchaseReceptionLineId === ctx.breakdownSourceId)?.xmlSource && (
+        <PurchaseLineBreakdownModal
+          key={ctx.breakdownSourceId}
+          source={ctx.lines.find(l => l.purchaseReceptionLineId === ctx.breakdownSourceId)!}
+          lines={ctx.lines}
+          supplierId={ctx.formWatch.supplierId}
+          warehouseId={ctx.formWatch.globalWarehouseId}
+          onCancel={() => ctx.setBreakdownSourceId(null)}
+          onApply={rows => ctx.applyBreakdown(ctx.breakdownSourceId!, rows)}
+        />
+      )}
       <DistributeCostModal
+        error={ctx.distributionError}
         open={ctx.modalDistributeCost}
         lines={
           ctx.editing
@@ -1284,7 +1120,8 @@ export function PurchasesPage() {
                 total={ctx.editing.grandTotal}
               />
             )}
-            <XmlConfirmChecklist summary={xmlConfirmChecklist} />
+            <PurchaseConfirmChecklist summary={xmlConfirmChecklist} lineWarnings={confirmLineWarnings}
+              commercialRisk={confirmCommercialRisk} />
             {ctx.retentionIntent.appliesRetention && ctx.whPreview && (
               <ZHPageNotice
                 variant="info"
@@ -1309,27 +1146,7 @@ export function PurchasesPage() {
         title={t("purchases.cancel.title", "Anular compra")}
         message={
           ctx.editing
-            ? [
-                t("purchases.cancel.message", {
-                  invoiceNumber: ctx.editing.invoiceNumber,
-                }),
-                // ZH-RETENTION-CANCELLATION-LIFECYCLE-01 — la retención solo se anula con su compra y
-                // es terminal: se advierte antes de confirmar la anulación. ZH-RETENTION-SRI-ANNULMENT-01:
-                // si ya está autorizada por el SRI, primero debe anularse ante el SRI.
-                ctx.retention?.status === "Issued"
-                  ? ctx.retention.electronicStatus === "Authorized"
-                    ? `${t(
-                        "purchases.cancel.retentionAuthorizedWarning",
-                        "La retención de esta compra ya fue autorizada por el SRI: la compra no se anula aquí, primero debe anularse la retención ante el SRI.",
-                      )} (${ctx.retention.retentionNumber ?? ""})`
-                    : `${t(
-                        "purchases.cancel.retentionWarning",
-                        "También se anulará la retención emitida con esta compra y se revertirá su efecto en la cuenta por pagar y en contabilidad. Una retención anulada no puede volver a emitirse.",
-                      )} (${ctx.retention.retentionNumber ?? ""})`
-                  : "",
-              ]
-                .filter(Boolean)
-                .join(" ")
+            ? buildPurchaseCancelMessage(t, ctx.editing.invoiceNumber, ctx.retention)
             : ""
         }
         label={t("purchases.cancel.reasonLabel", "Motivo de anulación")}
@@ -1393,61 +1210,6 @@ export function PurchasesPage() {
 
 // ── Internal Components ────────────────────────────────────────────────
 
-const DOCUMENT_STATE_VARIANT: Record<PurchaseDocumentStateKind, BadgeVariant> = {
-  new: "neutral",
-  draftIncomplete: "warning",
-  draftReady: "success",
-  confirmed: "success",
-  cancelled: "error",
-  discarded: "neutral",
-};
-
-/**
- * FASE 5 PURCHASE-UX — estado de la compra a nivel documento: Nueva / Borrador incompleto (con
- * motivos) / Listo para confirmar / Confirmada / Anulada. Nunca habla de productos "listos".
- */
-function PurchaseDocumentStateStrip({ state }: { state: PurchaseDocumentState }) {
-  const { t } = useI18n();
-  const labels: Record<PurchaseDocumentStateKind, string> = {
-    new: t("purchases.documentState.new", "Nueva compra · sin guardar"),
-    draftIncomplete: t("purchases.documentState.draftIncomplete", "Borrador incompleto"),
-    draftReady: t("purchases.documentState.draftReady", "Borrador listo para confirmar"),
-    confirmed: t("purchases.documentState.confirmed", "Confirmada"),
-    cancelled: t("purchases.documentState.cancelled", "Anulada"),
-    discarded: t("purchases.documentState.discarded", "Borrador descartado"),
-  };
-  const reasonText = (reason: PurchaseDocumentStateReason): string => {
-    switch (reason.code) {
-      case "noLines":
-        return t("purchases.documentState.reason.noLines", "Sin líneas");
-      case "linesToResolve":
-        return t("purchases.documentState.reason.linesToResolve", { count: reason.count });
-      case "pendingProducts":
-        return t("purchases.documentState.reason.pendingProducts", { count: reason.count });
-      case "scheduleMismatch":
-        return t(
-          "purchases.documentState.reason.scheduleMismatch",
-          "Las cuotas no cuadran con el total",
-        );
-      case "unsavedChanges":
-        return t("purchases.documentState.reason.unsavedChanges", "Cambios sin guardar");
-    }
-  };
-  const detail =
-    state.kind === "new"
-      ? t(
-          "purchases.documentState.newDetail",
-          "Guarde el borrador para poder confirmarlo.",
-        )
-      : state.reasons.map(reasonText).join(" · ");
-  return (
-    <div className="pf-doc-state" aria-live="polite">
-      <Badge variant={DOCUMENT_STATE_VARIANT[state.kind]} size="md" label={labels[state.kind]} />
-      {detail && <ZHDataValue variant="muted">{detail}</ZHDataValue>}
-    </div>
-  );
-}
-
 /** FASE 5 PURCHASE-UX — identifica la compra antes de confirmarla (evita confirmar la equivocada). */
 function PurchaseConfirmSummary({
   supplierName,
@@ -1494,32 +1256,26 @@ function PurchaseConfirmSummary({
   );
 }
 
-const STATUS_TONE_VARIANT: Record<LineStatusTone, BadgeVariant> = {
-  success: "green",
-  warning: "orange",
-  danger: "red",
-};
+/** Margin indicator: tone by state; without a sale price there is no margin to show. */
+const MARGIN_BADGE_VARIANT = {
+  positive: "success",
+  zero: "warning",
+  negative: "error",
+  noSalePrice: "neutral",
+  unavailable: "neutral",
+} as const satisfies Record<LineMarginState, BadgeVariant>;
 
-/** readiness.tone ("success"|"warning"|"danger") ya usa el mismo vocabulario que NoticeSeverity
- * salvo "info" (sin equivalente en readiness) — conversión trivial de tipo, sin lógica. */
-function toneToSeverity(tone: "success" | "warning" | "danger"): NoticeSeverity {
-  return tone;
+function marginBadgeLabel(
+  profitability: { marginState: LineMarginState; marginPct: string },
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  if (profitability.marginState === "noSalePrice") return t("purchases.lines.marginNoSalePrice", "Sin PVP");
+  if (profitability.marginState === "unavailable") return profitability.marginPct;
+  return `${profitability.marginPct}%`;
 }
 
 type PurchaseLineDraft = PurchaseLineFormValues;
 type TFunction = ReturnType<typeof useI18n>["t"];
-type ChecklistTone = "success" | "warning" | "danger" | "neutral";
-type XmlConfirmChecklistSummary = {
-  hasXmlPurchase: boolean;
-  blockerCount: number;
-  items: {
-    key: string;
-    label: string;
-    detail: string;
-    tone: ChecklistTone;
-    icon: string;
-  }[];
-};
 
 function readinessActionLabel(
   action: PurchaseLineReadinessAction | undefined,
@@ -1548,227 +1304,6 @@ function readinessActionLabel(
     case undefined:
       return "";
   }
-}
-
-function buildXmlConfirmChecklist(
-  lines: PurchaseLineDraft[],
-  persistedLines: NonNullable<ReturnType<typeof usePurchasesPage>["editing"]>["lines"],
-  vatRatesMap: Record<string, number>,
-  iceRatesMap: Record<string, number>,
-  t: TFunction,
-  moneyDecimals: number,
-): XmlConfirmChecklistSummary {
-  const xmlLines = lines.filter((line) => line.purchaseReceptionLineId);
-  const persistedByReceptionLine = new Map(
-    persistedLines
-      .filter((line) => line.purchaseReceptionLineId)
-      .map((line) => [line.purchaseReceptionLineId, line]),
-  );
-  const linkedItems = xmlLines.filter((line) => !!line.itemId).length;
-  const missingItems = xmlLines.length - linkedItems;
-  const linesWithoutPresentation = xmlLines.filter(
-    (line) => line.itemId && !line.packagingLevelId,
-  );
-  const stockLinesWithoutPresentation = linesWithoutPresentation.filter(
-    (line) => line.context?.participatesInInventory === true,
-  );
-  const unknownPresentationRisk = linesWithoutPresentation.filter(
-    (line) => line.context?.participatesInInventory === undefined,
-  );
-  const taxesRecognized = xmlLines.filter((line) => {
-    const persisted = line.purchaseReceptionLineId
-      ? persistedByReceptionLine.get(line.purchaseReceptionLineId)
-      : undefined;
-    if (persisted?.taxes?.length) {
-      return persisted.taxes.every((tax) => tax.taxRateCode && tax.taxName);
-    }
-    return !!line.vatCode || !!line.xmlTaxCode || line.xmlTaxValue !== undefined;
-  }).length;
-  const xmlTotalsAvailable =
-    xmlLines.length > 0 &&
-    xmlLines.every((line) => typeof line.xmlTotalLine === "number");
-  const totalDifference = xmlTotalsAvailable
-    ? roundToTotalAmount(
-        xmlLines.reduce(
-          (sum, line) =>
-            sum +
-            lineNet(line) +
-            resolveLineTaxes(line, vatRatesMap, iceRatesMap).vat +
-            resolveLineTaxes(line, vatRatesMap, iceRatesMap).ice -
-            (line.xmlTotalLine ?? 0),
-          0,
-        ),
-      )
-    : null;
-
-  if (xmlLines.length === 0) {
-    return {
-      hasXmlPurchase: false,
-      blockerCount: 0,
-      items: [
-        {
-          key: "manual",
-          label: t("purchases.confirm.checklist.manualTitle"),
-          detail: t("purchases.confirm.checklist.manualDetail"),
-          tone: "neutral",
-          icon: "description",
-        },
-      ],
-    };
-  }
-
-  const blockerCount = missingItems + stockLinesWithoutPresentation.length;
-  return {
-    hasXmlPurchase: true,
-    blockerCount,
-    items: [
-      {
-        key: "linked-items",
-        label: t("purchases.confirm.checklist.linkedItems"),
-        detail:
-          missingItems === 0
-            ? t("purchases.confirm.checklist.linkedItemsOk", {
-                count: linkedItems,
-              })
-            : t("purchases.confirm.checklist.linkedItemsMissing", {
-                count: missingItems,
-              }),
-        tone: missingItems === 0 ? "success" : "danger",
-        icon: missingItems === 0 ? "check_circle" : "error",
-      },
-      {
-        key: "linked-presentations",
-        label: t("purchases.confirm.checklist.linkedPresentations"),
-        detail:
-          linesWithoutPresentation.length === 0
-            ? t("purchases.confirm.checklist.linkedPresentationsOk")
-            : t("purchases.confirm.checklist.linkedPresentationsMissing", {
-                count: linesWithoutPresentation.length,
-              }),
-        tone:
-          stockLinesWithoutPresentation.length > 0
-            ? "danger"
-            : linesWithoutPresentation.length > 0
-              ? "warning"
-              : "success",
-        icon:
-          linesWithoutPresentation.length === 0
-            ? "check_circle"
-            : stockLinesWithoutPresentation.length > 0
-              ? "error"
-              : "warning",
-      },
-      {
-        key: "missing-presentations",
-        label: t("purchases.confirm.checklist.linesWithoutPresentation"),
-        detail:
-          linesWithoutPresentation.length === 0
-            ? t("purchases.confirm.checklist.linesWithoutPresentationOk")
-            : unknownPresentationRisk.length > 0
-              ? t("purchases.confirm.checklist.linesWithoutPresentationUnknown", {
-                  count: linesWithoutPresentation.length,
-                })
-              : t("purchases.confirm.checklist.linesWithoutPresentationWarn", {
-                  count: linesWithoutPresentation.length,
-                }),
-        tone:
-          stockLinesWithoutPresentation.length > 0
-            ? "danger"
-            : linesWithoutPresentation.length > 0
-              ? "warning"
-              : "success",
-        icon:
-          linesWithoutPresentation.length === 0
-            ? "check_circle"
-            : stockLinesWithoutPresentation.length > 0
-              ? "error"
-              : "warning",
-      },
-      {
-        key: "taxes",
-        label: t("purchases.confirm.checklist.recognizedTaxes"),
-        detail:
-          taxesRecognized === xmlLines.length
-            ? t("purchases.confirm.checklist.recognizedTaxesOk", {
-                count: taxesRecognized,
-              })
-            : t("purchases.confirm.checklist.recognizedTaxesWarn", {
-                count: xmlLines.length - taxesRecognized,
-              }),
-        tone: taxesRecognized === xmlLines.length ? "success" : "warning",
-        icon: taxesRecognized === xmlLines.length ? "check_circle" : "warning",
-      },
-      {
-        key: "total-difference",
-        label: t("purchases.confirm.checklist.totalDifference"),
-        detail:
-          totalDifference === null
-            ? t("purchases.confirm.checklist.totalDifferenceUnavailable")
-            : t("purchases.confirm.checklist.totalDifferenceValue", {
-                amount: formatMoneyWithSymbol(Math.abs(totalDifference), moneyDecimals),
-              }),
-        tone:
-          totalDifference === null
-            ? "warning"
-            : Math.abs(totalDifference) <= 0.01
-              ? "success"
-              : "warning",
-        icon:
-          totalDifference !== null && Math.abs(totalDifference) <= 0.01
-            ? "check_circle"
-            : "warning",
-      },
-    ],
-  };
-}
-
-function XmlConfirmChecklist({
-  summary,
-}: {
-  summary: XmlConfirmChecklistSummary;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="pf-confirm-checklist">
-      <p className="pf-confirm-checklist__intro">
-        {t(
-          "purchases.confirm.message",
-          "Esta acción generará movimientos de inventario y cuentas por pagar. No se puede revertir.",
-        )}
-      </p>
-      {summary.hasXmlPurchase && (
-        <p className="pf-confirm-checklist__hint">
-          {summary.blockerCount > 0
-            ? t(
-                "purchases.confirm.checklist.blockingHint",
-                "Hay controles pendientes que bloquearán la confirmación.",
-              )
-            : t(
-                "purchases.confirm.checklist.readyHint",
-                "Revise el checklist antes de confirmar la compra XML.",
-              )}
-        </p>
-      )}
-      <ul className="pf-confirm-checklist__list">
-        {summary.items.map((item) => (
-          <li
-            key={item.key}
-            className={`pf-confirm-checklist__item pf-confirm-checklist__item--${item.tone}`}
-          >
-            <span className="material-symbols-outlined pf-confirm-checklist__icon">
-              {item.icon}
-            </span>
-            <span>
-              <strong>{item.label}</strong>
-              <span className="pf-confirm-checklist__detail">
-                {item.detail}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 function ProductLineActionMenu({
@@ -1913,7 +1448,7 @@ function ProductLineActionMenu({
   );
 }
 
-function PurchaseLineCard({
+export function PurchaseLineCard({
   line: l,
   idx,
   ctx,
@@ -1923,6 +1458,7 @@ function PurchaseLineCard({
   ctx: ReturnType<typeof usePurchasesPage>;
 }) {
   const { t } = useI18n();
+  const lineLocked = ctx.fieldDisabled || !!l.xmlAllocation;
   const precisionPolicy = usePrecisionPolicy(); // presentación de línea (06)
   const viewMatchedItem = useOpenItemDetail();
   // Estado local de expandir/colapsar SOLO la banda inferior de detalle
@@ -1931,6 +1467,18 @@ function PurchaseLineCard({
   // instancia de línea (key={l._key} en el .map() que renderiza esta
   // card). Inicia expandido para no ocultar información por defecto.
   const [collapsed, setCollapsed] = useState(false);
+  const fieldIssues = purchaseFieldErrors(ctx.errors?.lines?.[idx]);
+  const errorId = (field: string) => `purchase-line-${l._key}-${field}-error`;
+  const fieldMessage = (fields: string[]) => [...new Set(fieldIssues
+    .filter(issue => fields.some(field => issue.path === field || issue.path.startsWith(`${field}.`)))
+    .map(issue => issue.message))].join(" ") || undefined;
+  const identityFields = ["description", "itemId"];
+  const quantityFields = ["quantity", "quantityInBaseUom"];
+  const costFields = ["unitPrice", "baseUnitPrice"];
+  const taxFields = ["vatCode", "iceCode", "taxes"];
+  const headerFields = [...identityFields, ...quantityFields, ...costFields, ...taxFields, "warehouseId"];
+  const detailErrors = fieldIssues.filter(issue => !headerFields.some(field => issue.path === field || issue.path.startsWith(`${field}.`)));
+
   // PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — Base/IVA/ICE/Total de la cabecera
   // editable viven en `vm.editableHeader`, recalculados en cada render desde quantity/unitPrice/
   // discountPct/vatCode/iceCode actuales — nunca desde el snapshot XML (`vm.xml.*`, que se muestra
@@ -1949,6 +1497,12 @@ function PurchaseLineCard({
   const ctxData = l.context;
   const vatPct = ctxData?.vatPercent ?? ctx.vatRatesMap[l.vatCode] ?? 0;
   const readiness = ctx.lineReadinessByKey[l._key];
+  const readinessFields: Record<string, string[]> = {
+    MISSING_ITEM: ["itemId", "description"], MISSING_PRESENTATION: ["packagingLevelId"],
+    MISSING_WAREHOUSE: ["warehouseId"], INVALID_TAX: taxFields,
+  };
+  const readinessField = readinessFields[readiness?.status ?? ""];
+  const readinessHasFieldError = readinessField && fieldMessage(readinessField);
   const primaryReadinessAction = readinessActionLabel(readiness?.primaryAction, t);
   const secondaryReadinessAction = readinessActionLabel(
     readiness?.secondaryAction,
@@ -2040,6 +1594,22 @@ function PurchaseLineCard({
   };
   const productName =
     ctxData?.shortName || l.description?.split(" — ")[1] || l.description;
+  const detailId = `pdl-detail-${l._key}`;
+  // ZH-DS-LINE-ISSUES-01 — incidencias de la línea, cada una una sola vez, para la
+  // etiqueta anclada al borde de la tarjeta. Sin incidencias no hay etiqueta (sin badges de éxito).
+  const lineIssues = buildPurchaseLineIssues({ vm, readiness, t, hasFieldErrors: fieldIssues.length > 0,
+    readinessHasFieldError, showReadinessActions, lineLocked, onReset: handleResetToSupplierOrigin,
+    onGoToField: () => {
+      setCollapsed(false);
+      requestAnimationFrame(() => {
+        const line = document.getElementById(`purchase-line-${l._key}-fields`);
+        (line?.querySelector<HTMLElement>('[aria-invalid="true"]:not(:disabled)') ?? line)?.focus();
+      });
+    },
+  });
+  // Franja operativa (no son estados de error): solo si hay equivalencia o nota de costo.
+  const hasOperationalInfo =
+    vm.registration.show && (!!vm.registration.presentationDetail || !!vm.registration.costNote);
 
   return (
     // DS-LINE-CARD-UNIFY-02: wrapper externo unificado (ZHLineCard) en vez de la caja local
@@ -2047,16 +1617,22 @@ function PurchaseLineCard({
     // duplicar, eliminar, colapso — plantilla DESIGN-SYSTEM-LINE-RAIL-04), pasado como prop
     // `rail`; el contenido de la línea (`.pdl-line`, sin cambios internos) sigue como children.
     <ZHLineCard
-      className="pdl-line-card"
+      className={`pdl-line-card${lineIssues.length > 0 ? " pdl-line-card--has-issues" : ""}`}
       rail={
         <>
           <span className="pdl-line-row__num">
             {String(idx + 1).padStart(2, "0")}
           </span>
+          {canBreakDown(l) && (
+            <ZHLineAction icon="call_split" variant="default" size="md" compact showText={false}
+              title={t(l.xmlAllocation ? "purchases.breakdown.edit" : "purchases.breakdown.action", l.xmlAllocation ? "Editar desglose" : "Desglosar")}
+              label={t(l.xmlAllocation ? "purchases.breakdown.edit" : "purchases.breakdown.action", l.xmlAllocation ? "Editar desglose" : "Desglosar")}
+              disabled={ctx.fieldDisabled} onClick={() => ctx.setBreakdownSourceId(l.purchaseReceptionLineId!)} />
+          )}
           <ProductLineActionMenu
             line={l}
             ctx={ctx}
-            disabled={ctx.fieldDisabled}
+            disabled={lineLocked}
             onProductSelect={handleProductSelect}
             onViewProduct={() => viewMatchedItem(l.itemId as string)}
             onUnlinkProduct={handleUnlinkProduct}
@@ -2069,6 +1645,7 @@ function PurchaseLineCard({
             showText={false}
             title={t("purchases.lines.duplicate", "Duplicar")}
             label={t("purchases.lines.duplicate", "Duplicar")}
+            disabled={lineLocked}
             onClick={() => ctx.duplicateLine(l._key)}
           />
           <ZHRowDeleteAction
@@ -2076,37 +1653,18 @@ function PurchaseLineCard({
             showText={false}
             title={t("purchases.lines.delete", "Eliminar")}
             label={t("purchases.lines.delete", "Eliminar")}
+            disabled={lineLocked}
             onClick={() => ctx.removeLine(l._key)}
           />
-          <button
-            type="button"
-            className="pdl-line-row__collapse-toggle"
-            aria-expanded={!collapsed}
-            aria-label={
-              collapsed
-                ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
-                : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
-            }
-            title={
-              collapsed
-                ? t("purchases.lines.expandDetail", "Mostrar detalle de la línea")
-                : t("purchases.lines.collapseDetail", "Ocultar detalle de la línea")
-            }
-            onClick={() => setCollapsed((current) => !current)}
-          >
-            <span
-              className={`material-symbols-outlined pdl-line-row__collapse-icon${collapsed ? "" : " pdl-line-row__collapse-icon--open"}`}
-            >
-              expand_more
-            </span>
-          </button>
         </>
       }
     >
-      <div className="pdl-line">
-      <div className="pdl-line__main">
+      <div className="pdl-line" id={`purchase-line-${l._key}`} tabIndex={-1}>
+      {lineIssues.length > 0 && <PurchaseLineIssuesTag issues={lineIssues} />}
+      <div className="pdl-line__main" id={`purchase-line-${l._key}-fields`} tabIndex={-1}>
         <div className="pdl-line__summary">
-          <div className="pdl-line__identity">
+          <div className="pdl-line__identity" role="group" aria-label={t("purchases.lines.product", "Producto")}
+            aria-describedby={fieldMessage(identityFields) ? errorId("identity") : undefined}>
             {!l.itemId ? (
               <div className="pdl-line__product-name pdl-line__product-name--muted">
                 {t(
@@ -2138,6 +1696,21 @@ function PurchaseLineCard({
                 </div>
               </>
             )}
+            <PurchaseFieldError id={errorId("identity")} message={fieldMessage(identityFields)} />
+            {/* PURCHASE-LINE-COMPACT-02 — disclosure "Detalle" (ZH-DS-DISCLOSURE-01) dentro de la
+                cabecera; el estado de la línea vive en la etiqueta anclada (ISSUES-TAG-01). */}
+            <div className="pdl-line__identity-actions">
+              <ZHBtn
+                type="button"
+                variant="secondary"
+                size="sm"
+                expanded={!collapsed}
+                aria-controls={detailId}
+                onClick={() => setCollapsed((current) => !current)}
+              >
+                {t("purchases.lines.detailToggle", "Detalle")}
+              </ZHBtn>
+            </div>
           </div>
           {/* PURCHASE-LINE-HEADER-UX-02 — bodega como columna operativa propia (criterio
               "Ubicación" de Ventas), en vez de un campo suelto debajo del producto. Mismo
@@ -2150,6 +1723,8 @@ function PurchaseLineCard({
                 </ZHFieldLabel>
                 <ZhSelect
                   className="pdl-line__wh-select-compact"
+                  aria-label={t("purchases.lines.warehouse", "Bodega")}
+                  aria-invalid={!!fieldMessage(["warehouseId"])} aria-describedby={fieldMessage(["warehouseId"]) ? errorId("warehouse") : undefined}
                   density="compact"
                   value={l.warehouseId ?? ctx.formWatch.globalWarehouseId ?? ""}
                   onChange={(e) =>
@@ -2168,6 +1743,7 @@ function PurchaseLineCard({
                 </ZhSelect>
               </>
             )}
+            <PurchaseFieldError id={errorId("warehouse")} message={fieldMessage(["warehouseId"])} />
           </div>
           {/* PURCHASE-LINE-HEADER-UX-03 — cada métrica pasa a ser columna directa de
               .pdl-line__summary (antes agrupadas en .pdl-line__metrics) para que la cabecera sea
@@ -2180,6 +1756,8 @@ function PurchaseLineCard({
               <ZhDecimalInput
                 key={headerInputKey("qty", vm, l.packagingLevelId)}
                 className="pdl-input pdl-input--qty"
+                aria-label={t("purchases.lines.quantityToRegister", "Cantidad a registrar")}
+                aria-invalid={!!fieldMessage(quantityFields)} aria-describedby={fieldMessage(quantityFields) ? errorId("quantity") : undefined}
                 density="compact"
                 precision="quantity"
                 positiveOnly
@@ -2197,8 +1775,9 @@ function PurchaseLineCard({
                   ctx.updateLine(l._key, "quantityInBaseUom", patch.quantityInBaseUom);
                   ctx.updateLine(l._key, "baseUnitPrice", patch.baseUnitPrice);
                 }}
-                disabled={ctx.fieldDisabled}
+                disabled={lineLocked}
               />
+              <PurchaseFieldError id={errorId("quantity")} message={fieldMessage(quantityFields)} />
             </div>
             <div className="pdl-line__metric">
               <ZHFieldLabel size="sm">
@@ -2208,6 +1787,8 @@ function PurchaseLineCard({
                 <ZhDecimalInput
                   key={headerInputKey("cost", vm, l.packagingLevelId)}
                   className="pdl-input pdl-input--cost"
+                  aria-label={t("purchases.lines.unitCostToRegister", "Costo unitario a registrar")}
+                  aria-invalid={!!fieldMessage(costFields)} aria-describedby={fieldMessage(costFields) ? errorId("cost") : undefined}
                   density="compact"
                   // Escala del precio de compra: es la que el backend persiste para el precio base.
                   precision="purchaseUnitPrice"
@@ -2225,13 +1806,16 @@ function PurchaseLineCard({
                     ctx.updateLine(l._key, "unitPrice", patch.unitPrice);
                     ctx.updateLine(l._key, "baseUnitPrice", patch.baseUnitPrice);
                   }}
-                  disabled={ctx.fieldDisabled}
+                  disabled={lineLocked}
                 />
               </ZHInputGroup>
+              <PurchaseFieldError id={errorId("cost")} message={fieldMessage(costFields)} />
             </div>
+            {/* Subtotal de producto (cantidad × costo − descuento, sin impuestos): no es la base
+                imponible tributaria — esa vive en el XML como "Base imp. IVA" (puede incluir ICE). */}
             <div className="pdl-line__metric">
               <ZHFieldLabel size="sm">
-                {t("purchases.lines.taxableBaseShort", "BASE IMP.")}
+                {t("purchases.lines.productSubtotal", "Subtotal producto")}
               </ZHFieldLabel>
               <div className="pdl-line__metric-value">
                 <ZHMoneyValue value={sub} precision="money" />
@@ -2242,7 +1826,8 @@ function PurchaseLineCard({
                 <ZHFieldLabel size="sm">
                   {t("purchases.lines.vatShort", "IVA")} {vatPct}%: $
                 </ZHFieldLabel>
-                <div className="pdl-line__tax-amount">
+                <div className="pdl-line__tax-amount" role="group" aria-label={t("purchases.lines.taxes", "Impuestos")}
+                  aria-describedby={fieldMessage(taxFields) ? errorId("tax") : undefined}>
                   <ZHMoneyValue
                     value={vatAmt}
                     precision="tax"
@@ -2250,16 +1835,20 @@ function PurchaseLineCard({
                     emphasis="strong"
                   />
                 </div>
-                <div>
-                  <ZHDataValue variant="muted">
-                    {t("purchases.lines.iceShort", "ICE")}:{" "}
-                  </ZHDataValue>
-                  <ZHMoneyValue
-                    value={iceAmt}
-                    precision="tax"
-                    emphasis="muted"
-                  />
-                </div>
+                <PurchaseFieldError id={errorId("tax")} message={fieldMessage(taxFields)} />
+                {/* ICE/IRBPNR solo cuando aplican a la línea: un $0.00 fijo no aporta dato fiscal. */}
+                {(iceAmt > 0 || !!l.iceCode) && (
+                  <div>
+                    <ZHDataValue variant="muted">
+                      {t("purchases.lines.iceShort", "ICE")}:{" "}
+                    </ZHDataValue>
+                    <ZHMoneyValue
+                      value={iceAmt}
+                      precision="tax"
+                      emphasis="muted"
+                    />
+                  </div>
+                )}
                 {irbpnrAmt > 0 && (
                   <div>
                     <ZHDataValue variant="muted">
@@ -2291,18 +1880,19 @@ function PurchaseLineCard({
                 {t("purchases.lines.marginShort", "Margen")}
               </ZHFieldLabel>
               <Badge
-                variant={vm.commercial.profitability.marginPctValue >= 0 ? "success" : "error"}
+                variant={MARGIN_BADGE_VARIANT[vm.commercial.profitability.marginState]}
                 size="md"
-                label={`${vm.commercial.profitability.marginPct}%`}
+                label={marginBadgeLabel(vm.commercial.profitability, t)}
               />
             </div>
         </div>
       </div>
 
-      {/* FASE 5 PURCHASE-UX — qué se registrará realmente (siempre visible, también colapsado). */}
-      {vm.registration.show && (
-        <div className="pdl-line__registration">
-          <span className="pdl-line__registration-sentence">{vm.registration.sentence}</span>
+      {/* Franja operativa (no son estados de error), solo si existe: equivalencia de
+          presentación y nota de costo. Las incidencias viven en la etiqueta anclada
+          (ZH-DS-LINE-ISSUES-01). Cantidad/costo a registrar viven solo en la cabecera. */}
+      {hasOperationalInfo && (
+        <div className="pdl-line__status">
           {vm.registration.presentationDetail && (
             <ZHDataValue variant="muted">{vm.registration.presentationDetail}</ZHDataValue>
           )}
@@ -2311,100 +1901,13 @@ function PurchaseLineCard({
           )}
         </div>
       )}
-      {vm.registration.show && vm.registration.savedInBaseUnitNote && (
-        <ZHCompactNotice
-          notice={buildNotice({
-            severity: "info",
-            intent: "status",
-            source: "domain-status",
-            label: t("purchases.lines.registrationSavedInBaseUnitTitle", "Equivalencia informativa"),
-            detail: vm.registration.savedInBaseUnitNote,
-          })}
-        />
-      )}
-      {vm.registration.originDiffers && (
-        <>
-          <ZHCompactNotice
-            notice={buildNotice({
-              severity: "warning",
-              intent: "status",
-              source: "domain-status",
-              label: t(
-                "purchases.lines.registrationOriginDiffers",
-                "Cantidad o costo distintos al documento del proveedor",
-              ),
-              detail: vm.registration.originDetail,
-            })}
-          />
-          {!ctx.fieldDisabled && (
-            <div className="pdl-line__registration">
-              <ZHBtn
-                type="button"
-                variant="secondary"
-                size="xs"
-                onClick={handleResetToSupplierOrigin}
-              >
-                <span className="material-symbols-outlined zh-icon-md">restart_alt</span>
-                {t("purchases.lines.resetToSupplierOrigin", "Recalcular desde XML")}
-              </ZHBtn>
-            </div>
-          )}
-        </>
-      )}
 
-      {/* Resumen de estado de preparación: solo interpreta datos ya presentes en la línea. */}
-      <div className="pdl-line__status">
-        {readiness ? (
-          <>
-            {readiness.status !== "MISSING_ITEM" &&
-              readiness.status !== "READY" && (
-                <Badge
-                  variant={STATUS_TONE_VARIANT[readiness.tone]}
-                  label={readiness.label}
-                />
-              )}
-            {readiness.blocking && (
-              <ZHCompactNotice
-                notice={buildNotice({
-                  severity: toneToSeverity(readiness.tone),
-                  intent: "blocking",
-                  source: "domain-status",
-                  label: readiness.label,
-                  detail: showReadinessActions
-                    ? `${readiness.detail} ${t("purchases.lineReadiness.nextAction", "Acción")}: ${showReadinessActions}`
-                    : readiness.detail,
-                })}
-              />
-            )}
-            {/* PURCHASE-LINE-MISSING-SALE-PRICE-WARNING-01 — no bloqueante, independiente del
-                bloqueo de arriba: ambos pueden coexistir (p. ej. falta bodega Y falta precio de
-                venta a la vez). */}
-            {readiness.warning && (
-              <ZHCompactNotice
-                notice={buildNotice({
-                  severity: toneToSeverity(readiness.warning.tone),
-                  intent: "status",
-                  source: "domain-status",
-                  label: readiness.warning.label,
-                  detail: readiness.warning.detail,
-                })}
-              />
-            )}
-          </>
-        ) : (
-          <Badge
-            variant={STATUS_TONE_VARIANT[vm.status.tone]}
-            label={`${vm.status.icon} ${vm.status.label}`}
-          />
-        )}
-      </div>
-
-      {/* 1. Qué llegó del proveedor — visible mientras la línea no esté colapsada,
-          con nota cuando la línea no viene de XML. Solo esta banda se oculta al
-          colapsar: el aviso de estado/readiness de arriba (.pdl-line__status)
-          queda siempre visible, incluso colapsado. */}
+      {/* Detalle expandible (botón "Detalle", ZH-DS-DISCLOSURE-01): 1. XML recibido — snapshot
+          documental, única comparación explícita XML vs registro; en compra manual solo la nota.
+          2. Presentación e inventario. 3. Información comercial. Cabecera, línea secundaria y
+          avisos quedan siempre visibles, también colapsado. */}
       {!collapsed && (
-      <div className="pdl-blocks">
+      <div className="pdl-blocks" id={detailId}>
         <section className="pdl-block">
           <header className="pdl-block__header">
             <span
@@ -2427,12 +1930,16 @@ function PurchaseLineCard({
               </ZHDataValue>
             </p>
           )}
+          {vm.xml.hasOrigin && (<>
+          {/* Cód. proveedor ya está en la cabecera cuando hay producto vinculado. */}
           <div className="pdl-ctx-col__badges">
-            <Badge
-              variant="neutral"
-              code
-              label={`${t("purchases.lines.supplierCode", "Cód. proveedor")}: ${vm.xml.supplierCode}`}
-            />
+            {!l.itemId && (
+              <Badge
+                variant="neutral"
+                code
+                label={`${t("purchases.lines.supplierCode", "Cód. proveedor")}: ${vm.xml.supplierCode}`}
+              />
+            )}
             <Badge
               variant={vm.xml.hasSupplierAuxCode ? "warning" : "neutral"}
               code
@@ -2442,7 +1949,7 @@ function PurchaseLineCard({
           <ZHDataValue variant="muted" className="pdl-ctx-col__desc">
             {vm.xml.description}
           </ZHDataValue>
-          <div className="pdl-ctx-col__costs">
+          <div className="pdl-ctx-col__costs pdl-ctx-col__costs--grid">
             <ZHInfoRow
               label={<ZHFieldLabel size="sm">{t("purchases.lines.quantity", "Cantidad")}</ZHFieldLabel>}
               value={<ZHDataValue variant="numeric">{vm.xml.quantity}</ZHDataValue>}
@@ -2458,7 +1965,7 @@ function PurchaseLineCard({
             <ZHInfoRow
               label={
                 <ZHFieldLabel size="sm">
-                  {t("purchases.lines.taxableBase", "Base imponible")}
+                  {t("purchases.lines.xmlVatTaxableBase", "Base imp. IVA")}
                 </ZHFieldLabel>
               }
               value={<ZHDataValue variant="numeric">{vm.xml.taxableBase}</ZHDataValue>}
@@ -2467,10 +1974,12 @@ function PurchaseLineCard({
               label={<ZHFieldLabel size="sm">IVA ({vm.xml.vatPercentage}%)</ZHFieldLabel>}
               value={<ZHDataValue variant="numeric">{vm.xml.taxValue}</ZHDataValue>}
             />
-            <ZHInfoRow
-              label={<ZHFieldLabel size="sm">{t("purchases.lines.iceShort", "ICE")}</ZHFieldLabel>}
-              value={<ZHDataValue variant="numeric">{vm.xml.iceValue}</ZHDataValue>}
-            />
+            {vm.xml.hasIce && (
+              <ZHInfoRow
+                label={<ZHFieldLabel size="sm">{t("purchases.lines.iceShort", "ICE")}</ZHFieldLabel>}
+                value={<ZHDataValue variant="numeric">{vm.xml.iceValue}</ZHDataValue>}
+              />
+            )}
             {vm.xml.hasIrbpnr && (
               <ZHInfoRow
                 label={<ZHFieldLabel size="sm">IRBPNR</ZHFieldLabel>}
@@ -2506,6 +2015,7 @@ function PurchaseLineCard({
               </div>
             </div>
           )}
+          </>)}
         </section>
 
         {/* 2. Con qué producto del sistema está relacionado — siempre visible, incluso sin producto aún. */}
@@ -2547,6 +2057,11 @@ function PurchaseLineCard({
               )}
           </header>
           <div className="pdl-ctx-col__costs">
+            {detailErrors.filter(issue => issue.path !== "packagingLevelId").map(issue => (
+              <ZHField key={issue.path} density="compact"
+                label={t(`purchases.validation.lineField.${issue.path}`, issue.path === "discountPct" ? "Descuento" : issue.path)}
+                fieldError={issue.message}>{null}</ZHField>
+            ))}
             {packagingLevels.length > 0 && (
               <div>
                 <ZHFieldLabel size="sm">
@@ -2555,8 +2070,10 @@ function PurchaseLineCard({
                 <ZhSelect
                   density="compact"
                   value={l.packagingLevelId ?? ""}
+                  aria-label={t("purchases.lines.receivedPresentation", "Presentación recibida")}
+                  aria-invalid={!!fieldMessage(["packagingLevelId"])} aria-describedby={fieldMessage(["packagingLevelId"]) ? errorId("presentation") : undefined}
                   onChange={(e) => handlePackagingChange(e.target.value)}
-                  disabled={ctx.fieldDisabled}
+                  disabled={lineLocked}
                 >
                   <option value="">
                     {t("purchases.lines.baseUnit", "Unidad base")}
@@ -2569,6 +2086,8 @@ function PurchaseLineCard({
                 </ZhSelect>
               </div>
             )}
+            <PurchaseFieldError id={errorId("presentation")} message={fieldMessage(["packagingLevelId"])} />
+            {vm.registration.savedInBaseUnitNote && <ZHDataValue variant="muted">{vm.registration.savedInBaseUnitNote}</ZHDataValue>}
             {/* FASE 5 PURCHASE-UX — producto sin presentaciones: flujo normal en unidad base, sin
                 controles de presentación innecesarios. */}
             {vm.item.hasItem && packagingLevels.length === 0 && !vm.inventory.hasPresentation && (
@@ -2579,7 +2098,10 @@ function PurchaseLineCard({
                 )}
               </ZHDataValue>
             )}
-            {vm.inventory.hasPresentation && vm.inventory.conversionFactorValue !== 1 && (
+            {/* La equivalencia ya se lee en la línea secundaria cuando hay presentación elegida. */}
+            {vm.inventory.hasPresentation &&
+              vm.inventory.conversionFactorValue !== 1 &&
+              !(vm.registration.show && vm.registration.presentationDetail) && (
               <ZHInfoRow
                 wide
                 label={
@@ -2605,7 +2127,7 @@ function PurchaseLineCard({
                     "Recordar esta presentación para las próximas facturas de este proveedor.",
                   )}
                   disabled={
-                    ctx.fieldDisabled ||
+                    lineLocked ||
                     ctx.matchingKey === l._key ||
                     !l.packagingLevelId
                   }
@@ -2623,7 +2145,8 @@ function PurchaseLineCard({
           </div>
         </section>
 
-        {/* 3. Impacto para el negocio — información de análisis, menor peso visual que los bloques anteriores. */}
+        {/* 3. Impacto para el negocio — el margen % vive solo en la cabecera; aquí lo que no está
+            arriba (stock, costos de referencia, precio de venta, descuento máximo). */}
         <section className="pdl-block pdl-block--muted">
           <header className="pdl-block__header">
             <span
@@ -2635,17 +2158,20 @@ function PurchaseLineCard({
               {t("purchases.lines.commercialInfo", "Información comercial")}
             </h4>
           </header>
+          {!vm.commercial.hasContext ? (
+            <p className="pdl-block__hint">
+              <ZHDataValue variant="muted">
+                {t("purchases.lines.noCommercialData", "Sin datos comerciales para esta línea.")}
+              </ZHDataValue>
+            </p>
+          ) : (<>
           <div className="pdl-ctx-col__stock">
             <div className="pdl-stock-item">
-              {vm.commercial.hasContext ? (
-                <Badge
-                  variant={vm.commercial.stock.isCritical ? "error" : "success"}
-                  size="md"
-                  label={vm.commercial.stock.statusLabel}
-                />
-              ) : (
-                <ZHFieldLabel size="sm">{vm.commercial.stock.statusLabel}</ZHFieldLabel>
-              )}
+              <Badge
+                variant={vm.commercial.stock.isCritical ? "error" : "success"}
+                size="md"
+                label={vm.commercial.stock.statusLabel}
+              />
               <ZHDataValue variant="numeric">{vm.commercial.stock.current}</ZHDataValue>
             </div>
             <div className="pdl-stock-item">
@@ -2661,7 +2187,7 @@ function PurchaseLineCard({
               <ZHDataValue variant="numeric">{vm.commercial.stock.reserved}</ZHDataValue>
             </div>
           </div>
-          <div className="pdl-ctx-col__costs">
+          <div className="pdl-ctx-col__costs pdl-ctx-col__costs--grid">
             <ZHInfoRow
               label={
                 <ZHFieldLabel size="sm">
@@ -2678,74 +2204,30 @@ function PurchaseLineCard({
               }
               value={<ZHDataValue variant="numeric">{vm.commercial.costs.last}</ZHDataValue>}
             />
-          </div>
-          {vm.commercial.costs.showDeviationAlert && (
-            <ZHCompactNotice
-              notice={buildNotice({
-                severity: "warning",
-                intent: "status",
-                source: "domain-status",
-                label: t("purchases.lines.costDeviation", "Costo fuera de rango"),
-                detail: vm.commercial.costs.deviationLabel,
-              })}
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.salePrice", "Precio de venta")}
+                </ZHFieldLabel>
+              }
+              value={<ZHDataValue variant="numeric">{vm.commercial.profitability.pvp}</ZHDataValue>}
             />
-          )}
-          <div className="pdl-ctx-col__margin">
-            <div className="pdl-margin-row">
-              <ZHFieldLabel size="sm">
-                {t("purchases.lines.profitability", "Rentabilidad (margen neto)")}
-              </ZHFieldLabel>
-              <ZHDataValue
-                variant="numeric"
-                tone={vm.commercial.profitability.marginPctValue >= 0 ? "success" : "danger"}
-              >
-                {vm.commercial.profitability.marginPct}%
-              </ZHDataValue>
-            </div>
-            <progress
-              className="pdl-margin-bar pdl-margin-bar--progress"
-              value={Math.min(100, Math.max(0, vm.commercial.profitability.marginPctValue))}
-              max={100}
-              aria-label={t("purchases.lines.profitabilityAria", "Rentabilidad margen neto")}
+            <ZHInfoRow
+              label={
+                <ZHFieldLabel size="sm">
+                  {t("purchases.lines.maxDiscount", "Desc. máx.")}
+                </ZHFieldLabel>
+              }
+              value={
+                <ZHDataValue variant="numeric">
+                  {vm.commercial.profitability.maxDiscountPercent}%
+                </ZHDataValue>
+              }
             />
-            <div className="pdl-margin-meta">
-              <ZHDataValue variant="muted">
-                {t("purchases.lines.salePrice", "Precio de venta")}:{" "}
-                {vm.commercial.profitability.pvp}
-              </ZHDataValue>
-              <ZHDataValue variant="muted">
-                {t("purchases.lines.maxDiscount", "Desc. máx.")}:{" "}
-                {vm.commercial.profitability.maxDiscountPercent}%
-              </ZHDataValue>
-            </div>
           </div>
+          </>)}
         </section>
       </div>
-      )}
-      {/* Barra compacta que reemplaza visualmente a .pdl-blocks cuando la línea
-          está colapsada — evita que se sienta como un espacio vacío y deja
-          claro que hay detalle oculto (XML / presentación / info comercial).
-          Mismo estado/handler que el chevron de la banda izquierda, solo un
-          segundo disparador para expandir. */}
-      {collapsed && (
-        <button
-          type="button"
-          className="pdl-line__collapsed-bar"
-          onClick={() => setCollapsed(false)}
-        >
-          <span className="material-symbols-outlined pdl-line__collapsed-bar-icon">
-            info
-          </span>
-          <span className="pdl-line__collapsed-bar-text">
-            {t(
-              "purchases.lines.collapsedBar",
-              "Detalle colapsado — Ver XML, presentación e información comercial",
-            )}
-          </span>
-          <span className="material-symbols-outlined pdl-line__collapsed-bar-chevron">
-            expand_more
-          </span>
-        </button>
       )}
       </div>
     </ZHLineCard>
@@ -3033,7 +2515,7 @@ function PaymentScheduleSection({
   const { t } = useI18n();
   const moneyDecimals = usePrecisionDecimals("money"); // texto compuesto (06)
   return (
-    <div className="pf-card">
+    <div className="pf-card" id="purchase-schedule" tabIndex={-1}>
       <div className="pf-card__header">
         <h4 className="pf-card__title">
           <span className="material-symbols-outlined pf-card__title-icon">
@@ -3323,7 +2805,7 @@ function RetentionSection({
   const { t } = useI18n();
   const isDraft = ctx.editing?.status === "Draft";
   return (
-    <div className="pf-card pf-retention">
+    <div className="pf-card pf-retention" id="purchase-retention" tabIndex={-1}>
       <div className="pf-card__header">
         <h4 className="pf-card__title">
           <span className="material-symbols-outlined pf-card__title-icon">
@@ -3368,10 +2850,7 @@ function RetentionSection({
       <div className="pf-card__body">
         {isDraft && <PurchaseRetentionDraft ctx={ctx} />}
         {!isDraft && !ctx.retention && (
-          <ZHPageNotice
-            variant="neutral"
-            message={t("purchases.retention.noneIssued", "Sin retención emitida para esta compra.")}
-          />
+          <ZHDataValue variant="muted">{t("purchases.retention.noneIssued")}</ZHDataValue>
         )}
         {ctx.retention && (
           <>

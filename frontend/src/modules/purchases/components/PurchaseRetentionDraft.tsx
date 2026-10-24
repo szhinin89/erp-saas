@@ -1,3 +1,4 @@
+import { ZHDataValue } from "../../../components/zh/ZHDataValue";
 import { Badge } from "../../../components/PageShell";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
@@ -59,14 +60,10 @@ export function PurchaseRetentionDraft({ ctx }: { ctx: PurchaseRetentionDraftCon
         </>
       )}
       {preview && !ctx.canApplyRetention && (
-        <ZHPageNotice
-          variant="neutral"
-          message={t(
-            "purchases.retention.notApplicable",
-            "Esta compra no genera retención con la configuración actual.",
-          )}
-          detail={preview.skipReason}
-        />
+        <div className="zh-stack">
+          <ZHDataValue variant="muted">{t("purchases.retention.notApplicable", "Esta compra no genera retención con la configuración actual.")}</ZHDataValue>
+          {preview.skipReason && <ZHDataValue variant="muted">{preview.skipReason}</ZHDataValue>}
+        </div>
       )}
       {preview && ctx.canApplyRetention && (
         <>
@@ -110,20 +107,13 @@ export function PurchaseRetentionDraft({ ctx }: { ctx: PurchaseRetentionDraftCon
             title={t("purchases.retention.applyOnConfirm", "Emitir la retención al confirmar la compra")}
             subtitle={t(
               "purchases.retention.applyOnConfirmHint",
-              "Se emite junto con la compra en una sola operación; el registro ante el SRI se hace después.",
+              "Se emite junto con la compra en una sola operación y el número se asigna automáticamente; el registro ante el SRI se hace después.",
             )}
             disabled={ctx.saving}
             onClick={() => ctx.updateRetentionIntent({ appliesRetention: !intent.appliesRetention })}
           />
           {intent.appliesRetention && (
             <>
-              <ZHPageNotice
-                variant="info"
-                message={t(
-                  "purchases.retention.numberOnConfirm",
-                  "El número de retención se generará automáticamente al confirmar la compra.",
-                )}
-              />
               {!ctx.canReadEmissionPoints && (
                 <ZHPageNotice
                   variant="warning"
@@ -135,7 +125,7 @@ export function PurchaseRetentionDraft({ ctx }: { ctx: PurchaseRetentionDraftCon
                 />
               )}
               <ZHGrid cols={2}>
-                <ZHField label={t("purchases.retention.emissionPoint", "Punto de emisión")} required>
+                <ZHField label={t("purchases.retention.emissionPoint", "Punto de emisión")} required fieldError={!intent.emissionPointId ? t("purchases.retention.emissionPointRequired") : undefined}>
                   <ZhSelect
                     value={intent.emissionPointId}
                     disabled={ctx.saving || !ctx.canReadEmissionPoints}
@@ -150,7 +140,7 @@ export function PurchaseRetentionDraft({ ctx }: { ctx: PurchaseRetentionDraftCon
                     ))}
                   </ZhSelect>
                 </ZHField>
-                <ZHField label={t("purchases.retention.issueDate", "Fecha de emisión")} required>
+                <ZHField label={t("purchases.retention.issueDate", "Fecha de emisión")} required fieldError={!intent.issueDate ? t("purchases.retention.issueDateRequired") : undefined}>
                   <ZhDateInput
                     value={intent.issueDate}
                     disabled={ctx.saving}

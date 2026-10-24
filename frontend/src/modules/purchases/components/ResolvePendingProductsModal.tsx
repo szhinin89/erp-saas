@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
   FormProvider,
   useForm,
@@ -7,17 +8,11 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZHModal } from "../../../components/zh/ZHModal";
-import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
-import { ZhSelect } from "../../../components/zh/inputs/ZhSelect";
-import { ZhDecimalInput } from "../../../components/zh/inputs/ZhDecimalInput";
-import { ZhTextarea } from "../../../components/zh/inputs/ZhTextarea";
-import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { Badge } from "../../../components/PageShell";
 import { useItemCreationCatalogs } from "../../../components/items/ItemEditorModal/useItemCreationCatalogs";
 import { usePrecisionDecimals } from "../../../hooks/usePrecisionPolicy";
 import { useI18n } from "../../../i18n/i18n";
-import { formatMoney } from "../../../lib/sanitizers";
 import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { itemLookupFacade } from "../../items/facades/itemLookupFacade";
@@ -26,24 +21,19 @@ import {
   purchaseReceptionService,
   type ResolveReceptionLinesResult,
 } from "../api/purchaseReceptionService";
-import { ProductPicker } from "./ProductPicker";
+import { PendingProductsBulkBar } from "./PendingProductsBulkBar";
+import { PendingProductRow } from "./PendingProductRow";
 import {
   pendingProductsFormSchema,
   type PendingProductsFormValues,
-  type PendingProductMode,
 } from "../schemas/pendingProductsSchema";
 import {
-  applyBulkAssignment,
-  applyMarginToSelected,
   buildInitialRow,
   buildResolveRequest,
   groupRowErrors,
-  isBasePresentation,
-  netUnitCost,
-  provisionalUnitBarcode,
-  rowSalePrice,
+  lacksNetSalePrice,
+  pendingRowIssues,
   suggestBarcodeType,
-  type BulkAssignment,
   type PendingProductSource,
   type SalePricing,
 } from "../utils/pendingProductsResolution";
@@ -57,15 +47,15 @@ type Props = {
   onResolved: (result: ResolveReceptionLinesResult) => void;
 };
 
-type Catalogs = ReturnType<typeof useItemCreationCatalogs>;
 type LevelsByItem = Record<string, ItemPackagingLevelDto[]>;
 
 /**
  * COMPRAS-METODO-ZH-01B — "Resolver productos pendientes": todas las líneas XML sin producto en una
- * sola tabla. Cada fila crea un producto, lo vincula a uno existente o se declara como otra
- * presentación (otro código del proveedor) de un producto nuevo del mismo lote. Las acciones en
- * bloque aplican valores a las filas seleccionadas; cada fila sigue siendo editable. El envío es
- * todo o nada: si el servidor rechaza alguna fila no se persiste nada y los datos quedan en pantalla.
+ * sola lista de filas compactas con detalle expandible. Cada fila crea un producto, lo vincula a uno
+ * existente o se declara como otra presentación (otro código del proveedor) de un producto nuevo
+ * del mismo lote. Las acciones en bloque aplican valores a las filas seleccionadas; cada fila sigue
+ * siendo editable. El envío es todo o nada: si el servidor rechaza alguna fila no se persiste nada
+ * y los datos quedan en pantalla.
  */
 export function ResolvePendingProductsModal({
   open,
@@ -84,6 +74,10 @@ export function ResolvePendingProductsModal({
     }),
     [catalogs.vatRateOptions, priceDecimals],
   );
+  const noNetPriceMessage = t(
+    "purchases.pendingProducts.errors.noNetPrice",
+    "No se pudo calcular el precio sin IVA: revise el IVA de venta y el PVP.",
+  );
   const barcodeTypeCodes = catalogs.barcodeTypeOptions.map((b) => b.code);
   const form = useForm<PendingProductsFormValues>({
     resolver: zodResolver(pendingProductsFormSchema),
@@ -92,6 +86,7 @@ export function ResolvePendingProductsModal({
   const [rowErrors, setRowErrors] = useState<Map<string, string[]>>(new Map());
   const [generalErrors, setGeneralErrors] = useState<string[]>([]);
   const [levelsByItem, setLevelsByItem] = useState<LevelsByItem>({});
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const initialized = useRef(false);
   const sourcesById = useMemo(
     () => new Map(sources.map((s) => [s.rowId, s])),
@@ -109,6 +104,8 @@ export function ResolvePendingProductsModal({
     form.reset({ rows: sources.map((s) => buildInitialRow(s, barcodeTypeCodes)) });
     setRowErrors(new Map());
     setGeneralErrors([]);
+    // Una sola línea (abierta desde su fila de la compra): no hay nada que compactar.
+    setExpanded(new Set(sources.length === 1 ? [sources[0].rowId] : []));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, sources, catalogs.barcodeTypeOptions.length]);
 
@@ -163,24 +160,30 @@ export function ResolvePendingProductsModal({
     }
   };
 
+  const expandRows = (rowIds: string[]) =>
+    // Síncrono: RHF enfoca el primer campo con error justo después, y debe estar visible.
+    flushSync(() => setExpanded((prev) => new Set([...prev, ...rowIds])));
+  const setRowExpanded = (rowId: string, value: boolean) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (value) next.add(rowId);
+      else next.delete(rowId);
+      return next;
+    });
+
   const submit = form.handleSubmit(async (values) => {
     setRowErrors(new Map());
     setGeneralErrors([]);
     // El precio sin IVA que se persiste debe quedar > 0 con la precisión de la empresa.
-    let unpriced = false;
-    values.rows.forEach((row, index) => {
-      if (!row.selected || row.mode !== "create") return;
-      const net = rowSalePrice(row, undefined, pricing)?.net ?? 0;
-      if (net > 0) return;
-      unpriced = true;
-      form.setError(`rows.${index}.salePriceGross`, {
-        message: t(
-          "purchases.pendingProducts.errors.noNetPrice",
-          "No se pudo calcular el precio sin IVA: revise el IVA de venta y el PVP.",
-        ),
+    const unpriced = values.rows.filter((row) => lacksNetSalePrice(row, pricing));
+    if (unpriced.length > 0) {
+      expandRows(unpriced.map((row) => row.rowId));
+      values.rows.forEach((row, index) => {
+        if (!unpriced.includes(row)) return;
+        form.setError(`rows.${index}.salePriceGross`, { message: noNetPriceMessage }, { shouldFocus: row === unpriced[0] });
       });
-    });
-    if (unpriced) return;
+      return;
+    }
     try {
       const result = await purchaseReceptionService.resolveLines(
         buildResolveRequest(values.rows, pricing),
@@ -189,6 +192,7 @@ export function ResolvePendingProductsModal({
         const grouped = groupRowErrors(result.errors);
         setRowErrors(grouped.byRow);
         setGeneralErrors(grouped.general);
+        expandRows([...grouped.byRow.keys()]);
         return;
       }
       onResolved(result);
@@ -203,11 +207,20 @@ export function ResolvePendingProductsModal({
           }),
         ]);
     }
+  }, (errors) => {
+    // Ningún campo con error queda oculto: se expanden sus filas antes de enfocar el primero.
+    const rowsWithFieldErrors = Object.keys(errors.rows ?? {}).map((i) => form.getValues(`rows.${Number(i)}.rowId`));
+    expandRows(rowsWithFieldErrors.filter(Boolean));
   });
 
   const rows = useWatch({ control: form.control, name: "rows" }) ?? [];
   const selectedCount = rows.filter((r) => r.selected).length;
   const rowsWithErrors = rows.filter((r) => rowErrors.has(r.rowId)).length;
+  const issuesByRow = pendingRowIssues(rows, pricing, noNetPriceMessage);
+  // Pendiente = fila seleccionada que no pasa las validaciones del envío o que el servidor rechazó.
+  const pendingCount = rows.filter((r) => r.selected && (issuesByRow.has(r.rowId) || rowErrors.has(r.rowId))).length;
+  const allExpanded = rows.length > 0 && rows.every((r) => expanded.has(r.rowId));
+  const counter = (label: string) => <span className="pbd-summary__item">{label}</span>;
 
   return (
     <ZHModal
@@ -221,6 +234,11 @@ export function ResolvePendingProductsModal({
       })}
       footer={
         <>
+          <span className="pbd-summary pbd-footer-status" aria-live="polite">
+            {counter(t("purchases.pendingProducts.footer.selected", { count: selectedCount }))}
+            {counter(t("purchases.pendingProducts.footer.ready", { count: selectedCount - pendingCount }))}
+            {counter(t("purchases.pendingProducts.footer.pending", { count: pendingCount }))}
+          </span>
           <ZHBtn variant="ghost" size="md" onClick={onClose} disabled={form.formState.isSubmitting}>
             {t("common.cancel", "Cancelar")}
           </ZHBtn>
@@ -236,47 +254,48 @@ export function ResolvePendingProductsModal({
       }
     >
       <FormProvider {...form}>
-        {generalErrors.length > 0 && (
-          <ZHPageNotice variant="error" message={generalErrors.join("\n")} />
-        )}
-        {rowsWithErrors > 0 && (
+        {/* One summary per rejection: row reasons stay on their rows; only reasons without a row go here. */}
+        {(rowsWithErrors > 0 || generalErrors.length > 0) && (
           <ZHPageNotice
-            variant="warning"
-            message={t("purchases.pendingProducts.rowsRejected", { count: rowsWithErrors })}
+            variant={rowsWithErrors > 0 ? "warning" : "error"}
+            message={rowsWithErrors > 0
+              ? t("purchases.pendingProducts.rowsRejected", { count: rowsWithErrors })
+              : generalErrors.join("\n")}
+            detail={rowsWithErrors > 0 ? generalErrors.join("\n") : null}
           />
         )}
-        <BulkActionsBar catalogs={catalogs} sourcesById={sourcesById} pricing={pricing} />
-        <div className="prl-scroll">
-          <table className="pf-table prl-table">
-            <thead>
-              <tr>
-                <th>
-                  <SelectAllCheckbox />
-                </th>
-                <th>{t("purchases.pendingProducts.col.xml", "Línea XML del proveedor")}</th>
-                <th>{t("purchases.pendingProducts.col.action", "Acción")}</th>
-                <th>{t("purchases.pendingProducts.col.product", "Producto ERP")}</th>
-                <th>{t("purchases.pendingProducts.col.classification", "Clasificación")}</th>
-                <th>{t("purchases.pendingProducts.col.presentation", "Presentación")}</th>
-                <th>{t("purchases.pendingProducts.col.taxPrice", "Impuestos y precio")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => (
-                <PendingProductRowView
-                  key={row.rowId}
-                  index={index}
-                  source={sourcesById.get(row.rowId)}
-                  sourcesById={sourcesById}
-                  catalogs={catalogs}
-                  pricing={pricing}
-                  levels={levelsByItem[row.linkItemId] ?? []}
-                  serverErrors={rowErrors.get(row.rowId) ?? []}
-                  onItemLinked={(itemId) => void loadLevels(itemId, index)}
-                />
-              ))}
-            </tbody>
-          </table>
+        <PendingProductsBulkBar catalogs={catalogs} sourcesById={sourcesById} pricing={pricing} />
+        <div className="prl-rows" role="table" aria-label={t("purchases.pendingProducts.title", "Resolver productos pendientes")}>
+          <div className="prl-row prl-row--head" role="row">
+            <span role="columnheader" className="prl-row__check"><SelectAllCheckbox /></span>
+            <span role="columnheader">{t("purchases.pendingProducts.col.xml", "Línea XML del proveedor")}</span>
+            <span role="columnheader">{t("purchases.pendingProducts.col.action", "Acción")}</span>
+            <span role="columnheader">{t("purchases.pendingProducts.col.product", "Producto ERP")}</span>
+            <span role="columnheader" className="prl-row__toggle">
+              <ZHBtn type="button" variant="ghost" size="sm"
+                onClick={() => setExpanded(new Set(allExpanded ? [] : rows.map((r) => r.rowId)))}>
+                {allExpanded
+                  ? t("purchases.pendingProducts.collapseAll", "Contraer todo")
+                  : t("purchases.pendingProducts.expandAll", "Expandir todo")}
+              </ZHBtn>
+            </span>
+          </div>
+          {rows.map((row, index) => (
+            <PendingProductRow
+              key={row.rowId}
+              index={index}
+              source={sourcesById.get(row.rowId)}
+              sourcesById={sourcesById}
+              catalogs={catalogs}
+              pricing={pricing}
+              levels={levelsByItem[row.linkItemId] ?? []}
+              serverErrors={rowErrors.get(row.rowId) ?? []}
+              issues={issuesByRow.get(row.rowId) ?? []}
+              expanded={expanded.has(row.rowId)}
+              onExpandedChange={(value) => setRowExpanded(row.rowId, value)}
+              onItemLinked={(itemId) => void loadLevels(itemId, index)}
+            />
+          ))}
         </div>
       </FormProvider>
     </ZHModal>
@@ -284,473 +303,18 @@ export function ResolvePendingProductsModal({
 }
 
 function SelectAllCheckbox() {
+  const { t } = useI18n();
   const { control, setValue, getValues } = useFormContext<PendingProductsFormValues>();
   const rows = useWatch({ control, name: "rows" }) ?? [];
   const all = rows.length > 0 && rows.every((r) => r.selected);
   return (
     <input
       type="checkbox"
-      aria-label="Seleccionar todas"
+      aria-label={t("purchases.pendingProducts.selectAll", "Seleccionar todas")}
       checked={all}
       onChange={() =>
         setValue("rows", getValues("rows").map((row) => ({ ...row, selected: !all })), { shouldDirty: true })
       }
     />
-  );
-}
-
-/** Patrón: seleccionar filas → elegir valor → aplicar a seleccionados. */
-function BulkActionsBar({
-  catalogs,
-  sourcesById,
-  pricing,
-}: {
-  catalogs: Catalogs;
-  sourcesById: ReadonlyMap<string, PendingProductSource>;
-  pricing: SalePricing;
-}) {
-  const { t } = useI18n();
-  const { getValues, setValue, clearErrors } = useFormContext<PendingProductsFormValues>();
-  const [assignment, setAssignment] = useState<BulkAssignment>({});
-  const [margin, setMargin] = useState<number | null>(null);
-  const set = (field: keyof BulkAssignment, value: string) =>
-    setAssignment((prev) => ({ ...prev, [field]: value }));
-  const replaceRows = (rows: PendingProductsFormValues["rows"]) => {
-    setValue("rows", rows, { shouldDirty: true });
-    clearErrors();
-  };
-
-  return (
-    <div className="prl-bulk">
-      <ZHField density="compact" label={t("purchases.pendingProducts.col.action", "Acción")}>
-        <ZhSelect density="compact" value={assignment.mode ?? ""} onChange={(e) => set("mode", e.target.value)}>
-          <option value="">—</option>
-          <option value="create">{t("purchases.pendingProducts.mode.create", "Crear producto")}</option>
-          <option value="link">{t("purchases.pendingProducts.mode.link", "Vincular existente")}</option>
-        </ZhSelect>
-      </ZHField>
-      <CatalogSelect label={t("purchases.pendingProducts.field.itemType", "Tipo de producto")} value={assignment.itemTypeId} onChange={(v) => set("itemTypeId", v)} options={catalogs.itemTypeOptions.map((o) => ({ value: o.id, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.brand", "Marca")} value={assignment.brandId} onChange={(v) => set("brandId", v)} options={catalogs.brandOptions.map((o) => ({ value: o.id, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.category", "Categoría")} value={assignment.categoryNodeId} onChange={(v) => set("categoryNodeId", v)} options={catalogs.categoryOptions.map((o) => ({ value: o.id, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.uom", "Unidad base")} value={assignment.defaultUomCode} onChange={(v) => set("defaultUomCode", v)} options={catalogs.uomOptions.map((o) => ({ value: o.code, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.saleVat", "IVA venta")} value={assignment.saleVatCode} onChange={(v) => set("saleVatCode", v)} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
-      <ZHBtn
-        type="button"
-        variant="secondary"
-        size="md"
-        onClick={() => {
-          replaceRows(applyBulkAssignment(getValues("rows"), assignment));
-          setAssignment({});
-        }}
-      >
-        {t("purchases.pendingProducts.applySelected", "Aplicar a seleccionados")}
-      </ZHBtn>
-      <ZHField density="compact" label={t("purchases.pendingProducts.field.margin", "Margen sobre precio (%)")}>
-        <ZhDecimalInput
-          precision="percentage"
-          positiveOnly
-          defaultValue={margin ?? undefined}
-          onValueCommit={(v) => setMargin(v === "" ? null : Number(v))}
-        />
-      </ZHField>
-      <ZHBtn
-        type="button"
-        variant="secondary"
-        size="md"
-        disabled={margin == null || margin >= 100}
-        onClick={() =>
-          replaceRows(applyMarginToSelected(getValues("rows"), sourcesById, margin ?? 0, pricing))
-        }
-      >
-        {t("purchases.pendingProducts.applyMargin", "Sugerir PVP final")}
-      </ZHBtn>
-    </div>
-  );
-}
-
-function CatalogSelect({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string | undefined;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <ZHField density="compact" label={label}>
-      <ZhSelect density="compact" value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
-        <option value="">—</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </ZhSelect>
-    </ZHField>
-  );
-}
-
-function PendingProductRowView({
-  index,
-  source,
-  sourcesById,
-  catalogs,
-  pricing,
-  levels,
-  serverErrors,
-  onItemLinked,
-}: {
-  index: number;
-  source: PendingProductSource | undefined;
-  sourcesById: ReadonlyMap<string, PendingProductSource>;
-  catalogs: Catalogs;
-  pricing: SalePricing;
-  levels: ItemPackagingLevelDto[];
-  serverErrors: string[];
-  onItemLinked: (itemId: string) => void;
-}) {
-  const { t } = useI18n();
-  const quantityDecimals = usePrecisionDecimals("quantity");
-  const { register, control, setValue, formState } = useFormContext<PendingProductsFormValues>();
-  const row = useWatch({ control, name: `rows.${index}` });
-  const allRows = useWatch({ control, name: "rows" }) ?? [];
-  const errors = formState.errors.rows?.[index];
-  const [picking, setPicking] = useState(false);
-  if (!row || !source) return null;
-  const field = (name: keyof PendingProductsFormValues["rows"][number]) => `rows.${index}.${name}` as const;
-  const err = (name: keyof NonNullable<typeof errors>) =>
-    (errors?.[name] as { message?: string } | undefined)?.message;
-  const parentOptions = allRows.filter((r) => r.selected && r.mode === "create" && r.rowId !== row.rowId);
-  const factorIsBase = isBasePresentation(row);
-  const provisionalCode =
-    row.mode === "create" && row.selected ? provisionalUnitBarcode(allRows, row.rowId, sourcesById) : null;
-  // Factor de la presentación que entrega el proveedor: la del Item vinculado o la declarada aquí.
-  const factor =
-    row.mode === "link"
-      ? (levels.find((l) => l.id === row.linkPackagingLevelId)?.baseQuantity ?? null)
-      : row.presentationFactor;
-
-  return (
-    <tr className={serverErrors.length > 0 ? "prl-row prl-row--error" : "prl-row"}>
-      <td>
-        <input type="checkbox" aria-label={source.supplierCode} {...register(field("selected"))} />
-      </td>
-      <td className="prl-xml">
-        <strong>{source.supplierCode || "—"}</strong>
-        {source.supplierAuxCode && <span className="prl-muted"> · {source.supplierAuxCode}</span>}
-        <div className="prl-xml__desc">{source.xmlDescription}</div>
-        <XmlFacts source={source} factor={factor} catalogs={catalogs} purchaseVatError={err("purchaseVatCode")} />
-        {source.matchStatus === "NEEDS_REVIEW" && (
-          <Badge variant="warning" label={t("purchases.pendingProducts.suggested", "Con sugerencia")} />
-        )}
-        {serverErrors.map((m) => (
-          <div key={m} className="prl-row__error">
-            {m}
-          </div>
-        ))}
-      </td>
-      <td>
-        <ZhSelect density="compact" {...register(field("mode"))}>
-          <option value="create">{t("purchases.pendingProducts.mode.create", "Crear producto")}</option>
-          <option value="link">{t("purchases.pendingProducts.mode.link", "Vincular existente")}</option>
-          <option value="presentation">
-            {t("purchases.pendingProducts.mode.presentation", "Otra presentación de un producto nuevo")}
-          </option>
-        </ZhSelect>
-      </td>
-      <td className="prl-stack">
-        {(row.mode as PendingProductMode) === "create" && (
-          <>
-            <ZHField density="compact" label={t("purchases.pendingProducts.field.name", "Nombre ERP")} fieldError={err("shortName")}>
-              <input {...register(field("shortName"))} />
-            </ZHField>
-            <ZHField density="compact" label="SKU" fieldError={err("sku")}>
-              <input {...register(field("sku"))} />
-            </ZHField>
-            <details className="prl-more" open={err("description") ? true : undefined}>
-              <summary>{t("purchases.pendingProducts.moreData", "Más datos")}</summary>
-              <ZHField density="compact" label={t("purchases.pendingProducts.field.description", "Descripción ERP")} fieldError={err("description")}>
-                <ZhTextarea rows={3} {...register(field("description"))} />
-              </ZHField>
-            </details>
-          </>
-        )}
-        {row.mode === "link" && (
-          <ZHField density="compact" label={t("purchases.pendingProducts.field.existing", "Producto existente")} fieldError={err("linkItemId")}>
-            {row.linkItemLabel && !picking ? (
-              <div className="prl-link">
-                <span>{row.linkItemLabel}</span>
-                <ZHBtn type="button" variant="ghost" size="xs" onClick={() => setPicking(true)}>
-                  {t("purchases.pendingProducts.change", "Cambiar")}
-                </ZHBtn>
-              </div>
-            ) : (
-              <ProductPicker
-                initialQuery={source.xmlDescription}
-                onSelect={(p) => {
-                  setValue(field("linkItemId"), p.id, { shouldValidate: true, shouldDirty: true });
-                  setValue(field("linkItemLabel"), p.label);
-                  setPicking(false);
-                  onItemLinked(p.id);
-                }}
-              />
-            )}
-          </ZHField>
-        )}
-        {row.mode === "presentation" && (
-          <ZHField density="compact" label={t("purchases.pendingProducts.field.parent", "Producto nuevo (otra fila)")} fieldError={err("parentRowId")}>
-            <ZhSelect density="compact" {...register(field("parentRowId"))}>
-              <option value="">—</option>
-              {parentOptions.map((p) => (
-                <option key={p.rowId} value={p.rowId}>
-                  {p.shortName || p.sku}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-        )}
-      </td>
-      <td className="prl-stack">
-        {row.mode === "create" && (
-          <>
-            <RowSelect index={index} name="itemTypeId" label={t("purchases.pendingProducts.field.itemType", "Tipo de producto")} error={err("itemTypeId")} options={catalogs.itemTypeOptions.map((o) => ({ value: o.id, label: o.name }))} />
-            <RowSelect index={index} name="brandId" label={t("purchases.pendingProducts.field.brand", "Marca")} error={err("brandId")} options={catalogs.brandOptions.map((o) => ({ value: o.id, label: o.name }))} />
-            <RowSelect index={index} name="categoryNodeId" label={t("purchases.pendingProducts.field.category", "Categoría")} error={err("categoryNodeId")} options={catalogs.categoryOptions.map((o) => ({ value: o.id, label: o.name }))} />
-          </>
-        )}
-      </td>
-      <td className="prl-stack">
-        {row.mode === "create" && (
-          <RowSelect index={index} name="defaultUomCode" label={t("purchases.pendingProducts.field.uom", "Unidad base")} error={err("defaultUomCode")} options={catalogs.uomOptions.map((o) => ({ value: o.code, label: o.name }))} />
-        )}
-        {row.mode === "link" ? (
-          <ZHField density="compact" label={t("purchases.pendingProducts.field.supplierPresentation", "Presentación del proveedor")}>
-            <ZhSelect density="compact" {...register(field("linkPackagingLevelId"))}>
-              <option value="">—</option>
-              {levels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name} ({formatMoney(l.baseQuantity, quantityDecimals)})
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-        ) : (
-          <>
-            <ZHField density="compact" label={t("purchases.pendingProducts.field.factor", "Unidades por presentación")} fieldError={err("presentationFactor")}>
-              <ZhDecimalInput
-                precision="conversionFactor"
-                positiveOnly
-                {...register(field("presentationFactor"), {
-                  setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
-                })}
-              />
-            </ZHField>
-            {!factorIsBase && (
-              <>
-                <ZHField density="compact" label={t("purchases.pendingProducts.field.presentationName", "Nombre presentación")} fieldError={err("presentationName")}>
-                  <input placeholder="Caja x12" {...register(field("presentationName"))} />
-                </ZHField>
-                <RowSelect index={index} name="presentationUomCode" label={t("purchases.pendingProducts.field.presentationUom", "Unidad presentación")} error={err("presentationUomCode")} options={catalogs.uomOptions.map((o) => ({ value: o.code, label: o.name }))} />
-              </>
-            )}
-            <ZHField
-              density="compact"
-              label={
-                factorIsBase
-                  ? t("purchases.pendingProducts.field.unitBarcode", "Código de barras de la unidad (opcional)")
-                  : t("purchases.pendingProducts.field.presentationBarcode", "Código de barras de esta presentación (opcional)")
-              }
-              fieldError={err("barcode") ?? err("barcodeType")}
-              hint={
-                provisionalCode
-                  ? t("purchases.pendingProducts.provisionalBarcode", { code: provisionalCode })
-                  : undefined
-              }
-            >
-              <input placeholder="EAN / UPC" {...register(field("barcode"))} />
-              {factorIsBase && (
-                <ZhSelect density="compact" aria-label={t("purchases.pendingProducts.field.barcodeType", "Tipo de código de barras")} {...register(field("barcodeType"))}>
-                  <option value="">—</option>
-                  {catalogs.barcodeTypeOptions.map((o) => (
-                    <option key={o.code} value={o.code}>
-                      {o.name}
-                    </option>
-                  ))}
-                </ZhSelect>
-              )}
-            </ZHField>
-          </>
-        )}
-      </td>
-      <td className="prl-stack">
-        {row.mode === "create" && (
-          <>
-            <RowSelect index={index} name="saleVatCode" label={t("purchases.pendingProducts.field.saleVat", "IVA venta")} error={err("saleVatCode")} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
-            <ZHField
-              density="compact"
-              label={
-                (pricing.vatPercentByCode.get(row.saleVatCode) ?? 0) > 0
-                  ? t("purchases.pendingProducts.field.salePriceGross", "PVP final con IVA (unidad base)")
-                  : t("purchases.pendingProducts.field.salePriceNoVat", "PVP final (unidad base)")
-              }
-              fieldError={err("salePriceGross")}
-            >
-              <ZhDecimalInput
-                precision="salesUnitPrice"
-                positiveOnly
-                {...register(field("salePriceGross"), {
-                  setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
-                })}
-              />
-            </ZHField>
-            <SalePriceSummary
-              row={row}
-              breakdown={rowSalePrice(row, source, pricing)}
-              priceDecimals={pricing.priceDecimals}
-            />
-          </>
-        )}
-      </td>
-    </tr>
-  );
-}
-
-/** Datos del XML del proveedor — solo lectura: no son decisiones del Item. */
-function XmlFacts({
-  source,
-  factor,
-  catalogs,
-  purchaseVatError,
-}: {
-  source: PendingProductSource;
-  factor: number | null;
-  catalogs: Catalogs;
-  purchaseVatError: string | undefined;
-}) {
-  const { t } = useI18n();
-  const quantityDecimals = usePrecisionDecimals("quantity");
-  const percentageDecimals = usePrecisionDecimals("percentage");
-  const vat = catalogs.vatRateByCode.get(source.vatCode);
-  const ice = source.iceCode
-    ? catalogs.iceRateOptions.find((r) => r.code === source.iceCode)
-    : undefined;
-  return (
-    <dl className="zh-description-grid">
-      <dt>{t("purchases.pendingProducts.xml.quantityCost", "Cantidad × costo")}</dt>
-      <dd>
-        {formatMoney(source.quantity, quantityDecimals)} ×{" "}
-        <ZHMoneyValue value={source.unitPrice} precision="purchaseUnitPrice" currencySymbol="" />
-        {source.discountPct > 0 && (
-          <span className="prl-muted">
-            {" "}
-            (−{formatMoney(source.discountPct, percentageDecimals)}%)
-          </span>
-        )}
-      </dd>
-      <dt>{t("purchases.pendingProducts.xml.baseCost", "Costo neto por unidad base")}</dt>
-      <dd>
-        {factor && factor > 0 ? (
-          <ZHMoneyValue value={netUnitCost(source, factor)} precision="purchaseUnitPrice" currencySymbol="" />
-        ) : (
-          "—"
-        )}
-      </dd>
-      <dt>{t("purchases.pendingProducts.field.purchaseVat", "IVA compra")}</dt>
-      <dd>
-        {vat?.name ?? (source.vatCode || "—")}
-        {purchaseVatError && <div className="prl-row__error">{purchaseVatError}</div>}
-      </dd>
-      {source.iceCode && (
-        <>
-          <dt>ICE</dt>
-          <dd>{ice?.name ?? source.iceCode}</dd>
-        </>
-      )}
-    </dl>
-  );
-}
-
-/** Desglose del PVP final desde el precio sin IVA realmente persistible. */
-function SalePriceSummary({
-  row,
-  breakdown,
-  priceDecimals,
-}: {
-  row: PendingProductsFormValues["rows"][number];
-  breakdown: ReturnType<typeof rowSalePrice>;
-  priceDecimals: number;
-}) {
-  const { t } = useI18n();
-  const percentageDecimals = usePrecisionDecimals("percentage");
-  if (!breakdown) return null;
-  const percent = (value: number | null) =>
-    value == null ? "—" : `${formatMoney(value, percentageDecimals)}%`;
-  return (
-    <dl className="zh-description-grid">
-      <dt>{t("purchases.pendingProducts.price.net", "Sin IVA (se guarda)")}</dt>
-      <dd>
-        <ZHMoneyValue value={breakdown.net} precision="salesUnitPrice" currencySymbol="" />
-      </dd>
-      {breakdown.vatAmount !== 0 && (
-        <>
-          <dt>{t("purchases.pendingProducts.price.effective", "PVP efectivo con IVA")}</dt>
-          <dd>
-            <ZHMoneyValue value={breakdown.effectiveGross} precision="salesUnitPrice" currencySymbol="" />
-          </dd>
-        </>
-      )}
-      <dt>{t("purchases.pendingProducts.price.profit", "Utilidad")}</dt>
-      <dd className={breakdown.profit != null && breakdown.profit < 0 ? "prl-price--loss" : undefined}>
-        {breakdown.profit == null ? (
-          "—"
-        ) : (
-          <ZHMoneyValue value={breakdown.profit} precision="salesUnitPrice" currencySymbol="" />
-        )}
-      </dd>
-      <dt>{t("purchases.pendingProducts.price.marginMarkup", "Margen / recargo")}</dt>
-      <dd>
-        {percent(breakdown.marginPct)} / {percent(breakdown.markupPct)}
-      </dd>
-      {breakdown.differs && (
-        <dd className="zh-description-grid__full-row prl-row__warning" role="alert">
-          {t("purchases.pendingProducts.price.differs", {
-            entered: formatMoney(row.salePriceGross ?? 0, priceDecimals),
-            effective: formatMoney(breakdown.effectiveGross, priceDecimals),
-            decimals: priceDecimals,
-          })}
-        </dd>
-      )}
-    </dl>
-  );
-}
-
-function RowSelect({
-  index,
-  name,
-  label,
-  error,
-  options,
-}: {
-  index: number;
-  name: "itemTypeId" | "brandId" | "categoryNodeId" | "defaultUomCode" | "presentationUomCode" | "saleVatCode";
-  label: string;
-  error: string | undefined;
-  options: { value: string; label: string }[];
-}) {
-  const { register } = useFormContext<PendingProductsFormValues>();
-  return (
-    <ZHField density="compact" label={label} fieldError={error}>
-      <ZhSelect density="compact" {...register(`rows.${index}.${name}` as const)}>
-        <option value="">—</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </ZhSelect>
-    </ZHField>
   );
 }

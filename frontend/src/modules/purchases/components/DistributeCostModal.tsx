@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
@@ -14,8 +14,11 @@ import {
   type DistributeCostSourceLine,
 } from "../utils/purchaseCalc";
 
+type DistributionPreviewRow = ReturnType<typeof simulateCostDistribution>[number];
+
 interface Props {
   open: boolean;
+  error?: string;
   lines: DistributeCostSourceLine[];
   totalFreight: number;
   totalOtherCosts: number;
@@ -36,6 +39,7 @@ interface Props {
  */
 export function DistributeCostModal({
   open,
+  error,
   lines,
   totalFreight,
   totalOtherCosts,
@@ -96,13 +100,16 @@ export function DistributeCostModal({
   const hasInvalidQuantity = includedPreview.some(
     (p) => p.quantityInBaseUom <= 0,
   );
-  const validationMessage =
+  // The empty amount is the starting state: an instruction on its own field, not a warning.
+  const amountHint =
     amount <= 0
       ? t(
           "purchases.distributeCost.errors.amountRequired",
           "El valor a distribuir debe ser mayor a cero.",
         )
-      : includedCount === 0
+      : null;
+  const linesMessage =
+    includedCount === 0
         ? t(
             "purchases.distributeCost.errors.noLines",
             "Debe incluir al menos un ítem.",
@@ -119,7 +126,7 @@ export function DistributeCostModal({
               )
             : null;
 
-  const canCalculate = validationMessage === null;
+  const canCalculate = amountHint === null && linesMessage === null;
   const hasCalculated = lastCalculatedSignature === signature;
   const canApply = canCalculate && hasCalculated && !applying;
 
@@ -139,11 +146,90 @@ export function DistributeCostModal({
     if (ok) onCancel();
   };
 
+  // Una definición por columna: encabezado de escritorio y data-label del apilado móvil.
+  const itemHeader = t("purchases.distributeCost.col.item", "Ítem");
+  const includeLabel = t("purchases.distributeCost.col.include", "Incluir");
+  const calculated = (value: number) => (hasCalculated ? value : null);
+  const numericColumns: {
+    key: string;
+    label: string;
+    render: (p: DistributionPreviewRow) => ReactNode;
+  }[] = [
+    {
+      key: "quantity",
+      label: t("purchases.distributeCost.col.quantity", "Cantidad"),
+      render: (p) => formatMoney(p.quantity, quantityDecimals),
+    },
+    {
+      key: "currentCost",
+      label: t("purchases.distributeCost.col.currentCost", "Costo unit. actual"),
+      render: (p) => <ZHMoneyValue value={p.currentUnitCost} precision="unitCost" currencySymbol="" />,
+    },
+    {
+      key: "subtotalBase",
+      label: t("purchases.distributeCost.col.subtotalBase", "Subtotal base"),
+      render: (p) => <ZHMoneyValue value={p.subtotalBase} precision="money" currencySymbol="" />,
+    },
+    {
+      key: "participation",
+      label: t("purchases.distributeCost.col.participation", "% particip."),
+      render: (p) => (hasCalculated ? `${formatMoney(p.participationPct, percentageDecimals)}%` : "—"),
+    },
+    {
+      key: "allocated",
+      label: t("purchases.distributeCost.col.allocated", "Valor asignado"),
+      render: (p) => <ZHMoneyValue value={calculated(p.allocatedAmount)} precision="money" currencySymbol="" />,
+    },
+    {
+      key: "allocatedPerUnit",
+      label: t("purchases.distributeCost.col.allocatedPerUnit", "Asignado/unidad"),
+      render: (p) => <ZHMoneyValue value={calculated(p.allocatedPerUnit)} precision="unitCost" currencySymbol="" />,
+    },
+    {
+      key: "newCost",
+      label: t("purchases.distributeCost.col.newCost", "Nuevo costo unit."),
+      render: (p) => <ZHMoneyValue value={calculated(p.newUnitCost)} precision="unitCost" currencySymbol="" />,
+    },
+    {
+      key: "newTotal",
+      label: t("purchases.distributeCost.col.newTotal", "Nuevo total línea"),
+      render: (p) => <ZHMoneyValue value={calculated(p.newLineTotal)} precision="money" currencySymbol="" />,
+    },
+  ];
+
+  // Mismos ocho conceptos de siempre, agrupados: primero el resultado de cada grupo.
+  const summaryGroups: {
+    key: string;
+    title: string;
+    rows: { label: string; value: number | null; primary?: boolean }[];
+  }[] = [
+    {
+      key: "distribution",
+      title: t("purchases.distributeCost.totals.groupDistribution", "Distribución"),
+      rows: [
+        { label: t("purchases.distributeCost.totals.distributed", "Total distribuido"), value: calculated(totalDistributed), primary: true },
+        { label: t("purchases.distributeCost.totals.roundingDiff", "Diferencia de redondeo / por cuadrar"), value: calculated(roundingDiff) },
+        { label: t("purchases.distributeCost.totals.baseIncluded", "Subtotal base ítems incluidos"), value: subtotalBaseIncluded },
+        { label: t("purchases.distributeCost.totals.baseAll", "Subtotal base todos los ítems"), value: subtotalBaseAll },
+      ],
+    },
+    {
+      key: "invoice",
+      title: t("purchases.distributeCost.totals.groupInvoice", "Factura"),
+      rows: [
+        { label: t("purchases.distributeCost.totals.invoiceAfter", "Total factura después / CxP esperada"), value: calculated(totalFacturaDespues), primary: true },
+        { label: t("purchases.distributeCost.totals.invoiceBefore", "Total factura antes"), value: grandTotal },
+        { label: t("purchases.distributeCost.totals.currentFreight", "Flete actual del documento"), value: totalFreight },
+        { label: t("purchases.distributeCost.totals.currentOtherCosts", "Otros gastos actuales del documento"), value: totalOtherCosts },
+      ],
+    },
+  ];
+
   return (
     <ZHModal
       open={open}
       onClose={onCancel}
-      size="xl"
+      size="2xl"
       title={t("purchases.distributeCost.title", "Distribuir flete/gasto")}
       subtitle={t(
         "purchases.distributeCost.subtitle",
@@ -165,10 +251,13 @@ export function DistributeCostModal({
         </>
       }
     >
+      {error && <ZHPageNotice variant="error" message={error} />}
       <div className="pdc-toolbar">
         <ZHField
           density="compact"
           label={t("purchases.distributeCost.amount", "Valor a distribuir")}
+          hint={amountHint}
+          hintType="muted"
         >
           <ZhDecimalInput
             precision="money"
@@ -206,252 +295,76 @@ export function DistributeCostModal({
         </ZHBtn>
       </div>
 
-      {validationMessage && (
-        <ZHPageNotice variant="warning" message={validationMessage} />
+      {linesMessage && (
+        <ZHPageNotice variant="warning" message={linesMessage} />
       )}
 
-      <table className="pf-table pdc-table">
-        <thead>
-          <tr>
-            <th>{t("purchases.distributeCost.col.include", "Incluir")}</th>
-            <th>{t("purchases.distributeCost.col.item", "Ítem")}</th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.quantity", "Cantidad")}
-            </th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.currentCost", "Costo unit. actual")}
-            </th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.subtotalBase", "Subtotal base")}
-            </th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.participation", "% particip.")}
-            </th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.allocated", "Valor asignado")}
-            </th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.allocatedPerUnit", "Asignado/unidad")}
-            </th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.newCost", "Nuevo costo unit.")}
-            </th>
-            <th className="zh-text-align-right">
-              {t("purchases.distributeCost.col.newTotal", "Nuevo total línea")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {preview.map((p) => (
-            <tr key={p.lineId}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={p.included}
-                  onChange={() => toggleLine(p.lineId)}
-                />
-              </td>
-              <td>{p.description}</td>
-              <td className="zh-table-cell--num">{formatMoney(p.quantity, quantityDecimals)}</td>
-              <td className="zh-table-cell--num">
-                <ZHMoneyValue
-                  value={p.currentUnitCost}
-                  precision="unitCost"
-                  currencySymbol=""
-                />
-              </td>
-              <td className="zh-table-cell--num">
-                <ZHMoneyValue
-                  value={p.subtotalBase}
-                  precision="money"
-                  currencySymbol=""
-                />
-              </td>
-              <td className="zh-table-cell--num">
-                {hasCalculated ? `${formatMoney(p.participationPct, percentageDecimals)}%` : "—"}
-              </td>
-              <td className="zh-table-cell--num">
-                <ZHMoneyValue
-                  value={hasCalculated ? p.allocatedAmount : null}
-                  precision="money"
-                  currencySymbol=""
-                />
-              </td>
-              <td className="zh-table-cell--num">
-                <ZHMoneyValue
-                  value={hasCalculated ? p.allocatedPerUnit : null}
-                  precision="unitCost"
-                  currencySymbol=""
-                />
-              </td>
-              <td className="zh-table-cell--num">
-                <ZHMoneyValue
-                  value={hasCalculated ? p.newUnitCost : null}
-                  precision="unitCost"
-                  currencySymbol=""
-                />
-              </td>
-              <td className="zh-table-cell--num">
-                <ZHMoneyValue
-                  value={hasCalculated ? p.newLineTotal : null}
-                  precision="money"
-                  currencySymbol=""
-                />
-              </td>
+      {/* Preview técnico calculado en vivo (excepción documentada de ZHDataTable, frontend.md):
+          checkbox por fila y data-label por celda para el apilado móvil de .responsive-table.
+          El scroll horizontal vive solo en .table-scroll; la columna Ítem queda fija. */}
+      <div className="table-scroll pdc-table-scroll">
+        <table className="table table--compact table--sticky-column responsive-table pdc-table">
+          <thead>
+            <tr>
+              <th className="table__sticky-cell pdc-table__item">{itemHeader}</th>
+              {numericColumns.map((col) => (
+                <th key={col.key} className="zh-text-align-right">
+                  {col.label}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {preview.map((p) => (
+              <tr key={p.lineId} className={p.included ? undefined : "pdc-table__row--excluded"}>
+                <td className="table__sticky-cell pdc-table__item">
+                  <label className="pdc-table__include">
+                    <input
+                      type="checkbox"
+                      checked={p.included}
+                      onChange={() => toggleLine(p.lineId)}
+                      aria-label={`${includeLabel}: ${p.description}`}
+                    />
+                    <span className="pdc-table__desc" title={p.description}>
+                      {p.description}
+                    </span>
+                  </label>
+                </td>
+                {numericColumns.map((col) => (
+                  <td key={col.key} className="zh-table-cell--num" data-label={col.label}>
+                    {col.render(p)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <div className="pdc-totals">
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.baseIncluded",
-              "Subtotal base ítems incluidos",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={subtotalBaseIncluded}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.baseAll",
-              "Subtotal base todos los ítems",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={subtotalBaseAll}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t("purchases.distributeCost.totals.amount", "Valor a distribuir")}
-          </span>
-          <ZHMoneyValue
-            value={amount}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t("purchases.distributeCost.totals.distributed", "Total distribuido")}
-          </span>
-          <ZHMoneyValue
-            value={hasCalculated ? totalDistributed : null}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.roundingDiff",
-              "Diferencia de redondeo",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={hasCalculated ? roundingDiff : null}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.invoiceBefore",
-              "Total factura antes",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={grandTotal}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.invoiceAfter",
-              "Total factura después",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={hasCalculated ? totalFacturaDespues : null}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.payableExpected",
-              "Total documento / CxP esperado",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={hasCalculated ? totalFacturaDespues : null}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.squareDiff",
-              "Diferencia para cuadrar factura",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={hasCalculated ? roundingDiff : null}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.currentFreight",
-              "Flete actual del documento",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={totalFreight}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
-        <div className="pdc-totals__row">
-          <span>
-            {t(
-              "purchases.distributeCost.totals.currentOtherCosts",
-              "Otros gastos actuales del documento",
-            )}
-          </span>
-          <ZHMoneyValue
-            value={totalOtherCosts}
-            precision="money"
-            currencySymbol=""
-            emphasis="strong"
-          />
-        </div>
+      <div className="pdc-summary">
+        {summaryGroups.map((group) => (
+          <section key={group.key} className="pdc-summary__group" aria-label={group.title}>
+            <h4 className="zh-section-title pdc-summary__title">{group.title}</h4>
+            <div className="zh-summary-grid">
+              {group.rows.map((row) => (
+                <div
+                  key={row.label}
+                  className={`pdc-totals__row${row.primary ? " pdc-totals__row--primary" : ""}`}
+                >
+                  <span className="zh-summary-grid__label">{row.label}</span>
+                  <span className="zh-summary-grid__value">
+                    <ZHMoneyValue
+                      value={row.value}
+                      precision="money"
+                      currencySymbol=""
+                      emphasis="strong"
+                    />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
     </ZHModal>
   );

@@ -1,3 +1,4 @@
+import { hasInvalidBreakdown } from "../utils/purchaseXmlBreakdown";
 import { z } from "zod";
 import type { PurchaseItemContextDto } from "../api/purchaseService";
 
@@ -8,6 +9,12 @@ const passthroughT: TFunction = (_key, fallback) => fallback;
 // ── Line sub-schema ────────────────────────────────────────────────────
 export const createPurchaseLineSchema = (t: TFunction) => z.object({
   _key: z.number(),
+  xmlSource: z.custom<import("../api/purchaseReceptionService").PurchaseDraftLineDto>().optional(),
+  xmlAllocation: z.object({
+    subtotal: z.number().nonnegative(), discount: z.number().nonnegative(),
+    taxes: z.array(z.object({ purchaseReceptionLineTaxId: z.string().min(1),
+      taxableBase: z.number().nonnegative(), taxAmount: z.number().nonnegative() })),
+  }).optional(),
   itemId: z.string().nullable().optional(),
   description: z
     .string()
@@ -119,6 +126,9 @@ export const createPurchaseInvoiceSchema = (t: TFunction) => z.object({
   lines: z
     .array(createPurchaseLineSchema(t))
     .min(1, t("purchases.validation.linesRequired", "Agregue al menos una línea.")),
+}).superRefine((data, ctx) => {
+  if (hasInvalidBreakdown(data.lines)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["lines"],
+    message: t("purchases.breakdown.incomplete", "El desglose XML debe cuadrar antes de guardar.") });
 });
 
 export const purchaseInvoiceSchema = createPurchaseInvoiceSchema(passthroughT);

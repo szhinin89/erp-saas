@@ -34,6 +34,7 @@ export interface PurchaseInvoiceTaxSummaryDto {
 
 /** FLOW-READY-02F.1 — snapshot fiel de un impuesto del XML (IVA/ICE/IRBPNR), solo lectura. */
 export interface PurchaseInvoiceDetailTaxDto {
+  purchaseReceptionLineTaxId?: string | null;
   taxCode: string;
   taxRateCode: string;
   taxName: string;
@@ -45,6 +46,7 @@ export interface PurchaseInvoiceDetailTaxDto {
 }
 
 export interface PurchaseLineDto {
+  xmlAllocatedSubtotal?: number | null;
   id: string;
   itemId: string | null;
   description: string;
@@ -236,7 +238,14 @@ export interface PurchasesBySupplierReportResponse {
 
 // ── Payloads ─────────────────────────────────────────────────────────────
 
+export interface PurchaseXmlAllocationInput {
+  subtotal: number;
+  discount: number;
+  taxes: { purchaseReceptionLineTaxId: string; taxableBase: number; taxAmount: number }[];
+}
+
 export interface PurchaseLineInput {
+  xmlAllocation?: PurchaseXmlAllocationInput;
   itemId?: string | null;
   description: string;
   quantity: number;

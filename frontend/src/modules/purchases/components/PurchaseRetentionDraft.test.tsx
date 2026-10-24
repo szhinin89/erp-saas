@@ -98,7 +98,9 @@ describe("PurchaseRetentionDraft", () => {
     renderDraft(ctx);
 
     expect(screen.getByRole("button", { name: /Emitir la retención al confirmar la compra/ }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByText("El número de retención se generará automáticamente al confirmar la compra.")).toBeTruthy();
+    // P1 — el aviso del número automático vive en el hint del toggle, sin banner aparte.
+    expect(screen.getByText(/el número se asigna automáticamente/)).toBeTruthy();
+    expect(document.querySelector(".zh-page-notice")).toBeNull();
     const select = screen.getByRole("combobox") as HTMLSelectElement;
     expect(select.value).toBe("ep-1");
     fireEvent.change(select, { target: { value: "" } });

@@ -530,3 +530,57 @@ describe("PURCHASES-HARDENING-P0 (B9) — crear producto individual usa el resol
     expect(result.current.modalPendingProductSources.map((s) => s.rowId)).toEqual(["rx-1", "rx-2"]);
   });
 });
+
+it("P0 - maps bracket-indexed API line errors without duplicating them in the general notice", async () => {
+  vi.mocked(purchaseService.update).mockRejectedValue(apiError({
+    message: { user: GENERIC_CATALOG_MESSAGE },
+    data: { errors: { "lines[0].quantity": ["Quantity rejected by API"], "lines[0].discountPct": ["Discount rejected by API"] } },
+  }));
+  const result = await setupLoaded();
+  await waitFor(() => expect(result.current.canUseSriDocTypes).toBe(true));
+  await act(async () => { await result.current.handleSave(); });
+  expect(result.current.errors.lines?.[0]?.quantity?.message).toBe("Quantity rejected by API");
+  expect(result.current.errors.lines?.[0]?.discountPct?.message).toBe("Discount rejected by API");
+  expect(result.current.saveError).toBe("");
+  expect(result.current.saving).toBe(false);
+  act(() => result.current.updateLine(result.current.lines[0]._key, "quantity", 3));
+  await waitFor(() => expect(result.current.errors.lines?.[0]?.quantity).toBeUndefined());
+  expect(result.current.errors.lines?.[0]?.discountPct?.message).toBe("Discount rejected by API");
+});
+
+describe("P1 - one rejection channel and truthful success messages", () => {
+  it("keeps a general server rejection in the form without repeating it in a toast", async () => {
+    vi.mocked(purchaseService.update).mockRejectedValue(validationError("Public rejection"));
+    const result = await setupLoaded();
+    await waitFor(() => expect(result.current.canUseSriDocTypes).toBe(true));
+    await act(async () => { await result.current.handleSave(); });
+    expect(result.current.saveErrorDetails).toContain("Public rejection");
+    expect(message.error).not.toHaveBeenCalled();
+  });
+  it("keeps duplicate SRI feedback and its destination, without a second toast", async () => {
+    vi.mocked(purchaseService.getByAccessKey).mockResolvedValue({ exists: true, purchaseId: "other", invoiceNumber: "001-001-2", supplierName: "Other", accessKey: "123" });
+    const result = await setupLoaded();
+    act(() => result.current.setValue("accessKey", "123"));
+    await act(async () => { await result.current.handleSave(); });
+    expect(result.current.isDuplicateAccessKeyBlocking).toBe(true);
+    expect(result.current.duplicateAccessKey?.purchaseId).toBe("other");
+    expect(message.error).not.toHaveBeenCalled();
+    expect(purchaseService.update).not.toHaveBeenCalled();
+  });
+  it("labels a local distribution as unsaved and does not call the persistence endpoint", async () => {
+    const result = await setupLoaded();
+    await waitFor(() => expect(result.current.lines[0]?.context).toBeTruthy());
+    act(() => { result.current.handleDistributeCostToForm("Freight", 1, [String(result.current.lines[0]._key)]); });
+    expect(message.success).toHaveBeenCalledWith("Distribución aplicada al formulario. Guarde el borrador para conservarla.");
+    expect(purchaseService.distributeCost).not.toHaveBeenCalled();
+    expect(purchaseService.update).not.toHaveBeenCalled();
+  });
+  it("keeps a distribution rejection in its modal state instead of the form or toast", async () => {
+    vi.mocked(purchaseService.distributeCost).mockRejectedValue(validationError("Distribution rejected"));
+    const result = await setupLoaded();
+    await act(async () => { await result.current.handleDistributeCost("Freight", 1, ["line-1"]); });
+    expect(result.current.distributionError).toContain("Distribution rejected");
+    expect(result.current.saveError).toBe("");
+    expect(message.error).not.toHaveBeenCalled();
+  });
+});

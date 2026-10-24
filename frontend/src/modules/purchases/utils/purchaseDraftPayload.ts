@@ -47,10 +47,11 @@ export function buildPurchaseDraftPayload(
     invoiceNumber: data.invoiceNumber,
     issueDate: data.issueDate,
     lines: data.lines.map((l) => {
-      const persisted = precision
+      const persisted = precision && !l.xmlAllocation
         ? resolveLinePersistence(l, precision.purchaseUnitPriceDecimals)
         : null;
       return {
+      xmlAllocation: l.xmlAllocation,
       itemId: l.itemId,
       description: l.description,
       quantity: persisted ? persisted.quantity : l.quantity,

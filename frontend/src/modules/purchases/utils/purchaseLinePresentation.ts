@@ -23,6 +23,27 @@ type TFunction = (
 export type LineStatusTone = "success" | "warning" | "danger";
 
 /**
+ * Rentabilidad de la línea: costo a registrar (unidad base, sin IVA) frente al PVP (unidad base,
+ * sin IVA). "unavailable": sin contexto o sin cantidad a registrar; "noSalePrice": sin PVP.
+ * Cero/negativo se evalúan a la escala visible del porcentaje (lo que el usuario ve).
+ */
+export type LineMarginState = "unavailable" | "noSalePrice" | "negative" | "zero" | "positive";
+
+function resolveMarginState(input: {
+  hasContext: boolean;
+  quantityInBase: number;
+  pvp: number;
+  marginPctValue: number;
+  percentageDecimals: number;
+}): LineMarginState {
+  if (!input.hasContext || !(input.quantityInBase > 0)) return "unavailable";
+  if (!(input.pvp > 0)) return "noSalePrice";
+  const visibleMargin = roundTo(input.marginPctValue, input.percentageDecimals);
+  if (visibleMargin < 0) return "negative";
+  return visibleMargin === 0 ? "zero" : "positive";
+}
+
+/**
  * View model de presentación de una línea de compra — responde, en este orden, "qué llegó del
  * proveedor", "con qué Item del ERP está relacionado", "qué impacto tiene para el negocio" y "qué
  * acción está pendiente". Centraliza toda la lógica de null-check y de distinguir "valor real"
@@ -47,6 +68,7 @@ export interface PurchaseLinePresentationVM {
     taxableBase: string;
     iceValue: string;
     irbpnrValue: string;
+    hasIce: boolean;
     hasIrbpnr: boolean;
     /** PURCHASE-XML-LINE-ADDITIONAL-FIELDS-01 — detallesAdicionales/detAdicional, solo lectura. */
     additionalFields: { name: string; value: string }[];
@@ -153,8 +175,10 @@ export interface PurchaseLinePresentationVM {
     };
     profitability: {
       pvp: string;
+      /** "—" si no hay margen evaluable (sin PVP o sin costo a registrar): nunca un 0 % ficticio. */
       marginPct: string;
       marginPctValue: number;
+      marginState: LineMarginState;
       maxDiscountPercent: string;
     };
   };
@@ -262,8 +286,8 @@ export function buildPurchaseLinePresentation(
   // descuento de línea (y sumar flete/otros gastos ya asignados, si existen) antes de dividir
   // entre la cantidad en unidad base — nunca el bruto sin descuento. Misma fórmula que
   // `buildCostDistributionInputFromFormLines` (purchaseCalc.ts) para una sola línea.
-  const grossLineSubtotal = quantity * unitPrice;
-  const discountAmount = grossLineSubtotal * ((line.discountPct ?? 0) / 100);
+  const grossLineSubtotal = line.xmlAllocation?.subtotal ?? quantity * unitPrice;
+  const discountAmount = line.xmlAllocation?.discount ?? grossLineSubtotal * ((line.discountPct ?? 0) / 100);
   const netLineSubtotal = grossLineSubtotal - discountAmount;
   const freightAllocated = line.freightAllocated ?? 0;
   const otherCostsAllocated = line.otherCostsAllocated ?? 0;
@@ -277,6 +301,14 @@ export function buildPurchaseLinePresentation(
   // unitPrice contra pvp mezcla unidades y produce márgenes absurdos (ej. -447%) en cualquier
   // línea con presentación (conversionFactor > 1).
   const marginPctValue = hasContext ? calcMarginPercent(baseUnitCost, pvp) : 0;
+  const marginState = resolveMarginState({
+    hasContext,
+    quantityInBase,
+    pvp,
+    marginPctValue,
+    percentageDecimals: decimals.percentageDecimals,
+  });
+  const hasEvaluableMargin = marginState !== "unavailable" && marginState !== "noSalePrice";
 
   const referenceCost =
     hasContext && (ctx?.lastPurchaseCost ?? 0) > 0
@@ -393,8 +425,10 @@ export function buildPurchaseLinePresentation(
   const originTaxableBase =
     line.xmlTaxableBase ?? originQuantity * originUnitPrice - (line.xmlDiscount ?? 0);
   // Subtotal neto de producto del XML (sin impuestos): es lo comparable con la línea editable.
+  // `xmlLineSubtotal` es `precioTotalSinImpuesto`, YA neto de descuento (ver grossXmlSubtotal):
+  // restarle otra vez el descuento marcaba como "distinta" toda línea XML con descuento.
   const originProductNet = roundTo(
-    (line.xmlLineSubtotal ?? originQuantity * originUnitPrice) - (line.xmlDiscount ?? 0),
+    line.xmlLineSubtotal ?? originQuantity * originUnitPrice - (line.xmlDiscount ?? 0),
     2,
   );
   const originDiffers =
@@ -461,6 +495,7 @@ export function buildPurchaseLinePresentation(
       irbpnrValue: hasOrigin
         ? formatMoneyWithSymbol(line.xmlIrbpnrAmount ?? 0, decimals.taxDecimals)
         : UNKNOWN,
+      hasIce: hasOrigin && (line.xmlIceAmount ?? 0) > 0,
       hasIrbpnr: hasOrigin && (line.xmlIrbpnrAmount ?? 0) > 0,
       additionalFields: line.xmlAdditionalFields ?? [],
       hasAdditionalFields: (line.xmlAdditionalFields?.length ?? 0) > 0,
@@ -550,10 +585,11 @@ export function buildPurchaseLinePresentation(
         pvp: hasContext
           ? formatMoneyWithSymbol(pvp, decimals.salesUnitPriceDecimals)
           : UNKNOWN,
-        marginPct: hasContext
+        marginPct: hasEvaluableMargin
           ? formatMoney(marginPctValue, decimals.percentageDecimals)
           : UNKNOWN,
         marginPctValue,
+        marginState,
         maxDiscountPercent: hasContext
           ? formatMoney(ctx!.maxDiscountPercent, decimals.percentageDecimals)
           : UNKNOWN,
@@ -741,6 +777,41 @@ export function buildMissingSalePriceForMarginWarning(
     `No se puede calcular margen para '${description}' porque el producto no tiene precio de venta configurado. Revise el precio de venta para validar si el costo y la presentación son correctos.`;
 
   return { blocking: false, message };
+}
+
+/**
+ * Margen negativo o cero de un producto inventariable con PVP — aviso comercial NO bloqueante
+ * (no existe política empresarial que autorice bloquear por margen). Mismo `marginState` que pinta
+ * el indicador de la línea. Bajo −50 % no aplica: lo cubre el bloqueo de presentación sospechosa
+ * ({@link buildSuspiciousPackagingCostWarning}), así la línea nunca repite el mismo riesgo.
+ * Margen bajo positivo no se avisa: no hay umbral empresarial configurable.
+ */
+export function buildMarginRiskWarning(
+  line: PurchaseLineFormValues,
+  policy: PrecisionPolicy,
+  t?: TFunction,
+): { blocking: false; kind: "negative" | "zero"; message: string } | null {
+  const ctx = line.context;
+  if (!line.itemId || !ctx || ctx.participatesInInventory !== true) return null;
+
+  const vm = buildPurchaseLinePresentation(line, policy, t);
+  const { marginState, marginPctValue } = vm.commercial.profitability;
+  if (marginState !== "negative" && marginState !== "zero") return null;
+  if (marginPctValue < SUSPICIOUS_PURCHASE_MARGIN_THRESHOLD_PCT) return null;
+
+  const params = {
+    baseUnitCost: vm.inventory.baseUnitCost,
+    salePrice: vm.commercial.profitability.pvp,
+    marginPct: `${vm.commercial.profitability.marginPct}%`,
+  };
+  const message =
+    marginState === "negative"
+      ? (t?.("purchases.lineReadiness.negativeMarginDetail", params) ??
+        `El costo unitario a registrar (${params.baseUnitCost}) supera el precio de venta (${params.salePrice}): margen ${params.marginPct}. Revise el costo o actualice el precio de venta.`)
+      : (t?.("purchases.lineReadiness.zeroMarginDetail", params) ??
+        `El costo unitario a registrar (${params.baseUnitCost}) iguala el precio de venta (${params.salePrice}): la venta no deja utilidad. Revise el costo o actualice el precio de venta.`);
+
+  return { blocking: false, kind: marginState, message };
 }
 
 /**

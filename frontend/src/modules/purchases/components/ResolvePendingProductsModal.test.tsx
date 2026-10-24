@@ -59,6 +59,28 @@ describe("bulk resolution modal", () => {
     expect(mocks.resolve.mock.calls[1][0].lines[0]).toMatchObject({ barcode: null, barcodeType: null });
   });
 
+  it("P2 - summarizes a partial rejection once and keeps each reason on its row", async () => {
+    const second: PendingProductSource = { ...source, rowId: "b", lineKey: 2, supplierCode: "B", xmlDescription: "Otra línea" };
+    mocks.resolve.mockResolvedValueOnce({ applied: false, errors: [
+      { purchaseReceptionLineId: "a", newItemKey: null, message: "SKU duplicado" },
+      { purchaseReceptionLineId: null, newItemKey: null, message: "Lote sin proveedor" },
+    ] });
+    render(<ResolvePendingProductsModal {...props()} sources={[source, second]} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "B" }));
+    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5", description: "Descripción ERP" })) change(name, value);
+    fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
+    await waitFor(() => expect(screen.getByText("SKU duplicado")).toBeTruthy());
+    const notices = screen.getAllByRole("alert");
+    expect(notices).toHaveLength(1);
+    expect(notices[0].textContent).toContain("purchases.pendingProducts.rowsRejected");
+    expect(notices[0].textContent).toContain("Lote sin proveedor");
+    expect(notices[0].textContent).not.toContain("SKU duplicado");
+    const rowA = screen.getByRole("checkbox", { name: "A" });
+    expect(rowA.getAttribute("aria-invalid")).toBe("true");
+    expect(document.getElementById(rowA.getAttribute("aria-describedby")!)?.textContent).toBe("SKU duplicado");
+    expect(screen.getByRole("checkbox", { name: "B" }).getAttribute("aria-describedby")).toBeNull();
+  });
+
   it("puts a real XML barcode on the box presentation when the line is a box", async () => {
     mocks.barcodeTypes = [{ code: "EAN13", name: "EAN-13" }];
     mocks.resolve.mockResolvedValueOnce({ applied: true, errors: [], lines: [], itemsCreated: 1, linesLinked: 1, equivalencesLearned: 1, linesAutoMatched: 0 });

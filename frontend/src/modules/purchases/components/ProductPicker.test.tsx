@@ -132,3 +132,79 @@ describe("ProductPicker — fila de resultado (ZHPickerResultItem)", () => {
     expect(money?.getAttribute("style")).toBeNull();
   });
 });
+
+describe("ProductPicker — modo flotante (desglose XML)", () => {
+  const ITEMS = [
+    { ...ITEM, defaultUomAbbrev: "CJ" },
+    { ...ITEM, id: "item-2", sku: "SKU-002", shortName: "Producto Dos", description: "Producto dos nombre completo", defaultUomAbbrev: "" },
+  ];
+
+  it("flota anclado al buscador como listbox accesible y muestra SKU, nombre completo y presentación", async () => {
+    vi.mocked(itemLookupFacade.search).mockResolvedValue({ items: ITEMS, total: 2 } as never);
+    render(<I18nProvider><ProductPicker floating onSelect={vi.fn()} /></I18nProvider>);
+    await search("Producto");
+
+    const input = screen.getByRole("combobox");
+    const listbox = screen.getByRole("listbox");
+    expect(input.getAttribute("aria-expanded")).toBe("true");
+    expect(input.getAttribute("aria-controls")).toBe(listbox.id);
+    expect(listbox.className).toContain("zh-picker__dropdown--floating");
+    expect(listbox.style.width).not.toBe("");
+    expect(listbox.style.maxHeight).not.toBe("");
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(2);
+    expect(options[0].textContent).toContain("SKU-001");
+    expect(options[0].textContent).toContain("Descripción del producto uno");
+    expect(options[0].textContent).toContain("Presentación: CJ");
+    expect(options[1].textContent).not.toContain("Presentación");
+  });
+
+  it("navega con teclado (activedescendant) y selecciona con Enter", async () => {
+    vi.mocked(itemLookupFacade.search).mockResolvedValue({ items: ITEMS, total: 2 } as never);
+    vi.mocked(itemLookupFacade.getById).mockResolvedValue({ ...ITEMS[1] } as never);
+    const onSelect = vi.fn();
+    render(<I18nProvider><ProductPicker floating onSelect={onSelect} /></I18nProvider>);
+    await search("Producto");
+
+    const input = screen.getByRole("combobox");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    const active = input.getAttribute("aria-activedescendant")!;
+    expect(document.getElementById(active)!.getAttribute("aria-selected")).toBe("true");
+    expect(document.getElementById(active)!.textContent).toContain("SKU-002");
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: "item-2" })));
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+});
+
+describe("P0 - search failures and retry", () => {
+  it("resets keyboard selection when the query changes and permits Escape with no results", async () => {
+    vi.mocked(itemLookupFacade.search).mockResolvedValueOnce({ items: [ITEM], total: 1 } as never)
+      .mockResolvedValueOnce({ items: [], total: 0 } as never);
+    renderPicker();
+    await search("Producto");
+    const input = screen.getByRole("combobox");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(input.getAttribute("aria-activedescendant")).toBeTruthy();
+    fireEvent.change(input, { target: { value: "another" } });
+    expect(input.getAttribute("aria-activedescendant")).toBeNull();
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("another"));
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(input.getAttribute("aria-expanded")).toBe("false");
+  });
+  it("shows loading, then a real failure instead of no results; retries the same query", async () => {
+    vi.mocked(itemLookupFacade.search).mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce({ items: [], total: 0 } as never);
+    renderPicker();
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "missing" } });
+    expect(screen.getByRole("status").textContent).toContain("Buscando");
+    await screen.findByText("Error al consultar productos.");
+    expect(screen.queryByText(/No se encontraron/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    await waitFor(() => expect(itemLookupFacade.search).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByText("Error al consultar productos.")).toBeNull());
+    expect(screen.getByRole("status").textContent).toContain("missing");
+    expect(itemLookupFacade.search).toHaveBeenLastCalledWith(expect.objectContaining({ search: "missing" }));
+  });
+});

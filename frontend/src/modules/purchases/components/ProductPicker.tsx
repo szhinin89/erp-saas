@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { usePurchaseProductSearch } from "../hooks/usePurchaseProductSearch";
+import { PurchaseSearchFeedback } from "./PurchaseSearchFeedback";
+import { useState, useEffect, useId, useLayoutEffect, useRef } from "react";
 import { ZhTextInput } from "../../../components/zh/inputs/ZhTextInput";
 import { ZHPickerResultItem } from "../../../components/zh/ZHPickerResultItem";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
@@ -23,49 +25,74 @@ type Props = {
    * posteriores, así que el usuario puede editar/borrar libremente sin que se
    * pise lo que escribe. No selecciona ni vincula nada automáticamente. */
   initialQuery?: string;
+  /** Inside scrollable containers (modals): the results float over the content, anchored to the
+   * input width, with their own scroll, instead of being clipped by the container. */
+  floating?: boolean;
 };
+
+const FLOATING_MAX_HEIGHT = 320;
 
 const profileCache = new Map<string, ProductProfile>();
 
-export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Props) {
+export function ProductPicker({ onSelect, disabled, vatRates, initialQuery, floating = false }: Props) {
   const { t } = useI18n();
   const [query, setQuery] = useState(initialQuery ?? "");
-  const [results, setResults] = useState<ItemDto[]>([]);
   const [open, setOpen] = useState(
     () => (initialQuery ?? "").trim().length >= 2,
   );
-  const [loading, setLoading] = useState(false);
+  const { results, status, retry } = usePurchaseProductSearch(query, open, 12);
+  const loading = status === "loading";
   const [focusIdx, setFocusIdx] = useState(-1);
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  const showDropdown = open && query.length >= 2;
+  useEffect(() => setFocusIdx(-1), [query, status]);
 
-  const search = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await itemLookupFacade.search({
-        search: q.trim(),
-        isActive: true,
-        pageSize: 12,
-      });
-      setResults(res.items);
-      setFocusIdx(-1);
-    } catch {
-      setResults([]);
-    }
-    setLoading(false);
-  }, []);
+  // Floating mode: fixed panel measured against its own containing block (the transformed modal
+  // or the viewport), limited to the space left inside that container; opens upward if needed.
+  useLayoutEffect(() => {
+    if (!floating || !showDropdown) return;
+    const panel = dropdownRef.current;
+    const anchor = wrapRef.current;
+    if (!panel || !anchor) return;
+    const position = () => {
+      const gap = 4;
+      const margin = 8;
+      const input = anchor.getBoundingClientRect();
+      panel.style.left = "0px";
+      panel.style.top = "0px";
+      const origin = panel.getBoundingClientRect();
+      const container = anchor.closest(".zh-modal")?.getBoundingClientRect()
+        ?? { top: 0, bottom: document.documentElement.clientHeight };
+      const desired = Math.min(panel.scrollHeight, FLOATING_MAX_HEIGHT);
+      const below = Math.max(0, container.bottom - input.bottom - gap - margin);
+      const above = Math.max(0, input.top - container.top - gap - margin);
+      const openAbove = desired > below && above > below;
+      const height = Math.min(desired, openAbove ? above : below);
+      panel.style.width = `${input.width}px`;
+      panel.style.maxHeight = `${height}px`;
+      panel.style.left = `${input.left - origin.left}px`;
+      panel.style.top = `${(openAbove ? input.top - gap - height : input.bottom + gap) - origin.top}px`;
+    };
+    position();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(position) : null;
+    observer?.observe(anchor);
+    window.addEventListener("resize", position);
+    window.addEventListener("scroll", position, true);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", position);
+      window.removeEventListener("scroll", position, true);
+    };
+  }, [floating, showDropdown, results, loading, status]);
 
+  // Keyboard navigation keeps the active option visible inside the list's own scroll.
   useEffect(() => {
-    clearTimeout(debounceRef.current);
-    if (!open || query.length < 2) return;
-    debounceRef.current = setTimeout(() => search(query), 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [query, open, search]);
+    if (focusIdx < 0) return;
+    document.getElementById(`${listId}-${focusIdx}`)?.scrollIntoView?.({ block: "nearest" });
+  }, [focusIdx, listId]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -79,7 +106,6 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Pr
   const handleSelect = async (item: ItemDto) => {
     setOpen(false);
     setQuery("");
-    setResults([]);
 
     const cached = profileCache.get(item.id);
     if (cached) {
@@ -98,6 +124,7 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Pr
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") { setOpen(false); return; }
     if (!open || results.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -107,11 +134,10 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Pr
       e.preventDefault();
       setFocusIdx((i) => Math.max(i - 1, 0));
     }
-    if (e.key === "Enter" && focusIdx >= 0) {
+    if (e.key === "Enter" && focusIdx >= 0 && results[focusIdx]) {
       e.preventDefault();
       void handleSelect(results[focusIdx]);
     }
-    if (e.key === "Escape") setOpen(false);
   };
 
   return (
@@ -127,27 +153,28 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Pr
           if (query.length >= 2) setOpen(true);
         }}
         onKeyDown={handleKeyDown}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={showDropdown}
+        aria-controls={listId}
+        aria-activedescendant={showDropdown && focusIdx >= 0 ? `${listId}-${focusIdx}` : undefined}
+        aria-label={t("purchases.productPicker.placeholder", "Buscar por SKU, nombre...")}
         placeholder={t("purchases.productPicker.placeholder", "Buscar por SKU, nombre...")}
         disabled={disabled}
       />
 
-      {open && query.length >= 2 && (
-        <div className="zh-picker__dropdown">
-          {loading && (
-            <div className="zh-picker__empty">
-              {t("common.searching", "Buscando...")}
-            </div>
-          )}
-          {!loading && results.length === 0 && (
-            <div className="zh-picker__empty">
-              {t("purchases.productPicker.noResults", { query })}
-            </div>
-          )}
+      {showDropdown && (
+        <div ref={dropdownRef} id={listId} role="listbox"
+          className={`zh-picker__dropdown${floating ? " zh-picker__dropdown--floating" : ""}`}>
+          <PurchaseSearchFeedback status={status} empty={results.length === 0} query={query} onRetry={retry} />
           {results.map((item, i) => {
             const cached = profileCache.get(item.id);
             return (
               <ZHPickerResultItem
                 key={item.id}
+                id={`${listId}-${i}`}
+                role="option"
+                tabIndex={-1}
                 selected={i === focusIdx}
                 title={
                   <>
@@ -155,7 +182,16 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery }: Pr
                     {item.shortName}
                   </>
                 }
-                subtitle={item.description}
+                subtitle={
+                  <>
+                    {item.description}
+                    {item.defaultUomAbbrev && (
+                      <span className="zh-picker__result-presentation">
+                        {t("purchases.productPicker.presentation", "Presentación")}: {item.defaultUomAbbrev}
+                      </span>
+                    )}
+                  </>
+                }
                 meta={
                   cached && (
                     <div className="zh-picker__result-extra">

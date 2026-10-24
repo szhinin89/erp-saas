@@ -11,6 +11,7 @@ import { addDaysIso } from "../../../lib/formatters/dateFormatters";
 
 type LineWithContext = PurchaseLineInput & {
   context?: PurchaseItemContextDto;
+  xmlSource?: PurchaseLineFormValues["xmlSource"];
   // Montos documentales (XML) de la línea — solo en líneas de Recepción Electrónica.
   xmlQuantity?: number;
   xmlUnitPrice?: number;
@@ -22,11 +23,11 @@ type LineWithContext = PurchaseLineInput & {
 };
 
 export function lineGross(l: PurchaseLineInput): number {
-  return l.quantity * l.unitPrice;
+  return l.xmlAllocation?.subtotal ?? l.quantity * l.unitPrice;
 }
 
 export function lineDiscountAmt(l: PurchaseLineInput): number {
-  return lineGross(l) * ((l.discountPct ?? 0) / 100);
+  return l.xmlAllocation?.discount ?? lineGross(l) * ((l.discountPct ?? 0) / 100);
 }
 
 export function lineNet(l: PurchaseLineInput): number {
@@ -85,6 +86,11 @@ export function resolveLineTaxes(
   vatRates?: Record<string, number>,
   iceRates?: Record<string, number>,
 ): { vat: number; ice: number; irbpnr: number } {
+  if (l.xmlAllocation) {
+    const sum = (code: string) => l.xmlAllocation!.taxes.reduce((total, tax) =>
+      total + (l.xmlSource?.taxes.find(t => t.purchaseReceptionLineTaxId === tax.purchaseReceptionLineTaxId)?.taxCode === code ? tax.taxAmount : 0), 0);
+    return { vat: sum("2"), ice: sum("3"), irbpnr: sum("5") };
+  }
   const irbpnr = l.xmlIrbpnrAmount ?? 0;
   const documentMatches = matchesXmlDocument(l);
   const gross = new FiscalDecimal(l.quantity ?? 0).times(l.unitPrice ?? 0);
@@ -280,7 +286,7 @@ export function buildCostDistributionInputFromPersistedLines(
     description: l.description,
     quantity: l.quantity,
     quantityInBaseUom: l.quantityInBaseUom,
-    unitPrice: l.unitPrice,
+    unitPrice: l.xmlAllocatedSubtotal != null ? l.xmlAllocatedSubtotal / l.quantity : l.unitPrice,
     discountAmount: l.discountAmount,
     landedUnitCost: l.landedUnitCost,
     totalLineCost: l.totalLineCost,
@@ -303,14 +309,14 @@ export function buildCostDistributionInputFromFormLines(
     const quantity = l.quantity ?? 0;
     const unitPrice = l.unitPrice ?? 0;
     const discountPct = l.discountPct ?? 0;
-    const discountAmount = round2((quantity * unitPrice * discountPct) / 100);
+    const discountAmount = l.xmlAllocation?.discount ?? round2((quantity * unitPrice * discountPct) / 100);
     const quantityInBaseUom =
       l.quantityInBaseUom && l.quantityInBaseUom > 0
         ? l.quantityInBaseUom
-        : quantity;
+        : quantity * (l.conversionFactor ?? 1);
     const freightAllocated = l.freightAllocated ?? 0;
     const otherCostsAllocated = l.otherCostsAllocated ?? 0;
-    const taxableBase = quantity * unitPrice - discountAmount;
+    const taxableBase = lineGross(l) - discountAmount;
     const totalLineCost = round2(
       taxableBase + freightAllocated + otherCostsAllocated,
     );
@@ -321,7 +327,7 @@ export function buildCostDistributionInputFromFormLines(
       description: l.description,
       quantity,
       quantityInBaseUom,
-      unitPrice,
+      unitPrice: l.xmlAllocation && quantity > 0 ? l.xmlAllocation.subtotal / quantity : unitPrice,
       discountAmount,
       landedUnitCost,
       totalLineCost,

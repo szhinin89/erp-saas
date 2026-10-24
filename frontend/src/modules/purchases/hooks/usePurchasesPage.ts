@@ -1,5 +1,7 @@
+import { usePurchaseProductSearch } from "./usePurchaseProductSearch";
+import { restoreXmlAllocation, replaceBreakdownRows } from "../utils/purchaseXmlBreakdown";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type {
   PurchaseAccessKeyLookupDto,
@@ -175,6 +177,7 @@ export function usePurchasesPage() {
   const listPageSize = 25;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [distributionError, setDistributionError] = useState("");
   const [saveErrorDetails, setSaveErrorDetails] = useState<string[]>([]);
   const [duplicateAccessKey, setDuplicateAccessKey] =
     useState<PurchaseAccessKeyLookupDto | null>(null);
@@ -246,6 +249,7 @@ export function usePurchasesPage() {
 
   // ── Modals ─────────────────────────────────────────────────────────
   const [modalConfirm, setModalConfirm] = useState(false);
+  const [breakdownSourceId, setBreakdownSourceId] = useState<string | null>(null);
   const [modalDiscount, setModalDiscount] = useState(false);
   const [modalCancelReason, setModalCancelReason] = useState(false);
   // FASE 5 PURCHASE-UX — confirmación de "Descartar borrador" (motivo opcional).
@@ -266,14 +270,15 @@ export function usePurchasesPage() {
 
   // ── Global search ──────────────────────────────────────────────────
   const [globalQuery, setGlobalQuery] = useState("");
-  const [globalResults, setGlobalResults] = useState<ItemDto[]>([]);
   const [globalOpen, setGlobalOpen] = useState(false);
   const [globalFilter, setGlobalFilter] = useState<SearchFilter>("all");
   const itemTypesState = useItemTypeOptions();
   const itemTypeOptions = itemTypesState.data ?? [];
   const [globalFocusIdx, setGlobalFocusIdx] = useState(-1);
   const globalSearchRef = useRef<HTMLDivElement>(null);
-  const globalDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const { results: globalResults, status: globalSearchStatus, retry: retryGlobalSearch } =
+    usePurchaseProductSearch(globalQuery, globalOpen, 10, globalFilter === "all" ? undefined : globalFilter);
+  useEffect(() => setGlobalFocusIdx(-1), [globalQuery, globalFilter, globalSearchStatus]);
 
   // ── Line key counter ───────────────────────────────────────────────
   const [lineKey, setLineKey] = useState(1);
@@ -300,6 +305,8 @@ export function usePurchasesPage() {
     watch,
     setValue,
     getValues,
+    getFieldState,
+    trigger,
     setError: setFieldError,
     formState: { errors },
   } = form;
@@ -654,9 +661,9 @@ export function usePurchasesPage() {
         const blocks =
           lookup.exists && lookup.purchaseId !== editing?.id;
         setDuplicateAccessKey(blocks ? lookup : null);
+        if (!blocks) setSaveError(previous => previous === duplicateAccessKeyTitle ? "" : previous);
         if (blocks && showMessage) {
           showSaveError(duplicateAccessKeyTitle, [duplicateAccessKeyDetail]);
-          message.error(`${duplicateAccessKeyTitle} ${duplicateAccessKeyDetail}`);
         }
         return blocks ? lookup : null;
       } catch {
@@ -744,28 +751,6 @@ export function usePurchasesPage() {
   }, []);
 
   // ── Global search effects ─────────────────────────────────────────
-  useEffect(() => {
-    clearTimeout(globalDebounce.current);
-    if (!globalOpen || globalQuery.length < 2) {
-      setGlobalResults([]);
-      return;
-    }
-    globalDebounce.current = setTimeout(async () => {
-      try {
-        const res = await itemLookupFacade.search({
-          search: globalQuery.trim(),
-          isActive: true,
-          itemTypeId: globalFilter === "all" ? undefined : globalFilter,
-          pageSize: 10,
-        });
-        setGlobalResults(res.items);
-        setGlobalFocusIdx(-1);
-      } catch {
-        setGlobalResults([]);
-      }
-    }, 300);
-    return () => clearTimeout(globalDebounce.current);
-  }, [globalQuery, globalOpen, globalFilter]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -892,6 +877,7 @@ export function usePurchasesPage() {
   const removeLine = useCallback(
     (key: number) => {
       const currentLines = getValues("lines");
+      if (currentLines.find(l => l._key === key)?.xmlAllocation) return;
       setValue(
         "lines",
         currentLines.filter((l) => l._key !== key),
@@ -905,7 +891,7 @@ export function usePurchasesPage() {
     (key: number) => {
       const currentLines = getValues("lines");
       const src = currentLines.find((l) => l._key === key);
-      if (src) {
+      if (src && !src.xmlAllocation) {
         const { _readinessIssue: _discard, ...copy } = src;
         void _discard;
         setValue("lines", [
@@ -921,14 +907,18 @@ export function usePurchasesPage() {
   const updateLine = useCallback(
     (key: number, field: string, value: unknown) => {
       const currentLines = getValues("lines");
+      const index = currentLines.findIndex(line => line._key === key);
+      const fieldPath = `lines.${index}.${field}` as FieldPath<PurchaseInvoiceFormValues>;
+      const revalidate = index >= 0 && getFieldState(fieldPath).invalid;
       setValue(
         "lines",
         currentLines.map((l) =>
-          l._key === key ? { ...l, [field]: value } : l,
+          l._key === key && (!l.xmlAllocation || ["context", "_contextLoading", "warehouseId"].includes(field)) ? { ...l, [field]: value } : l,
         ),
       );
+      if (revalidate) void trigger(fieldPath);
     },
-    [getValues, setValue],
+    [getValues, setValue, getFieldState, trigger],
   );
 
   // ── Bodega de línea (ADR-030, regla de arquitectura permanente) ──────
@@ -1202,7 +1192,6 @@ export function usePurchasesPage() {
     async (item: ItemDto) => {
       setGlobalOpen(false);
       setGlobalQuery("");
-      setGlobalResults([]);
       const key = lineKey;
       const detail = await itemLookupFacade.getById(item.id);
       const newLine = buildPurchaseLineFromItem(detail, { key });
@@ -1216,6 +1205,7 @@ export function usePurchasesPage() {
 
   const handleGlobalKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.key === "Escape") { setGlobalOpen(false); return; }
       if (!globalOpen || globalResults.length === 0) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -1225,11 +1215,10 @@ export function usePurchasesPage() {
         e.preventDefault();
         setGlobalFocusIdx((i) => Math.max(i - 1, 0));
       }
-      if (e.key === "Enter" && globalFocusIdx >= 0) {
+      if (e.key === "Enter" && globalFocusIdx >= 0 && globalResults[globalFocusIdx]) {
         e.preventDefault();
         void addLineWithItem(globalResults[globalFocusIdx]);
       }
-      if (e.key === "Escape") setGlobalOpen(false);
     },
     [globalOpen, globalResults, globalFocusIdx, addLineWithItem],
   );
@@ -1340,7 +1329,6 @@ export function usePurchasesPage() {
         buildSupplierInactiveMessage(profile.name);
       if (showMessage) {
         showSaveError(text, [supplierInactiveDetail]);
-        message.error(`${text} ${supplierInactiveDetail}`);
       }
       return profile;
     },
@@ -1373,7 +1361,6 @@ export function usePurchasesPage() {
     setPtLoaded(false);
     setPtManual(false);
     setGlobalQuery("");
-    setGlobalResults([]);
     setGlobalOpen(false);
     setGlobalFilter("all");
   }, [reset, showSaveError]);
@@ -1411,6 +1398,7 @@ export function usePurchasesPage() {
           notes: l.notes,
           purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
           ...normalizePurchaseLinePresentation(l),
+          ...restoreXmlAllocation(l),
           // PURCHASES-HARDENING-P0 (B1) — el prorrateo persistido viaja de vuelta en el payload;
           // sin él, el backend reprorratearía el total entre TODAS las líneas al guardar.
           freightAllocated: l.freightAllocated,
@@ -1575,7 +1563,6 @@ export function usePurchasesPage() {
       } catch {
         const error = t("purchases.errors.loadFailed", "Error al cargar la compra.");
         showSaveError(error);
-        message.error(t("purchases.messages.loadFailed", "No se pudo cargar la compra."));
       }
     },
     [
@@ -1649,6 +1636,7 @@ export function usePurchasesPage() {
             notes: l.notes ?? undefined,
             purchaseReceptionLineId: l.purchaseReceptionLineId,
             ...normalizePurchaseLinePresentation(l),
+
             itemMatchStatus: l.itemMatchStatus,
             // PURCHASE-LINE-PACKAGING-XML-SNAPSHOT-IMMUTABLE-01 — copia congelada del comprobante,
             // ANTES de que el usuario edite: `quantity`/`unitPrice` de arriba siguen siendo los
@@ -1702,17 +1690,7 @@ export function usePurchasesPage() {
               ),
           );
         }
-        message.error(
-          backendMessage === DUPLICATE_PURCHASE_DETAIL
-            ? `${duplicateAccessKeyTitle} ${duplicateAccessKeyDetail}`
-            : isSupplierInactiveError
-              ? `${supplierInactiveBackendMessage} ${supplierInactiveDetail}`
-            : backendMessage ??
-              t(
-                "purchases.messages.receptionDraftFailed",
-                "No se pudo generar el borrador de compra.",
-              ),
-        );
+
       }
     },
     [
@@ -1739,9 +1717,6 @@ export function usePurchasesPage() {
     if (inactiveSupplier) return;
     if (hasLineSaveBlockers) {
       showSaveError(lineReadinessBlockedTitle, lineReadinessBlockerDetails);
-      message.error(
-        `${lineReadinessBlockedTitle} ${lineReadinessBlockerDetails[0] ?? ""}`,
-      );
       return;
     }
     if (!canUseSriDocTypes) {
@@ -1754,7 +1729,6 @@ export function usePurchasesPage() {
         "El catálogo SRI de tipos de documento no está disponible. Recargue la página o inténtelo nuevamente.",
       );
       showSaveError(title, [detail]);
-      message.error(`${title} ${detail}`);
       return;
     }
     if (!sriDocTypes.some((d) => d.code === data.docTypeCode)) {
@@ -1767,7 +1741,6 @@ export function usePurchasesPage() {
         "Seleccione un tipo de documento SRI activo del catálogo.",
       );
       showSaveError(title, [detail]);
-      message.error(`${title} ${detail}`);
       return;
     }
     setSaving(true);
@@ -1803,6 +1776,7 @@ export function usePurchasesPage() {
       fetchList();
     } catch (err: unknown) {
       const applied = applyServerErrors(err, setFieldError);
+      if (applied) return;
       const apiMessages = readApiErrorMessages(err);
       if (apiMessages.length > 0) {
         const isDuplicateAccessKeyError = apiMessages.some(
@@ -1815,7 +1789,6 @@ export function usePurchasesPage() {
         );
         if (!isDuplicateAccessKeyError && supplierInactiveMessage) {
           showSaveError(supplierInactiveMessage, [supplierInactiveDetail]);
-          message.error(`${supplierInactiveMessage} ${supplierInactiveDetail}`);
           return;
         }
         const title = isDuplicateAccessKeyError
@@ -1825,7 +1798,6 @@ export function usePurchasesPage() {
               "No se puede guardar la compra.",
             );
         showSaveError(title, apiMessages);
-        message.error(`${title} ${apiMessages[0]}`);
       } else if (!applied) {
         const e = err as ApiErrorLike;
         showSaveError(
@@ -1941,7 +1913,7 @@ export function usePurchasesPage() {
           setTab("listado");
           fetchList();
         } else {
-          message.success(
+          message.info(
             t(
               "purchases.messages.sriAnnulmentRequested",
               "Se registró la solicitud de anulación ante el SRI. La compra sigue vigente hasta que el SRI confirme ANULADO.",
@@ -2076,14 +2048,10 @@ export function usePurchasesPage() {
     ): Promise<boolean> => {
       if (!editing) return false;
       if (hasUnsavedChanges) {
-        message.warning(
-          t(
-            "purchases.distributeCost.disabled.unsavedChanges",
-            "Guarde los cambios antes de distribuir flete/gasto.",
-          ),
-        );
+        setDistributionError(t("purchases.distributeCost.disabled.unsavedChanges"));
         return false;
       }
+      setDistributionError("");
       try {
         const r = await purchaseService.distributeCost(
           editing.id,
@@ -2101,14 +2069,13 @@ export function usePurchasesPage() {
         );
         return true;
       } catch (err) {
-        showSaveError(
-          t("purchases.errors.distributeCostFailed", "Error al distribuir el valor."),
-          readApiErrorMessages(err as ApiErrorLike),
-        );
+        setDistributionError(formatApiRequestError(err, {
+          generic: t("purchases.errors.distributeCostFailed", "Error al distribuir el valor."),
+        }));
         return false;
       }
     },
-    [editing, hasUnsavedChanges, loadForEdit, showSaveError, t],
+    [editing, hasUnsavedChanges, loadForEdit, t],
   );
 
   // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — misma fórmula/simulación que handleDistributeCost,
@@ -2150,7 +2117,7 @@ export function usePurchasesPage() {
       );
 
       message.success(
-        t("purchases.messages.costDistributed", "Valor distribuido correctamente."),
+        t("purchases.messages.costAppliedLocally", "Distribución aplicada al formulario. Guarde el borrador para conservarla."),
       );
       return true;
     },
@@ -2393,6 +2360,17 @@ export function usePurchasesPage() {
     reset,
 
     // Lines
+    breakdownSourceId, setBreakdownSourceId,
+    applyBreakdown: (sourceId: string, components: PurchaseLineFormValues[]) => {
+      if (fieldDisabled) return false;
+      const current = getValues("lines");
+      const next = replaceBreakdownRows(current, sourceId, components, lineKey,
+        resolvePrecisionDecimals(precisionPolicy, "quantity"));
+      if (next === current) return false;
+      setValue("lines", next, { shouldDirty: true, shouldValidate: true });
+      setLineKey(lineKey + components.length);
+      return true;
+    },
     lines,
     addLine,
     removeLine,
@@ -2519,7 +2497,8 @@ export function usePurchasesPage() {
     modalDiscardDraft,
     setModalDiscardDraft,
     modalDistributeCost,
-    setModalDistributeCost,
+    setModalDistributeCost: (open: boolean) => { if (open) setDistributionError(""); setModalDistributeCost(open); },
+    distributionError,
     modalPendingProducts,
     setModalPendingProducts,
     pendingProductSources,
@@ -2539,6 +2518,8 @@ export function usePurchasesPage() {
     globalQuery,
     setGlobalQuery,
     globalResults,
+    globalSearchStatus,
+    retryGlobalSearch,
     globalOpen,
     setGlobalOpen,
     globalFilter,

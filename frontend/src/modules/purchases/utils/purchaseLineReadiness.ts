@@ -2,6 +2,7 @@ import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
 import { matchesXmlDocument } from "./purchaseCalc";
 import {
+  buildMarginRiskWarning,
   buildMissingSalePriceForMarginWarning,
   buildSuspiciousPackagingCostWarning,
 } from "./purchaseLinePresentation";
@@ -38,9 +39,11 @@ export type PurchaseLineReadinessTone = "success" | "warning" | "danger";
  * aparte para no competir por prioridad con MISSING_WAREHOUSE/INVALID_TAX/etc.: una línea puede
  * estar bloqueada por otra razón y, a la vez, no tener precio de venta configurado para evaluar
  * margen — ambas cosas deben poder verse.
+ * Es el aviso COMERCIAL de la línea: sin PVP, margen negativo o margen cero (excluyentes entre sí:
+ * los dos últimos exigen PVP). El modal de confirmación los resume sin enumerarlos por producto.
  */
 export interface PurchaseLineReadinessWarning {
-  status: "MISSING_SALE_PRICE_FOR_MARGIN";
+  status: "MISSING_SALE_PRICE_FOR_MARGIN" | "NEGATIVE_MARGIN" | "ZERO_MARGIN";
   label: string;
   detail: string;
   tone: "warning";
@@ -116,7 +119,7 @@ function hasBlockedXmlIceEdit(
   line: PurchaseLineFormValues,
   options: PurchaseLineReadinessOptions,
 ) {
-  if (!hasXmlIce(line) || matchesXmlDocument(line)) return false;
+  if (line.xmlAllocation || !hasXmlIce(line) || matchesXmlDocument(line)) return false;
   const code = line.iceCode?.trim();
   return !code || !hasKnownRate(code, options.iceRates);
 }
@@ -225,6 +228,29 @@ function buildMissingSalePriceWarning(
   };
 }
 
+function buildMarginWarning(
+  line: PurchaseLineFormValues,
+  policy: PrecisionPolicy,
+  t: TFunction,
+  rawT?: TFunction,
+): PurchaseLineReadinessWarning | undefined {
+  const built = buildMarginRiskWarning(line, policy, rawT);
+  if (!built) return undefined;
+  return built.kind === "negative"
+    ? {
+        status: "NEGATIVE_MARGIN",
+        label: t("purchases.lineReadiness.negativeMargin", "Margen negativo"),
+        detail: built.message,
+        tone: "warning",
+      }
+    : {
+        status: "ZERO_MARGIN",
+        label: t("purchases.lineReadiness.zeroMargin", "Margen cero"),
+        detail: built.message,
+        tone: "warning",
+      };
+}
+
 export function getPurchaseLineReadiness(
   line: PurchaseLineFormValues,
   options: PurchaseLineReadinessOptions,
@@ -233,7 +259,9 @@ export function getPurchaseLineReadiness(
   // Igual que con buildSuspiciousPackagingCostWarning más abajo: se le pasa options.t crudo
   // (no el `t` ya resuelto con el fallback de este archivo) para que distinga "sin traductor
   // real" de "hay traductor real" y use su propio fallback interpolado en el primer caso.
-  const warning = buildMissingSalePriceWarning(line, options.precisionPolicy, t, options.t);
+  const warning =
+    buildMissingSalePriceWarning(line, options.precisionPolicy, t, options.t) ??
+    buildMarginWarning(line, options.precisionPolicy, t, options.t);
 
   const primary = computePrimaryReadiness(line, options, t);
   return warning ? { ...primary, warning } : primary;

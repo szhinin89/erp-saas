@@ -38,7 +38,7 @@
 .pf-badge--offset { margin-left: 8px; }
 .pf-validation-summary .zh-form-alert-detail { white-space: pre-line; }
 /* Cabecera de línea: .pdl-line__main envuelve una sola columna (.pdl-line__summary).
- * Menú, número, Duplicar/Eliminar y el toggle de colapso viven todos en la
+ * Menú, número y Duplicar/Eliminar viven en la
  * única banda lateral izquierda (.pdl-line-row__rail, hermana de .pdl-line__main
  * dentro de .pdl-line-row) — ya no hay banda derecha. Producto/Bodega/Cantidad/
  * Costo/Base/IVA-ICE/Total/Margen son columnas directas de .pdl-line__summary
@@ -57,6 +57,9 @@
  * Scoped a compras (base: erp-form-core.css .pdl-line__status, sin otros
  * consumidores hoy — ver DS-LINE-CARD-UNIFY-02). */
 .pdl-container .pdl-line__status {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border-light);
 }
@@ -105,8 +108,15 @@
 .pdl-container .pdl-blocks .pdl-block + .pdl-block {
   border-left: 1px solid var(--color-border);
 }
+/* PURCHASE-LINE-COMPACT-01 — columnas equilibradas solo en escritorio ancho: por debajo
+   de 1100px manda el responsive compartido de erp-form-core.css (2 → 1 columnas). */
+@media (min-width: 1101px) {
+  .pdl-container .pdl-blocks {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+}
 /* Fila de línea con control lateral: banda externa única (número, menú,
-   Duplicar, Eliminar y toggle de colapso — DESIGN-SYSTEM-LINE-RAIL-04)
+   Duplicar, Eliminar — DESIGN-SYSTEM-LINE-RAIL-04; el colapso pasó al botón "Detalle", PURCHASE-LINE-COMPACT-01)
    + componente de detalle de la línea (.pdl-line, sin cambios internos).
    DS-LINE-CARD-UNIFY-02: el wrapper externo ahora es `ZHLineCard`
    (`.zh-line-card` en zh-ui.css, con `className="pdl-line-card"`) — reemplaza
@@ -133,6 +143,21 @@
 .pdl-line-card.zh-line-card:last-child {
   margin-bottom: 0;
 }
+/* ZH-DS-LINE-ISSUES-01 — etiqueta de incidencias anclada al borde superior de la
+   tarjeta (ZHNoticeBadge), centrada sobre el borde. Mitad exterior (≈11px): la tarjeta con
+   incidencias separa 16px de la anterior (margin-top; colapsa con el margin-bottom de 8px de la
+   anterior, por eso no basta con sumar 4px). Mitad interior: la cabecera reserva 12px arriba
+   (en vez de 8px) para no tapar etiquetas de columnas cortas. z-index 1: por encima del
+   contenido de la línea, por debajo de menús, popovers (1200) y modales. */
+.pdl-line-card--has-issues.zh-line-card {
+  margin-top: var(--space-4);
+}
+.pdl-container .pdl-line-card--has-issues .pdl-line__main {
+  padding-top: var(--space-3);
+}
+.pdl-line-card .pdl-line {
+  position: relative;
+}
 .pdl-line-card .pdl-line {
   flex: 1;
   min-width: 0;
@@ -147,14 +172,15 @@
      .pdl-line-card .pdl-line). */
   width: 44px;
   justify-content: flex-start;
-  /* DESIGN-SYSTEM-LINE-RAIL-04A: var(--space-2) -> var(--space-3) — más aire
-     entre los 5 controles apilados, evita que se sientan pegados. */
-  gap: var(--space-3);
+  /* PURCHASE-LINE-COMPACT-01: var(--space-3) -> var(--space-2) — el rail ya no apila el
+     toggle de colapso (pasó al botón "Detalle"); con 12px su altura fijaba el alto mínimo
+     de la línea colapsada por encima de su contenido. */
+  gap: var(--space-2);
   /* Alineado con el nuevo padding-top compacto de .pdl-line__main (arriba);
      padding-bottom agregado (DESIGN-SYSTEM-LINE-RAIL-04A) para que el último
-     control (colapso) no quede pegado al borde inferior de la fila. */
+     control no quede pegado al borde inferior de la fila. */
   padding-top: var(--space-2);
-  padding-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
   background: var(--color-surface-container-low);
   border-right: 1px solid var(--color-border);
   /* Redondea solo el borde izquierdo para que el relleno de la banda no se
@@ -170,6 +196,24 @@
 .pdl-line-card .zh-line-card__rail .zh-line-action__btn--lg.prd-icon-btn--danger {
   padding: var(--space-1);
 }
+/* PURCHASE-LINE-COMPACT-02 — en escritorio el rail apilado (número, menú, duplicar,
+   eliminar ≈ 160px) fijaba la altura de la línea colapsada por encima de su contenido
+   (≈ 100px). Mismos controles y orden, en 2 columnas: número|menú, duplicar|eliminar
+   (+ desglosar cuando aplica). En móvil (≤640px) sigue apilado: allí el contenido ya es
+   más alto que el rail. */
+@media (min-width: 641px) {
+  .pdl-line-card .zh-line-card__rail {
+    display: grid;
+    grid-template-columns: repeat(2, 32px);
+    grid-auto-rows: auto;
+    align-content: start;
+    justify-items: center;
+    align-items: center;
+    width: auto;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-1);
+  }
+}
 /* Número de línea, arriba del menú, dentro de la misma banda lateral —
    aislado del contenido principal (no es parte del menú ni del producto). */
 .pdl-line-row__num {
@@ -179,38 +223,6 @@
   font-weight: 700;
   color: var(--color-text-secondary);
   text-align: center;
-}
-/* Expandir/colapsar SOLO la banda inferior de detalle (.pdl-blocks) — vive
-   debajo del número, dentro de la misma banda lateral, sin mezclarse con
-   los datos de la línea. Mismo criterio visual que el trigger del menú de
-   arriba (icono + hover con tokens), pero neutro (no primary) porque no es
-   una acción de producto. */
-.pdl-line-row__collapse-toggle {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-.pdl-line-row__collapse-toggle:hover,
-.pdl-line-row__collapse-toggle:focus-visible {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-}
-.pdl-line-row__collapse-icon {
-  font-size: 18px;
-  transition: transform var(--transition);
-}
-/* Colapsado = flecha apuntando hacia abajo (expandir); abierto = rotada
-   180° (colapsar) — mismo patrón de rotación que el chevron del menú. */
-.pdl-line-row__collapse-icon--open {
-  transform: rotate(180deg);
 }
 /* .pdl-line-row__actions-rail ELIMINADO (DESIGN-SYSTEM-LINE-RAIL-04) — la banda
    derecha (Duplicar/Eliminar) se unificó dentro de .pdl-line-row__rail (izquierda);
@@ -307,6 +319,16 @@
 .pdl-line__identity {
   min-width: 0;
 }
+/* PURCHASE-LINE-COMPACT-02 — estado + acciones de la línea (Recalcular desde XML,
+   "Detalle") en la columna de producto: la línea colapsada no necesita una franja
+   secundaria solo para ellos. */
+.pdl-line__identity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-1);
+}
 /* Columna de bodega — mismo componente/handler que antes (ZhSelect +
    ctx.updateLineWarehouse), solo reubicado visualmente (PURCHASE-LINE-HEADER-
    UX-02) y ahora como columna real del grid (UX-03) en vez de un flex item
@@ -361,55 +383,9 @@
 /* .pdl-container .pdl-line__total ELIMINADA (PURCHASES-DS-GLOBAL-COMPONENT-04)
    — el tamaño 20px/800 que este override agregaba ahora vive en
    <ZHMoneyValue emphasis="grand"> (zh-ui.css), como único tier global. */
-/* Margen en cabecera — mismo valor ya calculado que "Información comercial"
-   (vm.commercial.profitability), solo se repite visualmente aquí como badge
-   compacto para que sea visible siempre, incluso con la línea colapsada.
-   Reutiliza los tokens de éxito/error ya usados por .pdl-margin-pct. */
 /* .pdl-line__margin-badge(--neg/--lg) ELIMINADAS (PURCHASES-DS-GLOBAL-COMPONENT-04)
    — sin consumidores desde que Margen pasó a <Badge variant="success"|"error"
    size="md"> (global); quedaron huérfanas en el cambio anterior, corregido aquí. */
-/* Barra de "detalle colapsado" — reemplaza visualmente a .pdl-blocks cuando
-   la línea está colapsada, para que no se sienta como un hueco vacío. Mismo
-   criterio de color informativo que Badge variant="blue" (--color-info),
-   clickeable para expandir (mismo estado que el chevron de la banda
-   izquierda). */
-.pdl-line__collapsed-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  /* Antes: width:100% sin margen horizontal, quedaba pegada al riel
-     izquierdo/derecho a diferencia de .pdl-line__main/.pdl-blocks, que sí
-     respetan el gutter var(--space-5). Con margin horizontal + width auto
-     (default de un flex block-level) queda alineada sin riesgo de overflow. */
-  margin: var(--space-2) var(--space-5) var(--space-3);
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-info);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--color-info) 8%, transparent);
-  color: var(--color-info);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  cursor: pointer;
-  text-align: left;
-}
-.pdl-line__collapsed-bar:hover,
-.pdl-line__collapsed-bar:focus-visible {
-  background: color-mix(in srgb, var(--color-info) 14%, transparent);
-}
-.pdl-line__collapsed-bar-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-.pdl-line__collapsed-bar-text {
-  flex: 1;
-  /* Blindaje: sin esto, el min-width por defecto de un flex item ("auto")
-     podría impedir que encoja bien con textos largos según el idioma. */
-  min-width: 0;
-}
-.pdl-line__collapsed-bar-chevron {
-  font-size: 18px;
-  flex-shrink: 0;
-}
 /* .pdl-line__action / .pdl-line__action-label(--danger) / .pdl-line__delete-btn
    ELIMINADOS (PURCHASE-CLEANUP-RAIL-05) — sin consumidores; eran el rail
    derecho de Duplicar/Eliminar, reemplazado por ZHLineAction/ZHRowDeleteAction
@@ -420,6 +396,11 @@
    horizontal, y solo las últimas 2 celdas (última fila) se quedan sin borde
    inferior. PURCHASE-LINE-HEADER-UX-03. */
 @media (max-width: 1100px) {
+  /* ZH-DS-LINE-ISSUES-01 — sin columnas centradas verticalmente, la esquina superior
+     derecha tiene contenido: se reserva la mitad interior de la etiqueta. */
+  .pdl-container .pdl-line-card--has-issues .pdl-line__main {
+    padding-top: var(--space-4);
+  }
   .pdl-line__summary {
     grid-template-columns: 1fr 1fr;
     gap: 0;
@@ -666,6 +647,24 @@
   margin-top: 2px;
 }
 
+.pf-confirm-checklist__sublist {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.pf-confirm-checklist__sublist .pf-confirm-checklist__detail {
+  margin-top: 0;
+}
+
+.pf-confirm-checklist__line {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
 .pf-confirm-checklist__item--success .pf-confirm-checklist__icon {
   color: var(--color-success);
 }
@@ -880,6 +879,18 @@
    indicador de estado ("CRÍTICO"/"OK") ahora es <Badge variant="error"|
    "success" size="md"> (global) en vez de texto local con punto de color
    manual (::before). */
+.pdl-ctx-col__costs--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  column-gap: var(--space-4);
+  row-gap: 2px;
+}
+.pdl-ctx-col__costs--grid > .zh-info-row + .zh-info-row {
+  margin-top: 0;
+}
+.pdl-ctx-col__stock + .pdl-ctx-col__costs {
+  margin-top: var(--space-2);
+}
 .pdl-ctx-col__costs > .pdl-cost-wide {
   align-items: flex-start;
   gap: var(--space-2);
@@ -913,36 +924,9 @@
   align-items: center;
   gap: 4px;
 }
-.pdl-ctx-col__margin {
-}
-.pdl-margin-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: var(--space-1);
-}
-/* PURCHASES-DS-VISUAL-BASELINE-02 — mismos tokens que .pdl-cost-label/
-   .pdl-stock-head (antes 11px). */
-/* .pdl-margin-label/.pdl-margin-pct(--neg) ELIMINADAS
-   (PURCHASES-DS-GLOBAL-COMPONENT-04) — label ahora <ZHFieldLabel size="sm">;
-   el valor ahora <ZHDataValue variant="numeric" tone="success"|"danger">
-   (global) en vez de un modificador de color local. */
-.pdl-margin-bar {
-  height: 4px;
-  background: var(--color-surface-container-high);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: var(--space-2);
-}
-/* .pdl-margin-bar__fill ELIMINADA (PURCHASES-DS-FULL-SWEEP-01) — sin
-   consumidores; la barra de margen usa <progress className="pdl-margin-bar
-   pdl-margin-bar--progress"> nativo, sin un div interno de relleno manual. */
-/* Layout puro: cada línea ahora es <ZHDataValue variant="muted"> (global) —
-   .pdl-margin-meta solo distribuye las dos líneas (PURCHASES-DS-GLOBAL-COMPONENT-04). */
-.pdl-margin-meta {
-  display: flex;
-  justify-content: space-between;
-}
+/* .pdl-ctx-col__margin / .pdl-margin-* ELIMINADAS (PURCHASE-LINE-COMPACT-01) — el
+   margen % vive solo en la cabecera (Badge); precio de venta y desc. máx. pasaron a
+   ZHInfoRow en la grilla de "Información comercial". */
 
 /* PURCHASE-ADD-LINE-CTA-REUSE-AFTER-LAST-LINE-01 — misma acción/botón que .pdl-empty__cta
    (ctx.addLine), reutilizada como continuación compacta de la lista cuando ya hay líneas —
@@ -1056,26 +1040,9 @@
   color: var(--color-error);
 }
 
-.pdl-margin-bar--progress {
-  width: 100%;
-  appearance: none;
-  border: 0;
-}
 
-.pdl-margin-bar--progress::-webkit-progress-bar {
-  background: var(--color-surface-container-low);
-  border-radius: inherit;
-}
 
-.pdl-margin-bar--progress::-webkit-progress-value {
-  background: var(--color-success);
-  border-radius: inherit;
-}
 
-.pdl-margin-bar--progress::-moz-progress-bar {
-  background: var(--color-success);
-  border-radius: inherit;
-}
 
 /* ── Distribuir flete/gasto (modal) — PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 ── */
 .pdc-toolbar {
@@ -1085,68 +1052,167 @@
   margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
-.pdc-table {
+.pdc-table-scroll {
   margin-bottom: var(--space-4);
+  border: var(--border-width) solid var(--color-border-light);
+  border-radius: var(--radius-md);
 }
-.pdc-totals {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--space-1) var(--space-6);
+/* El modal aplica overflow-wrap:anywhere (contrato de overlays): sin un ancho mínimo, la
+   descripción era la única columna encogible y se partía carácter por carácter. */
+.pdc-table th {
+  vertical-align: bottom;
+  overflow-wrap: normal;
 }
-.pdc-totals__row {
+/* Importes sin símbolo de moneda: sin el hueco del símbolo vacío, las cifras alinean. */
+:is(.pdc-table, .pdc-summary) .zh-money-value__symbol:empty {
+  display: none;
+}
+.pdc-table .pdc-table__item {
+  min-width: 15rem;
+  width: 15rem;
+  max-width: 22rem;
+}
+.pdc-table__include {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-3);
-  padding: 4px 0;
-  border-bottom: 1px solid var(--color-border);
-  font-size: var(--text-body-sm-size);
-  color: var(--color-text-secondary);
-}
-/* .pdc-totals__row strong ELIMINADA (PURCHASES-DS-FULL-SWEEP-01) — los totales
-   ahora usan <ZHMoneyValue emphasis="strong"> en vez de envolver el texto en
-   <strong>; el color "fuerte" ya lo da ZHMoneyValue por defecto
-   (--color-text-primary), y el tamaño/peso se hereda de la fila vía la regla
-   siguiente para no imponer el tamaño por defecto de ZHMoneyValue sobre esta
-   fila compacta (--text-body-sm-size). */
-.pdc-totals__row .zh-money-value {
-  font-size: inherit;
-}
-
-/* ── Resolver productos pendientes (modal masivo) — COMPRAS-METODO-ZH-01B ── */
-.prl-summary {
-  display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  cursor: pointer;
 }
-.prl-bulk {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  align-items: end;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+.pdc-table__include input[type="checkbox"] {
+  margin-top: 2px;
 }
-.prl-scroll {
-  overflow-x: auto;
-}
-.prl-table td {
-  vertical-align: top;
-}
-.prl-stack {
-  min-width: 190px;
-}
-.prl-stack > * + * {
-  margin-top: var(--space-2);
-}
-.prl-xml {
-  min-width: 220px;
-  max-width: 320px;
-}
-.prl-xml__desc {
-  margin: 2px 0;
+/* Descripción larga: dos líneas como máximo; el texto completo queda en title. */
+.pdc-table__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: break-word;
   color: var(--color-text-primary);
 }
+.pdc-table__row--excluded .pdc-table__desc {
+  color: var(--color-text-secondary);
+}
+
+/* Resumen: dos grupos (distribución / factura), cada uno con su resultado primero. */
+.pdc-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--space-3);
+}
+.pdc-summary__group {
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-container-low);
+}
+.pdc-summary__title {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-secondary);
+}
+.pdc-summary .zh-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+.pdc-totals__row--primary .zh-summary-grid__value {
+  font-size: var(--text-title-sm-size);
+}
+
+/* Móvil: .responsive-table apila cada producto; aquí, en dos columnas compactas
+   (etiqueta sobre valor) y la descripción a todo el ancho. */
+@media (max-width: 640px) {
+  .pdc-table-scroll {
+    border: none;
+  }
+  .pdc-table.responsive-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+  }
+  .pdc-table.responsive-table td {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+    padding: var(--space-1) 0;
+  }
+  .pdc-table.responsive-table td::before {
+    align-self: flex-start;
+    flex: none;
+    font-size: var(--text-label-sm-size);
+    font-weight: var(--text-label-sm-weight);
+  }
+  .pdc-table.responsive-table .pdc-table__item {
+    grid-column: 1 / -1;
+    align-items: stretch;
+    position: static;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    background: transparent;
+    padding-bottom: var(--space-2);
+  }
+  .pdc-table.responsive-table .pdc-table__item::before {
+    content: none;
+  }
+}
+
+/* ── Resolver productos pendientes (modal masivo) — COMPRAS-METODO-ZH-01B ──
+   Filas compactas + detalle expandible (mismo patrón que el desglose XML, .pbd-*). */
+.prl-bulk {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+  align-items: end;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.prl-rows { border-top: var(--border-width) solid var(--color-border-light); }
+.prl-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 2.4fr) minmax(150px, 1.1fr) minmax(0, 2fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-1);
+}
+.prl-row-group {
+  position: relative;
+  overflow: visible;
+  border-bottom: var(--border-width) solid var(--color-border-light);
+}
+/* ZH-DS-LINE-ISSUES-01 — misma reserva que las líneas de la compra (.pdl-line-card--has-issues):
+   mitad exterior de la etiqueta sobre el borde superior, mitad interior sobre la fila. */
+.prl-row-group--has-issues { margin-top: var(--space-2); }
+.prl-row-group--has-issues > .prl-row { padding-top: var(--space-4); }
+.prl-row--head {
+  font-size: var(--text-label-sm-size);
+  text-transform: uppercase;
+  letter-spacing: var(--text-label-sm-spacing);
+  color: var(--color-text-secondary);
+  border-bottom: var(--border-width) solid var(--color-border-light);
+}
+.prl-row--error { background: var(--color-error-container); }
+.prl-row__toggle { justify-self: end; }
+.prl-xml,
+.prl-row__product {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.prl-xml__code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+.prl-xml__desc,
+.prl-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prl-xml__desc { color: var(--color-text-primary); }
 .prl-muted {
   color: var(--color-text-secondary);
   font-size: var(--text-body-sm-size);
@@ -1156,13 +1222,29 @@
   align-items: center;
   gap: var(--space-2);
 }
-.prl-row--error {
-  background: var(--color-error-container);
-}
 .prl-row__error {
+  display: flex;
+  flex-direction: column;
   margin-top: var(--space-1);
   color: var(--color-error);
   font-size: var(--text-body-sm-size);
+}
+.prl-detail-row[hidden] { display: none; }
+.prl-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-1) var(--space-4) calc(28px + var(--space-3));
+}
+.prl-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.prl-section__title {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 .prl-price--loss {
   color: var(--color-error);
@@ -1171,10 +1253,28 @@
   color: var(--color-warning);
   font-size: var(--text-body-sm-size);
 }
-.prl-more summary {
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: var(--text-body-sm-size);
+@media (max-width: 720px) {
+  .prl-bulk { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .prl-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-areas: "check xml xml" "check action toggle" "check product product";
+    align-items: start;
+    column-gap: var(--space-2);
+  }
+  .prl-row > :nth-child(1) { grid-area: check; }
+  .prl-row > :nth-child(2) { grid-area: xml; }
+  .prl-row > :nth-child(3) { grid-area: action; }
+  .prl-row > :nth-child(4) { grid-area: product; }
+  .prl-row > :nth-child(5) { grid-area: toggle; }
+  .prl-row--head { grid-template-areas: "check . toggle"; align-items: center; }
+  .prl-row--head > :nth-child(n + 2):nth-child(-n + 4) { display: none; }
+  .prl-row [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--text-label-sm-size);
+    color: var(--color-text-secondary);
+  }
+  .prl-detail { padding-left: 0; }
 }
 
 /* FASE 5 PURCHASE-UX — estado de la compra (nivel documento). */
@@ -1206,16 +1306,79 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 
-/* FASE 5 PURCHASE-UX — "Se registrarán X unidades a $Y c/u": siempre visible bajo la cabecera. */
-.pdl-container .pdl-line__registration {
+
+
+/* Desglose XML (PurchaseLineBreakdownModal): resumen en línea, filas compactas, barra única. */
+.pbd-summary {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-1) var(--space-3);
-  padding-top: var(--space-2);
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body-sm-size);
 }
-
-.pdl-line__registration-sentence {
-  color: var(--color-text-primary);
+.pbd-summary__item { white-space: nowrap; }
+.pbd-summary__label { color: var(--color-text-secondary); }
+.pbd-summary__description {
+  white-space: normal;
   font-weight: 600;
+  color: var(--color-text-primary);
+}
+.pbd-footer-status { margin: 0 auto 0 0; align-self: center; }
+.pbd-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.pbd-search__picker { flex: 1; min-width: 0; }
+.pbd-history { font-size: var(--text-body-sm-size); margin-bottom: var(--space-2); }
+.pbd-rows { border-top: var(--border-width) solid var(--color-border-light); }
+.pbd-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) minmax(0, 0.9fr) minmax(0, 1fr) minmax(88px, auto) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+.pbd-row-group { border-bottom: var(--border-width) solid var(--color-border-light); }
+.pbd-row--head {
+  font-size: var(--text-label-sm-size);
+  text-transform: uppercase;
+  letter-spacing: var(--text-label-sm-spacing);
+  color: var(--color-text-secondary);
+  border-bottom: var(--border-width) solid var(--color-border-light);
+}
+.pbd-row__product {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.pbd-taxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-3);
+}
+.pbd-reconciliation { margin-top: var(--space-3); }
+@media (max-width: 720px) {
+  .pbd-row--head { display: none; }
+  .pbd-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas: "product product remove" "pack pack pack" "qty cost taxes";
+    padding: var(--space-2) 0;
+  }
+  .pbd-row > :nth-child(1) { grid-area: product; }
+  .pbd-row > :nth-child(2) { grid-area: pack; }
+  .pbd-row > :nth-child(3) { grid-area: qty; }
+  .pbd-row > :nth-child(4) { grid-area: cost; }
+  .pbd-row > :nth-child(5) { grid-area: taxes; }
+  .pbd-row > :nth-child(6) { grid-area: remove; }
+  .pbd-row [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--text-label-sm-size);
+    color: var(--color-text-secondary);
+  }
 }

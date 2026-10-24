@@ -209,12 +209,6 @@
       "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
     },
     {
-      "file": "frontend/src/modules/purchases/components/ResolvePendingProductsModal.tsx",
-      "maxLines": 737,
-      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
-      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
-    },
-    {
       "file": "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
       "maxLines": 667,
       "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",

@@ -192,6 +192,7 @@ export interface DownloadXmlResult {
  */
 /** FLOW-READY-02F.1 — un impuesto crudo del XML, tal como quedó en PurchaseReceptionLineTax. */
 export interface PurchaseDraftLineTax {
+  purchaseReceptionLineTaxId?: string | null;
   taxCode: string;
   taxRateCode: string;
   tarifa: number;

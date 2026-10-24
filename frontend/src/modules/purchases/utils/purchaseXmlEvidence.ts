@@ -3,6 +3,7 @@ import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 
 type XmlEvidenceFields = Pick<
   PurchaseLineFormValues,
+  | "xmlSource"
   | "xmlSupplierCode"
   | "xmlDescription"
   | "xmlSupplierAuxCode"
@@ -21,9 +22,9 @@ type XmlEvidenceFields = Pick<
   | "xmlAdditionalFields"
 >;
 
-const VAT_TAX_CODE = "2";
-const ICE_TAX_CODE = "3";
-const IRBPNR_TAX_CODE = "5";
+export const VAT_TAX_CODE = "2";
+export const ICE_TAX_CODE = "3";
+export const IRBPNR_TAX_CODE = "5";
 
 function sumTaxAmount(line: PurchaseDraftLineDto, taxCode: string): number | undefined {
   const rows = line.taxes.filter((tx) => tx.taxCode === taxCode);
@@ -41,6 +42,7 @@ function sumTaxAmount(line: PurchaseDraftLineDto, taxCode: string): number | und
 export function xmlEvidenceFromDraftLine(line: PurchaseDraftLineDto): XmlEvidenceFields {
   const vat = line.taxes.find((tx) => tx.taxCode === VAT_TAX_CODE);
   return {
+    xmlSource: line,
     xmlSupplierCode: line.supplierCode ?? undefined,
     xmlDescription: line.description,
     xmlSupplierAuxCode: line.supplierAuxCode,
