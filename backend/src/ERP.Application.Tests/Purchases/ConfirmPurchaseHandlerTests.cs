@@ -50,6 +50,49 @@ public sealed class ConfirmPurchaseHandlerTests
     }
 
     [Fact]
+    public async Task Xml_components_use_existing_confirmation_once_per_detail_without_promotion()
+    {
+        var inv = CreateDraftInvoice();
+        var item = CreateItem();
+        var origin = Guid.NewGuid();
+        var taxes = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+        var lines = new List<PurchaseInvoiceDetail>();
+        foreach (var first in new[] { true, false })
+        {
+            var line = PurchaseInvoiceDetail.Create(inv.Id, TenantId, "Componente", first ? 15 : 30,
+                1, "10", "UNIT", itemId: item.Id, warehouseId: WhId, purchaseReceptionLineId: origin,
+                packagingLevelId: item.PackagingLevels.Single(p => p.IsBaseUnit).Id);
+            line.ApplyXmlAllocation(first ? 30 : 29.74m, 0,
+            [
+                PurchaseInvoiceDetailTax.Create(line.Id, TenantId, "2", "10", "IVA", 15,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Percentage, first ? 34 : 34.71m,
+                    first ? 5 : 5.31m, ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.XmlAllocation, taxes[0]),
+                PurchaseInvoiceDetailTax.Create(line.Id, TenantId, "3", "3053", "ICE", .18m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific, first ? 24 : 25.83m,
+                    first ? 4 : 4.97m, ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.XmlAllocation, taxes[1]),
+                PurchaseInvoiceDetailTax.Create(line.Id, TenantId, "5", "5001", "IRBPNR", .02m,
+                    ERP.Domain.Modules.SriCatalogs.Enums.SriTaxCalculationType.Specific, first ? 30 : 45,
+                    first ? .70m : .80m, ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.XmlAllocation, taxes[2]),
+            ]);
+            lines.Add(line);
+        }
+        inv.ReplaceLines(lines, UserId);
+        var (handler, _, stock, payables) = BuildHandler(inv, itemForXmlLines: item);
+        var result = await handler.Handle(new ConfirmPurchaseCommand(inv.Id), default);
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.GrandTotal.Should().Be(80.52m);
+        inv.TotalCostValue.Should().Be(59.74m);
+        var entries = stock.Invocations.Where(i => i.Method.Name == nameof(IStockRepository.AppendMovementAsync)).ToList();
+        entries.Should().HaveCount(2);
+        entries.Select(i => (Guid?)i.Arguments[16]).Should().BeEquivalentTo(lines.Select(l => (Guid?)l.Id));
+        entries.Select(i => (decimal)i.Arguments[5]).Sum().Should().Be(45);
+        payables.Invocations.Count(i => i.Method.Name == nameof(IAccountsPayableService.StageFromOriginAsync)).Should().Be(1);
+        stock.Verify(s => s.SaveChangesWithSequenceRetryAsync(It.IsAny<CancellationToken>()), Times.Once);
+        (await handler.Handle(new ConfirmPurchaseCommand(inv.Id), default)).IsSuccess.Should().BeFalse();
+        stock.Invocations.Count(i => i.Method.Name == nameof(IStockRepository.AppendMovementAsync)).Should().Be(2);
+    }
+
+    [Fact]
     public async Task Confirm_preserves_reviewed_freight_and_other_cost_allocations()
     {
         var inv = CreateDraftInvoice(2);

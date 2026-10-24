@@ -12163,6 +12163,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("warehouse_id");
 
+                    b.Property<decimal?>("XmlAllocatedSubtotal")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("xml_allocated_subtotal");
+
                     b.Property<decimal?>("XmlOriginFactor")
                         .HasColumnType("numeric(22,10)")
                         .HasColumnName("xml_origin_factor");
@@ -12212,6 +12216,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_invoice_detail_id");
 
+                    b.Property<Guid?>("PurchaseReceptionLineTaxId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_reception_line_tax_id");
+
                     b.Property<decimal?>("Rate")
                         .HasColumnType("numeric(10,4)")
                         .HasColumnName("rate");
@@ -12255,8 +12263,14 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("PurchaseInvoiceDetailId")
                         .HasDatabaseName("ix_purchase_invoice_detail_taxes_detail");
 
+                    b.HasIndex("PurchaseReceptionLineTaxId");
+
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_purchase_invoice_detail_taxes_tenant");
+
+                    b.HasIndex("PurchaseInvoiceDetailId", "PurchaseReceptionLineTaxId")
+                        .IsUnique()
+                        .HasFilter("purchase_reception_line_tax_id IS NOT NULL");
 
                     b.ToTable("purchase_invoice_detail_taxes", (string)null);
                 });
@@ -21123,6 +21137,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("PurchaseInvoiceDetailId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLineTax", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseReceptionLineTaxId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceTaxSummary", b =>

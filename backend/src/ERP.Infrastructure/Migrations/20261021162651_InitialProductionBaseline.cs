@@ -10893,11 +10893,61 @@ namespace ERP.Infrastructure.Migrations
                 );
                 """
             );
+            migrationBuilder.AddColumn<decimal>(
+                name: "xml_allocated_subtotal",
+                table: "purchase_invoice_details",
+                type: "numeric(18,2)",
+                nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "purchase_reception_line_tax_id",
+                table: "purchase_invoice_detail_taxes",
+                type: "uuid",
+                nullable: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_invoice_detail_taxes_purchase_invoice_detail_id_pu~",
+                table: "purchase_invoice_detail_taxes",
+                columns: new[] { "purchase_invoice_detail_id", "purchase_reception_line_tax_id" },
+                unique: true,
+                filter: "purchase_reception_line_tax_id IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_invoice_detail_taxes_purchase_reception_line_tax_id",
+                table: "purchase_invoice_detail_taxes",
+                column: "purchase_reception_line_tax_id");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_purchase_invoice_detail_taxes_purchase_reception_line_taxes~",
+                table: "purchase_invoice_detail_taxes",
+                column: "purchase_reception_line_tax_id",
+                principalTable: "purchase_reception_line_taxes",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_purchase_invoice_detail_taxes_purchase_reception_line_taxes~",
+                table: "purchase_invoice_detail_taxes");
+
+            migrationBuilder.DropIndex(
+                name: "IX_purchase_invoice_detail_taxes_purchase_invoice_detail_id_pu~",
+                table: "purchase_invoice_detail_taxes");
+
+            migrationBuilder.DropIndex(
+                name: "IX_purchase_invoice_detail_taxes_purchase_reception_line_tax_id",
+                table: "purchase_invoice_detail_taxes");
+
+            migrationBuilder.DropColumn(
+                name: "xml_allocated_subtotal",
+                table: "purchase_invoice_details");
+
+            migrationBuilder.DropColumn(
+                name: "purchase_reception_line_tax_id",
+                table: "purchase_invoice_detail_taxes");
             // Raw SQL en orden inverso al Up (bloque final del Up).
             migrationBuilder.Sql(
                 """

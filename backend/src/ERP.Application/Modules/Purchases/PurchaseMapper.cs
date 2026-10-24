@@ -123,7 +123,8 @@ internal static class PurchaseMapper
             l.SortOrder,
             xmlSource,
             l.XmlOriginPackagingLevelId,
-            l.XmlOriginFactor
+            l.XmlOriginFactor,
+            l.XmlAllocatedSubtotal
         );
 
     public static PurchasePaymentScheduleDto MapSchedule(PurchasePaymentSchedule s) =>
@@ -138,6 +139,7 @@ internal static class PurchaseMapper
             t.CalculationType.ToString(),
             t.TaxableBase,
             t.TaxAmount,
-            t.Source.ToString()
+            t.Source.ToString(),
+            t.PurchaseReceptionLineTaxId
         );
 }

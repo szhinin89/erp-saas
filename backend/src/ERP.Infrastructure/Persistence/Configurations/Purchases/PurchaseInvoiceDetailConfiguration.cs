@@ -182,6 +182,8 @@ public sealed class PurchaseInvoiceDetailConfiguration
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
 
         // ── Ignored (computed in domain, not persisted) ─────────────────
+        builder.Property(x => x.XmlAllocatedSubtotal).HasColumnName("xml_allocated_subtotal").HasColumnType("numeric(18,2)");
+        builder.Ignore(x => x.IsXmlBreakdown);
         builder.Ignore(x => x.LineSubtotal);
         builder.Ignore(x => x.TaxableBase);
         builder.Ignore(x => x.TaxInclusiveTotal);

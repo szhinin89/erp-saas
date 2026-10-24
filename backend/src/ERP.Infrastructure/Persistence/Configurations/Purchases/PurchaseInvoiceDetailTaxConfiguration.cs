@@ -51,6 +51,11 @@ public sealed class PurchaseInvoiceDetailTaxConfiguration
             .HasColumnType("numeric(18,2)")
             .IsRequired();
         builder.Property(x => x.Source).HasColumnName("source").HasConversion<int>().IsRequired();
+        builder.Property(x => x.PurchaseReceptionLineTaxId).HasColumnName("purchase_reception_line_tax_id");
+        builder.HasOne<ERP.Domain.Modules.Purchases.PurchaseReception.Entities.PurchaseReceptionLineTax>()
+            .WithMany().HasForeignKey(x => x.PurchaseReceptionLineTaxId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.PurchaseInvoiceDetailId, x.PurchaseReceptionLineTaxId })
+            .IsUnique().HasFilter("purchase_reception_line_tax_id IS NOT NULL");
 
         builder
             .HasIndex(x => x.PurchaseInvoiceDetailId)

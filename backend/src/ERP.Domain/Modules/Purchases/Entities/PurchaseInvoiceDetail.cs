@@ -144,8 +144,11 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public string? Notes { get; private set; }
     public short SortOrder { get; private set; }
 
+    // Explicit fiscal allocation; quantity and price remain operational values.
+    public decimal? XmlAllocatedSubtotal { get; private set; }
     // ── Calculated (NOT persisted) ──────────────────────────────────────
-    public decimal LineSubtotal => Quantity * UnitPrice;
+    public bool IsXmlBreakdown => XmlAllocatedSubtotal.HasValue;
+    public decimal LineSubtotal => XmlAllocatedSubtotal ?? Quantity * UnitPrice;
     public decimal TaxableBase =>
         Math.Round(
             LineSubtotal - DiscountAmount,
@@ -310,6 +313,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     )
     {
         EnsureNotFrozen();
+        if (IsXmlBreakdown)
+            return; // Allocations are checked against their documentary source, never recalculated.
         if (string.IsNullOrWhiteSpace(vatCode))
             throw new ArgumentException("El código IVA es obligatorio.", nameof(vatCode));
         if (vatRate < 0)
@@ -397,9 +402,37 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         _taxes.AddRange(taxes);
     }
 
+    // ── Documentary allocation ─────────────────────────────────────────
+    public void ApplyXmlAllocation(decimal subtotal, decimal discount,
+        IReadOnlyList<PurchaseInvoiceDetailTax> taxes)
+    {
+        EnsureNotFrozen();
+        if (PurchaseReceptionLineId is null || ItemId is null || subtotal < 0 || discount < 0
+            || discount > subtotal || subtotal != Math.Round(subtotal, FiscalPrecision.TaxAmount)
+            || discount != Math.Round(discount, FiscalPrecision.TaxAmount)
+            || taxes.Count == 0 || taxes.Count(t => t.TaxCode == VatSriTaxCode) != 1
+            || taxes.GroupBy(t => t.TaxCode).Any(g => g.Count() != 1)
+            || taxes.Any(t => t.PurchaseInvoiceDetailId != Id || t.TenantId != TenantId
+                || t.Source != PurchaseTaxSource.XmlAllocation || t.PurchaseReceptionLineTaxId is null
+                || t.TaxableBase < 0 || t.TaxableBase != Math.Round(t.TaxableBase, FiscalPrecision.TaxAmount)
+                || t.TaxAmount != Math.Round(t.TaxAmount, FiscalPrecision.TaxAmount)))
+            throw new DomainRuleViolationException("La asignación XML es inválida o contiene impuestos duplicados.");
+        XmlAllocatedSubtotal = subtotal;
+        DiscountAmount = discount;
+        ReplaceTaxes(taxes);
+        var vat = taxes.Single(t => t.TaxCode == VatSriTaxCode);
+        VatCode = vat.TaxRateCode;
+        VatRate = vat.Rate ?? 0m;
+        VatAmount = vat.TaxAmount;
+        SnapshotVatName = vat.TaxName;
+        RecalcCosts();
+    }
+
     // ── Discount ────────────────────────────────────────────────────────
     public bool BlocksXmlDiscount(decimal pct) => pct != DiscountPct
-        && _taxes.Any(t => t.TaxCode == IceSriTaxCode && t.Source == PurchaseTaxSource.Xml
+        && (IsXmlBreakdown || BlocksSpecificXmlDiscount());
+
+    private bool BlocksSpecificXmlDiscount() => _taxes.Any(t => t.TaxCode == IceSriTaxCode && t.Source == PurchaseTaxSource.Xml
             && t.CalculationType != SriTaxCalculationType.Percentage);
 
     public void ApplyDiscount(decimal pct)
@@ -408,7 +441,9 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         if (pct is < 0 or > 100)
             throw new ArgumentException("El descuento debe estar entre 0 y 100.", nameof(pct));
         if (BlocksXmlDiscount(pct))
-            throw new DomainRuleViolationException("No se puede modificar el descuento del XML con ICE específico o mixto sin bases físicas verificadas.");
+            throw new DomainRuleViolationException(IsXmlBreakdown
+                ? "El descuento del desglose requiere reasignar y conciliar el grupo documental."
+                : "No se puede modificar el descuento del XML con ICE específico o mixto sin bases físicas verificadas.");
         if (pct != DiscountPct)
         {
             var recalculated = _taxes.Select(t => t.Source == PurchaseTaxSource.Xml
@@ -419,6 +454,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
                     PurchaseTaxSource.Calculated) : t).ToList();
             ReplaceTaxes(recalculated);
         }
+        if (IsXmlBreakdown)
+            return;
         DiscountPct = pct;
         RecalcDiscount();
         RecalcTaxes();
@@ -548,6 +585,8 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     /// </summary>
     private void RecalcTaxes()
     {
+        if (IsXmlBreakdown)
+            return;
         var iceRow = _taxes.FirstOrDefault(t => t.TaxCode == IceSriTaxCode);
         var iceCalculationType = iceRow?.CalculationType ?? SriTaxCalculationType.Percentage;
         decimal iceAmount;

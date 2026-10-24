@@ -17,7 +17,7 @@ public static class PurchaseXmlOriginPackagingResolver
         (Guid LevelId, decimal Factor)? previous
     )
     {
-        if (line.XmlOriginPackagingLevelId is not { } levelId)
+        if (line.XmlAllocation is not null || line.XmlOriginPackagingLevelId is not { } levelId)
             return (null, null, null);
         // Solo líneas de Recepción con ítem: en el resto el origen no aplica y se ignora.
         if (line.PurchaseReceptionLineId is null || item is null)

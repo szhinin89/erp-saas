@@ -134,7 +134,8 @@ public sealed record PurchaseInvoiceDetailDto(
     PurchaseDraftLineDto? XmlSource = null,
     // FASE 5 PURCHASE-UX — presentación de origen XML persistida (null: manual / borrador anterior).
     Guid? XmlOriginPackagingLevelId = null,
-    decimal? XmlOriginFactor = null
+    decimal? XmlOriginFactor = null,
+    decimal? XmlAllocatedSubtotal = null
 );
 
 /// <summary>FLOW-READY-02F.1 — snapshot fiel de un &lt;impuesto&gt; del XML (IVA/ICE/IRBPNR).</summary>
@@ -146,7 +147,8 @@ public sealed record PurchaseInvoiceDetailTaxDto(
     string CalculationType,
     decimal TaxableBase,
     decimal TaxAmount,
-    string Source
+    string Source,
+    Guid? PurchaseReceptionLineTaxId = null
 );
 
 public sealed record PurchaseListDto(

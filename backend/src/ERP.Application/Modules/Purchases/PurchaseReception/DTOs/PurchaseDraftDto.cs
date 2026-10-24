@@ -46,7 +46,8 @@ public sealed record PurchaseDraftLineTaxDto(
     string TaxRateCode,
     decimal Tarifa,
     decimal TaxableBase,
-    decimal TaxAmount
+    decimal TaxAmount,
+    Guid? PurchaseReceptionLineTaxId = null
 );
 
 /// <summary>

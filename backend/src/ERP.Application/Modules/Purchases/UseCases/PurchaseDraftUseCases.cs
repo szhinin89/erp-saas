@@ -24,6 +24,26 @@ namespace ERP.Application.Modules.Purchases.UseCases;
 
 // ── Shared input ────────────────────────────────────────────────────────
 
+public sealed record PurchaseXmlTaxAllocationInput(Guid PurchaseReceptionLineTaxId, decimal TaxableBase, decimal TaxAmount);
+public sealed record PurchaseXmlAllocationInput(decimal Subtotal, decimal Discount,
+    IReadOnlyList<PurchaseXmlTaxAllocationInput> Taxes);
+
+public sealed class PurchaseXmlAllocationValidator : AbstractValidator<PurchaseXmlAllocationInput>
+{
+    public PurchaseXmlAllocationValidator()
+    {
+        RuleFor(x => x.Subtotal).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Discount).GreaterThanOrEqualTo(0).LessThanOrEqualTo(x => x.Subtotal);
+        RuleFor(x => x.Taxes).NotEmpty();
+        RuleForEach(x => x.Taxes).ChildRules(t =>
+        {
+            t.RuleFor(x => x.PurchaseReceptionLineTaxId).NotEmpty();
+            t.RuleFor(x => x.TaxableBase).GreaterThanOrEqualTo(0);
+            t.RuleFor(x => x.TaxAmount).GreaterThanOrEqualTo(0);
+        });
+    }
+}
+
 public sealed record PurchaseLineInput(
     Guid? ItemId,
     string Description,
@@ -49,7 +69,8 @@ public sealed record PurchaseLineInput(
     // FASE 5 PURCHASE-UX — presentación con la que se interpreta el documento del proveedor (solo
     // líneas XML). El factor NUNCA viene del body: se resuelve del nivel de empaque del ítem (o se
     // conserva el snapshot ya persistido si el nivel no cambió). No aprende nada del proveedor.
-    Guid? XmlOriginPackagingLevelId = null
+    Guid? XmlOriginPackagingLevelId = null,
+    PurchaseXmlAllocationInput? XmlAllocation = null
 );
 
 /// <summary>
@@ -121,7 +142,7 @@ file static class PurchaseLinePackagingResolver
             return new(ToSnapshot(item, selected), null);
         }
 
-        if (supplierId is null || line.PurchaseReceptionLineId is null)
+        if (line.XmlAllocation is not null || supplierId is null || line.PurchaseReceptionLineId is null)
             return new(fallback, null);
 
         var document = await receptionRepo.GetByLineIdAsync(
@@ -486,6 +507,10 @@ public sealed class CreatePurchaseDraftValidator : AbstractValidator<CreatePurch
                 line.RuleFor(l => l.Description)
                     .NotEmpty()
                     .MaximumLength(PurchaseInvoiceDetail.DescriptionMaxLen);
+                line.RuleFor(l => l.XmlAllocation).SetValidator(new PurchaseXmlAllocationValidator()!)
+                    .When(l => l.XmlAllocation is not null);
+                line.RuleFor(l => l.PurchaseReceptionLineId).NotNull().When(l => l.XmlAllocation is not null);
+                line.RuleFor(l => l.ItemId).NotNull().When(l => l.XmlAllocation is not null);
                 line.RuleFor(l => l.Quantity)
                     .GreaterThan(0)
                     .WithMessage("La cantidad debe ser mayor a cero.");
@@ -544,6 +569,10 @@ public sealed class UpdatePurchaseDraftValidator : AbstractValidator<UpdatePurch
                     .NotEmpty()
                     .MaximumLength(PurchaseInvoiceDetail.DescriptionMaxLen);
                 line.RuleFor(l => l.Quantity).GreaterThan(0);
+                line.RuleFor(l => l.XmlAllocation).SetValidator(new PurchaseXmlAllocationValidator()!)
+                    .When(l => l.XmlAllocation is not null);
+                line.RuleFor(l => l.PurchaseReceptionLineId).NotNull().When(l => l.XmlAllocation is not null);
+                line.RuleFor(l => l.ItemId).NotNull().When(l => l.XmlAllocation is not null);
                 line.RuleFor(l => l.UnitPrice).GreaterThanOrEqualTo(0);
                 line.RuleFor(l => l.VatCode)
                     .NotEmpty()
@@ -824,6 +853,9 @@ public sealed class CreatePurchaseDraftHandler
         var hasExplicitLineCosts = cmd.Lines.Any(l =>
             l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
         );
+        var breakdownError = await PurchaseXmlBreakdown.ValidateAsync(inv, linesResult.Lines, _receptionRepo, ct);
+        if (breakdownError is not null)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(breakdownError);
         inv.ReplaceLines(linesResult.Lines, _u.UserId);
         if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
             inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
@@ -885,7 +917,7 @@ public sealed class CreatePurchaseDraftHandler
             if (l.ItemId.HasValue)
             {
                 var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, tid, ct);
-                if (item is null)
+                if (item is null || item.CompanyId != _c.CompanyId)
                     return new(null!, Result<PurchaseInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa."));
                 participatesInInventory = item.ParticipatesInInventory;
                 lineItem = item;
@@ -1030,7 +1062,7 @@ public sealed class CreatePurchaseDraftHandler
                 return new(null!, Result<PurchaseInvoiceDto>.ValidationFailure(xmlOrigin.Error));
             line.SetXmlOrigin(xmlOrigin.LevelId, xmlOrigin.Factor);
 
-            var taxResult = await ResolveLineTaxesAsync(
+            var taxResult = l.XmlAllocation is not null ? null : await ResolveLineTaxesAsync(
                 line,
                 l.PurchaseReceptionLineId,
                 normalizedLine.MatchesXmlDocument,
@@ -1039,6 +1071,13 @@ public sealed class CreatePurchaseDraftHandler
             );
             if (taxResult is not null)
                 return new(null!, taxResult);
+            if (l.XmlAllocation is not null)
+            {
+                var allocationError = await PurchaseXmlBreakdown.ApplyAsync(line, l.XmlAllocation,
+                    _receptionRepo, _tax, ct);
+                if (allocationError is not null)
+                    return new(null!, Result<PurchaseInvoiceDto>.ValidationFailure(allocationError));
+            }
             lines.Add(line);
         }
         return new(lines, null);
@@ -1306,7 +1345,7 @@ public sealed class UpdatePurchaseDraftHandler
             if (l.ItemId.HasValue)
             {
                 var item = await _itemRepo.GetByIdAsync(l.ItemId.Value, _t.TenantId, ct);
-                if (item is null)
+                if (item is null || item.CompanyId != inv.CompanyId)
                     return Result<PurchaseInvoiceDto>.ValidationFailure("El ítem no pertenece a esta empresa.");
                 participatesInInventory = item.ParticipatesInInventory;
                 lineItem = item;
@@ -1436,7 +1475,7 @@ public sealed class UpdatePurchaseDraftHandler
             line.SetXmlOrigin(xmlOrigin.LevelId, xmlOrigin.Factor);
 
             Result<PurchaseInvoiceDto>? taxResult = null;
-            if (l.PurchaseReceptionLineId.HasValue)
+            if (l.XmlAllocation is null && l.PurchaseReceptionLineId.HasValue)
             {
                 var receptionTaxes = await ReceptionTaxLookup.LoadAsync(
                     _receptionRepo,
@@ -1455,12 +1494,19 @@ public sealed class UpdatePurchaseDraftHandler
                 else
                     taxResult = await PurchaseTaxHelper.ResolveTaxesAsync(line, _tax, ct);
             }
-            else
+            else if (l.XmlAllocation is null)
             {
                 taxResult = await PurchaseTaxHelper.ResolveTaxesAsync(line, _tax, ct);
             }
             if (taxResult is not null)
                 return taxResult;
+            if (l.XmlAllocation is not null)
+            {
+                var allocationError = await PurchaseXmlBreakdown.ApplyAsync(line, l.XmlAllocation,
+                    _receptionRepo, _tax, ct);
+                if (allocationError is not null)
+                    return Result<PurchaseInvoiceDto>.ValidationFailure(allocationError);
+            }
             lines.Add(line);
         }
         // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — mismo criterio que CreatePurchaseDraftHandler:
@@ -1468,6 +1514,9 @@ public sealed class UpdatePurchaseDraftHandler
         var hasExplicitLineCosts = cmd.Lines.Any(l =>
             l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
         );
+        var breakdownError = await PurchaseXmlBreakdown.ValidateAsync(inv, lines, _receptionRepo, ct);
+        if (breakdownError is not null)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(breakdownError);
         await _repo.RemoveLinesByInvoiceAsync(inv.Id, lines, ct);
         inv.ReplaceLines(lines, _u.UserId);
         if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
@@ -1502,6 +1551,8 @@ internal static class PurchaseTaxHelper
         CancellationToken ct
     )
     {
+        if (line.IsXmlBreakdown)
+            return null; // Documentary allocations are validated by PurchaseXmlBreakdown.
         var vatResult = await tax.GetVatRateWithNameAsync(line.VatCode, ct);
         if (vatResult is null)
             return Result<PurchaseInvoiceDto>.ValidationFailure(
@@ -1768,8 +1819,7 @@ public sealed class GetPurchaseByIdHandler
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
 
-        var xmlSources =
-            inv.Status == PurchaseStatus.Draft ? await LoadXmlSourcesAsync(inv, ct) : null;
+        var xmlSources = await LoadXmlSourcesAsync(inv, ct);
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv, xmlSources));
     }
 
@@ -1941,7 +1991,7 @@ file static class PurchaseLineNormalizer
     {
         PurchaseReceptionLine? original = null;
 
-        if (line.PurchaseReceptionLineId is { } receptionLineId)
+        if (line.XmlAllocation is null && line.PurchaseReceptionLineId is { } receptionLineId)
         {
             var document = await receptionRepo.GetByLineIdAsync(tenantId, receptionLineId, ct);
             original = document?.Lines.FirstOrDefault(l => l.Id == receptionLineId);

@@ -91,7 +91,8 @@ public static class PurchaseDraftMapper
                     t.TaxRateCode,
                     t.Tarifa,
                     t.TaxableBase,
-                    t.TaxAmount
+                    t.TaxAmount,
+                    t.PurchaseReceptionLineTaxId
                 ))
                 .ToList(),
             AdditionalFields: l.AdditionalFields.Select(

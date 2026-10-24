@@ -11,4 +11,6 @@ public enum PurchaseTaxSource
 {
     Xml = 1,
     Calculated = 2,
+    /// <summary>Parte explícita de un impuesto documental, vinculada a su fila fiscal original.</summary>
+    XmlAllocation = 3,
 }

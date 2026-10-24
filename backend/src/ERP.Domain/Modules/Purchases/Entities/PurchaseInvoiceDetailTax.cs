@@ -38,6 +38,7 @@ public sealed class PurchaseInvoiceDetailTax : IMustHaveTenant
     public decimal TaxableBase { get; private set; }
     public decimal TaxAmount { get; private set; }
     public PurchaseTaxSource Source { get; private set; }
+    public Guid? PurchaseReceptionLineTaxId { get; private set; }
 
     private PurchaseInvoiceDetailTax() { }
 
@@ -51,7 +52,8 @@ public sealed class PurchaseInvoiceDetailTax : IMustHaveTenant
         SriTaxCalculationType calculationType,
         decimal taxableBase,
         decimal taxAmount,
-        PurchaseTaxSource source
+        PurchaseTaxSource source,
+        Guid? purchaseReceptionLineTaxId = null
     )
     {
         if (purchaseInvoiceDetailId == Guid.Empty)
@@ -84,6 +86,7 @@ public sealed class PurchaseInvoiceDetailTax : IMustHaveTenant
             TaxableBase = taxableBase,
             TaxAmount = taxAmount,
             Source = source,
+            PurchaseReceptionLineTaxId = purchaseReceptionLineTaxId,
         };
     }
 }

@@ -71,13 +71,17 @@ public sealed class PurchaseXmlConfirmationGuard(
         // FASE 3 — "Corregir relación" cambia el producto en la recepción; un borrador guardado antes
         // conserva el anterior hasta "Guardar". Nunca se confirma ni se corrige solo: se pide guardar.
         // Solo el producto: la presentación de la línea puede elegirse distinta a la aprendida.
-        var stale = linked.FirstOrDefault(line =>
+        var breakdownError = await PurchaseXmlBreakdown.ValidateAsync(invoice, invoice.Lines, receptions, ct);
+        if (breakdownError is not null)
+            return breakdownError;
+
+        var stale = linked.Where(l => !l.IsXmlBreakdown).FirstOrDefault(line =>
             ResolvedItemChanged(line, source.Lines.Single(l => l.Id == line.PurchaseReceptionLineId))
         );
         if (stale is not null)
             return $"El producto de la línea '{stale.Description}' se corrigió en la recepción XML después de guardar la compra. Guarde nuevamente la compra para aplicar la corrección antes de confirmar.";
 
-        var changed = linked.FirstOrDefault(line =>
+        var changed = linked.Where(l => !l.IsXmlBreakdown).FirstOrDefault(line =>
             !LineMatches(line, source.Lines.Single(l => l.Id == line.PurchaseReceptionLineId))
         );
         return changed is null
@@ -153,7 +157,8 @@ public sealed class PurchaseXmlConfirmationGuard(
     {
         var ids = linked.Select(l => l.PurchaseReceptionLineId!.Value).ToHashSet();
         return linked.Count == invoice.Lines.Count
-            && ids.Count == linked.Count
+            && linked.GroupBy(l => l.PurchaseReceptionLineId).All(g =>
+                g.Count() == 1 ? !g.First().IsXmlBreakdown : g.All(l => l.IsXmlBreakdown))
             && ids.Count == source.Lines.Count
             && source.Lines.All(l => ids.Contains(l.Id));
     }

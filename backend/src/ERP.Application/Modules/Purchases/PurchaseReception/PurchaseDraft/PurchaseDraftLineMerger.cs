@@ -13,11 +13,12 @@ public sealed record PurchaseDraftMergedLineTax(
     string TaxRateCode,
     decimal Tarifa,
     decimal TaxableBase,
-    decimal TaxAmount
+    decimal TaxAmount,
+    Guid? PurchaseReceptionLineTaxId = null
 )
 {
     public static PurchaseDraftMergedLineTax FromPersisted(PurchaseReceptionLineTax tax) =>
-        new(tax.TaxCode, tax.TaxRateCode, tax.Tarifa, tax.TaxableBase, tax.TaxAmount);
+        new(tax.TaxCode, tax.TaxRateCode, tax.Tarifa, tax.TaxableBase, tax.TaxAmount, tax.Id);
 
     public static PurchaseDraftMergedLineTax FromParsed(ParsedPurchaseXmlLineTax tax) =>
         new(tax.TaxCode, tax.TaxRateCode, tax.Tarifa, tax.TaxableBase, tax.TaxAmount);
@@ -128,7 +129,13 @@ public sealed record PurchaseDraftMergedLine(
             VatPercentage: fresh.VatPercentage,
             TaxValue: fresh.TaxValue,
             TotalLine: fresh.TotalLine,
-            Taxes: fresh.Taxes.Select(PurchaseDraftMergedLineTax.FromParsed).ToList(),
+            Taxes: fresh.Taxes.Select(t => PurchaseDraftMergedLineTax.FromParsed(t) with
+            {
+                PurchaseReceptionLineTaxId = persisted.Taxes.Where(p => p.TaxCode == t.TaxCode
+                    && p.TaxRateCode == t.TaxRateCode && p.Tarifa == t.Tarifa
+                    && p.TaxableBase == t.TaxableBase && p.TaxAmount == t.TaxAmount)
+                    .Select(p => (Guid?)p.Id).SingleOrDefault()
+            }).ToList(),
             AdditionalFields: fresh
                 .AdditionalFields.Select(PurchaseDraftMergedLineAdditionalField.FromParsed)
                 .ToList()
