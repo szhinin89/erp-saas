@@ -13,9 +13,11 @@ import type {
 } from "../api/purchaseReceptionService";
 import { buildPurchaseItemLabel } from "./purchaseItemProfile";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
-import type {
-  PendingProductMode,
-  PendingProductRow,
+import {
+  pendingProductsFormSchema,
+  normalizePendingBarcode,
+  type PendingProductMode,
+  type PendingProductRow,
 } from "../schemas/pendingProductsSchema";
 import type { PurchaseLineReadiness } from "./purchaseLineReadiness";
 
@@ -87,7 +89,7 @@ const MAX_BARCODE_LENGTH = 100;
  * si no, queda solo como evidencia XML (nunca se convierte en SKU ni en código de barras).
  */
 export function isAcceptableBarcode(code: string): boolean {
-  const value = code.trim();
+  const value = normalizePendingBarcode(code);
   return value.length > 0 && value.length <= MAX_BARCODE_LENGTH;
 }
 
@@ -96,7 +98,7 @@ export function isAcceptableBarcode(code: string): boolean {
  * que no lo es sirve solo para el matching: nunca se precarga como código de barras.
  */
 export function isRealBarcode(code: string): boolean {
-  const value = code.trim();
+  const value = normalizePendingBarcode(code);
   if (!/^(\d{8}|\d{12,14})$/.test(value)) return false;
   const digits = [...value].map(Number);
   const check = digits.pop() as number;
@@ -137,16 +139,16 @@ export function provisionalUnitBarcode(
       ((r.mode === "create" && r.rowId === rowId) ||
         (r.mode === "presentation" && r.parentRowId === rowId)),
   );
-  if (itemRows.some((r) => isBasePresentation(r) && r.barcode.trim())) return null;
+  if (itemRows.some((r) => isBasePresentation(r) && normalizePendingBarcode(r.barcode))) return null;
   const packBarcodes = new Set(
     itemRows
-      .filter((r) => !isBasePresentation(r) && r.barcode.trim())
-      .map((r) => r.barcode.trim().toUpperCase()),
+      .filter((r) => !isBasePresentation(r) && normalizePendingBarcode(r.barcode))
+      .map((r) => normalizePendingBarcode(r.barcode).toUpperCase()),
   );
   const candidates = [
     ...itemRows.filter((r) => isBasePresentation(r)),
     ...itemRows.filter((r) => !isBasePresentation(r)),
-  ].map((r) => sources.get(r.rowId)?.supplierCode.trim() ?? "");
+  ].map((r) => normalizePendingBarcode(sources.get(r.rowId)?.supplierCode ?? ""));
   return (
     candidates.find((code) => code && !packBarcodes.has(code.toUpperCase())) ?? null
   );
@@ -160,7 +162,7 @@ export function provisionalUnitBarcode(
  * - si no, vacío (el backend aplica su regla de código Interno provisional).
  */
 export function proposedUnitBarcode(source: PendingProductSource): string {
-  const auxCode = source.supplierAuxCode.trim();
+  const auxCode = normalizePendingBarcode(source.supplierAuxCode);
   if (isAcceptableBarcode(auxCode)) return auxCode;
   const supplierCode = source.supplierCode.trim();
   return isRealBarcode(supplierCode) ? supplierCode : "";
@@ -293,6 +295,46 @@ export function applyMarginToSelected(
   });
 }
 
+/** Fila seleccionada que crea producto sin precio sin IVA persistible (> 0 con la precisión de la empresa). */
+export function lacksNetSalePrice(row: PendingProductRow, pricing: SalePricing): boolean {
+  if (!row.selected || row.mode !== "create") return false;
+  return !((rowSalePrice(row, undefined, pricing)?.net ?? 0) > 0);
+}
+
+export interface PendingRowIssue {
+  field: string;
+  message: string;
+}
+
+/**
+ * Datos por completar de cada fila seleccionada, derivados de las mismas validaciones del envío
+ * (schema del formulario + precio sin IVA); no es una regla alternativa. Clave = rowId.
+ */
+export function pendingRowIssues(
+  rows: PendingProductRow[],
+  pricing: SalePricing,
+  noNetPriceMessage: string,
+): Map<string, PendingRowIssue[]> {
+  const issues = new Map<string, PendingRowIssue[]>();
+  const add = (rowId: string, issue: PendingRowIssue) => {
+    const current = issues.get(rowId) ?? [];
+    if (!current.some((i) => i.field === issue.field && i.message === issue.message))
+      issues.set(rowId, [...current, issue]);
+  };
+  const parsed = pendingProductsFormSchema.safeParse({ rows });
+  if (!parsed.success)
+    for (const issue of parsed.error.issues) {
+      const [root, index, field] = issue.path;
+      const row = root === "rows" && typeof index === "number" ? rows[index] : undefined;
+      if (row) add(row.rowId, { field: String(field ?? ""), message: issue.message });
+    }
+  rows.forEach((row) => {
+    if (lacksNetSalePrice(row, pricing) && !issues.get(row.rowId)?.some((i) => i.field === "salePriceGross"))
+      add(row.rowId, { field: "salePriceGross", message: noNetPriceMessage });
+  });
+  return issues;
+}
+
 const optional = (value: string) => (value.trim() ? value.trim() : null);
 
 /** Contrato del backend: productos nuevos (clave = fila que lo crea) + resolución de cada línea. */
@@ -302,7 +344,7 @@ export function buildResolveRequest(
 ): ResolveReceptionLinesRequest {
   const selected = rows.filter((r) => r.selected);
   const presentation = (r: PendingProductRow) => {
-    const barcode = optional(r.barcode);
+    const barcode = normalizePendingBarcode(r.barcode) || null;
     return {
       presentationFactor: r.presentationFactor ?? 1,
       presentationName: r.presentationFactor === 1 ? null : optional(r.presentationName),

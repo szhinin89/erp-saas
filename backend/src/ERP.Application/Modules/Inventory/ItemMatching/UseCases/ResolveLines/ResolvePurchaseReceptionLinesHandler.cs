@@ -348,7 +348,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         var conflictingBarcode = itemLines
             .GroupBy(l => l.PresentationFactor)
             .FirstOrDefault(g =>
-                g.Select(l => Trimmed(l.Barcode))
+                g.Select(l => NormalizedBarcode(l.Barcode))
                     .OfType<string>()
                     .Distinct(StringComparer.Ordinal)
                     .Count() > 1
@@ -680,17 +680,17 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     )
     {
         var presentations = itemLines
-            .Where(l => l.PresentationFactor != 1m && Trimmed(l.Barcode) is not null)
+            .Where(l => l.PresentationFactor != 1m && NormalizedBarcode(l.Barcode) is not null)
             .GroupBy(l => l.PresentationFactor)
-            .ToDictionary(g => g.Key, g => Trimmed(g.First().Barcode)!);
+            .ToDictionary(g => g.Key, g => NormalizedBarcode(g.First().Barcode)!);
 
         var unit = itemLines.FirstOrDefault(l =>
-            l.PresentationFactor == 1m && Trimmed(l.Barcode) is not null
+            l.PresentationFactor == 1m && NormalizedBarcode(l.Barcode) is not null
         );
         if (unit is not null)
             return new(
                 new CreateItemBarcodeDto(
-                    Trimmed(unit.Barcode)!,
+                    NormalizedBarcode(unit.Barcode)!,
                     unit.BarcodeType?.Trim() ?? string.Empty,
                     true
                 ),
@@ -701,7 +701,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         var supplierCode = itemLines
             .OrderBy(l => l.PresentationFactor == 1m ? 0 : 1)
             .Select(l =>
-                Trimmed(
+                NormalizedBarcode(
                     document.Lines.FirstOrDefault(d => d.Id == l.PurchaseReceptionLineId)?.SupplierCode
                 )
             )
@@ -717,6 +717,9 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             presentations
         );
     }
+
+    private static string? NormalizedBarcode(string? value) =>
+        Trimmed(value) is { } code && code != "0" ? code : null;
 
     private static string? Trimmed(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

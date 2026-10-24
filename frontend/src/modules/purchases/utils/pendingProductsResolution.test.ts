@@ -4,7 +4,7 @@ import { pendingProductsFormSchema } from "../schemas/pendingProductsSchema";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PurchaseLineReadiness } from "./purchaseLineReadiness";
 import { applyBulkAssignment, applyMarginToSelected, applyResolvedReceptionLines, buildInitialRow,
-  buildResolveRequest, groupRowErrors, isRealBarcode, netUnitCost, provisionalUnitBarcode, rowSalePrice,
+  buildResolveRequest, groupRowErrors, isRealBarcode, lacksNetSalePrice, netUnitCost, pendingRowIssues, provisionalUnitBarcode, rowSalePrice,
   selectPendingProductSources, summarizeXmlLines, type PendingProductSource,
   type SalePricing } from "./pendingProductsResolution";
 import type { ResolvedReceptionLine } from "../api/purchaseReceptionService";
@@ -25,6 +25,15 @@ const line = (patch: Partial<PurchaseLineFormValues> = {}): PurchaseLineFormValu
 });
 
 describe("pending products schema", () => {
+  it.each(["", "   ", "0", " 0 "])("treats %j as absent through preload, validation and payload", (barcode) => {
+    const initial = buildInitialRow({ ...source, supplierAuxCode: barcode, supplierCode: "SUP-A" }, ["EAN13"]);
+    expect(initial).toMatchObject({ barcode: "", barcodeType: "" });
+    const rows = ["a", "b"].map(rowId => ({ ...row(), rowId, sku: rowId, barcode, barcodeType: "" }));
+    expect(pendingProductsFormSchema.safeParse({ rows }).success).toBe(true);
+    expect(buildResolveRequest(rows, pricing()).lines.every(l => l.barcode === null && l.barcodeType === null)).toBe(true);
+    expect(provisionalUnitBarcode(rows, "a", new Map([["a", { ...source, supplierCode: "SUP-A" }]]))).toBe("SUP-A");
+    expect(provisionalUnitBarcode(rows, "a", new Map([["a", { ...source, supplierCode: barcode }]]))).toBeNull();
+  });
   it("accepts create, link and another presentation without requiring new-item fields on links", () => {
     expect(pendingProductsFormSchema.safeParse({ rows: [row(),
       { ...buildInitialRow({ ...source, rowId: "b" }, []), mode: "link", linkItemId: "existing" },
@@ -176,6 +185,29 @@ describe("PVP final con IVA → BaseSalePrice sin IVA (FASE 3)", () => {
     expect(result[0].salePriceGross).toBe(13.8);
     expect(result[1]).toBe(rows[1]);
     expect(applyMarginToSelected(rows, sources, 25, pricing(2), () => 13.99)[0].salePriceGross).toBe(13.99);
+  });
+});
+
+describe("readiness of each row (same validations as submit)", () => {
+  const NO_NET = "sin precio neto";
+  it("lists the schema issues of selected rows only, keyed by row", () => {
+    const issues = pendingRowIssues([{ ...row(), brandId: "" }, { ...row(), rowId: "b", sku: "B", brandId: "", selected: false }], pricing(), NO_NET);
+    expect([...issues.keys()]).toEqual(["a"]);
+    expect(issues.get("a")).toEqual([{ field: "brandId", message: "La marca es obligatoria." }]);
+  });
+  it("includes cross-row rules from the form schema", () => {
+    const issues = pendingRowIssues([row(), { ...row(), rowId: "b" }], pricing(), NO_NET);
+    expect(issues.get("a")).toContainEqual({ field: "sku", message: "El SKU está repetido en el lote." });
+    expect(issues.get("b")).toContainEqual({ field: "sku", message: "El SKU está repetido en el lote." });
+  });
+  it("adds the submit-time net price check once, only when the schema accepted the price", () => {
+    expect(lacksNetSalePrice({ ...row(), saleVatCode: "X" }, pricing())).toBe(true);
+    expect(lacksNetSalePrice({ ...row(), saleVatCode: "X", mode: "link" }, pricing())).toBe(false);
+    expect(pendingRowIssues([{ ...row(), saleVatCode: "X" }], pricing(), NO_NET).get("a")).toEqual([{ field: "salePriceGross", message: NO_NET }]);
+    expect(pendingRowIssues([{ ...row(), salePriceGross: null }], pricing(), NO_NET).get("a")).toEqual([{ field: "salePriceGross", message: "Ingrese el PVP final (mayor a cero)." }]);
+  });
+  it("reports a complete row as ready (no entry)", () => {
+    expect(pendingRowIssues([row()], pricing(), NO_NET).size).toBe(0);
   });
 });
 

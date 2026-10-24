@@ -10,6 +10,12 @@ import { z } from "zod";
 export const PENDING_PRODUCT_MODES = ["create", "link", "presentation"] as const;
 export type PendingProductMode = (typeof PENDING_PRODUCT_MODES)[number];
 
+/** Solo el cero aislado representa ausencia; se conservan ceros iniciales de codigos reales. */
+export function normalizePendingBarcode(value: string): string {
+  const code = value.trim();
+  return code === "0" ? "" : code;
+}
+
 const SKU_PATTERN = /^[A-Za-z0-9\-_.]+$/;
 
 export const pendingProductRowSchema = z
@@ -80,7 +86,7 @@ export const pendingProductRowSchema = z
     if (row.mode === "presentation")
       require("parentRowId", row.parentRowId.length > 0, "Seleccione el producto nuevo al que pertenece.");
     if (row.mode !== "link") {
-      const barcode = row.barcode.trim();
+      const barcode = normalizePendingBarcode(row.barcode);
       const isUnit = row.presentationFactor == null || row.presentationFactor === 1;
       require("barcode", barcode.length <= 100, "El código de barras no puede exceder 100 caracteres.");
       require(
@@ -131,7 +137,7 @@ export const pendingProductsFormSchema = z
     for (const r of selected) {
       const sku = r.sku.trim().toUpperCase();
       if (r.mode === "create" && sku) skuCount.set(sku, (skuCount.get(sku) ?? 0) + 1);
-      const barcode = r.barcode.trim();
+      const barcode = normalizePendingBarcode(r.barcode);
       if (r.mode === "link" || !barcode) continue;
       targetsByBarcode.set(barcode, (targetsByBarcode.get(barcode) ?? new Set()).add(target(r)));
       barcodesByTarget.set(target(r), (barcodesByTarget.get(target(r)) ?? new Set()).add(barcode));
@@ -161,7 +167,7 @@ export const pendingProductsFormSchema = z
             message: `Otra presentación de este producto ya usa esa unidad. Cada presentación necesita su propia unidad: elija otra (p. ej. Paquete o Caja).`,
           });
       }
-      const barcode = r.barcode.trim();
+      const barcode = normalizePendingBarcode(r.barcode);
       if (barcode && (targetsByBarcode.get(barcode)?.size ?? 0) > 1)
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["rows", index, "barcode"], message: "El código de barras está repetido en el lote." });
       else if (barcode && (barcodesByTarget.get(target(r))?.size ?? 0) > 1)

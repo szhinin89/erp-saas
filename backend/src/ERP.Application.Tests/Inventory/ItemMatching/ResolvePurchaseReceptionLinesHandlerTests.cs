@@ -44,7 +44,8 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
         public Fixture(
             PurchaseReceptionDocumentStatus? status = null,
             Guid? branchId = null,
-            Guid? companyId = null
+            Guid? companyId = null,
+            string supplierCodeA = "COD-A"
         )
         {
             Document = PurchaseReceptionDocument.Create(
@@ -64,7 +65,7 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
                 20m,
                 UserId
             );
-            LineA = Line("COD-A");
+            LineA = Line(supplierCodeA);
             LineB = Line("COD-B");
             LineC = Line("COD-A");
             Document.AttachSriAuthorization(
@@ -387,6 +388,52 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
             Times.Once,
             "the supplier code is checked as the provisional unit barcode"
         );
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("0")]
+    [InlineData(" 0 ")]
+    public async Task Absent_barcodes_use_distinct_supplier_identifiers_without_requiring_type(string? barcode)
+    {
+        var f = new Fixture();
+        var result = await f.Build().Handle(
+            new([NewItem("n1"), NewItem("n2") with { Sku = "SKU-2" }], [
+                new(f.LineA.Id, NewItemKey: "n1", Barcode: barcode),
+                new(f.LineB.Id, NewItemKey: "n2", Barcode: barcode)
+            ]), CancellationToken.None);
+        result.Value!.Errors.Should().BeEmpty();
+        f.Items.Verify(i => i.BarcodeExistsAsync("0", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Never);
+        f.Items.Verify(i => i.BarcodeExistsAsync("COD-A", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
+        f.Items.Verify(i => i.BarcodeExistsAsync("COD-B", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("0")]
+    [InlineData(" 0 ")]
+    public async Task Absent_supplier_identifier_requires_manual_unit_barcode(string supplierCode)
+    {
+        var f = new Fixture(supplierCodeA: supplierCode);
+        var errors = await RejectedAsync(f,
+            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1", Barcode: "0")]));
+        errors.Should().Contain(e => e.Message.Contains("Interno provisional"));
+        f.Items.Verify(i => i.BarcodeExistsAsync("0", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Duplicate_provisional_supplier_identifiers_remain_blocked()
+    {
+        var f = new Fixture();
+        var errors = await RejectedAsync(f,
+            new([NewItem("n1"), NewItem("n2")], [
+                new(f.LineA.Id, NewItemKey: "n1", Barcode: "0"),
+                new(f.LineC.Id, NewItemKey: "n2", Barcode: "0")
+            ]));
+        errors.Should().Contain(e => e.Message.Contains("provisional") && e.Message.Contains("repetido"));
     }
 
     [Fact]
