@@ -1,7 +1,11 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Inventory.ItemMatching.Services;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Items.ValueObjects;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Infrastructure.Persistence;
@@ -45,6 +49,92 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Supplier_07_requires_its_own_active_relation_even_when_another_item_has_sku_07(bool inactiveRelation)
+    {
+        var (supplierA, supplierB, rice, _) = await SeedSupplier07Async(inactiveRelation, inactiveRelation);
+
+        await using var readDb = CreateContext(_tenantId);
+        var repository = new ItemRepository(readDb);
+        (await repository.FindItemIdBySupplierCodeAsync(supplierA, " 07 ", _tenantId)).Should().Be(rice);
+        (await repository.GetSupplierCodeMatchAsync(supplierA, "07", _tenantId))!.ItemId.Should().Be(rice);
+        (await repository.FindItemIdBySupplierCodeAsync(supplierB, "07", _tenantId)).Should().BeNull();
+        (await repository.GetSupplierCodeMatchAsync(supplierB, "07", _tenantId)).Should().BeNull();
+        var document = Reception(supplierB);
+        (await new PurchaseReceptionAutoMatcher(repository).RefreshAsync(document, CancellationToken.None)).Should().Be(0);
+        document.Lines.Single().ItemId.Should().BeNull();
+        document.Lines.Single().MatchStatus.Should().Be(ItemMatchStatus.Pending);
+        (await new ItemMatchFinder(repository).FindCandidatesAsync(_tenantId, supplierB, "07", null, "Azucar", 5))
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Supplier_A_07_is_rice_and_supplier_B_07_is_sugar_only_in_the_authenticated_company()
+    {
+        var (supplierA, supplierB, rice, sugar) = await SeedSupplier07Async(registerB: true);
+
+        await using (var readDb = CreateContext(_tenantId))
+        {
+            var repository = new ItemRepository(readDb);
+            (await repository.FindItemIdBySupplierCodeAsync(supplierA, "07", _tenantId)).Should().Be(rice);
+            (await repository.FindItemIdBySupplierCodeAsync(supplierB, "07", _tenantId)).Should().Be(sugar);
+            (await repository.GetSupplierCodeMatchAsync(supplierA, "07", _tenantId))!.ItemId.Should().Be(rice);
+            (await repository.GetSupplierCodeMatchAsync(supplierB, "07", _tenantId))!.ItemId.Should().Be(sugar);
+            foreach (var (supplier, expected) in new[] { (supplierA, rice), (supplierB, sugar) })
+            {
+                var document = Reception(supplier);
+                (await new PurchaseReceptionAutoMatcher(repository).RefreshAsync(document, CancellationToken.None)).Should().Be(1);
+                document.Lines.Single().ItemId.Should().Be(expected);
+            }
+            (await repository.FindItemIdBySupplierCodeAsync(supplierA, "07", Guid.NewGuid())).Should().BeNull();
+            (await repository.GetSupplierCodeMatchAsync(supplierA, "07", Guid.NewGuid())).Should().BeNull();
+        }
+
+        await using var foreignDb = CreateContext(_tenantId, Guid.NewGuid());
+        var foreignRepository = new ItemRepository(foreignDb);
+        (await foreignRepository.FindItemIdBySupplierCodeAsync(supplierA, "07", _tenantId)).Should().BeNull();
+        (await foreignRepository.GetSupplierCodeMatchAsync(supplierB, "07", _tenantId)).Should().BeNull();
+    }
+
+    private async Task<(Guid SupplierA, Guid SupplierB, Guid Rice, Guid Sugar)> SeedSupplier07Async(
+        bool registerB = false, bool inactiveB = false)
+    {
+        await using var db = CreateContext(_tenantId);
+        var supplierA = BusinessPartner.Create(_tenantId, "04", "1791352688001", 2, "Proveedor A", _createdBy);
+        var supplierB = BusinessPartner.Create(_tenantId, "04", "1791352688002", 2, "Proveedor B", _createdBy);
+        var itemType = ItemTypeDefinition.Create(_tenantId, "PHYSICAL", "Fisico", 1, _createdBy);
+        Item Product(string sku, string name) => Item.Create(_tenantId, sku, name, name, itemType.Id, "UNIT",
+            ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(), ItemStockConfig.Create(),
+            _createdBy, companyId: _companyId);
+        var rice = Product("07", "Arroz");
+        var sugar = Product("SUGAR", "Azucar");
+        rice.AddSupplierCode("07", false, supplierA.Id, _createdBy);
+        if (registerB)
+        {
+            var relation = sugar.AddSupplierCode("07", false, supplierB.Id, _createdBy);
+            if (inactiveB) relation.Disable();
+        }
+        db.BusinessPartners.AddRange(supplierA, supplierB);
+        db.ItemTypes.Add(itemType);
+        db.Items.AddRange(rice, sugar);
+        await db.SaveChangesAsync();
+        return (supplierA.Id, supplierB.Id, rice.Id, sugar.Id);
+    }
+
+    private PurchaseReceptionDocument Reception(Guid supplierId)
+    {
+        var document = PurchaseReceptionDocument.Create(_tenantId, _companyId, Guid.NewGuid(),
+            PurchaseReceptionSourceDocType.Invoice, "1791352688001", "Proveedor", supplierId,
+            new string('1', 49), "001-001-000000001", new DateOnly(2026, 10, 23), null, 10m, 0m, 10m, _createdBy);
+        var line = PurchaseReceptionLine.Create(document.Id, _tenantId, "Producto", 1m, 10m,
+            "0", "2", 0m, 0m, 0m, 0m, 10m, 10m, supplierCode: "07");
+        document.AttachSriAuthorization("1", DateTime.UtcNow, "<factura/>", DateTime.UtcNow, [line], _createdBy,
+            "01", null, new PurchaseReceptionProcessingOutcome(PurchaseReceptionProcessingStatus.Processed, 1, 1, null));
+        return document;
+    }
 
     [Fact]
     public async Task GetSupplierCodeMatchAsync_devuelve_presentacion_configurada_para_codigo_proveedor()
@@ -114,7 +204,7 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
         match.BaseUomCode.Should().Be("UNIT");
     }
 
-    private ErpDbContext CreateContext(Guid tenantId)
+    private ErpDbContext CreateContext(Guid tenantId, Guid? companyId = null)
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseNpgsql(_postgres.GetConnectionString())
@@ -124,7 +214,7 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
             options,
             new FixedCurrentTenant(tenantId),
             new NoOpPublisher(),
-            new FixedCurrentCompany(_companyId)
+            new FixedCurrentCompany(companyId ?? _companyId)
         );
     }
 

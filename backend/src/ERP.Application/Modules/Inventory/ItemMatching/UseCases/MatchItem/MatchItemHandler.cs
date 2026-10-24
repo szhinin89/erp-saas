@@ -76,7 +76,7 @@ public sealed class MatchItemHandler
 
         // PURCHASES-HARDENING-P0 (B10) — una equivalencia proveedor→Item ya registrada no se
         // contradice nunca, se envíe o no PackagingLevelId. Solo bloquea una equivalencia real
-        // (ItemSupplierCode activo), no el fallback por SKU de GetSupplierCodeMatchAsync.
+        // (ItemSupplierCode activo del mismo proveedor y empresa).
         if (document.SupplierId.HasValue && !string.IsNullOrWhiteSpace(line.SupplierCode))
         {
             var existingMatch = await _itemRepo.GetSupplierCodeMatchAsync(

@@ -214,9 +214,8 @@ public sealed class ItemRepository : IItemRepository
     )
     {
         var normalized = code.Trim().ToUpperInvariant();
-        // 1. Regla principal:
-        // Código específico del proveedor
-        var supplierItemId = await _context
+        // Solo una relación activa del proveedor en la empresa autenticada identifica el ítem.
+        return await _context
             .Set<ItemSupplierCode>()
             .Where(s =>
                 s.TenantId == tenantId
@@ -225,16 +224,6 @@ public sealed class ItemRepository : IItemRepository
                 && s.IsActive
             )
             .Select(s => (Guid?)s.ItemId)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (supplierItemId.HasValue)
-            return supplierItemId;
-
-        // 2. Fallback:
-        // Si el código del XML coincide con el SKU interno
-        return await Scoped(tenantId)
-            .Where(x => x.IsActive && x.Code.SKU == normalized)
-            .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -247,7 +236,7 @@ public sealed class ItemRepository : IItemRepository
     {
         var normalized = code.Trim().ToUpperInvariant();
 
-        var supplierMatch = await (
+        return await (
             from supplierCode in _context.Set<ItemSupplierCode>()
             join item in Scoped(tenantId) on supplierCode.ItemId equals item.Id
             join packaging in _context.ItemPackagingLevels
@@ -268,14 +257,6 @@ public sealed class ItemRepository : IItemRepository
                 item.DefaultUomCode
             )
         ).FirstOrDefaultAsync(cancellationToken);
-
-        if (supplierMatch is not null)
-            return supplierMatch;
-
-        return await Scoped(tenantId)
-            .Where(x => x.IsActive && x.Code.SKU == normalized)
-            .Select(x => new ItemSupplierCodeMatch(x.Id, null, null, null, x.DefaultUomCode))
-            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<bool> PackagingLevelBelongsToItemAsync(

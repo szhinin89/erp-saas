@@ -131,8 +131,7 @@ public sealed class MatchItemHandlerTests
                 )
             )
             .ReturnsAsync(supplierCodeMatch);
-        // Equivalencia real (ItemSupplierCode) vs fallback por SKU: por defecto, un match informado
-        // es una equivalencia real del proveedor.
+        // Un match informado representa una equivalencia activa del proveedor.
         itemRepo
             .Setup(r =>
                 r.SupplierCodeExistsAsync(
@@ -352,17 +351,16 @@ public sealed class MatchItemHandlerTests
     }
 
     [Fact]
-    public async Task Handle_allows_link_when_match_is_only_sku_fallback_of_another_item()
+    public async Task Handle_allows_manual_link_when_supplier_has_no_registered_relation()
     {
         var document = CreateDocumentWithLine(out var line);
         var item = CreateItem();
-        var skuFallback = new ItemSupplierCodeMatch(Guid.NewGuid(), null, null, null, "UNIT");
         var handler = BuildHandler(
             document,
             line,
             item,
             packagingBelongs: true,
-            supplierCodeMatch: skuFallback,
+            supplierCodeMatch: null,
             out var service,
             supplierCodeIsEquivalence: false
         );
