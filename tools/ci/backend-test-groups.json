@@ -33,6 +33,7 @@
         "ERP.Infrastructure.Tests.Codes.QrGenerationRequestHardeningTests",
         "ERP.Infrastructure.Tests.Communications.CommunicationOutboxDeliveryIntegrationTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseRetentionConfirmIntegrationTests",
+        "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseXmlBreakdownPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.Configuration.ConfigurationChangeLogTransactionalIntegrityTests",
         "ERP.Infrastructure.Tests.Persistence.Items.ItemRepositorySupplierCodeMatchTests",
         "ERP.Infrastructure.Tests.Persistence.MasterDataRepositoryCompanyScopeTests",
