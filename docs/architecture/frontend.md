@@ -120,7 +120,7 @@ y debe migrarse al tocar el archivo.
 
 | Necesidad | Estándar único | Deprecado |
 |-----------|-----------------|-----------|
-| Botón | `ZHBtn` (`variant` opcional, default `'secondary'`; `size?`) | `<button className="zh-btn ...">` crudo — excepción única: `<Link>` de navegación estilizado como botón (`ZHBtn` solo renderiza `<button>`) |
+| Botón | `ZHBtn` (`variant` opcional, default `'secondary'`; `size?`; `icon?`; `expanded?` = modo disclosure, ver [Acción expandible](#acción-expandible-disclosure-zh-ds-disclosure-01)) | `<button className="zh-btn ...">` crudo — excepción única: `<Link>` de navegación estilizado como botón (`ZHBtn` solo renderiza `<button>`) |
 | Campo de formulario | `ZHField` (`label?`, `required?`, `fieldError`/`error`, `hint`/`hintType`, `density?: 'default'\|'compact'`) | `.pf-field`/`.pf-field__*`/`.pf-label` (eliminado, ADR Fase 3B) — usar `density="compact"` para grillas densas de líneas, nunca un segundo sistema |
 | Badge / etiqueta de estado corta | `Badge` (`components/PageShell.tsx`; `label`, `variant: 'green'\|'gray'\|'red'\|'blue'\|'orange'`, `size?: 'md'`, `upper?`, resto de atributos de `<span>`) | `<span className="badge badge--...">` crudo |
 | Grid de campos en formularios | `<ZHGrid cols={1\|2\|3}>` | `.pg-form-grid`, `.pg-form-grid--N` |
@@ -149,6 +149,33 @@ y debe migrarse al tocar el archivo.
 | KPI card | `ReportKpiCard` (`components/ReportPageTemplate.tsx`) | tarjetas de KPI custom por módulo |
 
 Nota: `pf-badge`, `prd-status-badge`, `pg-kpi-badge`, `md-badge` **no** están deprecados — son variantes con semántica propia (status dot de 2 estados, tendencia de KPI) no consolidadas todavía en `Badge`. No copiar su patrón para casos nuevos que sí encajen en `Badge` (etiqueta simple con color semántico).
+
+### Incidencias flotantes de linea (ZH-DS-LINE-ISSUES-01)
+
+Componente unico: `ZHLineIssuesTag`, exportado por `components/zh/notices`. Compone
+`ZHNoticeBadge`, `ZHNoticePopover` anclado, `ZHNoticeList` y `ZHBtn`; el posicionamiento
+pertenece a `useAnchoredOverlayPosition`. No contiene reglas de Compras ni otros dominios.
+
+- Usar para incidencias pendientes de una linea editable: una sola etiqueta sobre el borde
+  superior, sin franja propia, visible con el detalle expandido o colapsado. Sin incidencias
+  no renderiza; los estados correctos (`success`) quedan excluidos de etiqueta, contador y panel.
+- El consumidor entrega `issues: NoticeVM[]` ordenadas por su prioridad de negocio, con sus
+  acciones correctivas. La primera determina severidad y texto principal. `label(primary,
+  additionalCount)` y `title(count)` aportan textos localizados; el contador representa las
+  incidencias adicionales. El DS no clasifica, ordena ni inventa acciones.
+- El contenedor de linea debe ser relativo y permitir overflow visible. `.zh-line-issues`
+  gobierna anclaje, fondo opaco y truncamiento; el consumidor reserva espacio entre lineas y
+  sobre su cabecera para la mitad exterior/interior de la etiqueta, sin introducir una franja.
+- Apertura por click, Enter o Espacio, sin hover. Disclosure con `aria-expanded` y dialogo
+  etiquetado; apertura de teclado lleva foco a la primera accion. Escape cierra y devuelve foco;
+  click exterior o segundo click cierran. Una accion ejecuta el callback, cierra y devuelve foco.
+- Portal y posicionamiento automatico arriba/abajo, limites del viewport, cuerpo con scroll,
+  seguimiento de scroll interno/documento, resize, ResizeObserver y visualViewport movil.
+- No usar para estados correctos, estado general del documento, errores de campo (usar `ZHField`),
+  avisos de pagina (`ZHPageNotice`), ayuda (`ZHFieldHelp`) ni reemplazar validacion de dominio.
+
+Consumidor vigente: Compras, con adaptador minimo para traducciones. Ventas, Gastos y otros
+modulos no se migran en esta entrega. No existen versiones locales del comportamiento o estilo.
 
 ### ZH Visual Discipline (principio)
 
@@ -193,6 +220,40 @@ Solo presentación: ningún patrón formatea, redondea ni decide decimales (eso 
 | Estado electrónico SRI | `Pending`, `Discarded`, `Annulled` | `Processing` | `Authorized` | `RequiresReconciliation`, `AnnulmentPending` | `Rejected` |
 
 `attention` existe solo en notices (`.zh-form-alert--attention`); `Badge` no tiene esa variante. Desvíos detectados respecto del mapeo (deuda, no se tocan): `ExpenseDocumentStatusBadge` `Draft`→gray; `adjustmentStatusBadge` `Cancelled`→gray; `cashFundingRequestStatus` `Cancelled`→neutral; `purchaseReceptionLabels` `PENDING`→neutral.
+
+#### Tamaños y alineación de botones (ZH-DS-BUTTON-SIZING-01)
+
+`ZHBtn` tiene una sola escala de tamaños, definida por tokens `--density-control-height*` (`design-tokens.css`) y aplicada en `.zh-btn` / `.zh-btn--{md,sm,xs}` (`zh-ui.css`). El tamaño se elige por **contexto**, no por pantalla:
+
+| Contexto | `size` | Altura | Uso |
+|---|---|---|---|
+| Formularios, modales, drawers, barras de acciones de página | *(omitido — estándar)* | 36px | Todas las acciones del grupo (primaria, secundaria, ghost, disclosure) con el mismo tamaño |
+| Barras densas / toolbars secundarias | `md` | 32px | Acciones agrupadas fuera de un formulario |
+| Filas de tabla, líneas de documento, controles inline | `sm` (o `xs` en celdas muy densas) | 26px / 24px | Acciones por fila; `ZHIconButton` para icon-only |
+
+- **Un tamaño por grupo:** los botones de un mismo grupo de acciones (p. ej. el pie de un modal) comparten tamaño; nunca mezclar `sm` con estándar en un pie.
+- **Altura y alineación:** cada tamaño fija altura y `min-height` iguales, con contenido centrado (`inline-flex`, `align-items: center`), separación ícono↔etiqueta↔chevrón de 6px y ícono/chevrón a `1.15em` sin alterar la altura. En `.zh-modal-footer`/`.zh-drawer-footer` la altura pasa a ser mínima: una etiqueta que envuelve hace crecer el botón y sus hermanos lo igualan (flex stretch); en móvil (≤640px) cada botón ocupa el ancho completo con la misma altura.
+- **Separación entre controles:** la da el contenedor (`gap: var(--space-3)` en pies de modal/drawer); no márgenes por botón.
+- **Estados:** jerarquía primaria/secundaria/ghost/destructive, hover, foco (`:focus-visible` global), disabled y `expanded` (disclosure) no cambian la altura ni el ancho del borde — solo color/rotación del chevrón.
+- **Prohibido:** CSS local que redefina `height`/`padding`/`font-size` de `.zh-btn` por módulo.
+- **Adopción:** validado en el pie de `PurchaseLineBreakdownModal` (Conciliación · Cancelar · Aplicar desglose, todos estándar). Los demás pies se ajustan al tocar el archivo.
+
+#### Acción expandible (disclosure, ZH-DS-DISCLOSURE-01)
+
+Toda acción que muestra/oculta un panel («Ver/Ocultar detalle», «Ver diferencias», «Conciliación», «Impuestos», «Historial» y equivalentes) debe leerse como acción, nunca como texto informativo. Patrón único: `ZHBtn` con `expanded`:
+
+```tsx
+<ZHBtn type="button" variant="secondary" icon="compare_arrows"
+  expanded={open} aria-controls="panel-id" onClick={() => setOpen(v => !v)}>
+  Conciliación (2)
+</ZHBtn>
+{open && <div id="panel-id">…</div>}
+```
+
+- **Visual:** `variant="secondary"` (superficie + borde identificable), ícono opcional a la izquierda, chevrón `expand_more` a la derecha que rota 180° al expandir (`.zh-btn--disclosure` en `zh-ui.css`); hover/focus/disabled heredados de `.zh-btn`. No usar `ghost` ni texto plano para disclosures.
+- **Accesibilidad:** `<button>` nativo (Enter/Espacio), `aria-expanded` emitido por el componente, `aria-controls` al id del panel; ícono y chevrón `aria-hidden`, la etiqueta es el nombre accesible.
+- **Prohibido:** componentes o CSS locales de toggle/disclosure; pasar `aria-expanded` a mano junto con `expanded`.
+- **Adopción:** aplicado al control de conciliación del modal de desglose de Compras (`PurchaseLineBreakdownModal`); los demás disclosures se migran al tocar el archivo.
 
 ### Excepciones permitidas al uso de componentes ZH de input
 

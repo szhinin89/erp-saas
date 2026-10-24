@@ -14,7 +14,7 @@ interface ZHNoticeBadgeProps {
   severity: NoticeSeverity;
   expanded: boolean;
   describedById?: string;
-  onClick: () => void;
+  onClick: React.MouseEventHandler<HTMLButtonElement>;
   onMouseEnter?: () => void;
   triggerRef: React.RefObject<HTMLButtonElement | null>;
 }

@@ -316,17 +316,30 @@ export const ZHBtn = React.forwardRef<
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: ZHBtnVariant;
     size?: ZHBtnSize;
+    /** Ícono Material Symbols antes de la etiqueta (decorativo, `aria-hidden`). */
+    icon?: string;
+    /** Modo disclosure (ZH-DS-DISCLOSURE-01): si se define, el botón controla un panel
+     * expandible — expone `aria-expanded` y muestra el chevrón de expansión. Usar con
+     * `aria-controls` apuntando al id del panel. */
+    expanded?: boolean;
   }
 >(function ZHBtn(props, ref) {
-  const { variant = "secondary", size, className, ...rest } = props;
+  const { variant = "secondary", size, className, icon, expanded, children, ...rest } = props;
+  const disclosure = expanded !== undefined;
   const cls = useMemo(
     () =>
-      ["zh-btn", `zh-btn--${variant}`, size ? `zh-btn--${size}` : "", className]
+      ["zh-btn", `zh-btn--${variant}`, size ? `zh-btn--${size}` : "", disclosure ? "zh-btn--disclosure" : "", className]
         .filter(Boolean)
         .join(" "),
-    [variant, size, className],
+    [variant, size, disclosure, className],
   );
-  return <button {...rest} ref={ref} className={cls} />;
+  return (
+    <button {...rest} ref={ref} className={cls} {...(disclosure ? { "aria-expanded": expanded } : {})}>
+      {icon && <span className="material-symbols-outlined zh-btn__icon" aria-hidden="true">{icon}</span>}
+      {children}
+      {disclosure && <span className="material-symbols-outlined zh-btn__chevron" aria-hidden="true">expand_more</span>}
+    </button>
+  );
 });
 
 /**

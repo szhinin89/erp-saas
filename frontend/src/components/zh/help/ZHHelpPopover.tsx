@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useAnchoredOverlayPosition } from "../useAnchoredOverlayPosition";
 
 interface ZHHelpPopoverProps {
   open: boolean;
@@ -12,8 +13,8 @@ interface ZHHelpPopoverProps {
   closeOnMouseLeave?: boolean;
 }
 
-/** Portal fijo con medición previa y colisiones de viewport, siguiendo el patrón de
- * ZhWarehouseSelector. Conserva pointerdown en captura y Escape. */
+/** Portal fijo con medición previa y colisiones de viewport (useAnchoredOverlayPosition, patrón de
+ * ZhWarehouseSelector). Conserva pointerdown en captura y Escape. */
 export function ZHHelpPopover({
   open,
   onClose,
@@ -24,67 +25,13 @@ export function ZHHelpPopover({
   closeOnMouseLeave,
 }: ZHHelpPopoverProps) {
   const popoverRef = useRef<HTMLDivElement | null>(null);
-  useLayoutEffect(() => {
-    if (!open) return;
-    const panel = popoverRef.current;
-    const anchor = anchorRef.current;
-    if (!panel || !anchor) return;
-    const position = () => {
-      const viewport = window.visualViewport;
-      const width = viewport?.width ?? document.documentElement.clientWidth;
-      const height = viewport?.height ?? document.documentElement.clientHeight;
-      const x = viewport?.offsetLeft ?? 0;
-      const y = viewport?.offsetTop ?? 0;
-      const styles = getComputedStyle(panel);
-      const margin = Math.min(parseFloat(styles.getPropertyValue("--space-3")) || 12, width / 2, height / 2);
-      const gap = parseFloat(styles.getPropertyValue("--space-2")) || 8;
-      const bounds = anchor.getBoundingClientRect();
-      const availableWidth = Math.max(0, width - margin * 2);
-      panel.style.maxWidth = `${Math.min(320, availableWidth)}px`;
-      panel.style.maxHeight = `${Math.max(0, height - margin * 2)}px`;
-      const panelWidth = panel.getBoundingClientRect().width;
-      const desiredHeight = panel.scrollHeight + (parseFloat(styles.borderTopWidth) || 0) + (parseFloat(styles.borderBottomWidth) || 0);
-      const below = Math.max(0, y + height - margin - bounds.bottom - gap);
-      const above = Math.max(0, bounds.top - gap - y - margin);
-      const openAbove = desiredHeight > below && above > below;
-      panel.style.maxHeight = `${Math.min(height - margin * 2, openAbove ? above : below)}px`;
-      const panelHeight = panel.getBoundingClientRect().height;
-      const preferredLeft = bounds.left + panelWidth <= x + width - margin
-        ? bounds.left : bounds.right - panelWidth;
-      panel.style.left = `${Math.max(x + margin, Math.min(preferredLeft, x + width - margin - panelWidth))}px`;
-      const preferredTop = openAbove ? bounds.top - gap - panelHeight : bounds.bottom + gap;
-      panel.style.top = `${Math.max(y + margin, Math.min(preferredTop, y + height - margin - panelHeight))}px`;
-      panel.style.visibility = "visible";
-    };
-    position();
-    // No cambiar dimensiones dentro de la entrega de ResizeObserver: evita ciclos
-    // cuando el clamp cambia el tamaño del propio panel observado.
-    let frame: number | null = null;
-    const schedulePosition = () => {
-      if (frame !== null) cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        frame = null;
-        position();
-      });
-    };
-    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedulePosition) : null;
-    observer?.observe(anchor);
-    observer?.observe(panel);
-    const body = panel.querySelector(".zh-help-popover__body");
-    if (body) observer?.observe(body);
-    window.addEventListener("resize", position);
-    window.addEventListener("scroll", position, true);
-    window.visualViewport?.addEventListener("resize", position);
-    window.visualViewport?.addEventListener("scroll", position);
-    return () => {
-      if (frame !== null) cancelAnimationFrame(frame);
-      observer?.disconnect();
-      window.removeEventListener("resize", position);
-      window.removeEventListener("scroll", position, true);
-      window.visualViewport?.removeEventListener("resize", position);
-      window.visualViewport?.removeEventListener("scroll", position);
-    };
-  }, [open, anchorRef, children, title]);
+  useAnchoredOverlayPosition({
+    open,
+    anchorRef,
+    panelRef: popoverRef,
+    bodySelector: ".zh-help-popover__body",
+    deps: [children, title],
+  });
 
   useEffect(() => {
     if (!open) return;

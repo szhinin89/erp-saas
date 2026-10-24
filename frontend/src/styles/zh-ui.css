@@ -114,6 +114,7 @@ a:hover {
   justify-content: center;
   gap: 6px;
   height: var(--density-control-height);
+  min-height: var(--density-control-height);
   padding: 0 16px;
   font-family: var(--font-family);
   font-size: var(--text-label-md-size);
@@ -146,16 +147,19 @@ a:hover {
 /* Sizes */
 .zh-btn--md {
   height: var(--density-control-height-md);
+  min-height: var(--density-control-height-md);
   padding: 0 14px;
   font-size: var(--text-compact-size);
 }
 .zh-btn--sm {
   height: var(--density-control-height-sm);
+  min-height: var(--density-control-height-sm);
   padding: 0 10px;
   font-size: var(--font-size-xs);
 }
 .zh-btn--xs {
   height: var(--density-control-height-xs);
+  min-height: var(--density-control-height-xs);
   padding: 0 var(--space-2);
   font-size: var(--font-size-2xs);
 }
@@ -202,6 +206,27 @@ a:hover {
 .zh-btn--ghost:hover:not(:disabled) {
   background: var(--color-surface-hover);
   color: var(--color-text-primary);
+}
+
+/* Disclosure (ZH-DS-DISCLOSURE-01) — acción que expande/colapsa un panel
+   ("Ver detalle", "Diferencias", "Impuestos", "Historial"). Se combina con
+   --secondary (superficie + borde) para no confundirse con texto informativo;
+   ícono opcional a la izquierda, chevrón a la derecha que rota al expandir.
+   Hover/focus/disabled heredan de .zh-btn y la variante. */
+.zh-btn__icon,
+.zh-btn__chevron {
+  font-size: 1.15em;
+  line-height: 1;
+}
+.zh-btn__chevron {
+  margin-right: -2px;
+  transition: transform var(--transition);
+}
+.zh-btn--disclosure[aria-expanded="true"] {
+  border-color: var(--color-border-interactive);
+}
+.zh-btn--disclosure[aria-expanded="true"] .zh-btn__chevron {
+  transform: rotate(180deg);
 }
 
 .zh-btn--destructive {
@@ -2119,6 +2144,12 @@ select.zh-input--compact {
 :is(.zh-modal-footer, .zh-drawer-footer) .zh-btn {
   white-space: normal;
   overflow-wrap: anywhere;
+  /* ZH-DS-BUTTON-SIZING-01 — en barras de acciones la altura de cada tamaño es un
+     mínimo: si una etiqueta envuelve, el botón crece y sus hermanos lo igualan
+     (flex stretch); con una sola línea la altura es idéntica a la fija. */
+  height: auto;
+  padding-block: var(--space-1);
+  line-height: var(--line-height-snug);
 }
 
 @media (max-width: 640px) {
@@ -3311,6 +3342,20 @@ select.zh-input--compact {
   max-height: 240px;
   overflow-y: auto;
   margin-top: var(--space-1);
+}
+
+.zh-picker__dropdown--floating {
+  /* Coordinates/width/max-height are set by ProductPicker from the input bounds. */
+  position: fixed;
+  right: auto;
+  margin-top: 0;
+  max-height: 320px;
+  overscroll-behavior: contain;
+  z-index: 60;
+}
+.zh-picker__result-presentation {
+  display: block;
+  margin-top: 2px;
 }
 
 .zh-picker__empty {

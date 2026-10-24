@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { NoticeSeverity } from "../../../notices";
+import { useAnchoredOverlayPosition } from "../useAnchoredOverlayPosition";
 
 interface ZHNoticePopoverProps {
   open: boolean;
@@ -12,6 +13,10 @@ interface ZHNoticePopoverProps {
   children: ReactNode;
   /** Cierra también al quitar el mouse del trigger/popover (usado cuando se abrió por hover). */
   closeOnMouseLeave?: boolean;
+  /** Opt-in: posicionamiento anclado de useAnchoredOverlayPosition (arriba/abajo según espacio,
+   * clamp al viewport, sigue al trigger en scroll/resize). Sin la prop se conserva el cálculo
+   * único bajo el trigger — los consumidores existentes no cambian. */
+  anchored?: boolean;
 }
 
 /** Panel de aviso anclado a un trigger. Mismo recipe que ZHHelpPopover: rect manual + createPortal
@@ -25,9 +30,17 @@ export function ZHNoticePopover({
   severity,
   children,
   closeOnMouseLeave,
+  anchored = false,
 }: ZHNoticePopoverProps) {
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  useAnchoredOverlayPosition({
+    open: open && anchored,
+    anchorRef,
+    panelRef: popoverRef,
+    bodySelector: ".zh-notice-popover__body",
+    deps: [children, title],
+  });
 
   useEffect(() => {
     if (!open) {
@@ -35,7 +48,7 @@ export function ZHNoticePopover({
       return;
     }
     const anchorEl = anchorRef.current;
-    if (anchorEl) {
+    if (anchorEl && !anchored) {
       const r = anchorEl.getBoundingClientRect();
       setPos({
         top: Math.round(r.bottom + 8),
@@ -78,17 +91,17 @@ export function ZHNoticePopover({
         pop?.removeEventListener("mouseleave", onLeave);
       }
     };
-  }, [open, onClose, anchorRef, closeOnMouseLeave]);
+  }, [open, onClose, anchorRef, closeOnMouseLeave, anchored]);
 
-  if (!open || !pos) return null;
+  if (!open || (!anchored && !pos)) return null;
 
   return createPortal(
     <div
       ref={popoverRef}
-      className={`zh-notice-popover zh-notice-popover--${severity}`}
+      className={`zh-notice-popover zh-notice-popover--${severity}${anchored ? " zh-notice-popover--anchored" : ""}`}
       role="dialog"
       aria-labelledby={titleId}
-      style={{ top: pos.top, left: pos.left }}
+      style={anchored ? { top: 0, left: 0, visibility: "hidden" } : { top: pos?.top, left: pos?.left }}
     >
       <div className="zh-notice-popover__title" id={titleId}>
         {title}

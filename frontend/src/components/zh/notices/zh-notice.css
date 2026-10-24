@@ -40,6 +40,14 @@
   box-shadow: var(--shadow-md); /* contrato: popover → md */
 }
 
+/* Modo anclado (prop `anchored`): useAnchoredOverlayPosition fija max-width/max-height según el
+   viewport; el contenido largo hace scroll dentro del panel en vez de desbordar la pantalla. */
+.zh-notice-popover--anchored {
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
 .zh-notice-popover--info {
   border-left-color: var(--color-info);
 }
@@ -126,4 +134,29 @@
   font-size: var(--text-help-size);
   line-height: var(--text-help-height);
   color: var(--color-text-secondary);
+}
+
+/* ZH-DS-LINE-ISSUES-01 ? floating tag on its relative line container. */
+.zh-line-issues {
+  position: absolute;
+  top: 0;
+  /* A la izquierda, sobre el producto: ZHNoticePopover abre hacia la derecha desde el borde
+     izquierdo del trigger, así el detalle siempre tiene ancho completo dentro del viewport. */
+  left: var(--space-5);
+  z-index: 1;
+  max-width: calc(100% - 2 * var(--space-5));
+  transform: translateY(-50%);
+}
+/* Fondo opaco bajo la pill (sus tonos --*-soft dejarían ver el borde de la tarjeta) y
+   etiqueta truncada si el texto es largo; el detalle completo está en el popover. */
+.zh-line-issues .zh-notice-badge-trigger {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.zh-line-issues .badge {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
