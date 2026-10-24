@@ -1,5 +1,97 @@
 # Project Status
 
+## COMPRAS — Desglose documental XML (2026-10-23, commits 478f5cc0b backend + 77f80985f frontend)
+
+Componentes operativos de una línea fiscal XML persistidos en la baseline única V1
+(`xml_allocated_subtotal` y asignación de impuestos `Source=XmlAllocation`), sin migración adicional.
+`erp_zh_dev` verificado con columnas, índices y FK; EF sin diferencias modelo/snapshot; SQL de
+instalación nueva generado y revisado, no ejecutado. PASS: Domain 59, Application 121, frontend focal 77,
+conservación de objetos SQL 2/2, build backend, `tsc -b`, ESLint (0 errores) y build frontend.
+SSOT: [Compras § Desglose documental XML](docs/architecture/purchases.md#desglose-documental-xml). Sin push ni deploy.
+
+## COMPRAS — Vinculación estricta por proveedor — BUG REAL (2026-10-23, commit dc643c455)
+
+Eliminado el fallback de código de proveedor a SKU en `FindItemIdBySupplierCodeAsync` y
+`GetSupplierCodeMatchAsync`. Solo resuelven relaciones `ItemSupplierCode` activas del mismo
+proveedor y empresa; sin relación, la línea queda pendiente. Consumidores revisados; selección
+manual, creación, presentaciones y equivalencias correctas conservadas. Sin cambios de SKU,
+barcodes, XML, impuestos, inventario, datos existentes ni migraciones.
+Reproducción PostgreSQL antes del fix: 2 FAIL por devolver arroz (SKU `07`) para otro proveedor
+sin relación activa. Después: PostgreSQL desechable 6/6 PASS (A `07` arroz / B `07` azúcar,
+relación ausente/inactiva, scope, presentación, creación/vinculación y facturas siguientes),
+Application focal 100/100 PASS y selección manual actualizada 6/6 PASS; TypeScript,
+architecture:check (0 nuevas infracciones) y diff check PASS. Sin push ni deploy.
+SSOT: [Compras § 3](docs/architecture/purchases.md#3-recepción-electrónica-y-conciliación-de-ítems).
+
+## COMPRAS - Barcode ausente en productos pendientes - BUG REAL (2026-10-23, commit d6fabdcd4)
+
+Corregida la interpretacion del auxiliar XML `0` como barcode presente: precarga, schema,
+duplicados, payload y aviso provisional del frontend usan la misma normalizacion; backend
+normaliza barcode y candidato provisional sin alterar la referencia del proveedor. Vacio,
+espacios y cero aislado son ausencia. Se mantienen codigos reales, tipos, unicidad y la regla
+existente de Interno provisional validado por Items; sin candidato utilizable o con colision
+se requiere intervencion manual. Sin datos, migraciones, reglas fiscales ni otros modulos.
+PASS: frontend focal 83/83 (incluido lote de 23 con auxiliares `0` / ` 0 `), backend unitario
+30/30, lint (0 errores), TypeScript, build, architecture:check (0 nuevas infracciones) y diff check.
+La primera ejecucion paralela tuvo
+un timeout en el lote de 23; repeticion aislada PASS 8/8 sin aumentar su timeout.
+SSOT: [Compras](docs/architecture/purchases.md#ausencia-de-barcode-en-productos-pendientes).
+Sin push ni deploy.
+
+## COMPRAS — «Resolver productos pendientes» compacto (2026-10-23, commit 77f80985f)
+
+Solo frontend de Compras. Filas compactas con detalle expandible (todos los campos, datos conservados
+al colapsar), barra masiva intacta y pie con seleccionadas/listas/pendientes derivados de las
+validaciones existentes. Modal dividido en `PendingProductsBulkBar`, `PendingProductRow` y
+`PendingProductFacts`; `PurchaseLineIssuesTag` extraído de `PurchasesPage` y compartido. Sin cambios
+de reglas, cálculos, contratos, backend ni datos. Caracterización antes/después (crear, vincular,
+agrupar, masivo, individual, errores, selección parcial, 23 productos) + teclado y móvil. PASS:
+Vitest 589/589, `tsc -b`, ESLint (0 errores), build, architecture:check, guardrail PR-7 (excepción
+ADR-047 del modal retirada). [Evidencia](docs/evidence/purchases-pending-products-compact-01/README.md) ·
+SSOT: [Compras § Productos pendientes compactos](docs/architecture/purchases.md#productos-pendientes-compactos).
+
+## COMPRAS — Diseño del modal «Distribuir flete/gasto» (2026-10-23, commit 77f80985f)
+
+BUG REAL de UX corregido solo en presentación: descripción partida carácter por carácter (el modal
+fuerza `overflow-wrap:anywhere` y era la única columna encogible), columnas fuera de vista sin
+scroll y filas de hasta 787 px. Ahora tabla DS en `.table-scroll` con Ítem fijo, filas de 61 px,
+apilado móvil de dos columnas y totales en dos grupos. Cálculos, selección, redondeos y validaciones
+intactos. PASS: Vitest del modal 16/16, `tsc -b`, ESLint (0 errores), architecture:check (0 nuevas),
+diff --check. [Evidencia antes/después](docs/evidence/purchases-distribute-cost-01/README.md).
+
+## COMPRAS — Validaciones comerciales de línea (2026-10-23, commit 77f80985f)
+
+Solo frontend de Compras. Corregido el falso «Cantidad o costo distintos al documento del proveedor»
+en toda línea XML con descuento (se restaba dos veces el descuento de `precioTotalSinImpuesto`; caso
+DINADEC 034-005-002241241). Indicador de margen por estado (Sin PVP/«—» en lugar de 0 % ficticio);
+avisos no bloqueantes de margen negativo y cero en `ZHLineIssuesTag`; el modal de Confirmar los
+resume en una sola fila. Sin margen bajo (no hay umbral empresarial). Bloqueos intactos. PASS:
+Vitest focal 16 archivos/368 tests, `tsc -b`, ESLint (0 errores), architecture:check (0 nuevas).
+Pendiente de decisión: redondeo a centavos del costo mostrado frente a `LandedUnitCost`.
+[Evidencia](docs/evidence/purchases-commercial-risk-01/README.md) ·
+SSOT: [Compras § Rentabilidad de línea](docs/architecture/purchases.md#rentabilidad-de-línea).
+
+## COMPRAS UX P2 — Mensajes de modales (2026-10-23, commit 77f80985f)
+
+Solo frontend de Compras: checklist de Confirmar unificado (incidencias primero, correctos en una
+línea), desglose XML sin falso «cuadrado» con total cero, Distribuir y Productos pendientes con un
+mensaje por problema en su contexto, y Anular con alcance local frente al SRI. Sin cambios de reglas,
+cálculos, contratos, backend ni datos; P0/P1 y `ZHLineIssuesTag` intactos. PASS focal: 534/534,
+`tsc -b`, ESLint (0 errores), build, architecture:check e i18n. Capturas con fixtures (no ERP real).
+SSOT: [Compras § Mensajes de modales P2](docs/architecture/purchases.md#mensajes-de-modales-p2).
+Sin suites completas, push ni deploy.
+
+## ZH-DS-LINE-ISSUES-01 - EXTEND (2026-10-23)
+
+Patron global `ZHLineIssuesTag` extraido del diseno aprobado de Compras; adaptador local
+solo de traducciones. Prioridad, incidencias y acciones permanecen en Compras. Sin migrar
+otros modulos ni tocar backend/datos/calculos. PASS: 24/24 tests focales, TypeScript,
+ESLint focal (advertencia previa max-lines), build, architecture:check (0 nuevas infracciones), diff.
+[Evidencia visual y limites](docs/evidence/zh-ds-line-issues-01/README.md).
+SSOT: [Design System](docs/architecture/frontend.md#incidencias-flotantes-de-linea-zh-ds-line-issues-01),
+[Compras](docs/architecture/purchases.md#incidencias-de-linea). Sin suites completas, push ni deploy.
+
+
 ## Recepción XML de NC — BUG REAL (2026-10-21)
 
 Corregida la clasificación del parser de NC: cero líneas utilizables produce `Failed`, nunca
@@ -591,7 +683,7 @@ Inventario, configuración, ownership y evidencia:
 
 **Estado: implementado (sin commit).** Purchases reabierto solo para esta fase. Sin cambios en FASE 1-3, FASE 4 (FUTURE), pricing por presentación, política comercial global ni servicios capitalizables.
 
-- **"Cantidad a registrar" y "Costo unitario a registrar" (unidad base) son autoritativos**, con o sin presentación (costo neto de descuento, con flete/gastos asignados). Antes cambiaban de significado en silencio al elegir presentación (riesgo de registrar 2 unidades en vez de 2 cajas). Frase siempre visible: "Se registrarán X unidades a $Y c/u". El formulario guarda la base (`quantityInBaseUom`, `baseUnitPrice`) y deriva la presentación (B / f, P × f): nunca round-trip presentación → base, sin drift al cambiar de presentación. Blur sin edición real no recalcula.
+- **"Cantidad a registrar" y "Costo unitario a registrar" (unidad base) son autoritativos**, con o sin presentación (costo neto de descuento, con flete/gastos asignados). Antes cambiaban de significado en silencio al elegir presentación (riesgo de registrar 2 unidades en vez de 2 cajas). Se leen solo en la cabecera de la línea (PURCHASE-LINE-COMPACT-01, 2026-10-23: retiró la frase "Se registrarán…" que los repetía; estado y disclosure "Detalle" en la columna de producto; equivalencia y nota de costo en una franja que solo aparece si hay contenido — PURCHASE-LINE-COMPACT-02; las incidencias de la línea viven en una etiqueta anclada al borde superior de la tarjeta con detalle desplegable y acciones correctivas — PURCHASE-LINE-ISSUES-TAG-01, solo Compras, pendiente de aprobación antes de volverla global). El formulario guarda la base (`quantityInBaseUom`, `baseUnitPrice`) y deriva la presentación (B / f, P × f): nunca round-trip presentación → base, sin drift al cambiar de presentación. Blur sin edición real no recalcula.
 - **Persistencia lossless (`resolveLinePersistence`, misma fuente para payload y avisos):** invariante guardar → reabrir → guardar nunca altera cantidad/costo a registrar. Manual o XML editada: se persiste en la presentación solo si es exacta (24 u. en paca x12 → 2 × 25.482; XML 24 → 36 → 3 × paca); si no, en unidad base (manual 25 u. en paca x12 → 25.0000 sin presentación, ≈2.0833 solo informativo; XML 24 → 23 → 23 con el nivel base `IsBaseUnit` del ítem, porque Confirmar exige presentación en XML inventariable y sin ella el backend aplicaría la aprendida). XML sin editar: tal cual en la unidad del documento — origen proveedor + presentación → base (2 cajas x12 → 24). Producto sin presentaciones: sin controles.
 - **Origen del proveedor (XML) persistido:** migración `PurchaseLineXmlOriginPresentation` (`purchase_invoice_details.xml_origin_packaging_level_id` uuid + `xml_origin_factor` numeric(22,10), nullable, aditiva). `PackagingLevelId` = presentación operativa; `XmlOriginPackagingLevelId` + snapshot `XmlOriginFactor` = interpretación del documento del proveedor. El factor lo resuelve el servidor desde el nivel del ítem (`PurchaseXmlOriginPackagingResolver`, nunca del body) y se conserva al re-guardar si el nivel no cambia. Al reabrir manda el origen persistido; solo borradores anteriores (null) caen a la línea/recepción (`xmlSource`). Snapshot XML intacto; diferencia medida en unidad base, con advertencia; "Recalcular desde XML" es la única acción que restaura el origen (usa el persistido). Guardar la compra no aprende nada del proveedor; "Guardar presentación" (acción explícita) aprende la presentación de ORIGEN y no toca cantidad/costo/presentación operativa.
 - "Total neto" → "Total línea (con impuestos)". Guardar oculto en compras confirmadas/anuladas ("Volver" en lugar de "Cancelar"; pestaña "Ver compra").
@@ -2794,7 +2886,7 @@ Details: [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DATABASE.md](docs/DATABASE.md
 
 | Project | Status (2026-05-21) |
 |---------|---------------------|
-| `ERP.Infrastructure.Tests` (limits/entitlements + optional Postgres unified-doc) | ✅ 23/23 |
+| `ERP.Infrastructure.Tests` (limits/entitlements + optional Postgres unified-doc) | ✅ 24/24 |
 | `ERP.Domain.Tests` | ✅ 24/24 |
 | `ERP.Application.Tests` | ✅ 190/190 (2026-06-05) |
 | `ERP.API.Tests` | ✅ 33/33 SecurityTests (2026-06-05); integration suite stable |
