@@ -60,13 +60,7 @@
     },
     {
       "file": "frontend/src/components/items/ItemEditorModal/ItemEditorForm.tsx",
-      "maxLines": 652,
-      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
-      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
-    },
-    {
-      "file": "frontend/src/components/items/ItemEditorModal/ItemEditorModal.test.tsx",
-      "maxLines": 682,
+      "maxLines": 610,
       "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
       "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
     },
@@ -162,7 +156,7 @@
     },
     {
       "file": "frontend/src/modules/items/detail/components/CollectionSection.tsx",
-      "maxLines": 923,
+      "maxLines": 862,
       "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
       "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
     },
