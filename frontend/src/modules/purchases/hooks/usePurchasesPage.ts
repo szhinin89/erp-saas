@@ -8,9 +8,9 @@ import type {
   PurchaseInvoiceDto,
   PurchaseListItemDto,
   RetentionPreviewDto,
-  PurchaseCostDistributionType,
 } from "../api/purchaseService";
 import { purchaseService } from "../api/purchaseService";
+import { summarizeCostDistributions, usePurchaseCostDistributions } from "./usePurchaseCostDistributions";
 import {
   purchaseRetentionFacade,
   SRI_ANNULMENT_REQUIRED_CODE,
@@ -63,8 +63,6 @@ import {
   documentalTaxSnapshot,
   generateScheduleRows,
   roundToTotalAmount,
-  buildCostDistributionInputFromFormLines,
-  simulateCostDistribution,
 } from "../utils/purchaseCalc";
 import { applyServerErrors } from "../../lib/validationErrors";
 import {
@@ -177,7 +175,6 @@ export function usePurchasesPage() {
   const listPageSize = 25;
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [distributionError, setDistributionError] = useState("");
   const [saveErrorDetails, setSaveErrorDetails] = useState<string[]>([]);
   const [duplicateAccessKey, setDuplicateAccessKey] =
     useState<PurchaseAccessKeyLookupDto | null>(null);
@@ -257,8 +254,6 @@ export function usePurchasesPage() {
   // ZH-RETENTION-SRI-ANNULMENT-01 — la retención ya está AUTORIZADA: el motivo se conserva para
   // iniciar la anulación ante el SRI sin pedirlo de nuevo.
   const [sriAnnulmentReason, setSriAnnulmentReason] = useState<string | null>(null);
-  // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01
-  const [modalDistributeCost, setModalDistributeCost] = useState(false);
   // COMPRAS-METODO-ZH-01B — resolución masiva de líneas XML sin producto.
   const [modalPendingProducts, setModalPendingProducts] = useState(false);
   // PURCHASE-DRAFT-RECOVERY D3 — salida pendiente de confirmación por cambios sin guardar.
@@ -398,13 +393,21 @@ export function usePurchasesPage() {
     editing.paymentSchedules.length > 0;
 
   const localSummary = useMemo(
-    () => calcSummary(lines, 0, 0, vatRatesMap, iceRatesMap),
+    () => calcSummary(lines, vatRatesMap, iceRatesMap),
     [lines, vatRatesMap, iceRatesMap],
   );
   // PURCHASES-HARDENING-P0 (B4-B6) — los totales vienen de UNA sola fuente: los persistidos
   // mientras no haya cambios locales; en cuanto el borrador se edita, todos salen del formulario.
   // Nunca se mezcla (p. ej. IVA persistido con líneas ya editadas).
   const showPersistedTotals = !!editing && !hasUnsavedFormChanges;
+  const costDistributionSummary = useMemo(
+    () => summarizeCostDistributions(editing?.costDistributions),
+    [editing],
+  );
+  const costSummary = {
+    externalCosts: costDistributionSummary.externalTotal,
+    xmlTransportCosts: costDistributionSummary.xmlTransportTotal,
+  };
   const summaryTotals =
     showPersistedTotals && editing
       ? {
@@ -413,8 +416,7 @@ export function usePurchasesPage() {
           ice: editing.totalIce,
           vat: editing.totalVat,
           irbpnr: editing.totalIrbpnr,
-          freight: editing.totalFreight,
-          otherCosts: editing.totalOtherCosts,
+          ...costSummary,
           total: editing.grandTotal,
         }
       : {
@@ -423,15 +425,9 @@ export function usePurchasesPage() {
           ice: localSummary.ice,
           vat: localSummary.vat,
           irbpnr: localSummary.irbpnr,
-          freight: formWatch.freightCost,
-          otherCosts: formWatch.otherCosts,
-          total:
-            localSummary.netSubtotal +
-            localSummary.vat +
-            localSummary.ice +
-            localSummary.irbpnr +
-            formWatch.freightCost +
-            formWatch.otherCosts,
+          ...costSummary,
+          // Solo los costos externos suman: el transporte del XML ya está en las líneas.
+          total: localSummary.total + costSummary.externalCosts,
         };
   const localTotal = summaryTotals.total;
 
@@ -561,78 +557,6 @@ export function usePurchasesPage() {
     !!duplicateAccessKey?.exists &&
     duplicateAccessKey.purchaseId !== editing?.id;
   const isSupplierInactiveBlocking = supplierProfile?.isActive === false;
-
-  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — el botón "Distribuir flete/gasto" NO depende de
-  // `editing` (compra ya persistida): se habilita apenas la compra esté lista para guardar, sin
-  // forzar guardar/reabrir. Reutiliza EXACTAMENTE los mismos chequeos que bloquean handleSave, para
-  // que el botón y "Guardar" queden siempre en sincronía.
-  const distributeCostDisabledReason = useMemo(() => {
-    if (!isDraft)
-      return t(
-        "purchases.distributeCost.disabled.notEditable",
-        "Solo puede distribuir flete/gasto en compras editables.",
-      );
-    if (saving)
-      return t(
-        "purchases.distributeCost.disabled.saving",
-        "Espere a que termine la operación en curso.",
-      );
-    // PURCHASES-HARDENING-P0 (B2) — sobre una compra ya guardada el prorrateo se aplica en backend
-    // y recarga el borrador: con cambios locales sin guardar, esos cambios se perderían.
-    if (hasUnsavedChanges)
-      return t(
-        "purchases.distributeCost.disabled.unsavedChanges",
-        "Guarde los cambios antes de distribuir flete/gasto.",
-      );
-    if (lines.length === 0)
-      return t(
-        "purchases.distributeCost.disabled.noLines",
-        "Agregue al menos un ítem antes de distribuir flete/gasto.",
-      );
-    if (hasLineSaveBlockers)
-      return t(
-        "purchases.distributeCost.disabled.linesIncomplete",
-        "Complete las líneas antes de distribuir flete/gasto.",
-      );
-    if (!formWatch.supplierId)
-      return t(
-        "purchases.distributeCost.disabled.supplier",
-        "Seleccione un proveedor antes de distribuir flete/gasto.",
-      );
-    if (!formWatch.docTypeCode)
-      return t(
-        "purchases.distributeCost.disabled.docType",
-        "Seleccione el tipo de documento antes de distribuir flete/gasto.",
-      );
-    if (isDuplicateAccessKeyBlocking)
-      return t(
-        "purchases.distributeCost.disabled.duplicate",
-        "Resuelva la clave de acceso duplicada antes de distribuir flete/gasto.",
-      );
-    if (isSupplierInactiveBlocking)
-      return t(
-        "purchases.distributeCost.disabled.supplierInactive",
-        "El proveedor está inactivo.",
-      );
-    if (!canUseSriDocTypes)
-      return t(
-        "purchases.distributeCost.disabled.sriCatalog",
-        "El catálogo de tipos de documento SRI no está disponible.",
-      );
-    return null;
-  }, [
-    isDraft,
-    saving,
-    hasUnsavedChanges,
-    lines.length,
-    hasLineSaveBlockers,
-    formWatch.supplierId,
-    formWatch.docTypeCode,
-    isDuplicateAccessKeyBlocking,
-    isSupplierInactiveBlocking,
-    canUseSriDocTypes,
-    t,
-  ]);
 
   const duplicateAccessKeyTitle = t(
     "purchases.duplicate.title",
@@ -892,8 +816,9 @@ export function usePurchasesPage() {
       const currentLines = getValues("lines");
       const src = currentLines.find((l) => l._key === key);
       if (src && !src.xmlAllocation) {
-        const { _readinessIssue: _discard, ...copy } = src;
-        void _discard;
+        // La copia es una línea nueva: sin Id guardado ni costos distribuidos de la original.
+        const { _readinessIssue: _discard, lineId: _id, freightAllocated: _f, otherCostsAllocated: _o, ...copy } = src;
+        void [_discard, _id, _f, _o];
         setValue("lines", [
           ...currentLines,
           { ...copy, _key: lineKey, context: undefined },
@@ -1387,6 +1312,7 @@ export function usePurchasesPage() {
         // Map lines
         const mappedLines: PurchaseLineFormValues[] = inv.lines.map((l, i) => ({
           _key: i + 1,
+          lineId: l.id,
           itemId: l.itemId,
           description: l.description,
           quantity: l.quantity,
@@ -1399,8 +1325,7 @@ export function usePurchasesPage() {
           purchaseReceptionLineId: l.purchaseReceptionLineId ?? undefined,
           ...normalizePurchaseLinePresentation(l),
           ...restoreXmlAllocation(l),
-          // PURCHASES-HARDENING-P0 (B1) — el prorrateo persistido viaja de vuelta en el payload;
-          // sin él, el backend reprorratearía el total entre TODAS las líneas al guardar.
+          // Derivados de las distribuciones guardadas: solo lectura (costo con flete de la línea).
           freightAllocated: l.freightAllocated,
           otherCostsAllocated: l.otherCostsAllocated,
           // PURCHASE-DRAFT-RECOVERY F1/B2 — evidencia original de la recepción (misma proyección
@@ -1432,8 +1357,6 @@ export function usePurchasesPage() {
           authorizationNumber: inv.authorizationNumber ?? "",
           authorizationDate: toDateTimeLocalInputValue(inv.authorizationDate),
           globalWarehouseId: inv.globalWarehouseId ?? "",
-          freightCost: inv.totalFreight,
-          otherCosts: inv.totalOtherCosts,
           dueDate: inv.dueDate ?? "",
           notes: inv.notes ?? "",
           sriPaymentMethodCode:
@@ -2006,23 +1929,7 @@ export function usePurchasesPage() {
     [editing, blockIfUnsaved, loadForEdit, showSaveError, t],
   );
 
-  // ── Freight/Recalculate ────────────────────────────────────────────
-  const handleAllocateFreight = useCallback(async () => {
-    if (!editing || blockIfUnsaved()) return;
-    try {
-      const r = await purchaseService.allocateFreight(editing.id);
-      setEditing(r);
-      await loadForEdit(editing.id);
-      message.success(
-        t("purchases.messages.freightAllocated", "Flete distribuido correctamente."),
-      );
-    } catch {
-      showSaveError(
-        t("purchases.errors.freightFailed", "Error al distribuir flete."),
-      );
-    }
-  }, [editing, blockIfUnsaved, loadForEdit, showSaveError, t]);
-
+  // ── Recalculate ────────────────────────────────────────────────────
   const handleRecalculate = useCallback(async () => {
     if (!editing || blockIfUnsaved()) return;
     try {
@@ -2037,92 +1944,14 @@ export function usePurchasesPage() {
     }
   }, [editing, blockIfUnsaved, loadForEdit, showSaveError, t]);
 
-  // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo revisado por el usuario en el
-  // modal "Distribuir flete/gasto" (suma amount solo entre includedLineIds). Retorna true/false
-  // para que el modal sepa si debe cerrarse.
-  const handleDistributeCost = useCallback(
-    async (
-      costType: "Freight" | "OtherCost",
-      amount: number,
-      includedLineIds: string[],
-    ): Promise<boolean> => {
-      if (!editing) return false;
-      if (hasUnsavedChanges) {
-        setDistributionError(t("purchases.distributeCost.disabled.unsavedChanges"));
-        return false;
-      }
-      setDistributionError("");
-      try {
-        const r = await purchaseService.distributeCost(
-          editing.id,
-          costType,
-          amount,
-          includedLineIds,
-        );
-        setEditing(r);
-        await loadForEdit(editing.id);
-        message.success(
-          t(
-            "purchases.messages.costDistributed",
-            "Valor distribuido correctamente.",
-          ),
-        );
-        return true;
-      } catch (err) {
-        setDistributionError(formatApiRequestError(err, {
-          generic: t("purchases.errors.distributeCostFailed", "Error al distribuir el valor."),
-        }));
-        return false;
-      }
-    },
-    [editing, hasUnsavedChanges, loadForEdit, t],
-  );
-
-  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — misma fórmula/simulación que handleDistributeCost,
-  // pero para una compra NUEVA sin guardar (sin PurchaseInvoice.Id todavía): no llama al backend,
-  // aplica el prorrateo directo sobre el formulario (líneas + total documento) usando `_key` como
-  // identificador estable de línea. Aditivo — respeta cualquier freightAllocated/otherCostsAllocated
-  // ya aplicado en una vuelta previa del modal en esta misma sesión de edición.
-  const handleDistributeCostToForm = useCallback(
-    (
-      costType: PurchaseCostDistributionType,
-      amount: number,
-      includedLineIds: string[],
-    ): boolean => {
-      const currentLines = getValues("lines");
-      const sourceLines = buildCostDistributionInputFromFormLines(currentLines);
-      const includedSet = new Set(includedLineIds);
-      const preview = simulateCostDistribution(sourceLines, includedSet, amount);
-
-      const field = costType === "Freight" ? "freightAllocated" : "otherCostsAllocated";
-      const totalField = costType === "Freight" ? "freightCost" : "otherCosts";
-      let totalAllocated = 0;
-
-      preview.forEach((p) => {
-        if (!p.included || p.allocatedAmount === 0) return;
-        const idx = currentLines.findIndex((l) => String(l._key) === p.lineId);
-        if (idx === -1) return;
-        const prevAllocated =
-          (currentLines[idx][field] as number | undefined) ?? 0;
-        setValue(`lines.${idx}.${field}`, prevAllocated + p.allocatedAmount, {
-          shouldDirty: true,
-        });
-        totalAllocated += p.allocatedAmount;
-      });
-
-      setValue(
-        totalField,
-        roundToTotalAmount((getValues(totalField) || 0) + totalAllocated),
-        { shouldDirty: true },
-      );
-
-      message.success(
-        t("purchases.messages.costAppliedLocally", "Distribución aplicada al formulario. Guarde el borrador para conservarla."),
-      );
-      return true;
-    },
-    [getValues, setValue, t],
-  );
+  // PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — distribución de costos del borrador guardado.
+  const costDistributions = usePurchaseCostDistributions({
+    editing,
+    isDraft,
+    saving,
+    hasUnsavedChanges,
+    reload: loadForEdit,
+  });
 
   // ── Retención en el borrador (ZH-PURCHASE-RETENTION-CONFIRM-01) ─────
   // La vista previa se pide sola cada vez que se abre o recarga un borrador (guardar, descuento,
@@ -2416,7 +2245,6 @@ export function usePurchasesPage() {
     confirmLeave,
     cancelLeave,
     isSupplierInactiveBlocking,
-    distributeCostDisabledReason,
     supplierInactiveMessage: supplierProfile
       ? formatSupplierInactiveMessage(supplierProfile.name)
       : "",
@@ -2482,10 +2310,9 @@ export function usePurchasesPage() {
     handleRetentionAnnulmentChanged,
     canOperateRetentionAnnulment: has("purchases.update"),
     handleApplyDiscount,
-    handleAllocateFreight,
     handleRecalculate,
-    handleDistributeCost,
-    handleDistributeCostToForm,
+    ...costDistributions,
+    costDistributionLineIds: costDistributionSummary.lineIds,
 
     // Modals
     modalConfirm,
@@ -2496,9 +2323,6 @@ export function usePurchasesPage() {
     setModalCancelReason,
     modalDiscardDraft,
     setModalDiscardDraft,
-    modalDistributeCost,
-    setModalDistributeCost: (open: boolean) => { if (open) setDistributionError(""); setModalDistributeCost(open); },
-    distributionError,
     modalPendingProducts,
     setModalPendingProducts,
     pendingProductSources,

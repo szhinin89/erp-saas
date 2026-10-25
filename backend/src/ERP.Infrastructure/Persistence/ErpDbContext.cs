@@ -497,6 +497,12 @@ public class ErpDbContext : DbContext
         modelBuilder.HasPostgresExtension("btree_gist");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
         EnterpriseQueryFilterConfigurator.Apply(modelBuilder, this);
+        modelBuilder.Entity<ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistribution>()
+            .HasQueryFilter(d => d.TenantId == FilterTenantId && FilterTenantId != Guid.Empty
+                && PurchaseInvoices.Any(i => i.Id == d.InvoiceId));
+        modelBuilder.Entity<ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistributionAllocation>()
+            .HasQueryFilter(a => a.TenantId == FilterTenantId && FilterTenantId != Guid.Empty
+                && PurchaseInvoices.Any(i => i.Id == a.InvoiceId));
         modelBuilder.Entity<ItemVariant>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
         modelBuilder.Entity<ItemVariantBarcode>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));
         modelBuilder.Entity<ItemImage>().HasQueryFilter(x => x.TenantId == FilterTenantId && FilterTenantId != Guid.Empty && Items.Any(i => i.Id == x.ItemId));

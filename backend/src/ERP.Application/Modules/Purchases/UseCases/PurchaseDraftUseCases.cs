@@ -58,19 +58,15 @@ public sealed record PurchaseLineInput(
     decimal? OrderedQuantity = null,
     Guid? PurchaseReceptionLineId = null,
     Guid? PackagingLevelId = null,
-    // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo ya revisado por el usuario en el modal
-    // "Distribuir flete/gasto" ANTES de guardar (compra nueva sin Id persistido todavía). Cuando
-    // vienen informados, el handler los aplica directamente por línea (SetFreightAllocated/
-    // SetOtherCostsAllocated) y omite el reprorrateo automático por DistributeCosts — evita que
-    // ese reprorrateo (que opera sobre TODAS las líneas, sin respetar inclusión/exclusión manual)
-    // pise la distribución ya revisada y aceptada por el usuario.
-    decimal? FreightAllocated = null,
-    decimal? OtherCostsAllocated = null,
     // FASE 5 PURCHASE-UX — presentación con la que se interpreta el documento del proveedor (solo
     // líneas XML). El factor NUNCA viene del body: se resuelve del nivel de empaque del ítem (o se
     // conserva el snapshot ya persistido si el nivel no cambió). No aprende nada del proveedor.
     Guid? XmlOriginPackagingLevelId = null,
-    PurchaseXmlAllocationInput? XmlAllocation = null
+    PurchaseXmlAllocationInput? XmlAllocation = null,
+    // PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — Id de una línea ya guardada del mismo borrador: se
+    // conserva al guardar para que sus distribuciones de costos sigan referenciándola. Flete y otros
+    // costos no viajan por línea: solo cambian vía la operación canónica de distribución.
+    Guid? LineId = null
 );
 
 /// <summary>
@@ -379,8 +375,6 @@ public sealed record CreatePurchaseDraftCommand(
     string? TaxSupportCode = null,
     string? SriPaymentMethodCode = null,
     Guid? GlobalWarehouseId = null,
-    decimal FreightCost = 0,
-    decimal OtherCosts = 0,
     DateOnly? DueDate = null,
     string? Notes = null,
     Guid? PaymentTermId = null,
@@ -405,8 +399,6 @@ public sealed record UpdatePurchaseDraftCommand(
     string? TaxSupportCode = null,
     string? SriPaymentMethodCode = null,
     Guid? GlobalWarehouseId = null,
-    decimal FreightCost = 0,
-    decimal OtherCosts = 0,
     DateOnly? DueDate = null,
     string? Notes = null,
     Guid? PaymentTermId = null,
@@ -521,17 +513,7 @@ public sealed class CreatePurchaseDraftValidator : AbstractValidator<CreatePurch
                     .NotEmpty()
                     .WithMessage("El código IVA es obligatorio por línea.");
                 line.RuleFor(l => l.DiscountPct).InclusiveBetween(0, 100);
-                line.RuleFor(l => l.FreightAllocated)
-                    .GreaterThanOrEqualTo(0)
-                    .When(l => l.FreightAllocated.HasValue)
-                    .WithMessage("El flete asignado no puede ser negativo.");
-                line.RuleFor(l => l.OtherCostsAllocated)
-                    .GreaterThanOrEqualTo(0)
-                    .When(l => l.OtherCostsAllocated.HasValue)
-                    .WithMessage("Los otros costos asignados no pueden ser negativos.");
             });
-        RuleFor(x => x.FreightCost).GreaterThanOrEqualTo(0);
-        RuleFor(x => x.OtherCosts).GreaterThanOrEqualTo(0);
         RuleForEach(x => x.Schedule)
             .ChildRules(row =>
                 row.RuleFor(r => r.Notes).MaximumLength(PurchasePaymentSchedule.NotesMaxLen)
@@ -578,17 +560,7 @@ public sealed class UpdatePurchaseDraftValidator : AbstractValidator<UpdatePurch
                     .NotEmpty()
                     .WithMessage("El código IVA es obligatorio por línea.");
                 line.RuleFor(l => l.DiscountPct).InclusiveBetween(0, 100);
-                line.RuleFor(l => l.FreightAllocated)
-                    .GreaterThanOrEqualTo(0)
-                    .When(l => l.FreightAllocated.HasValue)
-                    .WithMessage("El flete asignado no puede ser negativo.");
-                line.RuleFor(l => l.OtherCostsAllocated)
-                    .GreaterThanOrEqualTo(0)
-                    .When(l => l.OtherCostsAllocated.HasValue)
-                    .WithMessage("Los otros costos asignados no pueden ser negativos.");
             });
-        RuleFor(x => x.FreightCost).GreaterThanOrEqualTo(0);
-        RuleFor(x => x.OtherCosts).GreaterThanOrEqualTo(0);
         RuleForEach(x => x.Schedule)
             .ChildRules(row =>
                 row.RuleFor(r => r.Notes).MaximumLength(PurchasePaymentSchedule.NotesMaxLen)
@@ -845,20 +817,10 @@ public sealed class CreatePurchaseDraftHandler
         if (linesResult.Error is not null)
             return linesResult.Error;
 
-        // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — si el cliente ya envió FreightAllocated/
-        // OtherCostsAllocated explícitos por línea (modal "Distribuir flete/gasto" revisado antes
-        // de guardar), esos valores ya quedaron aplicados en BuildLines y son la fuente de verdad:
-        // NO reprorratear con DistributeCosts, que ignora la inclusión/exclusión manual del usuario
-        // y redistribuiría por TODAS las líneas desde cero.
-        var hasExplicitLineCosts = cmd.Lines.Any(l =>
-            l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
-        );
         var breakdownError = await PurchaseXmlBreakdown.ValidateAsync(inv, linesResult.Lines, _receptionRepo, ct);
         if (breakdownError is not null)
             return Result<PurchaseInvoiceDto>.ValidationFailure(breakdownError);
         inv.ReplaceLines(linesResult.Lines, _u.UserId);
-        if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
-            inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
         try
         {
             PurchaseDraftSchedule.Apply(inv, cmd.Schedule);
@@ -1048,10 +1010,6 @@ public sealed class CreatePurchaseDraftHandler
                 unitCostDecimals: precision.UnitCostDecimals,
                 exactDiscountAmount: normalizedLine.ExactDiscountAmount
             );
-            if (l.FreightAllocated.HasValue)
-                line.SetFreightAllocated(l.FreightAllocated.Value);
-            if (l.OtherCostsAllocated.HasValue)
-                line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
             var xmlOrigin = PurchaseXmlOriginPackagingResolver.Resolve(
                 lineItem,
                 l,
@@ -1214,6 +1172,11 @@ public sealed class UpdatePurchaseDraftHandler
             _unitOfWork.ClearChangeTracker();
             return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
         }
+        catch (ERP.Domain.Exceptions.DomainRuleViolationException ex)
+        {
+            _unitOfWork.ClearChangeTracker();
+            return Result<PurchaseInvoiceDto>.FromDomainRule(ex);
+        }
         catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info))
         {
             _unitOfWork.ClearChangeTracker();
@@ -1223,6 +1186,17 @@ public sealed class UpdatePurchaseDraftHandler
             throw;
         }
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
+    }
+
+    /// <summary>Un LineId solo puede conservar una línea existente de este borrador, una sola vez.</summary>
+    private static string? ValidateKeptLineIds(IReadOnlyList<PurchaseLineInput> inputs, PurchaseInvoice inv)
+    {
+        var kept = inputs.Where(l => l.LineId.HasValue).Select(l => l.LineId!.Value).ToList();
+        if (kept.Distinct().Count() != kept.Count)
+            return "Una línea de la compra se envió más de una vez.";
+        return kept.Exists(id => inv.Lines.All(x => x.Id != id))
+            ? "Una línea enviada no pertenece a esta compra."
+            : null;
     }
 
     /// <summary>
@@ -1329,6 +1303,9 @@ public sealed class UpdatePurchaseDraftHandler
         );
 
         var lines = new List<PurchaseInvoiceDetail>();
+        var lineIdError = ValidateKeptLineIds(cmd.Lines, inv);
+        if (lineIdError is not null)
+            return Result<PurchaseInvoiceDto>.ValidationFailure(lineIdError);
         // ERP-PRECISION-OPERATIONAL-05B: cantidad/costo unitario/factor según la política de la empresa.
         var precision = await _precision.GetEffectiveAsync(ct);
         foreach (var l in cmd.Lines)
@@ -1455,12 +1432,9 @@ public sealed class UpdatePurchaseDraftHandler
                 packagingLevelId: packaging.PackagingLevelId,
                 quantityDecimals: precision.QuantityDecimals,
                 unitCostDecimals: precision.UnitCostDecimals,
-                exactDiscountAmount: normalizedLine.ExactDiscountAmount
+                exactDiscountAmount: normalizedLine.ExactDiscountAmount,
+                id: l.LineId
             );
-            if (l.FreightAllocated.HasValue)
-                line.SetFreightAllocated(l.FreightAllocated.Value);
-            if (l.OtherCostsAllocated.HasValue)
-                line.SetOtherCostsAllocated(l.OtherCostsAllocated.Value);
             var xmlOrigin = PurchaseXmlOriginPackagingResolver.Resolve(
                 lineItem,
                 l,
@@ -1509,18 +1483,13 @@ public sealed class UpdatePurchaseDraftHandler
             }
             lines.Add(line);
         }
-        // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — mismo criterio que CreatePurchaseDraftHandler:
-        // no reprorratear si el cliente ya envió FreightAllocated/OtherCostsAllocated explícitos.
-        var hasExplicitLineCosts = cmd.Lines.Any(l =>
-            l.FreightAllocated.HasValue || l.OtherCostsAllocated.HasValue
-        );
         var breakdownError = await PurchaseXmlBreakdown.ValidateAsync(inv, lines, _receptionRepo, ct);
         if (breakdownError is not null)
             return Result<PurchaseInvoiceDto>.ValidationFailure(breakdownError);
         await _repo.RemoveLinesByInvoiceAsync(inv.Id, lines, ct);
+        // C3: ReplaceLines rechaza quitar/desglosar líneas con distribuciones (rollback completo).
         inv.ReplaceLines(lines, _u.UserId);
-        if (!hasExplicitLineCosts && (cmd.FreightCost > 0 || cmd.OtherCosts > 0))
-            inv.DistributeCosts(cmd.FreightCost, cmd.OtherCosts, _u.UserId);
+        _repo.ReattachCostDistributionsAsAdded(inv);
         if (PurchaseDraftSchedule.Apply(inv, cmd.Schedule))
         {
             await _repo.ClearScheduleTrackingAsync(inv.Id, ct);

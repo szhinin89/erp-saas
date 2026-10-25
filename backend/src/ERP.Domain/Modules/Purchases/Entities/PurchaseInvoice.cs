@@ -6,7 +6,7 @@ using ERP.Domain.Modules.Purchases.Events;
 
 namespace ERP.Domain.Modules.Purchases.Entities;
 
-public sealed class PurchaseInvoice
+public sealed partial class PurchaseInvoice
     : AuditableEntity,
         ITenantScopedEntity,
         ICompanyOperationalEntity
@@ -104,7 +104,7 @@ public sealed class PurchaseInvoice
     public decimal TotalOtherCosts => _lines.Sum(l => l.OtherCostsAllocated);
     public decimal GrandTotal =>
         ConfirmedGrandTotal
-        ?? (_lines.Sum(l => l.TaxInclusiveTotal) + TotalFreight + TotalOtherCosts);
+        ?? (_lines.Sum(l => l.TaxInclusiveTotal) + ExternalDistributedCost);
 
     public decimal TotalCostValue => _lines.Sum(l => l.TotalLineCost);
 
@@ -285,13 +285,16 @@ public sealed class PurchaseInvoice
     public void ReplaceLines(IEnumerable<PurchaseInvoiceDetail> lines, Guid updatedBy)
     {
         EnsureDraft();
+        var replacement = lines.ToList();
+        EnsureLinesKeepCostDistributions(replacement);
         _lines.Clear();
         short order = 1;
-        foreach (var line in lines)
+        foreach (var line in replacement)
         {
             line.SetSortOrder(order++);
             _lines.Add(line);
         }
+        RecalculateCostDistributionsCore();
         SetUpdated(updatedBy);
     }
 
@@ -317,122 +320,23 @@ public sealed class PurchaseInvoice
         foreach (var line in _lines)
             line.ApplyDiscount(pct);
 
-        if (_lines.Any(l => l.FreightAllocated > 0 || l.OtherCostsAllocated > 0))
-            RedistributeCosts(TotalFreight, TotalOtherCosts);
+        RecalculateCostDistributionsCore();
 
         SetUpdated(updatedBy);
-    }
-
-    public void DistributeCosts(decimal freightCost, decimal otherCosts, Guid updatedBy)
-    {
-        EnsureDraft();
-        if (freightCost < 0)
-            throw new ArgumentException("El flete no puede ser negativo.", nameof(freightCost));
-        if (otherCosts < 0)
-            throw new ArgumentException(
-                "Los otros costos no pueden ser negativos.",
-                nameof(otherCosts)
-            );
-        RedistributeCosts(freightCost, otherCosts);
-        SetUpdated(updatedBy);
-    }
-
-    /// <summary>
-    /// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — distribuye un monto ADICIONAL de flete/otros
-    /// gastos (aún no registrado en el documento, p. ej. el valor de una línea de transporte que
-    /// el usuario acaba de eliminar) únicamente entre las líneas incluidas por el usuario, SUMÁNDOLO
-    /// a su FreightAllocated/OtherCostsAllocated actual. A diferencia de <see cref="DistributeCosts"/>
-    /// (que fija el total absoluto del documento y reprorratea TODAS las líneas desde cero), este
-    /// método es aditivo y deja intactas las líneas no incluidas — soporta el flujo del modal
-    /// "Distribuir flete/gasto", donde el usuario decide manualmente qué ítems reciben el costo.
-    /// Redondeo: <see cref="CostAllocationPrecision"/> decimales por línea (vía
-    /// <see cref="ProrateAmount"/>), la última línea incluida absorbe el residuo — misma regla que
-    /// <see cref="ProrateCostToLines"/> y que la simulación mostrada en el modal antes de aplicar.
-    /// </summary>
-    public void DistributeAdditionalCost(
-        PurchaseCostType costType,
-        decimal amount,
-        IReadOnlyCollection<Guid> includedLineIds,
-        Guid updatedBy
-    )
-    {
-        EnsureDraft();
-        if (amount <= 0)
-            throw new ArgumentException(
-                "El valor a distribuir debe ser mayor a cero.",
-                nameof(amount)
-            );
-        if (includedLineIds.Count == 0)
-            throw new ArgumentException(
-                "Debe incluir al menos una línea.",
-                nameof(includedLineIds)
-            );
-
-        var included = _lines.Where(l => includedLineIds.Contains(l.Id)).ToList();
-        if (included.Count != includedLineIds.Count)
-            throw new ArgumentException(
-                "Alguna línea incluida no pertenece a esta compra.",
-                nameof(includedLineIds)
-            );
-        if (included.Any(l => l.QuantityInBaseUom <= 0))
-            throw new DomainRuleViolationException(
-                "Todas las líneas incluidas deben tener cantidad base mayor a cero."
-            );
-
-        Action<PurchaseInvoiceDetail, decimal> add =
-            costType == PurchaseCostType.Freight
-                ? (line, share) => line.SetFreightAllocated(line.FreightAllocated + share)
-                : (line, share) => line.SetOtherCostsAllocated(line.OtherCostsAllocated + share);
-
-        ProrateAmount(amount, included, add);
-
-        SetUpdated(updatedBy);
-    }
-
-    private void RedistributeCosts(decimal freightCost, decimal otherCosts)
-    {
-        if (_lines.Count == 0)
-        {
-            return;
-        }
-
-        ProrateCostToLines(freightCost, (line, amount) => line.SetFreightAllocated(amount));
-        ProrateCostToLines(otherCosts, (line, amount) => line.SetOtherCostsAllocated(amount));
-    }
-
-    private void ProrateCostToLines(
-        decimal totalCost,
-        Action<PurchaseInvoiceDetail, decimal> setter
-    )
-    {
-        if (totalCost <= 0)
-        {
-            foreach (var line in _lines)
-                setter(line, 0);
-            return;
-        }
-
-        ProrateAmount(totalCost, _lines, setter);
     }
 
     // PURCHASE-LANDED-COST-PRORATION-CONSISTENCY-01 — misma precisión que TotalLineCost/
     // LandedUnitCost (FiscalPrecision.UnitCost), a los que este prorrateo alimenta directamente vía
-    // FreightAllocated/OtherCostsAllocated. Antes DistributeAdditionalCost redondeaba a 2 decimales
-    // y ProrateCostToLines a 6 — la misma operación conceptual con precisión distinta según el flujo
-    // que la disparara.
+    // las asignaciones de PurchaseCostDistribution.
     private const int CostAllocationPrecision = FiscalPrecision.UnitCost;
 
     /// <summary>
-    /// PURCHASE-LANDED-COST-PRORATION-CONSISTENCY-01 — única lógica de prorrateo de un monto
-    /// (flete/otro gasto) entre líneas, compartida por <see cref="DistributeAdditionalCost"/>
-    /// (aditivo, subconjunto de líneas incluidas por el usuario) y <see cref="ProrateCostToLines"/>
-    /// (absoluto, todas las líneas del documento) — ambas llaman a <paramref name="applyShare"/>
-    /// con el share ya calculado, cada una decide si suma o reemplaza el campo de costo. Reparte
-    /// proporcionalmente a la base imponible de línea (LineSubtotal - DiscountAmount); si esa base
-    /// es &lt;= 0 en el conjunto de líneas recibido, reparte equitativamente en su lugar — nunca
-    /// lanza excepción por eso mientras haya al menos una línea elegible. La última línea absorbe
-    /// el residuo de redondeo para que la suma asignada sea exactamente igual a
-    /// <paramref name="totalAmount"/>, dentro de <see cref="CostAllocationPrecision"/> decimales.
+    /// PURCHASE-LANDED-COST-PRORATION-CONSISTENCY-01 — única lógica de prorrateo de un monto entre
+    /// líneas, usada por toda <see cref="PurchaseCostDistribution"/>. Reparte proporcionalmente a la
+    /// base imponible de línea (LineSubtotal - DiscountAmount); si esa base es &lt;= 0 en el conjunto
+    /// recibido, reparte equitativamente. La última línea absorbe el residuo de redondeo para que la
+    /// suma asignada sea exactamente <paramref name="totalAmount"/>, dentro de
+    /// <see cref="CostAllocationPrecision"/> decimales.
     /// </summary>
     private static void ProrateAmount(
         decimal totalAmount,
@@ -516,6 +420,7 @@ public sealed class PurchaseInvoice
             );
         }
 
+        EnsureCostDistributionsConsistent(itemNatures);
         foreach (var line in _lines)
             line.FreezeCosts();
 
@@ -524,7 +429,7 @@ public sealed class PurchaseInvoice
         ConfirmedSubtotal = _lines.Sum(l => l.LineSubtotal);
         ConfirmedTotalDiscount = _lines.Sum(l => l.DiscountAmount);
         ConfirmedTotalTax = _lines.Sum(l => l.IceAmount) + _lines.Sum(l => l.VatAmount);
-        ConfirmedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal) + TotalFreight + TotalOtherCosts;
+        ConfirmedGrandTotal = _lines.Sum(l => l.TaxInclusiveTotal) + ExternalDistributedCost;
 
         Status = PurchaseStatus.Confirmed;
         SetUpdated(updatedBy);

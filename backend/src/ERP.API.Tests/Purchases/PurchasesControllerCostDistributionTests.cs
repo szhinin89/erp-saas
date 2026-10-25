@@ -13,14 +13,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ERP.API.Tests.Purchases;
 
 /// <summary>
-/// PURCHASE-COSTTYPE-ENUM-CONTRACT-CLEANUP-01 — PurchasesController.DistributeCost sigue recibiendo
-/// CostType como string en el body (contrato HTTP sin cambios), pero ahora lo convierte a
-/// PurchaseCostType con Enum.TryParse antes de construir el comando. Estos tests cubren: (1) los dos
-/// valores válidos actuales del frontend llegan al mediator ya como enum, (2) un valor inválido
-/// devuelve un BadRequest amigable sin invocar el mediator (nunca el error genérico de deserialización
-/// JSON que se tendría si CostType fuera enum directo en el DTO del request).
+/// PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — PUT/DELETE cost-distributions: CostType llega como string
+/// y se convierte con TryParse case-sensitive (más IsDefined, que rechaza valores numéricos fuera del
+/// enum); un valor inválido devuelve BadRequest sin invocar el mediator. Identidad y revisión viajan
+/// intactas al comando.
 /// </summary>
-public sealed class PurchasesControllerDistributeCostTests
+public sealed class PurchasesControllerCostDistributionTests
 {
     private static PurchasesController BuildController(Func<object, object> handler)
     {
@@ -52,31 +50,31 @@ public sealed class PurchasesControllerDistributeCostTests
     [Theory]
     [InlineData("Freight", PurchaseCostType.Freight)]
     [InlineData("OtherCost", PurchaseCostType.OtherCost)]
-    public async Task DistributeCost_convierte_el_string_del_payload_al_enum_esperado(
+    public async Task ReplaceCostDistribution_envia_identidad_revision_y_enum_al_comando(
         string costTypeInPayload,
         PurchaseCostType expected
     )
     {
-        DistributePurchaseCostCommand? captured = null;
+        ReplacePurchaseCostDistributionCommand? captured = null;
         var controller = BuildController(req =>
         {
-            captured = (DistributePurchaseCostCommand)req;
+            captured = (ReplacePurchaseCostDistributionCommand)req;
             return Result<PurchaseInvoiceDto>.Success(null!);
         });
-        var invoiceId = Guid.NewGuid();
-        var lineId = Guid.NewGuid();
+        var (invoiceId, distributionId, lineId, sourceId) =
+            (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
 
-        var response = await controller.DistributeCost(
+        var response = await controller.ReplaceCostDistribution(
             invoiceId,
-            new DistributeCostRequest(costTypeInPayload, 10m, new List<Guid> { lineId }),
+            distributionId,
+            new ReplaceCostDistributionRequest(costTypeInPayload, 3, null, [lineId], sourceId),
             CancellationToken.None
         );
 
         response.Should().BeOfType<OkObjectResult>();
-        captured.Should().NotBeNull();
-        captured!.CostType.Should().Be(expected);
-        captured.InvoiceId.Should().Be(invoiceId);
-        captured.IncludedLineIds.Should().Equal(lineId);
+        captured.Should().Be(new ReplacePurchaseCostDistributionCommand(invoiceId, distributionId, expected, 3,
+            null, captured!.TargetLineIds, sourceId));
+        captured.TargetLineIds.Should().Equal(lineId);
     }
 
     [Theory]
@@ -84,7 +82,8 @@ public sealed class PurchasesControllerDistributeCostTests
     [InlineData("Flete")]
     [InlineData("")]
     [InlineData("Other")]
-    public async Task DistributeCost_con_CostType_invalido_devuelve_BadRequest_amigable_sin_llamar_al_mediator(
+    [InlineData("99")]
+    public async Task ReplaceCostDistribution_con_CostType_invalido_devuelve_BadRequest_sin_llamar_al_mediator(
         string invalidCostType
     )
     {
@@ -95,13 +94,31 @@ public sealed class PurchasesControllerDistributeCostTests
             return Result<PurchaseInvoiceDto>.Success(null!);
         });
 
-        var response = await controller.DistributeCost(
+        var response = await controller.ReplaceCostDistribution(
             Guid.NewGuid(),
-            new DistributeCostRequest(invalidCostType, 10m, new List<Guid> { Guid.NewGuid() }),
+            Guid.NewGuid(),
+            new ReplaceCostDistributionRequest(invalidCostType, 0, 10m, [Guid.NewGuid()]),
             CancellationToken.None
         );
 
         response.Should().BeOfType<BadRequestObjectResult>();
         mediatorCalled.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task RemoveCostDistribution_envia_la_revision_esperada()
+    {
+        RemovePurchaseCostDistributionCommand? captured = null;
+        var controller = BuildController(req =>
+        {
+            captured = (RemovePurchaseCostDistributionCommand)req;
+            return Result<PurchaseInvoiceDto>.Success(null!);
+        });
+        var (invoiceId, distributionId) = (Guid.NewGuid(), Guid.NewGuid());
+
+        var response = await controller.RemoveCostDistribution(invoiceId, distributionId, 4, CancellationToken.None);
+
+        response.Should().BeOfType<OkObjectResult>();
+        captured.Should().Be(new RemovePurchaseCostDistributionCommand(invoiceId, distributionId, 4));
     }
 }

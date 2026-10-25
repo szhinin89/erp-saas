@@ -1064,7 +1064,7 @@
   overflow-wrap: normal;
 }
 /* Importes sin símbolo de moneda: sin el hueco del símbolo vacío, las cifras alinean. */
-:is(.pdc-table, .pdc-summary) .zh-money-value__symbol:empty {
+.pdc-table .zh-money-value__symbol:empty {
   display: none;
 }
 .pdc-table .pdc-table__item {
@@ -1095,29 +1095,35 @@
   color: var(--color-text-secondary);
 }
 
-/* Resumen: dos grupos (distribución / factura), cada uno con su resultado primero. */
-.pdc-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-  gap: var(--space-3);
-}
-.pdc-summary__group {
+/* Secciones: distribuciones registradas y editor de una distribución (PURCHASE-COST-DISTRIBUTION-CANONICAL-01). */
+.pdc-section {
   min-width: 0;
+  margin-bottom: var(--space-4);
   padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--color-border-light);
   border-radius: var(--radius-md);
   background: var(--color-surface-container-low);
 }
-.pdc-summary__title {
+.pdc-section__title {
   margin: 0 0 var(--space-2);
   color: var(--color-text-secondary);
 }
-.pdc-summary .zh-summary-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2) var(--space-4);
+.pdc-allocations {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.pdc-totals__row--primary .zh-summary-grid__value {
-  font-size: var(--text-title-sm-size);
+.pdc-allocations li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.pdc-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
 }
 
 /* Móvil: .responsive-table apila cada producto; aquí, en dos columnas compactas

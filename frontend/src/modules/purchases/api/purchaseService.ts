@@ -65,7 +65,7 @@ export interface PurchaseLineDto {
   unitPrice: number;
   discountPct: number;
   discountAmount: number;
-  // ── Costs ───────────────────────────────────────────────────────
+  // ── Costs (derivados de costDistributions; solo lectura) ─────────
   freightAllocated: number;
   otherCostsAllocated: number;
   totalLineCost: number;
@@ -176,6 +176,30 @@ export interface PurchaseInvoiceDto {
   updatedAt: string | null;
   /** PURCHASE-DRAFT-RECOVERY F3 — null si el borrador nunca registró una decisión. */
   retentionIntent?: PurchaseRetentionIntentDraftDto | null;
+  /**
+   * PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — única fuente de verdad de flete/otros costos. Sin
+   * `sourceLineId` = costo externo (suma al total); con origen = transporte del XML (ya en el total).
+   */
+  costDistributions?: PurchaseCostDistributionDto[];
+}
+
+export interface PurchaseCostDistributionDto {
+  id: string;
+  costType: PurchaseCostDistributionType;
+  sourceLineId: string | null;
+  amount: number;
+  revision: number;
+  allocations: { lineId: string; amount: number }[];
+}
+
+/** Cuerpo de `PUT /purchases/{id}/cost-distributions/{distributionId}` (crea o reemplaza). */
+export interface ReplaceCostDistributionRequest {
+  costType: PurchaseCostDistributionType;
+  expectedRevision: number;
+  /** Solo costo externo; el transporte XML toma la base neta de su línea fiscal. */
+  amount: number | null;
+  targetLineIds: string[];
+  sourceLineId: string | null;
 }
 
 export interface PurchaseListItemDto {
@@ -262,10 +286,9 @@ export interface PurchaseLineInput {
   // FASE 5 PURCHASE-UX — presentación de origen XML (solo líneas de recepción); el backend resuelve
   // el factor desde el nivel del ítem. No aprende nada del proveedor.
   xmlOriginPackagingLevelId?: string | null;
-  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo ya revisado en el modal "Distribuir
-  // flete/gasto" antes de guardar; el backend lo aplica directo por línea sin reprorratear.
-  freightAllocated?: number | null;
-  otherCostsAllocated?: number | null;
+  // PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — Id de una línea ya guardada del borrador: se conserva
+  // para que sus distribuciones de costos sigan referenciándola. Los costos no viajan por línea.
+  lineId?: string | null;
 }
 
 export interface CreatePurchasePayload {
@@ -280,8 +303,6 @@ export interface CreatePurchasePayload {
   taxSupportCode?: string | null;
   sriPaymentMethodCode?: string | null;
   globalWarehouseId?: string | null;
-  freightCost?: number;
-  otherCosts?: number;
   dueDate?: string | null;
   notes?: string | null;
   paymentTermId?: string | null;
@@ -372,23 +393,15 @@ export const purchaseService = {
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/apply-discount`, {
       discountPct,
     }),
-  allocateFreight: (id: string) =>
-    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/allocate-freight`, {}),
   recalculate: (id: string) =>
     apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/recalculate`, {}),
-  // PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — suma `amount` (flete/otro gasto aún no registrado)
-  // solo entre `includedLineIds`, sin tocar el resto de líneas. Distinto de allocateFreight (que
-  // reprorratea el total ya persistido entre TODAS las líneas).
-  distributeCost: (
-    id: string,
-    costType: PurchaseCostDistributionType,
-    amount: number,
-    includedLineIds: string[],
-  ) =>
-    apiPost<PurchaseInvoiceDto>(`${BASE}/${id}/distribute-cost`, {
-      costType,
-      amount,
-      includedLineIds,
+  // PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — única operación de distribución: crea o reemplaza (nunca
+  // suma); un reintento con el mismo id y cuerpo no duplica importes.
+  replaceCostDistribution: (id: string, distributionId: string, body: ReplaceCostDistributionRequest) =>
+    apiPut<PurchaseInvoiceDto>(`${BASE}/${id}/cost-distributions/${distributionId}`, body),
+  removeCostDistribution: (id: string, distributionId: string, expectedRevision: number) =>
+    apiDelete<PurchaseInvoiceDto>(`${BASE}/${id}/cost-distributions/${distributionId}`, {
+      params: { expectedRevision },
     }),
   /**
    * ZH-PURCHASE-RETENTION-CONFIRM-01 — `retention` es la intención opcional de emitir la retención

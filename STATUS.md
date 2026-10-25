@@ -1,5 +1,24 @@
 # Project Status
 
+## COMPRAS — Distribución canónica de costos, FASE B frontend (2026-10-25)
+
+Compras usa solo `PUT/DELETE /purchases/{id}/cost-distributions/{distributionId}`: el formulario
+conserva `lineId`, ya no envía costos por línea ni de cabecera, y el modal lista/edita/retira las
+distribuciones del borrador guardado sin prorratear en el cliente. Revisión obsoleta = 409
+`PURCHASE_COST_DISTRIBUTION_STALE` (recarga); destinos externos solo ítems; transporte XML no se suma
+dos veces al total local. Pendiente: gate del propietario; no CLOSED.
+[SSOT](docs/architecture/purchases.md#2-borrador).
+
+## COMPRAS — Distribución canónica de costos, FASE A backend — BUG REAL (2026-10-25)
+
+Antes, contra HEAD: reintento y edición sumaban (20 ≠ 10, 25 ≠ 15), el transporte XML duplicaba
+total/CxP (120 ≠ 110) y el descuento movía flete a líneas excluidas. Ahora `PurchaseCostDistribution`
+es la única fuente (reemplazo idempotente, revisión, retiro, transporte XML solo a Product sin tocar
+total ni impuestos, guardado que conserva Ids y bloquea quitar/desglosar líneas referenciadas).
+Baseline V1 modificada (sin migración nueva). PASS focal: Domain 34, Application 99, API 8,
+PostgreSQL 20 + 5, arquitectura. Pendiente: FASE B frontend y gate del propietario; no CLOSED.
+[SSOT](docs/architecture/purchases.md#2-borrador).
+
 ## COMPRAS — Precisión de prorrateo y base cero — BUG REAL (2026-10-25)
 
 Reproducción: 6/6 FAIL por reparto frontend a centavos y bloqueo de base cero. El contrato oficial
@@ -800,6 +819,11 @@ Estado actual:
 - **Flujo soportado: solo el flujo manual existente.** El servicio/flete se elimina de las líneas operativas y su valor se distribuye entre los productos con la fórmula vigente (`FreightAllocated`/`OtherCostsAllocated` → `TotalLineCost`/`LandedUnitCost`, prorrateo por base neta).
 - Inventario y costo siguen normalizados a unidad base.
 - **Fuera de soporte completo:** facturas XML mixtas (productos + servicios capitalizables).
+
+Actualización 2026-10-25 (FASE A backend): el transporte XML se distribuye conservando la línea
+fiscal sin duplicar CxP, con trazabilidad origen → destino (`PurchaseCostDistribution`), y el
+re-prorrateo respeta los destinos elegidos; ver la entrada superior. Los dos riesgos XML y de
+re-prorrateo de esta lista quedan resueltos en backend; frontend en FASE B.
 
 Riesgos conocidos mientras siga en FUTURE (hallazgos de la auditoría):
 - **Flete con IVA en flujo manual:** el monto distribuido no lleva IVA; si la línea eliminada tenía IVA, la CxP queda por debajo del total del proveedor. Distribuir solo fletes con IVA 0 % o conservar la línea.

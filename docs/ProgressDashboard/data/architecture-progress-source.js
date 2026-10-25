@@ -1471,11 +1471,15 @@ window.__ARCHITECTURE_PROGRESS_SOURCE__ = [
               {
                 "s": "f",
                 "n": "Distribución de flete y otros costos",
-                "d": "AllocateFreight: distribuye flete y otros costos proporcionalmente entre líneas. Landed cost por línea.",
+                "d": "PurchaseCostDistribution: operación canónica que crea o reemplaza (nunca suma) y retira distribuciones de costos externos o de transporte XML con revisión; landed cost por línea derivado.",
                 "tags": [
                   [
                     "a",
-                    "POST /allocate-freight"
+                    "PUT /cost-distributions/{distributionId}"
+                  ],
+                  [
+                    "a",
+                    "DELETE /cost-distributions/{distributionId}"
                   ]
                 ]
               },

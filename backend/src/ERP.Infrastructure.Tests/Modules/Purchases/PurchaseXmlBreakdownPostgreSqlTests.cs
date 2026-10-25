@@ -306,15 +306,23 @@ public sealed class PurchaseXmlBreakdownPostgreSqlTests : IAsyncLifetime
                 _createdBy, _paymentTermId, "Contado", 1, 0);
             var prices = scenario == "unequal" ? new[] { 1m, 2m, 4m }
                 : scenario == "zero" ? new[] { 0m, 0m, 0m } : new[] { 1m, 1m, 1m };
+            // Un costo externo solo se asigna a ítems de la compra (PURCHASE-COST-DISTRIBUTION-CANONICAL-01).
+            var code = $"PR-{Guid.NewGuid():N}"[..16];
+            var itemType = ItemTypeDefinition.Create(_tenantId, code, code, 1, _createdBy);
+            var item = Item.Create(_tenantId, code, "Producto", "Producto", itemType.Id, "UNIT",
+                ItemTaxConfig.Create("0", "0"), ItemSaleConfig.Create(), ItemStockConfig.Create(true),
+                _createdBy, companyId: _companyId);
+            db.Set<ItemTypeDefinition>().Add(itemType);
+            db.Set<Item>().Add(item);
             var lines = prices.Select(price => PurchaseInvoiceDetail.Create(invoice.Id, _tenantId,
-                "Producto test", 3, price / 3, "0", "UNIT")).ToList();
+                "Producto test", 3, price / 3, "0", "UNIT", itemId: item.Id)).ToList();
             invoice.ReplaceLines(lines, _createdBy);
             if (scenario == "discount") invoice.ApplyGlobalDiscount(100, _createdBy);
             invoice.ApplyUnitCostPrecision(unitCostDecimals);
             // Equal bases are exact multiples of the same decimal, so each ratio is 1/3.
             lineIds = lines.Select(l => l.Id).ToArray();
             totalBefore = invoice.GrandTotal;
-            invoice.DistributeAdditionalCost(PurchaseCostType.Freight, 1m, lineIds, _createdBy);
+            invoice.Distribute(PurchaseCostType.Freight, 1m, lineIds, _createdBy);
             invoice.Lines.Select(l => l.FreightAllocated).Should().Equal(expected);
             invoice.Lines.Sum(l => l.FreightAllocated).Should().Be(1m);
             db.PurchaseInvoices.Add(invoice);
@@ -349,7 +357,7 @@ public sealed class PurchaseXmlBreakdownPostgreSqlTests : IAsyncLifetime
             var invoice = await ReopenAsync(db, id);
             taxes = invoice.Lines.SelectMany(l => l.Taxes)
                 .ToDictionary(t => t.Id, t => (t.TaxableBase, t.TaxAmount));
-            invoice.DistributeAdditionalCost(PurchaseCostType.Freight, 1m,
+            invoice.Distribute(PurchaseCostType.Freight, 1m,
                 invoice.Lines.Select(l => l.Id).ToArray(), _createdBy);
             await db.SaveChangesAsync();
         }
@@ -358,7 +366,7 @@ public sealed class PurchaseXmlBreakdownPostgreSqlTests : IAsyncLifetime
         saved.Lines.SelectMany(l => l.Taxes).ToDictionary(t => t.Id, t => (t.TaxableBase, t.TaxAmount))
             .Should().BeEquivalentTo(taxes);
         saved.TotalFreight.Should().Be(1m);
-        saved.GrandTotal.Should().Be(81.52m); // Existing additive operation: original 80.52 + 1.
+        saved.GrandTotal.Should().Be(81.52m); // External cost: original 80.52 + 1.
         var source = (await new PurchaseReceptionDocumentRepository(reopened, new FixedCurrentCompany(_companyId))
             .GetByIdAsync(_tenantId, sourceId))!;
         source.XmlContent.Should().Be("<factura/>");

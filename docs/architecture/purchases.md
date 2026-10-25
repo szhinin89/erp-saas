@@ -15,13 +15,38 @@ Código: `ERP.Domain/Modules/Purchases`, `ERP.Application/Modules/Purchases`, `E
 - Requiere un proveedor activo con configuración SRI y una condición de pago (cuotas ≥ 1). Desde una recepción solo una factura genera compra; la NC sigue su propio flujo.
 - Líneas: la bodega debe pertenecer a la sucursal de la compra; el Item debe ser de la empresa; la presentación debe pertenecer al Item y estar activa; el factor de conversión debe ser representable con `ConversionFactorDecimals`; los códigos IVA/ICE seleccionados manualmente deben estar activos en el catálogo SRI. Si el XML trae un impuesto que no está en el catálogo, se rechaza.
 - ICE: el snapshot fiscal de una línea de recepción conserva la tarifa, la base y el importe declarados en el XML (`Source=Xml`); recálculos, prorrateos, confirmación y reapertura no los alteran. Un código ICE inactivo se reconoce solo como dato del XML, nunca como selección manual. La selección manual admite únicamente ICE porcentual activo; ICE específico o mixto sin importe XML se rechaza (`PURCHASE_ICE_DATA_REQUIRED`) y nunca se calcula $0 ni se deriva de la cantidad comercial. No existe cálculo operativo de ICE mixto. Editar cantidad, precio o descuento (de línea o global) de una línea XML con ICE específico, mixto o inactivo se rechaza (`PURCHASE_ICE_XML_EDIT_BLOCKED`) por falta de bases físicas verificables; con ICE porcentual activo la línea pasa a cálculo por tarifa. Las devoluciones prorratean cada fila del snapshot (tarifa conservada).
-- Costos: descuento global 0–100. Flete y otros costos ≥ 0 se prorratean según la base imponible de cada línea (equitativo si la base es 0) y la última línea absorbe el residuo. "Distribuir flete/gasto" suma un monto > 0 solo a las líneas elegidas (con cantidad base > 0).
-- La simulación usa `costAllocationDecimals` del contrato oficial de precisión para las asignaciones
-  internas (escala fija existente de 6), sin redondear cada asignación como dinero fiscal. El residuo
-  se obtiene restando lo asignado al importe original. El nuevo costo unitario se deriva del total
-  de línea, con `unitCostDecimals` de la empresa; la presentación monetaria conserva su escala fiscal.
-  El formulario conserva las asignaciones explícitas al guardar y reabrir. Esta corrección no cambia
-  el carácter aditivo de la operación ni la lógica de impuestos, total documental o CxP.
+- Costos: descuento global 0–100. Flete y otros costos tienen una única fuente de verdad:
+  `PurchaseCostDistribution` (identidad, tipo `Freight`/`OtherCost`, origen opcional, importe,
+  `Revision`) con sus asignaciones por línea destino. `FreightAllocated`/`OtherCostsAllocated` por
+  línea y `TotalFreight`/`TotalOtherCosts` de cabecera son derivados, nunca editables ni enviados en
+  el guardado del borrador.
+  - Operación canónica (solo Draft): `PUT /purchases/{id}/cost-distributions/{distributionId}`
+    (`costType`, `expectedRevision`, `amount`, `targetLineIds`, `sourceLineId`) crea o reemplaza
+    —nunca suma— la distribución; un reintento idéntico no cambia importes ni revisión; una revisión
+    obsoleta responde 409 `PURCHASE_COST_DISTRIBUTION_STALE` y un cambio concurrente de la compra 409
+    `CONFLICT`. `DELETE …?expectedRevision=n`
+    la retira de forma atómica y revierte los derivados; repetirla no tiene efecto. Confirmed es inmutable.
+  - Costo externo (sin origen): importe > 0 con precisión monetaria (2 decimales), destinos ítems
+    Product o Service de la empresa (nunca líneas sin ítem) con cantidad base > 0; se suma al total
+    del documento y a la CxP. Confirmar vuelve a validar los destinos con el maestro de Items.
+  - Transporte incluido en el XML (origen = línea fiscal Service de recepción, sin desglose): el
+    importe es su base neta (`TaxableBase`), los destinos son exclusivamente Product y una línea
+    fiscal admite una sola distribución. Se conservan la línea, sus descuentos e impuestos; el total y
+    la CxP no cambian; el costo operativo de la línea Service queda en cero y se transfiere a los
+    productos. Confirmar vuelve a validar origen Service y destinos Product con el maestro de Items.
+  - Prorrateo único (`ProrateAmount`): proporcional a la base neta de cada destino (equitativo si es
+    0), asignaciones con `FiscalPrecision.UnitCost` (6) y la última línea absorbe el residuo.
+    Descuento global, recálculo y guardado re-prorratean cada distribución solo entre sus propios
+    destinos; el transporte XML nunca se convierte en costo externo. Si la línea de transporte queda
+    sin base, se exige retirar su distribución.
+  - El guardado del borrador conserva el Id de cada línea enviada con `LineId` (de la misma compra,
+    sin duplicados). Eliminar o desglosar una línea origen o destino se rechaza con un mensaje que
+    pide editar o retirar la distribución; el guardado completo se revierte.
+  - Frontend: solo sobre un borrador guardado y sin cambios locales. El modal lista las distribuciones
+    con las asignaciones del servidor y crea, edita (misma identidad y revisión) o retira; no calcula
+    prorrateos. Ante 409 recarga la compra y conserva el motivo. Eliminar o desglosar una línea
+    referenciada se deshabilita con el motivo. El resumen muestra "Costos adicionales externos" (suman
+    al total) y el transporte XML redistribuido como dato informativo (ya incluido en las líneas).
 - Las cuotas manuales del borrador se guardan solo con validación estructural (número ≥ 1 sin duplicados, monto > 0).
 - Descartar: Draft → Discarded, con motivo opcional (`Borrador descartado.` por defecto). Sin reversos; libera la clave de acceso, el número y la recepción de origen.
 
@@ -31,6 +56,7 @@ Código: `ERP.Domain/Modules/Purchases`, `ERP.Application/Modules/Purchases`, `E
 - Los comandos existentes de alta/actualización aceptan `XmlAllocation` por componente: `Subtotal` bruto antes del descuento, `Discount` exacto y `Taxes` con `PurchaseReceptionLineTaxId`, `TaxableBase` y `TaxAmount`. Cantidad, presentación y precio unitario son operativos; el subtotal documental asignado es explícito, no se infiere de cantidad × precio. Se devuelve como `XmlAllocatedSubtotal`, junto con los identificadores de impuestos de origen (`PurchaseReceptionLineTaxId`, también en la evidencia XML del borrador), al consultar la compra; la consulta por id incluye la evidencia XML en cualquier estado.
 - Cada impuesto asignado tiene `Source=XmlAllocation`: el servidor obtiene código, tarifa y clasificación del origen/catálogo; el cliente solo asigna bases e importes. No calcula bases físicas, azúcar, volumen ni tributos desde cantidades comerciales. No se aprende una equivalencia proveedor→producto por el desglose, ni se interpreta la promoción como una presentación de sus componentes.
 - Guardar y confirmar exigen igualdad exacta del grupo en subtotal bruto, descuento, base neta y total; además, por cada impuesto documental y código tributario, suma de bases e importes asignados igual al original, conservando tarifa y procedencia. Se rechazan grupos incompletos, impuestos ajenos/duplicados, mezcla de promoción y componentes, y cruces de tenant/empresa/sucursal/proveedor/comprobante. Las cantidades operativas no se comparan con la cantidad comercial de la promoción.
+- Una línea que participa en una distribución de costos no puede desglosarse hasta editar o retirar la distribución.
 - Los componentes se guardan con la misma operación atómica del borrador y se reabren con sus asignaciones. Recalcular, distribuir costos o confirmar no recalcula sus impuestos; modificar el descuento global de un componente se bloquea y requiere reasignar explícitamente el grupo. Las líneas sin desglose conservan sus reglas actuales.
 - La confirmación reutiliza los motores existentes: entrada por detalle Product, Kardex/promedio ponderado, una CxP y el hecho contable de la compra. Costo inventariable = base neta asignada + flete + otros costos; IVA, ICE e IRBPNR permanecen separados. Las devoluciones continúan referenciando el detalle operativo y prorrateando su snapshot asignado; no hay conciliación automática de NC promocionales.
 - Precisión de las columnas nuevas: `xml_allocated_subtotal` es monto fiscal, `FiscalPrecision.TaxAmount`, `numeric(18,2)`; representa el subtotal documental asignado sin derivarlo de un precio redondeado. El descuento y las bases/importes tributarios reutilizan las columnas existentes y su precisión fiscal. Los identificadores de origen tributario tienen FK restrictiva e índice único por detalle + impuesto original. El modelo y la instalación se consolidan en la única baseline V1; no se aplican cambios a bases existentes en esta entrega.
@@ -257,7 +283,7 @@ sin bodega y no genera inventario; Product conserva la exigencia de bodega.
   - Congela costos y resúmenes de impuestos.
   - Cronograma de pagos: el enviado; si no, el del borrador si cuadra con el total y no vence antes de la emisión; si no, el generado desde la condición. Nunca se ajusta en silencio.
   - `PurchaseEntry` por línea Product al costo unitario con flete/gastos incluidos, con la fecha de emisión.
-  - CxP (`AccountsPayable`) si el total > 0.
+  - CxP (`AccountsPayable`) si el total > 0. El total incluye los costos externos distribuidos; el transporte XML distribuido ya está en el total y no se suma otra vez.
   - Retención opcional ([backend.md § Retenciones](./backend.md#retenciones-una-capacidad-una-política-de-emisión-zh-retention-emission-ssot-01-zh-purchase-retention-confirm-01)).
   - Actualiza `Item.BaseSalePrice` con el PVP de la línea cuando difiere.
   - Obligaciones contables durables. La transmisión de la retención ocurre después del commit.
@@ -298,6 +324,20 @@ sin bodega y no genera inventario; Product conserva la exigencia de bodega.
 - No existe calendario oficial de días hábiles: el plazo SRI ordinario es informativo y se verifica en SRI en Línea. No existe ventana interna de anulación por empresa.
 
 ## 9. Evidencia
+
+Distribución canónica de costos, FASE A backend (2026-10-25): cuatro probes de negocio contra la
+API previa (HEAD) FAIL: reintento 20 ≠ 10, edición 25 ≠ 15, transporte XML total 120 ≠ 110 (CxP
+duplicada), descuento 5 ≠ 0 en línea excluida. Después: Domain 34/34, Application 99/99, API 8/8,
+PostgreSQL desechable 20/20 (`PurchaseCostDistributionPostgreSqlTests`, desglose XML y confirmación
+real con transporte XML y fallo tardío), contabilización 4/4 y E2E con flete 1/1; arquitectura
+140/140 + 143/143. Baseline V1 única con las dos tablas nuevas y sin columnas de costo por línea;
+modelo EF sin cambios pendientes. Frontend pendiente (FASE B); no CLOSED.
+
+FASE B frontend (2026-10-25): integración con la operación canónica; retirados la simulación local, la
+distribución antes de guardar y los campos de costo del payload/formulario. Backend: revisión obsoleta
+con código propio (409) y destinos externos solo ítems. PASS focal: Vitest compras 8 archivos/217 +
+modal 4 + tarjeta de línea 17 + feedback/desglose; Domain 35/35, Application 99/99, API 131/131,
+PostgreSQL desechable 32/32, E2E API 38/38; lint, `tsc -b`, build y arquitectura. No CLOSED.
 
 Confirmación XML (2026-10-25): dos regresiones en
 `PurchaseRetentionConfirmIntegrationTests.ConfirmationRegressions.cs` reproducidas antes del fix

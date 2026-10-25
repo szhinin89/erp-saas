@@ -22,6 +22,14 @@ public static class ApiResponseCodes
     public static class Purchases
     {
         public const string CancellationSubsequentInventoryExit = "PURCHASE_CANCELLATION_SUBSEQUENT_INVENTORY_EXIT";
+
+        /// <summary>Revisión obsoleta de una distribución de costos: el cliente recarga la compra.</summary>
+        public const string CostDistributionStale = ERP.Domain
+            .Modules
+            .Purchases
+            .Exceptions
+            .PurchaseCostDistributionStaleException
+            .ErrorCode;
     }
 
     /// <summary>Códigos transversales (éxito genérico, errores HTTP comunes, infraestructura).</summary>

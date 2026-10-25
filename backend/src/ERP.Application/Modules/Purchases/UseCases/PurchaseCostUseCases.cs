@@ -15,31 +15,9 @@ public sealed record ApplyGlobalDiscountCommand(Guid InvoiceId, decimal Discount
     : IRequest<Result<PurchaseInvoiceDto>>,
         IBranchScopedRequest;
 
-public sealed record AllocateFreightCommand(Guid InvoiceId)
-    : IRequest<Result<PurchaseInvoiceDto>>,
-        IBranchScopedRequest;
-
 public sealed record RecalculatePurchaseCommand(Guid InvoiceId)
     : IRequest<Result<PurchaseInvoiceDto>>,
         IBranchScopedRequest;
-
-/// <summary>
-/// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo aditivo revisado por el usuario en
-/// el modal "Distribuir flete/gasto". A diferencia de <see cref="AllocateFreightCommand"/>
-/// (redistribuye el total ya persistido entre TODAS las líneas), este comando suma un monto nuevo
-/// únicamente entre <c>IncludedLineIds</c>.
-/// PURCHASE-COSTTYPE-ENUM-CONTRACT-CLEANUP-01 — <c>CostType</c> es <see cref="PurchaseCostType"/>
-/// (antes <c>string</c> "Freight"/"OtherCost" re-validado a mano). El payload HTTP no cambió: sigue
-/// llegando como string ("Freight"/"OtherCost") en <c>DistributeCostRequest</c>, y
-/// <c>PurchasesController.DistributeCost</c> lo convierte con <c>Enum.TryParse</c> antes de construir
-/// este comando — un valor inválido nunca llega hasta acá.
-/// </summary>
-public sealed record DistributePurchaseCostCommand(
-    Guid InvoiceId,
-    PurchaseCostType CostType,
-    decimal Amount,
-    List<Guid> IncludedLineIds
-) : IRequest<Result<PurchaseInvoiceDto>>, IBranchScopedRequest;
 
 // ── Validators ──────────────────────────────────────────────────────────
 
@@ -51,31 +29,6 @@ public sealed class ApplyGlobalDiscountValidator : AbstractValidator<ApplyGlobal
         RuleFor(x => x.DiscountPct)
             .InclusiveBetween(0, 100)
             .WithMessage("El descuento debe estar entre 0% y 100%.");
-    }
-}
-
-public sealed class AllocateFreightValidator : AbstractValidator<AllocateFreightCommand>
-{
-    public AllocateFreightValidator()
-    {
-        RuleFor(x => x.InvoiceId).NotEmpty();
-    }
-}
-
-public sealed class DistributePurchaseCostValidator
-    : AbstractValidator<DistributePurchaseCostCommand>
-{
-    public DistributePurchaseCostValidator()
-    {
-        RuleFor(x => x.InvoiceId).NotEmpty();
-        // PURCHASE-COSTTYPE-ENUM-CONTRACT-CLEANUP-01 — el string original ("Freight"/"OtherCost")
-        // ya se validó y convirtió en PurchasesController.DistributeCost (Enum.TryParse, mensaje
-        // amigable si falla); acá solo queda el guard defensivo de que el enum llegue en rango.
-        RuleFor(x => x.CostType).IsInEnum();
-        RuleFor(x => x.Amount)
-            .GreaterThan(0)
-            .WithMessage("El valor a distribuir debe ser mayor a cero.");
-        RuleFor(x => x.IncludedLineIds).NotEmpty().WithMessage("Debe incluir al menos una línea.");
     }
 }
 
@@ -124,50 +77,6 @@ public sealed class ApplyGlobalDiscountHandler
                 $"Línea '{blockedLine.Description}': no se puede modificar el descuento del XML con ICE específico o mixto sin bases físicas verificadas.",
                 "PURCHASE_ICE_XML_EDIT_BLOCKED");
         inv.ApplyGlobalDiscount(cmd.DiscountPct, _u.UserId);
-
-        await _repo.SaveChangesAsync(ct);
-        return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
-    }
-}
-
-public sealed class AllocateFreightHandler
-    : IRequestHandler<AllocateFreightCommand, Result<PurchaseInvoiceDto>>
-{
-    private readonly IPurchaseInvoiceRepository _repo;
-    private readonly ICurrentTenant _t;
-    private readonly ICurrentBranch _b;
-    private readonly ICurrentUser _u;
-    private readonly ICompanyPrecisionPolicyProvider _precision;
-
-    public AllocateFreightHandler(
-        IPurchaseInvoiceRepository repo,
-        ICurrentTenant t,
-        ICurrentBranch b,
-        ICurrentUser u,
-        ICompanyPrecisionPolicyProvider precision
-    )
-    {
-        _precision = precision;
-        _repo = repo;
-        _t = t;
-        _b = b;
-        _u = u;
-    }
-
-    public async Task<Result<PurchaseInvoiceDto>> Handle(
-        AllocateFreightCommand cmd,
-        CancellationToken ct
-    )
-    {
-        var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null || inv.BranchId != _b.BranchId)
-            return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
-        // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
-        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
-        if (inv.Lines.Count == 0)
-            return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
-
-        inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
@@ -225,58 +134,7 @@ public sealed class RecalculatePurchaseHandler
                 return taxError;
         }
 
-        inv.DistributeCosts(inv.TotalFreight, inv.TotalOtherCosts, _u.UserId);
-
-        await _repo.SaveChangesAsync(ct);
-        return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));
-    }
-}
-
-public sealed class DistributePurchaseCostHandler
-    : IRequestHandler<DistributePurchaseCostCommand, Result<PurchaseInvoiceDto>>
-{
-    private readonly IPurchaseInvoiceRepository _repo;
-    private readonly ICurrentTenant _t;
-    private readonly ICurrentBranch _b;
-    private readonly ICurrentUser _u;
-    private readonly ICompanyPrecisionPolicyProvider _precision;
-
-    public DistributePurchaseCostHandler(
-        IPurchaseInvoiceRepository repo,
-        ICurrentTenant t,
-        ICurrentBranch b,
-        ICurrentUser u,
-        ICompanyPrecisionPolicyProvider precision
-    )
-    {
-        _precision = precision;
-        _repo = repo;
-        _t = t;
-        _b = b;
-        _u = u;
-    }
-
-    public async Task<Result<PurchaseInvoiceDto>> Handle(
-        DistributePurchaseCostCommand cmd,
-        CancellationToken ct
-    )
-    {
-        var inv = await _repo.GetByIdAsync(_t.TenantId, cmd.InvoiceId, ct);
-        if (inv is null || inv.BranchId != _b.BranchId)
-            return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
-        // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
-        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
-        if (inv.Lines.Count == 0)
-            return Result<PurchaseInvoiceDto>.ValidationFailure("La compra no tiene líneas.");
-
-        try
-        {
-            inv.DistributeAdditionalCost(cmd.CostType, cmd.Amount, cmd.IncludedLineIds, _u.UserId);
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<PurchaseInvoiceDto>.ValidationFailure(ex.Message);
-        }
+        inv.RecalculateCostDistributions(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
         return Result<PurchaseInvoiceDto>.Success(PurchaseMapper.ToDto(inv));

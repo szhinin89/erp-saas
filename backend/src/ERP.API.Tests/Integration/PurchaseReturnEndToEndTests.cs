@@ -386,7 +386,14 @@ public sealed partial class PurchaseReturnEndToEndTests : IAsyncLifetime
         line.ApplyTaxes("10", 12m, "IVA", null, 0m, null);
         inv.ReplaceLines(new[] { line }, _userId);
         if (freightCost > 0)
-            inv.DistributeCosts(freightCost, 0m, _userId);
+            inv.ReplaceCostDistribution(
+                new ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistributionChange(
+                    Guid.NewGuid(), 0, ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
+                    freightCost, [line.Id], null),
+                new Dictionary<Guid, ERP.Domain.Modules.Items.Entities.ItemNature>
+                {
+                    [_itemId] = ERP.Domain.Modules.Items.Entities.ItemNature.Product,
+                }, _userId);
         inv.Confirm(_userId);
         var confirmedLine = inv.Lines.Single();
 

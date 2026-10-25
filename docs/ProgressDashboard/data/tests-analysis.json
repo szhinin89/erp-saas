@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-10-24 20:49:30",
+    "Generated":  "2026-10-25 10:33:03",
     "Backend":  {
                     "TestProjects":  5,
-                    "TestFiles":  841,
+                    "TestFiles":  848,
                     "Projects":  [
                                      {
                                          "Project":  "ERP.API.Tests",
@@ -12,7 +12,7 @@
                                      {
                                          "Project":  "ERP.Application.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests",
-                                         "TestFiles":  335
+                                         "TestFiles":  337
                                      },
                                      {
                                          "Project":  "ERP.Architecture.Tests",
@@ -22,16 +22,16 @@
                                      {
                                          "Project":  "ERP.Domain.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests",
-                                         "TestFiles":  123
+                                         "TestFiles":  124
                                      },
                                      {
                                          "Project":  "ERP.Infrastructure.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests",
-                                         "TestFiles":  248
+                                         "TestFiles":  252
                                      }
                                  ]
                 },
     "Frontend":  {
-                     "TestFiles":  488
+                     "TestFiles":  489
                  }
 }

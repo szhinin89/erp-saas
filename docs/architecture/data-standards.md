@@ -26,7 +26,8 @@ Una sola política de precisión, leída siempre como `EffectivePrecisionPolicyD
   `precisionPolicy.config.ts`; ruta y guard en [frontend.md § Presentación numérica](frontend.md).
 - Asignaciones internas del prorrateo de Compras: `EffectivePrecisionPolicyDto.CostAllocationDecimals`
   publica la escala fija existente `FiscalPrecision.UnitCost` (6), compatible con
-  `freight_allocated`, `other_costs_allocated` y `total_line_cost` (`numeric(18,6)`). No es un
+  `purchase_cost_distribution_allocations.amount` y `total_line_cost` (`numeric(18,6)`); el importe
+  de cada distribución es dinero (`purchase_cost_distributions.amount`, `numeric(18,2)`). No es un
   campo editable de empresa ni reemplaza `UnitCostDecimals` para el costo unitario. Decisión del
   propietario aprobada el 2026-10-25; frontend consume este campo sin otra escala independiente.
 - Prohibido crear otra política, servicio, configuración o regla de precisión (también por módulo,

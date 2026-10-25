@@ -49,8 +49,22 @@ public sealed record PurchaseInvoiceDto(
     DateTime? UpdatedAt,
     // PURCHASE-DRAFT-RECOVERY F3 — decisión de retención recordada por el borrador (null = nunca
     // registrada). Solo restaura la UI; la emisión sigue viajando en el body de Confirm.
-    PurchaseRetentionIntentDraftDto? RetentionIntent = null
+    PurchaseRetentionIntentDraftDto? RetentionIntent = null,
+    // PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — fuente de verdad de flete/otros costos; los importes
+    // por línea y de cabecera son derivados. SourceLineId nulo = costo externo (suma al total).
+    IReadOnlyList<PurchaseCostDistributionDto>? CostDistributions = null
 );
+
+public sealed record PurchaseCostDistributionDto(
+    Guid Id,
+    string CostType,
+    Guid? SourceLineId,
+    decimal Amount,
+    long Revision,
+    IReadOnlyList<PurchaseCostDistributionAllocationDto> Allocations
+);
+
+public sealed record PurchaseCostDistributionAllocationDto(Guid LineId, decimal Amount);
 
 /// <summary>
 /// PURCHASE-DRAFT-RECOVERY F3 — intención de retención de un borrador de compra (entrada en

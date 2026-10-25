@@ -61,7 +61,19 @@ internal static class PurchaseMapper
                     i.RetentionIntentEmissionPointId,
                     i.RetentionIntentIssueDate
                 )
-                : null
+                : null,
+            i.CostDistributions.Select(MapCostDistribution).ToList()
+        );
+
+    private static PurchaseCostDistributionDto MapCostDistribution(PurchaseCostDistribution d) =>
+        new(
+            d.Id,
+            d.CostType.ToString(),
+            d.SourceInvoiceDetailId,
+            d.Amount,
+            d.Revision,
+            d.Allocations.Select(a => new PurchaseCostDistributionAllocationDto(a.TargetInvoiceDetailId, a.Amount))
+                .ToList()
         );
 
     private static PurchaseDraftLineDto? FindXmlSource(

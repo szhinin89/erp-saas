@@ -54,11 +54,16 @@ describe("purchaseXmlBreakdown", () => {
     expect(hasInvalidBreakdown(next)).toBe(false);
   });
 
-  it("keeps the form unchanged when the split does not reconcile or drops allocated freight", () => {
-    const lines = [promo({ freightAllocated: 1 })];
-    expect(replaceBreakdownRows(lines, xml.purchaseReceptionLineId, balanced(), 10, 6)).toBe(lines);
-    const withFreight = balanced().map((l, i) => ({ ...l, freightAllocated: i === 0 ? 0.6 : 0.4 }));
-    expect(replaceBreakdownRows(lines, xml.purchaseReceptionLineId, withFreight, 10, 6)).toHaveLength(2);
+  it("keeps the form unchanged when the split does not reconcile", () => {
+    const lines = [promo()];
+    const unbalanced = balanced().map((l, i) => (i === 0 ? { ...l, xmlAllocation: { ...l.xmlAllocation!, subtotal: 1 } } : l));
+    expect(replaceBreakdownRows(lines, xml.purchaseReceptionLineId, unbalanced, 10, 6)).toBe(lines);
+  });
+
+  it("components are new lines: no saved id or distributed costs are carried over", () => {
+    const components = balanced().map(l => ({ ...l, lineId: "saved-line", freightAllocated: 1 }));
+    const next = replaceBreakdownRows([promo()], xml.purchaseReceptionLineId, components, 10, 6);
+    expect(next.map(l => [l.lineId, l.freightAllocated])).toEqual([[undefined, undefined], [undefined, undefined]]);
   });
 
   it("re-splitting replaces the previous components of the same origin", () => {

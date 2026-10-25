@@ -54,9 +54,19 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     public decimal DiscountPct { get; private set; }
     public decimal DiscountAmount { get; private set; }
 
-    // ── Distributed Costs ──────────────────────────────────────────────
-    public decimal FreightAllocated { get; private set; }
-    public decimal OtherCostsAllocated { get; private set; }
+    // ── Distributed Costs (derivados de PurchaseInvoice.CostDistributions — nunca editables) ──
+    public PurchaseInvoice? Invoice { get; private set; }
+    public decimal FreightAllocated => AllocatedCost(PurchaseCostType.Freight);
+    public decimal OtherCostsAllocated => AllocatedCost(PurchaseCostType.OtherCost);
+    private decimal AllocatedCost(PurchaseCostType costType) => Invoice?.CostDistributions
+        .Where(d => d.CostType == costType).SelectMany(d => d.Allocations)
+        .Where(a => a.TargetInvoiceDetailId == Id).Sum(a => a.Amount) ?? 0;
+
+    /// <summary>Base neta de transporte XML transferida desde esta línea fiscal a los productos.</summary>
+    private decimal DistributedSourceAmount => Invoice?.CostDistributions
+        .Where(d => d.SourceInvoiceDetailId == Id).Sum(d => d.Amount) ?? 0;
+    internal void BindInvoice(PurchaseInvoice invoice) => Invoice = invoice;
+    internal void RecalculateDistributedCosts() { if (!IsFrozen) RecalcCosts(); }
 
     // ── Landed Cost (frozen on Confirm — single source of truth) ───────
     public decimal TotalLineCost { get; private set; }
@@ -194,9 +204,12 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         Guid? packagingLevelId = null,
         int quantityDecimals = FiscalPrecision.Quantity,
         int unitCostDecimals = FiscalPrecision.UnitCost,
-        decimal? exactDiscountAmount = null
+        decimal? exactDiscountAmount = null,
+        Guid? id = null
     )
     {
+        if (id == Guid.Empty)
+            throw new ArgumentException("El identificador de la línea no es válido.", nameof(id));
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException(
                 "La descripción de la línea es obligatoria.",
@@ -236,7 +249,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
 
         var line = new PurchaseInvoiceDetail
         {
-            Id = Guid.NewGuid(),
+            Id = id ?? Guid.NewGuid(),
             TenantId = tenantId,
             InvoiceId = invoiceId,
             ItemId = itemId,
@@ -511,29 +524,6 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         XmlOriginFactor = factor;
     }
 
-    // ── Freight & Other Costs ───────────────────────────────────────────
-    public void SetFreightAllocated(decimal amount)
-    {
-        EnsureNotFrozen();
-        if (amount < 0)
-            throw new ArgumentException("El flete asignado no puede ser negativo.", nameof(amount));
-        FreightAllocated = amount;
-        RecalcCosts();
-    }
-
-    public void SetOtherCostsAllocated(decimal amount)
-    {
-        EnsureNotFrozen();
-        if (amount < 0)
-            throw new ArgumentException(
-                "Los otros costos asignados no pueden ser negativos.",
-                nameof(amount)
-            );
-        OtherCostsAllocated = amount;
-        RecalcCosts();
-    }
-
-    // ── Analytic PVP Snapshot ───────────────────────────────────────────
     public void SetItemPvpSnapshot(decimal pvp)
     {
         EnsureNotFrozen();
@@ -687,7 +677,7 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     private void RecalcCosts()
     {
         TotalLineCost = Math.Round(
-            TaxableBase + FreightAllocated + OtherCostsAllocated,
+            TaxableBase + FreightAllocated + OtherCostsAllocated - DistributedSourceAmount,
             FiscalPrecision.UnitCost,
             MidpointRounding.AwayFromZero
         );

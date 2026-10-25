@@ -86,11 +86,10 @@ export function replaceBreakdownRows(lines: Line[], sourceId: string, components
   if (first < 0) return lines;
   const source = lines[first];
   if (!breakdownBalance(source, components).valid) return lines;
-  const cost = (field: "freightAllocated" | "otherCostsAllocated") =>
-    sum(lines.filter(l => l.purchaseReceptionLineId === sourceId).map(l => l[field] ?? 0))
-      .eq(sum(components.map(l => l[field] ?? 0)));
-  if (!cost("freightAllocated") || !cost("otherCostsAllocated")) return lines;
+  // Los componentes son líneas nuevas: sin Id guardado ni costos distribuidos (una línea con
+  // distribución no se desglosa hasta editarla o retirarla).
   const replacement = components.map((c, i) => ({ ...xmlEvidenceFromDraftLine(source.xmlSource!), ...c, _key: nextKey + i,
+    lineId: undefined, freightAllocated: undefined, otherCostsAllocated: undefined,
     xmlSource: source.xmlSource, quantityInBaseUom: roundToDecimals(c.quantity * (c.conversionFactor ?? 1), quantityDecimals) }));
   return lines.flatMap((l, index) => {
     if (index === first) return replacement;

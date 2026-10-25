@@ -11,6 +11,7 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Enums;
@@ -21,10 +22,9 @@ using PurchaseTaxResolver = ERP.Application.Modules.Purchases.Services.ISriTaxRe
 namespace ERP.Application.Tests.Purchases;
 
 /// <summary>
-/// PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — cuando el cliente envía FreightAllocated/
-/// OtherCostsAllocated explícitos por línea (modal "Distribuir flete/gasto" aplicado ANTES de
-/// guardar), Create/UpdatePurchaseDraftHandler deben usarlos tal cual y NO reprorratear con
-/// DistributeCosts (que ignora la selección manual de líneas incluidas/excluidas).
+/// Create/UpdatePurchaseDraftHandler: normalización de líneas y, desde
+/// PURCHASE-COST-DISTRIBUTION-CANONICAL-01, conservación del Id de línea y de sus distribuciones de
+/// costos al guardar (flete/otros costos ya no viajan por línea).
 /// </summary>
 public sealed class PurchaseDraftExplicitCostAllocationTests
 {
@@ -174,84 +174,6 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             precision ?? PrecisionPolicyTestDouble.Mock()
         );
 
-    [Fact]
-    public async Task CreateDraft_con_FreightAllocated_explicito_por_linea_lo_persiste_tal_cual()
-    {
-        var repo = new Mock<IPurchaseInvoiceRepository>();
-        var handler = BuildCreateHandler(repo);
-
-        var cmd = new CreatePurchaseDraftCommand(
-            SupplierId,
-            "01",
-            "001-001-000000001",
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            [
-                new PurchaseLineInput(null, "Producto A", 1m, 100m, "10", FreightAllocated: 10m),
-                new PurchaseLineInput(null, "Producto B", 1m, 300m, "10", FreightAllocated: 30m),
-            ]
-        );
-
-        var result = await handler.Handle(cmd, CancellationToken.None);
-
-        result.IsSuccess.Should().BeTrue(result.Error);
-        var lines = result.Value!.Lines;
-        lines.Should().HaveCount(2);
-        lines[0].FreightAllocated.Should().Be(10m);
-        lines[1].FreightAllocated.Should().Be(30m);
-        result.Value.TotalFreight.Should().Be(40m);
-    }
-
-    [Fact]
-    public async Task CreateDraft_con_asignacion_explicita_solo_en_una_linea_no_toca_la_otra()
-    {
-        var repo = new Mock<IPurchaseInvoiceRepository>();
-        var handler = BuildCreateHandler(repo);
-
-        var cmd = new CreatePurchaseDraftCommand(
-            SupplierId,
-            "01",
-            "001-001-000000001",
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            [
-                new PurchaseLineInput(null, "Producto A", 1m, 100m, "10", FreightAllocated: 15m),
-                new PurchaseLineInput(null, "Producto B (excluida)", 1m, 100m, "10"),
-            ]
-        );
-
-        var result = await handler.Handle(cmd, CancellationToken.None);
-
-        result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Lines[0].FreightAllocated.Should().Be(15m);
-        result.Value.Lines[1].FreightAllocated.Should().Be(0m);
-    }
-
-    [Fact]
-    public async Task CreateDraft_sin_asignacion_explicita_sigue_usando_DistributeCosts_por_FreightCost()
-    {
-        // Regresión: si ninguna línea trae FreightAllocated explícito, se preserva el comportamiento
-        // histórico (reprorratea cmd.FreightCost proporcionalmente entre TODAS las líneas).
-        var repo = new Mock<IPurchaseInvoiceRepository>();
-        var handler = BuildCreateHandler(repo);
-
-        var cmd = new CreatePurchaseDraftCommand(
-            SupplierId,
-            "01",
-            "001-001-000000001",
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            [
-                new PurchaseLineInput(null, "Producto A", 1m, 100m, "10"),
-                new PurchaseLineInput(null, "Producto B", 1m, 300m, "10"),
-            ],
-            FreightCost: 40m
-        );
-
-        var result = await handler.Handle(cmd, CancellationToken.None);
-
-        result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Lines[0].FreightAllocated.Should().Be(10m);
-        result.Value.Lines[1].FreightAllocated.Should().Be(30m);
-    }
-
     private static UpdatePurchaseDraftHandler BuildUpdateHandler(
         Mock<IPurchaseInvoiceRepository> repo
     ) =>
@@ -295,41 +217,82 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
             1m,
             50m,
             "10",
-            "UNIT"
+            "UNIT",
+            itemId: Guid.NewGuid()
         );
         inv.ReplaceLines([line], UserId);
         return inv;
     }
 
-    [Fact]
-    public async Task UpdateDraft_con_FreightAllocated_explicito_por_linea_lo_persiste_tal_cual()
+    // ── PURCHASE-COST-DISTRIBUTION-CANONICAL-01: el guardado conserva Ids y distribuciones ──
+
+    private static (PurchaseInvoice Invoice, Mock<IPurchaseInvoiceRepository> Repo) ExistingDraftWithFreight()
     {
         var inv = CreateExistingDraft();
+        inv.ReplaceCostDistribution(
+            new PurchaseCostDistributionChange(Guid.NewGuid(), 0, PurchaseCostType.Freight, 10m,
+                [inv.Lines[0].Id], null),
+            new Dictionary<Guid, ERP.Domain.Modules.Items.Entities.ItemNature>
+            {
+                [inv.Lines[0].ItemId!.Value] = ERP.Domain.Modules.Items.Entities.ItemNature.Product,
+            }, UserId);
         var repo = new Mock<IPurchaseInvoiceRepository>();
         repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(inv);
-        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        var handler = BuildUpdateHandler(repo);
+        return (inv, repo);
+    }
 
-        var cmd = new UpdatePurchaseDraftCommand(
-            inv.Id,
-            SupplierId,
-            "01",
-            "001-001-000000001",
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            [
-                new PurchaseLineInput(null, "Producto A", 1m, 100m, "10", OtherCostsAllocated: 8m),
-                new PurchaseLineInput(null, "Producto B", 1m, 400m, "10", OtherCostsAllocated: 32m),
-            ]
-        );
+    private static UpdatePurchaseDraftCommand UpdateWith(PurchaseInvoice inv, params PurchaseLineInput[] lines) =>
+        new(inv.Id, SupplierId, "01", "001-001-000000001", DateOnly.FromDateTime(DateTime.UtcNow), [.. lines]);
 
-        var result = await handler.Handle(cmd, CancellationToken.None);
+    [Fact]
+    public async Task UpdateDraft_conserva_el_Id_de_linea_y_reprorratea_su_distribucion()
+    {
+        var (inv, repo) = ExistingDraftWithFreight();
+        var lineId = inv.Lines[0].Id;
+
+        var result = await BuildUpdateHandler(repo).Handle(UpdateWith(inv,
+            new PurchaseLineInput(null, "Producto editado", 2m, 50m, "10", LineId: lineId),
+            new PurchaseLineInput(null, "Producto nuevo", 1m, 30m, "10")), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Lines[0].OtherCostsAllocated.Should().Be(8m);
-        result.Value.Lines[1].OtherCostsAllocated.Should().Be(32m);
-        result.Value.TotalOtherCosts.Should().Be(40m);
+        result.Value!.Lines[0].Id.Should().Be(lineId);
+        result.Value.Lines[0].FreightAllocated.Should().Be(10m);
+        result.Value.Lines[1].FreightAllocated.Should().Be(0m);
+        result.Value.CostDistributions.Should().ContainSingle()
+            .Which.Allocations.Should().ContainSingle(a => a.LineId == lineId);
+        repo.Verify(r => r.ReattachCostDistributionsAsAdded(inv), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateDraft_bloquea_eliminar_una_linea_con_distribucion()
+    {
+        var (inv, repo) = ExistingDraftWithFreight();
+
+        var result = await BuildUpdateHandler(repo).Handle(UpdateWith(inv,
+            new PurchaseLineInput(null, "Otra línea", 1m, 50m, "10")), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("distribución de costos");
+        repo.Verify(r => r.ReattachCostDistributionsAsAdded(It.IsAny<PurchaseInvoice>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("ajena")]
+    [InlineData("duplicada")]
+    public async Task UpdateDraft_rechaza_LineId_ajeno_o_duplicado(string scenario)
+    {
+        var (inv, repo) = ExistingDraftWithFreight();
+        var lineId = scenario == "ajena" ? Guid.NewGuid() : inv.Lines[0].Id;
+
+        var result = await BuildUpdateHandler(repo).Handle(UpdateWith(inv,
+            new PurchaseLineInput(null, "A", 1m, 50m, "10", LineId: lineId),
+            new PurchaseLineInput(null, "B", 1m, 50m, "10", LineId: scenario == "duplicada" ? lineId : null)),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        repo.Verify(r => r.RemoveLinesByInvoiceAsync(It.IsAny<Guid>(),
+            It.IsAny<IEnumerable<PurchaseInvoiceDetail>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ── ERP-PRECISION-OPERATIONAL-05B1: purchaseUnitPriceDecimals gobierna el precio operativo ──

@@ -1109,6 +1109,13 @@
                                           ]
                          },
                          {
+                             "name":  "Purchase Cost Distribution",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCostDistributionUseCases.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Purchase Cost",
                              "status":  "implemented",
                              "evidence":  [

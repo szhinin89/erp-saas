@@ -41,8 +41,8 @@
     {
       "file": "frontend/src/modules/purchases/utils/purchaseCalc.ts",
       "rule": "F-PREC-policy-read",
-      "count": 4,
-      "reason": "Cálculo: factores de redondeo de total/cronograma de pagos (moneyDecimals) y costo unitario aterrizado/redistribuido (unitCostDecimals) de Compras; no presentación."
+      "count": 2,
+      "reason": "Cálculo: factores de redondeo de total/cronograma de pagos (moneyDecimals) de Compras; no presentación. El prorrateo de costos lo calcula solo el backend."
     },
     {
       "file": "frontend/src/modules/sales/api/printAgentClient.ts",

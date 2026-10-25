@@ -29,7 +29,8 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
             quantity: quantity,
             unitPrice: unitPrice,
             vatCode: vatCode,
-            uomCode: "UNIT"
+            uomCode: "UNIT",
+            itemId: Guid.NewGuid()
         );
 
     [Theory]
@@ -48,7 +49,8 @@ public sealed class PurchaseInvoiceDetailXmlTaxSnapshotTests
         ]);
 
         line.ApplyTaxes("4", 15m, "IVA", "3031", 75m, "ICE", mode, 999m);
-        line.SetFreightAllocated(5m);
+        var invoice = line.InDraft(Guid.NewGuid());
+        invoice.Distribute(PurchaseCostType.Freight, 5m, [line.Id], Guid.NewGuid());
         line.ApplyTaxes("4", 15m, "IVA", "3031", 75m, "ICE", mode, 999m);
 
         var ice = line.Taxes.Single(t => t.TaxCode == "3");

@@ -1,23 +1,23 @@
 ﻿{
-    "Generated":  "2026-10-24 20:49:34",
+    "Generated":  "2026-10-25 10:33:06",
     "Summary":  {
                     "TotalFiles":  3
                 },
     "Migrations":  [
                        {
                            "Name":  "20261021162651_InitialProductionBaseline",
-                           "SizeKB":  692.26,
-                           "Modified":  "2026-10-23 06:46:55"
+                           "SizeKB":  697.54,
+                           "Modified":  "2026-10-25 08:27:19"
                        },
                        {
                            "Name":  "20261021162651_InitialProductionBaseline.Designer",
-                           "SizeKB":  933.82,
-                           "Modified":  "2026-10-23 06:46:55"
+                           "SizeKB":  939.02,
+                           "Modified":  "2026-10-25 08:27:32"
                        },
                        {
                            "Name":  "ErpDbContextModelSnapshot",
-                           "SizeKB":  933.69,
-                           "Modified":  "2026-10-23 06:44:20"
+                           "SizeKB":  938.9,
+                           "Modified":  "2026-10-25 08:26:44"
                        }
                    ]
 }

@@ -11,7 +11,7 @@ namespace ERP.Application.Tests.Purchases;
 
 /// <summary>
 /// Hallazgo ALTO auditoría de aislamiento (Sales/Purchases cross-branch): ApplyGlobalDiscountCommand,
-/// AllocateFreightCommand, RecalculatePurchaseCommand, LoadPvpSnapshotsCommand y UpdateLinePvpCommand
+/// RecalculatePurchaseCommand, LoadPvpSnapshotsCommand y UpdateLinePvpCommand
 /// están marcados IBranchScopedRequest, pero ese marker solo exige sucursal activa autorizada — no
 /// que la compra cargada pertenezca a esa sucursal. Cada handler debe rechazar con NotFound (nunca
 /// revelar existencia cross-branch) cuando la compra pertenece a otra sucursal, y seguir funcionando
@@ -106,51 +106,6 @@ public sealed class PurchaseCostAndMarginBranchScopeTests
 
         var result = await handler.Handle(
             new ApplyGlobalDiscountCommand(inv.Id, 10m),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeTrue(result.Error);
-    }
-
-    // ── AllocateFreightHandler ───────────────────────────────────────────
-
-    [Fact]
-    public async Task AllocateFreight_compra_de_otra_sucursal_retorna_NotFound()
-    {
-        var inv = CreateDraftWithOneLine(BranchId);
-        var repo = BuildRepo(inv);
-        var handler = new AllocateFreightHandler(
-            repo.Object,
-            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-            Mock.Of<ICurrentBranch>(b => b.BranchId == Guid.NewGuid()),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            PrecisionPolicyTestDouble.Mock()
-        );
-
-        var result = await handler.Handle(
-            new AllocateFreightCommand(inv.Id),
-            CancellationToken.None
-        );
-
-        result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
-    }
-
-    [Fact]
-    public async Task AllocateFreight_compra_de_la_misma_sucursal_funciona()
-    {
-        var inv = CreateDraftWithOneLine(BranchId);
-        var repo = BuildRepo(inv);
-        var handler = new AllocateFreightHandler(
-            repo.Object,
-            Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
-            Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
-            Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-            PrecisionPolicyTestDouble.Mock()
-        );
-
-        var result = await handler.Handle(
-            new AllocateFreightCommand(inv.Id),
             CancellationToken.None
         );
 

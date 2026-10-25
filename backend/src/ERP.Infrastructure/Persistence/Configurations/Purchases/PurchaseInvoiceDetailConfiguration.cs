@@ -96,17 +96,9 @@ public sealed class PurchaseInvoiceDetailConfiguration
             .HasColumnType("numeric(18,6)")
             .IsRequired();
 
-        // ── Distributed Costs ──────────────────────────────────────────
-        builder
-            .Property(x => x.FreightAllocated)
-            .HasColumnName("freight_allocated")
-            .HasColumnType("numeric(18,6)")
-            .IsRequired();
-        builder
-            .Property(x => x.OtherCostsAllocated)
-            .HasColumnName("other_costs_allocated")
-            .HasColumnType("numeric(18,6)")
-            .IsRequired();
+        // ── Distributed Costs (derivados de purchase_cost_distributions) ──
+        builder.Ignore(x => x.FreightAllocated);
+        builder.Ignore(x => x.OtherCostsAllocated);
 
         // ── Landed Cost (frozen on Confirm) ────────────────────────────
         builder

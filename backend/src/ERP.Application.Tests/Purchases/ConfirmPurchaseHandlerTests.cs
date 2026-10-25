@@ -96,13 +96,13 @@ public sealed class ConfirmPurchaseHandlerTests
     public async Task Confirm_preserves_reviewed_freight_and_other_cost_allocations()
     {
         var inv = CreateDraftInvoice(2);
-        inv.DistributeAdditionalCost(
+        inv.Distribute(
             ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
-            13.123456m,
+            13.12m,
             new[] { inv.Lines[0].Id },
             UserId
         );
-        inv.DistributeAdditionalCost(
+        inv.Distribute(
             ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
             4m,
             new[] { inv.Lines[1].Id },
@@ -769,7 +769,7 @@ public sealed class ConfirmPurchaseHandlerTests
 
     private static decimal ExpectedGrandTotal(PurchaseInvoice inv)
     {
-        // After ApplyTaxes(15%) + DistributeCosts(0,0) + Confirm (freeze)
+        // After ApplyTaxes(15%) + Confirm (freeze)
         // Each line: qty=5, price=10 → subtotal=50, disc=0 → taxable=50
         // VAT 15% on 50 = 7.50 → total per line = 57.50
         return inv.Lines.Sum(l =>

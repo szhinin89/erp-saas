@@ -41,7 +41,6 @@ interface Props {
 }
 const schema = z.object({ components: z.array(purchaseLineSchema).min(2) });
 const HISTORY_PAGE_SIZE = 25;
-type CostField = "freightAllocated" | "otherCostsAllocated";
 
 /** One editor for the origin group. Applying only updates the existing purchase form. */
 export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehouseId, onCancel, onApply }: Readonly<Props>) {
@@ -66,11 +65,6 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
   const [openTaxes, setOpenTaxes] = useState<number | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const balance = breakdownBalance(source, components);
-  const totalCost = (rows: Line[], field: CostField) =>
-    roundToDecimals(rows.reduce((s, l) => s + (l[field] ?? 0), 0), policy.unitCostDecimals);
-  const costsMatch = (["freightAllocated", "otherCostsAllocated"] as const).every(field => totalCost(group, field) === totalCost(components, field));
-  const groupFreight = totalCost(group, "freightAllocated");
-  const groupOther = totalCost(group, "otherCostsAllocated");
 
   // ── Labels: tax names from the existing i18n keys; VAT shows its rate, never the SRI code ──
   const taxName = (code: string) => ({
@@ -96,8 +90,8 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
   // ── Footer status (presentation only; validity still comes from breakdownBalance) ──
   const totalRow = balance.rows.find(r => r.concept === "total");
   const pending = totalRow?.difference ?? 0;
-  const differences = balance.rows.filter(r => r.difference !== 0).length + (costsMatch ? 0 : 1);
-  const ready = balance.valid && costsMatch;
+  const differences = balance.rows.filter(r => r.difference !== 0).length;
+  const ready = balance.valid;
   // The count lives only in «Conciliación (n)»; the reason names the corrective step once.
   const blockedReason = [
     components.length < 2 && t("purchases.breakdown.minTwo", "Agregue al menos dos productos."),
@@ -291,10 +285,6 @@ export function PurchaseLineBreakdownModal({ source, lines, supplierId, warehous
                 <ZHField key={`${tx.purchaseReceptionLineTaxId}:tax`} density="compact" label={amount}>{decimal(amount, product, tx.taxAmount, taxAmount => taxPatch({ taxAmount }), "money", index, `xmlAllocation.taxes.${taxIndex}.taxAmount`)}</ZHField>,
               ];
             })}
-            {(groupFreight > 0 || (line.freightAllocated ?? 0) > 0) && <ZHField density="compact" label={t("purchases.breakdown.freight", "Flete asignado")}>
-              {decimal(t("purchases.breakdown.freight", "Flete asignado"), product, line.freightAllocated ?? 0, freightAllocated => patch(index, { freightAllocated }), "unitCost", index, "freightAllocated")}</ZHField>}
-            {(groupOther > 0 || (line.otherCostsAllocated ?? 0) > 0) && <ZHField density="compact" label={t("purchases.breakdown.other", "Otros costos asignados")}>
-              {decimal(t("purchases.breakdown.other", "Otros costos asignados"), product, line.otherCostsAllocated ?? 0, otherCostsAllocated => patch(index, { otherCostsAllocated }), "unitCost", index, "otherCostsAllocated")}</ZHField>}
           </div>}
         </div>;
       })}

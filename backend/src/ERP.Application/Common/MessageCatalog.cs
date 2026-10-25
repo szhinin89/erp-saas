@@ -28,6 +28,12 @@ public static class MessageCatalog
             "Purchase cancellation blocked by a subsequent effective inventory exit; a reversal does not restore eligibility.",
             ApiErrorCategory.BusinessRule
         ),
+        [ApiResponseCodes.Purchases.CostDistributionStale] = new(
+            ApiSeverity.Error,
+            "La distribución de costos cambió. Recargue la compra antes de modificarla.",
+            "Stale purchase cost distribution revision.",
+            ApiErrorCategory.Duplicate
+        ),
         [ApiResponseCodes.Common.Ok] = new(
             ApiSeverity.Success,
             "Operación realizada correctamente.",

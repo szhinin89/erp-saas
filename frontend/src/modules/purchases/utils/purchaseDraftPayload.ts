@@ -68,8 +68,7 @@ export function buildPurchaseDraftPayload(
       xmlOriginPackagingLevelId: hasSupplierDocumentOrigin(l)
         ? (l.xmlOriginPackagingLevelId ?? undefined)
         : undefined,
-      freightAllocated: l.freightAllocated ?? undefined,
-      otherCostsAllocated: l.otherCostsAllocated ?? undefined,
+      lineId: l.lineId,
       };
     }),
     accessKey: normalizeOptionalCode(data.accessKey),
@@ -79,8 +78,6 @@ export function buildPurchaseDraftPayload(
     taxSupportCode: normalizeOptionalCode(data.taxSupportCode),
     sriPaymentMethodCode: normalizeOptionalCode(data.sriPaymentMethodCode),
     globalWarehouseId: data.globalWarehouseId || null,
-    freightCost: data.freightCost,
-    otherCosts: data.otherCosts,
     dueDate: data.dueDate || null,
     notes: data.notes || null,
     paymentTermId: data.paymentTermId || null,
@@ -118,8 +115,6 @@ export function buildPurchaseDraftSnapshot(data: PurchaseInvoiceFormValues): str
   const payload = buildPurchaseDraftPayload(data);
   return JSON.stringify({
     ...payload,
-    freightCost: toNumber(payload.freightCost),
-    otherCosts: toNumber(payload.otherCosts),
     lines: payload.lines.map((l) => ({
       ...l,
       itemId: l.itemId ?? null,
@@ -128,8 +123,6 @@ export function buildPurchaseDraftSnapshot(data: PurchaseInvoiceFormValues): str
       quantity: toNumber(l.quantity),
       unitPrice: toNumber(l.unitPrice),
       discountPct: toNumber(l.discountPct),
-      freightAllocated: toNumber(l.freightAllocated),
-      otherCostsAllocated: toNumber(l.otherCostsAllocated),
     })),
   });
 }

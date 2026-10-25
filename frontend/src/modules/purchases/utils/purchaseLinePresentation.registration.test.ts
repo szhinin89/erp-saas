@@ -115,8 +115,6 @@ function payloadLine(line: PurchaseLineFormValues) {
       invoiceNumber: "001-001-000000001",
       issueDate: "2026-10-12",
       lines: [line],
-      freightCost: 0,
-      otherCosts: 0,
     } as unknown as Parameters<typeof buildPurchaseDraftPayload>[0],
     undefined,
     { purchaseUnitPriceDecimals: PURCHASE_PRICE_DECIMALS },

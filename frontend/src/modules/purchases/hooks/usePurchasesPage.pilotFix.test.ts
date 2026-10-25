@@ -27,9 +27,9 @@ vi.mock("../api/purchaseService", () => ({
     create: vi.fn(),
     update: vi.fn(),
     applyDiscount: vi.fn(),
-    allocateFreight: vi.fn(),
     recalculate: vi.fn(),
-    distributeCost: vi.fn(),
+    replaceCostDistribution: vi.fn(),
+    removeCostDistribution: vi.fn(),
     confirm: vi.fn(),
     cancel: vi.fn(),
     retentionPreview: vi.fn(),
@@ -408,14 +408,17 @@ describe("PURCHASES-HARDENING-P0 — reabrir borrador con prorrateo", () => {
     otherCostsAllocated: 1.5,
     taxes: [],
   };
+  const external = (id: string, costType: "Freight" | "OtherCost", amount: number) =>
+    ({ id, costType, sourceLineId: null, amount, revision: 1, allocations: [{ lineId: "line-1", amount }] });
   const withAllocation = {
     totalFreight: 5,
     totalOtherCosts: 1.5,
     grandTotal: 29.5,
     lines: [allocatedLine] as unknown as PurchaseInvoiceDto["lines"],
+    costDistributions: [external("d-1", "Freight", 5), external("d-2", "OtherCost", 1.5)],
   };
 
-  it("B1: restaura freightAllocated/otherCostsAllocated y los reenvía al guardar (sin reprorrateo)", async () => {
+  it("B1: conserva el Id de la línea al guardar; los costos distribuidos no viajan en el payload", async () => {
     vi.mocked(purchaseService.update).mockResolvedValue(buildInvoice(withAllocation));
     const result = await setupLoaded(withAllocation);
     await waitFor(() => expect(result.current.canUseSriDocTypes).toBe(true));
@@ -430,8 +433,20 @@ describe("PURCHASES-HARDENING-P0 — reabrir borrador con prorrateo", () => {
 
     expect(purchaseService.update).toHaveBeenCalledTimes(1);
     const payload = vi.mocked(purchaseService.update).mock.calls[0][1];
-    expect(payload.lines[0].freightAllocated).toBe(5);
-    expect(payload.lines[0].otherCostsAllocated).toBe(1.5);
+    expect(payload.lines[0].lineId).toBe("line-1");
+    expect(payload.lines[0]).not.toHaveProperty("freightAllocated");
+    expect(payload.lines[0]).not.toHaveProperty("otherCostsAllocated");
+    expect(payload).not.toHaveProperty("freightCost");
+    expect(result.current.costDistributionLineIds.has("line-1")).toBe(true);
+  });
+
+  it("duplicar una línea no copia su Id ni sus costos distribuidos", async () => {
+    const result = await setupLoaded(withAllocation);
+    act(() => result.current.duplicateLine(result.current.lines[0]._key));
+    const copy = result.current.lines[1];
+    expect(copy.lineId).toBeUndefined();
+    expect(copy.freightAllocated).toBeUndefined();
+    expect(copy.otherCostsAllocated).toBeUndefined();
   });
 
   it("B2: con cambios sin guardar, Distribuir flete/gasto se bloquea y no llama al backend", async () => {
@@ -448,10 +463,11 @@ describe("PURCHASES-HARDENING-P0 — reabrir borrador con prorrateo", () => {
     );
     let applied = true;
     await act(async () => {
-      applied = await result.current.handleDistributeCost("Freight", 10, ["line-1"]);
+      applied = await result.current.saveCostDistribution({ id: "d-new", costType: "Freight", expectedRevision: 0,
+        amount: 10, targetLineIds: ["line-1"], sourceLineId: null });
     });
     expect(applied).toBe(false);
-    expect(purchaseService.distributeCost).not.toHaveBeenCalled();
+    expect(purchaseService.replaceCostDistribution).not.toHaveBeenCalled();
     expect(result.current.lines[0].unitPrice).toBe(2.5);
   });
 
@@ -469,9 +485,20 @@ describe("PURCHASES-HARDENING-P0 — reabrir borrador con prorrateo", () => {
 
     expect(result.current.summaryTotals.subtotal).toBe(25);
     expect(result.current.summaryTotals.vat).toBeCloseTo(3.75, 6);
-    expect(result.current.summaryTotals.freight).toBe(5);
-    expect(result.current.summaryTotals.total).toBeCloseTo(25 + 3.75 + 5 + 1.5, 6);
-    expect(result.current.localTotal).toBeCloseTo(25 + 3.75 + 5 + 1.5, 6);
+    expect(result.current.summaryTotals.externalCosts).toBe(6.5);
+    expect(result.current.summaryTotals.total).toBeCloseTo(25 + 3.75 + 6.5, 6);
+    expect(result.current.localTotal).toBeCloseTo(25 + 3.75 + 6.5, 6);
+  });
+
+  it("el transporte del XML redistribuido se informa pero no se suma otra vez al total local", async () => {
+    const result = await setupLoaded({ ...withAllocation, totalFreight: 5, totalOtherCosts: 0, grandTotal: 23,
+      costDistributions: [{ ...external("d-xml", "Freight", 5), sourceLineId: "line-xml" }] });
+    act(() => result.current.updateLine(result.current.lines[0]._key, "unitPrice", 2.5));
+    await waitFor(() => expect(result.current.hasUnsavedChanges).toBe(true));
+
+    expect(result.current.summaryTotals.xmlTransportCosts).toBe(5);
+    expect(result.current.summaryTotals.externalCosts).toBe(0);
+    expect(result.current.localTotal).toBeCloseTo(25 + 3.75, 6);
   });
 });
 
@@ -567,18 +594,36 @@ describe("P1 - one rejection channel and truthful success messages", () => {
     expect(message.error).not.toHaveBeenCalled();
     expect(purchaseService.update).not.toHaveBeenCalled();
   });
-  it("labels a local distribution as unsaved and does not call the persistence endpoint", async () => {
+  const draft = { id: "d-1", costType: "Freight" as const, expectedRevision: 0, amount: 1, targetLineIds: ["line-1"], sourceLineId: null };
+  it("replaces through the canonical operation with a stable id and reloads the saved draft", async () => {
+    vi.mocked(purchaseService.replaceCostDistribution).mockResolvedValue(buildInvoice());
     const result = await setupLoaded();
-    await waitFor(() => expect(result.current.lines[0]?.context).toBeTruthy());
-    act(() => { result.current.handleDistributeCostToForm("Freight", 1, [String(result.current.lines[0]._key)]); });
-    expect(message.success).toHaveBeenCalledWith("Distribución aplicada al formulario. Guarde el borrador para conservarla.");
-    expect(purchaseService.distributeCost).not.toHaveBeenCalled();
-    expect(purchaseService.update).not.toHaveBeenCalled();
+    vi.mocked(purchaseService.getById).mockClear();
+    let applied = false;
+    await act(async () => { applied = await result.current.saveCostDistribution(draft); });
+    expect(applied).toBe(true);
+    expect(purchaseService.replaceCostDistribution).toHaveBeenCalledWith("purchase-1", "d-1",
+      { costType: "Freight", expectedRevision: 0, amount: 1, targetLineIds: ["line-1"], sourceLineId: null });
+    expect(purchaseService.getById).toHaveBeenCalledWith("purchase-1");
+  });
+  it("a stale revision reloads the purchase and keeps the reason in the modal", async () => {
+    vi.mocked(purchaseService.removeCostDistribution).mockRejectedValue(apiError({
+      code: "PURCHASE_COST_DISTRIBUTION_STALE",
+      message: { user: "La distribución de costos cambió. Recargue la compra antes de modificarla." },
+    }, 409));
+    const result = await setupLoaded();
+    vi.mocked(purchaseService.getById).mockClear();
+    await act(async () => {
+      await result.current.removeCostDistribution({ id: "d-1", costType: "Freight", sourceLineId: null, amount: 1, revision: 1, allocations: [] });
+    });
+    expect(purchaseService.removeCostDistribution).toHaveBeenCalledWith("purchase-1", "d-1", 1);
+    expect(result.current.distributionError).toContain("cambió");
+    expect(purchaseService.getById).toHaveBeenCalledWith("purchase-1");
   });
   it("keeps a distribution rejection in its modal state instead of the form or toast", async () => {
-    vi.mocked(purchaseService.distributeCost).mockRejectedValue(validationError("Distribution rejected"));
+    vi.mocked(purchaseService.replaceCostDistribution).mockRejectedValue(validationError("Distribution rejected"));
     const result = await setupLoaded();
-    await act(async () => { await result.current.handleDistributeCost("Freight", 1, ["line-1"]); });
+    await act(async () => { await result.current.saveCostDistribution(draft); });
     expect(result.current.distributionError).toContain("Distribution rejected");
     expect(result.current.saveError).toBe("");
     expect(message.error).not.toHaveBeenCalled();

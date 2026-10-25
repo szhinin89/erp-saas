@@ -117,6 +117,12 @@ public interface IPurchaseInvoiceRepository
     );
 
     Task AddAsync(PurchaseInvoice invoice, CancellationToken ct = default);
+
+    /// <summary>
+    /// Reemplazo del borrador: borra detalles y distribuciones persistidas (las distribuciones
+    /// referencian detalles con FK restrictiva) y registra las líneas nuevas, que conservan su Id.
+    /// Tras <c>ReplaceLines</c> debe llamarse <see cref="ReattachCostDistributionsAsAdded"/>.
+    /// </summary>
     Task RemoveLinesByInvoiceAsync(
         Guid invoiceId,
         IEnumerable<PurchaseInvoiceDetail> newLines,
@@ -124,6 +130,7 @@ public interface IPurchaseInvoiceRepository
     );
     Task ClearScheduleTrackingAsync(Guid invoiceId, CancellationToken ct = default);
     void ReattachSchedulesAsAdded(PurchaseInvoice invoice);
+    void ReattachCostDistributionsAsAdded(PurchaseInvoice invoice);
     void TrackCommunication(PurchaseCommunication communication);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

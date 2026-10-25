@@ -1,6 +1,3 @@
-import { buildCostDistributionInputFromFormLines, simulateCostDistribution } from "./purchaseCalc";
-import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.config";
-import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   lineGross,
@@ -55,20 +52,8 @@ describe("compra contado — IVA 15%, sin descuento", () => {
   });
 
   it("total incluye IVA", () => {
-    const s = calcSummary(lines, 0, 0);
+    const s = calcSummary(lines);
     expect(s.total).toBe(1437.5);
-  });
-});
-
-// ────────────────────────────────────────────────────────
-// 2. Compra crédito — con flete y otros costos
-// ────────────────────────────────────────────────────────
-describe("compra crédito — flete + otros costos", () => {
-  const lines = [mkLine(10, 100, "10", 0, { vatPercent: 15, icePercent: 0 })];
-
-  it("total incluye flete y otros", () => {
-    const s = calcSummary(lines, 25, 10);
-    expect(s.total).toBe(1000 + 150 + 25 + 10);
   });
 });
 
@@ -138,40 +123,12 @@ describe("descuento por línea", () => {
       mkLine(10, 100, "10", 10, { vatPercent: 15, icePercent: 0 }),
       mkLine(5, 50, "10", 0, { vatPercent: 15, icePercent: 0 }),
     ];
-    const s = calcSummary(lines, 0, 0);
+    const s = calcSummary(lines);
     expect(s.subtotal).toBe(1250);
     expect(s.discount).toBe(100);
     expect(s.netSubtotal).toBe(1150);
     expect(s.vat).toBe(172.5);
     expect(s.total).toBe(1322.5);
-  });
-});
-
-// ────────────────────────────────────────────────────────
-// 6. Compra con flete
-// ────────────────────────────────────────────────────────
-describe("flete", () => {
-  it("flete se suma al total", () => {
-    const s = calcSummary(
-      [mkLine(1, 100, "0", 0, { vatPercent: 0, icePercent: 0 })],
-      50,
-      0,
-    );
-    expect(s.total).toBe(150);
-  });
-});
-
-// ────────────────────────────────────────────────────────
-// 7. Compra con otros costos
-// ────────────────────────────────────────────────────────
-describe("otros costos", () => {
-  it("otros costos se suman al total", () => {
-    const s = calcSummary(
-      [mkLine(1, 100, "0", 0, { vatPercent: 0, icePercent: 0 })],
-      0,
-      30,
-    );
-    expect(s.total).toBe(130);
   });
 });
 
@@ -187,24 +144,24 @@ describe("múltiples líneas mixtas", () => {
   ];
 
   it("subtotal bruto", () => {
-    const s = calcSummary(lines, 0, 0);
+    const s = calcSummary(lines);
     expect(s.subtotal).toBe(10 * 100 + 3 * 200 + 20 * 10 + 1 * 500);
   });
 
   it("descuento total", () => {
-    const s = calcSummary(lines, 0, 0);
+    const s = calcSummary(lines);
     expect(s.discount).toBe(1000 * 0.05 + 500 * 0.1);
   });
 
   it("IVA solo sobre líneas con IVA (neto)", () => {
-    const s = calcSummary(lines, 0, 0);
+    const s = calcSummary(lines);
     // SriTaxCalculator.Compute (backend): el IVA se calcula sobre base + ICE → (450 + 9) × 15%.
     const expectedVat = 950 * 0.15 + 600 * 0.15 + 0 + (450 + 9) * 0.15;
     expect(s.vat).toBeCloseTo(expectedVat, 10);
   });
 
   it("ICE solo sobre línea con ICE", () => {
-    const s = calcSummary(lines, 0, 0);
+    const s = calcSummary(lines);
     expect(s.ice).toBe(450 * 0.02);
   });
 });
@@ -405,28 +362,6 @@ describe("payload de confirmación", () => {
 });
 
 
-describe("unit costs retain operational precision", () => {
-  it.each([[2, 0.33, 0.67], [6, 0.333333, 0.666667], [10, 0.3333333333, 0.6666666667]])(
-    "uses unitCostDecimals=%s independently of purchase and fiscal scales",
-    (decimals, expectedCost, expectedNewCost) => {
-      setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, unitCostDecimals: decimals });
-      try {
-        const lines = buildCostDistributionInputFromFormLines([
-          { ...mkLine(1, 1, "10", 0), _key: 1, quantityInBaseUom: 3 },
-        ]);
-        expect(lines[0].landedUnitCost).toBe(expectedCost);
-        expect(lines[0].totalLineCost).toBe(1);
-        const result = simulateCostDistribution(lines, new Set(["1"]), 1);
-        expect(result[0].newUnitCost).toBe(expectedNewCost);
-        expect(result[0].allocatedAmount).toBe(1);
-        expect(result[0].newLineTotal).toBe(2);
-      } finally {
-        setPrecisionPolicyForTests(TEST_PRECISION_POLICY);
-      }
-    },
-  );
-});
-
 // ────────────────────────────────────────────────────────
 // PURCHASES-HARDENING-P0 (B4-B6) — precedencia documental XML
 // ────────────────────────────────────────────────────────
@@ -475,7 +410,7 @@ describe("resolveLineTaxes — IVA/ICE/IRBPNR documental vs recalculado (espejo 
   });
 
   it("calcSummary incluye IRBPNR en el total (igual que GrandTotal backend)", () => {
-    const s = calcSummary([xmlLine], 0, 0);
+    const s = calcSummary([xmlLine]);
     expect(s.vat).toBe(0.49);
     expect(s.irbpnr).toBe(0.06);
     expect(s.total).toBeCloseTo(3.33 + 0.49 + 1.2 + 0.06, 6);

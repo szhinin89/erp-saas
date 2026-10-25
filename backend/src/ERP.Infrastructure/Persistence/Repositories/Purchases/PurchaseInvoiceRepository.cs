@@ -20,17 +20,22 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     private IQueryable<PurchaseInvoice> Scoped(Guid tenantId) =>
         _db.PurchaseInvoices.ForOperationalScope(tenantId, _company);
 
-    public Task<PurchaseInvoice?> GetByIdAsync(
+    public async Task<PurchaseInvoice?> GetByIdAsync(
         Guid tenantId,
         Guid id,
         CancellationToken ct = default
-    ) =>
-        Scoped(tenantId)
+    )
+    {
+        var invoice = await Scoped(tenantId)
             .Include(x => x.Lines.OrderBy(l => l.SortOrder))
                 .ThenInclude(l => l.Taxes)
             .Include(x => x.PaymentSchedules.OrderBy(s => s.InstallmentNumber))
             .Include(x => x.TaxSummaries)
+            .Include(x => x.CostDistributions).ThenInclude(d => d.Allocations)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
+        invoice?.BindCostDistributions();
+        return invoice;
+    }
 
     // RECEPTION-REPROCESS-AFTER-CANCEL-STANDARD-01 — mismo criterio ya cerrado para
     // PurchaseCreditNote: una compra Cancelled es historial, no activa — nunca cuenta como
@@ -179,6 +184,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         // listado (un borrador calcula su total desde las líneas; ICE vive en Taxes).
         var items = await q.Include(x => x.Lines)
             .ThenInclude(l => l.Taxes)
+            .Include(x => x.CostDistributions).ThenInclude(d => d.Allocations)
             .AsSplitQuery()
             .OrderByDescending(x => x.IssueDate)
             .ThenByDescending(x => x.CreatedAt)
@@ -211,6 +217,7 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
         return await q.OrderBy(x => x.IssueDate)
             .ThenBy(x => x.CreatedAt)
             .Include(x => x.Lines)
+            .Include(x => x.CostDistributions).ThenInclude(d => d.Allocations)
             .AsNoTracking()
             .ToListAsync(ct);
     }
@@ -252,10 +259,18 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
     )
     {
         await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM purchase_cost_distributions WHERE purchase_invoice_id = {invoiceId}",
+            ct
+        );
+        await _db.Database.ExecuteSqlInterpolatedAsync(
             $"DELETE FROM purchase_invoice_details WHERE purchase_invoice_id = {invoiceId}",
             ct
         );
 
+        foreach (var entry in _db.ChangeTracker.Entries<PurchaseCostDistributionAllocation>().ToList())
+            entry.State = EntityState.Detached;
+        foreach (var entry in _db.ChangeTracker.Entries<PurchaseCostDistribution>().ToList())
+            entry.State = EntityState.Detached;
         foreach (var entry in _db.ChangeTracker.Entries<PurchaseInvoiceDetail>().ToList())
             entry.State = EntityState.Detached;
 
@@ -281,6 +296,12 @@ public sealed class PurchaseInvoiceRepository : IPurchaseInvoiceRepository
 
         foreach (var schedule in invoice.PaymentSchedules)
             _db.Set<PurchasePaymentSchedule>().Add(schedule);
+    }
+
+    public void ReattachCostDistributionsAsAdded(PurchaseInvoice invoice)
+    {
+        foreach (var distribution in invoice.CostDistributions)
+            _db.Set<PurchaseCostDistribution>().Add(distribution);
     }
 
     public void TrackCommunication(PurchaseCommunication communication) =>

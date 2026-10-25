@@ -1,5 +1,6 @@
 using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 using ERP.Application.Modules.Purchases.Services;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -191,9 +192,11 @@ public sealed class PurchaseXmlConfirmationGuardTests
                 user
             );
         // Additional allocated costs do not alter the original supplier XML amounts.
-        invoice.DistributeCosts(12.50m, 3m, user);
+        var allLines = invoice.Lines.Select(l => l.Id).ToArray();
+        invoice.Distribute(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight, 12.50m, allLines, user);
+        invoice.Distribute(ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost, 3m, allLines, user);
         if (freightLineRemoved)
-            invoice.DistributeAdditionalCost(
+            invoice.Distribute(
                 ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
                 10m,
                 [invoice.Lines[0].Id],

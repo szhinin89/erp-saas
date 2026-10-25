@@ -154,13 +154,14 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
         builder.Ignore(x => x.TotalTax);
         builder.Ignore(x => x.TotalFreight);
         builder.Ignore(x => x.TotalOtherCosts);
+        builder.Ignore(x => x.ExternalDistributedCost);
         builder.Ignore(x => x.TotalCostValue);
         builder.Ignore(x => x.GrandTotal);
         builder.Ignore(x => x.CreditTermDays);
 
         builder
             .HasMany(x => x.Lines)
-            .WithOne()
+            .WithOne(l => l.Invoice)
             .HasForeignKey(x => x.InvoiceId)
             .OnDelete(DeleteBehavior.Cascade);
 

@@ -25,7 +25,7 @@ public sealed class PurchaseXmlAllocationTests
         line.ApplyXmlAllocation(31.74m, 2m, [Tax(line, "2", 5.31m), Tax(line, "3", 4.97m), Tax(line, "5", .80m)]);
         line.ApplyTaxes("0", 0, "Changed", null, 0, null);
         line.ApplyDiscount(0);
-        line.SetFreightAllocated(1);
+        line.InDraft(Guid.NewGuid()).Distribute(PurchaseCostType.Freight, 1, [line.Id], Guid.NewGuid());
         line.LineSubtotal.Should().Be(31.74m);
         line.TaxableBase.Should().Be(29.74m);
         line.TaxInclusiveTotal.Should().Be(40.82m);

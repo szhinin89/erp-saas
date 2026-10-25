@@ -1,21 +1,21 @@
 ﻿{
-    "generated":  "2026-10-24 20:50:33",
+    "generated":  "2026-10-25 10:35:44",
     "source":  "architecture-progress.json, dashboard-model-v12.json, model-health.json, modules.json, features.json, processes.json, tasks.json",
     "erpCompletion":  84,
-    "engineeringHealth":  59.54,
+    "engineeringHealth":  58.92,
     "architectureHealth":  100,
     "productionReadiness":  "NOT READY",
     "overallStatus":  "NOT READY",
     "criticalGaps":  [
-                         "Security Score bajo: 20% (Secrets detectados: 180, endpoints anonimos: 12)",
-                         "Quality Score bajo: 7.95%",
+                         "Security Score bajo: 16.8% (Secrets detectados: 196, endpoints anonimos: 12)",
+                         "Quality Score bajo: 8.05%",
                          "Technical Debt alta: 38 critical findings (TODO: 732, FIXME: 30)",
                          "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                          "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
                          "Etapa incompleta: Operaciones al 83% (81 / 98 tareas)"
                      ],
     "recommendedOrder":  [
-                             "1. Resolver problemas de seguridad (Security Score 20%, 180 secretos, 12 endpoints anonimos)",
+                             "1. Resolver problemas de seguridad (Security Score 16.8%, 196 secretos, 12 endpoints anonimos)",
                              "2. Reducir deuda tecnica (38 critical findings, 732 TODO, 30 FIXME)",
                              "3. Completar fases parcialmente implementadas: 45 items abiertos, priorizar Futuro (70%), Fiscal / SRI (75%), Operaciones (83%)",
                              "4. Completar fases sin iniciar (10 items en: Fiscal / SRI, Futuro)",

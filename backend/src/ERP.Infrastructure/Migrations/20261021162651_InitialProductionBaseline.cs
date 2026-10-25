@@ -4758,6 +4758,7 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_purchase_invoices", x => x.id);
+                    table.UniqueConstraint("AK_purchase_invoices_tenant_id_id", x => new { x.tenant_id, x.id });
                     table.ForeignKey(
                         name: "FK_purchase_invoices_branches_branch_id",
                         column: x => x.branch_id,
@@ -4974,8 +4975,6 @@ namespace ERP.Infrastructure.Migrations
                     unit_price = table.Column<decimal>(type: "numeric(22,10)", nullable: false),
                     discount_pct = table.Column<decimal>(type: "numeric(9,6)", nullable: false),
                     discount_amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    freight_allocated = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
-                    other_costs_allocated = table.Column<decimal>(type: "numeric(18,6)", nullable: false),
                     total_line_cost = table.Column<decimal>(type: "numeric(18,6)", nullable: false, defaultValue: 0m),
                     landed_unit_cost = table.Column<decimal>(type: "numeric(22,10)", nullable: false, defaultValue: 0m),
                     is_frozen = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
@@ -4995,6 +4994,7 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_purchase_invoice_details", x => x.id);
+                    table.UniqueConstraint("AK_purchase_invoice_details_tenant_id_purchase_invoice_id_id", x => new { x.tenant_id, x.purchase_invoice_id, x.id });
                     table.ForeignKey(
                         name: "FK_purchase_invoice_details_items_item_id",
                         column: x => x.item_id,
@@ -10924,11 +10924,94 @@ namespace ERP.Infrastructure.Migrations
                 principalTable: "purchase_reception_line_taxes",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.CreateTable(
+                name: "purchase_cost_distributions",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    purchase_invoice_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    cost_type = table.Column<int>(type: "integer", nullable: false),
+                    source_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    revision = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_purchase_cost_distributions", x => x.id);
+                    table.UniqueConstraint("AK_purchase_cost_distributions_tenant_id_purchase_invoice_id_id", x => new { x.tenant_id, x.purchase_invoice_id, x.id });
+                    table.CheckConstraint("ck_purchase_cost_distribution_amount", "amount > 0 AND revision > 0");
+                    table.CheckConstraint("ck_purchase_cost_distribution_type", "cost_type IN (1, 2)");
+                    table.ForeignKey(
+                        name: "FK_purchase_cost_distributions_purchase_invoice_details_tenant~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.source_invoice_detail_id },
+                        principalTable: "purchase_invoice_details",
+                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_purchase_cost_distributions_purchase_invoices_tenant_id_pur~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id },
+                        principalTable: "purchase_invoices",
+                        principalColumns: new[] { "tenant_id", "id" },
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "purchase_cost_distribution_allocations",
+                columns: table => new
+                {
+                    distribution_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    target_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    purchase_invoice_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_purchase_cost_distribution_allocations", x => new { x.distribution_id, x.target_invoice_detail_id });
+                    table.CheckConstraint("ck_purchase_cost_allocation_amount", "amount >= 0");
+                    table.ForeignKey(
+                        name: "FK_purchase_cost_distribution_allocations_purchase_cost_distri~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.distribution_id },
+                        principalTable: "purchase_cost_distributions",
+                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_purchase_cost_distribution_allocations_purchase_invoice_det~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.target_invoice_detail_id },
+                        principalTable: "purchase_invoice_details",
+                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_cost_distribution_allocations_tenant_id_purchase_~1",
+                table: "purchase_cost_distribution_allocations",
+                columns: new[] { "tenant_id", "purchase_invoice_id", "target_invoice_detail_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_cost_distribution_allocations_tenant_id_purchase_i~",
+                table: "purchase_cost_distribution_allocations",
+                columns: new[] { "tenant_id", "purchase_invoice_id", "distribution_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_cost_distributions_tenant_id_purchase_invoice_id_s~",
+                table: "purchase_cost_distributions",
+                columns: new[] { "tenant_id", "purchase_invoice_id", "source_invoice_detail_id" },
+                unique: true,
+                filter: "source_invoice_detail_id IS NOT NULL");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "purchase_cost_distribution_allocations");
+
+            migrationBuilder.DropTable(
+                name: "purchase_cost_distributions");
+
             migrationBuilder.DropForeignKey(
                 name: "FK_purchase_invoice_detail_taxes_purchase_reception_line_taxes~",
                 table: "purchase_invoice_detail_taxes");

@@ -1,9 +1,8 @@
 namespace ERP.Domain.Modules.Purchases.Enums;
 
 /// <summary>
-/// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — tipo de costo adicional que el modal "Distribuir
-/// flete/gasto" reparte entre las líneas incluidas por el usuario, vía
-/// <see cref="Entities.PurchaseInvoice.DistributeAdditionalCost"/>.
+/// Tipo de costo adicional de una <see cref="Entities.PurchaseCostDistribution"/> (persistido como
+/// entero en <c>purchase_cost_distributions.cost_type</c>).
 /// </summary>
 public enum PurchaseCostType
 {

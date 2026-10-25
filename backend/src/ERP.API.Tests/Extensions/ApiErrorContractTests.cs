@@ -47,6 +47,7 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Common.DomainRuleViolation] = 422,
         [ApiResponseCodes.Common.BadRequest] = 400,
         [ApiResponseCodes.Purchases.CancellationSubsequentInventoryExit] = 400,
+        [ApiResponseCodes.Purchases.CostDistributionStale] = 409,
         [ApiResponseCodes.Common.NotFound] = 404,
         [ApiResponseCodes.Common.Conflict] = 409,
         [ApiResponseCodes.Common.UniqueViolation] = 409,
@@ -180,6 +181,10 @@ public sealed class ApiErrorContractTests
             {
                 new ERP.Domain.Modules.Payables.Exceptions.RetentionAnnulmentPendingException(),
                 ApiResponseCodes.Retentions.AnnulmentPending
+            },
+            {
+                new ERP.Domain.Modules.Purchases.Exceptions.PurchaseCostDistributionStaleException(),
+                ApiResponseCodes.Purchases.CostDistributionStale
             },
             { new SriCommunicationException("x"), ApiResponseCodes.Common.SriCommunicationError },
             { CompanyScopeException.AccessDenied(), ApiResponseCodes.Common.CompanyScopeForbidden },

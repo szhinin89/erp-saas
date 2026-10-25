@@ -26,6 +26,7 @@ import { ZHInfoRow } from "../../../components/zh/ZHInfoRow";
 import { ZHInputGroup } from "../../../components/zh/ZHInputGroup";
 import { SupplierSearchSelect } from "../../masterData/facades/supplierPickerFacade";
 import { DistributeCostModal } from "../components/DistributeCostModal";
+import { PurchaseSummaryPanel } from "../components/PurchaseSummaryPanel";
 import { PurchaseRetentionDraft } from "../components/PurchaseRetentionDraft";
 import {
   RetentionAnnulmentPanel,
@@ -57,10 +58,7 @@ import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHFieldHelp } from "../../../components/zh/help";
 import { HELP_KEYS } from "../../../help";
 import {
-  calcVatBreakdown,
   roundToTotalAmount,
-  buildCostDistributionInputFromPersistedLines,
-  buildCostDistributionInputFromFormLines,
 } from "../utils/purchaseCalc";
 import { usePurchasesPage, type Tab } from "../hooks/usePurchasesPage";
 import type { PurchaseListItemDto } from "../api/purchaseService";
@@ -929,7 +927,8 @@ export function PurchasesPage() {
                     <RetentionSection ctx={ctx} />
                   )}
               </div>
-              <SummaryPanel ctx={ctx} />
+              <PurchaseSummaryPanel lines={ctx.lines} vatRatesMap={ctx.vatRatesMap}
+                iceRatesMap={ctx.iceRatesMap} totals={ctx.summaryTotals} />
             </div>
           </div>
 
@@ -1088,22 +1087,12 @@ export function PurchasesPage() {
       <DistributeCostModal
         error={ctx.distributionError}
         open={ctx.modalDistributeCost}
-        lines={
-          ctx.editing
-            ? buildCostDistributionInputFromPersistedLines(ctx.editing.lines)
-            : buildCostDistributionInputFromFormLines(ctx.lines)
-        }
-        totalFreight={ctx.editing ? ctx.editing.totalFreight : ctx.formWatch.freightCost}
-        totalOtherCosts={
-          ctx.editing ? ctx.editing.totalOtherCosts : ctx.formWatch.otherCosts
-        }
-        grandTotal={ctx.localTotal}
+        busy={ctx.distributionBusy}
+        invoice={ctx.editing}
+        formLines={ctx.lines}
         onCancel={() => ctx.setModalDistributeCost(false)}
-        onApply={(costType, amount, includedIds) =>
-          ctx.editing
-            ? ctx.handleDistributeCost(costType, amount, includedIds)
-            : ctx.handleDistributeCostToForm(costType, amount, includedIds)
-        }
+        onSave={ctx.saveCostDistribution}
+        onRemove={ctx.removeCostDistribution}
       />
 
       <ZHConfirmModal
@@ -1460,6 +1449,12 @@ export function PurchaseLineCard({
 }) {
   const { t } = useI18n();
   const lineLocked = ctx.fieldDisabled || !!l.xmlAllocation;
+  // Origen o destino de una distribución de costos: no se elimina ni se desglosa (todo su grupo XML).
+  const inCostDistribution = (line: PurchaseLineDraft) => !!line.lineId && ctx.costDistributionLineIds.has(line.lineId);
+  const distributionLocked = inCostDistribution(l);
+  const breakdownLocked = ctx.lines.some(x => x.purchaseReceptionLineId === l.purchaseReceptionLineId && inCostDistribution(x));
+  const distributionLockReason = t("purchases.distributeCost.lineLocked",
+    "La línea participa en una distribución de costos. Edite o retire la distribución antes de eliminarla o desglosarla.");
   const precisionPolicy = usePrecisionPolicy(); // presentación de línea (06)
   const viewMatchedItem = useOpenItemDetail();
   // Estado local de expandir/colapsar SOLO la banda inferior de detalle
@@ -1626,9 +1621,10 @@ export function PurchaseLineCard({
           </span>
           {canBreakDown(l) && (
             <ZHLineAction icon="call_split" variant="default" size="md" compact showText={false}
-              title={t(l.xmlAllocation ? "purchases.breakdown.edit" : "purchases.breakdown.action", l.xmlAllocation ? "Editar desglose" : "Desglosar")}
+              title={breakdownLocked ? distributionLockReason : t(l.xmlAllocation ? "purchases.breakdown.edit" : "purchases.breakdown.action", l.xmlAllocation ? "Editar desglose" : "Desglosar")}
               label={t(l.xmlAllocation ? "purchases.breakdown.edit" : "purchases.breakdown.action", l.xmlAllocation ? "Editar desglose" : "Desglosar")}
-              disabled={ctx.fieldDisabled} onClick={() => ctx.setBreakdownSourceId(l.purchaseReceptionLineId!)} />
+              ariaLabel={t(l.xmlAllocation ? "purchases.breakdown.edit" : "purchases.breakdown.action", l.xmlAllocation ? "Editar desglose" : "Desglosar")}
+              disabled={ctx.fieldDisabled || breakdownLocked} onClick={() => ctx.setBreakdownSourceId(l.purchaseReceptionLineId!)} />
           )}
           <ProductLineActionMenu
             line={l}
@@ -1652,9 +1648,10 @@ export function PurchaseLineCard({
           <ZHRowDeleteAction
             compact
             showText={false}
-            title={t("purchases.lines.delete", "Eliminar")}
+            title={distributionLocked ? distributionLockReason : t("purchases.lines.delete", "Eliminar")}
             label={t("purchases.lines.delete", "Eliminar")}
-            disabled={lineLocked}
+            ariaLabel={t("purchases.lines.delete", "Eliminar")}
+            disabled={lineLocked || distributionLocked}
             onClick={() => ctx.removeLine(l._key)}
           />
         </>
@@ -2941,177 +2938,6 @@ function RetentionSection({
             </div>
           </>
         )}
-      </div>
-    </div>
-  );
-}
-
-function SummaryPanel({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
-  const { t } = useI18n();
-  // PURCHASE-INVOICE-TOTALS-SUMMARY-PANEL-01 — desglose por tarifa IVA, calculado siempre desde
-  // el draft editable (ctx.lines: quantity/unitPrice/discountPct/vatCode/iceCode), nunca desde el
-  // snapshot XML (xmlQuantity/xmlUnitPrice/xmlTaxableBase/...), que solo se muestra por línea en
-  // "Producto recibido (XML)". Solo lectura — sin inputs, sin ajustes manuales (fase futura).
-  const vatBreakdown = calcVatBreakdown(
-    ctx.lines,
-    ctx.vatRatesMap,
-    ctx.iceRatesMap,
-  );
-  const hasIce = vatBreakdown.some((row) => row.ice !== 0);
-  return (
-    <div className="pf-totals">
-      <div className="pf-totals__header">
-        <h4>
-          <span
-            className="material-symbols-outlined pf-totals__title-icon--primary"
-          >
-            summarize
-          </span>{" "}
-          {t("purchases.summary.title", "Resumen")}
-        </h4>
-      </div>
-      {vatBreakdown.length > 0 && (
-        <div className="pf-totals__vat-breakdown">
-          <table className="table table--compact table--neutral">
-            <thead>
-              <tr>
-                <th>{t("purchases.summary.vatRate", "% IVA")}</th>
-                <th className="zh-table-cell--num">
-                  {t("purchases.summary.taxableBase", "Base imponible")}
-                </th>
-                <th className="zh-table-cell--num">
-                  {t("purchases.lines.vatShort", "IVA")}
-                </th>
-                {hasIce && (
-                  <th className="zh-table-cell--num">
-                    {t("purchases.lines.iceShort", "ICE")}
-                  </th>
-                )}
-                <th className="zh-table-cell--num">
-                  {t("purchases.summary.rowTotal", "Total")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {vatBreakdown.map((row) => (
-                <tr key={row.vatCode}>
-                  <td>{row.vatPercent}%</td>
-                  <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={row.taxableBase} precision="money" />
-                  </td>
-                  <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={row.vat} precision="tax" />
-                  </td>
-                  {hasIce && (
-                    <td className="zh-table-cell--num">
-                      <ZHMoneyValue value={row.ice} precision="tax" />
-                    </td>
-                  )}
-                  <td className="zh-table-cell--num">
-                    <ZHMoneyValue value={row.total} precision="money" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div className="pf-totals__body">
-        <div className="pf-totals__row">
-          <span className="pf-totals__label">{t("purchases.summary.subtotal", "Subtotal")}</span>
-          <span className="pf-totals__value">
-            <ZHMoneyValue
-              value={ctx.summaryTotals.subtotal}
-              precision="money"
-            />
-          </span>
-        </div>
-        <div className="pf-totals__row">
-          <span className="pf-totals__label">{t("purchases.summary.discount", "Descuento")}</span>
-          <span
-            className="pf-totals__value pf-totals__value--warning"
-          >
-            -
-            <ZHMoneyValue
-              value={ctx.summaryTotals.discount}
-              precision="money"
-            />
-          </span>
-        </div>
-        <div className="pf-totals__row">
-          <span className="pf-totals__label">{t("purchases.lines.iceShort", "ICE")}</span>
-          <span className="pf-totals__value">
-            <ZHMoneyValue
-              value={ctx.summaryTotals.ice}
-              precision="tax"
-            />
-          </span>
-        </div>
-        <div className="pf-totals__row">
-          <span className="pf-totals__label">
-            {t("purchases.lines.vatShort", "IVA")}
-            <ZHFieldHelp helpKey={HELP_KEYS.PURCHASES_VAT} />
-          </span>
-          <span className="pf-totals__value">
-            <ZHMoneyValue
-              value={ctx.summaryTotals.vat}
-              precision="tax"
-            />
-          </span>
-        </div>
-        {!!ctx.summaryTotals.irbpnr && (
-          <div className="pf-totals__row">
-            <span className="pf-totals__label">
-              IRBPNR{" "}
-              <span
-                className="pf-totals__value--warning"
-                title={t(
-                  "purchases.summary.irbpnrHint",
-                  "Valor del comprobante XML — incluido en el Gran Total.",
-                )}
-              >
-                (i)
-              </span>
-            </span>
-            <span className="pf-totals__value">
-              <ZHMoneyValue value={ctx.summaryTotals.irbpnr} precision="tax" />
-            </span>
-          </div>
-        )}
-        <div className="pf-totals__row">
-          <span className="pf-totals__label">{t("purchases.summary.freight", "Flete")}</span>
-          <span className="pf-totals__value">
-            <ZHMoneyValue
-              value={ctx.summaryTotals.freight}
-              precision="money"
-            />
-          </span>
-        </div>
-        <div className="pf-totals__row">
-          <span className="pf-totals__label">{t("purchases.summary.otherCosts", "Otros costos")}</span>
-          <span className="pf-totals__value">
-            <ZHMoneyValue
-              value={ctx.summaryTotals.otherCosts}
-              precision="money"
-            />
-          </span>
-        </div>
-        <div className="pf-totals__divider" />
-        <div className="pf-totals__row">
-          <span className="pf-totals__label pf-totals__label--strong">
-            {t("purchases.summary.lines", "Líneas")}
-          </span>
-          <span className="pf-totals__value">{ctx.lines.length}</span>
-        </div>
-      </div>
-      <div className="pf-totals__grand">
-        <span className="pf-totals__grand-label">{t("purchases.summary.total", "TOTAL")}</span>
-        <span className="pf-totals__grand-value">
-          <ZHMoneyValue
-            value={ctx.summaryTotals.total}
-            precision="money"
-          />
-        </span>
       </div>
     </div>
   );

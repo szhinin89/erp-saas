@@ -104,50 +104,61 @@ public sealed class PurchasesController : ControllerBase
             await _mediator.Send(new ApplyGlobalDiscountCommand(id, request.DiscountPct), ct)
         );
 
-    [HttpPost("{id:guid}/allocate-freight")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
-    public async Task<IActionResult> AllocateFreight(Guid id, CancellationToken ct) =>
-        this.ToOkOrBadRequest(await _mediator.Send(new AllocateFreightCommand(id), ct));
-
     [HttpPost("{id:guid}/recalculate")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
     public async Task<IActionResult> Recalculate(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(await _mediator.Send(new RecalculatePurchaseCommand(id), ct));
 
     /// <summary>
-    /// PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — aplica el prorrateo revisado en el modal
-    /// "Distribuir flete/gasto": suma <c>Amount</c> a las líneas de <c>IncludedLineIds</c>,
-    /// proporcional a su base imponible. No toca líneas fuera de la selección.
+    /// PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — crea o reemplaza (nunca suma) la distribución
+    /// <paramref name="distributionId"/>. Reintentar el mismo cuerpo no duplica importes.
     /// </summary>
-    [HttpPost("{id:guid}/distribute-cost")]
+    [HttpPut("{id:guid}/cost-distributions/{distributionId:guid}")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
-    public async Task<IActionResult> DistributeCost(
+    public async Task<IActionResult> ReplaceCostDistribution(
         Guid id,
-        [FromBody] DistributeCostRequest request,
+        Guid distributionId,
+        [FromBody] ReplaceCostDistributionRequest request,
         CancellationToken ct
     )
     {
-        // PURCHASE-COSTTYPE-ENUM-CONTRACT-CLEANUP-01 — el payload sigue siendo string ("Freight"/
-        // "OtherCost", sin cambios frontend); se convierte acá a PurchaseCostType con un TryParse
-        // explícito y case-sensitive (no Enum.Parse sin control, no dejar que el model binder de
-        // MediatR/JSON falle con un error genérico si algún día CostType llegara mal tipado).
-        if (!Enum.TryParse<PurchaseCostType>(request.CostType, ignoreCase: false, out var costType))
+        // Payload string ("Freight"/"OtherCost"), convertido con TryParse case-sensitive.
+        if (!Enum.TryParse<PurchaseCostType>(request.CostType, ignoreCase: false, out var costType)
+            || !Enum.IsDefined(costType))
             return this.ApiBadRequest(
                 $"El tipo de costo '{request.CostType}' no es válido. Valores permitidos: Freight, OtherCost."
             );
 
         return this.ToOkOrBadRequest(
             await _mediator.Send(
-                new DistributePurchaseCostCommand(
+                new ReplacePurchaseCostDistributionCommand(
                     id,
+                    distributionId,
                     costType,
+                    request.ExpectedRevision,
                     request.Amount,
-                    request.IncludedLineIds
+                    request.TargetLineIds,
+                    request.SourceLineId
                 ),
                 ct
             )
         );
     }
+
+    [HttpDelete("{id:guid}/cost-distributions/{distributionId:guid}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
+    public async Task<IActionResult> RemoveCostDistribution(
+        Guid id,
+        Guid distributionId,
+        [FromQuery] long expectedRevision,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new RemovePurchaseCostDistributionCommand(id, distributionId, expectedRevision),
+                ct
+            )
+        );
 
     [HttpPost("{id:guid}/load-pvp")]
     [Authorize(Policy = $"perm:{PurchasePermissions.Update}")]
@@ -298,7 +309,13 @@ public record UpdatePvpRequest(decimal NewPvp);
 
 public record ApplyDiscountRequest(decimal DiscountPct);
 
-public record DistributeCostRequest(string CostType, decimal Amount, List<Guid> IncludedLineIds);
+public record ReplaceCostDistributionRequest(
+    string CostType,
+    long ExpectedRevision,
+    decimal? Amount,
+    List<Guid> TargetLineIds,
+    Guid? SourceLineId = null
+);
 
 /// <summary>
 /// <see cref="RequestSriAnnulment"/> (ZH-RETENTION-SRI-ANNULMENT-01): si la retención de la compra ya

@@ -9,6 +9,9 @@ const passthroughT: TFunction = (_key, fallback) => fallback;
 // ── Line sub-schema ────────────────────────────────────────────────────
 export const createPurchaseLineSchema = (t: TFunction) => z.object({
   _key: z.number(),
+  // PURCHASE-COST-DISTRIBUTION-CANONICAL-01 — Id de la línea guardada (viaja como `lineId` para que
+  // sus distribuciones de costos sigan referenciándola). Ausente en líneas nuevas o duplicadas.
+  lineId: z.string().optional(),
   xmlSource: z.custom<import("../api/purchaseReceptionService").PurchaseDraftLineDto>().optional(),
   xmlAllocation: z.object({
     subtotal: z.number().nonnegative(), discount: z.number().nonnegative(),
@@ -51,9 +54,8 @@ export const createPurchaseLineSchema = (t: TFunction) => z.object({
   // persistirse en unidad base sin perder "2 CAJA = 2 × PACA x12". Solo estado de formulario.
   xmlOriginPackagingLevelId: z.string().nullable().optional(),
   xmlOriginFactor: z.number().optional(),
-  // PURCHASE-DISTRIBUTE-COST-BEFORE-SAVE-01 — prorrateo aplicado en el modal "Distribuir
-  // flete/gasto" ANTES de guardar (compra nueva sin Id persistido). Viaja en el payload
-  // create/update; el backend lo aplica directo por línea y omite el reprorrateo automático.
+  // Asignaciones derivadas de las distribuciones de costos guardadas (servidor). Solo lectura para el
+  // costo con flete de la línea; nunca viajan en el payload.
   freightAllocated: z.number().optional(),
   otherCostsAllocated: z.number().optional(),
   // Id de la PurchaseReceptionLine de origen — presente solo en líneas que vienen de Recepción
@@ -116,8 +118,6 @@ export const createPurchaseInvoiceSchema = (t: TFunction) => z.object({
   authorizationNumber: z.string().optional().default(""),
   authorizationDate: z.string().optional().default(""),
   globalWarehouseId: z.string().optional().default(""),
-  freightCost: z.coerce.number().min(0).default(0),
-  otherCosts: z.coerce.number().min(0).default(0),
   dueDate: z.string().optional().default(""),
   notes: z.string().optional().default(""),
   sriPaymentMethodCode: z.string().optional().default(""),
@@ -146,8 +146,6 @@ export function emptyPurchaseInvoiceForm(): PurchaseInvoiceFormValues {
     authorizationNumber: "",
     authorizationDate: "",
     globalWarehouseId: "",
-    freightCost: 0,
-    otherCosts: 0,
     dueDate: "",
     notes: "",
     sriPaymentMethodCode: "",

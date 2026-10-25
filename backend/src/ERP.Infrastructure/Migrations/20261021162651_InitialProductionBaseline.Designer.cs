@@ -11253,6 +11253,86 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("purchase_communications", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistribution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<int>("CostType")
+                        .HasColumnType("integer")
+                        .HasColumnName("cost_type");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("revision");
+
+                    b.Property<Guid?>("SourceInvoiceDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_invoice_detail_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "InvoiceId", "SourceInvoiceDetailId")
+                        .IsUnique()
+                        .HasFilter("source_invoice_detail_id IS NOT NULL");
+
+                    b.ToTable("purchase_cost_distributions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_purchase_cost_distribution_amount", "amount > 0 AND revision > 0");
+
+                            t.HasCheckConstraint("ck_purchase_cost_distribution_type", "cost_type IN (1, 2)");
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistributionAllocation", b =>
+                {
+                    b.Property<Guid>("DistributionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distribution_id");
+
+                    b.Property<Guid>("TargetInvoiceDetailId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_invoice_detail_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_invoice_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("DistributionId", "TargetInvoiceDetailId");
+
+                    b.HasIndex("TenantId", "InvoiceId", "DistributionId");
+
+                    b.HasIndex("TenantId", "InvoiceId", "TargetInvoiceDetailId")
+                        .HasDatabaseName("IX_purchase_cost_distribution_allocations_tenant_id_purchase_~1");
+
+                    b.ToTable("purchase_cost_distribution_allocations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_purchase_cost_allocation_amount", "amount >= 0");
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -12033,10 +12113,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(9,6)")
                         .HasColumnName("discount_pct");
 
-                    b.Property<decimal>("FreightAllocated")
-                        .HasColumnType("numeric(18,6)")
-                        .HasColumnName("freight_allocated");
-
                     b.Property<Guid>("InvoiceId")
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_invoice_id");
@@ -12065,10 +12141,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<decimal?>("OrderedQuantity")
                         .HasColumnType("numeric(20,6)")
                         .HasColumnName("ordered_quantity");
-
-                    b.Property<decimal>("OtherCostsAllocated")
-                        .HasColumnType("numeric(18,6)")
-                        .HasColumnName("other_costs_allocated");
 
                     b.Property<Guid?>("PackagingLevelId")
                         .HasColumnType("uuid")
@@ -20986,6 +21058,41 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistribution", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
+                        .WithMany("CostDistributions")
+                        .HasForeignKey("TenantId", "InvoiceId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "InvoiceId", "SourceInvoiceDetailId")
+                        .HasPrincipalKey("TenantId", "InvoiceId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistributionAllocation", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistribution", "Distribution")
+                        .WithMany("Allocations")
+                        .HasForeignKey("TenantId", "InvoiceId", "DistributionId")
+                        .HasPrincipalKey("TenantId", "InvoiceId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "InvoiceId", "TargetInvoiceDetailId")
+                        .HasPrincipalKey("TenantId", "InvoiceId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Distribution");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -21113,7 +21220,7 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetail", b =>
                 {
-                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", null)
+                    b.HasOne("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", "Invoice")
                         .WithMany("Lines")
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -21128,6 +21235,8 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("WarehouseId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Invoice");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoiceDetailTax", b =>
@@ -21930,6 +22039,11 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("MethodLines");
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCostDistribution", b =>
+                {
+                    b.Navigation("Allocations");
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseCreditNote", b =>
                 {
                     b.Navigation("Lines");
@@ -21944,6 +22058,8 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>
                 {
+                    b.Navigation("CostDistributions");
+
                     b.Navigation("Lines");
 
                     b.Navigation("PaymentSchedules");

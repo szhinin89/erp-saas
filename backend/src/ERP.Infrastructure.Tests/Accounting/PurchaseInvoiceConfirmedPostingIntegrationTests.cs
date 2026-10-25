@@ -724,6 +724,8 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         await using var ownedDb = db;
         if (postingConfigured)
             await SeedRuleAndPeriodAsync(db, date);
+        // Un costo externo solo se distribuye a ítems de la compra (PURCHASE-COST-DISTRIBUTION-CANONICAL-01).
+        var productId = await SeedInventoryProductAsync();
         var invoice = BuildConfirmableInvoice(date, "001-001-000000099");
         invoice.ReplaceLines(
             [
@@ -734,7 +736,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
                     2m,
                     50m,
                     "10",
-                    "UNIT"
+                    "UNIT",
+                    itemId: productId,
+                    warehouseId: _warehouseId
                 ),
                 PurchaseInvoiceDetail.Create(
                     invoice.Id,
@@ -743,19 +747,21 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
                     1m,
                     100m,
                     "10",
-                    "UNIT"
+                    "UNIT",
+                    itemId: productId,
+                    warehouseId: _warehouseId
                 ),
             ],
             _createdBy
         );
         invoice.ApplyGlobalDiscount(10m, _createdBy);
-        invoice.DistributeAdditionalCost(
+        invoice.Distribute(
             ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
             12m,
             [invoice.Lines[0].Id],
             _createdBy
         );
-        invoice.DistributeAdditionalCost(
+        invoice.Distribute(
             ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
             3m,
             [invoice.Lines[1].Id],
@@ -763,7 +769,6 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         );
         db.PurchaseInvoices.Add(invoice);
         await db.SaveChangesAsync();
-        var productId = await SeedInventoryProductAsync();
         var precision = new Mock<ICompanyPrecisionPolicyProvider>();
         precision
             .Setup(p => p.GetEffectiveAsync(It.IsAny<CancellationToken>()))
@@ -914,7 +919,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         await repo.SaveChangesWithSequenceRetryAsync();
     }
 
-    private PurchaseInvoice StageConfirmation(DateOnly date, string number)
+    private PurchaseInvoice StageConfirmation(DateOnly date, string number, Guid productId)
     {
         var invoice = BuildConfirmableInvoice(date, number);
         invoice.ReplaceLines(
@@ -926,7 +931,9 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
                     2m,
                     50m,
                     "10",
-                    "UNIT"
+                    "UNIT",
+                    itemId: productId,
+                    warehouseId: _warehouseId
                 ),
                 PurchaseInvoiceDetail.Create(
                     invoice.Id,
@@ -935,19 +942,21 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
                     1m,
                     100m,
                     "10",
-                    "UNIT"
+                    "UNIT",
+                    itemId: productId,
+                    warehouseId: _warehouseId
                 ),
             ],
             _createdBy
         );
         invoice.ApplyGlobalDiscount(10m, _createdBy);
-        invoice.DistributeAdditionalCost(
+        invoice.Distribute(
             ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.Freight,
             12m,
             [invoice.Lines[0].Id],
             _createdBy
         );
-        invoice.DistributeAdditionalCost(
+        invoice.Distribute(
             ERP.Domain.Modules.Purchases.Enums.PurchaseCostType.OtherCost,
             3m,
             [invoice.Lines[1].Id],
@@ -1043,7 +1052,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
         var (db, _) = BuildWiredContext(_tenantId, _companyId, _postgres);
         await using var ownedDb = db;
         await SeedRuleAndPeriodAsync(db, date);
-        var invoice = StageConfirmation(date, "001-001-000000201");
+        var invoice = StageConfirmation(date, "001-001-000000201", productId);
         db.PurchaseInvoices.Add(invoice);
         await db.SaveChangesAsync();
         var stock = NewStockRepository(db);
@@ -1122,7 +1131,7 @@ public sealed class PurchaseInvoiceConfirmedPostingIntegrationTests : IAsyncLife
             publisher,
             new FixedCurrentCompany(_companyId)
         );
-        var invoice = StageConfirmation(date, "001-001-000000202");
+        var invoice = StageConfirmation(date, "001-001-000000202", productId);
         db.PurchaseInvoices.Add(invoice);
         await db.SaveChangesAsync();
         var stock = NewStockRepository(db);

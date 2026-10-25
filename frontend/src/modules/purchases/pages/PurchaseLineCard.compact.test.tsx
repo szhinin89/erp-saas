@@ -17,13 +17,15 @@ import {
   xmlIceEditedLine,
   xmlIrbpnrLine,
 } from "./purchaseLineCard.fixture";
+import { promo } from "../utils/purchaseXmlBreakdown.fixture";
 
 // PURCHASE-LINE-COMPACT-01 — cada dato en una sola ubicación visual, cada aviso una sola vez y
 // el detalle detrás del disclosure "Detalle" (ZH-DS-DISCLOSURE-01).
 
 type Ctx = Parameters<typeof PurchaseLineCard>[0]["ctx"];
 
-function renderLine(line: PurchaseLineFormValues, readiness?: PurchaseLineReadiness, errors?: Ctx["errors"]) {
+function renderLine(line: PurchaseLineFormValues, readiness?: PurchaseLineReadiness, errors?: Ctx["errors"],
+  costDistributionLineIds = new Set<string>()) {
   const ctx = {
     fieldDisabled: false,
     errors,
@@ -42,6 +44,8 @@ function renderLine(line: PurchaseLineFormValues, readiness?: PurchaseLineReadin
     handleUnmatchItem: vi.fn(),
     handleSaveSupplierPresentation: vi.fn(),
     setBreakdownSourceId: vi.fn(),
+    lines: [line],
+    costDistributionLineIds,
   } as unknown as Ctx;
   const utils = render(
     <MemoryRouter>
@@ -123,6 +127,16 @@ describe("PurchaseLineCard — layout compacto", () => {
     inputs.forEach((input) => expect(input.disabled).toBe(true));
     expect(screen.queryByRole("button", { name: /Recalcular desde XML/ })).toBeNull();
     expect(detailToggle()).toBeTruthy();
+  });
+
+  it("línea con distribución de costos: no se elimina ni se desglosa y explica cómo liberarla", () => {
+    renderLine({ ...unlinkedXmlLine, lineId: "saved-1" }, undefined, undefined, new Set(["saved-1"]));
+    const remove = screen.getByRole("button", { name: "Eliminar" }) as HTMLButtonElement;
+    expect(remove.disabled).toBe(true);
+    expect(remove.title).toContain("distribución de costos");
+    cleanup();
+    renderLine(promo({ lineId: "saved-2" }), undefined, undefined, new Set(["saved-2"]));
+    expect((screen.getByRole("button", { name: "Desglosar" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("IRBPNR sin ICE: muestra IRBPNR en cabecera y XML, omite ICE en cero", () => {
