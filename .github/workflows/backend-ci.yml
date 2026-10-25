@@ -41,11 +41,39 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET SDK (global.json)
-        uses: actions/setup-dotnet@v5
+        shell: pwsh
+        run: |
+          $sdk = (Get-Content global.json -Raw | ConvertFrom-Json).sdk
+          $minimum = [version]$sdk.version
+          $channel = "$($minimum.Major).$($minimum.Minor)"
+          $feed = 'https://builds.dotnet.microsoft.com/dotnet'
+          $version = ((Invoke-RestMethod "$feed/Sdk/$channel/latest.version").Trim() -split '\s+')[-1]
+          if ($sdk.rollForward -ne 'latestFeature' -or $sdk.allowPrerelease -ne $false -or
+              $version -notmatch "^$([regex]::Escape($channel))\.\d+$" -or [version]$version -lt $minimum) {
+            throw "SDK $version does not satisfy global.json"
+          }
+          $installDir = Join-Path $env:RUNNER_TEMP 'dotnet'
+          # Exact version + explicit feed bypass aka.ms and the failing origin endpoint.
+          if ($IsWindows) {
+            $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
+            Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer
+            & $installer -Version $version -AzureFeed $feed -InstallDir $installDir -NoPath
+            if ($LASTEXITCODE -ne 0) { throw 'dotnet-install failed' }
+          } else {
+            $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.sh'
+            Invoke-WebRequest 'https://dot.net/v1/dotnet-install.sh' -OutFile $installer
+            bash $installer --version $version --azure-feed $feed --install-dir $installDir --no-path
+            if ($LASTEXITCODE -ne 0) { throw 'dotnet-install failed' }
+          }
+          $installDir >> $env:GITHUB_PATH
+          "DOTNET_ROOT=$installDir" >> $env:GITHUB_ENV
+          & (Join-Path $installDir 'dotnet') --version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed SDK cannot resolve global.json' }
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
         with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: backend/src/**/*.csproj
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend/src/**/*.csproj') }}
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
