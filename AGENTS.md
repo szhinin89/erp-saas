@@ -17,22 +17,9 @@
 - **CLOSED = no reauditar ni rediseñar salvo BUG REAL.**
 - No modificar módulos CLOSED salvo BUG REAL directamente relacionado.
 
-## Clasificación de hallazgos
-
-Clasificar hallazgos **solo** como una de estas categorías:
-
-- `KEEP`
-- `EXTEND`
-- `NEW`
-- `BUG REAL`
-- `STRUCTURAL DEBT`
-- `PILOT BLOCKER`
-- `FUTURE`
-- `DO NOT TOUCH`
-
 ## Flujo de trabajo por tarea
 
-audit focalizado → reproducir → fix mínimo → tests → diff review
+Aplicar el [flujo obligatorio del agente por fase](docs/architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase), incluida la clasificación `KEEP / BUG REAL / DEBT / FALTA` y la separación de responsabilidades entre agente y propietario.
 
 ## Contradicciones y dominio no definido
 
@@ -48,7 +35,7 @@ No sustituir por SQLite, in-memory ni mocks para estos casos.
 ## Alcance
 
 - No hacer refactors fuera de alcance.
-- No commit ni push salvo autorización expresa.
+- Staging y commit los realiza el propietario según el flujo por fase. No hacer push salvo autorización expresa.
 
 ## Estilo de respuesta
 

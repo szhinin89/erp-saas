@@ -35,6 +35,7 @@ Onboarding rápido y fuente principal de reglas globales del proyecto. Cuerpo no
 1. Identificar la SSOT vigente del módulo ([regla global](docs/architecture/enforcement.md#ssot-por-módulo)) y verificar si el archivo **ya existe** → editar, no regenerar.
 2. Seguir el [flujo jerárquico de implementación](docs/architecture/architecture.md#flujo-jerárquico-implementar-una-feature).
 3. **No inventar reglas** fuera de `docs/architecture/*` sin confirmación del usuario.
+4. Aplicar el [flujo obligatorio del agente por fase](docs/architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 
 ## Al terminar una tarea
 

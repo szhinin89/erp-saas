@@ -62,6 +62,27 @@ Ver [Compatibilidad multi-agente](#compatibilidad-multi-agente) más abajo en es
 
 ---
 
+## Flujo obligatorio del agente por fase
+
+Regla de trabajo del agente acordada con el propietario (2026-10-25):
+
+1. Leer `CLAUDE.md`, `STATUS.md`, `FEATURES.md` y la SSOT vigente del módulo, además de las lecturas requeridas por `AGENTS.md`.
+2. Trabajar en un chat nuevo por fase, con alcance acotado.
+3. Realizar una auditoría corta y clasificar los hallazgos como `KEEP`, `BUG REAL`, `DEBT` o `FALTA`.
+4. Resolver las decisiones funcionales con el propietario antes de implementar. Ante contradicción de negocio o dominio no definido, detenerse y reportar únicamente la decisión necesaria; no asumir reglas.
+5. Realizar una implementación corta y focalizada. Para un BUG REAL, reproducir antes y aplicar el fix mínimo, sin refactors fuera de alcance.
+6. Ejecutar pruebas focales pequeñas y entregar al propietario los comandos concretos para el gate intermedio en su PowerShell. Mantener los checks obligatorios aplicables; usar PostgreSQL real para concurrencia, transacciones, scope, locks e invariantes de persistencia.
+7. Esperar el resultado del gate ejecutado por el propietario: `PASS` o `FAIL`. Las pruebas del agente no sustituyen este gate.
+8. Si es `FAIL`, corregir de forma focalizada, ejecutar las pruebas pertinentes y volver al gate del propietario. Si es `PASS`, realizar la revisión final del diff y la documentación.
+9. El propietario realiza staging y commit. El agente no ejecuta esas operaciones.
+10. Solo después del gate PASS, la revisión final y el staging y commit del propietario, declarar la fase `CLOSED`. Abrir un chat nuevo para la siguiente fase.
+
+**CLOSED = no reauditar ni rediseñar salvo BUG REAL directamente relacionado.**
+
+Este flujo es la instrucción vigente para el agente. Las categorías históricas de entregas no se reclasifican retroactivamente.
+
+---
+
 ## Validación en 4 capas (datos persistidos)
 
 Toda validación que afecte datos guardados se refleja en **4 capas**. Prohibido validar solo en frontend.
