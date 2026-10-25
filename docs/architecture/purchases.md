@@ -231,6 +231,11 @@ foco). Vitest de Compras, notices ZH y disclosure 589/589, `tsc -b`, ESLint (0 e
 
 En una sola transacción, todo o nada:
 
+Un rechazo o fallo antes del commit conserva el borrador y las cuotas manuales guardadas,
+incluidos sus identificadores, fechas, importes y notas, sin efectos parciales. La eliminación
+o sustitución de cuotas forma parte de esa misma transacción. Un Service vinculado se confirma
+sin bodega y no genera inventario; Product conserva la exigencia de bodega.
+
 - **Bloquean la confirmación:**
   - Estado distinto de Draft, o compra sin líneas.
   - Condición de pago inactiva.
@@ -287,6 +292,16 @@ En una sola transacción, todo o nada:
 - No existe calendario oficial de días hábiles: el plazo SRI ordinario es informativo y se verifica en SRI en Línea. No existe ventana interna de anulación por empresa.
 
 ## 9. Evidencia
+
+Confirmación XML (2026-10-25): dos regresiones en
+`PurchaseRetentionConfirmIntegrationTests.ConfirmationRegressions.cs` reproducidas antes del fix
+contra PostgreSQL desechable (cuotas guardadas: 2 → 0 tras rechazo tardío; Service XML: rechazo
+por bodega). Después, PostgreSQL focal 7/7 PASS, incluidos confirmación con/sin retención,
+fallo contable posterior al commit, concurrencia y reintento sin duplicados; Application 66/66
+y Domain 30/30 PASS. Domain verifica Service, Product y clasificación ausente sin relajar el
+guard físico. Clase parcial existente registrada en CI `infrastructure-01`, sin nueva clase.
+Sin cambios de XML fiscal, cálculos, presentaciones ni contrato de idempotencia; sin migraciones
+ni ejecución sobre datos reales. Gate del propietario pendiente.
 
 Desglose XML backend (2026-10-23): `PurchaseXmlAllocationTests`, `PurchaseXmlBreakdownTests`, confirmación por componentes en `ConfirmPurchaseHandlerTests` y `PurchaseXmlBreakdownPostgreSqlTests`. Validación focal: Domain 59/59, Application 91/91 y PostgreSQL desechable 12/12 (incluyen regresiones XML/ICE y devoluciones). Cubren asignación exacta, descuento, procedencia, rechazo de impuestos/grupos duplicados, alta, actualización, reapertura, rollback posterior al reemplazo, aislamiento por empresa/tenant y confirmación sin duplicar entradas/CxP. Caso `029-001-001341832`, código `13563`: fixture reconstruido con los importes suministrados, no verificación del XML autorizado original; bases y tarifas de prueba explícitas, nunca inferidas por el motor. Modelo EF sin cambios pendientes, guardrail de arquitectura sin infracciones nuevas y diff revisado. Sin cambios de reglas contables ni ejecución sobre bases existentes.
 

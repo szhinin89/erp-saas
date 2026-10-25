@@ -1,5 +1,6 @@
 using ERP.Domain.Common;
 using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Purchases.Enums;
 using ERP.Domain.Modules.Purchases.Events;
 
@@ -472,7 +473,7 @@ public sealed class PurchaseInvoice
         }
     }
 
-    public void Confirm(Guid updatedBy)
+    public void Confirm(Guid updatedBy, IReadOnlyDictionary<Guid, ItemNature>? itemNatures = null)
     {
         EnsureDraft();
         if (_lines.Count == 0)
@@ -488,7 +489,12 @@ public sealed class PurchaseInvoice
                 throw new DomainRuleViolationException(
                     $"Línea '{line.Description}': código IVA es obligatorio."
                 );
-            if (line.ItemId.HasValue && line.WarehouseId is null && GlobalWarehouseId is null)
+            // Only a Service explicitly classified by the caller is exempt from warehouse.
+            var isService = line.ItemId is { } itemId
+                && itemNatures is not null
+                && itemNatures.TryGetValue(itemId, out var nature)
+                && nature == ItemNature.Service;
+            if (line.ItemId.HasValue && !isService && line.WarehouseId is null && GlobalWarehouseId is null)
                 throw new DomainRuleViolationException(
                     $"Línea '{line.Description}': el producto requiere una bodega destino."
                 );

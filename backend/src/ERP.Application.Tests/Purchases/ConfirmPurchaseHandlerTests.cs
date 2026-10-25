@@ -646,7 +646,8 @@ public sealed class ConfirmPurchaseHandlerTests
                 ?? Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
             retentionIssuer
                 ?? Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
-            retentionTransmission ?? RetentionElectronicTestDoubles.Transmission().Object
+            retentionTransmission ?? RetentionElectronicTestDoubles.Transmission().Object,
+            Mock.Of<IUnitOfWork>()
         );
 
         return (handler, repo, stockRepo, payables);
@@ -1248,7 +1249,8 @@ public sealed class ConfirmPurchaseHandlerTests
             PrecisionPolicyTestDouble.Mock(),
             Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
             Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
-            RetentionElectronicTestDoubles.Transmission().Object
+            RetentionElectronicTestDoubles.Transmission().Object,
+            Mock.Of<IUnitOfWork>()
         );
 
         var result = await handler.Handle(
@@ -1309,7 +1311,8 @@ public sealed class ConfirmPurchaseHandlerTests
             PrecisionPolicyTestDouble.Mock(),
             Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
             Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
-            RetentionElectronicTestDoubles.Transmission().Object
+            RetentionElectronicTestDoubles.Transmission().Object,
+            Mock.Of<IUnitOfWork>()
         );
 
         var result = await h.Handle(new ConfirmPurchaseCommand(fakeId), CancellationToken.None);

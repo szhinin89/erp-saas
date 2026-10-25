@@ -1,4 +1,5 @@
 using ERP.Domain.Exceptions;
+using ERP.Domain.Modules.Items.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using FluentAssertions;
 
@@ -21,7 +22,7 @@ public sealed class PurchaseInvoiceConfirmMatchingTests
     private static readonly Guid PtId = Guid.NewGuid();
     private static readonly Guid ItemId = Guid.NewGuid();
 
-    private static PurchaseInvoice CreateDraftInvoice() =>
+    private static PurchaseInvoice CreateDraftInvoice(bool withWarehouse = true) =>
         PurchaseInvoice.CreateDraft(
             TenantId,
             CompanyId,
@@ -37,7 +38,7 @@ public sealed class PurchaseInvoiceConfirmMatchingTests
             "Contado",
             1,
             30,
-            globalWarehouseId: WhId
+            globalWarehouseId: withWarehouse ? WhId : null
         );
 
     [Fact]
@@ -63,6 +64,34 @@ public sealed class PurchaseInvoiceConfirmMatchingTests
         act.Should()
             .Throw<DomainRuleViolationException>()
             .WithMessage("*productos pendientes de vinculación*Producto sin vincular*");
+    }
+
+    [Theory]
+    [InlineData(ItemNature.Service, false)]
+    [InlineData(ItemNature.Product, true)]
+    [InlineData(null, true)]
+    public void Warehouse_guard_uses_explicit_nature_and_preserves_physical_guard(
+        ItemNature? nature, bool requiresWarehouse)
+    {
+        var inv = CreateDraftInvoice(withWarehouse: false);
+        inv.ReplaceLines([PurchaseInvoiceDetail.Create(inv.Id, TenantId, "Línea XML", 1m,
+            10m, "4", "UNIT", itemId: ItemId, purchaseReceptionLineId: Guid.NewGuid())], UserId);
+        var natures = new Dictionary<Guid, ItemNature>();
+        if (nature.HasValue)
+            natures.Add(ItemId, nature.Value);
+
+        var act = () => inv.Confirm(UserId, natures);
+        if (requiresWarehouse)
+        {
+            act.Should().Throw<DomainRuleViolationException>().WithMessage("*bodega destino*");
+            inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+            inv.Lines.Single().IsFrozen.Should().BeFalse();
+        }
+        else
+        {
+            act.Should().NotThrow();
+            inv.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+        }
     }
 
     [Fact]

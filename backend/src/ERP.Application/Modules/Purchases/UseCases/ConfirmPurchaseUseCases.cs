@@ -77,6 +77,7 @@ public sealed class ConfirmPurchaseHandler
     private readonly IPurchaseXmlConfirmationGuard _xmlGuard;
     private readonly IRetentionIssuer _retentionIssuer;
     private readonly IRetentionElectronicTransmission _retentionTransmission;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ConfirmPurchaseHandler(
         IPurchaseInvoiceRepository repo,
@@ -97,10 +98,12 @@ public sealed class ConfirmPurchaseHandler
         ICompanyPrecisionPolicyProvider precision,
         IPurchaseXmlConfirmationGuard xmlGuard,
         IRetentionIssuer retentionIssuer,
-        IRetentionElectronicTransmission retentionTransmission
+        IRetentionElectronicTransmission retentionTransmission,
+        IUnitOfWork unitOfWork
     )
     {
         _retentionTransmission = retentionTransmission;
+        _unitOfWork = unitOfWork;
         _precision = precision;
         _xmlGuard = xmlGuard;
         _retentionIssuer = retentionIssuer;
@@ -122,6 +125,31 @@ public sealed class ConfirmPurchaseHandler
     }
 
     public async Task<Result<PurchaseInvoiceDto>> Handle(
+        ConfirmPurchaseCommand cmd,
+        CancellationToken ct
+    )
+    {
+        // Include the immediate schedule DELETE, before inventory acquires its resource locks.
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await ConfirmAsync(cmd, ct);
+            if (!result.IsSuccess)
+            {
+                await _unitOfWork.RollbackAsync(CancellationToken.None);
+                _unitOfWork.ClearChangeTracker();
+            }
+            return result;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+            _unitOfWork.ClearChangeTracker();
+            throw;
+        }
+    }
+
+    private async Task<Result<PurchaseInvoiceDto>> ConfirmAsync(
         ConfirmPurchaseCommand cmd,
         CancellationToken ct
     )
@@ -274,7 +302,7 @@ public sealed class ConfirmPurchaseHandler
         }
 
         // ── STEP 2: Confirmar (cambia estado, valida invariantes, congela costos) ─
-        inv.Confirm(uid);
+        inv.Confirm(uid, operationalItems.ToDictionary(p => p.Key, p => p.Value.Nature));
 
         // ── STEP 2b: Generar calendario de pagos ────────────────────────
         // PURCHASE-DRAFT-RECOVERY F2 — prioridad: cronograma enviado > cronograma manual guardado
@@ -475,6 +503,7 @@ public sealed class ConfirmPurchaseHandler
         // obligaciones contables durables (Pending). Un error contable ya no revierte la compra:
         // el intento inicial ocurre después del commit y queda Posted o Failed.
         await _stockRepo.SaveChangesWithSequenceRetryAsync(ct);
+        await _unitOfWork.CommitAsync(ct);
         await _accountingPostings.DispatchPendingAsync(ct);
 
         _logger.LogInformation(

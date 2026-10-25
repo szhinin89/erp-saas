@@ -356,7 +356,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
     private ConfirmPurchaseHandler ConfirmHandler(
         ErpDbContext db,
         Guid? branchId = null,
-        IRetentionElectronicTransmission? transmission = null
+        IRetentionElectronicTransmission? transmission = null,
+        IPurchaseXmlConfirmationGuard? confirmationGuard = null
     )
     {
         var company = new FixedCurrentCompany(_companyId);
@@ -399,7 +400,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
             new FixedCurrentUser(_userId),
             preferences.Object,
             StandardPrecisionPolicyProvider.Instance,
-            xmlGuard.Object,
+            confirmationGuard ?? xmlGuard.Object,
             new RetentionIssuer(
                 new RetentionDocumentRepository(db, company),
                 Eligibility(db),
@@ -407,7 +408,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 new EstablishmentRepository(db),
                 new DocumentSequenceRepository(db)
             ),
-            transmission ?? RetentionElectronicTestWiring.NoOpTransmission()
+            transmission ?? RetentionElectronicTestWiring.NoOpTransmission(),
+            new UnitOfWork(db)
         );
     }
 

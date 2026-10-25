@@ -1,5 +1,16 @@
 # Project Status
 
+## COMPRAS XML — Confirmación atómica y Service sin bodega — BUG REAL (2026-10-25)
+
+Dos regresiones PostgreSQL reproducidas antes del fix: rechazo tardío eliminaba las dos cuotas
+manuales guardadas; Service XML sin bodega era rechazado por Domain. Confirmación ahora incluye
+el reemplazo de cuotas en su transacción y revierte/limpia tracking ante rechazo o excepción;
+Domain recibe la naturaleza ya resuelta para eximir únicamente a Service de exigir bodega.
+PASS focal: PostgreSQL 7/7, Application 66/66, Domain 30/30; cinco guardrails backend sin infracciones.
+Clase de regresión existente incluida una sola vez en CI (`infrastructure-01`). Pendiente: gate del
+propietario en PowerShell y revisión final; fase no CLOSED. Sin migraciones, datos reales, commit,
+push ni deploy. [SSOT](docs/architecture/purchases.md#4-confirmación).
+
 ## FRONTEND — 2 timeouts recurrentes de pruebas — DEBT (2026-10-24)
 
 Compras (lote de 23): flujo de asignación masiva y consultas acotadas, de 11,3 s a ~1 s, con la misma

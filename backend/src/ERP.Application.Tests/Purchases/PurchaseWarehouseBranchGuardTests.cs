@@ -364,7 +364,8 @@ public sealed class PurchaseWarehouseBranchGuardTests
             PrecisionPolicyTestDouble.Mock(),
             Mock.Of<ERP.Application.Modules.Purchases.Services.IPurchaseXmlConfirmationGuard>(),
             Mock.Of<ERP.Application.Modules.Retentions.Services.IRetentionIssuer>(),
-            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Transmission().Object
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Transmission().Object,
+            Mock.Of<IUnitOfWork>()
         );
 
         var result = await handler.Handle(
