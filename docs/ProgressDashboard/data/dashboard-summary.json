@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-13 13:16:15",
+    "generated":  "2026-10-24 20:50:49",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",
@@ -11,10 +11,10 @@
                },
     "securityStatus":  "RED",
     "debtStatus":  "RED",
-    "productionReadinessScore":  63.13,
+    "productionReadinessScore":  61.55,
     "productionStatus":  "NOT READY",
-    "maturity":  "Controlled",
-    "confidenceScore":  59.52,
+    "maturity":  "Developing",
+    "confidenceScore":  57.55,
     "risk":  {
                  "architectureRisk":  "LOW",
                  "securityRisk":  "CRITICAL",
@@ -24,13 +24,13 @@
              },
     "productionDecision":  "NOT READY",
     "decisionBlockers":  [
-                             "Security blockers - Security score 27.8%",
-                             "Quality blockers - Quality score 8.05%",
+                             "Security blockers - Security score 20%",
+                             "Quality blockers - Quality score 7.95%",
                              "Debt blockers - 38 critical findings"
                          ],
     "quickRecommendations":  [
-                                 "Remove detected secrets (181 found)",
-                                 "Improve automated tests and code quality (current: 8.05%)",
+                                 "Remove detected secrets (180 found)",
+                                 "Improve automated tests and code quality (current: 7.95%)",
                                  "Reduce critical findings (currently 38)",
                                  "Review security configuration (12 anonymous access points detected)"
                              ],
@@ -61,13 +61,13 @@
                     {
                         "order":  1,
                         "title":  "Security Hardening",
-                        "detail":  "Score: 27.8%",
+                        "detail":  "Score: 20%",
                         "priority":  "CRITICAL"
                     },
                     {
                         "order":  2,
                         "title":  "Quality Improvement",
-                        "detail":  "Score: 8.05%",
+                        "detail":  "Score: 7.95%",
                         "priority":  "HIGH"
                     },
                     {
@@ -81,12 +81,12 @@
                            {
                                "gate":  "Security Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 27.8%"
+                               "detail":  "Score 20%"
                            },
                            {
                                "gate":  "Quality Gate",
                                "status":  "FAILED",
-                               "detail":  "Score 8.05%"
+                               "detail":  "Score 7.95%"
                            },
                            {
                                "gate":  "Technical Debt Gate",
@@ -95,8 +95,8 @@
                            }
                        ],
     "trend":  {
-                  "current":  61.12,
-                  "previous":  61.12,
+                  "current":  59.54,
+                  "previous":  59.54,
                   "change":  0,
                   "status":  "Stable"
               },

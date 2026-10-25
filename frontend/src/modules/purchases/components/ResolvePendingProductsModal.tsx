@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useItemCodeConflicts } from "../../../components/items/useItemCodeConflicts";
+import type { ItemCodeCandidate } from "../../items/facades/itemLookupFacade";
 import { flushSync } from "react-dom";
 import {
   FormProvider,
@@ -25,6 +27,7 @@ import { PendingProductsBulkBar } from "./PendingProductsBulkBar";
 import { PendingProductRow } from "./PendingProductRow";
 import {
   pendingProductsFormSchema,
+  normalizePendingBarcode,
   type PendingProductsFormValues,
 } from "../schemas/pendingProductsSchema";
 import {
@@ -42,6 +45,7 @@ type Props = {
   open: boolean;
   sources: PendingProductSource[];
   supplierName: string;
+  supplierId?: string;
   onClose: () => void;
   /** Lote aplicado (todo o nada) — el llamador actualiza las líneas de la compra. */
   onResolved: (result: ResolveReceptionLinesResult) => void;
@@ -61,6 +65,7 @@ export function ResolvePendingProductsModal({
   open,
   sources,
   supplierName,
+  supplierId,
   onClose,
   onResolved,
 }: Props) {
@@ -172,6 +177,7 @@ export function ResolvePendingProductsModal({
     });
 
   const submit = form.handleSubmit(async (values) => {
+    if (codeResolutionBlocked) return;
     setRowErrors(new Map());
     setGeneralErrors([]);
     // El precio sin IVA que se persiste debe quedar > 0 con la precisión de la empresa.
@@ -189,7 +195,14 @@ export function ResolvePendingProductsModal({
         buildResolveRequest(values.rows, pricing),
       );
       if (!result.applied) {
+        itemLookupFacade.refreshCodeConflicts();
         const grouped = groupRowErrors(result.errors);
+        // An unrecognized row cannot have a visible tag; retain its reason globally.
+        for (const [rowId, messages] of grouped.byRow) {
+          if (values.rows.some(row => row.rowId === rowId)) continue;
+          grouped.general.push(...messages);
+          grouped.byRow.delete(rowId);
+        }
         setRowErrors(grouped.byRow);
         setGeneralErrors(grouped.general);
         expandRows([...grouped.byRow.keys()]);
@@ -197,6 +210,7 @@ export function ResolvePendingProductsModal({
       }
       onResolved(result);
     } catch (err) {
+      itemLookupFacade.refreshCodeConflicts();
       if (!applyServerErrors(err, form.setError))
         setGeneralErrors([
           formatApiRequestError(err, {
@@ -215,11 +229,30 @@ export function ResolvePendingProductsModal({
 
   const rows = useWatch({ control: form.control, name: "rows" }) ?? [];
   const selectedCount = rows.filter((r) => r.selected).length;
-  const rowsWithErrors = rows.filter((r) => rowErrors.has(r.rowId)).length;
   const issuesByRow = pendingRowIssues(rows, pricing, noNetPriceMessage);
-  // Pendiente = fila seleccionada que no pasa las validaciones del envío o que el servidor rechazó.
-  const pendingCount = rows.filter((r) => r.selected && (issuesByRow.has(r.rowId) || rowErrors.has(r.rowId))).length;
   const allExpanded = rows.length > 0 && rows.every((r) => expanded.has(r.rowId));
+  const codeCandidates: ItemCodeCandidate[] = rows.flatMap((row, index) => {
+    if (!row.selected || row.mode === "link") return [];
+    const rowLabel = String(index + 1);
+    const owner = row.mode === "create" ? row.rowId : row.parentRowId;
+    const codes: ItemCodeCandidate[] = [];
+    if (row.mode === "create") codes.push({ kind: "Sku", code: row.sku, row: rowLabel, targetKey: owner });
+    const barcode = normalizePendingBarcode(row.barcode);
+    if (barcode) codes.push({ kind: "Barcode", code: barcode, row: rowLabel, targetKey: `${owner}:${row.presentationFactor ?? 1}` });
+    const supplierCode = sourcesById.get(row.rowId)?.supplierCode.trim();
+    if (supplierId && supplierCode && supplierCode !== "0") codes.push({ kind: "SupplierCode", code: supplierCode.toUpperCase(),
+      supplierId, row: rowLabel, targetKey: `${owner}:${row.presentationFactor ?? 1}` });
+    return codes;
+  });
+  const { conflicts, failed: conflictsUnavailable, verified, pending: checkingCodes } = useItemCodeConflicts({ codes: codeCandidates, enabled: open });
+  const codeIssuesByRow = new Map(rows.map((row, index) => [row.rowId, {
+    conflicts: conflicts.filter(c => c.rows.includes(String(index + 1))),
+    unverified: !verified && codeCandidates.some(c => c.row === String(index + 1)),
+  }]));
+  const codeResolutionBlocked = [...codeIssuesByRow.values()].some(c => c.unverified || c.conflicts.length > 0);
+  // Labels, counters and resolution consume the same current diagnostic snapshot.
+  const pendingCount = rows.filter(r => r.selected && (issuesByRow.has(r.rowId) || rowErrors.has(r.rowId)
+    || codeIssuesByRow.get(r.rowId)?.unverified || codeIssuesByRow.get(r.rowId)!.conflicts.length > 0)).length;
   const counter = (label: string) => <span className="pbd-summary__item">{label}</span>;
 
   return (
@@ -246,7 +279,7 @@ export function ResolvePendingProductsModal({
             variant="primary"
             size="md"
             onClick={() => void submit()}
-            disabled={selectedCount === 0 || form.formState.isSubmitting}
+            disabled={selectedCount === 0 || form.formState.isSubmitting || codeResolutionBlocked}
           >
             {t("purchases.pendingProducts.apply", { count: selectedCount })}
           </ZHBtn>
@@ -254,16 +287,8 @@ export function ResolvePendingProductsModal({
       }
     >
       <FormProvider {...form}>
-        {/* One summary per rejection: row reasons stay on their rows; only reasons without a row go here. */}
-        {(rowsWithErrors > 0 || generalErrors.length > 0) && (
-          <ZHPageNotice
-            variant={rowsWithErrors > 0 ? "warning" : "error"}
-            message={rowsWithErrors > 0
-              ? t("purchases.pendingProducts.rowsRejected", { count: rowsWithErrors })
-              : generalErrors.join("\n")}
-            detail={rowsWithErrors > 0 ? generalErrors.join("\n") : null}
-          />
-        )}
+        {conflictsUnavailable && <ZHPageNotice variant="warning" message={t("items.codeConflicts.unavailable")} />}
+        {generalErrors.length > 0 && <ZHPageNotice variant="error" message={[...new Set(generalErrors)].join("\n")} />}
         <PendingProductsBulkBar catalogs={catalogs} sourcesById={sourcesById} pricing={pricing} />
         <div className="prl-rows" role="table" aria-label={t("purchases.pendingProducts.title", "Resolver productos pendientes")}>
           <div className="prl-row prl-row--head" role="row">
@@ -285,11 +310,13 @@ export function ResolvePendingProductsModal({
               key={row.rowId}
               index={index}
               source={sourcesById.get(row.rowId)}
-              sourcesById={sourcesById}
               catalogs={catalogs}
               pricing={pricing}
               levels={levelsByItem[row.linkItemId] ?? []}
               serverErrors={rowErrors.get(row.rowId) ?? []}
+              codeConflicts={codeIssuesByRow.get(row.rowId)!.conflicts}
+              codeCheckMessage={codeIssuesByRow.get(row.rowId)?.unverified
+                ? t(checkingCodes ? "purchases.pendingProducts.checkingCodes" : "items.codeConflicts.unavailable") : undefined}
               issues={issuesByRow.get(row.rowId) ?? []}
               expanded={expanded.has(row.rowId)}
               onExpandedChange={(value) => setRowExpanded(row.rowId, value)}

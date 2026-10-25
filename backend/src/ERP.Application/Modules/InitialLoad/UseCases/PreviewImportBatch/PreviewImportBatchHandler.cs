@@ -1,4 +1,8 @@
 using System.Text.Json;
+using System.Globalization;
+using ERP.Application.Items.UseCases.CodeConflicts;
+using ERP.Application.Modules.InitialLoad.Processors;
+using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Application.Common;
 using ERP.Application.Modules.InitialLoad.DTOs;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
@@ -60,12 +64,33 @@ public sealed class PreviewImportBatchHandler
                 r.IsImported,
                 r.CreatedBusinessPartnerId,
                 JsonSerializer.Deserialize<Dictionary<string, string?>>(r.RawData) ?? new(),
-                issuesByRow[r.Id].Select(ImportBatchIssueDto.From).ToList()
+                issuesByRow[r.Id].Select(ImportBatchIssueDto.From).ToList(),
+                ItemCodes(r)
             ))
             .ToList();
 
         return Result<PagedResult<ImportBatchRowPreviewDto>>.Success(
             new PagedResult<ImportBatchRowPreviewDto>(items, page, pageSize, total)
         );
+    }
+
+    private static IReadOnlyList<ItemCodeCandidate>? ItemCodes(ImportBatchRow row)
+    {
+        var raw = JsonSerializer.Deserialize<Dictionary<string, string?>>(row.RawData)!;
+        if (row.IsImported || !raw.ContainsKey(ItemImportColumns.ItemTypeCode)) return null;
+        var label = row.RowNumber.ToString(CultureInfo.InvariantCulture);
+        var codes = new List<ItemCodeCandidate>();
+        void Add(string kind, string column, string target, Guid? supplierId = null)
+        {
+            if (raw.GetValueOrDefault(column) is { } code && !string.IsNullOrWhiteSpace(code))
+                codes.Add(new(kind, code, label, target, supplierId));
+        }
+        Add("Sku", ItemImportColumns.Sku, row.Id.ToString());
+        foreach (var column in new[] { ItemImportColumns.Barcode1, ItemImportColumns.Barcode2, ItemImportColumns.Barcode3 })
+            Add("Barcode", column, $"{row.Id}:{column}");
+        var parsed = row.ParsedData is null ? null : JsonSerializer.Deserialize<ParsedItemRow>(row.ParsedData);
+        if (parsed?.SupplierId is { } supplierId)
+            Add("SupplierCode", ItemImportColumns.SupplierItemCode, row.Id.ToString(), supplierId);
+        return codes;
     }
 }

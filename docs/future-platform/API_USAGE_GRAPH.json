@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-05T18:15:54.557Z",
+  "generatedAt": "2026-10-25T02:30:41.929Z",
   "summary": {
-    "total": 135,
-    "allowed": 135,
+    "total": 136,
+    "allowed": 136,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -745,6 +745,14 @@
         "frontend/src/modules/items/api/itemService.tracksStock.test.ts",
         "frontend/src/modules/items/api/itemService.ts",
         "frontend/src/modules/lib/authRefreshPolicy.test.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/items/code-conflicts",
+      "files": [
+        "frontend/src/modules/items/api/itemCodeConflicts.ts"
       ],
       "legacy": false,
       "allowed": true

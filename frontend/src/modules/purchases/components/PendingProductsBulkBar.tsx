@@ -44,11 +44,11 @@ export function PendingProductsBulkBar({
           <option value="link">{t("purchases.pendingProducts.mode.link", "Vincular existente")}</option>
         </ZhSelect>
       </ZHField>
-      <CatalogSelect label={t("purchases.pendingProducts.field.itemType", "Tipo de producto")} value={assignment.itemTypeId} onChange={(v) => set("itemTypeId", v)} options={catalogs.itemTypeOptions.map((o) => ({ value: o.id, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.brand", "Marca")} value={assignment.brandId} onChange={(v) => set("brandId", v)} options={catalogs.brandOptions.map((o) => ({ value: o.id, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.category", "Categoría")} value={assignment.categoryNodeId} onChange={(v) => set("categoryNodeId", v)} options={catalogs.categoryOptions.map((o) => ({ value: o.id, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.uom", "Unidad base")} value={assignment.defaultUomCode} onChange={(v) => set("defaultUomCode", v)} options={catalogs.uomOptions.map((o) => ({ value: o.code, label: o.name }))} />
-      <CatalogSelect label={t("purchases.pendingProducts.field.saleVat", "IVA venta")} value={assignment.saleVatCode} onChange={(v) => set("saleVatCode", v)} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
+      <CatalogSelect label={t("items.form.itemType", "Tipo")} value={assignment.itemTypeId} onChange={(v) => set("itemTypeId", v)} options={catalogs.itemTypeOptions.map((o) => ({ value: o.id, label: o.name }))} />
+      <CatalogSelect label={t("items.form.brand", "Marca")} value={assignment.brandId} onChange={(v) => set("brandId", v)} options={catalogs.brandOptions.map((o) => ({ value: o.id, label: o.name }))} />
+      <CatalogSelect label={t("items.form.category", "Categoría")} value={assignment.categoryNodeId} onChange={(v) => set("categoryNodeId", v)} options={catalogs.categoryOptions.map((o) => ({ value: o.id, label: o.name }))} />
+      <CatalogSelect label={t("items.form.uom", "Unidad base de inventario")} value={assignment.defaultUomCode} onChange={(v) => set("defaultUomCode", v)} options={catalogs.uomOptions.map((o) => ({ value: o.code, label: o.name }))} />
+      <CatalogSelect label={t("items.tax.saleVatCode", "Tarifa IVA venta")} value={assignment.saleVatCode} onChange={(v) => set("saleVatCode", v)} options={catalogs.vatRateOptions.map((o) => ({ value: o.code, label: o.name }))} />
       <ZHBtn
         type="button"
         variant="secondary"

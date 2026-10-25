@@ -10,10 +10,12 @@ import { z } from "zod";
 export const PENDING_PRODUCT_MODES = ["create", "link", "presentation"] as const;
 export type PendingProductMode = (typeof PENDING_PRODUCT_MODES)[number];
 
-/** Solo el cero aislado representa ausencia; se conservan ceros iniciales de codigos reales. */
+/**
+ * Barcode explícito de la fila: solo el vacío equivale a ausencia. Que un código del XML sea
+ * barcode lo decide `isRealBarcode` (GTIN válido) al precargar, nunca una lista de valores.
+ */
 export function normalizePendingBarcode(value: string): string {
-  const code = value.trim();
-  return code === "0" ? "" : code;
+  return value.trim();
 }
 
 const SKU_PATTERN = /^[A-Za-z0-9\-_.]+$/;
@@ -69,16 +71,16 @@ export const pendingProductRowSchema = z
         sku.length === 0 || SKU_PATTERN.test(sku),
         "El SKU solo puede contener letras, números, guiones, puntos y guiones bajos.",
       );
-      require("shortName", row.shortName.trim().length > 0, "El nombre es obligatorio.");
-      require("shortName", row.shortName.trim().length <= 50, "El nombre no puede exceder 50 caracteres.");
-      require("description", row.description.trim().length > 0, "La descripción es obligatoria.");
-      require("description", row.description.trim().length <= 254, "La descripción no puede exceder 254 caracteres.");
-      require("itemTypeId", row.itemTypeId.length > 0, "El tipo de producto es obligatorio.");
+      require("shortName", row.shortName.trim().length > 0, "El nombre comercial es obligatorio.");
+      require("shortName", row.shortName.trim().length <= 50, "El nombre comercial no puede superar 50 caracteres.");
+      require("description", row.description.trim().length > 0, "La descripción completa es obligatoria.");
+      require("description", row.description.trim().length <= 254, "La descripción completa no puede superar 254 caracteres.");
+      require("itemTypeId", row.itemTypeId.length > 0, "El tipo de ítem es obligatorio.");
       require("brandId", row.brandId.length > 0, "La marca es obligatoria.");
       require("categoryNodeId", row.categoryNodeId.length > 0, "La categoría es obligatoria.");
-      require("defaultUomCode", row.defaultUomCode.length > 0, "La unidad de medida es obligatoria.");
-      require("purchaseVatCode", row.purchaseVatCode.length > 0, "Seleccione el IVA de compra.");
-      require("saleVatCode", row.saleVatCode.length > 0, "Seleccione el IVA de venta.");
+      require("defaultUomCode", row.defaultUomCode.length > 0, "La unidad base de inventario es obligatoria.");
+      require("purchaseVatCode", row.purchaseVatCode.length > 0, "Debe seleccionar un código de IVA para compra.");
+      require("saleVatCode", row.saleVatCode.length > 0, "Debe seleccionar un código de IVA para venta.");
       require("salePriceGross", row.salePriceGross != null && row.salePriceGross > 0, "Ingrese el PVP final (mayor a cero).");
     }
     if (row.mode === "link")

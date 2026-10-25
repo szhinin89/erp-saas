@@ -1,0 +1,4 @@
+Suite frontend completa (resumen del reporte JSON de Vitest, 2026-10-24, tras corregir Caja/Contabilidad)
+Vitest 3248 pruebas: 3248 PASS, 0 FAIL, 322 archivos. success=True
+
+FAIL: ninguno

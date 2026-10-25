@@ -215,6 +215,11 @@ public sealed class Item : MasterEntity, ITenantScopedEntity, ICompanyScopedEnti
 
     // ── Variantes ─────────────────────────────────────────────────────────
 
+    public string ResolveVariantSku(IReadOnlyList<(Guid AttributeDefinitionId, string Value)> axisAttributes,
+        string? skuOverride) => skuOverride?.Trim() ?? (axisAttributes.Count > 0
+            ? $"{Code.SKU}-{string.Join("-", axisAttributes.Select(a => a.Value.ToUpperInvariant()))}"
+            : Code.SKU);
+
     public ItemVariant AddVariant(
         IReadOnlyList<(Guid AttributeDefinitionId, string Value)> axisAttributes,
         string? skuOverride,
@@ -222,13 +227,7 @@ public sealed class Item : MasterEntity, ITenantScopedEntity, ICompanyScopedEnti
         Guid updatedBy
     )
     {
-        var variantSku =
-            skuOverride?.Trim()
-            ?? (
-                axisAttributes.Count > 0
-                    ? $"{Code.SKU}-{string.Join("-", axisAttributes.Select(a => a.Value.ToUpperInvariant()))}"
-                    : Code.SKU
-            );
+        var variantSku = ResolveVariantSku(axisAttributes, skuOverride);
 
         if (_variants.Any(v => v.IsActive && v.SKU == variantSku))
             throw new DomainRuleViolationException(

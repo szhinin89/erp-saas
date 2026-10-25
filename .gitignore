@@ -17,3 +17,6 @@ backend/src/.vs/
 
 # Artefactos locales del desarrollador (harness, datos de prueba): nunca versionar
 /.local/
+
+# Reporte local regenerado por npm run architecture:check/report
+tools/architecture/architecture-report.json

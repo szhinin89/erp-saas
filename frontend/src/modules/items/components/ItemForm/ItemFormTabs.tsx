@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ItemCodeConflicts } from "../../../../components/items/ItemCodeConflicts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { applyServerErrors } from "../../../lib/validationErrors";
@@ -152,21 +153,22 @@ export function ItemFormTabs({
   useEffect(() => {
     if (!detail.item) return;
     const item = detail.item;
-    if (brandOptions.length > 0) form.setValue("brandId", item.brandId ?? "");
-    if (categoryOptions.length > 0)
+    if (brandOptions.length > 0 && !form.getFieldState("brandId").isDirty) form.setValue("brandId", item.brandId ?? "");
+    if (categoryOptions.length > 0 && !form.getFieldState("categoryNodeId").isDirty)
       form.setValue("categoryNodeId", item.categoryNodeId ?? "");
-    if (sriUomOptions.length > 0)
+    if (sriUomOptions.length > 0 && !form.getFieldState("defaultUomCode").isDirty)
       form.setValue("defaultUomCode", item.defaultUomCode);
-    if (itemTypeOptions.length > 0)
+    if (itemTypeOptions.length > 0 && !form.getFieldState("itemTypeId").isDirty)
       form.setValue("itemTypeId", item.itemTypeId);
     if (vatRateOptions.length > 0) {
-      form.setValue("taxConfig.saleVatCode", item.taxConfig.saleVatCode ?? "");
-      form.setValue(
+      if (!form.getFieldState("taxConfig.saleVatCode").isDirty)
+        form.setValue("taxConfig.saleVatCode", item.taxConfig.saleVatCode ?? "");
+      if (!form.getFieldState("taxConfig.purchaseVatCode").isDirty) form.setValue(
         "taxConfig.purchaseVatCode",
         item.taxConfig.purchaseVatCode ?? "",
       );
     }
-    if (iceRateOptions.length > 0)
+    if (iceRateOptions.length > 0 && !form.getFieldState("taxConfig.exciseTaxCode").isDirty)
       form.setValue("taxConfig.exciseTaxCode", item.taxConfig.exciseTaxCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -226,6 +228,16 @@ export function ItemFormTabs({
     <FormProvider {...form}>
       <div>
         {formError && <ZHPageNotice variant="error" message={formError} />}
+        {!disabled && <ItemCodeConflicts codes={[
+          { kind: "Sku", code: form.watch("sku") ?? "", row: "1", targetKey: "item", excludeId: itemId },
+          ...(!isEditMode ? (form.watch("barcodes") ?? []).map((b, i) => ({
+            kind: "Barcode" as const, code: b.code, row: String(i + 1), targetKey: `barcode:${i}`,
+          })) : []),
+          ...(!isEditMode ? (form.watch("supplierCodes") ?? []).map((c, i) => ({
+            kind: "SupplierCode" as const, code: c.code, supplierId: c.supplierId,
+            row: String(i + 1), targetKey: `supplier:${i}`,
+          })) : []),
+        ]} />}
 
         <ZHTabBar
           tabs={ITEM_FORM_TABS.map((tab) => ({

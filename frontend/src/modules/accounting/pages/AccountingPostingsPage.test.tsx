@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
@@ -190,14 +191,22 @@ it("caps selection at 100 and cancellation sends no request", async () => {
   );
   mocks.confirm.mockResolvedValue(false);
   show();
-  const checks = await screen.findAllByRole("checkbox");
+  const checks = (await screen.findAllByRole("checkbox")) as HTMLInputElement[];
+  // 100 clics reales = 100 renders de la tabla de 101 filas (~4 s en jsdom): React confirma cada
+  // evento discreto aunque estén agrupados. Por eso el archivo corre en el proyecto Vitest
+  // `heavy-dom`, sin contención de CPU (vite.config.ts).
   checks.slice(0, 100).forEach((check) => fireEvent.click(check));
-  expect((checks[100] as HTMLInputElement).disabled).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: /Reprocesar selecci/ }));
-  fireEvent.change(screen.getByRole("textbox"), {
+  expect(checks.slice(0, 100).every((check) => check.checked)).toBe(true);
+  expect(checks[100].checked).toBe(false);
+  expect(checks[100].disabled).toBe(true);
+  const batch = screen.getByRole("button", { name: /Reprocesar selecci/ });
+  expect(batch.textContent).toContain("(100/100)");
+  fireEvent.click(batch);
+  const dialog = screen.getByRole("dialog");
+  fireEvent.change(within(dialog).getByRole("textbox"), {
     target: { value: "Correccion" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Continuar" }));
   await waitFor(() => expect(mocks.confirm).toHaveBeenCalledOnce());
   expect(mocks.reprocessPostings).not.toHaveBeenCalled();
 }, 15000);

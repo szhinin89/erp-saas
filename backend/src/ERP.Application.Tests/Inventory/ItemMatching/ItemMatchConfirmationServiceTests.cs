@@ -82,6 +82,24 @@ public sealed class ItemMatchConfirmationServiceTests
         return item;
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData(" 0 ")]
+    [InlineData("")]
+    public async Task ConfirmAsync_links_without_learning_absent_supplier_code(string code)
+    {
+        var document = CreateDocument();
+        var line = CreateLine(document.Id, code);
+        var item = CreateItem();
+        var repo = new Mock<IItemRepository>();
+        await new ItemMatchConfirmationService(repo.Object).ConfirmAsync(
+            document, line, item.Id, UserId, DateTime.UtcNow);
+        line.ItemId.Should().Be(item.Id);
+        repo.Verify(r => r.SupplierCodeExistsAsync(It.IsAny<Guid>(), It.IsAny<string>(),
+            It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task ConfirmAsync_normalizes_learned_code_but_keeps_original_XML()
     {

@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-10-13 13:15:29",
+    "generated":  "2026-10-24 20:50:33",
     "coverage":  {
-                     "mappedFeaturePoints":  48,
-                     "totalFeaturePoints":  292,
-                     "percentage":  16.44
+                     "mappedFeaturePoints":  52,
+                     "totalFeaturePoints":  300,
+                     "percentage":  17.33
                  },
     "domains":  [
                     {
@@ -155,7 +155,7 @@
                                         {
                                             "name":  "Purchases",
                                             "score":  81.5,
-                                            "features":  29,
+                                            "features":  33,
                                             "processes":  [
                                                               {
                                                                   "name":  "Compra",
@@ -176,7 +176,7 @@
                                         {
                                             "name":  "Items",
                                             "score":  81.5,
-                                            "features":  24,
+                                            "features":  25,
                                             "processes":  [
 
                                                           ],
@@ -188,7 +188,7 @@
                                         {
                                             "name":  "Inventory",
                                             "score":  81.5,
-                                            "features":  35,
+                                            "features":  36,
                                             "processes":  [
 
                                                           ],
@@ -239,7 +239,7 @@
                                         {
                                             "name":  "Caja",
                                             "score":  81.5,
-                                            "features":  11,
+                                            "features":  12,
                                             "processes":  [
 
                                                           ],
@@ -495,7 +495,7 @@
                                         {
                                             "name":  "Accounting",
                                             "score":  81.5,
-                                            "features":  5,
+                                            "features":  6,
                                             "processes":  [
 
                                                           ],

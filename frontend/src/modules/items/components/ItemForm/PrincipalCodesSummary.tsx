@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { formatApiRequestError } from "../../../lib/apiError";
+import { ItemCodeConflicts } from "../../../../components/items/ItemCodeConflicts";
 import { Badge, EmptyState } from "../../../../components/PageShell";
 import { ZHBtn, ZHFormSection } from "../../../../components/zh/ZHForm";
 import { ZhSelect, ZhTextInput } from "../../../../components/zh/inputs";
@@ -61,17 +63,20 @@ export function BarcodePrincipalManager({
   const [code, setCode] = useState("");
   const [barcodeType, setBarcodeType] = useState("");
   const [busy, setBusy] = useState(false);
+  const [addError, setAddError] = useState("");
 
   const resetAdd = () => {
     setAdding(false);
     setVariantId(defaultVariantId);
     setCode("");
     setBarcodeType("");
+    setAddError("");
   };
 
   const handleAdd = async () => {
     if (!item || !variantId || !code.trim() || !barcodeType) return;
     setBusy(true);
+    setAddError("");
     try {
       await itemService.addBarcode(
         item.id,
@@ -81,6 +86,8 @@ export function BarcodePrincipalManager({
       );
       resetAdd();
       onRefresh();
+    } catch (error) {
+      setAddError(formatApiRequestError(error, { generic: t("common.saveError", "Error al guardar.") }));
     } finally {
       setBusy(false);
     }
@@ -105,6 +112,8 @@ export function BarcodePrincipalManager({
         "Código usado para escanear o buscar el ítem.",
       )}
     >
+      {adding && <ItemCodeConflicts codes={[{ kind: "Barcode", code, row: "1", targetKey: "barcode" }]} />}
+      {addError && <p className="zh-field-hint zh-field-hint--error">{addError}</p>}
       {barcodes.length > 0 || adding ? (
         <div className="table-scroll">
           <table className="table">

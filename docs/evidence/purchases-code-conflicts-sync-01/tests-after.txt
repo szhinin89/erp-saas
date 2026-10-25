@@ -1,0 +1,8 @@
+
+ RUN  v4.1.6 C:/ProyectCursor/erp-saas/frontend
+
+
+ Test Files  72 passed (72)
+      Tests  767 passed (767)
+   Start at  18:08:05
+   Duration  131.59s (transform 10.18s, setup 9.34s, import 47.54s, tests 77.21s, environment 101.68s)

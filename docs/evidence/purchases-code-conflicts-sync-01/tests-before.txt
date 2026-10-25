@@ -1,0 +1,98 @@
+
+ RUN  v4.1.6 C:/ProyectCursor/erp-saas/frontend
+
+ ❯ src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx (4 tests | 4 failed) 3148ms
+     × counts a detected duplicate as pending and disables resolution before any save 901ms
+     × moves valid to pending to duplicate to corrected without saving 154ms
+     × ignores stale duplicate and stale success responses in both orders 1698ms
+     × does not claim uniqueness when the diagnostic request fails 392ms
+npx.cmd :
+En línea: 2 Carácter: 1
++ npx.cmd vitest run src/modules/purchases/components/ResolvePendingPro ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx > purchase code diagnostics
+synchronization > counts a detected duplicate as pending and disables resolution before any save
+AssertionError: expected 'purchases.pendingProducts.footer.sele…' to contain 'purchases.pendingProducts.footer.read…'
+
+Expected: "purchases.pendingProducts.footer.ready:0"
+Received: "purchases.pendingProducts.footer.selected:1purchases.pendingProducts.footer.ready:1purchases.pendingProducts
+.footer.pending:0"
+
+ ❯ expectCount src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:34:20
+     32| const footer = () => document.querySelector(".pbd-footer-status")!.tex…
+     33| const expectCount = (ready: number, pending: number) => {
+     34|   expect(footer()).toContain(`purchases.pendingProducts.footer.ready:$…
+       |                    ^
+     35|   expect(footer()).toContain(`purchases.pendingProducts.footer.pending…
+     36| };
+ ❯ src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:53:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx > purchase code diagnostics
+synchronization > moves valid to pending to duplicate to corrected without saving
+AssertionError: expected 'purchases.pendingProducts.footer.sele…' to contain 'purchases.pendingProducts.footer.read…'
+
+Expected: "purchases.pendingProducts.footer.ready:0"
+Received: "purchases.pendingProducts.footer.selected:1purchases.pendingProducts.footer.ready:1purchases.pendingProducts
+.footer.pending:0"
+
+ ❯ expectCount src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:34:20
+     32| const footer = () => document.querySelector(".pbd-footer-status")!.tex…
+     33| const expectCount = (ready: number, pending: number) => {
+     34|   expect(footer()).toContain(`purchases.pendingProducts.footer.ready:$…
+       |                    ^
+     35|   expect(footer()).toContain(`purchases.pendingProducts.footer.pending…
+     36| };
+ ❯ src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:56:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx > purchase code diagnostics
+synchronization > ignores stale duplicate and stale success responses in both orders
+AssertionError: expected 'purchases.pendingProducts.footer.sele…' to contain 'purchases.pendingProducts.footer.read…'
+
+Expected: "purchases.pendingProducts.footer.ready:0"
+Received: "purchases.pendingProducts.footer.selected:1purchases.pendingProducts.footer.ready:1purchases.pendingProducts
+.footer.pending:0"
+
+ ❯ expectCount src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:34:20
+     32| const footer = () => document.querySelector(".pbd-footer-status")!.tex…
+     33| const expectCount = (ready: number, pending: number) => {
+     34|   expect(footer()).toContain(`purchases.pendingProducts.footer.ready:$…
+       |                    ^
+     35|   expect(footer()).toContain(`purchases.pendingProducts.footer.pending…
+     36| };
+ ❯ src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:71:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx > purchase code diagnostics
+synchronization > does not claim uniqueness when the diagnostic request fails
+AssertionError: expected 'purchases.pendingProducts.footer.sele…' to contain 'purchases.pendingProducts.footer.read…'
+
+Expected: "purchases.pendingProducts.footer.ready:0"
+Received: "purchases.pendingProducts.footer.selected:1purchases.pendingProducts.footer.ready:1purchases.pendingProducts
+.footer.pending:0"
+
+ ❯ expectCount src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:34:20
+     32| const footer = () => document.querySelector(".pbd-footer-status")!.tex…
+     33| const expectCount = (ready: number, pending: number) => {
+     34|   expect(footer()).toContain(`purchases.pendingProducts.footer.ready:$…
+       |                    ^
+     35|   expect(footer()).toContain(`purchases.pendingProducts.footer.pending…
+     36| };
+ ❯ src/modules/purchases/components/ResolvePendingProductsModal.codeSync.test.tsx:77:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  18:06:43
+   Duration  7.74s (transform 1.44s, setup 520ms, import 1.83s, tests 3.15s, environment 1.90s)

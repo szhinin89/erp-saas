@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { ItemCodeConflicts } from "../../../components/items/ItemCodeConflicts";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHCard } from "../../../components/zh/ZHCard";
@@ -179,6 +180,8 @@ export function ImportWizardPage({
         </ZHBtn>
       }
     >
+      {importType === "Items" && <ItemCodeConflicts codes={previewRows.flatMap(r => r.itemCodes ?? [])}
+        refreshKey={`${batch?.status}:${error ?? ""}`} />}
       {error && (
         <ZHPageNotice
           variant="error"

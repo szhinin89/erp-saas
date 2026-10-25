@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-13 13:16:12",
+    "generated":  "2026-10-24 20:50:49",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -104,9 +104,9 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  1065,
+                                                                "SourceFiles":  1129,
                                                                 "Pages":  0,
-                                                                "Components":  129,
+                                                                "Components":  137,
                                                                 "Hooks":  8,
                                                                 "Services":  0,
                                                                 "Stores":  0,
@@ -432,39 +432,29 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  102,
-                                             "DbSets":  189,
+                                             "DbContext":  101,
+                                             "DbSets":  196,
                                              "EntityConfigurations":  0,
                                              "Repositories":  95,
-                                             "Migrations":  9
+                                             "Migrations":  3
                                          },
                        "migrations":  {
-                                          "totalFiles":  9,
+                                          "totalFiles":  3,
                                           "mostRecent":  [
                                                              {
-                                                                 "name":  "20261012114051_PurchaseLineXmlOriginPresentation",
-                                                                 "modified":  "2026-10-12 06:40:51",
-                                                                 "sizeKB":  1.2
+                                                                 "name":  "20261021162651_InitialProductionBaseline.Designer",
+                                                                 "modified":  "2026-10-23 06:46:55",
+                                                                 "sizeKB":  933.82
                                                              },
                                                              {
-                                                                 "name":  "20261012114051_PurchaseLineXmlOriginPresentation.Designer",
-                                                                 "modified":  "2026-10-12 06:40:51",
-                                                                 "sizeKB":  856.74
+                                                                 "name":  "20261021162651_InitialProductionBaseline",
+                                                                 "modified":  "2026-10-23 06:46:55",
+                                                                 "sizeKB":  692.26
                                                              },
                                                              {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-10-12 06:40:51",
-                                                                 "sizeKB":  856.6
-                                                             },
-                                                             {
-                                                                 "name":  "20261012014646_ItemSupplierCodeActiveUnique.Designer",
-                                                                 "modified":  "2026-10-11 20:46:46",
-                                                                 "sizeKB":  856.36
-                                                             },
-                                                             {
-                                                                 "name":  "20261012014646_ItemSupplierCodeActiveUnique",
-                                                                 "modified":  "2026-10-11 20:46:46",
-                                                                 "sizeKB":  1.39
+                                                                 "modified":  "2026-10-23 06:44:20",
+                                                                 "sizeKB":  933.69
                                                              }
                                                          ]
                                       },

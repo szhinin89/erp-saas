@@ -53,7 +53,7 @@ export function XmlFacts({
           "—"
         )}
       </dd>
-      <dt>{t("purchases.pendingProducts.field.purchaseVat", "IVA compra")}</dt>
+      <dt>{t("items.tax.purchaseVatCode", "Tarifa IVA compra")}</dt>
       <dd>
         {vat?.name ?? (source.vatCode || "—")}
         {purchaseVatError && <div className="prl-row__error">{purchaseVatError}</div>}

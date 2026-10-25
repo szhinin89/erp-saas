@@ -1,5 +1,6 @@
 using ERP.Domain.Modules.InitialLoad.Entities;
 using ERP.Domain.Modules.InitialLoad.Enums;
+using ERP.Application.Items.UseCases.CodeConflicts;
 
 namespace ERP.Application.Modules.InitialLoad.DTOs;
 
@@ -61,7 +62,8 @@ public sealed record ImportBatchRowPreviewDto(
     bool IsImported,
     Guid? CreatedBusinessPartnerId,
     IReadOnlyDictionary<string, string?> RawData,
-    IReadOnlyList<ImportBatchIssueDto> Issues
+    IReadOnlyList<ImportBatchIssueDto> Issues,
+    IReadOnlyList<ItemCodeCandidate>? ItemCodes = null
 );
 
 public sealed record ImportBatchConfirmResultDto(

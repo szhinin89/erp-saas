@@ -45,8 +45,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
 
     /// <summary>
     /// Tipo del catálogo global <c>barcode_types</c> para el código provisional: Items exige ≥1
-    /// código de barras, y sin EAN/UPC real de la unidad se usa el código del proveedor como
-    /// identificación interna hasta registrar el real desde la ficha del Item.
+    /// código de barras. Se genera independientemente del proveedor, hasta añadir el EAN real.
     /// </summary>
     private const string ProvisionalBarcodeType = "Internal";
 
@@ -66,6 +65,10 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     public async Task<Result<ResolvePurchaseReceptionLinesResultDto>> Handle(
         ResolvePurchaseReceptionLinesCommand cmd,
         CancellationToken cancellationToken
+    ) => await HandleAttemptAsync(cmd, cancellationToken, 0);
+
+    private async Task<Result<ResolvePurchaseReceptionLinesResultDto>> HandleAttemptAsync(
+        ResolvePurchaseReceptionLinesCommand cmd, CancellationToken cancellationToken, int attempt
     )
     {
         if (cmd.Lines.Count == 0)
@@ -110,7 +113,8 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                 "No tiene permiso para crear productos."
             );
 
-        var errors = await ValidateAsync(document, cmd, cancellationToken);
+        var allocatedCodes = new Dictionary<string, NewItemBarcodes>(StringComparer.Ordinal);
+        var errors = await ValidateAsync(document, cmd, allocatedCodes, cancellationToken);
         if (errors.Count > 0)
             return Rejected(errors);
 
@@ -118,9 +122,21 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         try
         {
             await unitOfWork.ExecuteInTransactionAsync(
-                ct => ApplyAsync(document, cmd, outcome, ct),
+                ct => ApplyAsync(document, cmd, allocatedCodes, outcome, ct),
                 cancellationToken
             );
+        }
+        catch (GeneratedBarcodeCollisionException) when (attempt < 3)
+        {
+            // The whole batch was rolled back. Reload reception and regenerate only internal codes.
+            unitOfWork.ClearChangeTracker();
+            return await HandleAttemptAsync(cmd, cancellationToken, attempt + 1);
+        }
+        catch (GeneratedBarcodeCollisionException)
+        {
+            unitOfWork.ClearChangeTracker();
+            return Rejected([new(null, outcome.CurrentItemKey,
+                "No se pudo reservar un código Interno único. Reintente la operación.")]);
         }
         catch (RowFailureException ex)
         {
@@ -185,6 +201,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     private async Task<List<ResolveReceptionRowError>> ValidateAsync(
         PurchaseReceptionDocument document,
         ResolvePurchaseReceptionLinesCommand cmd,
+        Dictionary<string, NewItemBarcodes> allocatedCodes,
         CancellationToken ct
     )
     {
@@ -218,12 +235,12 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
 
             // Un mismo código de proveedor = una sola equivalencia (Item + presentación).
             var line = document.Lines.Single(l => l.Id == input.PurchaseReceptionLineId);
-            if (string.IsNullOrWhiteSpace(line.SupplierCode))
+            if (NormalizedSupplierCode(line.SupplierCode) is null)
                 continue;
             var target = input.ItemId is { } existing
                 ? $"item:{existing}:{input.PackagingLevelId}"
                 : $"new:{input.NewItemKey}:{input.PresentationFactor}";
-            var normalizedCode = line.SupplierCode.Trim().ToUpperInvariant();
+            var normalizedCode = line.SupplierCode!.Trim().ToUpperInvariant();
             if (
                 targetsByCode.TryGetValue(normalizedCode, out var previous)
                 && previous.Target != target
@@ -251,6 +268,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                     itemLines,
                     skus,
                     barcodes,
+                    allocatedCodes,
                     ct
                 )
             )
@@ -278,10 +296,10 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             return "Indique un producto existente o un producto nuevo (solo uno).";
 
         var registered =
-            document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode)
+            document.SupplierId is { } supplierId && NormalizedSupplierCode(line.SupplierCode) is not null
                 ? await items.GetSupplierCodeMatchAsync(
                     supplierId,
-                    line.SupplierCode,
+                    line.SupplierCode!,
                     document.TenantId,
                     ct
                 )
@@ -336,9 +354,11 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         IReadOnlyList<ResolveReceptionLineInput> itemLines,
         HashSet<string> skus,
         HashSet<string> barcodes,
+        Dictionary<string, NewItemBarcodes> allocatedCodes,
         CancellationToken ct
     )
     {
+        itemLines = ResolveXmlBarcodes(document, itemLines);
         var messages = new List<string>();
         if (itemLines.Count == 0)
             messages.Add("El producto nuevo no está asignado a ninguna línea.");
@@ -358,15 +378,28 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                 $"La presentación de {conflictingBarcode.Key} unidades tiene códigos de barras distintos entre líneas."
             );
 
-        var codes = ResolveBarcodes(document, itemLines);
+        var codes = ResolveBarcodes(itemLines);
         if (codes.Presentations.Values.Any(code => code.Length > MaxBarcodeLength))
             messages.Add(
                 $"El código de barras de la presentación no puede exceder {MaxBarcodeLength} caracteres."
             );
-        if (itemLines.Count > 0 && codes.Base is null)
-            messages.Add(
-                "Ingrese el código de barras de la unidad: la línea no trae un código del proveedor que pueda usarse como código Interno provisional."
-            );
+        if (codes.BaseIsProvisional)
+        {
+            var reserved = false;
+            for (var tries = 0; tries < 10; tries++)
+            {
+                if (!barcodes.Contains(codes.Base!.Code)
+                    && !await items.BarcodeExistsAsync(codes.Base.Code, tenant.TenantId, company.CompanyId, ct))
+                {
+                    reserved = true;
+                    break;
+                }
+                codes = codes with { Base = NewInternalBarcode() };
+            }
+            if (!reserved)
+                messages.Add("No se pudo reservar un código Interno único. Reintente la operación.");
+        }
+        allocatedCodes[newItem.Key] = codes;
 
         var command = ToCreateItemCommand(newItem, codes.Base);
         foreach (var validator in createItemValidators)
@@ -387,19 +420,9 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         foreach (var (barcode, provisional) in codes.All())
         {
             if (!barcodes.Add(barcode))
-                messages.Add(
-                    provisional
-                        ? $"El código del proveedor '{barcode}' se usaría como código de barras Interno provisional, pero está repetido en el lote. Ingrese el código de barras de la unidad."
-                        : $"El código de barras '{barcode}' está repetido en el lote."
-                );
-            else if (
-                await items.BarcodeExistsAsync(barcode, tenant.TenantId, company.CompanyId, ct)
-            )
-                messages.Add(
-                    provisional
-                        ? $"El código del proveedor '{barcode}' se usaría como código de barras Interno provisional, pero ya está asignado a otro ítem. Ingrese el código de barras de la unidad."
-                        : $"El código de barras '{barcode}' ya está asignado a otro ítem."
-                );
+                messages.Add($"El código de barras '{barcode}' está repetido en el lote.");
+            else if (!provisional && await items.BarcodeExistsAsync(barcode, tenant.TenantId, company.CompanyId, ct))
+                messages.Add($"El código de barras '{barcode}' ya está asignado a otro ítem. Use Vincular en lugar de crear.");
         }
 
         var conflictingFactor = itemLines
@@ -455,6 +478,7 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     private async Task ApplyAsync(
         PurchaseReceptionDocument document,
         ResolvePurchaseReceptionLinesCommand cmd,
+        IReadOnlyDictionary<string, NewItemBarcodes> allocatedCodes,
         ExecutionOutcome outcome,
         CancellationToken ct
     )
@@ -465,8 +489,10 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
         {
             outcome.CurrentItemKey = newItem.Key;
             var itemLines = cmd.Lines.Where(l => l.NewItemKey == newItem.Key).ToList();
-            var codes = ResolveBarcodes(document, itemLines);
+            var codes = allocatedCodes[newItem.Key];
             var created = await mediator.Send(ToCreateItemCommand(newItem, codes.Base), ct);
+            if (!created.IsSuccess && codes.BaseIsProvisional && created.Code == "BARCODE_DUPLICATE")
+                throw new GeneratedBarcodeCollisionException();
             if (!created.IsSuccess || created.Value is null)
                 throw new RowFailureException(
                     new(null, newItem.Key, created.Error ?? "No se pudo crear el producto.")
@@ -511,12 +537,12 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
 
             var learns =
                 document.SupplierId is { } supplierId
-                && !string.IsNullOrWhiteSpace(line.SupplierCode)
+                && NormalizedSupplierCode(line.SupplierCode) is not null
                 && (
-                    learnedCodes.Contains(line.SupplierCode)
+                    learnedCodes.Contains(line.SupplierCode!)
                     || !await items.SupplierCodeExistsAsync(
                         supplierId,
-                        line.SupplierCode.Trim().ToUpperInvariant(),
+                        line.SupplierCode!.Trim().ToUpperInvariant(),
                         document.TenantId,
                         ct
                     )
@@ -524,16 +550,16 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             // Recheck after product creation: another batch may have learned this code meanwhile.
             var registered =
                 document.SupplierId is { } supplier
-                && !string.IsNullOrWhiteSpace(line.SupplierCode)
+                && NormalizedSupplierCode(line.SupplierCode) is not null
                 && await items.SupplierCodeExistsAsync(
                     supplier,
-                    line.SupplierCode.Trim().ToUpperInvariant(),
+                    line.SupplierCode!.Trim().ToUpperInvariant(),
                     document.TenantId,
                     ct
                 )
                     ? await items.GetSupplierCodeMatchAsync(
                         supplier,
-                        line.SupplierCode,
+                        line.SupplierCode!,
                         document.TenantId,
                         ct
                     )
@@ -671,13 +697,23 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
 
     /// <summary>
     /// Código real de la unidad = el de una línea de factor 1. Sin él, el Item (que exige ≥1 código)
-    /// recibe el código del proveedor como Interno provisional — de una línea de unidad primero, y
-    /// nunca uno que ya es el código de barras de una caja/pack del mismo producto.
+    /// recibe un Interno generado, independiente del proveedor y de los barcodes de caja/pack.
     /// </summary>
-    private static NewItemBarcodes ResolveBarcodes(
+    private static IReadOnlyList<ResolveReceptionLineInput> ResolveXmlBarcodes(
         PurchaseReceptionDocument document,
         IReadOnlyList<ResolveReceptionLineInput> itemLines
-    )
+    ) =>
+        // The XML is authoritative even when a client omits its valid EAN from the request.
+        itemLines.Select(input =>
+        {
+            if (NormalizedBarcode(input.Barcode) is not null) return input;
+            var source = document.Lines.FirstOrDefault(l => l.Id == input.PurchaseReceptionLineId);
+            var gtin = new[] { source?.SupplierAuxCode, source?.SupplierCode }
+                .Select(Trimmed).FirstOrDefault(code => IsValidGtin(code) && GtinBarcodeType(code!) is not null);
+            return gtin is null ? input : input with { Barcode = gtin, BarcodeType = GtinBarcodeType(gtin) };
+        }).ToList();
+
+    private static NewItemBarcodes ResolveBarcodes(IReadOnlyList<ResolveReceptionLineInput> itemLines)
     {
         var presentations = itemLines
             .Where(l => l.PresentationFactor != 1m && NormalizedBarcode(l.Barcode) is not null)
@@ -698,27 +734,34 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
                 presentations
             );
 
-        var supplierCode = itemLines
-            .OrderBy(l => l.PresentationFactor == 1m ? 0 : 1)
-            .Select(l =>
-                NormalizedBarcode(
-                    document.Lines.FirstOrDefault(d => d.Id == l.PurchaseReceptionLineId)?.SupplierCode
-                )
-            )
-            .FirstOrDefault(code =>
-                code is not null
-                && !presentations.Values.Contains(code, StringComparer.OrdinalIgnoreCase)
-            );
-        return new(
-            supplierCode is null
-                ? null
-                : new CreateItemBarcodeDto(supplierCode, ProvisionalBarcodeType, true),
-            true,
-            presentations
-        );
+        return new(NewInternalBarcode(), true, presentations);
     }
 
-    private static string? NormalizedBarcode(string? value) =>
+    private static CreateItemBarcodeDto NewInternalBarcode() =>
+        new($"INT-{Guid.NewGuid():N}", ProvisionalBarcodeType, true);
+
+    /// <summary>
+    /// Un código del XML solo es barcode si es GTIN-8/12/13/14 con dígito verificador válido (misma
+    /// regla que <c>isRealBarcode</c> del frontend). Cualquier otro valor es código del proveedor.
+    /// </summary>
+    private static bool IsValidGtin(string? value)
+    {
+        if (value is null || value.Length is not (8 or 12 or 13 or 14) || value.Any(c => c is < '0' or > '9'))
+            return false;
+        var sum = 0;
+        for (var i = value.Length - 2; i >= 0; i--)
+            sum += (value[i] - '0') * ((value.Length - 2 - i) % 2 == 0 ? 3 : 1);
+        return (10 - sum % 10) % 10 == value[^1] - '0';
+    }
+
+    /// <summary>Tipo inferible solo para EAN-8/EAN-13 (igual que <c>suggestBarcodeType</c>); otro GTIN lo tipifica el usuario.</summary>
+    private static string? GtinBarcodeType(string code) =>
+        code.Length switch { 8 => "EAN8", 13 => "EAN13", _ => null };
+
+    /// <summary>El barcode de la solicitud es explícito: solo el vacío equivale a ausencia.</summary>
+    private static string? NormalizedBarcode(string? value) => Trimmed(value);
+
+    private static string? NormalizedSupplierCode(string? value) =>
         Trimmed(value) is { } code && code != "0" ? code : null;
 
     private static string? Trimmed(string? value) =>
@@ -748,6 +791,8 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             newItem.ExciseTaxCode,
             BaseSalePrice: newItem.BaseSalePrice
         );
+
+    private sealed class GeneratedBarcodeCollisionException : Exception;
 
     private sealed class ExecutionOutcome
     {

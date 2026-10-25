@@ -80,19 +80,6 @@ export function suggestSku(supplierCode: string): string {
     .toUpperCase();
 }
 
-/** Mismo límite que Items (CreateItemCommandValidator / createItemSchema). */
-const MAX_BARCODE_LENGTH = 100;
-
-/**
- * FASE 5 — el código auxiliar del XML cumple las validaciones existentes de código de barras de
- * Items (obligatorio, máx. 100). Solo entonces se propone como código de barras de la unidad base;
- * si no, queda solo como evidencia XML (nunca se convierte en SKU ni en código de barras).
- */
-export function isAcceptableBarcode(code: string): boolean {
-  const value = normalizePendingBarcode(code);
-  return value.length > 0 && value.length <= MAX_BARCODE_LENGTH;
-}
-
 /**
  * Código de barras real (GTIN-8/12/13/14 con dígito verificador válido). Un código del proveedor
  * que no lo es sirve solo para el matching: nunca se precarga como código de barras.
@@ -122,48 +109,28 @@ export function isBasePresentation(row: Pick<PendingProductRow, "presentationFac
   return row.presentationFactor == null || row.presentationFactor === 1;
 }
 
-/**
- * Código que el backend registrará como Interno provisional cuando el producto nuevo de `rowId`
- * no tiene código de barras real de la unidad (mismo criterio que el servidor): código del
- * proveedor de una línea de unidad primero, nunca uno que ya es el código de una caja/pack.
- * `null` si la unidad ya tiene código real o no hay código del proveedor utilizable.
- */
-export function provisionalUnitBarcode(
+/** The server generates an Internal code when the unit has no barcode. */
+export function needsProvisionalUnitBarcode(
   rows: PendingProductRow[],
   rowId: string,
-  sources: ReadonlyMap<string, PendingProductSource>,
-): string | null {
-  const itemRows = rows.filter(
-    (r) =>
-      r.selected &&
-      ((r.mode === "create" && r.rowId === rowId) ||
-        (r.mode === "presentation" && r.parentRowId === rowId)),
-  );
-  if (itemRows.some((r) => isBasePresentation(r) && normalizePendingBarcode(r.barcode))) return null;
-  const packBarcodes = new Set(
-    itemRows
-      .filter((r) => !isBasePresentation(r) && normalizePendingBarcode(r.barcode))
-      .map((r) => normalizePendingBarcode(r.barcode).toUpperCase()),
-  );
-  const candidates = [
-    ...itemRows.filter((r) => isBasePresentation(r)),
-    ...itemRows.filter((r) => !isBasePresentation(r)),
-  ].map((r) => normalizePendingBarcode(sources.get(r.rowId)?.supplierCode ?? ""));
-  return (
-    candidates.find((code) => code && !packBarcodes.has(code.toUpperCase())) ?? null
-  );
+): boolean {
+  const itemRows = rows.filter((r) => r.selected &&
+    ((r.mode === "create" && r.rowId === rowId) ||
+      (r.mode === "presentation" && r.parentRowId === rowId)));
+  return itemRows.length > 0 && !itemRows.some((r) =>
+    isBasePresentation(r) && normalizePendingBarcode(r.barcode));
 }
 
 /**
  * Código de barras propuesto para la unidad base (FASE 5):
- * - código auxiliar del XML si cumple las validaciones de código de barras de Items;
+ * - código auxiliar del XML si es un GTIN válido;
  * - si no, el código principal del proveedor SOLO si es un código de barras real (GTIN) — el
  *   código del proveedor se conserva como código del proveedor (ItemSupplierCode), no como barcode;
  * - si no, vacío (el backend aplica su regla de código Interno provisional).
  */
 export function proposedUnitBarcode(source: PendingProductSource): string {
   const auxCode = normalizePendingBarcode(source.supplierAuxCode);
-  if (isAcceptableBarcode(auxCode)) return auxCode;
+  if (isRealBarcode(auxCode)) return auxCode;
   const supplierCode = source.supplierCode.trim();
   return isRealBarcode(supplierCode) ? supplierCode : "";
 }

@@ -873,6 +873,13 @@
                                           ]
                          },
                          {
+                             "name":  "Code Conflicts",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Items/UseCases/CodeConflicts"
+                                          ]
+                         },
+                         {
                              "name":  "Create Item",
                              "status":  "implemented",
                              "evidence":  [
@@ -1116,10 +1123,38 @@
                                           ]
                          },
                          {
+                             "name":  "Purchase Credit Note Fiscal Identity",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteFiscalIdentity.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Credit Note Historical Returns",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteHistoricalReturns.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Purchase Credit Note",
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteQueryUseCases.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Credit Note Reprocessing Guard",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteReprocessingGuard.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Purchase Credit Note Return Motor",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteReturnMotor.cs"
                                           ]
                          },
                          {
@@ -1332,6 +1367,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/ListInventoryAdjustmentReasons"
+                                          ]
+                         },
+                         {
+                             "name":  "Set Inventory Adjustment Reason Account",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Inventory/AdjustmentReasons/UseCases/SetInventoryAdjustmentReasonAccount"
                                           ]
                          },
                          {
@@ -1836,6 +1878,13 @@
                                           ]
                          },
                          {
+                             "name":  "Record Cash Bank Deposit",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/RecordCashBankDepositUseCases.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Record Cash Movement",
                              "status":  "implemented",
                              "evidence":  [
@@ -2202,6 +2251,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Accounting/UseCases/Accounts"
+                                          ]
+                         },
+                         {
+                             "name":  "Continuity",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Accounting/UseCases/Continuity"
                                           ]
                          },
                          {

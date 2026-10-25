@@ -1,0 +1,43 @@
+ERP.Application.Tests, filtro Items|InitialLoad|ItemMatching (resumen del TRX, 2026-10-24)
+total=446 executed=446 passed=446 failed=0
+
+FAIL: ninguno
+
+Pruebas por clase:
+     1  ERP.Application.Tests.Access.GetPermissionCatalogHandlerTests
+     1  ERP.Application.Tests.Finance.CompanyBankAccountUseCasesTests
+     9  ERP.Application.Tests.InitialLoad.ConfirmItemsAtomicTests
+     2  ERP.Application.Tests.InitialLoad.CustomerConfirmAllOrNothingTests
+    27  ERP.Application.Tests.InitialLoad.CustomerImportProcessorTests
+     6  ERP.Application.Tests.InitialLoad.ImportErrorSemanticsTests
+     8  ERP.Application.Tests.InitialLoad.InitialLoadClosedGuardTests
+    62  ERP.Application.Tests.InitialLoad.InitialPayableImportProcessorTests
+    64  ERP.Application.Tests.InitialLoad.InitialReceivableImportProcessorTests
+    37  ERP.Application.Tests.InitialLoad.InitialStockImportProcessorTests
+    55  ERP.Application.Tests.InitialLoad.ItemImportProcessorTests
+    32  ERP.Application.Tests.InitialLoad.SupplierImportProcessorTests
+     4  ERP.Application.Tests.InitialLoad.ValidateItemsRecoveryTests
+     1  ERP.Application.Tests.Inventory.ItemMatching.BulkMatchItemsHandlerTests
+     5  ERP.Application.Tests.Inventory.ItemMatching.CorrectReceptionLineMatchHandlerTests
+     3  ERP.Application.Tests.Inventory.ItemMatching.GetPurchaseReceptionLineMatchHandlerTests
+     9  ERP.Application.Tests.Inventory.ItemMatching.ItemMatchConfirmationServiceTests
+     4  ERP.Application.Tests.Inventory.ItemMatching.ItemMatchFinderTests
+     6  ERP.Application.Tests.Inventory.ItemMatching.MatchItemHandlerTests
+    37  ERP.Application.Tests.Inventory.ItemMatching.ResolvePurchaseReceptionLinesHandlerTests
+     5  ERP.Application.Tests.Inventory.ItemMatching.UnmatchPurchaseReceptionItemHandlerTests
+     3  ERP.Application.Tests.Items.CategoryNodeCatalogConfigurationResolverUsageTests
+    15  ERP.Application.Tests.Items.CreateItemCommandValidatorTests
+     6  ERP.Application.Tests.Items.GetItemCodeConflictsQueryHandlerTests
+     3  ERP.Application.Tests.Items.ItemDomainRuleContractsTests
+     6  ERP.Application.Tests.Items.PackagingWeightScaleValidatorTests
+     6  ERP.Application.Tests.Items.ReplaceItemPackagingLevelsTests
+     6  ERP.Application.Tests.Items.RequiredItemVatTests
+     2  ERP.Application.Tests.Items.UpdateItemCommandHandlerTests
+     1  ERP.Application.Tests.Payables.GetSupplierPaymentUseCasesTests
+     1  ERP.Application.Tests.Pricing.PricingBatchResolutionParityTests
+     3  ERP.Application.Tests.Pricing.PricingListUxTests
+     1  ERP.Application.Tests.Purchases.ConfirmPurchaseHandlerTests
+     2  ERP.Application.Tests.Purchases.GetPurchaseItemContextQueryHandlerTests
+     1  ERP.Application.Tests.Purchases.PurchaseReception.ImportPurchaseReceptionHandlerTests
+     2  ERP.Application.Tests.Sales.PreviewSalesRepricingQueryHandlerTests
+    10  ERP.Application.Tests.Sales.SearchItemsForInvoiceContextualPricingTests

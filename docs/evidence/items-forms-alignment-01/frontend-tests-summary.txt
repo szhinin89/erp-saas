@@ -1,0 +1,8 @@
+Suite frontend completa (resumen del reporte JSON de Vitest, 2026-10-24, antes de corregir Caja/Contabilidad)
+Vitest 3248 pruebas: 3244 PASS, 4 FAIL, 322 archivos. success=False
+
+FAIL:
+  src/modules/caja/cajaI18n.test.ts > cash locale integrity has no untranslated JSX text or visible string props in the cash page and confirmations
+  src/modules/accounting/pages/JournalEntryDetailPage.test.tsx > shows displayDescription for the automatic line and falls back to description when absent
+  src/modules/accounting/pages/JournalEntryDetailPage.test.tsx > falls back to a friendly (translated) description when displayDescription cannot be resolved
+  src/modules/accounting/pages/JournalEntryDetailPage.test.tsx > debe/haber y totales usan accountingDecimals (no moneyDecimals) y reaccionan A → B

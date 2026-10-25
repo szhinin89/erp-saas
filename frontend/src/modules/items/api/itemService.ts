@@ -1,3 +1,4 @@
+import { itemCodeMutation } from "./itemCodeConflicts";
 import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 import type {
   ItemDetailDto,
@@ -5,6 +6,13 @@ import type {
   ItemVariantDto,
   GetItemsResponse,
 } from "../../../types/items";
+
+function codePost<T>(...args: Parameters<typeof apiPost<T>>) {
+  return itemCodeMutation(apiPost<T>(...args));
+}
+function codePut<T>(...args: Parameters<typeof apiPut<T>>) {
+  return itemCodeMutation(apiPut<T>(...args));
+}
 
 export interface GetItemsParams {
   search?: string;
@@ -121,25 +129,25 @@ export const itemService = {
   getById: (id: string) => apiGet<ItemDetailDto>(`/api/v1/items/${id}`),
 
   create: (request: CreateItemRequest) =>
-    apiPost<ItemDto>("/api/v1/items", request),
+    codePost<ItemDto>("/api/v1/items", request),
 
   update: (request: UpdateItemRequest) => {
     const { id, ...body } = request;
-    return apiPut<ItemDto>(`/api/v1/items/${id}`, { id, ...body });
+    return codePut<ItemDto>(`/api/v1/items/${id}`, { id, ...body });
   },
 
   disable: (id: string) => apiPatch<boolean>(`/api/v1/items/${id}/disable`),
   enable: (id: string) => apiPatch<boolean>(`/api/v1/items/${id}/enable`),
 
   addVariant: (itemId: string, request: AddVariantRequest) =>
-    apiPost<ItemVariantDto>(`/api/v1/items/${itemId}/variants`, request),
+    codePost<ItemVariantDto>(`/api/v1/items/${itemId}/variants`, request),
 
   updateVariant: (
     itemId: string,
     variantId: string,
     request: AddVariantRequest,
   ) =>
-    apiPut<ItemVariantDto>(
+    codePut<ItemVariantDto>(
       `/api/v1/items/${itemId}/variants/${variantId}`,
       request,
     ),
@@ -160,7 +168,7 @@ export const itemService = {
       sortOrder?: number;
       variantId?: string | null;
     }[],
-  ) => apiPut<ItemDetailDto>(`/api/v1/items/${itemId}/images`, { images }),
+  ) => codePut<ItemDetailDto>(`/api/v1/items/${itemId}/images`, { images }),
 
   disableImage: (itemId: string, imageId: string) =>
     apiPatch<boolean>(`/api/v1/items/${itemId}/images/${imageId}/disable`),
@@ -169,7 +177,7 @@ export const itemService = {
     itemId: string,
     conversions: { fromUomCode: string; toUomCode: string; factor: number }[],
   ) =>
-    apiPut<ItemDetailDto>(`/api/v1/items/${itemId}/unit-conversions`, {
+    codePut<ItemDetailDto>(`/api/v1/items/${itemId}/unit-conversions`, {
       conversions,
     }),
 
@@ -181,7 +189,7 @@ export const itemService = {
       note?: string | null;
     }[],
   ) =>
-    apiPut<ItemDetailDto>(`/api/v1/items/${itemId}/substitutes`, {
+    codePut<ItemDetailDto>(`/api/v1/items/${itemId}/substitutes`, {
       substitutes,
     }),
 
@@ -200,7 +208,7 @@ export const itemService = {
       isSaleDefault?: boolean;
     }[],
   ) =>
-    apiPut<ItemDetailDto>(`/api/v1/items/${itemId}/packaging-levels`, {
+    codePut<ItemDetailDto>(`/api/v1/items/${itemId}/packaging-levels`, {
       levels,
     }),
 
@@ -212,7 +220,7 @@ export const itemService = {
       packagingLevelId?: string | null;
     },
   ) =>
-    apiPut<ItemDetailDto>(`/api/v1/items/${itemId}/supplier-codes/presentation`, {
+    codePut<ItemDetailDto>(`/api/v1/items/${itemId}/supplier-codes/presentation`, {
       supplierId: request.supplierId,
       code: request.code,
       packagingLevelId: request.packagingLevelId ?? null,
@@ -224,7 +232,7 @@ export const itemService = {
     code: string,
     barcodeType: string,
   ) =>
-    apiPost<{ id: string; code: string; barcodeType: string }>(
+    codePost<{ id: string; code: string; barcodeType: string }>(
       `/api/v1/items/${itemId}/variants/${variantId}/barcodes`,
       { code, barcodeType },
     ),
@@ -242,7 +250,7 @@ export const itemService = {
     apiGet<string[]>(`/api/v1/items/${itemId}/price-lists`),
 
   setPriceLists: (itemId: string, priceListIds: string[]) =>
-    apiPut<string[]>(`/api/v1/items/${itemId}/price-lists`, { priceListIds }),
+    codePut<string[]>(`/api/v1/items/${itemId}/price-lists`, { priceListIds }),
 };
 
 // Refleja los 5 códigos que produce ItemProfitabilityUseCases.CalcMargin() (backend) —

@@ -23,18 +23,18 @@ export function buildItemEditorSchema(mode: ItemEditorMode) {
       shortName: z
         .string()
         .trim()
-        .min(1, "El nombre corto es obligatorio.")
-        .max(50, "El nombre corto no puede exceder 50 caracteres."),
+        .min(1, "El nombre comercial es obligatorio.")
+        .max(50, "El nombre comercial no puede superar 50 caracteres."),
       description: z
         .string()
         .trim()
-        .min(1, "La descripción es obligatoria.")
-        .max(254, "La descripción no puede exceder 254 caracteres."),
+        .min(1, "La descripción completa es obligatoria.")
+        .max(254, "La descripción completa no puede superar 254 caracteres."),
       nature: z.enum(["Product", "Service"]).default("Product"),
       itemTypeId: z.string().min(1, "El tipo de ítem es obligatorio."),
-      categoryNodeId: z.string().min(1, "La categoría es obligatoria."),
-      brandId: z.string().min(1, "La marca es obligatoria."),
-      defaultUomCode: z.string().min(1, "La unidad de medida es obligatoria."),
+      categoryNodeId: isCreate ? z.string().min(1, "La categoría es obligatoria.") : z.string(),
+      brandId: isCreate ? z.string().min(1, "La marca es obligatoria.") : z.string(),
+      defaultUomCode: z.string().min(1, "La unidad base de inventario es obligatoria."),
       barcode:
         mode === "create"
           ? z
@@ -53,8 +53,8 @@ export function buildItemEditorSchema(mode: ItemEditorMode) {
         .max(500, "Las observaciones no pueden exceder 500 caracteres.")
         .optional(),
       // Ambos IVA requieren selección explícita e independiente, también al actualizar.
-      saleVatCode: z.string().trim().min(1, "Debe seleccionar el IVA de venta del Item."),
-      purchaseVatCode: z.string().trim().min(1, "Debe seleccionar el IVA de compra del Item."),
+      saleVatCode: z.string().trim().min(1, "Debe seleccionar un código de IVA para venta."),
+      purchaseVatCode: z.string().trim().min(1, "Debe seleccionar un código de IVA para compra."),
       // Precio de Venta — obligatorio al crear (el Item debe quedar vendible sin reproceso
       // manual); en Update sigue siendo opcional salvo que se active "Actualizar precio".
       salePrice: z

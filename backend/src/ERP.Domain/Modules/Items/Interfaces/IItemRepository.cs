@@ -6,6 +6,9 @@ namespace ERP.Domain.Modules.Items.Interfaces;
 /// <summary>All reads/writes are scoped to Tenant + authenticated Company; absent company context fails closed.</summary>
 public interface IItemRepository
 {
+    Task<ItemCodeOwner?> FindCodeOwnerAsync(ItemCodeLookup lookup, Guid tenantId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Carga completa con variantes, imágenes, conversiones, sustitutos y empaques.</summary>
     Task<Item?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default);
 

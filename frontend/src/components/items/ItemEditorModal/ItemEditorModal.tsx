@@ -102,7 +102,7 @@ export function ItemEditorModal({
       open={open}
       onClose={onClose}
       size="lg"
-      title={mode === "update" ? "Editar Item" : "Crear nuevo Item"}
+      title={mode === "update" ? "Editar ítem" : "Nuevo ítem"}
       subtitle={
         mode === "update"
           ? "Los cambios se aplican al Item ya vinculado a esta línea."

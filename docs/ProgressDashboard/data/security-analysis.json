@@ -1,10 +1,8 @@
 ﻿{
-    "Generated":  "2026-10-13 13:15:18",
-    "FilesAnalyzed":  11832,
-    "SecretsFound":  181,
+    "Generated":  "2026-10-24 20:50:21",
+    "FilesAnalyzed":  11957,
+    "SecretsFound":  180,
     "SecretFiles":  [
-                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
-                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ApiErrorContractTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ExceptionClassificationTests.cs",
@@ -29,11 +27,12 @@
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Constants\\OrgSettingKeys.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Entities\\SriSettings.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Communications\\CommunicationSettingsResolver.cs",
-                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261010184156_InitialProductionBaseline.cs",
+                        "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\E2E\\E2ESeedService.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Security\\BcryptPasswordHasherTests.cs",
                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\TestP12CertificateFactory.cs",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\helpers\\api.ts",
+                        "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\enterprise-auth.spec.ts",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\.vite\\deps\\axios.js",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\.vite\\deps\\react-dom_client.js",
                         "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\@hookform\\resolvers\\ajv\\src\\__tests__\\__fixtures__\\data.ts",
@@ -200,14 +199,18 @@
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\typescript.js",
                            "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\typescript\\lib\\_tsc.js"
                        ],
-    "ConnectionStringsFound":  6,
+    "ConnectionStringsFound":  10,
     "ConnectionStringFiles":  [
-                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\bin\\Debug\\net10.0\\appsettings.json",
-                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\appsettings.json",
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Hosting\\ErpDesignTimeDbContextFactory.cs",
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Hosting\\ErpHostRegistration.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Hangfire\\RecurringJobRunnerPostgreSqlTests.cs",
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Hangfire\\WorkerHostRegistrationTests.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\DevCacheEndpointsHttpContractTests.cs",
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Support\\FirstRunHttpProcess.cs",
                                   "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Support\\PostgreSqlTestWebAppFactory.cs",
-                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\ErpDbContextFactory.cs"
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
+                                  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
                               ],
-    "Warnings":  199
+    "Warnings":  202
 }

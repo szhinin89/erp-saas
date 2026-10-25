@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ItemCodeConflicts } from "../../../../components/items/ItemCodeConflicts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,6 +15,7 @@ import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { EmptyState, Badge } from "../../../../components/PageShell";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { applyServerErrors } from "../../../lib/validationErrors";
+import { formatApiRequestError } from "../../../lib/apiError";
 import { useI18n } from "../../../../i18n/i18n";
 import { itemService } from "../../api/itemService";
 import {
@@ -84,14 +86,15 @@ export function VariantsSection({
   const handleAddBarcode = async () => {
     if (!bcVariantId || !bcCode.trim() || !bcType) return;
     setBcSaving(true);
+    setSaveError("");
     try {
       await itemService.addBarcode(itemId, bcVariantId, bcCode.trim(), bcType);
       setBcVariantId(null);
       setBcCode("");
       setBcType("");
       onRefresh();
-    } catch {
-      /* error handled by API layer */
+    } catch (error) {
+      setSaveError(formatApiRequestError(error, { generic: t("common.saveError", "Error al guardar.") }));
     }
     setBcSaving(false);
   };
@@ -293,6 +296,9 @@ export function VariantsSection({
 
   return (
     <div className="pg-section">
+      {bcVariantId && <ItemCodeConflicts codes={[{ kind: "Barcode", code: bcCode,
+        row: "1", targetKey: "new-barcode" }]} />}
+      {bcVariantId && saveError && <ZHPageNotice variant="error" message={saveError} />}
       <div className="pg-section-header">
         <div className="pg-section-header-left">
           <span className="material-symbols-outlined pg-section-icon">
@@ -355,6 +361,10 @@ export function VariantsSection({
           />
         }
       >
+        <ItemCodeConflicts enabled={modalOpen} codes={[{ kind: "VariantSku",
+          code: form.watch("skuOverride") ?? "", row: "1", targetKey: "variant",
+          variant: { itemId, skuOverride: form.watch("skuOverride") || null,
+            attributes: form.watch("attributes").filter(a => a.value.trim()) } }]} />
         {saveError && (
           <ZHPageNotice
             variant="error"

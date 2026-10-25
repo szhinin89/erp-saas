@@ -171,6 +171,8 @@ pertenece a `useAnchoredOverlayPosition`. No contiene reglas de Compras ni otros
   click exterior o segundo click cierran. Una accion ejecuta el callback, cierra y devuelve foco.
 - Portal y posicionamiento automatico arriba/abajo, limites del viewport, cuerpo con scroll,
   seguimiento de scroll interno/documento, resize, ResizeObserver y visualViewport movil.
+- El slot opcional `children` admite detalles compartidos como `ZHCodeConflicts compact`, sin
+  insertar alertas adicionales. La apertura por teclado considera botones y enlaces como acciones.
 - No usar para estados correctos, estado general del documento, errores de campo (usar `ZHField`),
   avisos de pagina (`ZHPageNotice`), ayuda (`ZHFieldHelp`) ni reemplazar validacion de dominio.
 
@@ -211,6 +213,7 @@ Solo presentación: ningún patrón formatea, redondea ni decide decimales (eso 
 | Acciones | `ZHBtn` primary · secondary · ghost · destructive; icon-only `ZHIconButton` | Una sola primaria por zona; disabled `--opacity-disabled` |
 | Loading / empty / sin resultados / error | `LoadingState` / `EmptyState` / `EmptyState` (texto de filtro) / `ErrorState`; en tabla `.zh-table-empty` | Sin familias paralelas |
 | Notice / ayuda | `ZHFormAlert`/`ZHPageNotice` (`.zh-form-alert--*`), `zh-notice`, `zh-help` | Escala soft/border/strong; popovers con `--shadow-md` |
+| Conflictos de códigos | `ZHCodeConflicts` (sobre `ZHFormAlert` + `ZHLinkButton`) | Código, propietario y «Ver ítem» en otra pestaña; sin consulta ni validación propias ([Ítems](./items.md#2-identidad-y-unicidad)) |
 
 **Mapeo canónico estado → familia** (derivado del uso real; los módulos conservan sus mapas — no se migraron):
 

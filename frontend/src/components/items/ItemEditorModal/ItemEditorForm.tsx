@@ -1,3 +1,5 @@
+import { useI18n } from "../../../i18n/i18n";
+import { ItemCodeConflicts } from "../ItemCodeConflicts";
 import { useEffect, useRef } from "react";
 import { useFormContext } from "react-hook-form";
 import {
@@ -49,9 +51,11 @@ export function ItemEditorForm({
     setError,
     watch,
     setValue,
+    getFieldState,
     formState: { errors, isSubmitting },
   } = useFormContext<ItemEditorFormValues>();
   const isUpdate = mode === "update";
+  const { t } = useI18n();
 
   const {
     itemTypesState,
@@ -74,7 +78,7 @@ export function ItemEditorForm({
   // de resolver — el <select> uncontrolled no puede reflejar (ni retener al enviar el formulario,
   // por ser uncontrolled) un valor cuya opción todavía no existe en el DOM. Sin este efecto, "Actualizar
   // Item" podía mostrarse con categoría/marca/UOM/IVA en blanco y, peor, guardar `null` sobre un
-  // Item que sí tenía esos datos. Se reaplica una sola vez por Item (ref por id) apenas los 4
+  // Item que sí tenía esos datos. Se reaplica una sola vez por Item (ref por id) apenas los 5
   // catálogos de los que depende están listos, sin pisar una edición ya hecha por el usuario.
   const appliedExistingItemIdRef = useRef<string | null>(null);
   const updateCatalogsReady =
@@ -87,20 +91,17 @@ export function ItemEditorForm({
     if (!isUpdate || !existingItem || !updateCatalogsReady) return;
     if (appliedExistingItemIdRef.current === existingItem.id) return;
     appliedExistingItemIdRef.current = existingItem.id;
-    setValue("categoryNodeId", existingItem.categoryNodeId ?? "", {
-      shouldValidate: false,
-    });
-    setValue("brandId", existingItem.brandId ?? "", { shouldValidate: false });
-    setValue("defaultUomCode", existingItem.defaultUomCode, {
-      shouldValidate: false,
-    });
-    setValue("saleVatCode", existingItem.taxConfig.saleVatCode ?? "", {
-      shouldValidate: false,
-    });
-    setValue("purchaseVatCode", existingItem.taxConfig.purchaseVatCode ?? "", {
-      shouldValidate: false,
-    });
-  }, [isUpdate, existingItem, updateCatalogsReady, setValue]);
+    for (const [field, value] of [
+      ["itemTypeId", existingItem.itemTypeId],
+      ["categoryNodeId", existingItem.categoryNodeId ?? ""],
+      ["brandId", existingItem.brandId ?? ""],
+      ["defaultUomCode", existingItem.defaultUomCode],
+      ["saleVatCode", existingItem.taxConfig.saleVatCode ?? ""],
+      ["purchaseVatCode", existingItem.taxConfig.purchaseVatCode ?? ""],
+    ] as const) {
+      if (!getFieldState(field).isDirty) setValue(field, value, { shouldValidate: false });
+    }
+  }, [isUpdate, existingItem, updateCatalogsReady, setValue, getFieldState]);
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -213,15 +214,23 @@ export function ItemEditorForm({
 
   return (
     <form onSubmit={onSubmit}>
+      <ItemCodeConflicts codes={[
+        { kind: "Sku", code: watch("sku"), row: "1", targetKey: "item", excludeId: existingItem?.id },
+        ...(!isUpdate ? [{ kind: "Barcode" as const, code: watch("barcode") ?? "", row: "1", targetKey: "unit" }] : []),
+        ...(!isUpdate && initialData?.supplierId && initialData.supplierCode ? [{
+          kind: "SupplierCode" as const, code: initialData.supplierCode, supplierId: initialData.supplierId,
+          row: "1", targetKey: "supplier",
+        }] : []),
+      ]} />
       {rootError && <ZHFormAlert type="error" message={rootError} />}
 
       {isUpdate && existingItem && (
-        <ZHFormSection title="Actualizar Item existente">
+        <ZHFormSection title="Actualizar ítem existente">
           <ZHGrid cols={3}>
-            <ZHField label="SKU" readOnly density="compact">
+            <ZHField label={t("items.form.sku")} readOnly density="compact">
               <input value={existingItem.sku} disabled />
             </ZHField>
-            <ZHField label="Nombre" readOnly density="compact">
+            <ZHField label={t("items.form.shortName")} readOnly density="compact">
               <input value={existingItem.shortName} disabled />
             </ZHField>
             <ZHField label="Estado" readOnly density="compact">
@@ -237,7 +246,7 @@ export function ItemEditorForm({
       )}
 
       <ZHFormSection
-        title="Información del Item"
+        title="Información del ítem"
         description="Datos del producto en el catálogo."
       >
         {(initialData?.supplierName || initialData?.supplierCode) && (
@@ -248,7 +257,7 @@ export function ItemEditorForm({
               </ZHField>
             )}
             {initialData.supplierCode && (
-              <ZHField label="Código proveedor" readOnly density="compact">
+              <ZHField label={t("items.supplierCodes.col.code")} readOnly density="compact">
                 <input value={initialData.supplierCode} disabled />
               </ZHField>
             )}
@@ -256,11 +265,11 @@ export function ItemEditorForm({
         )}
 
         <ZHGrid cols={2}>
-          <ZHField label="SKU" required fieldError={errors.sku?.message}>
+          <ZHField label={t("items.form.sku")} required fieldError={errors.sku?.message}>
             <input {...register("sku")} />
           </ZHField>
           <ZHField
-            label="Nombre corto"
+            label={t("items.form.shortName")}
             required
             fieldError={errors.shortName?.message}
           >
@@ -269,7 +278,7 @@ export function ItemEditorForm({
         </ZHGrid>
 
         <ZHField
-          label="Descripción"
+          label={t("items.form.description")}
           required
           fieldError={errors.description?.message}
         >
@@ -277,103 +286,104 @@ export function ItemEditorForm({
         </ZHField>
 
         <ZHGrid cols={2}>
-          <ZHField label="Naturaleza operativa">
+          <ZHField label={t("items.nature.label")} required fieldError={errors.nature?.message} hint={isUpdate ? t("items.nature.immutableHint") : undefined}>
             <ZhSelect {...register("nature")} disabled={isUpdate}>
               <option value="Product">Producto</option>
               <option value="Service">Servicio</option>
             </ZhSelect>
           </ZHField>
           <ZHField
-            label="Tipo de ítem"
+            label={t("items.form.itemType")}
             required
             fieldError={errors.itemTypeId?.message}
             hint={
               isUpdate
-                ? "El tipo de ítem no se puede cambiar luego de creado."
+                ? t("items.form.itemTypeImmutableHint")
                 : undefined
             }
             hintType="muted"
           >
-            <select {...register("itemTypeId")} disabled={isUpdate}>
+            <ZhSelect {...register("itemTypeId")} disabled={isUpdate}>
               <option value="">Seleccione...</option>
               {itemTypeOptions.map((it) => (
                 <option key={it.id} value={it.id}>
                   {it.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
           <ZHField
-            label="Unidad de medida"
+            label={t("items.form.uom")}
             required
             fieldError={errors.defaultUomCode?.message}
+            hint={t("items.form.uomHint")}
           >
-            <select {...register("defaultUomCode")}>
+            <ZhSelect {...register("defaultUomCode")}>
               <option value="">Seleccione...</option>
               {uomOptions.map((u) => (
                 <option key={u.code} value={u.code}>
                   {u.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </ZHGrid>
 
         <ZHGrid cols={2}>
           <ZHField
-            label="Categoría"
-            required
+            label={t("items.form.category")}
+            required={!isUpdate}
             fieldError={errors.categoryNodeId?.message}
           >
-            <select {...register("categoryNodeId")}>
+            <ZhSelect {...register("categoryNodeId")}>
               <option value="">Seleccione...</option>
               {categoryOptions.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
-          <ZHField label="Marca" required fieldError={errors.brandId?.message}>
-            <select {...register("brandId")}>
+          <ZHField label={t("items.form.brand")} required={!isUpdate} fieldError={errors.brandId?.message}>
+            <ZhSelect {...register("brandId")}>
               <option value="">Seleccione...</option>
               {brandOptions.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
                 </option>
               ))}
-            </select>
+            </ZhSelect>
           </ZHField>
         </ZHGrid>
 
         {!isUpdate && (
           <ZHGrid cols={2}>
             <ZHField
-              label="Código de barras"
+              label={t("items.barcodes.code")}
               required
               fieldError={errors.barcode?.message}
             >
               <input {...register("barcode")} />
             </ZHField>
             <ZHField
-              label="Tipo de código de barras"
+              label={t("items.barcodes.type")}
               required
               fieldError={errors.barcodeType?.message}
             >
-              <select {...register("barcodeType")}>
+              <ZhSelect {...register("barcodeType")}>
                 <option value="">Seleccione...</option>
                 {barcodeTypeOptions.map((t) => (
                   <option key={t.code} value={t.code}>
                     {t.name}
                   </option>
                 ))}
-              </select>
+              </ZhSelect>
             </ZHField>
           </ZHGrid>
         )}
 
         <ZHField
-          label="Observaciones"
+          label={t("items.form.observations")}
           fieldError={errors.observations?.message}
         >
           <textarea {...register("observations")} rows={2} />
@@ -413,8 +423,8 @@ export function ItemEditorForm({
               ? "Actualizando..."
               : "Creando..."
             : isUpdate
-              ? "Actualizar Item"
-              : "Crear Item",
+              ? t("items.form.update")
+              : t("items.form.create"),
         }}
       />
     </form>
@@ -510,6 +520,7 @@ function PriceAndProfitability({
   purchaseVatCodeFieldError?: string;
   isUpdate: boolean;
 }) {
+  const { t } = useI18n();
   // Presentación semántica (06): IVA es porcentaje FISCAL; margen/descuento, porcentaje operativo.
   const pp = {
     purchaseUnitPriceDecimals: usePrecisionDecimals("purchaseUnitPrice"),
@@ -555,32 +566,32 @@ function PriceAndProfitability({
           />
         </ZHField>
         <ZHField
-          label="IVA de venta"
+          label={t("items.tax.saleVatCode")}
           required
           fieldError={saleVatCodeFieldError}
         >
-          <select {...register("saleVatCode")}>
+          <ZhSelect {...register("saleVatCode")}>
             <option value="" disabled>Seleccione IVA</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
                 {v.name} ({formatMoney(v.percentage, pp.fiscalPercentageDecimals)}%)
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
         <ZHField
-          label="IVA de compra"
+          label={t("items.tax.purchaseVatCode")}
           required
           fieldError={purchaseVatCodeFieldError}
         >
-          <select {...register("purchaseVatCode")}>
+          <ZhSelect {...register("purchaseVatCode")}>
             <option value="" disabled>Seleccione IVA</option>
             {vatRateOptions.map((v) => (
               <option key={v.code} value={v.code}>
                 {v.name} ({formatMoney(v.percentage, pp.fiscalPercentageDecimals)}%)
               </option>
             ))}
-          </select>
+          </ZhSelect>
         </ZHField>
       </ZHGrid>
 

@@ -16,8 +16,10 @@ Código: `ERP.Domain/Modules/Items`, `ERP.Application/Modules/Items`, `ERP.Infra
 - SKU: obligatorio, ≤ 50 caracteres, `[A-Za-z0-9-_.]`; se normaliza a mayúsculas; editable (el Id es la identidad relacional). Único por empresa: el handler responde `SKU_DUPLICATE` y lo garantiza el índice `uq_items_tenant_company_sku`. El SKU de variante también es único por empresa (`(TenantId, CompanyId, SKU)` en variantes).
 - Nombre corto ≤ 50, descripción ≤ 254, observaciones ≤ 500.
 - Barcode: ≥ 1 al crear, exactamente uno principal, sin repetidos en la solicitud, tipo existente y activo en el catálogo. Único por empresa entre variantes y empaques (trigger `a1_item_barcode_unique`).
+- Desde Resolver productos pendientes de Compras, sin barcode comercial de unidad se crea un `Internal` principal `INT-` + GUID; nunca deriva del proveedor ni modifica SKU. El EAN real se añade con `AddBarcodeCommand` al mismo Item/variante, conservando relaciones e historial. Generación y reintentos: [Compras](./purchases.md#ausencia-de-barcode-en-productos-pendientes).
 - Código de proveedor: único por Tenant + Company + Supplier + Code; ≤ 100 caracteres; a lo sumo uno principal; puede asociarse a un nivel de empaque activo del mismo Item.
 - El mismo SKU, barcode, variante o código de proveedor puede repetirse en otra empresa.
+- Diagnóstico de conflictos (solo lectura): `POST /api/v1/items/code-conflicts` (`items.view`, Tenant + Company autenticados; el proveedor del body solo filtra dentro de la empresa) devuelve, por SKU/SKU de variante/barcode/código de proveedor, el Item propietario (Id + nombre) o el duplicado entre líneas del lote sin guardar. `ExcludeId` evita el falso duplicado del propio registro al editar. Usa las mismas claves de unicidad; no las reemplaza: la persistencia sigue siendo la autoridad (incluida la concurrencia). Frontend: `ItemCodeConflicts` (adaptador) sobre `ZHCodeConflicts`, con «Ver ítem» → `/products/items?view={id}` en otra pestaña. Integrado en alta/edición de Ítems, editor compartido, barcodes, variantes, presentaciones, Resolver productos pendientes e importador inicial.
 
 ## 3. Naturaleza operativa (`ItemNature`)
 
@@ -53,5 +55,19 @@ Código: `ERP.Domain/Modules/Items`, `ERP.Application/Modules/Items`, `ERP.Infra
 - Naturaleza `Digital`: no existe en el código.
 
 ## 8. Evidencia
+
+Terminología de formularios: `SKU`, `Nombre comercial` (`shortName`), `Descripción completa`
+(`description`), `Tipo` (`itemTypeId`, clasificación), `Naturaleza operativa` (`nature`),
+`Unidad base de inventario` (`defaultUomCode`), `Marca`, `Categoría`, `Tarifa IVA venta`,
+`Tarifa IVA compra`, `Código de barras`, `Tipo de código de barras`, `Código proveedor`,
+`Observaciones`. Las etiquetas compartidas consumen las claves `items.*` de i18n; el marcador
+de obligatoriedad pertenece a `ZHField`, no al texto de la etiqueta. Unidad de presentación y
+equivalencia en unidad base describen el empaque, no la unidad base del Item. Los encabezados
+Excel de carga inicial se conservan como contrato de lectura; su interfaz explica la equivalencia
+con estos nombres. Nombre de importación alimenta nombre comercial y descripción completa.
+
+La precarga de selectores asíncronos recupera el valor persistido (incluido el tipo inmutable)
+sin sobrescribir campos ya editados. Evidencia y límites de validación:
+[alineación de formularios](../evidence/items-forms-alignment-01/README.md).
 
 Domain/Application (filtro Items/Inventory/Purchases, 2026-10-19): 354/354 y 551/551 PASS. PostgreSQL: `ItemCompanyScopeA1Tests` 16/16 PASS. Cobertura adicional: `ItemNatureA1Tests`, `CreateItemCommandValidatorTests`, `UpdateItemCommandHandlerTests`, `ReplaceItemPackagingLevelsTests`, `ItemVariantBarcodeTests`, `ItemSupplierCodeTests`, `RequiredItemVatTests`, `ItemTaxConfigTests`.

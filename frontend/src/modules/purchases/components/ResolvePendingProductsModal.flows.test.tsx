@@ -2,13 +2,14 @@
 // Caracterización de los flujos de «Resolver productos pendientes»: consultas por nombre de campo
 // (independientes del layout) para fijar el mismo comportamiento antes y después del rediseño.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { ResolvePendingProductsModal } from "./ResolvePendingProductsModal";
 import type { PendingProductSource } from "../utils/pendingProductsResolution";
 
 const mocks = vi.hoisted(() => ({ resolve: vi.fn(), match: vi.fn(), getById: vi.fn() }));
 vi.mock("../api/purchaseReceptionService", () => ({ purchaseReceptionService: { resolveLines: mocks.resolve, getLineMatch: mocks.match } }));
-vi.mock("../../items/facades/itemLookupFacade", () => ({ itemLookupFacade: { getById: mocks.getById } }));
+vi.mock("../../items/facades/itemLookupFacade", () => ({ itemLookupFacade: { getById: mocks.getById, refreshCodeConflicts: vi.fn() } }));
+vi.mock("../../../components/items/useItemCodeConflicts", () => ({ useItemCodeConflicts: () => ({ conflicts: [], failed: false, verified: true, pending: false }) }));
 vi.mock("./ProductPicker", () => ({ ProductPicker: ({ onSelect }: { onSelect: (p: { id: string; label: string }) => void }) =>
   <button type="button" onClick={() => onSelect({ id: "item-1", label: "SKU1 — Producto existente" })}>pick-product</button> }));
 vi.mock("../../../i18n/i18n", () => ({ useI18n: () => ({ t: (key: string, fallback?: unknown) => typeof fallback === "string" ? fallback : key }) }));
@@ -85,11 +86,11 @@ describe("pending products flows (characterization)", () => {
     render(<ResolvePendingProductsModal {...props([src(0), src(1)])} />);
     fireEvent.click(screen.getByRole("checkbox", { name: "C1" }));
     const bulk = (label: string, value: string) => fireEvent.change(screen.getAllByLabelText(label)[0], { target: { value } });
-    bulk("Tipo de producto", "type");
+    bulk("Tipo", "type");
     bulk("Marca", "brand");
     bulk("Categoría", "category");
-    bulk("Unidad base", "19");
-    bulk("IVA venta", "4");
+    bulk("Unidad base de inventario", "19");
+    bulk("Tarifa IVA venta", "4");
     fireEvent.click(screen.getByRole("button", { name: "Aplicar a seleccionados" }));
     await waitFor(() => expect(field(0, "brandId").value).toBe("brand"));
     expect([field(0, "itemTypeId").value, field(0, "categoryNodeId").value, field(0, "defaultUomCode").value, field(0, "saleVatCode").value]).toEqual(["type", "category", "19", "4"]);
@@ -115,7 +116,7 @@ describe("pending products flows (characterization)", () => {
     change(0, "shortName", "");
     apply();
     await waitFor(() => expect(screen.getByText("La marca es obligatoria.")).toBeTruthy());
-    for (const message of ["El nombre es obligatorio.", "El tipo de producto es obligatorio.", "La categoría es obligatoria.", "La unidad de medida es obligatoria.", "Ingrese el PVP final (mayor a cero)."])
+    for (const message of ["El nombre comercial es obligatorio.", "El tipo de ítem es obligatorio.", "La categoría es obligatoria.", "La unidad base de inventario es obligatoria.", "Ingrese el PVP final (mayor a cero)."])
       expect(screen.getByText(message)).toBeTruthy();
     expect(mocks.resolve).not.toHaveBeenCalled();
   });
@@ -138,12 +139,31 @@ describe("pending products flows (characterization)", () => {
     const sources = Array.from({ length: 23 }, (_, i) => src(i, { supplierAuxCode: i % 2 ? " 0 " : "0" }));
     const p = props(sources);
     render(<ResolvePendingProductsModal {...p} />);
-    sources.forEach((_, i) => fillCreate(i));
+    // Lote real: asignación masiva y margen sobre los 23 seleccionados (pocos renders del formulario
+    // de 23 filas). Rellenar fila a fila ya lo cubren las pruebas de una o dos filas.
+    // Consultas acotadas a la barra masiva: recorrer las 23 filas por etiqueta/rol cuesta ~0,5 s cada vez.
+    const bar = within(document.querySelector(".prl-bulk") as HTMLElement);
+    const bulk = (label: string, value: string) => fireEvent.change(bar.getByLabelText(label), { target: { value } });
+    bulk("Tipo", "type");
+    bulk("Marca", "brand");
+    bulk("Categoría", "category");
+    bulk("Unidad base de inventario", "19");
+    fireEvent.click(bar.getByRole("button", { name: "Aplicar a seleccionados" }));
+    const margin = bar.getByLabelText("Margen sobre precio (%)");
+    fireEvent.change(margin, { target: { value: "20" } });
+    fireEvent.blur(margin);
+    fireEvent.click(bar.getByRole("button", { name: "Sugerir PVP final" }));
+    const rowValues = (name: string) =>
+      [...document.querySelectorAll<HTMLInputElement>(`[name^="rows."][name$=".${name}"]`)].map((el) => el.value);
+    await waitFor(() => expect(rowValues("salePriceGross")).toEqual(Array(23).fill("3.75")));
+    expect(rowValues("barcode")).toEqual(Array(23).fill(""));
+    expect(rowValues("brandId")).toEqual(Array(23).fill("brand"));
     apply();
     await waitFor(() => expect(p.onResolved).toHaveBeenCalledOnce());
     const request = mocks.resolve.mock.calls[0][0];
     expect(request.newItems).toHaveLength(23);
     expect(request.lines).toHaveLength(23);
+    expect(request.newItems.every((n: { baseSalePrice: number; brandId: string }) => n.baseSalePrice === 3.75 && n.brandId === "brand")).toBe(true);
     expect(request.lines.every((l: { barcode: string | null; barcodeType: string | null }) => l.barcode === null && l.barcodeType === null)).toBe(true);
-  }, 30000); // jsdom: 115 cambios sobre 23 filas (~10 s aislado); margen para la suite en paralelo.
+  });
 });

@@ -15,7 +15,9 @@ import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
  */
 
 const mocks = vi.hoisted(() => ({ getJournalEntryById: vi.fn() }));
-vi.mock("../api/accountingApi", () => ({
+// Mock parcial: la página también consume constantes reales del módulo (FISCAL_YEAR_CLOSING_FACT).
+vi.mock("../api/accountingApi", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../api/accountingApi")>()),
   accountingApi: { getJournalEntryById: mocks.getJournalEntryById },
 }));
 vi.mock("../../../lib/messages", () => ({ message: { error: vi.fn() } }));

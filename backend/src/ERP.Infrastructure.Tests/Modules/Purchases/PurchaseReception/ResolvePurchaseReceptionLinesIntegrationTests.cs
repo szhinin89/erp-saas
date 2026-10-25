@@ -103,7 +103,7 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         services.AddDistributedMemoryCache();
         services.AddDbContext<ErpDbContext>(o =>
             o.UseNpgsql(_postgres.GetConnectionString())
-                .AddInterceptors(new NewChildEntityTrackingInterceptor())
+                .AddInterceptors(new NewChildEntityTrackingInterceptor(), _barcodeRace)
         );
         services.AddScoped(_ => Mock.Of<ICurrentTenant>(t => t.TenantId == _tenantId));
         services.AddScoped<ICurrentCompany>(_ => new FixedCurrentCompany(() => _companyId));
@@ -418,14 +418,15 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
     }
 
     /// <summary>Descarga + procesamiento real del XML (mismo matching automático de producción).</summary>
-    private async Task<Guid> ReceiveInvoiceAsync(bool repeatBox = false)
+    private async Task<Guid> ReceiveInvoiceAsync(bool repeatBox = false,
+        IEnumerable<(string Code, string Description, decimal Qty, decimal Price)>? customLines = null)
     {
         var sequential = $"{++_invoiceSequence:D9}";
         var xml = BuildXml(
             sequential,
-            repeatBox
+            customLines ?? (repeatBox
                 ? InvoiceLines().Concat(InvoiceLines().Where(l => l.Code == "B-000"))
-                : InvoiceLines()
+                : InvoiceLines())
         );
         await using var scope = _services.CreateAsyncScope();
         var sp = scope.ServiceProvider;
@@ -705,7 +706,7 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
 
         // Unit without real barcode + box with EAN: provisional internal on the unit, EAN on the box.
         var noUnitEan = await LoadCreatedAsync("BC-000");
-        ActiveCode(noUnitEan, "Internal").Should().Be("N-000");
+        ActiveCode(noUnitEan, "Internal").Should().StartWith("INT-");
         noUnitEan.PackagingLevels.Single(p => p.IsBaseUnit).Barcode.Should().BeNull();
         noUnitEan.PackagingLevels.Single(p => !p.IsBaseUnit).Barcode.Should().Be(BoxEan("BC-", 0));
         noUnitEan.SupplierCodes.Select(c => c.Code).Should().BeEquivalentTo(["N-000", "B-000"]);
@@ -718,7 +719,7 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
 
         // Unit only: real EAN as the item barcode; without it, the provisional internal code.
         ActiveCode(await LoadCreatedAsync("BC-021"), "EAN13").Should().Be(UnitEan("BC-", 21));
-        ActiveCode(await LoadCreatedAsync("BC-020"), "Internal").Should().Be("N-020");
+        ActiveCode(await LoadCreatedAsync("BC-020"), "Internal").Should().StartWith("INT-");
 
         // Matching still learns from the supplier code: the next invoice resolves by itself.
         (await LoadAsync(await ReceiveInvoiceAsync()))
@@ -741,7 +742,7 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
 
         outcome.Applied.Should().BeTrue(string.Join(" | ", outcome.Errors.Select(e => e.Message)));
         var item = await LoadCreatedAsync("BOX-000");
-        ActiveCode(item, "Internal").Should().Be("B-000", "the box EAN never becomes the unit code");
+        ActiveCode(item, "Internal").Should().StartWith("INT-", "the box EAN never becomes the unit code");
         var box = item.PackagingLevels.Single(p => !p.IsBaseUnit);
         box.Barcode.Should().Be(BoxEan("BOX-", 0));
         item.SupplierCodes.Single(c => c.Code == "B-000").PackagingLevelId.Should().Be(box.Id);
@@ -766,7 +767,7 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         (await CountItemsAsync()).Should().Be(before);
     }
 
-    private async Task<string> SeedItemWithBarcodeAsync(string code)
+    private async Task<string> SeedItemWithBarcodeAsync(string code, string barcodeType = "EAN13")
     {
         await using var scope = _services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -785,7 +786,7 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
             companyId: _companyId
         );
         item.AddVariant(Array.Empty<(Guid, string)>(), null, 0, _userId)
-            .AddBarcode(code, "EAN13", _tenantId, _userId, true);
+            .AddBarcode(code, barcodeType, _tenantId, _userId, true);
         db.Items.Add(item);
         await db.SaveChangesAsync();
         return code;

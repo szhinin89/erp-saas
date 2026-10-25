@@ -1,0 +1,35 @@
+{
+  "states": [
+    {
+      "label": "01-valid-before-save",
+      "footer": "1 seleccionadas1 listas0 pendientes",
+      "enabled": true,
+      "saves": 0
+    },
+    {
+      "label": "02-checking-before-save",
+      "footer": "1 seleccionadas0 listas1 pendientes",
+      "enabled": false,
+      "saves": 0
+    },
+    {
+      "label": "03-duplicate-before-save",
+      "footer": "1 seleccionadas0 listas1 pendientes",
+      "enabled": false,
+      "saves": 0
+    },
+    {
+      "label": "05-corrected-checking",
+      "footer": "1 seleccionadas0 listas1 pendientes",
+      "enabled": false,
+      "saves": 0
+    },
+    {
+      "label": "06-corrected-before-save",
+      "footer": "1 seleccionadas1 listas0 pendientes",
+      "enabled": true,
+      "saves": 0
+    }
+  ],
+  "errors": []
+}

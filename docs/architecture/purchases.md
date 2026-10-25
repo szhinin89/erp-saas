@@ -151,8 +151,8 @@ Sin suites completas, cambios de calculos/contratos/backend/datos, commit, push 
   (`data-label`). Los ocho totales se agrupan en «Distribución» y «Factura» (`zh-summary-grid`), cada
   grupo con su resultado primero. Es un preview calculado en vivo: excepción documentada de
   `ZHDataTable`.
-- Productos pendientes: un único resumen de rechazo, con los motivos sin fila como detalle. Cada motivo
-  de fila queda junto a ella y vinculado a su selector (`aria-invalid`/`aria-describedby`).
+- Productos pendientes: los motivos atribuibles a una fila se agrupan en su `PurchaseLineIssuesTag`,
+  sin resumen superior ni mensajes inline repetidos. Solo los motivos sin fila visible permanecen globales.
 - Anular: `buildPurchaseCancelMessage` informa efectos locales, que la anulación local no anula ante el
   SRI la factura del proveedor y, si existe, la anulación terminal de la retención. Con retención
   autorizada por el SRI solo indica ese requisito, sin anunciar efectos que no ocurrirán. El modal de
@@ -194,6 +194,18 @@ de Confirmar no se incluye porque no cambió. Material Symbols no cargó: los ic
   (seleccionadas con incidencias o rechazadas por el servidor).
 - Al enviar con errores se expanden las filas afectadas antes de enfocar el primer campo; un rechazo
   del servidor expande sus filas. Ningún campo con error queda oculto.
+- Los conflictos de SKU, barcode y código de proveedor reutilizan el diagnóstico global de Ítems
+  (`useItemCodeConflicts`) y `ZHCodeConflicts` en modo compacto dentro del popup de la fila.
+  El detalle muestra código, propietario y «Ver ítem» en otra pestaña; los duplicados del lote
+  muestran las filas implicadas sin enlace. SKU/barcode se marcan en sus campos y el código del
+  proveedor en la línea XML. El rechazo conserva los datos, refresca el diagnóstico y evita repetir
+  el mismo conflicto. No cambia validación, envío ni persistencia.
+- El diagnóstico asíncrono vigente también alimenta el pie y la habilitación de Resolver.
+  Una fila seleccionada con códigos sin verificar o con conflictos no se cuenta como lista.
+  Durante debounce/consulta se muestra «Verificando códigos» en su etiqueta compacta y se impide
+  resolver el lote. Cambiar códigos invalida inmediatamente el diagnóstico anterior; solo una
+  respuesta correspondiente a los candidatos actuales puede confirmar la verificación. Un fallo
+  de consulta no confirma unicidad. Corregir un código recalcula etiqueta y contadores sin guardar.
 
 Validación (2026-10-23): caracterización previa y posterior con los mismos escenarios (crear,
 vincular, sugerencia, agrupar presentación, edición masiva, margen, edición individual, errores,
@@ -288,10 +300,26 @@ Domain/Application (filtro Items/Inventory/Purchases, 2026-10-19): 354/354 y 551
 
 ### Ausencia de barcode en productos pendientes
 
-En Resolver productos pendientes, barcode vacio, espacios y el valor aislado `0` se normalizan
-como ausencia, tanto en frontend como en backend. No exigen tipo ni participan en duplicados.
-Los codigos presentes conservan sus validaciones; no se eliminan ceros iniciales.
-La referencia del proveedor permanece separada. Sin barcode de unidad se conserva la regla
-existente de Interno provisional desde un codigo de proveedor utilizable, validado por Items
-y sujeto a unicidad; `0` tampoco es candidato provisional. Si falta o esta ocupado, se requiere
-intervencion manual. No se generan identificadores arbitrarios ni se tipifican internos como GTIN.
+- Regla única (frontend `isRealBarcode`, backend `IsValidGtin`): un código del XML (auxiliar o
+  principal) solo es barcode si es GTIN-8/12/13/14 con dígito verificador válido. Cualquier otro
+  valor es código del proveedor. No existen listas de valores excluidos. El frontend precarga el
+  GTIN válido y sugiere el tipo solo para EAN-8/EAN-13. Cuando el cliente omite el barcode, el
+  backend recupera el GTIN válido del XML si su tipo es inferible (EAN-8/EAN-13). Lo conserva en su
+  presentación (unidad o caja/pack), previa comprobación de unicidad.
+- Un barcode explícito de la fila o la solicitud nunca se descarta. Solo el vacío o los espacios
+  equivalen a ausencia. Un valor explícito conserva sus validaciones existentes: la unidad exige
+  tipo de catálogo, de modo que un Interno ingresado como `5077` es válido y uno sin tipo se rechaza.
+  Sin barcode de unidad, el backend genera `INT-` + GUID de 32 dígitos hexadecimales, tipo de
+  catálogo `Internal`, principal de la variante base. Nunca inventa EAN ni cambia SKU.
+- La generación comprueba disponibilidad por Tenant + Company y dentro del lote (hasta 10
+  candidatos). El trigger PostgreSQL existente garantiza unicidad entre variantes y empaques,
+  incluso en concurrencia. Una colisión del Interno al crear provoca rollback del lote completo,
+  recarga y regeneración (hasta tres reintentos); el agotamiento devuelve error por producto.
+- Un barcode comercial ya ocupado rechaza la creación y solicita Vincular; nunca crea otro Item
+  ni reemplaza un código comercial. Se mantienen creación/vinculación atómicas, presentaciones,
+  edición masiva y precios mediante los mismos comandos y componentes.
+- `ItemSupplierCode` conserva por separado el código válido del proveedor (por ejemplo, un código
+  corto o numérico que no es GTIN), con la normalización existente y su presentación. Vacío y `0` no generan equivalencias;
+  el snapshot XML se conserva. El SKU sigue siendo el ingresado por el usuario.
+- El EAN real se añade después mediante el alta de barcode existente de Ítems, sobre el mismo
+  Item/variante. Se conservan Interno, Id, relaciones, presentaciones e historial.

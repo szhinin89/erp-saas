@@ -48,6 +48,7 @@ export interface ImportBatchIssueDto {
 }
 
 export interface ImportBatchRowPreviewDto {
+  itemCodes?: ItemCodeCandidate[] | null;
   id: string;
   rowNumber: number;
   hasBlockingIssue: boolean;
@@ -238,3 +239,4 @@ export interface OpeningBalancePostingDto {
   attempts: number;
   alreadyPosted: boolean;
 }
+import type { ItemCodeCandidate } from "../../items/facades/itemLookupFacade";

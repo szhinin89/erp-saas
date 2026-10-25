@@ -1,0 +1,581 @@
+
+ RUN  v4.1.6 C:/ProyectCursor/erp-saas/frontend
+
+ ❯ src/components/items/ItemEditorModal/ItemEditorModal.test.tsx (32 tests | 4 failed | 28 skipped) 3489ms
+     × Productos: un catálogo tardío no sobrescribe una marca ya editada 181ms
+     × Compras: un catálogo tardío no sobrescribe una marca ya editada 1115ms
+     × muestra el tipo persistido cuando el catálogo llega después del DTO y permite guardar la edición 1080ms
+     × reabre el mismo ítem conservando tipo, naturaleza y valores actualizados 1111ms
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 28 skipped (32)
+   Start at  18:48:12
+   Duration  7.09s (transform 1.39s, setup 318ms, import 1.83s, tests 3.49s, environment 1.23s)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/items/ItemEditorModal/ItemEditorModal.test.tsx > ItemEditorModal — regresión catálogo de tipos asíncrono > Productos: un catálogo tardío no sobrescribe una marca ya editada
+AssertionError: expected 'brand-1' to be 'brand-2' // Object.is equality
+
+Expected: "brand-2"
+Received: "brand-1"
+
+ ❯ src/components/items/ItemEditorModal/ItemEditorModal.test.tsx:793:58
+    791|     await act(async () => resolveTypes([{ id: "type-1", name: "Bien" }…
+    792|     await waitFor(() => expect(fieldByName(view.container, "itemTypeId…
+    793|     expect(fieldByName(view.container, "brandId").value).toBe("brand-2…
+       |                                                          ^
+    794|   });
+    795|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/components/items/ItemEditorModal/ItemEditorModal.test.tsx > ItemEditorModal — regresión catálogo de tipos asíncrono > Compras: un catálogo tardío no sobrescribe una marca ya editada
+AssertionError: expected '' to be 'type-1' // Object.is equality
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body
+    style="overflow: hidden;"
+  >
+    <div>
+      <div
+        aria-label="Editar Item"
+        aria-modal="true"
+        class="zh-modal-overlay"
+        role="dialog"
+      >
+        <div
+          class="zh-modal zh-modal--lg"
+        >
+          <div
+            class="zh-form-header"
+          >
+            <div
+              class="zh-form-header-left"
+            >
+              <div
+                class="zh-form-logo"
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  width="22"
+                >
+                  <path
+                    d="M8 3.2 4 5.6v4.8l4 2.4 4-2.4V5.6L8 3.2Z"
+                    stroke="currentColor"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="M12 8h3.2M15.2 8v3.2M15.2 11.2H18"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-width="1.2"
+                  />
+                  <circle
+                    cx="18.2"
+                    cy="11.2"
+                    fill="currentColor"
+                    r="1.1"
+                  />
+                </svg>
+              </div>
+              <div
+                class="zh-form-header-text"
+              >
+                <h2
+                  class="zh-form-title"
+                >
+                  Editar Item
+                </h2>
+                <p
+                  class="zh-form-subtitle"
+                >
+                  Los cambios se aplican al Item ya vinculado a esta línea.
+                </p>
+              </div>
+            </div>
+            <div
+              class="zh-form-header-right"
+            >
+              <button
+                aria-label="Cerrar"
+                class="zh-form-header-close"
+                type="button"
+              >
+                <span
+                  class="material-symbols-outlined"
+                >
+                  close
+                </span>
+              </button>
+            </div>
+          </div>
+          <div
+            class="zh-modal-body"
+          >
+            <form>
+              <div
+                aria-live="assertive"
+                class="zh-page-notice"
+                role="alert"
+              >
+                <div
+                  class="zh-form-alert zh-form-alert--warning"
+                >
+                  <span
+                    class="zh-form-alert-icon zh-form-alert-icon--warning"
+                  >
+                    <svg
+                      fill="none"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      width="18"
+                    >
+                      <path
+                        d="M12 9v4"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-width="2"
+                      />
+                      <path
+                        d="M12 17h.01"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-width="3"
+                      />
+                      <path
+                        d="M10.3 3.6h3.4L21 20H3l7.3-16.4Z"
+                        stroke="currentColor"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </span>
+                  <div>
+                    <p
+                      class="zh-form-alert-message"
+                    >
+                      No se pudieron consultar los conflictos de códigos. Las validaciones al guardar siguen vigentes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <section
+                class="zh-form-section"
+              >
+                <h3
+                  class="zh-form-section-title"
+                >
+                  Actualizar ítem existente
+                </h3>
+                <div
+                  class="zh-grid zh-grid--3"
+                >
+                  <label
+                    class="zh-field zh-field--readonly zh-field--compact"
+                  >
+                    <span
+                      class="zh-field-label"
+                    >
+                      SKU
+                    </span>
+                    <div
+                      class="zh-field-control"
+                    >
+                      <input
+                        disabled=""
+                        value="SKU-1"
+                      />
+                    </div>
+                  ...
+
+- Expected
++ Received
+
+- type-1
+
+ ❯ src/components/items/ItemEditorModal/ItemEditorModal.test.tsx:792:81
+    790|     await waitFor(() => expect(fieldByName(view.container, "brandId").…
+    791|     await act(async () => resolveTypes([{ id: "type-1", name: "Bien" }…
+    792|     await waitFor(() => expect(fieldByName(view.container, "itemTypeId…
+       |                                                                                 ^
+    793|     expect(fieldByName(view.container, "brandId").value).toBe("brand-2…
+    794|   });
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/components/items/ItemEditorModal/ItemEditorModal.test.tsx > ItemEditorModal — regresión catálogo de tipos asíncrono > muestra el tipo persistido cuando el catálogo llega después del DTO y permite guardar la edición
+AssertionError: expected '' to be 'type-1' // Object.is equality
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body
+    style="overflow: hidden;"
+  >
+    <div>
+      <div
+        aria-label="Editar Item"
+        aria-modal="true"
+        class="zh-modal-overlay"
+        role="dialog"
+      >
+        <div
+          class="zh-modal zh-modal--lg"
+        >
+          <div
+            class="zh-form-header"
+          >
+            <div
+              class="zh-form-header-left"
+            >
+              <div
+                class="zh-form-logo"
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  width="22"
+                >
+                  <path
+                    d="M8 3.2 4 5.6v4.8l4 2.4 4-2.4V5.6L8 3.2Z"
+                    stroke="currentColor"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="M12 8h3.2M15.2 8v3.2M15.2 11.2H18"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-width="1.2"
+                  />
+                  <circle
+                    cx="18.2"
+                    cy="11.2"
+                    fill="currentColor"
+                    r="1.1"
+                  />
+                </svg>
+              </div>
+              <div
+                class="zh-form-header-text"
+              >
+                <h2
+                  class="zh-form-title"
+                >
+                  Editar Item
+                </h2>
+                <p
+                  class="zh-form-subtitle"
+                >
+                  Los cambios se aplican al Item ya vinculado a esta línea.
+                </p>
+              </div>
+            </div>
+            <div
+              class="zh-form-header-right"
+            >
+              <button
+                aria-label="Cerrar"
+                class="zh-form-header-close"
+                type="button"
+              >
+                <span
+                  class="material-symbols-outlined"
+                >
+                  close
+                </span>
+              </button>
+            </div>
+          </div>
+          <div
+            class="zh-modal-body"
+          >
+            <form>
+              <div
+                aria-live="assertive"
+                class="zh-page-notice"
+                role="alert"
+              >
+                <div
+                  class="zh-form-alert zh-form-alert--warning"
+                >
+                  <span
+                    class="zh-form-alert-icon zh-form-alert-icon--warning"
+                  >
+                    <svg
+                      fill="none"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      width="18"
+                    >
+                      <path
+                        d="M12 9v4"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-width="2"
+                      />
+                      <path
+                        d="M12 17h.01"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-width="3"
+                      />
+                      <path
+                        d="M10.3 3.6h3.4L21 20H3l7.3-16.4Z"
+                        stroke="currentColor"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </span>
+                  <div>
+                    <p
+                      class="zh-form-alert-message"
+                    >
+                      No se pudieron consultar los conflictos de códigos. Las validaciones al guardar siguen vigentes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <section
+                class="zh-form-section"
+              >
+                <h3
+                  class="zh-form-section-title"
+                >
+                  Actualizar ítem existente
+                </h3>
+                <div
+                  class="zh-grid zh-grid--3"
+                >
+                  <label
+                    class="zh-field zh-field--readonly zh-field--compact"
+                  >
+                    <span
+                      class="zh-field-label"
+                    >
+                      SKU
+                    </span>
+                    <div
+                      class="zh-field-control"
+                    >
+                      <input
+                        disabled=""
+                        value="SKU-1"
+                      />
+                    </div>
+                  ...
+
+- Expected
++ Received
+
+- type-1
+
+ ❯ src/components/items/ItemEditorModal/ItemEditorModal.test.tsx:828:76
+    826|     expect(fieldByName(container, "itemTypeId").disabled).toBe(true);
+    827|     await act(async () => resolveTypes([{ id: "type-1", name: "Bien" }…
+    828|     await waitFor(() => expect(fieldByName(container, "itemTypeId").va…
+       |                                                                            ^
+    829|     expect((fieldByName(container, "itemTypeId") as unknown as HTMLSel…
+    830|     expect(fieldByName(container, "nature").value).toBe("Product");
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/components/items/ItemEditorModal/ItemEditorModal.test.tsx > ItemEditorModal — regresión catálogo de tipos asíncrono > reabre el mismo ítem conservando tipo, naturaleza y valores actualizados
+AssertionError: expected '' to be 'type-1' // Object.is equality
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body
+    style="overflow: hidden;"
+  >
+    <div />
+    <div>
+      <div
+        aria-label="Editar Item"
+        aria-modal="true"
+        class="zh-modal-overlay"
+        role="dialog"
+      >
+        <div
+          class="zh-modal zh-modal--lg"
+        >
+          <div
+            class="zh-form-header"
+          >
+            <div
+              class="zh-form-header-left"
+            >
+              <div
+                class="zh-form-logo"
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  width="22"
+                >
+                  <path
+                    d="M8 3.2 4 5.6v4.8l4 2.4 4-2.4V5.6L8 3.2Z"
+                    stroke="currentColor"
+                    stroke-linejoin="round"
+                    stroke-width="1.3"
+                  />
+                  <path
+                    d="M12 8h3.2M15.2 8v3.2M15.2 11.2H18"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-width="1.2"
+                  />
+                  <circle
+                    cx="18.2"
+                    cy="11.2"
+                    fill="currentColor"
+                    r="1.1"
+                  />
+                </svg>
+              </div>
+              <div
+                class="zh-form-header-text"
+              >
+                <h2
+                  class="zh-form-title"
+                >
+                  Editar Item
+                </h2>
+                <p
+                  class="zh-form-subtitle"
+                >
+                  Los cambios se aplican al Item ya vinculado a esta línea.
+                </p>
+              </div>
+            </div>
+            <div
+              class="zh-form-header-right"
+            >
+              <button
+                aria-label="Cerrar"
+                class="zh-form-header-close"
+                type="button"
+              >
+                <span
+                  class="material-symbols-outlined"
+                >
+                  close
+                </span>
+              </button>
+            </div>
+          </div>
+          <div
+            class="zh-modal-body"
+          >
+            <form>
+              <div
+                aria-live="assertive"
+                class="zh-page-notice"
+                role="alert"
+              >
+                <div
+                  class="zh-form-alert zh-form-alert--warning"
+                >
+                  <span
+                    class="zh-form-alert-icon zh-form-alert-icon--warning"
+                  >
+                    <svg
+                      fill="none"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      width="18"
+                    >
+                      <path
+                        d="M12 9v4"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-width="2"
+                      />
+                      <path
+                        d="M12 17h.01"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-width="3"
+                      />
+                      <path
+                        d="M10.3 3.6h3.4L21 20H3l7.3-16.4Z"
+                        stroke="currentColor"
+                        stroke-linejoin="round"
+                        stroke-width="1.6"
+                      />
+                    </svg>
+                  </span>
+                  <div>
+                    <p
+                      class="zh-form-alert-message"
+                    >
+                      No se pudieron consultar los conflictos de códigos. Las validaciones al guardar siguen vigentes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <section
+                class="zh-form-section"
+              >
+                <h3
+                  class="zh-form-section-title"
+                >
+                  Actualizar ítem existente
+                </h3>
+                <div
+                  class="zh-grid zh-grid--3"
+                >
+                  <label
+                    class="zh-field zh-field--readonly zh-field--compact"
+                  >
+                    <span
+                      class="zh-field-label"
+                    >
+                      SKU
+                    </span>
+                    <div
+                      class="zh-field-control"
+                    >
+                      <input
+                        disabled=""
+                        value="SKU-1"
+                      />
+                    </div>[3...
+
+- Expected
++ Received
+
+- type-1
+
+ ❯ src/components/items/ItemEditorModal/ItemEditorModal.test.tsx:851:83
+    849|     await waitFor(() => expect(fieldByName(second.container, "shortNam…
+    850|     await act(async () => resolveTypes([{ id: "type-1", name: "Bien" }…
+    851|     await waitFor(() => expect(fieldByName(second.container, "itemType…
+       |                                                                                   ^
+    852|     expect(fieldByName(second.container, "nature").value).toBe("Servic…
+    853|     expect(fieldByName(second.container, "nature").disabled).toBe(true…
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯

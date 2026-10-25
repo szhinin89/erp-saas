@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.ItemMatching.Services;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.Models;
 using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -202,6 +203,77 @@ public sealed class ItemRepositorySupplierCodeMatchTests : IAsyncLifetime
         match.PackagingUomCode.Should().Be("PACA");
         match.PackagingBaseQuantity.Should().Be(12m);
         match.BaseUomCode.Should().Be("UNIT");
+    }
+
+    [Fact]
+    public async Task FindCodeOwnerAsync_reports_owner_by_company_and_supplier_without_self_conflict()
+    {
+        var foreignCompanyId = Guid.NewGuid();
+        Guid supplierA, supplierB, ownerId, barcodeId, boxId, foreignId;
+        await using (var db = CreateContext(_tenantId))
+        {
+            var foreignCompany = Company.CreateManaged(_tenantId, "1790012345002", "Foreign Company", createdBy: _createdBy);
+            foreignCompanyId = foreignCompany.Id;
+            db.Companies.Add(foreignCompany);
+            var a = BusinessPartner.Create(_tenantId, "04", "1791352688011", 2, "Proveedor A", _createdBy);
+            var b = BusinessPartner.Create(_tenantId, "04", "1791352688012", 2, "Proveedor B", _createdBy);
+            var itemType = ItemTypeDefinition.Create(_tenantId, "PHYSICAL", "Fisico", 1, _createdBy);
+            var owner = Item.Create(_tenantId, "SKU-OWN", "Arroz Owner", "Arroz Owner", itemType.Id, "UNIT",
+                ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(), ItemStockConfig.Create(),
+                _createdBy, companyId: _companyId);
+            var variant = owner.AddVariant(Array.Empty<(Guid, string)>(), null, 0, _createdBy);
+            variant.AddBarcode("7861234567898", "EAN13", _tenantId, _createdBy, true);
+            owner.ReplacePackagingLevels(
+                [
+                    ("Unidad", 1, 1m, "UNIT", null, null, true, false, true),
+                    ("Caja 12", 2, 12m, "CAJA", "17861234567895", null, false, true, false),
+                ], _createdBy);
+            owner.AddSupplierCode("SUP-1", false, a.Id, _createdBy);
+            owner.AddSupplierCode("OLD-1", false, a.Id, _createdBy).Disable();
+            db.BusinessPartners.AddRange(a, b);
+            db.ItemTypes.Add(itemType);
+            db.Items.Add(owner);
+            await db.SaveChangesAsync();
+            (supplierA, supplierB, ownerId) = (a.Id, b.Id, owner.Id);
+            barcodeId = variant.Barcodes.Single().Id;
+            boxId = owner.PackagingLevels.Single(p => !p.IsBaseUnit).Id;
+
+            var foreign = Item.Create(_tenantId, "FOREIGN", "Foreign", "Foreign", itemType.Id, "UNIT",
+                ItemTaxConfig.Create("10", "10"), ItemSaleConfig.Create(), ItemStockConfig.Create(),
+                _createdBy, companyId: foreignCompanyId);
+            foreign.AddVariant(Array.Empty<(Guid, string)>(), null, 0, _createdBy)
+                .AddBarcode("FOREIGN-BC", "Internal", _tenantId, _createdBy, true);
+            foreignId = foreign.Id;
+            await using var foreignDb = CreateContext(_tenantId, foreignCompanyId);
+            foreignDb.Items.Add(foreign);
+            await foreignDb.SaveChangesAsync();
+        }
+
+        await using var readDb = CreateContext(_tenantId);
+        var repository = new ItemRepository(readDb);
+        Task<ItemCodeOwner?> Find(string kind, string code, Guid? supplier = null, Guid? exclude = null) =>
+            repository.FindCodeOwnerAsync(new ItemCodeLookup(kind, code, supplier, exclude), _tenantId);
+
+        (await Find("Sku", " sku-own "))!.Should().Be(new ItemCodeOwner(ownerId, "Arroz Owner"));
+        (await Find("Sku", "SKU-OWN", exclude: ownerId)).Should().BeNull("editing keeps its own SKU");
+        (await Find("VariantSku", "SKU-OWN"))!.ItemId.Should().Be(ownerId);
+        (await Find("Barcode", "7861234567898"))!.ItemId.Should().Be(ownerId);
+        (await Find("Barcode", "7861234567898", exclude: barcodeId)).Should().BeNull();
+        (await Find("Barcode", "17861234567895"))!.ItemId.Should().Be(ownerId);
+        (await Find("Barcode", "17861234567895", exclude: boxId)).Should().BeNull();
+        (await Find("SupplierCode", "SUP-1", supplierA))!.ItemId.Should().Be(ownerId);
+        (await Find("SupplierCode", "SUP-1", supplierB)).Should().BeNull("supplier codes are scoped per supplier");
+        (await Find("SupplierCode", "OLD-1", supplierA)).Should().BeNull("inactive relations do not block");
+        (await Find("SupplierCode", "SUP-1")).Should().BeNull("supplier is mandatory");
+        (await Find("Sku", "FOREIGN")).Should().BeNull("another company may reuse codes");
+        (await Find("Barcode", "FOREIGN-BC")).Should().BeNull();
+        (await repository.FindCodeOwnerAsync(new ItemCodeLookup("Sku", "SKU-OWN"), Guid.NewGuid())).Should().BeNull();
+
+        await using var foreignRead = CreateContext(_tenantId, foreignCompanyId);
+        var foreignRepository = new ItemRepository(foreignRead);
+        (await foreignRepository.FindCodeOwnerAsync(new ItemCodeLookup("Barcode", "FOREIGN-BC"), _tenantId))!
+            .ItemId.Should().Be(foreignId);
+        (await foreignRepository.FindCodeOwnerAsync(new ItemCodeLookup("Sku", "SKU-OWN"), _tenantId)).Should().BeNull();
     }
 
     private ErpDbContext CreateContext(Guid tenantId, Guid? companyId = null)

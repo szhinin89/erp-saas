@@ -372,7 +372,7 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
     }
 
     [Fact]
-    public async Task Product_without_real_barcode_is_valid_using_supplier_code_as_provisional_internal()
+    public async Task Product_without_real_barcode_uses_generated_internal_code()
     {
         var f = new Fixture();
 
@@ -384,9 +384,9 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
 
         result.Value!.Errors.Should().BeEmpty();
         f.Items.Verify(
-            i => i.BarcodeExistsAsync("COD-A", TenantId, CompanyId, It.IsAny<CancellationToken>()),
+            i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()),
             Times.Once,
-            "the supplier code is checked as the provisional unit barcode"
+            "a generated Internal code is checked for uniqueness"
         );
     }
 
@@ -394,8 +394,6 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    [InlineData("0")]
-    [InlineData(" 0 ")]
     public async Task Absent_barcodes_use_distinct_supplier_identifiers_without_requiring_type(string? barcode)
     {
         var f = new Fixture();
@@ -405,23 +403,62 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
                 new(f.LineB.Id, NewItemKey: "n2", Barcode: barcode)
             ]), CancellationToken.None);
         result.Value!.Errors.Should().BeEmpty();
-        f.Items.Verify(i => i.BarcodeExistsAsync("0", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Never);
-        f.Items.Verify(i => i.BarcodeExistsAsync("COD-A", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
-        f.Items.Verify(i => i.BarcodeExistsAsync("COD-B", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
+        f.Items.Verify(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Exactly(2));
+
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("07")]
+    [InlineData("300067162")]
+    public async Task Explicit_untyped_barcode_is_kept_and_requires_its_type(string barcode)
+    {
+        // Un barcode explícito nunca se descarta en silencio: sin tipo, falla la validación oficial.
+        var f = new Fixture();
+        var errors = await RejectedAsync(f,
+            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1", Barcode: barcode)]));
+        errors.Should().Contain(e => e.Message.Contains("tipo de código de barras"));
+        f.Items.Verify(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Explicit_internal_barcode_is_used_without_generating_internal()
+    {
+        var f = new Fixture();
+        var result = await f.Build().Handle(
+            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1", Barcode: " 5077 ", BarcodeType: "Internal")]),
+            CancellationToken.None);
+        result.Value!.Errors.Should().BeEmpty();
+        f.Items.Verify(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("0")]
-    [InlineData(" 0 ")]
-    public async Task Absent_supplier_identifier_requires_manual_unit_barcode(string supplierCode)
+    [InlineData("07")]
+    [InlineData("300067162")]
+    [InlineData("7861234567890")] // 13 dígitos con dígito verificador inválido
+    [InlineData("12345670123")] // longitud que no es GTIN
+    public async Task Non_GTIN_supplier_identifier_generates_internal_barcode(string supplierCode)
     {
         var f = new Fixture(supplierCodeA: supplierCode);
-        var errors = await RejectedAsync(f,
-            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1", Barcode: "0")]));
-        errors.Should().Contain(e => e.Message.Contains("Interno provisional"));
-        f.Items.Verify(i => i.BarcodeExistsAsync("0", TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Never);
+        var result = await f.Build().Handle(
+            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1")]), CancellationToken.None);
+        result.Value!.Errors.Should().BeEmpty();
+        f.Items.Verify(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("7861234567898")]
+    [InlineData("12345670")]
+    public async Task Valid_XML_GTIN_is_recovered_as_typed_barcode(string supplierCode)
+    {
+        var f = new Fixture(supplierCodeA: supplierCode);
+        var result = await f.Build().Handle(
+            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1")]), CancellationToken.None);
+        result.Value!.Errors.Should().BeEmpty();
+        f.Items.Verify(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -430,14 +467,14 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
         var f = new Fixture();
         var errors = await RejectedAsync(f,
             new([NewItem("n1"), NewItem("n2")], [
-                new(f.LineA.Id, NewItemKey: "n1", Barcode: "0"),
-                new(f.LineC.Id, NewItemKey: "n2", Barcode: "0")
+                new(f.LineA.Id, NewItemKey: "n1"),
+                new(f.LineC.Id, NewItemKey: "n2")
             ]));
-        errors.Should().Contain(e => e.Message.Contains("provisional") && e.Message.Contains("repetido"));
+        errors.Should().Contain(e => e.Message.Contains("proveedor") && e.Message.Contains("distintas"));
     }
 
     [Fact]
-    public async Task Provisional_supplier_code_already_used_as_barcode_is_rejected()
+    public async Task Supplier_code_already_used_as_barcode_does_not_block_generated_internal()
     {
         var f = new Fixture();
         f.Items.Setup(i =>
@@ -445,12 +482,24 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
             )
             .ReturnsAsync(true);
 
-        var errors = await RejectedAsync(
-            f,
-            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1")])
-        );
+        var result = await f.Build().Handle(
+            new([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1")]), CancellationToken.None);
+        result.Value!.Errors.Should().BeEmpty();
+    }
 
-        errors.Should().ContainSingle(e => e.NewItemKey == "n1" && e.Message.Contains("provisional"));
+    [Fact]
+    public async Task Generated_collision_is_retried_and_exhaustion_returns_row_error()
+    {
+        var f = new Fixture();
+        f.Items.SetupSequence(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true).ReturnsAsync(false);
+        var command = new ResolvePurchaseReceptionLinesCommand([NewItem("n1")], [new(f.LineA.Id, NewItemKey: "n1")]);
+        (await f.Build().Handle(command, CancellationToken.None)).Value!.Errors.Should().BeEmpty();
+        f.Items.Verify(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Exactly(2));
+
+        f.Items.Setup(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var errors = await RejectedAsync(f, command);
+        errors.Should().ContainSingle(e => e.NewItemKey == "n1" && e.Message.Contains("Interno"));
     }
 
     [Fact]
@@ -531,24 +580,11 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
     {
         var f = new Fixture();
         // Only the box line exists and its supplier code IS the box barcode: the unit has no code.
-        var errors = await RejectedAsync(
-            f,
-            new(
-                [NewItem("n1")],
-                [
-                    new(
-                        f.LineB.Id,
-                        NewItemKey: "n1",
-                        PresentationFactor: 12m,
-                        PresentationName: "Caja x12",
-                        PresentationUomCode: "02",
-                        Barcode: "cod-b"
-                    ),
-                ]
-            )
-        );
-
-        errors.Should().Contain(e => e.NewItemKey == "n1" && e.Message.Contains("unidad"));
+        var result = await f.Build().Handle(
+            new([NewItem("n1")], [new(f.LineB.Id, NewItemKey: "n1", PresentationFactor: 12m,
+                PresentationName: "Caja x12", PresentationUomCode: "02", Barcode: "cod-b")]), CancellationToken.None);
+        result.Value!.Errors.Should().BeEmpty();
+        f.Items.Verify(i => i.BarcodeExistsAsync(It.Is<string>(c => c.StartsWith("INT-")), TenantId, CompanyId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // ── FASE 5 PURCHASE-UX — unidad de medida duplicada entre presentaciones ─────────────────

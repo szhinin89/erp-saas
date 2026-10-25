@@ -1,53 +1,23 @@
 ﻿{
-    "Generated":  "2026-10-13 13:14:18",
+    "Generated":  "2026-10-24 20:49:34",
     "Summary":  {
-                    "TotalFiles":  9
+                    "TotalFiles":  3
                 },
     "Migrations":  [
                        {
-                           "Name":  "20261010184156_InitialProductionBaseline",
-                           "SizeKB":  632.22,
-                           "Modified":  "2026-10-10 14:09:07"
+                           "Name":  "20261021162651_InitialProductionBaseline",
+                           "SizeKB":  692.26,
+                           "Modified":  "2026-10-23 06:46:55"
                        },
                        {
-                           "Name":  "20261010184156_InitialProductionBaseline.Designer",
-                           "SizeKB":  835.73,
-                           "Modified":  "2026-10-10 14:09:07"
-                       },
-                       {
-                           "Name":  "20261012002737_PurchaseDraftRetentionIntent",
-                           "SizeKB":  1.53,
-                           "Modified":  "2026-10-11 19:27:38"
-                       },
-                       {
-                           "Name":  "20261012002737_PurchaseDraftRetentionIntent.Designer",
-                           "SizeKB":  856.31,
-                           "Modified":  "2026-10-11 19:27:38"
-                       },
-                       {
-                           "Name":  "20261012014646_ItemSupplierCodeActiveUnique",
-                           "SizeKB":  1.39,
-                           "Modified":  "2026-10-11 20:46:46"
-                       },
-                       {
-                           "Name":  "20261012014646_ItemSupplierCodeActiveUnique.Designer",
-                           "SizeKB":  856.36,
-                           "Modified":  "2026-10-11 20:46:46"
-                       },
-                       {
-                           "Name":  "20261012114051_PurchaseLineXmlOriginPresentation",
-                           "SizeKB":  1.2,
-                           "Modified":  "2026-10-12 06:40:51"
-                       },
-                       {
-                           "Name":  "20261012114051_PurchaseLineXmlOriginPresentation.Designer",
-                           "SizeKB":  856.74,
-                           "Modified":  "2026-10-12 06:40:51"
+                           "Name":  "20261021162651_InitialProductionBaseline.Designer",
+                           "SizeKB":  933.82,
+                           "Modified":  "2026-10-23 06:46:55"
                        },
                        {
                            "Name":  "ErpDbContextModelSnapshot",
-                           "SizeKB":  856.6,
-                           "Modified":  "2026-10-12 06:40:51"
+                           "SizeKB":  933.69,
+                           "Modified":  "2026-10-23 06:44:20"
                        }
                    ]
 }

@@ -1,4 +1,6 @@
 import { useI18n } from "../../../i18n/i18n";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { NoAccessPage } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
@@ -86,6 +88,9 @@ export function ItemsPage() {
   const setActiveTab = useItemUiStore((s) => s.setActiveTab);
   const startEdit = useItemUiStore((s) => s.startEdit);
   const startView = useItemUiStore((s) => s.startView);
+  const [searchParams] = useSearchParams();
+  const viewId = searchParams.get("view");
+  useEffect(() => { if (viewId && canView) startView(viewId); }, [viewId, canView, startView]);
   const cancelEdit = useItemUiStore((s) => s.cancelEdit);
 
   const handleSubmit = async (values: CreateItemFormValues): Promise<void> => {

@@ -17,6 +17,28 @@ public sealed class ItemRepository : IItemRepository
     private IQueryable<Item> Scoped(Guid tenantId) =>
         _context.Items.Where(x => x.TenantId == tenantId && _context.FilterHasCompanyContext && x.CompanyId == _context.FilterCompanyId);
 
+    public async Task<ItemCodeOwner?> FindCodeOwnerAsync(ItemCodeLookup lookup, Guid tenantId,
+        CancellationToken cancellationToken = default)
+    {
+        var code = lookup.Code.Trim();
+        var upper = code.ToUpperInvariant();
+        var query = Scoped(tenantId);
+        // Barcode triggers and SKU indexes include inactive rows; supplier uniqueness is active-only.
+        query = lookup.Kind switch
+        {
+            "Sku" => query.Where(i => i.Code.SKU == upper && i.Id != lookup.ExcludeId),
+            "VariantSku" => query.Where(i => i.Variants.Any(v => v.SKU == upper && v.Id != lookup.ExcludeId)),
+            "Barcode" => query.Where(i =>
+                i.Variants.Any(v => v.Barcodes.Any(b => b.Code == code && b.Id != lookup.ExcludeId)) ||
+                i.PackagingLevels.Any(p => p.Barcode == code && p.Id != lookup.ExcludeId)),
+            "SupplierCode" when lookup.SupplierId.HasValue => query.Where(i =>
+                i.SupplierCodes.Any(s => s.SupplierId == lookup.SupplierId && s.Code == code && s.IsActive && s.Id != lookup.ExcludeId)),
+            _ => query.Where(_ => false),
+        };
+        return await query.Select(i => new ItemCodeOwner(i.Id, i.Code.ShortName))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<Item?> GetByIdAsync(
         Guid id,
         Guid tenantId,

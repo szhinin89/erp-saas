@@ -275,7 +275,7 @@ function alertIcon(type: ZHFormAlertType) {
 export function ZHFormAlert(props: {
   type: ZHFormAlertType;
   message: string;
-  detail?: string | null;
+  detail?: React.ReactNode;
   /** Sobrescribe el icono por defecto de la variante con un Material Symbol (p. ej. para distinguir estados que comparten color). */
   icon?: string;
 }) {

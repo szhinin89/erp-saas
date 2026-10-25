@@ -68,6 +68,7 @@ export function GeneralTab({
           label={t("items.form.itemType", "Tipo")}
           required
           fieldError={fe(errors.itemTypeId?.message)}
+          hint={isEditMode ? t("items.form.itemTypeImmutableHint") : undefined}
         >
           <ZhSelect
             {...register("itemTypeId")}
@@ -103,6 +104,7 @@ export function GeneralTab({
           label={t("items.nature.label", "Naturaleza operativa")}
           required
           fieldError={fe(errors.nature?.message)}
+          hint={isEditMode ? t("items.nature.immutableHint") : undefined}
         >
           <ZhSelect {...register("nature")} disabled={disabled || isEditMode}>
             <option value="Product">

@@ -13,6 +13,8 @@ import { setPrecisionPolicyForTests } from "../../../../lib/config/precisionPoli
 import { TEST_PRECISION_POLICY } from "../../../../test/precisionPolicyFixture";
 import type { ItemPackagingLevelDto } from "../../../../types/items";
 
+vi.mock("../../../../components/items/ItemCodeConflicts", () => ({ ItemCodeConflicts: () => null }));
+
 afterEach(() => cleanup());
 
 const t = (_key: string, fallback?: string) => fallback ?? _key;

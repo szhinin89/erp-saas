@@ -9,11 +9,11 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 ## Dashboard Health Summary
 
 - Hallazgos abiertos: 1
-- Hallazgos resueltos: 3
+- Hallazgos resueltos: 4
 - Hallazgos críticos: 0
 - Hallazgos importantes: 1
 - Hallazgos menores: 0
-- Última auditoría: 2026-09-26
+- Última auditoría: 2026-10-24
 - Estado general: Advertencia
 
 ---
@@ -72,6 +72,17 @@ Este documento **nunca se borra**. Los hallazgos resueltos se marcan como `Resue
 - **Causa raíz:** commits `2a48d75d`, `cf2c7ff3`, `0162d2a7` y `e909f1ef` editaron la salida HTML sin trasladar su presentación al renderer. `51f52f21` volvió a generar la versión anterior del renderer.
 - **Corrección:** fuente explícita recuperada de `c395ec6c` en `templates/`, composición validada antes de escribir, datos técnicos actuales con precedencia y referencias ausentes conservadas como históricas. Se recuperan 39 secciones, navegación y diagrama con porcentajes originales y futuros a 0%.
 - **Alcance:** Dashboard exclusivamente; no se modifica ERP funcional, `PROGRESS.html` ni progreso manual.
+
+### DH-005 — Fecha de generación fija en el pie del dashboard curado
+
+- **Fecha de detección / resolución:** 2026-10-24
+- **Estado:** Resuelto
+- **Prioridad:** 🟨 Menor
+- **Descripción:** Tras `run-dashboard-final.ps1` (datos con `generated` 2026-10-24), `index.html` mostraba «Generated: 2026-07-26 17:06:29». El pie de `templates/dashboard-curated.html` (recuperado en DH-004) tenía la fecha escrita en el HTML, y la composición no la sustituía.
+- **Impacto:** El lector no podía saber cuándo se generó realmente el dashboard. Las métricas sí eran actuales.
+- **Corrección:** El pie de la plantilla usa el slot `{{META:GENERATED}}`. `compose-curated-dashboard.ps1` lo resuelve con la marca de tiempo del pie generado (`dashboard-model-v12.json` → `Generated`). Si falta, falla de forma explícita, y un slot `META` sin resolver bloquea la composición. Las secciones curadas y la segunda línea del pie no cambian.
+- **Responsable:** Pipeline Dashboard
+- **Alcance:** Dashboard exclusivamente.
 
 ## Convenciones de este documento
 

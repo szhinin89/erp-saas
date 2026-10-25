@@ -1,3 +1,4 @@
+import { ItemCodeConflicts } from "../../../../components/items/ItemCodeConflicts";
 import { useState } from "react";
 import { EmptyState } from "../../../../components/PageShell";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
@@ -482,6 +483,13 @@ export function PackagingLevelsSection({
 
   return (
     <div className="pg-section">
+      <ItemCodeConflicts enabled={!disabled && (adding || !!editingId)} codes={[
+        ...active.map((level, i) => ({ kind: "Barcode" as const,
+          code: level.id === editingId ? editDraft.barcode : level.barcode ?? "",
+          excludeId: level.id, row: String(i + 1), targetKey: level.id })),
+        ...(adding ? [{ kind: "Barcode" as const, code: addDraft.barcode,
+          row: String(active.length + 1), targetKey: "new" }] : []),
+      ]} />
       <div className="pg-section-header">
         <div className="pg-section-header-left">
           <span className="material-symbols-outlined pg-section-icon">

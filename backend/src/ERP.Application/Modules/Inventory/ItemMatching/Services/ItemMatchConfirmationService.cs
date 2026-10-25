@@ -50,7 +50,8 @@ public sealed class ItemMatchConfirmationService : IItemMatchConfirmationService
         CancellationToken cancellationToken = default
     )
     {
-        if (document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode))
+        if (document.SupplierId is { } supplierId && !string.IsNullOrWhiteSpace(line.SupplierCode)
+            && line.SupplierCode.Trim() != "0")
         {
             // Match finders normalize supplier codes; persist learned codes with the same rule.
             // The reception line keeps the original XML value.

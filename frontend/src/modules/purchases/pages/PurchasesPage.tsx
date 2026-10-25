@@ -1070,6 +1070,7 @@ export function PurchasesPage() {
         open={ctx.modalPendingProducts}
         sources={ctx.modalPendingProductSources}
         supplierName={ctx.supplierProfile?.name ?? ""}
+        supplierId={ctx.formWatch.supplierId || undefined}
         onClose={ctx.closePendingProducts}
         onResolved={(result) => void ctx.applyResolvedLines(result)}
       />

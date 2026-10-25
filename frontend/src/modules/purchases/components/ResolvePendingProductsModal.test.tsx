@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import type { ItemCodeConflict } from "../../items/facades/itemLookupFacade";
 import { ResolvePendingProductsModal } from "./ResolvePendingProductsModal";
 import type { PendingProductSource } from "../utils/pendingProductsResolution";
 
-const mocks = vi.hoisted(() => ({ resolve: vi.fn(), barcodeTypes: [] as { code: string; name: string }[] }));
+const mocks = vi.hoisted(() => ({ resolve: vi.fn(), conflicts: [] as ItemCodeConflict[], barcodeTypes: [] as { code: string; name: string }[] }));
 vi.mock("../api/purchaseReceptionService", () => ({ purchaseReceptionService: { resolveLines: mocks.resolve, getLineMatch: vi.fn() } }));
+vi.mock("../../../components/items/useItemCodeConflicts", () => ({ useItemCodeConflicts: () => ({ conflicts: mocks.conflicts, failed: false, verified: true, pending: false }) }));
 vi.mock("./ProductPicker", () => ({ ProductPicker: () => null }));
 vi.mock("../../../i18n/i18n", () => ({ useI18n: () => ({ t: (key: string, fallback?: unknown) => typeof fallback === "string" ? fallback
   : fallback && typeof fallback === "object" && "code" in fallback ? `${key}:${String(fallback.code)}` : key }) }));
@@ -21,7 +24,7 @@ const source: PendingProductSource = { rowId: "a", lineKey: 1, supplierCode: "A"
 const props = () => ({ open: true, sources: [source], supplierName: "Proveedor", onClose: vi.fn(), onResolved: vi.fn() });
 const input = (name: string) => document.querySelector(`[name="rows.0.${name}"]`) as HTMLInputElement;
 const change = (name: string, value: string) => fireEvent.change(input(name), { target: { value } });
-beforeEach(() => { mocks.resolve.mockReset(); mocks.barcodeTypes = [{ code: "Internal", name: "Interno" }]; });
+beforeEach(() => { mocks.conflicts = []; mocks.resolve.mockReset(); mocks.barcodeTypes = [{ code: "Internal", name: "Interno" }]; });
 afterEach(cleanup);
 
 describe("bulk resolution modal", () => {
@@ -34,7 +37,7 @@ describe("bulk resolution modal", () => {
     mocks.barcodeTypes = [{ code: "Internal", name: "Interno" }];
     view.rerender(<ResolvePendingProductsModal {...p} sources={[{ ...source }]} />);
     // The supplier code is not a barcode: nothing is copied and no internal type is implied.
-    await waitFor(() => expect(screen.getByText("purchases.pendingProducts.provisionalBarcode:A")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("purchases.pendingProducts.provisionalBarcode")).toBeTruthy());
     expect(input("barcode").value).toBe("");
     expect(input("barcodeType").value).toBe("");
     expect(input("description").value).toBe("Descripción ERP editada");
@@ -49,7 +52,7 @@ describe("bulk resolution modal", () => {
     render(<ResolvePendingProductsModal {...p} />);
     for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5", description: "Descripción ERP" })) change(name, value);
     fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
-    await waitFor(() => expect(screen.getByText("SKU duplicado")).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("button", { name: /SKU duplicado/ })).toBeTruthy());
     expect(p.onResolved).not.toHaveBeenCalled();
     expect(input("description").value).toBe("Descripción ERP");
     change("sku", "CORREGIDO");
@@ -69,15 +72,15 @@ describe("bulk resolution modal", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "B" }));
     for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5", description: "Descripción ERP" })) change(name, value);
     fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
-    await waitFor(() => expect(screen.getByText("SKU duplicado")).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("button", { name: /SKU duplicado/ })).toBeTruthy());
     const notices = screen.getAllByRole("alert");
     expect(notices).toHaveLength(1);
-    expect(notices[0].textContent).toContain("purchases.pendingProducts.rowsRejected");
+    expect(notices[0].textContent).not.toContain("purchases.pendingProducts.rowsRejected");
     expect(notices[0].textContent).toContain("Lote sin proveedor");
     expect(notices[0].textContent).not.toContain("SKU duplicado");
     const rowA = screen.getByRole("checkbox", { name: "A" });
     expect(rowA.getAttribute("aria-invalid")).toBe("true");
-    expect(document.getElementById(rowA.getAttribute("aria-describedby")!)?.textContent).toBe("SKU duplicado");
+    expect(rowA.closest("[role=rowgroup]")?.textContent).toContain("SKU duplicado");
     expect(screen.getByRole("checkbox", { name: "B" }).getAttribute("aria-describedby")).toBeNull();
   });
 
@@ -95,7 +98,7 @@ describe("bulk resolution modal", () => {
     fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
     await waitFor(() => expect(p.onResolved).toHaveBeenCalledOnce());
     expect(mocks.resolve.mock.calls[0][0].lines[0]).toMatchObject({ presentationFactor: 12, barcode: "7861234567898", barcodeType: null });
-    expect(screen.getByText("purchases.pendingProducts.provisionalBarcode:A")).toBeTruthy();
+    expect(screen.getByText("purchases.pendingProducts.provisionalBarcode")).toBeTruthy();
   });
 
   it("takes the final price with VAT, saves it without VAT and shows XML purchase taxes read-only", async () => {
@@ -146,3 +149,35 @@ describe("bulk resolution modal", () => {
     expect((screen.getByRole("button", { name: "purchases.pendingProducts.apply" }) as HTMLButtonElement).disabled).toBe(true);
   }, 15000);
 });
+
+ it("groups diagnostics on the affected row and replaces repeated save errors", async () => {
+    const diagnostics: ItemCodeConflict[] = [
+      { kind: "Sku", code: "A", itemId: "owner", itemName: "Arroz propietario", rows: ["1"] },
+      { kind: "Barcode", code: "7861234567898", itemId: "owner", itemName: "Arroz propietario", rows: ["1"] },
+      { kind: "SupplierCode", code: "A", itemId: "owner", itemName: "Arroz propietario", rows: ["1"] },
+    ];
+    mocks.resolve.mockImplementation(async () => {
+      mocks.conflicts = diagnostics;
+      return { applied: false, errors: [
+      { purchaseReceptionLineId: "a", message: "SKU duplicado" },
+      { purchaseReceptionLineId: "a", message: "SKU duplicado" },
+      { purchaseReceptionLineId: "a", message: "El código de proveedor ya está asociado a otro ítem." },
+    ] }; });
+    render(<MemoryRouter><ResolvePendingProductsModal {...props()} /></MemoryRouter>);
+    for (const [name, value] of Object.entries({ itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: "5", description: "Datos conservados" })) change(name, value);
+    const tag = () => document.querySelector(".zh-line-issues button") as HTMLButtonElement;
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply" }));
+    await waitFor(() => expect(mocks.resolve).toHaveBeenCalledOnce());
+    expect(document.querySelectorAll(".zh-line-issues")).toHaveLength(1);
+    expect(input("sku").getAttribute("aria-invalid")).toBe("true");
+    expect(input("barcode").getAttribute("aria-invalid")).toBe("true");
+    expect(input("description").value).toBe("Datos conservados");
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.click(tag(), { detail: 1 });
+    await waitFor(() => expect(screen.getAllByRole("link", { name: "items.codeConflicts.view" })).toHaveLength(3));
+    expect(screen.queryByText("SKU duplicado")).toBeNull();
+    expect(screen.queryByText("El código de proveedor ya está asociado a otro ítem.")).toBeNull();
+    expect(screen.getAllByRole("link")[0].getAttribute("href")).toBe("/products/items?view=owner");
+    expect(screen.getAllByRole("link")[0].getAttribute("target")).toBe("_blank");
+ });

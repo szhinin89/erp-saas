@@ -9,6 +9,8 @@ const apiProxy = {
   },
 } as const;
 
+const HEAVY_DOM_TESTS = ["src/modules/accounting/pages/AccountingPostingsPage.test.tsx"];
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -16,9 +18,23 @@ export default defineConfig({
     cssMinify: false,
   },
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
     setupFiles: ["src/test/setupPrecisionPolicy.ts", "src/test/setupI18n.ts"],
-    exclude: ["e2e/**", "node_modules/**"],
+    // Tests jsdom con trabajo de render inevitable (p. ej. 100 selecciones reales sobre una tabla
+    // de 101 filas): corren después del resto, sin contención de CPU, para que su tiempo sea estable.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["src/**/*.test.{ts,tsx}"],
+          exclude: ["e2e/**", "node_modules/**", ...HEAVY_DOM_TESTS],
+        },
+      },
+      {
+        extends: true,
+        test: { name: "heavy-dom", include: HEAVY_DOM_TESTS, sequence: { groupOrder: 1 } },
+      },
+    ],
   },
   server: {
     // Mismo origen que el front (5173…): evita CORS al llamar a /api/* en desarrollo.

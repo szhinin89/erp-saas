@@ -74,7 +74,7 @@ describe("cash locale integrity", () => {
         if (ts.isJsxText(node)) {
           const text = node.text.trim();
           // Material Symbols ligatures and punctuation have no language content.
-          if (/[\p{L}]/u.test(text) && !["add", "refresh", "arrow_back"].includes(text)) hardcodes.push(text);
+          if (/[\p{L}]/u.test(text) && !["add", "refresh", "arrow_back", "account_balance"].includes(text)) hardcodes.push(text);
         }
         if (ts.isJsxAttribute(node) && /^(label|title|ariaLabel|placeholder|emptyMessage|message|closeLabel)$/.test(node.name.getText(ast)) && node.initializer && ts.isStringLiteral(node.initializer)) {
           hardcodes.push(node.initializer.text);

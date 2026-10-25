@@ -19,15 +19,15 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
 
         RuleFor(x => x.ShortName)
             .NotEmpty()
-            .WithMessage("El nombre corto es obligatorio.")
+            .WithMessage("El nombre comercial es obligatorio.")
             .MaximumLength(50)
-            .WithMessage("El nombre corto no puede exceder 50 caracteres.");
+            .WithMessage("El nombre comercial no puede superar 50 caracteres.");
 
         RuleFor(x => x.Description)
             .NotEmpty()
-            .WithMessage("La descripción es obligatoria.")
+            .WithMessage("La descripción completa es obligatoria.")
             .MaximumLength(254)
-            .WithMessage("La descripción no puede exceder 254 caracteres.");
+            .WithMessage("La descripción completa no puede superar 254 caracteres.");
 
         RuleFor(x => x.Observations)
             .MaximumLength(500)
@@ -42,7 +42,7 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
 
         RuleFor(x => x.DefaultUomCode)
             .NotEmpty()
-            .WithMessage("La unidad de medida base es obligatoria.")
+            .WithMessage("La unidad base de inventario es obligatoria.")
             .MaximumLength(10)
             .WithMessage("El código UOM no puede exceder 10 caracteres.");
 
@@ -52,13 +52,13 @@ public sealed class CreateItemCommandValidator : AbstractValidator<CreateItemCom
 
         RuleFor(x => x.SaleVatCode)
             .NotEmpty()
-            .WithMessage("El IVA de venta es obligatorio.")
+            .WithMessage("Debe seleccionar un código de IVA para venta.")
             .MaximumLength(10)
             .WithMessage("El código de IVA de venta no puede exceder 10 caracteres.");
 
         RuleFor(x => x.PurchaseVatCode)
             .NotEmpty()
-            .WithMessage("El IVA de compra es obligatorio.")
+            .WithMessage("Debe seleccionar un código de IVA para compra.")
             .MaximumLength(10)
             .WithMessage("El código de IVA de compra no puede exceder 10 caracteres.");
 

@@ -4,7 +4,7 @@ import { pendingProductsFormSchema } from "../schemas/pendingProductsSchema";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PurchaseLineReadiness } from "./purchaseLineReadiness";
 import { applyBulkAssignment, applyMarginToSelected, applyResolvedReceptionLines, buildInitialRow,
-  buildResolveRequest, groupRowErrors, isRealBarcode, lacksNetSalePrice, netUnitCost, pendingRowIssues, provisionalUnitBarcode, rowSalePrice,
+  buildResolveRequest, groupRowErrors, isRealBarcode, lacksNetSalePrice, netUnitCost, pendingRowIssues, needsProvisionalUnitBarcode, rowSalePrice,
   selectPendingProductSources, summarizeXmlLines, type PendingProductSource,
   type SalePricing } from "./pendingProductsResolution";
 import type { ResolvedReceptionLine } from "../api/purchaseReceptionService";
@@ -25,14 +25,29 @@ const line = (patch: Partial<PurchaseLineFormValues> = {}): PurchaseLineFormValu
 });
 
 describe("pending products schema", () => {
-  it.each(["", "   ", "0", " 0 "])("treats %j as absent through preload, validation and payload", (barcode) => {
+  it.each(["", "   "])("treats %j as absent through preload, validation and payload", (barcode) => {
     const initial = buildInitialRow({ ...source, supplierAuxCode: barcode, supplierCode: "SUP-A" }, ["EAN13"]);
     expect(initial).toMatchObject({ barcode: "", barcodeType: "" });
     const rows = ["a", "b"].map(rowId => ({ ...row(), rowId, sku: rowId, barcode, barcodeType: "" }));
     expect(pendingProductsFormSchema.safeParse({ rows }).success).toBe(true);
     expect(buildResolveRequest(rows, pricing()).lines.every(l => l.barcode === null && l.barcodeType === null)).toBe(true);
-    expect(provisionalUnitBarcode(rows, "a", new Map([["a", { ...source, supplierCode: "SUP-A" }]]))).toBe("SUP-A");
-    expect(provisionalUnitBarcode(rows, "a", new Map([["a", { ...source, supplierCode: barcode }]]))).toBeNull();
+    expect(needsProvisionalUnitBarcode(rows, "a")).toBe(true);
+  });
+  it.each(["0", " 0 ", "07", "300067162", "7861234567890", "12345670123"])("never preloads the non-GTIN XML code %j as barcode", (code) => {
+    for (const xml of [{ supplierAuxCode: code, supplierCode: "SUP-A" }, { supplierAuxCode: "", supplierCode: code }])
+      expect(buildInitialRow({ ...source, ...xml }, ["EAN13"])).toMatchObject({ barcode: "", barcodeType: "" });
+  });
+  it.each(["7861234567898", "12345670"])("preloads the valid XML GTIN %j as unit barcode", (code) => {
+    expect(buildInitialRow({ ...source, supplierAuxCode: "", supplierCode: code }, ["EAN13", "EAN8"]))
+      .toMatchObject({ barcode: code, barcodeType: code.length === 13 ? "EAN13" : "EAN8" });
+  });
+  it("keeps an explicit barcode, requires its type and accepts an explicit Internal code", () => {
+    const parse = (patch: object) => pendingProductsFormSchema.safeParse({ rows: [{ ...row(), ...patch }] }).success;
+    expect(parse({ barcode: "07", barcodeType: "" })).toBe(false);
+    const rows = [{ ...row(), barcode: " 5077 ", barcodeType: "Internal" }];
+    expect(pendingProductsFormSchema.safeParse({ rows }).success).toBe(true);
+    expect(buildResolveRequest(rows, pricing()).lines[0]).toMatchObject({ barcode: "5077", barcodeType: "Internal" });
+    expect(needsProvisionalUnitBarcode(rows, "a")).toBe(false);
   });
   it("accepts create, link and another presentation without requiring new-item fields on links", () => {
     expect(pendingProductsFormSchema.safeParse({ rows: [row(),
@@ -98,20 +113,15 @@ describe("XML sources and initial values", () => {
     expect(isRealBarcode("XML/A")).toBe(false);
     expect(buildInitialRow(source, ["EAN13"])).toMatchObject({ barcode: UNIT_EAN, barcodeType: "EAN13" });
     expect(buildInitialRow({ ...source, supplierAuxCode: "", supplierCode: UNIT_EAN }, ["EAN13"]).barcode).toBe(UNIT_EAN);
-    // FASE 5: un código auxiliar que cumple las validaciones de Items se propone como código de
-    // barras de la unidad, pero sin tipo implícito (no es GTIN).
+    // An XML reference without a valid GTIN stays out of the proposed barcode.
     expect(buildInitialRow({ ...source, supplierAuxCode: "AUX-9" }, ["EAN13", "Internal"]))
-      .toMatchObject({ barcode: "AUX-9", barcodeType: "" });
+      .toMatchObject({ barcode: "", barcodeType: "" });
   });
-  it("shows the supplier code as provisional unit barcode only when the unit has no real one", () => {
-    const sources = new Map([["a", { ...source, supplierCode: "SUP-U" }], ["b", { ...source, rowId: "b", supplierCode: "SUP-BOX" }]]);
+  it("requests generated Internal for a missing unit barcode, including box-only purchases", () => {
     const box = { ...row(), rowId: "b", mode: "presentation" as const, parentRowId: "a", presentationFactor: 12, barcode: BOX_EAN };
-    expect(provisionalUnitBarcode([row(), box], "a", sources)).toBeNull();
-    expect(provisionalUnitBarcode([{ ...row(), barcode: "" }, box], "a", sources)).toBe("SUP-U");
-    // Bought only by box: the box supplier code, unless it is the box barcode itself.
-    const boxOnly = { ...row(), barcode: BOX_EAN, presentationFactor: 12 };
-    expect(provisionalUnitBarcode([boxOnly], "a", sources)).toBe("SUP-U");
-    expect(provisionalUnitBarcode([boxOnly], "a", new Map([["a", { ...source, supplierCode: BOX_EAN }]]))).toBeNull();
+    expect(needsProvisionalUnitBarcode([row(), box], "a")).toBe(false);
+    expect(needsProvisionalUnitBarcode([{ ...row(), barcode: "" }, box], "a")).toBe(true);
+    expect(needsProvisionalUnitBarcode([{ ...row(), barcode: BOX_EAN, presentationFactor: 12 }], "a")).toBe(true);
   });
   it("uses the original XML description and discount after editing the purchase fields", () => {
     const [result] = selectPendingProductSources([line({ purchaseReceptionLineId: "a", description: "ERP edited",
@@ -275,17 +285,17 @@ describe("FASE 5 — código auxiliar del XML: código de barras, nunca SKU", ()
     ...r, itemTypeId: "type", brandId: "brand", categoryNodeId: "category", defaultUomCode: "19", salePriceGross: 15,
   });
 
-  it("1. auxiliar válido → se propone como código de barras de la unidad, no como SKU", () => {
+  it("1. auxiliar sin GTIN → Interno automático, sin alterar SKU", () => {
     const initial = buildInitialRow(xml, ["EAN13", "Code128", "Internal"]);
 
-    expect(initial.barcode).toBe("001013300320845306");
+    expect(initial.barcode).toBe("");
     expect(initial.barcodeType).toBe("");
     expect(initial.sku).toBe("8433");
     expect(initial.sku).not.toContain("001013300320845306");
 
     const request = buildResolveRequest([{ ...ready(initial), barcodeType: "Code128" }], pricing());
     expect(request.newItems[0].sku).toBe("8433");
-    expect(request.lines[0]).toMatchObject({ barcode: "001013300320845306", barcodeType: "Code128" });
+    expect(request.lines[0]).toMatchObject({ barcode: null, barcodeType: null });
   });
 
   it("1b. auxiliar GTIN real → código de barras con su tipo EAN sugerido", () => {
@@ -313,9 +323,8 @@ describe("FASE 5 — código auxiliar del XML: código de barras, nunca SKU", ()
     // El backend aprende Proveedor + código principal desde la línea de recepción indicada.
     expect(request.lines[0]).toMatchObject({ purchaseReceptionLineId: xml.rowId, newItemKey: xml.rowId });
     expect(request.newItems[0]).toMatchObject({ key: xml.rowId, sku: "8433" });
-    // Sin código de barras de la unidad, el código del proveedor sigue siendo el Interno provisional.
-    const sources = new Map([[xml.rowId, xml]]);
-    expect(provisionalUnitBarcode([{ ...initial, barcode: "" }], xml.rowId, sources)).toBe("8433");
+    // The supplier reference stays separate from the automatically generated Internal code.
+    expect(needsProvisionalUnitBarcode([{ ...initial, barcode: "" }], xml.rowId)).toBe(true);
   });
 
   it("4. creación sin código auxiliar sigue funcionando", () => {

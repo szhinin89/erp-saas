@@ -1,5 +1,81 @@
 # Project Status
 
+## FRONTEND — 2 timeouts recurrentes de pruebas — DEBT (2026-10-24)
+
+Compras (lote de 23): flujo de asignación masiva y consultas acotadas, de 11,3 s a ~1 s, con la misma
+cobertura y aserciones añadidas. Contabilidad (tope de 100): 100 renders reales inevitables; el archivo
+corre en el proyecto Vitest `heavy-dom` sin contención, con el límite original. Ambas pruebas detectan
+la mutación de su regla. tsc, ESLint, build y architecture:check PASS. Pendiente: gate del usuario.
+Posible inestabilidad aparte: `ZHOverlayGeometry.test.tsx` (`afterAll` de Chromium bajo carga).
+[Evidencia](docs/evidence/frontend-timeouts-01/README.md).
+
+## FRONTEND — 4 FAIL preexistentes de Caja y Contabilidad — pruebas desactualizadas (2026-10-24)
+
+`cajaI18n.test.ts`: faltaba la ligadura de icono `account_balance` (depósito bancario) en la lista
+de exclusión. `JournalEntryDetailPage.test.tsx` (3): el mock de `accountingApi` no exportaba
+`FISCAL_YEAR_CLOSING_FACT` (cierre anual); ahora es un mock parcial con `importOriginal`. Solo cambian
+pruebas; sin cambios de producción ni de reglas. Antes 3244/3248, después 3248/3248 PASS; tsc,
+ESLint (0 errores), build y architecture:check PASS. [Evidencia](docs/evidence/frontend-preexisting-fails-01/README.md).
+
+## ÍTEMS — Alineación de formularios y precarga asíncrona — BUG REAL (2026-10-24)
+
+Productos, editor compartido de Compras, Resolver pendientes e importador usan las etiquetas
+oficiales `items.*` (nombre comercial, descripción completa, tipo, naturaleza operativa, unidad base
+de inventario, tarifas IVA). Tipo ≠ naturaleza, precio sin IVA ≠ PVP final y unidad base ≠ unidad
+de presentación se mantienen separados. Encabezados Excel conservados como contrato.
+Corregido: tipo de ítem vacío con catálogo tardío; catálogos tardíos ya no sobrescriben campos editados.
+Regresión previa: 4/4 FAIL. PASS: editor 32/32, focal frontend 313/313, Application focal 446/446,
+tsc, ESLint (0 errores), build, architecture:check. Suite frontend 3244/3248: los 4 FAIL de Caja y
+Contabilidad ya existían en `HEAD` (corregidos después; ver entrada FRONTEND). Pendiente: guardar y reabrir en el ERP real. Sin datos,
+migraciones, contratos, cambios fiscales, commit, push ni deploy.
+[Evidencia](docs/evidence/items-forms-alignment-01/README.md).
+
+## COMPRAS — Sincronización de conflictos — BUG REAL (2026-10-24)
+
+Etiquetas, pie y Resolver consumen el diagnóstico actual de códigos: pendientes durante
+debounce/consulta o fallo de verificación, bloqueantes al detectar duplicados y listas solo
+tras confirmar los códigos corregidos. Respuestas obsoletas descartadas; sin intentar guardar.
+Regresión antes del fix: 4/4 FAIL. Después: frontend 767/767 PASS, TypeScript, lint,
+build, architecture:check y diff review PASS.
+Capturas y verificaciones: [evidencia](docs/evidence/purchases-code-conflicts-sync-01/README.md).
+Sin backend, datos, migraciones, reglas de negocio, commit, push ni deploy.
+
+## COMPRAS — Avisos compactos de duplicados — BUG REAL (2026-10-24)
+
+Resolver productos pendientes agrupa conflictos por fila en `PurchaseLineIssuesTag`, con
+`ZHCodeConflicts compact` dentro del popup (código, propietario y «Ver ítem»). Campos afectados
+marcados; datos conservados y diagnóstico actualizado tras rechazo; sin banners ni mensajes
+repetidos para motivos de fila. Avisos globales solo para errores sin fila visible.
+PASS: frontend 763/763, focal 37/37, TypeScript, build, architecture:check y diff review.
+Capturas desktop/móvil, scroll, teclado y enlace: [evidencia](docs/evidence/purchases-compact-code-conflicts-01/README.md).
+Solo presentación; sin backend, datos, migraciones, cálculos fiscales, commit, push ni deploy.
+
+## ÍTEMS — Conflictos de códigos unificados — EXTEND (2026-10-24)
+
+SKU, SKU de variante, barcode y código de proveedor duplicados muestran código, producto existente
+y «Ver ítem» (otra pestaña, `/products/items?view={id}`), o el duplicado entre líneas del lote.
+Contrato de solo lectura `POST /api/v1/items/code-conflicts` (`items.view`, Tenant + Company;
+proveedor como filtro). Integrado en alta/edición de Ítems, editor compartido, barcodes, variantes,
+presentaciones, Resolver productos pendientes e importador. Unicidad y validación al guardar intactas.
+PASS: Application 423/423, PostgreSQL 22/22, frontend 755, Architecture.Tests 143/143, tsc, ESLint
+(0 errores), build, architecture:check. Sin migraciones, datos reales, commit, push ni deploy.
+[Evidencia](docs/evidence/items-code-conflicts-01/README.md). SSOT: [Ítems](docs/architecture/items.md#2-identidad-y-unicidad).
+
+## COMPRAS — Códigos Internos provisionales automáticos — EXTEND (2026-10-24)
+
+Resolver productos pendientes genera `INT-` + GUID como barcode `Internal` cuando falta el código
+comercial de unidad. Solo un GTIN válido del XML es barcode (regla única frontend/backend, sin
+listas de valores); duplicados solicitan Vincular. Barcodes explícitos (p. ej. Interno `5077`)
+se conservan con su tipo. Código del proveedor separado (vacío y `0` no se aprenden), SKU intacto.
+Unicidad PostgreSQL existente por empresa, candidatos comprobados y rollback/reintento del lote
+ante colisión del Interno. Alta posterior del EAN sobre el mismo Item comprobada.
+PASS: Application focal 63/63, frontend 86/86, PostgreSQL desechable 11/11 (10 en lote + colisión
+aislada 1/1), Architecture.Tests 143/143, TypeScript, ESLint (0 errores), build frontend,
+architecture:check (0 nuevas infracciones) y diff check. Regresión original: 5 FAIL / 3 PASS.
+Sin datos reales, migraciones, cambios fiscales, commit, push ni deploy. Sin decisiones pendientes.
+[Archivos y evidencia](docs/evidence/purchases-internal-barcodes-01/README.md).
+SSOT: [Compras](docs/architecture/purchases.md#ausencia-de-barcode-en-productos-pendientes), [Ítems](docs/architecture/items.md#2-identidad-y-unicidad).
+
 ## COMPRAS — Desglose documental XML (2026-10-23, commits 478f5cc0b backend + 77f80985f frontend)
 
 Componentes operativos de una línea fiscal XML persistidos en la baseline única V1

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { NoticeVM } from "../../../notices";
 import { ZHBtn } from "../ZHForm";
@@ -8,12 +9,13 @@ import { ZHNoticeList } from "./ZHNoticeList";
 export interface ZHLineIssuesTagProps {
   /** Ordered by the consumer's business priority; success is never an issue. */
   issues: NoticeVM[];
+  children?: ReactNode;
   label: (primary: NoticeVM, additionalCount: number) => string;
   title: (count: number) => string;
 }
 
 /** ZH-DS-LINE-ISSUES-01: one floating disclosure, without business rules. */
-export function ZHLineIssuesTag({ issues, label, title }: ZHLineIssuesTagProps) {
+export function ZHLineIssuesTag({ issues, label, title, children }: ZHLineIssuesTagProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const titleId = useId();
@@ -30,7 +32,7 @@ export function ZHLineIssuesTag({ issues, label, title }: ZHLineIssuesTagProps) 
     let attempts = 0;
     const focusFirstAction = () => {
       const action = document.querySelector<HTMLElement>(
-        `[aria-labelledby="${CSS.escape(titleId)}"] button`,
+        `[aria-labelledby="${CSS.escape(titleId)}"] button, [aria-labelledby="${CSS.escape(titleId)}"] a[href]`,
       );
       if (action) action.focus();
       else if (++attempts < 10) frame = requestAnimationFrame(focusFirstAction);
@@ -64,6 +66,7 @@ export function ZHLineIssuesTag({ issues, label, title }: ZHLineIssuesTagProps) 
         anchored
       >
         <ZHNoticeList notices={visibleIssues} />
+        {children}
         {actions.map((n) => (
           <ZHBtn
             key={n.actionLabel}

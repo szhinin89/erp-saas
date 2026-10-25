@@ -36,7 +36,11 @@ function Merge-CuratedDashboard([string]$GeneratedHtml, [string]$ProjectRoot) {
         }
         $template = $template.Replace('{{DATA:' + $name + '}}', $json)
     }
-    if ($template -match '\{\{(?:SECTION|DATA):') { throw 'Unresolved curated dashboard slot' }
+    # DH-005: real generation metadata from the generated footer (dashboard-model-v12.json), never a date frozen in the template.
+    $generated = [regex]::Match($GeneratedHtml, "<footer class='footer'>\s*<p>Generated: ([^<]+?) &middot;")
+    if (!$generated.Success) { throw 'Missing generated footer metadata' }
+    $template = $template.Replace('{{META:GENERATED}}', $generated.Groups[1].Value)
+    if ($template -match '\{\{(?:SECTION|DATA|META):') { throw 'Unresolved curated dashboard slot' }
     foreach ($id in @($manifest.curatedSections) + @($manifest.dynamicSections)) {
         if ([regex]::Matches($template, "<section id='" + [regex]::Escape($id) + "'").Count -ne 1) {
             throw "Missing or duplicated dashboard section: $id"

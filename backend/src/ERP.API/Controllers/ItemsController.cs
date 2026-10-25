@@ -3,6 +3,7 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Items.DTOs;
 using ERP.Application.Items.UseCases.CreateItem;
+using ERP.Application.Items.UseCases.CodeConflicts;
 using ERP.Application.Items.UseCases.DisableItem;
 using ERP.Application.Items.UseCases.EnableItem;
 using ERP.Application.Items.UseCases.GetItemById;
@@ -79,6 +80,12 @@ public sealed class ItemsController : ControllerBase
         string code,
         CancellationToken cancellationToken
     ) => this.ToOkOrNotFound(await _mediator.Send(new ResolveItemQuery(code), cancellationToken));
+
+    [HttpPost("code-conflicts")]
+    [Authorize(Policy = $"perm:{InventoryPermissions.ItemsView}")]
+    public async Task<IActionResult> CodeConflicts([FromBody] GetItemCodeConflictsQuery query,
+        CancellationToken cancellationToken) =>
+        this.ToOkOrBadRequest(await _mediator.Send(query, cancellationToken));
 
     [HttpGet("report")]
     [Authorize(Policy = $"perm:{InventoryPermissions.ItemsView}")]

@@ -7,6 +7,7 @@ import type { PendingProductSource } from "../utils/pendingProductsResolution";
 
 const mocks = vi.hoisted(() => ({ resolve: vi.fn() }));
 vi.mock("../api/purchaseReceptionService", () => ({ purchaseReceptionService: { resolveLines: mocks.resolve, getLineMatch: vi.fn() } }));
+vi.mock("../../../components/items/useItemCodeConflicts", () => ({ useItemCodeConflicts: () => ({ conflicts: [], failed: false, verified: true, pending: false }) }));
 vi.mock("./ProductPicker", () => ({ ProductPicker: () => null }));
 vi.mock("../../../i18n/i18n", () => ({ useI18n: () => ({ t: (key: string, fallback?: unknown) => typeof fallback === "string" ? fallback
   : fallback && typeof fallback === "object" && "count" in fallback ? `${key}:${String(fallback.count)}` : key }) }));
@@ -90,9 +91,9 @@ describe("compact pending products rows", () => {
   it("names what is missing in a collapsed row and opens it to complete the data", async () => {
     render(<ResolvePendingProductsModal {...props(2)} />);
     const tag = within(tagOf("C1")!).getByRole("button");
-    expect(tag.textContent).toBe("Advertencia: El tipo de producto es obligatorio. · purchases.lines.issuesMore:4");
+    expect(tag.textContent).toBe("Advertencia: El tipo de ítem es obligatorio. · purchases.lines.issuesMore:4");
     fireEvent.click(tag);
-    for (const message of ["El tipo de producto es obligatorio.", "La marca es obligatoria.", "La categoría es obligatoria.", "La unidad de medida es obligatoria.", "Ingrese el PVP final (mayor a cero)."])
+    for (const message of ["El tipo de ítem es obligatorio.", "La marca es obligatoria.", "La categoría es obligatoria.", "La unidad base de inventario es obligatoria.", "Ingrese el PVP final (mayor a cero)."])
       expect(await screen.findByText(message)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Completar datos" }));
     expect(isShown(field(1, "brandId"))).toBe(true);
@@ -119,7 +120,7 @@ describe("compact pending products rows", () => {
     fillCreate(1);
     expect(footer()).toContain("purchases.pendingProducts.footer.pending:0");
     fireEvent.click(screen.getByRole("button", { name: "purchases.pendingProducts.apply:2" }));
-    await waitFor(() => expect(screen.getByText("SKU duplicado")).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("button", { name: /SKU duplicado/ })).toBeTruthy());
     expect(isShown(field(1, "sku"))).toBe(true);
     expect(isShown(field(0, "sku"))).toBe(false);
     expect(footer()).toContain("purchases.pendingProducts.footer.pending:1");

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ZHLineIssuesTag } from "../../../components/zh/notices";
 import { useI18n } from "../../../i18n/i18n";
 import type { NoticeSeverity, NoticeVM } from "../../../notices";
@@ -6,7 +7,7 @@ import type { NoticeSeverity, NoticeVM } from "../../../notices";
  * Adaptador único de Compras para ZHLineIssuesTag (líneas de la compra y productos pendientes).
  * Purchase labels only; priority and corrective actions are supplied by the caller.
  */
-export function PurchaseLineIssuesTag({ issues }: { issues: NoticeVM[] }) {
+export function PurchaseLineIssuesTag({ issues, children }: { issues: NoticeVM[]; children?: ReactNode }) {
   const { t } = useI18n();
   const severityWord: Record<NoticeSeverity, string> = {
     danger: t("purchases.lines.issueSeverity.danger", "Bloqueante"),
@@ -16,6 +17,7 @@ export function PurchaseLineIssuesTag({ issues }: { issues: NoticeVM[] }) {
   };
   return <ZHLineIssuesTag
     issues={issues}
+    children={children}
     label={(top, additionalCount) => `${severityWord[top.severity]}: ${top.label}${additionalCount > 0 ? ` · ${t("purchases.lines.issuesMore", { count: additionalCount })}` : ""}`}
     title={(count) => t("purchases.lines.issuesTitle", { count })}
   />;

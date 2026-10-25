@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { ItemsPage } from "./ItemsPage";
 import { itemService } from "../api/itemService";
 import { itemTypeService } from "../api/itemTypeService";
@@ -25,6 +26,12 @@ vi.mock("../../../access/usePermissionsUi", () => ({
   usePermissionsUi: () => ({
     canShow: () => true,
   }),
+}));
+
+vi.mock("../components/ItemForm/ItemFormTabs", () => ({
+  ItemFormTabs: ({ itemId, disabled }: { itemId?: string; disabled?: boolean }) => (
+    <div data-testid="item-form">{`${itemId}:${String(disabled)}`}</div>
+  ),
 }));
 
 vi.mock("../api/itemService", () => ({
@@ -111,7 +118,7 @@ function openListTab() {
 
 async function renderItemsPage() {
   openListTab();
-  render(<ItemsPage />);
+  render(<MemoryRouter><ItemsPage /></MemoryRouter>);
   await waitFor(() => {
     expect(itemService.getAll).toHaveBeenCalled();
   });
@@ -209,7 +216,7 @@ describe("ItemsPage listado", () => {
   });
 
   it("muestra empty state filtrado con i18n y no usa estilos inline", async () => {
-    const { container } = render(<ItemsPage />);
+    const { container } = render(<MemoryRouter><ItemsPage /></MemoryRouter>);
 
     await waitFor(() => {
       expect(
@@ -330,5 +337,19 @@ describe("ItemsPage — deshabilitar/habilitar ítem: confirmación y feedback (
     confirmSpy.mockRestore();
     promptSpy.mockRestore();
     alertSpy.mockRestore();
+  });
+});
+
+describe("ItemsPage — enlace Ver ítem desde conflictos de códigos", () => {
+  it("abre en modo consulta el ítem indicado en ?view=", async () => {
+    render(
+      <MemoryRouter initialEntries={["/products/items?view=item-42"]}>
+        <ItemsPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(useItemUiStore.getState()).toMatchObject({ editingItemId: "item-42", readOnly: true, activeTab: "nuevo" });
+    });
+    expect((await screen.findByTestId("item-form")).textContent).toBe("item-42:true");
   });
 });

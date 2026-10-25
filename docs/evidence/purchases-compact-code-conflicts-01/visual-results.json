@@ -1,0 +1,26 @@
+{
+  "errors": [],
+  "link": "PASS",
+  "failedSave": "PASS",
+  "keyboard": "PASS",
+  "mobileBounds": {
+    "x": 52,
+    "y": 122,
+    "width": 320,
+    "height": 458
+  },
+  "scroll": {
+    "before": {
+      "x": 64,
+      "y": 336,
+      "width": 320,
+      "height": 458
+    },
+    "after": {
+      "x": 64,
+      "y": 276,
+      "width": 320,
+      "height": 458
+    }
+  }
+}

@@ -234,7 +234,8 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
         {
             return Result<ItemDto>.Conflict(
                 $"Conflicto de unicidad en '{info.ConstraintName ?? "items"}'.",
-                "SKU_DUPLICATE"
+                info.ConstraintName == "uq_item_barcode_tenant_company"
+                    ? "BARCODE_DUPLICATE" : "SKU_DUPLICATE"
             );
         }
 

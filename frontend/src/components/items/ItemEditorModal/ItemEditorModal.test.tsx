@@ -6,26 +6,37 @@ import {
   waitFor,
   fireEvent,
   cleanup,
+  act,
 } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { ItemEditorModal } from "./ItemEditorModal";
+import { ItemFormTabs } from "../../../modules/items/components/ItemForm/ItemFormTabs";
 import { itemService } from "../../../modules/items/api/itemService";
 import { apiGet } from "../../../modules/lib/apiEnvelope";
 import type { CreateItemInitialData, ItemCreatedResult } from "./types";
 import type { ItemDetailDto } from "../../../types/items";
 
 vi.mock("../../../modules/items/api/itemService", () => ({
-  itemService: { create: vi.fn(), update: vi.fn(), getById: vi.fn() },
+  itemService: { create: vi.fn(), update: vi.fn(), getById: vi.fn(), getProfitability: vi.fn().mockResolvedValue(null) },
 }));
 
-vi.mock("../../../modules/items/hooks/useItemTypeOptions", () => ({
-  useItemTypeOptions: () => ({ data: [{ id: "type-1", name: "Bien" }] }),
+vi.mock("../../../modules/pricing/facades/priceListLookupFacade", () => ({
+  priceListLookupFacade: { list: vi.fn().mockResolvedValue([]) },
 }));
+vi.mock("../../../modules/configuracion/empresa/facades/companyProfileLookupFacade", () => ({
+  companyProfileLookupFacade: { getProfile: vi.fn().mockResolvedValue({ currencyCode: "USD" }) },
+}));
+
+const typeCatalog = vi.hoisted(() => ({ promise: null as Promise<{ id: string; name: string }[]> | null }));
+vi.mock("../../../modules/items/hooks/useItemTypeOptions", async () => {
+  const { useAsync } = await import("../../../hooks/useAsync");
+  return { useItemTypeOptions: () => useAsync(() => typeCatalog.promise ?? Promise.resolve([{ id: "type-1", name: "Bien" }])) };
+});
 
 vi.mock("../../../modules/lib/apiEnvelope", () => ({
   apiGet: vi.fn((url: string) => {
     if (url.includes("brands"))
-      return Promise.resolve([{ id: "brand-1", name: "Marca X" }]);
+      return Promise.resolve([{ id: "brand-1", name: "Marca X" }, { id: "brand-2", name: "Marca Y" }]);
     if (url.includes("category-nodes")) {
       return Promise.resolve({
         nodes: [
@@ -188,6 +199,7 @@ async function fillRequiredFields(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  typeCatalog.promise = null;
 });
 
 afterEach(() => {
@@ -198,7 +210,7 @@ describe("ItemEditorModal — modo Crear — render", () => {
   it("no renderiza el formulario cuando open=false", () => {
     renderModal({ open: false });
 
-    expect(screen.queryByText("Crear nuevo Item")).toBeNull();
+    expect(screen.queryByText("Nuevo ítem")).toBeNull();
   });
 
   it("prellena los campos desde initialData", async () => {
@@ -239,7 +251,7 @@ describe("ItemEditorModal — modo Crear — envío", () => {
     await waitForCatalogs();
 
     await fillRequiredFields(container);
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() => {
       expect(itemService.create).toHaveBeenCalledWith(
@@ -282,7 +294,7 @@ describe("ItemEditorModal — modo Crear — envío", () => {
     await waitForCatalogs();
 
     await fillRequiredFields(container, { barcode: "00125" });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() =>
       expect(
@@ -318,7 +330,7 @@ describe("ItemEditorModal — modo Crear — envío", () => {
     await waitForCatalogs();
 
     await fillRequiredFields(container, { sku: "10001204", barcode: "00125" });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() =>
       expect(
@@ -354,7 +366,7 @@ describe("ItemEditorModal — modo Crear — envío", () => {
     await waitForCatalogs();
 
     await fillRequiredFields(container, { barcode: "00125" });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() =>
       expect(
@@ -375,7 +387,7 @@ describe("ItemEditorModal — modo Crear — envío", () => {
     await waitForCatalogs();
 
     await fillRequiredFields(container, { barcode: "00125" });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() =>
       expect(screen.getByText("No se pudo crear el ítem.")).toBeTruthy(),
@@ -482,7 +494,7 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
       barcode: "00125",
       salePrice: "12",
     });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() => {
       expect(itemService.create).toHaveBeenCalledWith(
@@ -534,7 +546,7 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
     fireEvent.change(fieldByName(container, "purchaseVatCode"), {
       target: { value: "2" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() =>
       expect(
@@ -554,11 +566,11 @@ describe("ItemEditorModal — simulación de precio de compra (purchaseContext)"
       barcode: "00125",
       purchaseVatCode: "",
     });
-    fireEvent.click(screen.getByRole("button", { name: "Crear Item" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear ítem" }));
 
     await waitFor(() =>
       expect(
-        screen.getByText("Debe seleccionar el IVA de compra del Item."),
+        screen.getByText("Debe seleccionar un código de IVA para compra."),
       ).toBeTruthy(),
     );
     expect(itemService.create).not.toHaveBeenCalled();
@@ -592,7 +604,7 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
     );
     await waitForCatalogs();
 
-    expect(screen.getByText("Actualizar Item existente")).toBeTruthy();
+    expect(screen.getByText("Actualizar ítem existente")).toBeTruthy();
     await waitFor(() =>
       expect(fieldByName(container, "shortName").value).toBe("Aceite"),
     );
@@ -630,10 +642,11 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Actualizar Item" }),
+        screen.getByRole("button", { name: "Actualizar ítem" }),
       ).toBeTruthy(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Actualizar Item" }));
+    await waitFor(() => expect(document.querySelector<HTMLSelectElement>('[name="purchaseVatCode"]')?.value).toBe("2"));
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar ítem" }));
 
     await waitFor(() => {
       expect(itemService.update).toHaveBeenCalledWith(
@@ -652,7 +665,7 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
     renderModal({ itemId: "item-1" });
 
     await waitFor(() =>
-      expect(screen.getByText("Actualizar Item existente")).toBeTruthy(),
+      expect(screen.getByText("Actualizar ítem existente")).toBeTruthy(),
     );
     expect(screen.queryByText("Código de barras")).toBeNull();
   });
@@ -666,16 +679,16 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
     );
   });
 
-  it('botón principal es "Actualizar Item", nunca "Crear Item"', async () => {
+  it('botón principal es "Actualizar ítem", nunca "Crear ítem"', async () => {
     vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
     renderModal({ itemId: "item-1" });
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Actualizar Item" }),
+        screen.getByRole("button", { name: "Actualizar ítem" }),
       ).toBeTruthy(),
     );
-    expect(screen.queryByRole("button", { name: "Crear Item" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Crear ítem" })).toBeNull();
   });
 
   it("éxito: llama itemService.update (nunca create) y dispara onSaved", async () => {
@@ -694,7 +707,8 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
     fireEvent.change(fieldByName(container, "shortName"), {
       target: { value: "Aceite Editado" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Actualizar Item" }));
+    await waitFor(() => expect(document.querySelector<HTMLSelectElement>('[name="purchaseVatCode"]')?.value).toBe("2"));
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar ítem" }));
 
     await waitFor(() => {
       expect(itemService.update).toHaveBeenCalledWith(
@@ -719,10 +733,11 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Actualizar Item" }),
+        screen.getByRole("button", { name: "Actualizar ítem" }),
       ).toBeTruthy(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Actualizar Item" }));
+    await waitFor(() => expect(document.querySelector<HTMLSelectElement>('[name="purchaseVatCode"]')?.value).toBe("2"));
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar ítem" }));
 
     await waitFor(() => {
       expect(itemService.update).toHaveBeenCalledWith(
@@ -748,12 +763,95 @@ describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
       target: { value: "20" },
     });
     fireEvent.click(fieldByName(container, "updatePrice"));
-    fireEvent.click(screen.getByRole("button", { name: "Actualizar Item" }));
+    await waitFor(() => expect(document.querySelector<HTMLSelectElement>('[name="purchaseVatCode"]')?.value).toBe("2"));
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar ítem" }));
 
     await waitFor(() => {
       expect(itemService.update).toHaveBeenCalledWith(
         expect.objectContaining({ baseSalePrice: 20 }),
       );
     });
+  });
+});
+
+
+describe("ItemEditorModal — regresión catálogo de tipos asíncrono", () => {
+  it.each(["Productos", "Compras"])("%s: un catálogo tardío no sobrescribe una marca ya editada", async (flow) => {
+    let resolveTypes!: (types: { id: string; name: string }[]) => void;
+    typeCatalog.promise = new Promise(resolve => { resolveTypes = resolve; });
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem);
+    const view = flow === "Productos"
+      ? render(<I18nProvider><ItemFormTabs itemId={existingItem.id} submitting={false} onSubmit={vi.fn()} /></I18nProvider>)
+      : renderModal({ itemId: existingItem.id });
+    await waitFor(() => expect(fieldByName(view.container, "shortName").value).toBe("Aceite"));
+    await waitFor(() => expect(view.container.querySelector('[name="brandId"] option[value="brand-2"]')).not.toBeNull());
+    expect(fieldByName(view.container, "brandId").disabled).toBe(false);
+    fireEvent.change(fieldByName(view.container, "brandId"), { target: { value: "brand-2" } });
+    await waitFor(() => expect(fieldByName(view.container, "brandId").value).toBe("brand-2"));
+    await act(async () => resolveTypes([{ id: "type-1", name: "Bien" }]));
+    await waitFor(() => expect(fieldByName(view.container, "itemTypeId").value).toBe("type-1"));
+    expect(fieldByName(view.container, "brandId").value).toBe("brand-2");
+  });
+
+  it("actualiza sin exigir marca/categoría opcionales del contrato de edición", async () => {
+    vi.mocked(itemService.getById).mockResolvedValue({ ...existingItem, brandId: null, categoryNodeId: null });
+    vi.mocked(itemService.update).mockResolvedValue(existingItem);
+    const view = renderModal({ itemId: existingItem.id });
+    await waitFor(() => expect(fieldByName(view.container, "itemTypeId").value).toBe("type-1"));
+    await waitFor(() => expect(document.querySelector<HTMLSelectElement>('[name="purchaseVatCode"]')?.value).toBe("2"));
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar ítem" }));
+    await waitFor(() => expect(itemService.update).toHaveBeenCalledWith(expect.objectContaining({ brandId: null, categoryNodeId: null })));
+  });
+  it("Productos y Compras muestran las mismas etiquetas y valores al consultar el mismo DTO", async () => {
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem);
+    const products = render(<I18nProvider><ItemFormTabs itemId={existingItem.id} submitting={false} disabled onSubmit={vi.fn()} /></I18nProvider>);
+    await waitFor(() => expect(fieldByName(products.container, "itemTypeId").value).toBe("type-1"));
+    const fields = ["sku", "shortName", "description", "itemTypeId", "nature", "defaultUomCode", "brandId", "categoryNodeId"];
+    const values = fields.map(name => fieldByName(products.container, name).value);
+    const labels = fields.map(name => fieldByName(products.container, name).closest("label")?.querySelector(".zh-field-label")?.textContent?.replaceAll("*", "").trim());
+    for (const name of fields) expect(fieldByName(products.container, name).disabled).toBe(true);
+    products.unmount();
+    const purchases = renderModal({ itemId: existingItem.id });
+    await waitFor(() => expect(fieldByName(purchases.container, "itemTypeId").value).toBe("type-1"));
+    expect(fields.map(name => fieldByName(purchases.container, name).value)).toEqual(values);
+    expect(fields.map(name => fieldByName(purchases.container, name).closest("label")?.querySelector(".zh-field-label")?.textContent?.replaceAll("*", "").trim())).toEqual(labels);
+  });
+  it("muestra el tipo persistido cuando el catálogo llega después del DTO y permite guardar la edición", async () => {
+    let resolveTypes!: (types: { id: string; name: string }[]) => void;
+    typeCatalog.promise = new Promise(resolve => { resolveTypes = resolve; });
+    vi.mocked(itemService.getById).mockResolvedValue(existingItem);
+    vi.mocked(itemService.update).mockResolvedValue({ ...existingItem, shortName: "Aceite editado" });
+    const { container } = renderModal({ itemId: existingItem.id });
+    await waitFor(() => expect(fieldByName(container, "shortName").value).toBe("Aceite"));
+    expect(fieldByName(container, "itemTypeId").disabled).toBe(true);
+    await act(async () => resolveTypes([{ id: "type-1", name: "Bien" }]));
+    await waitFor(() => expect(fieldByName(container, "itemTypeId").value).toBe("type-1"));
+    expect((fieldByName(container, "itemTypeId") as unknown as HTMLSelectElement).selectedOptions[0].text).toBe("Bien");
+    expect(fieldByName(container, "nature").value).toBe("Product");
+    fireEvent.change(fieldByName(container, "shortName"), { target: { value: "Aceite editado" } });
+    await waitFor(() => expect(document.querySelector<HTMLSelectElement>('[name="purchaseVatCode"]')?.value).toBe("2"));
+    fireEvent.click(screen.getByRole("button", { name: "Actualizar ítem" }));
+    await waitFor(() => expect(itemService.update).toHaveBeenCalledWith(expect.objectContaining({
+      shortName: "Aceite editado", sku: "SKU-1", defaultUomCode: "UNIT", brandId: "brand-1", categoryNodeId: "cat-1", saleVatCode: "2", purchaseVatCode: "2",
+    })));
+    expect(vi.mocked(itemService.update).mock.calls[0][0]).not.toHaveProperty("itemTypeId");
+    expect(vi.mocked(itemService.update).mock.calls[0][0]).not.toHaveProperty("nature");
+  });
+
+  it("reabre el mismo ítem conservando tipo, naturaleza y valores actualizados", async () => {
+    vi.mocked(itemService.getById).mockResolvedValue({ ...existingItem, shortName: "Aceite reabierto", nature: "Service" });
+    const first = renderModal({ itemId: existingItem.id });
+    await waitFor(() => expect(fieldByName(first.container, "shortName").value).toBe("Aceite reabierto"));
+    first.unmount();
+    let resolveTypes!: (types: { id: string; name: string }[]) => void;
+    typeCatalog.promise = new Promise(resolve => { resolveTypes = resolve; });
+    const second = renderModal({ itemId: existingItem.id });
+    await waitFor(() => expect(fieldByName(second.container, "shortName").value).toBe("Aceite reabierto"));
+    await act(async () => resolveTypes([{ id: "type-1", name: "Bien" }]));
+    await waitFor(() => expect(fieldByName(second.container, "itemTypeId").value).toBe("type-1"));
+    expect(fieldByName(second.container, "nature").value).toBe("Service");
+    expect(fieldByName(second.container, "nature").disabled).toBe(true);
+    expect(fieldByName(second.container, "saleVatCode").value).toBe("2");
+    expect(fieldByName(second.container, "purchaseVatCode").value).toBe("2");
   });
 });

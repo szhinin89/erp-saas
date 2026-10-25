@@ -38,6 +38,7 @@ export function TaxConfigTab({
         <ZHGrid cols={2}>
           <ZHField
             label={t("items.tax.saleVatCode", "Tarifa IVA venta")}
+            required
             fieldError={fe(errors.taxConfig?.saleVatCode?.message)}
           >
             <ZhSelect {...register("taxConfig.saleVatCode")} disabled={disabled}>
@@ -64,6 +65,7 @@ export function TaxConfigTab({
         <ZHGrid cols={2}>
           <ZHField
             label={t("items.tax.purchaseVatCode", "Tarifa IVA compra")}
+            required
             fieldError={fe(errors.taxConfig?.purchaseVatCode?.message)}
           >
             <ZhSelect

@@ -545,7 +545,7 @@ public sealed class ItemImportProcessor : IImportProcessor, IImportBatchValidato
                 if (affected.Count < 2) continue;
                 foreach (var index in affected)
                     issues[index].Add(new RowIssue(ImportSeverity.Error, code,
-                        "Valor duplicado entre filas del archivo.", field));
+                        $"Código '{(code == "DUPLICATE_SUPPLIER_CODE_IN_FILE" ? group.Key[(group.Key.IndexOf(':') + 1)..] : group.Key)}' duplicado entre las filas {string.Join(", ", affected.Select(i => i + 1))} del archivo.", field));
             }
         }
         Check(parsed.Select((r, i) => (Normalize(r.SKU), i)), "DUPLICATE_SKU_IN_FILE", ItemImportColumns.Sku);
