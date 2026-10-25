@@ -246,7 +246,7 @@ describe("DistributeCostModal — diseño compacto (PURCHASES-DISTRIBUTE-COST-UX
     expect(rows).toHaveLength(6);
     expect(rows[4].className).toContain("pdc-table__row--excluded");
     const allocated = rows.map((r) => r.querySelector('td[data-label="Valor asignado"]')?.textContent);
-    expect(allocated).toEqual(["19.64", "2.25", "6.13", "4.05", "0.00", "5.78"]);
+    expect(allocated).toEqual(["19.64", "2.25", "6.13", "4.05", "0.00", "5.79"]);
 
     expect(summaryValue(container, "Total distribuido")).toBe("37.85");
     expect(summaryValue(container, "Diferencia de redondeo / por cuadrar")).toBe("0.00");
@@ -265,5 +265,21 @@ describe("DistributeCostModal — diseño compacto (PURCHASES-DISTRIBUTE-COST-UX
     expect(groups.map((g) => g.querySelectorAll(".pdc-totals__row")).map((r) => r.length)).toEqual([4, 4]);
     expect(groups.map((g) => g.querySelector(".pdc-totals__row--primary .zh-summary-grid__label")?.textContent))
       .toEqual(["Total distribuido", "Total factura después / CxP esperada"]);
+  });
+});
+
+
+describe("DistributeCostModal ? base cero", () => {
+  it("permite calcular y aplicar con descuento del 100 %", () => {
+    const { container } = render(<I18nProvider><DistributeCostModal open
+      lines={lines.map(l => ({ ...l, discountAmount: l.quantity * l.unitPrice, landedUnitCost: 0, totalLineCost: 0 }))}
+      totalFreight={0} totalOtherCosts={0} grandTotal={0} onCancel={vi.fn()} onApply={vi.fn()} />
+    </I18nProvider>);
+    fireEvent.blur(container.querySelector(".pdc-toolbar input") as HTMLInputElement, { target: { value: "1" } });
+    const calculate = screen.getByRole("button", { name: "Calcular" });
+    expect(calculate.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(calculate);
+    expect(screen.getByRole("button", { name: "Aplicar" }).hasAttribute("disabled")).toBe(false);
+    expect(screen.queryByText("La base de los ?tems incluidos debe ser mayor a cero.")).toBeNull();
   });
 });

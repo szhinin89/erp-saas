@@ -286,6 +286,88 @@ public sealed class PurchaseXmlBreakdownPostgreSqlTests : IAsyncLifetime
         (await ReopenAsync(reopened, id)).GrandTotal.Should().Be(80.52m);
     }
 
+    [Theory]
+    [InlineData(2, "equal")]
+    [InlineData(6, "unequal")]
+    [InlineData(10, "zero")]
+    [InlineData(10, "discount")]
+    public async Task Cost_distribution_preserves_six_decimal_allocations_on_reopen(int unitCostDecimals, string scenario)
+    {
+        Guid id;
+        decimal[] expected = scenario == "unequal"
+            ? [0.142857m, 0.285714m, 0.571429m]
+            : [0.333333m, 0.333333m, 0.333334m];
+        Guid[] lineIds;
+        decimal totalBefore;
+        await using (var db = CreateContext())
+        {
+            var invoice = PurchaseInvoice.CreateDraft(_tenantId, _companyId, _branchId, _supplierId,
+                "Proveedor test", "1791352688001", "01", "001-001-000000099", new DateOnly(2026, 10, 1),
+                _createdBy, _paymentTermId, "Contado", 1, 0);
+            var prices = scenario == "unequal" ? new[] { 1m, 2m, 4m }
+                : scenario == "zero" ? new[] { 0m, 0m, 0m } : new[] { 1m, 1m, 1m };
+            var lines = prices.Select(price => PurchaseInvoiceDetail.Create(invoice.Id, _tenantId,
+                "Producto test", 3, price / 3, "0", "UNIT")).ToList();
+            invoice.ReplaceLines(lines, _createdBy);
+            if (scenario == "discount") invoice.ApplyGlobalDiscount(100, _createdBy);
+            invoice.ApplyUnitCostPrecision(unitCostDecimals);
+            // Equal bases are exact multiples of the same decimal, so each ratio is 1/3.
+            lineIds = lines.Select(l => l.Id).ToArray();
+            totalBefore = invoice.GrandTotal;
+            invoice.DistributeAdditionalCost(PurchaseCostType.Freight, 1m, lineIds, _createdBy);
+            invoice.Lines.Select(l => l.FreightAllocated).Should().Equal(expected);
+            invoice.Lines.Sum(l => l.FreightAllocated).Should().Be(1m);
+            db.PurchaseInvoices.Add(invoice);
+            await db.SaveChangesAsync();
+            id = invoice.Id;
+        }
+        await using var reopened = CreateContext();
+        var saved = await ReopenAsync(reopened, id);
+        saved.ApplyUnitCostPrecision(unitCostDecimals);
+        var ordered = lineIds.Select(lineId => saved.Lines.Single(l => l.Id == lineId)).ToArray();
+        ordered.Select(l => l.FreightAllocated).Should().Equal(expected);
+        ordered.Sum(l => l.FreightAllocated).Should().Be(1m);
+        saved.GrandTotal.Should().Be(totalBefore + 1m);
+        ordered.Should().OnlyContain(l => l.VatAmount == 0 && l.IceAmount == 0 && l.IrbpnrAmount == 0);
+        foreach (var line in ordered)
+            line.LandedUnitCost.Should().Be(Math.Round(line.TotalLineCost / line.QuantityInBaseUom,
+                unitCostDecimals, MidpointRounding.AwayFromZero));
+        await reopened.SaveChangesAsync();
+        await using var again = CreateContext();
+        var unchanged = await ReopenAsync(again, id);
+        unchanged.TotalFreight.Should().Be(1m);
+        unchanged.GrandTotal.Should().Be(saved.GrandTotal);
+    }
+
+    [Fact]
+    public async Task Cost_distribution_preserves_xml_and_tax_snapshots_on_reopen()
+    {
+        var (id, sourceId, _) = await SeedAsync();
+        Dictionary<Guid, (decimal Base, decimal Amount)> taxes;
+        await using (var db = CreateContext())
+        {
+            var invoice = await ReopenAsync(db, id);
+            taxes = invoice.Lines.SelectMany(l => l.Taxes)
+                .ToDictionary(t => t.Id, t => (t.TaxableBase, t.TaxAmount));
+            invoice.DistributeAdditionalCost(PurchaseCostType.Freight, 1m,
+                invoice.Lines.Select(l => l.Id).ToArray(), _createdBy);
+            await db.SaveChangesAsync();
+        }
+        await using var reopened = CreateContext();
+        var saved = await ReopenAsync(reopened, id);
+        saved.Lines.SelectMany(l => l.Taxes).ToDictionary(t => t.Id, t => (t.TaxableBase, t.TaxAmount))
+            .Should().BeEquivalentTo(taxes);
+        saved.TotalFreight.Should().Be(1m);
+        saved.GrandTotal.Should().Be(81.52m); // Existing additive operation: original 80.52 + 1.
+        var source = (await new PurchaseReceptionDocumentRepository(reopened, new FixedCurrentCompany(_companyId))
+            .GetByIdAsync(_tenantId, sourceId))!;
+        source.XmlContent.Should().Be("<factura/>");
+        source.Lines.Single().Taxes.Sum(t => t.TaxAmount).Should().Be(20.78m);
+        (await PurchaseXmlBreakdown.ValidateAsync(saved, saved.Lines,
+            new PurchaseReceptionDocumentRepository(reopened, new FixedCurrentCompany(_companyId)), default))
+            .Should().BeNull();
+    }
+
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
     {
         public Guid TenantId => tenantId;

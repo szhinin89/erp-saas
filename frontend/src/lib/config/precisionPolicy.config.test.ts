@@ -130,6 +130,7 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     ["warehouseCapacity", 9],
     ["creditInstallmentPercentage", 6],
     ["packagingWeight", 5],
+    ["costAllocation", TEST_PRECISION_POLICY.costAllocationDecimals],
   ])("%s → %s", (kind, expected) => {
     expect(resolvePrecisionDecimals(DISTINCT_POLICY, kind)).toBe(expected);
   });
@@ -181,12 +182,13 @@ describe("resolvePrecisionDecimals — semántica → campo real de la policy", 
     expect(resolvePrecisionDecimals(policy, "fiscalPercentage")).toBe(2);
   });
 
-  it("exhaustividad: el mapa cubre las 14 semánticas y cada campo *Decimals de la policy exactamente una vez", () => {
+  it("exhaustividad: el mapa cubre las 15 semánticas y cada campo *Decimals de la policy exactamente una vez", () => {
     expect(Object.keys(PRECISION_FIELD_BY_KIND).sort()).toEqual(
       [
         "accounting",
         "averageCost",
         "conversionFactor",
+        "costAllocation",
         "creditInstallmentPercentage",
         "fiscalPercentage",
         "money",

@@ -24,6 +24,11 @@ Una sola política de precisión, leída siempre como `EffectivePrecisionPolicyD
   contexto de empresa o sin política lanza excepción, nunca un default silencioso).
 - Frontend: `GET /api/v1/config/precision-policy` y `/precision-policy/metadata` →
   `precisionPolicy.config.ts`; ruta y guard en [frontend.md § Presentación numérica](frontend.md).
+- Asignaciones internas del prorrateo de Compras: `EffectivePrecisionPolicyDto.CostAllocationDecimals`
+  publica la escala fija existente `FiscalPrecision.UnitCost` (6), compatible con
+  `freight_allocated`, `other_costs_allocated` y `total_line_cost` (`numeric(18,6)`). No es un
+  campo editable de empresa ni reemplaza `UnitCostDecimals` para el costo unitario. Decisión del
+  propietario aprobada el 2026-10-25; frontend consume este campo sin otra escala independiente.
 - Prohibido crear otra política, servicio, configuración o regla de precisión (también por módulo,
   p. ej. Accounting): todos los módulos consumen esta autoridad. Si no puede identificarse el campo
   aplicable o existe más de una implementación para el mismo dato, se clasifica DEBT/FALTA antes de

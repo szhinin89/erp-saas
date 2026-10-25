@@ -1,5 +1,13 @@
 # Project Status
 
+## COMPRAS — Precisión de prorrateo y base cero — BUG REAL (2026-10-25)
+
+Reproducción: 6/6 FAIL por reparto frontend a centavos y bloqueo de base cero. El contrato oficial
+publica `CostAllocationDecimals` desde la escala fija existente; simulación decimal con residuo,
+reparto equitativo y costo unitario según empresa. Sin cambios de esquema, datos reales, impuestos,
+XML, reglas de total/CxP ni inventario. Etapa 1 implementada, pendiente del gate del propietario;
+no CLOSED. Evidencia, archivos y comandos: [entrega](docs/evidence/purchases-cost-precision-01/README.md).
+
 ## COMPRAS XML — Confirmación atómica y Service sin bodega — BUG REAL (2026-10-25)
 
 Dos regresiones PostgreSQL reproducidas antes del fix: rechazo tardío eliminaba las dos cuotas

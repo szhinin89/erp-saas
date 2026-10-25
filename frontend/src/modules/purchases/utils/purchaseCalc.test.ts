@@ -406,7 +406,7 @@ describe("payload de confirmación", () => {
 
 
 describe("unit costs retain operational precision", () => {
-  it.each([[2, 0.33, 0.66], [6, 0.333333, 0.666666], [10, 0.3333333333, 0.6666666666]])(
+  it.each([[2, 0.33, 0.67], [6, 0.333333, 0.666667], [10, 0.3333333333, 0.6666666667]])(
     "uses unitCostDecimals=%s independently of purchase and fiscal scales",
     (decimals, expectedCost, expectedNewCost) => {
       setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY, unitCostDecimals: decimals });

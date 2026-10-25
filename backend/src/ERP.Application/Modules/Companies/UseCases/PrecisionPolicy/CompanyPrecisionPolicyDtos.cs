@@ -34,7 +34,11 @@ public sealed record EffectivePrecisionPolicyDto(
     int WarehouseCapacityDecimals,
     int CreditInstallmentPercentageDecimals,
     int PackagingWeightDecimals
-);
+)
+{
+    // Escala interna fija de asignaciones; distinta del costo unitario configurable.
+    public int CostAllocationDecimals => ERP.Domain.Common.FiscalPrecision.UnitCost;
+}
 
 /// <summary>Payload de entrada para actualizar la policy. ProfileType Standard/HighPrecision ignora los campos individuales.</summary>
 public sealed record UpdateCompanyPrecisionPolicyInput(

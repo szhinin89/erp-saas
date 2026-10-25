@@ -25,6 +25,7 @@ export const TEST_PRECISION_POLICY: PrecisionPolicy = {
   warehouseCapacityDecimals: 4,
   creditInstallmentPercentageDecimals: 2,
   packagingWeightDecimals: 3,
+  costAllocationDecimals: 6,
 };
 
 /**

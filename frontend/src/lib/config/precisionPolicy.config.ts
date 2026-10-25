@@ -38,6 +38,8 @@ export type PrecisionPolicy = {
   creditInstallmentPercentageDecimals: number;
   /** Peso de un nivel de empaque (ItemPrecision.PackagingWeight → numeric(10,3)). */
   packagingWeightDecimals: number;
+  /** Escala interna fija de asignaciones, publicada por backend. */
+  costAllocationDecimals: number;
 };
 
 /**
@@ -60,7 +62,8 @@ export type PrecisionKind =
   | "conversionFactor"
   | "warehouseCapacity"
   | "creditInstallmentPercentage"
-  | "packagingWeight";
+  | "packagingWeight"
+  | "costAllocation";
 
 /** Campos de la policy que expresan una cantidad de decimales. */
 export type PrecisionDecimalsField = Extract<keyof PrecisionPolicy, `${string}Decimals`>;
@@ -85,6 +88,7 @@ export const PRECISION_FIELD_BY_KIND = {
   warehouseCapacity: "warehouseCapacityDecimals",
   creditInstallmentPercentage: "creditInstallmentPercentageDecimals",
   packagingWeight: "packagingWeightDecimals",
+  costAllocation: "costAllocationDecimals",
 } as const satisfies Readonly<Record<PrecisionKind, PrecisionDecimalsField>>;
 
 /**
@@ -242,6 +246,7 @@ export type UpdatePrecisionPolicyInput = Omit<
   | "warehouseCapacityDecimals"
   | "creditInstallmentPercentageDecimals"
   | "packagingWeightDecimals"
+  | "costAllocationDecimals"
 >;
 
 /**

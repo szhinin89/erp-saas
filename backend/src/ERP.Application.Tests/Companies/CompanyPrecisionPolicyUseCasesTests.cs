@@ -379,6 +379,7 @@ public sealed class CompanyPrecisionPolicyUseCasesTests
         dto.CreditInstallmentPercentageDecimals.Should().Be(2); // credit_installments.percentage numeric(5,2)
         dto.PackagingWeightDecimals.Should()
             .Be(ERP.Domain.Modules.Items.Entities.ItemPrecision.PackagingWeight);
+        dto.CostAllocationDecimals.Should().Be(ERP.Domain.Common.FiscalPrecision.UnitCost);
         dto.PackagingWeightDecimals.Should().Be(3); // item_packaging_levels.weight numeric(10,3)
     }
 

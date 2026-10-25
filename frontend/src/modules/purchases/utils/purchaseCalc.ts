@@ -236,15 +236,12 @@ export function roundToTotalAmount(value: number): number {
   return Math.round(value * factor) / factor;
 }
 
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
 /**
  * PURCHASE-FREIGHT-DISTRIBUTION-MODAL-01 — previsualización del modal "Distribuir flete/gasto".
  * Espeja EXACTAMENTE el algoritmo de PurchaseInvoice.DistributeAdditionalCost (backend): prorrateo
  * proporcional por base imponible (subtotal - descuento) entre las líneas incluidas, redondeo a
- * 2 decimales, la última línea incluida absorbe el residuo. Es solo una simulación local — el
+ * la escala interna publicada por la política; con base cero reparte equitativamente.
+ * La última línea incluida absorbe el residuo. Es solo una simulación local — el
  * valor real se aplica y persiste vía purchaseService.distributeCost (misma fórmula server-side).
  */
 export type DistributeCostPreviewLine = {
@@ -273,6 +270,8 @@ export type DistributeCostSourceLine = {
   quantity: number;
   quantityInBaseUom: number;
   unitPrice: number;
+  /** Subtotal documental exacto, sin reconstruirlo desde un precio dividido. */
+  subtotal?: number;
   discountAmount: number;
   landedUnitCost: number;
   totalLineCost: number;
@@ -287,6 +286,7 @@ export function buildCostDistributionInputFromPersistedLines(
     quantity: l.quantity,
     quantityInBaseUom: l.quantityInBaseUom,
     unitPrice: l.xmlAllocatedSubtotal != null ? l.xmlAllocatedSubtotal / l.quantity : l.unitPrice,
+    subtotal: l.xmlAllocatedSubtotal ?? new FiscalDecimal(l.quantity).times(l.unitPrice).toNumber(),
     discountAmount: l.discountAmount,
     landedUnitCost: l.landedUnitCost,
     totalLineCost: l.totalLineCost,
@@ -309,25 +309,30 @@ export function buildCostDistributionInputFromFormLines(
     const quantity = l.quantity ?? 0;
     const unitPrice = l.unitPrice ?? 0;
     const discountPct = l.discountPct ?? 0;
-    const discountAmount = l.xmlAllocation?.discount ?? round2((quantity * unitPrice * discountPct) / 100);
+    const policy = getPrecisionPolicy();
+    const gross = l.xmlAllocation
+      ? new FiscalDecimal(l.xmlAllocation.subtotal)
+      : new FiscalDecimal(quantity).times(unitPrice);
+    const discountAmount = l.xmlAllocation?.discount ?? fiscalRound(gross.times(discountPct).div(100), policy.costAllocationDecimals).toNumber();
     const quantityInBaseUom =
       l.quantityInBaseUom && l.quantityInBaseUom > 0
         ? l.quantityInBaseUom
         : quantity * (l.conversionFactor ?? 1);
     const freightAllocated = l.freightAllocated ?? 0;
     const otherCostsAllocated = l.otherCostsAllocated ?? 0;
-    const taxableBase = lineGross(l) - discountAmount;
-    const totalLineCost = round2(
-      taxableBase + freightAllocated + otherCostsAllocated,
-    );
+    const taxableBase = fiscalRound(gross.minus(discountAmount), policy.taxDecimals);
+    const totalLineCost = fiscalRound(
+      taxableBase.plus(freightAllocated).plus(otherCostsAllocated), policy.costAllocationDecimals,
+    ).toNumber();
     const landedUnitCost =
-      quantityInBaseUom > 0 ? roundToDecimals(totalLineCost / quantityInBaseUom, getPrecisionPolicy().unitCostDecimals) : 0;
+      quantityInBaseUom > 0 ? roundToDecimals(totalLineCost / quantityInBaseUom, policy.unitCostDecimals) : 0;
     return {
       id: String(l._key),
       description: l.description,
       quantity,
       quantityInBaseUom,
       unitPrice: l.xmlAllocation && quantity > 0 ? l.xmlAllocation.subtotal / quantity : unitPrice,
+      subtotal: gross.toNumber(),
       discountAmount,
       landedUnitCost,
       totalLineCost,
@@ -340,56 +345,44 @@ export function simulateCostDistribution(
   includedIds: Set<string>,
   amountToDistribute: number,
 ): DistributeCostPreviewLine[] {
+  const policy = getPrecisionPolicy();
   const included = lines.filter((l) => includedIds.has(l.id));
-  const baseTotal = included.reduce(
-    (s, l) => s + (l.quantity * l.unitPrice - l.discountAmount),
-    0,
-  );
-  const canDistribute = amountToDistribute > 0 && baseTotal > 0;
-  let allocated = 0;
+  const netBase = (l: DistributeCostSourceLine) =>
+    (l.subtotal == null ? new FiscalDecimal(l.quantity).times(l.unitPrice) : new FiscalDecimal(l.subtotal))
+      .minus(l.discountAmount);
+  const baseTotal = included.reduce((sum, l) => sum.plus(netBase(l)), new FiscalDecimal(0));
+  const canDistribute = amountToDistribute > 0 && included.length > 0;
+  let allocated = new FiscalDecimal(0);
 
   return lines.map((l) => {
-    const subtotalBase = l.quantity * l.unitPrice - l.discountAmount;
+    const base = netBase(l);
+    const subtotalBase = base.toNumber();
     const isIncluded = includedIds.has(l.id);
-
     if (!isIncluded || !canDistribute) {
       return {
-        lineId: l.id,
-        description: l.description,
-        quantity: l.quantity,
-        quantityInBaseUom: l.quantityInBaseUom,
-        currentUnitCost: l.landedUnitCost,
-        subtotalBase,
-        included: isIncluded,
-        participationPct: 0,
-        allocatedAmount: 0,
-        allocatedPerUnit: 0,
-        newUnitCost: l.landedUnitCost,
-        newLineTotal: l.totalLineCost,
+        lineId: l.id, description: l.description, quantity: l.quantity,
+        quantityInBaseUom: l.quantityInBaseUom, currentUnitCost: l.landedUnitCost,
+        subtotalBase, included: isIncluded, participationPct: 0, allocatedAmount: 0,
+        allocatedPerUnit: 0, newUnitCost: l.landedUnitCost, newLineTotal: l.totalLineCost,
       };
     }
 
-    const isLastIncluded = included.at(-1)?.id === l.id;
-    const share = isLastIncluded
-      ? round2(amountToDistribute - allocated)
-      : round2((amountToDistribute * subtotalBase) / baseTotal);
-    if (!isLastIncluded) allocated += share;
-
-    const perUnit = l.quantityInBaseUom > 0 ? share / l.quantityInBaseUom : 0;
-
+    const amount = new FiscalDecimal(amountToDistribute);
+    const ratio = baseTotal.gt(0) ? base.div(baseTotal) : new FiscalDecimal(1).div(included.length);
+    const share = included.at(-1)?.id === l.id
+      ? amount.minus(allocated)
+      : fiscalRound(amount.times(ratio), policy.costAllocationDecimals);
+    allocated = allocated.plus(share);
+    const perUnit = l.quantityInBaseUom > 0 ? share.div(l.quantityInBaseUom) : new FiscalDecimal(0);
+    const newLineTotal = fiscalRound(new FiscalDecimal(l.totalLineCost).plus(share), policy.costAllocationDecimals);
     return {
-      lineId: l.id,
-      description: l.description,
-      quantity: l.quantity,
-      quantityInBaseUom: l.quantityInBaseUom,
-      currentUnitCost: l.landedUnitCost,
-      subtotalBase,
-      included: true,
-      participationPct: (subtotalBase / baseTotal) * 100,
-      allocatedAmount: share,
-      allocatedPerUnit: perUnit,
-      newUnitCost: roundToDecimals(l.landedUnitCost + perUnit, getPrecisionPolicy().unitCostDecimals),
-      newLineTotal: round2(l.totalLineCost + share),
+      lineId: l.id, description: l.description, quantity: l.quantity,
+      quantityInBaseUom: l.quantityInBaseUom, currentUnitCost: l.landedUnitCost,
+      subtotalBase, included: true, participationPct: ratio.times(100).toNumber(),
+      allocatedAmount: share.toNumber(), allocatedPerUnit: perUnit.toNumber(),
+      newUnitCost: l.quantityInBaseUom > 0
+        ? fiscalRound(newLineTotal.div(l.quantityInBaseUom), policy.unitCostDecimals).toNumber() : 0,
+      newLineTotal: newLineTotal.toNumber(),
     };
   });
 }

@@ -116,6 +116,7 @@ describe("syncCompanySelection", () => {
         warehouseCapacityDecimals: 4,
         creditInstallmentPercentageDecimals: 2,
         packagingWeightDecimals: 3,
+        costAllocationDecimals: 6,
       };
     });
   });

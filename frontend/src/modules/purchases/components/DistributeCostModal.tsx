@@ -119,12 +119,7 @@ export function DistributeCostModal({
               "purchases.distributeCost.errors.invalidQuantity",
               "Todos los ítems incluidos deben tener cantidad válida.",
             )
-          : subtotalBaseIncluded <= 0
-            ? t(
-                "purchases.distributeCost.errors.baseZero",
-                "La base de los ítems incluidos debe ser mayor a cero.",
-              )
-            : null;
+          : null;
 
   const canCalculate = amountHint === null && linesMessage === null;
   const hasCalculated = lastCalculatedSignature === signature;
