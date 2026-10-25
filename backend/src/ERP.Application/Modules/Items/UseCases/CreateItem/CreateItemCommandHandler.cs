@@ -226,9 +226,21 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
 
         // La auditoría la registra ItemAuditHandler al reaccionar a ItemCreatedEvent
         // (levantado por Item.Create) — ya no se escribe manualmente aquí.
+        if (await SaveOrConflictAsync(cancellationToken) is { } conflict)
+            return conflict;
+
+        var uomMap = await _sri.ResolveUomsAsync([item.DefaultUomCode], cancellationToken);
+        var itemTypeNames = new Dictionary<Guid, string> { [itemTypeDef.Id] = itemTypeDef.Name };
+        return Result<ItemDto>.Success(ItemMappingService.ToDto(item, uomMap, itemTypeNames));
+    }
+
+    /// <summary>Persiste el Item; una violación de unicidad se traduce a Conflict (barcode o SKU).</summary>
+    private async Task<Result<ItemDto>?> SaveOrConflictAsync(CancellationToken ct)
+    {
         try
         {
-            await _repository.SaveChangesAsync(cancellationToken);
+            await _repository.SaveChangesAsync(ct);
+            return null;
         }
         catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out var info))
         {
@@ -238,10 +250,6 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
                     ? "BARCODE_DUPLICATE" : "SKU_DUPLICATE"
             );
         }
-
-        var uomMap = await _sri.ResolveUomsAsync([item.DefaultUomCode], cancellationToken);
-        var itemTypeNames = new Dictionary<Guid, string> { [itemTypeDef.Id] = itemTypeDef.Name };
-        return Result<ItemDto>.Success(ItemMappingService.ToDto(item, uomMap, itemTypeNames));
     }
 
     private async Task<Result<ItemDto>?> ValidateCategoryNodeAsync(
