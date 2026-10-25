@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -7,8 +8,13 @@ namespace ERP.Infrastructure.Persistence.Repositories.Inventory;
 public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
 {
     private readonly ErpDbContext _db;
+    private readonly ICurrentCompany _company;
 
-    public StockAdjustmentRepository(ErpDbContext db) => _db = db;
+    public StockAdjustmentRepository(ErpDbContext db, ICurrentCompany company)
+    {
+        _db = db;
+        _company = company;
+    }
 
     public async Task AddAsync(StockAdjustment adjustment, CancellationToken ct = default) =>
         await _db.Set<StockAdjustment>().AddAsync(adjustment, ct);
@@ -21,6 +27,25 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
         _db.Set<StockAdjustment>()
             .Include(a => a.Lines)
             .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Id == id, ct);
+
+    public async Task<StockAdjustment?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        // Patrón oficial (SalesInvoiceRepository.GetByIdForUpdateAsync): lock → lectura acotada → Reload.
+        if (!_company.HasCompanyContext)
+            return null;
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM stock_adjustments WHERE tenant_id = {tenantId} AND company_id = {_company.CompanyId} AND id = {id} FOR UPDATE",
+            ct
+        );
+        var adjustment = await GetByIdAsync(tenantId, id, ct);
+        if (adjustment is not null)
+            await _db.Entry(adjustment).ReloadAsync(ct);
+        return adjustment;
+    }
 
     /// <summary>
     /// El siguiente secuencial debe considerar también ajustes deshabilitados/soft-deleted (el

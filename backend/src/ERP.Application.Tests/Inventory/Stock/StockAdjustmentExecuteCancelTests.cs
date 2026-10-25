@@ -118,7 +118,7 @@ public sealed class StockAdjustmentExecuteCancelTests
             User.Setup(u => u.UserId).Returns(UserId);
 
             AdjRepo
-                .Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetByIdForUpdateAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(adj);
             WarehouseRepo
                 .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
@@ -140,7 +140,8 @@ public sealed class StockAdjustmentExecuteCancelTests
                 StubCompanyClock(),
                 PrecisionPolicyTestDouble.Mock(),
                 A1ItemTestSupport.Products(TenantId, CompanyId),
-                A1ItemTestSupport.InventoryControl()
+                A1ItemTestSupport.InventoryControl(),
+                Mock.Of<IUnitOfWork>()
             );
     }
 
@@ -439,7 +440,7 @@ public sealed class StockAdjustmentExecuteCancelTests
             Branch.Setup(b => b.BranchId).Returns(BranchId);
             User.Setup(u => u.UserId).Returns(UserId);
             AdjRepo
-                .Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetByIdForUpdateAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(adj);
             WarehouseRepo
                 .Setup(r => r.GetByIdAsync(TenantId, WarehouseId, It.IsAny<CancellationToken>()))
@@ -467,7 +468,8 @@ public sealed class StockAdjustmentExecuteCancelTests
                 Tenant.Object,
                 Branch.Object,
                 User.Object,
-                StubCompanyClock()
+                StubCompanyClock(),
+                Mock.Of<IUnitOfWork>()
             );
     }
 

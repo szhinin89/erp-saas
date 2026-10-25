@@ -7,6 +7,7 @@ using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
 using ERP.Domain.Modules.Purchases.Entities;
@@ -74,6 +75,7 @@ public sealed class CancelPurchaseHandler
     private readonly IPurchaseInvoiceRepository _repo;
     private readonly IAccountsPayableRepository _payableRepo;
     private readonly IStockRepository _stockRepo;
+    private readonly IItemRepository _itemRepo;
     private readonly IPurchaseReturnRepository _purchaseReturnRepo;
     private readonly IRetentionDocumentRepository _retentionRepo;
     private readonly IRetentionCanceller _retentionCanceller;
@@ -91,6 +93,7 @@ public sealed class CancelPurchaseHandler
         IPurchaseInvoiceRepository repo,
         IAccountsPayableRepository payableRepo,
         IStockRepository stockRepo,
+        IItemRepository itemRepo,
         IPurchaseReturnRepository purchaseReturnRepo,
         IRetentionDocumentRepository retentionRepo,
         IRetentionCanceller retentionCanceller,
@@ -109,6 +112,7 @@ public sealed class CancelPurchaseHandler
         _repo = repo;
         _payableRepo = payableRepo;
         _stockRepo = stockRepo;
+        _itemRepo = itemRepo;
         _purchaseReturnRepo = purchaseReturnRepo;
         _retentionRepo = retentionRepo;
         _retentionCanceller = retentionCanceller;
@@ -246,10 +250,16 @@ public sealed class CancelPurchaseHandler
             // (nunca PurchaseReturn: esto no es una devolución real a proveedor, es la reversa de
             // stock de una factura anulada). SourceDocType sigue siendo "PurchaseInvoice" — sigue
             // siendo únicamente el documento origen (FACCOM), no el motivo del movimiento.
+            // Mismo criterio que Confirm: solo un Product generó PurchaseEntry; un Service con la
+            // bodega global de la compra nunca tuvo inventario que revertir.
             var effectiveDate = await _companyClock.TodayAsync(cid, tid, ct);
+            var lineItemIds = inv.Lines.Where(l => l.ItemId.HasValue).Select(l => l.ItemId!.Value)
+                .Distinct().ToList();
+            var inventoryItemIds = (await _itemRepo.GetByIdsLightAsync(lineItemIds, tid, ct))
+                .Where(i => i.ParticipatesInInventory).Select(i => i.Id).ToHashSet();
             foreach (var line in inv.Lines)
             {
-                if (line.ItemId is null)
+                if (line.ItemId is not { } itemId || !inventoryItemIds.Contains(itemId))
                     continue;
                 var warehouseId = line.WarehouseId ?? inv.GlobalWarehouseId;
                 if (warehouseId is null)
@@ -258,7 +268,7 @@ public sealed class CancelPurchaseHandler
                 await _stockRepo.AppendMovementAsync(
                     tid,
                     cid,
-                    line.ItemId.Value,
+                    itemId,
                     warehouseId.Value,
                     StockMovementType.PurchaseCancelled,
                     -line.QuantityInBaseUom,

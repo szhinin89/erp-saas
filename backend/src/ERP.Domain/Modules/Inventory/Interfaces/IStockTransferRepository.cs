@@ -11,6 +11,17 @@ public interface IStockTransferRepository
         Guid id,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Bloquea la transferencia (FOR UPDATE) dentro de la transacción del llamador y la devuelve
+    /// recargada; fuera del alcance no bloquea y devuelve null.
+    /// </summary>
+    Task<StockTransfer?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
     Task<int> GetNextSequentialAsync(
         Guid tenantId,
         Guid companyId,

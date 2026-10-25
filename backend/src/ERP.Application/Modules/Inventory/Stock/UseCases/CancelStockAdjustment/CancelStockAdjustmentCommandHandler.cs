@@ -28,6 +28,7 @@ public sealed class CancelStockAdjustmentCommandHandler
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
     private readonly ICompanyClock _companyClock;
+    private readonly IUnitOfWork _unitOfWork;
 
     public CancelStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -37,9 +38,11 @@ public sealed class CancelStockAdjustmentCommandHandler
         ICurrentTenant tenant,
         ICurrentBranch branch,
         ICurrentUser user,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        IUnitOfWork unitOfWork
     )
     {
+        _unitOfWork = unitOfWork;
         _adjRepo = adjRepo;
         _reasonRepo = reasonRepo;
         _stockRepo = stockRepo;
@@ -50,14 +53,41 @@ public sealed class CancelStockAdjustmentCommandHandler
         _companyClock = companyClock;
     }
 
+    /// <summary>
+    /// INVENTORY-V1-B2 — decisión y efectos en UNA transacción con el documento bloqueado
+    /// (FOR UPDATE) antes de validar su estado: una solicitud concurrente espera y ve el estado ya
+    /// aplicado (mismo patrón que CancelSalesInvoiceHandler). Orden de locks: documento → Kardex.
+    /// </summary>
     public async Task<Result<StockAdjustmentDto>> Handle(
+        CancelStockAdjustmentCommand request,
+        CancellationToken ct
+    )
+    {
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await CancelAsync(request, ct);
+            if (result.IsSuccess)
+                await _unitOfWork.CommitAsync(ct);
+            else
+                await _unitOfWork.RollbackAsync(ct);
+            return result;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    private async Task<Result<StockAdjustmentDto>> CancelAsync(
         CancelStockAdjustmentCommand request,
         CancellationToken ct
     )
     {
         var tid = _tenant.TenantId;
 
-        var adj = await _adjRepo.GetByIdAsync(tid, request.Id, ct);
+        var adj = await _adjRepo.GetByIdForUpdateAsync(tid, request.Id, ct);
         if (adj is null)
             return Result<StockAdjustmentDto>.NotFound("Ajuste no encontrado.");
 

@@ -253,7 +253,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 StubCompanyClock(),
                 PrecisionPolicyTestDouble.Mock(),
                 A1ItemTestSupport.Products(TenantId, CompanyId),
-                A1ItemTestSupport.InventoryControl()
+                A1ItemTestSupport.InventoryControl(),
+                Mock.Of<IUnitOfWork>()
             );
     }
 
@@ -305,7 +306,7 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var warehouseOfBranchB = CreateWarehouse(BranchBId);
         var adj = CreateDraftAdjustmentWithLine(warehouseOfBranchB.Id);
         var f = new ExecuteFixture(activeBranchId: BranchAId);
-        f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+        f.AdjRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
         f.WarehouseRepo.Setup(r =>
                 r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())
@@ -348,7 +349,7 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var warehouseOfBranchA = CreateWarehouse(BranchAId);
         var adj = CreateDraftAdjustmentWithLine(warehouseOfBranchA.Id);
         var f = new ExecuteFixture(activeBranchId: BranchAId);
-        f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+        f.AdjRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
         f.WarehouseRepo.Setup(r =>
                 r.GetByIdAsync(TenantId, warehouseOfBranchA.Id, It.IsAny<CancellationToken>())
@@ -438,7 +439,8 @@ public sealed class StockAdjustmentBranchOwnershipTests
                 Tenant.Object,
                 Branch.Object,
                 User.Object,
-                StubCompanyClock()
+                StubCompanyClock(),
+                Mock.Of<IUnitOfWork>()
             );
     }
 
@@ -449,7 +451,7 @@ public sealed class StockAdjustmentBranchOwnershipTests
         var adj = CreateDraftAdjustmentWithLine(warehouseOfBranchB.Id);
         adj.Execute(UserId);
         var f = new CancelFixture(activeBranchId: BranchAId);
-        f.AdjRepo.Setup(r => r.GetByIdAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
+        f.AdjRepo.Setup(r => r.GetByIdForUpdateAsync(TenantId, adj.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(adj);
         f.WarehouseRepo.Setup(r =>
                 r.GetByIdAsync(TenantId, warehouseOfBranchB.Id, It.IsAny<CancellationToken>())

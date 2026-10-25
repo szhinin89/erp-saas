@@ -4,6 +4,9 @@ using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Payables.Entities;
 using ERP.Domain.Modules.Payables.Enums;
 using ERP.Domain.Modules.Payables.Interfaces;
@@ -37,7 +40,10 @@ public sealed class CancelPurchaseHandlerTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid PtId = Guid.NewGuid();
-    private static readonly Guid ItemId = Guid.NewGuid();
+    private static readonly Item Product = Item.Create(TenantId, "SKU-CANCEL", "Producto",
+        "Producto", Guid.NewGuid(), "UNIT", ItemTaxConfig.Create("10", "10"),
+        ItemSaleConfig.Create(), ItemStockConfig.Create(true), UserId, companyId: CompanyId);
+    private static readonly Guid ItemId = Product.Id;
     private static readonly Guid WhId = Guid.NewGuid();
 
     private static PurchaseInvoice CreateConfirmedInvoice()
@@ -130,6 +136,21 @@ public sealed class CancelPurchaseHandlerTests
         return (repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
     }
 
+    private static IItemRepository ItemRepository()
+    {
+        var items = new Mock<IItemRepository>();
+        items
+            .Setup(r =>
+                r.GetByIdsLightAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([Product]);
+        return items.Object;
+    }
+
     private static CancelPurchaseHandler BuildHandler(
         Mock<IPurchaseInvoiceRepository> repo,
         Mock<IAccountsPayableRepository> payableRepo,
@@ -186,6 +207,7 @@ public sealed class CancelPurchaseHandlerTests
             repo.Object,
             payableRepo.Object,
             stockRepo.Object,
+            ItemRepository(),
             purchaseReturnRepo.Object,
             effectiveRetentionRepo.Object,
             effectiveRetentionCanceller,

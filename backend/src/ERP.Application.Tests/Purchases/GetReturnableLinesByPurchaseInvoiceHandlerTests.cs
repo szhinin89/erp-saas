@@ -1,5 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.Modules.Items.Entities;
+using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Items.ValueObjects;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using FluentAssertions;
@@ -17,6 +20,9 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandlerTests
     private static readonly Guid SupplierId = Guid.NewGuid();
     private static readonly Guid WarehouseId = Guid.NewGuid();
     private static readonly Guid PaymentTermId = Guid.NewGuid();
+    private static readonly Item Product = Item.Create(TenantId, "SKU-RET", "Producto 1",
+        "Producto 1", Guid.NewGuid(), "UNIT", ItemTaxConfig.Create("10", "10"),
+        ItemSaleConfig.Create(), ItemStockConfig.Create(true), UserId, companyId: CompanyId);
 
     private static PurchaseInvoice ConfirmedInvoiceWithOneLine(decimal quantity = 10)
     {
@@ -45,7 +51,7 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandlerTests
             unitPrice: 10.00m,
             vatCode: "10",
             uomCode: "UNIT",
-            itemId: Guid.NewGuid(),
+            itemId: Product.Id,
             warehouseId: WarehouseId
         );
         inv.ReplaceLines(new[] { line }, UserId);
@@ -63,11 +69,22 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandlerTests
         var returnRepo = new Mock<IPurchaseReturnRepository>();
         var t = new Mock<ICurrentTenant>();
         t.SetupGet(x => x.TenantId).Returns(TenantId);
+        var items = new Mock<IItemRepository>();
+        items
+            .Setup(r =>
+                r.GetByIdsLightAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([Product]);
         var b = new Mock<ICurrentBranch>();
         b.SetupGet(x => x.BranchId).Returns(activeBranchId ?? BranchId);
         var handler = new GetReturnableLinesByPurchaseInvoiceHandler(
             invoiceRepo.Object,
             returnRepo.Object,
+            items.Object,
             t.Object,
             b.Object
         );

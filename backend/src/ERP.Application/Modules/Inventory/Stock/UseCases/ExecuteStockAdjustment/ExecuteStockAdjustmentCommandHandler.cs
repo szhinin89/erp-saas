@@ -36,6 +36,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
     private readonly ICompanyPrecisionPolicyProvider _precision;
     private readonly ERP.Domain.Modules.Items.Interfaces.IItemRepository _itemRepo;
     private readonly ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver _preferences;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ExecuteStockAdjustmentCommandHandler(
         IStockAdjustmentRepository adjRepo,
@@ -48,9 +49,11 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         ICompanyClock companyClock,
         ICompanyPrecisionPolicyProvider precision,
         ERP.Domain.Modules.Items.Interfaces.IItemRepository itemRepo,
-        ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver preferences
+        ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver preferences,
+        IUnitOfWork unitOfWork
     )
     {
+        _unitOfWork = unitOfWork;
         _precision = precision;
         _itemRepo = itemRepo;
         _preferences = preferences;
@@ -64,14 +67,41 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         _companyClock = companyClock;
     }
 
+    /// <summary>
+    /// INVENTORY-V1-B2 — decisión y efectos en UNA transacción con el documento bloqueado
+    /// (FOR UPDATE) antes de validar su estado: una solicitud concurrente espera y ve el estado ya
+    /// aplicado (mismo patrón que CancelSalesInvoiceHandler). Orden de locks: documento → Kardex.
+    /// </summary>
     public async Task<Result<StockAdjustmentDto>> Handle(
+        ExecuteStockAdjustmentCommand request,
+        CancellationToken ct
+    )
+    {
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await ExecuteAsync(request, ct);
+            if (result.IsSuccess)
+                await _unitOfWork.CommitAsync(ct);
+            else
+                await _unitOfWork.RollbackAsync(ct);
+            return result;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    private async Task<Result<StockAdjustmentDto>> ExecuteAsync(
         ExecuteStockAdjustmentCommand request,
         CancellationToken ct
     )
     {
         var tid = _tenant.TenantId;
 
-        var adj = await _adjRepo.GetByIdAsync(tid, request.Id, ct);
+        var adj = await _adjRepo.GetByIdForUpdateAsync(tid, request.Id, ct);
         if (adj is null)
             return Result<StockAdjustmentDto>.NotFound("Ajuste no encontrado.");
 

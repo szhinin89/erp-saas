@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchases.DTOs;
+using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using MediatR;
 
@@ -22,18 +23,21 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandler
 {
     private readonly IPurchaseInvoiceRepository _invoiceRepo;
     private readonly IPurchaseReturnRepository _returnRepo;
+    private readonly IItemRepository _itemRepo;
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
 
     public GetReturnableLinesByPurchaseInvoiceHandler(
         IPurchaseInvoiceRepository invoiceRepo,
         IPurchaseReturnRepository returnRepo,
+        IItemRepository itemRepo,
         ICurrentTenant t,
         ICurrentBranch b
     )
     {
         _invoiceRepo = invoiceRepo;
         _returnRepo = returnRepo;
+        _itemRepo = itemRepo;
         _t = t;
         _b = b;
     }
@@ -51,7 +55,13 @@ public sealed class GetReturnableLinesByPurchaseInvoiceHandler
                 "Factura de compra no encontrada."
             );
 
-        var eligibleLines = invoice.Lines.Where(l => l.ItemId is not null).ToList();
+        // Devolución física: solo los Product que entraron a inventario (mismo criterio que Confirm).
+        var lineItemIds = invoice.Lines.Where(l => l.ItemId.HasValue).Select(l => l.ItemId!.Value)
+            .Distinct().ToList();
+        var inventoryItemIds = (await _itemRepo.GetByIdsLightAsync(lineItemIds, tid, ct))
+            .Where(i => i.ParticipatesInInventory).Select(i => i.Id).ToHashSet();
+        var eligibleLines = invoice.Lines
+            .Where(l => l.ItemId is { } itemId && inventoryItemIds.Contains(itemId)).ToList();
         var detailIds = eligibleLines.Select(l => l.Id).ToList();
         var returnedByDetailId = await _returnRepo.GetReturnedQuantitiesByInvoiceDetailIdsAsync(
             tid,

@@ -10,6 +10,16 @@ public interface IStockAdjustmentRepository
         Guid id,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>
+    /// Bloquea el ajuste (FOR UPDATE, empresa actual) dentro de la transacción del llamador y lo
+    /// devuelve recargado; fuera del alcance no bloquea y devuelve null.
+    /// </summary>
+    Task<StockAdjustment?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken cancellationToken = default
+    );
     Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken cancellationToken = default);
 
     /// <summary>

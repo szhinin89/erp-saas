@@ -35,14 +35,14 @@ Código: `ERP.Domain/Modules/Inventory`, `ERP.Application/Modules/Inventory`, `E
 
 ## 6. Ajustes de inventario
 
-- `StockAdjustment` (`ADJ-NNNN`): Draft → Executed → Cancelled. Solo Draft se edita o ejecuta; solo Executed se anula, con motivo obligatorio.
+- `StockAdjustment` (`ADJ-NNNN`): Draft → Executed → Cancelled. Solo Draft se edita o ejecuta; solo Executed se anula, con motivo obligatorio. Ejecutar y anular deciden y registran en una transacción con el ajuste bloqueado (`GetByIdForUpdateAsync`): una solicitud concurrente ve el estado ya aplicado y no duplica movimientos.
 - El motivo (`InventoryAdjustmentReason`) debe existir, estar activo y admitir la dirección (Ingreso, Egreso o Ambos); si `RequiresNotes`, exige observaciones. La cuenta contable del motivo se configura por empresa (`InventoryAdjustmentReasonAccount`).
 - Líneas: solo Products de la empresa; cantidad > 0; factor de conversión > 0; costo ≥ 0. Un Ingreso exige costo unitario > 0 y registra `PositiveAdjust` a ese costo. Un Egreso valida disponibilidad cuando la política la exige y registra `NegativeAdjust` al promedio corrido.
 - La fecha efectiva es el día de la empresa. La anulación registra el movimiento contrario por línea. Un documento de saldo inicial no se anula desde Ajustes.
 
 ## 7. Transferencias y saldo inicial
 
-- `StockTransfer` (`TR-NNNN`): origen distinto de destino, al menos una línea, solo Products de la empresa y acceso inter-sucursal validado. Confirmar (Draft → Confirmed) registra `TransferExit` al promedio corrido de origen y `TransferEntry` en destino con ese mismo costo, cada uno con la sucursal de su bodega.
+- `StockTransfer` (`TR-NNNN`): origen distinto de destino, al menos una línea, solo Products de la empresa y acceso inter-sucursal validado. Confirmar (Draft → Confirmed) registra `TransferExit` al promedio corrido de origen y `TransferEntry` en destino con ese mismo costo, cada uno con la sucursal de su bodega. La confirmación ocurre en una transacción con la transferencia bloqueada (`GetByIdForUpdateAsync`); una confirmación concurrente no vuelve a mover stock.
 - Saldo inicial (`PostInitialBalance`, Carga Inicial): bodega activa de la sucursal activa, motivo de apertura que admita Ingreso, fecha de corte no posterior al día de la empresa, Product activo sin lotes ni series, costo > 0 y sin stock ni movimientos previos en la bodega. Registra `InitialBalance` con la fecha de corte.
 
 ## 8. Pendiente (no operativo)
@@ -54,4 +54,4 @@ Código: `ERP.Domain/Modules/Inventory`, `ERP.Application/Modules/Inventory`, `E
 
 ## 9. Evidencia
 
-Domain/Application (filtro Items/Inventory/Purchases, 2026-10-19): 354/354 y 551/551 PASS. PostgreSQL 2026-10-19: `StockRepositoryCompanyScopeIntegrationTests`, `StockMovementBranchOwnershipIntegrationTests`, `PurchaseCancelledStockMovementIntegrationTests`, `ResolvePurchaseReceptionLinesIntegrationTests` y `PurchaseInvoiceConfirmedPostingIntegrationTests` 39/39 PASS; `ItemCompanyScopeA1Tests` 16/16 PASS. Cobertura adicional: `NegativeSaleCostA2Tests`, `SaleStockPolicyTests`, `SaleCostObligationTests`, `StockMovementValuationCostTests`, `StockAdjustmentExecuteCancelTests`, `InventoryAdjustmentsEndToEndTests`, `WarehouseBranchOwnershipTests`, `GetStockMovementsBranchScopeTests`, `ConfirmInitialStockAtomicPostgreSqlTests`.
+Domain/Application (filtro Items/Inventory/Purchases, 2026-10-19): 354/354 y 551/551 PASS. PostgreSQL 2026-10-19: `StockRepositoryCompanyScopeIntegrationTests`, `StockMovementBranchOwnershipIntegrationTests`, `PurchaseCancelledStockMovementIntegrationTests`, `ResolvePurchaseReceptionLinesIntegrationTests` y `PurchaseInvoiceConfirmedPostingIntegrationTests` 39/39 PASS; `ItemCompanyScopeA1Tests` 16/16 PASS. Cobertura adicional: `NegativeSaleCostA2Tests`, `SaleStockPolicyTests`, `SaleCostObligationTests`, `StockMovementValuationCostTests`, `StockAdjustmentExecuteCancelTests`, `InventoryAdjustmentsEndToEndTests`, `WarehouseBranchOwnershipTests`, `GetStockMovementsBranchScopeTests`, `ConfirmInitialStockAtomicPostgreSqlTests`. Concurrencia de documentos (2026-10-25): `InventoryDocumentConcurrencyPostgreSqlTests` 3/3 PASS.

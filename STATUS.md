@@ -1,5 +1,16 @@
 # Project Status
 
+## INVENTARIO V1 — Etapa 1: anulación con servicios y concurrencia de documentos — BUG REAL (2026-10-25)
+
+B1: anular una compra Product + Service con bodega global fallaba ("El ítem no es un producto…");
+ahora solo revierte los Product (`ParticipatesInInventory`, como Confirmar) y las líneas devolvibles
+excluyen los Service. B2: ejecutar/anular ajuste y confirmar transferencia concurrentes duplicaban
+Kardex y stock (5→10, 10→13, 6→2); ahora bloquean el documento (`GetByIdForUpdateAsync`) en una
+transacción. Sin migración. Gate del propietario aprobado: Application 137/137, Infrastructure 98/98,
+API 71/71 y Arquitectura backend 143/143 PASS; revisión final del código PASS.
+**Estado: PENDIENTE DE COMMIT, PUSH Y CI** (no CLOSED).
+[SSOT Inventario](docs/architecture/inventory.md#6-ajustes-de-inventario) · [SSOT Compras](docs/architecture/purchases.md#5-anulación-confirmed--cancelled).
+
 ## COMPRAS — Distribución canónica de costos, FASE B frontend (2026-10-25)
 
 Compras usa solo `PUT/DELETE /purchases/{id}/cost-distributions/{distributionId}`: el formulario

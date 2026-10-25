@@ -434,6 +434,7 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 new PostgresDatabaseExceptionTranslator(),
                 StandardPrecisionPolicyProvider.Instance
             ),
+            new ItemRepository(db),
             new PurchaseReturnRepository(db, company),
             new RetentionDocumentRepository(db, company),
             new RetentionCanceller(

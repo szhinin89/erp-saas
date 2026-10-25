@@ -18,6 +18,7 @@ public sealed class ConfirmStockTransferCommandHandler
     private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
     private readonly ICompanyClock _companyClock;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ConfirmStockTransferCommandHandler(
         IStockTransferRepository repo,
@@ -26,9 +27,11 @@ public sealed class ConfirmStockTransferCommandHandler
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentUser user,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        IUnitOfWork unitOfWork
     )
     {
+        _unitOfWork = unitOfWork;
         _repo = repo;
         _stockRepo = stockRepo;
         _interBranchGuard = interBranchGuard;
@@ -38,7 +41,34 @@ public sealed class ConfirmStockTransferCommandHandler
         _companyClock = companyClock;
     }
 
+    /// <summary>
+    /// INVENTORY-V1-B2 — decisión y efectos en UNA transacción con el documento bloqueado
+    /// (FOR UPDATE) antes de validar su estado: una solicitud concurrente espera y ve el estado ya
+    /// aplicado (mismo patrón que CancelSalesInvoiceHandler). Orden de locks: documento → Kardex.
+    /// </summary>
     public async Task<Result<StockTransferDto>> Handle(
+        ConfirmStockTransferCommand request,
+        CancellationToken ct
+    )
+    {
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await ConfirmAsync(request, ct);
+            if (result.IsSuccess)
+                await _unitOfWork.CommitAsync(ct);
+            else
+                await _unitOfWork.RollbackAsync(ct);
+            return result;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    private async Task<Result<StockTransferDto>> ConfirmAsync(
         ConfirmStockTransferCommand request,
         CancellationToken ct
     )
@@ -47,7 +77,7 @@ public sealed class ConfirmStockTransferCommandHandler
         var cid = _company.CompanyId;
         var uid = _user.UserId;
 
-        var transfer = await _repo.GetByIdAsync(tid, cid, request.Id, ct);
+        var transfer = await _repo.GetByIdForUpdateAsync(tid, cid, request.Id, ct);
         if (transfer is null)
             return Result<StockTransferDto>.NotFound("Transferencia no encontrada.");
 

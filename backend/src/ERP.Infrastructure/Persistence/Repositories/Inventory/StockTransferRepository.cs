@@ -26,6 +26,24 @@ public sealed class StockTransferRepository : IStockTransferRepository
                 ct
             );
 
+    public async Task<StockTransfer?> GetByIdForUpdateAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        CancellationToken ct = default
+    )
+    {
+        // Patrón oficial (SalesInvoiceRepository.GetByIdForUpdateAsync): lock → lectura acotada → Reload.
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM stock_transfers WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id} FOR UPDATE",
+            ct
+        );
+        var transfer = await GetByIdAsync(tenantId, companyId, id, ct);
+        if (transfer is not null)
+            await _db.Entry(transfer).ReloadAsync(ct);
+        return transfer;
+    }
+
     public async Task<int> GetNextSequentialAsync(
         Guid tenantId,
         Guid companyId,
