@@ -448,8 +448,10 @@ internal sealed class AuthorizePurchaseReturnHandler
                     throw new ERP.Domain.Exceptions.DomainRuleViolationException(
                         "El producto no tiene un costo de inventario valorado para registrar la devolución."
                     );
+                // Costo unitario = promedio consumido por la salida; el importe es el canónico del
+                // Kardex (INVENTORY-V1-B3: incluye el residuo si la devolución vacía la bodega).
                 inventoryExitByLineId[line.Id] = new PurchaseReturn.InventoryExitValuation(
-                    exitCost / baseQuantity,
+                    movement.CostBasis ?? exitCost / baseQuantity,
                     exitCost
                 );
             }

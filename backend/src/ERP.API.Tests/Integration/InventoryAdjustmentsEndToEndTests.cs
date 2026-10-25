@@ -959,7 +959,8 @@ public sealed class InventoryAdjustmentsEndToEndTests
         movement
             .TotalCost.Should()
             .Be(
-                2m * avgCostBeforeEgreso,
+                // INVENTORY-V1-B3: importe monetario canónico (AccountingDecimals = 2).
+                Math.Round(2m * avgCostBeforeEgreso, 2, MidpointRounding.AwayFromZero),
                 "TotalCost se calcula desde el costo promedio vigente, no desde el costo manual del request (999)"
             );
         movement
@@ -1520,6 +1521,38 @@ public sealed class InventoryAdjustmentsEndToEndTests
         kardex.Should().BeGreaterThan(0m);
         entry.Lines.Should().HaveCount(2);
         entry.Lines.Should().ContainSingle(l => l.AccountId == shrinkage && l.Debit == kardex);
+        entry.Lines.Should().ContainSingle(l => l.AccountId == inventory && l.Credit == kardex);
+    }
+
+    /// <summary>INVENTORY-V1-B3 — 3 u a 3.333333 (10.00) y tres egresos de 1 u: el último vacía y vale 3.34.</summary>
+    [Fact]
+    public async Task B3_Egreso_que_vacia_la_bodega_documento_Kardex_y_asiento_registran_el_mismo_importe()
+    {
+        var inventory = await AccountIdAsync("1.1.04.001");
+        var shrinkage = await AccountIdAsync("5.1.02.001");
+        var inReason = await CreateReasonWithAccountAsync(InventoryAdjustmentReason.Ingreso, await AccountIdAsync("4.2.01.001"));
+        var outReason = await CreateReasonWithAccountAsync(InventoryAdjustmentReason.Egreso, shrinkage);
+        var existing = await GetCurrentQuantityAsync(_f.ItemId);
+        if (existing > 0m)
+            await ExecutedAdjustmentAsync(InventoryAdjustmentReason.Egreso, outReason, existing, null);
+        await ExecutedAdjustmentAsync(InventoryAdjustmentReason.Ingreso, inReason, 3m, 3.333333m);
+        await ExecutedAdjustmentAsync(InventoryAdjustmentReason.Egreso, outReason, 1m, null);
+        await ExecutedAdjustmentAsync(InventoryAdjustmentReason.Egreso, outReason, 1m, null);
+
+        var last = await ExecutedAdjustmentAsync(InventoryAdjustmentReason.Egreso, outReason, 1m, null);
+
+        (await GetCurrentQuantityAsync(_f.ItemId)).Should().Be(0m);
+        var (kardex, _, posting, entry) = await AccountingOfAsync(last.Id);
+        kardex.Should().Be(3.34m, "el egreso que vacía la bodega se lleva el valor restante");
+        using (var scope = _f.CreateDbScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            (await db.Set<StockAdjustmentLine>().IgnoreQueryFilters().AsNoTracking()
+                    .SingleAsync(l => l.StockAdjustmentId == last.Id))
+                .TotalCost.Should().Be(kardex, "el documento muestra el importe canónico del Kardex");
+        }
+        posting!.Status.Should().Be(ERP.Domain.Modules.Accounting.Enums.AccountingPostingStatus.Posted, posting.ErrorCode);
+        entry!.Lines.Should().ContainSingle(l => l.AccountId == shrinkage && l.Debit == kardex);
         entry.Lines.Should().ContainSingle(l => l.AccountId == inventory && l.Credit == kardex);
     }
 

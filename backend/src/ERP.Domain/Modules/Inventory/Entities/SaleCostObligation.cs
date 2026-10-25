@@ -20,7 +20,10 @@ public sealed class SaleCostObligation : AuditableEntity, ITenantScopedEntity, I
     public decimal ReturnedQuantity { get; private set; }
     private SaleCostObligation() { }
 
-    public static SaleCostObligation Create(StockMovement movement, decimal pendingQuantity, decimal? basis)
+    /// <param name="resolvedCost">INVENTORY-V1-B3 — importe monetario del tramo resuelto, tomado del
+    /// mismo <see cref="StockMovement.TotalCost"/>; sin él se conserva cantidad × costo base.</param>
+    public static SaleCostObligation Create(StockMovement movement, decimal pendingQuantity, decimal? basis,
+        decimal? resolvedCost = null)
     {
         if (movement.SourceDocId is null || movement.SourceDocLineId is null)
             throw new DomainRuleViolationException("Sale costing requires the original document and line.");
@@ -33,13 +36,16 @@ public sealed class SaleCostObligation : AuditableEntity, ITenantScopedEntity, I
             SaleMovementId = movement.Id, SequenceNumber = movement.SequenceNumber,
             ProvisionalUnitCost = basis, PendingQuantity = pendingQuantity,
             ResolvedQuantity = quantity - pendingQuantity,
-            ResolvedCost = (quantity - pendingQuantity) * (basis ?? 0m)
+            ResolvedCost = resolvedCost ?? (quantity - pendingQuantity) * (basis ?? 0m)
         };
         result.SetCreated(movement.CreatedBy);
         return result;
     }
 
-    public SaleCostAllocation Cover(StockMovement receipt, decimal quantity, decimal actualCost)
+    /// <param name="coveredCost">INVENTORY-V1-B3 — importe monetario del tramo cubierto, parte del
+    /// <see cref="StockMovement.TotalCost"/> de la entrada; sin él, cantidad × costo real.</param>
+    public SaleCostAllocation Cover(StockMovement receipt, decimal quantity, decimal actualCost,
+        decimal? coveredCost = null)
     {
         if (quantity <= 0m || quantity > PendingQuantity || actualCost < 0m)
             throw new DomainRuleViolationException("Invalid cost coverage.");
@@ -47,12 +53,13 @@ public sealed class SaleCostObligation : AuditableEntity, ITenantScopedEntity, I
             ProvisionalUnitCost, actualCost, quantity * (actualCost - (ProvisionalUnitCost ?? 0m)), "Coverage");
         PendingQuantity -= quantity;
         ResolvedQuantity += quantity;
-        ResolvedCost += quantity * actualCost;
+        ResolvedCost += coveredCost ?? quantity * actualCost;
         SetUpdated(receipt.CreatedBy);
         return allocation;
     }
 
-    public SaleCostAllocation Return(StockMovement movement, decimal quantity)
+    /// <param name="moneyDecimals">INVENTORY-V1-B3 — escala del importe resuelto devuelto (AccountingDecimals).</param>
+    public SaleCostAllocation Return(StockMovement movement, decimal quantity, int? moneyDecimals = null)
     {
         if (quantity <= 0m || quantity > PendingQuantity + ResolvedQuantity)
             throw new DomainRuleViolationException("Return exceeds outstanding original sale units.");
@@ -60,6 +67,8 @@ public sealed class SaleCostObligation : AuditableEntity, ITenantScopedEntity, I
         var resolved = quantity - pending;
         var resolvedCost = resolved == ResolvedQuantity ? ResolvedCost
             : ResolvedQuantity > 0m ? ResolvedCost * resolved / ResolvedQuantity : 0m;
+        if (moneyDecimals is { } decimals && resolved != ResolvedQuantity)
+            resolvedCost = Math.Round(resolvedCost, decimals, MidpointRounding.AwayFromZero);
         var recognizedCost = pending * (ProvisionalUnitCost ?? 0m) + resolvedCost;
         var allocation = SaleCostAllocation.Create(this, movement, pending, resolved,
             ProvisionalUnitCost, resolved > 0m ? resolvedCost / resolved : null, -recognizedCost, "Return");

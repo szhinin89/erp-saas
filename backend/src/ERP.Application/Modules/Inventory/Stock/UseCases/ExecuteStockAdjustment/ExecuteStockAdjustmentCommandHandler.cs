@@ -211,6 +211,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
                 before,
                 movement.ResultQuantity,
                 resolvedCost,
+                movement.TotalCost,
                 isIngreso ? precision.UnitCostDecimals : precision.AverageCostDecimals
             );
         }

@@ -204,7 +204,8 @@ public sealed class StockAdjustmentExecuteCancelTests
                     null,
                     null,
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 )
             )
             .Returns(
@@ -225,7 +226,8 @@ public sealed class StockAdjustmentExecuteCancelTests
                     Guid? lot,
                     Guid? serial,
                     CancellationToken _ct,
-                    Guid? srcLineId
+                    Guid? srcLineId,
+                    decimal? _totalCost
                 ) =>
                 {
                     var newAvg = (0m + qty * (unitCost ?? 0m)) / qty;
@@ -449,6 +451,9 @@ public sealed class StockAdjustmentExecuteCancelTests
                 .Setup(r => r.GetByIdAsync(TenantId, adj.ReasonId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(CreateReason());
             OpeningDocuments(isOpening: false, adj.Id);
+            StockRepo
+                .Setup(r => r.GetMovementsByDocumentAsync(TenantId, adj.Id, "StockAdjustment", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<StockMovement>());
         }
 
         /// <summary>IL-4B — el Kardex indica si el documento es una apertura (InitialBalance).</summary>

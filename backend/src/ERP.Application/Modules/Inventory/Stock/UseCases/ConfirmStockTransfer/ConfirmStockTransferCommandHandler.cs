@@ -119,6 +119,8 @@ public sealed class ConfirmStockTransferCommandHandler
             // TransferEntry — incrementar destino, con el costo que traía la mercadería de origen
             // (una salida por promedio ponderado no cambia el costo promedio, por eso
             // exitMovement.RunningAverageCost sigue representando el costo de esas unidades).
+            // INVENTORY-V1-B3: el importe es exactamente el de la salida (incluido el residuo que
+            // absorbe al vaciar el origen), así el valor se conserva entre bodegas.
             await _stockRepo.AppendMovementAsync(
                 tid,
                 transfer.CompanyId,
@@ -133,7 +135,8 @@ public sealed class ConfirmStockTransferCommandHandler
                 "StockTransfer",
                 uid,
                 exitMovement.RunningAverageCost,
-                cancellationToken: ct
+                cancellationToken: ct,
+                totalCost: exitMovement.TotalCost
             );
         }
 

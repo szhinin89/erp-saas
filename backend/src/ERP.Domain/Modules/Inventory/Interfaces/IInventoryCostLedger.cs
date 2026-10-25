@@ -21,7 +21,13 @@ public interface IInventoryCostLedger
     Task<IReadOnlyList<DateOnly>> GetPendingObligationInvoiceDatesAsync(Guid tenantId, Guid companyId, CancellationToken ct);
 
     Task LockInvoiceAsync(Guid tenantId, Guid companyId, Guid invoiceId, CancellationToken ct);
-    Task<decimal?> GetCurrentInvoiceCostAsync(Guid tenantId, Guid companyId, Guid invoiceId, CancellationToken ct);
+
+    /// <summary>
+    /// Costo vigente de la factura: Σ importe resuelto + pendiente × costo provisional, este último
+    /// redondeado por obligación a <paramref name="moneyDecimals"/> (mismo importe que su TotalCost).
+    /// </summary>
+    Task<decimal?> GetCurrentInvoiceCostAsync(Guid tenantId, Guid companyId, Guid invoiceId, int moneyDecimals,
+        CancellationToken ct);
 }
 
 /// <summary>Proyección de lectura de una <see cref="SaleCostObligation"/> pendiente (ACCOUNTING-12B).</summary>

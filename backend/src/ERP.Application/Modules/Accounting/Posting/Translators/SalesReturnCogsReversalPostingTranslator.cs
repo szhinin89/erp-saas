@@ -1,4 +1,5 @@
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Companies;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Sales.Events;
 using MediatR;
@@ -15,7 +16,8 @@ public sealed class SalesReturnCogsReversalPostingTranslator(
     IStockRepository stockRepository,
     IInventoryCostLedger ledger,
     ICompanyClock companyClock,
-    SaleCostPostingRecorder costs)
+    SaleCostPostingRecorder costs,
+    ICompanyPrecisionPolicyProvider precision)
     : INotificationHandler<SalesReturnAuthorizedEvent>
 {
     private const string StockDocumentType = "SalesReturn";
@@ -23,7 +25,8 @@ public sealed class SalesReturnCogsReversalPostingTranslator(
     public async Task Handle(SalesReturnAuthorizedEvent e, CancellationToken ct)
     {
         var tenantId = e.TenantId!.Value;
-        if (await ledger.GetCurrentInvoiceCostAsync(tenantId, e.CompanyId, e.SalesInvoiceId, ct) is not null)
+        var moneyDecimals = (await precision.GetEffectiveAsync(ct)).AccountingDecimals;
+        if (await ledger.GetCurrentInvoiceCostAsync(tenantId, e.CompanyId, e.SalesInvoiceId, moneyDecimals, ct) is not null)
             return;
 
         var movements = await stockRepository.GetMovementsByDocumentAsync(tenantId, e.SalesReturnId, StockDocumentType, ct);

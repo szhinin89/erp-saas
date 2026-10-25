@@ -63,6 +63,7 @@
         "ERP.Infrastructure.Tests.InitialLoad.OpeningBalanceDatePostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.CreateAuthenticatedSessionIntegrationTests",
         "ERP.Infrastructure.Tests.Persistence.Inventory.InventoryDocumentConcurrencyPostgreSqlTests",
+        "ERP.Infrastructure.Tests.Persistence.Inventory.InventoryValuationPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.Inventory.NegativeSaleCostA2Tests",
         "ERP.Infrastructure.Tests.Persistence.NewChildEntityTrackingInterceptorTests",
         "ERP.Infrastructure.Tests.Persistence.PurchaseCancelledStockMovementIntegrationTests",

@@ -147,7 +147,8 @@ public sealed class PostInitialBalanceCommandHandler
                 throw new DomainRuleViolationException(
                     $"El ítem '{line.ItemName}' ya tiene movimientos en la bodega; la apertura solo aplica sin historia.");
 
-            line.ApplyExecutionResult(0m, movement.ResultQuantity, line.UnitCostBase, precision.UnitCostDecimals);
+            line.ApplyExecutionResult(0m, movement.ResultQuantity, line.UnitCostBase, movement.TotalCost,
+                precision.UnitCostDecimals);
         }
 
         adj.ExecuteAsOpeningBalance(_user.UserId);

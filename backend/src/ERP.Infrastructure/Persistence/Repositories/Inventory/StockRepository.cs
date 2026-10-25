@@ -47,7 +47,8 @@ public sealed class StockRepository : IStockRepository
         Guid? SerialId,
         Guid? SourceDocLineId,
         bool AllowNegativeSale,
-        bool EnforceAvailability
+        bool EnforceAvailability,
+        decimal? TotalCost
     );
 
     private readonly List<PendingMovement> _pending = new();
@@ -112,7 +113,8 @@ public sealed class StockRepository : IStockRepository
         Guid? lotId = null,
         Guid? serialId = null,
         CancellationToken ct = default,
-        Guid? sourceDocLineId = null
+        Guid? sourceDocLineId = null,
+        decimal? totalCost = null
     )
     {
         if (!_company.HasCompanyContext || companyId != _company.CompanyId)
@@ -144,7 +146,8 @@ public sealed class StockRepository : IStockRepository
             serialId,
             sourceDocLineId,
             movementType == StockMovementType.SaleExit && !enforce,
-            movementType == StockMovementType.SaleExit && enforce
+            movementType == StockMovementType.SaleExit && enforce,
+            totalCost
         );
 
         var movement = await CreateAndTrackMovementAsync(request, ct);
@@ -270,7 +273,9 @@ public sealed class StockRepository : IStockRepository
             last = pendingLast;
 
         var nextSeq = (last?.SequenceNumber ?? 0) + 1;
-        var lastRunningValue = last?.RunningStockValue ?? 0m;
+        // INVENTORY-V1-B3: cantidad cero implica valor cero — un residuo de un movimiento histórico
+        // en cantidad cero no se arrastra al siguiente (sin modificar el movimiento histórico).
+        var lastRunningValue = previousQty == 0m ? 0m : last?.RunningStockValue ?? 0m;
         var lastRunningAvg = last?.RunningAverageCost ?? 0m;
 
         // Salidas sin costo explícito consumen el costo promedio corrido del propio Kardex
@@ -285,7 +290,6 @@ public sealed class StockRepository : IStockRepository
                 .Select(m => m.CostBasis ?? m.RunningAverageCost).Cast<decimal?>().FirstOrDefaultAsync(ct);
         var resolvedUnitCost = basis ?? 0m;
         var resultQty = previousQty + r.Quantity;
-        var newRunningStockValue = lastRunningValue + r.Quantity * resolvedUnitCost;
         // ERP-PRECISION-OPERATIONAL-05B: el costo promedio corrido se persiste con la escala
         // averageCostDecimals de la política de la empresa (con la columna ya ampliada a numeric(22,10)
         // ya no es la BD quien lo redondea). Fail-closed (05B1): el provider es obligatorio y lanza si
@@ -295,6 +299,24 @@ public sealed class StockRepository : IStockRepository
         // ACCOUNTING-CONTINUITY-05: el costo de ventas reconocido usa la precisión contable de la
         // empresa (SSOT de precisión), nunca una escala fija.
         var accountingDecimals = precision.AccountingDecimals;
+        decimal Money(decimal value) => Math.Round(value, accountingDecimals, MidpointRounding.AwayFromZero);
+
+        // INVENTORY-V1-B3: StockMovement.TotalCost es el único importe monetario del movimiento
+        // (AccountingDecimals); el valor corrido es la suma exacta de esos importes. Una reversa o
+        // transferencia trae el importe del movimiento original. La salida que vacía la bodega se
+        // lleva el valor restante; en una venta que cruza a negativo, el tramo sin stock se valora
+        // al costo provisional (mismo importe que su SaleCostObligation).
+        var quantity = Math.Abs(r.Quantity);
+        decimal? totalCost = r.TotalCost.HasValue ? Money(r.TotalCost.Value)
+            : basis.HasValue ? Money(quantity * basis.Value) : null;
+        var resolvedSaleCost = 0m;
+        if (r.Quantity < 0m && r.TotalCost is null && basis.HasValue)
+        {
+            var inStock = Math.Min(quantity, Math.Max(0m, previousQty));
+            resolvedSaleCost = inStock == previousQty && inStock > 0m ? lastRunningValue : Money(inStock * basis.Value);
+            totalCost = resolvedSaleCost + Money((quantity - inStock) * basis.Value);
+        }
+        var newRunningStockValue = lastRunningValue + (r.Quantity < 0m ? -1m : 1m) * (totalCost ?? 0m);
         var newRunningAverageCost =
             resultQty > 0m
                 ? Math.Round(
@@ -350,7 +372,6 @@ public sealed class StockRepository : IStockRepository
             valuationUnitCost: basis
         );
 
-        var totalCost = movement.TotalCost;
         var pendingCost = basis is null || (r.MovementType == StockMovementType.SaleExit && resultQty < 0m);
         if (r.MovementType == StockMovementType.SaleExit && pendingCost
             && (r.SourceDocId is null || r.SourceDocLineId is null))
@@ -359,7 +380,8 @@ public sealed class StockRepository : IStockRepository
         {
             var pendingQuantity = basis is null ? -r.Quantity
                 : Math.Min(-r.Quantity, Math.Max(0m, -resultQty));
-            _db.Set<SaleCostObligation>().Add(SaleCostObligation.Create(movement, pendingQuantity, basis));
+            _db.Set<SaleCostObligation>().Add(SaleCostObligation.Create(movement, pendingQuantity, basis,
+                basis is null ? null : resolvedSaleCost));
         }
         else if (r.MovementType == StockMovementType.SaleReturn && r.SourceDocLineId.HasValue)
         {
@@ -388,10 +410,12 @@ public sealed class StockRepository : IStockRepository
                 // ACCOUNTING-CONTINUITY-05: el costo reconocido es operativo (valoración del Kardex),
                 // independiente de Accounting: costo vigente de la factura redondeado, antes y después.
                 var priorRecognizedCost = RoundRecognizedCost(
-                    await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, invoiceId, ct), accountingDecimals);
-                var allocation = original.Return(movement, r.Quantity);
+                    await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, invoiceId, accountingDecimals, ct),
+                    accountingDecimals);
+                var allocation = original.Return(movement, r.Quantity, accountingDecimals);
                 _db.Set<SaleCostAllocation>().Add(allocation);
-                var remainingCost = await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, invoiceId, ct);
+                var remainingCost = await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, invoiceId,
+                    accountingDecimals, ct);
                 var returnedCost = priorRecognizedCost - RoundRecognizedCost(remainingCost, accountingDecimals);
                 if (returnedCost < 0m)
                     throw new ERP.Domain.Exceptions.DomainRuleViolationException("La devolución no tiene una base contable de costo consistente.");
@@ -416,15 +440,16 @@ public sealed class StockRepository : IStockRepository
                         ? returnedCost * allocation.ActualUnitCost.Value / -allocation.CogsAdjustment
                         : allocation.ActualUnitCost.Value;
                     basis = returnedUnitCost;
-                    newRunningStockValue -= await CoverPendingCostsAsync(r, movement,
-                        allocation.ResolvedQuantity, returnedUnitCost, accountingDecimals, ct);
+                    newRunningStockValue -= await CoverPendingCostsAsync(r, movement, allocation.ResolvedQuantity,
+                        returnedUnitCost, Money(allocation.ResolvedQuantity * returnedUnitCost), accountingDecimals, ct);
                 }
             }
             // Legacy sales have no A2 obligations: their existing return behavior is preserved.
         }
-        else if (r.Quantity > 0m && r.UnitCost.HasValue)
+        else if (r.Quantity > 0m && totalCost.HasValue && (r.UnitCost.HasValue || r.TotalCost.HasValue))
         {
-            newRunningStockValue -= await CoverPendingCostsAsync(r, movement, r.Quantity, r.UnitCost.Value, accountingDecimals, ct);
+            newRunningStockValue -= await CoverPendingCostsAsync(r, movement, r.Quantity,
+                r.UnitCost ?? totalCost.Value / r.Quantity, totalCost.Value, accountingDecimals, ct);
         }
         var outstanding = (await GetCostObligationsAsync(r, ct)).Where(o => o.PendingQuantity > 0m).ToList();
         pendingCost = basis is null || outstanding.Count > 0;
@@ -435,7 +460,6 @@ public sealed class StockRepository : IStockRepository
             if (valuedQuantity > 0m)
                 basis = valued.Sum(o => o.PendingQuantity * o.ProvisionalUnitCost!.Value) / valuedQuantity;
         }
-        newRunningStockValue = Math.Round(newRunningStockValue, StockMovement.StockValueScale, MidpointRounding.AwayFromZero);
         // INVENTORY-RUNNING-AVERAGE-PRECISION-01: una salida valuada al promedio corrido (sin costo
         // propio) no cambia el promedio; re-derivarlo del valor ya redondeado a StockValueScale
         // introduciría deriva de redondeo en cada egreso.
@@ -502,8 +526,14 @@ public sealed class StockRepository : IStockRepository
             .DistinctBy(o => o.Id).ToList();
     }
 
+    /// <summary>
+    /// Cubre obligaciones pendientes con una entrada de costo real. INVENTORY-V1-B3: cada tramo
+    /// cubierto toma su parte monetaria del importe de la entrada (el tramo que la consume entera
+    /// absorbe el redondeo) y el ajuste devuelto es el mismo delta del costo vigente de cada
+    /// factura que se reconoce en Contabilidad.
+    /// </summary>
     private async Task<decimal> CoverPendingCostsAsync(PendingMovement r, StockMovement movement,
-        decimal quantity, decimal actualCost, int accountingDecimals, CancellationToken ct)
+        decimal quantity, decimal actualCost, decimal entryCost, int accountingDecimals, CancellationToken ct)
     {
         var adjustment = 0m;
         var obligations = await GetCostObligationsAsync(r, ct);
@@ -512,21 +542,21 @@ public sealed class StockRepository : IStockRepository
             if (quantity <= 0m) break;
             var ledger = new InventoryCostLedger(_db);
             await ledger.LockInvoiceAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
-            var previousCost = RoundRecognizedCost(
-                await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct), accountingDecimals);
+            var previousCost = RoundRecognizedCost(await ledger.GetCurrentInvoiceCostAsync(
+                r.TenantId, r.CompanyId, obligation.InvoiceId, accountingDecimals, ct), accountingDecimals);
             var covered = Math.Min(quantity, obligation.PendingQuantity);
-            var allocation = obligation.Cover(movement, covered, actualCost);
+            var coveredCost = covered == quantity ? entryCost
+                : Math.Round(covered * actualCost, accountingDecimals, MidpointRounding.AwayFromZero);
+            var allocation = obligation.Cover(movement, covered, actualCost, coveredCost);
             _db.Set<SaleCostAllocation>().Add(allocation);
-            adjustment += allocation.CogsAdjustment;
-            if (allocation.CogsAdjustment != 0m)
-            {
-                var costTarget = await ledger.GetCurrentInvoiceCostAsync(r.TenantId, r.CompanyId, obligation.InvoiceId, ct);
-                // El delta operativo solo fija el sentido del hecho; el importe contable se resuelve al
-                // contabilizar: costo objetivo − costo ya contabilizado (Posted) de la factura.
-                var target = RoundRecognizedCost(costTarget, accountingDecimals);
-                allocation.RecognizeCost(allocation.Id, target - previousCost, r.EffectiveDate, target);
-            }
+            // El importe contable se resuelve al contabilizar: costo objetivo − costo ya contabilizado
+            // (Posted) de la factura; este mismo delta mueve el valor del Kardex.
+            var target = RoundRecognizedCost(await ledger.GetCurrentInvoiceCostAsync(
+                r.TenantId, r.CompanyId, obligation.InvoiceId, accountingDecimals, ct), accountingDecimals);
+            allocation.RecognizeCost(allocation.Id, target - previousCost, r.EffectiveDate, target);
+            adjustment += target - previousCost;
             quantity -= covered;
+            entryCost -= coveredCost;
         }
         return adjustment;
     }

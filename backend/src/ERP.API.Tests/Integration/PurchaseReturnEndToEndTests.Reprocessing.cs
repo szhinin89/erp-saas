@@ -33,10 +33,12 @@ public sealed partial class PurchaseReturnEndToEndTests
         new StockRepository(db, new FixedCurrentCompany(() => _companyId), new RealDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance),
         new JournalEntryRepository(db), new AccountingPostingRepository(db),
         new AccountingOperationalDecision(new AccountingOperationalPolicyRepository(db)),
-        new SriSettingsRepository(db), new ReprocessingSriQuery(status), new UnitOfWork(db));
+        new SriSettingsRepository(db), new ReprocessingSriQuery(status), new UnitOfWork(db),
+        StandardPrecisionPolicyProvider.Instance);
 
     private async Task<(CreateDraftPurchaseCreditNoteCommand Command, Guid NoteId)> CancelledNoteForReprocessing(
-        bool discount = false, bool cancel = true)
+        bool discount = false, bool cancel = true, decimal unitPrice = 100m, decimal quantity = 10m,
+        decimal? paidAmount = null, decimal freightCost = 0m, decimal? legacyExitTotalCost = null)
     {
         await using (var setup = CreateContext())
         {
@@ -47,7 +49,7 @@ public sealed partial class PurchaseReturnEndToEndTests
             setup.SriSettings.Add(SriSettings.Create(_tenantId, _companyId, 1, 1, "https://sri.invalid/test", _userId));
             await setup.SaveChangesAsync();
         }
-        var invoice = await SeedConfirmedInvoiceAsync(100m, 10m, discount ? 0m : 1000m);
+        var invoice = await SeedConfirmedInvoiceAsync(unitPrice, quantity, paidAmount ?? (discount ? 0m : 1000m), freightCost);
         var command = UnifiedReturnCommand(invoice) with { CreditNoteNumber = "001-001-000000099", AccessKey = ReprocessingKey };
         Guid id;
         await using (var db = CreateContext())
@@ -67,6 +69,16 @@ public sealed partial class PurchaseReturnEndToEndTests
         {
             var authorized = await UnifiedAuthorizeHandler(db).Handle(new(id, Guid.NewGuid()), default);
             authorized.IsSuccess.Should().BeTrue(authorized.Error);
+        }
+        if (legacyExitTotalCost is { } legacy)
+        {
+            // Fixture aislada: emula una salida registrada antes del importe monetario canónico
+            // (TotalCost con 6 decimales). Producción nunca modifica un movimiento existente.
+            await using var legacyDb = CreateContext();
+            var returnId = (await legacyDb.PurchaseCreditNotes.SingleAsync(n => n.Id == id)).LinkedPurchaseReturnId!.Value;
+            (await legacyDb.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE stock_movements SET total_cost = {legacy} WHERE source_doc_id = {returnId} AND quantity < 0"))
+                .Should().Be(1);
         }
         if (cancel)
         {
@@ -91,6 +103,20 @@ public sealed partial class PurchaseReturnEndToEndTests
         duplicate.IsSuccess.Should().BeFalse();
         (await db.PurchaseCreditNotes.CountAsync()).Should().Be(2);
         (await db.PurchaseCreditNotes.SingleAsync(n => n.Id == oldId)).Status.Should().Be(PurchaseCreditNoteStatus.Cancelled);
+    }
+
+    /// <summary>INVENTORY-V1-B3 — 3 × 10.00 + flete 0.01: costo 10.003333; la devolución total vale 30.01.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData(30.009999)]
+    public async Task UnifiedReprocessing_Fractional_inventory_cost_reversal_allows_reprocessing(double? legacyExitTotalCost)
+    {
+        var (command, oldId) = await CancelledNoteForReprocessing(unitPrice: 10m, quantity: 3m, paidAmount: 0m,
+            freightCost: 0.01m, legacyExitTotalCost: (decimal?)legacyExitTotalCost);
+        await using var db = CreateContext();
+        var created = await UnifiedDraftHandler(db, ReprocessingGuard(db)).Handle(command with { ClientRequestId = Guid.NewGuid() }, default);
+        created.IsSuccess.Should().BeTrue(created.Error);
+        created.Value!.Id.Should().NotBe(oldId);
     }
 
     [Theory]

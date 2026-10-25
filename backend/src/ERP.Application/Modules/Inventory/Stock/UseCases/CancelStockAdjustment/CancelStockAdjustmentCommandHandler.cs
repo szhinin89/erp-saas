@@ -120,6 +120,11 @@ public sealed class CancelStockAdjustmentCommandHandler
             ? StockMovementType.NegativeAdjust
             : StockMovementType.PositiveAdjust;
         var reference = $"ANULACIÓN: {adj.AdjustmentNumber}";
+        // INVENTORY-V1-B3: la reversa conserva el importe que registró el movimiento original.
+        var originalType = isIngreso ? StockMovementType.PositiveAdjust : StockMovementType.NegativeAdjust;
+        var originals = (await _stockRepo.GetMovementsByDocumentAsync(tid, adj.Id, "StockAdjustment", ct))
+            .Where(m => m.MovementType == originalType && m.SourceDocLineId.HasValue)
+            .ToDictionary(m => m.SourceDocLineId!.Value);
 
         foreach (var line in adj.Lines)
         {
@@ -140,7 +145,8 @@ public sealed class CancelStockAdjustmentCommandHandler
                 uid,
                 unitCost: line.UnitCostBase,
                 cancellationToken: ct,
-                sourceDocLineId: line.Id
+                sourceDocLineId: line.Id,
+                totalCost: originals.GetValueOrDefault(line.Id)?.TotalCost
             );
         }
 

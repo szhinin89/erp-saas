@@ -261,7 +261,8 @@ public sealed class CancelPurchaseReturnUseCasesTests
                         null,
                         null,
                         It.IsAny<CancellationToken>(),
-                        It.IsAny<Guid?>()
+                        It.IsAny<Guid?>(),
+                        It.IsAny<decimal?>()
                     )
                 )
                 .Returns(
@@ -426,7 +427,8 @@ public sealed class CancelPurchaseReturnUseCasesTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Never
         );

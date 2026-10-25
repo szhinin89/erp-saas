@@ -1,6 +1,7 @@
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Application.Modules.Companies;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -21,7 +22,7 @@ public sealed class PurchaseCreditNoteReprocessingGuard(
     IAccountsPayableRepository payables, ISupplierCreditRepository credits, IStockRepository stock,
     IJournalEntryRepository journal, IAccountingPostingRepository postings,
     AccountingOperationalDecision accounting, ISriSettingsRepository settings, ISriDocumentStatusQuery sri,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork, ICompanyPrecisionPolicyProvider precision)
 {
     public async Task<string?> CheckAsync(Guid tenantId, Guid companyId, Guid supplierId,
         string number, string? accessKey, Guid? receptionId, CancellationToken ct)
@@ -98,6 +99,11 @@ public sealed class PurchaseCreditNoteReprocessingGuard(
             if (!wasAuthorized && movements.Count != 0) return "el borrador cancelado tiene movimientos de inventario.";
             if (wasAuthorized)
             {
+                // INVENTORY-V1-B3: comparación monetaria (AccountingDecimals); un movimiento histórico
+                // con más decimales se compara por su importe, sin modificarlo.
+                var moneyDecimals = (await precision.GetEffectiveAsync(ct)).AccountingDecimals;
+                decimal? Money(decimal? value) => value is null ? null
+                    : Math.Round(value.Value, moneyDecimals, MidpointRounding.AwayFromZero);
                 if (movements.Count != originalReturn.Lines.Count * 2) return "faltan movimientos de reversa de inventario.";
                 foreach (var line in originalReturn.Lines)
                 {
@@ -107,8 +113,9 @@ public sealed class PurchaseCreditNoteReprocessingGuard(
                     if (pair.Count != 2 || exit is null || entry is null || exit.Quantity != -entry.Quantity
                         || exit.ProductId != entry.ProductId || exit.WarehouseId != entry.WarehouseId
                         || exit.ProductId != line.ItemId || exit.WarehouseId != line.WarehouseId
-                        || exit.UomCode != entry.UomCode || exit.TotalCost is null || exit.TotalCost != entry.TotalCost
-                        || exit.TotalCost != line.HistoricalCostAmount)
+                        || exit.UomCode != entry.UomCode || exit.TotalCost is null
+                        || Money(exit.TotalCost) != Money(entry.TotalCost)
+                        || Money(exit.TotalCost) != line.HistoricalCostAmount)
                         return "cantidad, bodega o costo de inventario no quedaron íntegramente revertidos.";
                     businessDate = exit.EffectiveDate;
                 }

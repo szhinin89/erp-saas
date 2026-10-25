@@ -193,8 +193,9 @@ public sealed class OperationalPrecisionTests
     {
         var line = AdjustmentLine(6, 10);
 
-        line.ApplyExecutionResult(0m, 1.123457m, 2.123456789012m, unitCostDecimals: 8);
+        line.ApplyExecutionResult(0m, 1.123457m, 2.123456789012m, totalCost: 2.39m, unitCostDecimals: 8);
 
         line.UnitCostBase.Should().Be(2.12345679m);
+        line.TotalCost.Should().Be(2.39m, "el total es el importe canónico del Kardex, no cantidad × costo");
     }
 }

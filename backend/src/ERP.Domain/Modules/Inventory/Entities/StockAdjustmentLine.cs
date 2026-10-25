@@ -118,32 +118,28 @@ public sealed class StockAdjustmentLine : ITenantScopedEntity, ICompanyOperation
     }
 
     /// <summary>
-    /// Fija los saldos resueltos al momento de Execute (antes/después) y — para Ingreso — el costo
-    /// unitario/costo total definitivamente aplicado al Kardex. Llamado exclusivamente por los
-    /// handlers de ExecuteStockAdjustment y PostInitialBalance (apertura IL-4B); la línea no conoce
-    /// stock por sí misma.
+    /// Fija los saldos resueltos al momento de Execute (antes/después), el costo unitario aplicado
+    /// y el costo total. Llamado exclusivamente por los handlers de ExecuteStockAdjustment y
+    /// PostInitialBalance (apertura IL-4B); la línea no conoce stock por sí misma.
+    /// INVENTORY-V1-B3: <paramref name="totalCost"/> es el importe canónico del movimiento Kardex
+    /// (StockMovement.TotalCost); la línea ejecutada no lo recalcula.
     /// </summary>
     public void ApplyExecutionResult(
         decimal currentStockBefore,
         decimal currentStockAfter,
         decimal? resolvedUnitCostBase,
+        decimal? totalCost,
         int unitCostDecimals = FiscalPrecision.UnitCost
     )
     {
         CurrentStockBefore = currentStockBefore;
         CurrentStockAfter = currentStockAfter;
         if (resolvedUnitCostBase.HasValue)
-        {
             UnitCostBase = Math.Round(
                 resolvedUnitCostBase.Value,
                 unitCostDecimals,
                 MidpointRounding.AwayFromZero
             );
-            TotalCost = Math.Round(
-                QuantityInBaseUom * UnitCostBase.Value,
-                FiscalPrecision.UnitCost,
-                MidpointRounding.AwayFromZero
-            );
-        }
+        TotalCost = totalCost;
     }
 }

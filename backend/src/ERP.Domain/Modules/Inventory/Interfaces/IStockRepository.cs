@@ -59,7 +59,10 @@ public interface IStockRepository
         // cancellationToken (no antes) — muchos call sites existentes pasan cancellationToken
         // posicionalmente como último argumento; insertarlo antes rompería esa posición. Aditivo
         // puro, ningún call site existente lo requiere.
-        Guid? sourceDocLineId = null
+        Guid? sourceDocLineId = null,
+        // INVENTORY-V1-B3: importe monetario del movimiento original que una reversa o transferencia
+        // conserva (se lleva a AccountingDecimals, nunca se modifica el original).
+        decimal? totalCost = null
     );
 
     /// <summary>

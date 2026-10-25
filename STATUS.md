@@ -1,5 +1,19 @@
 # Project Status
 
+## INVENTARIO V1 — Etapa 2A: importe monetario canónico del Kardex (B3) — BUG REAL (2026-10-25)
+
+3 u por 10.00 y tres ventas dejaban cantidad 0 con valor 0.01 (y la compra siguiente lo heredaba);
+una transferencia del saldo dejaba 0.01 en origen; A2 y el reproceso de NC usaban importes sin escala.
+Ahora `StockMovement.TotalCost` (AccountingDecimals) es el único importe: valor corrido = suma exacta,
+cantidad 0 ⇒ valor 0 (la salida que vacía absorbe el residuo), A2 usa el mismo importe en obligaciones,
+coberturas y Contabilidad, y reversas/transferencias conservan el importe original. El guard de
+reproceso de NC compara en dinero (compatible con movimientos históricos). Sin migración ni
+revalorización. B4 (servicios, ICE/IRBPNR) sin cambios. El documento de ajuste ejecutado guarda el mismo
+`TotalCost` del Kardex (sin recálculo de línea). Gates del propietario PASS (Domain 33/33, Application
+1080/1080, Infrastructure 150/150, API 98/98, Arquitectura backend 143/143, Arquitectura frontend PASS).
+**Estado: PENDIENTE DE COMMIT, PUSH Y CI** (no CLOSED).
+[SSOT Inventario](docs/architecture/inventory.md#4-valoración-promedio-ponderado).
+
 ## INVENTARIO V1 — Etapa 1: anulación con servicios y concurrencia de documentos — BUG REAL (2026-10-25)
 
 B1: anular una compra Product + Service con bodega global fallaba ("El ítem no es un producto…");

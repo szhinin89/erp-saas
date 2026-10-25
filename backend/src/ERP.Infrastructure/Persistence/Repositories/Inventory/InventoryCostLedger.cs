@@ -48,12 +48,14 @@ public sealed class InventoryCostLedger(ErpDbContext db) : IInventoryCostLedger
             await entry.ReloadAsync(ct);
     }
 
-    public async Task<decimal?> GetCurrentInvoiceCostAsync(Guid tenantId, Guid companyId, Guid invoiceId, CancellationToken ct)
+    public async Task<decimal?> GetCurrentInvoiceCostAsync(Guid tenantId, Guid companyId, Guid invoiceId,
+        int moneyDecimals, CancellationToken ct)
     {
         var persisted = await db.Set<SaleCostObligation>().Where(o => o.TenantId == tenantId
             && o.CompanyId == companyId && o.InvoiceId == invoiceId).ToListAsync(ct);
         var costs = persisted.Concat(db.Set<SaleCostObligation>().Local).Where(o => o.TenantId == tenantId
             && o.CompanyId == companyId && o.InvoiceId == invoiceId).DistinctBy(o => o.Id).ToList();
-        return costs.Count == 0 ? null : costs.Sum(o => o.ResolvedCost + o.PendingQuantity * (o.ProvisionalUnitCost ?? 0m));
+        return costs.Count == 0 ? null : costs.Sum(o => o.ResolvedCost + Math.Round(
+            o.PendingQuantity * (o.ProvisionalUnitCost ?? 0m), moneyDecimals, MidpointRounding.AwayFromZero));
     }
 }

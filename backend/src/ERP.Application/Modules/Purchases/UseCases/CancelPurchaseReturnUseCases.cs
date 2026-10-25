@@ -248,7 +248,9 @@ internal sealed class CancelPurchaseReturnHandler
                         uid,
                         line.UnitCost,
                         sourceDocLineId: line.Id,
-                        cancellationToken: ct
+                        cancellationToken: ct,
+                        // INVENTORY-V1-B3: el reingreso conserva el importe de la salida autorizada.
+                        totalCost: exit.TotalCost
                     );
                 }
 
