@@ -57,8 +57,9 @@ jobs:
           if ($IsWindows) {
             $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.ps1'
             Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer
+            $ErrorActionPreference = 'Stop'
             & $installer -Version $version -AzureFeed $feed -InstallDir $installDir -NoPath
-            if ($LASTEXITCODE -ne 0) { throw 'dotnet-install failed' }
+            if (-not (Test-Path (Join-Path $installDir 'dotnet.exe') -PathType Leaf)) { throw 'Installed dotnet.exe not found' }
           } else {
             $installer = Join-Path $env:RUNNER_TEMP 'dotnet-install.sh'
             Invoke-WebRequest 'https://dot.net/v1/dotnet-install.sh' -OutFile $installer
