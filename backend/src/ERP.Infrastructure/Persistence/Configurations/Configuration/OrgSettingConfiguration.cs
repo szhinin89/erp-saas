@@ -82,7 +82,7 @@ public sealed class OrgSettingConfiguration : IEntityTypeConfiguration<OrgSettin
             .HasDatabaseName("ix_org_settings_scope_lookup");
 
         // CONFIG-FOUNDATION-P0-01: concurrencia optimista para settings críticos editados por
-        // más de un admin (Fase 5 de docs/architecture/configuration-engine-target-architecture.md).
+        // más de un admin (docs/architecture/backend.md § Configuración organizacional).
         // Mapea la columna de sistema xmin de Postgres como shadow property de solo lectura —
         // no requiere columna nueva ni migración de datos; EF Core la usa como token de
         // concurrencia automáticamente en cada UPDATE/DELETE.

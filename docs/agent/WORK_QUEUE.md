@@ -1,133 +1,21 @@
-# WORK_QUEUE.md — Cola de tareas controladas
+# Cola de trabajo abierto autorizado
 
-## GREENFIELD-INSTALL — BUG REAL (2026-10-21)
+Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
+[flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
+No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-Cierre final implementado: configuración oficial habilitada, fallo INEC bloqueante, baseline y script únicos conservados.
-Regresión reproducida antes del fix; pruebas focalizadas 6/6 PASS. Instalación limpia en `erp_zh_dev` validada manualmente
-por el propietario (25/224/1048 y SRI cargados). Sin recrear bases, auditorías adicionales, push/deploy.
-SSOT: [Geografía INEC](../architecture/architecture.md#geografía-inec).
+## Consolidación documental — revisión del propietario
 
-## GLOBAL–OFFICIAL-ALIGNMENT — BUG REAL P2/P3 (2026-10-21)
+Revisar la consolidación autorizada del 2026-10-26, sus referencias y controles focales.
+Staging y commit corresponden al propietario. No declarar CLOSED automáticamente.
+Acreditar el estado documental A3–A8 antes de convertir antecedentes contradictorios en tareas.
+Los gates de Inventario, Compras, frontend y smoke pendientes están únicamente en STATUS.
 
-Hallazgos P2/P3 de GLOBAL consolidados en la baseline única y el único script INEC CGE 2026.
-PASS focal 190/190 Infrastructure, 9/9 API, 2/2 frontend.
-Pendientes con dependencia fuera de GLOBAL y única definición vigente: [SSOT GLOBAL](../architecture/architecture.md#pendientes-global-dependencias-fuera-de-global).
-Cierre en commits locales; sin push/deploy.
+## GOV-002 — adopción del contrato de errores
 
-## GLOBAL–ICE-TABLE18 — BUG REAL (2026-10-21)
-
-Implementado para revisión: catálogo ICE alineado con la Tabla 18 y las tarifas 2026. Migraciones consolidadas en
-la baseline única (GREENFIELD-INSTALL). Pendientes: verificar el D.E. 302 (armas), decidir la habilitación de `3680` y
-dar soporte operativo a mixtos y específicos de base física. Detalle único: [SSOT GLOBAL](../architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias).
-Cierre en commits locales; sin push/deploy.
-
-## GLOBAL–ICE-MIXED — EXTEND (2026-10-21)
-
-Representación GLOBAL implementada y consolidada en la baseline única; PASS focal 65/65,
-API Release, snapshot y diff. La integración de cálculo queda detenida con el impacto documentado
-en [SSOT GLOBAL](../architecture/architecture.md#ice-mixto-representación-global-y-límite-operativo).
-Sin cambios de cálculo ni migraciones a bases de negocio, push/deploy.
-
-## GLOBAL–SRI — BUG REAL (2026-10-21)
-
-Implementadas correcciones focales de ICE `3073`/`3630` y flag electrónico de `02`; PASS 58/58
-(PostgreSQL/seed/compliance), API Release y snapshot. Migraciones consolidadas en la baseline única (GREENFIELD-INSTALL);
-inventario local READ ONLY sin referencias ICE 3073. Detalle único: [SSOT GLOBAL](../architecture/architecture.md#ice-definición-oficial-y-corrección-de-referencias).
-Representación GLOBAL ampliada en GLOBAL–ICE-MIXED; integración operativa detenida. Cierre en commits locales; sin push/deploy.
-
-## PURCHASE-CREDIT-NOTE-UNIFICATION — EXTEND (2026-10-21)
-
-Implementado y validado; decisiones de vínculo histórico y reproceso resueltas por el propietario. Validación focal PASS; guardrail general limitado por PR-7 preexistente de Gastos, sin tocarlo. Sin GLOBAL ni operaciones sobre bases de negocio, push o deploy. [Entrega y archivos](PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md); SSOT único: [purchases.md](../architecture/purchases.md).
-
-## SRI-TAX-SUPPORT-TABLE5 — BUG REAL P1 (2026-10-20)
-
-Implementado y validado, sin push ni migración a bases de negocio. Seed global 01–15 alineado con Tabla 5 ATS 06/08/2026; 00 y 16–20 conservados, no seleccionables. Consolidado en la baseline única, sin remapear documentos/defaults/snapshots. PASS: Infrastructure PostgreSQL/seed 5/5, HTTP 1/1 y frontend focal 46/46. [Evidencia y límites](../archive/sri/SRI-TAX-SUPPORT-TABLE5-CORRECTION.md).
-
-## QA-INVENTORY-INFRA-SUITES-01 (2026-10-19)
-
-CLOSED. Resuelto en `509ac6d75`; PostgreSQL 39/39 PASS. Regla: [inventory.md § 2](../architecture/inventory.md#2-participación-y-alcance). Sin bloqueadores.
-
-## AUTH - SENSITIVE LOGGING FIX (2026-10-19)
-
-BUG REAL corregido: evento de auditoria de rotacion refresh_success registraba successorHash (SHA-256 del refresh token sucesor, clave de busqueda en BD) por parametro explicito del template LoggerMessage de RefreshTokenService (no serializacion automatica ni configuracion). Eliminado successorHash de mensajes y campos estructurados; trazabilidad conservada por familyId, tokenId y successorId. Sin cambios de logica de autenticacion, rotacion ni persistencia. PASS: RefreshTokenServiceTests 21/21 (19 existentes + 2 nuevos con CapturingLogger: rotacion, reuso benigno/sospechoso y token inexistente sin tokens ni hashes en logs); los 2 nuevos fallan contra el codigo previo. Logs historicos previos al fix pueden contener hashes. Sin suites completas, commit ni push.
-
-
-## FIRST RUN - CONSOLIDACION SSOT (2026-10-19)
-
-Cerrado. Flujo vigente: launcher -> API/frontend -> `/setup` si no esta inicializado -> alta inicial manual -> ERP operativo. Contrato, seguridad, operacion y gate de pruebas: [docs/architecture/first-run.md](../architecture/first-run.md). Documentos historicos `docs/agent/FIRST_RUN_*` retirados. QA obsoleto retirado: `qa-engine/`, `qa-bot/` y workflow `qa-regression.yml` dependian de endpoints Platform/no versionados inexistentes. `IsFirstRun` se conserva (redundante; retirarlo exige migracion sobre el baseline aplicado).
-
-
-## BACKGROUND DEPLOYMENT — FASE D
-
-**Status: IMPLEMENTADO y validado focalmente (2026-10-15).** API/Worker separados
-en Compose canónico, misma imagen/volumen, storage explícito y Redis único.
-PASS Compose 4/4, tests 21/21 + PostgreSQL 4/4, build/smoke aislado. Coolify real
-pendiente de inspección/transición según runbook. Sin suites completas, commit/push.
-[Entrega](BACKGROUND_DEPLOYMENT_PHASE_D_DELIVERY.md).
-
-## PURCHASES FASE B — BUG REAL: ORDEN DE MIGRACIÓN
-
-**Status: CORREGIDO y validado focalmente (2026-10-15).** Índices/trigger de activos
-antes del backfill; regresiones de ambas claves únicas. PostgreSQL PASS 6/6 + 2/2
-trigger, reproducción previa FAIL 4/4 por 23505. Reaplicación al piloto pendiente.
-Sin suites completas, commit/push. [purchases.md](../architecture/purchases.md).
-
-## PURCHASES LEGACY / DOMAIN — FASE B
-
-**Status: IMPLEMENTADO y validado focalmente (2026-10-15).** Sin commit/push.
-SSOT PurchaseState + PurchaseId y Discarded=4 persistido; sin flags legacy.
-Pruebas focales PASS, incluida migración/índices en PostgreSQL real. Aplicación
-al piloto pendiente de despliegue. [purchases.md](../architecture/purchases.md).
-
-## A9 — Commercial → ElectronicDocument recovery
-
-**Status: IMPLEMENTADO y validado; apto para declarar CLOSED (2026-10-08).**
-
-Recuperación durable exclusivamente de SalesInvoice Authorized + Electronic + secuencial definitivo sin documento por origen. Registro create-only en infraestructura existente; scopes frescos; concurrencia PostgreSQL segura. No reautoriza ni reanuda/envía documentos existentes. Sin migración, commit ni push. Gates y resultados: `STATUS.md`, sección A9. A1–A8 permanecen CLOSED por instrucción vigente.
-
-## A3 — Atomic Sales Draft Update
-
-**Status: OPEN**
-
-### Problema
-Update Draft puede modificar/eliminar hijos antes de completar validación/save,
-dejando el Draft parcialmente alterado si la operación falla.
-
-### Objetivo
-Una actualización rechazada debe dejar el Sales Draft exactamente igual.
-
-### Alcance
-- Sales Draft Update
-- Lines
-- Taxes
-- Payments / schedules si forman parte del mismo agregado
-- Transaction boundary
-- Repository behavior
-- PostgreSQL tests
-
-### No tocar
-- A1
-- A2
-- Pricing
-- SRI
-- Accounting
-- Inventory salvo dependencia directa
-
-### Gate
-- reproducir bug
-- test que falle antes
-- fix mínimo
-- test PostgreSQL real
-- regresión focalizada
-- diff review
-- no commit
-
----
-
-## Después (orden previsto, aún sin abrir)
-
-- **A4** — SalesReturn taxes ICE/IRBPNR
-- **A5** — Packaging barcode search
-- **A6** — Warehouse guards/race
-- **A7** — Sales concurrency
-- **A8** — Authorization retry/idempotence
+Preservar el seguimiento de gobernanza abierto, sin asumir que siguen sin iniciar las
+cuatro fases descritas en julio. La SSOT de implementación es
+[error-handling.md](../architecture/error-handling.md); rationale: [ADR-027](../decisions/ADR-027-error-handling-architecture.md).
+La revisión documental no autoriza reauditar ni refactorizar módulos CLOSED.
+Cualquier defecto actual requiere reproducción y fase expresamente autorizada.
+Otras propuestas de UX/configuración se conservan únicamente en [ROADMAP](../ROADMAP.md).

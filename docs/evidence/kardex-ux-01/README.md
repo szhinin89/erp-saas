@@ -1,10 +1,10 @@
 # Kardex — corrección UX/UI focal (2026-10-25)
 
-Implementado para revisión del propietario. **No CLOSED**: falta el gate del propietario.
+Publicado en `50a1af3d9` sobre la base histórica `8a2c3692d`. **No CLOSED**: gate del propietario y smoke autenticado pendientes de acreditar. Publicación y CI #999 SUCCESS: [STATUS](../../../STATUS.md#inventario-v1--evidencia-ci-de-referencia).
 
 ## Base y causa comprobada
 
-- HEAD, main local, origin/main y main remoto: `8a2c3692d8fb5c870e2284e06832b60dc014cac5`.
+- Base histórica de la intervención (HEAD/main al iniciar): `8a2c3692d8fb5c870e2284e06832b60dc014cac5`; publicación UX/UI: `50a1af3d9`.
 - [CI #997, intento 2: success](https://github.com/szhinin89/erp-saas/actions/runs/40248632996).
 - BUG REAL: `KardexPage.css` no tenía ningún import en el código. Chromium confirmó filtros con display block y apilados incluso a 1440 px. La reproducción inicial produjo 12/12 FAIL al comprobar la distribución flex ausente, antes de modificar producción.
 - DEBT: reglas CSS repetidas, anchos mínimos rígidos y cinco tarjetas sobre el grid compartido de tres columnas (dos filas con hueco). Expediente con márgenes de panel dentro de cards y etiquetas pequeñas en mayúsculas.
@@ -38,7 +38,7 @@ Registros de esta fase retirados de la evidencia (resumen fiel de su contenido):
 - `build.log` (`tsc -b && run-platform-guard && vite build`): platform guard PASS en sus cinco controles (0 violaciones; 136 endpoints escaneados); `✓ built in 2.02s`.
 - `architecture.log`: TAP 140 tests, 140 pass, 0 fail; todas las comprobaciones `[PASS]`; `Architecture gate PASS: 0 new violations.`
 
-No suites funcionales completas, acceso a bases, staging, commit, push ni deploy. El build regeneró únicamente timestamps de dos informes ajenos; se restituyó su contenido original sin modificar Git.
+Durante la validación del agente no se ejecutaron suites funcionales completas ni se accedió a bases; tampoco se realizó staging, commit, push ni deploy en esa fase. La publicación posterior se identifica al inicio. El build regeneró únicamente timestamps de dos informes ajenos; se restituyó su contenido original sin modificar Git.
 
 ## Evidencia visual y límites
 
@@ -63,4 +63,4 @@ npm.cmd run architecture:check
 git diff --check
 ```
 
-Revisión autenticada pendiente con las fuentes disponibles: filtros/búsquedas y dropdowns, volver desde documentos, estados y expediente en escritorio/móvil. El propietario realiza staging y commit después de su revisión. No se actualizan estados de cierre mientras falta ese gate.
+Revisión autenticada pendiente con las fuentes disponibles: filtros/búsquedas y dropdowns, volver desde documentos, estados y expediente en escritorio/móvil. El código ya está publicado; no hay staging ni commit de UX/UI pendientes. El cierre sigue pendiente de acreditar ese gate y el smoke autenticado.

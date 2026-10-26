@@ -319,12 +319,9 @@ cobro posterior es otro hecho, sin volver a reconocer el ingreso de la venta.
 - Reembolso de crédito de proveedor: Debe Caja/Banco real y Haber Anticipos; su reversa
   espeja el asiento publicado (§7). No depende de una cuenta genérica. La cuenta guardada en
   la transacción de reembolso es solo referencia histórica opcional, no autoridad contable.
-- Inventory determina el costo por promedio ponderado y conserva la incertidumbre
-  cuando no existe base conocida: null no significa cero. Sin costo conocido se
-  mantiene SaleCostObligation; nunca inventar COGS desde el precio de venta. Con base
-  conocida se reconoce costo provisional, y la compensación con costo real genera
-  ajustes append-only. SaleCostAllocation conserva cantidades/costos y prioridad por
-  secuencia del recurso Company + Item + Warehouse; no se reescribe Kardex histórico.
+- El costo operativo y su regularización se determinan exclusivamente en
+  [Inventario § 4](./inventory.md#4-valoración-promedio-ponderado). Su reconocimiento
+  contable y los hechos de costo se rigen por [§20](#20-costos-apertura-y-disabled-accounting-continuity-05).
 - Devolución de venta: unidades sin costo reconocido no revierten COGS inexistente;
   unidades regularizadas revierten el costo efectivamente reconocido, incluyendo sus
   ajustes y remanentes monetarios. La anulación revierte lo publicado y extingue lo

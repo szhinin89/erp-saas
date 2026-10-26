@@ -1,6 +1,6 @@
 # Kardex — selector de productos y alineación
 
-Continuación sobre el diff local de UX/UI. Implementado para revisión; **pendiente del gate del propietario**, no CLOSED. Sin staging, commit, push ni deploy.
+Continuación de UX/UI sobre la base histórica `8a2c3692d`, publicada con Kardex en `50a1af3d9`. **Pendiente de acreditar el gate del propietario y el smoke autenticado; no CLOSED.** Publicación y CI #999 SUCCESS: [STATUS](../../../../STATUS.md#inventario-v1--evidencia-ci-de-referencia).
 
 ## Causa comprobada y alcance
 

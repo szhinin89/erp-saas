@@ -1,9 +1,8 @@
 # Estándar de Manejo de Errores
 
-Decisión arquitectónica 2026-07-27. Rige el diseño; la migración de código existente sigue el plan de fases de ADR-027 — hasta que cada fase se implemente, este documento es el estándar **obligatorio para todo código nuevo** y la referencia de corrección para código existente.
-
-ADR: [`docs/decisions/ADR-027-error-handling-architecture.md`](../decisions/ADR-027-error-handling-architecture.md)
-Auditoría de estado actual: [`docs/architecture/ERROR-HANDLING-AUDIT.md`](./ERROR-HANDLING-AUDIT.md)
+Contrato implementado de errores. Decisión: [ADR-027](../decisions/ADR-027-error-handling-architecture.md).
+La adopción pendiente se sigue en [GOV-002](../agent/WORK_QUEUE.md#gov-002--adopción-del-contrato-de-errores);
+no se deduce del diagnóstico histórico de julio.
 
 ---
 

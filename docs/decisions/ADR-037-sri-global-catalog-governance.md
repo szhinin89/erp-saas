@@ -1,6 +1,6 @@
 # ADR-037 — Gobernanza de catálogos globales SRI
 
-**Status:** Proposed · **Fecha:** 2026-10-02 · **Ticket:** ZH-SRI-GLOBAL-CATALOG-ARCHITECTURE-01
+**Status:** Decisión arquitectónica conservada; implementación vigente en GLOBAL · **Fecha:** 2026-10-02 · **Ticket:** ZH-SRI-GLOBAL-CATALOG-ARCHITECTURE-01
 **Evidencia y diseño detallado:** [`docs/archive/sri/SRI-GLOBAL-CATALOG-ARCHITECTURE.md`](../archive/sri/SRI-GLOBAL-CATALOG-ARCHITECTURE.md) (histórico; vigente: [architecture.md § GLOBAL IMMUTABLE](../architecture/architecture.md#global-immutable-schema-global))
 **Base:** [`docs/sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md`](../sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md) (hallazgo P0 R24)
 **Complementa:** `docs/architecture/architecture.md § Catálogos y datos configurables (SSOT dinámico)`; ADR-034 (fecha de negocio); ADR-023/ADR-036 (no los modifica).
@@ -42,8 +42,10 @@ Tienen tres defectos estructurales:
   paralelos) devuelve exactamente una versión vigente. 0 versiones, más de 1, representación nula o
   incoherencia con el dato del documento (p. ej. tasa aplicada ≠ porcentaje) son errores de configuración
   fiscal, y no se genera el XML.
-- **D8 — Upgrades incrementales.** `InitialEnterpriseBaseline` no se modifica. Toda evolución es una migración
-  nueva, y una instalación nueva recorre la misma secuencia que un upgrade.
+- **D8 — Instalación V1 única.** La instalación vigente se define exclusivamente en
+  [GLOBAL](../architecture/architecture.md#global-immutable-schema-global). No prescribe
+  restaurar ni encadenar baselines sustituidas; preservar siempre datos existentes.
+
 - **D9 — Históricos no se destruyen.** Sobre una versión existente solo se permite cerrar `ValidUntil`
   (`null → fecha`). Porcentaje, código y fuente no cambian. Ni conceptos ni versiones se borran; se retiran con
   `IsActive = false` o cerrando su vigencia.

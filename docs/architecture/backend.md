@@ -347,7 +347,7 @@ Capacidad única (módulo `Retentions`, compartida por todo origen): `RetentionI
 
 **Política única (RETENTIONS-MODULE-DESIGN-01, decisión 15):** la retención de una Compra o un Gasto se define ANTES de confirmar el documento origen y, si hay `RetentionIntent` (`Retentions/UseCases/RetentionIntent.cs`, contrato único con `RetentionIntentValidator`), se emite DENTRO de la misma unidad de trabajo de la confirmación: documento confirmado + CxP creada con la retención aplicada + `RetentionDocument` emitido, en la misma transacción. Si falla el núcleo operativo/tributario (elegibilidad, punto de emisión, saldo de CxP), falla toda la confirmación y el documento sigue en borrador. Integración contable: [Accounting](./accounting.md). Sin intención, la confirmación es exactamente la de siempre. No existe emisión posterior sobre un documento ya confirmado (`IssueRetentionCommand` y `POST /purchases/{id}/retention` fueron retirados).
 
-Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (nace, recibe número "07", aplica a la CxP) → `Cancelled`. La parte SRI es otro agregado (`ElectronicDocument`) y un acto explícito POSTERIOR para ambos orígenes, nunca automático al confirmar: `POST /retentions/{id}/electronic/register` (XML → firma → envío → autorización); XML y RIDE se consultan bajo demanda (`/retentions/{id}/electronic/xml`, `/ride/pdf`).
+Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (nace, recibe número "07", aplica a la CxP) → `Cancelled`. La parte SRI es otro agregado (`ElectronicDocument`): su transmisión inicial se dispara después del commit para ambos orígenes por la capacidad única de Retentions. Desde que existe el documento, ElectronicDocuments posee su recuperación. XML y RIDE se consultan bajo demanda; detalle fiscal en [verificación de anulación](#verificación-fiscal-de-anulación-de-retenciones).
 
 | | Gastos | Compras |
 |---|---|---|
@@ -374,10 +374,9 @@ Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (na
   - Desistir: antes de presentar, o con el SRI confirmando AUTORIZADO (`CanBeAbandoned`). El comprobante vuelve a `Authorized` y la CxP se libera.
   - CxP retenida: la regla vive en `AccountsPayable` (pagos, créditos de proveedor, notas de crédito y devoluciones → 422 `RETENTION_ANNULMENT_PENDING`).
   - Permisos: anular el origen (`purchases.update` / `expenses.documents.cancel`).
-  - Plazo ordinario: día 7 del mes siguiente a la emisión, sin calendario de días hábiles (se advierte que debe validarse contra el SRI).
+  - Plazo ordinario: política versionada GLOBAL por fecha de emisión; detalle en [Compras](purchases.md#5-anulación-confirmed--cancelled). Sin calendario oficial, es informativo.
 - **XML/RIDE:** autorizados por el origen, server-side (`IRetentionSourceAccess`): Compra → `purchases.view`, Gasto → `expenses.documents.view`; sin acceso → 404.
 
-## Estructura por módulo
 ## Estructura por módulo
 
 ```
@@ -403,7 +402,7 @@ Controller delgado: recibe request → delega → devuelve contrato HTTP.
 
 Checks automáticos: [check-ai-layer-boundaries.mjs](../../tools/architecture/check-ai-layer-boundaries.mjs) (AI-001 → AI-005)
 Arquitectura futura IA: [AI-FOUNDATION.md](./ai-foundation.md)
-Read models / analytics: [ANALYTICS-FOUNDATION.md](./ai-foundation.md)
+Read models / analytics: [ai-foundation.md](./ai-foundation.md)
 
 ---
 
@@ -443,3 +442,302 @@ Guardrails: [ENFORCEMENT.md](./enforcement.md).
 ## Compras, Inventario e Ítems
 
 Reglas funcionales: [purchases.md](./purchases.md), [inventory.md](./inventory.md), [items.md](./items.md).
+
+
+## Background Processing
+
+SSOT de orquestación recurrente implementada. Rationale: [ADR-043](../decisions/ADR-043-background-processing-ssot.md).
+Operación y despliegue: [runbook](../deployment/README.md).
+
+### Arquitectura única
+
+`HangfireRecurringJobs.All` es el catálogo inmutable ID → tipo concreto y solo define
+identidad. Deriva DI, validación, registro y sincronización. Los siete tipos implementan
+`IRecurringJob` y reciben BatchSize explícito. `HangfireOptions` es el único modelo de
+valores operativos (Server, storage, Workers por cola y, por job, Enabled/Cron/Queue/
+BatchSize): binding estricto, IValidateOptions y ValidateOnStart. Claves desconocidas
+o faltantes abortan incluso con Server OFF. Storage exige cadena PostgreSQL explícita con
+Host/Database/Username, sin fallback a la base ERP; usa el destino explícito del entorno autorizado.
+Multiplexing se rechaza porque el lock requiere afinidad de sesión.
+
+`RecurringJobRunner.RunAsync(id)` es la única entrada de Hangfire: revisa Enabled,
+adquiere `pg_try_advisory_lock(hashtextextended('ERP.Jobs/' + id, 734108))` en una
+conexión física mantenida durante la ejecución, crea scope fresco y emite logs y
+métricas. Lock ocupado significa skipped, sin error ni espera. Finalmente libera
+el lock también al fallar/cancelar; una caída del proceso lo libera en PostgreSQL.
+AutomaticRetry(0): la siguiente corrida descubre nuevamente el trabajo durable.
+Los scopes tenant/company por candidato y los controles de persistencia existentes
+siguen siendo autoridad de aislamiento e idempotencia.
+
+Un solo hosted service sincroniza antes de iniciar workers: AddOrUpdate para ON;
+RemoveIfExists para OFF y todos los IDs fuera del catálogo. La cola explícita se
+guarda en `Job.Queue` mediante Hangfire 1.8. Cada cola tiene su servidor y workers
+explícitos. Ningún servidor consume `default`.
+
+### Configuración final
+
+| Job | Cola | Cron UTC | BatchSize |
+|---|---|---|---:|
+| process-outbox | core | `* * * * *` | 50 |
+| process-communications | communications | `* * * * *` | 50 |
+| reconcile-electronic-document-communications | communications | `*/10 * * * *` | 200 |
+| electronic-document-retry | sri | `* * * * *` | 50 |
+| sales-electronic-document-recovery | sri | `* * * * *` | 50 |
+| retention-electronic-recovery | sri | `* * * * *` | 50 |
+| expire-user-sessions | maintenance | `0 4 * * *` | 50 |
+
+Todos declaran Enabled explícito. Cron admite cinco campos numéricos con listas,
+rangos y pasos. La cola de cada job es configuración (minúsculas, nunca `default`);
+`Workers` declara exactamente las colas usadas por los jobs, con 1..256 workers cada
+una: core=1, communications=2, sri=2, maintenance=1 como valores iniciales para afinar
+con métricas. Concurrencia máxima 1 por ID es invariante del runner (advisory lock),
+no una opción: varios workers corren distintos jobs de la cola, nunca el mismo ID.
+
+API sin workers: `Hangfire:Server:Enabled=false` (versionado). Host combinado:
+Server.Enabled=true. Worker separado, desde el directorio publicado de API:
+
+```powershell
+dotnet ERP.API.dll --worker --Hangfire:Server:Enabled true
+```
+
+El worker usa Generic Host sin Kestrel. API y worker componen la infraestructura común
+solo con `ErpHostRegistration` (fuentes de configuración, Serilog, caché Redis/memoria,
+Infrastructure/Application, Data Protection y opciones) más el registro único de
+Background Processing; lo exclusivo de HTTP queda en `Program.cs`. El despliegue aplica migraciones antes
+de arrancar workers separados; API conserva su migración previa al bootstrap.
+Ambos requieren misma base ERP, storage Hangfire y volumen FileStorage/keyring.
+No hay Dashboard de Hangfire. Se eliminan las claves antiguas del entorno, incluidos
+user-secrets: Enabled → Server:Enabled y ConnectionString → StorageConnectionString,
+preservando valores; `Dashboard:*` y `Jobs:*:MaxConcurrency` se eliminan. Ninguna se
+lee como alias: el binding estricto las rechaza al arrancar.
+
+### Lotes, fairness y ownership
+
+Todas las consultas de candidatos usan LIMIT/Take explícito. Retentions distribuye
+el presupuesto total B entre floor(B/3) finalizaciones, B−2×floor(B/3) transmisiones
+y floor(B/3) verificaciones. B mínimo=3; cada stream tiene progreso independiente.
+
+La migración `20261015000000_BackgroundJobProgress` crea checkpoints técnicos en
+PostgreSQL, sin datos de negocio ni preferencias por empresa. Reintentos, Sales y
+Retentions rotan por UUID estable después del último lote descubierto, incluyendo
+los candidatos fallidos. Guardar antes de procesar evita que un poison item acapare
+los lotes y conserva progreso al reiniciar o cambiar de nodo. Sin OFFSET creciente.
+
+El reconciliador conserva orden `(created_at, id)` y persiste su checkpoint al
+terminar cada lote; vuelve al principio al llegar al final. Si el último lote llena
+exactamente B, la siguiente corrida vacía detecta el final. Las anomalías se
+revisitan en otra vuelta. Se elimina el cursor singleton en memoria. El anti-join
+conserva el CTE materializado; LIMIT acota filas cargadas, COUNT/MIN quedan en SQL.
+
+Las preferencias auto_retry_enabled y email_on_authorization se correlacionan por
+tenant/company/scope en SQL antes del límite, con la clave de `OrgSettingKeys` y la
+semántica de `OperationalPreferencesResolver` (`DefaultOnCompanySwitch`: solo un valor
+que se lee como `false` apaga; faltante/corrupto conserva el default activo). Es la
+única decisión previa al lote: el job de reintentos y el reconciliador no vuelven a
+resolverlas; el servicio de comunicación conserva su guard al encolar. La elegibilidad
+de reintento (estados, máximo efectivo por empresa y backoff `min(1·2^n, 16)` minutos) existe una sola
+vez como predicado de `ElectronicDocumentRetryPolicy`, traducido a SQL. Communications resuelve el perfil de cada
+fila y conserva claims, leases, fencing y política de reintento. No hay preferencias
+por empresa nuevas para procesos técnicos.
+
+Retentions recupera la transmisión inicial únicamente antes del registro de
+ElectronicDocument. Desde que existe, incluido Draft, ElectronicDocuments es el
+único dueño de recuperación fiscal. Retentions excluye cualquier documento por
+origen existente; el issuer canónico conserva unicidad e idempotencia ante carreras.
+Sales recovery permanece create-only.
+
+### Health y métricas
+
+No existe masterdata-reconciliation: servicio, interfaz, job ni health.
+Integridad de membresías/MasterData sale de ready y conserva endpoints diagnósticos.
+Ready conserva conectividad y probes configurados.
+
+Meter ERP.Jobs: duración (s), procesados, fallidos, skipped por lock, backlog y edad
+del pendiente más antiguo (s). Etiquetas técnicas job/stream, sin secretos ni PII.
+Backlog/edad son gauges por stream; agregados SQL sin cargar históricos. Prometheus
+de API incluye ERP.Jobs. Un worker separado emite el mismo Meter; su exportación
+requiere un collector en ese proceso (no se añade un servidor HTTP al worker).
+
+### Máximo por empresa y preferencia de correo
+
+`electronic_documents.max_retry_attempts` gobierna candidatos y DeadLetter.
+`ElectronicDocumentRetryMaximum` centraliza default 5, rango 1..10 y la expresión
+única de resolución (faltante/corrupto: default), compilada para el resolver y
+traducida a SQL para candidatos/contador. `ElectronicDocumentRetryPolicy` conserva
+estados/backoff y compone la elegibilidad; el filtro efectivo precede al BatchSize.
+El job no interpreta configuración. El issuer lee el mismo setting scoped y aplica
+la misma resolución para DeadLetter. No hay un límite fijo paralelo `MaxAttempts`.
+
+`communications.sales_invoice_authorized.enabled` duplicaba la decisión vigente
+`electronic_documents.email_on_authorization`: se eliminan clave, definición y
+contrato legacy, sin conservar claves ni variantes legacy.
+No hay alias ni segunda ruta; Communications conserva su guard y perfil SMTP.
+
+
+## Verificación fiscal de anulación de retenciones
+
+Contrato vigente de consulta; sin segundo cliente SOAP ni resolución manual.
+
+### Contrato oficial (Ficha Técnica Comprobantes Electrónicos Esquema Offline v2.34, julio 2026, §8; idéntico en v2.32)
+
+| Elemento | Valor |
+|---|---|
+| WSDL pruebas | `https://celcer.sri.gob.ec/comprobantes-electronicos-ws/ConsultaComprobante?wsdl` |
+| WSDL producción | `https://cel.sri.gob.ec/comprobantes-electronicos-ws/ConsultaComprobante?wsdl` |
+| Namespace | `http://ec.gob.sri.ws.consultas` |
+| Operación | `consultarEstadoAutorizacionComprobante(claveAcceso: String)` → `EstadoAutorizacionComprobante` (`RespuestaConsultaComprobante`) |
+| Respuesta exitosa | `claveAcceso`, `mensajes`, `estadoAutorizacion`, `tipoComprobante`, `rucEmisor`, `fechaAutorizacion` (con offset, p.ej. `2024-12-12T10:49:37-05:00`) |
+| Estados (§8.4) | `AUTORIZADO`, `NO AUTORIZADO`, `PENDIENTE DE ANULAR`, `ANULADO` |
+| Respuesta de error | `estadoConsulta = RECHAZADA` + `mensaje` con `identificador = 99` ("ERROR AL CONSULTAR DATOS DEL SERVICIO WEB"); casos documentados: fecha de emisión fuera del rango permitido, y "No existen datos para los parámetros ingresados" |
+
+La prosa de la ficha llama "estadoAutorizacion = RECHAZADA" al caso de error, pero sus ejemplos XML usan `estadoConsulta`. El cliente trata `RECHAZADA` en cualquiera de los dos elementos como **consulta rechazada**, nunca como estado fiscal. La ficha **no** documenta un WS para solicitar la anulación.
+
+### Abstracción (sin duplicar SOAP)
+
+- **`ISriDocumentStatusQuery`** (Application, `Common/Interfaces/SRI`) → `SriDocumentStatusResult`. Es el SSOT tipado del estado fiscal.
+- Implementación: `SriDocumentStatusQuery` (Infrastructure). Es un adaptador sobre el **mismo** `SriSoapClient` de recepción y autorización: comparte HTTP, reintentos, SOAP Fault, parsing de `<mensajes>` y `SriSettings.WsdlUrl`. `QueryDocumentStatusAsync` agrega solo el envelope y el parser. El endpoint se deriva del `WsdlUrl` de Recepción de la empresa (mismo ambiente celcer/cel). Si el `WsdlUrl` no apunta a `RecepcionComprobantesOffline`, la consulta devuelve `Unavailable` y no se postea a ningún otro servicio.
+- `PostSoapAsync` se generalizó internamente (`PostSoapCoreAsync`) para distinguir timeout de red caída. Recepción y autorización no cambian.
+
+### Estados tipados (Domain, `ElectronicDocuments/Enums`)
+
+| `SriStatusQueryOutcome` (técnico) | `SriFiscalStatus` (fiscal, solo con `Success`) |
+|---|---|
+| `Success`, `Rejected` (RECHAZADA / 99), `Timeout`, `Unavailable` (red, HTTP, SOAP Fault, sin configuración), `Unknown` (no XML, literal no oficial, otra clave de acceso) | `Authorized`, `NotAuthorized`, `PendingAnnulment`, `Annulled`; `Unknown` si la consulta no fue exitosa |
+
+Invariantes, aplicadas por cliente, servicio y dominio:
+- una consulta no exitosa **nunca** trae estado fiscal;
+- `RECHAZADA` **nunca** se mapea a `NotAuthorized`;
+- un timeout **nunca** es `Annulled`.
+
+### Flujo
+
+1. **Solicitar:** crear la solicitud asistida por el flujo del origen, sin reversos locales ni envío automático de anulación a SRI.
+2. **"Ya presenté la solicitud"** (`POST /retentions/annulments/{id}/submission`): registra la presentación y **consulta enseguida** ConsultaComprobante. Si la verificación no se puede aplicar, la presentación queda registrada igual y la respuesta informa `RETENTION_ANNULMENT_SRI_VERIFICATION_FAILED`.
+3. **Verificar** (`IRetentionAnnulmentService.VerifyWithSriAsync`, `POST /retentions/annulments/{id}/sri-verification`, sin body). Solo con la solicitud `PendingSriResolution`.
+   - La consulta SOAP corre **sin transacción ni lock**.
+   - Después se toma el lock de la retención, se relee la solicitud y, si sigue pendiente, se registra la consulta (`RecordSriCheck`: fecha, resultado, estado fiscal, literal crudo, contador).
+   - La consulta se audita (`SriChecked`) **solo cuando cambia lo informado**, para que el polling no inunde la auditoría.
+
+| SRI informa | Efecto | Código (200) |
+|---|---|---|
+| `AUTORIZADO` | Sigue vigente: sin finalización, sin reversos. El usuario puede **desistir**  | `RETENTION_ANNULMENT_SRI_STILL_AUTHORIZED` — "El SRI todavía mantiene vigente el comprobante" |
+| `PENDIENTE DE ANULAR` | Comprobante `AnnulmentPending`, retención `Issued`, origen `Confirmed`, CxP retenida; se re-consulta | `RETENTION_ANNULMENT_SRI_PENDING` — "Pendiente de anulación en SRI" |
+| `ANULADO` | `AcceptSriAnnulment` (solo si la última consulta registrada es ese ANULADO). Evidencia: fecha de verificación (empresa), referencia `ConsultaComprobante ANULADO <UTC>` y respuesta SOAP cruda (`sri_annulment_evidence`). Comprobante `Cancelled`. Solicitud `Accepted`. Después, **fuera de la transacción**, la finalización idempotente existente (`FinalizeAsync`), una vez | `RETENTION_ANNULMENT_FINALIZED` (o `…_FINALIZATION_PENDING`) |
+| `NO AUTORIZADO` | **Sin acción automática** — Decision Required  | `RETENTION_ANNULMENT_SRI_NOT_AUTHORIZED` |
+| Rechazada (99) / timeout / red / desconocido | Solo se registra el fallo técnico; sin cambio fiscal ni finalización | `RETENTION_ANNULMENT_SRI_VERIFICATION_FAILED` — "No fue posible verificar el estado en SRI" |
+
+4. **Sin resolución manual de ANULADO.** No existen `ResolveRetentionAnnulmentCommand`, `POST …/resolution`, `RetentionAnnulmentResult`, `RetentionAnnulmentRequest.Resolve` y el modal de resolución. No queda contingencia manual (preferencia del ticket: no tener fallback hasta justificarlo con un caso real). Si se justifica, deberá ser un flujo separado, con permiso fuerte y evidencia, y con su propio ADR. El dominio impide aceptar sin un ANULADO consultado.
+
+### Desistimiento
+
+`RetentionAnnulmentRequest.CanBeAbandoned` es la regla única para el agregado y para la UI (`canAbandon` en el DTO). Permite desistir:
+- antes de presentar; o
+- ya presentada, **solo** si la última consulta exitosa informa **AUTORIZADO** (el SRI no anuló; p.ej. el receptor no aceptó).
+
+Con PENDIENTE DE ANULAR, NO AUTORIZADO o sin una consulta exitosa no se puede, porque el SRI todavía podría anularlo. Desistir revierte el comprobante a `Authorized` y libera la CxP.
+
+
+### Límites y finalización
+
+NO AUTORIZADO sobre un comprobante previamente autorizado no causa reversos ni
+finalización automática; no se inventa una decisión fiscal. Una consulta no exitosa
+no confirma ANULADO. Rejected/Expired no tienen transición operativa en este flujo.
+El polling, lotes y ownership de recuperación se definen solo en
+[Background Processing](#background-processing), no en una política paralela de Retentions.
+`FinalizeAsync` usa el flujo oficial del origen, idempotente. Después del commit,
+`IAccountingPostingDispatcher.DispatchPendingAsync` da el intento inicial a sus reversos
+antes de marcar la finalización; un fallo contable conserva la obligación Failed sin
+revertir la anulación ni generar reintento contable automático. Contrato: [Accounting](accounting.md).
+
+`Signed` histórico, `Dispatching` o `Received` sin respuesta concluyente del SRI quedan
+en `RequiresReconciliation` ("Requiere conciliación"): no se reenvían ni se descartan.
+El ERP no tiene comando ni procedimiento de conciliación para esos estados; tampoco para
+comprobantes de retención anteriores a este ciclo cuyo origen ya fue anulado. Ventas y NC
+de venta (sin guard) conservan el pipeline v1.0. Pendientes: [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
+
+
+## Configuración organizacional
+
+Contrato implementado de configuración persistida por empresa y scope. Defaults de factura
+de venta: [Valores por Defecto de Facturación](./frozen-infrastructure.md#valores-por-defecto-de-facturación).
+La precisión numérica no es un setting: [CompanyPrecisionPolicy](./data-standards.md#estándar-de-precisión-numérica).
+
+### Almacenamiento y escritura
+
+- `OrgSetting` (`org_settings`) guarda un valor por `(TenantId, CompanyId, Scope, ScopeId, Key)`
+  (`uq_org_settings_scope_key`). `OrgScope` persistido: Company, Branch, Establishment,
+  EmissionPoint, Warehouse. La columna de sistema `xmin` es el token de concurrencia optimista.
+- `ConfigurationDefinitionCatalog` (Domain) es el registro único de keys: módulo, tipo
+  semántico (`ConfigurationDataType` y su tipo persistido), scopes permitidos, scope por
+  defecto, `FallbackStrategy`, validador y flags `RequiresAudit`/`IsSensitive`/
+  `RequiresSnapshot`/`IsUserEditable`. Falla al construirse ante keys duplicadas, sin scopes
+  o con `DefaultScope` fuera de `AllowedScopes`. No existen metadatos de presentación ni de acceso.
+- `OrgSettingsRepository.UpsertAsync` es el único punto de escritura: rechaza key desconocida,
+  scope no permitido, `DataType` distinto del declarado o valor inválido
+  (`ConfigurationDefinitionViolationException`), sin corregir ni guardar parcialmente.
+  Null o vacío significa "sin configurar". `FallbackStrategy` declara la estrategia; la aplica
+  el resolver tipado que consume la key. `RequiresSnapshot` no tiene consumidor: no hay
+  snapshots de configuración en documentos.
+
+### Lectura
+
+Application no depende de `IOrgSettingsRepository` para decidir comportamiento: lee mediante
+resolvers tipados (`IInvoiceDefaultsResolver`, `ICompanyBrandingResolver`,
+`ICatalogConfigurationResolver`, `ISalesFiscalPolicyResolver`, `IOrgConfigResolver`,
+`IOperationalPreferencesResolver`). Solo los handlers administrativos de la configuración
+enumerados en `OrgSettingsAccessGuardrailTests` leen o escriben el repositorio; el test falla
+si otro tipo de Application lo referencia o si una entrada del allowlist deja de existir.
+La marca pertenece a Company (`company.branding.*`, `ICompanyBrandingResolver`); RIDE la consume.
+
+### Principal y default únicos
+
+Índices únicos filtrados: una sucursal principal por empresa (`uq_branches_tenant_company_main`),
+un establecimiento principal por empresa (`uq_establishment_tenant_company_main`), un punto de
+emisión default por establecimiento (`uq_emission_point_establishment_default`), una bodega
+principal por sucursal (`uq_warehouses_tenant_branch_main`) y una lista de precios default por
+empresa (`uq_price_lists_tenant_company_default`). Sucursal, establecimiento, punto de emisión
+y lista de precios desmarcan el anterior al marcar uno nuevo. Ningún caso de uso cambia la
+bodega principal; el índice es su protección.
+
+### Historial
+
+`ConfigurationChangeLog` es append-only y se escribe solo por `IConfigurationChangeLogger`.
+`UpsertAsync` registra las keys `RequiresAudit=true` cuando el valor cambia; también se
+registran los cambios de principal/default anteriores y los campos críticos de `SriSettings`
+(sin certificado binario ni contraseña). `ConfigurationChangeLogGuardrailTests` exige que el
+repositorio dependa del logger. Consulta de solo lectura: `GET /api/v1/configuration/change-log`
+(`erp.companies.update`). No existe UI de historial.
+
+
+## Condiciones de pago y cronogramas
+
+PaymentTerm es el catálogo tenant-wide de plazos; el default del tercero pertenece a
+Company y rol (`CompanyBpPurchaseSettings` / `CompanyBpSalesSettings`).
+`PaymentTermDefaultResolver` resuelve documento explícito activo → default activo del
+tercero → exigir selección explícita. No elige el primer registro ni infiere por días.
+La colección de cuotas pertenece al documento y se conserva al generar CxC/CxP;
+un cambio de catálogo/default no recalcula documentos confirmados. Sales conserva su
+`SalesPaymentSchedule`; Compras y Gastos sus colecciones propias, sin entidad compartida.
+CreditTerm no es el SSOT de esos cronogramas ni se fusiona con PaymentTerm.
+Rationale: [ADR-033](../decisions/ADR-033-payment-term-ssot-and-document-schedules.md).
+
+
+## RIDE
+
+RIDE es lectura/presentación del XML fiscal, sin emitir ni alterar ElectronicDocuments.
+Parsers por tipo producen un modelo neutro; plantilla, branding, renderer y storage
+son contratos separados. QuestPDF es implementación Infrastructure, no contrato de Application.
+El PDF físico se guarda por IFileStorage y su estrategia de nombres; la BD conserva metadatos.
+La caché considera XML, plantilla, branding, renderer y versión de especificación.
+La metadata de autorización se compone fuera del parser; la fecha se presenta en Company.Timezone,
+con ausencia explícita cuando no está disponible. Su huella afecta la versión de plantilla;
+SourceXmlHash sigue representando únicamente XML. No hay otro caché.
+
+Las queries HTTP conservan autorización y scope. `IRideBackgroundDocumentService` es
+una entrada interna verificada: TenantId/CompanyId no vacíos deben coincidir con el contexto;
+delega en IRideDocumentService y el mismo RidePipeline. No autentica artificialmente
+al job ni permite HTTP anónimo. `ElectronicDocumentRideSourceXmlProvider` consume el
+contrato interno de ElectronicDocuments; Ride no referencia Sales ni sus repositorios.
+Adjuntos de Communications conservan PendingSource reintentable y omisión opcional;
+fallos registran etapa/tipo de excepción, nunca XML, tokens, destinatarios ni rutas sensibles.
+Rationale: [ADR-025](../decisions/ADR-025-ride-design-freeze.md).

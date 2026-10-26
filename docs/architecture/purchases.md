@@ -12,6 +12,17 @@ Código: `ERP.Domain/Modules/Purchases`, `ERP.Application/Modules/Purchases`, `E
 
 ## 2. Borrador
 
+### Bodega por línea y aplicación masiva
+
+La bodega pertenece a cada línea Product: una compra admite múltiples bodegas.
+El selector general aplica una bodega a las líneas actuales una sola vez mediante
+`applyGlobalWarehouse`, delegando en `updateLineWarehouse` para actualizar el contexto
+del ítem. No sincroniza permanentemente las líneas mediante watchers; una selección
+individual posterior se conserva. Limpiar el selector general aplica null por el mismo
+flujo. No duplicar recálculos ni validaciones entre ambos selectores. Service conserva
+su tratamiento sin inventario y sin exigencia de bodega.
+
+
 - Requiere un proveedor activo con configuración SRI y una condición de pago (cuotas ≥ 1). Desde una recepción solo una factura genera compra; la NC sigue su propio flujo.
 - Líneas: la bodega debe pertenecer a la sucursal de la compra; el Item debe ser de la empresa; la presentación debe pertenecer al Item y estar activa; el factor de conversión debe ser representable con `ConversionFactorDecimals`; los códigos IVA/ICE seleccionados manualmente deben estar activos en el catálogo SRI. Si el XML trae un impuesto que no está en el catálogo, se rechaza.
 - ICE: el snapshot fiscal de una línea de recepción conserva la tarifa, la base y el importe declarados en el XML (`Source=Xml`); recálculos, prorrateos, confirmación y reapertura no los alteran. Un código ICE inactivo se reconoce solo como dato del XML, nunca como selección manual. La selección manual admite únicamente ICE porcentual activo; ICE específico o mixto sin importe XML se rechaza (`PURCHASE_ICE_DATA_REQUIRED`) y nunca se calcula $0 ni se deriva de la cantidad comercial. No existe cálculo operativo de ICE mixto. Editar cantidad, precio o descuento (de línea o global) de una línea XML con ICE específico, mixto o inactivo se rechaza (`PURCHASE_ICE_XML_EDIT_BLOCKED`) por falta de bases físicas verificables; con ICE porcentual activo la línea pasa a cálculo por tarifa. Las devoluciones prorratean cada fila del snapshot (tarifa conservada).
@@ -320,7 +331,7 @@ sin bodega y no genera inventario; Product conserva la exigencia de bodega.
 ## 8. Pendiente (no operativo)
 
 - Órdenes de compra: existe la columna `PurchaseOrderId`, pero no hay agregado, flujo ni endpoint.
-- Compras mixtas y costos capitalizables: FUTURE; solo existe el flujo manual vigente.
+- Product + Service y las distribuciones de costos externos y transporte XML ya están implementados dentro de los alcances de [§ 2](#2-borrador) y [§ 4](#4-confirmación). La etiqueta histórica «compras mixtas y costos capitalizables — FUTURE» no excluye esos flujos vigentes. Solo las ampliaciones no implementadas ni autorizadas permanecen FUTURE; esta referencia no define ampliaciones adicionales ni obligaciones V1.
 - No existe calendario oficial de días hábiles: el plazo SRI ordinario es informativo y se verifica en SRI en Línea. No existe ventana interna de anulación por empresa.
 
 ## 9. Evidencia
@@ -355,7 +366,7 @@ Desglose XML frontend (2026-10-23): `purchaseXmlBreakdown.test.ts` (9: elegibili
 
 ICE en Compras (2026-10-21): `PurchaseIceSnapshotTests`, `PurchaseIceSpecificResolutionTests`, `PurchaseInvoiceDetailXmlTaxSnapshotTests`, `PurchaseReturnTests` (prorrateo ICE XML) y `PurchaseIceXmlSnapshotPostgreSqlTests` (PostgreSQL real 5/5: persistencia, reapertura, recálculo y descuento bloqueado); frontend `purchaseLineReadiness.test.ts`. Sin migración ni ejecución sobre datos existentes.
 
-Unificación de NC (2026-10-21): `PurchaseReturnEndToEndTests.UnifiedCreditNotes.cs` y `.Reprocessing.cs`, PostgreSQL real 21/21 con SRI simulado; contratos API 24/24; Application focal 79/79; contabilización PostgreSQL de devolución/descuento 6/6; frontend focal 32/32. Cubren salida única, descuento sin inventario, idempotencia, concurrencia, vínculo histórico sin efectos, duplicados, cancelación interna, reversas incompletas y SRI anulado/pendiente/no verificable. Build/lint/TypeScript y gate de arquitectura PASS; límite externo del guardrail general en [entrega](../agent/PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md). Sin migración ni ejecución sobre datos de negocio.
+Unificación de NC (2026-10-21): `PurchaseReturnEndToEndTests.UnifiedCreditNotes.cs` y `.Reprocessing.cs`, PostgreSQL real 21/21 con SRI simulado; contratos API 24/24; Application focal 79/79; contabilización PostgreSQL de devolución/descuento 6/6; frontend focal 32/32. Cubren salida única, descuento sin inventario, idempotencia, concurrencia, vínculo histórico sin efectos, duplicados, cancelación interna, reversas incompletas y SRI anulado/pendiente/no verificable. Build/lint/TypeScript y gate de arquitectura PASS; límite externo del guardrail general en [entrega](../../STATUS.md#estado-de-entrega). Sin migración ni ejecución sobre datos de negocio.
 
 Domain/Application (filtro Items/Inventory/Purchases, 2026-10-19): 354/354 y 551/551 PASS. PostgreSQL 2026-10-19: `PurchaseCancelledStockMovementIntegrationTests`, `ResolvePurchaseReceptionLinesIntegrationTests` y `PurchaseInvoiceConfirmedPostingIntegrationTests` (dentro de 39/39 PASS). Cobertura adicional: `ConfirmPurchaseHandlerTests`, `CancelPurchaseHandlerTests`, `DiscardPurchaseDraftTests`, `PurchaseDraftRecoveryTests`, `PurchaseXmlConfirmationGuardTests`, `PurchaseInvoiceCostProrationConsistencyTests`, `ItemMatchFinderTests`, `ItemMatchConfirmationServiceTests`, `AuthorizePurchaseReturnHandlerTests`, `CancelPurchaseReturnUseCasesTests`, `PurchaseCreditNoteDiscountIntegrationTests`, `SupplierCreditMovementTests`, `PurchaseRetentionConfirmIntegrationTests`.
 

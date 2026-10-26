@@ -12,7 +12,7 @@ Onboarding rápido y fuente principal de reglas globales del proyecto. Cuerpo no
 4. **`/STATUS.md`** — solo estado actual del proyecto. No define reglas técnicas.
 5. **`/FEATURES.md`** — solo funcionalidades y alcance funcional. No define reglas técnicas.
 6. **`/docs/architecture/*`** — documentación técnica extendida; cuerpo normativo completo de cada regla. Puede explicar y detallar, nunca contradecir este archivo.
-7. **`/docs/decisions/*`** — decisiones históricas (ADRs). Explican el *por qué*; no son fuente activa si contradicen una regla vigente aquí o en `docs/architecture/*`.
+7. **`/docs/decisions/*`** — decisiones arquitectónicas vigentes (ADRs). Explican el *por qué* y enlazan la SSOT; no duplican su especificación funcional.
 8. **`/docs/archive/**`** — históricos/snapshots congelados. No usar para implementar, decidir arquitectura, ni definir comportamiento, reglas de negocio, contratos, seguridad o el modelo multiempresa.
 
 ### Regla de precedencia (conflicto entre documentos)
@@ -22,7 +22,7 @@ Onboarding rápido y fuente principal de reglas globales del proyecto. Cuerpo no
 - `/frontend/CLAUDE.md` prevalece solo dentro de `frontend/` si no contradice este archivo.
 - `/STATUS.md` y `/FEATURES.md` no definen reglas técnicas — si un lector encuentra una regla ahí, es un defecto a corregir (moverla a `docs/architecture/*`), no una fuente válida.
 - `docs/architecture/*` no puede contradecir este archivo — si lo hace, se considera desactualizado y debe corregirse para alinearse.
-- `docs/decisions/*` es histórico y no reemplaza las reglas vigentes.
+- `docs/decisions/*` conserva justificaciones arquitectónicas vigentes; no reemplaza las SSOT.
 - `docs/archive/**` es Nivel 4 — solo registro/bitácora, nunca fuente de decisión.
 - Detalle completo de precedencia (incluye CI/scripts ejecutables, seguridad/multi-tenant, catálogo PR bloqueante): [docs/architecture/enforcement.md § Jerarquía de documentación y precedencia](docs/architecture/enforcement.md#jerarquía-de-documentación-y-precedencia).
 
@@ -81,6 +81,6 @@ Actualizar docs de avance → [docs/architecture/enforcement.md § sincronizaci�
 | Precedencia y jerarquía de reglas | [`docs/architecture/enforcement.md`](docs/architecture/enforcement.md) |
 | Arquitectura vigente (diagramas, estado) | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | Acta de congelamiento ERP↔Platform | [`ERP_CORE_FREEZE.md`](ERP_CORE_FREEZE.md) |
-| Decisiones históricas (ADRs) | [`docs/decisions/`](docs/decisions/README.md) |
+| Decisiones arquitectónicas (ADRs) | [`docs/decisions/`](docs/decisions/README.md) |
 | Arranque local, Docker, tests | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) |
 | Índice maestro humano | [`CONTEXT.md`](CONTEXT.md) |

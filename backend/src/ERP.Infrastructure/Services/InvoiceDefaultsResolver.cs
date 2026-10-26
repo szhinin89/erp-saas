@@ -86,7 +86,7 @@ public sealed class InvoiceDefaultsResolver : IInvoiceDefaultsResolver
     }
 
     /// <summary>
-    /// Precedencia P0 (Fase 3/4 de docs/architecture/configuration-engine-target-architecture.md):
+    /// Precedencia (docs/architecture/frozen-infrastructure.md § Valores por Defecto de Facturación):
     /// Branch OrgSetting (<c>invoice.default_warehouse_id</c>) → Warehouse.IsMain de la sucursal
     /// activa → null + selección manual obligatoria. La participación de CashRegister
     /// (precedencia mayor) queda documentada como aclaración pendiente — se resuelve en frontend

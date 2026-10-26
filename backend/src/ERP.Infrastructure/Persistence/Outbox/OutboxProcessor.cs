@@ -68,7 +68,7 @@ internal sealed partial class OutboxProcessor : IOutboxProcessor
 
         // TODO (Phase 4 — Retention): add a separate purge job that deletes or archives
         // OutboxMessages where ProcessedOnUtc < UtcNow - RetentionWindow.
-        // Policy defined in AI-RULES/OUTBOX-RETENTION.md.
+        // Policy defined in docs/architecture/events.md § Outbox Retention Strategy.
         // Do NOT implement here; create a dedicated IOutboxRetentionJob.
     }
 

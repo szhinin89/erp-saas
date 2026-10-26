@@ -99,14 +99,14 @@
   },
   "adr": {
     "index": [
-      "docs/adr/ADR-001-modular-monolith.md",
-      "docs/adr/ADR-002-no-erp-shared.md",
-      "docs/adr/ADR-003-pages-wrapper-only.md",
-      "docs/adr/ADR-004-clean-architecture-enforcement.md",
-      "docs/adr/ADR-005-multi-tenant-query-filters.md",
-      "docs/adr/ADR-006-multi-agent-governance.md"
+      "docs/decisions/ADR-001-modular-monolith.md",
+      "docs/decisions/ADR-002-no-erp-shared.md",
+      "docs/decisions/ADR-003-pages-wrapper-only.md",
+      "docs/decisions/ADR-004-clean-architecture-enforcement.md",
+      "docs/decisions/ADR-005-multi-tenant-query-filters.md",
+      "docs/decisions/ADR-006-multi-agent-governance.md"
     ],
-    "readme": "docs/adr/README.md"
+    "readme": "docs/decisions/README.md"
   },
   "backend": {
     "layering": {

@@ -2,7 +2,7 @@
 
 > Toda infraestructura clasificada como **CLOSED** forma parte de la **Baseline Arquitectónica del ERP**. Ningún cambio funcional podrá modificar su comportamiento sin un nuevo ADR, evidencia técnica, pruebas automatizadas y revisión de compatibilidad hacia atrás.
 
-Esta regla rige a **todas** las infraestructuras transversales declaradas CLOSED en `STATUS.md` (tabla "Módulos FROZEN"), incluyendo —sin limitarse a— las listadas en este documento. Aplica también a toda infraestructura futura que se declare CLOSED bajo el mismo proceso.
+Esta regla rige a **todas** las infraestructuras transversales declaradas CLOSED en `STATUS.md` y en sus decisiones de cierre, incluyendo —sin limitarse a— las listadas en este documento. Aplica también a toda infraestructura futura que se declare CLOSED bajo el mismo proceso.
 
 Implicaciones:
 
@@ -39,6 +39,15 @@ Esta llamada es atómica (advisory lock + transacción propia), concurrentemente
 - Llamar a `IDocumentSequenceRepository.GetForUpdateAsync()` desde capa Application (patrón obsoleto).
 - Implementar lógica propia de numeración en cualquier módulo del ERP.
 - Resetear o decrementar `current_seq` directamente en la BD.
+
+### Configuración de número inicial
+
+La configuración reutiliza DocumentSequence por Company + EmissionPoint + DocTypeCode,
+sin tabla ni contador paralelo por Branch/ambiente. HasBeenUsed representa captura real,
+no se infiere de CurrentSeq > 1. El valor inicial válido está entre 1 y 999999999;
+tras uso real ConfigureNextNumber rechaza cambios (Conflict); no existe ajuste restringido
+operativo en ese comando ni permiso que lo habilite desde documentación. No se captura en Draft ni se libera un número al anular.
+Rationale: [diseño de configuración](../decisions/DOCUMENT-SEQUENCES-DESIGN-02.md).
 
 ### Reglas de evolución
 
@@ -217,73 +226,66 @@ Decisión arquitectónica congelada 2026-07-04. Reemplaza el enum C# fijo `ItemT
 
 Decisión arquitectónica congelada 2026-07-01. **Migrado a org_settings 2026-07-01 (Phase 8).**
 
-Infraestructura transversal del ERP. Gestiona los 5 parámetros por defecto que se precargan al crear una nueva factura de venta. **Fuente de verdad: tabla `org_settings` con `scope=Company`** — ya no `SriSettings`. Los 5 campos fueron eliminados de `SriSettings` y sus columnas dropeadas vía migración `RemoveSriSettingsInvoiceDefaults`.
+Infraestructura transversal del ERP. Gestiona los valores que se precargan al crear una factura de venta. `SriSettings` no almacena defaults de factura. Mecánica común de `org_settings` (catálogo, guardrail de escritura, resolvers, historial): [Backend § Configuración organizacional](./backend.md#configuración-organizacional).
 
 ### Parámetros congelados
 
-| Clave `org_settings` | Tipo | Propósito |
+| Valor | Fuente única | Scope |
 |---|---|---|
-| `invoice.default_doc_type_code` | `String` | Tipo de documento SRI por defecto |
-| `invoice.default_payment_method_code` | `String` | Forma de pago SRI por defecto |
-| `invoice.default_emission_point_id` | `Guid` | Punto de emisión por defecto |
-| `invoice.default_warehouse_id` | `Guid` | Bodega por defecto |
-| `invoice.default_payment_term_id` | `Guid` | Condición de pago por defecto |
+| Tipo de documento SRI | `invoice.default_doc_type_code` | Company |
+| Forma de pago SRI | `invoice.default_payment_method_code` | Company |
+| Condición de pago | `invoice.default_payment_term_id` | Company |
+| Bodega | `invoice.default_warehouse_id` | Branch |
+| Punto de emisión | `EmissionPoint.IsDefault` activo del establecimiento principal activo de la empresa (no es un `org_setting`) | — |
 
-Todos son opcionales: ausencia de fila significa "sin configurar" — el usuario lo seleccionará manualmente en cada factura.
+Todos son opcionales: ausencia de valor significa "sin configurar" y la selección es manual.
+
+### Resolución
+
+`IInvoiceDefaultsResolver` (`InvoiceDefaultsResolver`) es el único punto de resolución. Bodega:
+setting de la sucursal activa (debe existir, estar activa y pertenecer a esa sucursal) →
+`Warehouse.IsMain` de la sucursal → `null` con `RequiresManualWarehouseSelection`. Un valor
+inválido o cruzado no cae al siguiente nivel: devuelve `null`, selección manual y
+`ConfigurationWarnings`. `DefaultWarehouseSource` informa `BranchSetting`, `BranchMainWarehouse`
+o `None`. La bodega de la caja activa la aplica el frontend fuera de este resolver.
+La respuesta incluye las constantes `SriSettings.FallbackDocTypeCode` y
+`SriSettings.FallbackSriPaymentMethodCode` como campos separados de los valores configurados.
 
 ### API pública congelada
 
-```csharp
-// Única operación autorizada para leer los defaults desde módulos de negocio:
-GetSalesInvoiceDefaultsQuery  →  GET /api/v1/electronic-invoicing/invoice-defaults
-
-// Única operación autorizada para mutar los defaults (Company Settings Hub):
-UpdateSalesInvoiceDefaultsCommand  →  PUT /api/v1/electronic-invoicing/sales-defaults
+```text
+GetSalesInvoiceDefaultsQuery              →  GET /api/v1/sales/invoice-defaults ([Authorize])
+GetCompanyInvoiceOrgSettingsQuery         →  GET /api/v1/org-config/company/invoice-defaults (settings.company.view)
+UpsertCompanyInvoiceOrgSettingsCommand    →  PUT /api/v1/org-config/company/invoice-defaults (erp.companies.update)
+GetBranchInvoiceOrgSettingsQuery          →  GET /api/v1/org-config/branch/{branchId}/invoice-defaults (settings.company.view)
+UpsertBranchInvoiceOrgSettingsCommand     →  PUT /api/v1/org-config/branch/{branchId}/invoice-defaults (erp.companies.update)
 ```
-
-El handler lee/escribe via `IOrgSettingsRepository` con `OrgScope.Company`. Los valores fallback SRI (`"01"`) vienen de las constantes `SriSettings.FallbackDocTypeCode` y `SriSettings.FallbackSriPaymentMethodCode`.
 
 ### Componentes congelados
 
-| Componente | Ubicación | Estado |
-|---|---|---|
-| `UpdateSalesInvoiceDefaultsCommand` | `ERP.Application/Modules/ElectronicInvoicing/UseCases/UpdateSalesInvoiceDefaults/` | FROZEN |
-| `UpdateSalesInvoiceDefaultsCommandHandler` | `ERP.Application/Modules/ElectronicInvoicing/UseCases/UpdateSalesInvoiceDefaults/` | FROZEN |
-| `UpdateSalesInvoiceDefaultsCommandValidator` | `ERP.Application/Modules/ElectronicInvoicing/UseCases/UpdateSalesInvoiceDefaults/` | FROZEN |
-| `GetSalesInvoiceDefaultsQueryHandler` | `ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults/` | FROZEN |
-| `GET /electronic-invoicing/sales-defaults` (endpoint) | `ERP.API/Controllers/ElectronicInvoicingController.cs` | FROZEN |
-| `PUT /electronic-invoicing/sales-defaults` (endpoint) | `ERP.API/Controllers/ElectronicInvoicingController.cs` | FROZEN |
-| `salesDefaultsSchema.ts` + `SalesDefaultsValues` | `frontend/src/modules/configuracion/empresa/schemas/` | FROZEN |
-| `SalesDefaultsSettingsSection.tsx` | `frontend/src/modules/configuracion/empresa/sections/` | FROZEN |
-| `salesDefaultsService.getSettings()` / `updateSettings()` | `frontend/src/modules/sales/api/salesDefaultsService.ts` | FROZEN |
-| Tab `'sales-defaults'` en `companySettingsTabs.ts` | `frontend/src/modules/configuracion/empresa/` | FROZEN |
-
-### Reglas permanentes
-
-**Regla 1 — Fuente de verdad**
-Los 5 defaults viven en `org_settings` con `scope=Company`. `SriSettings` no almacena defaults de factura.
-
-**Regla 2 — Todos los campos son opcionales**
-`null` / ausencia de fila es el estado válido para cualquiera de los 5 parámetros. El módulo de ventas debe manejar `null` sin inventar fallbacks de negocio.
-
-**Regla 3 — Separación de concern con Facturación Electrónica**
-Los defaults de factura son un concern de Company Settings, no de Electronic Invoicing. Los endpoints viven en `ElectronicInvoicingController` por afinidad histórica, pero la UI vive en Company Settings Hub (`/settings/company`).
-
-**Regla 4 — Org Config Hierarchy**
-Los defaults de nivel Empresa son el nivel base. Los niveles Sucursal, Establecimiento, PuntoEmisión y Bodega pueden sobrescribir campo a campo via `org-config/{scope}/{id}/invoice-defaults`. El módulo de ventas deberá aplicar la resolución jerárquica al momento de precargar una factura.
+| Componente | Ubicación |
+|---|---|
+| Queries/commands Company y Branch | `ERP.Application/Modules/OrgConfig/UseCases/` |
+| `GetSalesInvoiceDefaultsQueryHandler` | `ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults/` |
+| `IInvoiceDefaultsResolver` / `InvoiceDefaultsResolver` | `ERP.Domain/Modules/Sales/Interfaces/` / `ERP.Infrastructure/Services/` |
+| `OrgConfigController` | `ERP.API/Controllers/OrgConfigController.cs` |
+| `orgConfigService` | `frontend/src/modules/configuracion/empresa/api/orgConfigService.ts` |
+| `CompanySalesSettingsSection.tsx` (defaults Company) | `frontend/src/modules/configuracion/empresa/sections/` |
+| `branchInvoiceDefaultsFacade` + `BranchConfigSection.tsx` (bodega por sucursal) | `frontend/src/modules/configuracion/empresa/facades/`, `frontend/src/modules/branches/components/` |
+| `salesDefaultsService.get()` | `frontend/src/modules/sales/api/salesDefaultsService.ts` |
 
 ### Prohibido en todo el sistema
 
-- Almacenar defaults de factura de venta en `SriSettings` ni en ninguna entidad distinta de `org_settings`.
-- Reintroducir `DefaultDocTypeCode`, `DefaultSriPaymentMethodCode`, `DefaultEmissionPointId`, `DefaultWarehouseId` o `DefaultPaymentTermId` en `SriSettings`.
+- Almacenar defaults de factura de venta en `SriSettings` o en otra entidad distinta de las fuentes de la tabla anterior.
+- Reintroducir `DefaultDocTypeCode`, `DefaultSriPaymentMethodCode`, `DefaultEmissionPointId`, `DefaultWarehouseId` o `DefaultPaymentTermId` en `SriSettings`, o una key de punto de emisión por defecto.
 - Reintroducir `SriSettings.CreateForDefaults()` o `SriSettings.UpdateInvoiceDefaults()`.
-- Usar valores hardcodeados como fallback cuando el campo es `null` en cualquier módulo de negocio.
-- Crear selectores de defaults de factura fuera de la pestaña "Valores por Defecto" del Company Settings Hub.
+- Resolver la bodega por defecto en un handler distinto de `IInvoiceDefaultsResolver` o elegir el primer registro en el cliente.
+- Inventar fallbacks de negocio cuando un valor es `null`.
 
 ### Reglas de evolución
 
-- Un 6.° parámetro por defecto (p. ej. `DefaultCurrencyCode`) se agrega como nueva clave en `OrgSettingKeys.Invoice.*` — sin nueva entidad ni nueva tabla.
-- Cualquier cambio en el contrato de `SalesInvoiceDefaultsDto` (campo nuevo o renombrado) requiere actualizar `GetSalesInvoiceDefaultsQuery`, `UpdateSalesInvoiceDefaultsCommand` y el servicio frontend `salesDefaultsService` de forma sincronizada.
+- Un parámetro adicional se agrega como clave en `OrgSettingKeys.Invoice.*` con su `ConfigurationDefinition` — sin nueva entidad ni tabla.
+- Cualquier cambio en `SalesInvoiceDefaultsDto` requiere actualizar de forma sincronizada `GetSalesInvoiceDefaultsQuery`, `InvoiceDefaultsResolver` y `salesDefaultsService`.
 
 ---
 

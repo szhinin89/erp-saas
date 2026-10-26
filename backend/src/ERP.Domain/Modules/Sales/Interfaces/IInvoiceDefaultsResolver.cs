@@ -3,7 +3,7 @@ namespace ERP.Domain.Modules.Sales.Interfaces;
 /// <summary>
 /// CONFIG-FOUNDATION-P1-04: valores por defecto ya resueltos para una nueva factura de venta.
 /// <see cref="DefaultWarehouseSource"/> es uno de "BranchSetting" | "BranchMainWarehouse" | "None"
-/// (ver Fase 3/4 de docs/architecture/configuration-engine-target-architecture.md — el valor
+/// (ver docs/architecture/frozen-infrastructure.md § Valores por Defecto de Facturación — el valor
 /// "CashRegister", de mayor precedencia, se resuelve en frontend a partir de la sesión de caja
 /// activa, fuera de este resolver).
 /// </summary>

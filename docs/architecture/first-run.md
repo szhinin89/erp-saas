@@ -39,6 +39,8 @@ No existe otra ruta de alta del primer administrador: sin registro anónimo, sin
 | Frontend | `modules/auth/pages/SetupPage.tsx`, `api/setupService.ts`, ruta pública `/setup` | Formulario de alta (Zod + RHF) |
 | Script | `scripts/dev-launcher.ps1` | Arranque local, consulta de estado, navegación a `/setup` o raíz |
 
+Nota técnica: `SystemSetupState.IsFirstRun` permanece en el modelo y se escribe, pero no tiene lectores operativos identificados. Su eliminación requeriría una modificación explícita de la baseline V1, que no está autorizada.
+
 ## Token de instalación
 
 - Mientras `IsInitialized=false`, **cada arranque propietario** de la API emite un token nuevo y reemplaza el anterior, aunque siga vigente. El valor original no es recuperable desde su hash.

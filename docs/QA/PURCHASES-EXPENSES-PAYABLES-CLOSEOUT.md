@@ -2,7 +2,7 @@
 
 Fecha: 2026-09-12. Ticket: **CLOSE-PURCHASES-EXPENSES-PAYABLES-READY-01**.
 
-Estado funcional: **LISTO / CERRADO**, según el [SSOT de entrega](../../STATUS.md#close-purchases-expenses-payables-ready-01--cierre-funcional-2026-09-12). Esta matriz identifica pruebas existentes y el protocolo de regresión; no declara que se hayan vuelto a ejecutar en este cambio documental.
+Estado funcional: **LISTO / CERRADO**, según el [SSOT de entrega](../../STATUS.md#cierres-acreditados-y-límites). Esta matriz identifica pruebas existentes y el protocolo de regresión; no declara que se hayan vuelto a ejecutar en este cambio documental.
 
 ## Cobertura que protege el cierre
 
@@ -36,4 +36,4 @@ Casillas sin marcar a propósito: corresponden a la **próxima regresión**, no 
 - [ ] Verificar origen y líneas contables legibles; cuentas resueltas por reglas/configuración.
 - [ ] Ejecutar E2E/integración del flujo afectado, registrar comando, fecha y resultado. No declarar aprobado por inspección de código solamente.
 
-Los [guardrails y pendientes no bloqueantes](../../STATUS.md#guardrails--no-romper) se mantienen en STATUS para evitar fuentes de estado divergentes. No se certifica aquí la aplicación de migraciones a ambientes ni un cierre contable global.
+Los [guardrails y pendientes no bloqueantes](../architecture/frozen-infrastructure.md) se mantienen en STATUS para evitar fuentes de estado divergentes. No se certifica aquí la aplicación de migraciones a ambientes ni un cierre contable global.

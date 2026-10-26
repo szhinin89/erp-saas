@@ -126,20 +126,15 @@ y regla [SEC-01b / PR-18](./pr-rules-catalog.md#sec-01b--roles-fuente-única-sec
 
 ## Sincronización docs de avance
 
-**Al completar funcionalidad**, actualizar documentación de avance:
+`STATUS.md` es la única fuente de estado de entrega, gates y cierres. Actualizarla
+cuando cambie ese estado, sin copiar reglas funcionales ni cronologías de implementación.
+`FEATURES.md` describe capacidades actuales y enlaza la SSOT; `docs/agent/WORK_QUEUE.md`
+contiene únicamente trabajo abierto autorizado; `docs/ROADMAP.md` conserva planificación futura.
+Actualizar README o runbooks solo si cambian sus entradas o instrucciones de operación.
+No se exige un mapa visual inexistente ni otro espejo manual de avance.
+El dashboard existente tiene sus propias fuentes y scripts; no es autoridad de cierre.
 
-| Documento | Acción |
-|-----------|--------|
-| `PROGRESS.html` | Marcar ítem, `#last-updated`, badge |
-| `STATUS.md` | Resumen, tablas módulos, pendientes MVP, fecha |
-| `docs/ROADMAP.md` | Si cambian prioridades/fases |
-| `README.md` | Si cambia alcance, rutas, endpoints, permisos |
-
-Estados módulo: `✅` completo, `🟡` parcial, `⏳` pendiente, `🚧` en progreso.
-
-Fuente operativa consolidada: **`STATUS.md`**.
-
-Cursor hint: `.cursor/rules/docs-progress-status-sync.mdc` (glob `STATUS.md`).
+Cursor hint: `.cursor/rules/docs-progress-status-sync.mdc`.
 
 ---
 
@@ -282,7 +277,7 @@ Arquitectura para que **Cursor**, **Claude** y futuros agentes lean la misma ver
 
 ## Fuente canónica
 
-**`docs/architecture/*`** es la única fuente donde viven las reglas completas (sustituye al antiguo `AI-RULES/*`, ver [`docs/decisions/archive-ai-rules/README.md`](../decisions/archive-ai-rules/README.md)).
+**`docs/architecture/*`** es la única fuente donde viven las reglas completas (sustituye al antiguo `AI-RULES/*`, ver [`docs/architecture/README.md`](README.md)).
 
 Ningún agente debe inventar convenciones fuera de estos archivos sin confirmación explícita del usuario.
 
@@ -332,8 +327,8 @@ Detalle por check: [§ Guardrails automatizados](#guardrails-automatizados) más
 
 Si entran en conflicto **prompts de IA**, **documentación** o **código sugerido** con el resultado de CI:
 
-1. **Scripts ejecutables** (`tools/architecture/*.mjs`, guardrails PowerShell, tests) tienen **prioridad absoluta**.
-2. **`docs/architecture/*`** prevalece sobre adaptadores (`.mdc`, `CLAUDE.md`, `backend/CLAUDE.md`, `frontend/CLAUDE.md`) en conflictos documentales.
+1. **Scripts ejecutables** (`tools/architecture/*.mjs`, guardrails PowerShell, tests) son el gate técnico obligatorio. Su resultado no redefine las reglas globales del propietario ni autoriza omitirlas; una discrepancia se resuelve explícitamente, sin ignorar el gate.
+2. **`CLAUDE.md`** conserva la precedencia global del propietario. `docs/architecture/*` contiene el detalle canónico y prevalece sobre adaptadores de capa y `.mdc` cuando no contradice esas reglas globales.
 3. **ADRs** (`docs/decisions/`) explican el *por qué*; no anulan un check que falla en CI sin ADR + cambio de config.
 4. Los agentes deben **corregir el código** o **proponer cambio en config/ADR**, no ignorar el fallo del pipeline.
 
@@ -352,16 +347,17 @@ Rationale histórico: [`docs/decisions/ADR-006-multi-agent-governance.md`](../de
 
 Orden de autoridad cuando varias fuentes aplican al mismo cambio.
 
-## Capas (de mayor a menor prioridad normativa)
+## Capas de aplicación bajo las reglas globales
 
 | # | Capa | Ubicación | Rol |
 |---|------|-----------|-----|
+| 0 | **Reglas globales del propietario** | `CLAUDE.md` | Precedencia documental global |
 | 1 | **Scripts ejecutables + CI** | `tools/architecture/*.mjs`, guardrails PS | Bloquean merge si fallan |
 | 2 | **Seguridad / multi-tenant** | [security.md](./security.md) | Innegociable |
 | 3 | **Catálogo PR bloqueante** | [pr-rules-catalog.md](./pr-rules-catalog.md) | B-xx / F-xx |
 | 4 | **Reglas canónicas por área** | [architecture.md](./architecture.md), [backend.md](./backend.md), [frontend.md](./frontend.md), este documento | Implementación diaria |
 | 5 | **Stack y herramientas** | [stack.md](./stack.md) → `docs/DEVELOPMENT.md#stack-oficial` | Solo herramientas aprobadas |
-| 6 | **Adaptadores de agente** | `CLAUDE.md`, `backend/CLAUDE.md`, `frontend/CLAUDE.md`, `.cursor/rules/*.mdc` | Índice + hints Cursor |
+| 6 | **Adaptadores de agente** | `backend/CLAUDE.md`, `frontend/CLAUDE.md`, `.cursor/rules/*.mdc` | Índice + hints bajo CLAUDE.md |
 | 7 | **Contexto descriptivo** | `CONTEXT.md`, `docs/ARCHITECTURE.md`, `STATUS.md` | Estado, diagramas |
 | 8 | **ADRs (rationale)** | [`docs/decisions/`](../decisions/README.md) | **Por qué** se decidió (no enforcement) |
 | 9 | **Docs feature-specific** | `docs/*` | Detalle de dominio |
@@ -379,7 +375,7 @@ Orden de autoridad cuando varias fuentes aplican al mismo cambio.
 1. **Resultado de CI/scripts** prevalece sobre sugerencias de agentes IA.
 2. **Seguridad / tenant / billing** prevalece sobre conveniencia o velocidad.
 3. Entre reglas canónicas: la regla **más específica por área** gana.
-4. Entre `CLAUDE.md`/`backend/CLAUDE.md`/`frontend/CLAUDE.md` y `docs/architecture/*`: **`docs/architecture/*` prevalece** si hay contradicción documental.
+4. `CLAUDE.md` prevalece como regla global del propietario; `docs/architecture/*` es el detalle canónico. Un conflicto se corrige y nunca autoriza omitir un gate de CI.
 5. `.cursor/rules/*.mdc` con `globs` aplican sobre reglas generales **solo en su alcance**.
 
 ## Qué NO es fuente de verdad

@@ -66,7 +66,7 @@ public sealed class PriceListConfiguration : IEntityTypeConfiguration<PriceList>
             .HasDatabaseName("uq_price_lists_tenant_company_code");
 
         // CONFIG-FOUNDATION-P0-01: garantiza en DB que solo exista una lista de precios
-        // default por empresa (Fase 10 de docs/architecture/configuration-engine-target-architecture.md).
+        // default por empresa (docs/architecture/backend.md § Configuración organizacional).
         // Incluye IsDefault en la tupla de columnas (aunque el filtro ya la fija en true) porque
         // EF Core identifica un índice por su lista exacta de propiedades: usar la misma tupla
         // (TenantId, CompanyId) que "ix_price_lists_tenant_company" hace que el segundo

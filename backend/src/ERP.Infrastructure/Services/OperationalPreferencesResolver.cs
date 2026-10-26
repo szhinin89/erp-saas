@@ -14,9 +14,9 @@ namespace ERP.Infrastructure.Services;
 /// ConfigurationDefinitions.cs).
 ///
 /// Manejo de valor faltante/corrupto: cae a un default seguro documentado (ConfigurationDefinition.
-/// DefaultValue) con warning de log — NO fail-closed, a diferencia de la regla general de la
-/// arquitectura objetivo para keys RequiresAudit=true (docs/architecture/
-/// configuration-engine-target-architecture.md Fase 5). Desviación deliberada y acotada a este
+/// DefaultValue) con warning de log — NO fail-closed, a diferencia de la bodega por defecto de factura
+/// (docs/architecture/frozen-infrastructure.md § Valores por Defecto de Facturación).
+/// Desviación deliberada y acotada a este
 /// resolver: estas son preferencias operativas de bajo riesgo con default conservador
 /// documentado (no bodega/certificado/fiscal), y OrgSettingsRepository.UpsertAsync ya impide que
 /// se escriba un valor inválido en el flujo normal — un valor corrupto solo puede llegar aquí por

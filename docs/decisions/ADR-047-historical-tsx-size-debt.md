@@ -1,5 +1,13 @@
 # ADR-047 — Excepción temporal para deuda histórica de tamaño TSX (PR-7)
 
+
+Responsabilidad vigente: justificar las excepciones con techo individual, sin modificar el límite general.
+SSOT de la regla: [catálogo PR](../architecture/pr-rules-catalog.md) y [enforcement](../architecture/enforcement.md).
+Inventario activo único: `tsxMaxLines500` en `tools/architecture/architecture-grandfather.json`.
+Las tablas y cantidades del contexto son la autorización inicial, no una segunda lista activa.
+Dependencias: verificadores PowerShell, integridad Node y fixtures requieren este archivo y su ID.
+No ejecutar las comprobaciones de activación inicial como gate permanente después de retirar excepciones.
+
 ## Status
 
 Accepted — aprobado por el propietario para implementación controlada. Fecha: 2026-10-19.

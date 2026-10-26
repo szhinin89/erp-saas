@@ -243,9 +243,9 @@ Solo cuando se cumplan **todas** las condiciones siguientes:
 
 Sin estas tres condiciones, cualquier capa de compatibilidad es rechazada en PR review.
 
-### Conflicto con EVENT-VERSIONING.md
+### Conflicto con events.md
 
-`EVENT-VERSIONING.md` define política de compatibilidad histórica para **Domain Events y Outbox** (log inmutable). Esa política es independiente y permanece vigente porque:
+`events.md` define política de compatibilidad histórica para **Domain Events y Outbox** (log inmutable). Esa política es independiente y permanece vigente porque:
 - Los mensajes en el Outbox no pueden retroactivamente modificarse.
 - Aplica solo al schema de eventos, no a modelos de dominio, APIs ni Value Objects.
 
@@ -297,7 +297,7 @@ Si la feature es solo frontend o solo API, aplicar las capas que correspondan (p
 | 6 | Tabs Datos vs listado | [FRONTEND-RULES.md#formularios-de-entidad-zh-form-tabs](./frontend.md) |
 | 7 | Copy UX, PageShell | [FRONTEND-RULES.md#copy-ux](./frontend.md) |
 | 8 | Menú sin duplicar `to` | [FRONTEND-RULES.md#menú-estático](./frontend.md) |
-| 9 | IDs sensibles fuera de la URL | [SAAS-RULES.md](./security.md) |
+| 9 | IDs sensibles fuera de la URL | [security.md](./security.md) |
 | 10 | Claves i18n nuevas | [FRONTEND-RULES.md#i18n](./frontend.md) |
 
 **Regla práctica:** en frontend, no bajar a Copy UX sin alinear ZH Form + orden de tabs. En backend, no exponer endpoints sin Validator + reglas dominio/EF.
@@ -623,6 +623,8 @@ Admitir direcciones fuera de Ecuador requiere agregar país a `PhysicalAddress`:
 **Ejemplos — debe ir a BD/servicio:** métodos de pago SRI, tipos de documento SRI, tipos de identificación SRI, régimen tributario, IVA/ICE/retenciones, categorías configurables, motivos operativos, cualquier tipo administrable por el tenant.
 
 **Ejemplos — puede ser enum:** `Draft`/`Authorized`/`Cancelled`, `Pending`/`Processing`/`Failed`, `AuditSource`, `MediaType`, resultados internos de cómputo, flags técnicos no configurables.
+
+Configuración persistida por empresa y scope: [Backend § Configuración organizacional](./backend.md#configuración-organizacional).
 
 Catálogos SRI ya persistidos: ver el inventario de [GLOBAL IMMUTABLE](#global-immutable-schema-global). Constantes frontend que repliquen códigos de estos catálogos (p. ej. para validación Zod síncrona) son válidas solo como espejo de validación — nunca como fuente para poblar selects/listas (eso siempre es API).
 

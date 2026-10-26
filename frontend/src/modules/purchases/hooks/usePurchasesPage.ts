@@ -846,7 +846,7 @@ export function usePurchasesPage() {
     [getValues, setValue, getFieldState, trigger],
   );
 
-  // ── Bodega de línea (ADR-030, regla de arquitectura permanente) ──────
+  // ── Bodega de línea (docs/architecture/purchases.md § Bodega por línea) ──
   // Una compra puede tener líneas en múltiples bodegas — WarehouseId pertenece a la
   // línea, nunca al documento. updateLineWarehouse es el ÚNICO flujo de actualización
   // (Single Source of Truth): asigna warehouseId y, si la línea ya tiene Item, refresca
@@ -863,7 +863,7 @@ export function usePurchasesPage() {
     [getValues, updateLine, fetchItemContext],
   );
 
-  // Aplicación masiva, NO sincronización permanente (ADR-030): corre una única vez, al
+  // Aplicación masiva, NO sincronización permanente (purchases.md § Bodega por línea): corre una única vez, al
   // clic. El selector general no implementa lógica propia — solo guarda el default del
   // documento y delega en updateLineWarehouse línea por línea, exactamente igual que si
   // el usuario hubiera cambiado cada línea manualmente. Un cambio posterior en una línea

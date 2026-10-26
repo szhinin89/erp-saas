@@ -226,7 +226,7 @@ Patrones **explícitamente prohibidos**:
 - Código comentado `// legacy`, bloques `// TODO: remove when migrated`, wrappers `V1`/`V2` coexistentes.
 - Value Objects con rama `if (legacy) { ... }`.
 
-**No aplica** a `EVENT-VERSIONING.md` (Outbox es un log inmutable con sus propias reglas).
+**No aplica** a `events.md` (Outbox es un log inmutable con sus propias reglas).
 
 ### WHY
 Sin clientes productivos, cada capa de compatibilidad es deuda técnica innecesaria que enturbia el diseño real y complica la refactorización futura. El costo de actualizar todos los call-sites ahora es casi cero; el costo de mantener adapters en producción crece indefinidamente.
@@ -1179,7 +1179,7 @@ Equivalente a pre-commit (sin Husky): ejecutar desde raíz del repo:
 
 # MANTENIMIENTO
 
-- Cambios a reglas bloqueantes: PR dedicado + entrada en [STATUS.md](../STATUS.md).
+- Cambios a reglas bloqueantes: PR dedicado + entrada en [STATUS.md](../../STATUS.md).
 - Cursor/Claude: referenciar este archivo en `CONTEXT.md` y `.cursor/rules/rules-consolidated-map.mdc`.
 - Revisión trimestral: alinear con auditorías y métricas CI.
 

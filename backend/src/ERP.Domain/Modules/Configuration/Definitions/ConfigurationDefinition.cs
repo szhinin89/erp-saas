@@ -10,7 +10,7 @@ namespace ERP.Domain.Configuration.Definitions;
 /// Deliberadamente NO contiene: nombre visible, descripción para usuario, help text, i18n key,
 /// orden de UI, pestaña, permiso requerido, ni ningún otro dato de presentación o de acceso —
 /// eso vive en capas superiores (Presentation metadata / Access metadata, fuera de Domain, no
-/// implementadas todavía — ver Fase 4 de docs/architecture/configuration-engine-target-architecture.md).
+/// implementadas — ver docs/architecture/backend.md § Configuración organizacional).
 /// Si algún día un resolver necesita "el nombre visible" de una key, es señal de que se está
 /// mezclando una responsabilidad que no le corresponde a esta clase.
 /// </summary>

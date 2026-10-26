@@ -34,7 +34,7 @@ public sealed class OutboxMessage
 
     /// <summary>
     /// Schema version of the event. Starts at 1; increment when the payload shape changes
-    /// in a way that is not purely additive (see AI-RULES/EVENT-VERSIONING.md).
+    /// in a way that is not purely additive (see docs/architecture/events.md § Event Versioning).
     /// </summary>
     public int EventVersion { get; private set; } = 1;
 

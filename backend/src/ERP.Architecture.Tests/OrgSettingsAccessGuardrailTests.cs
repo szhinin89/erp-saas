@@ -9,7 +9,7 @@ namespace ERP.Architecture.Tests;
 /// test falla si cualquier tipo nuevo en ERP.Application referencia IOrgSettingsRepository fuera
 /// del allowlist explícito — evita que la deuda vuelva a crecer sin que nadie se dé cuenta.
 ///
-/// Allowlist (todos documentados en docs/architecture/configuration-engine-target-architecture.md
+/// Allowlist (regla en docs/architecture/backend.md § Configuración organizacional; entradas
 /// como escritura protegida por ConfigurationDefinitionCatalog o lectura administrativa de UI de
 /// settings, nunca lectura operativa de negocio):
 /// - UpsertBranchInvoiceOrgSettingsCommandHandler / GetBranchInvoiceOrgSettingsQueryHandler

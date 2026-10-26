@@ -135,7 +135,7 @@ public class BranchConfiguration : IEntityTypeConfiguration<Branch>
         builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_branches_tenant_id");
 
         // CONFIG-FOUNDATION-P0-01: garantiza en DB que solo exista una sucursal principal
-        // por empresa (Fase 10 de docs/architecture/configuration-engine-target-architecture.md).
+        // por empresa (docs/architecture/backend.md § Configuración organizacional).
         builder
             .HasIndex(x => new { x.TenantId, x.CompanyId })
             .IsUnique()

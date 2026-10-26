@@ -13,8 +13,8 @@ namespace ERP.Application.Modules.Sales.DTOs;
 /// <c>RequiresManualWarehouseSelection</c> es true, debe exigir selección manual.
 /// <c>DefaultWarehouseSource</c> es uno de: "BranchSetting" | "BranchMainWarehouse" | "None"
 /// (el valor "CashRegister" —de mayor precedencia— se resuelve en frontend a partir de la
-/// sesión de caja activa, fuera de esta query; ver Fase 3/4 de
-/// docs/architecture/configuration-engine-target-architecture.md).
+/// sesión de caja activa, fuera de esta query; ver
+/// docs/architecture/frozen-infrastructure.md § Valores por Defecto de Facturación).
 /// <c>ConfigurationWarnings</c> solo se puebla cuando un valor configurado es inválido
 /// (fail-closed: nunca cae en silencio al siguiente scope).
 /// </summary>

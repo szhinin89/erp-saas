@@ -23,8 +23,7 @@ alwaysApply: true
 | Flujo feature / monorepo | [CORE-ARCHITECTURE.md](../../docs/architecture/architecture.md) |
 | Backend | [BACKEND-RULES.md](../../docs/architecture/backend.md) |
 | Frontend / ZH Form / tabs | [FRONTEND-RULES.md](../../docs/architecture/frontend.md) |
-| SaaS / planes / URL | [SAAS-RULES.md](../../docs/architecture/security.md) |
-| Platform naming (equipo) | [TEAM-NAMING-GUIDE.md](../../docs/platform/TEAM-NAMING-GUIDE.md) |
+| SaaS / planes / URL | [security.md](../../docs/architecture/security.md) |
 | Auth / tenant | [SECURITY.md](../../docs/architecture/security.md) |
 | Stack | [STACK.md](../../docs/architecture/stack.md) |
 | Validación 4 capas / CI | [ENFORCEMENT.md](../../docs/architecture/enforcement.md) |

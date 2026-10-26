@@ -2,11 +2,11 @@
 
 ## Leer antes de modificar código
 
+- `CLAUDE.md`
 - `STATUS.md`
+- `FEATURES.md`
 - `docs/decisions/` (especialmente ADRs vigentes; mínimos relevantes: ADR-040, ADR-041)
-- `docs/agent/PROJECT_STATE.md`
 - `docs/agent/WORK_QUEUE.md`
-- `docs/agent/DECISIONS.md`
 
 ## Reglas globales
 

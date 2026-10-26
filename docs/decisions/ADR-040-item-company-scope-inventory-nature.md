@@ -1,27 +1,28 @@
-# ADR-040 — Item por empresa y naturaleza operativa de inventario
+# ADR-040 — Item por empresa y naturaleza operativa
 
-Estado: Accepted. Fecha: 2026-10-05. Entrega: A1.
+Estado: Accepted. Decisión arquitectónica vigente; no es especificación funcional.
 
 ## Decisión
 
-Item pertenece a Tenant + Company, sin ownership de Branch. La empresa se obtiene del contexto autenticado; no se acepta como autoridad desde el payload. Sin contexto válido, las lecturas quedan cerradas. BusinessPartner conserva su alcance tenant-wide y ADR-017 no cambia.
+Item tiene ownership Tenant + Company, sin ownership Branch. La clasificación
+ItemTypeDefinition y la naturaleza operativa Product/Service son conceptos distintos.
+La participación en inventario no depende de un flag de control de disponibilidad.
 
-`ItemTypeDefinition` es clasificación pura. `ItemNature` es naturaleza operativa independiente, con `Product` y `Service`. Esta decisión aprobada no reabre la infraestructura CLOSED de Tipos de Ítem: sus entidades, catálogo, configuración y comportamiento permanecen intactos. Digital queda FUTURE.
+## Justificación
 
-Product siempre participa en Inventory. Service nunca genera StockMovement, CurrentStock, kardex ni costo promedio de Inventory y no utiliza Warehouse. El Item existente `10001204 — BIS MAN REG 12X10` se migra a Product.
+Separar catálogo compartido por sucursales de su empresa, clasificación administrable
+y comportamiento operativo evita cruzar empresas o confundir desactivar controles con
+suprimir movimientos. BusinessPartner conserva su decisión tenant-wide independiente.
 
-`TracksStock` deja de ser autoridad de participación. Su reemplazo, `StockControlEnabled`, controla la exigencia de existencias, junto con `inventory.stock_control_enabled` de Company (default true). Si cualquiera está OFF, Product mantiene los movimientos sin bloqueo por disponibilidad. Con ambos ON se conserva la validación existente y la excepción existente `AllowSellWithoutStock`. La semántica de stock negativo y su costo se conserva; cualquier evolución corresponde a A2.
+## Responsabilidad y límites
 
-## Aislamiento y persistencia
+No reabre ItemTypeDefinition ni Pricing CLOSED; Digital no está implementado.
+No prescribe migraciones sustituidas ni modifica datos existentes.
 
-SKU, SKU de variante y barcode son únicos por Tenant + Company; código de proveedor por Tenant + Company + Supplier. Los hijos se filtran a través del Item propietario. CompanyId físico en hijos se limita a las columnas shadow necesarias para constraints compuestos de unicidad y FK; no se duplica en el modelo de dominio.
+## SSOT y dependencias
 
-Pricing solamente asocia Items de la misma empresa. Sales, Purchases, Inventory, matching, lookups y reportes resuelven el Item dentro de la empresa autenticada. Los Products conservan Warehouse por línea y el caso multiwarehouse.
-
-## Migración
-
-`20261006002212_ItemCompanyScopeAndInventoryNature` identifica ownership a partir de las referencias operativas existentes y exige una única empresa por Item. Ante referencias a varias empresas aborta. Para Items sin referencias utiliza la única empresa del tenant; si esa asignación resulta ambigua aborta. Conserva datos, convierte el flag existente a control individual y backfillea Nature como Product, incluida la referencia explícita 10001204. Añade FK y unicidad compuestas y restricciones de inventario y barcodes en PostgreSQL.
-
-## Límites y validación
-
-No cambia BusinessPartner, ItemTypeDefinition, ElectronicDocuments ni SRI. No introduce Digital, Promotions ni A2. Se detiene ante ownership compartido, cambios obligatorios en esas infraestructuras o decisiones de costo negativo. Las pruebas críticas usan PostgreSQL real y migraciones completas; las verificaciones finales y sus resultados se registran en el informe A1.
+Comportamiento: [items.md](../architecture/items.md).
+Integración contable: [Accounting](../architecture/accounting.md).
+Instalación vigente: [GLOBAL](../architecture/architecture.md#global-immutable-schema-global).
+Gates/cierres: [STATUS](../../STATUS.md). PostgreSQL real es obligatorio para validar persistencia,
+concurrencia y aislamiento; este ADR no acredita nuevas ejecuciones.

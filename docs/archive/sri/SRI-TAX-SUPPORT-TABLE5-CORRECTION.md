@@ -54,6 +54,6 @@ Corregir etiquetas no permite inferir la intención tributaria de quien seleccio
 - `frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts`.
 - `frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx`.
 - `frontend/src/modules/masterData/pages/MasterDataSuppliersPage.test.tsx`.
-- `STATUS.md`, `docs/agent/PROJECT_STATE.md`, `docs/agent/WORK_QUEUE.md` y este informe.
+- `STATUS.md`, `docs/agent/WORK_QUEUE.md` y este informe.
 
 EF confirma que no hay cambios de modelo pendientes. La fecha UTC del identificador generado de migración es 2026-10-21; fecha local de entrega: 2026-10-20.

@@ -1,6 +1,6 @@
 # Reporte de Stock — pulido UX/UI (2026-10-25)
 
-Implementado para revisión del propietario; **no CLOSED**, pendiente de su gate. Ruta `/reportes/stock`.
+Publicado junto con Kardex en `50a1af3d9`, sobre la base histórica `8a2c3692d`; **no CLOSED**, gate del propietario y smoke autenticado pendientes de acreditar. Ruta `/reportes/stock`. Publicación y CI #999 SUCCESS: [STATUS](../../../STATUS.md#inventario-v1--evidencia-ci-de-referencia).
 
 ## Causa comprobada
 
@@ -34,7 +34,7 @@ Revisados `ReportPageTemplate.tsx/.css`, `page-template.css`, `zh-ui.css`, `lega
 | `git diff --check` y revisión del diff | PASS |
 | Preservación de Kardex | PASS, hashes idénticos |
 
-No suites funcionales completas, backend, bases, migraciones, staging, commit, push ni deploy. El build puede regenerar timestamps en informes Platform: se restituye únicamente esa salida generada, tras comprobar que no hay otros cambios.
+Durante la validación del agente no se ejecutaron suites funcionales completas ni se modificaron backend, bases o migraciones; tampoco se realizó staging, commit, push ni deploy en esa fase. La publicación posterior se identifica al inicio. El build puede regenerar timestamps en informes Platform: se restituye únicamente esa salida generada, tras comprobar que no hay otros cambios.
 
 El primer gate detectó el selector local `.empty-state` como prefijo no permitido. Se corrigió con el modificador local `rpt-stock-results--empty`, que solo activa el layout compacto en vacío; sin cambiar el contrato global. Las 140 pruebas de scripts ya habían pasado y, tras el ajuste de UI, se repitieron las pruebas focales y el runner completo `node ../tools/architecture/run-all.mjs` con ratchet.
 
@@ -68,4 +68,4 @@ npm.cmd run architecture:check
 git diff --check
 ```
 
-Para regenerar las capturas finales, definir `$env:STOCK_CAPTURE_STAGE='after'` antes de la prueba visual. El propietario revisa el diff nuevo junto al diff preexistente de Kardex y realiza staging/commit cuando corresponda.
+Para regenerar las capturas finales, definir `$env:STOCK_CAPTURE_STAGE='after'` antes de la prueba visual. El código de Stock y Kardex ya está publicado; no hay staging ni commit de UX/UI pendientes. Sigue pendiente acreditar el gate del propietario y el smoke autenticado.

@@ -3,7 +3,7 @@ using ERP.Domain.Configuration.Enums;
 
 namespace ERP.Domain.Configuration.Definitions.Modules;
 
-/// <summary>Definitions para OrgSettingKeys.Invoice — ver docs/architecture/configuration-engine-target-architecture.md Fase 3.</summary>
+/// <summary>Definitions para OrgSettingKeys.Invoice — ver docs/architecture/frozen-infrastructure.md § Valores por Defecto de Facturación.</summary>
 public static class InvoiceConfigurationDefinitions
 {
     public static IEnumerable<ConfigurationDefinition> All()

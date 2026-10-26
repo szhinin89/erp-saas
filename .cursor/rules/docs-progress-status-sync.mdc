@@ -6,29 +6,11 @@ alwaysApply: false
 
 # Sincronización de documentación de avance
 
-**Canónico:** [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md#sincronización-docs-de-avance)
+**Canónico:** [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md#sincronización-docs-de-avance). Este adaptador no agrega reglas.
 
-Si editas **`STATUS.md`**, trata el cambio como **actualización de estado del producto**, no como edición aislada.
+- **`STATUS.md`** — única autoridad de estado de entrega, gates, cierres y riesgos vigentes.
+- **`FEATURES.md`** — capacidades actuales con enlace a su SSOT.
+- **`docs/agent/WORK_QUEUE.md`** — solo trabajo abierto autorizado.
+- **`docs/ROADMAP.md`** — planificación futura, sin autoridad funcional.
 
-## Fuente de verdad
-
-1. **`STATUS.md`** — estado operativo consolidado (única fuente oficial)
-2. **`docs/ROADMAP.md`** — prioridades y fases pendientes
-3. **`README.md`** (sección Producto) — resumen de negocio; tablas MVP en **`STATUS.md`**
-
-## Checklist obligatorio (misma sesión de cambio)
-
-| Documento | Actualizar cuando… |
-|-----------|-------------------|
-| **`docs/ROADMAP.md`** | Cambian prioridades, fases o ítems diferidos |
-| **`README.md`** (Producto) + **`STATUS.md`** | Cambia alcance MVP o pendientes comerciales |
-| **`README.md`** | Cambia la tabla de documentación o arranque |
-| **`CONTEXT.md`** | Cambia el mapa de docs |
-| **`docs/ARCHITECTURE.md`** | Decisión arquitectónica nueva |
-| **`docs/DATABASE.md`** | Schema, RLS o política de migraciones |
-
-No crear documentos fuera de la estructura oficial en `docs/`.
-
-## Estados de módulo
-
-Usar: `✅` completo, `🟡` parcial, `⏳` pendiente, `🚧` en progreso.
+Las reglas funcionales viven únicamente en `docs/architecture/*`; no copiarlas en estos documentos.

@@ -2,8 +2,8 @@ namespace ERP.Domain.Configuration.Definitions;
 
 /// <summary>
 /// CONFIG-FOUNDATION-P1-03: qué ocurre cuando una key no tiene valor configurado en ningún scope
-/// de su cadena de precedencia (ver docs/architecture/configuration-engine-target-architecture.md
-/// Fase 3). Es documentación de la estrategia — el resolver tipado de cada dominio sigue siendo
+/// de su cadena de precedencia (ver docs/architecture/backend.md § Configuración organizacional).
+/// Es documentación de la estrategia — el resolver tipado de cada dominio sigue siendo
 /// quien la aplica; esta enum no ejecuta lógica por sí sola.
 /// </summary>
 public enum ConfigurationFallbackStrategy

@@ -27,7 +27,7 @@ El ERP ya tiene Domain Events con Outbox Pattern (ADR-007/008). A medida que cre
 - ✅ Versioning explícito: fácil detectar mensajes v1 vs v2 en queries de analytics
 - ✅ Zero breaking changes por defecto: additive-first protege consumers existentes
 - ✅ Event catalog vivo: nuevos devs entienden qué eventos existen y qué significan
-- ⚠️ Discipline required: devs deben consultar AI-RULES/EVENT-VERSIONING.md antes de modificar un evento
+- ⚠️ Discipline required: devs deben consultar AI-RULES/events.md antes de modificar un evento
 - ⚠️ Doble clase durante migración: temporalmente existirán EventXEvent y EventXEventV2
 
 ## Alternatives Considered

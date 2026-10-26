@@ -84,7 +84,7 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
             .HasFilter("code IS NOT NULL");
 
         // CONFIG-FOUNDATION-P0-01: garantiza en DB que solo exista una bodega principal por
-        // sucursal (Fase 10 de docs/architecture/configuration-engine-target-architecture.md).
+        // sucursal (docs/architecture/backend.md § Configuración organizacional).
         builder
             .HasIndex(x => new
             {

@@ -1,10 +1,10 @@
 # docs/architecture — Fuente canónica de reglas de implementación
 
-**Única fuente de verdad** para reglas de implementación, arquitectura y enforcement del monorepo ERP SaaS ZH Technologies. Sustituye a `AI-RULES/*` (archivado, ver [`docs/decisions/archive-ai-rules/README.md`](../decisions/archive-ai-rules/README.md)).
+**Única fuente de verdad** de comportamiento y contratos implementados, bajo las reglas globales de `CLAUDE.md`.
 
 Cursor, Claude y futuros agentes deben leer **estos archivos** antes de inventar convenciones. `CLAUDE.md`, `backend/CLAUDE.md` y `frontend/CLAUDE.md` son **adaptadores** que enlazan aquí — no duplican el cuerpo de las reglas.
 
-Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECTURE.md). ADRs (por qué se decidió, no enforcement): [`../decisions/`](../decisions/README.md).
+Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECTURE.md). ADRs (decisiones arquitectónicas vigentes y su justificación, no otra especificación funcional): [`../decisions/`](../decisions/README.md).
 
 ---
 
@@ -31,8 +31,6 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 | [visual-messages.md](./visual-messages.md) | **FROZEN** — API `message.*`, store encapsulado (ADR-018) |
 | [modal-standard.md](./modal-standard.md) | **FROZEN** — Componente oficial `ZHModal` |
 | [error-handling.md](./error-handling.md) | Contrato único de errores Backend↔Frontend, categorías, mapeo HTTP, reglas E-B/E-F (ADR-027) |
-| [ARCHITECTURE-BACKLOG.md](./ARCHITECTURE-BACKLOG.md) | Iniciativas de gobernanza/arquitectura (ADR aceptado, migración pendiente) — no es roadmap funcional |
-| [ERROR-HANDLING-AUDIT.md](./ERROR-HANDLING-AUDIT.md) | Auditoría de adopción del contrato de errores por módulo |
 | [saas-commercial-flow.md](./saas-commercial-flow.md) | Flujo comercial SaaS (histórico/Platform, fuera de alcance ERP Core — ver `ERP_CORE_FREEZE.md`) |
 | [`docs/decisions/`](../decisions/README.md) | ADRs — rationale arquitectónico (no duplicar reglas de enforcement aquí) |
 
