@@ -5,6 +5,7 @@ using ERP.Application.Modules.Purchases.Exceptions;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Modules.Retentions.Exceptions;
 using ERP.Application.Modules.Retentions.Services;
+using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
@@ -257,19 +258,29 @@ public sealed class CancelPurchaseHandler
                 .Distinct().ToList();
             var inventoryItemIds = (await _itemRepo.GetByIdsLightAsync(lineItemIds, tid, ct))
                 .Where(i => i.ParticipatesInInventory).Select(i => i.Id).ToHashSet();
-            foreach (var line in inv.Lines)
+            var inventoryLines = inv.Lines
+                .Where(l => l.ItemId is { } id && inventoryItemIds.Contains(id)
+                    && (l.WarehouseId ?? inv.GlobalWarehouseId) is not null)
+                .Select(l => (Line: l, WarehouseId: (l.WarehouseId ?? inv.GlobalWarehouseId)!.Value))
+                .ToList();
+            // INVENTORY-V1-B4: la reversa conserva el importe de la entrada original de cada línea.
+            var entries = MatchPurchaseEntries(inventoryLines,
+                (await _stockRepo.GetMovementsByDocumentAsync(tid, inv.Id, "PurchaseInvoice", ct))
+                    .Where(m => m.CompanyId == cid && m.MovementType == StockMovementType.PurchaseEntry)
+                    .ToList());
+            if (entries is null)
             {
-                if (line.ItemId is not { } itemId || !inventoryItemIds.Contains(itemId))
-                    continue;
-                var warehouseId = line.WarehouseId ?? inv.GlobalWarehouseId;
-                if (warehouseId is null)
-                    continue;
-
+                await _uow.RollbackAsync(ct);
+                return Result<PurchaseInvoiceDto>.ValidationFailure(
+                    "No se pudo identificar de forma inequívoca la entrada de inventario de cada línea de la compra para revertirla.");
+            }
+            foreach (var (line, warehouseId) in inventoryLines)
+            {
                 await _stockRepo.AppendMovementAsync(
                     tid,
                     cid,
-                    itemId,
-                    warehouseId.Value,
+                    line.ItemId!.Value,
+                    warehouseId,
                     StockMovementType.PurchaseCancelled,
                     -line.QuantityInBaseUom,
                     line.BaseUomCode,
@@ -279,7 +290,8 @@ public sealed class CancelPurchaseHandler
                     "PurchaseInvoice",
                     uid,
                     line.LandedUnitCost,
-                    cancellationToken: ct
+                    cancellationToken: ct,
+                    totalCost: entries[line.Id].TotalCost
                 );
             }
 
@@ -331,6 +343,42 @@ public sealed class CancelPurchaseHandler
             await _uow.RollbackAsync(ct);
             throw;
         }
+    }
+
+    /// <summary>
+    /// INVENTORY-V1-B4 — entrada PurchaseEntry original de cada línea inventariable. Con
+    /// SourceDocLineId se valida contra su detalle; una entrada histórica sin él solo se acepta si
+    /// producto, bodega, cantidad base y costo unitario la identifican con una única línea y viceversa.
+    /// Faltante, sobrante o ambigüedad ⇒ null (la anulación falla cerrada).
+    /// </summary>
+    private static Dictionary<Guid, StockMovement>? MatchPurchaseEntries(
+        IReadOnlyList<(PurchaseInvoiceDetail Line, Guid WarehouseId)> lines,
+        IReadOnlyList<StockMovement> entries)
+    {
+        static bool Matches((PurchaseInvoiceDetail Line, Guid WarehouseId) l,
+            StockMovement m) =>
+            m.ProductId == l.Line.ItemId && m.WarehouseId == l.WarehouseId
+            && m.Quantity == l.Line.QuantityInBaseUom && m.UnitCost == l.Line.LandedUnitCost;
+
+        if (entries.Count != lines.Count)
+            return null;
+        var matched = new Dictionary<Guid, StockMovement>();
+        foreach (var entry in entries.Where(m => m.SourceDocLineId.HasValue))
+        {
+            var line = lines.FirstOrDefault(l => l.Line.Id == entry.SourceDocLineId);
+            if (line.Line is null || !Matches(line, entry) || !matched.TryAdd(line.Line.Id, entry))
+                return null;
+        }
+        var pendingLines = lines.Where(l => !matched.ContainsKey(l.Line.Id)).ToList();
+        var unlinked = entries.Where(m => !m.SourceDocLineId.HasValue).ToList();
+        foreach (var line in pendingLines)
+        {
+            var candidates = unlinked.Where(m => Matches(line, m)).ToList();
+            if (candidates.Count != 1 || pendingLines.Count(l => Matches(l, candidates[0])) != 1)
+                return null;
+            matched.Add(line.Line.Id, candidates[0]);
+        }
+        return matched;
     }
 
     private async Task<Result<PurchaseInvoiceDto>> RequestSriAnnulmentAsync(

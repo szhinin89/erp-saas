@@ -162,7 +162,8 @@ public sealed class ConfirmPurchaseHandler
         if (inv is null || inv.BranchId != _b.BranchId)
             return Result<PurchaseInvoiceDto>.NotFound("Compra no encontrada.");
         // ERP-PRECISION-OPERATIONAL-05B: LandedUnitCost se recalcula con unitCostDecimals de la política.
-        inv.ApplyUnitCostPrecision((await _precision.GetEffectiveAsync(ct)).UnitCostDecimals);
+        var precision = await _precision.GetEffectiveAsync(ct);
+        inv.ApplyUnitCostPrecision(precision.UnitCostDecimals);
 
         if (inv.Status != ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft)
             return Result<PurchaseInvoiceDto>.ValidationFailure("Esta compra ya fue confirmada.");
@@ -345,7 +346,13 @@ public sealed class ConfirmPurchaseHandler
         _repo.ReattachSchedulesAsAdded(inv);
 
         // ── STEP 3: Movimientos de inventario ───────────────────────────
-        foreach (var line in inv.Lines)
+        // INVENTORY-V1-B4: el importe de cada entrada es el tramo monetario (AccountingDecimals) del
+        // acumulado de TotalLineCost en el orden persistido de las líneas: la suma de las entradas es
+        // exactamente el costo inventariable contabilizado y el residuo de las asignaciones a 6
+        // decimales queda en la línea donde el acumulado cruza el centavo.
+        var inventoriedCost = 0m;
+        var inventoriedAmount = 0m;
+        foreach (var line in inv.Lines.OrderBy(l => l.SortOrder))
         {
             if (line.ItemId is null)
                 continue;
@@ -367,6 +374,11 @@ public sealed class ConfirmPurchaseHandler
                 );
             }
 
+            inventoriedCost += line.TotalLineCost;
+            var entryAmount = Math.Round(inventoriedCost, precision.AccountingDecimals,
+                MidpointRounding.AwayFromZero) - inventoriedAmount;
+            inventoriedAmount += entryAmount;
+
             await _stockRepo.AppendMovementAsync(
                 tid,
                 cid,
@@ -382,7 +394,9 @@ public sealed class ConfirmPurchaseHandler
                 uid,
                 line.LandedUnitCost,
                 cancellationToken: ct,
-                sourceDocLineId: line.Id
+                sourceDocLineId: line.Id,
+                // Nunca cantidad × LandedUnitCost: LandedUnitCost es solo el costo unitario.
+                totalCost: entryAmount
             );
         }
 

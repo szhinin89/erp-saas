@@ -1,5 +1,17 @@
 # Project Status
 
+## INVENTARIO V1 — B4 solo Product: importe inventariable único Compras/Kardex/Contabilidad — BUG REAL (2026-10-25)
+
+12000 u × 0.1234 con 1.25 % de descuento e IVA 0: Compras y el asiento registraban 1462.29 y el Kardex
+1462.30 (cantidad × `LandedUnitCost` redondeado); 3 × 100 + flete 10 prorrateado dejaba el Kardex en
+309.99 frente a 310.00. Ahora cada entrada recibe el tramo en `AccountingDecimals` del acumulado de
+`TotalLineCost` en el orden persistido (103.33/103.34/103.33): Σ Kardex = asiento. La anulación revierte
+el `TotalCost` exacto de la entrada original; las entradas históricas sin `SourceDocLineId` solo se
+aceptan con identificación inequívoca, si no falla cerrada. Sin migración ni cambios en
+`PurchaseCostDistribution`. Servicios, ICE e IRBPNR sin cambios.
+**Estado: PENDIENTE DE GATE DEL PROPIETARIO, COMMIT, PUSH Y CI** (B4 no CLOSED).
+[SSOT Inventario](docs/architecture/inventory.md#4-valoración-promedio-ponderado) · [SSOT Compras](docs/architecture/purchases.md#5-anulación-confirmed--cancelled).
+
 ## INVENTARIO V1 — Etapa 2A: importe monetario canónico del Kardex (B3) — BUG REAL (2026-10-25)
 
 3 u por 10.00 y tres ventas dejaban cantidad 0 con valor 0.01 (y la compra siguiente lo heredaba);

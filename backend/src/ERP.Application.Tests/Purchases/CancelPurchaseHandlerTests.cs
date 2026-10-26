@@ -272,6 +272,9 @@ public sealed class CancelPurchaseHandlerTests
                 )
             )
             .ReturnsAsync((AccountsPayable?)null);
+        stockRepo.Setup(r => r.GetMovementsByDocumentAsync(TenantId, inv.Id, "PurchaseInvoice",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([PurchaseEntry(inv, inv.Lines[0], 18.58m)]);
         var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
         var result = await handler.Handle(
             new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
@@ -300,10 +303,41 @@ public sealed class CancelPurchaseHandlerTests
                     0.774167m,
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
-                    It.IsAny<CancellationToken>()
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<Guid?>(),
+                    18.58m
                 ),
             Times.Once
         );
+    }
+
+    /// <summary>INVENTORY-V1-B4 — sin la entrada original de la línea no hay reversa: la anulación falla cerrada.</summary>
+    [Fact]
+    public async Task Anulacion_sin_entrada_de_inventario_original_falla_sin_revertir_stock()
+    {
+        var (repo, payableRepo, stockRepo, purchaseReturnRepo, uow) = BuildMocks();
+        var inv = CreateConfirmedInvoiceWithPackagedLine();
+        repo.Setup(r => r.GetByIdAsync(TenantId, inv.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(inv);
+        var handler = BuildHandler(repo, payableRepo, stockRepo, purchaseReturnRepo, uow);
+
+        var result = await handler.Handle(new CancelPurchaseCommand(inv.Id, "Compra duplicada"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        stockRepo.Invocations.Should().NotContain(i => i.Method.Name == nameof(IStockRepository.AppendMovementAsync));
+        uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private static ERP.Domain.Modules.Inventory.Entities.StockMovement PurchaseEntry(
+        PurchaseInvoice inv, PurchaseInvoiceDetail line, decimal totalCost)
+    {
+        var entry = ERP.Domain.Modules.Inventory.Entities.StockMovement.Create(TenantId, BranchId, ItemId, WhId,
+            StockMovementType.PurchaseEntry, line.QuantityInBaseUom, "UNIT", 0m, 1, 0m, 0m, inv.IssueDate,
+            inv.InvoiceNumber, inv.Id, "PurchaseInvoice", UserId, CompanyId, line.LandedUnitCost,
+            sourceDocLineId: line.Id);
+        entry.CompleteValuation(line.LandedUnitCost, false, line.LandedUnitCost, totalCost, totalCost);
+        return entry;
     }
 
     [Fact]

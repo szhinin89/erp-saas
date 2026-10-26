@@ -421,7 +421,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 )
             )
             // 17 parámetros excede la aridad máxima soportada por los overloads genéricos
@@ -819,7 +820,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Once
         );
@@ -926,7 +928,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Once
         );
@@ -965,7 +968,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Never
         );
@@ -1009,7 +1013,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Once
         );
@@ -1051,7 +1056,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Exactly(2)
         );
@@ -1093,7 +1099,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Once
         );
@@ -1116,7 +1123,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Once
         );
@@ -1492,7 +1500,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Exactly(3)
         );
@@ -1517,7 +1526,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Exactly(2)
         );
@@ -1542,7 +1552,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Once
         );
@@ -1621,7 +1632,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Never
         );
@@ -1665,7 +1677,8 @@ public sealed class ConfirmPurchaseHandlerTests
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<CancellationToken>(),
-                    It.IsAny<Guid?>()
+                    It.IsAny<Guid?>(),
+                    It.IsAny<decimal?>()
                 ),
             Times.Once
         );
