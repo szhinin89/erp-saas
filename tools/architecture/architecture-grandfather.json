@@ -143,12 +143,6 @@
       "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
     },
     {
-      "file": "frontend/src/modules/inventory/kardex/pages/KardexPage.tsx",
-      "maxLines": 518,
-      "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
-      "adr": "docs/decisions/ADR-047-historical-tsx-size-debt.md"
-    },
-    {
       "file": "frontend/src/modules/items/catalog/wizard/TreeEditor.tsx",
       "maxLines": 506,
       "baselineCommit": "e38a0a682d6339ec7f230c5b890c4278f3464d10",
