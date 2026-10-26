@@ -19,7 +19,7 @@ public sealed record UpdateOperationalPreferencesCommand(
     ElectronicDocumentsPreferencesInput? ElectronicDocuments,
     NotificationsPreferencesInput? Notifications,
     PayablesPreferencesInput? Payables = null
-) : IRequest<Result<OperationalPreferencesDto>>;
+) : IRequest<Result<OperationalPreferencesDto>>, IRequiresCompanyContext;
 
 public sealed record SalesPosPreferencesInput(
     bool RequireOpenCashSession,

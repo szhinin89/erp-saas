@@ -21,4 +21,4 @@ public sealed record UpdateCompanyEmailSettingsCommand(
     string? ReplyToEmail,
     int? MaxRetries,
     string? DefaultLanguage
-) : IRequest<Result<CommunicationEmailSettingsDto>>;
+) : IRequest<Result<CommunicationEmailSettingsDto>>, IRequiresCompanyContext;

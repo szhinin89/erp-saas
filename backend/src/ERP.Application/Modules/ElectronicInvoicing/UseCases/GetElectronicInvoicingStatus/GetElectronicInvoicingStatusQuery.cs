@@ -14,4 +14,5 @@ namespace ERP.Application.Modules.ElectronicInvoicing.UseCases.GetElectronicInvo
 /// default real para el bootstrap global (<c>false</c>) vs. un check explícito (<c>true</c>).
 /// </summary>
 public sealed record GetElectronicInvoicingStatusQuery(bool CheckConnectivity = true)
-    : IRequest<Result<ElectronicInvoicingStatusDto>>;
+    : IRequest<Result<ElectronicInvoicingStatusDto>>,
+        IRequiresCompanyContext;

@@ -1,5 +1,23 @@
 # Project Status
 
+## SEGURIDAD — SEC-03: aislamiento entre empresas en configuración y retenciones — CORREGIDO (2026-10-26)
+
+13 operaciones COMPANY no declaraban marcador de scope y `CompanyScopeBehavior` no validaba la
+membership de la empresa de `X-Company-Id`: un usuario de A podía leer/modificar el SMTP, la política
+fiscal de Consumidor Final, las preferencias operativas y los defaults de facturación de B, consultar
+el estado de facturación electrónica de B y generar/registrar comprobantes de retención con el
+contexto de B. Corregido protegiendo los 13 requests con el marcador existente
+`IRequiresCompanyContext` (Communications ×3, Retenciones ×3, OrgConfig ×2, política fiscal ×2,
+preferencias operativas ×2, estado FE ×1); `INV_E2` alineado a los namespaces reales (`Purchases`,
+`Caja`) y ampliado a esas operaciones. Evidencia: `CompanySettingsIsolationHttpTests` RED 7/7 (fallos
+esperados sin la corrección); focales PASS: API HTTP/PostgreSQL 15/15, Application 49/49,
+`RetentionsControllerTests` 16/16, Arquitectura 17/17 y `architecture:check`; gate independiente del
+propietario en PowerShell 32/32 PASS. Revisión técnica final PASS y alcance de la corrección aceptado
+por el propietario (2026-10-26). **Estado: SEC-03 corregido y técnicamente validado.** Sin evidencia
+de CI para este cambio hasta publicar su commit. Riesgos conocidos en
+[Riesgos y limitaciones vigentes](#riesgos-y-limitaciones-vigentes).
+[SSOT Seguridad](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
+
 ## INVENTARIO V1 — D-1: aislamiento por empresa de motivos de ajuste — CORREGIDO (2026-10-26)
 
 `InventoryAdjustmentReason` admitía `CompanyId` nulo y se filtraba solo por tenant: una empresa podía
@@ -193,6 +211,15 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
 - **Logs de autenticación anteriores a la corrección de AUTH sensitive logging:** pueden
   contener el campo `successorHash` del evento de rotación de refresh token. No se acredita
   exposición ni incidente; su revisión o depuración depende de la operación de cada entorno.
+- **Aislamiento entre empresas — límites conocidos tras SEC-03** (contrato:
+  [security.md](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant)):
+  `UpdateCustomerRoleConfigValidator` (request TENANT) comprueba códigos de catálogo contra la
+  empresa del contexto; `CreateCompanyUserPreferences` es un consumidor interno sin marcador de
+  empresa; la resolución de permisos usa la única membership del usuario cuando la empresa del
+  header no tiene membership, por lo que una operación COMPANY sin marcador ni guard no quedaría
+  protegida; `INV_E2` no cubre todos los módulos ni detecta un marcador TENANT puesto por error.
+  Impacto acreditado: como máximo, el validador revela si un código existe en el catálogo de otra
+  empresa; no se acredita lectura ni escritura de sus datos.
 
 ## Consolidación documental
 

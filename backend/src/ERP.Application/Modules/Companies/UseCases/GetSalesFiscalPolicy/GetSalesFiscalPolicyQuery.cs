@@ -5,4 +5,6 @@ using MediatR;
 namespace ERP.Application.Modules.Companies.UseCases.GetSalesFiscalPolicy;
 
 /// <summary>Lee la política fiscal de Consumidor Final de la empresa activa (tab Fiscal/Tributario).</summary>
-public sealed record GetSalesFiscalPolicyQuery : IRequest<Result<SalesFiscalPolicyDto>>;
+public sealed record GetSalesFiscalPolicyQuery
+    : IRequest<Result<SalesFiscalPolicyDto>>,
+        IRequiresCompanyContext;

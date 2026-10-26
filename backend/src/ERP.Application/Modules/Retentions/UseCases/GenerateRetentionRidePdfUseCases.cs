@@ -15,7 +15,9 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 /// 03E) → PDF (<see cref="IRetentionRidePdfService"/>, 03E). Sin lógica propia, sin cache: cada
 /// llamada genera XML y PDF de nuevo. No firma, no envía al SRI, no persiste nada.
 /// </summary>
-public sealed record GenerateRetentionRidePdfQuery(Guid RetentionId) : IRequest<Result<byte[]>>;
+public sealed record GenerateRetentionRidePdfQuery(Guid RetentionId)
+    : IRequest<Result<byte[]>>,
+        IRequiresCompanyContext;
 
 // ── Validator ───────────────────────────────────────────────────────────
 

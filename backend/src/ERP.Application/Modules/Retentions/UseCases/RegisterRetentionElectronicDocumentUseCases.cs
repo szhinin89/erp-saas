@@ -19,7 +19,8 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 /// módulo origen resuelto server-side (<see cref="IRetentionSourceAccess.CanOperateAsync"/>).
 /// </summary>
 public sealed record RegisterRetentionElectronicDocumentCommand(Guid RetentionId)
-    : IRequest<Result<ElectronicDocumentDto>>;
+    : IRequest<Result<ElectronicDocumentDto>>,
+        IRequiresCompanyContext;
 
 // ── Validator ───────────────────────────────────────────────────────────
 

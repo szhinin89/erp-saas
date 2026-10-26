@@ -13,6 +13,16 @@ Canónico para identidad y aislamiento. Detalle descriptivo: `docs/IDENTITY.md`,
 - Frontend: no enviar `tenantId` en formularios tenant-scoped.
 - URLs: no UUID tenant en query — ver [SaaS — IDs sensibles fuera de la URL](#saas--ids-sensibles-fuera-de-la-url) más abajo.
 
+### Aislamiento entre empresas del mismo tenant
+
+Una empresa no consulta, modifica, usa ni afecta datos operativos de otra, aunque compartan tenant. Solo se comparten los datos TENANT (p. ej. BusinessPartner, `ITenantScopedRequest`) y GLOBAL/plataforma expresamente definidos.
+
+- La empresa activa llega en `X-Company-Id` (`ICurrentCompany`) y **no es autoridad por sí sola**: la valida `CompanyScopeBehavior` vía `ICompanyAccessGuard` (empresa del tenant, operativa y con membership activa del usuario, o operador autorizado) para todo request `ICompanyScopedRequest` / `IRequiresCompanyContext` / `IBranchScopedRequest`. Rechazo: 403 `COMPANY_SCOPE_FORBIDDEN`. Un `ExplicitCompanyId` del cliente debe coincidir con la empresa activa.
+- Los filtros globales EF por empresa (`ICompanyOperationalEntity`, `ICompanyScopedEntity`) usan esa misma empresa activa, fail-closed sin contexto; no reemplazan la validación de membership.
+- La autorización `perm:*` no valida la empresa del header (la empresa operativa del permiso puede resolverse por la única membership del usuario en el tenant). Por eso **toda operación COMPANY expuesta por la API declara su marcador** o, como única alternativa existente, valida con el guard explícito en el handler (`RequireCurrentCompanyAsync` / `RequireMembershipAsync`, p. ej. perfil de empresa). Excepción conocida: `CreateCompanyUserPreferences`, consumidor interno sin endpoint propio (riesgo registrado en [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes)).
+- `ITenantScopedRequest` valida solo el tenant: no se usa para leer ni escribir datos de una empresa. Excepción conocida: `UpdateCustomerRoleConfigValidator` comprueba la existencia de códigos en catálogos de la empresa del contexto (riesgo registrado en STATUS).
+- Guardrail: `INV_E2` (`TenantIsolationInvariantTests`) exige marcador explícito, de cualquier scope, en los namespaces COMPANY que enumera; no cubre todos los módulos ni distingue un marcador TENANT puesto por error.
+
 ### Prohibiciones backend (resumen)
 
 - `IgnoreQueryFilters()` sin `PlatformQueryReason`

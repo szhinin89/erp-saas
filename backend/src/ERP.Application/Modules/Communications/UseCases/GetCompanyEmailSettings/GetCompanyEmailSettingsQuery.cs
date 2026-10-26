@@ -4,4 +4,6 @@ using MediatR;
 
 namespace ERP.Application.Modules.Communications.UseCases.GetCompanyEmailSettings;
 
-public sealed record GetCompanyEmailSettingsQuery : IRequest<Result<CommunicationEmailSettingsDto>>;
+public sealed record GetCompanyEmailSettingsQuery
+    : IRequest<Result<CommunicationEmailSettingsDto>>,
+        IRequiresCompanyContext;

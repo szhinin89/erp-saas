@@ -10,4 +10,5 @@ namespace ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmoun
 /// no editable.
 /// </summary>
 public sealed record UpdateConsumerFinalMaxAmountCommand(decimal ConsumerFinalMaxAmount)
-    : IRequest<Result<SalesFiscalPolicyDto>>;
+    : IRequest<Result<SalesFiscalPolicyDto>>,
+        IRequiresCompanyContext;

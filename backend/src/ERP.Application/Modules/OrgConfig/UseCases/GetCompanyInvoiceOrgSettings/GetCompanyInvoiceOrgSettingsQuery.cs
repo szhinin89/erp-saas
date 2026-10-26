@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.OrgConfig.UseCases.GetCompanyInvoiceOrgSettings;
 
 public sealed record GetCompanyInvoiceOrgSettingsQuery
-    : IRequest<Result<CompanyInvoiceOrgSettingsDto>>;
+    : IRequest<Result<CompanyInvoiceOrgSettingsDto>>,
+        IRequiresCompanyContext;

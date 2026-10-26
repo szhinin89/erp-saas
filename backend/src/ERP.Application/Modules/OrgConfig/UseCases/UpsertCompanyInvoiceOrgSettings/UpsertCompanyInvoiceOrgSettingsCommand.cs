@@ -8,4 +8,4 @@ public sealed record UpsertCompanyInvoiceOrgSettingsCommand(
     string? DefaultDocTypeCode,
     string? DefaultSriPaymentMethodCode,
     Guid? DefaultPaymentTermId
-) : IRequest<Result<CompanyInvoiceOrgSettingsDto>>;
+) : IRequest<Result<CompanyInvoiceOrgSettingsDto>>, IRequiresCompanyContext;

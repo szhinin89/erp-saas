@@ -17,7 +17,8 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 /// vuelve a generar el XML en memoria a partir del estado actual de la retención.
 /// </summary>
 public sealed record GenerateRetentionXmlQuery(Guid RetentionId)
-    : IRequest<Result<ElectronicDocumentXml>>;
+    : IRequest<Result<ElectronicDocumentXml>>,
+        IRequiresCompanyContext;
 
 // ── Validator ───────────────────────────────────────────────────────────
 

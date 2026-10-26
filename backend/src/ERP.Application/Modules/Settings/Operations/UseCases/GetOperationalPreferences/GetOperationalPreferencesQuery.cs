@@ -4,4 +4,6 @@ using MediatR;
 
 namespace ERP.Application.Modules.Settings.Operations.UseCases.GetOperationalPreferences;
 
-public sealed record GetOperationalPreferencesQuery : IRequest<Result<OperationalPreferencesDto>>;
+public sealed record GetOperationalPreferencesQuery
+    : IRequest<Result<OperationalPreferencesDto>>,
+        IRequiresCompanyContext;

@@ -5,4 +5,5 @@ using MediatR;
 namespace ERP.Application.Modules.Communications.UseCases.SendTestEmail;
 
 public sealed record SendTestEmailCommand(string ToEmail)
-    : IRequest<Result<SendTestEmailResultDto>>;
+    : IRequest<Result<SendTestEmailResultDto>>,
+        IRequiresCompanyContext;

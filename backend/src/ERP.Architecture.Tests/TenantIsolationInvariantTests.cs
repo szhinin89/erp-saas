@@ -254,6 +254,9 @@ public sealed class TenantIsolationInvariantTests
     /// <summary>
     /// INV-E2: Todo request MediatR en módulos COMPANY debe declarar scope explícito.
     /// Previene requests sin validación de tenant context.
+    /// SEC-03: prefijos alineados a los namespaces reales (Purchases, Caja) y ampliados a las
+    /// operaciones COMPANY que estaban sin marcador. Companies y ElectronicInvoicing se listan por
+    /// caso de uso porque esos módulos también contienen operaciones TENANT/GLOBAL legítimas.
     /// </summary>
     [Fact]
     public void INV_E2_company_module_requests_must_declare_explicit_scope()
@@ -261,10 +264,17 @@ public sealed class TenantIsolationInvariantTests
         var companyModulePrefixes = new[]
         {
             "ERP.Application.Modules.Sales",
-            "ERP.Application.Modules.Purchasing",
+            "ERP.Application.Modules.Purchases",
             "ERP.Application.Modules.Inventory",
             "ERP.Application.Modules.Accounting",
-            "ERP.Application.Modules.Cash",
+            "ERP.Application.Modules.Caja",
+            "ERP.Application.Modules.Communications",
+            "ERP.Application.Modules.Retentions",
+            "ERP.Application.Modules.OrgConfig",
+            "ERP.Application.Modules.Settings.Operations",
+            "ERP.Application.Modules.Companies.UseCases.GetSalesFiscalPolicy",
+            "ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount",
+            "ERP.Application.Modules.ElectronicInvoicing.UseCases.GetElectronicInvoicingStatus",
             "ERP.Application.Sales",
         };
 
