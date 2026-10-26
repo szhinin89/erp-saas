@@ -44,7 +44,9 @@ CI acumulativo: [CI #999](#inventario-v1--evidencia-ci-de-referencia).
 Publicados en `50a1af3d9`, sobre la base histórica `8a2c3692d`. Kardex y selector: 32/32 PASS
 focales registrados; Reporte de Stock: 17/17 PASS. La excepción obsoleta de tamaño de Kardex
 se retiró en `6c5c8c111`. Sin cambios funcionales de inventario.
-**Estado: PUBLICADO; gate del propietario y smoke autenticado pendientes de acreditar; no CLOSED.**
+**Estado: PUBLICADO; Kardex y Reporte de Stock aceptados por el propietario (comunicado 2026-10-26).**
+La aceptación se apoya en la evidencia ya registrada; no se ejecutó un nuevo smoke autenticado ni
+se obtuvieron evidencias nuevas.
 Limitaciones de fixtures, fuentes e hidratación en las evidencias de
 [Kardex](docs/evidence/kardex-ux-01/README.md), [selector](docs/evidence/kardex-ux-01/selector/README.md)
 y [Stock](docs/evidence/stock-report-ux-01/README.md).
@@ -71,10 +73,16 @@ Referencia publicada: `fa7b2d842b457c7d2fbe2faef8d065cd01ecf4da`.
 en los logs; `backend / Backend (application)` SUCCESS. Acredita solo las pruebas que ejecutó el
 pipeline; no acredita un despliegue.
 
+Referencia publicada: `fce60ea1d52614fee5ce0f84c231df2643b18485`.
+[CI #1002](https://github.com/szhinin89/erp-saas/actions/runs/40357020744), intento 1: **SUCCESS**.
+Resultado acumulativo del pipeline; no acredita un smoke autenticado, una aceptación del
+propietario ni un despliegue.
+
 ## Estado de entrega
 
 Preproducción. Actualización documental: 2026-10-26. Este archivo conserva resultados
-ya registrados; no acredita nuevas ejecuciones, aceptación del propietario ni despliegues.
+ya registrados; no acredita nuevas ejecuciones ni despliegues. Las aceptaciones del
+propietario se registran solo donde se indican expresamente.
 Reglas funcionales únicamente en las [SSOT](docs/architecture/README.md).
 
 | Entrega | Evidencia registrada | Estado / límite pendiente |
@@ -176,5 +184,6 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
 ## Consolidación documental
 
 2026-10-26: edición autorizada de documentos e índice ADR, sin lógica, pruebas funcionales,
-base de datos, migraciones, capturas o logs. Revisión del propietario, staging y commit pendientes.
+base de datos, migraciones, capturas o logs. Publicada en `ba06799ac99b883bcca289d914c69f4cb261f672`;
+[CI #1000](#inventario-v1--evidencia-ci-de-referencia) SUCCESS.
 Trabajo abierto: [WORK_QUEUE](docs/agent/WORK_QUEUE.md). Futuro: [ROADMAP](docs/ROADMAP.md).
