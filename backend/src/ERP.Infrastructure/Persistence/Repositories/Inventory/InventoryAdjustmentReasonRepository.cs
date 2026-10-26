@@ -27,7 +27,6 @@ public sealed class InventoryAdjustmentReasonRepository : IInventoryAdjustmentRe
         CancellationToken ct = default
     ) =>
         _db.Set<InventoryAdjustmentReason>()
-            .AsPlatformQuery()
             .FirstOrDefaultAsync(
                 r => r.TenantId == tenantId && r.Code == code.Trim().ToUpper(),
                 ct
@@ -35,7 +34,6 @@ public sealed class InventoryAdjustmentReasonRepository : IInventoryAdjustmentRe
 
     public async Task<IReadOnlyList<InventoryAdjustmentReason>> ListAsync(
         Guid tenantId,
-        Guid? companyId,
         bool includeInactive,
         CancellationToken ct = default
     )
@@ -43,8 +41,6 @@ public sealed class InventoryAdjustmentReasonRepository : IInventoryAdjustmentRe
         var q = _db.Set<InventoryAdjustmentReason>().Where(r => r.TenantId == tenantId);
         if (!includeInactive)
             q = q.Where(r => r.IsActive);
-        if (companyId.HasValue)
-            q = q.Where(r => r.CompanyId == null || r.CompanyId == companyId.Value);
 
         return await q.OrderBy(r => r.SortOrder).ThenBy(r => r.Name).ToListAsync(ct);
     }

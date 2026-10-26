@@ -12,7 +12,7 @@ public sealed record UpdateInventoryAdjustmentReasonCommand(
     string AllowedMovementType,
     bool RequiresNotes,
     int SortOrder
-) : IRequest<Result<InventoryAdjustmentReasonDto>>, ITenantScopedRequest;
+) : IRequest<Result<InventoryAdjustmentReasonDto>>, ICompanyScopedRequest;
 
 public sealed class UpdateInventoryAdjustmentReasonValidator
     : AbstractValidator<UpdateInventoryAdjustmentReasonCommand>

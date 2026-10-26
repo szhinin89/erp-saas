@@ -667,7 +667,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
                     code = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     allowed_movement_type = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
@@ -8294,9 +8294,9 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "uq_inventory_adjustment_reasons_tenant_code",
+                name: "uq_inventory_adjustment_reasons_tenant_company_code",
                 table: "inventory_adjustment_reasons",
-                columns: new[] { "tenant_id", "code" },
+                columns: new[] { "tenant_id", "company_id", "code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

@@ -87,7 +87,7 @@ public sealed class StockAdjustmentBranchOwnershipTests
     ) =>
         InventoryAdjustmentReason.Create(
             TenantId,
-            null,
+            CompanyId,
             "MERMA",
             "Merma",
             allowedMovementType,
@@ -582,7 +582,7 @@ public sealed class StockAdjustmentBranchOwnershipTests
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
             ReasonRepo
-                .Setup(r => r.ListAsync(TenantId, null, true, It.IsAny<CancellationToken>()))
+                .Setup(r => r.ListAsync(TenantId, true, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Array.Empty<InventoryAdjustmentReason>());
         }
 

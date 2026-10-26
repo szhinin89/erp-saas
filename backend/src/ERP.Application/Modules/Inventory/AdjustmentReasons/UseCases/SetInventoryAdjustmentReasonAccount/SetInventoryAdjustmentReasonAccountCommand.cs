@@ -11,7 +11,7 @@ namespace ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.SetInvent
 
 /// <summary>
 /// ACCOUNTING-12A — configura la cuenta contable del motivo para la Company activa (contexto
-/// autenticado, nunca desde el body). El maestro tenant-wide no guarda cuenta.
+/// autenticado, nunca desde el body). El motivo pertenece a esa misma Company y no guarda cuenta.
 /// </summary>
 public sealed record SetInventoryAdjustmentReasonAccountCommand(Guid ReasonId, Guid AccountingAccountId)
     : IRequest<Result<InventoryAdjustmentReasonDto>>,
@@ -45,7 +45,7 @@ public sealed class SetInventoryAdjustmentReasonAccountHandler(
         var companyId = company.CompanyId;
 
         var reason = await reasons.GetByIdAsync(tenantId, cmd.ReasonId, ct);
-        if (reason is null || (reason.CompanyId is { } reasonCompany && reasonCompany != companyId))
+        if (reason is null)
             return Result<InventoryAdjustmentReasonDto>.NotFound("Motivo no encontrado.");
 
         var account = await accounts.GetByIdAsync(tenantId, companyId, cmd.AccountingAccountId, ct);

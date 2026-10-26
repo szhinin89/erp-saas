@@ -12,6 +12,7 @@ namespace ERP.Application.Tests.Inventory.Stock;
 public sealed class InventoryAdjustmentReasonTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
 
     [Fact]
@@ -25,7 +26,7 @@ public sealed class InventoryAdjustmentReasonTests
 
         var existing = InventoryAdjustmentReason.Create(
             TenantId,
-            null,
+            CompanyId,
             "MERMA",
             "Merma",
             InventoryAdjustmentReason.Ambos,
@@ -39,6 +40,7 @@ public sealed class InventoryAdjustmentReasonTests
         var handler = new CreateInventoryAdjustmentReasonCommandHandler(
             repo.Object,
             tenant.Object,
+            Company().Object,
             user.Object
         );
 
@@ -62,11 +64,65 @@ public sealed class InventoryAdjustmentReasonTests
     }
 
     [Fact]
+    public async Task Crear_motivo_asigna_la_empresa_del_contexto()
+    {
+        var repo = new Mock<IInventoryAdjustmentReasonRepository>();
+        InventoryAdjustmentReason? added = null;
+        repo.Setup(r => r.AddAsync(It.IsAny<InventoryAdjustmentReason>(), It.IsAny<CancellationToken>()))
+            .Callback<InventoryAdjustmentReason, CancellationToken>((r, _) => added = r);
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var user = new Mock<ICurrentUser>();
+        user.Setup(u => u.UserId).Returns(UserId);
+
+        var handler = new CreateInventoryAdjustmentReasonCommandHandler(
+            repo.Object,
+            tenant.Object,
+            Company().Object,
+            user.Object
+        );
+
+        var result = await handler.Handle(
+            new CreateInventoryAdjustmentReasonCommand(
+                null,
+                "MERMA",
+                "Merma",
+                InventoryAdjustmentReason.Ambos,
+                false,
+                1
+            ),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        added!.TenantId.Should().Be(TenantId);
+        added.CompanyId.Should().Be(CompanyId);
+    }
+
+    [Fact]
+    public void Crear_motivo_sin_empresa_es_rechazado()
+    {
+        var act = () =>
+            InventoryAdjustmentReason.Create(
+                TenantId,
+                Guid.Empty,
+                "MERMA",
+                "Merma",
+                InventoryAdjustmentReason.Ambos,
+                false,
+                1,
+                UserId
+            );
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
     public void AllowsMovementType_respeta_restriccion_de_tipo()
     {
         var ingresoOnly = InventoryAdjustmentReason.Create(
             TenantId,
-            null,
+            CompanyId,
             "ING",
             "Solo ingreso",
             InventoryAdjustmentReason.Ingreso,
@@ -84,7 +140,7 @@ public sealed class InventoryAdjustmentReasonTests
     {
         var reason = InventoryAdjustmentReason.Create(
             TenantId,
-            null,
+            CompanyId,
             "MERMA",
             "Merma",
             InventoryAdjustmentReason.Ambos,
@@ -101,5 +157,12 @@ public sealed class InventoryAdjustmentReasonTests
 
         reason.Enable(UserId);
         reason.IsActive.Should().BeTrue();
+    }
+
+    private static Mock<ICurrentCompany> Company()
+    {
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(CompanyId);
+        return company;
     }
 }

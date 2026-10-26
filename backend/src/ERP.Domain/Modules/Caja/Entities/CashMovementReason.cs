@@ -5,9 +5,9 @@ namespace ERP.Domain.Modules.Caja.Entities;
 
 /// <summary>
 /// TREASURY-CASH-MANUAL-MOVEMENTS-01 — catálogo administrable de motivos para movimientos
-/// manuales de caja (SSOT dinámico — CLAUDE.md § Catálogos y datos configurables). A diferencia de
-/// <c>InventoryAdjustmentReason</c> (CompanyId nullable = tenant-wide), aquí el scope es SIEMPRE
-/// Tenant+Company (obligatorio) — un motivo nunca se comparte entre empresas del mismo tenant.
+/// manuales de caja (SSOT dinámico — CLAUDE.md § Catálogos y datos configurables). Igual que
+/// <c>InventoryAdjustmentReason</c>, el scope es SIEMPRE Tenant+Company (obligatorio) — un motivo
+/// nunca se comparte entre empresas del mismo tenant.
 /// <see cref="MovementType"/> restringe el motivo a exactamente un tipo manual
 /// (<see cref="CashMovementType.ManualIncome"/>/<see cref="CashMovementType.ManualExpense"/>/
 /// <see cref="CashMovementType.Withdrawal"/>) — nunca a los tipos de sistema (Opening/SaleIncome/
@@ -32,7 +32,7 @@ public sealed class CashMovementReason
     /// ManualIncome, Debe en ManualExpense/Withdrawal). El motivo ya es Tenant+Company (nunca se
     /// comparte entre empresas), así que la cuenta vive aquí — mismo criterio que
     /// <c>CashRegister.AccountingAccountId</c>; no hace falta una tabla puente por Company como
-    /// <c>InventoryAdjustmentReasonAccount</c> (cuyo motivo es tenant-wide). Null = sin configurar: el
+    /// <c>InventoryAdjustmentReasonAccount</c>. Null = sin configurar: el
     /// movimiento opera y su obligación contable queda Failed hasta configurarla (sin fallback).
     /// Solo se muta mediante <see cref="SetAccountingAccount"/>.
     /// </summary>

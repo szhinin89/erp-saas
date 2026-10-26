@@ -4,12 +4,14 @@ namespace ERP.Domain.Modules.Inventory.Entities;
 
 /// <summary>
 /// Catálogo administrable de motivos de ajuste de inventario (SSOT dinámico — CLAUDE.md § Catálogos
-/// y datos configurables). INVENTORY-ADJUSTMENTS-02. <see cref="CompanyId"/> es nullable: null =
-/// motivo disponible para todo el tenant (todas las empresas), valor concreto = motivo restringido
-/// a esa empresa. No existe un precedente exacto de "catálogo nullable-company" en el código — se
-/// modela como columna nullable simple, sin FK obligatoria.
+/// y datos configurables). INVENTORY-ADJUSTMENTS-02. Dato COMPANY: Tenant+Company obligatorios, igual
+/// que <c>CashMovementReason</c> — un motivo nunca se comparte entre empresas del mismo tenant; el
+/// filtro global fail-closed de <see cref="ICompanyOperationalEntity"/> aísla toda lectura.
 /// </summary>
-public sealed class InventoryAdjustmentReason : MasterEntity, ITenantScopedEntity
+public sealed class InventoryAdjustmentReason
+    : MasterEntity,
+        ITenantScopedEntity,
+        ICompanyOperationalEntity
 {
     public const int CodeMaxLen = 30;
     public const int NameMaxLen = 150;
@@ -19,8 +21,7 @@ public sealed class InventoryAdjustmentReason : MasterEntity, ITenantScopedEntit
     public const string Egreso = "Egreso";
     public const string Ambos = "Ambos";
 
-    /// <summary>Null = motivo disponible para todas las empresas del tenant (tenant-wide).</summary>
-    public Guid? CompanyId { get; private set; }
+    public Guid CompanyId { get; private set; }
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public string AllowedMovementType { get; private set; } = null!;
@@ -31,7 +32,7 @@ public sealed class InventoryAdjustmentReason : MasterEntity, ITenantScopedEntit
 
     public static InventoryAdjustmentReason Create(
         Guid tenantId,
-        Guid? companyId,
+        Guid companyId,
         string code,
         string name,
         string allowedMovementType,
@@ -40,6 +41,8 @@ public sealed class InventoryAdjustmentReason : MasterEntity, ITenantScopedEntit
         Guid createdBy
     )
     {
+        if (companyId == Guid.Empty)
+            throw new ArgumentException("La empresa es obligatoria.", nameof(companyId));
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("El código es obligatorio.", nameof(code));
         if (string.IsNullOrWhiteSpace(name))

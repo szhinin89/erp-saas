@@ -197,7 +197,7 @@ public sealed class AccountingPostingFactBuilder
                 // ACCOUNTING-12A — sin fallback: motivo sin cuenta o cuenta inválida deja Failed y se
                 // corrige configurando el motivo y reprocesando.
                 var reason = await _adjustmentReasons.GetByIdAsync(posting.TenantId, destination.ReferenceId, ct);
-                if (reason is null || (reason.CompanyId is { } reasonCompany && reasonCompany != posting.CompanyId))
+                if (reason is null || reason.CompanyId != posting.CompanyId)
                     return Result<Guid>.ValidationFailure("El motivo del ajuste no existe en esta empresa.", DestinationNotFoundCode);
                 // Cuenta de la Company del hecho (configuración Company-scoped, nunca del maestro tenant-wide).
                 var reasonLink = await _adjustmentReasonAccounts.GetAsync(posting.TenantId, posting.CompanyId, reason.Id, ct);

@@ -82,7 +82,7 @@ public sealed class ListStockAdjustmentsQueryHandler
             ct
         );
 
-        var reasons = await _reasonRepo.ListAsync(tid, null, includeInactive: true, ct);
+        var reasons = await _reasonRepo.ListAsync(tid, includeInactive: true, ct);
         var reasonNames = reasons.ToDictionary(r => r.Id, r => r.Name);
 
         // IL-4B — documentos de apertura (movimientos InitialBalance) de la página, en una consulta.

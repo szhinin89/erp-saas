@@ -7511,7 +7511,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("code");
 
-                    b.Property<Guid?>("CompanyId")
+                    b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
 
@@ -7559,9 +7559,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("TenantId", "CompanyId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("uq_inventory_adjustment_reasons_tenant_code");
+                        .HasDatabaseName("uq_inventory_adjustment_reasons_tenant_company_code");
 
                     b.ToTable("inventory_adjustment_reasons", (string)null);
                 });

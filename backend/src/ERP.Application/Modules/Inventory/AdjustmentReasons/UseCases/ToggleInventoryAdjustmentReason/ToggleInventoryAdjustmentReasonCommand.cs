@@ -7,7 +7,7 @@ namespace ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.ToggleInv
 
 public sealed record ToggleInventoryAdjustmentReasonCommand(Guid Id, bool Activate)
     : IRequest<Result<InventoryAdjustmentReasonDto>>,
-        ITenantScopedRequest;
+        ICompanyScopedRequest;
 
 public sealed class ToggleInventoryAdjustmentReasonValidator
     : AbstractValidator<ToggleInventoryAdjustmentReasonCommand>

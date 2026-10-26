@@ -23,18 +23,16 @@ export interface InventoryAdjustmentReasonDto {
   sortOrder: number;
   /**
    * ACCOUNTING-12A — cuenta contable del motivo para la empresa ACTIVA (configuración por empresa,
-   * nunca del maestro tenant-wide); null = sin configurar (la contabilización queda fallida).
+   * el motivo no guarda cuenta); null = sin configurar (la contabilización queda fallida).
    */
   accountingAccountId: string | null;
 }
 
 /**
- * `companyId` es opcional y solo se envía cuando el usuario administra un motivo de otra
- * empresa del tenant; en el flujo normal el backend lo resuelve del contexto autenticado
+ * El motivo pertenece a la empresa activa: el backend la resuelve del contexto autenticado
  * (regla global: nunca se envía tenant/company/branch como autoridad desde el body).
  */
 export interface CreateInventoryAdjustmentReasonRequest {
-  companyId?: string | null;
   code: string;
   name: string;
   allowedMovementType: ReasonAllowedMovementType;

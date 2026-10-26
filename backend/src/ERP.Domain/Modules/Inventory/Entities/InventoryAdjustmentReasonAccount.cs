@@ -4,9 +4,8 @@ namespace ERP.Domain.Modules.Inventory.Entities;
 
 /// <summary>
 /// ACCOUNTING-12A — cuenta contable de un <see cref="InventoryAdjustmentReason"/> para UNA Company.
-/// Entidad separada (mismo criterio que <c>PaymentMethodAccount</c>): el motivo puede ser tenant-wide
-/// mientras que <c>Account</c> es estrictamente Company-scoped, así que un campo escalar en el motivo no
-/// podría apuntar a la cuenta de cada Company. Sin fila para (Company, motivo) el ajuste opera y su
+/// Entidad separada: el motivo pertenece a una sola Company (<c>CompanyId</c> obligatorio) y no guarda
+/// cuenta; la cuenta de esa misma Company se configura en esta fila. Sin fila para (Company, motivo) el ajuste opera y su
 /// obligación contable queda Failed hasta configurarla (nunca un default oculto).
 /// </summary>
 public sealed class InventoryAdjustmentReasonAccount

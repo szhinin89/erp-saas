@@ -361,7 +361,7 @@ public sealed class InitialStockImportProcessorTests
     private void SetupConfirmable(params (Item Item, Warehouse Warehouse)[] pairs)
     {
         _reasonRepo.Setup(x => x.GetByCodeAsync(TenantId, "CARGA_INICIAL", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(InventoryAdjustmentReason.Create(TenantId, null, "CARGA_INICIAL", "Carga Inicial",
+            .ReturnsAsync(InventoryAdjustmentReason.Create(TenantId, CompanyId, "CARGA_INICIAL", "Carga Inicial",
                 InventoryAdjustmentReason.Ingreso, false, 0, Guid.NewGuid()));
         foreach (var (item, warehouse) in pairs)
         {

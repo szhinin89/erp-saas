@@ -35,12 +35,7 @@ public sealed class ListInventoryAdjustmentReasonsQueryHandler
         CancellationToken ct
     )
     {
-        var items = await _repo.ListAsync(
-            _tenant.TenantId,
-            request.CompanyId,
-            request.IncludeInactive,
-            ct
-        );
+        var items = await _repo.ListAsync(_tenant.TenantId, request.IncludeInactive, ct);
 
         // ACCOUNTING-12A — la cuenta contable es la configurada para la Company activa.
         var accounts = await _accounts.GetMapAsync(_tenant.TenantId, _company.CompanyId, ct);

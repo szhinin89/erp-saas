@@ -809,8 +809,7 @@ así que un borrador creado en un período luego cerrado y ejecutado hoy contabi
 transacción; el saldo inicial de Carga Inicial (`PostInitialBalance`) no lo publica (tiene su propio hecho).
 
 **Cuenta del motivo.** Configuración Company-scoped `InventoryAdjustmentReasonAccount` (TenantId, CompanyId,
-motivo, cuenta; único CompanyId + motivo), mismo criterio que `PaymentMethodAccount`: el motivo puede ser
-tenant-wide y no guarda cuenta. Se administra desde la pantalla de motivos para la Company activa
+motivo, cuenta; único CompanyId + motivo); el motivo es de la misma Company y no guarda cuenta. Se administra desde la pantalla de motivos para la Company activa
 (`PUT inventory/adjustment-reasons/{id}/account`, Company del contexto autenticado; la cuenta debe ser de esa
 Company, activa e imputable; se reemplaza, no se quita). Se resuelve en cada intento con la Company del hecho,
 sin fallback: sin configuración → Failed `INVENTORY_ADJUSTMENT_ACCOUNT_NOT_CONFIGURED`; cuenta inactiva o no
@@ -846,8 +845,7 @@ cierre (se aplican los gates comunes: modo operativo no configurado y período C
 
 **Cuenta del motivo.** `CashMovementReason.AccountingAccountId`: el motivo de caja ya es Tenant+Company obligatorio
 (nunca se comparte entre empresas), así que la cuenta vive en el propio motivo, mismo criterio que
-`CashRegister.AccountingAccountId`; no se usa una tabla puente como `InventoryAdjustmentReasonAccount` (cuyo motivo es
-tenant-wide). Se administra en la pantalla de motivos de caja (`PUT cash-movement-reasons/{id}/account`,
+`CashRegister.AccountingAccountId`; no usa una tabla puente como `InventoryAdjustmentReasonAccount`. Se administra en la pantalla de motivos de caja (`PUT cash-movement-reasons/{id}/account`,
 `caja.manage`, Company del contexto; cuenta de esa Company, activa e imputable; se reemplaza, no se quita). Se resuelve
 en cada intento, sin fallback: sin cuenta → Failed `CASH_MOVEMENT_REASON_ACCOUNT_NOT_CONFIGURED`; cuenta inactiva o no
 imputable → Failed `CASH_MOVEMENT_REASON_ACCOUNT_INVALID`; se corrige configurando y reprocesando (§17).

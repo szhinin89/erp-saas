@@ -14,7 +14,7 @@ public sealed class InventoryAdjustmentReasonConfiguration
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").IsRequired();
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
-        builder.Property(x => x.CompanyId).HasColumnName("company_id");
+        builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder
             .Property(x => x.Code)
             .HasColumnName("code")
@@ -41,8 +41,13 @@ public sealed class InventoryAdjustmentReasonConfiguration
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder
-            .HasIndex(x => new { x.TenantId, x.Code })
+            .HasIndex(x => new
+            {
+                x.TenantId,
+                x.CompanyId,
+                x.Code,
+            })
             .IsUnique()
-            .HasDatabaseName("uq_inventory_adjustment_reasons_tenant_code");
+            .HasDatabaseName("uq_inventory_adjustment_reasons_tenant_company_code");
     }
 }

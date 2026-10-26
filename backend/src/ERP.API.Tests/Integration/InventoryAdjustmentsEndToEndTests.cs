@@ -1430,7 +1430,7 @@ public sealed class InventoryAdjustmentsEndToEndTests
         return accounts.Single(a => a.Code.Value == code).Id;
     }
 
-    /// <summary>Motivo tenant-wide (maestro sin cuenta) + cuenta de la Company activa vía su endpoint propio.</summary>
+    /// <summary>Motivo de la Company activa (sin cuenta propia) + su cuenta vía el endpoint propio.</summary>
     private async Task<Guid> CreateReasonWithAccountAsync(string allowedMovementType, Guid? accountId)
     {
         var (reasonId, _) = await CreateReasonAsync(allowedMovementType, codePrefix: "AC12");

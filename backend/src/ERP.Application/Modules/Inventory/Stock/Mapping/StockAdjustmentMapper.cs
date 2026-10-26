@@ -51,7 +51,7 @@ internal static class StockAdjustmentMapper
     public static InventoryAdjustmentReasonDto ToDto(InventoryAdjustmentReason r) => ToDto(r, null);
 
     /// <param name="accountingAccountId">ACCOUNTING-12A — cuenta del motivo en la Company activa
-    /// (<c>InventoryAdjustmentReasonAccount</c>); nunca un dato del maestro tenant-wide.</param>
+    /// (<c>InventoryAdjustmentReasonAccount</c>); el motivo no guarda cuenta.</param>
     public static InventoryAdjustmentReasonDto ToDto(InventoryAdjustmentReason r, Guid? accountingAccountId) =>
         new(r.Id, r.Code, r.Name, r.AllowedMovementType, r.RequiresNotes, r.IsActive, r.SortOrder,
             accountingAccountId);

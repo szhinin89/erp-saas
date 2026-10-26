@@ -6,6 +6,10 @@ using MediatR;
 
 namespace ERP.Application.Modules.Inventory.AdjustmentReasons.UseCases.CreateInventoryAdjustmentReason;
 
+/// <summary>
+/// El motivo pertenece siempre a la Company activa (contexto autenticado). <see cref="CompanyId"/>
+/// es solo un hint opcional: si viene, CompanyScopeBehavior exige que coincida con el contexto.
+/// </summary>
 public sealed record CreateInventoryAdjustmentReasonCommand(
     Guid? CompanyId,
     string Code,
@@ -13,7 +17,10 @@ public sealed record CreateInventoryAdjustmentReasonCommand(
     string AllowedMovementType,
     bool RequiresNotes,
     int SortOrder
-) : IRequest<Result<InventoryAdjustmentReasonDto>>, ITenantScopedRequest;
+) : IRequest<Result<InventoryAdjustmentReasonDto>>, ICompanyScopedRequest
+{
+    Guid? ICompanyScopedRequest.ExplicitCompanyId => CompanyId;
+}
 
 public sealed class CreateInventoryAdjustmentReasonValidator
     : AbstractValidator<CreateInventoryAdjustmentReasonCommand>

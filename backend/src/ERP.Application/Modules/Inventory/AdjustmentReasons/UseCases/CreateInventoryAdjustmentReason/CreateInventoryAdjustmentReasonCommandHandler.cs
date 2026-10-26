@@ -12,16 +12,19 @@ public sealed class CreateInventoryAdjustmentReasonCommandHandler
 {
     private readonly IInventoryAdjustmentReasonRepository _repo;
     private readonly ICurrentTenant _tenant;
+    private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
 
     public CreateInventoryAdjustmentReasonCommandHandler(
         IInventoryAdjustmentReasonRepository repo,
         ICurrentTenant tenant,
+        ICurrentCompany company,
         ICurrentUser user
     )
     {
         _repo = repo;
         _tenant = tenant;
+        _company = company;
         _user = user;
     }
 
@@ -40,7 +43,7 @@ public sealed class CreateInventoryAdjustmentReasonCommandHandler
 
         var reason = InventoryAdjustmentReason.Create(
             tid,
-            request.CompanyId,
+            _company.CompanyId,
             request.Code,
             request.Name,
             request.AllowedMovementType,

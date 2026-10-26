@@ -151,7 +151,7 @@ public sealed class StockAdjustmentExecuteCancelTests
     ) =>
         InventoryAdjustmentReason.Create(
             TenantId,
-            null,
+            CompanyId,
             "MERMA",
             "Merma",
             allowed,

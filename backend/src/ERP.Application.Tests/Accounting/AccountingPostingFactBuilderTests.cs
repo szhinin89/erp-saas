@@ -176,12 +176,13 @@ public sealed class AccountingPostingFactBuilderTests
     }
 
     [Fact]
-    public async Task InventoryAdjustment_mismo_motivo_tenant_wide_cada_Company_resuelve_su_propia_cuenta()
+    public async Task InventoryAdjustment_motivo_de_otra_Company_no_resuelve_cuenta()
     {
-        // ACCOUNTING-12A — la cuenta del motivo es configuración Company-scoped; el maestro no la guarda.
+        // D-1 — el motivo es dato COMPANY: solo la Company dueña resuelve su cuenta; otra Company falla
+        // cerrado aunque tenga configuración para ese Id.
         var companyB = Guid.NewGuid();
         var reason = ERP.Domain.Modules.Inventory.Entities.InventoryAdjustmentReason.Create(
-            TenantId, null, "SOBRANTE", "Sobrante", "Ingreso", false, 1, UserId);
+            TenantId, CompanyId, "SOBRANTE", "Sobrante", "Ingreso", false, 1, UserId);
         var accountA = Account.Create(TenantId, CompanyId, AccountCode.Create("4.2.01.001"), "Sobrantes A", null,
             AccountType.Income, AccountNature.Credit, allowsPosting: true, createdBy: UserId);
         var accountB = Account.Create(TenantId, companyB, AccountCode.Create("4.2.01.001"), "Sobrantes B", null,
@@ -216,8 +217,8 @@ public sealed class AccountingPostingFactBuilderTests
         var factB = await builder.BuildAsync(AdjustmentIn(companyB), CancellationToken.None);
 
         factA.IsSuccess.Should().BeTrue(factA.Error);
-        factB.IsSuccess.Should().BeTrue(factB.Error);
         factA.Value!.Allocations.Should().ContainSingle(a => a.AccountingAccountId == accountA.Id && a.Nature == AccountNature.Credit && a.Amount == 10m);
-        factB.Value!.Allocations.Should().ContainSingle(a => a.AccountingAccountId == accountB.Id && a.Nature == AccountNature.Credit && a.Amount == 10m);
+        factB.IsSuccess.Should().BeFalse();
+        factB.Code.Should().Be(AccountingPostingFactBuilder.DestinationNotFoundCode);
     }
 }

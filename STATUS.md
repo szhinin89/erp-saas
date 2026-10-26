@@ -1,5 +1,18 @@
 # Project Status
 
+## INVENTARIO V1 — D-1: aislamiento por empresa de motivos de ajuste — CORREGIDO (2026-10-26)
+
+`InventoryAdjustmentReason` admitía `CompanyId` nulo y se filtraba solo por tenant: una empresa podía
+listar, editar, desactivar y usar motivos de otra del mismo tenant. Corregido como dato de empresa
+reutilizando el filtro global y `CompanyScopeBehavior` existentes; baseline única actualizada
+(`company_id` NOT NULL, índice único Tenant + Company + código), sin migración incremental. Focales PASS:
+Application 106/106, API HTTP/PostgreSQL 21/21 (incluye `InventoryAdjustmentReasonCompanyIsolationHttpTests`),
+OpenAPI 3/3, Arquitectura backend 31/31, Infrastructure 59/59, frontend 10/10 y `architecture:check`.
+Revisión técnica final PASS y aceptación del propietario (2026-10-26).
+**Estado: D-1 corregido y técnicamente validado.** Las bases de desarrollo ya migradas conservan el
+esquema anterior hasta reinstalarse.
+[SSOT Inventario](docs/architecture/inventory.md#6-ajustes-de-inventario).
+
 ## INVENTARIO V1 — B4: Cuadre monetario Compras/Kardex/Contabilidad — CLOSED (2026-10-26)
 
 12000 u × 0.1234 con 1.25 % de descuento e IVA 0: Compras y el asiento registraban 1462.29 y el Kardex
