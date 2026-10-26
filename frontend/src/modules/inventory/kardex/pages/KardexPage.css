@@ -1,205 +1,65 @@
-.kdx-filter-card {
-  margin-bottom: 16px;
-}
-
+/* Layout local de Kardex; controles, tarjetas y expediente usan el Design System. */
+.kdx-filter-card { margin-bottom: var(--space-4); }
 .kdx-filter-row {
   display: flex;
-  gap: 12px;
   flex-wrap: wrap;
   align-items: flex-end;
+  gap: var(--space-3);
 }
-
-.kdx-field-product {
-  min-width: 280px;
-  position: relative;
-}
-
-.kdx-field-document {
-  min-width: 260px;
-  position: relative;
-}
-
-.kdx-field-warehouse {
-  width: 220px;
-}
-
-.kdx-field-date {
-  width: 160px;
-}
-
-.kdx-field-type {
-  width: 200px;
-}
-
-.kdx-toolbar {
+.kdx-filter-row > * { min-width: 0; }
+.kdx-field-product, .kdx-field-document { flex: 2 1 16rem; position: relative; }
+/* Nombres/SKU extensos se ajustan al panel existente del DS sin ensanchar filtros. */
+.kdx-field-product .zh-picker-result-item { overflow-wrap: anywhere; }
+.kdx-field-warehouse { flex: 1 1 13rem; }
+.kdx-field-date { flex: 1 1 9rem; }
+.kdx-field-type { flex: 1 1 13rem; }
+.kdx-tabs-actions {
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.kdx-toolbar-actions {
-  display: flex;
-  gap: 8px;
-}
-.kdx-filter-card {
-  margin-bottom: 16px;
-}
-
-.kdx-filter-row {
-  display: flex;
-  gap: 12px;
   flex-wrap: wrap;
-  align-items: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
-
-.kdx-field-product {
-  min-width: 280px;
-  position: relative;
-}
-
-.kdx-field-document {
-  min-width: 260px;
-  position: relative;
-}
-
-.kdx-field-warehouse {
-  width: 220px;
-}
-
-.kdx-field-date {
-  width: 160px;
-}
-
-.kdx-field-type {
-  width: 200px;
-}
-
 .kdx-summary-row {
-  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
-
+.kdx-summary-row > .pg-kpi { flex: 1 1 13rem; min-width: 0; }
+.kdx-summary-row .pg-kpi-bottom { flex: 1; min-width: 0; }
+.kdx-summary-row .pg-kpi-value { overflow-wrap: anywhere; }
+.kdx-last-movement { font-size: var(--text-body-sm-size); font-weight: var(--font-weight-medium); }
 .kdx-toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
   align-items: center;
   justify-content: space-between;
 }
-
-.kdx-toolbar-actions {
-  display: flex;
-  gap: 8px;
-}
-
-
-/* .kdx-mono (codigo tecnico: bodega/doc-id/numero de documento/secuencial)
-   promovida a zh-ui.css (ERP-DS-MONO-REMAINING-01) -- consumida tambien
-   desde Purchases (PurchaseReceptionXmlViewModal.tsx), asi que no puede
-   quedar como font-family-mono local de este modulo. */
-
-.kdx-mono--strong {
-  font-weight: 600;
-}
-
-.kdx-secondary-text {
+.kdx-toolbar > select { max-width: 100%; }
+.kdx-mono--strong, .kdx-value-strong { font-weight: var(--font-weight-semibold); }
+.kdx-secondary-text, .kdx-muted-text, .kdx-accounting-info {
   font-size: var(--text-body-sm-size);
   color: var(--color-text-secondary);
 }
-
-.kdx-positive {
-  color: var(--color-success);
-}
-
-.kdx-negative {
-  color: var(--color-error);
-}
-
-.kdx-value-strong {
-  font-weight: 600;
-}
-
-.kdx-small-text {
-  font-size: var(--text-body-sm-size);
-}
-
-.kdx-summary-icon {
-  color: var(--color-primary);
-}
-
-.kdx-summary-label {
-  font-size: var(--text-label-sm-size);
-  color: var(--color-text-secondary);
-  margin-top: var(--space-1);
-}
-
-.kdx-summary-value {
-  font-size: var(--text-headline-sm-size);
-  font-weight: 700;
-}
-
-
-.kdx-tabs-actions {
-  display: flex;
-  gap: 8px;
-}
-
-
-.kdx-tabs-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.kdx-summary-body {
-  text-align: center;
-}
-
-
-.kdx-modal-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.kdx-grid-4 {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.kdx-grid-3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-/* .kdx-btn-source ELIMINADO (Bloque 4D) — equivalente exacto .zh-mt-10 en zh-ui.css. */
-
-.kdx-muted-text {
-  color: var(--color-text-secondary);
-  font-size: var(--text-body-sm-size);
-}
-
-.kdx-links-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
+.kdx-positive { color: var(--color-success); }
+.kdx-negative { color: var(--color-error); }
+.kdx-small-text { font-size: var(--text-body-sm-size); }
+.kdx-modal-stack { display: flex; flex-direction: column; gap: var(--space-4); }
+.kdx-modal-stack > .pf-card { margin-bottom: 0; }
+.kdx-modal-stack .zh-description-grid { margin-bottom: 0; row-gap: var(--space-3); }
+.kdx-field-value { font-size: var(--text-body-sm-size); }
+.kdx-links-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .kdx-relations-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
-
-.kdx-accounting-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--color-text-secondary);
-  font-size: var(--text-body-sm-size);
+.kdx-accounting-info { display: flex; align-items: center; gap: var(--space-2); }
+@media (max-width: 640px) {
+  .kdx-filter-row > *, .kdx-tabs-actions > *, .kdx-relations-row > .zh-btn { flex: 1 1 100%; }
+  .kdx-relations-row { justify-content: center; }
 }
-
-.kdx-field-value {
-  font-size: var(--text-body-sm-size);
-}
-

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { KardexMovementDetailModal } from "./KardexMovementDetailModal";
 import type { KardexMovementDetailDto } from "../../stock/api/kardexService";
 import { setPrecisionPolicyForTests } from "../../../../lib/config/precisionPolicy.config";
@@ -59,6 +59,29 @@ function renderModal(modalDetail = detail) {
 
 // ERP-PRECISION-FRONTEND-06B: costo unitario → unitCostDecimals; costo promedio → averageCostDecimals.
 describe("KardexMovementDetailModal — precisión de costos", () => {
+  it("conserva navegación al documento, movimientos relacionados y cierre", () => {
+    const onNavigate = vi.fn();
+    const onClose = vi.fn();
+    function Location() { return <output>{useLocation().search}</output>; }
+    render(<MemoryRouter>
+      <Location />
+      <KardexMovementDetailModal open loading={false} detail={{
+        ...detail,
+        movement: { ...detail.movement, sourceDocId: "invoice-1", sourceDocType: "PurchaseInvoice" },
+        sourceDocument: { docType: "PurchaseInvoice", docNumber: "001-001-000000001", partnerName: null,
+          unitPrice: null, discountPct: null, vatCode: null, vatRate: null, reason: null, notes: null },
+        relations: { current, previous: { ...current, movementId: "previous", sequenceNumber: 10 },
+          next: { ...current, movementId: "next", sequenceNumber: 12 } },
+      }} onNavigate={onNavigate} onClose={onClose} movementTypeLabels={{}} />
+    </MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Ver documento origen/ }));
+    expect(screen.getByRole("status").textContent).toBe("?invoiceId=invoice-1");
+    fireEvent.click(screen.getByRole("button", { name: /#10/ }));
+    fireEvent.click(screen.getByRole("button", { name: /#12/ }));
+    expect(onNavigate.mock.calls).toEqual([["previous"], ["next"]]);
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
   it("muestra cantidad a 6 y costos unitario/promedio a 10 sin recortar el DTO", () => {
     setPrecisionPolicyForTests({ ...TEST_PRECISION_POLICY,
       quantityDecimals: 6, unitCostDecimals: 10, averageCostDecimals: 10 });

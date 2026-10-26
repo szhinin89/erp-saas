@@ -94,8 +94,8 @@ export function KardexMovementDetailModal({
         <div className="kdx-modal-stack">
           {/* ── A. Hecho de Inventario ─────────────────────────────────── */}
           <Section icon="inventory_2" title="Hecho de Inventario">
-            <div
-              className="pdl-line__context kdx-grid-4"
+            <dl
+              className="zh-description-grid"
             >
               <Field label="Bodega" value={m.warehouseId} mono />
               <Field label="Movimiento" value={typeLabel} />
@@ -135,15 +135,15 @@ export function KardexMovementDetailModal({
                 label="Valor de Inventario Corrido"
                 value={formatMoneyWithSymbol(m.runningStockValue, total)}
               />
-            </div>
+            </dl>
           </Section>
 
           {/* ── B. Documento Origen ─────────────────────────────────────── */}
           <Section icon="description" title="Documento Origen">
             {detail.sourceDocument ? (
               <>
-                <div
-                  className="pdl-line__context kdx-grid-3"
+                <dl
+                  className="zh-description-grid"
                 >
                   <Field
                     label="Tipo"
@@ -197,7 +197,7 @@ export function KardexMovementDetailModal({
                   {detail.sourceDocument.notes && (
                     <Field label="Notas" value={detail.sourceDocument.notes} />
                   )}
-                </div>
+                </dl>
                 {DOC_TYPE_ROUTE[detail.sourceDocument.docType] && (
                   <ZHBtn
                     type="button"
@@ -290,8 +290,8 @@ export function KardexMovementDetailModal({
 
           {/* ── C. Auditoría ─────────────────────────────────────────────── */}
           <Section icon="verified_user" title="Auditoría">
-            <div
-              className="pdl-line__context pdl-line__context--audit"
+            <dl
+              className="zh-description-grid"
             >
               <Field label="Usuario" value={detail.actor.userName} />
               <Field
@@ -312,13 +312,13 @@ export function KardexMovementDetailModal({
                 value={m.sourceDocId ?? "—"}
                 mono
               />
-            </div>
+            </dl>
           </Section>
 
           {/* ── D. Contabilidad ──────────────────────────────────────────── */}
           <Section icon="account_balance" title="Contabilidad">
             <div
-              className="pf-mini-card__body kdx-accounting-info"
+              className="kdx-accounting-info"
             >
               <span
                 className="material-symbols-outlined zh-icon-md"
@@ -369,11 +369,11 @@ function Field({
   mono?: boolean;
 }) {
   return (
-    <div className="pdl-ctx-col">
-      <div className="pdl-ctx-col__title">{label}</div>
-      <div className={mono ? "kdx-field-value kdx-mono" : "kdx-field-value"}>
+    <>
+      <dt>{label}</dt>
+      <dd className={mono ? "kdx-field-value kdx-mono" : "kdx-field-value"}>
         {value}
-      </div>
-    </div>
+      </dd>
+    </>
   );
 }

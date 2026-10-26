@@ -8,9 +8,10 @@ import {
 } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { useI18n } from "../../../../i18n/i18n";
-import { ZHTabBar } from "../../../../components/zh/ZHTabBar";
+import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
+import { ZHPickerResultItem } from "../../../../components/zh/ZHPickerResultItem";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { formatDate } from "../../../../lib/formatters/dateFormatters";
 import { formatMoneyWithSymbol, formatMoney } from "../../../../lib/sanitizers";
@@ -21,6 +22,7 @@ import type { StockMovementDto } from "../../stock/api/stockService";
 import { KardexMovementDetailModal } from "../components/KardexMovementDetailModal";
 import "../../../../styles/shared/items-catalog.css";
 import "../../../../styles/shared/erp-form-core.css";
+import "./KardexPage.css";
 
 const MOVEMENT_TYPE_LABELS: Record<string, string> = {
   PurchaseEntry: "Entrada por Compra",
@@ -217,15 +219,6 @@ export function KardexPage() {
         "Trazabilidad completa de movimientos de inventario — Compras, Ventas y ajustes en un solo lugar.",
       )}
     >
-      <ZHTabBar
-        tabs={[{ id: "kardex", label: "Kardex", icon: "history" }]}
-        activeTab={ctx.tab}
-        onChange={() => {
-          /* única pestaña activa hoy */
-        }}
-        ariaLabel="Secciones del centro de investigación"
-      />
-
       <div className="prd-section">
         {/* ── Búsqueda rápida: modo explícito ─────────────────────────── */}
         <div className="pf-mini-card kdx-filter-card">
@@ -279,23 +272,14 @@ export function KardexPage() {
                   }}
                 />
                 {ctx.productResults.length > 0 && (
-                  <div className="pf-picker-dropdown">
+                  <div className="zh-picker__dropdown">
                     {ctx.productResults.map((item) => (
-                      <button
+                      <ZHPickerResultItem
                         key={item.id}
-                        type="button"
-                        className="pf-picker-item"
+                        title={<span className="zh-picker__result-code">{item.sku}</span>}
+                        subtitle={item.shortName}
                         onClick={() => ctx.selectProduct(item)}
-                      >
-                        <div className="pf-picker-item__main">
-                          <div className="pf-picker-item__name">
-                            <span className="pf-picker-item__sku">
-                              {item.sku}
-                            </span>
-                            {item.shortName}
-                          </div>
-                        </div>
-                      </button>
+                      />
                     ))}
                   </div>
                 )}
@@ -426,32 +410,37 @@ export function KardexPage() {
 
         {/* ── Resumen superior (solo modo Producto con resultados) ────── */}
         {ctx.searchMode === "product" && ctx.summary && (
-          <div className="pf-header-cards-row kdx-summary-row">
-            <SummaryCard
+          <div className="kdx-summary-row zh-text-align-right">
+            <ReportKpiCard
+              layout="horizontal"
               icon="inventory_2"
               label="Stock Actual"
               value={`${formatMoney(ctx.summary.quantity, qty)} und.`}
             />
-            <SummaryCard
+            <ReportKpiCard
+              layout="horizontal"
               icon="payments"
               label="Costo Promedio"
               value={formatMoneyWithSymbol(ctx.summary.averageCost, averageCost)}
             />
-            <SummaryCard
+            <ReportKpiCard
+              layout="horizontal"
               icon="account_balance_wallet"
               label="Valor de Inventario"
               value={formatMoneyWithSymbol(ctx.summary.totalStockValue, total)}
             />
-            <SummaryCard
+            <ReportKpiCard
+              layout="horizontal"
               icon="update"
               label="Último Movimiento"
               value={
                 ctx.lastMovement
-                  ? `${MOVEMENT_TYPE_LABELS[ctx.lastMovement.movementTypeName] ?? ctx.lastMovement.movementTypeName} — ${formatDate(ctx.lastMovement.effectiveDate)}`
+                  ? <span className="kdx-last-movement">{`${MOVEMENT_TYPE_LABELS[ctx.lastMovement.movementTypeName] ?? ctx.lastMovement.movementTypeName} — ${formatDate(ctx.lastMovement.effectiveDate)}`}</span>
                   : "—"
               }
             />
-            <SummaryCard
+            <ReportKpiCard
+              layout="horizontal"
               icon="format_list_numbered"
               label="Cantidad de Movimientos"
               value={`${ctx.movements.length}`}
@@ -501,35 +490,5 @@ export function KardexPage() {
         movementTypeLabels={MOVEMENT_TYPE_LABELS}
       />
     </ErpPageTemplate>
-  );
-}
-
-function SummaryCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="pf-mini-card">
-      <div className="pf-mini-card__body kdx-summary-body">
-        <span
-          className="material-symbols-outlined zh-icon-xl kdx-summary-icon"
-        >
-          {icon}
-        </span>
-        <div
-          className="kdx-summary-label"
-        >
-          {label}
-        </div>
-        <div className="kdx-summary-value">
-          {value}
-        </div>
-      </div>
-    </div>
   );
 }

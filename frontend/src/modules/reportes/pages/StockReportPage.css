@@ -1,0 +1,48 @@
+/* Distribución exclusiva del reporte; los componentes conservan el contrato visual ZH. */
+.rpt-stock-page .pg-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rpt-stock-page .rpt-filters-fields {
+  flex: 1 1 32rem;
+}
+
+.rpt-stock-page .rpt-filter-field {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.rpt-stock-page .rpt-filter-field:last-child {
+  flex-grow: 2;
+}
+
+.rpt-stock-page .rpt-filter-icon-wrap > .zh-input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Solo el estado vacío: no reduce el espacio de carga ni altera filas con datos. */
+.rpt-stock-results--empty > .pg-pad-40 {
+  padding: var(--space-4);
+}
+
+.rpt-stock-results--empty > .pg-pad-40 > div {
+  padding: var(--space-6) var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .rpt-stock-page .pg-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rpt-stock-page .rpt-filters-fields,
+  .rpt-stock-page .rpt-filter-field,
+  .rpt-stock-page .rpt-filters-actions {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .rpt-stock-page .rpt-filters-actions > .zh-btn {
+    flex: 1;
+  }
+}

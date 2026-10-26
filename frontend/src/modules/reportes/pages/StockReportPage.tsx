@@ -23,6 +23,7 @@ import {
   type WarehouseDto,
 } from "../../inventory/facades/warehouseLookupFacade";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
+import "./StockReportPage.css";
 
 const STATUS_LABEL: Record<StockReportStatus, string> = {
   SinStock: "Sin stock",
@@ -98,6 +99,7 @@ export function StockReportPage() {
   ];
 
   return (
+    <div className="rpt-stock-page">
     <ReportPage
       key={`stock-report-${companySessionVersion}`}
       breadcrumb={["ERP", "REPORTES"]}
@@ -160,7 +162,7 @@ export function StockReportPage() {
 
       {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
 
-      <div className="pg-section">
+      <div className={`pg-section rpt-stock-results${!loading && rows.length === 0 ? " rpt-stock-results--empty" : ""}`}>
         <ZHDataTable
           columns={stockColumns}
           rows={rows}
@@ -171,5 +173,6 @@ export function StockReportPage() {
         />
       </div>
     </ReportPage>
+    </div>
   );
 }

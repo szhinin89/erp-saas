@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
 import { StockReportPage } from "./StockReportPage";
 import { stockLookupFacade, type StockReportRowDto } from "../../inventory/facades/stockLookupFacade";
@@ -62,6 +62,28 @@ beforeEach(() => {
 });
 
 describe("StockReportPage — ZH-LISTING-COMPLIANCE-AUDIT-08", () => {
+  it("Buscar conserva los parámetros y Limpiar solo restablece los filtros", async () => {
+    vi.mocked(warehouseLookupFacade.list).mockResolvedValue([{
+      id: "wh-1", branchId: "branch-1", name: "Central", code: null, storageType: null,
+      address: null, phone: null, email: null, manager: null, latitude: null, longitude: null,
+      capacity: null, dailyDispatchGoal: null, isActive: true,
+    }]);
+    renderPage();
+    await screen.findByText("SKU-001");
+    await screen.findByRole("option", { name: "Central" });
+    const warehouse = screen.getByRole("combobox") as HTMLSelectElement;
+    const search = screen.getByPlaceholderText("Buscar por producto o SKU…") as HTMLInputElement;
+    fireEvent.change(warehouse, { target: { value: "wh-1" } });
+    fireEvent.change(search, { target: { value: "SKU-001" } });
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    await waitFor(() => expect(stockLookupFacade.getReport).toHaveBeenLastCalledWith("wh-1", "SKU-001"));
+    const calls = vi.mocked(stockLookupFacade.getReport).mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar" }));
+    expect(warehouse.value).toBe("");
+    expect(search.value).toBe("");
+    expect(stockLookupFacade.getReport).toHaveBeenCalledTimes(calls);
+  });
+
   it('muestra "N°" como primera columna', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("SKU-001")).toBeTruthy());
