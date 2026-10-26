@@ -1,14 +1,18 @@
 # Project Status
 
-## INVENTARIO V1 — B4 solo Product: importe inventariable único Compras/Kardex/Contabilidad — BUG REAL (2026-10-25)
+## INVENTARIO V1 — B4: Cuadre monetario Compras/Kardex/Contabilidad — CLOSED (2026-10-26)
 
 12000 u × 0.1234 con 1.25 % de descuento e IVA 0: Compras y el asiento registraban 1462.29 y el Kardex
 1462.30 (cantidad × `LandedUnitCost` redondeado); 3 × 100 + flete 10 prorrateado dejaba el Kardex en
-309.99 frente a 310.00. Corregidos el importe de entrada y su reversa histórica, con cobertura en
-`PurchaseRetentionConfirmIntegrationTests.InventoryRounding.cs`. Sin migración ni cambios en
-`PurchaseCostDistribution`. Servicios, ICE e IRBPNR sin cambios.
-**Estado: PUBLICADO en `8a2c3692d`; gate del propietario pendiente de acreditar; B4 no CLOSED.**
-CI acumulativo: [CI #999](#inventario-v1--evidencia-ci-de-referencia).
+309.99 frente a 310.00. Alcance: compras exclusivamente Product inventariable. El importe de
+`TotalLineCost` se conserva entre Compras, Kardex y Contabilidad; la anulación revierte el importe
+original persistido y un histórico ambiguo se rechaza en la transacción, sin efectos parciales. Sin
+migración ni cambios en `PurchaseCostDistribution`. Compras mixtas Product + Service, ICE e IRBPNR
+no forman parte de este cierre. Focales B4 en `PurchaseRetentionConfirmIntegrationTests.InventoryRounding.cs`:
+6/6 PASS en CI #1001 (`infrastructure-01` 208/208 PASS, `application` SUCCESS). Revisión técnica final
+PASS (2026-10-26), sin defectos reproducidos.
+**Estado: B4 CLOSED; publicado en `8a2c3692d8fb5c870e2284e06832b60dc014cac5`.**
+CI: [#999, #1000 y #1001](#inventario-v1--evidencia-ci-de-referencia).
 [SSOT Inventario](docs/architecture/inventory.md#4-valoración-promedio-ponderado) · [SSOT Compras](docs/architecture/purchases.md#5-anulación-confirmed--cancelled).
 
 ## INVENTARIO V1 — B3: importe monetario canónico del Kardex — CLOSED (2026-10-26)
@@ -59,6 +63,13 @@ Referencia publicada: `ba06799ac99b883bcca289d914c69f4cb261f672`.
 [CI #1000](https://github.com/szhinin89/erp-saas/actions/runs/40322826093), intento 1:
 **SUCCESS, 19 PASS, 0 FAIL, deploy Azure SKIPPED**. Resultado acumulativo del pipeline;
 no sustituye los gates focales ni acredita un despliegue.
+
+Referencia publicada: `fa7b2d842b457c7d2fbe2faef8d065cd01ecf4da`.
+[CI #1001](https://github.com/szhinin89/erp-saas/actions/runs/40327986902): **SUCCESS**;
+`backend / Backend (infrastructure-01)` 208/208 PASS, con las seis pruebas B4 de
+`PurchaseRetentionConfirmIntegrationTests.InventoryRounding.cs` identificadas individualmente como PASS
+en los logs; `backend / Backend (application)` SUCCESS. Acredita solo las pruebas que ejecutó el
+pipeline; no acredita un despliegue.
 
 ## Estado de entrega
 
