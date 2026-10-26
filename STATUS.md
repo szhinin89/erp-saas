@@ -11,15 +11,17 @@
 CI acumulativo: [CI #999](#inventario-v1--evidencia-ci-de-referencia).
 [SSOT Inventario](docs/architecture/inventory.md#4-valoración-promedio-ponderado) · [SSOT Compras](docs/architecture/purchases.md#5-anulación-confirmed--cancelled).
 
-## INVENTARIO V1 — Etapa 2A: importe monetario canónico del Kardex (B3) — BUG REAL (2026-10-25)
+## INVENTARIO V1 — B3: importe monetario canónico del Kardex — CLOSED (2026-10-26)
 
 3 u por 10.00 y tres ventas dejaban cantidad 0 con valor 0.01 (y la compra siguiente lo heredaba);
 una transferencia del saldo dejaba 0.01 en origen; A2 y el reproceso de NC usaban importes sin escala.
 Corregidos los residuos y unificado el importe operativo; reglas exclusivamente en la SSOT enlazada.
-Sin migración ni revalorización histórica. Gates del propietario PASS (Domain 33/33, Application
-1080/1080, Infrastructure 150/150, API 98/98, Arquitectura backend 143/143, Arquitectura frontend PASS).
-**Estado: PUBLICADO en `8dd2f91e2` con gate PASS; revisión final pendiente de acreditar; no CLOSED.**
-CI acumulativo: [CI #999](#inventario-v1--evidencia-ci-de-referencia).
+Sin migración ni revalorización histórica. Implementación alineada con la SSOT. Focales PostgreSQL:
+`InventoryValuationPostgreSqlTests` 6/6 y reproceso 2/2 PASS. Gates del propietario PASS (Domain 33/33,
+Application 1080/1080, Infrastructure 150/150, API 98/98, Arquitectura backend 143/143, Arquitectura
+frontend PASS). Revisión técnica final PASS (2026-10-26), sin defectos reproducidos.
+**Estado: B3 CLOSED; publicado en `8dd2f91e2fc1de4cc36e5cc227e3f8c4f29f6ac5`.**
+CI acumulativo #999 y #1000 SUCCESS ([referencia](#inventario-v1--evidencia-ci-de-referencia)); no sustituye los gates focales.
 [SSOT Inventario](docs/architecture/inventory.md#4-valoración-promedio-ponderado).
 
 ## INVENTARIO V1 — Etapa 1: anulación con servicios y concurrencia de documentos — BUG REAL (2026-10-25)
@@ -52,6 +54,11 @@ CI #999, segundo intento: **SUCCESS, 19 PASS, 0 FAIL, deploy SKIPPED**, verifica
 por el propietario y aportado para esta corrección documental (2026-10-26). Es evidencia
 acumulativa de la referencia, no una ejecución individual atribuida a cada commit anterior.
 No acredita gates del propietario pendientes ni un despliegue.
+
+Referencia publicada: `ba06799ac99b883bcca289d914c69f4cb261f672`.
+[CI #1000](https://github.com/szhinin89/erp-saas/actions/runs/40322826093), intento 1:
+**SUCCESS, 19 PASS, 0 FAIL, deploy Azure SKIPPED**. Resultado acumulativo del pipeline;
+no sustituye los gates focales ni acredita un despliegue.
 
 ## Estado de entrega
 
