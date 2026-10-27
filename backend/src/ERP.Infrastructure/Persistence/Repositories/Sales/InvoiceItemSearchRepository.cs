@@ -76,7 +76,7 @@ public sealed class InvoiceItemSearchRepository : IInvoiceItemSearchRepository
                     || EF.Functions.ILike(i.Code.Description, pattern),
                 ShortNameForSort = i.Code.ShortName,
             })
-            .Where(x => x.HasBarcodePartial || x.SkuPartial || x.NamePartial)
+            .Where(x => x.HasBarcodePartial || x.HasPackagingBarcodeExact || x.SkuPartial || x.NamePartial)
             .Select(x => new
             {
                 x.Id,

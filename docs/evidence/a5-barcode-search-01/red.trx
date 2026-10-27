@@ -1,0 +1,141 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="0467f849-59e3-466f-a1b6-758324c70974" name="Sebas@SEBASTIAN 2026-10-27 16:15:18" runUser="SEBASTIAN\Sebas" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-27T16:15:18.7951157-05:00" queuing="2026-10-27T16:15:18.7951164-05:00" start="2026-10-27T16:14:56.7006954-05:00" finish="2026-10-27T16:15:26.5431692-05:00" />
+  <TestSettings name="default" id="ee906f80-49bd-477f-b007-fb4a9242cdde">
+    <Deployment runDeploymentRoot="Sebas_SEBASTIAN_2026-10-27_16_15_18" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="cf7b8f94-ad68-44f6-9c2e-c4d6cdcc61c3" testId="a6868db1-d2db-755c-a956-b044bda9396c" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: False)" computerName="SEBASTIAN" duration="00:00:01.4605010" startTime="2026-10-27T16:14:58.6601001-05:00" endTime="2026-10-27T16:15:18.6991933-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cf7b8f94-ad68-44f6-9c2e-c4d6cdcc61c3">
+      <Output>
+        <ErrorInfo>
+          <Message>Expected match.Id[0] to be {40a84252-0da0-4ff8-8ebc-be49c1f2075d}, but found {5b728523-5326-4f02-b8d3-1f82c1a21dc7}.</Message>
+          <StackTrace>   at FluentAssertions.Execution.LateBoundTestFramework.Throw(String message)&#xD;
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+   at FluentAssertions.Execution.AssertionScope.AddPreFormattedFailure(String formattedFailureMessage)&#xD;
+   at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+   at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+   at FluentAssertions.Execution.AssertionChain.FailWith(String message, Object[] args)&#xD;
+   at FluentAssertions.Primitives.GuidAssertions`1.Be(Guid expected, String because, Object[] becauseArgs)&#xD;
+   at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded) in C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs:line 325&#xD;
+   at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded) in C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs:line 327&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="7240b83c-70af-411d-87c8-a5180875942e" testId="667acb9b-3e21-028c-c243-2449c26b7f08" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: True)" computerName="SEBASTIAN" duration="00:00:00.0735270" startTime="2026-10-27T16:15:18.7593937-05:00" endTime="2026-10-27T16:15:26.3675935-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7240b83c-70af-411d-87c8-a5180875942e">
+      <Output>
+        <ErrorInfo>
+          <Message>Expected match.Id[0] to be {18f275fe-9651-4272-a4f8-997675acf64d}, but found {7c34f59e-f4d9-4249-bfc9-600d4e7b497f}.</Message>
+          <StackTrace>   at FluentAssertions.Execution.LateBoundTestFramework.Throw(String message)&#xD;
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+   at FluentAssertions.Execution.AssertionScope.AddPreFormattedFailure(String formattedFailureMessage)&#xD;
+   at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+   at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+   at FluentAssertions.Execution.AssertionChain.FailWith(String message, Object[] args)&#xD;
+   at FluentAssertions.Primitives.GuidAssertions`1.Be(Guid expected, String because, Object[] becauseArgs)&#xD;
+   at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded) in C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs:line 325&#xD;
+   at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded) in C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs:line 327&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: True)" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="667acb9b-3e21-028c-c243-2449c26b7f08">
+      <Execution id="7240b83c-70af-411d-87c8-a5180875942e" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="A5_packaging_barcode_finds_and_selects_presentation_before_text_match" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: False)" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="a6868db1-d2db-755c-a956-b044bda9396c">
+      <Execution id="cf7b8f94-ad68-44f6-9c2e-c4d6cdcc61c3" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="A5_packaging_barcode_finds_and_selects_presentation_before_text_match" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="a6868db1-d2db-755c-a956-b044bda9396c" executionId="cf7b8f94-ad68-44f6-9c2e-c4d6cdcc61c3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="667acb9b-3e21-028c-c243-2449c26b7f08" executionId="7240b83c-70af-411d-87c8-a5180875942e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Resultados sin formato de lista" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Todos los resultados cargados" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="2" executed="2" passed="0" failed="2" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)&#xD;
+[xUnit.net 00:00:00.43]   Discovering: ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:00.82]   Discovered:  ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:00.88]   Starting:    ERP.Infrastructure.Tests&#xD;
+[testcontainers.org 00:00:00.16] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 26.1.4&#xD;
+  Kernel Version: 6.18.54.1-microsoft-standard-WSL2&#xD;
+  API Version: 1.45&#xD;
+  Operating System: Docker Desktop (containerized)&#xD;
+  Total Memory: 15.24 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.51] Docker container 8afae78cce46 created&#xD;
+[testcontainers.org 00:00:00.63] Start Docker container 8afae78cce46&#xD;
+[testcontainers.org 00:00:02.10] Wait for Docker container 8afae78cce46 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.10] Docker container 8afae78cce46 ready&#xD;
+[testcontainers.org 00:00:02.29] Docker container ea445ada8ff8 created&#xD;
+[testcontainers.org 00:00:02.31] Start Docker container ea445ada8ff8&#xD;
+[testcontainers.org 00:00:03.67] Wait for Docker container ea445ada8ff8 to complete readiness checks&#xD;
+[testcontainers.org 00:00:03.69] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container ea445ada8ff8&#xD;
+[testcontainers.org 00:00:04.80] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container ea445ada8ff8&#xD;
+[testcontainers.org 00:00:05.90] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container ea445ada8ff8&#xD;
+[testcontainers.org 00:00:06.01] Docker container ea445ada8ff8 ready&#xD;
+     Warning:&#xD;
+     The component "Fluent Assertions" is governed by the rules defined in the Xceed License Agreement and&#xD;
+     the Xceed Fluent Assertions Community License. You may use Fluent Assertions free of charge for&#xD;
+     non-commercial use only. An active subscription is required to use Fluent Assertions for commercial use.&#xD;
+     Please contact Xceed Sales mailto:sales@xceed.com to acquire a subscription at a very low cost.&#xD;
+     A paid commercial license supports the development and continued increasing support of&#xD;
+     Fluent Assertions users under both commercial and community licenses. Help us&#xD;
+     keep Fluent Assertions at the forefront of unit testing.&#xD;
+     For more information, visit https://xceed.com/products/unit-testing/fluent-assertions/&#xD;
+[testcontainers.org 00:00:19.40] Delete Docker container ea445ada8ff8&#xD;
+[xUnit.net 00:00:20.96]       Expected match.Id[0] to be {40a84252-0da0-4ff8-8ebc-be49c1f2075d}, but found {5b728523-5326-4f02-b8d3-1f82c1a21dc7}.&#xD;
+[xUnit.net 00:00:20.96]       Stack Trace:&#xD;
+[xUnit.net 00:00:20.96]            at FluentAssertions.Execution.LateBoundTestFramework.Throw(String message)&#xD;
+[xUnit.net 00:00:20.97]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+[xUnit.net 00:00:20.97]            at FluentAssertions.Execution.AssertionScope.AddPreFormattedFailure(String formattedFailureMessage)&#xD;
+[xUnit.net 00:00:20.97]            at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+[xUnit.net 00:00:20.97]            at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+[xUnit.net 00:00:20.97]            at FluentAssertions.Execution.AssertionChain.FailWith(String message, Object[] args)&#xD;
+[xUnit.net 00:00:20.97]            at FluentAssertions.Primitives.GuidAssertions`1.Be(Guid expected, String because, Object[] becauseArgs)&#xD;
+[xUnit.net 00:00:20.97]         C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs(325,0): at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded)&#xD;
+[xUnit.net 00:00:20.97]         C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs(327,0): at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded)&#xD;
+[xUnit.net 00:00:20.97]         --- End of stack trace from previous location ---&#xD;
+[testcontainers.org 00:00:20.11] Docker container 1ef83e19c56a created&#xD;
+[testcontainers.org 00:00:20.13] Start Docker container 1ef83e19c56a&#xD;
+[testcontainers.org 00:00:21.47] Wait for Docker container 1ef83e19c56a to complete readiness checks&#xD;
+[testcontainers.org 00:00:21.49] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 1ef83e19c56a&#xD;
+[testcontainers.org 00:00:22.59] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 1ef83e19c56a&#xD;
+[testcontainers.org 00:00:22.66] Docker container 1ef83e19c56a ready&#xD;
+[testcontainers.org 00:00:27.01] Delete Docker container 1ef83e19c56a&#xD;
+[xUnit.net 00:00:28.62]       Expected match.Id[0] to be {18f275fe-9651-4272-a4f8-997675acf64d}, but found {7c34f59e-f4d9-4249-bfc9-600d4e7b497f}.&#xD;
+[xUnit.net 00:00:28.62]       Stack Trace:&#xD;
+[xUnit.net 00:00:28.62]            at FluentAssertions.Execution.LateBoundTestFramework.Throw(String message)&#xD;
+[xUnit.net 00:00:28.62]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+[xUnit.net 00:00:28.62]            at FluentAssertions.Execution.AssertionScope.AddPreFormattedFailure(String formattedFailureMessage)&#xD;
+[xUnit.net 00:00:28.62]            at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+[xUnit.net 00:00:28.62]            at FluentAssertions.Execution.AssertionChain.FailWith(Func`1 getFailureReason)&#xD;
+[xUnit.net 00:00:28.62]            at FluentAssertions.Execution.AssertionChain.FailWith(String message, Object[] args)&#xD;
+[xUnit.net 00:00:28.62]            at FluentAssertions.Primitives.GuidAssertions`1.Be(Guid expected, String because, Object[] becauseArgs)&#xD;
+[xUnit.net 00:00:28.62]         C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs(325,0): at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded)&#xD;
+[xUnit.net 00:00:28.62]         C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\Persistence\Sales\InvoiceItemSearchRepositoryTests.cs(327,0): at ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(Boolean padded)&#xD;
+[xUnit.net 00:00:28.62]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:28.64]   Finished:    ERP.Infrastructure.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="SEBASTIAN" outcome="Error" timestamp="2026-10-27T16:15:18.7076695-05:00">
+        <Text>[xUnit.net 00:00:20.96]     ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: False) [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="SEBASTIAN" outcome="Error" timestamp="2026-10-27T16:15:26.3685829-05:00">
+        <Text>[xUnit.net 00:00:28.62]     ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: True) [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

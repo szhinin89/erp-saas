@@ -258,6 +258,32 @@ contabilización pendiente/fallida no equivale a anulación operativa fallida.
 Retenciones: emisión, XML/RIDE, transmisión y anulación asistida implementados en el
 alcance de [Backend](docs/architecture/backend.md); no quedan como tareas futuras genéricas.
 
+## A3–A8 — CLOSED (2026-10-27)
+
+Cierre documental y funcional aprobado expresamente por el propietario, con gate
+independiente A5 **10/10 PASS en PostgreSQL real** comunicado en esta fase. Se conservan
+los PASS ya acreditados de los demás casos, sin repetir pruebas.
+
+| Caso | Evidencia focal acreditada | Estado |
+|---|---|---|
+| A3 — actualización atómica del borrador de venta | Application 24/24 + PostgreSQL 1/1 PASS | CLOSED |
+| A4 — ICE/IRBPNR en devoluciones de venta | Application 7/7 PASS | CLOSED |
+| A5 — búsqueda y selección por barcode de presentación | RED 2/2 FAIL esperados → GREEN PostgreSQL 10/10 PASS; gate independiente del propietario 10/10 PASS | CLOSED |
+| A6 — guardas de bodega y carreras UI | Application 10/10 + PostgreSQL 6/6 PASS; carreras frontend PASS en el grupo indicado debajo | CLOSED |
+| A7 — concurrencia de autorización de ventas | PostgreSQL 6/6 PASS | CLOSED |
+| A8 — retry/idempotencia de autorización | PostgreSQL 13/13 + HTTP/PostgreSQL 3/3 PASS | CLOSED |
+
+Frontend focal agrupado previo: 113/113 PASS (incluye autoselección de presentación y
+carreras de búsqueda/bodega); no sumarlo como ejecuciones independientes por caso.
+A5 conserva el fix de una línea y sus cuatro casos de regresión en
+`InvoiceItemSearchRepositoryTests`; evidencias [RED](docs/evidence/a5-barcode-search-01/red.trx)
+y [GREEN](docs/evidence/a5-barcode-search-01/green.trx). Contrato funcional únicamente en
+[Backend](docs/architecture/backend.md#búsqueda-por-barcode-de-presentación-a5).
+Validación del agente en copia temporal sin leer/copiar/compilar el archivo RED histórico;
+revisión focal del diff y `git diff --check` PASS. Esta consolidación no ejecuta pruebas,
+no acredita despliegue y no modifica otros cierres. Commit y push no realizados;
+el propietario conserva su ejecución. CLOSED: no reauditar salvo BUG REAL relacionado.
+
 ## Cierres acreditados y límites
 
 | Ámbito | Estado previamente registrado |
@@ -271,9 +297,8 @@ alcance de [Backend](docs/architecture/backend.md); no quedan como tareas futura
 | Pricing, BP, ElectronicDocuments e infraestructuras FROZEN | Conservan sus cierres y límites; [infraestructuras](docs/architecture/frozen-infrastructure.md) |
 | A9 recovery comercial | Implementado y validado: PostgreSQL 19/19, guard 1/1, job 1/1, issuer 31/31, arquitectura 143/143 y gates técnicos PASS. No se acredita un cierre adicional |
 
-El registro anterior de A9 afirmaba A1–A8 CLOSED, pero la cola antigua conservaba
-A3 OPEN y A4–A8 sin abrir. No se usan esas entradas contradictorias para abrir trabajo
-ni declarar nuevos cierres: falta acreditar documentalmente A3–A8 con el propietario.
+A3–A8 quedan acreditados por el cierre aprobado en su sección precedente; la discrepancia
+documental anterior queda resuelta, sin ampliar el alcance de A9.
 AUTH sensitive logging: fix focal 21/21 PASS; sin modificar autenticación ni persistencia.
 No usar resultados anteriores como evidencia de que el árbol actual pasó una suite.
 

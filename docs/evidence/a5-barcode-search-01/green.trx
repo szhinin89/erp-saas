@@ -1,0 +1,184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="5b6f7671-5391-48c9-9428-70c17b7cd7c7" name="Sebas@SEBASTIAN 2026-10-27 16:16:19" runUser="SEBASTIAN\Sebas" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-27T16:16:19.3989214-05:00" queuing="2026-10-27T16:16:19.3989221-05:00" start="2026-10-27T16:15:57.8635089-05:00" finish="2026-10-27T16:17:31.1352653-05:00" />
+  <TestSettings name="default" id="ea9a943f-a4b6-4bf8-aeb2-aa7603ccd570">
+    <Deployment runDeploymentRoot="Sebas_SEBASTIAN_2026-10-27_16_16_19" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="d1503a60-8553-4f3c-b345-cd43f2a88680" testId="406264db-2d7b-5754-ae1e-ba4ed37defd0" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_respeta_pageSize_incluso_con_ranking_por_barcode" computerName="SEBASTIAN" duration="00:00:00.0866230" startTime="2026-10-27T16:16:51.9546812-05:00" endTime="2026-10-27T16:16:59.4466379-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d1503a60-8553-4f3c-b345-cd43f2a88680" />
+    <UnitTestResult executionId="61147433-243a-4c3f-b1b0-9973adc6148e" testId="1f1c1ae9-641f-1de2-e273-c7c481dfea74" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_encuentra_por_coincidencia_parcial_de_nombre" computerName="SEBASTIAN" duration="00:00:00.0545203" startTime="2026-10-27T16:16:59.4479215-05:00" endTime="2026-10-27T16:17:08.1575215-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="61147433-243a-4c3f-b1b0-9973adc6148e" />
+    <UnitTestResult executionId="5ccf4611-4ca9-4056-b8b2-b13446309b51" testId="667acb9b-3e21-028c-c243-2449c26b7f08" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: True)" computerName="SEBASTIAN" duration="00:00:00.0746926" startTime="2026-10-27T16:16:19.3520532-05:00" endTime="2026-10-27T16:16:28.0821772-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5ccf4611-4ca9-4056-b8b2-b13446309b51" />
+    <UnitTestResult executionId="8df03f4c-4e05-4257-b938-a19cea8fdd83" testId="a6868db1-d2db-755c-a956-b044bda9396c" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: False)" computerName="SEBASTIAN" duration="00:00:01.6078836" startTime="2026-10-27T16:15:59.8605553-05:00" endTime="2026-10-27T16:16:19.2762710-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8df03f4c-4e05-4257-b938-a19cea8fdd83" />
+    <UnitTestResult executionId="df96365d-26fa-4261-ac77-28dda4c0edb0" testId="e0c6b59d-97be-36f3-a42b-281d68eaef9b" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_encuentra_por_codigo_de_barras_real_aunque_no_coincida_con_sku_ni_nombre" computerName="SEBASTIAN" duration="00:00:00.0563721" startTime="2026-10-27T16:17:22.7115638-05:00" endTime="2026-10-27T16:17:30.9027084-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="df96365d-26fa-4261-ac77-28dda4c0edb0" />
+    <UnitTestResult executionId="5a043dde-4fc6-44b9-bb0a-c73f7f9e3b19" testId="9f491866-754e-61eb-e388-fb35ef1e9416" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_no_encuentra_barcode_registrado_en_otro_tenant" computerName="SEBASTIAN" duration="00:00:00.0534363" startTime="2026-10-27T16:17:15.2766469-05:00" endTime="2026-10-27T16:17:22.7106385-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5a043dde-4fc6-44b9-bb0a-c73f7f9e3b19" />
+    <UnitTestResult executionId="4da2a2ad-aee1-4416-93f3-e8d18400b184" testId="55d4fdb4-d8f7-a604-75fa-f7bc4934c05c" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_encuentra_por_coincidencia_parcial_de_sku" computerName="SEBASTIAN" duration="00:00:00.0448984" startTime="2026-10-27T16:17:08.1582912-05:00" endTime="2026-10-27T16:17:15.2754404-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4da2a2ad-aee1-4416-93f3-e8d18400b184" />
+    <UnitTestResult executionId="6572c43a-7e0b-4e96-8d84-abeed3a6ae40" testId="977e258a-f8d9-cf0e-5e91-0e389cff8a48" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_prioriza_barcode_exacto_sobre_coincidencia_parcial_de_texto" computerName="SEBASTIAN" duration="00:00:00.2115096" startTime="2026-10-27T16:16:28.0868344-05:00" endTime="2026-10-27T16:16:36.3999766-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6572c43a-7e0b-4e96-8d84-abeed3a6ae40" />
+    <UnitTestResult executionId="281a9d9b-42f5-4bed-be95-2b248731d66f" testId="cdaa0688-73f4-5898-1400-25c5d3ef7312" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_respects_explicit_tenant_and_company(foreignTenant: False)" computerName="SEBASTIAN" duration="00:00:00.0596800" startTime="2026-10-27T16:16:36.4011859-05:00" endTime="2026-10-27T16:16:44.7188667-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="281a9d9b-42f5-4bed-be95-2b248731d66f" />
+    <UnitTestResult executionId="b6ccac28-d076-41e2-ba61-ce140dea9c82" testId="024ceeb1-285b-7107-ccf8-ede36b9aef0d" testName="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_respects_explicit_tenant_and_company(foreignTenant: True)" computerName="SEBASTIAN" duration="00:00:00.0380061" startTime="2026-10-27T16:16:44.7206833-05:00" endTime="2026-10-27T16:16:51.9535351-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b6ccac28-d076-41e2-ba61-ce140dea9c82" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: True)" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="667acb9b-3e21-028c-c243-2449c26b7f08">
+      <Execution id="5ccf4611-4ca9-4056-b8b2-b13446309b51" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="A5_packaging_barcode_finds_and_selects_presentation_before_text_match" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_no_encuentra_barcode_registrado_en_otro_tenant" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="9f491866-754e-61eb-e388-fb35ef1e9416">
+      <Execution id="5a043dde-4fc6-44b9-bb0a-c73f7f9e3b19" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="SearchAsync_no_encuentra_barcode_registrado_en_otro_tenant" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_encuentra_por_coincidencia_parcial_de_nombre" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="1f1c1ae9-641f-1de2-e273-c7c481dfea74">
+      <Execution id="61147433-243a-4c3f-b1b0-9973adc6148e" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="SearchAsync_encuentra_por_coincidencia_parcial_de_nombre" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_finds_and_selects_presentation_before_text_match(padded: False)" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="a6868db1-d2db-755c-a956-b044bda9396c">
+      <Execution id="8df03f4c-4e05-4257-b938-a19cea8fdd83" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="A5_packaging_barcode_finds_and_selects_presentation_before_text_match" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_encuentra_por_codigo_de_barras_real_aunque_no_coincida_con_sku_ni_nombre" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="e0c6b59d-97be-36f3-a42b-281d68eaef9b">
+      <Execution id="df96365d-26fa-4261-ac77-28dda4c0edb0" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="SearchAsync_encuentra_por_codigo_de_barras_real_aunque_no_coincida_con_sku_ni_nombre" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_prioriza_barcode_exacto_sobre_coincidencia_parcial_de_texto" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="977e258a-f8d9-cf0e-5e91-0e389cff8a48">
+      <Execution id="6572c43a-7e0b-4e96-8d84-abeed3a6ae40" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="SearchAsync_prioriza_barcode_exacto_sobre_coincidencia_parcial_de_texto" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_respeta_pageSize_incluso_con_ranking_por_barcode" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="406264db-2d7b-5754-ae1e-ba4ed37defd0">
+      <Execution id="d1503a60-8553-4f3c-b345-cd43f2a88680" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="SearchAsync_respeta_pageSize_incluso_con_ranking_por_barcode" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.SearchAsync_encuentra_por_coincidencia_parcial_de_sku" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="55d4fdb4-d8f7-a604-75fa-f7bc4934c05c">
+      <Execution id="4da2a2ad-aee1-4416-93f3-e8d18400b184" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="SearchAsync_encuentra_por_coincidencia_parcial_de_sku" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_respects_explicit_tenant_and_company(foreignTenant: False)" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="cdaa0688-73f4-5898-1400-25c5d3ef7312">
+      <Execution id="281a9d9b-42f5-4bed-be95-2b248731d66f" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="A5_packaging_barcode_respects_explicit_tenant_and_company" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests.A5_packaging_barcode_respects_explicit_tenant_and_company(foreignTenant: True)" storage="c:\users\sebas\appdata\local\temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="024ceeb1-285b-7107-ccf8-ede36b9aef0d">
+      <Execution id="b6ccac28-d076-41e2-ba61-ce140dea9c82" />
+      <TestMethod codeBase="C:\Users\Sebas\AppData\Local\Temp\erp-a3-a8-796bfe040c9d4e5098182b6d0a60ef12\source\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Sales.InvoiceItemSearchRepositoryTests" name="A5_packaging_barcode_respects_explicit_tenant_and_company" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="406264db-2d7b-5754-ae1e-ba4ed37defd0" executionId="d1503a60-8553-4f3c-b345-cd43f2a88680" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1f1c1ae9-641f-1de2-e273-c7c481dfea74" executionId="61147433-243a-4c3f-b1b0-9973adc6148e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="667acb9b-3e21-028c-c243-2449c26b7f08" executionId="5ccf4611-4ca9-4056-b8b2-b13446309b51" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a6868db1-d2db-755c-a956-b044bda9396c" executionId="8df03f4c-4e05-4257-b938-a19cea8fdd83" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e0c6b59d-97be-36f3-a42b-281d68eaef9b" executionId="df96365d-26fa-4261-ac77-28dda4c0edb0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9f491866-754e-61eb-e388-fb35ef1e9416" executionId="5a043dde-4fc6-44b9-bb0a-c73f7f9e3b19" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="55d4fdb4-d8f7-a604-75fa-f7bc4934c05c" executionId="4da2a2ad-aee1-4416-93f3-e8d18400b184" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="977e258a-f8d9-cf0e-5e91-0e389cff8a48" executionId="6572c43a-7e0b-4e96-8d84-abeed3a6ae40" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cdaa0688-73f4-5898-1400-25c5d3ef7312" executionId="281a9d9b-42f5-4bed-be95-2b248731d66f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="024ceeb1-285b-7107-ccf8-ede36b9aef0d" executionId="b6ccac28-d076-41e2-ba61-ce140dea9c82" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Resultados sin formato de lista" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Todos los resultados cargados" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="10" executed="10" passed="10" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)&#xD;
+[xUnit.net 00:00:00.60]   Discovering: ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:00.97]   Discovered:  ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:01.04]   Starting:    ERP.Infrastructure.Tests&#xD;
+[testcontainers.org 00:00:00.15] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 26.1.4&#xD;
+  Kernel Version: 6.18.54.1-microsoft-standard-WSL2&#xD;
+  API Version: 1.45&#xD;
+  Operating System: Docker Desktop (containerized)&#xD;
+  Total Memory: 15.24 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.42] Docker container 73b697633253 created&#xD;
+[testcontainers.org 00:00:00.56] Start Docker container 73b697633253&#xD;
+[testcontainers.org 00:00:02.00] Wait for Docker container 73b697633253 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.01] Docker container 73b697633253 ready&#xD;
+[testcontainers.org 00:00:02.26] Docker container 061f75a15de2 created&#xD;
+[testcontainers.org 00:00:02.29] Start Docker container 061f75a15de2&#xD;
+[testcontainers.org 00:00:03.66] Wait for Docker container 061f75a15de2 to complete readiness checks&#xD;
+[testcontainers.org 00:00:03.67] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 061f75a15de2&#xD;
+[testcontainers.org 00:00:04.78] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 061f75a15de2&#xD;
+[testcontainers.org 00:00:04.86] Docker container 061f75a15de2 ready&#xD;
+     Warning:&#xD;
+     The component "Fluent Assertions" is governed by the rules defined in the Xceed License Agreement and&#xD;
+     the Xceed Fluent Assertions Community License. You may use Fluent Assertions free of charge for&#xD;
+     non-commercial use only. An active subscription is required to use Fluent Assertions for commercial use.&#xD;
+     Please contact Xceed Sales mailto:sales@xceed.com to acquire a subscription at a very low cost.&#xD;
+     A paid commercial license supports the development and continued increasing support of&#xD;
+     Fluent Assertions users under both commercial and community licenses. Help us&#xD;
+     keep Fluent Assertions at the forefront of unit testing.&#xD;
+     For more information, visit https://xceed.com/products/unit-testing/fluent-assertions/&#xD;
+[testcontainers.org 00:00:18.61] Delete Docker container 061f75a15de2&#xD;
+[testcontainers.org 00:00:19.51] Docker container 02b3865cfbea created&#xD;
+[testcontainers.org 00:00:19.52] Start Docker container 02b3865cfbea&#xD;
+[testcontainers.org 00:00:20.86] Wait for Docker container 02b3865cfbea to complete readiness checks&#xD;
+[testcontainers.org 00:00:20.87] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 02b3865cfbea&#xD;
+[testcontainers.org 00:00:21.96] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 02b3865cfbea&#xD;
+[testcontainers.org 00:00:23.04] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 02b3865cfbea&#xD;
+[testcontainers.org 00:00:23.11] Docker container 02b3865cfbea ready&#xD;
+[testcontainers.org 00:00:27.45] Delete Docker container 02b3865cfbea&#xD;
+[testcontainers.org 00:00:28.24] Docker container 6d5e550e9fd9 created&#xD;
+[testcontainers.org 00:00:28.25] Start Docker container 6d5e550e9fd9&#xD;
+[testcontainers.org 00:00:29.66] Wait for Docker container 6d5e550e9fd9 to complete readiness checks&#xD;
+[testcontainers.org 00:00:29.68] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 6d5e550e9fd9&#xD;
+[testcontainers.org 00:00:30.77] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 6d5e550e9fd9&#xD;
+[testcontainers.org 00:00:30.86] Docker container 6d5e550e9fd9 ready&#xD;
+[testcontainers.org 00:00:35.79] Delete Docker container 6d5e550e9fd9&#xD;
+[testcontainers.org 00:00:36.50] Docker container 7f6a876d2fbe created&#xD;
+[testcontainers.org 00:00:36.51] Start Docker container 7f6a876d2fbe&#xD;
+[testcontainers.org 00:00:37.86] Wait for Docker container 7f6a876d2fbe to complete readiness checks&#xD;
+[testcontainers.org 00:00:37.87] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 7f6a876d2fbe&#xD;
+[testcontainers.org 00:00:38.97] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 7f6a876d2fbe&#xD;
+[testcontainers.org 00:00:40.07] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 7f6a876d2fbe&#xD;
+[testcontainers.org 00:00:40.15] Docker container 7f6a876d2fbe ready&#xD;
+[testcontainers.org 00:00:44.14] Delete Docker container 7f6a876d2fbe&#xD;
+[testcontainers.org 00:00:44.87] Docker container b342d87ea065 created&#xD;
+[testcontainers.org 00:00:44.88] Start Docker container b342d87ea065&#xD;
+[testcontainers.org 00:00:46.21] Wait for Docker container b342d87ea065 to complete readiness checks&#xD;
+[testcontainers.org 00:00:46.28] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container b342d87ea065&#xD;
+[testcontainers.org 00:00:47.37] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container b342d87ea065&#xD;
+[testcontainers.org 00:00:47.46] Docker container b342d87ea065 ready&#xD;
+[testcontainers.org 00:00:51.28] Delete Docker container b342d87ea065&#xD;
+[testcontainers.org 00:00:52.02] Docker container 435079d7913b created&#xD;
+[testcontainers.org 00:00:52.04] Start Docker container 435079d7913b&#xD;
+[testcontainers.org 00:00:53.42] Wait for Docker container 435079d7913b to complete readiness checks&#xD;
+[testcontainers.org 00:00:53.44] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 435079d7913b&#xD;
+[testcontainers.org 00:00:54.54] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 435079d7913b&#xD;
+[testcontainers.org 00:00:54.62] Docker container 435079d7913b ready&#xD;
+[testcontainers.org 00:00:58.89] Delete Docker container 435079d7913b&#xD;
+[testcontainers.org 00:00:59.57] Docker container 44a286633d19 created&#xD;
+[testcontainers.org 00:00:59.60] Start Docker container 44a286633d19&#xD;
+[testcontainers.org 00:01:01.22] Wait for Docker container 44a286633d19 to complete readiness checks&#xD;
+[testcontainers.org 00:01:01.23] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 44a286633d19&#xD;
+[testcontainers.org 00:01:02.32] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 44a286633d19&#xD;
+[testcontainers.org 00:01:03.41] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 44a286633d19&#xD;
+[testcontainers.org 00:01:03.49] Docker container 44a286633d19 ready&#xD;
+[testcontainers.org 00:01:07.62] Delete Docker container 44a286633d19&#xD;
+[testcontainers.org 00:01:08.29] Docker container 264c19eb2607 created&#xD;
+[testcontainers.org 00:01:08.30] Start Docker container 264c19eb2607&#xD;
+[testcontainers.org 00:01:09.65] Wait for Docker container 264c19eb2607 to complete readiness checks&#xD;
+[testcontainers.org 00:01:09.66] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 264c19eb2607&#xD;
+[testcontainers.org 00:01:10.77] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 264c19eb2607&#xD;
+[testcontainers.org 00:01:10.85] Docker container 264c19eb2607 ready&#xD;
+[testcontainers.org 00:01:14.69] Delete Docker container 264c19eb2607&#xD;
+[testcontainers.org 00:01:15.46] Docker container c84ef50da00a created&#xD;
+[testcontainers.org 00:01:15.48] Start Docker container c84ef50da00a&#xD;
+[testcontainers.org 00:01:16.89] Wait for Docker container c84ef50da00a to complete readiness checks&#xD;
+[testcontainers.org 00:01:16.91] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container c84ef50da00a&#xD;
+[testcontainers.org 00:01:17.99] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container c84ef50da00a&#xD;
+[testcontainers.org 00:01:18.08] Docker container c84ef50da00a ready&#xD;
+[testcontainers.org 00:01:22.13] Delete Docker container c84ef50da00a&#xD;
+[testcontainers.org 00:01:22.86] Docker container 51ae9e63c8a2 created&#xD;
+[testcontainers.org 00:01:22.87] Start Docker container 51ae9e63c8a2&#xD;
+[testcontainers.org 00:01:24.20] Wait for Docker container 51ae9e63c8a2 to complete readiness checks&#xD;
+[testcontainers.org 00:01:24.22] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 51ae9e63c8a2&#xD;
+[testcontainers.org 00:01:25.28] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 51ae9e63c8a2&#xD;
+[testcontainers.org 00:01:26.35] Execute "pg_isready --host localhost --dbname erp_invoice_item_search_test --username erp" at Docker container 51ae9e63c8a2&#xD;
+[testcontainers.org 00:01:26.45] Docker container 51ae9e63c8a2 ready&#xD;
+[testcontainers.org 00:01:30.28] Delete Docker container 51ae9e63c8a2&#xD;
+[xUnit.net 00:01:32.15]   Finished:    ERP.Infrastructure.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

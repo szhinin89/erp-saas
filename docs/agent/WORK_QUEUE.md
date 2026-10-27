@@ -4,11 +4,6 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-## A3–A8 — acreditación documental
-
-Acreditar el estado documental A3–A8 antes de convertir antecedentes contradictorios en tareas.
-Los gates de Inventario, Compras, frontend y smoke pendientes están únicamente en STATUS.
-
 ## GOV-002 — adopción del contrato de errores
 
 Preservar el seguimiento de gobernanza abierto, sin asumir que siguen sin iniciar las

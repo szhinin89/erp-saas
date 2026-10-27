@@ -306,6 +306,14 @@ Una devolución autorizada es terminal y ya reingresó Kardex, reembolsó, emiti
 
 `SalesInvoice` y `Payment` nunca se toman en el mismo flujo; ningún flujo que tenga la CxC vuelve a pedir factura, pago o advisory. El cobro no toma `CashSession`. Sin `advisory lock` adicional ni migración: la fila existente es el recurso compartido.
 
+### Búsqueda por barcode de presentación (A5)
+
+La búsqueda de productos para facturar incluye el barcode exacto de una presentación
+activa entre los candidatos de la empresa y tenant solicitados, dentro del contexto
+autenticado. Conserva la prioridad de barcode exacto sobre coincidencias textuales y
+devuelve `MatchedPackagingLevelId` junto con las presentaciones activas para la
+autoselección existente del POS. No requiere coincidencia adicional por SKU o nombre.
+
 ### Tipo de emisión de una venta: snapshot inmutable (POS-EMISSION-TYPE-SNAPSHOT-01)
 
 `SalesInvoice.EmissionPointId` y `SalesInvoice.EmissionType` son **snapshots inmutables** fijados al crear el borrador (`CreateSalesDraftHandler`, desde `ICurrentCashSession` → `EmissionPoint.EmissionType`) y gobiernan **todo** el lifecycle de la factura: estrategia de emisión al autorizar (`ISalesInvoiceEmissionStrategyResolver`), XML/provider electrónico, RIDE, tirilla y DTO.

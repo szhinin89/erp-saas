@@ -298,6 +298,60 @@ public sealed class InvoiceItemSearchRepositoryTests : IAsyncLifetime
         results.Should().HaveCount(2);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A5_packaging_barcode_finds_and_selects_presentation_before_text_match(bool padded)
+    {
+        const string barcode = "7869876543210";
+        var item = SeedItem(_tenantId, "A5-BOX", "Z Producto", "Producto para venta");
+        var packaging = ItemPackagingLevel.Create(item.Id, _tenantId, null, "CAJA", 2,
+            12m, "UNIT", barcode, null, false, false, false, _createdBy);
+        await using (var db = CreateContext(_tenantId))
+        {
+            db.Items.Add(item);
+            db.Set<ItemPackagingLevel>().Add(packaging);
+            db.Entry(packaging).Property<Guid>("CompanyId").CurrentValue = _companyId;
+            db.Items.Add(SeedItem(_tenantId, "A5-TEXT", "A Coincidencia textual", $"Cupón {barcode}"));
+            await db.SaveChangesAsync();
+        }
+
+        await using var readDb = CreateContext(_tenantId);
+        var repo = new InvoiceItemSearchRepository(readDb);
+        var results = await repo.SearchAsync(_tenantId, _companyId,
+            padded ? $"  {barcode}  " : barcode, null, 1);
+
+        var match = results.Should().ContainSingle().Subject;
+        match.Id.Should().Be(item.Id);
+        match.MatchedPackagingLevelId.Should().Be(packaging.Id);
+        match.PackagingLevels.Should().ContainSingle(p => p.Id == packaging.Id && p.BaseQuantity == 12m);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A5_packaging_barcode_respects_explicit_tenant_and_company(bool foreignTenant)
+    {
+        const string barcode = "7869876543210";
+        var item = SeedItem(_tenantId, "A5-SCOPE", "Producto", "Producto para venta");
+        var packaging = ItemPackagingLevel.Create(item.Id, _tenantId, null, "CAJA", 2,
+            12m, "UNIT", barcode, null, false, false, false, _createdBy);
+        await using (var db = CreateContext(_tenantId))
+        {
+            db.Items.Add(item);
+            db.Set<ItemPackagingLevel>().Add(packaging);
+            db.Entry(packaging).Property<Guid>("CompanyId").CurrentValue = _companyId;
+            await db.SaveChangesAsync();
+        }
+
+        await using var readDb = CreateContext(_tenantId);
+        var results = await new InvoiceItemSearchRepository(readDb).SearchAsync(
+            foreignTenant ? Guid.NewGuid() : _tenantId,
+            foreignTenant ? _companyId : Guid.NewGuid(), barcode, null, 10);
+
+        results.Should().BeEmpty();
+    }
+
     private sealed class FixedCurrentTenant(Guid tenantId) : ICurrentTenant
     {
         public Guid TenantId { get; } = tenantId;
