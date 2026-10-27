@@ -1,0 +1,371 @@
+[
+ {
+  "i18nCheck": {
+   "rawKeysVisible": [],
+   "brandMsg": true,
+   "categoryMsg": true
+  }
+ },
+ {
+  "case": "product",
+  "sku": "VIS-PRD-762834",
+  "checks": [
+   {
+    "label": "view.sku",
+    "ok": true,
+    "actual": "VIS-PRD-762834",
+    "expected": "VIS-PRD-762834"
+   },
+   {
+    "label": "view.shortName",
+    "ok": true,
+    "actual": "Producto visual E2E",
+    "expected": "Producto visual E2E"
+   },
+   {
+    "label": "view.description",
+    "ok": true,
+    "actual": "Descripción producto visual",
+    "expected": "Descripción producto visual"
+   },
+   {
+    "label": "view.itemTypeId",
+    "ok": true,
+    "actual": "Físico",
+    "expected": "Físico"
+   },
+   {
+    "label": "view.nature",
+    "ok": true,
+    "actual": "Producto",
+    "expected": "Producto"
+   },
+   {
+    "label": "view.brandId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "view.categoryNodeId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "view.defaultUomCode",
+    "ok": true,
+    "actual": "07 — Kilogramo",
+    "expected": "07 — Kilogramo"
+   },
+   {
+    "label": "view.taxConfig.saleVatCode",
+    "ok": true,
+    "actual": "4 — 15% IVA (tarifa general vigente) (15%)",
+    "expected": "4 — 15% IVA (tarifa general vigente) (15%)"
+   },
+   {
+    "label": "view.taxConfig.purchaseVatCode",
+    "ok": true,
+    "actual": "4 — 15% IVA (tarifa general vigente) (15%)",
+    "expected": "4 — 15% IVA (tarifa general vigente) (15%)"
+   },
+   {
+    "label": "view.barcodes.0.code",
+    "ok": true,
+    "actual": "7797628340011",
+    "expected": "7797628340011"
+   },
+   {
+    "label": "view.price",
+    "ok": true,
+    "actual": "12.5",
+    "expected": "12.5"
+   },
+   {
+    "label": "edit.sku",
+    "ok": true,
+    "actual": "VIS-PRD-762834",
+    "expected": "VIS-PRD-762834"
+   },
+   {
+    "label": "edit.shortName",
+    "ok": true,
+    "actual": "Producto visual E2E editado",
+    "expected": "Producto visual E2E editado"
+   },
+   {
+    "label": "edit.description",
+    "ok": true,
+    "actual": "Descripción producto editada",
+    "expected": "Descripción producto editada"
+   },
+   {
+    "label": "edit.itemTypeId",
+    "ok": true,
+    "actual": "Físico",
+    "expected": "Físico"
+   },
+   {
+    "label": "edit.nature",
+    "ok": true,
+    "actual": "Producto",
+    "expected": "Producto"
+   },
+   {
+    "label": "edit.brandId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "edit.categoryNodeId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "edit.defaultUomCode",
+    "ok": true,
+    "actual": "07 — Kilogramo",
+    "expected": "07 — Kilogramo"
+   },
+   {
+    "label": "edit.taxConfig.saleVatCode",
+    "ok": true,
+    "actual": "0 — 0% IVA (0%)",
+    "expected": "0 — 0% IVA (0%)"
+   },
+   {
+    "label": "edit.taxConfig.purchaseVatCode",
+    "ok": true,
+    "actual": "4 — 15% IVA (tarifa general vigente) (15%)",
+    "expected": "4 — 15% IVA (tarifa general vigente) (15%)"
+   },
+   {
+    "label": "edit.barcodes.0.code",
+    "ok": true,
+    "actual": "7797628340011",
+    "expected": "7797628340011"
+   },
+   {
+    "label": "edit.price",
+    "ok": true,
+    "actual": "13.75",
+    "expected": "13.75"
+   }
+  ],
+  "createErrors": [
+   "check_circleÍtem creado correctamente.close"
+  ],
+  "created": {
+   "sku": "VIS-PRD-762834",
+   "shortName": "Producto visual E2E",
+   "description": "Descripción producto visual",
+   "itemTypeId": "Físico",
+   "nature": "Producto",
+   "brandId": "No aplica",
+   "categoryNodeId": "No aplica",
+   "defaultUomCode": "07 — Kilogramo",
+   "taxConfig.saleVatCode": "4 — 15% IVA (tarifa general vigente) (15%)",
+   "taxConfig.purchaseVatCode": "4 — 15% IVA (tarifa general vigente) (15%)",
+   "barcodes.0.code": "7797628340011",
+   "price": "12.5"
+  },
+  "reopened": {
+   "sku": "VIS-PRD-762834",
+   "shortName": "Producto visual E2E editado",
+   "description": "Descripción producto editada",
+   "itemTypeId": "Físico",
+   "nature": "Producto",
+   "brandId": "No aplica",
+   "categoryNodeId": "No aplica",
+   "defaultUomCode": "07 — Kilogramo",
+   "taxConfig.saleVatCode": "0 — 0% IVA (0%)",
+   "taxConfig.purchaseVatCode": "4 — 15% IVA (tarifa general vigente) (15%)",
+   "barcodes.0.code": "7797628340011",
+   "price": "13.75"
+  }
+ },
+ {
+  "case": "service",
+  "sku": "VIS-SRV-762834",
+  "checks": [
+   {
+    "label": "view.sku",
+    "ok": true,
+    "actual": "VIS-SRV-762834",
+    "expected": "VIS-SRV-762834"
+   },
+   {
+    "label": "view.shortName",
+    "ok": true,
+    "actual": "Servicio visual E2E",
+    "expected": "Servicio visual E2E"
+   },
+   {
+    "label": "view.description",
+    "ok": true,
+    "actual": "Descripción servicio visual",
+    "expected": "Descripción servicio visual"
+   },
+   {
+    "label": "view.itemTypeId",
+    "ok": true,
+    "actual": "Servicio",
+    "expected": "Servicio"
+   },
+   {
+    "label": "view.nature",
+    "ok": true,
+    "actual": "Servicio",
+    "expected": "Servicio"
+   },
+   {
+    "label": "view.brandId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "view.categoryNodeId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "view.defaultUomCode",
+    "ok": true,
+    "actual": "01 — Unidad Biológica",
+    "expected": "01 — Unidad Biológica"
+   },
+   {
+    "label": "view.taxConfig.saleVatCode",
+    "ok": true,
+    "actual": "4 — 15% IVA (tarifa general vigente) (15%)",
+    "expected": "4 — 15% IVA (tarifa general vigente) (15%)"
+   },
+   {
+    "label": "view.taxConfig.purchaseVatCode",
+    "ok": true,
+    "actual": "4 — 15% IVA (tarifa general vigente) (15%)",
+    "expected": "4 — 15% IVA (tarifa general vigente) (15%)"
+   },
+   {
+    "label": "view.barcodes.0.code",
+    "ok": true,
+    "actual": "7807628340022",
+    "expected": "7807628340022"
+   },
+   {
+    "label": "view.price",
+    "ok": true,
+    "actual": "40",
+    "expected": "40"
+   },
+   {
+    "label": "edit.sku",
+    "ok": true,
+    "actual": "VIS-SRV-762834",
+    "expected": "VIS-SRV-762834"
+   },
+   {
+    "label": "edit.shortName",
+    "ok": true,
+    "actual": "Servicio visual E2E editado",
+    "expected": "Servicio visual E2E editado"
+   },
+   {
+    "label": "edit.description",
+    "ok": true,
+    "actual": "Descripción servicio editada",
+    "expected": "Descripción servicio editada"
+   },
+   {
+    "label": "edit.itemTypeId",
+    "ok": true,
+    "actual": "Servicio",
+    "expected": "Servicio"
+   },
+   {
+    "label": "edit.nature",
+    "ok": true,
+    "actual": "Servicio",
+    "expected": "Servicio"
+   },
+   {
+    "label": "edit.brandId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "edit.categoryNodeId",
+    "ok": true,
+    "actual": "No aplica",
+    "expected": "No aplica"
+   },
+   {
+    "label": "edit.defaultUomCode",
+    "ok": true,
+    "actual": "01 — Unidad Biológica",
+    "expected": "01 — Unidad Biológica"
+   },
+   {
+    "label": "edit.taxConfig.saleVatCode",
+    "ok": true,
+    "actual": "6 — No objeto de Impuesto (0%)",
+    "expected": "6 — No objeto de Impuesto (0%)"
+   },
+   {
+    "label": "edit.taxConfig.purchaseVatCode",
+    "ok": true,
+    "actual": "4 — 15% IVA (tarifa general vigente) (15%)",
+    "expected": "4 — 15% IVA (tarifa general vigente) (15%)"
+   },
+   {
+    "label": "edit.barcodes.0.code",
+    "ok": true,
+    "actual": "7807628340022",
+    "expected": "7807628340022"
+   },
+   {
+    "label": "edit.price",
+    "ok": true,
+    "actual": "45",
+    "expected": "45"
+   }
+  ],
+  "createErrors": [
+   "check_circleÍtem creado correctamente.close"
+  ],
+  "created": {
+   "sku": "VIS-SRV-762834",
+   "shortName": "Servicio visual E2E",
+   "description": "Descripción servicio visual",
+   "itemTypeId": "Servicio",
+   "nature": "Servicio",
+   "brandId": "No aplica",
+   "categoryNodeId": "No aplica",
+   "defaultUomCode": "01 — Unidad Biológica",
+   "taxConfig.saleVatCode": "4 — 15% IVA (tarifa general vigente) (15%)",
+   "taxConfig.purchaseVatCode": "4 — 15% IVA (tarifa general vigente) (15%)",
+   "barcodes.0.code": "7807628340022",
+   "price": "40"
+  },
+  "reopened": {
+   "sku": "VIS-SRV-762834",
+   "shortName": "Servicio visual E2E editado",
+   "description": "Descripción servicio editada",
+   "itemTypeId": "Servicio",
+   "nature": "Servicio",
+   "brandId": "No aplica",
+   "categoryNodeId": "No aplica",
+   "defaultUomCode": "01 — Unidad Biológica",
+   "taxConfig.saleVatCode": "6 — No objeto de Impuesto (0%)",
+   "taxConfig.purchaseVatCode": "4 — 15% IVA (tarifa general vigente) (15%)",
+   "barcodes.0.code": "7807628340022",
+   "price": "45"
+  }
+ }
+]

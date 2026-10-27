@@ -134,7 +134,63 @@ function getMetricValue(label: string) {
     ?.textContent;
 }
 
+function EditHydrationHarness() {
+  const methods = useForm<CreateItemFormValues>({
+    defaultValues: {
+      baseSalePrice: null,
+      taxConfig: { saleVatCode: "", purchaseVatCode: "", exciseTaxCode: "" },
+      saleConfig: {
+        isForSale: true,
+        maxDiscountPercent: null,
+        isAvailableOnWeb: false,
+        isAvailableOnPOS: false,
+        isAvailableOnMobile: false,
+        isEcommerceActive: false,
+      },
+    } as unknown as CreateItemFormValues,
+  });
+  const watchedBasePrice = methods.watch("baseSalePrice");
+
+  return (
+    <FormProvider {...methods}>
+      <button
+        type="button"
+        onClick={() =>
+          methods.reset({
+            baseSalePrice: 12.5,
+            taxConfig: { saleVatCode: "IVA15", purchaseVatCode: "", exciseTaxCode: "" },
+            saleConfig: {
+              isForSale: true,
+              maxDiscountPercent: null,
+              isAvailableOnWeb: false,
+              isAvailableOnPOS: false,
+              isAvailableOnMobile: false,
+              isEcommerceActive: false,
+            },
+          } as unknown as CreateItemFormValues)
+        }
+      >
+        Cargar detalle
+      </button>
+      <PricingTab t={t} disabled={false} itemId="item-1" vatRateOptions={vatRateOptions} />
+      <output data-testid="base-sale-price">{watchedBasePrice ?? ""}</output>
+    </FormProvider>
+  );
+}
+
 describe("PricingTab", () => {
+  it("al reabrir un ítem (reset con precio e IVA) conserva el precio persistido", async () => {
+    render(<EditHydrationHarness />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cargar detalle" }));
+
+    await waitFor(() => {
+      const priceInput = screen.getByPlaceholderText("0.00") as HTMLInputElement;
+      expect(Number(priceInput.value)).toBe(12.5);
+      expect(screen.getByTestId("base-sale-price").textContent).toBe("12.5");
+    });
+  });
+
   it("calcula IVA desde precio sin IVA sin persistir campos derivados", async () => {
     render(<PricingHarness baseSalePrice={100} />);
 

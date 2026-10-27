@@ -216,6 +216,9 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
   useEffect(() => {
     if (syncedBasePrice.current === basePrice) return;
     syncedBasePrice.current = basePrice;
+    // El precio persistido llega (reset al reabrir) junto con su tarifa IVA: en este mismo
+    // commit el efecto derivado vería el input aún vacío y borraría el precio cargado.
+    skipNextDerivedPersist.current = true;
     setInputPriceMode("net");
     setInputPriceValue(valueFromBasePrice(basePrice));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -238,6 +241,11 @@ export function PricingTab({ t, disabled, itemId, vatRateOptions }: Props) {
     persistNetPrice(computedNetPrice);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputPriceMode, vatDecimal]);
+
+  // El salto solo aplica al commit en que se sincronizó el precio persistido.
+  useEffect(() => {
+    skipNextDerivedPersist.current = false;
+  });
 
   const handlePriceChange = (nextValue: string) => {
     setInputPriceValue(nextValue);

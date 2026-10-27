@@ -70,4 +70,9 @@ La precarga de selectores asíncronos recupera el valor persistido (incluido el 
 sin sobrescribir campos ya editados. Evidencia y límites de validación:
 [alineación de formularios](../evidence/items-forms-alignment-01/README.md).
 
+Reabrir un ítem muestra su `BaseSalePrice` persistido; la llegada simultánea de la tarifa IVA no
+lo recalcula ni lo borra. Todo mensaje de validación de los esquemas `items.validation.*` tiene
+traducción. E2E visual Product/Service (crear, guardar, reabrir, editar, conservar) 48/48 PASS:
+[E2E visual](../evidence/items-e2e-visual-01/README.md).
+
 Domain/Application (filtro Items/Inventory/Purchases, 2026-10-19): 354/354 y 551/551 PASS. PostgreSQL: `ItemCompanyScopeA1Tests` 16/16 PASS. Cobertura adicional: `ItemNatureA1Tests`, `CreateItemCommandValidatorTests`, `UpdateItemCommandHandlerTests`, `ReplaceItemPackagingLevelsTests`, `ItemVariantBarcodeTests`, `ItemSupplierCodeTests`, `RequiredItemVatTests`, `ItemTaxConfigTests`.
