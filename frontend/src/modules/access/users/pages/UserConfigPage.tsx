@@ -20,9 +20,7 @@ import { presentPermissionsMutationFailure } from "../../permissionsMutationFail
 import { applyServerErrors } from "../../../lib/validationErrors";
 import {
   membershipService,
-  MEMBERSHIP_ROLES,
   type CompanyUserMembershipAdminDto,
-  type MembershipRole,
 } from "../api/membershipService";
 import { branchAssignmentService } from "../api/branchAssignmentService";
 import { companyUserPreferencesService } from "../../api/companyUserPreferencesService";
@@ -33,6 +31,13 @@ import {
 } from "../../../branches/facades/branchLookupFacade";
 import { userConfigTabs, type UserConfigTabId } from "../config/userConfigTabs";
 import {
+  EMPTY_FORM_VALUES,
+  NO_BLOCK_ERRORS,
+  asMembershipRole,
+  parseTab,
+  type BlockErrors,
+} from "../config/userConfigForm";
+import {
   userConfigSchema,
   type UserConfigFormValues,
 } from "../../../../schemas/access/userConfigSchema";
@@ -41,43 +46,6 @@ import "../pages/UsersPage.css";
 
 const PERMISSION = "access.company_user_memberships.view";
 const CREATE_USER_PERMISSION = "access.identity_users.create";
-
-const VALID_TAB_IDS = userConfigTabs.map((tab) => tab.id);
-const DEFAULT_TAB: UserConfigTabId = "general";
-
-const EMPTY_FORM_VALUES: UserConfigFormValues = {
-  stage: "pending",
-  username: "",
-  firstName: "",
-  lastName: "",
-  email: "",
-  password: "",
-  role: "User",
-  profileId: null,
-  authorizedBranchIds: [],
-  loginMode: "AskBranch",
-  defaultBranchId: null,
-};
-
-function parseTab(raw: string | null): UserConfigTabId {
-  if (raw && (VALID_TAB_IDS as string[]).includes(raw))
-    return raw as UserConfigTabId;
-  return DEFAULT_TAB;
-}
-
-/** Backend persiste Role como string libre (SecurityRoles) — defensivo ante valores inesperados. */
-function asMembershipRole(role: string): MembershipRole {
-  return (MEMBERSHIP_ROLES as readonly string[]).includes(role)
-    ? (role as MembershipRole)
-    : "User";
-}
-
-type BlockErrors = { general: string; branches: string; preferences: string };
-const NO_BLOCK_ERRORS: BlockErrors = {
-  general: "",
-  branches: "",
-  preferences: "",
-};
 
 /**
  * Pantalla única de configuración de usuario (Fase 1 + pulido UX Fase 2). Un único formulario

@@ -15,6 +15,11 @@ import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { formatApiRequestError } from "../../lib/apiError";
 import { presentPermissionsMutationFailure } from "../permissionsMutationFailure";
+import {
+  categoryActionCodes,
+  categorySelectionState as selectionStateOf,
+  toggleActionState,
+} from "../permissionsAssignmentState";
 import { message } from "../../../lib/messages";
 import "./ProfilesPage.css";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
@@ -163,21 +168,9 @@ export function PermissionsAssignmentPage() {
     else setSearchParams({});
   };
 
-  /* ── Toggle con cascada por ítem: cualquier acción distinta de la principal
-     (actions[0], el permiso de acceso) exige que la principal esté activa; apagar la
-     principal apaga el resto de acciones del mismo ítem. Sin cambios de comportamiento. ── */
+  /* ── Toggle con cascada por ítem (regla en permissionsAssignmentState). ── */
   const toggleAction = (item: PermissionCatalogItem, actionCode: string, checked: boolean) => {
-    setPermState((state) => {
-      const next = { ...state, [actionCode]: checked };
-      const baseCode = item.actions[0]?.code;
-      if (baseCode) {
-        if (checked && actionCode !== baseCode) next[baseCode] = true;
-        if (!checked && actionCode === baseCode) {
-          for (const action of item.actions) next[action.code] = false;
-        }
-      }
-      return next;
-    });
+    setPermState((state) => toggleActionState(state, item, actionCode, checked));
   };
 
   /* ── Acciones rápidas: conveniencias de edición masiva sobre el mismo permState,
@@ -208,20 +201,8 @@ export function PermissionsAssignmentPage() {
   /* ── Selector masivo por categoría (Nivel 2): mismo mecanismo que markAll/unmarkAll, pero
      acotado a los actionCodes de una sola categoría — permite marcar/desmarcar toda una
      categoría del menú (p. ej. "Cuentas por pagar") de una sola vez. ── */
-  const categoryActionCodes = (category: PermissionCatalogCategory) => {
-    const codes = new Set<string>();
-    for (const item of category.items) for (const action of item.actions) codes.add(action.code);
-    return codes;
-  };
-
-  const categorySelectionState = (category: PermissionCatalogCategory): "all" | "none" | "partial" => {
-    const codes = [...categoryActionCodes(category)];
-    if (codes.length === 0) return "none";
-    const activeCount = codes.filter((code) => permState[code]).length;
-    if (activeCount === 0) return "none";
-    if (activeCount === codes.length) return "all";
-    return "partial";
-  };
+  const categorySelectionState = (category: PermissionCatalogCategory) =>
+    selectionStateOf(category, permState);
 
   const toggleCategoryAll = (category: PermissionCatalogCategory) => {
     const codes = categoryActionCodes(category);
