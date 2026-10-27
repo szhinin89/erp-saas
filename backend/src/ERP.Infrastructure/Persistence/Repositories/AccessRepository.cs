@@ -184,13 +184,16 @@ public class AccessRepository : IAccessRepository
             select m
         ).CountAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(
+    // SEC-05: AccessProfile es ICompanyOperationalEntity — el filtro global (tenant + empresa
+    // activa) aplica además del predicado explícito; sin empresa activa, 0 filas.
+    public async Task<IReadOnlyList<AccessProfile>> GetProfilesByCompanyAsync(
         Guid tenantId,
+        Guid companyId,
         bool onlyActive = true,
         CancellationToken cancellationToken = default
     )
     {
-        var q = _db.AccessProfiles.Where(p => p.TenantId == tenantId);
+        var q = _db.AccessProfiles.Where(p => p.TenantId == tenantId && p.CompanyId == companyId);
         if (onlyActive)
             q = q.Where(p => p.IsActive);
         return await q.OrderBy(p => p.Name).ToListAsync(cancellationToken);
@@ -198,11 +201,12 @@ public class AccessRepository : IAccessRepository
 
     public Task<AccessProfile?> GetProfileByIdAsync(
         Guid tenantId,
+        Guid companyId,
         Guid profileId,
         CancellationToken cancellationToken = default
     ) =>
         _db.AccessProfiles.FirstOrDefaultAsync(
-            p => p.TenantId == tenantId && p.Id == profileId,
+            p => p.TenantId == tenantId && p.CompanyId == companyId && p.Id == profileId,
             cancellationToken
         );
 
@@ -220,6 +224,30 @@ public class AccessRepository : IAccessRepository
             .AccessProfilePermissions.Where(p => p.TenantId == tenantId && p.ProfileId == profileId)
             .OrderBy(p => p.PermissionKey)
             .ToListAsync(cancellationToken);
+
+    // Runtime: la empresa operativa puede venir de la única membership del usuario (sin
+    // X-Company-Id), así que el filtro global de empresa no sirve aquí; el bypass se compensa con
+    // tenant + empresa + perfil activo explícitos (mismo patrón que las memberships).
+    public async Task<
+        IReadOnlyList<AccessProfilePermission>
+    > GetActiveProfilePermissionsForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid profileId,
+        CancellationToken cancellationToken = default
+    ) =>
+        await (
+            from perm in _db.AccessProfilePermissions.AsPlatformQuery()
+            join profile in _db.AccessProfiles.AsPlatformQuery() on perm.ProfileId equals profile.Id
+            where
+                perm.TenantId == tenantId
+                && perm.ProfileId == profileId
+                && profile.TenantId == tenantId
+                && profile.CompanyId == companyId
+                && profile.IsActive
+            orderby perm.PermissionKey
+            select perm
+        ).ToListAsync(cancellationToken);
 
     public Task<AccessProfilePermission?> GetProfilePermissionAsync(
         Guid tenantId,

@@ -33,6 +33,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -70,9 +74,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Name")
+                    b.HasAlternateKey("CompanyId", "Id")
+                        .HasName("ak_access_profiles_company_id");
+
+                    b.HasIndex("TenantId", "CompanyId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("ux_access_profiles_subscriber_name");
+                        .HasDatabaseName("ux_access_profiles_tenant_company_name");
 
                     b.ToTable("access_profiles", (string)null);
                 });
@@ -238,6 +245,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("CompanyId", "IdentityUserId")
                         .IsUnique()
                         .HasDatabaseName("ux_company_user_memberships_company_identity_user");
+
+                    b.HasIndex("CompanyId", "ProfileId");
 
                     b.ToTable("company_user_memberships", (string)null);
                 });
@@ -19430,6 +19439,16 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("OutboxMessages", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Access.Entities.AccessProfile", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_access_profiles_company_company_id");
+                });
+
             modelBuilder.Entity("ERP.Domain.Access.Entities.CompanyUserBranch", b =>
                 {
                     b.HasOne("ERP.Domain.Branches.Entities.Branch", null)
@@ -19459,6 +19478,13 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_company_user_memberships_company_company_id");
+
+                    b.HasOne("ERP.Domain.Access.Entities.AccessProfile", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "ProfileId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_company_user_memberships_access_profiles_company_profile");
                 });
 
             modelBuilder.Entity("ERP.Domain.Access.Entities.CompanyUserPreferences", b =>

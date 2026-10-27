@@ -47,6 +47,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     description = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
@@ -59,6 +60,7 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_access_profiles", x => x.id);
+                    table.UniqueConstraint("ak_access_profiles_company_id", x => new { x.company_id, x.id });
                 });
 
             migrationBuilder.CreateTable(
@@ -7283,9 +7285,9 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_access_profiles_subscriber_name",
+                name: "ux_access_profiles_tenant_company_name",
                 table: "access_profiles",
-                columns: new[] { "tenant_id", "name" },
+                columns: new[] { "tenant_id", "company_id", "name" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7824,6 +7826,28 @@ namespace ERP.Infrastructure.Migrations
                 table: "company_user_memberships",
                 columns: new[] { "company_id", "identity_user_id" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_company_user_memberships_company_id_profile_id",
+                table: "company_user_memberships",
+                columns: new[] { "company_id", "profile_id" });
+
+            // SEC-05: perfiles por empresa — el perfil de una membership pertenece a su misma empresa.
+            migrationBuilder.AddForeignKey(
+                name: "fk_access_profiles_company_company_id",
+                table: "access_profiles",
+                column: "company_id",
+                principalTable: "company",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_company_user_memberships_access_profiles_company_profile",
+                table: "company_user_memberships",
+                columns: new[] { "company_id", "profile_id" },
+                principalTable: "access_profiles",
+                principalColumns: new[] { "company_id", "id" },
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.CreateIndex(
                 name: "ix_company_user_preferences_company",
@@ -11053,6 +11077,10 @@ namespace ERP.Infrastructure.Migrations
                 DROP INDEX IF EXISTS uq_mbp_identification;
                 """
             );
+
+            migrationBuilder.DropForeignKey(
+                name: "fk_company_user_memberships_access_profiles_company_profile",
+                table: "company_user_memberships");
 
             migrationBuilder.DropTable(
                 name: "access_profile_permissions");

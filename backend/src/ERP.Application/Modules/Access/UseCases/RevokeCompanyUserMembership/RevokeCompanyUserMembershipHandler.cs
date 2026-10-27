@@ -2,6 +2,7 @@ using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Navigation;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Kernel.Security;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
@@ -17,6 +18,7 @@ public class RevokeCompanyUserMembershipHandler
     private readonly ICompanyRepository _companyRepository;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
     private readonly INavigationBuilder _navigationBuilder;
+    private readonly ICompanyContextProvider _companyContext;
 
     public RevokeCompanyUserMembershipHandler(
         IAccessRepository accessRepository,
@@ -24,7 +26,8 @@ public class RevokeCompanyUserMembershipHandler
         ITenantRepository TenantRepository,
         ICompanyRepository companyRepository,
         IPermissionsCacheInvalidator permissionsCache,
-        INavigationBuilder navigationBuilder
+        INavigationBuilder navigationBuilder,
+        ICompanyContextProvider companyContext
     )
     {
         _accessRepository = accessRepository;
@@ -33,6 +36,7 @@ public class RevokeCompanyUserMembershipHandler
         _companyRepository = companyRepository;
         _permissionsCache = permissionsCache;
         _navigationBuilder = navigationBuilder;
+        _companyContext = companyContext;
     }
 
     public Task<Result<object>> HandleAsync(
@@ -69,6 +73,19 @@ public class RevokeCompanyUserMembershipHandler
         );
         if (membership is null || !membership.IsActive)
             return Result<object>.Success(new { });
+
+        // SEC-05: retirar una membership Admin es retirar el rol Admin — solo un Admin de esta
+        // empresa u operador global (mismo bypass que RuntimePermissionAuthorizer).
+        if (string.Equals(membership.Role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            var actor = await _companyContext.ResolveOperationalForCurrentUserAsync(
+                cancellationToken
+            );
+            if (actor is null || actor.CompanyId != company.Id || !actor.HasAdminBypass)
+                return Result<object>.Forbidden(
+                    "Solo un administrador de la empresa puede retirar el rol Admin."
+                );
+        }
 
         // CompanyAdministratorInvariant: la empresa debe conservar al menos un Administrador
         // activo tras la revocación — regla pura, el handler obtiene las memberships activas y

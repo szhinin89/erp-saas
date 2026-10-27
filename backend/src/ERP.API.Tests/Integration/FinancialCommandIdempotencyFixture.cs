@@ -541,6 +541,7 @@ public sealed class FinancialCommandIdempotencyFixture : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var profile = AccessProfile.Create(
             TenantId,
+            CompanyId,
             $"Perfil {Guid.NewGuid():N}"[..20],
             null,
             _adminId

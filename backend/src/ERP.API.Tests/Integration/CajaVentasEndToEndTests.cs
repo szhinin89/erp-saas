@@ -434,7 +434,7 @@ public sealed class CajaVentasFlowFixture : IAsyncLifetime
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-        var profile = AccessProfile.Create(TenantId, name, null, _adminId);
+        var profile = AccessProfile.Create(TenantId, CompanyId, name, null, _adminId);
         db.AccessProfiles.Add(profile);
         await db.SaveChangesAsync();
 

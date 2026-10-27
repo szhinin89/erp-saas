@@ -34,5 +34,16 @@ public class CompanyUserMembershipConfiguration : IEntityTypeConfiguration<Compa
             .HasForeignKey(m => m.CompanyId)
             .OnDelete(DeleteBehavior.Cascade)
             .HasConstraintName("fk_company_user_memberships_company_company_id");
+
+        // SEC-05: FK compuesta — el perfil asignado debe pertenecer a la misma empresa de la
+        // membership. Con profile_id NULL (Admin sin perfil) la restricción no aplica.
+        builder
+            .HasOne<AccessProfile>()
+            .WithMany()
+            .HasForeignKey(m => new { m.CompanyId, m.ProfileId })
+            .HasPrincipalKey(p => new { p.CompanyId, p.Id })
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_company_user_memberships_access_profiles_company_profile");
     }
 }

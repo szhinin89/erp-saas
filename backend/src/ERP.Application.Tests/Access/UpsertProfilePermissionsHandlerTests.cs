@@ -16,7 +16,9 @@ namespace ERP.Application.Tests.Access;
 /// ADMIN-PERMISSIONS-SSOT-KERNEL-02 / SECURITY-PERMISSION-SCOPE-01 — cubre: (1) rechazo atómico
 /// de permisos inexistentes y no asignables contra KernelRegistry (nunca un guardado parcial de
 /// los válidos), y (2) la regla anti-escalamiento: un asignador sin rol Admin nunca puede otorgar
-/// un permiso que él mismo no tiene efectivo en su contexto operativo actual.
+/// un permiso que él mismo no tiene efectivo en su contexto operativo actual. SEC-05: el perfil se
+/// resuelve en el tenant y la empresa activa; un perfil de otra empresa no existe para el handler y
+/// la invalidación de cachés solo alcanza a la empresa activa.
 /// </summary>
 public sealed class UpsertProfilePermissionsHandlerTests
 {
@@ -28,6 +30,7 @@ public sealed class UpsertProfilePermissionsHandlerTests
 
     private readonly Mock<IAccessRepository> _repo = new();
     private readonly Mock<ICurrentTenant> _currentTenant = new();
+    private readonly Mock<ICurrentCompany> _currentCompany = new();
     private readonly Mock<ICurrentUser> _currentUser = new();
     private readonly Mock<IPermissionsCacheInvalidator> _permissionsCache = new();
     private readonly Mock<INavigationBuilder> _navigationBuilder = new();
@@ -38,6 +41,7 @@ public sealed class UpsertProfilePermissionsHandlerTests
         new(
             _repo.Object,
             _currentTenant.Object,
+            _currentCompany.Object,
             _currentUser.Object,
             _permissionsCache.Object,
             _navigationBuilder.Object,
@@ -48,12 +52,16 @@ public sealed class UpsertProfilePermissionsHandlerTests
     public UpsertProfilePermissionsHandlerTests()
     {
         _currentTenant.SetupGet(x => x.TenantId).Returns(TenantId);
+        _currentCompany.SetupGet(x => x.CompanyId).Returns(CompanyId);
+        _currentCompany.SetupGet(x => x.HasCompanyContext).Returns(true);
         _currentUser.SetupGet(x => x.IsAuthenticated).Returns(true);
         _currentUser.SetupGet(x => x.UserId).Returns(UserId);
 
         _repo
-            .Setup(x => x.GetProfileByIdAsync(TenantId, ProfileId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(AccessProfile.Create(TenantId, "Test", null, UserId));
+            .Setup(x =>
+                x.GetProfileByIdAsync(TenantId, CompanyId, ProfileId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(AccessProfile.Create(TenantId, CompanyId, "Test", null, UserId));
         _repo
             .Setup(x =>
                 x.GetProfilePermissionAsync(
@@ -66,8 +74,8 @@ public sealed class UpsertProfilePermissionsHandlerTests
             .ReturnsAsync((AccessProfilePermission?)null);
         _repo
             .Setup(x =>
-                x.GetCompanyUserMembershipsByTenantAsync(
-                    TenantId,
+                x.GetCompanyUserMembershipsByCompanyAsync(
+                    CompanyId,
                     true,
                     It.IsAny<CancellationToken>()
                 )
@@ -143,6 +151,7 @@ public sealed class UpsertProfilePermissionsHandlerTests
         _repo.Verify(
             x =>
                 x.GetProfileByIdAsync(
+                    It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
                     It.IsAny<Guid>(),
                     It.IsAny<CancellationToken>()
@@ -339,20 +348,19 @@ public sealed class UpsertProfilePermissionsHandlerTests
     }
 
     [Fact]
-    public async Task Profile_belonging_to_another_tenant_is_rejected_as_not_found_and_nothing_is_saved()
+    public async Task Profile_belonging_to_another_company_is_rejected_as_not_found_and_nothing_is_saved()
     {
-        // MEDIO cluster (auditoría multi-tenant): GetProfileByIdAsync está tenant-scoped por
-        // contrato (tenantId + profileId) — un perfil que pertenece a OTRO tenant nunca puede
-        // resolverse desde el tenant activo del caller, sin importar si el ProfileId es válido o
-        // adivinable. Distinto de "perfil inexistente": aquí el perfil sí existe, pero en otro
-        // tenant.
+        // SEC-05: GetProfileByIdAsync resuelve tenant + empresa activa + profileId — un perfil de
+        // OTRA empresa (mismo tenant) o de otro tenant nunca se resuelve, aunque el ProfileId sea
+        // válido o adivinable, ni siquiera para un Admin de la empresa activa.
         SetAssignerRole(SecurityRoles.Admin);
-        var profileOfAnotherTenant = Guid.NewGuid();
+        var profileOfAnotherCompany = Guid.NewGuid();
         _repo
             .Setup(x =>
                 x.GetProfileByIdAsync(
                     TenantId,
-                    profileOfAnotherTenant,
+                    CompanyId,
+                    profileOfAnotherCompany,
                     It.IsAny<CancellationToken>()
                 )
             )
@@ -360,7 +368,7 @@ public sealed class UpsertProfilePermissionsHandlerTests
 
         var handler = CreateHandler();
         var command = new UpsertProfilePermissionsCommand(
-            profileOfAnotherTenant,
+            profileOfAnotherCompany,
             new[] { new PermissionUpsertItem("access.profiles.view", true) }
         );
 
@@ -397,5 +405,90 @@ public sealed class UpsertProfilePermissionsHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
         _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Assigner_context_resolved_in_another_company_is_forbidden()
+    {
+        // SEC-05: el alcance del asignador se evalúa en la misma empresa del perfil (empresa
+        // activa); un contexto operativo de otra empresa nunca autoriza la concesión.
+        _companyContext
+            .Setup(x => x.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new OperationalCompanyContext(
+                    Guid.NewGuid(),
+                    UserId,
+                    null,
+                    true,
+                    MembershipRole: SecurityRoles.Admin
+                )
+            );
+        var handler = CreateHandler();
+        var command = new UpsertProfilePermissionsCommand(
+            ProfileId,
+            new[] { new PermissionUpsertItem("access.profiles.view", true) }
+        );
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Cache_invalidation_only_reaches_the_active_company_memberships_of_the_profile()
+    {
+        SetAssignerRole(SecurityRoles.Admin);
+        var memberUserId = Guid.NewGuid();
+        _repo
+            .Setup(x =>
+                x.GetCompanyUserMembershipsByCompanyAsync(
+                    CompanyId,
+                    true,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                [
+                    CompanyUserMembership.Create(
+                        CompanyId,
+                        memberUserId,
+                        "User",
+                        ProfileId,
+                        UserId
+                    ),
+                    CompanyUserMembership.Create(CompanyId, Guid.NewGuid(), "User", null, UserId),
+                ]
+            );
+        var handler = CreateHandler();
+        var command = new UpsertProfilePermissionsCommand(
+            ProfileId,
+            new[] { new PermissionUpsertItem("access.profiles.view", true) }
+        );
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        _permissionsCache.Verify(
+            x => x.BumpCompanyVersionAsync(CompanyId, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+        _permissionsCache.Verify(
+            x =>
+                x.BumpCompanyVersionAsync(
+                    It.Is<Guid>(id => id != CompanyId),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        _navigationBuilder.Verify(
+            x => x.InvalidateCache(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()),
+            Times.Once
+        );
+        _navigationBuilder.Verify(
+            x => x.InvalidateCache(TenantId, CompanyId, memberUserId),
+            Times.Once
+        );
     }
 }

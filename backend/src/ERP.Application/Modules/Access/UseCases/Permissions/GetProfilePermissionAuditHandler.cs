@@ -8,7 +8,8 @@ using MediatR;
 namespace ERP.Application.Access.UseCases.Permissions;
 
 public record GetProfilePermissionAuditQuery(Guid ProfileId)
-    : IRequest<Result<ProfilePermissionAuditDto>>;
+    : IRequest<Result<ProfilePermissionAuditDto>>,
+        IRequiresCompanyContext;
 
 public sealed record ProfilePermissionAuditDto(
     Guid ProfileId,
@@ -41,11 +42,17 @@ public sealed class GetProfilePermissionAuditHandler
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
-    public GetProfilePermissionAuditHandler(IAccessRepository repo, ICurrentTenant currentTenant)
+    public GetProfilePermissionAuditHandler(
+        IAccessRepository repo,
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<ProfilePermissionAuditDto>> Handle(
@@ -57,6 +64,7 @@ public sealed class GetProfilePermissionAuditHandler
 
         var profile = await _repo.GetProfileByIdAsync(
             tenantId,
+            _currentCompany.CompanyId,
             request.ProfileId,
             cancellationToken
         );

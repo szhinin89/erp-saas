@@ -46,7 +46,7 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
         if (!acquired)
         {
             _diagnostics.RecordMiss(PermissionsCacheMissReason.StampedeFallback);
-            return await LoadFromDatabaseAsync(tenantId, profileId, cancellationToken);
+            return await LoadFromDatabaseAsync(tenantId, companyId, profileId, cancellationToken);
         }
 
         try
@@ -60,7 +60,12 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
 
             _diagnostics.RecordMiss(cached.MissReason ?? PermissionsCacheMissReason.NotFound);
 
-            var allowed = await LoadFromDatabaseAsync(tenantId, profileId, cancellationToken);
+            var allowed = await LoadFromDatabaseAsync(
+                tenantId,
+                companyId,
+                profileId,
+                cancellationToken
+            );
             await _cache.WriteAsync(
                 tenantId,
                 companyId,
@@ -78,13 +83,21 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
         }
     }
 
+    // SEC-05: solo concede permisos un perfil activo de la misma empresa de la membership; un
+    // perfil desactivado o ajeno resuelve a vacío.
     private async Task<IReadOnlyList<string>> LoadFromDatabaseAsync(
         Guid tenantId,
+        Guid companyId,
         Guid profileId,
         CancellationToken cancellationToken
     )
     {
-        var items = await _repo.GetProfilePermissionsAsync(tenantId, profileId, cancellationToken);
+        var items = await _repo.GetActiveProfilePermissionsForCompanyAsync(
+            tenantId,
+            companyId,
+            profileId,
+            cancellationToken
+        );
         var allowed = items
             .Where(p => p.IsAllowed)
             .Select(p => p.PermissionKey)

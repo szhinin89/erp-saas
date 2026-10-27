@@ -24,6 +24,11 @@ Una empresa no consulta, modifica, usa ni afecta datos operativos de otra, aunqu
   - El bypass Admin (`*`) corresponde solo al rol `Admin` **de la membership de la empresa operativa**: ser Admin en A no concede privilegios en B. El rol del JWT (emitido para la empresa de apertura de sesión) nunca es autoridad de permisos. La única excepción transversal es el administrador global en modo operador, validado por `IOperatorCompanyAccessPolicy` (`operator_mode` + `GlobalUserRole` Admin activa).
   - `GetMyPermissions`, el contexto de sesión (roles/permisos), la navegación y la regla anti-escalamiento de `UpsertProfilePermissions` aplican la misma regla (`OperationalCompanyContext.HasAdminBypass`).
   - `perm:*` no reemplaza la validación de scope: **toda operación COMPANY expuesta por la API declara su marcador** o, como única alternativa existente, valida con el guard explícito en el handler (`RequireCurrentCompanyAsync` / `RequireMembershipAsync`, p. ej. perfil de empresa). Excepción conocida: `CreateCompanyUserPreferences`, consumidor interno sin endpoint propio (riesgo registrado en [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes)).
+- **Perfiles de acceso por empresa (SEC-05).** `AccessProfile` es una entidad operativa de empresa (`TenantId + CompanyId`, `ICompanyOperationalEntity`, filtro EF fail-closed). Cada empresa tiene perfiles propios: dos empresas pueden usar el mismo nombre (único por `tenant_id + company_id + name`) sin compartir identidad ni permisos.
+  - Consultar, crear, editar, desactivar y asignar permisos a un perfil exige empresa activa validada (`IRequiresCompanyContext`) y resuelve el perfil con tenant + empresa activa; un perfil de otra empresa no existe para la operación. Los cambios solo invalidan cachés de permisos y navegación de esa empresa.
+  - Una membership solo recibe perfiles de su misma empresa: lo valida `UpsertCompanyUserMembership` (perfil existente, activo y de la empresa) y lo garantiza en base de datos la FK compuesta `company_user_memberships (company_id, profile_id) → access_profiles (company_id, id)`.
+  - Un perfil desactivado no concede permisos efectivos: la resolución runtime (`IEffectivePermissionKeysProvider`) solo carga permisos de un perfil activo de la empresa de la membership. Límite conocido: ante un fallo de invalidación o una carrera de escritura, la caché de permisos puede conservar permisos revocados hasta su TTL (riesgo registrado en [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes), pendiente de SEC-06).
+  - Anti-escalamiento en memberships (mismo bypass `OperationalCompanyContext.HasAdminBypass` y mismo criterio de alcance que `UpsertProfilePermissions`): solo un Admin de la empresa o el administrador global en modo operador asigna, modifica o retira el rol Admin (incluida la revocación de una membership Admin); un usuario no Admin con permisos delegados no modifica su propia membership ni asigna un perfil con permisos que él no tiene efectivos en esa empresa.
 - `ITenantScopedRequest` valida solo el tenant: no se usa para leer ni escribir datos de una empresa. Excepción conocida: `UpdateCustomerRoleConfigValidator` comprueba la existencia de códigos en catálogos de la empresa del contexto (riesgo registrado en STATUS).
 - Guardrail: `INV_E2` (`TenantIsolationInvariantTests`) exige marcador explícito, de cualquier scope, en los namespaces COMPANY que enumera; no cubre todos los módulos ni distingue un marcador TENANT puesto por error.
 
@@ -79,7 +84,7 @@ Detalle endpoints y claims: `docs/IDENTITY.md`.
 
 Excepción documentada: `Platform.Contracts/Integration/Dtos/CompanyProvisionRequest.cs` (`CreatorRole = "Admin"`) — DTO de integración cross-boundary sin referencia a `ERP.Domain`, fuera del alcance de `SecurityRoles` (ver `ERP_CORE_FREEZE.md`).
 
-No confundir con perfiles de acceso asignables (ej. `"DataEntry"`), que son tenant-scoped y no forman parte de `SecurityRoles`.
+No confundir con perfiles de acceso asignables (ej. `"DataEntry"`), que pertenecen a cada empresa (SEC-05, ver [Aislamiento entre empresas del mismo tenant](#aislamiento-entre-empresas-del-mismo-tenant)) y no forman parte de `SecurityRoles`.
 
 ---
 
@@ -87,7 +92,7 @@ No confundir con perfiles de acceso asignables (ej. `"DataEntry"`), que son tena
 
 Distinción conceptual obligatoria, nunca debe mezclarse:
 
-- **Los permisos** (`ExpensePermissions`, `SettingsPermissions`, etc., `[Authorize(Policy = "perm:...")]`) definen **QUIÉN** puede ejecutar una acción. Fijos por rol/perfil de acceso, iguales para todas las companies del tenant.
+- **Los permisos** (`ExpensePermissions`, `SettingsPermissions`, etc., `[Authorize(Policy = "perm:...")]`) definen **QUIÉN** puede ejecutar una acción. Se conceden por rol de la membership o por el perfil de acceso de cada empresa (SEC-05); el catálogo de permisos (`KernelRegistry`) es el mismo para todas las companies.
 - **`DocumentFlowPolicy`** (tabla `document_flow_policy`, `IDocumentFlowPolicyService`) define **CÓMO** se comporta cada tipo de documento (`DocType`) por company: modo de creación/confirmación/autorización/anulación, y qué efectos dispara (CxP, asiento, inventario, notificaciones).
 - **Los estados del documento** (`ExpenseStatus`, etc.) definen **EN QUÉ ETAPA** está un documento concreto.
 - **Los eventos de dominio** (`ExpenseDocumentConfirmedEvent`, etc.) definen **QUÉ EFECTOS** genera un documento al avanzar de etapa.

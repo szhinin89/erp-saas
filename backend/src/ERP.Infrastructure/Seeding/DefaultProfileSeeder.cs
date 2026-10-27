@@ -8,9 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Seeding;
 
 /// <summary>
-/// Creates or updates the baseline access profiles for a tenant. Currently seeds only "DataEntry"
-/// (<see cref="DataEntryProfileBundle"/>). Operational profiles are intentionally tenant-configurable
-/// through AccessProfile and are not seeded as fixed product roles.
+/// Creates or updates the baseline access profiles of a company (SEC-05: profiles belong to
+/// <c>TenantId + CompanyId</c>). Currently seeds only "DataEntry" (<see cref="DataEntryProfileBundle"/>).
+/// Operational profiles are intentionally company-configurable through AccessProfile and are not
+/// seeded as fixed product roles.
 /// Safe to call multiple times: new profiles are created, existing profiles have missing permissions
 /// added (additive-only — never removes permissions that were customized by the admin).
 /// Uses EF Core so it participates in the same DbContext transaction as tenant creation.
@@ -26,8 +27,9 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
         _logger = logger;
     }
 
-    public async Task SeedForTenantAsync(
+    public async Task SeedForCompanyAsync(
         Guid tenantId,
+        Guid companyId,
         Guid actorId,
         CancellationToken cancellationToken = default
     )
@@ -46,7 +48,7 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
             var profile = await _db
                 .AccessProfiles.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(
-                    p => p.TenantId == tenantId && p.Name == name,
+                    p => p.TenantId == tenantId && p.CompanyId == companyId && p.Name == name,
                     cancellationToken
                 );
 
@@ -54,6 +56,7 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
             {
                 profile = AccessProfile.Create(
                     tenantId: tenantId,
+                    companyId: companyId,
                     name: name,
                     description: description,
                     createdBy: actorId
@@ -75,7 +78,7 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
                 _db.AccessProfilePermissions.AddRange(newPermissions);
                 await _db.SaveChangesAsync(cancellationToken);
 
-                LogProfileCreated(name, tenantId, permKeys.Count);
+                LogProfileCreated(name, companyId, permKeys.Count);
             }
             else
             {
@@ -90,7 +93,7 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
 
                 if (missing.Count == 0)
                 {
-                    LogProfileUpToDate(name, tenantId);
+                    LogProfileUpToDate(name, companyId);
                     continue;
                 }
 
@@ -109,7 +112,7 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
 
                 LogProfileUpdated(
                     name,
-                    tenantId,
+                    companyId,
                     missing.Count,
                     _logger.IsEnabled(LogLevel.Information)
                         ? string.Join(", ", missing)
@@ -121,19 +124,19 @@ public sealed partial class DefaultProfileSeeder : IDefaultProfileSeeder
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Default profile '{Name}' created for tenant {TenantId} ({Count} permissions)."
+        Message = "Default profile '{Name}' created for company {CompanyId} ({Count} permissions)."
     )]
-    private partial void LogProfileCreated(string name, Guid tenantId, int count);
+    private partial void LogProfileCreated(string name, Guid companyId, int count);
 
     [LoggerMessage(
         Level = LogLevel.Debug,
-        Message = "Default profile '{Name}' for tenant {TenantId} is up to date."
+        Message = "Default profile '{Name}' for company {CompanyId} is up to date."
     )]
-    private partial void LogProfileUpToDate(string name, Guid tenantId);
+    private partial void LogProfileUpToDate(string name, Guid companyId);
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Default profile '{Name}' for tenant {TenantId} updated: {Count} permission(s) added: {Keys}"
+        Message = "Default profile '{Name}' for company {CompanyId} updated: {Count} permission(s) added: {Keys}"
     )]
-    private partial void LogProfileUpdated(string name, Guid tenantId, int count, string keys);
+    private partial void LogProfileUpdated(string name, Guid companyId, int count, string keys);
 }

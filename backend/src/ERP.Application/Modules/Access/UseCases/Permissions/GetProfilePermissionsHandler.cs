@@ -16,11 +16,17 @@ public class GetProfilePermissionsHandler
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
-    public GetProfilePermissionsHandler(IAccessRepository repo, ICurrentTenant currentTenant)
+    public GetProfilePermissionsHandler(
+        IAccessRepository repo,
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
     }
 
     public Task<Result<ProfilePermissionsDto>> HandleAsync(
@@ -36,8 +42,10 @@ public class GetProfilePermissionsHandler
         if (!(_currentTenant.TenantId != Guid.Empty))
             return Result<ProfilePermissionsDto>.Failure("No autenticado.");
 
+        // SEC-05: un perfil de otra empresa no existe para este handler.
         var profile = await _repo.GetProfileByIdAsync(
             _currentTenant.TenantId,
+            _currentCompany.CompanyId,
             request.ProfileId,
             cancellationToken
         );

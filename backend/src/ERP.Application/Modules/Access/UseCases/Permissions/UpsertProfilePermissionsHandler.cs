@@ -1,4 +1,5 @@
 using ERP.Application.Access.Caching;
+using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Common;
 using ERP.Application.Navigation;
 using ERP.Domain.Access.Entities;
@@ -17,6 +18,9 @@ namespace ERP.Application.Access.UseCases.Permissions;
 /// (<c>IsAllowed = true</c>) un permiso que él mismo no tiene efectivo en su contexto operativo
 /// actual (<see cref="ICompanyContextProvider"/> + <see cref="IEffectivePermissionKeysProvider"/>).
 /// Revocar (<c>IsAllowed = false</c>) no escala privilegios y no pasa por este chequeo.
+/// SEC-05: el perfil se resuelve en el tenant y la empresa activa (<see cref="ICurrentCompany"/>,
+/// validada por CompanyScopeBehavior); un perfil de otra empresa no existe para este handler y el
+/// cambio solo afecta a las memberships de esta empresa.
 /// No implementa restricción por plan/entitlement SaaS externo: eso es deuda del futuro
 /// <c>IExternalEntitlementService</c> (SaaS es una plataforma externa conectada por API, fuera del
 /// alcance de este handler) — <see cref="RejectedPermission"/>/<c>rejected</c> se declara pero
@@ -28,6 +32,7 @@ public class UpsertProfilePermissionsHandler
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
     private readonly INavigationBuilder _navigationBuilder;
@@ -37,6 +42,7 @@ public class UpsertProfilePermissionsHandler
     public UpsertProfilePermissionsHandler(
         IAccessRepository repo,
         ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         IPermissionsCacheInvalidator permissionsCache,
         INavigationBuilder navigationBuilder,
@@ -46,6 +52,7 @@ public class UpsertProfilePermissionsHandler
     {
         _repo = repo;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
         _currentUser = currentUser;
         _permissionsCache = permissionsCache;
         _navigationBuilder = navigationBuilder;
@@ -112,7 +119,8 @@ public class UpsertProfilePermissionsHandler
             var assignerContext = await _companyContext.ResolveOperationalForCurrentUserAsync(
                 cancellationToken
             );
-            if (assignerContext is null)
+            // SEC-05: el alcance del asignador se evalúa en la misma empresa del perfil.
+            if (assignerContext is null || assignerContext.CompanyId != _currentCompany.CompanyId)
                 return Result<PermissionUpsertResultDto>.Failure(
                     "No se pudo resolver el contexto operativo del usuario que asigna.",
                     ApiResponseCodes.Common.Forbidden
@@ -151,6 +159,7 @@ public class UpsertProfilePermissionsHandler
 
         var profile = await _repo.GetProfileByIdAsync(
             _currentTenant.TenantId,
+            _currentCompany.CompanyId,
             command.ProfileId,
             cancellationToken
         );
@@ -193,27 +202,15 @@ public class UpsertProfilePermissionsHandler
 
         await _repo.SaveChangesAsync(cancellationToken);
 
-        var memberships = await _repo.GetCompanyUserMembershipsByTenantAsync(
+        await ProfileCacheInvalidation.InvalidateAsync(
+            _repo,
+            _permissionsCache,
+            _navigationBuilder,
             tenantId,
-            onlyActive: true,
+            profile.CompanyId,
+            command.ProfileId,
             cancellationToken
         );
-
-        var profileMemberships = memberships.Where(m => m.ProfileId == command.ProfileId).ToList();
-
-        foreach (var companyId in profileMemberships.Select(m => m.CompanyId).Distinct())
-        {
-            await _permissionsCache.BumpCompanyVersionAsync(companyId, cancellationToken);
-        }
-
-        foreach (var membership in profileMemberships)
-        {
-            _navigationBuilder.InvalidateCache(
-                tenantId,
-                membership.CompanyId,
-                membership.IdentityUserId
-            );
-        }
 
         return Result<PermissionUpsertResultDto>.Success(
             new PermissionUpsertResultDto(saved, rejected)

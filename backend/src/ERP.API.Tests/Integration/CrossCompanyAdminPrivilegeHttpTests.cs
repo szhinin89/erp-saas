@@ -20,8 +20,9 @@ namespace ERP.API.Tests.Integration;
 /// Usuario multiempresa: Admin en A, User con perfil limitado en B, sin membership en C. Usuario
 /// monoempresa: User en A con perfil que incluye <c>access.profiles.view</c>. Administrador global
 /// en modo operador: sin membership en ninguna empresa del tenant.
-/// Endpoint de prueba <c>GET admin/iam/profiles</c>: sin marcador de empresa, evalúa
-/// <c>perm:access.profiles.view</c> (o memberships.view) en runtime — aísla el authorizer.
+/// Endpoint de prueba <c>GET admin/permissions/catalog</c>: sin marcador de empresa, evalúa
+/// <c>perm:access.profiles.view</c> en runtime — aísla el authorizer. (SEC-05: el listado de
+/// perfiles ya no sirve de sonda, porque exige empresa activa con IRequiresCompanyContext.)
 /// </summary>
 public sealed class CrossCompanyAdminPrivilegeHttpFixture : IAsyncLifetime
 {
@@ -76,8 +77,21 @@ public sealed class CrossCompanyAdminPrivilegeHttpFixture : IAsyncLifetime
         CompanyBId = companyB.Id;
         CompanyCId = companyC.Id;
 
-        var limitedProfile = AccessProfile.Create(TenantId, "Limitado SEC04", null, seedBy);
-        var profilesViewer = AccessProfile.Create(TenantId, "Lector perfiles SEC04", null, seedBy);
+        // SEC-05: cada perfil pertenece a la empresa de la membership que lo usa.
+        var limitedProfile = AccessProfile.Create(
+            TenantId,
+            companyB.Id,
+            "Limitado SEC04",
+            null,
+            seedBy
+        );
+        var profilesViewer = AccessProfile.Create(
+            TenantId,
+            companyA.Id,
+            "Lector perfiles SEC04",
+            null,
+            seedBy
+        );
         db.AccessProfiles.AddRange(limitedProfile, profilesViewer);
         await db.SaveChangesAsync();
         db.AccessProfilePermissions.AddRange(
@@ -138,7 +152,7 @@ public sealed class CrossCompanyAdminPrivilegeHttpFixture : IAsyncLifetime
 public sealed class CrossCompanyAdminPrivilegeHttpTests
     : IClassFixture<CrossCompanyAdminPrivilegeHttpFixture>
 {
-    private const string ProfilesEndpoint = "/api/v1/admin/iam/profiles";
+    private const string ProfilesEndpoint = "/api/v1/admin/permissions/catalog";
     private const string MyPermissionsEndpoint = "/api/v1/admin/iam/me/permissions";
     private readonly CrossCompanyAdminPrivilegeHttpFixture _f;
 

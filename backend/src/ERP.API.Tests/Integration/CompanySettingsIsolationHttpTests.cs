@@ -183,7 +183,13 @@ public sealed class CompanySettingsIsolationFixture : IAsyncLifetime
         );
         await db.SaveChangesAsync();
 
-        var profile = AccessProfile.Create(TenantId, "SEC-03 Operador A", null, _adminId);
+        var profile = AccessProfile.Create(
+            TenantId,
+            CompanyAId,
+            "SEC-03 Operador A",
+            null,
+            _adminId
+        );
         db.AccessProfiles.Add(profile);
         await db.SaveChangesAsync();
         foreach (

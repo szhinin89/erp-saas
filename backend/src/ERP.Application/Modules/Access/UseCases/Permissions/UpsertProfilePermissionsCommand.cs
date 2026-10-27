@@ -6,10 +6,11 @@ using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
+/// <summary>SEC-05: el perfil se resuelve en la empresa activa (<see cref="IRequiresCompanyContext"/>).</summary>
 public record UpsertProfilePermissionsCommand(
     Guid ProfileId,
     IReadOnlyList<PermissionUpsertItem> Items
-) : IRequest<Result<PermissionUpsertResultDto>>;
+) : IRequest<Result<PermissionUpsertResultDto>>, IRequiresCompanyContext;
 
 public record PermissionUpsertItem(string PermissionKey, bool IsAllowed);
 
@@ -36,6 +37,8 @@ public static class RejectionCodes
     public const string InvalidKey = "invalid_key";
 }
 
-public record GetProfilePermissionsQuery(Guid ProfileId) : IRequest<Result<ProfilePermissionsDto>>;
+public record GetProfilePermissionsQuery(Guid ProfileId)
+    : IRequest<Result<ProfilePermissionsDto>>,
+        IRequiresCompanyContext;
 
 public record GetMyPermissionsQuery : IRequest<Result<MyPermissionsDto>>;

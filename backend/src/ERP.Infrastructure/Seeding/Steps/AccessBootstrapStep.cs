@@ -3,7 +3,7 @@ using ERP.Application.Common.Interfaces;
 namespace ERP.Infrastructure.Seeding.Steps;
 
 /// <summary>
-/// Perfiles de acceso por defecto del tenant. Delega en <see cref="IDefaultProfileSeeder"/>
+/// Perfiles de acceso por defecto de la empresa (SEC-05). Delega en <see cref="IDefaultProfileSeeder"/>
 /// (contrato público sin cambios, sigue siendo invocable/testeable de forma independiente) —
 /// este step solo lo integra al único flujo oficial de bootstrap. Se ejecuta al final porque no
 /// depende de ningún dato creado por los demás steps.
@@ -22,5 +22,11 @@ public sealed class AccessBootstrapStep : ICompanyBootstrapStep
     public Task ExecuteAsync(
         CompanyBootstrapContext context,
         CancellationToken cancellationToken = default
-    ) => _profileSeeder.SeedForTenantAsync(context.TenantId, context.ActorId, cancellationToken);
+    ) =>
+        _profileSeeder.SeedForCompanyAsync(
+            context.TenantId,
+            context.CompanyId,
+            context.ActorId,
+            cancellationToken
+        );
 }

@@ -275,6 +275,8 @@ public sealed class TenantIsolationInvariantTests
             "ERP.Application.Modules.Companies.UseCases.GetSalesFiscalPolicy",
             "ERP.Application.Modules.Companies.UseCases.UpdateConsumerFinalMaxAmount",
             "ERP.Application.Modules.ElectronicInvoicing.UseCases.GetElectronicInvoicingStatus",
+            // SEC-05: perfiles de acceso por empresa.
+            "ERP.Application.Access.UseCases.Profiles",
             "ERP.Application.Sales",
         };
 

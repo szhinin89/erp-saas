@@ -1,3 +1,4 @@
+using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 using ERP.Application.Common;
@@ -18,7 +19,8 @@ namespace ERP.Application.Tests.Access;
 /// Sin cobertura previa a este archivo (solo existía RevokeCompanyUserMembershipAdminTests, que
 /// mockea IMediator y no ejercita este handler). Cubre el comportamiento heredado (revocar
 /// usuario no-admin) y el nuevo CompanyAdministratorInvariant (no se puede dejar la empresa sin
-/// ningún Administrador activo).
+/// ningún Administrador activo). SEC-05: retirar una membership Admin exige que el actor sea Admin
+/// de esa empresa u operador global.
 /// </summary>
 public sealed class RevokeCompanyUserMembershipHandlerTests
 {
@@ -42,6 +44,7 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         public Mock<ICompanyRepository> CompanyRepo { get; } = new();
         public Mock<IPermissionsCacheInvalidator> PermissionsCache { get; } = new();
         public Mock<INavigationBuilder> NavigationBuilder { get; } = new();
+        public Mock<ICompanyContextProvider> CompanyContext { get; } = new();
 
         public Fixture()
         {
@@ -55,7 +58,8 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
                 TenantRepo.Object,
                 CompanyRepo.Object,
                 PermissionsCache.Object,
-                NavigationBuilder.Object
+                NavigationBuilder.Object,
+                CompanyContext.Object
             );
     }
 
@@ -88,7 +92,74 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
                 )
             )
             .ReturnsAsync(activeMemberships);
+        // Por defecto el actor es Admin de la empresa (flujo administrativo normal).
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                company.Id,
+                CreatedBy,
+                null,
+                IsActiveMembership: true,
+                MembershipRole: SecurityRoles.Admin
+            )
+        );
         return f;
+    }
+
+    private static void SetActor(Fixture f, OperationalCompanyContext? actor) =>
+        f.CompanyContext.Setup(c =>
+                c.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(actor);
+
+    [Fact]
+    public async Task No_Admin_no_puede_revocar_una_membership_Admin()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var otherAdmin = CompanyUserMembership.Create(
+            company.Id,
+            Guid.NewGuid(),
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(
+            user,
+            tenant,
+            company,
+            membership,
+            new[] { membership, otherAdmin }
+        );
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                company.Id,
+                CreatedBy,
+                Guid.NewGuid(),
+                IsActiveMembership: true,
+                MembershipRole: SecurityRoles.User
+            )
+        );
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        membership.IsActive.Should().BeTrue();
+        f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

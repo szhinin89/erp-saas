@@ -86,20 +86,41 @@ public interface IAccessRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(
+    /// <summary>SEC-05: perfiles de una empresa (tenant + empresa explícitos).</summary>
+    Task<IReadOnlyList<AccessProfile>> GetProfilesByCompanyAsync(
         Guid tenantId,
+        Guid companyId,
         bool onlyActive = true,
         CancellationToken cancellationToken = default
     );
+
+    /// <summary>SEC-05: <c>null</c> si el perfil no pertenece a ese tenant y empresa.</summary>
     Task<AccessProfile?> GetProfileByIdAsync(
         Guid tenantId,
+        Guid companyId,
         Guid profileId,
         CancellationToken cancellationToken = default
     );
     Task AddProfileAsync(AccessProfile profile, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Permisos guardados de un perfil. Solo para un perfil ya resuelto con
+    /// <see cref="GetProfileByIdAsync"/> en el tenant y empresa validados.
+    /// </summary>
     Task<IReadOnlyList<AccessProfilePermission>> GetProfilePermissionsAsync(
         Guid tenantId,
+        Guid profileId,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// SEC-05 — resolución efectiva (runtime): permisos del perfil solo si pertenece a ese tenant
+    /// y empresa y está activo; si no, vacío. No depende del contexto de empresa del request
+    /// (la empresa operativa puede resolverse sin <c>X-Company-Id</c>).
+    /// </summary>
+    Task<IReadOnlyList<AccessProfilePermission>> GetActiveProfilePermissionsForCompanyAsync(
+        Guid tenantId,
+        Guid companyId,
         Guid profileId,
         CancellationToken cancellationToken = default
     );

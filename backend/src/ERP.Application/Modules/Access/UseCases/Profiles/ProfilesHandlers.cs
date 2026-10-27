@@ -7,16 +7,25 @@ using MediatR;
 
 namespace ERP.Application.Access.UseCases.Profiles;
 
+// SEC-05: todo perfil se lee y escribe en el tenant y la empresa activa, ya validados por
+// CompanyScopeBehavior (IRequiresCompanyContext); nunca por un id del cliente.
+
 public class GetProfilesHandler
     : IRequestHandler<GetProfilesQuery, Result<IReadOnlyList<ProfileDto>>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
-    public GetProfilesHandler(IAccessRepository repo, ICurrentTenant tenant)
+    public GetProfilesHandler(
+        IAccessRepository repo,
+        ICurrentTenant tenant,
+        ICurrentCompany currentCompany
+    )
     {
         _repo = repo;
         _currentTenant = tenant;
+        _currentCompany = currentCompany;
     }
 
     public Task<Result<IReadOnlyList<ProfileDto>>> HandleAsync(
@@ -29,9 +38,9 @@ public class GetProfilesHandler
         CancellationToken cancellationToken
     )
     {
-        var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetProfilesByTenantAsync(
-            tenantId,
+        var items = await _repo.GetProfilesByCompanyAsync(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
             request.OnlyActive,
             cancellationToken
         );
@@ -45,12 +54,19 @@ public class CreateProfileHandler : IRequestHandler<CreateProfileCommand, Result
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _user;
 
-    public CreateProfileHandler(IAccessRepository repo, ICurrentTenant tenant, ICurrentUser user)
+    public CreateProfileHandler(
+        IAccessRepository repo,
+        ICurrentTenant tenant,
+        ICurrentCompany currentCompany,
+        ICurrentUser user
+    )
     {
         _repo = repo;
         _currentTenant = tenant;
+        _currentCompany = currentCompany;
         _user = user;
     }
 
@@ -67,8 +83,13 @@ public class CreateProfileHandler : IRequestHandler<CreateProfileCommand, Result
         if (string.IsNullOrWhiteSpace(cmd.Name))
             return Result<ProfileDto>.Failure("Nombre requerido.");
 
-        var tenantId = _currentTenant.TenantId;
-        var profile = AccessProfile.Create(tenantId, cmd.Name, cmd.Description, _user.UserId);
+        var profile = AccessProfile.Create(
+            _currentTenant.TenantId,
+            _currentCompany.CompanyId,
+            cmd.Name,
+            cmd.Description,
+            _user.UserId
+        );
         await _repo.AddProfileAsync(profile, cancellationToken);
         await _repo.SaveChangesAsync(cancellationToken);
         return Result<ProfileDto>.Success(
@@ -81,6 +102,7 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _user;
     private readonly IPermissionsCacheInvalidator _permissionsCache;
     private readonly INavigationBuilder _navigationBuilder;
@@ -88,6 +110,7 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
     public UpdateProfileHandler(
         IAccessRepository repo,
         ICurrentTenant tenant,
+        ICurrentCompany currentCompany,
         ICurrentUser user,
         IPermissionsCacheInvalidator permissionsCache,
         INavigationBuilder navigationBuilder
@@ -95,6 +118,7 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
     {
         _repo = repo;
         _currentTenant = tenant;
+        _currentCompany = currentCompany;
         _user = user;
         _permissionsCache = permissionsCache;
         _navigationBuilder = navigationBuilder;
@@ -111,7 +135,13 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
     )
     {
         var tenantId = _currentTenant.TenantId;
-        var profile = await _repo.GetProfileByIdAsync(tenantId, cmd.ProfileId, cancellationToken);
+        var companyId = _currentCompany.CompanyId;
+        var profile = await _repo.GetProfileByIdAsync(
+            tenantId,
+            companyId,
+            cmd.ProfileId,
+            cancellationToken
+        );
         if (profile is null)
             return Result<ProfileDto>.Failure("Perfil no encontrado.");
 
@@ -123,29 +153,56 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
 
         await _repo.SaveChangesAsync(cancellationToken);
 
-        var memberships = await _repo.GetCompanyUserMembershipsByTenantAsync(
+        // SEC-05: el perfil es de esta empresa, así que solo sus memberships cambian de permisos
+        // (incluida la desactivación, que deja de conceder permisos efectivos).
+        await ProfileCacheInvalidation.InvalidateAsync(
+            _repo,
+            _permissionsCache,
+            _navigationBuilder,
             tenantId,
-            onlyActive: true,
+            companyId,
+            cmd.ProfileId,
             cancellationToken
         );
-        var profileMemberships = memberships.Where(m => m.ProfileId == cmd.ProfileId).ToList();
-
-        foreach (var companyId in profileMemberships.Select(m => m.CompanyId).Distinct())
-        {
-            await _permissionsCache.BumpCompanyVersionAsync(companyId, cancellationToken);
-        }
-
-        foreach (var membership in profileMemberships)
-        {
-            _navigationBuilder.InvalidateCache(
-                tenantId,
-                membership.CompanyId,
-                membership.IdentityUserId
-            );
-        }
 
         return Result<ProfileDto>.Success(
             new ProfileDto(profile.Id, profile.Name, profile.Description, profile.IsActive)
         );
+    }
+}
+
+/// <summary>
+/// Invalidación tras cambiar un perfil (datos o permisos): versión de permisos de la empresa y
+/// navegación de cada usuario con ese perfil en ella. Compartida por UpdateProfile y
+/// UpsertProfilePermissions — un solo punto, sin mecanismos paralelos.
+/// </summary>
+internal static class ProfileCacheInvalidation
+{
+    public static async Task InvalidateAsync(
+        IAccessRepository repo,
+        IPermissionsCacheInvalidator permissionsCache,
+        INavigationBuilder navigationBuilder,
+        Guid tenantId,
+        Guid companyId,
+        Guid profileId,
+        CancellationToken cancellationToken
+    )
+    {
+        var profileMemberships = (
+            await repo.GetCompanyUserMembershipsByCompanyAsync(
+                companyId,
+                onlyActive: true,
+                cancellationToken
+            )
+        )
+            .Where(m => m.ProfileId == profileId)
+            .ToList();
+        if (profileMemberships.Count == 0)
+            return;
+
+        await permissionsCache.BumpCompanyVersionAsync(companyId, cancellationToken);
+
+        foreach (var membership in profileMemberships)
+            navigationBuilder.InvalidateCache(tenantId, companyId, membership.IdentityUserId);
     }
 }

@@ -3,7 +3,7 @@ namespace ERP.Domain.Kernel.Security;
 /// <summary>
 /// Single source of truth for JWT role claim values (<c>ClaimTypes.Role</c>).
 /// Not to be confused with permission keys (<see cref="ERP.Domain.Kernel.Permissions"/>)
-/// or access profiles (e.g. "DataEntry"), which are assignable and tenant-scoped.
+/// or access profiles (e.g. "DataEntry"), which are assignable and company-scoped (SEC-05).
 /// </summary>
 public static class SecurityRoles
 {

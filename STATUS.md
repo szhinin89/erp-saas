@@ -1,5 +1,30 @@
 # Project Status
 
+## SEGURIDAD — SEC-05: perfiles de acceso por empresa — CORREGIDO — revisión técnica final PASS (2026-10-26)
+
+Los perfiles de acceso eran TENANT: un Admin de A podía consultar, editar, desactivar o cambiar
+permisos de un perfil usado (o usado solo) por B, con efecto inmediato en B; un usuario Admin en A
+y User en B podía autoescalarse en B editando el perfil de su membership de B; y un no Admin con
+`access.company_user_memberships.view` podía asignarse rol Admin o un perfil más amplio que el suyo.
+Decisión del propietario: perfiles independientes por `TenantId + CompanyId`. Corregido en el
+mecanismo existente: `AccessProfile` es `ICompanyOperationalEntity` (unicidad por empresa, FK
+compuesta membership → perfil de la misma empresa, esquema inicial y snapshot adaptados, sin
+migración nueva ni cambios en bases existentes); los casos de uso de perfiles exigen empresa activa
+(`IRequiresCompanyContext`) y resuelven el perfil por tenant + empresa; un perfil inactivo no
+concede permisos; `UpsertCompanyUserMembership` y la revocación aplican anti-escalamiento con el
+mismo bypass de SEC-04; el perfil por defecto "DataEntry" se siembra por empresa. Sin cambios de
+contrato en frontend. Focales PASS: Application 213/213 (Access, sesión, `CompanyScopeBehavior`),
+Arquitectura 143/143, API HTTP/PostgreSQL `CompanyAccessProfilesIsolationHttpTests` 12/12 +
+`CrossCompanyAdminPrivilegeHttpTests` 8/8 y clases con fixtures de perfiles 103/103 + unitarias/
+snapshot API 102/102, `architecture:check` PASS, `git diff --check` PASS. Infrastructure.Tests no
+compilado en este árbol (archivo RED histórico). Gate independiente del propietario (PowerShell):
+Application 22/22, API HTTP 20/20, compilación de ERP.API y coherencia EF/baseline PASS,
+`git diff --check` PASS. Revisión técnica final PASS: aislamiento empresarial de perfiles aceptado
+técnicamente. **CI del commit SEC-05: aún no ejecutado.** La revocación inmediata de permisos ante
+fallos de caché no está garantizada (riesgo pendiente de SEC-06). Riesgos en
+[Riesgos y limitaciones vigentes](#riesgos-y-limitaciones-vigentes).
+[SSOT Seguridad](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
+
 ## SEGURIDAD — SEC-04: privilegios administrativos entre empresas — CORREGIDO — revisión técnica final PASS (2026-10-26)
 
 `RuntimePermissionAuthorizer` concedía el bypass Admin (`*`) por el rol del JWT, emitido para la
@@ -238,11 +263,20 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   empresa del contexto; `CreateCompanyUserPreferences` es un consumidor interno sin marcador de
   empresa; `INV_E2` no cubre todos los módulos ni detecta un marcador TENANT puesto por error.
   Tras SEC-04 la resolución de permisos ya no usa la única membership cuando
-  el header no tiene membership; los perfiles de acceso siguen siendo TENANT, por lo que un Admin de
-  una empresa que edita un perfil afecta a las memberships de ese perfil en otras empresas; la
-  firma `IRuntimePermissionAuthorizer.IsAuthorizedAsync` conserva el parámetro `role`, sin efecto.
+  el header no tiene membership; la firma `IRuntimePermissionAuthorizer.IsAuthorizedAsync`
+  conserva el parámetro `role`, sin efecto. Los perfiles de acceso son por empresa desde SEC-05.
   Impacto acreditado: como máximo, el validador revela si un código existe en el catálogo de otra
   empresa; no se acredita lectura ni escritura de sus datos.
+- **Seguridad — revocación de permisos con caché (pendiente de SEC-06):** la base de datos ya
+  excluye perfiles inactivos o de otra empresa (SEC-05), pero la caché de permisos por
+  empresa+usuario puede conservar permisos revocados (perfil desactivado, permiso retirado,
+  membership revocada) **hasta el TTL de 300 s**: (1) un fallo al actualizar la versión de caché de
+  la empresa se ignora (`ResilientPermissionsCacheService`), y la entrada previa sigue vigente;
+  (2) carrera de escritura posterior a la invalidación: una lectura que cargó los permisos antes del
+  cambio los escribe después del bump con la versión nueva (`DistributedPermissionsCacheService.WriteAsync`
+  toma la versión al escribir); el bump es además lectura+escritura no atómica. La revocación
+  inmediata ante esos fallos **no está garantizada**. Evidencia estática, sin reproducción HTTP. La
+  caché de navegación se invalida solo en el proceso local.
 
 ## Consolidación documental
 

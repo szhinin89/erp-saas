@@ -1,3 +1,4 @@
+using ERP.Application.Access;
 using ERP.Application.Access.Caching;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.CreateCompanyUserPreferences;
@@ -27,7 +28,9 @@ namespace ERP.Application.Tests.Access;
 /// (CompanyUserBranch, único flujo de producción que la escribe) y configurar preferencias
 /// operativas (CompanyUserPreferences, siempre vía sus UseCases ya existentes de Fase C — nunca
 /// se reimplementa su validación). El comportamiento heredado (crear/reactivar membresía) no se
-/// modifica y se cubre aquí para detectar regresiones.
+/// modifica y se cubre aquí para detectar regresiones. SEC-05: anti-escalamiento — rol Admin solo
+/// por Admin de la empresa u operador global, sin autoescalamiento sobre la propia membership, y
+/// perfil existente, activo, de la misma empresa y dentro del alcance del asignador no Admin.
 /// </summary>
 public sealed class UpsertCompanyUserMembershipHandlerTests
 {
@@ -84,6 +87,8 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         public Mock<IBranchRepository> BranchRepo { get; } = new();
         public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
+        public Mock<ICompanyContextProvider> CompanyContext { get; } = new();
+        public Mock<IEffectivePermissionKeysProvider> EffectivePermissionKeys { get; } = new();
 
         public Fixture()
         {
@@ -100,7 +105,9 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
                 NavigationBuilder.Object,
                 BranchRepo.Object,
                 CompanyUserBranchRepo.Object,
-                Mediator.Object
+                Mediator.Object,
+                CompanyContext.Object,
+                EffectivePermissionKeys.Object
             );
     }
 
@@ -124,7 +131,97 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
                 r.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(existingMembership);
+        // Por defecto el que asigna es Admin de la empresa del comando (flujo administrativo normal).
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                company.Id,
+                CreatedBy,
+                null,
+                IsActiveMembership: true,
+                MembershipRole: SecurityRoles.Admin
+            )
+        );
         return f;
+    }
+
+    private static void SetActor(Fixture f, OperationalCompanyContext? actor) =>
+        f.CompanyContext.Setup(c =>
+                c.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(actor);
+
+    private static readonly Guid DelegateProfileId = Guid.NewGuid();
+
+    // Usuario delegado (no Admin) con access.company_user_memberships.view en la empresa.
+    private static void SetDelegateActor(Fixture f, Guid companyId, params string[] effectiveKeys)
+    {
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                companyId,
+                CreatedBy,
+                DelegateProfileId,
+                IsActiveMembership: true,
+                MembershipRole: SecurityRoles.User
+            )
+        );
+        f.EffectivePermissionKeys.Setup(k =>
+                k.GetAllowedKeysAsync(
+                    It.IsAny<Guid>(),
+                    companyId,
+                    CreatedBy,
+                    DelegateProfileId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(effectiveKeys);
+    }
+
+    private static AccessProfile SetupProfile(
+        Fixture f,
+        Guid tenantId,
+        Guid companyId,
+        bool active = true,
+        params string[] allowedKeys
+    )
+    {
+        var profile = AccessProfile.Create(tenantId, companyId, "Perfil", null, CreatedBy);
+        if (!active)
+            profile.Deactivate(CreatedBy);
+        f.AccessRepo.Setup(r =>
+                r.GetProfileByIdAsync(
+                    tenantId,
+                    companyId,
+                    profile.Id,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(profile);
+        f.AccessRepo.Setup(r =>
+                r.GetProfilePermissionsAsync(tenantId, profile.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                allowedKeys
+                    .Select(k =>
+                        AccessProfilePermission.Create(tenantId, profile.Id, k, true, CreatedBy)
+                    )
+                    .ToList()
+            );
+        return profile;
+    }
+
+    private static void AssertNothingPersisted(Fixture f)
+    {
+        f.AccessRepo.Verify(
+            r =>
+                r.AddCompanyUserMembershipAsync(
+                    It.IsAny<CompanyUserMembership>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+        f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private static void SetupNoExistingPreferences(Fixture f)
@@ -739,5 +836,420 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             m => m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
+    }
+
+    // ── SEC-05: anti-escalamiento ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task No_Admin_no_puede_asignarse_el_rol_Admin()
+    {
+        var actorAsTarget = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(actorAsTarget, tenant, company, existingMembership: null);
+        f.CurrentUser.SetupGet(x => x.UserId).Returns(actorAsTarget.Id);
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                company.Id,
+                actorAsTarget.Id,
+                DelegateProfileId,
+                IsActiveMembership: true,
+                MembershipRole: SecurityRoles.User
+            )
+        );
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "admin"),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        AssertNothingPersisted(f);
+    }
+
+    [Fact]
+    public async Task No_Admin_no_puede_conceder_el_rol_Admin_a_otro_usuario()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+        SetDelegateActor(f, company.Id, "access.company_user_memberships.view");
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    company.Id,
+                    Username,
+                    SecurityRoles.Admin
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        AssertNothingPersisted(f);
+    }
+
+    [Fact]
+    public async Task No_Admin_no_puede_retirar_ni_modificar_una_membership_Admin()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var adminMembership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: adminMembership);
+        SetDelegateActor(f, company.Id, "access.company_user_memberships.view");
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        adminMembership.Role.Should().Be(SecurityRoles.Admin);
+        f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task No_Admin_no_puede_modificar_su_propia_membership()
+    {
+        var self = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(self, tenant, company, existingMembership: null);
+        var richer = SetupProfile(f, tenant.Id, company.Id, true, "access.sessions.view");
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                company.Id,
+                self.Id,
+                DelegateProfileId,
+                IsActiveMembership: true,
+                MembershipRole: SecurityRoles.User
+            )
+        );
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    company.Id,
+                    Username,
+                    "User",
+                    richer.Id
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        AssertNothingPersisted(f);
+    }
+
+    [Fact]
+    public async Task No_Admin_no_puede_asignar_un_perfil_con_permisos_superiores_a_los_propios()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+        SetDelegateActor(f, company.Id, "access.company_user_memberships.view");
+        var richer = SetupProfile(
+            f,
+            tenant.Id,
+            company.Id,
+            true,
+            "access.company_user_memberships.view",
+            "access.sessions.view"
+        );
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    company.Id,
+                    Username,
+                    "User",
+                    richer.Id
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        result.Error.Should().Contain("access.sessions.view");
+        AssertNothingPersisted(f);
+    }
+
+    [Fact]
+    public async Task No_Admin_puede_asignar_un_perfil_dentro_de_su_alcance()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+        SetupNoExistingPreferences(f);
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.Success(
+                    Preferences(
+                        Guid.NewGuid(),
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        null
+                    )
+                )
+            );
+        SetDelegateActor(
+            f,
+            company.Id,
+            "access.company_user_memberships.view",
+            "access.sessions.view"
+        );
+        var subset = SetupProfile(f, tenant.Id, company.Id, true, "access.sessions.view");
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    company.Id,
+                    Username,
+                    "User",
+                    subset.Id
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue();
+        f.AccessRepo.Verify(
+            r =>
+                r.AddCompanyUserMembershipAsync(
+                    It.Is<CompanyUserMembership>(m =>
+                        m.CompanyId == company.Id && m.ProfileId == subset.Id
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Admin_legitimo_asigna_perfil_de_su_propia_empresa()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+        SetupNoExistingPreferences(f);
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.Success(
+                    Preferences(
+                        Guid.NewGuid(),
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        null
+                    )
+                )
+            );
+        var profile = SetupProfile(f, tenant.Id, company.Id, true, "access.sessions.view");
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    company.Id,
+                    Username,
+                    "User",
+                    profile.Id
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue();
+        f.AccessRepo.Verify(
+            r =>
+                r.AddCompanyUserMembershipAsync(
+                    It.Is<CompanyUserMembership>(m => m.ProfileId == profile.Id),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        // Admin de la empresa: sin chequeo de alcance propio.
+        f.EffectivePermissionKeys.Verify(
+            k =>
+                k.GetAllowedKeysAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Perfil_de_otra_empresa_del_mismo_tenant_es_rechazado()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var companyA = NewCompany(tenant.Id);
+        var companyB = Company.CreateManaged(
+            tenant.Id,
+            "1790099999001",
+            "Empresa B S.A.",
+            createdBy: CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, companyA, existingMembership: null);
+        // El perfil existe, pero en B: para (tenant, A) no se resuelve.
+        var profileOfB = SetupProfile(f, tenant.Id, companyB.Id, true, "access.sessions.view");
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    companyA.Id,
+                    Username,
+                    "User",
+                    profileOfB.Id
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        AssertNothingPersisted(f);
+    }
+
+    [Fact]
+    public async Task Perfil_inactivo_es_rechazado()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+        var inactive = SetupProfile(f, tenant.Id, company.Id, active: false);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    company.Id,
+                    Username,
+                    "User",
+                    inactive.Id
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        AssertNothingPersisted(f);
+    }
+
+    [Fact]
+    public async Task Autoridad_resuelta_en_otra_empresa_es_rechazada()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                Guid.NewGuid(),
+                CreatedBy,
+                null,
+                IsActiveMembership: true,
+                MembershipRole: SecurityRoles.Admin
+            )
+        );
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        AssertNothingPersisted(f);
+    }
+
+    [Fact]
+    public async Task Administrador_global_en_modo_operador_puede_asignar_el_rol_Admin()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+        SetupNoExistingPreferences(f);
+        f.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<CreateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.Success(
+                    Preferences(
+                        Guid.NewGuid(),
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        null
+                    )
+                )
+            );
+        SetActor(
+            f,
+            new OperationalCompanyContext(
+                company.Id,
+                CreatedBy,
+                null,
+                IsActiveMembership: false,
+                MembershipRole: SecurityRoles.Admin,
+                IsAuthorizedOperator: true
+            )
+        );
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(
+                    tenant.Id,
+                    company.Id,
+                    Username,
+                    SecurityRoles.Admin
+                ),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue();
     }
 }

@@ -5,7 +5,8 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Access.Entities;
 
 /// <summary>
-/// Permiso asignado a un perfil (por tenant).
+/// Permiso asignado a un perfil. La empresa la determina el <see cref="AccessProfile"/> dueño
+/// (SEC-05): toda lectura/escritura resuelve antes el perfil en el tenant y empresa validados.
 /// PermissionKey es una cadena estable (ej. "inventario.brands.view").
 /// </summary>
 public class AccessProfilePermission : AuditableEntity

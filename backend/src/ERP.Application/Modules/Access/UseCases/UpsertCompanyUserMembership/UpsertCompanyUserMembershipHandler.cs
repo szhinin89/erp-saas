@@ -9,12 +9,21 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
+using ERP.Domain.Kernel.Security;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
 
 namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 
+/// <summary>
+/// SEC-05 — anti-escalamiento (mismo bypass que <see cref="ERP.Application.Access.Authorization.RuntimePermissionAuthorizer"/>,
+/// <see cref="OperationalCompanyContext.HasAdminBypass"/>, y mismo criterio de alcance que
+/// <c>UpsertProfilePermissionsHandler</c>): solo un Admin de la empresa u operador global asigna o
+/// retira el rol Admin; un no Admin delegado no modifica su propia membership ni asigna un perfil
+/// con permisos que él no tiene; el perfil asignado debe existir, estar activo y pertenecer a la
+/// misma empresa (tenant + empresa explícitos, nunca solo el id del cliente).
+/// </summary>
 public class UpsertCompanyUserMembershipHandler
     : IRequestHandler<UpsertCompanyUserMembershipCommand, Result<object>>
 {
@@ -27,6 +36,8 @@ public class UpsertCompanyUserMembershipHandler
     private readonly IBranchRepository _branchRepository;
     private readonly ICompanyUserBranchRepository _companyUserBranchRepository;
     private readonly IMediator _mediator;
+    private readonly ICompanyContextProvider _companyContext;
+    private readonly IEffectivePermissionKeysProvider _effectivePermissionKeys;
 
     public UpsertCompanyUserMembershipHandler(
         IAccessRepository accessRepository,
@@ -37,7 +48,9 @@ public class UpsertCompanyUserMembershipHandler
         INavigationBuilder navigationBuilder,
         IBranchRepository branchRepository,
         ICompanyUserBranchRepository companyUserBranchRepository,
-        IMediator mediator
+        IMediator mediator,
+        ICompanyContextProvider companyContext,
+        IEffectivePermissionKeysProvider effectivePermissionKeys
     )
     {
         _accessRepository = accessRepository;
@@ -49,6 +62,8 @@ public class UpsertCompanyUserMembershipHandler
         _branchRepository = branchRepository;
         _companyUserBranchRepository = companyUserBranchRepository;
         _mediator = mediator;
+        _companyContext = companyContext;
+        _effectivePermissionKeys = effectivePermissionKeys;
     }
 
     public Task<Result<object>> HandleAsync(
@@ -83,6 +98,17 @@ public class UpsertCompanyUserMembershipHandler
             user.Id,
             cancellationToken
         );
+
+        var assignmentViolation = await ValidateAssignmentAsync(
+            command,
+            company.Id,
+            user.Id,
+            existing,
+            cancellationToken
+        );
+        if (assignmentViolation is not null)
+            return assignmentViolation;
+
         CompanyUserMembership membership;
         if (existing is null)
         {
@@ -180,6 +206,92 @@ public class UpsertCompanyUserMembershipHandler
         _navigationBuilder.InvalidateCache(command.TenantId, company.Id, user.Id);
         return Result<object>.Success(new { });
     }
+
+    private async Task<Result<object>?> ValidateAssignmentAsync(
+        UpsertCompanyUserMembershipCommand command,
+        Guid companyId,
+        Guid targetUserId,
+        CompanyUserMembership? existing,
+        CancellationToken cancellationToken
+    )
+    {
+        // Autoridad del que asigna en ESTA empresa (membership operativa u operador global).
+        var actor = await _companyContext.ResolveOperationalForCurrentUserAsync(
+            cancellationToken
+        );
+        if (actor is null || actor.CompanyId != companyId)
+            return Result<object>.Forbidden(
+                "No se pudo resolver la autoridad del usuario que asigna en la empresa."
+            );
+
+        if (!actor.HasAdminBypass)
+        {
+            if (targetUserId == actor.UserId)
+                return Result<object>.Forbidden("No puede modificar su propia membresía.");
+
+            if (IsAdminRole(command.Role) || (existing is not null && IsAdminRole(existing.Role)))
+                return Result<object>.Forbidden(
+                    "Solo un administrador de la empresa puede asignar, modificar o retirar el rol Admin."
+                );
+        }
+
+        if (command.ProfileId is not Guid profileId)
+            return null;
+
+        // Perfil vigente sin cambios: no es una asignación nueva.
+        if (existing is { IsActive: true } && existing.ProfileId == profileId)
+            return null;
+
+        var profile = await _accessRepository.GetProfileByIdAsync(
+            command.TenantId,
+            companyId,
+            profileId,
+            cancellationToken
+        );
+        if (profile is null)
+            return Result<object>.NotFound("El perfil no existe en la empresa.");
+        if (!profile.IsActive)
+            return Result<object>.ValidationFailure("El perfil está inactivo.");
+
+        if (actor.HasAdminBypass)
+            return null;
+
+        if (!actor.IsActiveMembership || actor.ProfileId is null)
+            return Result<object>.Forbidden(
+                "No se pudo resolver el alcance del usuario que asigna."
+            );
+
+        var actorAllowed = new HashSet<string>(
+            await _effectivePermissionKeys.GetAllowedKeysAsync(
+                command.TenantId,
+                companyId,
+                actor.UserId,
+                actor.ProfileId.Value,
+                cancellationToken
+            ),
+            StringComparer.OrdinalIgnoreCase
+        );
+        var outOfScopeKeys = (
+            await _accessRepository.GetProfilePermissionsAsync(
+                command.TenantId,
+                profileId,
+                cancellationToken
+            )
+        )
+            .Where(p => p.IsAllowed && !actorAllowed.Contains(p.PermissionKey))
+            .Select(p => p.PermissionKey)
+            .ToList();
+
+        return outOfScopeKeys.Count > 0
+            ? Result<object>.Forbidden(
+                $"No puede asignar un perfil con permiso(s) fuera de su propio alcance: {string.Join(", ", outOfScopeKeys)}."
+            )
+            : null;
+    }
+
+    // Mismo criterio que OperationalCompanyContext.HasAdminBypass (sin distinguir mayúsculas).
+    private static bool IsAdminRole(string? role) =>
+        string.Equals(role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase);
 
     private async Task<Result<CompanyUserPreferencesDto?>> UpsertPreferencesAsync(
         Guid membershipId,

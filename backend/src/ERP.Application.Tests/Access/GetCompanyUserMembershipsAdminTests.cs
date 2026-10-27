@@ -23,7 +23,7 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
         IdentityUser.Create(email.Split('@')[0], first, last, email, "hash", CreatedBy);
 
     private static AccessProfile NewProfile(string name) =>
-        AccessProfile.Create(TenantId, name, null, CreatedBy);
+        AccessProfile.Create(TenantId, CurrentCompanyId, name, null, CreatedBy);
 
     private sealed class CurrentCompanyStub : ICurrentCompany
     {
@@ -84,7 +84,12 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
             )
             .ReturnsAsync(new[] { user });
         f.AccessRepo.Setup(r =>
-                r.GetProfilesByTenantAsync(TenantId, false, It.IsAny<CancellationToken>())
+                r.GetProfilesByCompanyAsync(
+                    TenantId,
+                    CurrentCompanyId,
+                    false,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(new[] { profile });
 
@@ -136,7 +141,12 @@ public sealed class GetCompanyUserMembershipsAdminHandlerTests
             )
             .ReturnsAsync(new[] { user });
         f.AccessRepo.Setup(r =>
-                r.GetProfilesByTenantAsync(TenantId, false, It.IsAny<CancellationToken>())
+                r.GetProfilesByCompanyAsync(
+                    TenantId,
+                    CurrentCompanyId,
+                    false,
+                    It.IsAny<CancellationToken>()
+                )
             )
             .ReturnsAsync(Array.Empty<AccessProfile>());
 

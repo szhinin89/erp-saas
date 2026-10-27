@@ -58,8 +58,9 @@ public sealed class GetCompanyUserMembershipsAdminHandler
         ).ToDictionary(u => u.Id);
 
         var profilesById = (
-            await _accessRepository.GetProfilesByTenantAsync(
+            await _accessRepository.GetProfilesByCompanyAsync(
                 _currentTenant.TenantId,
+                _currentCompany.CompanyId,
                 onlyActive: false,
                 cancellationToken
             )
