@@ -1,5 +1,15 @@
 # Project Status
 
+## GOV-002 — CLOSED
+
+Cierre documental del seguimiento de gobernanza aprobado expresamente por el propietario
+(2026-10-27), sobre el contrato central implementado y las validaciones previamente acreditadas.
+No certifica cumplimiento exhaustivo de todos los módulos ni acredita nuevas pruebas o despliegues.
+Las dos deudas conocidas (códigos de módulo sin catalogar y formateador frontend alternativo)
+se conservan como deuda no bloqueante en [error-handling.md](docs/architecture/error-handling.md#deudas-conocidas-y-límite-del-cierre).
+No autoriza reauditar ni refactorizar módulos CLOSED. Esta fase solo modifica documentación;
+staging autorizado por el propietario, commit y push no realizados.
+
 ## SEGURIDAD — SEC-06: revocación de permisos con caché — CLOSED — revisión técnica final PASS (2026-10-27)
 
 La caché de permisos efectivos (TTL 300 s) podía seguir autorizando permisos ya revocados: la
@@ -217,7 +227,7 @@ Reglas funcionales únicamente en las [SSOT](docs/architecture/README.md).
 | Compras: modal Distribuir | Focal 16/16 y gates PASS; [evidencia](docs/evidence/purchases-distribute-cost-01/README.md) | Implementado; no amplía cálculo |
 | Compras: validaciones comerciales | Focal 368 y gates PASS; [evidencia](docs/evidence/purchases-commercial-risk-01/README.md) | Falta decisión sobre precisión del costo mostrado; no se resuelve en esta consolidación |
 | Design System: incidencias de línea | [Evidencia](docs/evidence/zh-ds-line-issues-01/README.md) | Capturas con límites de fuentes/iconos; sin nueva aceptación visual |
-| Unificación de NC de compra | PostgreSQL 21/21 + contabilización 6/6, API 24/24, Application 79/79, frontend 35/35; build/lint/TypeScript/arquitectura PASS | Publicada en `51678b165`. Guardrail general de aquella entrega limitado por prueba externa de Gastos 516 > 514; no se afirma fallo actual sin repetir gate |
+| Unificación de NC de compra | PostgreSQL 21/21 con SRI simulado + contabilización 6/6, API 24/24, Application 79/79, frontend 35/35; build/lint/TypeScript/arquitectura PASS | **CLOSED (2026-10-27)**; aceptación funcional expresa del propietario para el alcance implementado de [Compras §§6–7](docs/architecture/purchases.md#6-nota-de-crédito-del-proveedor--entrada-única), publicado en `51678b165`. Recuento frontend conciliado en [evidencia SSOT](docs/architecture/purchases.md#9-evidencia). El límite histórico externo de Gastos (516 > 514) ya no se observa: conteo puntual actual 514, techo 514; no acredita un nuevo gate completo. Sin nuevas pruebas, validación SRI real ni despliegue. |
 | Anulación completa de compra | Validación focal PostgreSQL PASS | Implementada; calendario oficial y ventana interna Company siguen fuera del comportamiento operativo |
 
 ## Instalación inicial y GLOBAL
@@ -295,7 +305,7 @@ el propietario conserva su ejecución. CLOSED: no reauditar salvo BUG REAL relac
 | QA-INVENTORY-INFRA-SUITES-01 | CLOSED, 509ac6d75; PostgreSQL 39/39 PASS |
 | Compras/Gastos/CxP/Pagos, cierre 2026-09-12 | LISTO / CERRADO para ese alcance; [matriz QA](docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md). No cierra ampliaciones posteriores ni Accounting global |
 | Pricing, BP, ElectronicDocuments e infraestructuras FROZEN | Conservan sus cierres y límites; [infraestructuras](docs/architecture/frozen-infrastructure.md) |
-| A9 recovery comercial | Implementado y validado: PostgreSQL 19/19, guard 1/1, job 1/1, issuer 31/31, arquitectura 143/143 y gates técnicos PASS. No se acredita un cierre adicional |
+| A9 recovery comercial | **CLOSED (2026-10-27)**; cierre funcional aprobado expresamente por el propietario, exclusivamente para el alcance create-only de [Sales recovery](docs/architecture/backend.md#lotes-fairness-y-ownership). Evidencia PASS existente: PostgreSQL 19/19, guard 1/1, job 1/1, issuer 31/31, arquitectura 143/143 y gates técnicos. No incluye envío, reenvío ni nuevas funcionalidades; no acredita nuevas ejecuciones ni despliegue. |
 
 A3–A8 quedan acreditados por el cierre aprobado en su sección precedente; la discrepancia
 documental anterior queda resuelta, sin ampliar el alcance de A9.

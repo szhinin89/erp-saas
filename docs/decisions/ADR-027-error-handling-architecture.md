@@ -1,7 +1,7 @@
 # ADR-027 — Arquitectura unificada de errores
 
-Estado: Accepted. Decisión vigente; la adopción se sigue en GOV-002, sin asumir
-que las fases descritas antes de las correcciones siguen sin iniciar.
+Estado: Accepted. Decisión vigente; estado del seguimiento de gobernanza en
+[GOV-002](../../STATUS.md#gov-002--closed). No certifica adopción exhaustiva por todos los módulos.
 
 ## Decisión y justificación
 
@@ -21,4 +21,4 @@ La auditoría de julio no es evidencia del código de hoy.
 Contrato: [error-handling.md](../architecture/error-handling.md).
 Presentación: [visual-messages.md](../architecture/visual-messages.md) y
 [form-validation.md](../architecture/form-validation.md).
-Adopción pendiente: [GOV-002](../agent/WORK_QUEUE.md#gov-002--adopción-del-contrato-de-errores).
+Deudas conocidas de adopción: [error-handling.md](../architecture/error-handling.md#deudas-conocidas-y-límite-del-cierre).

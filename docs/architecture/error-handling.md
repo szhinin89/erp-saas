@@ -1,8 +1,22 @@
 # Estándar de Manejo de Errores
 
 Contrato implementado de errores. Decisión: [ADR-027](../decisions/ADR-027-error-handling-architecture.md).
-La adopción pendiente se sigue en [GOV-002](../agent/WORK_QUEUE.md#gov-002--adopción-del-contrato-de-errores);
-no se deduce del diagnóstico histórico de julio.
+Estado del seguimiento de gobernanza: [GOV-002](../../STATUS.md#gov-002--closed).
+No se deduce la adopción actual del diagnóstico histórico de julio.
+
+## Deudas conocidas y límite del cierre
+
+El cierre de GOV-002 corresponde al seguimiento de gobernanza del contrato central;
+no certifica cumplimiento exhaustivo de todos los módulos. Se conservan dos deudas
+conocidas, no bloqueantes para este cierre y sin autorización de implementación:
+
+- Códigos de módulo sin catalogar: conservan el fallback BusinessRule → 400 descrito
+  en las excepciones intencionales. Su catalogación se aborda por módulo, sin reabrir CLOSED.
+- Formateador frontend alternativo `frontend/src/modules/lib/formatApiError.ts`:
+  sigue deprecado frente a `formatApiRequestError`; su retirada queda como deuda de adopción.
+
+Estas deudas no relajan las reglas para cambios nuevos. Cualquier BUG REAL requiere
+reproducción y una fase expresamente autorizada; este cierre no autoriza auditorías generales.
 
 ---
 
@@ -160,7 +174,7 @@ Excepciones intencionales (documentadas y cubiertas por tests):
 - Un factory method de `Result<T>` (`.Conflict()`, `.ValidationFailure()`, etc.) cuyo HTTP status real no coincide con lo que su nombre promete.
 - `switch`/mapeos HTTP duplicados fuera de la tabla única categoría→HTTP (ningún controller, ningún handler decide su propio status).
 - Componentes/páginas de React que interpretan `response.data` fuera de `modules/lib/apiError.ts`.
-- Un segundo formateador de error de UI compitiendo con `formatApiRequestError` (`formatApiError.ts` está deprecado — ver plan de migración).
+- Un segundo formateador de error de UI compitiendo con `formatApiRequestError` (`formatApiError.ts` está deprecado — ver deudas conocidas y límite del cierre).
 - `catch` vacío en cualquier acción de mutación.
 - Mostrar `message.dev`, stack traces o detalle técnico de excepciones al usuario final.
 

@@ -366,7 +366,16 @@ Desglose XML frontend (2026-10-23): `purchaseXmlBreakdown.test.ts` (9: elegibili
 
 ICE en Compras (2026-10-21): `PurchaseIceSnapshotTests`, `PurchaseIceSpecificResolutionTests`, `PurchaseInvoiceDetailXmlTaxSnapshotTests`, `PurchaseReturnTests` (prorrateo ICE XML) y `PurchaseIceXmlSnapshotPostgreSqlTests` (PostgreSQL real 5/5: persistencia, reapertura, recálculo y descuento bloqueado); frontend `purchaseLineReadiness.test.ts`. Sin migración ni ejecución sobre datos existentes.
 
-Unificación de NC (2026-10-21): `PurchaseReturnEndToEndTests.UnifiedCreditNotes.cs` y `.Reprocessing.cs`, PostgreSQL real 21/21 con SRI simulado; contratos API 24/24; Application focal 79/79; contabilización PostgreSQL de devolución/descuento 6/6; frontend focal 32/32. Cubren salida única, descuento sin inventario, idempotencia, concurrencia, vínculo histórico sin efectos, duplicados, cancelación interna, reversas incompletas y SRI anulado/pendiente/no verificable. Build/lint/TypeScript y gate de arquitectura PASS; límite externo del guardrail general en [entrega](../../STATUS.md#estado-de-entrega). Sin migración ni ejecución sobre datos de negocio.
+Unificación de NC (2026-10-21): `PurchaseReturnEndToEndTests.UnifiedCreditNotes.cs` y `.Reprocessing.cs`, PostgreSQL real 21/21 con SRI simulado; contratos API 24/24; Application focal 79/79; contabilización PostgreSQL de devolución/descuento 6/6; frontend focal 35/35 según el registro de entrega. Cubren salida única, descuento sin inventario, idempotencia, concurrencia, vínculo histórico sin efectos, duplicados, cancelación interna, reversas incompletas y SRI anulado/pendiente/no verificable. Build/lint/TypeScript y gate de arquitectura PASS; límite externo del guardrail general en [entrega](../../STATUS.md#estado-de-entrega). Sin migración ni ejecución sobre datos de negocio.
+
+Conciliación documental del recuento frontend (2026-10-27): el commit `51678b165`
+incluye 35/35 PASS tanto en su `STATUS.md` como en
+`docs/agent/PURCHASE_CREDIT_NOTE_UNIFICATION_DELIVERY.md` (registro histórico consultado
+desde Git, no documento vigente). La SSOT del mismo commit indicaba 32/32; no se
+encontró evidencia que permita atribuir esa cifra a una ejecución distinta. Se corrige
+el resumen a 35/35 conforme al registro de entrega, sin sumar resultados ni acreditar
+una nueva ejecución. El cierre funcional aprobado y sus límites constan únicamente
+en [STATUS](../../STATUS.md#estado-de-entrega); SRI permanece simulado en esta evidencia.
 
 Domain/Application (filtro Items/Inventory/Purchases, 2026-10-19): 354/354 y 551/551 PASS. PostgreSQL 2026-10-19: `PurchaseCancelledStockMovementIntegrationTests`, `ResolvePurchaseReceptionLinesIntegrationTests` y `PurchaseInvoiceConfirmedPostingIntegrationTests` (dentro de 39/39 PASS). Cobertura adicional: `ConfirmPurchaseHandlerTests`, `CancelPurchaseHandlerTests`, `DiscardPurchaseDraftTests`, `PurchaseDraftRecoveryTests`, `PurchaseXmlConfirmationGuardTests`, `PurchaseInvoiceCostProrationConsistencyTests`, `ItemMatchFinderTests`, `ItemMatchConfirmationServiceTests`, `AuthorizePurchaseReturnHandlerTests`, `CancelPurchaseReturnUseCasesTests`, `PurchaseCreditNoteDiscountIntegrationTests`, `SupplierCreditMovementTests`, `PurchaseRetentionConfirmIntegrationTests`.
 
