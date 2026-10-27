@@ -58,6 +58,8 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Common.CompanyScopeForbidden] = 403,
         [ApiResponseCodes.Common.BranchScopeForbidden] = 403,
         [ApiResponseCodes.Common.DatabaseUnavailable] = 503,
+        [ApiResponseCodes.Access.PermissionsInvalidationUnavailable] = 503,
+        [ApiResponseCodes.Access.PermissionsInvalidationIncomplete] = 503,
         [ApiResponseCodes.Common.SriCommunicationError] = 502,
         [ApiResponseCodes.Common.RateLimited] = 429,
         [ApiResponseCodes.Common.InternalError] = 500,
@@ -296,6 +298,8 @@ public sealed class ApiErrorContractTests
                             ApiResponseCodes.Common.InternalError
                             or ApiResponseCodes.Common.InvalidDateTimeKind
                             or ApiResponseCodes.Common.DatabaseUnavailable
+                            or ApiResponseCodes.Access.PermissionsInvalidationUnavailable
+                            or ApiResponseCodes.Access.PermissionsInvalidationIncomplete
                         ),
                     code
                 );

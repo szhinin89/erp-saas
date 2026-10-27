@@ -133,7 +133,9 @@ public sealed class PermissionsCacheRedisGuaranteeTests
     {
         await using var redis = Redis([.. Compliant, "--maxmemory", "4mb"]);
         await redis.StartAsync();
-        await using var connection = await ConnectionMultiplexer.ConnectAsync(Endpoint(redis));
+        await using var connection = await ConnectionMultiplexer.ConnectAsync(
+            $"{Endpoint(redis)},allowAdmin=true"
+        );
         var store = new PermissionsCacheVersionStore(connection);
         var pendingScope = PermissionsCacheScope.Company(Guid.NewGuid()).Key;
         await store.BeginAsync(pendingScope);
@@ -154,13 +156,27 @@ public sealed class PermissionsCacheRedisGuaranteeTests
         }
 
         oom.Should().BeTrue();
+        // Un SET de 64 KiB puede fallar aunque después quepa una marca pequeña; además Redis
+        // puede liberar buffers entre comandos. Fijar el límite a un byte mantiene el servidor
+        // inequívocamente sobre maxmemory durante las dos rutas de Begin, sin expulsar claves.
+        var server = connection.GetServer(connection.GetEndPoints().Single());
+        await server.ConfigSetAsync("maxmemory", "1");
+        var rejectedScope = PermissionsCacheScope.Company(Guid.NewGuid());
+        var begin = () => store.BeginAsync(rejectedScope.Key);
+        (await begin.Should().ThrowAsync<RedisServerException>()).WithMessage("*OOM*");
         (await db.KeyExistsAsync(PermissionsCacheVersionStore.PendingKey(pendingScope)))
             .Should()
             .BeTrue();
         var cache = Node(connection, NewMemoryCache());
-        (await cache.TryBeginAsync(PermissionsCacheScope.Company(Guid.NewGuid())))
+        (await cache.TryBeginAsync(rejectedScope))
             .Should()
             .BeFalse();
+        (await db.KeyExistsAsync(PermissionsCacheVersionStore.PendingKey(rejectedScope.Key)))
+            .Should()
+            .BeFalse();
+        (await db.StringGetAsync(PermissionsCacheVersionStore.PendingKey(pendingScope)))
+            .Should()
+            .Be((RedisValue)1);
     }
 
     // Sin persistencia, un reinicio de Redis no puede recuperar una entrada anterior a una revocación.
