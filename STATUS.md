@@ -1,6 +1,6 @@
 # Project Status
 
-## SEGURIDAD — SEC-06: revocación de permisos con caché — CORREGIDO — revisión técnica final PASS (2026-10-27)
+## SEGURIDAD — SEC-06: revocación de permisos con caché — CLOSED — revisión técnica final PASS (2026-10-27)
 
 La caché de permisos efectivos (TTL 300 s) podía seguir autorizando permisos ya revocados: la
 entrada se publicaba con la versión vigente al escribir (una carga anterior a la revocación
@@ -32,7 +32,7 @@ host, `CompanyAccessProfilesIsolationHttpTests`, `CrossCompanyAdminPrivilegeHttp
 errores, sesión), Arquitectura 143/143, `architecture:check` PASS, tamaño de handlers PASS.
 Gate independiente del propietario (PowerShell): Infrastructure `Security.PermissionsCache` 39/39
 (worktree temporal sin el archivo RED), API Redis/hosts 14/14, Frontend Access 75/75, Architecture
-frontend 140/140, `git diff --check` PASS. Revisión técnica final PASS. **Pendiente: commit y su CI.**
+frontend 140/140, `git diff --check` PASS. Revisión técnica final PASS. **SEC-06 CLOSED: commit `bbaa708cd`, CI #1011 SUCCESS.**
 Sin despliegue: el Redis de producción (Coolify) no fue verificado contra el contrato. Riesgos en
 [Riesgos y limitaciones vigentes](#riesgos-y-limitaciones-vigentes).
 [SSOT Seguridad](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
