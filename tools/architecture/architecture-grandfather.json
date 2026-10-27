@@ -3,12 +3,6 @@
   "designSystemGrandfathered": [],
   "handlerHandleMaxLines150": [
     {
-      "file": "backend/src/ERP.Application/Modules/Access/UseCases/Permissions/UpsertProfilePermissionsHandler.cs",
-      "maxHandleLines": 160,
-      "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
-      "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
-    },
-    {
       "file": "backend/src/ERP.Application/Modules/Auth/UseCases/Login/LoginHandler.cs",
       "maxHandleLines": 213,
       "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
