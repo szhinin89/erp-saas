@@ -1,0 +1,122 @@
+{
+ "docNumber": "001-001-000695762",
+ "payableId": "1255bff8-0352-4586-9921-3e9adc36d8c1",
+ "checks": [
+  {
+   "label": "p1.status",
+   "ok": true,
+   "actual": "Confirmed",
+   "expected": "Confirmed"
+  },
+  {
+   "label": "p1.total",
+   "ok": true,
+   "actual": 40,
+   "expected": 40
+  },
+  {
+   "label": "p1.applied",
+   "ok": true,
+   "actual": 40,
+   "expected": 40
+  },
+  {
+   "label": "p1.unapplied",
+   "ok": true,
+   "actual": 0,
+   "expected": 0
+  },
+  {
+   "label": "p1.applicationDoc",
+   "ok": true,
+   "actual": "001-001-000695762",
+   "expected": "001-001-000695762"
+  },
+  {
+   "label": "p1.ui.detailShowsNumber",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ap.afterP1.paid",
+   "ok": true,
+   "actual": 40,
+   "expected": 40
+  },
+  {
+   "label": "ap.afterP1.outstanding",
+   "ok": true,
+   "actual": 60,
+   "expected": 60
+  },
+  {
+   "label": "ap.afterP1.status",
+   "ok": true,
+   "actual": "partiallypaid",
+   "expected": "partiallypaid"
+  },
+  {
+   "label": "p2.total",
+   "ok": true,
+   "actual": 60,
+   "expected": 60
+  },
+  {
+   "label": "p2.applied",
+   "ok": true,
+   "actual": 60,
+   "expected": 60
+  },
+  {
+   "label": "ap.afterP2.paid",
+   "ok": true,
+   "actual": 100,
+   "expected": 100
+  },
+  {
+   "label": "ap.afterP2.outstanding",
+   "ok": true,
+   "actual": 0,
+   "expected": 0
+  },
+  {
+   "label": "ap.afterP2.status",
+   "ok": true,
+   "actual": "paid",
+   "expected": "paid"
+  },
+  {
+   "label": "ui.portfolioEmptyAfterP2",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.listShowsP1",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.listShowsP2",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  }
+ ],
+ "consoleErrors": [
+  "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+  "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+ ],
+ "leakedRequests": [],
+ "apiErrors": [
+  "401 POST /api/v1/auth/refresh",
+  "403 GET /api/v1/electronic-invoicing/status"
+ ],
+ "payment1Id": "21e547f9-3f12-4c7e-80e3-8916297a6281",
+ "payment1DisplayNumber": "00000001",
+ "portfolioRowAfterP1": "01 001-001-000695762 — Cuota #1\t27/10/2026\t26/11/2026\t\n100.00\n\t\n40.00\n\t\n60.00\n\tParcial\t\nAplicar saldo completo",
+ "payment2Id": "67976149-bd6d-4dc6-9f00-0c39ad44cc49",
+ "payment2DisplayNumber": "00000002"
+}

@@ -1,0 +1,304 @@
+{
+ "date": "2026-10-27",
+ "environment": {
+  "database": "erp_zh_test",
+  "api": "http://localhost:5004 (Release, seed E2E)",
+  "front": "Vite :5181, /api/** -> :5004"
+ },
+ "invoice": {
+  "number": "001-001-000000002",
+  "receivableId": "a8c8cb57-9bc3-47f5-add4-89cafff3d106",
+  "total": 100,
+  "term": "E2E-30D",
+  "method": "CREDITO"
+ },
+ "bugReproduction": {
+  "invoice": "001-001-000000001",
+  "before_fix": [
+   {
+    "label": "rx.afterC1.inst.paid",
+    "ok": false,
+    "actual": 0,
+    "expected": 40
+   },
+   {
+    "label": "rx.afterC2.inst.status",
+    "ok": false,
+    "actual": "pending",
+    "expected": "paid"
+   }
+  ],
+  "note": "SalesReceivable.status permanece \"pending\" por diseño documentado (SalesReceivableRepository: el saldo es la señal de pagada); esas expectativas del arnés se corrigieron a statusLabel."
+ },
+ "browserFlow": {
+  "checks": [
+   {
+    "label": "c1.modalDefaultIsBalance",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   },
+   {
+    "label": "rx.afterC1.paid",
+    "ok": true,
+    "actual": 40,
+    "expected": 40
+   },
+   {
+    "label": "rx.afterC1.balance",
+    "ok": true,
+    "actual": 60,
+    "expected": 60
+   },
+   {
+    "label": "rx.afterC1.statusLabel",
+    "ok": true,
+    "actual": "Parcial",
+    "expected": "Parcial"
+   },
+   {
+    "label": "rx.afterC1.inst.status",
+    "ok": true,
+    "actual": "partial",
+    "expected": "partial"
+   },
+   {
+    "label": "rx.afterC1.inst.paid",
+    "ok": true,
+    "actual": 40,
+    "expected": 40
+   },
+   {
+    "label": "ui.afterC1.rowShowsParcial",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "ui.afterC1.rowShows60",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c2.modalDefaultIsBalance",
+    "ok": true,
+    "actual": 60,
+    "expected": 60
+   },
+   {
+    "label": "c2.ui.installmentShows60",
+    "ok": true,
+    "actual": "Cuota #1 — 60.00 pendiente",
+    "expected": "Cuota #1 — 60.00 pendiente"
+   },
+   {
+    "label": "rx.afterC2.paid",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   },
+   {
+    "label": "rx.afterC2.balance",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "rx.afterC2.statusLabel",
+    "ok": true,
+    "actual": "Pagada",
+    "expected": "Pagada"
+   },
+   {
+    "label": "rx.afterC2.inst.paid",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   },
+   {
+    "label": "rx.afterC2.inst.status",
+    "ok": true,
+    "actual": "paid",
+    "expected": "paid"
+   },
+   {
+    "label": "ui.afterC2.notInPending",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "ui.afterC2.paidRowShowsPagada",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "ui.afterC2.noCollectAction",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "ui.invoice.authorized",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "inv.status",
+    "ok": true,
+    "actual": "Authorized",
+    "expected": "Authorized"
+   },
+   {
+    "label": "inv.grandTotal",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   }
+  ],
+  "consoleErrors": [
+   "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ],
+  "apiErrors": [
+   "401 POST /api/v1/auth/refresh",
+   "403 GET /api/v1/electronic-invoicing/status"
+  ],
+  "leakedRequests": []
+ },
+ "isolation": {
+  "checks": [
+   {
+    "label": "B.companyIsB",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "B.list.excludesA",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   },
+   {
+    "label": "B.byInvoice.status",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "B.invoice.notFound",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "B.collectOnA.rejected",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "B.ui.noAInvoices",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   },
+   {
+    "label": "B.ui.headerIsB",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   }
+  ],
+  "collectAsCompanyB": {
+   "status": 404,
+   "body": "{\"code\":\"NOT_FOUND\",\"severity\":\"error\",\"message\":{\"user\":\"El recurso solicitado no existe.\",\"dev\":\"Entity not found.\"},\"data\":{\"errors\":[\"Cuenta por cobrar a8c8cb57-9bc3-47f5-add4-89cafff3d106 no encontrada.\"]},\"meta\":{\"correlationId\":\"0HNPKFOBKIL9H:00000009\",\"timestamp\":\"2026-10-27T23:03:28.5283525"
+  },
+  "leakedRequests": []
+ },
+ "postgres": {
+  "receivable": {
+   "original": 100,
+   "paid": 100,
+   "status": "pending (por diseño; statusLabel=Pagada)",
+   "installment": {
+    "paid": 100,
+    "status": "paid"
+   }
+  },
+  "payments": [
+   {
+    "amount": 40,
+    "status": "Applied",
+    "reference": "TRX-CXC-1793142058777",
+    "bank": true,
+    "installment": true
+   },
+   {
+    "amount": 60,
+    "status": "Applied",
+    "reference": "TRX-CXC-1793142064995",
+    "bank": true,
+    "installment": true
+   }
+  ],
+  "journalEntries": [
+   {
+    "n": 7,
+    "fact": "Sales/InvoiceIssued",
+    "lines": [
+     [
+      "1.1.03.001",
+      "D",
+      100
+     ],
+     [
+      "4.1.01.001",
+      "C",
+      100
+     ]
+    ],
+    "status": "Posted"
+   },
+   {
+    "n": 8,
+    "fact": "Finance/CollectionApplied",
+    "lines": [
+     [
+      "1.1.02.001",
+      "D",
+      40
+     ],
+     [
+      "1.1.03.001",
+      "C",
+      40
+     ]
+    ],
+    "status": "Posted"
+   },
+   {
+    "n": 9,
+    "fact": "Finance/CollectionApplied",
+    "lines": [
+     [
+      "1.1.02.001",
+      "D",
+      60
+     ],
+     [
+      "1.1.03.001",
+      "C",
+      60
+     ]
+    ],
+    "status": "Posted"
+   }
+  ],
+  "companyIdAllRows": "3156bddb-a6bb-44ed-a015-bf0789157fcb"
+ }
+}

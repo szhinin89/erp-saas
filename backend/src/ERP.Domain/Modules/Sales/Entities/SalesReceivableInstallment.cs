@@ -15,7 +15,38 @@ public sealed class SalesReceivableInstallment : IMustHaveTenant
     public decimal PaidAmount { get; private set; }
     public string Status { get; private set; } = "pending";
 
+    public decimal OutstandingAmount => Amount - PaidAmount;
+
     private SalesReceivableInstallment() { }
+
+    /// <summary>
+    /// CXC-E2E-01 — acumula en la cuota la parte del cobro que le corresponde; la CxC decide el
+    /// reparto (<see cref="SalesReceivable.RegisterCollection"/>) y valida los límites.
+    /// </summary>
+    internal void RegisterCollection(decimal amount)
+    {
+        PaidAmount += amount;
+        RecalculateStatus();
+    }
+
+    /// <summary>
+    /// Libera hasta <paramref name="amount"/> de lo cobrado en la cuota y devuelve lo liberado —
+    /// nunca deja <see cref="PaidAmount"/> negativo (cuotas reconstruidas o cobradas antes de que la
+    /// cuota acumulara lo cobrado no tienen nada que liberar).
+    /// </summary>
+    internal decimal ReverseCollection(decimal amount)
+    {
+        var released = Math.Min(amount, PaidAmount);
+        PaidAmount -= released;
+        RecalculateStatus();
+        return released;
+    }
+
+    private void RecalculateStatus() =>
+        Status =
+            PaidAmount >= Amount ? "paid"
+            : PaidAmount > 0 ? "partial"
+            : "pending";
 
     internal static SalesReceivableInstallment Create(
         Guid receivableId,

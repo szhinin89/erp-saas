@@ -659,5 +659,46 @@ public sealed class RegisterCollectionCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         target.PaidAmount.Should().Be(50m);
+        target.Installments[1].PaidAmount.Should().Be(50m);
+        target.Installments[1].Status.Should().Be("paid");
+        target.Installments[0].PaidAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Cuota_elegida_con_monto_mayor_a_su_saldo_se_rechaza_sin_mutar()
+    {
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var target = ReceivableOf(CustomerId, 100m, installments: 2);
+        Expose(receivables, target);
+        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+
+        var result = await handler.Handle(
+            Collection(CustomerId, new PaymentApplicationLineInput(target.Id, target.Installments[0].Id, 60m)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("saldo pendiente de la cuota #1");
+        target.PaidAmount.Should().Be(0m);
+        target.Installments.Should().OnlyContain(i => i.PaidAmount == 0m);
+        ShouldNotPersist(payments);
+    }
+
+    [Fact]
+    public async Task Cobro_parcial_sin_cuota_acumula_en_la_cuota_por_fifo()
+    {
+        var (payments, receivables, bankAccounts, cashRegisters, tenant, company, user) = BuildMocks();
+        var target = ReceivableOf(CustomerId, 100m);
+        Expose(receivables, target);
+        var handler = BuildHandler(payments, receivables, bankAccounts, cashRegisters, tenant, company, user);
+
+        var result = await handler.Handle(
+            Collection(CustomerId, new PaymentApplicationLineInput(target.Id, null, 40m)),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        target.Installments.Single().PaidAmount.Should().Be(40m);
+        target.Installments.Single().Status.Should().Be("partial");
     }
 }

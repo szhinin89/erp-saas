@@ -112,6 +112,102 @@ public sealed class SalesReceivableTests
         actNegative.Should().Throw<ArgumentException>();
     }
 
+    // ── Cobro por cuota (CXC-E2E-01) ──────────────────────────────────
+
+    private static SalesReceivable CreateWithInstallments(decimal amount, int count)
+    {
+        var receivable = Create(amount);
+        receivable.GenerateInstallments(new DateOnly(2026, 1, 1), 30 * count, count);
+        return receivable;
+    }
+
+    [Fact]
+    public void RegisterCollection_sin_cuota_reparte_por_fifo_y_actualiza_estado_de_cuota()
+    {
+        var receivable = CreateWithInstallments(100m, 2); // 50 + 50
+
+        receivable.RegisterCollection(70m, UserId);
+
+        var first = receivable.Installments.Single(i => i.InstallmentNumber == 1);
+        var second = receivable.Installments.Single(i => i.InstallmentNumber == 2);
+        first.PaidAmount.Should().Be(50m);
+        first.Status.Should().Be("paid");
+        second.PaidAmount.Should().Be(20m);
+        second.Status.Should().Be("partial");
+        receivable.Installments.Sum(i => i.OutstandingAmount).Should().Be(receivable.BalanceDue);
+    }
+
+    [Fact]
+    public void RegisterCollection_parcial_y_saldo_en_cuota_unica_la_deja_pagada()
+    {
+        var receivable = CreateWithInstallments(100m, 1);
+        var installment = receivable.Installments.Single();
+
+        receivable.RegisterCollection(40m, UserId, installment.Id);
+        installment.PaidAmount.Should().Be(40m);
+        installment.Status.Should().Be("partial");
+
+        receivable.RegisterCollection(60m, UserId, installment.Id);
+        installment.PaidAmount.Should().Be(100m);
+        installment.Status.Should().Be("paid");
+        receivable.BalanceDue.Should().Be(0m);
+    }
+
+    [Fact]
+    public void RegisterCollection_a_cuota_elegida_no_reasigna_a_otra()
+    {
+        var receivable = CreateWithInstallments(100m, 2);
+        var second = receivable.Installments.Single(i => i.InstallmentNumber == 2);
+
+        receivable.RegisterCollection(30m, UserId, second.Id);
+
+        second.PaidAmount.Should().Be(30m);
+        receivable.Installments.Single(i => i.InstallmentNumber == 1).PaidAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public void RegisterCollection_a_cuota_mayor_a_su_saldo_lanza_y_no_muta()
+    {
+        var receivable = CreateWithInstallments(100m, 2);
+        var first = receivable.Installments.Single(i => i.InstallmentNumber == 1);
+
+        var act = () => receivable.RegisterCollection(60m, UserId, first.Id);
+
+        act.Should().Throw<DomainRuleViolationException>().WithMessage("*saldo pendiente de la cuota*");
+        receivable.PaidAmount.Should().Be(0m);
+        first.PaidAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public void ReverseCollection_libera_la_cuota_del_cobro()
+    {
+        var receivable = CreateWithInstallments(100m, 2);
+        receivable.RegisterCollection(70m, UserId);
+
+        receivable.ReverseCollection(70m, UserId);
+
+        receivable.Installments.Should().AllSatisfy(i =>
+        {
+            i.PaidAmount.Should().Be(0m);
+            i.Status.Should().Be("pending");
+        });
+        receivable.BalanceDue.Should().Be(100m);
+    }
+
+    [Fact]
+    public void ReverseCollection_tras_reconstruir_cuotas_no_deja_pagado_negativo()
+    {
+        var receivable = CreateWithInstallments(100m, 1);
+        receivable.RegisterCollection(40m, UserId);
+        receivable.ApplyReturnCredit(20m, UserId);
+        receivable.RebuildInstallments(); // cuota nueva por el saldo 40, sin cobrado
+
+        receivable.ReverseCollection(40m, UserId);
+
+        receivable.PaidAmount.Should().Be(0m);
+        receivable.Installments.Should().AllSatisfy(i => i.PaidAmount.Should().Be(0m));
+    }
+
     // ── ApplyReturnCredit (P0-01) ─────────────────────────────────────
 
     [Fact]

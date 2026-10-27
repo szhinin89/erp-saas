@@ -1,5 +1,36 @@
 # Project Status
 
+## Cuentas por cobrar — E2E de cobros — CLOSED (2026-10-27)
+
+Resultado E2E **21/21 PASS** y aislamiento **7/7 PASS**, aprobado expresamente por el
+propietario, tras corregir un **BUG REAL**: el cobro no se acumulaba en la cuota de la CxC (cuota
+`pending` con saldo cobrado). Corrección focal en `SalesReceivable`, `SalesReceivableInstallment`
+y `RegisterCollectionCommandHandler`, con tests focales. Comportamiento: [SSOT de
+CxC](docs/architecture/receivables.md); cobertura: [matriz QA](docs/QA/RECEIVABLES-COLLECTIONS-CLOSEOUT.md);
+evidencia: [receivables-e2e-01](docs/evidence/receivables-e2e-01/README.md).
+Alcance acreditado: factura a crédito de una cuota por 100.00, cobro parcial 40.00 y del saldo
+60.00 con destino banco, reapertura de factura y CxC, asientos de venta y cobro balanceados y
+aislamiento entre empresas. No acredita facturas de varias cuotas, cobro a caja o sin destino,
+reversa de cobros (sin endpoint ni UI), devolución con CxC cobrada, saldo inicial IL-5, listado de
+cobros (no existe), suite completa ni despliegue. No se reparan cuotas cobradas antes de la
+corrección. Sin commit ni push.
+
+## Pagos a proveedores — cierre E2E de gastos — CLOSED (2026-10-27)
+
+Resultado E2E **17/17 PASS**, aprobado expresamente por el propietario. Clasificación:
+**KEEP**, sin BUG REAL. Evidencia existente incorporada en
+[supplier-payments-e2e-01](docs/evidence/supplier-payments-e2e-01/README.md)
+([resultados](docs/evidence/supplier-payments-e2e-01/e2e-results.json) y seis capturas).
+Alcance: gasto confirmado por 100.00, pago parcial de 40.00, reapertura del pago y de la CxP
+con saldo 60.00, pago total del saldo y cartera sin pendientes. En la
+[matriz QA](docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md) se acredita únicamente
+el pago parcial/total de gastos.
+No acredita pagos de compras, reversas, bloqueo de anulación, aislamiento entre empresas,
+suite completa ni despliegue. Se conservan las observaciones y límites de la evidencia,
+sin abrir pendientes ni reabrir módulos CLOSED. Cierre documental: sin cambios de código,
+sin repetir pruebas y sin tocar el archivo RED histórico. Staging autorizado expresamente
+para esta entrega; sin commit ni push.
+
 ## GOV-002 — CLOSED
 
 Cierre documental del seguimiento de gobernanza aprobado expresamente por el propietario
@@ -305,6 +336,7 @@ el propietario conserva su ejecución. CLOSED: no reauditar salvo BUG REAL relac
 | First Run | Cerrado; SSOT en first-run.md |
 | QA-INVENTORY-INFRA-SUITES-01 | CLOSED, 509ac6d75; PostgreSQL 39/39 PASS |
 | Compras/Gastos/CxP/Pagos, cierre 2026-09-12 | LISTO / CERRADO para ese alcance; [matriz QA](docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md). No cierra ampliaciones posteriores ni Accounting global |
+| CxC y cobros, cierre 2026-10-27 | **CLOSED** para el alcance de la sección precedente; [SSOT](docs/architecture/receivables.md) y [matriz QA](docs/QA/RECEIVABLES-COLLECTIONS-CLOSEOUT.md) |
 | Pricing, BP, ElectronicDocuments e infraestructuras FROZEN | Conservan sus cierres y límites; [infraestructuras](docs/architecture/frozen-infrastructure.md) |
 | A9 recovery comercial | **CLOSED (2026-10-27)**; cierre funcional aprobado expresamente por el propietario, exclusivamente para el alcance create-only de [Sales recovery](docs/architecture/backend.md#lotes-fairness-y-ownership). Evidencia PASS existente: PostgreSQL 19/19, guard 1/1, job 1/1, issuer 31/31, arquitectura 143/143 y gates técnicos. No incluye envío, reenvío ni nuevas funcionalidades; no acredita nuevas ejecuciones ni despliegue. |
 

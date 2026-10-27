@@ -18,6 +18,7 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 | [items.md](./items.md) | SSOT funcional de Ítems: alcance Company, naturaleza, unicidad, configuración, variantes y empaques |
 | [inventory.md](./inventory.md) | SSOT funcional de Inventario: bodegas, Kardex, valoración, disponibilidad, ajustes, transferencias y saldo inicial |
 | [purchases.md](./purchases.md) | SSOT funcional de Compras: recepción, conciliación de ítems, compra, anulación, devolución, NC y saldo a favor |
+| [receivables.md](./receivables.md) | SSOT funcional de Cuentas por Cobrar: origen, cuotas, estado, cobro, reversa, devolución/anulación y contabilización |
 | [backend.md](./backend.md) | .NET, CQRS, API envelope, multi-tenant backend, AI/Analytics prohibiciones, tarifas SRI |
 | [frontend.md](./frontend.md) | React, ZH Form, Design System, tabs, i18n, CSS, navegación UI |
 | [security.md](./security.md) | Auth, JWT, tokens, aislamiento tenant, **SaaS — IDs sensibles fuera de la URL** |

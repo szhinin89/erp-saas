@@ -235,7 +235,12 @@ public sealed class SalesReceivable
     /// el hecho de negocio "cobro aplicado" ya lo publica <c>Payment.Apply()</c> — este método
     /// solo mantiene el saldo de la CxC consistente con lo que ese pago registró.
     /// </summary>
-    public void RegisterCollection(decimal amount, Guid updatedBy)
+    /// <remarks>
+    /// CXC-E2E-01 — el cobro también se acumula en las cuotas (mismo criterio que
+    /// <c>AccountsPayable.RegisterPayment</c>/<c>RegisterPaymentToInstallment</c>): en la cuota
+    /// elegida si se indica <paramref name="installmentId"/>, si no por FIFO de vencimiento.
+    /// </remarks>
+    public void RegisterCollection(decimal amount, Guid updatedBy, Guid? installmentId = null)
     {
         if (amount <= 0)
             throw new ArgumentException(
@@ -251,6 +256,34 @@ public sealed class SalesReceivable
                 "El monto del cobro excede el saldo pendiente de la cuenta por cobrar."
             );
 
+        if (installmentId is { } id)
+        {
+            var installment =
+                _installments.FirstOrDefault(i => i.Id == id)
+                ?? throw new DomainRuleViolationException(
+                    "La cuota indicada no pertenece a esta cuenta por cobrar."
+                );
+            if (amount > installment.OutstandingAmount)
+                throw new DomainRuleViolationException(
+                    "El monto del cobro excede el saldo pendiente de la cuota."
+                );
+            installment.RegisterCollection(amount);
+        }
+        else
+        {
+            var remaining = amount;
+            foreach (var installment in _installments.OrderBy(i => i.InstallmentNumber))
+            {
+                if (remaining <= 0)
+                    break;
+                var applied = Math.Min(remaining, installment.OutstandingAmount);
+                if (applied <= 0)
+                    continue;
+                installment.RegisterCollection(applied);
+                remaining -= applied;
+            }
+        }
+
         PaidAmount += amount;
         SetUpdated(updatedBy);
     }
@@ -260,7 +293,7 @@ public sealed class SalesReceivable
     /// Application procesa un <c>Payment.Reverse()</c> ya ejecutado. Sin evento propio, mismo
     /// criterio que <see cref="RegisterCollection"/>.
     /// </summary>
-    public void ReverseCollection(decimal amount, Guid updatedBy)
+    public void ReverseCollection(decimal amount, Guid updatedBy, Guid? installmentId = null)
     {
         if (amount <= 0)
             throw new ArgumentException(
@@ -271,6 +304,17 @@ public sealed class SalesReceivable
             throw new DomainRuleViolationException(
                 "El monto a reversar excede el monto cobrado registrado en la cuenta por cobrar."
             );
+
+        // CXC-E2E-01 — libera primero la cuota del cobro y el resto desde la última cuota cobrada.
+        var remaining = amount;
+        if (installmentId is { } id && _installments.FirstOrDefault(i => i.Id == id) is { } chosen)
+            remaining -= chosen.ReverseCollection(remaining);
+        foreach (var installment in _installments.OrderByDescending(i => i.InstallmentNumber))
+        {
+            if (remaining <= 0)
+                break;
+            remaining -= installment.ReverseCollection(remaining);
+        }
 
         PaidAmount -= amount;
         SetUpdated(updatedBy);

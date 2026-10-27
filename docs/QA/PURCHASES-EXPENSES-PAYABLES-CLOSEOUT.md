@@ -25,12 +25,13 @@ La existencia de suites no sustituye su ejecución. Validaciones históricas: ve
 
 ## Checklist obligatorio ante cambios del flujo
 
-Casillas sin marcar a propósito: corresponden a la **próxima regresión**, no a defectos ni a tareas pendientes del cierre aprobado.
+La casilla marcada acredita únicamente la validación indicada y enlaza su evidencia aprobada. Las casillas sin marcar corresponden a la **próxima regresión**, no a defectos ni a tareas pendientes del cierre aprobado.
 
 - [ ] Compra normal y XML: vincular manualmente unidad x1 y caja; guardar y reabrir detalle/edición; comprobar nombre y factor sin IDs, cantidades base y costo correctos.
 - [ ] NC por devolución y descuento: comprobar impuestos históricos, efecto de inventario según tipo, CxP, asiento y anulación sin duplicación.
 - [ ] Gasto manual/XML: comprobar IVA desde `sri-vat-rates`, tipo documental desde `sri-doc-types`, totales XML y generación de CxP.
-- [ ] Por cada origen (compra/gasto), pagar parcialmente y totalmente; bloquear anulación con pagos activos; reversar todos los pagos y anular, respetando otras restricciones documentales.
+- [x] Origen gasto: pagar parcialmente y totalmente. E2E **17/17 PASS**, aprobado por el propietario (2026-10-27); [evidencia y límites](../evidence/supplier-payments-e2e-01/README.md).
+- [ ] Origen compra: pagar parcialmente y totalmente; por cada origen (compra/gasto), bloquear anulación con pagos activos; reversar todos los pagos y anular, respetando otras restricciones documentales.
 - [ ] Validar [Accounting](../architecture/accounting.md).
 - [ ] Cambiar de empresa: impedir consulta/aplicación/reversa de CxP y pagos ajenos.
 - [ ] Verificar origen y líneas contables legibles; cuentas resueltas por reglas/configuración.

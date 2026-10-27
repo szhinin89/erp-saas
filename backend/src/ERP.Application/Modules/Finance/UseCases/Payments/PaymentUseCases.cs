@@ -301,12 +301,17 @@ public sealed class RegisterCollectionCommandHandler
                 return Result<PaymentDto>.ValidationFailure(
                     $"La cuenta por cobrar {line.DocumentId} no pertenece al cliente del cobro."
                 );
-            if (
-                line.InstallmentId is { } installmentId
-                && receivable.Installments.All(i => i.Id != installmentId)
-            )
+            var installment = receivable.Installments.FirstOrDefault(i =>
+                i.Id == line.InstallmentId
+            );
+            if (line.InstallmentId is not null && installment is null)
                 return Result<PaymentDto>.ValidationFailure(
-                    $"La cuota {installmentId} no pertenece a la cuenta por cobrar {line.DocumentId}."
+                    $"La cuota {line.InstallmentId} no pertenece a la cuenta por cobrar {line.DocumentId}."
+                );
+            // CXC-E2E-01 — el cobro se acumula en la cuota elegida: no puede exceder su saldo.
+            if (installment is not null && line.AppliedAmount > installment.OutstandingAmount)
+                return Result<PaymentDto>.ValidationFailure(
+                    $"El monto aplicado excede el saldo pendiente de la cuota #{installment.InstallmentNumber}."
                 );
 
             try
@@ -323,7 +328,8 @@ public sealed class RegisterCollectionCommandHandler
 
         foreach (var line in cmd.Lines)
         {
-            receivablesByDocId[line.DocumentId].RegisterCollection(line.AppliedAmount, _u.UserId);
+            receivablesByDocId[line.DocumentId]
+                .RegisterCollection(line.AppliedAmount, _u.UserId, line.InstallmentId);
         }
 
         await _payments.AddAsync(payment, ct);
@@ -423,7 +429,7 @@ public sealed class ReverseCollectionCommandHandler
                     $"Cuenta por cobrar {line.ReceivableId} no encontrada."
                 );
 
-            receivable.ReverseCollection(line.AppliedAmount, _u.UserId);
+            receivable.ReverseCollection(line.AppliedAmount, _u.UserId, line.InstallmentId);
         }
 
         await _payments.SaveChangesAsync(ct);
