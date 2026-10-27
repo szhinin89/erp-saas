@@ -4447,6 +4447,7 @@
   "purchases.feedback.sriRequest": "View SRI request",
   "purchases.retention.applyOnConfirmHint": "Issued with the purchase in one operation, with an automatically assigned number; SRI registration happens afterward.",
   "purchases.retention.notApplicable": "This purchase does not generate withholding under the current configuration.",
+  "purchases.retention.noneIssued": "No withholding was issued for this purchase.",
   "purchases.retention.emissionPointRequired": "Select the emission point.",
   "purchases.retention.issueDateRequired": "Enter the issue date.",
   "purchases.feedback.ready": "Ready to confirm",

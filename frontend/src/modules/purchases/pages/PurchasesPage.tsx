@@ -2505,7 +2505,7 @@ function ReceptionCreateItemAction({
   );
 }
 
-function PaymentScheduleSection({
+export function PaymentScheduleSection({
   ctx,
 }: {
   ctx: ReturnType<typeof usePurchasesPage>;
@@ -2694,18 +2694,17 @@ function PaymentScheduleSection({
                       />
                     </td>
                     <td>
+                      {/* Input no controlado: la key por monto lo remonta cuando Regenerar/cargar
+                          cambia la cuota, para no mostrar ni re-confirmar un monto obsoleto. */}
                       <ZhDecimalInput
+                        key={r.amount}
                         precision="money"
                         positiveOnly
                         density="compact"
                         className="pf-schedule-input--amount"
                         defaultValue={r.amount}
-                        onBlur={(e) =>
-                          ctx.updateScheduleRow(
-                            idx,
-                            "amount",
-                            Number(e.target.value) || 0,
-                          )
+                        onValueCommit={(value) =>
+                          ctx.updateScheduleRow(idx, "amount", Number(value) || 0)
                         }
                         disabled={ctx.saving || !ctx.isDraft}
                       />
@@ -2795,7 +2794,7 @@ function PaymentScheduleSection({
   );
 }
 
-function RetentionSection({
+export function RetentionSection({
   ctx,
 }: {
   ctx: ReturnType<typeof usePurchasesPage>;

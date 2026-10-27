@@ -4447,6 +4447,7 @@
   "purchases.feedback.sriRequest": "Ver solicitud SRI",
   "purchases.retention.applyOnConfirmHint": "Se emite junto con la compra en una sola operación y el número se asigna automáticamente; el registro ante el SRI se hace después.",
   "purchases.retention.notApplicable": "Esta compra no genera retención con la configuración actual.",
+  "purchases.retention.noneIssued": "No se emitió retención para esta compra.",
   "purchases.retention.emissionPointRequired": "Seleccione el punto de emisión.",
   "purchases.retention.issueDateRequired": "Ingrese la fecha de emisión.",
   "purchases.feedback.ready": "Listo para confirmar",

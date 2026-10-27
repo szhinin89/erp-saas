@@ -1,0 +1,477 @@
+{
+ "docNumber": "001-001-000777001",
+ "purchaseId": "bdd6264c-cc87-4c08-8b98-5d94c882fc6d",
+ "payableId": "538f3ad8-d0de-45bf-956b-84f6dd62869c",
+ "payments": {
+  "00000003": "f61d5c17-85af-4825-bec6-965caf174702",
+  "00000004": "07ebac9d-220f-4faf-b761-6ed706382079"
+ },
+ "journalLines": [
+  [
+   "Purchases",
+   "InvoiceReceived",
+   "1",
+   "1.1.04.001",
+   "Inventario mercaderias",
+   "100.00",
+   "0.00"
+  ],
+  [
+   "Purchases",
+   "InvoiceReceived",
+   "1",
+   "1.1.05.001",
+   "IVA credito tributario",
+   "15.00",
+   "0.00"
+  ],
+  [
+   "Purchases",
+   "InvoiceReceived",
+   "1",
+   "2.1.01.001",
+   "Cuentas por pagar proveedores",
+   "0.00",
+   "115.00"
+  ],
+  [
+   "Payables",
+   "SupplierPaymentConfirmed",
+   "1",
+   "2.1.01.001",
+   "Cuentas por pagar proveedores",
+   "50.00",
+   "0.00"
+  ],
+  [
+   "Payables",
+   "SupplierPaymentConfirmed",
+   "1",
+   "1.1.02.001",
+   "Bancos cuenta corriente",
+   "0.00",
+   "50.00"
+  ],
+  [
+   "Payables",
+   "SupplierPaymentConfirmed",
+   "1",
+   "2.1.01.001",
+   "Cuentas por pagar proveedores",
+   "65.00",
+   "0.00"
+  ],
+  [
+   "Payables",
+   "SupplierPaymentConfirmed",
+   "1",
+   "1.1.02.001",
+   "Bancos cuenta corriente",
+   "0.00",
+   "65.00"
+  ]
+ ],
+ "isolationReverseResponse": {
+  "status": 404,
+  "body": {
+   "user": "El recurso solicitado no existe.",
+   "dev": "Entity not found."
+  }
+ },
+ "ui": {
+  "payablePaid": true,
+  "payablesListRow": true,
+  "p1Reopened": true,
+  "paymentsList": true,
+  "portfolioEmpty": true,
+  "purchaseListText": "001-001-000777001\t | Cliente E2E ZH | 1791352688001 | \t27/10/2026\t1\t | $ | 115.00 | \tConfirmada\t | visibility | history",
+  "purchaseListConfirmed": true,
+  "purchaseReopened": true,
+  "to5003": 0,
+  "consoleErrors": [
+   "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+   "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "[API] Entity not found.",
+   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+   "[API] Entity not found."
+  ],
+  "companyBNoPurchaseAp": true,
+  "companyBHeader": "ZH E2E B / SUCURSAL PRINCIPAL",
+  "companyBDirectUrlText": " SUCURSAL PRINCIPAL | Admin | Modo empresa | search | notifications | Español | ▾ | Empresa | ZH Technologies E2E Company (TMP-EC-b03ee00c) | ZH E2E B (1790016919001) | E | FINANZAS | Cuenta por pagar | Detalle de saldo y cuotas — solo lectura. | arrow_back | Volver | Cuenta por pagar no encontrada."
+ },
+ "checks": [
+  {
+   "label": "purchase.status",
+   "ok": true,
+   "actual": "Confirmed",
+   "expected": "Confirmed"
+  },
+  {
+   "label": "purchase.grandTotal",
+   "ok": true,
+   "actual": 115,
+   "expected": 115
+  },
+  {
+   "label": "purchase.paymentTerm",
+   "ok": true,
+   "actual": "Crédito 30 días E2E",
+   "expected": "Crédito 30 días E2E"
+  },
+  {
+   "label": "purchase.schedule",
+   "ok": true,
+   "actual": [
+    [
+     1,
+     "2026-11-26",
+     115
+    ]
+   ],
+   "expected": [
+    [
+     1,
+     "2026-11-26",
+     115
+    ]
+   ]
+  },
+  {
+   "label": "ap.origin",
+   "ok": true,
+   "actual": [
+    "PurchaseInvoice",
+    "bdd6264c-cc87-4c08-8b98-5d94c882fc6d",
+    "001-001-000777001"
+   ],
+   "expected": [
+    "PurchaseInvoice",
+    "bdd6264c-cc87-4c08-8b98-5d94c882fc6d",
+    "001-001-000777001"
+   ]
+  },
+  {
+   "label": "ap.total",
+   "ok": true,
+   "actual": 115,
+   "expected": 115
+  },
+  {
+   "label": "ap.paid",
+   "ok": true,
+   "actual": 115,
+   "expected": 115
+  },
+  {
+   "label": "ap.outstanding",
+   "ok": true,
+   "actual": 0,
+   "expected": 0
+  },
+  {
+   "label": "ap.status",
+   "ok": true,
+   "actual": "paid",
+   "expected": "paid"
+  },
+  {
+   "label": "ap.installments",
+   "ok": true,
+   "actual": [
+    [
+     1,
+     "2026-11-26",
+     115,
+     115,
+     0,
+     "paid"
+    ]
+   ],
+   "expected": [
+    [
+     1,
+     "2026-11-26",
+     115,
+     115,
+     0,
+     "paid"
+    ]
+   ]
+  },
+  {
+   "label": "pay.00000003.status",
+   "ok": true,
+   "actual": "Confirmed",
+   "expected": "Confirmed"
+  },
+  {
+   "label": "pay.00000003.total",
+   "ok": true,
+   "actual": 50,
+   "expected": 50
+  },
+  {
+   "label": "pay.00000003.ref",
+   "ok": true,
+   "actual": [
+    "TRF-E2E-PUR-001"
+   ],
+   "expected": [
+    "TRF-E2E-PUR-001"
+   ]
+  },
+  {
+   "label": "pay.00000004.status",
+   "ok": true,
+   "actual": "Confirmed",
+   "expected": "Confirmed"
+  },
+  {
+   "label": "pay.00000004.total",
+   "ok": true,
+   "actual": 65,
+   "expected": 65
+  },
+  {
+   "label": "pay.00000004.ref",
+   "ok": true,
+   "actual": [
+    "TRF-E2E-PUR-002"
+   ],
+   "expected": [
+    "TRF-E2E-PUR-002"
+   ]
+  },
+  {
+   "label": "db.applications",
+   "ok": true,
+   "actual": [
+    [
+     "00000003",
+     50,
+     "e2924912-5806-4985-bc71-22cb7570e829"
+    ],
+    [
+     "00000004",
+     65,
+     "e2924912-5806-4985-bc71-22cb7570e829"
+    ]
+   ],
+   "expected": [
+    [
+     "00000003",
+     50,
+     "e2924912-5806-4985-bc71-22cb7570e829"
+    ],
+    [
+     "00000004",
+     65,
+     "e2924912-5806-4985-bc71-22cb7570e829"
+    ]
+   ]
+  },
+  {
+   "label": "db.apInstallments",
+   "ok": true,
+   "actual": [
+    [
+     "1",
+     "2026-11-26",
+     115,
+     115
+    ]
+   ],
+   "expected": [
+    [
+     "1",
+     "2026-11-26",
+     115,
+     115
+    ]
+   ]
+  },
+  {
+   "label": "db.purchase",
+   "ok": true,
+   "actual": [
+    [
+     "2",
+     115,
+     "Crédito 30 días E2E"
+    ]
+   ],
+   "expected": [
+    [
+     "2",
+     115,
+     "Crédito 30 días E2E"
+    ]
+   ]
+  },
+  {
+   "label": "db.journal.count",
+   "ok": true,
+   "actual": 3,
+   "expected": 3
+  },
+  {
+   "label": "db.journal.allPostedBalanced",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "db.journal.totals",
+   "ok": true,
+   "actual": [
+    [
+     "InvoiceReceived",
+     "115.00"
+    ],
+    [
+     "SupplierPaymentConfirmed",
+     "50.00"
+    ],
+    [
+     "SupplierPaymentConfirmed",
+     "65.00"
+    ]
+   ],
+   "expected": [
+    [
+     "InvoiceReceived",
+     "115.00"
+    ],
+    [
+     "SupplierPaymentConfirmed",
+     "50.00"
+    ],
+    [
+     "SupplierPaymentConfirmed",
+     "65.00"
+    ]
+   ]
+  },
+  {
+   "label": "db.allRowsCompanyA",
+   "ok": true,
+   "actual": [
+    "3156bddb-a6bb-44ed-a015-bf0789157fcb"
+   ],
+   "expected": [
+    "3156bddb-a6bb-44ed-a015-bf0789157fcb"
+   ]
+  },
+  {
+   "label": "iso.B.company",
+   "ok": true,
+   "actual": "ZH E2E B",
+   "expected": "ZH E2E B"
+  },
+  {
+   "label": "iso.B.payableById",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "iso.B.purchaseById",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "iso.B.paymentById",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "iso.B.payablesListExcludesA",
+   "ok": true,
+   "actual": false,
+   "expected": false
+  },
+  {
+   "label": "iso.B.paymentsListExcludesA",
+   "ok": true,
+   "actual": false,
+   "expected": false
+  },
+  {
+   "label": "iso.B.reverseForeignPaymentRejected",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "iso.A.unchangedAfterBProbe",
+   "ok": true,
+   "actual": [
+    115,
+    "paid"
+   ],
+   "expected": [
+    115,
+    "paid"
+   ]
+  },
+  {
+   "label": "ui.payablePaid",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.payablesListRow",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.p1Reopened",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.paymentsList",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.portfolioEmpty",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.purchaseListConfirmed",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.purchaseReopened",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.companyBNoPurchaseAp",
+   "ok": true,
+   "actual": true,
+   "expected": true
+  },
+  {
+   "label": "ui.requestsTo5003",
+   "ok": true,
+   "actual": 0,
+   "expected": 0
+  }
+ ]
+}

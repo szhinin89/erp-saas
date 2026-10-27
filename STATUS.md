@@ -1,5 +1,20 @@
 # Project Status
 
+## Compras → CxP → Pago — E2E de compra a crédito — CLOSED (2026-10-27)
+
+Resultado E2E **40/40 PASS** (flujo, asientos y aislamiento), aprobado expresamente por el
+propietario junto con las dos correcciones, tras corregir dos **BUG REAL** de
+UI en Compras: la cuota regenerada mostraba y re-confirmaba un monto obsoleto (0.00), lo que dejaba
+«Las cuotas no cuadran» y bloqueaba «Confirmar compra»; y la compra confirmada sin retención mostraba
+la clave i18n cruda `purchases.retention.noneIssued`. Corrección focal en `PaymentScheduleSection`
+(`PurchasesPage.tsx`) y en `es.json`/`en.json`, con tests focales. Evidencia:
+[purchases-payables-e2e-01](docs/evidence/purchases-payables-e2e-01/README.md).
+Alcance: compra a crédito de una cuota por 115.00, pago parcial 50.00 y del saldo 65.00 por
+transferencia, reapertura de compra, CxP y pagos, asientos de compra y pago balanceados y
+aislamiento entre empresas. No acredita compras de varias cuotas, retención, reversa de pagos,
+bloqueo de anulación, suite completa ni despliegue. Los DEBT observados en la evidencia no abren
+trabajos ni reabren módulos CLOSED. Sin commit ni push.
+
 ## Cuentas por cobrar — E2E de cobros — CLOSED (2026-10-27)
 
 Resultado E2E **21/21 PASS** y aislamiento **7/7 PASS**, aprobado expresamente por el
