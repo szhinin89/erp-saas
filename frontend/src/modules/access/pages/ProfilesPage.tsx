@@ -25,6 +25,7 @@ import {
   type ProfileCreateFormValues,
 } from "../../../schemas/access/profileSchema";
 import { formatApiRequestError } from "../../lib/apiError";
+import { presentPermissionsMutationFailure } from "../permissionsMutationFailure";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { message } from "../../../lib/messages";
 import "./ProfilesPage.css";
@@ -149,6 +150,12 @@ export function ProfilesPage() {
       );
       closeModal();
     } catch (err) {
+      const handled = await presentPermissionsMutationFailure(err, {
+        t,
+        show: (text) => setSaveError(text),
+        reload: loadProfiles,
+      });
+      if (handled) return;
       const applied = applyServerErrors(err, setFieldError, (msg) =>
         setSaveError(msg),
       );
@@ -196,9 +203,15 @@ export function ProfilesPage() {
           : t("profiles.enableSuccess", "Perfil activado correctamente."),
       );
     } catch (err) {
-      setListError(
-        formatApiRequestError(err, { generic: t("profiles.error.update") }),
-      );
+      const handled = await presentPermissionsMutationFailure(err, {
+        t,
+        show: (text) => setListError(text),
+        reload: loadProfiles,
+      });
+      if (!handled)
+        setListError(
+          formatApiRequestError(err, { generic: t("profiles.error.update") }),
+        );
     } finally {
       setTogglingId(null);
     }

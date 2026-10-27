@@ -11,19 +11,13 @@ public sealed class PermissionsCacheInvalidator : IPermissionsCacheInvalidator
         _cache = cache;
     }
 
-    public Task InvalidateUserAsync(
-        Guid companyId,
-        Guid userId,
+    public Task<bool> TryBeginAsync(
+        PermissionsCacheScope scope,
         CancellationToken cancellationToken = default
-    ) => _cache.InvalidateUserAsync(companyId, userId, cancellationToken);
+    ) => _cache.TryBeginAsync(scope, cancellationToken);
 
-    public Task BumpCompanyVersionAsync(
-        Guid companyId,
+    public Task<bool> TryCompleteAsync(
+        PermissionsCacheScope scope,
         CancellationToken cancellationToken = default
-    ) => _cache.BumpCompanyVersionAsync(companyId, cancellationToken);
-
-    public Task BumpTenantVersionAsync(
-        Guid tenantId,
-        CancellationToken cancellationToken = default
-    ) => _cache.BumpTenantVersionAsync(tenantId, cancellationToken);
+    ) => _cache.TryCompleteAsync(scope, cancellationToken);
 }

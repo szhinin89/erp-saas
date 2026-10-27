@@ -503,7 +503,9 @@ dotnet ERP.API.dll --worker --Hangfire:Server:Enabled true
 El worker usa Generic Host sin Kestrel. API y worker componen la infraestructura común
 solo con `ErpHostRegistration` (fuentes de configuración, Serilog, caché Redis/memoria,
 Infrastructure/Application, Data Protection y opciones) más el registro único de
-Background Processing; lo exclusivo de HTTP queda en `Program.cs`. El despliegue aplica migraciones antes
+Background Processing; lo exclusivo de HTTP queda en `Program.cs`. Con más de una instancia de
+API, Redis es obligatorio: el despliegue declara `Redis:Required=true` y el host no arranca sin
+conexión Redis ([security.md, SEC-06](security.md)). El despliegue aplica migraciones antes
 de arrancar workers separados; API conserva su migración previa al bootstrap.
 Ambos requieren misma base ERP, storage Hangfire y volumen FileStorage/keyring.
 No hay Dashboard de Hangfire. Se eliminan las claves antiguas del entorno, incluidos

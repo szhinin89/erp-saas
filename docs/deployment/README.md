@@ -51,6 +51,25 @@ Conexiones dentro de contenedores: PostgreSQL DNS `postgreszh`, puerto **5432**;
 ERP. No usar localhost ni multiplexing. Nunca mostrar la salida interpolada de
 `docker compose config` con secretos reales (`app-stack.ps1 -Action Config` usa `--quiet`).
 
+## Redis de autorización (requisito de seguridad, SEC-06)
+
+Todo Redis configurado es el de la caché de permisos. API y worker **no arrancan** si no cumple o si
+no se puede verificar (contrato en [security.md](../architecture/security.md)):
+
+- `maxmemory-policy noeviction`, `save ""`, `appendonly no`; nodo primario sin réplicas conectadas.
+- El usuario de conexión debe poder ejecutar `CONFIG GET` e `INFO` (la verificación abre una conexión
+  efímera en modo admin). Un proveedor que bloquee `CONFIG` necesita una verificación equivalente
+  aprobada antes de usarse.
+- Con más de una instancia de API: `Redis__Required=true` (caché local solo en instancia única).
+- Operación: no restaurar respaldos de Redis ni promover réplicas; no cambiar la configuración en
+  caliente; monitorear memoria (`used_memory` frente a `maxmemory`) y alertar por indisponibilidad.
+  Con `noeviction`, memoria llena = escrituras rechazadas (cambios de permisos responden 503 sin
+  guardar), nunca permisos obsoletos.
+
+El Redis local (`infrastructure/docker/compose.base.yml`) ya declara esa configuración; el contenedor
+existente conserva la anterior hasta recrearlo (`docker compose up -d redis`). Redis solo contiene
+cachés y contadores efímeros (permisos, consultas, rate limits): perder su contenido es seguro.
+
 ## Configuración compartida y específica
 
 El anchor común de Compose comparte conexión ERP, `Hangfire__StorageConnectionString`,

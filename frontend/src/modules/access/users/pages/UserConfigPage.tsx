@@ -16,6 +16,7 @@ import { useAuthStore } from "../../../../store/authStore";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
+import { presentPermissionsMutationFailure } from "../../permissionsMutationFailure";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import {
   membershipService,
@@ -280,6 +281,24 @@ export function UserConfigPage() {
         });
       }
     } catch (err) {
+      // SEC-06: estado incierto → se relee la membership real (rol/perfil) sin repetir el guardado;
+      // sucursales y preferencias no se envían en esta pasada.
+      const handled = await presentPermissionsMutationFailure(err, {
+        t,
+        show: (text) => setBlockErrors((prev) => ({ ...prev, general: text })),
+        reload: async () => {
+          const rows = await membershipService.list(false);
+          const found = rows.find((r) => r.username === values.username);
+          if (!found) return;
+          setMembership(found);
+          setValue("role", asMembershipRole(found.role));
+          setValue("profileId", found.profileId);
+        },
+      });
+      if (handled) {
+        setSaving(false);
+        return;
+      }
       const applied = applyServerErrors(err, setError, (msg) =>
         setBlockErrors((prev) => ({ ...prev, general: msg })),
       );

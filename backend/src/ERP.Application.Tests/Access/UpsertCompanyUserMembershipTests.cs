@@ -82,13 +82,15 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
         public Mock<ICurrentUser> CurrentUser { get; } = new();
         public Mock<ITenantRepository> TenantRepo { get; } = new();
         public Mock<ICompanyRepository> CompanyRepo { get; } = new();
-        public Mock<IPermissionsCacheInvalidator> PermissionsCache { get; } = new();
+        public Mock<IPermissionsCacheInvalidator> PermissionsCache { get; } =
+            PermissionsCacheInvalidatorMocks.Healthy();
         public Mock<INavigationBuilder> NavigationBuilder { get; } = new();
         public Mock<IBranchRepository> BranchRepo { get; } = new();
         public Mock<ICompanyUserBranchRepository> CompanyUserBranchRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
         public Mock<ICompanyContextProvider> CompanyContext { get; } = new();
         public Mock<IEffectivePermissionKeysProvider> EffectivePermissionKeys { get; } = new();
+        public Mock<IUnitOfWork> UnitOfWork { get; } = new();
 
         public Fixture()
         {
@@ -107,7 +109,8 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
                 CompanyUserBranchRepo.Object,
                 Mediator.Object,
                 CompanyContext.Object,
-                EffectivePermissionKeys.Object
+                EffectivePermissionKeys.Object,
+                UnitOfWork.Object
             );
     }
 
@@ -789,7 +792,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             Times.Once
         );
         f.PermissionsCache.Verify(
-            c => c.InvalidateUserAsync(companyB.Id, user.Id, It.IsAny<CancellationToken>()),
+            c => c.TryCompleteAsync(PermissionsCacheScope.User(companyB.Id, user.Id), It.IsAny<CancellationToken>()),
             Times.Once
         );
         f.NavigationBuilder.Verify(n => n.InvalidateCache(tenant.Id, companyB.Id, user.Id));
@@ -1251,5 +1254,224 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             );
 
         result.IsSuccess.Should().BeTrue();
+    }
+
+    // ── SEC-06 (R5): un cambio de rol/perfil nunca queda persistido sin la invalidación ─────────
+
+    private sealed record ProfileChange(
+        Fixture F,
+        CompanyUserMembership Membership,
+        Guid OldProfileId,
+        AccessProfile NewProfile,
+        Tenant Tenant,
+        Company Company,
+        IdentityUser User
+    )
+    {
+        public UpsertCompanyUserMembershipCommand Command(
+            Guid[]? branchIds = null,
+            string? loginMode = null
+        ) =>
+            new(
+                Tenant.Id,
+                Company.Id,
+                Username,
+                "User",
+                NewProfile.Id,
+                AuthorizedBranchIds: branchIds,
+                LoginMode: loginMode
+            );
+    }
+
+    private static ProfileChange ProfileChangeFixture()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var oldProfileId = Guid.NewGuid();
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            "User",
+            oldProfileId,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: membership);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    company.Id,
+                    true,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    membership,
+                    CompanyUserMembership.Create(
+                        company.Id,
+                        Guid.NewGuid(),
+                        SecurityRoles.Admin,
+                        null,
+                        CreatedBy
+                    ),
+                }
+            );
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto?>.Success(
+                    Preferences(
+                        membership.Id,
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        null
+                    )
+                )
+            );
+        var newProfile = SetupProfile(f, tenant.Id, company.Id);
+        return new ProfileChange(f, membership, oldProfileId, newProfile, tenant, company, user);
+    }
+
+    [Fact]
+    public async Task SEC06_sucursal_inexistente_no_persiste_el_cambio_de_perfil_ni_inicia_invalidacion()
+    {
+        var c = ProfileChangeFixture();
+        var missingBranchId = Guid.NewGuid();
+        c.F.BranchRepo.Setup(r =>
+                r.GetByIdForCompanyAsync(
+                    c.Tenant.Id,
+                    c.Company.Id,
+                    missingBranchId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync((Branch?)null);
+
+        var result = await c.F.BuildHandler()
+            .Handle(c.Command(branchIds: new[] { missingBranchId }), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        c.Membership.ProfileId.Should().Be(c.OldProfileId);
+        AssertNothingPersisted(c.F);
+        c.F.PermissionsCache.Verify(
+            p => p.TryBeginAsync(It.IsAny<PermissionsCacheScope>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task SEC06_cambio_de_perfil_se_persiste_en_transaccion_entre_Begin_y_Complete()
+    {
+        var c = ProfileChangeFixture();
+        var scope = PermissionsCacheScope.User(c.Company.Id, c.User.Id);
+        var steps = new List<string>();
+        c.F.PermissionsCache.Setup(p => p.TryBeginAsync(scope, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("begin"))
+            .ReturnsAsync(true);
+        c.F.PermissionsCache.Setup(p => p.TryCompleteAsync(scope, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("complete"))
+            .ReturnsAsync(true);
+        c.F.UnitOfWork.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("tx"))
+            .Returns(Task.CompletedTask);
+        c.F.AccessRepo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("save"))
+            .Returns(Task.CompletedTask);
+        c.F.UnitOfWork.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("commit"))
+            .Returns(Task.CompletedTask);
+
+        var result = await c.F.BuildHandler().Handle(c.Command(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        c.Membership.ProfileId.Should().Be(c.NewProfile.Id);
+        steps.Should().Equal("begin", "tx", "save", "commit", "complete");
+    }
+
+    [Fact]
+    public async Task SEC06_fallo_de_preferencias_revierte_la_transaccion_y_completa_la_invalidacion()
+    {
+        var c = ProfileChangeFixture();
+        c.F.Mediator.Setup(m =>
+                m.Send(
+                    It.IsAny<UpdateCompanyUserPreferencesCommand>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto>.ValidationFailure("Preferencias inválidas.")
+            );
+
+        var result = await c.F.BuildHandler()
+            .Handle(
+                c.Command(loginMode: nameof(CompanyUserLoginMode.AskBranch)),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.ValidationError);
+        c.F.UnitOfWork.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        c.F.UnitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        c.F.PermissionsCache.Verify(
+            p =>
+                p.TryCompleteAsync(
+                    PermissionsCacheScope.User(c.Company.Id, c.User.Id),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task SEC06_sin_garantia_de_invalidacion_no_persiste_el_cambio_de_perfil()
+    {
+        var c = ProfileChangeFixture();
+        c.F.PermissionsCache.Setup(p =>
+                p.TryBeginAsync(It.IsAny<PermissionsCacheScope>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+
+        var result = await c.F.BuildHandler().Handle(c.Command(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Access.PermissionsInvalidationUnavailable);
+        c.Membership.ProfileId.Should().Be(c.OldProfileId);
+        AssertNothingPersisted(c.F);
+    }
+
+    [Fact]
+    public async Task SEC06_invalidacion_incompleta_tras_guardar_se_informa_como_fallo()
+    {
+        var c = ProfileChangeFixture();
+        c.F.PermissionsCache.Setup(p =>
+                p.TryCompleteAsync(It.IsAny<PermissionsCacheScope>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+
+        var result = await c.F.BuildHandler().Handle(c.Command(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Access.PermissionsInvalidationIncomplete);
+        c.F.UnitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SEC06_con_transaccion_ambiente_no_abre_ni_confirma_una_propia()
+    {
+        var c = ProfileChangeFixture();
+        c.F.UnitOfWork.SetupGet(u => u.HasActiveTransaction).Returns(true);
+
+        var result = await c.F.BuildHandler().Handle(c.Command(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        c.F.UnitOfWork.Verify(
+            u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        c.F.UnitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

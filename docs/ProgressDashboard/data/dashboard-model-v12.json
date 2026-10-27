@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-10-25 10:35:37",
+    "Generated":  "2026-10-27 07:08:09",
     "EngineeringScore":  {
-                             "Generated":  "2026-10-25 10:35:34",
+                             "Generated":  "2026-10-27 07:08:07",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
-                             "Quality":  8.05,
-                             "Security":  16.8,
+                             "Quality":  8,
+                             "Security":  16.6,
                              "Dependencies":  100,
-                             "Overall":  58.92
+                             "Overall":  58.87
                          },
     "QualityGate":  {
-                        "Generated":  "2026-10-25 10:35:37",
+                        "Generated":  "2026-10-27 07:08:09",
                         "Status":  "RED",
-                        "EngineeringScore":  58.92,
+                        "EngineeringScore":  58.87,
                         "Warnings":  [
                                          "Engineering score below 60%",
                                          "High number of possible secrets detected",
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-10-25 10:35:37",
-                  "Snapshots":  35,
+                  "Generated":  "2026-10-27 07:08:08",
+                  "Snapshots":  37,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -202,6 +202,16 @@
                                       "Date":  "2026-10-25 10:35:35",
                                       "File":  "dashboard-2026-10-25-1035-v2.json",
                                       "Score":  58.92
+                                  },
+                                  {
+                                      "Date":  "2026-10-27 06:46:04",
+                                      "File":  "dashboard-2026-10-27-0646-v2.json",
+                                      "Score":  58.87
+                                  },
+                                  {
+                                      "Date":  "2026-10-27 07:08:07",
+                                      "File":  "dashboard-2026-10-27-0708-v2.json",
+                                      "Score":  58.87
                                   }
                               ]
               },
@@ -553,14 +563,15 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-10-25 10:35:33",
-                     "FilesAnalyzed":  12262,
-                     "SecretsFound":  196,
+                     "Generated":  "2026-10-27 07:08:06",
+                     "FilesAnalyzed":  12285,
+                     "SecretsFound":  197,
                      "SecretFiles":  [
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ApiErrorContractTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ExceptionClassificationTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\ApiErrorContractHttpTests.cs",
+                                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\CompanySettingsIsolationHttpTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\ForgotPasswordSecurityHttpTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Communications\\UseCases\\UpdateCompanyEmailSettings\\UpdateCompanyEmailSettingsCommandHandler.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicDocuments\\Services\\ElectronicDocumentSigningService.cs",
@@ -585,22 +596,22 @@
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\E2E\\E2ESeedService.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Security\\BcryptPasswordHasherTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\TestP12CertificateFactory.cs",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\AdminCoreLoginPage-tQch8Xkt.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\AdminCoreLoginPage-BuDPDA1L.js",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\api-imM-S7tu.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\App-RCiHmDvA.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\App-BRdxBfrk.js",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\authService-CUGfDHJT.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CommunicationsEmailSettingsPage-D74kmgfI.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CompletePasswordResetPage-BPhU_WYb.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ElectronicInvoicingPage-CWpYTdV5.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CommunicationsEmailSettingsPage-DZtUXAZM.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CompletePasswordResetPage-Dgk5vh1T.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ElectronicInvoicingPage-ZJydH1UB.js",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\electronicInvoicingStatusStore-CSUP8QZy.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\index-CJGdOayP.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\LoginPage-D9p5CKoa.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\loginSchema-H3u5fUvV.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ResetPasswordPage-BlUp1PeE.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SalesPage-DbN2tFaf.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SetupPage-CVrlUz6k.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UserConfigPage-CF_wNXRz.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UsersPage-47KRSg1P.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\index-CJa8pfxv.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\LoginPage-BVGCrisy.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\loginSchema-51NbkR2i.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ResetPasswordPage-tYnmkODb.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SalesPage-BBw5t9HG.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SetupPage-5TSIeSsA.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UserConfigPage-UtDEcWz2.js",
+                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UsersPage-YTSjn4oH.js",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\helpers\\api.ts",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\enterprise-auth.spec.ts",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\.vite\\deps\\axios.js",
@@ -782,11 +793,11 @@
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
                                                ],
-                     "Warnings":  218
+                     "Warnings":  219
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-10-25 10:35:14",
-                          "FilesAnalyzed":  12180,
+                          "Generated":  "2026-10-27 07:07:48",
+                          "FilesAnalyzed":  12206,
                           "TODO":  732,
                           "FIXME":  30,
                           "HACK":  1,
@@ -806,23 +817,31 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\CajaVentasEndToEndTests.cs",
-                                                 "Lines":  1025
+                                                 "Lines":  1031
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\CashRegisterDefaultsEndToEndTests.cs",
-                                                 "Lines":  593
+                                                 "Lines":  599
+                                             },
+                                             {
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\CompanyAccessProfilesIsolationHttpTests.cs",
+                                                 "Lines":  696
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyFixture.cs",
-                                                 "Lines":  685
+                                                 "Lines":  686
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\FinancialCommandIdempotencyTests.cs",
                                                  "Lines":  664
                                              },
                                              {
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
+                                                 "Lines":  513
+                                             },
+                                             {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\InventoryAdjustmentsEndToEndTests.cs",
-                                                 "Lines":  1609
+                                                 "Lines":  1642
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\PurchaseReturnEndToEndTests.cs",
@@ -838,7 +857,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\SalesReturnEndToEndTests.cs",
-                                                 "Lines":  1755
+                                                 "Lines":  1761
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\SalesReturnInvoiceStateConcurrencyTests.cs",
@@ -914,11 +933,11 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\AuthorizePurchaseReturnUseCases.cs",
-                                                 "Lines":  547
+                                                 "Lines":  549
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\ConfirmPurchaseUseCases.cs",
-                                                 "Lines":  584
+                                                 "Lines":  598
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Purchases\\UseCases\\PurchaseCreditNoteDraftUseCases.cs",
@@ -958,7 +977,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Access\\UpsertCompanyUserMembershipTests.cs",
-                                                 "Lines":  744
+                                                 "Lines":  1478
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Accounting\\GetAccountingReportsUseCasesTests.cs",
@@ -1074,11 +1093,11 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Inventory\\Stock\\StockAdjustmentBranchOwnershipTests.cs",
-                                                 "Lines":  703
+                                                 "Lines":  705
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Inventory\\Stock\\StockAdjustmentExecuteCancelTests.cs",
-                                                 "Lines":  609
+                                                 "Lines":  616
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\MasterData\\BpNestedResourceOwnershipHandlerTests.cs",
@@ -1134,15 +1153,15 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\CancelPurchaseHandlerTests.cs",
-                                                 "Lines":  1089
+                                                 "Lines":  1145
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\CancelPurchaseReturnUseCasesTests.cs",
-                                                 "Lines":  719
+                                                 "Lines":  721
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\ConfirmPurchaseHandlerTests.cs",
-                                                 "Lines":  2158
+                                                 "Lines":  2171
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\GetPurchaseReturnByIdHandlerTests.cs",
@@ -1306,19 +1325,19 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.cs",
-                                                 "Lines":  11720
+                                                 "Lines":  11748
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.Designer.cs",
-                                                 "Lines":  22141
+                                                 "Lines":  22167
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\ErpDbContextModelSnapshot.cs",
-                                                 "Lines":  22138
+                                                 "Lines":  22164
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Inventory\\StockRepository.cs",
-                                                 "Lines":  761
+                                                 "Lines":  791
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Persistence\\Repositories\\Items\\ItemRepository.cs",
@@ -1350,7 +1369,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\DependencyInjection.cs",
-                                                 "Lines":  1194
+                                                 "Lines":  1199
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Accounting\\AccountingContinuityIntegrationTests.cs",
@@ -1458,7 +1477,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.cs",
-                                                 "Lines":  1305
+                                                 "Lines":  1306
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
@@ -1526,7 +1545,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\PurchaseReturnCrossInvariantTests.cs",
-                                                 "Lines":  925
+                                                 "Lines":  927
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Persistence\\RegisterSupplierCreditNoteIntegrationTests.cs",
@@ -3534,7 +3553,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\access\\pages\\PermissionsAssignmentPage.tsx",
-                                                 "Lines":  539
+                                                 "Lines":  546
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\access\\users\\pages\\UserConfigPage.test.tsx",
@@ -3542,7 +3561,7 @@
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\access\\users\\pages\\UserConfigPage.tsx",
-                                                 "Lines":  525
+                                                 "Lines":  544
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\accounting\\api\\accountingApi.ts",
@@ -3611,10 +3630,6 @@
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\inventory\\adjustments\\pages\\StockAdjustmentFormPage.test.tsx",
                                                  "Lines":  512
-                                             },
-                                             {
-                                                 "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\inventory\\kardex\\pages\\KardexPage.tsx",
-                                                 "Lines":  536
                                              },
                                              {
                                                  "File":  "C:\\ProyectCursor\\erp-saas\\frontend\\src\\modules\\items\\catalog\\wizard\\TreeEditor.tsx",
@@ -3752,7 +3767,7 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-10-25 10:33:03",
+                         "Generated":  "2026-10-27 07:07:30",
                          "Layers":  {
                                         "Domain":  {
                                                        "Files":  694
@@ -3761,16 +3776,16 @@
                                                             "Commands":  0,
                                                             "Validators":  6,
                                                             "Queries":  5,
-                                                            "Files":  1155
+                                                            "Files":  1156
                                                         },
                                         "Infrastructure":  {
                                                                "DbContext":  101,
-                                                               "Files":  496,
+                                                               "Files":  498,
                                                                "Repository":  95
                                                            },
                                         "API":  {
                                                     "Controllers":  491,
-                                                    "Files":  150
+                                                    "Files":  151
                                                 }
                                     },
                          "Violations":  [
@@ -3778,7 +3793,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-10-25 10:33:04",
+                         "Generated":  "2026-10-27 07:07:31",
                          "Violations":  [
 
                                         ],

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-25 10:35:54",
+    "generated":  "2026-10-27 07:08:26",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -245,12 +245,12 @@
                   },
                   {
                       "id":  "Access",
-                      "filesScanned":  105,
+                      "filesScanned":  107,
                       "fanIn":  11,
                       "fanOut":  6,
                       "coupling":  17,
                       "instability":  0.353,
-                      "cohesionApprox":  0.556,
+                      "cohesionApprox":  0.558,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -348,7 +348,7 @@
                       "fanOut":  13,
                       "coupling":  22,
                       "instability":  0.591,
-                      "cohesionApprox":  0.521,
+                      "cohesionApprox":  0.516,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -903,7 +903,7 @@
                       "fanOut":  14,
                       "coupling":  23,
                       "instability":  0.609,
-                      "cohesionApprox":  0.586,
+                      "cohesionApprox":  0.584,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -1120,13 +1120,13 @@
                   {
                       "from":  "Purchases",
                       "to":  "Items",
-                      "referenceCount":  15,
+                      "referenceCount":  17,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/PurchaseDraft/PurchaseDraftPackagingResolver.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/Services/PurchaseReceptionDetailProcessor.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/CreatePurchaseReceptionDraft/CreatePurchaseReceptionDraftHandler.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/Services/PurchaseXmlOriginPackagingResolver.cs",
-                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Purchases/UseCases/CancelPurchaseUseCases.cs"
                                    ]
                   },
                   {
@@ -1293,7 +1293,7 @@
                   {
                       "from":  "Purchases",
                       "to":  "Companies",
-                      "referenceCount":  9,
+                      "referenceCount":  10,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
@@ -2341,13 +2341,13 @@
                   {
                       "from":  "Accounting",
                       "to":  "Companies",
-                      "referenceCount":  6,
+                      "referenceCount":  7,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Accounting/Continuity/AccountingPostingExecutor.cs",
                                        "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/CashPostingTranslators.cs",
                                        "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SaleCostPostingRecorder.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/StockAdjustmentPostingTranslators.cs",
-                                       "backend/src/ERP.Application/Modules/Accounting/UseCases/AccountingPeriods/FiscalYearClosingUseCases.cs"
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/SalesReturnCogsReversalPostingTranslator.cs",
+                                       "backend/src/ERP.Application/Modules/Accounting/Posting/Translators/StockAdjustmentPostingTranslators.cs"
                                    ]
                   },
                   {
@@ -2586,7 +2586,7 @@
                   {
                       "from":  "Purchases",
                       "to":  "Inventory",
-                      "referenceCount":  17,
+                      "referenceCount":  18,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/PurchaseDraft/PurchaseDraftMapper.cs",
                                        "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/Services/PurchaseReceptionDetailProcessor.cs",

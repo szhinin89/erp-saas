@@ -1887,6 +1887,8 @@
   "permissionsAssignment.summary.actions": "Actions: {{count}}",
   "profiles.perms.error.load": "Couldn't load profile permissions.",
   "profiles.perms.error.save": "Couldn't save profile permissions.",
+  "access.permissionsInvalidation.unavailable": "The change could not be completed: nothing was saved. Retry once the service has recovered.",
+  "access.permissionsInvalidation.incomplete": "The change may have been saved, but the permissions security update could not be confirmed. Check the current state before repeating the operation; if it does not look up to date, reload the page.",
   "common.back": "Back",
   "common.view": "View",
   "common.prev": "Previous",

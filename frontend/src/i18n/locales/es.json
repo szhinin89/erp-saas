@@ -1956,6 +1956,8 @@
   "permissionsAssignment.summary.actions": "Acciones: {{count}}",
   "profiles.perms.error.load": "No se pudo cargar permisos del perfil.",
   "profiles.perms.error.save": "No se pudo guardar permisos del perfil.",
+  "access.permissionsInvalidation.unavailable": "No se pudo completar el cambio: no se guardó ninguna modificación. Reintente cuando el servicio se haya recuperado.",
+  "access.permissionsInvalidation.incomplete": "El cambio pudo haberse guardado, pero no se pudo confirmar la actualización de seguridad de los permisos. Verifique el estado actual antes de repetir la operación; si no se muestra actualizado, recargue la página.",
   "common.back": "Volver",
   "common.view": "Ver",
   "common.prev": "Anterior",

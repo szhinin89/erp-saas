@@ -1,69 +1,112 @@
+using System.Diagnostics;
 using System.Text.Json;
 using ERP.Application.Access.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace ERP.Infrastructure.Access.Caching;
 
+/// <summary>
+/// Entradas en <see cref="IDistributedCache"/>; versiones y marcas en
+/// <see cref="PermissionsCacheVersionStore"/> (atómico). SEC-06: una entrada solo es válida si su
+/// perfil coincide con el de la membership vigente y sus versiones (tenant, empresa, usuario) son
+/// las actuales, sin invalidación en curso; se publica con las versiones observadas antes de cargar
+/// la BD (<see cref="PermissionsCacheStamp"/>), nunca con las vigentes al escribir.
+/// </summary>
 public sealed class DistributedPermissionsCacheService : IPermissionsCacheBackend
 {
-    private const int DefaultTtlSeconds = 300;
+    public const int DefaultTtlSeconds = 300;
+
+    /// <summary>
+    /// Antigüedad máxima de un sello para publicar: acota cuánto después de una invalidación puede
+    /// llegar una escritura tardía (ver <see cref="PermissionsCacheVersionStore.PendingExpiry"/>).
+    /// </summary>
+    public static readonly TimeSpan MaxStampAge = TimeSpan.FromSeconds(60);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly DistributedCacheEntryOptions VersionEntryOptions = new()
-    {
-        AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30),
-    };
 
     private readonly IDistributedCache _cache;
+    private readonly PermissionsCacheVersionStore _versions;
 
-    public DistributedPermissionsCacheService(IDistributedCache cache)
+    public DistributedPermissionsCacheService(
+        IDistributedCache cache,
+        PermissionsCacheVersionStore versions
+    )
     {
         _cache = cache;
+        _versions = versions;
     }
 
     public async Task<PermissionsCacheReadResult> ReadAsync(
         Guid tenantId,
         Guid companyId,
         Guid userId,
+        Guid profileId,
         CancellationToken cancellationToken = default
     )
     {
+        var (pending, versions) = await _versions.ReadAsync(ScopeKeys(tenantId, companyId, userId));
+        if (pending)
+            return new PermissionsCacheReadResult(
+                null,
+                PermissionsCacheMissReason.InvalidationPending
+            );
+
+        var stamp = new PermissionsCacheStamp(
+            versions[0],
+            versions[1],
+            versions[2],
+            Stopwatch.GetTimestamp()
+        );
+
         var bytes = await _cache.GetAsync(DataKey(companyId, userId), cancellationToken);
         if (bytes is null || bytes.Length == 0)
-            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.NotFound);
+            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.NotFound, stamp);
 
         var envelope = JsonSerializer.Deserialize<PermissionCacheEnvelope>(bytes, JsonOptions);
         if (envelope?.Keys is null)
-            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.NotFound);
+            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.NotFound, stamp);
 
-        var companyVersion = await ReadVersionAsync(
-            CompanyVersionKey(companyId),
-            cancellationToken
-        );
-        var tenantVersion = await ReadVersionAsync(TenantVersionKey(tenantId), cancellationToken);
+        if (envelope.ProfileId != profileId)
+            return new PermissionsCacheReadResult(
+                null,
+                PermissionsCacheMissReason.ProfileMismatch,
+                stamp
+            );
 
-        if (envelope.CompanyVersion != companyVersion || envelope.TenantVersion != tenantVersion)
-            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.VersionMismatch);
+        if (
+            envelope.TenantVersion != stamp.TenantVersion
+            || envelope.CompanyVersion != stamp.CompanyVersion
+            || envelope.UserVersion != stamp.UserVersion
+        )
+            return new PermissionsCacheReadResult(
+                null,
+                PermissionsCacheMissReason.VersionMismatch,
+                stamp
+            );
 
-        return new PermissionsCacheReadResult(envelope.Keys, null);
+        return new PermissionsCacheReadResult(envelope.Keys, null, stamp);
     }
 
     public async Task WriteAsync(
         Guid tenantId,
         Guid companyId,
         Guid userId,
+        Guid profileId,
         IReadOnlyList<string> keys,
-        TimeSpan? ttl = null,
+        PermissionsCacheStamp stamp,
         CancellationToken cancellationToken = default
     )
     {
-        var companyVersion = await ReadVersionAsync(
-            CompanyVersionKey(companyId),
-            cancellationToken
-        );
-        var tenantVersion = await ReadVersionAsync(TenantVersionKey(tenantId), cancellationToken);
+        if (Stopwatch.GetElapsedTime(stamp.ObservedAtTimestamp) > MaxStampAge)
+            return;
 
-        var envelope = new PermissionCacheEnvelope(companyVersion, tenantVersion, keys.ToList());
+        var envelope = new PermissionCacheEnvelope(
+            profileId,
+            stamp.TenantVersion,
+            stamp.CompanyVersion,
+            stamp.UserVersion,
+            keys.ToList()
+        );
 
         var bytes = JsonSerializer.SerializeToUtf8Bytes(envelope, JsonOptions);
         await _cache.SetAsync(
@@ -71,62 +114,44 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheBacken
             bytes,
             new DistributedCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = ttl ?? TimeSpan.FromSeconds(DefaultTtlSeconds),
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(DefaultTtlSeconds),
             },
             cancellationToken
         );
     }
 
-    public Task InvalidateUserAsync(
-        Guid companyId,
-        Guid userId,
+    public Task<bool> TryBeginAsync(
+        PermissionsCacheScope scope,
         CancellationToken cancellationToken = default
-    ) => _cache.RemoveAsync(DataKey(companyId, userId), cancellationToken);
+    ) => Succeeded(_versions.BeginAsync(scope.Key));
 
-    public Task BumpCompanyVersionAsync(
-        Guid companyId,
+    public Task<bool> TryCompleteAsync(
+        PermissionsCacheScope scope,
         CancellationToken cancellationToken = default
-    ) => BumpVersionAsync(CompanyVersionKey(companyId), cancellationToken);
+    ) => Succeeded(_versions.CompleteAsync(scope.Key));
 
-    public Task BumpTenantVersionAsync(
-        Guid tenantId,
-        CancellationToken cancellationToken = default
-    ) => BumpVersionAsync(TenantVersionKey(tenantId), cancellationToken);
-
-    private async Task BumpVersionAsync(string versionKey, CancellationToken cancellationToken)
+    // Sin capturar: los fallos los traduce a false ResilientPermissionsCacheService (con log).
+    private static async Task<bool> Succeeded(Task operation)
     {
-        var next = await ReadVersionAsync(versionKey, cancellationToken) + 1;
-        await _cache.SetAsync(
-            versionKey,
-            BitConverter.GetBytes(next),
-            VersionEntryOptions,
-            cancellationToken
-        );
+        await operation;
+        return true;
     }
 
-    private async Task<long> ReadVersionAsync(
-        string versionKey,
-        CancellationToken cancellationToken
-    )
-    {
-        var bytes = await _cache.GetAsync(versionKey, cancellationToken);
-        if (bytes is null || bytes.Length < sizeof(long))
-            return 0;
-
-        return BitConverter.ToInt64(bytes, 0);
-    }
+    private static string[] ScopeKeys(Guid tenantId, Guid companyId, Guid userId) =>
+        [
+            PermissionsCacheScope.Tenant(tenantId).Key,
+            PermissionsCacheScope.Company(companyId).Key,
+            PermissionsCacheScope.User(companyId, userId).Key,
+        ];
 
     private static string DataKey(Guid companyId, Guid userId) =>
         $"permissions:{companyId:N}:{userId:N}";
 
-    private static string CompanyVersionKey(Guid companyId) => $"permissions:version:{companyId:N}";
-
-    private static string TenantVersionKey(Guid tenantId) =>
-        $"permissions:version:tenant:{tenantId:N}";
-
     private sealed record PermissionCacheEnvelope(
-        long CompanyVersion,
+        Guid ProfileId,
         long TenantVersion,
+        long CompanyVersion,
+        long UserVersion,
         List<string> Keys
     );
 }

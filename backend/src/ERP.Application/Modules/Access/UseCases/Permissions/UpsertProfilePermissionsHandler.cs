@@ -166,6 +166,21 @@ public class UpsertProfilePermissionsHandler
         if (profile is null)
             return Result<PermissionUpsertResultDto>.Failure("Perfil no existe.");
 
+        // SEC-06: la persistencia corre dentro del protocolo de invalidación fail-closed de la
+        // empresa del perfil.
+        return await _permissionsCache.RunAsync(
+            PermissionsCacheScope.Company(profile.CompanyId),
+            ct => PersistAsync(command, profile.CompanyId, ct),
+            cancellationToken
+        );
+    }
+
+    private async Task<Result<PermissionUpsertResultDto>> PersistAsync(
+        UpsertProfilePermissionsCommand command,
+        Guid companyId,
+        CancellationToken cancellationToken
+    )
+    {
         var tenantId = _currentTenant.TenantId;
         var actorId = _currentUser.UserId;
         var saved = new List<string>();
@@ -202,12 +217,11 @@ public class UpsertProfilePermissionsHandler
 
         await _repo.SaveChangesAsync(cancellationToken);
 
-        await ProfileCacheInvalidation.InvalidateAsync(
+        await ProfileCacheInvalidation.InvalidateNavigationAsync(
             _repo,
-            _permissionsCache,
             _navigationBuilder,
             tenantId,
-            profile.CompanyId,
+            companyId,
             command.ProfileId,
             cancellationToken
         );

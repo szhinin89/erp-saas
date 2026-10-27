@@ -218,6 +218,11 @@ public static class DependencyInjection
             ERP.Application.Modules.Sales.Services.ISalesCreditRequirementPolicy,
             ERP.Application.Modules.Sales.Services.SalesCreditRequirementPolicy
         >();
+        // SEC-06: singleton — sin Redis, sus contadores de proceso deben vivir lo mismo que la caché
+        // en memoria; con Redis, reutiliza el IConnectionMultiplexer único del host.
+        services.AddSingleton(sp => new PermissionsCacheVersionStore(
+            sp.GetService<StackExchange.Redis.IConnectionMultiplexer>()
+        ));
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp =>

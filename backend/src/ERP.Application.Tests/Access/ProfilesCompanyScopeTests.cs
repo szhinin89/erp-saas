@@ -131,7 +131,7 @@ public sealed class ProfilesCompanyScopeTests
     public async Task UpdateProfile_perfil_de_otra_empresa_falla_sin_actualizar_ni_invalidar_cache()
     {
         var repo = new Mock<IAccessRepository>();
-        var permissionsCache = new Mock<IPermissionsCacheInvalidator>();
+        var permissionsCache = PermissionsCacheInvalidatorMocks.Healthy();
         var navigationBuilder = new Mock<INavigationBuilder>();
 
         var profileOfCompanyB = Guid.NewGuid();
@@ -163,7 +163,7 @@ public sealed class ProfilesCompanyScopeTests
         result.Error.Should().Contain("Perfil no encontrado");
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         permissionsCache.Verify(
-            c => c.BumpCompanyVersionAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            c => c.TryCompleteAsync(It.IsAny<PermissionsCacheScope>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
         navigationBuilder.Verify(
@@ -176,7 +176,7 @@ public sealed class ProfilesCompanyScopeTests
     public async Task UpdateProfile_desactivar_invalida_solo_las_memberships_de_la_empresa_activa()
     {
         var repo = new Mock<IAccessRepository>();
-        var permissionsCache = new Mock<IPermissionsCacheInvalidator>();
+        var permissionsCache = PermissionsCacheInvalidatorMocks.Healthy();
         var navigationBuilder = new Mock<INavigationBuilder>();
 
         var profile = AccessProfile.Create(TenantId, CompanyAId, "Ventas", null, UserId);
@@ -218,13 +218,13 @@ public sealed class ProfilesCompanyScopeTests
         result.IsSuccess.Should().BeTrue();
         profile.IsActive.Should().BeFalse();
         permissionsCache.Verify(
-            c => c.BumpCompanyVersionAsync(CompanyAId, It.IsAny<CancellationToken>()),
+            c => c.TryCompleteAsync(PermissionsCacheScope.Company(CompanyAId), It.IsAny<CancellationToken>()),
             Times.Once
         );
         permissionsCache.Verify(
             c =>
-                c.BumpCompanyVersionAsync(
-                    It.Is<Guid>(id => id != CompanyAId),
+                c.TryCompleteAsync(
+                    It.Is<PermissionsCacheScope>(s => s != PermissionsCacheScope.Company(CompanyAId)),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Never

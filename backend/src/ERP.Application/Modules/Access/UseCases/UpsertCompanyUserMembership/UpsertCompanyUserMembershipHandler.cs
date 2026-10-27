@@ -38,6 +38,7 @@ public class UpsertCompanyUserMembershipHandler
     private readonly IMediator _mediator;
     private readonly ICompanyContextProvider _companyContext;
     private readonly IEffectivePermissionKeysProvider _effectivePermissionKeys;
+    private readonly IUnitOfWork _unitOfWork;
 
     public UpsertCompanyUserMembershipHandler(
         IAccessRepository accessRepository,
@@ -50,7 +51,8 @@ public class UpsertCompanyUserMembershipHandler
         ICompanyUserBranchRepository companyUserBranchRepository,
         IMediator mediator,
         ICompanyContextProvider companyContext,
-        IEffectivePermissionKeysProvider effectivePermissionKeys
+        IEffectivePermissionKeysProvider effectivePermissionKeys,
+        IUnitOfWork unitOfWork
     )
     {
         _accessRepository = accessRepository;
@@ -64,6 +66,7 @@ public class UpsertCompanyUserMembershipHandler
         _mediator = mediator;
         _companyContext = companyContext;
         _effectivePermissionKeys = effectivePermissionKeys;
+        _unitOfWork = unitOfWork;
     }
 
     public Task<Result<object>> HandleAsync(
@@ -109,19 +112,7 @@ public class UpsertCompanyUserMembershipHandler
         if (assignmentViolation is not null)
             return assignmentViolation;
 
-        CompanyUserMembership membership;
-        if (existing is null)
-        {
-            membership = CompanyUserMembership.Create(
-                company.Id,
-                user.Id,
-                command.Role,
-                command.ProfileId,
-                createdBy: _currentUser.UserId
-            );
-            await _accessRepository.AddCompanyUserMembershipAsync(membership, cancellationToken);
-        }
-        else
+        if (existing is not null)
         {
             // CompanyAdministratorInvariant: la empresa debe conservar al menos un Administrador
             // activo tras el cambio de rol — regla pura, el handler obtiene las memberships
@@ -138,73 +129,165 @@ public class UpsertCompanyUserMembershipHandler
             );
             if (invariantViolation is not null)
                 return invariantViolation;
-
-            existing.Activate(command.Role, command.ProfileId, updatedBy: _currentUser.UserId);
-            membership = existing;
         }
 
-        await _accessRepository.SaveChangesAsync(cancellationToken);
-
-        // ── Autorización de sucursales ──────────────────────────────────────────────────
-        // CompanyUserBranch sigue siendo la única fuente de verdad de sucursales permitidas.
-        // Este es hoy el único flujo de producción que escribe en esa tabla — reutiliza la
-        // entidad/repositorio ya construidos en Fase B tal cual, sin tocar CompanyUserBranch.Create
-        // ni su Domain. Se valida existencia real de cada Branch antes de autorizar cualquiera
-        // (todo o nada) y se ignoran las ya autorizadas (idempotente, sin duplicar el índice único).
-        if (command.AuthorizedBranchIds is { Count: > 0 } branchIds)
-        {
-            var distinctBranchIds = branchIds.Distinct().ToList();
-
-            foreach (var branchId in distinctBranchIds)
-            {
-                var branch = await _branchRepository.GetByIdForCompanyAsync(
-                    tenant.Id,
-                    company.Id,
-                    branchId,
-                    cancellationToken
-                );
-                if (branch is null)
-                    return Result<object>.NotFound($"La sucursal {branchId} no existe.");
-            }
-
-            foreach (var branchId in distinctBranchIds)
-            {
-                var alreadyAuthorized = await _companyUserBranchRepository.ExistsAsync(
-                    membership.Id,
-                    branchId,
-                    cancellationToken
-                );
-                if (alreadyAuthorized)
-                    continue;
-
-                var authorization = CompanyUserBranch.Create(
-                    tenant.Id,
-                    company.Id,
-                    membership.Id,
-                    branchId,
-                    createdBy: _currentUser.UserId
-                );
-                await _companyUserBranchRepository.AddAsync(authorization, cancellationToken);
-            }
-
-            await _companyUserBranchRepository.SaveChangesAsync(cancellationToken);
-        }
-
-        // ── Preferencias operativas ──────────────────────────────────────────────────────
-        // CompanyUserPreferences sigue siendo la única fuente de verdad de DefaultBranch/LoginMode.
-        // Nunca se reimplementa su validación: siempre se reutilizan los UseCases de Fase C vía
-        // MediatR (mismo patrón que LoginHandler → CreateAuthenticatedSessionCommand).
-        var preferencesResult = await UpsertPreferencesAsync(
-            membership.Id,
+        // SEC-06 (R5): toda validación ocurre antes de persistir — nunca se guarda un cambio de
+        // rol/perfil para abandonar después la operación sin invalidar la caché.
+        var branchViolation = await ValidateBranchesAsync(
             command,
+            tenant.Id,
+            company.Id,
             cancellationToken
         );
-        if (!preferencesResult.IsSuccess)
-            return Result<object>.Failure(preferencesResult.Error!, preferencesResult.Code);
+        if (branchViolation is not null)
+            return branchViolation;
 
-        await _permissionsCache.InvalidateUserAsync(company.Id, user.Id, cancellationToken);
-        _navigationBuilder.InvalidateCache(command.TenantId, company.Id, user.Id);
+        return await _permissionsCache.RunAsync(
+            PermissionsCacheScope.User(company.Id, user.Id),
+            ct => PersistAsync(command, tenant.Id, company.Id, user.Id, existing, ct),
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// SEC-06 (R5): membership, sucursales y preferencias como una sola unidad atómica. Usa la
+    /// transacción ambiente si existe (p. ej. <c>CreateSystemUserHandler</c>, que confirma o revierte
+    /// todo); si no, abre la suya. Un fallo de preferencias revierte el cambio de membership.
+    /// </summary>
+    private async Task<Result<object>> PersistAsync(
+        UpsertCompanyUserMembershipCommand command,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId,
+        CompanyUserMembership? existing,
+        CancellationToken cancellationToken
+    )
+    {
+        var ownsTransaction = !_unitOfWork.HasActiveTransaction;
+        if (ownsTransaction)
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            CompanyUserMembership membership;
+            if (existing is null)
+            {
+                membership = CompanyUserMembership.Create(
+                    companyId,
+                    userId,
+                    command.Role,
+                    command.ProfileId,
+                    createdBy: _currentUser.UserId
+                );
+                await _accessRepository.AddCompanyUserMembershipAsync(membership, cancellationToken);
+            }
+            else
+            {
+                existing.Activate(command.Role, command.ProfileId, updatedBy: _currentUser.UserId);
+                membership = existing;
+            }
+
+            await _accessRepository.SaveChangesAsync(cancellationToken);
+
+            await AuthorizeBranchesAsync(
+                command,
+                tenantId,
+                companyId,
+                membership.Id,
+                cancellationToken
+            );
+
+            // ── Preferencias operativas ──────────────────────────────────────────────────────
+            // CompanyUserPreferences sigue siendo la única fuente de verdad de DefaultBranch/LoginMode.
+            // Nunca se reimplementa su validación: siempre se reutilizan los UseCases de Fase C vía
+            // MediatR (mismo patrón que LoginHandler → CreateAuthenticatedSessionCommand).
+            var preferencesResult = await UpsertPreferencesAsync(
+                membership.Id,
+                command,
+                cancellationToken
+            );
+            if (!preferencesResult.IsSuccess)
+            {
+                if (ownsTransaction)
+                    await _unitOfWork.RollbackAsync(cancellationToken);
+                return Result<object>.Failure(preferencesResult.Error!, preferencesResult.Code);
+            }
+
+            if (ownsTransaction)
+                await _unitOfWork.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            if (ownsTransaction)
+                await _unitOfWork.RollbackAsync(cancellationToken);
+            throw;
+        }
+
+        _navigationBuilder.InvalidateCache(command.TenantId, companyId, userId);
         return Result<object>.Success(new { });
+    }
+
+    /// <summary>Existencia real de cada sucursal pedida, antes de persistir nada (todo o nada).</summary>
+    private async Task<Result<object>?> ValidateBranchesAsync(
+        UpsertCompanyUserMembershipCommand command,
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken cancellationToken
+    )
+    {
+        foreach (var branchId in (command.AuthorizedBranchIds ?? []).Distinct())
+        {
+            var branch = await _branchRepository.GetByIdForCompanyAsync(
+                tenantId,
+                companyId,
+                branchId,
+                cancellationToken
+            );
+            if (branch is null)
+                return Result<object>.NotFound($"La sucursal {branchId} no existe.");
+        }
+
+        return null;
+    }
+
+    // ── Autorización de sucursales ──────────────────────────────────────────────────
+    // CompanyUserBranch sigue siendo la única fuente de verdad de sucursales permitidas.
+    // Este es hoy el único flujo de producción que escribe en esa tabla — reutiliza la
+    // entidad/repositorio ya construidos en Fase B tal cual, sin tocar CompanyUserBranch.Create
+    // ni su Domain. Se valida existencia real de cada Branch antes de autorizar cualquiera
+    // (todo o nada) y se ignoran las ya autorizadas (idempotente, sin duplicar el índice único).
+    private async Task AuthorizeBranchesAsync(
+        UpsertCompanyUserMembershipCommand command,
+        Guid tenantId,
+        Guid companyId,
+        Guid membershipId,
+        CancellationToken cancellationToken
+    )
+    {
+        if (command.AuthorizedBranchIds is not { Count: > 0 } branchIds)
+            return;
+
+        foreach (var branchId in branchIds.Distinct())
+        {
+            var alreadyAuthorized = await _companyUserBranchRepository.ExistsAsync(
+                membershipId,
+                branchId,
+                cancellationToken
+            );
+            if (alreadyAuthorized)
+                continue;
+
+            var authorization = CompanyUserBranch.Create(
+                tenantId,
+                companyId,
+                membershipId,
+                branchId,
+                createdBy: _currentUser.UserId
+            );
+            await _companyUserBranchRepository.AddAsync(authorization, cancellationToken);
+        }
+
+        await _companyUserBranchRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<Result<object>?> ValidateAssignmentAsync(

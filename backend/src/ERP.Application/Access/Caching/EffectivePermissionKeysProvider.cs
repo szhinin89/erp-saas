@@ -31,7 +31,13 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
         CancellationToken cancellationToken = default
     )
     {
-        var cached = await _cache.ReadAsync(tenantId, companyId, userId, cancellationToken);
+        var cached = await _cache.ReadAsync(
+            tenantId,
+            companyId,
+            userId,
+            profileId,
+            cancellationToken
+        );
         if (cached.Keys is not null)
         {
             _diagnostics.RecordHit();
@@ -51,7 +57,15 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
 
         try
         {
-            cached = await _cache.ReadAsync(tenantId, companyId, userId, cancellationToken);
+            // SEC-06: esta lectura observa las versiones ANTES de cargar la BD; su sello es el único
+            // con el que se publica la entrada (una carga anterior a una invalidación nace obsoleta).
+            cached = await _cache.ReadAsync(
+                tenantId,
+                companyId,
+                userId,
+                profileId,
+                cancellationToken
+            );
             if (cached.Keys is not null)
             {
                 _diagnostics.RecordHit();
@@ -66,12 +80,18 @@ public sealed class EffectivePermissionKeysProvider : IEffectivePermissionKeysPr
                 profileId,
                 cancellationToken
             );
+
+            // Sin sello (fallo de caché o invalidación en curso) se resuelve desde BD sin publicar.
+            if (cached.Stamp is null)
+                return allowed;
+
             await _cache.WriteAsync(
                 tenantId,
                 companyId,
                 userId,
+                profileId,
                 allowed,
-                ttl: null,
+                cached.Stamp,
                 cancellationToken
             );
             _diagnostics.RecordSet();

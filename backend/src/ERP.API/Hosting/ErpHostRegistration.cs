@@ -42,6 +42,22 @@ public static class ErpHostRegistration
         return string.IsNullOrWhiteSpace(connection) ? null : connection;
     }
 
+    /// <summary>
+    /// SEC-06: con varias instancias de API, Redis es obligatorio — la caché en memoria (versiones e
+    /// invalidaciones de permisos incluidas) no se comparte entre procesos y solo se admite en un
+    /// despliegue de instancia única. Un despliegue multi-instancia declara <c>Redis:Required=true</c>
+    /// y el host no arranca sin conexión Redis.
+    /// </summary>
+    public static void EnsureRedisWhenRequired(IConfiguration configuration, string? redisConnection)
+    {
+        if (redisConnection is null && configuration.GetValue<bool>("Redis:Required"))
+            throw new InvalidOperationException(
+                "Redis:Required=true (despliegue con varias instancias de API) pero no hay "
+                    + "Redis:ConnectionString ni ConnectionStrings:Redis. La caché en memoria solo se "
+                    + "admite en un despliegue de instancia única."
+            );
+    }
+
     public static IServiceCollection AddErpHostCore(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -59,9 +75,13 @@ public static class ErpHostRegistration
         // IDistributedCache: Redis si está configurado; si no, memoria (no comparte entre
         // instancias). API y worker resuelven la misma caché, así que comparten invalidaciones.
         var redisConnection = RedisConnection(configuration);
+        EnsureRedisWhenRequired(configuration, redisConnection);
         if (redisConnection is not null)
         {
             var redisInstanceName = configuration["Redis:InstanceName"];
+            // SEC-06: el host no arranca sin un Redis conforme y verificable.
+            services.AddHostedService<PermissionsCacheRedisStartupValidator>();
+
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = redisConnection;

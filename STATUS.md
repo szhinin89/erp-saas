@@ -1,5 +1,42 @@
 # Project Status
 
+## SEGURIDAD — SEC-06: revocación de permisos con caché — CORREGIDO — revisión técnica final PASS (2026-10-27)
+
+La caché de permisos efectivos (TTL 300 s) podía seguir autorizando permisos ya revocados: la
+entrada se publicaba con la versión vigente al escribir (una carga anterior a la revocación
+quedaba válida), el cambio de perfil solo borraba la entrada (una carga concurrente del perfil
+anterior la recreaba), el bump de versión era GET+1+SET (incrementos perdidos), los fallos de
+invalidación se ignoraban y `UpsertCompanyUserMembership` podía guardar rol/perfil y salir sin
+invalidar. Corregido en el mecanismo existente, sin cachés ni autorizadores nuevos: sello de
+versiones (tenant, empresa, usuario) observado antes de cargar la BD, perfil dentro de la entrada,
+versiones y marcas atómicas (Lua sobre el `IConnectionMultiplexer` del host; contadores del
+proceso sin Redis), protocolo de invalidación en dos fases fail-closed en todos los handlers que
+cambian permisos (503 `PERMISSIONS_INVALIDATION_UNAVAILABLE` sin persistir / 503
+`PERMISSIONS_INVALIDATION_INCOMPLETE` con el alcance protegido), membership validada antes de
+persistir y guardada en transacción, y regla de despliegue verificable `Redis:Required=true` para
+más de una instancia de API. TTL sin cambios; sin cambios de base de datos ni migraciones.
+Ajustes finales (opción A aprobada): una restauración o failover de Redis podía revivir versiones y
+entradas anteriores a una revocación; ahora el Redis de autorización debe ser `noeviction`, sin
+RDB/AOF y primario sin réplicas, y API/worker no arrancan si no cumple o no es verificable
+(`CONFIG GET` + `INFO`); el Redis local de compose quedó declarado así (el contenedor existente
+conserva la configuración anterior hasta recrearlo). Frontend: los dos 503 se presentan en las
+pantallas IAM (perfiles, permisos, usuarios, configuración de usuario) sin éxito falso ni reintento
+automático; el estado incierto recarga desde el servidor y deja la advertencia. Focales de los
+ajustes PASS: Infrastructure 39/39 (worktree aislado; incluye Redis conforme/incompatible/sin
+CONFIG/inaccesible, presión de memoria con `noeviction` y reinicio), API 21/21 (registro del
+validador, contrato DevCache con Redis conforme e inaccesible), Vitest access 75/75, lint (0
+errores), `tsc -b`, build, Arquitectura 143/143 y `architecture:check` PASS. Focales previos PASS: Application 214/214 (Access) + 161/161 (sesión, alta de usuario, scope),
+Infrastructure (worktree aislado, sin el archivo RED) `PermissionsCacheRevocationTests` +
+`PermissionsCacheRevocationRedisTests` 21/21 con Redis efímero, API 41/41 (regla de despliegue,
+host, `CompanyAccessProfilesIsolationHttpTests`, `CrossCompanyAdminPrivilegeHttpTests`, contrato de
+errores, sesión), Arquitectura 143/143, `architecture:check` PASS, tamaño de handlers PASS.
+Gate independiente del propietario (PowerShell): Infrastructure `Security.PermissionsCache` 39/39
+(worktree temporal sin el archivo RED), API Redis/hosts 14/14, Frontend Access 75/75, Architecture
+frontend 140/140, `git diff --check` PASS. Revisión técnica final PASS. **Pendiente: commit y su CI.**
+Sin despliegue: el Redis de producción (Coolify) no fue verificado contra el contrato. Riesgos en
+[Riesgos y limitaciones vigentes](#riesgos-y-limitaciones-vigentes).
+[SSOT Seguridad](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
+
 ## SEGURIDAD — SEC-05: perfiles de acceso por empresa — CORREGIDO — revisión técnica final PASS (2026-10-26)
 
 Los perfiles de acceso eran TENANT: un Admin de A podía consultar, editar, desactivar o cambiar
@@ -20,8 +57,8 @@ snapshot API 102/102, `architecture:check` PASS, `git diff --check` PASS. Infras
 compilado en este árbol (archivo RED histórico). Gate independiente del propietario (PowerShell):
 Application 22/22, API HTTP 20/20, compilación de ERP.API y coherencia EF/baseline PASS,
 `git diff --check` PASS. Revisión técnica final PASS: aislamiento empresarial de perfiles aceptado
-técnicamente. **CI del commit SEC-05: aún no ejecutado.** La revocación inmediata de permisos ante
-fallos de caché no está garantizada (riesgo pendiente de SEC-06). Riesgos en
+técnicamente. **CI del commit SEC-05: aún no ejecutado.** La revocación de permisos frente a la caché se
+corrige en SEC-06. Riesgos en
 [Riesgos y limitaciones vigentes](#riesgos-y-limitaciones-vigentes).
 [SSOT Seguridad](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
 
@@ -267,16 +304,22 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   conserva el parámetro `role`, sin efecto. Los perfiles de acceso son por empresa desde SEC-05.
   Impacto acreditado: como máximo, el validador revela si un código existe en el catálogo de otra
   empresa; no se acredita lectura ni escritura de sus datos.
-- **Seguridad — revocación de permisos con caché (pendiente de SEC-06):** la base de datos ya
-  excluye perfiles inactivos o de otra empresa (SEC-05), pero la caché de permisos por
-  empresa+usuario puede conservar permisos revocados (perfil desactivado, permiso retirado,
-  membership revocada) **hasta el TTL de 300 s**: (1) un fallo al actualizar la versión de caché de
-  la empresa se ignora (`ResilientPermissionsCacheService`), y la entrada previa sigue vigente;
-  (2) carrera de escritura posterior a la invalidación: una lectura que cargó los permisos antes del
-  cambio los escribe después del bump con la versión nueva (`DistributedPermissionsCacheService.WriteAsync`
-  toma la versión al escribir); el bump es además lectura+escritura no atómica. La revocación
-  inmediata ante esos fallos **no está garantizada**. Evidencia estática, sin reproducción HTTP. La
-  caché de navegación se invalida solo en el proceso local.
+- **Seguridad — revocación de permisos con caché (SEC-06):** garantías y
+  contrato en [security.md](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
+  Límites: (1) cumplir "Redis obligatorio con varias instancias" depende de que el despliegue declare
+  `Redis:Required=true`; el repositorio no conoce la cantidad real de instancias. (2) Si Redis
+  desaloja una marca de invalidación en curso (política de memoria `volatile-*`/`allkeys-*`) mientras
+  Complete falló, la protección de ese alcance termina antes de los 900 s — excluido por el
+  contrato `noeviction` verificado al arrancar. (3) En el alta de usuario
+  (transacción ambiente) la invalidación se completa antes del commit externo; el usuario es nuevo y
+  no tiene entradas previas. (4) La caché de navegación se invalida solo en el proceso local (no
+  autoriza). (5) Escrituras de caché con más de 60 s entre la observación del sello y la escritura se
+  descartan (más lecturas a BD, nunca más permisos). (6) Garantías solo operativas: no cambiar la
+  configuración de Redis en caliente, no restaurar respaldos ni promover réplicas, monitoreo de
+  memoria y alertas de disponibilidad; con `noeviction` y memoria llena los cambios de permisos
+  responden 503 sin guardar. (7) Un Redis gestionado que bloquee `CONFIG` impide el arranque hasta
+  aprobar una verificación equivalente. (8) El Redis de producción (Coolify) no está inspeccionado:
+  si no cumple el contrato, la API no arrancará tras desplegar este cambio.
 
 ## Consolidación documental
 

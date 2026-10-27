@@ -145,42 +145,49 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
         if (profile is null)
             return Result<ProfileDto>.Failure("Perfil no encontrado.");
 
-        profile.Update(cmd.Name, cmd.Description, _user.UserId);
-        if (cmd.IsActive)
-            profile.Activate(_user.UserId);
-        else
-            profile.Deactivate(_user.UserId);
-
-        await _repo.SaveChangesAsync(cancellationToken);
-
         // SEC-05: el perfil es de esta empresa, así que solo sus memberships cambian de permisos
-        // (incluida la desactivación, que deja de conceder permisos efectivos).
-        await ProfileCacheInvalidation.InvalidateAsync(
-            _repo,
-            _permissionsCache,
-            _navigationBuilder,
-            tenantId,
-            companyId,
-            cmd.ProfileId,
-            cancellationToken
-        );
+        // (incluida la desactivación, que deja de conceder permisos efectivos). SEC-06: la
+        // persistencia corre dentro del protocolo de invalidación fail-closed de la empresa.
+        return await _permissionsCache.RunAsync(
+            PermissionsCacheScope.Company(companyId),
+            async ct =>
+            {
+                profile.Update(cmd.Name, cmd.Description, _user.UserId);
+                if (cmd.IsActive)
+                    profile.Activate(_user.UserId);
+                else
+                    profile.Deactivate(_user.UserId);
 
-        return Result<ProfileDto>.Success(
-            new ProfileDto(profile.Id, profile.Name, profile.Description, profile.IsActive)
+                await _repo.SaveChangesAsync(ct);
+                await ProfileCacheInvalidation.InvalidateNavigationAsync(
+                    _repo,
+                    _navigationBuilder,
+                    tenantId,
+                    companyId,
+                    cmd.ProfileId,
+                    ct
+                );
+
+                return Result<ProfileDto>.Success(
+                    new ProfileDto(profile.Id, profile.Name, profile.Description, profile.IsActive)
+                );
+            },
+            cancellationToken
         );
     }
 }
 
 /// <summary>
-/// Invalidación tras cambiar un perfil (datos o permisos): versión de permisos de la empresa y
-/// navegación de cada usuario con ese perfil en ella. Compartida por UpdateProfile y
+/// Navegación tras cambiar un perfil (datos o permisos): la de cada usuario con ese perfil en la
+/// empresa. La caché de permisos la invalida el protocolo SEC-06
+/// (<see cref="PermissionsCacheInvalidation"/>) con alcance empresa, siempre — no depende de
+/// las memberships leídas aquí, que pueden cambiar en paralelo. Compartida por UpdateProfile y
 /// UpsertProfilePermissions — un solo punto, sin mecanismos paralelos.
 /// </summary>
 internal static class ProfileCacheInvalidation
 {
-    public static async Task InvalidateAsync(
+    public static async Task InvalidateNavigationAsync(
         IAccessRepository repo,
-        IPermissionsCacheInvalidator permissionsCache,
         INavigationBuilder navigationBuilder,
         Guid tenantId,
         Guid companyId,
@@ -188,21 +195,13 @@ internal static class ProfileCacheInvalidation
         CancellationToken cancellationToken
     )
     {
-        var profileMemberships = (
-            await repo.GetCompanyUserMembershipsByCompanyAsync(
-                companyId,
-                onlyActive: true,
-                cancellationToken
-            )
-        )
-            .Where(m => m.ProfileId == profileId)
-            .ToList();
-        if (profileMemberships.Count == 0)
-            return;
+        var profileMemberships = await repo.GetCompanyUserMembershipsByCompanyAsync(
+            companyId,
+            onlyActive: true,
+            cancellationToken
+        );
 
-        await permissionsCache.BumpCompanyVersionAsync(companyId, cancellationToken);
-
-        foreach (var membership in profileMemberships)
+        foreach (var membership in profileMemberships.Where(m => m.ProfileId == profileId))
             navigationBuilder.InvalidateCache(tenantId, companyId, membership.IdentityUserId);
     }
 }

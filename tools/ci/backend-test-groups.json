@@ -101,6 +101,7 @@
         "ERP.Infrastructure.Tests.Persistence.SupplierCreditRefundConcurrencyTests",
         "ERP.Infrastructure.Tests.Persistence.UserSessionAndCompanyUserBranchRepositoryTests",
         "ERP.Infrastructure.Tests.Ride.ElectronicDocumentRideSourceXmlProviderTests",
+        "ERP.Infrastructure.Tests.Security.PermissionsCacheRevocationTests",
         "ERP.Infrastructure.Tests.Seeding.GlobalBootstrapOrchestratorTests",
         "ERP.Infrastructure.Tests.Services.CatalogConfigurationResolverTests",
         "ERP.Infrastructure.Tests.Services.DistributedFixedWindowRateLimitConcurrencyTests",
@@ -197,6 +198,8 @@
         "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriIceTable18PostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriTaxSupportPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.SriDocTypeSeedAlignmentTests",
+        "ERP.Infrastructure.Tests.Security.PermissionsCacheRedisGuaranteeTests",
+        "ERP.Infrastructure.Tests.Security.PermissionsCacheRevocationRedisTests",
         "ERP.Infrastructure.Tests.Services.DistributedFixedWindowRateLimitRedisTests",
         "ERP.Infrastructure.Tests.Services.Sri.SriReceptionClientTests",
         "ERP.Infrastructure.Tests.Setup.FirstRunFullInstallationTests"

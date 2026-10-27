@@ -32,7 +32,8 @@ public sealed class UpsertProfilePermissionsHandlerTests
     private readonly Mock<ICurrentTenant> _currentTenant = new();
     private readonly Mock<ICurrentCompany> _currentCompany = new();
     private readonly Mock<ICurrentUser> _currentUser = new();
-    private readonly Mock<IPermissionsCacheInvalidator> _permissionsCache = new();
+    private readonly Mock<IPermissionsCacheInvalidator> _permissionsCache =
+        PermissionsCacheInvalidatorMocks.Healthy();
     private readonly Mock<INavigationBuilder> _navigationBuilder = new();
     private readonly Mock<ICompanyContextProvider> _companyContext = new();
     private readonly Mock<IEffectivePermissionKeysProvider> _effectivePermissionKeys = new();
@@ -471,13 +472,13 @@ public sealed class UpsertProfilePermissionsHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         _permissionsCache.Verify(
-            x => x.BumpCompanyVersionAsync(CompanyId, It.IsAny<CancellationToken>()),
+            x => x.TryCompleteAsync(PermissionsCacheScope.Company(CompanyId), It.IsAny<CancellationToken>()),
             Times.Once
         );
         _permissionsCache.Verify(
             x =>
-                x.BumpCompanyVersionAsync(
-                    It.Is<Guid>(id => id != CompanyId),
+                x.TryCompleteAsync(
+                    It.Is<PermissionsCacheScope>(s => s != PermissionsCacheScope.Company(CompanyId)),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Never

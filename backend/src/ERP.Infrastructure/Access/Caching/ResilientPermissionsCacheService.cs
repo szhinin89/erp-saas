@@ -4,7 +4,13 @@ using Microsoft.Extensions.Logging;
 namespace ERP.Infrastructure.Access.Caching;
 
 /// <summary>
-/// Decorador que nunca propaga fallos de cache — degradación silenciosa a BD.
+/// Decorador que nunca propaga fallos de cache. SEC-06 — cada fallo degrada hacia el lado seguro:
+/// <list type="bullet">
+/// <item>Lectura: miss sin sello → el consumidor resuelve desde BD y no publica.</item>
+/// <item>Escritura: se ignora; no publicar nunca concede permisos.</item>
+/// <item>Invalidación: <c>false</c>, visible (log Error + métrica). Begin fallido impide persistir;
+/// Complete fallido deja la marca de invalidación en curso (ver <see cref="IPermissionsCacheInvalidator"/>).</item>
+/// </list>
 /// </summary>
 public sealed partial class ResilientPermissionsCacheService : IPermissionsCacheBackend
 {
@@ -27,12 +33,13 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         Guid tenantId,
         Guid companyId,
         Guid userId,
+        Guid profileId,
         CancellationToken cancellationToken = default
     )
     {
         try
         {
-            return await _inner.ReadAsync(tenantId, companyId, userId, cancellationToken);
+            return await _inner.ReadAsync(tenantId, companyId, userId, profileId, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -46,14 +53,23 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         Guid tenantId,
         Guid companyId,
         Guid userId,
+        Guid profileId,
         IReadOnlyList<string> keys,
-        TimeSpan? ttl = null,
+        PermissionsCacheStamp stamp,
         CancellationToken cancellationToken = default
     )
     {
         try
         {
-            await _inner.WriteAsync(tenantId, companyId, userId, keys, ttl, cancellationToken);
+            await _inner.WriteAsync(
+                tenantId,
+                companyId,
+                userId,
+                profileId,
+                keys,
+                stamp,
+                cancellationToken
+            );
         }
         catch (Exception ex)
         {
@@ -62,52 +78,37 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
         }
     }
 
-    public async Task InvalidateUserAsync(
-        Guid companyId,
-        Guid userId,
+    public async Task<bool> TryBeginAsync(
+        PermissionsCacheScope scope,
         CancellationToken cancellationToken = default
     )
     {
         try
         {
-            await _inner.InvalidateUserAsync(companyId, userId, cancellationToken);
+            return await _inner.TryBeginAsync(scope, cancellationToken);
         }
         catch (Exception ex)
         {
             _diagnostics.RecordError();
-            LogCacheInvalidateFailed(ex, companyId, userId);
+            LogInvalidationBeginFailed(ex, scope.Key);
+            return false;
         }
     }
 
-    public async Task BumpCompanyVersionAsync(
-        Guid companyId,
+    public async Task<bool> TryCompleteAsync(
+        PermissionsCacheScope scope,
         CancellationToken cancellationToken = default
     )
     {
         try
         {
-            await _inner.BumpCompanyVersionAsync(companyId, cancellationToken);
+            return await _inner.TryCompleteAsync(scope, cancellationToken);
         }
         catch (Exception ex)
         {
             _diagnostics.RecordError();
-            LogCacheBumpCompanyFailed(ex, companyId);
-        }
-    }
-
-    public async Task BumpTenantVersionAsync(
-        Guid tenantId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        try
-        {
-            await _inner.BumpTenantVersionAsync(tenantId, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _diagnostics.RecordError();
-            LogCacheBumpTenantFailed(ex, tenantId);
+            LogInvalidationCompleteFailed(ex, scope.Key);
+            return false;
         }
     }
 
@@ -119,25 +120,19 @@ public sealed partial class ResilientPermissionsCacheService : IPermissionsCache
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Permissions cache WRITE failed for {CompanyId}/{UserId}; ignored."
+        Message = "Permissions cache WRITE failed for {CompanyId}/{UserId}; ignored (nothing published)."
     )]
     private partial void LogCacheWriteFailed(Exception ex, Guid companyId, Guid userId);
 
     [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Permissions cache INVALIDATE user failed for {CompanyId}/{UserId}; ignored."
+        Level = LogLevel.Error,
+        Message = "Permissions cache invalidation BEGIN failed for {Scope}; mutation must not be persisted."
     )]
-    private partial void LogCacheInvalidateFailed(Exception ex, Guid companyId, Guid userId);
+    private partial void LogInvalidationBeginFailed(Exception ex, string scope);
 
     [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Permissions cache BUMP company failed for {CompanyId}; ignored."
+        Level = LogLevel.Error,
+        Message = "Permissions cache invalidation COMPLETE failed for {Scope}; scope stays in protected (cache-bypass) mode until the pending mark expires."
     )]
-    private partial void LogCacheBumpCompanyFailed(Exception ex, Guid companyId);
-
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Permissions cache BUMP tenant failed for {TenantId}; ignored."
-    )]
-    private partial void LogCacheBumpTenantFailed(Exception ex, Guid tenantId);
+    private partial void LogInvalidationCompleteFailed(Exception ex, string scope);
 }

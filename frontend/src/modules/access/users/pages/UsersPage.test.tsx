@@ -17,6 +17,7 @@ import { branchAssignmentService } from "../api/branchAssignmentService";
 import { companyUserPreferencesService } from "../../api/companyUserPreferencesService";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { message } from "../../../../lib/messages";
+import { AxiosError, AxiosHeaders } from "axios";
 
 const navigateMock = vi.fn();
 
@@ -367,5 +368,61 @@ describe("UsersPage — ZH-LISTING-USERS-REFACTOR-03, ZHDataTable + showRowNumbe
       branchesCallsBefore,
     );
     expect(companyUserPreferencesService.get).toHaveBeenCalledTimes(prefsCallsBefore);
+  });
+});
+
+// SEC-06 — códigos 503 de invalidación de la caché de permisos.
+function permissionsInvalidationError(code: string): AxiosError {
+  const headers = new AxiosHeaders();
+  return new AxiosError("Request failed", "ERR_BAD_RESPONSE", { headers }, null, {
+    status: 503,
+    statusText: "",
+    headers: {},
+    config: { headers },
+    data: { code },
+  });
+}
+
+describe("UsersPage — invalidación de permisos (SEC-06)", () => {
+  it("INCOMPLETE al revocar: sin éxito, sin reintento, recarga la lista y deja la advertencia", async () => {
+    vi.mocked(message.success).mockClear();
+    vi.mocked(membershipService.revokeMembership).mockRejectedValue(
+      permissionsInvalidationError("PERMISSIONS_INVALIDATION_INCOMPLETE"),
+    );
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+    vi.mocked(membershipService.list).mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: /Revocar/ }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/no se pudo confirmar la actualización de seguridad/)).toBeTruthy(),
+    );
+    expect(membershipService.revokeMembership).toHaveBeenCalledTimes(1);
+    expect(membershipService.list).toHaveBeenCalledTimes(1);
+    expect(message.success).not.toHaveBeenCalled();
+  });
+
+  it("UNAVAILABLE al reactivar: informa que no se guardó y no presenta éxito", async () => {
+    vi.mocked(message.success).mockClear();
+    vi.mocked(message.error).mockClear();
+    vi.mocked(membershipService.list).mockResolvedValue([{ ...membershipRow, isActive: false }]);
+    vi.mocked(membershipService.upsertMembership).mockRejectedValue(
+      permissionsInvalidationError("PERMISSIONS_INVALIDATION_UNAVAILABLE"),
+    );
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ana Perez")).toBeTruthy());
+
+    fireEvent.click(screen.getByRole("button", { name: /Reactivar/ }));
+
+    await waitFor(() =>
+      expect(message.error).toHaveBeenCalledWith(
+        expect.stringMatching(/no se guardó ninguna modificación/),
+      ),
+    );
+    expect(membershipService.upsertMembership).toHaveBeenCalledTimes(1);
+    expect(message.success).not.toHaveBeenCalled();
   });
 });

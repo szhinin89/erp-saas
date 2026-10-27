@@ -146,6 +146,18 @@ public static class MessageCatalog
             "Rate limit exceeded.",
             ApiErrorCategory.RateLimit
         ),
+        [ApiResponseCodes.Access.PermissionsInvalidationUnavailable] = new(
+            ApiSeverity.Error,
+            "No se pudo garantizar la actualización de permisos. No se aplicó ningún cambio; reintente en unos segundos.",
+            "Permissions cache invalidation could not be started; mutation not persisted.",
+            ApiErrorCategory.Infrastructure
+        ),
+        [ApiResponseCodes.Access.PermissionsInvalidationIncomplete] = new(
+            ApiSeverity.Error,
+            "El cambio se guardó, pero la propagación de permisos no pudo confirmarse. Los permisos afectados se evalúan desde la base de datos hasta normalizarse.",
+            "Mutation persisted; permissions cache invalidation incomplete, scope kept in protected (cache-bypass) mode.",
+            ApiErrorCategory.Infrastructure
+        ),
         [ApiResponseCodes.ElectronicDocuments.SourceNotProcessable] = new(
             ApiSeverity.Error,
             "El documento de origen ya no permite procesamiento electrónico.",

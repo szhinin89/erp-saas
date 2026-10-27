@@ -7,4 +7,6 @@ public enum PermissionsCacheMissReason
     Exception,
     VersionMismatch,
     StampedeFallback,
+    ProfileMismatch,
+    InvalidationPending,
 }

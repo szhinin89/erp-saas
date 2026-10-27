@@ -57,6 +57,18 @@ public static class ApiResponseCodes
     }
 
     /// <summary>
+    /// SEC-06 — invalidación de la caché de permisos efectivos (fail-closed). Estables: el cliente
+    /// distingue "no se aplicó nada" de "se guardó con propagación en modo protegido".
+    /// </summary>
+    public static class Access
+    {
+        public const string PermissionsInvalidationUnavailable =
+            "PERMISSIONS_INVALIDATION_UNAVAILABLE";
+        public const string PermissionsInvalidationIncomplete =
+            "PERMISSIONS_INVALIDATION_INCOMPLETE";
+    }
+
+    /// <summary>
     /// ADR-036 — ciclo de vida electrónico frente al documento de origen. Estables: el frontend
     /// puede distinguirlos sin interpretar el texto del mensaje.
     /// </summary>

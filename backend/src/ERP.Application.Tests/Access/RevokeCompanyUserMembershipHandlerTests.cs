@@ -42,7 +42,8 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         public Mock<ICurrentUser> CurrentUser { get; } = new();
         public Mock<ITenantRepository> TenantRepo { get; } = new();
         public Mock<ICompanyRepository> CompanyRepo { get; } = new();
-        public Mock<IPermissionsCacheInvalidator> PermissionsCache { get; } = new();
+        public Mock<IPermissionsCacheInvalidator> PermissionsCache { get; } =
+            PermissionsCacheInvalidatorMocks.Healthy();
         public Mock<INavigationBuilder> NavigationBuilder { get; } = new();
         public Mock<ICompanyContextProvider> CompanyContext { get; } = new();
 
@@ -190,9 +191,8 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         f.PermissionsCache.Verify(
             c =>
-                c.InvalidateUserAsync(
-                    It.IsAny<Guid>(),
-                    It.IsAny<Guid>(),
+                c.TryBeginAsync(
+                    It.IsAny<PermissionsCacheScope>(),
                     It.IsAny<CancellationToken>()
                 ),
             Times.Never
@@ -355,9 +355,85 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
             Times.Never
         );
         f.PermissionsCache.Verify(
-            c => c.InvalidateUserAsync(companyB.Id, user.Id, It.IsAny<CancellationToken>()),
+            c =>
+                c.TryCompleteAsync(
+                    PermissionsCacheScope.User(companyB.Id, user.Id),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Once
         );
         f.NavigationBuilder.Verify(n => n.InvalidateCache(tenant.Id, companyB.Id, user.Id));
+    }
+
+    // SEC-06 — sin garantía de invalidación la revocación no se persiste a medias: se informa y la
+    // membership no cambia (la autorización sigue leyendo la membership desde BD).
+    [Fact]
+    public async Task SEC06_sin_garantia_de_invalidacion_no_persiste_la_revocacion()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var membership = CompanyUserMembership.Create(company.Id, user.Id, "User", null, CreatedBy);
+        var admin = CompanyUserMembership.Create(
+            company.Id,
+            Guid.NewGuid(),
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, membership, new[] { membership, admin });
+        f.PermissionsCache.Setup(c =>
+                c.TryBeginAsync(It.IsAny<PermissionsCacheScope>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Access.PermissionsInvalidationUnavailable);
+        membership.IsActive.Should().BeTrue();
+        f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SEC06_revocacion_persiste_entre_Begin_y_Complete_del_usuario_en_la_empresa()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var membership = CompanyUserMembership.Create(company.Id, user.Id, "User", null, CreatedBy);
+        var admin = CompanyUserMembership.Create(
+            company.Id,
+            Guid.NewGuid(),
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, membership, new[] { membership, admin });
+        var scope = PermissionsCacheScope.User(company.Id, user.Id);
+        var steps = new List<string>();
+        f.PermissionsCache.Setup(c => c.TryBeginAsync(scope, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("begin"))
+            .ReturnsAsync(true);
+        f.PermissionsCache.Setup(c => c.TryCompleteAsync(scope, It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("complete"))
+            .ReturnsAsync(true);
+        f.AccessRepo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => steps.Add("save"))
+            .Returns(Task.CompletedTask);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue();
+        membership.IsActive.Should().BeFalse();
+        steps.Should().Equal("begin", "save", "complete");
     }
 }

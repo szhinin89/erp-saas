@@ -14,6 +14,7 @@ import { NoAccessPage, Badge } from "../../../components/PageShell";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { formatApiRequestError } from "../../lib/apiError";
+import { presentPermissionsMutationFailure } from "../permissionsMutationFailure";
 import { message } from "../../../lib/messages";
 import "./ProfilesPage.css";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
@@ -287,7 +288,13 @@ export function PermissionsAssignmentPage() {
         t("permissionsAssignment.saveSuccess", "Permisos guardados correctamente."),
       );
     } catch (err) {
-      setSaveError(formatApiRequestError(err, { generic: t("profiles.perms.error.save") }));
+      const handled = await presentPermissionsMutationFailure(err, {
+        t,
+        show: (text) => setSaveError(text),
+        reload: () => loadPermissions(selectedProfileId),
+      });
+      if (!handled)
+        setSaveError(formatApiRequestError(err, { generic: t("profiles.perms.error.save") }));
     } finally {
       setSaving(false);
     }

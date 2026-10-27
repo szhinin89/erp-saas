@@ -9,7 +9,10 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+    # SEC-06 (opción A): Redis de la caché de permisos — sin persistencia ni expulsión. La API y el
+    # worker no arrancan si no se cumple (docs/architecture/security.md). Solo contiene cachés y
+    # contadores efímeros; PostgreSQL es la autoridad.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory-policy", "noeviction"]
     volumes:
       - erp_saas_redisdata:/data
     healthcheck:

@@ -103,10 +103,18 @@ public class RevokeCompanyUserMembershipHandler
         if (invariantViolation is not null)
             return invariantViolation;
 
-        membership.Deactivate(_currentUser.UserId);
-        await _accessRepository.SaveChangesAsync(cancellationToken);
-        await _permissionsCache.InvalidateUserAsync(company.Id, user.Id, cancellationToken);
-        _navigationBuilder.InvalidateCache(command.TenantId, company.Id, user.Id);
-        return Result<object>.Success(new { });
+        // SEC-06: la revocación se persiste dentro del protocolo de invalidación fail-closed del
+        // usuario en la empresa (la autorización además la rechaza por membership inactiva).
+        return await _permissionsCache.RunAsync(
+            PermissionsCacheScope.User(company.Id, user.Id),
+            async ct =>
+            {
+                membership.Deactivate(_currentUser.UserId);
+                await _accessRepository.SaveChangesAsync(ct);
+                _navigationBuilder.InvalidateCache(command.TenantId, company.Id, user.Id);
+                return Result<object>.Success(new { });
+            },
+            cancellationToken
+        );
     }
 }

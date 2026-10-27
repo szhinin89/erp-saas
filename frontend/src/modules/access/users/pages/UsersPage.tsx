@@ -11,6 +11,7 @@ import { useAuthStore } from "../../../../store/authStore";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { message } from "../../../../lib/messages";
 import { formatApiRequestError } from "../../../lib/apiError";
+import { presentPermissionsMutationFailure } from "../../permissionsMutationFailure";
 import {
   membershipService,
   type CompanyUserMembershipAdminDto,
@@ -162,6 +163,15 @@ export function UsersPage() {
     });
   };
 
+  // SEC-06: estado incierto → recarga la lista y deja la advertencia en el banner de la lista
+  // (persistente); sin guardar → error en el toast habitual. Nunca se reintenta la mutación.
+  const permissionsFailureOptions = {
+    t,
+    reload: loadUsers,
+    show: (text: string, severity: "error" | "warning") =>
+      severity === "warning" ? setListError(text) : message.error(text),
+  };
+
   const handleRevoke = async (row: CompanyUserMembershipAdminDto) => {
     const confirmed = await message.confirm({
       title: t("users.revoke.confirmTitle", "Revocar acceso"),
@@ -180,6 +190,7 @@ export function UsersPage() {
       );
       await loadUsers();
     } catch (err) {
+      if (await presentPermissionsMutationFailure(err, permissionsFailureOptions)) return;
       message.error(
         formatApiRequestError(err, {
           generic: t("users.revoke.error", "No se pudo revocar el acceso."),
@@ -215,6 +226,7 @@ export function UsersPage() {
       );
       await loadUsers();
     } catch (err) {
+      if (await presentPermissionsMutationFailure(err, permissionsFailureOptions)) return;
       message.error(
         formatApiRequestError(err, {
           generic: t(
