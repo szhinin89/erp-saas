@@ -1,5 +1,7 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Security;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Kernel.Security;
 using ERP.Domain.Modules.Company.Interfaces;
 
 namespace ERP.Application.Access;
@@ -11,13 +13,15 @@ public sealed class CompanyContextProvider : ICompanyContextProvider
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
+    private readonly IOperatorCompanyAccessPolicy _operatorAccessPolicy;
 
     public CompanyContextProvider(
         IAccessRepository repo,
         ICompanyRepository companyRepository,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
-        ICurrentUser currentUser
+        ICurrentUser currentUser,
+        IOperatorCompanyAccessPolicy operatorAccessPolicy
     )
     {
         _repo = repo;
@@ -25,6 +29,7 @@ public sealed class CompanyContextProvider : ICompanyContextProvider
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
         _currentUser = currentUser;
+        _operatorAccessPolicy = operatorAccessPolicy;
     }
 
     public async Task<Guid?> ResolveDefaultCompanyIdAsync(
@@ -68,7 +73,29 @@ public sealed class CompanyContextProvider : ICompanyContextProvider
         if (userId == Guid.Empty || !(_currentTenant.TenantId != Guid.Empty))
             return null;
 
-        var companyId = await ResolveOperationalCompanyIdAsync(userId, cancellationToken);
+        var hasHeaderCompany =
+            _currentCompany.HasCompanyContext && _currentCompany.CompanyId != Guid.Empty;
+
+        // SEC-04: el administrador global en modo operador no tiene membership en la empresa que
+        // opera; la política central de operador es la única fuente que lo sustituye.
+        if (
+            userId == _currentUser.UserId
+            && await _operatorAccessPolicy.IsAuthorizedOperatorAsync(cancellationToken)
+        )
+            return new OperationalCompanyContext(
+                hasHeaderCompany ? _currentCompany.CompanyId : Guid.Empty,
+                userId,
+                null,
+                IsActiveMembership: false,
+                MembershipRole: SecurityRoles.Admin,
+                IsAuthorizedOperator: true
+            );
+
+        // SEC-04: un X-Company-Id presente solo vale con membership activa del usuario en esa
+        // empresa — nunca se sustituye en silencio por otra empresa del usuario.
+        var companyId = hasHeaderCompany
+            ? _currentCompany.CompanyId
+            : await ResolveSingleMembershipCompanyIdAsync(userId, cancellationToken);
         if (companyId == Guid.Empty)
             return null;
 
@@ -77,38 +104,33 @@ public sealed class CompanyContextProvider : ICompanyContextProvider
             userId,
             cancellationToken
         );
-        if (membership is null)
-            return new OperationalCompanyContext(
-                companyId,
-                userId,
-                null,
-                IsActiveMembership: false
-            );
+        if (membership is null || !membership.IsActive)
+            return null;
+
+        // La membership no lleva TenantId: la empresa debe pertenecer al tenant del JWT, o un
+        // rol/perfil de otro tenant nunca puede evaluarse aquí.
+        if (hasHeaderCompany)
+        {
+            var companies = await _companyRepository.GetByIdsAsync([companyId], cancellationToken);
+            if (!companies.Any(c => c.Id == companyId && c.TenantId == _currentTenant.TenantId))
+                return null;
+        }
 
         return new OperationalCompanyContext(
             companyId,
             userId,
             membership.ProfileId,
-            membership.IsActive
+            IsActiveMembership: true,
+            MembershipRole: membership.Role
         );
     }
 
-    private async Task<Guid> ResolveOperationalCompanyIdAsync(
+    /// <summary>Sin X-Company-Id: solo la única membership activa del usuario en el tenant.</summary>
+    private async Task<Guid> ResolveSingleMembershipCompanyIdAsync(
         Guid userId,
         CancellationToken cancellationToken
     )
     {
-        if (_currentCompany.HasCompanyContext && _currentCompany.CompanyId != Guid.Empty)
-        {
-            var headerMembership = await _repo.GetCompanyUserMembershipAsync(
-                _currentCompany.CompanyId,
-                userId,
-                cancellationToken
-            );
-            if (headerMembership is not null && headerMembership.IsActive)
-                return _currentCompany.CompanyId;
-        }
-
         var memberships = await _repo.GetActiveCompanyUserMembershipsForUserSystemAsync(
             userId,
             cancellationToken

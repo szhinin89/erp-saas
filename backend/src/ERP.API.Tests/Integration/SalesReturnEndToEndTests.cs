@@ -460,6 +460,12 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
     public void SetActiveContext(Guid userId)
     {
         _baseFactory.MutableUser.UserId = userId;
+        // SEC-04: el JWT debe pertenecer al mismo usuario con membership Admin; el rol Admin del
+        // JWT por sí solo (sub sin membership) ya no concede bypass de permisos.
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            TestJwtFactory.CreateSessionJwt(TenantId, userId)
+        );
         Client.DefaultRequestHeaders.Remove("X-Branch-Id");
         Client.DefaultRequestHeaders.Add("X-Branch-Id", BranchId.ToString());
     }

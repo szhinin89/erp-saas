@@ -1,5 +1,26 @@
 # Project Status
 
+## SEGURIDAD — SEC-04: privilegios administrativos entre empresas — CORREGIDO — revisión técnica final PASS (2026-10-26)
+
+`RuntimePermissionAuthorizer` concedía el bypass Admin (`*`) por el rol del JWT, emitido para la
+empresa de apertura de sesión: un usuario Admin en A y User limitado en B podía, con el JWT de A y
+`X-Company-Id: B`, ejecutar en B cualquier operación `perm:*` (y `GetMyPermissions` devolvía `*`).
+Además, `CompanyContextProvider` sustituía en silencio un `X-Company-Id` sin membership por la única
+membership del usuario. Corregido en el mecanismo existente: el bypass sale de la membership de la
+empresa operativa u operador global (`IOperatorCompanyAccessPolicy`), alineando `GetMyPermissions`,
+sesión, navegación y anti-escalamiento de `UpsertProfilePermissions`; un header sin membership activa
+del tenant se rechaza con 403 `COMPANY_SCOPE_FORBIDDEN`, sin fallback. Sin cambios en tokens, first-run
+ni base de datos. Focales PASS: Application 97/97 (incluye `CompanyScopedAdminAuthorizationTests`),
+API HTTP/PostgreSQL 290/290 en las clases con host real (incluye `CrossCompanyAdminPrivilegeHttpTests`
+8/8; fixtures de Caja, Ventas y BusinessPartner alineados: su JWT usaba un `sub` sin membership).
+Regla funcional aprobada por el propietario: únicamente el Administrador Global de instalación
+(modo operador) atraviesa tenants y empresas; los Administradores de Empresa quedan limitados a las
+empresas donde su membership tiene rol Admin. Gate independiente del propietario (PowerShell):
+Application 37/37, API HTTP 15/15, `architecture:check` 140/140, `git diff --check` PASS; revisión
+técnica final PASS sin defectos bloqueantes. **CI del commit SEC-04: aún no ejecutado.** Riesgos en
+[Riesgos y limitaciones vigentes](#riesgos-y-limitaciones-vigentes).
+[SSOT Seguridad](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
+
 ## SEGURIDAD — SEC-03: aislamiento entre empresas en configuración y retenciones — CORREGIDO (2026-10-26)
 
 13 operaciones COMPANY no declaraban marcador de scope y `CompanyScopeBehavior` no validaba la
@@ -215,9 +236,11 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   [security.md](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant)):
   `UpdateCustomerRoleConfigValidator` (request TENANT) comprueba códigos de catálogo contra la
   empresa del contexto; `CreateCompanyUserPreferences` es un consumidor interno sin marcador de
-  empresa; la resolución de permisos usa la única membership del usuario cuando la empresa del
-  header no tiene membership, por lo que una operación COMPANY sin marcador ni guard no quedaría
-  protegida; `INV_E2` no cubre todos los módulos ni detecta un marcador TENANT puesto por error.
+  empresa; `INV_E2` no cubre todos los módulos ni detecta un marcador TENANT puesto por error.
+  Tras SEC-04 la resolución de permisos ya no usa la única membership cuando
+  el header no tiene membership; los perfiles de acceso siguen siendo TENANT, por lo que un Admin de
+  una empresa que edita un perfil afecta a las memberships de ese perfil en otras empresas; la
+  firma `IRuntimePermissionAuthorizer.IsAuthorizedAsync` conserva el parámetro `role`, sin efecto.
   Impacto acreditado: como máximo, el validador revela si un código existe en el catálogo de otra
   empresa; no se acredita lectura ni escritura de sus datos.
 

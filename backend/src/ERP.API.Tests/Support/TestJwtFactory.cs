@@ -11,7 +11,8 @@ internal static class TestJwtFactory
         Guid tenantId,
         Guid userId,
         Guid? companyId = null,
-        string role = "Admin"
+        string role = "Admin",
+        IEnumerable<Claim>? extraClaims = null
     )
     {
         var claims = new List<Claim>
@@ -20,6 +21,8 @@ internal static class TestJwtFactory
             new("tenant_id", tenantId.ToString()),
             new(ClaimTypes.Role, role),
         };
+        if (extraClaims is not null)
+            claims.AddRange(extraClaims);
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(IntegrationTestConstants.JwtSecretKey)

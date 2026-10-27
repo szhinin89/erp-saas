@@ -75,14 +75,37 @@ public sealed class UpsertProfilePermissionsHandlerTests
             .ReturnsAsync(Array.Empty<CompanyUserMembership>());
     }
 
-    private void SetAssignerRole(string? role) => _currentUser.SetupGet(x => x.Role).Returns(role);
+    // SEC-04: el rol que cuenta es el de la membership en la empresa operativa (el JWT lo replica
+    // aquí solo como dato de sesión, no como autoridad).
+    private void SetAssignerRole(string? role)
+    {
+        _currentUser.SetupGet(x => x.Role).Returns(role);
+        if (role == SecurityRoles.Admin)
+            _companyContext
+                .Setup(x => x.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new OperationalCompanyContext(
+                        CompanyId,
+                        UserId,
+                        null,
+                        true,
+                        MembershipRole: SecurityRoles.Admin
+                    )
+                );
+    }
 
     private void SetAssignerEffectivePermissions(params string[] keys)
     {
         _companyContext
             .Setup(x => x.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                new OperationalCompanyContext(CompanyId, UserId, AssignerProfileId, true)
+                new OperationalCompanyContext(
+                    CompanyId,
+                    UserId,
+                    AssignerProfileId,
+                    true,
+                    MembershipRole: "User"
+                )
             );
         _effectivePermissionKeys
             .Setup(x =>
@@ -178,11 +201,85 @@ public sealed class UpsertProfilePermissionsHandlerTests
         );
         _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
 
-        // Admin bypasses the anti-escalation check entirely.
-        _companyContext.Verify(
-            x => x.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>()),
+        // Admin de la empresa operativa omite el chequeo de alcance (no consulta sus claves).
+        _effectivePermissionKeys.Verify(
+            x =>
+                x.GetAllowedKeysAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()
+                ),
             Times.Never
         );
+    }
+
+    [Fact]
+    public async Task Jwt_Admin_whose_operational_company_membership_is_not_Admin_cannot_escalate()
+    {
+        // SEC-04: JWT emitido como Admin en A; la empresa operativa (X-Company-Id = B) tiene
+        // membership "User" con perfil limitado → se aplica la regla anti-escalamiento de B.
+        _currentUser.SetupGet(x => x.Role).Returns(SecurityRoles.Admin);
+        SetAssignerEffectivePermissions("access.profiles.view");
+        var handler = CreateHandler();
+        var command = new UpsertProfilePermissionsCommand(
+            ProfileId,
+            new[] { new PermissionUpsertItem("access.sessions.view", true) }
+        );
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        result.Error.Should().Contain("access.sessions.view");
+        _repo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Jwt_Admin_without_resolvable_operational_context_is_forbidden()
+    {
+        _currentUser.SetupGet(x => x.Role).Returns(SecurityRoles.Admin);
+        _companyContext
+            .Setup(x => x.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OperationalCompanyContext?)null);
+        var handler = CreateHandler();
+        var command = new UpsertProfilePermissionsCommand(
+            ProfileId,
+            new[] { new PermissionUpsertItem("access.profiles.view", true) }
+        );
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+    }
+
+    [Fact]
+    public async Task Authorized_global_operator_can_grant_without_membership()
+    {
+        _currentUser.SetupGet(x => x.Role).Returns(SecurityRoles.Admin);
+        _companyContext
+            .Setup(x => x.ResolveOperationalForCurrentUserAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                new OperationalCompanyContext(
+                    CompanyId,
+                    UserId,
+                    null,
+                    false,
+                    MembershipRole: SecurityRoles.Admin,
+                    IsAuthorizedOperator: true
+                )
+            );
+        var handler = CreateHandler();
+        var command = new UpsertProfilePermissionsCommand(
+            ProfileId,
+            new[] { new PermissionUpsertItem("access.sessions.view", true) }
+        );
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]

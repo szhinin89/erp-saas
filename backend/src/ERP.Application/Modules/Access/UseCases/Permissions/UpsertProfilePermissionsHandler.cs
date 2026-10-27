@@ -4,7 +4,6 @@ using ERP.Application.Navigation;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Kernel;
-using ERP.Domain.Kernel.Security;
 using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
@@ -13,7 +12,8 @@ namespace ERP.Application.Access.UseCases.Permissions;
 /// SECURITY-PERMISSION-SCOPE-01: rechaza permisos inexistentes (no declarados en
 /// <see cref="KernelRegistry.Permissions"/>) y permisos no asignables (declarados pero fuera de
 /// <see cref="KernelRegistry.AssignablePermissionKeys"/>) en pasos separados, y aplica una regla
-/// anti-escalamiento — un asignador sin rol <see cref="SecurityRoles.Admin"/> nunca puede otorgar
+/// anti-escalamiento — un asignador sin bypass Admin en su empresa operativa
+/// (<see cref="OperationalCompanyContext.HasAdminBypass"/>, SEC-04) nunca puede otorgar
 /// (<c>IsAllowed = true</c>) un permiso que él mismo no tiene efectivo en su contexto operativo
 /// actual (<see cref="ICompanyContextProvider"/> + <see cref="IEffectivePermissionKeysProvider"/>).
 /// Revocar (<c>IsAllowed = false</c>) no escala privilegios y no pasa por este chequeo.
@@ -96,34 +96,31 @@ public class UpsertProfilePermissionsHandler
                 ApiResponseCodes.Common.ValidationError
             );
 
-        // SECURITY-PERMISSION-SCOPE-01: anti-escalamiento — un asignador sin rol Admin (bypass
-        // total dentro del tenant, igual que en RuntimePermissionAuthorizer) no puede otorgar un
-        // permiso que él mismo no tiene efectivo en su contexto operativo actual. Revocar
-        // (IsAllowed = false) nunca escala privilegios, así que no pasa por este chequeo.
-        if (
-            !string.Equals(
-                _currentUser.Role,
-                SecurityRoles.Admin,
-                StringComparison.OrdinalIgnoreCase
-            )
-        )
-        {
-            var grantingKeys = command
-                .Items.Where(i => i.IsAllowed && !string.IsNullOrWhiteSpace(i.PermissionKey))
-                .Select(i => i.PermissionKey.Trim())
-                .Distinct()
-                .ToList();
+        // SECURITY-PERMISSION-SCOPE-01: anti-escalamiento — un asignador sin bypass Admin no puede
+        // otorgar un permiso que él mismo no tiene efectivo en su contexto operativo actual.
+        // SEC-04: el bypass es el mismo de RuntimePermissionAuthorizer (Admin de la empresa
+        // operativa u operador global), nunca el rol del JWT. Revocar (IsAllowed = false) nunca
+        // escala privilegios, así que no pasa por este chequeo.
+        var grantingKeys = command
+            .Items.Where(i => i.IsAllowed && !string.IsNullOrWhiteSpace(i.PermissionKey))
+            .Select(i => i.PermissionKey.Trim())
+            .Distinct()
+            .ToList();
 
-            if (grantingKeys.Count > 0)
-            {
-                var assignerContext = await _companyContext.ResolveOperationalForCurrentUserAsync(
-                    cancellationToken
+        if (grantingKeys.Count > 0)
+        {
+            var assignerContext = await _companyContext.ResolveOperationalForCurrentUserAsync(
+                cancellationToken
+            );
+            if (assignerContext is null)
+                return Result<PermissionUpsertResultDto>.Failure(
+                    "No se pudo resolver el contexto operativo del usuario que asigna.",
+                    ApiResponseCodes.Common.Forbidden
                 );
-                if (
-                    assignerContext is null
-                    || !assignerContext.IsActiveMembership
-                    || assignerContext.ProfileId is null
-                )
+
+            if (!assignerContext.HasAdminBypass)
+            {
+                if (!assignerContext.IsActiveMembership || assignerContext.ProfileId is null)
                     return Result<PermissionUpsertResultDto>.Failure(
                         "No se pudo resolver el contexto operativo del usuario que asigna.",
                         ApiResponseCodes.Common.Forbidden

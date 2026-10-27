@@ -7,6 +7,10 @@ namespace ERP.Application.Access.Authorization;
 /// </summary>
 public interface IRuntimePermissionAuthorizer
 {
+    /// <param name="role">
+    /// Rol del JWT. SEC-04: no es autoridad — el bypass Admin se decide por la membership de la
+    /// empresa operativa o por el operador global (<see cref="OperationalCompanyContext.HasAdminBypass"/>).
+    /// </param>
     Task<bool> IsAuthorizedAsync(
         string permissionKey,
         Guid userId,

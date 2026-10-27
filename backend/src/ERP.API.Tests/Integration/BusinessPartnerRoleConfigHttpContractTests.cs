@@ -54,6 +54,9 @@ public sealed class BusinessPartnerRoleConfigHttpContractTests : IAsyncLifetime
         await _factory.InitializeAsync();
         await _factory.MigrateAsync();
 
+        // SEC-04: el sub del JWT debe ser el usuario con membership Admin en la empresa; el rol
+        // Admin del JWT por sí solo ya no concede bypass de permisos.
+        Guid memberUserId;
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -82,6 +85,7 @@ public sealed class BusinessPartnerRoleConfigHttpContractTests : IAsyncLifetime
             );
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
+            memberUserId = user.Id;
             db.CompanyUserMemberships.Add(
                 CompanyUserMembership.Create(_companyId, user.Id, "Admin", null, _adminId)
             );
@@ -91,7 +95,7 @@ public sealed class BusinessPartnerRoleConfigHttpContractTests : IAsyncLifetime
         _client = _factory.CreateClient();
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
-            TestJwtFactory.CreateSessionJwt(_tenantId, _adminId, _companyId, "Admin")
+            TestJwtFactory.CreateSessionJwt(_tenantId, memberUserId, _companyId, "Admin")
         );
         _factory.MutableTenant.TenantId = _tenantId;
         _factory.MutableCompany.CompanyId = _companyId;

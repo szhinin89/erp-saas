@@ -1,3 +1,5 @@
+using ERP.Domain.Kernel.Security;
+
 namespace ERP.Application.Access;
 
 /// <summary>
@@ -29,10 +31,49 @@ public interface ICompanyContextProvider
     );
 }
 
-/// <summary>Contexto operativo mínimo para evaluar permisos de perfil.</summary>
+/// <summary>
+/// Contexto operativo mínimo para evaluar permisos de perfil. SEC-04: el rol que cuenta es el de
+/// la membership en <see cref="CompanyId"/>, nunca el rol del JWT (emitido para la empresa de
+/// apertura de sesión). Única excepción: el administrador global en modo operador
+/// (<see cref="IsAuthorizedOperator"/>, resuelto por <c>IOperatorCompanyAccessPolicy</c>).
+/// </summary>
 public sealed record OperationalCompanyContext(
     Guid CompanyId,
     Guid UserId,
     Guid? ProfileId,
-    bool IsActiveMembership
-);
+    bool IsActiveMembership,
+    string? MembershipRole = null,
+    bool IsAuthorizedOperator = false
+)
+{
+    /// <summary>Bypass total de permisos (<c>*</c>): Admin de ESTA empresa u operador global.</summary>
+    public bool HasAdminBypass =>
+        IsAuthorizedOperator
+        || (
+            IsActiveMembership
+            && string.Equals(
+                MembershipRole,
+                SecurityRoles.Admin,
+                StringComparison.OrdinalIgnoreCase
+            )
+        );
+
+    /// <summary>
+    /// Rol efectivo para UI (roles de sesión, visibilidad de navegación). Sin contexto operativo
+    /// resuelto se conserva el rol del JWT, salvo Admin: nunca vale sin empresa que lo respalde.
+    /// </summary>
+    public static string ResolveEffectiveRole(OperationalCompanyContext? context, string? jwtRole)
+    {
+        if (context is not null && context.HasAdminBypass)
+            return SecurityRoles.Admin;
+        if (
+            context is not null
+            && context.IsActiveMembership
+            && !string.IsNullOrEmpty(context.MembershipRole)
+        )
+            return context.MembershipRole;
+        return string.Equals(jwtRole, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase)
+            ? SecurityRoles.User
+            : jwtRole ?? string.Empty;
+    }
+}

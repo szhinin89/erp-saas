@@ -18,7 +18,7 @@ namespace ERP.Infrastructure.Persistence.Navigation;
 /// tener roles/permisos distintos por empresa), por lo que CompanyId forma parte de la clave.
 /// CompanyId se resuelve siempre vía <see cref="ICompanyContextProvider"/> (contexto de
 /// sesión autenticada), nunca se toma directamente de un valor sin validar.
-/// Admin role: ve todos los ítems activos sin restricción.
+/// Admin de la empresa operativa (u operador global): ve todos los ítems activos sin restricción.
 /// </summary>
 public sealed class NavigationBuilder : INavigationBuilder
 {
@@ -61,7 +61,6 @@ public sealed class NavigationBuilder : INavigationBuilder
     {
         var tenantId = _tenant.TenantId;
         var userId = _user.UserId;
-        var role = _user.Role ?? string.Empty;
 
         // CompanyId del contexto operativo de la sesión autenticada (membresía validada),
         // nunca un valor crudo enviado por el frontend sin validar.
@@ -70,6 +69,10 @@ public sealed class NavigationBuilder : INavigationBuilder
                 ? await _companyCtx.ResolveOperationalForCurrentUserAsync(cancellationToken)
                 : null;
         var companyId = ctx?.CompanyId ?? Guid.Empty;
+
+        // SEC-04: rol de la membership en la empresa operativa (u operador global), nunca el
+        // Admin del JWT emitido para otra empresa.
+        var role = OperationalCompanyContext.ResolveEffectiveRole(ctx, _user.Role);
 
         var cacheKey = BuildCacheKey(tenantId, companyId, userId);
 

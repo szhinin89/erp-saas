@@ -1,7 +1,6 @@
 using ERP.Application.Access.Caching;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
-using ERP.Domain.Kernel.Security;
 using MediatR;
 
 namespace ERP.Application.Access.UseCases.Permissions;
@@ -40,13 +39,14 @@ public class GetMyPermissionsHandler
         if (!_currentUser.IsAuthenticated || _currentTenant.TenantId == Guid.Empty)
             return Result<MyPermissionsDto>.Failure("No autenticado.");
 
-        var role = _currentUser.Role ?? string.Empty;
-        if (string.Equals(role, SecurityRoles.Admin, StringComparison.OrdinalIgnoreCase))
-            return Result<MyPermissionsDto>.Success(new MyPermissionsDto(AdminPermissions));
-
+        // SEC-04: misma regla que RuntimePermissionAuthorizer — "*" solo para Admin de la empresa
+        // operativa u operador global, nunca por el rol del JWT.
         var context = await _companyContext.ResolveOperationalForCurrentUserAsync(
             cancellationToken
         );
+        if (context?.HasAdminBypass == true)
+            return Result<MyPermissionsDto>.Success(new MyPermissionsDto(AdminPermissions));
+
         if (context is null || context.CompanyId == Guid.Empty)
             return Result<MyPermissionsDto>.Success(new MyPermissionsDto([]));
 

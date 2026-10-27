@@ -135,7 +135,12 @@ public sealed class GetSessionContextHandler
         );
 
         var authorization = new SessionAuthorizationDto(
-            ResolveRoles(_currentUser.Role),
+            ResolveRoles(
+                OperationalCompanyContext.ResolveEffectiveRole(
+                    operationalContext,
+                    _currentUser.Role
+                )
+            ),
             await ResolvePermissionsAsync(operationalContext, cancellationToken)
         );
 
@@ -321,13 +326,8 @@ public sealed class GetSessionContextHandler
         CancellationToken cancellationToken
     )
     {
-        if (
-            string.Equals(
-                _currentUser.Role,
-                SecurityRoles.Admin,
-                StringComparison.OrdinalIgnoreCase
-            )
-        )
+        // SEC-04: misma regla que RuntimePermissionAuthorizer — nunca el rol del JWT.
+        if (operationalContext?.HasAdminBypass == true)
             return AdminPermissions;
 
         if (
