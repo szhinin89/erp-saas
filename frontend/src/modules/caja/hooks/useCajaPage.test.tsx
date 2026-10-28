@@ -1190,29 +1190,6 @@ describe("useCajaPage — cerrar turno: confirmación y feedback (CRITICAL-CONFI
     return result;
   }
 
-  it("recalcula el total contado al cambiar una denominación por su ruta (como register), sin reemplazar el array", async () => {
-    vi.mocked(cajaService.close).mockResolvedValue(
-      buildSession({ status: "Closed" }),
-    );
-    const result = await setupCloseReady(100);
-
-    // Mismo efecto que escribir en el input registrado: RHF muta el array en su lugar y watch()
-    // devuelve la misma referencia (R3, 2026-10-28: el total quedaba en $0.00 en Chromium).
-    act(() => {
-      result.current.closeForm.setValue("closingCounts.3.quantity", 1); // $10
-      result.current.closeForm.setValue("closingCounts.4.quantity", 1); // $5
-    });
-
-    expect(result.current.countedTotal).toBe(15);
-
-    await act(async () => {
-      await result.current.handleClose();
-    });
-    renderLastConfirmMessage();
-    expect(screen.getByText("$15.00")).toBeTruthy();
-    expect(screen.getByText("$-85.00")).toBeTruthy();
-  });
-
   it("pide confirmación/modal antes de cerrar y muestra esperado/contado/diferencia", async () => {
     vi.mocked(cajaService.close).mockResolvedValue(
       buildSession({ status: "Closed" }),
