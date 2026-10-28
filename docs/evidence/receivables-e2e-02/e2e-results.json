@@ -1,0 +1,539 @@
+{
+ "date": "2026-10-27",
+ "environment": {
+  "database": "erp_zh_test",
+  "api": "http://localhost:5004 (Release, seed E2E)",
+  "front": "Vite :5181, /api/** -> :5004"
+ },
+ "invoice": {
+  "number": "001-001-000000003",
+  "id": "9d19cb39-cfab-4324-8f9e-5ccd745b3534",
+  "receivableId": "cd7c7fdc-345d-46f5-9f42-9052526ca75a",
+  "total": 300,
+  "method": "CREDITO",
+  "schedule": [
+   {
+    "n": 1,
+    "dueDate": "2026-11-26",
+    "amount": 100
+   },
+   {
+    "n": 2,
+    "dueDate": "2026-12-26",
+    "amount": 100
+   },
+   {
+    "n": 3,
+    "dueDate": "2027-01-25",
+    "amount": 100
+   }
+  ]
+ },
+ "browserFlow": {
+  "checks": [
+   {
+    "label": "m0.defaultAmount",
+    "ok": true,
+    "actual": 300,
+    "expected": 300
+   },
+   {
+    "label": "m0.options",
+    "ok": true,
+    "actual": "Sin cuota específica | Cuota #1 — 100.00 pendiente | Cuota #2 — 100.00 pendiente | Cuota #3 — 100.00 pendiente",
+    "expected": "Sin cuota específica | Cuota #1 — 100.00 pendiente | Cuota #2 — 100.00 pendiente | Cuota #3 — 100.00 pendiente"
+   },
+   {
+    "label": "c1a.dialogStillOpen",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c1a.noChange.paid",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c1.paid",
+    "ok": true,
+    "actual": 30,
+    "expected": 30
+   },
+   {
+    "label": "c1.balance",
+    "ok": true,
+    "actual": 270,
+    "expected": 270
+   },
+   {
+    "label": "c1.statusLabel",
+    "ok": true,
+    "actual": "Parcial",
+    "expected": "Parcial"
+   },
+   {
+    "label": "c1.dueDate",
+    "ok": true,
+    "actual": "2026-11-26",
+    "expected": "2026-11-26"
+   },
+   {
+    "label": "c1.overdueDays",
+    "ok": true,
+    "actual": "null",
+    "expected": "null"
+   },
+   {
+    "label": "c1.inst1.paid",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c1.inst1.status",
+    "ok": true,
+    "actual": "pending",
+    "expected": "pending"
+   },
+   {
+    "label": "c1.inst2.paid",
+    "ok": true,
+    "actual": 30,
+    "expected": 30
+   },
+   {
+    "label": "c1.inst2.status",
+    "ok": true,
+    "actual": "partial",
+    "expected": "partial"
+   },
+   {
+    "label": "c1.inst3.paid",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c1.inst3.status",
+    "ok": true,
+    "actual": "pending",
+    "expected": "pending"
+   },
+   {
+    "label": "c1.sumInstallmentsOutstanding=balance",
+    "ok": true,
+    "actual": 270,
+    "expected": 270
+   },
+   {
+    "label": "c1.ui.row.label",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c1.ui.row.amounts",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c1.ui.row.vence",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c1.reopen.options",
+    "ok": true,
+    "actual": "Sin cuota específica | Cuota #1 — 100.00 pendiente | Cuota #2 — 70.00 pendiente | Cuota #3 — 100.00 pendiente",
+    "expected": "Sin cuota específica | Cuota #1 — 100.00 pendiente | Cuota #2 — 70.00 pendiente | Cuota #3 — 100.00 pendiente"
+   },
+   {
+    "label": "c1.reopen.defaultAmount",
+    "ok": true,
+    "actual": 270,
+    "expected": 270
+   },
+   {
+    "label": "c2.paid",
+    "ok": true,
+    "actual": 150,
+    "expected": 150
+   },
+   {
+    "label": "c2.balance",
+    "ok": true,
+    "actual": 150,
+    "expected": 150
+   },
+   {
+    "label": "c2.statusLabel",
+    "ok": true,
+    "actual": "Parcial",
+    "expected": "Parcial"
+   },
+   {
+    "label": "c2.dueDate",
+    "ok": true,
+    "actual": "2026-12-26",
+    "expected": "2026-12-26"
+   },
+   {
+    "label": "c2.overdueDays",
+    "ok": true,
+    "actual": "null",
+    "expected": "null"
+   },
+   {
+    "label": "c2.inst1.paid",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   },
+   {
+    "label": "c2.inst1.status",
+    "ok": true,
+    "actual": "paid",
+    "expected": "paid"
+   },
+   {
+    "label": "c2.inst2.paid",
+    "ok": true,
+    "actual": 50,
+    "expected": 50
+   },
+   {
+    "label": "c2.inst2.status",
+    "ok": true,
+    "actual": "partial",
+    "expected": "partial"
+   },
+   {
+    "label": "c2.inst3.paid",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c2.inst3.status",
+    "ok": true,
+    "actual": "pending",
+    "expected": "pending"
+   },
+   {
+    "label": "c2.sumInstallmentsOutstanding=balance",
+    "ok": true,
+    "actual": 150,
+    "expected": 150
+   },
+   {
+    "label": "c2.ui.row.label",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c2.ui.row.amounts",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c2.ui.row.vence",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c2.reopen.options",
+    "ok": true,
+    "actual": "Sin cuota específica | Cuota #2 — 50.00 pendiente | Cuota #3 — 100.00 pendiente",
+    "expected": "Sin cuota específica | Cuota #2 — 50.00 pendiente | Cuota #3 — 100.00 pendiente"
+   },
+   {
+    "label": "c2.reopen.defaultAmount",
+    "ok": true,
+    "actual": 150,
+    "expected": 150
+   },
+   {
+    "label": "c3.paid",
+    "ok": true,
+    "actual": 300,
+    "expected": 300
+   },
+   {
+    "label": "c3.balance",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c3.statusLabel",
+    "ok": true,
+    "actual": "Pagada",
+    "expected": "Pagada"
+   },
+   {
+    "label": "c3.dueDate",
+    "ok": true,
+    "actual": "null",
+    "expected": "null"
+   },
+   {
+    "label": "c3.overdueDays",
+    "ok": true,
+    "actual": "null",
+    "expected": "null"
+   },
+   {
+    "label": "c3.inst1.paid",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   },
+   {
+    "label": "c3.inst1.status",
+    "ok": true,
+    "actual": "paid",
+    "expected": "paid"
+   },
+   {
+    "label": "c3.inst2.paid",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   },
+   {
+    "label": "c3.inst2.status",
+    "ok": true,
+    "actual": "paid",
+    "expected": "paid"
+   },
+   {
+    "label": "c3.inst3.paid",
+    "ok": true,
+    "actual": 100,
+    "expected": 100
+   },
+   {
+    "label": "c3.inst3.status",
+    "ok": true,
+    "actual": "paid",
+    "expected": "paid"
+   },
+   {
+    "label": "c3.sumInstallmentsOutstanding=balance",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c3.ui.notInPending",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c3.ui.paidRow",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c3.ui.vence",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c3.ui.noCollectAction",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "ui.invoice.authorized",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "inv.status",
+    "ok": true,
+    "actual": "Authorized",
+    "expected": "Authorized"
+   },
+   {
+    "label": "inv.grandTotal",
+    "ok": true,
+    "actual": 300,
+    "expected": 300
+   },
+   {
+    "label": "inv.schedule.count",
+    "ok": true,
+    "actual": 3,
+    "expected": 3
+   }
+  ],
+  "passed": 58,
+  "total": 58,
+  "rejectionMessage": "El monto aplicado excede el saldo pendiente de la cuota #3.",
+  "rows": {
+   "c1": "1 001-001-000000003 Cliente E2E ZH 04-1791352688001 Sucursal Principal E2E Administrator 27/10/2026 19:24:38 26/11/2026 $ 300.00 $ 30.00 $ 270.00 Parcial payments Registrar cobro",
+   "c2": "1 001-001-000000003 Cliente E2E ZH 04-1791352688001 Sucursal Principal E2E Administrator 27/10/2026 19:24:38 26/12/2026 $ 300.00 $ 150.00 $ 150.00 Parcial payments Registrar cobro",
+   "c3": "1 001-001-000000003 Cliente E2E ZH 04-1791352688001 Sucursal Principal E2E Administrator 27/10/2026 19:24:38 — $ 300.00 $ 300.00 $ 0.00 Pagada "
+  },
+  "consoleErrors": [
+   "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+   "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+   "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+  ],
+  "apiErrors": [
+   "401 POST /api/v1/auth/refresh",
+   "403 GET /api/v1/electronic-invoicing/status",
+   "422 POST /api/v1/finance/collections"
+  ],
+  "leakedRequests": []
+ },
+ "isolation": {
+  "checks": [
+   {
+    "label": "B.companyIsB",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "B.list.excludesA",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   },
+   {
+    "label": "B.byInvoice.status",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "B.invoice.notFound",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "B.collectOnA.rejected",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "B.ui.noAInvoices",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   },
+   {
+    "label": "B.ui.headerIsB",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   }
+  ],
+  "passed": 7,
+  "total": 7,
+  "collectAsB": {
+   "status": 404,
+   "body": "{\"code\":\"NOT_FOUND\",\"severity\":\"error\",\"message\":{\"user\":\"El recurso solicitado no existe.\",\"dev\":\"Entity not found.\"},\"data\":{\"errors\":[\"Cuenta por cobrar cd7c7fdc-345d-46f5-9f42-9052526ca75a no encontrada.\"]},\"meta\":{\"correlationId\":\"0HNPKH54SR5TA:00000009\",\"timestamp\":\"2026-10-28T00:26:55.2273785"
+  },
+  "apiErrors": [
+   "401 POST /api/v1/auth/refresh",
+   "403 GET /api/v1/electronic-invoicing/status"
+  ],
+  "leakedRequests": []
+ },
+ "postgres": {
+  "installments": [
+   {
+    "n": 1,
+    "due": "2026-11-26",
+    "amount": 100,
+    "paid": 100,
+    "status": "paid"
+   },
+   {
+    "n": 2,
+    "due": "2026-12-26",
+    "amount": 100,
+    "paid": 100,
+    "status": "paid"
+   },
+   {
+    "n": 3,
+    "due": "2027-01-25",
+    "amount": 100,
+    "paid": 100,
+    "status": "paid"
+   }
+  ],
+  "receivable": {
+   "original": 300,
+   "paid": 300,
+   "status": "pending (por diseño; el saldo es la señal)"
+  },
+  "payments": [
+   {
+    "amount": 30,
+    "lineInstallment": 2,
+    "hasBank": true,
+    "status": 1
+   },
+   {
+    "amount": 120,
+    "lineInstallment": null,
+    "hasBank": true,
+    "status": 1
+   },
+   {
+    "amount": 150,
+    "lineInstallment": null,
+    "hasBank": true,
+    "status": 1
+   }
+  ],
+  "journalEntries": [
+   {
+    "n": 21,
+    "event": "Sales/InvoiceIssued",
+    "debit": "1.1.03.001 300.00",
+    "credit": "4.1.01.001 300.00"
+   },
+   {
+    "n": 22,
+    "event": "Finance/CollectionApplied",
+    "debit": "1.1.02.001 30.00",
+    "credit": "1.1.03.001 30.00"
+   },
+   {
+    "n": 23,
+    "event": "Finance/CollectionApplied",
+    "debit": "1.1.02.001 120.00",
+    "credit": "1.1.03.001 120.00"
+   },
+   {
+    "n": 24,
+    "event": "Finance/CollectionApplied",
+    "debit": "1.1.02.001 150.00",
+    "credit": "1.1.03.001 150.00"
+   }
+  ],
+  "allPosted": true,
+  "allBalanced": true,
+  "companyBPaymentsCreated": 0
+ }
+}

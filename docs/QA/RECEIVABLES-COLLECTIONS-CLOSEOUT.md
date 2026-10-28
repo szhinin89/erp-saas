@@ -35,7 +35,14 @@ casillas sin marcar corresponden a la **próxima regresión**, no a defectos del
 - [x] Asientos de venta a crédito y de cobro a banco publicados y balanceados (misma evidencia).
 - [x] Cambiar de empresa: impedir consulta y cobro de CxC y facturas ajenas. **7/7 PASS** (misma
   evidencia).
-- [ ] Factura con varias cuotas: cobro a cuota elegida, por FIFO, vencimiento y mora tras cada cobro.
+- [x] Factura con varias cuotas (3 cuotas, vencimientos distintos): cobro a cuota elegida (con
+  rechazo por exceso del saldo de la cuota), cobro sin cuota por FIFO, liquidación y «Vence» tras
+  cada cobro, con recarga, reapertura, asientos y aislamiento. E2E **58/58** y aislamiento **7/7
+  PASS**, aprobado por el propietario (2026-10-27);
+  [evidencia y límites](../evidence/receivables-e2e-02/README.md).
+- [ ] Mora con varias cuotas en E2E visual: **no acreditada en E2E**. Solo tiene cobertura mediante
+  test automatizado (`SalesReceivableUseCasesTests.Build_varias_cuotas_mora_sigue_a_la_primera_cuota_no_saldada`);
+  los datos E2E no permiten una cuota vencida.
 - [ ] Cobro con destino caja y sin destino.
 - [ ] Reversa de cobro (sin endpoint HTTP ni UI hoy) y anulación de factura tras reversar.
 - [ ] Devolución de venta con crédito a CxC sobre una CxC con cobros.

@@ -1,5 +1,19 @@
 # Project Status
 
+## Cuentas por cobrar — E2E de factura con varias cuotas — CLOSED (2026-10-27)
+
+Resultado E2E **58/58 PASS** y aislamiento **7/7 PASS**, aprobado expresamente por el propietario;
+CLOSED solo para el alcance descrito a continuación.
+Sin BUG REAL ni cambios de código de producción; se agregó un test focal de mora con varias cuotas.
+Evidencia: [receivables-e2e-02](docs/evidence/receivables-e2e-02/README.md).
+Alcance: factura a crédito por 300.00 en 3 cuotas con vencimientos distintos; cobro de 30.00 a la
+cuota #2 (tras rechazar un monto mayor al saldo de la cuota), 120.00 sin cuota aplicado por FIFO y
+liquidación de 150.00 sin cuota, con recarga y reapertura tras cada paso, «Vence» siguiendo a la
+primera cuota no saldada, asientos de venta y cobro balanceados y aislamiento entre empresas. La
+mora no se reprodujo en E2E (las fechas de los datos no lo permiten) y solo se acredita por test
+focal. No acredita cobro a caja o sin destino, reversa de cobros, devolución con CxC cobrada, saldo
+inicial IL-5, suite completa ni despliegue. Sin commit ni push.
+
 ## Compras/Gastos → CxP — E2E de reversa de pagos y anulación — CLOSED (2026-10-27)
 
 Resultado E2E **46/46 PASS** (17 comprobaciones en navegador, 20 por API y 9 en PostgreSQL),

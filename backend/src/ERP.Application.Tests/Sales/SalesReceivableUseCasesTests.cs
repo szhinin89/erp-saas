@@ -169,6 +169,32 @@ public sealed class SalesReceivableUseCasesTests
     }
 
     [Fact]
+    public void Build_varias_cuotas_mora_sigue_a_la_primera_cuota_no_saldada()
+    {
+        var r = CreateReceivable(100m);
+        r.GenerateInstallments(new DateOnly(2026, 7, 1), creditTermDays: 60, installmentCount: 2);
+        // Cuota #1 vence 2026-07-31, cuota #2 vence 2026-08-30 (50.00 c/u).
+
+        Build(r, new DateOnly(2026, 8, 17)).Should().Match<SalesReceivableDto>(d =>
+            d.StatusLabel == "Vencida" && d.OverdueDays == 17 && d.DueDate == new DateOnly(2026, 7, 31)
+        );
+
+        // Cobro sin cuota (FIFO) salda la cuota #1: la mora desaparece y "Vence" pasa a la #2.
+        r.RegisterCollection(50m, ActorId);
+        Build(r, new DateOnly(2026, 8, 17)).Should().Match<SalesReceivableDto>(d =>
+            d.StatusLabel == "Parcial" && d.OverdueDays == null && d.DueDate == new DateOnly(2026, 8, 30)
+        );
+
+        // Al vencer la cuota #2, la mora se cuenta desde su fecha.
+        Build(r, new DateOnly(2026, 9, 4)).Should().Match<SalesReceivableDto>(d =>
+            d.StatusLabel == "Vencida" && d.OverdueDays == 5 && d.DueDate == new DateOnly(2026, 8, 30)
+        );
+
+        static SalesReceivableDto Build(SalesReceivable r, DateOnly today) =>
+            SalesReceivableDtoMapper.Build(r, CreateSummary(), "Sucursal Principal", "Admin ZH", today);
+    }
+
+    [Fact]
     public void Build_cancelada_es_Anulada_sin_importar_mora()
     {
         var r = CreateReceivable(100m);
