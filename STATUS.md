@@ -1,5 +1,18 @@
 # Project Status
 
+## Cuentas por cobrar — E2E de cobros a caja y sin destino — CLOSED (2026-10-27)
+
+Resultado E2E **28/28 PASS** en navegador y **14/14 PASS** en rechazos, aislamiento y PostgreSQL,
+aprobado expresamente por el propietario; CLOSED solo para el alcance descrito a continuación.
+Sin BUG REAL ni cambios de código.
+Evidencia: [receivables-e2e-03](docs/evidence/receivables-e2e-03/README.md).
+Alcance: factura a crédito por 90.00 (1 cuota); cobro parcial de 40.00 en efectivo a «Caja
+Principal» y cobro del saldo de 50.00 sin forma de pago ni destino (permitido por la SSOT), con
+recarga y reapertura, asientos balanceados (Debe 1.1.01.001 Caja general en ambos: cuenta de la
+caja y cuenta de la regla) y rechazo de caja ajena, de banco y caja a la vez y de cobros desde otra
+empresa. No acredita mora, reversa de cobros, devolución con CxC cobrada, saldo inicial IL-5, suite
+completa ni despliegue. Sin commit ni push.
+
 ## Cuentas por cobrar — E2E de factura con varias cuotas — CLOSED (2026-10-27)
 
 Resultado E2E **58/58 PASS** y aislamiento **7/7 PASS**, aprobado expresamente por el propietario;

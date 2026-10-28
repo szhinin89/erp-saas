@@ -1,0 +1,424 @@
+{
+ "date": "2026-10-27",
+ "environment": {
+  "database": "erp_zh_test",
+  "api": "http://localhost:5004 (Release, seed E2E)",
+  "front": "Vite :5181, /api/* -> :5004"
+ },
+ "invoice": {
+  "number": "001-001-000000004",
+  "id": "b1e7c771-7edf-4fe4-aecf-bdb30e0fbf40",
+  "receivableId": "dca265b9-551d-4ef4-8262-77ea6618e735",
+  "total": 90,
+  "term": "E2E-30D",
+  "method": "CREDITO",
+  "installments": [
+   {
+    "n": 1,
+    "dueDate": "2026-11-27",
+    "amount": 90
+   }
+  ]
+ },
+ "browserFlow": {
+  "checks": [
+   {
+    "label": "r0.row.visible",
+    "ok": true,
+    "actual": 1,
+    "expected": 1
+   },
+   {
+    "label": "r0.row.text",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "m0.defaultAmount",
+    "ok": true,
+    "actual": 90,
+    "expected": 90
+   },
+   {
+    "label": "m0.destination.options",
+    "ok": true,
+    "actual": [
+     "Sin especificar",
+     "Banco: Cuenta corriente E2E",
+     "Caja: Caja Principal"
+    ],
+    "expected": [
+     "Sin especificar",
+     "Banco: Cuenta corriente E2E",
+     "Caja: Caja Principal"
+    ]
+   },
+   {
+    "label": "m0.destination.hasSinEspecificar",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "m0.destination.hasCajaA",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "m0.destination.cajaCount",
+    "ok": true,
+    "actual": 1,
+    "expected": 1
+   },
+   {
+    "label": "c1.paid",
+    "ok": true,
+    "actual": 40,
+    "expected": 40
+   },
+   {
+    "label": "c1.balance",
+    "ok": true,
+    "actual": 50,
+    "expected": 50
+   },
+   {
+    "label": "c1.statusLabel",
+    "ok": true,
+    "actual": "Parcial",
+    "expected": "Parcial"
+   },
+   {
+    "label": "c1.inst1.paid",
+    "ok": true,
+    "actual": 40,
+    "expected": 40
+   },
+   {
+    "label": "c1.inst1.status",
+    "ok": true,
+    "actual": "partial",
+    "expected": "partial"
+   },
+   {
+    "label": "c1.ui.row",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c2.reopen.defaultAmount",
+    "ok": true,
+    "actual": 50,
+    "expected": 50
+   },
+   {
+    "label": "c2.reopen.installments",
+    "ok": true,
+    "actual": [
+     "Sin cuota específica",
+     "Cuota #1 — 50.00 pendiente"
+    ],
+    "expected": [
+     "Sin cuota específica",
+     "Cuota #1 — 50.00 pendiente"
+    ]
+   },
+   {
+    "label": "c2.destination.default",
+    "ok": true,
+    "actual": "",
+    "expected": ""
+   },
+   {
+    "label": "c2.method.default",
+    "ok": true,
+    "actual": "",
+    "expected": ""
+   },
+   {
+    "label": "c2.paid",
+    "ok": true,
+    "actual": 90,
+    "expected": 90
+   },
+   {
+    "label": "c2.balance",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c2.statusLabel",
+    "ok": true,
+    "actual": "Pagada",
+    "expected": "Pagada"
+   },
+   {
+    "label": "c2.inst1.paid",
+    "ok": true,
+    "actual": 90,
+    "expected": 90
+   },
+   {
+    "label": "c2.inst1.status",
+    "ok": true,
+    "actual": "paid",
+    "expected": "paid"
+   },
+   {
+    "label": "c2.dueDate",
+    "ok": true,
+    "actual": null,
+    "expected": null
+   },
+   {
+    "label": "c2.ui.notInPending",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "c2.ui.paidRow",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c2.ui.noCollectAction",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "b.ui.rowAbsent",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "net.requestsTo5003",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   }
+  ],
+  "expectedApiErrors": [
+   "401 POST /api/v1/auth/refresh",
+   "403 GET /api/v1/electronic-invoicing/status",
+   "401 POST /api/v1/auth/refresh",
+   "403 GET /api/v1/electronic-invoicing/status"
+  ],
+  "finalReceivable": {
+   "id": "dca265b9-551d-4ef4-8262-77ea6618e735",
+   "invoiceId": "b1e7c771-7edf-4fe4-aecf-bdb30e0fbf40",
+   "invoiceNumber": "001-001-000000004",
+   "customerId": "a4a8c779-953b-4b9f-bf17-9068dea15e37",
+   "customerName": "Cliente E2E ZH",
+   "customerIdentification": "04-1791352688001",
+   "branchId": "d8a9ec7d-ccaa-4be0-86be-af96f8edfe1a",
+   "branchName": "Sucursal Principal",
+   "createdByUserId": "a1dd960e-ad5a-4943-bfbc-ae9f0fff0266",
+   "createdByName": "E2E Administrator",
+   "invoiceIssuedAt": "2026-10-27",
+   "invoiceCreatedAt": "2026-10-28T00:44:53.841821Z",
+   "dueDate": null,
+   "originalAmount": 90,
+   "paidAmount": 90,
+   "balanceDue": 0,
+   "status": "pending",
+   "statusLabel": "Pagada",
+   "installmentCount": 1,
+   "overdueDays": null,
+   "installments": [
+    {
+     "id": "6de12add-9c80-4e7c-baad-8aa07017e952",
+     "installmentNumber": 1,
+     "dueDate": "2026-11-27",
+     "amount": 90,
+     "paidAmount": 90,
+     "status": "paid"
+    }
+   ],
+   "createdAt": "2026-10-28T00:45:04.748823Z",
+   "updatedAt": "2026-10-28T00:48:09.084865Z"
+  }
+ },
+ "apiRejectionsAndIsolation": {
+  "checks": [
+   {
+    "label": "a.cashOfB.status",
+    "ok": true,
+    "actual": 422,
+    "expected": 422
+   },
+   {
+    "label": "a.cashOfB.message",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "a.bankAndCash.status",
+    "ok": true,
+    "actual": 422,
+    "expected": 422
+   },
+   {
+    "label": "a.paidReceivable.noDestination.status",
+    "ok": true,
+    "actual": 422,
+    "expected": 422
+   },
+   {
+    "label": "b.list.excludesA",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   },
+   {
+    "label": "b.list.allCompanyB",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "b.byInvoice.status",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.invoice.status",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.collect.cashB.status",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.collect.noDestination.status",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.collect.cashOfA.status",
+    "ok": true,
+    "actual": 422,
+    "expected": 422
+   },
+   {
+    "label": "db.noNewPayments",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "db.receivableUnchanged",
+    "ok": true,
+    "actual": "90.00/90.00",
+    "expected": "90.00/90.00"
+   },
+   {
+    "label": "db.postingsAllPosted",
+    "ok": true,
+    "actual": "0",
+    "expected": "0"
+   }
+  ]
+ },
+ "postgres": {
+  "payments": [
+   {
+    "amount": 40,
+    "paymentDate": "2026-10-27",
+    "method": "EFECTIVO",
+    "cashRegister": "Caja Principal (A)",
+    "bankAccount": null,
+    "reference": "E2E-CAJA-40",
+    "installment": null,
+    "status": "Applied"
+   },
+   {
+    "amount": 50,
+    "paymentDate": "2026-10-27",
+    "method": null,
+    "cashRegister": null,
+    "bankAccount": null,
+    "reference": null,
+    "installment": null,
+    "status": "Applied"
+   }
+  ],
+  "receivable": {
+   "original": 90,
+   "paid": 90,
+   "status": "pending (saldo 0 = pagada)"
+  },
+  "installment": {
+   "n": 1,
+   "amount": 90,
+   "paid": 90,
+   "status": "paid"
+  },
+  "journal": [
+   {
+    "entry": 25,
+    "fact": "Sales/InvoiceIssued",
+    "lines": [
+     [
+      "1.1.03.001",
+      "D",
+      90
+     ],
+     [
+      "4.1.01.001",
+      "C",
+      90
+     ]
+    ]
+   },
+   {
+    "entry": 26,
+    "fact": "Finance/CollectionApplied (caja)",
+    "lines": [
+     [
+      "1.1.01.001 Caja general",
+      "D",
+      40
+     ],
+     [
+      "1.1.03.001",
+      "C",
+      40
+     ]
+    ]
+   },
+   {
+    "entry": 27,
+    "fact": "Finance/CollectionApplied (sin destino)",
+    "lines": [
+     [
+      "1.1.01.001 Caja general",
+      "D",
+      50
+     ],
+     [
+      "1.1.03.001",
+      "C",
+      50
+     ]
+    ]
+   }
+  ],
+  "allRowsCompany": "A",
+  "postingsNotPosted": 0
+ }
+}

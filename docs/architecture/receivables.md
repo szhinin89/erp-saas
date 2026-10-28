@@ -61,7 +61,8 @@ negativo. Hoy no tiene endpoint HTTP ni pantalla.
 ## Contabilidad
 
 Venta (`Sales/InvoiceIssued`: Debe CxC clientes) y cobro (`Finance/CollectionApplied`: Debe caja o
-banco elegido, Haber CxC clientes) registran obligaciones durables; ver
+banco elegido —sin destino, la cuenta Debe de la regla—, Haber CxC clientes) registran obligaciones
+durables; ver
 [accounting.md § 10](./accounting.md#10-integración-y-matriz-de-atomicidad) y
 [§ 19](./accounting.md#19-integraciones-durables-accounting-continuity-04).
 
