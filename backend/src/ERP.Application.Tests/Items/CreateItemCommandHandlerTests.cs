@@ -20,9 +20,14 @@ public sealed class CreateItemCommandHandlerTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid ItemTypeId = Guid.NewGuid();
 
-    private static CreateItemCommandHandler BuildHandler(string? violatedConstraint)
+    private static CreateItemCommandHandler BuildHandler(
+        string? violatedConstraint,
+        Action<Item>? onAdd = null
+    )
     {
         var repo = new Mock<IItemRepository>();
+        repo.Setup(r => r.AddAsync(It.IsAny<Item>(), It.IsAny<CancellationToken>()))
+            .Callback<Item, CancellationToken>((item, _) => onAdd?.Invoke(item));
         repo.Setup(r => r.ExistsBySkuAsync(It.IsAny<string>(), TenantId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         repo.Setup(r => r.BarcodeExistsAsync(It.IsAny<string>(), TenantId, CompanyId, It.IsAny<CancellationToken>()))
@@ -95,5 +100,35 @@ public sealed class CreateItemCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Code.Should().Be("SKU_DUPLICATE");
         result.Error.Should().Be("Conflicto de unicidad en 'uq_items_tenant_company_sku'.");
+    }
+
+    // R2 H-1 (items.md §5): todo Product nace con su presentación base; un Service no la exige.
+    [Fact]
+    public async Task Product_is_created_with_its_base_presentation()
+    {
+        Item? added = null;
+        await BuildHandler("uq_items_tenant_company_sku", i => added = i)
+            .Handle(ValidCommand(), CancellationToken.None);
+
+        added.Should().NotBeNull();
+        var level = added!.PackagingLevels.Should().ContainSingle().Subject;
+        level.IsBaseUnit.Should().BeTrue();
+        level.BaseQuantity.Should().Be(1m);
+        level.Level.Should().Be(1);
+        level.UomCode.Should().Be("UNIT");
+        level.IsPurchaseDefault.Should().BeTrue();
+        level.IsSaleDefault.Should().BeTrue();
+        level.Barcode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Service_is_created_without_presentations()
+    {
+        Item? added = null;
+        await BuildHandler("uq_items_tenant_company_sku", i => added = i)
+            .Handle(ValidCommand() with { Nature = ItemNature.Service }, CancellationToken.None);
+
+        added.Should().NotBeNull();
+        added!.PackagingLevels.Should().BeEmpty();
     }
 }

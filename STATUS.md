@@ -1,5 +1,31 @@
 # Project Status
 
+## R2 — Compras XML, retención, NC de proveedor, ajuste y transferencia — CLOSED (2026-10-28)
+
+E2E en navegador, API y PostgreSQL sobre la empresa B de `erp_zh_test`, con datos sintéticos y los
+datos de R1, aprobado expresamente por el propietario: **5/5 PASS** en #14 compra desde XML
+(vincular, crear pendiente, flete, confirmar y reabrir), #31 retención funcional con CxP neta 24.95,
+#16 NC de proveedor con devolución parcial, #10 ajuste de egreso con anulación y #11 transferencia
+entre bodegas; aislamiento entre empresas PASS. Evidencia:
+[r2-purchases-inventory-e2e-01](docs/evidence/r2-purchases-inventory-e2e-01/README.md).
+Dos correcciones con regresión focal RED → GREEN: (1) **BUG REAL** #16,
+`AccountsPayable.ApplyReturnCredit` no recalculaba el estado y la CxP quedaba «Pendiente» tras una
+devolución autorizada; (2) **H-1** autorizado, `CreateItemCommandHandler` crea la presentación base
+de todo Product nuevo (Ítems, IL-1 y Resolver productos pendientes), conforme a
+[items.md §5](docs/architecture/items.md#5-variantes-empaques-y-conversiones); los Products
+históricos no se migran. Gates focales PASS: Domain 13/13 y 60/60; Application 387/387 (CxP/NC) y
+562/562 (Items, InitialLoad, ItemMatching, PurchaseReception, Packaging); Infrastructure PostgreSQL
+8/8 (devoluciones), 62/62 (`ConfirmItemsAtomicPostgreSqlTests` + `ResolvePurchaseReceptionLinesIntegrationTests`)
+y 31/31 (ajustes, alcance de Items, códigos de proveedor y búsqueda); `architecture:check` (0
+nuevas) y `git diff --check`.
+Límites: el XML autorizado se sirvió desde un mock local del WS de autorización; la transmisión
+electrónica de la retención no se acredita (se detuvo antes del XML por falta de dirección del
+emisor) y nada se envió al SRI. La configuración SRI temporal de la empresa B se retiró al cerrar
+(estado previo: sin configuración). El arreglo H-1 no se repitió en E2E. Diferidos sin bloquear R2:
+H-2 (retención de otra empresa: 200 con `data: null`, sin fuga) y H-3 (transferencias sin listado ni
+detalle); las observaciones UX del README siguen sin cambios. No acredita suite completa ni
+despliegue. Sin commit ni push.
+
 ## R1 — Arranque: carga inicial, apertura contable y usuario limitado — CLOSED (2026-10-28)
 
 E2E en navegador, API y PostgreSQL sobre la empresa B de `erp_zh_test`, con datos sintéticos,

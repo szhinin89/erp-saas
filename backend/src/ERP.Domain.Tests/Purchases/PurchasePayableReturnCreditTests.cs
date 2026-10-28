@@ -84,6 +84,30 @@ public sealed class PurchasePayableReturnCreditTests
         payable.OutstandingAmount.Should().Be(0m);
     }
 
+    // R2 #16: la devolución autorizada dejaba la CxP en Pending aunque reducía su saldo.
+    [Fact]
+    public void ApplyReturnCredit_parcial_recalcula_estado_a_PartiallyPaid()
+    {
+        var payable = Create(99.34m);
+
+        payable.ApplyReturnCredit(10.12m, UserId);
+
+        payable.OutstandingAmount.Should().Be(89.22m);
+        payable.Status.Should().Be(AccountsPayableStatus.PartiallyPaid);
+    }
+
+    [Fact]
+    public void ApplyReturnCredit_que_cubre_el_saldo_recalcula_estado_a_Paid()
+    {
+        var payable = Create(1000m);
+        payable.RegisterPayment(600m, UserId);
+
+        payable.ApplyReturnCredit(550m, UserId);
+
+        payable.OutstandingAmount.Should().Be(0m);
+        payable.Status.Should().Be(AccountsPayableStatus.Paid);
+    }
+
     [Fact]
     public void ApplyReturnCredit_sobre_CxP_anulada_lanza()
     {

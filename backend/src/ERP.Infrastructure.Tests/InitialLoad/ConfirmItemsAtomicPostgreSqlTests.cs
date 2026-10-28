@@ -225,6 +225,10 @@ public sealed partial class ConfirmItemsAtomicPostgreSqlTests : IClassFixture<In
         (await db.Set<ItemCategoryNode>().CountAsync()).Should().Be(auto ? 2 : 1);
         (await db.Set<Brand>().CountAsync()).Should().Be(auto ? 2 : 1);
         (await db.ImportBatchRows.CountAsync(r => r.ImportBatchId == batch && r.IsImported)).Should().Be(2);
+        // R2 H-1 (items.md §5): cada Product importado persiste exactamente su presentación base.
+        var levels = await db.ItemPackagingLevels.ToListAsync();
+        levels.Should().HaveCount(2).And.OnlyContain(l => l.IsBaseUnit && l.BaseQuantity == 1m && l.Level == 1);
+        levels.Select(l => l.ItemId).Should().BeEquivalentTo(await db.Items.Select(i => i.Id).ToListAsync());
     }
 
     [Theory]

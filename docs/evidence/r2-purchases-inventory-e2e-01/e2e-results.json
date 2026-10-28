@@ -1,0 +1,112 @@
+{
+  "run": "R2-PURCHASES-INVENTORY-E2E-01",
+  "date": "2026-10-28",
+  "environment": {
+    "database": "erp_zh_test",
+    "api": "http://localhost:5004 (Release, Development, seed E2E, JWT efímero)",
+    "frontend": "Vite dev :5181, proxy /api -> :5004",
+    "browser": "Chromium (Playwright 1.59)",
+    "company": "ZH E2E B (1790016919001)",
+    "sri": "mock local 127.0.0.1:5099 (solo autorizacionComprobante, XML sintético); sin tráfico al SRI real"
+  },
+  "scenarios": [
+    {
+      "id": 14,
+      "name": "Compras XML: importar, vincular, crear pendiente, flete, confirmar y reabrir",
+      "result": "PASS",
+      "findings": [
+        "H-1 corregido al cierre: CreateItemCommandHandler crea la presentación base de todo Product nuevo; históricos no migrados"
+      ],
+      "checks": [
+        "TXT importado; XML VERIFICADO; reimportación idempotente",
+        "2 líneas vinculadas a productos de R1 y 1 producto creado (R2-AZUCAR-01); 3 códigos de proveedor aprendidos",
+        "flete externo 6.00 prorrateado 1.766355/2.383178/1.850467",
+        "Kardex 26.97/36.38/28.25 = 91.60",
+        "CxP 99.34; asiento 7 Inventario 91.60 + IVA 7.74 / CxP 99.34",
+        "reapertura en solo lectura con acciones deshabilitadas"
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Retención funcional y CxP neta",
+      "result": "PASS",
+      "checks": [
+        "IVA 725 30% x 3.45 = 1.04; Renta 312 2% x 23.00 = 0.46; total 1.50",
+        "retención 001-001-000000001 Issued en la confirmación",
+        "CxP 26.45, retenido 1.50, saldo 24.95",
+        "asientos 8 (retención) y 9 (compra) balanceados",
+        "transmisión detenida antes del XML (VALIDATION_ERROR); sin envío al SRI"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "NC de proveedor: devolución parcial, Kardex, CxP y asiento",
+      "result": "PASS",
+      "bugs": [
+        {
+          "type": "BUG REAL",
+          "status": "CORREGIDO",
+          "summary": "ApplyReturnCredit no recalculaba el estado: la CxP quedaba Pending tras una devolución parcial (y Pending con saldo 0 si la cubría)",
+          "test": "PurchasePayableReturnCreditTests: HEAD 2 FAIL/11 PASS -> 13/13 PASS; E2E: NC 102 deja la CxP Parcial"
+        }
+      ],
+      "checks": [
+        "NC 101: 4 aceites, 8.80 + 1.32 = 10.12",
+        "Kardex -4 por 9.56 al promedio",
+        "CxP crédito de devolución 10.12",
+        "asiento 10: CxP 10.12 + diferencia 0.76 / Inventario 9.56 + IVA 1.32",
+        "NC 102 tras la corrección: CxP Parcial, saldo 87.52; asiento 11"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Ajuste de egreso, Kardex, contabilización y anulación",
+      "result": "PASS",
+      "checks": [
+        "ADJ-0003 borrador sin efectos; motivos filtrados por dirección",
+        "ejecutar: -5 por 5.60; asiento 12 Mermas / Inventario",
+        "anular: +5 por 5.60; asiento 13 reverso espejo",
+        "anular de nuevo y ejecutar anulado: 422 sin efectos"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Transferencia entre bodegas",
+      "result": "PASS",
+      "findings": [
+        "H-3: sin listado ni detalle de transferencias; cantidad sin etiqueta accesible"
+      ],
+      "checks": [
+        "TR-0001: salida y entrada por 18.03 al promedio de origen",
+        "TR-0003 confirmada en UI: 2.39 / 2.39",
+        "sin asiento (no hay hecho contable de transferencia en la SSOT)",
+        "reconfirmar: 400 sin movimientos"
+      ]
+    }
+  ],
+  "isolation": {
+    "result": "PASS",
+    "checks": [
+      "empresa A: 404 en compras, NC, ajuste, recepción, autorizar NC, anular ajuste y confirmar transferencia de B",
+      "listados de compras y CxP de A sin documentos de B",
+      "conteos sin cambios antes/después"
+    ],
+    "findings": [
+      "H-2: GET /purchases/{id}/retention de otra empresa responde 200 con data null (sin fuga)"
+    ]
+  },
+  "gates": {
+    "domain_focal": "PurchasePayableReturnCreditTests 2 FAIL -> 13/13 PASS; PurchasePayable|AccountsPayable 60/60",
+    "application_focal": "387/387 PASS",
+    "infrastructure_postgresql_focal": "8/8 PASS",
+    "api_release_build": "PASS",
+    "architecture_check": "PASS, 0 violaciones nuevas",
+    "git_diff_check": "PASS",
+    "full_suite": "no ejecutada",
+    "h1_application": "CreateItemCommandHandlerTests 1 FAIL -> 4/4; Items|InitialLoad|ItemMatching|PurchaseReception|Packaging 562/562",
+    "h1_infrastructure_postgresql": "ConfirmItemsAtomic 2 FAIL -> PASS; ConfirmItemsAtomic + ResolvePurchaseReceptionLines 62/62; relacionados 31/31"
+  },
+  "processes": "API :5004, Vite :5181 y mock SRI :5099 detenidos; :5003 no usado",
+  "ownerApproval": "R2 CLOSED 2026-10-28 (5/5 PASS); H-1 corregido con autorización; H-2 y H-3 diferidos",
+  "sriConfigRestored": "sri_settings de la empresa B (mock local) retirada al cerrar; estado previo sin configuración"
+}

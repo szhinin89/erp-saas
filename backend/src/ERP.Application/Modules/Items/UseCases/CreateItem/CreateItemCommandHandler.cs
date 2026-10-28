@@ -11,6 +11,8 @@ namespace ERP.Application.Items.UseCases.CreateItem;
 
 public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand, Result<ItemDto>>
 {
+    private const string BasePresentationName = "Unidad";
+
     private readonly IItemRepository _repository;
     private readonly ICategoryNodeRepository _categoryNodeRepo;
     private readonly IItemCatalogRepository _catalogRepo;
@@ -184,6 +186,24 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
                 companyId: _company.CompanyId,
                 nature: cmd.Nature
             );
+            // items.md §5: un Product nace con su presentación base (unidad base, factor 1).
+            if (item.ParticipatesInInventory)
+                item.ReplacePackagingLevels(
+                    [
+                        (
+                            BasePresentationName,
+                            1,
+                            1m,
+                            item.DefaultUomCode,
+                            null,
+                            null,
+                            true,
+                            true,
+                            true
+                        ),
+                    ],
+                    userId
+                );
         }
         catch (ArgumentException ex)
         {

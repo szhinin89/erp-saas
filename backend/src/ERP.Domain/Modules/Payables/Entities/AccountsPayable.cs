@@ -383,6 +383,7 @@ public sealed class AccountsPayable
         var appliedAmount = Math.Min(recognizedAmount, OutstandingAmount);
         if (appliedAmount > 0)
             AllocateFifo(AccountsPayableAdjustmentType.ReturnCredit, appliedAmount, forward: true);
+        RecalculateStatus();
         SetUpdated(updatedBy);
 
         return (appliedAmount, recognizedAmount - appliedAmount);

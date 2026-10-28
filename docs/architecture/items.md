@@ -41,6 +41,7 @@ Código: `ERP.Domain/Modules/Items`, `ERP.Application/Modules/Items`, `ERP.Infra
 
 - Al crear un Item se crea su variante por defecto con el SKU del Item. Variantes adicionales: SKU (override ≤ 80 o derivado de los atributos de eje) y combinación de atributos únicos entre activas.
 - Empaques: un Product exige exactamente una presentación base; un Service admite como máximo una. La presentación base tiene cantidad base 1. No se repite UOM + cantidad base.
+- Crear un Product (`CreateItemCommand`: Ítems, Carga Inicial IL-1 y Resolver productos pendientes) registra en la misma operación su presentación base «Unidad» (nivel 1, cantidad 1, UOM base del Item, predeterminada de compra y venta, sin código de barras). Un Service se crea sin presentaciones. Los Products creados antes de esta regla no se migran: su presentación base se crea desde Ítems → Inventario y presentaciones («Crear presentación base X1»).
 - No se puede quitar un empaque usado por códigos de proveedor ni por documentos confirmados, ni cambiar la cantidad base de uno usado en documentos confirmados (se crea uno nuevo).
 - Conversiones de UOM: origen, destino y factor > 0. Sustitutos: un Item no es sustituto de sí mismo.
 
