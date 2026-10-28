@@ -1,0 +1,597 @@
+{
+ "date": "2026-10-27",
+ "environment": {
+  "db": "erp_zh_test",
+  "api": "http://localhost:5004 (Release HEAD c1046783a)",
+  "front": "Vite :5181, /api -> :5004",
+  "requestsTo5003": 0,
+  "apiErrorsInBrowser": [
+   "401 POST /api/v1/auth/refresh",
+   "403 GET /api/v1/electronic-invoicing/status"
+  ]
+ },
+ "setup": {
+  "item": "RET-PRD-758825 (15% IVA, precio 20.00)",
+  "stockIn": "ADJ-0001 10 u x 8.00, Bodega Principal",
+  "invoice": {
+   "number": "001-001-000000005",
+   "subtotal": 100,
+   "totalVat": 15,
+   "grandTotal": 115,
+   "schedule": [
+    [
+     1,
+     "2026-11-26",
+     57.5
+    ],
+    [
+     2,
+     "2026-12-26",
+     57.5
+    ]
+   ]
+  },
+  "collection": {
+   "amount": 40,
+   "reference": "E2E-DEV-COBRO-40"
+  },
+  "receivableAfterCollection": {
+   "original": 115,
+   "paid": 40,
+   "balance": 75,
+   "installments": [
+    [
+     1,
+     57.5,
+     40,
+     "partial"
+    ],
+    [
+     2,
+     57.5,
+     0,
+     "pending"
+    ]
+   ]
+  }
+ },
+ "browser": {
+  "returnNumber": "DEV-0a5d40ad43",
+  "checks": [
+   {
+    "label": "d0.line.visible",
+    "ok": true,
+    "actual": 1,
+    "expected": 1
+   },
+   {
+    "label": "d0.line.text",
+    "info": "Producto devolución E2E 758825 RET-PRD-758825 5 01 0 01 5 01 20.00"
+   },
+   {
+    "label": "d1.draft.status",
+    "ok": true,
+    "actual": "Draft",
+    "expected": "Draft"
+   },
+   {
+    "label": "d1.draft.grandTotal",
+    "ok": true,
+    "actual": 46,
+    "expected": 46
+   },
+   {
+    "label": "d1.draft.totals",
+    "info": {
+     "subtotal": 40,
+     "totalVat": 6,
+     "grandTotal": 46
+    }
+   },
+   {
+    "label": "d1.rx.unchanged",
+    "ok": true,
+    "actual": [
+     115,
+     40,
+     75
+    ],
+    "expected": [
+     115,
+     40,
+     75
+    ]
+   },
+   {
+    "label": "a0.modal.subtitle",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "a0.modal.amount",
+    "info": "46"
+   },
+   {
+    "label": "a2.return.status",
+    "ok": true,
+    "actual": "Authorized",
+    "expected": "Authorized"
+   },
+   {
+    "label": "a2.return.number",
+    "info": "DEV-0a5d40ad43"
+   },
+   {
+    "label": "a2.return.refunds",
+    "info": [
+     {
+      "id": "cf59206e-a7a8-449b-a32c-9b4bc33fef2e",
+      "method": "ReceivableCredit",
+      "amount": 46
+     }
+    ]
+   },
+   {
+    "label": "a2.rx",
+    "ok": true,
+    "actual": {
+     "o": 69,
+     "p": 40,
+     "b": 29,
+     "l": "Parcial",
+     "due": "2026-11-26"
+    },
+    "expected": {
+     "o": 69,
+     "p": 40,
+     "b": 29,
+     "l": "Parcial",
+     "due": "2026-11-26"
+    }
+   },
+   {
+    "label": "a2.rx.installments",
+    "ok": true,
+    "actual": [
+     [
+      1,
+      "2026-11-26",
+      14.5,
+      0,
+      "pending"
+     ],
+     [
+      2,
+      "2026-12-26",
+      14.5,
+      0,
+      "pending"
+     ]
+    ],
+    "expected": [
+     [
+      1,
+      "2026-11-26",
+      14.5,
+      0,
+      "pending"
+     ],
+     [
+      2,
+      "2026-12-26",
+      14.5,
+      0,
+      "pending"
+     ]
+    ]
+   },
+   {
+    "label": "r1.reload.authorized",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "r1.reload.noAuthorizeBtn",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "r1.reload.noDraftEditor",
+    "ok": true,
+    "actual": 0,
+    "expected": 0
+   },
+   {
+    "label": "r2.list.row",
+    "ok": true,
+    "actual": 1,
+    "expected": 1
+   },
+   {
+    "label": "r2.list.text",
+    "info": "1 DEV-0a5d40ad43 a4a8c779-953b-4b9f-bf17-9068dea15e37 Autorizada 1 46.00 27/10/2026 20:12:35 Ver"
+   },
+   {
+    "label": "c1.rx.row",
+    "info": "1 001-001-000000005 Cliente E2E ZH 04-1791352688001 Sucursal Principal E2E Administrator 27/10/2026 20:10:43 26/11/2026 $ 69.00 $ 40.00 $ 29.00 Parcial payments Registrar cobro"
+   },
+   {
+    "label": "c1.rx.row.values",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "c1.rx.row.reload",
+    "ok": true,
+    "actual": "1 001-001-000000005 Cliente E2E ZH 04-1791352688001 Sucursal Principal E2E Administrator 27/10/2026 20:10:43 26/11/2026 $ 69.00 $ 40.00 $ 29.00 Parcial payments Registrar cobro",
+    "expected": "1 001-001-000000005 Cliente E2E ZH 04-1791352688001 Sucursal Principal E2E Administrator 27/10/2026 20:10:43 26/11/2026 $ 69.00 $ 40.00 $ 29.00 Parcial payments Registrar cobro"
+   },
+   {
+    "label": "c2.modal.options",
+    "info": [
+     "Sin cuota específica",
+     "Cuota #1 — 14.50 pendiente",
+     "Cuota #2 — 14.50 pendiente",
+     "Sin especificar",
+     "Efectivo",
+     "Tarjeta de Crédito",
+     "Transferencia Bancaria",
+     "Cheque",
+     "Crédito",
+     "Sin especificar",
+     "Banco: Cuenta corriente E2E",
+     "Caja: Caja Principal"
+    ]
+   },
+   {
+    "label": "c2.modal.cuotas",
+    "ok": true,
+    "actual": [
+     "Cuota #1 — 14.50 pendiente",
+     "Cuota #2 — 14.50 pendiente"
+    ],
+    "expected": [
+     "Cuota #1 — 14.50 pendiente",
+     "Cuota #2 — 14.50 pendiente"
+    ]
+   }
+  ]
+ },
+ "rejectionsAndIsolation": {
+  "checks": [
+   {
+    "label": "a.returnable.remaining",
+    "ok": true,
+    "actual": 3,
+    "expected": 3
+   },
+   {
+    "label": "a.draft.exceedsRemaining.status",
+    "ok": true,
+    "actual": 422,
+    "expected": 422
+   },
+   {
+    "label": "a.draft2.created",
+    "ok": true,
+    "actual": 201,
+    "expected": 201
+   },
+   {
+    "label": "a.draft2.total",
+    "ok": true,
+    "actual": 69,
+    "expected": 69
+   },
+   {
+    "label": "a.authorize.creditOverBalance.status",
+    "ok": true,
+    "actual": 422,
+    "expected": 422
+   },
+   {
+    "label": "a.authorize.creditOverBalance.msg",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "a.rx.unchanged",
+    "ok": true,
+    "actual": [
+     69,
+     40,
+     29
+    ],
+    "expected": [
+     69,
+     40,
+     29
+    ]
+   },
+   {
+    "label": "a.draft2.stillDraft",
+    "ok": true,
+    "actual": "Draft",
+    "expected": "Draft"
+   },
+   {
+    "label": "a.cancelInvoice.rejected",
+    "ok": true,
+    "actual": true,
+    "expected": true
+   },
+   {
+    "label": "a.draft2.cancelled",
+    "ok": true,
+    "actual": "Cancelled",
+    "expected": "Cancelled"
+   },
+   {
+    "label": "a.rx.unchanged2",
+    "ok": true,
+    "actual": [
+     69,
+     40,
+     29
+    ],
+    "expected": [
+     69,
+     40,
+     29
+    ]
+   },
+   {
+    "label": "b.list.noReturnOfA",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   },
+   {
+    "label": "b.get.returnOfA",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.returnableLines.invoiceOfA",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.createDraft.invoiceOfA",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.authorize.returnOfA",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.cancel.returnOfA",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "b.receivable.ofA",
+    "ok": true,
+    "actual": 404,
+    "expected": 404
+   },
+   {
+    "label": "a.rx.unchanged3",
+    "ok": true,
+    "actual": [
+     69,
+     40,
+     29
+    ],
+    "expected": [
+     69,
+     40,
+     29
+    ]
+   },
+   {
+    "label": "a.return.stillAuthorized",
+    "ok": true,
+    "actual": "Authorized",
+    "expected": "Authorized"
+   },
+   {
+    "label": "b.ui.noReturnOfA",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   },
+   {
+    "label": "b.ui.detailOfA.hidden",
+    "ok": true,
+    "actual": false,
+    "expected": false
+   }
+  ]
+ },
+ "postgres": {
+  "sales_return": {
+   "status": "Authorized",
+   "credit_note_document_number": "001-001-000000001",
+   "subtotal": 40,
+   "vat": 6,
+   "grand_total": 46,
+   "detail": {
+    "qty": 2,
+    "vat_code": "4",
+    "vat_rate": 15,
+    "vat_amount": 6,
+    "frozen": true
+   },
+   "refund": [
+    [
+     "ReceivableCredit",
+     46
+    ]
+   ]
+  },
+  "receivable": {
+   "original": 69,
+   "paid": 40,
+   "balance": 29,
+   "installments": [
+    [
+     1,
+     "2026-11-26",
+     14.5,
+     0,
+     "pending"
+    ],
+    [
+     2,
+     "2026-12-26",
+     14.5,
+     0,
+     "pending"
+    ]
+   ]
+  },
+  "stock": {
+   "movements": [
+    [
+     "StockAdjustment",
+     "ADJ-0001",
+     10,
+     8
+    ],
+    [
+     "SalesInvoice",
+     "001-001-000000005",
+     -5,
+     40
+    ],
+    [
+     "SalesReturn",
+     "DEV-DEV-0a5d40ad43",
+     2,
+     16
+    ]
+   ],
+   "current": {
+    "qty": 7,
+    "value": 56,
+    "cost": 8
+   }
+  },
+  "cashMovementsForReturn": 0,
+  "journal": [
+   {
+    "n": 28,
+    "ev": "Sales/InvoiceIssued",
+    "lines": [
+     [
+      "1.1.03.001",
+      115,
+      0
+     ],
+     [
+      "4.1.01.001",
+      0,
+      100
+     ],
+     [
+      "2.1.02.001",
+      0,
+      15
+     ]
+    ]
+   },
+   {
+    "n": 29,
+    "ev": "Sales/CostOfGoodsSold",
+    "lines": [
+     [
+      "5.1.01.001",
+      40,
+      0
+     ],
+     [
+      "1.1.04.001",
+      0,
+      40
+     ]
+    ]
+   },
+   {
+    "n": 30,
+    "ev": "Finance/CollectionApplied",
+    "lines": [
+     [
+      "1.1.01.001",
+      40,
+      0
+     ],
+     [
+      "1.1.03.001",
+      0,
+      40
+     ]
+    ]
+   },
+   {
+    "n": 31,
+    "ev": "Sales/CostOfGoodsSoldReversed",
+    "lines": [
+     [
+      "1.1.04.001",
+      16,
+      0
+     ],
+     [
+      "5.1.01.001",
+      0,
+      16
+     ]
+    ]
+   },
+   {
+    "n": 32,
+    "ev": "Sales/SalesReturn",
+    "lines": [
+     [
+      "4.1.03.001",
+      40,
+      0
+     ],
+     [
+      "2.1.02.001",
+      6,
+      0
+     ],
+     [
+      "1.1.03.001",
+      0,
+      46
+     ]
+    ]
+   }
+  ],
+  "journalAllPostedBalancedSameCompany": true,
+  "afterRejections": {
+   "secondReturn": "DEV-132315be88 Cancelled, sin NC",
+   "stockMovements": 3,
+   "maxEntryNumber": 32,
+   "receivable": [
+    69,
+    40
+   ]
+  }
+ }
+}

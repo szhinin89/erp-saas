@@ -49,7 +49,13 @@ casillas sin marcar corresponden a la **próxima regresión**, no a defectos del
   **14/14 PASS**, aprobado por el propietario (2026-10-27);
   [evidencia y límites](../evidence/receivables-e2e-03/README.md).
 - [ ] Reversa de cobro (sin endpoint HTTP ni UI hoy) y anulación de factura tras reversar.
-- [ ] Devolución de venta con crédito a CxC sobre una CxC con cobros.
+- [x] Devolución de venta parcial con crédito a una CxC parcialmente cobrada (2 cuotas), con
+  recarga, Kardex, IVA, asientos, rechazos y aislamiento. E2E **14/14** y rechazos y aislamiento
+  **23/23 PASS**, aprobado por el propietario (2026-10-27). No acredita la emisión electrónica SRI
+  de la Nota de Crédito; las cuotas se reconstruyen conforme a la SSOT;
+  [evidencia y límites](../evidence/sales-return-receivable-e2e-01/README.md).
+- [ ] Devolución de venta con reembolso en efectivo o mixto, y devolución total, sobre una CxC con
+  cobros.
 - [ ] Saldo inicial de CxC (IL-5): cobro parcial y total.
 - [ ] Ejecutar E2E/integración del flujo afectado, registrar comando, fecha y resultado. No declarar
   aprobado por inspección de código solamente.

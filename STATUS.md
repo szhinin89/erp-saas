@@ -1,5 +1,23 @@
 # Project Status
 
+## Ventas — E2E de devolución con crédito a CxC cobrada — CLOSED (2026-10-27)
+
+Resultado E2E **14/14 PASS** en navegador y **23/23 PASS** en rechazos y aislamiento (37/37), con
+verificación en PostgreSQL, aprobado expresamente por el propietario; CLOSED solo para la
+devolución parcial con crédito a una CxC parcialmente cobrada. Sin BUG REAL ni cambios de código.
+Evidencia: [sales-return-receivable-e2e-01](docs/evidence/sales-return-receivable-e2e-01/README.md).
+Alcance: factura a crédito de un producto con IVA 15% por 115.00 en 2 cuotas; cobro parcial de
+40.00; devolución parcial de 2 u (46.00) desde `/sales/returns` con crédito a CxC: CxC 69.00 /
+40.00 / 29.00 con cuotas reconstruidas (14.50 + 14.50), Kardex +2 al costo de la venta, IVA 6.00
+revertido, asientos de devolución y de costo balanceados, persistencia tras recargar. Rechazo de
+crédito mayor al saldo, de exceso sobre el remanente y de anulación de la factura con devolución
+autorizada; aislamiento frente a la empresa B. Límites: la emisión electrónica SRI de la Nota de
+Crédito no queda acreditada (la empresa E2E no tiene configuración SRI) y las cuotas se reconstruyen
+sobre el saldo conforme a la SSOT (lo cobrado queda en la CxC, no en las cuotas). Observación UX no
+bloqueante: el listado de devoluciones muestra el GUID del cliente en vez del nombre; sin ticket ni
+cambio de contrato. No acredita reembolso en efectivo o mixto, devolución total, mora, suite
+completa ni despliegue. Sin commit ni push.
+
 ## Cuentas por cobrar — E2E de cobros a caja y sin destino — CLOSED (2026-10-27)
 
 Resultado E2E **28/28 PASS** en navegador y **14/14 PASS** en rechazos, aislamiento y PostgreSQL,
