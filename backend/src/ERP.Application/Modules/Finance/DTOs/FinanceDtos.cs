@@ -47,7 +47,8 @@ public sealed record PaymentDto(
     /// <summary>Cuenta bancaria del cobro/pago, si se especificó — mutuamente excluyente con <see cref="CashRegisterId"/>.</summary>
     Guid? CompanyBankAccountId = null,
     /// <summary>Caja del cobro/pago, si se especificó — mutuamente excluyente con <see cref="CompanyBankAccountId"/>.</summary>
-    Guid? CashRegisterId = null
+    Guid? CashRegisterId = null,
+    Guid? ReversedByUserId = null
 );
 
 /// <summary>Entrada de una línea de aplicación al registrar un cobro/pago — DocumentId es SalesReceivable.Id o PurchasePayable.Id según el comando.</summary>

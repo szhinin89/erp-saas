@@ -1,4 +1,4 @@
-import { apiPost } from "../../lib/apiEnvelope";
+import { apiGet, apiPost } from "../../lib/apiEnvelope";
 
 // ── DTOs (espejo exacto de PaymentDto / PaymentApplicationLineDto — backend) ──
 
@@ -22,6 +22,7 @@ export interface PaymentDto {
   appliedAtUtc: string | null;
   reversedAtUtc: string | null;
   reverseReason: string | null;
+  reversedByUserId: string | null;
   lines: PaymentApplicationLineDto[];
   createdAt: string;
   updatedAt: string | null;
@@ -63,6 +64,10 @@ const BASE = "/api/v1/finance";
  * activo desde PAYABLES-LEGACY-CLEANUP-13).
  */
 export const paymentService = {
+  collectionsByReceivable: (id: string) =>
+    apiGet<PaymentDto[]>(`${BASE}/collections/receivable/${id}`),
+  reverseCollection: (id: string, reason: string) =>
+    apiPost<PaymentDto>(`${BASE}/collections/${id}/reverse`, { reason }),
   registerCollection: (payload: RegisterCollectionPayload) =>
     apiPost<PaymentDto>(`${BASE}/collections`, payload),
 };

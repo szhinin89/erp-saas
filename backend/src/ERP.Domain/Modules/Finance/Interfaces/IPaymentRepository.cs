@@ -5,6 +5,12 @@ namespace ERP.Domain.Modules.Finance.Interfaces;
 /// <summary>Fase 5.5.5.3 — repositorio del agregado <c>Payment</c> (liquidación de AR/AP).</summary>
 public interface IPaymentRepository
 {
+    Task<IReadOnlyList<Payment>> GetCollectionsByReceivableAsync(Guid tenantId, Guid companyId,
+        Guid receivableId, CancellationToken ct = default);
+
+    Task<bool> HasOperationalReferencesAsync(Guid tenantId, Guid companyId, Guid paymentId,
+        CancellationToken ct = default);
+
     /// <summary>
     /// ZH-FINANCIAL-COMMAND-IDEMPOTENCY-01 — cobro ya registrado para esta intención del cliente
     /// (índice único parcial <c>uq_payments_tenant_client_request_id</c>), o null.

@@ -125,6 +125,7 @@ public sealed class ReverseCollectionCommandValidator : AbstractValidator<Revers
     {
         RuleFor(x => x.PaymentId).NotEmpty();
         RuleFor(x => x.Reason).NotEmpty().WithMessage("El motivo del reverso es obligatorio.");
+        RuleFor(x => x.Reason).MaximumLength(500);
     }
 }
 
@@ -408,6 +409,37 @@ public sealed class ReverseCollectionCommandHandler
         if (payment.Direction != PaymentDirection.Collection)
             return Result<PaymentDto>.ValidationFailure("El pago indicado no es un cobro.");
 
+        // Historical destinations without a recorded request have no provable operational
+        // provenance. Fail closed; this use case never compensates cash or bank movements.
+        if (payment.ClientRequestId is null && (payment.CashRegisterId is not null || payment.CompanyBankAccountId is not null))
+            return Result<PaymentDto>.ValidationFailure(
+                "No se puede garantizar la corrección documental de este cobro histórico con destino de caja/banco y sin trazabilidad de origen.");
+
+        if (await _payments.HasOperationalReferencesAsync(tenantId, companyId, payment.Id, ct))
+            return Result<PaymentDto>.ValidationFailure(
+                "No se puede anular: el cobro tiene movimientos operativos vinculados. Esta acción no devuelve dinero.");
+
+        var receivables = await _receivables.GetByIdsForUpdateAsync(
+            tenantId,
+            payment.Lines.Select(l => l.ReceivableId!.Value).ToList(),
+            ct
+        );
+        foreach (var group in payment.Lines.GroupBy(l => l.ReceivableId!.Value))
+        {
+            if (!receivables.TryGetValue(group.Key, out var receivable))
+                return Result<PaymentDto>.NotFound(
+                    $"Cuenta por cobrar {group.Key} no encontrada."
+                );
+
+            if (receivable.CompanyId != companyId || receivable.Status == "cancelled")
+                return Result<PaymentDto>.ValidationFailure(
+                    "No se puede anular un cobro de una CxC anulada o fuera de la empresa activa.");
+
+            if (group.Sum(l => l.AppliedAmount) > receivable.PaidAmount)
+                return Result<PaymentDto>.ValidationFailure(
+                    "No se puede anular: operaciones posteriores modificaron el saldo cobrado de la CxC.");
+        }
+
         try
         {
             payment.Reverse(_u.UserId, cmd.Reason);
@@ -416,24 +448,33 @@ public sealed class ReverseCollectionCommandHandler
         {
             return Result<PaymentDto>.ValidationFailure(ex.Message);
         }
-
-        var receivables = await _receivables.GetByIdsForUpdateAsync(
-            tenantId,
-            payment.Lines.Select(l => l.ReceivableId!.Value).ToList(),
-            ct
-        );
         foreach (var line in payment.Lines)
         {
-            if (!receivables.TryGetValue(line.ReceivableId!.Value, out var receivable))
-                return Result<PaymentDto>.NotFound(
-                    $"Cuenta por cobrar {line.ReceivableId} no encontrada."
-                );
-
+            var receivable = receivables[line.ReceivableId!.Value];
             receivable.ReverseCollection(line.AppliedAmount, _u.UserId, line.InstallmentId);
         }
 
         await _payments.SaveChangesAsync(ct);
         return Result<PaymentDto>.Success(Map.ToDto(payment));
+    }
+}
+
+public sealed record GetReceivableCollectionsQuery(Guid ReceivableId)
+    : IRequest<Result<IReadOnlyList<PaymentDto>>>, ICompanyScopedRequest;
+
+public sealed class GetReceivableCollectionsQueryValidator : AbstractValidator<GetReceivableCollectionsQuery>
+{
+    public GetReceivableCollectionsQueryValidator() => RuleFor(x => x.ReceivableId).NotEmpty();
+}
+
+public sealed class GetReceivableCollectionsQueryHandler(
+    IPaymentRepository payments, ICurrentTenant tenant, ICurrentCompany company)
+    : IRequestHandler<GetReceivableCollectionsQuery, Result<IReadOnlyList<PaymentDto>>>
+{
+    public async Task<Result<IReadOnlyList<PaymentDto>>> Handle(GetReceivableCollectionsQuery query, CancellationToken ct)
+    {
+        var rows = await payments.GetCollectionsByReceivableAsync(tenant.TenantId, company.CompanyId, query.ReceivableId, ct);
+        return Result<IReadOnlyList<PaymentDto>>.Success(rows.Select(Map.ToDto).ToList());
     }
 }
 
@@ -465,6 +506,7 @@ file static class Map
             p.CreatedAt,
             p.UpdatedAt,
             p.CompanyBankAccountId,
-            p.CashRegisterId
+            p.CashRegisterId,
+            p.Status == PaymentStatus.Reversed ? p.UpdatedBy : null
         );
 }

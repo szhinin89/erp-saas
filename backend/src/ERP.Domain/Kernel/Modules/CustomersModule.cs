@@ -70,7 +70,7 @@ public static class CustomersModule
         SortOrder = 10,
         Id = "f6000000-0000-4000-9000-000000000001",
         ParentId = "aea32545-8fbc-4c99-9495-6d2873282dd9",
-        RelatedActionPermissionsCsv = FinancePermissions.Create
+        RelatedActionPermissionsCsv = FinancePermissions.Create + "," + FinancePermissions.ReverseCollection
     )]
     public const string Receivables = "/finance/receivables";
 

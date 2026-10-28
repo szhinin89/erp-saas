@@ -47,9 +47,39 @@ cuota opcional, forma de pago, cuenta bancaria o caja de destino y referencia.
 
 ## Reversa de un cobro
 
-`ReverseCollectionCommand` (motivo obligatorio) reversa el `Payment` y devuelve el monto a la CxC:
-libera primero la cuota del cobro y el resto desde la última cuota con cobrado, sin dejar cobrado
-negativo. Hoy no tiene endpoint HTTP ni pantalla.
+`POST /api/v1/finance/collections/{id}/reverse`, con `{ reason }` y permiso específico
+`finance.collections.reverse`, delega en `ReverseCollectionCommand`. La UI de CxC ofrece
+«Consultar / anular cobro» y permite seleccionar el cobro, confirmar su importe total e indicar
+motivo obligatorio (hasta 500 caracteres). El permiso se asigna desde la pantalla de CxC del
+catálogo del Kernel. La consulta `GET /api/v1/finance/collections/receivable/{id}` exige el mismo
+permiso y devuelve únicamente cobros de la CxC dentro del tenant y empresa activos.
+
+La anulación es exclusivamente una corrección documental de un registro erróneo, **no una
+devolución de dinero**. Conserva el `Payment` original en `Reversed`, sus aplicaciones, motivo,
+fecha UTC y actor (`UpdatedBy`, expuesto como `reversedByUserId`); mantiene `CollectionReversed`
+en Entity Audit y la contabilización existente. Restaura la CxC: libera primero la cuota del
+cobro y el resto desde la última cuota con cobrado, sin dejar cobrado negativo. Se anula el cobro
+completo, incluidas sus aplicaciones a otras CxC. Después puede registrarse un cobro correcto
+con una nueva intención (`ClientRequestId`).
+
+Precondiciones, antes de mutar y dentro de la transacción existente:
+
+- Lock del `Payment` y de las CxC; todas deben pertenecer a la empresa activa, estar sin anular y
+  conservar cobrado suficiente para la suma de sus aplicaciones. Una operación posterior
+  incompatible bloquea todo el reverso. La segunda anulación se rechaza sin otro efecto.
+- Cualquier movimiento de caja referenciado al cobro bloquea, incluso si su turno está cerrado.
+  La comprobación consulta los movimientos mediante sus sesiones, con TenantId + CompanyId.
+- El registro vigente de CxC no crea `CashMovement`, no vincula `CashSession` ni crea un movimiento
+  bancario operativo; sus destinos son datos del cobro y del posting contable. La anulación no
+  modifica turnos, arqueos ni movimientos operativos, ni genera egresos o transferencias.
+- Para históricos sin `ClientRequestId` y con destino de caja/banco se bloquea: no se puede
+  demostrar la procedencia operativa. Sin destino y sin referencias operativas se permite la
+  corrección documental. No se infiere un turno a partir de fechas ni se reabre uno cerrado.
+- La reversión contable y su gate de período conservan el contrato de
+  [Accounting §7](./accounting.md#7-reversos-fecha-efectiva-e-inmutabilidad); no se reimplementan.
+
+Implementación con validación unitaria focal; prueba funcional integrada de UI/HTTP/PostgreSQL
+pendiente por instrucción del propietario. Estado y gates: [STATUS](../../STATUS.md).
 
 ## Devolución y anulación
 
@@ -68,6 +98,8 @@ durables; ver
 
 ## Límites vigentes
 
-- No existe pantalla de listado o detalle de cobros; se consultan por la CxC (cobrado/saldo).
+- Los cobros se consultan desde la CxC; no existe un listado global independiente.
+- Las devoluciones de dinero por cobros quedan fuera de esta corrección documental y pendientes
+  de una decisión funcional separada.
 - Una cuota cobrada antes de que la cuota acumulara lo cobrado conserva cobrado 0; no se reparan
   datos existentes.

@@ -6,6 +6,21 @@ namespace ERP.Infrastructure.Persistence.Repositories.Finance;
 
 public sealed class PaymentRepository : IPaymentRepository
 {
+    public async Task<IReadOnlyList<Payment>> GetCollectionsByReceivableAsync(
+        Guid tenantId, Guid companyId, Guid receivableId, CancellationToken ct = default) =>
+        await _context.Payments.AsNoTracking().Include(x => x.Lines)
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId
+                && x.Direction == ERP.Domain.Modules.Finance.Enums.PaymentDirection.Collection
+                && x.Lines.Any(l => l.ReceivableId == receivableId))
+            .OrderByDescending(x => x.CreatedAt).ToListAsync(ct);
+
+    // Always scope through the owning session, including closed sessions. A documentary
+    // correction must never invalidate an operational movement, regardless of reference type.
+    public Task<bool> HasOperationalReferencesAsync(Guid tenantId, Guid companyId, Guid paymentId,
+        CancellationToken ct = default) =>
+        _context.CashSessions.Where(s => s.TenantId == tenantId && s.CompanyId == companyId)
+            .AnyAsync(s => s.Movements.Any(m => m.ReferenceId == paymentId), ct);
+
     private readonly ErpDbContext _context;
 
     public PaymentRepository(ErpDbContext context)

@@ -24,6 +24,27 @@ namespace ERP.API.Tests.Finance;
 public sealed class FinancePaymentsControllerTests
 {
     [Fact]
+    public async Task ReverseCollection_exige_permiso_especifico_y_envia_id_de_ruta_y_motivo()
+    {
+        var method = typeof(FinancePaymentsController).GetMethod(nameof(FinancePaymentsController.ReverseCollection))!;
+        method.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
+            .Single().Policy.Should().Be($"perm:{FinancePermissions.ReverseCollection}");
+        var id = Guid.NewGuid();
+        object? sent = null;
+        var controller = BuildController(req => { sent = req; return Result<PaymentDto>.Success(SamplePaymentDto(id)); });
+        var response = await controller.ReverseCollection(id, new("Error de registro"), CancellationToken.None);
+        sent.Should().Be(new ReverseCollectionCommand(id, "Error de registro"));
+        response.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public void Consulta_de_cobros_exige_el_mismo_permiso_especifico()
+    {
+        typeof(FinancePaymentsController).GetMethod(nameof(FinancePaymentsController.GetCollections))!
+            .GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>()
+            .Single().Policy.Should().Be($"perm:{FinancePermissions.ReverseCollection}");
+    }
+    [Fact]
     public void No_existe_endpoint_activo_legacy_de_registrar_pago_a_proveedor()
     {
         // PAYABLES-PAYMENTS-LEGACY-CLEANUP-14 — guard de regresión: sin PagoCabecera/PagoDetalle

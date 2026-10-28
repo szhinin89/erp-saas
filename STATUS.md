@@ -1,5 +1,37 @@
 # Project Status
 
+## Caso #20 — IMPLEMENTADO — PENDIENTE E2E INTEGRADA (2026-10-28)
+
+Anulación documental de cobros erróneos desde CxC, con permiso específico, selección,
+confirmación y motivo obligatorio. **KEEP:** `ReverseCollectionCommand`, restauración de
+CxC, locks, auditoría y traducción contable existentes. **FALTA autorizada implementada:**
+API, permiso asignable, consulta/UI y precondiciones de seguridad operativa. Sin devolución
+de dinero. Los históricos con destino caja/banco sin trazabilidad de origen se bloquean.
+Reglas y límites: [receivables.md](docs/architecture/receivables.md#reversa-de-un-cobro).
+
+**PASS técnico del agente:** Application 15/15 (handler de reversa, registro posterior correcto
+y traductor existente); controller 7/7 (unitarias, sin servidor HTTP); modal 4/4 (jsdom).
+Compilación backend mediante los proyectos de prueba, frontend `tsc -b`/build, lint
+(0 errores, 34 warnings), `architecture:check` (0 violaciones nuevas) y `git diff --check` PASS.
+Sin BUG REAL funcional acreditado por E2E en esta entrega; los rechazos nuevos se verificaron
+unitariamente. Comandos focales desde la raíz:
+
+```powershell
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --filter "FullyQualifiedName~ReverseCollectionCommandHandlerTests|FullyQualifiedName~CollectionReversedPostingTranslatorTests" --no-restore
+dotnet test backend/src/ERP.API.Tests/ERP.API.Tests.csproj --filter FullyQualifiedName~FinancePaymentsControllerTests --no-restore
+cd frontend
+npx.cmd vitest run src/modules/finance/components/ReverseCollectionModal.test.tsx
+```
+
+Por ajuste expreso del propietario, **no se ejecutó E2E funcional de navegador, HTTP ni
+PostgreSQL**. Pendiente para la cadena integrada: permiso efectivo/denegación, aislamiento
+tenant/empresa, duplicados concurrentes, persistencia de motivo/actor/fecha, restauración de
+cuotas y nuevo cobro, reversión contable/gate de período y ausencia de cambios operativos
+en caja/banco (incluidos turnos cerrados e históricos bloqueados). Estas propiedades no se
+acreditan con mocks. Sin modificaciones de bases, migraciones, repetición de R1–R4,
+suites funcionales completas, staging, commit ni push. **No CLOSED**; queda pendiente el
+gate integrado y la aprobación del propietario conforme al protocolo.
+
 ## R4 — Contabilidad — CLOSED (2026-10-28)
 
 Validación UI/API/PostgreSQL en `erp_zh_test`, empresa B: #26 manual 25 y reverso 26

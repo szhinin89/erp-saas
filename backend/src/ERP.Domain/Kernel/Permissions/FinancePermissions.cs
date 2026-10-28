@@ -6,4 +6,5 @@ public static class FinancePermissions
     public const string Create = "finance.create";
     public const string Update = "finance.update";
     public const string Delete = "finance.delete";
+    public const string ReverseCollection = "finance.collections.reverse";
 }

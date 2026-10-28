@@ -36,4 +36,17 @@ public sealed class FinancePaymentsController : ControllerBase
         [FromBody] RegisterCollectionCommand command,
         CancellationToken ct
     ) => this.ToCreatedOrBadRequest(await _mediator.Send(command, ct));
+
+    [HttpGet("collections/receivable/{receivableId:guid}")]
+    [Authorize(Policy = $"perm:{FinancePermissions.ReverseCollection}")]
+    public async Task<IActionResult> GetCollections(Guid receivableId, CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new GetReceivableCollectionsQuery(receivableId), ct));
+
+    public sealed record ReverseCollectionRequest(string Reason);
+
+    [HttpPost("collections/{id:guid}/reverse")]
+    [Authorize(Policy = $"perm:{FinancePermissions.ReverseCollection}")]
+    public async Task<IActionResult> ReverseCollection(Guid id, [FromBody] ReverseCollectionRequest request,
+        CancellationToken ct) =>
+        this.ToOkOrBadRequest(await _mediator.Send(new ReverseCollectionCommand(id, request.Reason), ct));
 }

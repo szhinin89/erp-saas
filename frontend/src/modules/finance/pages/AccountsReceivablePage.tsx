@@ -12,6 +12,9 @@ import {
 } from "../../../lib/formatters/dateFormatters";
 import { receivableService, type SalesReceivableDto } from "../api/receivableService";
 import { RegisterCollectionModal } from "../components/RegisterCollectionModal";
+import { ReverseCollectionModal } from "../components/ReverseCollectionModal";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { useSessionStore } from "../../../store/sessionStore";
 
 import "../../../styles/shared/items-catalog.css";
 
@@ -45,6 +48,10 @@ function getReceivableStatusBadge(r: SalesReceivableDto): {
  * No implementa devoluciones, notas de crédito ni reportes — fuera de este alcance.
  */
 export function AccountsReceivablePage() {
+  const { isAdminRole } = usePermissionsUi();
+  const permissions = useSessionStore(s => s.authorization?.permissions);
+  const canReverse = isAdminRole || !!permissions?.some(p => p === "*" || p === "finance.collections.reverse");
+  const [reverseTarget, setReverseTarget] = useState<SalesReceivableDto | null>(null);
   const [items, setItems] = useState<SalesReceivableDto[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -97,13 +104,15 @@ export function AccountsReceivablePage() {
     {
       key: "actions",
       header: "Acciones",
-      render: (r) =>
-        r.balanceDue > 0 && r.status !== "cancelled" ? (
+      render: (r) => <>
+        {r.balanceDue > 0 && r.status !== "cancelled" ? (
           <ZHBtn onClick={() => setSelected(r)} aria-label={`Registrar cobro de factura ${r.invoiceNumber}`}>
             <span className="material-symbols-outlined zh-icon-md">payments</span>
             Registrar cobro
           </ZHBtn>
-        ) : null,
+        ) : null}
+        {canReverse && <ZHBtn onClick={() => setReverseTarget(r)}>Consultar / anular cobro</ZHBtn>}
+      </>,
     },
   ];
 
@@ -150,6 +159,8 @@ export function AccountsReceivablePage() {
         onClose={() => setSelected(null)}
         onRegistered={fetchItems}
       />
+      {reverseTarget && <ReverseCollectionModal receivable={reverseTarget}
+        onClose={() => setReverseTarget(null)} onReversed={fetchItems} />}
     </ErpPageTemplate>
   );
 }
