@@ -186,24 +186,7 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
                 companyId: _company.CompanyId,
                 nature: cmd.Nature
             );
-            // items.md §5: un Product nace con su presentación base (unidad base, factor 1).
-            if (item.ParticipatesInInventory)
-                item.ReplacePackagingLevels(
-                    [
-                        (
-                            BasePresentationName,
-                            1,
-                            1m,
-                            item.DefaultUomCode,
-                            null,
-                            null,
-                            true,
-                            true,
-                            true
-                        ),
-                    ],
-                    userId
-                );
+            AddBasePresentation(item, userId);
         }
         catch (ArgumentException ex)
         {
@@ -252,6 +235,18 @@ public sealed class CreateItemCommandHandler : IRequestHandler<CreateItemCommand
         var uomMap = await _sri.ResolveUomsAsync([item.DefaultUomCode], cancellationToken);
         var itemTypeNames = new Dictionary<Guid, string> { [itemTypeDef.Id] = itemTypeDef.Name };
         return Result<ItemDto>.Success(ItemMappingService.ToDto(item, uomMap, itemTypeNames));
+    }
+
+    /// <summary>items.md §5: un Product nace con su presentación base (unidad base, factor 1).</summary>
+    private static void AddBasePresentation(Item item, Guid userId)
+    {
+        if (!item.ParticipatesInInventory)
+            return;
+
+        item.ReplacePackagingLevels(
+            [(BasePresentationName, 1, 1m, item.DefaultUomCode, null, null, true, true, true)],
+            userId
+        );
     }
 
     /// <summary>Persiste el Item; una violación de unicidad se traduce a Conflict (barcode o SKU).</summary>
