@@ -224,6 +224,7 @@
         "ERP.Infrastructure.Tests.Persistence.ApplySupplierCreditConcurrencyTests",
         "ERP.Infrastructure.Tests.Persistence.AuthorizePurchaseReturnStockMovementSequenceTests",
         "ERP.Infrastructure.Tests.Persistence.BranchRepositoryPreTenantContextTests",
+        "ERP.Infrastructure.Tests.Persistence.Caja.CashSessionOpenUniquenessTests",
         "ERP.Infrastructure.Tests.Persistence.Caja.CashSessionRepositoryBranchScopeTests",
         "ERP.Infrastructure.Tests.Persistence.DocTypeSeedAlignmentTests",
         "ERP.Infrastructure.Tests.Persistence.DocumentSequenceConfigurationTests",

@@ -128,8 +128,8 @@ public sealed class CashSessionRepositoryBranchScopeTests : IAsyncLifetime
         db.EmissionPoints.AddRange(emissionPointA, emissionPointB);
         await db.SaveChangesAsync();
 
-        // Usuarios distintos por sesión: ux_cash_sessions_open_per_user exige a lo sumo una sesión
-        // abierta por usuario — no es un detalle del filtro por sucursal que esta suite prueba.
+        // Usuarios distintos por sesión: ux_cash_sessions_open_per_company_user exige a lo sumo una sesión
+        // abierta por usuario en cada empresa — no es un detalle del filtro por sucursal que esta suite prueba.
         var userA = Guid.NewGuid();
         var userB = Guid.NewGuid();
         var sessionA = CashSession.Open(

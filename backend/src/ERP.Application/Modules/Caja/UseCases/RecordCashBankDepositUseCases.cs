@@ -140,6 +140,8 @@ public sealed class RecordCashBankDepositHandler(
             );
         if (!bank.IsActive)
             return Result<CashMovementDto>.ValidationFailure("La cuenta bancaria seleccionada está inactiva.");
+        if (CashSessionAvailability.OverdraftMessage(session, cmd.Amount) is { } overdraft)
+            return Result<CashMovementDto>.ValidationFailure(overdraft);
 
         var movement = session.RecordBankDeposit(bank.Id, cmd.Amount, cmd.Description, user.UserId, cmd.ReferenceNumber);
         movement.BindClientRequest(key);

@@ -1,0 +1,116 @@
+{
+  "run": "R3-CASH-SALES-E2E-01",
+  "date": "2026-10-28",
+  "status": "CLOSED (aprobado 2026-10-28)",
+  "environment": {
+    "database": "erp_zh_test",
+    "api": "http://localhost:5004 (Release, Development, seed E2E, JWT efímero)",
+    "frontend": "Vite dev :5181, proxy /api -> :5004",
+    "browser": "Chromium (Playwright 1.59)",
+    "company": "ZH E2E B (1790016919001)",
+    "sri": "sin configuración SRI en la empresa B; comprobantes electrónicos Fallidos; sin tráfico al SRI"
+  },
+  "scenarios": [
+    {
+      "id": 17,
+      "name": "Venta de contado con caja abierta, efectivo y vuelto",
+      "result": "PASS",
+      "bugs": [
+        {
+          "type": "BUG REAL",
+          "status": "CORREGIDO (autorizado)",
+          "summary": "ux_cash_sessions_open_per_user era tenant-wide: un turno abierto en la empresa A impedía abrir caja en la B",
+          "fix": "índice único parcial ux_cash_sessions_open_per_company_user (tenant, empresa, usuario) en la configuración y en la migración forward 20261028210143_CashSessionOpenPerCompanyUser; aplicada a erp_zh_test con dotnet ef database update",
+          "test": "CashSessionOpenUniquenessTests (PostgreSQL): HEAD 2 FAIL -> 2/2 PASS"
+        }
+      ],
+      "checks": [
+        "factura 001-001-000000001: 14.86 (base 13.90, IVA 0.96); recibido 20.00, vuelto 5.14",
+        "pago EFECTIVO 14.86 con tendered_amount 20.00; tirilla cashChange 5.14",
+        "caja SaleIncome 14.86",
+        "Kardex -3 arroz 5.41, -2 aceite 4.78",
+        "asientos 14 (Caja 14.86 / Ventas 13.90 + IVA 0.96) y 15 (Costo 10.19 / Inventario 10.19)"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Devolución de venta con reembolso en efectivo",
+      "result": "PASS",
+      "checks": [
+        "DEV-15cffa563d: 1 aceite, 3.20 + 0.48 = 3.68, reembolso Efectivo (Caja)",
+        "caja SaleRefund 3.68",
+        "Kardex +1 aceite 2.39 al costo de la venta",
+        "asientos 16 (Inventario / Costo 2.39) y 17 (Devoluciones 3.20 + IVA 0.48 / Caja 3.68)",
+        "devolver 2 con remanente 1 -> 422 sin borrador"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Movimiento manual de caja con motivo y asiento",
+      "result": "PASS",
+      "checks": [
+        "egreso manual 4.50, motivo Compra de insumos menores (cuenta 6.1.01.002)",
+        "asiento 18 Suministros 4.50 / Caja 4.50",
+        "sin motivo, motivo de otro tipo y monto 0 -> 422"
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Depósito bancario desde caja",
+      "result": "PASS",
+      "bugs": [
+        {
+          "type": "BUG REAL",
+          "status": "CORREGIDO (autorizado)",
+          "summary": "depósito, egreso manual y retiro no validaban el efectivo esperado: depósito de 100.00 con 16.68 aceptado (esperado -83.32, asiento 20 sin efectivo)",
+          "fix": "CashSessionAvailability en RecordCashBankDepositHandler y RecordCashMovementHandler (Egreso manual y Retiro), con la sesión bloqueada y sin override",
+          "test": "RecordCashBankDepositHandlerTests + RecordCashMovementHandlerTests: HEAD 3 FAIL/16 PASS -> 19/19; E2E: depósito de 10.00 con -83.32 rechazado en UI; egreso y retiro 422 por API"
+        }
+      ],
+      "checks": [
+        "depósito 40.00 papeleta PAP-R3-0001; asiento 19 Bancos 40.00 / Caja 40.00",
+        "cuenta bancaria de la empresa A -> 422; monto 0 -> 422"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Cierre de caja con arqueo y diferencia",
+      "result": "PASS",
+      "bugs": [
+        {
+          "type": "BUG REAL",
+          "status": "CORREGIDO",
+          "summary": "Total contado y modal de cierre en $0.00: countedTotal memorizado sobre el array que RHF muta en su lugar",
+          "fix": "useCajaPage suma el total en cada render",
+          "test": "useCajaPage.test.tsx (cambio por ruta): HEAD FAIL -> PASS; src/modules/caja 108/108"
+        }
+      ],
+      "checks": [
+        "turno 1: esperado -83.32, contado 16.68, diferencia +100.00; asiento 21 sobrante 100.00. Anomalía histórica E2E: el depósito de 100.00 (asiento 20) permanece sin reversa bancaria",
+        "turno 2: apertura 30.00 + venta 5.00; esperado 35.00, contado 34.50, diferencia -0.50",
+        "desglose de denominaciones persistido",
+        "asiento 24 Descuadres de caja 0.50 / Caja 0.50",
+        "movimiento, depósito y cierre sobre un turno cerrado -> 422"
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Reporte de ventas frente a movimientos y cierre de caja",
+      "result": "PASS",
+      "checks": [
+        "reporte: 2 facturas, total 19.86, subtotal 18.90, IVA 0.96",
+        "caja: SaleIncome 14.86 + 5.00 = 19.86; total facturado por turno 14.86 y 5.00",
+        "Caja 1.1.01.001 neto -28.82 = (16.68 - 50.00) + (34.50 - 30.00)",
+        "asientos 14-24 balanceados",
+        "empresa A: reporte sin facturas de B, no ve turnos de B, GET y movimientos sobre B -> 404"
+      ]
+    }
+  ],
+  "observations": [
+    "regla sembrada: todo el subtotal a 4.1.01.001, incluida la línea con IVA 0 %",
+    "formulario de devolución muestra el código de unidad (19) en las cantidades",
+    "Kardex de devolución con referencia DEV-DEV-",
+    "montos negativos formateados $-83.32",
+    "permisos con segundo usuario no probados (requiere credenciales)"
+  ]
+}

@@ -851,7 +851,8 @@ en cada intento, sin fallback: sin cuenta → Failed `CASH_MOVEMENT_REASON_ACCOU
 imputable → Failed `CASH_MOVEMENT_REASON_ACCOUNT_INVALID`; se corrige configurando y reprocesando (§17).
 
 **Depósito bancario.** `POST cash-sessions/{id}/bank-deposits` (`caja.record`): sesión abierta y operada por su
-cajero, `CompanyBankAccountId` activa de la Company de la sesión, monto > 0, nota y referencia/papeleta opcional,
+cajero, `CompanyBankAccountId` activa de la Company de la sesión, monto > 0 y sin superar el efectivo esperado
+([sin sobregiro](backend.md#turnos-de-caja-uno-por-empresa-y-sin-sobregiro)), nota y referencia/papeleta opcional,
 idempotente por `ClientRequestId` (intención V1 propia). Crea `CashMovement` tipo `BankDeposit` (egreso de caja) con
 `ReferenceType = CompanyBankAccount` y `ReferenceId` = cuenta bancaria destino. El seed ya no crea el motivo
 "DEPOSITO_BANCARIO" de Withdrawal; los existentes se conservan.

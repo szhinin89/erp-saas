@@ -51,8 +51,9 @@ public sealed class FirstRunFullInstallationTests : IAsyncLifetime
                 var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
                 await db.Database.MigrateAsync();
                 var migrations = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
-                Assert.Single(migrations);
+                // Baseline V1 primero; las migraciones forward (DATABASE.md) se aplican después.
                 Assert.True(migrations[0].EndsWith("_InitialProductionBaseline", StringComparison.Ordinal));
+                Assert.Empty(await db.Database.GetPendingMigrationsAsync());
                 foreach (var name in new[] { "IdentityUser", "Tenant", "Company", "GlobalUserRole",
                     "CompanyUserMembership", "CompanyUserBranch", "Account", "PostingRule", "Branch" })
                 {

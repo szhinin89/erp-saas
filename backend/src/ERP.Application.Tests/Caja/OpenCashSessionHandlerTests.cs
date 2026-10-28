@@ -328,7 +328,7 @@ public sealed class OpenCashSessionHandlerTests
     /// P1-01 (ERP_CORE_SUMAK_READINESS_AUDIT.md): dos aperturas concurrentes para la misma caja o
     /// el mismo usuario pueden ambas pasar las verificaciones previas (GetOpenByUserAsync/
     /// GetOpenByCashRegisterAsync) bajo condición de carrera. El índice único parcial de BD
-    /// (ux_cash_sessions_open_per_register / ux_cash_sessions_open_per_user,
+    /// (ux_cash_sessions_open_per_register / ux_cash_sessions_open_per_company_user,
     /// CashSessionConfiguration) es la defensa final: el "perdedor" no debe recibir un 500 crudo,
     /// sino un Result.Conflict — mismo patrón que CreateAuthenticatedSessionHandler.
     /// </summary>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cajaService } from "../api/cajaService";
@@ -256,14 +256,12 @@ export function useCajaPage() {
     setTab("cerrar");
   }, []);
 
-  const closingCountsWatch = closeForm.watch("closingCounts");
-  const countedTotal = useMemo(
-    () =>
-      (closingCountsWatch ?? []).reduce(
-        (sum, c) => sum + c.denominationValue * c.quantity,
-        0,
-      ),
-    [closingCountsWatch],
+  // Sin useMemo: al escribir en un input registrado RHF muta el array en su lugar y watch()
+  // devuelve la misma referencia, así que un memo sobre ella dejaba el total en $0.00 (R3).
+  // watch() re-renderiza en cada cambio y son 11 denominaciones: se suma en cada render.
+  const countedTotal = (closeForm.watch("closingCounts") ?? []).reduce(
+    (sum, c) => sum + c.denominationValue * c.quantity,
+    0,
   );
 
   // CRITICAL-CONFIRMATIONS-CASH-02: cerrar caja finaliza el turno y bloquea nuevos

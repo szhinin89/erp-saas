@@ -49,7 +49,8 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ### Baseline EF (ERP ZH V1, GREENFIELD)
 
-Una sola migración: `20261021162651_InitialProductionBaseline`, la definición inicial vigente de todo el esquema,
+Baseline: `20261021162651_InitialProductionBaseline`, la definición inicial vigente de todo el esquema (más las
+migraciones forward autorizadas que se indican abajo),
 incluidos los catálogos GLOBAL con todas sus correcciones SRI (`HasData`) y los objetos raw SQL de la tabla siguiente.
 La geografía INEC llega aparte, por el único script de `Seeding/InstallData` (CGE 2026). No existe upgrade-path:
 una BD creada con una baseline anterior (p. ej. `20261018014647_…`) falla de forma explícita en `MigrateAsync`
@@ -63,7 +64,11 @@ Diferencia de esquema: orden físico de columnas en `sri_country` y `sri_ice_rat
 
 Mientras no exista una instalación publicada, un cambio de esquema o de catálogo se consolida en la baseline
 (regenerarla con `dotnet ef migrations add` y copiar sin cambios el raw SQL de la tabla siguiente). Tras la primera
-instalación publicada: solo migraciones forward. Las transformaciones de datos de bases previas (backfills,
+instalación publicada: solo migraciones forward. Excepción autorizada por el propietario (R3, 2026-10-28): un cambio
+que deba llegar a bases existentes sin recrearlas va como migración forward sobre la baseline, que la API aplica al
+arrancar. Vigente: `20261028210143_CashSessionOpenPerCompanyUser` (turnos de caja por empresa,
+`ux_cash_sessions_open_per_user` → `ux_cash_sessions_open_per_company_user`; el índice nuevo es menos restrictivo, así
+que toda base existente lo cumple). Las transformaciones de datos de bases previas (backfills,
 `DROP DEFAULT` transitorios, guards de referencias) nunca forman parte de la baseline.
 
 Los archivos de migración se guardan con LF (`.gitattributes`): los raw string literals de C# trasladan el fin de línea al cuerpo de las funciones plpgsql.

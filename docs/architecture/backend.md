@@ -331,6 +331,11 @@ El efectivo entregado es dato operacional del settlement y **no modifica el impo
 - `ChangeAmount` = `TenderedAmount − Amount`, derivado (no persistido). En multipago solo la porción efectivo lo tiene.
 - La tirilla (`receipt-print-payload`) reconstruye "Efectivo recibido / Vuelto" desde los pagos persistidos, así que la tirilla inicial y cualquier reimpresión muestran lo mismo. Las ventas anteriores a este dato no lo muestran (no se infiere).
 
+### Turnos de caja: uno por empresa y sin sobregiro
+
+- Los turnos son independientes por TenantId + CompanyId: un usuario tiene como máximo un turno abierto en cada empresa (puede tener uno en la empresa A y otro en la B) y cada caja registradora, como máximo uno. Lo valida `OpenCashSessionHandler` con el alcance de la empresa activa y lo garantizan los índices únicos parciales `ux_cash_sessions_open_per_company_user` (tenant, empresa, usuario) y `ux_cash_sessions_open_per_register`.
+- Sin sobregiro: una salida de efectivo que elige el cajero (egreso manual, retiro, depósito bancario y pago a proveedor en efectivo) no puede superar el efectivo esperado del turno (`CashSession.CurrentBalance`, el mismo valor del arqueo). Se valida con la sesión bloqueada, sin override, y se rechaza con «La caja dispone de $X y se intenta registrar…». Los reembolsos que registra el sistema (devolución de venta, saldo a favor) no pasan por esta regla.
+
 ---
 
 ## Una capacidad, varios contextos de autorización (ZH-COMPANY-IDENTITY-SSOT-01)

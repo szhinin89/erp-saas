@@ -1,5 +1,26 @@
 # Project Status
 
+## R3 — Caja y ventas de contado — CLOSED (2026-10-28)
+
+E2E en navegador, API y PostgreSQL sobre la empresa B de `erp_zh_test`, con los datos de R1 y R2,
+aprobado expresamente por el propietario: **6/6 PASS**. Escenarios: #17 venta de contado con vuelto, #19 devolución con reembolso en efectivo, #22
+movimiento manual con motivo y asiento, #23 depósito bancario, #21 cierre con arqueo y diferencia, y #39
+reporte de ventas conciliado con caja y contabilidad. Aislamiento entre empresas PASS. Evidencia:
+[r3-cash-sales-e2e-01](docs/evidence/r3-cash-sales-e2e-01/README.md). Tres **BUG REAL** corregidos con
+regresión focal RED → GREEN: (1) un turno abierto en otra empresa del tenant impedía abrir caja; ahora
+hay un turno por TenantId + CompanyId (índice `ux_cash_sessions_open_per_company_user` en la migración
+forward autorizada `20261028210143_CashSessionOpenPerCompanyUser`, que llega a las bases existentes al arrancar la
+API; aplicada a `erp_zh_test`, ver [DATABASE.md](docs/DATABASE.md)); (2) depósito bancario, egreso manual y retiro permitían sobregirar la
+caja; ahora aplican la misma regla que el pago a proveedor; (3) el arqueo mostraba «Total contado» $0.00
+en la UI. SSOT: [backend.md § Turnos de caja](docs/architecture/backend.md#turnos-de-caja-uno-por-empresa-y-sin-sobregiro)
+y [accounting.md §25](docs/architecture/accounting.md#25-caja-contable-accounting-12c). Gates focales:
+PostgreSQL 10/10, Application 168/168, API HTTP 36/36, frontend Caja 108/108, lint/tsc/build,
+`architecture:check` (0 nuevas) y `git diff --check`. Límites: no se valida la transmisión SRI (B sin
+configuración SRI); no se probó con un segundo usuario; anomalía histórica E2E conservada: el depósito de
+prueba de 100.00 previo a la corrección (asiento 20) permanece sin reversa bancaria, y el sobrante de 100.00 del
+arqueo del turno 1 (asiento 21) solo repone el saldo contable de Caja. No acredita suite completa ni
+despliegue. Sin commit ni push.
+
 ## R2 — Compras XML, retención, NC de proveedor, ajuste y transferencia — CLOSED (2026-10-28)
 
 E2E en navegador, API y PostgreSQL sobre la empresa B de `erp_zh_test`, con datos sintéticos y los

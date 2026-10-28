@@ -118,7 +118,7 @@ public sealed class NewChildEntityTrackingInterceptorTests : IAsyncLifetime
         );
         // Segunda caja registradora — únicamente para el escenario "dos agregados a la vez",
         // que necesita dos CashSession Open simultáneas. Reutilizar la misma caja/usuario para
-        // ambas violaría ahora ux_cash_sessions_open_per_register/ux_cash_sessions_open_per_user
+        // ambas violaría ahora ux_cash_sessions_open_per_register/ux_cash_sessions_open_per_company_user
         // (P1-01, ERP_CORE_SUMAK_READINESS_AUDIT.md) — correctamente, es el mismo invariante que
         // esos índices existen para proteger.
         var cashRegister2 = CashRegister.Create(

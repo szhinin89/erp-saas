@@ -255,6 +255,10 @@ public sealed class RecordCashMovementHandler
                 "El motivo seleccionado no corresponde a este tipo de movimiento."
             );
 
+        if (movementType is CashMovementType.ManualExpense or CashMovementType.Withdrawal
+            && CashSessionAvailability.OverdraftMessage(session, cmd.Amount) is { } overdraft)
+            return Result<CashMovementDto>.ValidationFailure(overdraft);
+
         // ACCOUNTING-12C — publica el hecho económico del movimiento manual (su obligación contable
         // se registra en esta misma transacción; una falla contable posterior nunca lo revierte).
         var movement = session.RecordManualMovement(

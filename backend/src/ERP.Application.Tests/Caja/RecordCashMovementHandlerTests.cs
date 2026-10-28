@@ -164,6 +164,59 @@ public sealed class RecordCashMovementHandlerTests
         f.CashRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // ── R3: sin sobregiro de caja en egresos manuales y retiros ─────────
+
+    [Theory]
+    [InlineData("ManualExpense")]
+    [InlineData("Withdrawal")]
+    public async Task Egreso_mayor_al_efectivo_esperado_es_rechazado_sin_registrar(string type)
+    {
+        var session = OpenSession(); // apertura 100.00
+        var reason = ValidReason(Enum.Parse<CashMovementType>(type));
+        var f = new Fixture();
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
+
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, reason.Id, type, 100.01m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La caja dispone de $100.00 y se intenta registrar una salida de $100.01.");
+        session.Movements.Should().ContainSingle(m => m.MovementType == CashMovementType.Opening);
+        f.CashRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("ManualExpense", 100)]
+    [InlineData("Withdrawal", 100)]
+    [InlineData("ManualIncome", 500)]
+    public async Task Egreso_igual_al_efectivo_esperado_e_ingresos_se_registran(string type, decimal amount)
+    {
+        var session = OpenSession();
+        var reason = ValidReason(Enum.Parse<CashMovementType>(type));
+        var f = new Fixture();
+        f.CashRepo.Setup(r =>
+                r.GetByIdForUpdateAsync(TenantId, session.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(session);
+        f.ReasonRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, CompanyId, reason.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(reason);
+
+        var result = await f.BuildHandler()
+            .Handle(Command(session.Id, reason.Id, type, amount), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        f.CashRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     // ── "motivo otra empresa rechazado" ─────────────────────────────────
 
     [Fact]

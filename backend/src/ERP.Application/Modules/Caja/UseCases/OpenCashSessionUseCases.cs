@@ -135,7 +135,7 @@ public sealed class OpenCashSessionHandler
         // verificaciones previas (GetOpenByUserAsync/GetOpenByCashRegisterAsync) no son
         // suficientes bajo condición de carrera (dos requests pueden pasar ambas antes de que
         // cualquiera complete el INSERT). El índice único parcial de BD
-        // (ux_cash_sessions_open_per_register / ux_cash_sessions_open_per_user,
+        // (ux_cash_sessions_open_per_register / ux_cash_sessions_open_per_company_user,
         // CashSessionConfiguration) decide de forma atómica cuál gana; el "perdedor" recibe un
         // Result.Conflict controlado en vez de un 500 — mismo patrón que
         // CreateAuthenticatedSessionHandler/CreateItemCommandHandler vía IDatabaseExceptionTranslator.
