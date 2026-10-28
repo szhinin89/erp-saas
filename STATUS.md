@@ -1,5 +1,22 @@
 # Project Status
 
+## R4 — Contabilidad — CLOSED (2026-10-28)
+
+Validación UI/API/PostgreSQL en `erp_zh_test`, empresa B: #26 manual 25 y reverso 26
+por 7.25; #27 Diario (62 líneas, 1820.15 por lado), Mayor (109 cuentas), Balance
+y Resultados conciliados con SQL y el libro R1–R3; #28 fallo controlado de un gasto
+de 2.00, configuración restaurada y reproceso UI a Posted (asiento 27, dos intentos),
+readiness sin POSTINGS_UNRESOLVED; #42 doce períodos mensuales Open de 2027,
+regeneración idempotente. Aislamiento API PASS. Resultado 96.43, activo 780.63,
+pasivo 315.70 y patrimonio incluido resultado 464.93. Se conserva la anomalía
+histórica de R3. Cierre 2026 bloqueado correctamente por ejercicio no terminado y
+cierre anual pendiente; no se cerró ningún período. Acceso desbloqueado mediante
+restablecimiento de solo e2e.admin expresamente autorizado. Sin BUG REAL reproducido
+ni cambios de código, commit o push. El propietario aprueba **4/4 PASS** y autoriza
+el cierre, limitado exclusivamente a #26, #27, #28 y #42 ejecutados.
+Evidencia y límites:
+[r4-accounting-e2e-01](docs/evidence/r4-accounting-e2e-01/README.md).
+
 ## R3 — Caja y ventas de contado — CLOSED (2026-10-28)
 
 E2E en navegador, API y PostgreSQL sobre la empresa B de `erp_zh_test`, con los datos de R1 y R2,

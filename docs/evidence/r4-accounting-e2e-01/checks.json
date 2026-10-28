@@ -1,0 +1,16 @@
+{
+  "pass": [
+    "Diario: 62 lÃ­neas exactas SQL/API; 27 asientos; 1820.15 por lado",
+    "Mayor: 109 cuentas comparadas con SQL",
+    "Balance/Resultados: SQL/API exactos; 780.63 = 315.70 + 464.93; resultado 96.43",
+    "Reproceso: Failed/Posted durables; readiness elimina POSTINGS_UNRESOLVED",
+    "Reproceso repetido: mismo asiento, sin tercer intento",
+    "2027: 12 meses exactos Open, regenerar crea 0; A sin 2027",
+    "RepublicaciÃ³n manual rechazada"
+  ],
+  "isolation": {
+    "manual": "404 /accounting/journal-entries/61b51a9f-1775-47ce-8d65-80ece4b9b88b: {\"code\":\"NOT_FOUND\",\"severity\":\"error\",\"message\":{\"user\":\"El recurso solicitado no existe.\",\"dev\":\"Entity not found.\"},\"data\":{\"errors\":[\"Asiento contable no encontrado.\"]},\"meta\":{\"correlationId\":\"0HNPL728668JG:00000002\",\"timestamp\":\"2026-10-28T21:20:57.8091887Z\",\"traceId\":null}}",
+    "posting": "404 /accounting/postings/bedfbdc6-4762-4c65-8d2d-6e711641740b: {\"code\":\"NOT_FOUND\",\"severity\":\"error\",\"message\":{\"user\":\"El recurso solicitado no existe.\",\"dev\":\"Entity not found.\"},\"data\":{\"errors\":[\"Contabilización no encontrada.\"]},\"meta\":{\"correlationId\":\"0HNPL728668JH:00000002\",\"timestamp\":\"2026-10-28T21:20:57.8463003Z\",\"traceId\":null}}",
+    "period": "404 /accounting/accounting-periods/134042d6-c04c-4957-ad6d-9b1adf7d68f8/closure-readiness: {\"code\":\"NOT_FOUND\",\"severity\":\"error\",\"message\":{\"user\":\"El recurso solicitado no existe.\",\"dev\":\"Entity not found.\"},\"data\":{\"errors\":[\"Período contable no encontrado.\"]},\"meta\":{\"correlationId\":\"0HNPL728668JG:00000003\",\"timestamp\":\"2026-10-28T21:20:57.8796653Z\",\"traceId\":null}}"
+  }
+}

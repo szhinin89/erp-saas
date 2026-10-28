@@ -1,0 +1,142 @@
+{
+  "before": {
+    "periodId": "134042d6-c04c-4957-ad6d-9b1adf7d68f8",
+    "status": "Open",
+    "isEligible": true,
+    "hasEnded": false,
+    "companyToday": "2026-10-28",
+    "canClose": false,
+    "completeness": {
+      "isComplete": false,
+      "asOf": "2026-12-31",
+      "reasons": [
+        {
+          "code": "YEAR_END_CLOSING_MISSING",
+          "count": 1
+        }
+      ]
+    }
+  },
+  "expenseId": "808b01d5-f126-4ebe-afb5-ef353d4e3ded",
+  "ruleId": "c714f931-4407-4336-a122-f9b488bbb737",
+  "confirmed": {
+    "id": "808b01d5-f126-4ebe-afb5-ef353d4e3ded",
+    "companyId": "f74b2da3-83b2-4e26-a273-93efd29b6719",
+    "branchId": "2289c853-6a22-435a-8993-8e40b70708f2",
+    "supplierId": "cbd4412d-2b71-4ab8-83cb-91a7def4f549",
+    "supplierName": "Distribuidora Andina R1",
+    "supplierTaxId": "1711924454001",
+    "issueDate": "2026-10-28",
+    "accountingDate": "2026-10-28",
+    "documentType": "01",
+    "documentNumber": "004-004-000000028",
+    "authorizationNumber": "1234567890",
+    "authorizationDate": null,
+    "paymentTermId": "1aefb79e-4c8f-4955-9737-76652c7424f1",
+    "paymentTermName": "Crédito 30 días E2E",
+    "dueDate": "2026-11-27",
+    "subtotal": 2,
+    "totalDiscount": 0,
+    "totalTax": 0,
+    "grandTotal": 2,
+    "notes": "R4 #28 fallo controlado y reproceso",
+    "taxSupportCode": "06",
+    "status": "Confirmed",
+    "lines": [
+      {
+        "id": "1153239b-0f3b-4013-8dd2-beece63d2f3d",
+        "expenseSubcategoryId": "f5b5d842-b39d-43ea-adbc-b02b65dc7983",
+        "snapshotAccountingAccountId": "e2a5d5c0-785b-4db4-abfa-8d1541226c5f",
+        "snapshotAccountingAccountCode": "6.4.01.002",
+        "snapshotAccountingAccountName": "Multas y gastos no deducibles",
+        "description": "R4 prueba contable",
+        "quantity": 1,
+        "unitAmount": 2,
+        "discountAmount": 0,
+        "vatCode": "0",
+        "vatRate": 0,
+        "vatAmount": 0,
+        "taxInclusiveTotal": 2,
+        "sortOrder": 1,
+        "notes": null
+      }
+    ],
+    "cancelReason": null,
+    "cancelledAt": null,
+    "cancelledBy": null
+  },
+  "failed": {
+    "id": "bedfbdc6-4762-4c65-8d2d-6e711641740b",
+    "sourceModule": "Expenses",
+    "factType": "DocumentConfirmed",
+    "sourceEventId": "808b01d5-f126-4ebe-afb5-ef353d4e3ded",
+    "sourceDocumentNumber": "004-004-000000028",
+    "businessDate": "2026-10-28",
+    "entryDate": "2026-10-28",
+    "status": "Failed",
+    "errorCode": "RULE_NOT_FOUND",
+    "errorMessage": "No existe una regla de contabilización activa para el hecho contable.",
+    "attempts": 1,
+    "lastAttemptAtUtc": "2026-10-28T21:18:47.598694Z",
+    "journalEntryId": null,
+    "createdAt": "2026-10-28T21:18:47.28165Z",
+    "createdBy": "a1dd960e-ad5a-4943-bfbc-ae9f0fff0266"
+  },
+  "failedDetail": {
+    "posting": {
+      "id": "bedfbdc6-4762-4c65-8d2d-6e711641740b",
+      "sourceModule": "Expenses",
+      "factType": "DocumentConfirmed",
+      "sourceEventId": "808b01d5-f126-4ebe-afb5-ef353d4e3ded",
+      "sourceDocumentNumber": "004-004-000000028",
+      "businessDate": "2026-10-28",
+      "entryDate": "2026-10-28",
+      "status": "Failed",
+      "errorCode": "RULE_NOT_FOUND",
+      "errorMessage": "No existe una regla de contabilización activa para el hecho contable.",
+      "attempts": 1,
+      "lastAttemptAtUtc": "2026-10-28T21:18:47.598694Z",
+      "journalEntryId": null,
+      "createdAt": "2026-10-28T21:18:47.28165Z",
+      "createdBy": "a1dd960e-ad5a-4943-bfbc-ae9f0fff0266"
+    },
+    "attemptHistory": [
+      {
+        "id": "2cbfdcd7-6064-4a08-8760-aa0be83cfedb",
+        "attemptNumber": 1,
+        "trigger": "Initial",
+        "triggeredBy": "a1dd960e-ad5a-4943-bfbc-ae9f0fff0266",
+        "correlationId": "0HNPL728668DD:00000003",
+        "reason": null,
+        "startedAtUtc": "2026-10-28T21:18:47.384842Z",
+        "finishedAtUtc": "2026-10-28T21:18:47.598694Z",
+        "outcome": "Failed",
+        "errorCode": "RULE_NOT_FOUND",
+        "errorMessage": "No existe una regla de contabilización activa para el hecho contable.",
+        "journalEntryId": null
+      }
+    ]
+  },
+  "readinessFailed": {
+    "periodId": "134042d6-c04c-4957-ad6d-9b1adf7d68f8",
+    "status": "Open",
+    "isEligible": true,
+    "hasEnded": false,
+    "companyToday": "2026-10-28",
+    "canClose": false,
+    "completeness": {
+      "isComplete": false,
+      "asOf": "2026-12-31",
+      "reasons": [
+        {
+          "code": "POSTINGS_UNRESOLVED",
+          "count": 1
+        },
+        {
+          "code": "YEAR_END_CLOSING_MISSING",
+          "count": 1
+        }
+      ]
+    }
+  }
+}
