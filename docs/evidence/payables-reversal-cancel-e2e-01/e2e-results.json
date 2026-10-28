@@ -1,0 +1,276 @@
+{
+ "date": "2026-10-27",
+ "environment": {
+  "database": "erp_zh_test",
+  "baseline": "20261021162651_InitialProductionBaseline",
+  "api": ":5004 Release/Development seed E2E",
+  "ui": "Chromium Playwright 1.59 sobre Vite :5181, /api/** -> :5004",
+  "hitsDevApi5003": 0
+ },
+ "data": {
+  "purchase": {
+   "id": "18d50c23-a775-4ab6-8207-2ed27b9c4196",
+   "number": "001-001-000922054",
+   "total": 115,
+   "payableId": "2e7f296e-a59e-4271-8685-4e4b3e2f7fd6",
+   "payment": {
+    "id": "b5ad3127-d8c6-4acb-af93-ea5ccd9917a5",
+    "number": "00000005",
+    "amount": 45
+   }
+  },
+  "expense": {
+   "id": "c537a578-1765-4f51-857a-153bfef47c0a",
+   "number": "001-002-000922054",
+   "total": 80,
+   "payableId": "e9df2ce1-830d-49b3-919e-eca2b5852ed8",
+   "payment": {
+    "id": "f175d588-ca81-428c-89bf-9ee8265de2ef",
+    "number": "00000006",
+    "amount": 30
+   }
+  }
+ },
+ "ui": {
+  "blockedPurchaseCancel": {
+   "method": "POST",
+   "path": "/api/v1/purchases/18d50c23-a775-4ab6-8207-2ed27b9c4196/cancel",
+   "status": 422,
+   "errors": [
+    "No se puede anular una compra con pagos aplicados. Reverse los pagos primero."
+   ]
+  },
+  "blockedExpenseCancel": {
+   "method": "POST",
+   "path": "/api/v1/expenses/documents/c537a578-1765-4f51-857a-153bfef47c0a/cancel",
+   "status": 422,
+   "errors": [
+    "No se puede anular una cuenta por pagar con pagos registrados."
+   ]
+  },
+  "reverse": [
+   {
+    "label": "reverse.purchase.http",
+    "ok": true,
+    "actual": 200,
+    "expected": 200
+   },
+   {
+    "label": "reverse.purchase.reloadedShowsReversed",
+    "ok": true,
+    "actual": "Reversado",
+    "expected": "Reversado"
+   },
+   {
+    "label": "reverse.purchase.noReverseButton",
+    "ok": true,
+    "actual": null,
+    "expected": 0
+   },
+   {
+    "label": "reverse.expense.http",
+    "ok": true,
+    "actual": 200,
+    "expected": 200
+   },
+   {
+    "label": "reverse.expense.reloadedShowsReversed",
+    "ok": true,
+    "actual": "Reversado",
+    "expected": "Reversado"
+   },
+   {
+    "label": "reverse.expense.noReverseButton",
+    "ok": true,
+    "actual": null,
+    "expected": 0
+   }
+  ],
+  "purchaseCancel": {
+   "method": "POST",
+   "path": "/api/v1/purchases/18d50c23-a775-4ab6-8207-2ed27b9c4196/cancel",
+   "status": 200
+  },
+  "expenseCancel": {
+   "method": "POST",
+   "path": "/api/v1/expenses/documents/c537a578-1765-4f51-857a-153bfef47c0a/cancel",
+   "status": 200
+  },
+  "isolationB": {
+   "payable": "FINANZAS Cuenta por pagar Detalle de saldo y cuotas — solo lectura. arrow_back Volver Cuenta por pagar no encontrada.",
+   "payment": "FINANZAS Pago a proveedor Comprobante confirmado — sin edición posterior. arrow_back Volver Pago a proveedor no encontrado.",
+   "purchase": "Facturas de compra Registro de facturas de compra de proveedores. view_list Listado add_box Nueva compra Error al cargar la compra. Nueva compra · sin guardar N",
+   "expense": "GASTOS Editar gasto Borrador por proveedor, con detalle por subcategoria de gasto. arrow_back Volver No se pudo preparar la pantalla Gasto no encontrado. No hay",
+   "payables-list": "FINANZAS Cuentas por pagar Consulta de la deuda viva con proveedores, generada desde Compras y Gastos. Buscar Proveedor Origen Todos Compra Gasto Manual Saldo i"
+  }
+ },
+ "apiChecks": [
+  {
+   "label": "isolation.B.getPayable",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.getExpensePayable",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.getPayment",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.getPurchase",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.getExpense",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.reversePayment",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.cancelPurchase",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.cancelExpense",
+   "ok": true,
+   "actual": 404,
+   "expected": 404
+  },
+  {
+   "label": "isolation.B.payablesList",
+   "ok": true,
+   "actual": 0,
+   "expected": 0
+  },
+  {
+   "label": "isolation.B.paymentsList",
+   "ok": true,
+   "actual": 0,
+   "expected": 0
+  },
+  {
+   "label": "A.reverseTwice.rejected",
+   "ok": true,
+   "actual": [
+    422,
+    "[\"Solo un pago Confirmed puede reversarse (estado actual: Reversed).\"]"
+   ],
+   "expected": "4xx"
+  },
+  {
+   "label": "A.cancelPurchaseTwice.rejected",
+   "ok": true,
+   "actual": [
+    422,
+    "[\"Esta compra ya fue anulada.\"]"
+   ],
+   "expected": "4xx"
+  },
+  {
+   "label": "A.cancelExpenseTwice.rejected",
+   "ok": true,
+   "actual": [
+    422,
+    "[\"Solo se pueden anular gastos confirmados.\"]"
+   ],
+   "expected": "4xx"
+  },
+  {
+   "label": "A.payCancelledPayable.rejected",
+   "ok": true,
+   "actual": [
+    422,
+    "[\"La cuota f1499190-5a70-4142-a86e-1d37c97ee8d4 está Cancelled y no admite pagos.\"]"
+   ],
+   "expected": "4xx"
+  },
+  {
+   "label": "A.purchasePayable.final",
+   "ok": true,
+   "actual": [
+    "cancelled",
+    0,
+    115
+   ],
+   "expected": [
+    "cancelled",
+    0
+   ]
+  },
+  {
+   "label": "A.expensePayable.final",
+   "ok": true,
+   "actual": [
+    "cancelled",
+    0,
+    80
+   ],
+   "expected": [
+    "cancelled",
+    0
+   ]
+  },
+  {
+   "label": "A.purchase.final",
+   "ok": true,
+   "actual": [
+    "Cancelled",
+    "E2E cancel: anulación de compra"
+   ],
+   "expected": "Cancelled"
+  },
+  {
+   "label": "A.expense.final",
+   "ok": true,
+   "actual": [
+    "Cancelled",
+    "E2E cancel: anulación de gasto"
+   ],
+   "expected": "Cancelled"
+  },
+  {
+   "label": "A.purchasePayment.final",
+   "ok": "E2E reversa pago purchase",
+   "actual": [
+    "Reversed",
+    "E2E reversa pago purchase",
+    "RegistrationError"
+   ],
+   "expected": "Reversed"
+  },
+  {
+   "label": "A.expensePayment.final",
+   "ok": "E2E reversa pago expense",
+   "actual": [
+    "Reversed",
+    "E2E reversa pago expense",
+    "RegistrationError"
+   ],
+   "expected": "Reversed"
+  }
+ ],
+ "postgres": {
+  "afterPayments": "== docs\n?column?|invoice_number|status\npurchase|001-001-000922054|2\nexpense|001-002-000922054|1\n(2 rows)\n== AP\ndocument_number|origin_type|status|company_id|installment_number|amount|paid_amount|status\n001-001-000922054|0|1|3156bddb-a6bb-44ed-a015-bf0789157fcb|1|115.00|45.00|1\n001-002-000922054|1|1|3156bddb-a6bb-44ed-a015-bf0789157fcb|1|80.00|30.00|1\n(2 rows)\n== payments\nsystem_number|total_amount|status|reversed|reverse_reason|reversal_bank_reason|company_id\n00000005|45.00|1|f|||3156bddb-a6bb-44ed-a015-bf0789157fcb\n00000006|30.00|1|f|||3156bddb-a6bb-44ed-a015-bf0789157fcb\n(2 rows)\n== journal\nentry_number|source_module|source_event_type|status|is_reversal|code|debit|credit\n13|Purchases|InvoiceReceived|1|f|1.1.04.001|100.00|0.00\n13|Purchases|InvoiceReceived|1|f|1.1.05.001|15.00|0.00\n13|Purchases|InvoiceReceived|1|f|2.1.01.001|0.00|115.00\n14|Expenses|DocumentConfirmed|1|f|2.1.01.001|0.00|80.00\n14|Expenses|DocumentConfirmed|1|f|6.1.01.003|80.00|0.00\n15|Payables|SupplierPaymentConfirmed|1|f|2.1.01.001|45.00|0.00\n15|Payables|SupplierPaymentConfirmed|1|f|1.1.02.001|0.00|45.00\n16|Payables|SupplierPaymentConfirmed|1|f|2.1.01.001|30.00|0.00\n16|Payables|SupplierPaymentConfirmed|1|f|1.1.02.001|0.00|30.00\n(9 rows)\n== balance per entry\nentry_number|d|c\n13|115.00|115.00\n14|80.00|80.00\n15|45.00|45.00\n16|30.00|30.00\n(4 rows)\n== stock movements\nmovement_type|quantity|source_doc_type\n1|10.000000|PurchaseInvoice\n(1 row)\n",
+  "afterBlockedCancel": "idéntico a afterPayments (diff vacío)",
+  "afterReverse": "== docs\n?column?|invoice_number|status\npurchase|001-001-000922054|2\nexpense|001-002-000922054|1\n(2 rows)\n== AP\ndocument_number|origin_type|status|company_id|installment_number|amount|paid_amount|status\n001-001-000922054|0|0|3156bddb-a6bb-44ed-a015-bf0789157fcb|1|115.00|0.00|0\n001-002-000922054|1|0|3156bddb-a6bb-44ed-a015-bf0789157fcb|1|80.00|0.00|0\n(2 rows)\n== payments\nsystem_number|total_amount|status|reversed|reverse_reason|reversal_bank_reason|company_id\n00000005|45.00|2|t|E2E reversa pago purchase|3|3156bddb-a6bb-44ed-a015-bf0789157fcb\n00000006|30.00|2|t|E2E reversa pago expense|3|3156bddb-a6bb-44ed-a015-bf0789157fcb\n(2 rows)\n== journal\nentry_number|source_module|source_event_type|status|is_reversal|code|debit|credit\n13|Purchases|InvoiceReceived|1|f|1.1.04.001|100.00|0.00\n13|Purchases|InvoiceReceived|1|f|1.1.05.001|15.00|0.00\n13|Purchases|InvoiceReceived|1|f|2.1.01.001|0.00|115.00\n14|Expenses|DocumentConfirmed|1|f|2.1.01.001|0.00|80.00\n14|Expenses|DocumentConfirmed|1|f|6.1.01.003|80.00|0.00\n15|Payables|SupplierPaymentConfirmed|1|f|2.1.01.001|45.00|0.00\n15|Payables|SupplierPaymentConfirmed|1|f|1.1.02.001|0.00|45.00\n16|Payables|SupplierPaymentConfirmed|1|f|2.1.01.001|30.00|0.00\n16|Payables|SupplierPaymentConfirmed|1|f|1.1.02.001|0.00|30.00\n17|Accounting|Reversal|1|t|2.1.01.001|0.00|45.00\n17|Accounting|Reversal|1|t|1.1.02.001|45.00|0.00\n18|Accounting|Reversal|1|t|2.1.01.001|0.00|30.00\n18|Accounting|Reversal|1|t|1.1.02.001|30.00|0.00\n(13 rows)\n== balance per entry\nentry_number|d|c\n13|115.00|115.00\n14|80.00|80.00\n15|45.00|45.00\n16|30.00|30.00\n17|45.00|45.00\n18|30.00|30.00\n(6 rows)\n== stock movements\nmovement_type|quantity|source_doc_type\n1|10.000000|PurchaseInvoice\n(1 row)\n",
+  "afterCancel": "== docs\n?column?|invoice_number|status\npurchase|001-001-000922054|3\nexpense|001-002-000922054|2\n(2 rows)\n== AP\ndocument_number|origin_type|status|company_id|installment_number|amount|paid_amount|status\n001-001-000922054|0|3|3156bddb-a6bb-44ed-a015-bf0789157fcb|1|115.00|0.00|3\n001-002-000922054|1|3|3156bddb-a6bb-44ed-a015-bf0789157fcb|1|80.00|0.00|3\n(2 rows)\n== payments\nsystem_number|total_amount|status|reversed|reverse_reason|reversal_bank_reason|company_id\n00000005|45.00|2|t|E2E reversa pago purchase|3|3156bddb-a6bb-44ed-a015-bf0789157fcb\n00000006|30.00|2|t|E2E reversa pago expense|3|3156bddb-a6bb-44ed-a015-bf0789157fcb\n(2 rows)\n== journal\nentry_number|source_module|source_event_type|status|is_reversal|code|debit|credit\n13|Purchases|InvoiceReceived|1|f|1.1.04.001|100.00|0.00\n13|Purchases|InvoiceReceived|1|f|1.1.05.001|15.00|0.00\n13|Purchases|InvoiceReceived|1|f|2.1.01.001|0.00|115.00\n14|Expenses|DocumentConfirmed|1|f|2.1.01.001|0.00|80.00\n14|Expenses|DocumentConfirmed|1|f|6.1.01.003|80.00|0.00\n15|Payables|SupplierPaymentConfirmed|1|f|2.1.01.001|45.00|0.00\n15|Payables|SupplierPaymentConfirmed|1|f|1.1.02.001|0.00|45.00\n16|Payables|SupplierPaymentConfirmed|1|f|2.1.01.001|30.00|0.00\n16|Payables|SupplierPaymentConfirmed|1|f|1.1.02.001|0.00|30.00\n17|Accounting|Reversal|1|t|2.1.01.001|0.00|45.00\n17|Accounting|Reversal|1|t|1.1.02.001|45.00|0.00\n18|Accounting|Reversal|1|t|2.1.01.001|0.00|30.00\n18|Accounting|Reversal|1|t|1.1.02.001|30.00|0.00\n19|Accounting|Reversal|1|t|1.1.04.001|0.00|100.00\n19|Accounting|Reversal|1|t|1.1.05.001|0.00|15.00\n19|Accounting|Reversal|1|t|2.1.01.001|115.00|0.00\n20|Accounting|Reversal|1|t|2.1.01.001|80.00|0.00\n20|Accounting|Reversal|1|t|6.1.01.003|0.00|80.00\n(18 rows)\n== balance per entry\nentry_number|d|c\n13|115.00|115.00\n14|80.00|80.00\n15|45.00|45.00\n16|30.00|30.00\n17|45.00|45.00\n18|30.00|30.00\n19|115.00|115.00\n20|80.00|80.00\n(8 rows)\n== stock movements\nmovement_type|quantity|source_doc_type\n1|10.000000|PurchaseInvoice\n11|-10.000000|PurchaseInvoice\n(2 rows)\n",
+  "afterIsolationProbes": "idéntico a afterCancel (diff vacío)"
+ }
+}

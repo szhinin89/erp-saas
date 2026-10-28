@@ -1,5 +1,21 @@
 # Project Status
 
+## Compras/Gastos → CxP — E2E de reversa de pagos y anulación — CLOSED (2026-10-27)
+
+Resultado E2E **46/46 PASS** (17 comprobaciones en navegador, 20 por API y 9 en PostgreSQL),
+aprobado expresamente por el propietario. No se encontró BUG REAL ni hubo cambios de código. Evidencia:
+[payables-reversal-cancel-e2e-01](docs/evidence/payables-reversal-cancel-e2e-01/README.md).
+Se probaron una compra (115.00) y un gasto (80.00) a crédito, cada uno con un pago parcial por
+transferencia. Con pagos activos, la anulación se bloqueó y no hubo cambios en la base. Luego se
+reversaron los pagos desde «Reversar pago» del detalle del pago: las CxP recuperaron su saldo y se
+generaron asientos inversos. Después se anularon compra y gasto: CxP y cuotas anuladas, kardex
+revertido y asientos originales reversados. También se comprobaron las restricciones posteriores
+(doble reversa, doble anulación y pago sobre una CxP anulada) y el aislamiento entre empresas. No
+acredita pagos en efectivo o cheque, varias cuotas, retenciones, saldo a favor aplicado, suite
+completa ni despliegue. Quedan dos DEBT no bloqueantes, documentados en la evidencia: «Reversado
+por» muestra el UUID del usuario, y el bloqueo del gasto devuelve un código y un mensaje distintos
+de los de la compra. No abren trabajos ni reabren módulos CLOSED. Sin commit ni push.
+
 ## Compras → CxP → Pago — E2E de compra a crédito — CLOSED (2026-10-27)
 
 Resultado E2E **40/40 PASS** (flujo, asientos y aislamiento), aprobado expresamente por el

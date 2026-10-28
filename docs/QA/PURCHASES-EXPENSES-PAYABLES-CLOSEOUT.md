@@ -32,7 +32,7 @@ La casilla marcada acredita únicamente la validación indicada y enlaza su evid
 - [ ] Gasto manual/XML: comprobar IVA desde `sri-vat-rates`, tipo documental desde `sri-doc-types`, totales XML y generación de CxP.
 - [x] Origen gasto: pagar parcialmente y totalmente. E2E **17/17 PASS**, aprobado por el propietario (2026-10-27); [evidencia y límites](../evidence/supplier-payments-e2e-01/README.md).
 - [x] Origen compra: pagar parcialmente y totalmente. E2E **40/40 PASS** tras corregir dos BUG REAL de UI, aprobado por el propietario (2026-10-27); [evidencia y límites](../evidence/purchases-payables-e2e-01/README.md).
-- [ ] Por cada origen (compra/gasto), bloquear anulación con pagos activos; reversar todos los pagos y anular, respetando otras restricciones documentales.
+- [x] Por cada origen (compra/gasto), bloquear anulación con pagos activos; reversar todos los pagos y anular, respetando otras restricciones documentales. E2E **46/46 PASS**, sin BUG REAL, aprobado por el propietario (2026-10-27); [evidencia y límites](../evidence/payables-reversal-cancel-e2e-01/README.md).
 - [ ] Validar [Accounting](../architecture/accounting.md).
 - [ ] Cambiar de empresa: impedir consulta/aplicación/reversa de CxP y pagos ajenos.
 - [ ] Verificar origen y líneas contables legibles; cuentas resueltas por reglas/configuración.
