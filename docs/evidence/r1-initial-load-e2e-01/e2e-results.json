@@ -1,0 +1,110 @@
+{
+  "run": "R1-INITIAL-LOAD-E2E-01",
+  "date": "2026-10-28",
+  "environment": {
+    "database": "erp_zh_test",
+    "baseline": "20261021162651_InitialProductionBaseline",
+    "api": "http://localhost:5004 (Release, Development, seed E2E, JWT efímero)",
+    "frontend": "Vite dev :5181, proxy /api -> :5004",
+    "browser": "Chromium (Playwright 1.59)",
+    "company": "ZH E2E B (1790016919001)",
+    "openingBalanceDate": "2026-10-27",
+    "accountingMode": "Enabled desde 2026-10-27"
+  },
+  "scenarios": [
+    {
+      "id": 37,
+      "name": "Carga inicial de productos (IL-1)",
+      "result": "PASS",
+      "bugs": [
+        {
+          "type": "BUG REAL",
+          "status": "CORREGIDO",
+          "summary": "El modal anunciaba 3 categorías y 3 marcas por crear cuando eran 1 y 1 (contaba avisos por fila)",
+          "test": "ImportWizardPage.catalogCreation.test.tsx RED->GREEN; Chromium 1 categoría y 1 marca"
+        }
+      ],
+      "checks": [
+        "lote inválido: fila sin PVP en Error, confirmación deshabilitada",
+        "lote válido: 3 productos confirmados",
+        "PostgreSQL: 3 ítems Product, IVA/PVP/UoM según archivo, 1 categoría, 1 marca, barcodes con tipo",
+        "UI: reapertura del ítem con sus datos"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Carga inicial de clientes y proveedores (IL-2/IL-3)",
+      "result": "PASS",
+      "checks": [
+        "identificación repetida: 2 filas en Error, confirmación bloqueada",
+        "3 clientes y 2 proveedores confirmados",
+        "PostgreSQL: roles activos, condición de pago solo en la empresa B, datos fiscales del proveedor y contactos según el archivo",
+        "UI: listados y ficha del proveedor"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Carga inicial de inventario (IL-4)",
+      "result": "PASS",
+      "checks": [
+        "bodega inexistente: Error, confirmación bloqueada",
+        "3 existencias confirmadas (una por barcode)",
+        "PostgreSQL: saldo inicial a 27/10/2026, total 333.00",
+        "Reporte de Stock 333.00; Kardex con «Saldo Inicial — 27/10/2026»"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "CxC/CxP iniciales, apertura contable, cobro y pago parcial",
+      "result": "PASS",
+      "bugs": [
+        {
+          "type": "BUG REAL",
+          "status": "CORREGIDO (autorizado por el propietario)",
+          "summary": "En /finance/receivables, «Fecha factura» de una CxC de saldo inicial muestra la fecha de carga en lugar de la emisión propia",
+          "test": "AccountsReceivablePage.initialBalanceDate.test.tsx: HEAD 1 FAIL/1 PASS -> 2/2 PASS"
+        }
+      ],
+      "checks": [
+        "varias fechas de corte: Error",
+        "saldo con 3 decimales: Error, sin redondeo",
+        "2 CxC y 2 CxP confirmadas con origen saldo inicial y una cuota",
+        "3 lotes contabilizados y conciliados (asientos 1-3); puente 368.50",
+        "ASI publicado (asiento 4); puente 0.00; apertura conciliada",
+        "PostgreSQL: asientos 1-4 Posted, balanceados, al corte",
+        "cobro parcial 80.00: CxC 200.00/80.00/120.00, cuota parcial, asiento 5",
+        "pago en efectivo sin sesión de caja: 422 sin persistencia (regla de negocio)",
+        "pago parcial 50.75 por transferencia: CxP 150.75/50.75/100.00, asiento 6",
+        "carga inicial no cerrada (irreversible, fuera de alcance)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Usuario con perfil limitado",
+      "result": "PASS",
+      "checks": [
+        "alta r1.digitador: rol User, perfil DataEntry",
+        "primer inicio: cambio obligatorio de contraseña",
+        "sin sucursal: bloqueado hasta asignarla",
+        "UI: permitido Ítems y Clientes; denegado Carga Inicial, CxC y Asientos",
+        "API: 200 en ítems y terceros; 403 en 5 operaciones; ninguna fila nueva",
+        "cambio a la empresa A rechazado"
+      ]
+    }
+  ],
+  "gates": {
+    "vitest_initialLoad": "32/32 PASS",
+    "eslint_changed_files": "PASS",
+    "tsc_b": "PASS",
+    "build": "PASS",
+    "architecture_check": "PASS, 0 violaciones nuevas",
+    "git_diff_check": "PASS",
+    "full_suite": "no ejecutada"
+  },
+  "processes": "API :5004 y Vite :5181 detenidos; :5003 no usado",
+  "ownerApproval": "R1 CLOSED 2026-10-28 (5/5 PASS)",
+  "limits": [
+    "carga inicial no cerrada (cierre irreversible no ejecutado)",
+    "sin liquidación total de saldos iniciales de CxC/CxP"
+  ]
+}

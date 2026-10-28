@@ -1,5 +1,27 @@
 # Project Status
 
+## R1 — Arranque: carga inicial, apertura contable y usuario limitado — CLOSED (2026-10-28)
+
+E2E en navegador, API y PostgreSQL sobre la empresa B de `erp_zh_test`, con datos sintéticos,
+aprobado expresamente por el propietario: **5/5 PASS** en #37 IL-1, #6 IL-2/IL-3, #7 IL-4, #8
+IL-5/IL-6 con apertura contable, cobro y pago parcial, y #3 usuario con perfil limitado. Evidencia:
+[r1-initial-load-e2e-01](docs/evidence/r1-initial-load-e2e-01/README.md).
+Dos **BUG REAL** corregidos con regresión focal RED → GREEN: (1) IL-1, el aviso de creación de
+catálogo contaba avisos por fila («3 categorías y 3 marcas» cuando eran 1 y 1), en
+`ImportWizardPage.tsx`; (2) CxC, «Fecha factura» de una CxC de saldo inicial mostraba la fecha de
+carga en lugar de la emisión del documento, en `AccountsReceivablePage.tsx`. La corrección de CxC
+fue autorizada expresamente y se limita a esa columna: las CxC con factura conservan la fecha y hora
+de la factura. Con aprobación del propietario y conforme a ADR-034 (sufijo `At` solo para instantes),
+el campo de fecha de negocio de la respuesta de CxC se renombró de `InvoiceIssuedAt` a
+`InvoiceIssueDate` (`invoiceIssueDate` en JSON) en `SalesReceivableDto` y sus consumidores directos;
+mismo tipo y valor; sin cambios de guardrails. Gates focales PASS: Vitest initialLoad + finance 82/82,
+Application `SalesReceivable*` 9/9, Infrastructure `ValidateInitialReceivablesPostgreSqlTests` 28/28,
+compilación de ERP.API, ESLint, `tsc -b`, build, `architecture:check` (0 violaciones nuevas) y
+`git diff --check`.
+Límites: no se ejecutó el cierre irreversible de la carga inicial (queda abierta y conciliada), ni la
+liquidación total de saldos iniciales de CxC/CxP. No acredita suite completa ni despliegue. Sin
+commit ni push.
+
 ## Ventas — E2E de devolución con crédito a CxC cobrada — CLOSED (2026-10-27)
 
 Resultado E2E **14/14 PASS** en navegador y **23/23 PASS** en rechazos y aislamiento (37/37), con

@@ -35,7 +35,7 @@ const RECEIVABLE: SalesReceivableDto = {
   branchName: "Matriz",
   createdByUserId: null,
   createdByName: null,
-  invoiceIssuedAt: "2026-09-01",
+  invoiceIssueDate: "2026-09-01",
   invoiceCreatedAt: "2026-09-01T10:00:00Z",
   dueDate: "2026-10-01",
   originalAmount: 100,

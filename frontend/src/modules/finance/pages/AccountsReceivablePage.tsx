@@ -76,7 +76,12 @@ export function AccountsReceivablePage() {
     { key: "identification", header: "Identificación", render: (r) => <span className="mono">{r.customerIdentification}</span> },
     { key: "branch", header: "Sucursal", render: (r) => r.branchName || "Sucursal no disponible" },
     { key: "createdBy", header: "Emitido por", render: (r) => r.createdByName || "Usuario no disponible" },
-    { key: "invoiceDate", header: "Fecha factura", render: (r) => formatDateTime(r.invoiceCreatedAt) },
+    {
+      key: "invoiceDate",
+      header: "Fecha factura",
+      // Saldo inicial (sin factura): emisión propia del documento, no la fecha de carga.
+      render: (r) => (r.invoiceId ? formatDateTime(r.invoiceCreatedAt) : formatDate(r.invoiceIssueDate)),
+    },
     { key: "dueDate", header: "Vence", render: (r) => (r.dueDate ? formatDate(r.dueDate) : "—") },
     { key: "originalAmount", header: "Monto original", render: (r) => <ZHMoneyValue precision="money" value={r.originalAmount} /> },
     { key: "paidAmount", header: "Cobrado", render: (r) => <ZHMoneyValue precision="money" value={r.paidAmount} /> },

@@ -142,12 +142,11 @@ export function ImportWizardPage({
     importType === "InitialPayables";
   const previewRows = preview?.items ?? [];
   const previewIssues = previewRows.flatMap((row) => row.issues);
-  const categoryCreationWarnings = previewIssues.filter(
-    (issue) => issue.code === "CATEGORY_WILL_BE_CREATED",
-  ).length;
-  const brandCreationWarnings = previewIssues.filter(
-    (issue) => issue.code === "BRAND_WILL_BE_CREATED",
-  ).length;
+  // Un mismo valor repetido en varias filas se crea una sola vez: contar valores distintos, no filas.
+  const distinctIssueMessages = (code: string) =>
+    new Set(previewIssues.filter((issue) => issue.code === code).map((issue) => issue.message)).size;
+  const categoryCreationWarnings = distinctIssueMessages("CATEGORY_WILL_BE_CREATED");
+  const brandCreationWarnings = distinctIssueMessages("BRAND_WILL_BE_CREATED");
   const hasCatalogCreationWarnings =
     batch?.autoCreateCatalogValues === true &&
     (categoryCreationWarnings > 0 || brandCreationWarnings > 0);

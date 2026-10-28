@@ -170,7 +170,7 @@ public sealed partial class ValidateInitialReceivablesPostgreSqlTests
         row.CustomerIdentification.Should().Be("04-1790016919001");
         row.BranchId.Should().Be(_branch);
         row.BranchName.Should().Be("Sucursal B01");
-        row.InvoiceIssuedAt.Should().Be(new DateOnly(2026, 7, 15));
+        row.InvoiceIssueDate.Should().Be(new DateOnly(2026, 7, 15));
         row.DueDate.Should().Be(new DateOnly(2026, 9, 15));
         row.OriginalAmount.Should().Be(80m);
         row.BalanceDue.Should().Be(80m);

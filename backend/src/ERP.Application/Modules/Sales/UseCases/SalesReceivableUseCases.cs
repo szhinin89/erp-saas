@@ -30,7 +30,7 @@ public sealed record SalesReceivableDto(
     string? BranchName,
     Guid? CreatedByUserId,
     string? CreatedByName,
-    DateOnly InvoiceIssuedAt,
+    DateOnly InvoiceIssueDate,
     DateTime InvoiceCreatedAt,
     DateOnly? DueDate,
     decimal OriginalAmount,

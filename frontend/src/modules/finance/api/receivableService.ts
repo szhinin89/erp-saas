@@ -30,7 +30,7 @@ export interface SalesReceivableDto {
   branchName: string | null;
   createdByUserId: string | null;
   createdByName: string | null;
-  invoiceIssuedAt: string;
+  invoiceIssueDate: string;
   invoiceCreatedAt: string;
   dueDate: string | null;
   originalAmount: number;
