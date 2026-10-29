@@ -1,5 +1,125 @@
 # Project Status
 
+
+## Compras XML: identidad de lineas repetidas — pendiente validacion del propietario (2026-10-29)
+
+BUG REAL: el merger emparejaba por posicion grupos de igual codigo/descripcion y conteo,
+cruzando normales/promociones cuando cambiaba la enumeracion de la recepcion.
+Los grupos repetidos ahora conservan el snapshot de cada PurchaseReceptionLineId y sus
+PurchaseReceptionLineTaxId. KEEP: payload, lectura por ID, edicion operativa, XML inmutable
+y conciliacion fiscal. Sin cambios de BD/EF/migraciones ni reparacion de borradores existentes.
+PASS focal: backend 35/35 (incluye XML DISURGAL invertido y conciliacion 544.84), frontend
+25/25 (guardar/reabrir las seis lineas normales/gratuitas en orden inverso).
+Compilacion backend incluida en el test focal; TypeScript y diff --check PASS. Gate real PostgreSQL y funcional a cargo del
+propietario; no CLOSED, sin staging, commit ni push. Comandos tecnicos:
+`dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~RealSupplierXmlRegressionTests|FullyQualifiedName~CreatePurchaseReceptionDraftHandlerTests"`
+y desde frontend: `npx.cmd vitest run src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts`.
+
+## Modal Editar empresa — IMPLEMENTADO — PENDIENTE VALIDACIÓN VISUAL DEL PROPIETARIO (2026-10-29)
+
+BUG REAL de composición: campos sin `ZHGrid` y botones dentro del cuerpo, fuera del footer
+oficial. Adaptado a `ZHGrid`, `ZHField`, `ZhTextInput`, checkbox compartido y `footer` de
+`ZHModal`, con Guardar asociado al formulario y acciones deshabilitadas durante el envío.
+Estilos globales existentes reutilizados, sin CSS nuevo ni cambios de negocio/API/permisos.
+PASS focal: componentes 15/15, TypeScript, ESLint de los dos archivos afectados y compilación
+frontend. Sin suites generales, E2E ni navegador. Validación visual real pendiente del propietario;
+sin commit ni push. Contrato de composición: [modales](docs/architecture/modal-standard.md#formularios-dentro-del-modal).
+
+
+## Compras XML V1 — IMPLEMENTADO — PENDIENTE VALIDACIÓN FUNCIONAL DEL PROPIETARIO (2026-10-29)
+
+- Regla única vigente: producto, cantidad, presentación, bodega y costo operativo editables
+  antes de confirmar, sin igualdad literal con las líneas XML. Se mantienen conversiones reales,
+  conciliación fiscal por categoría/tarifa, CxP exacta y persistencia normal de los costos finales
+  usados por inventario, Kardex y contabilidad. XML/recepción fiscal intactos;
+  desglose reutilizado. Sin EF, baseline, migraciones, escrituras de BD ni cambios al caso #32.
+- DISURGAL `001-001-000005545`: regresión con XML real, descuentos del 100 %, cantidades,
+  presentaciones y costos editados: costo final 473.77, IVA 71.07, CxP 544.84; ambos snapshots
+  originales del XML conservados (detalle base/IVA 473.78/71.06). No hay asiento ficticio.
+- PASS técnico focal: Application 98 casos (97 + regresión nueva de documento duplicado),
+  Domain 32 y frontend 94; compilación API y frontend, TypeScript, ESLint de archivos afectados,
+  guardrails de capas/precisión/imports y diff sin errores. Los tests comprueban también el
+  evento contable balanceado, la base retenible y las unidades reales de inventario de DISURGAL.
+- Reglas y limitaciones: [SSOT Compras](docs/architecture/purchases.md#2-borrador).
+  Pendiente el gate manual del propietario; no CLOSED. No se ejecutan suites generales,
+  E2E, navegador, API ni PostgreSQL; no se repiten R1–R4. Sin staging, commit ni push.
+- Sigue vigente el bloqueo de esquema ALPINA descrito abajo: esta corrección no modifica bases.
+
+
+## Compras XML reales — antecedentes DISURGAL y bloqueo de esquema ALPINA (2026-10-28)
+
+Revisión focal de DISURGAL `001-001-000005545` y ALPINA `012-004-004253387`;
+no reabre el cierre histórico R2 ni continúa #32.
+
+- **ALPINA — BUG REAL de esquema:** el log del POST de 18:37:49 (respuesta correlacionada
+  `77767d8d-0cd0-4cbb-be8b-cf9b4ec33f0a`) muestra PostgreSQL `23502`, no duplicidad:
+  `purchase_invoice_details.freight_allocated` recibe NULL. API efectiva en
+  `localhost:5435/erp_zh_dev` (Development, user-secrets sin override de conexión).
+  Inspección expresamente autorizada, mediante `BEGIN READ ONLY` y `ROLLBACK`: tanto
+  `freight_allocated` como `other_costs_allocated` son `numeric(18,6) NOT NULL`, sin default;
+  una fila existente, cero filas con importes distintos de cero en ambas columnas, sin
+  dependencias de columna registradas en `pg_depend`. EF las ignora y la baseline/snapshot
+  vigentes no las contienen. En aquella inspección, el historial EF de la base contenía dos registros;
+  la migración nueva no aplicada fue retirada junto con su prueba de contrato por orden
+  del propietario. Reparación SQL directa autorizada en `localhost:5435/erp_zh_dev`:
+  respaldo completo `.local/alpina-backup/erp_zh_dev-before.dump` (ignorado por Git),
+  verificado por lectura/descompresión con `pg_restore`, SHA-256
+  `CDCF2F0172B14902B90BADCFC1501AC1F9F48094D0ADCA65738125531941584A`.
+  Transacción con locks y guardas: ambas columnas solo ceros, sin NULL ni dependencias;
+  eliminadas exclusivamente con `RESTRICT`, COMMIT confirmado. Conteos y huellas de
+  226 tablas / 9570 filas idénticos antes/después, excluyendo solo las dos columnas.
+  Verificación posterior: columnas ausentes, detalle existente conservado (1 fila),
+  historial EF intacto (2 registros). Baseline, snapshot y migraciones anteriores intactos.
+  Reintento del propietario: POST 201 a las 03:06:44.760Z; borrador ALPINA
+  `739de567-9683-48c2-a499-36546854011e` persistido con 4 líneas. GET por id a las
+  03:06:45.016Z falla con PostgreSQL `42P01`: falta `purchase_cost_distributions`
+  (`PurchaseInvoiceRepository.cs:29`); el listado también falla (`:185`).
+  El correlationId reportado `6d463e49-a677-4074-bbce-71d0ee50f9d2` no aparece
+  literalmente en el log de archivo; asociación por hora y endpoint, no por id probado.
+  Inspección PostgreSQL READ ONLY: faltan ambas tablas canónicas de distribuciones y
+  las claves únicas compuestas de factura/detalle requeridas por sus FK. La baseline
+  vigente sí las define; el respaldo previo tampoco contiene las tablas. BUG REAL de
+  esquema independiente del DROP anterior. BLOQUEO: pendiente autorización expresa
+  para reparación focal de esas tablas, claves e índices; sin nuevas escrituras de BD,
+  cambios EF, migraciones ni código. Carga funcional todavía no PASS.
+- **DISURGAL:** la nueva regla operativa y su conciliación están implementadas según la
+  entrada vigente superior. Se conservan los fixtures firmados, el descuento exacto y la
+  evidencia de diferencia cabecera/detalle; no se mantiene el bloqueo del guard anterior.
+
+Gates focales previos: regresiones de XML reales/descuento/contrato de migración 7/7; Domain
+`PurchaseInvoiceDetailMultiTaxTests` + `PurchaseInvoiceCostProrationConsistencyTests` 18/18;
+build API PASS; `architecture:check` PASS (0 nuevas); `git diff --check` PASS. El test de
+migración fue retirado con ella; corrección ALPINA validada en PostgreSQL real según lo
+anterior. Sin suites generales, aplicación de migraciones, commit ni push. No CLOSED.
+ALPINA continúa bloqueada en la carga por tablas ausentes según lo anterior. DISURGAL queda
+pendiente de validación manual del propietario con la regla vigente de conciliación.
+
+## Caso #32 — IMPLEMENTADO — PENDIENTE E2E INTEGRADA (2026-10-29)
+
+Respuestas inciertas del SRI, con la decisión del propietario: consultar antes de reenviar,
+conservar AUTORIZADO, dejar lo inconcluso pendiente de conciliación, conciliación manual solo
+con permiso y evidencia, y ningún reenvío automático ni autorización sin respuesta válida.
+**KEEP:** consulta de autorización, reintento solo consulta de Retenciones, Monitor y estado
+compacto "Requiere conciliación". **BUG frente a la decisión:** Ventas/NC reenviaban un `Signed`
+sin consultar; ahora solo consultan. **FALTA implementada:** conciliación manual
+(`electronic-documents.reconcile`, evidencia de texto auditada, reconsulta; nunca libera reenvío)
+y acción "Registrar conciliación" en el Monitor. Contrato:
+[backend.md](docs/architecture/backend.md#límites-y-finalización); addendum ADR-023.
+
+**PASS técnico del agente:** Domain ElectronicDocuments 52/52 (incluye Kernel/permisos 50/50 en otra
+corrida); Application ElectronicDocuments + Retenciones 368/368 y catálogo de permisos +
+conciliación 11/11; Infrastructure ED/Retención electrónica/A9 90/90; API Admin permisos + Monitor
+11/11; Architecture 143/143; vitest Monitor/diagnóstico/NC 25/25 e i18n 15/15; `tsc -b`, ESLint
+focal, build y `architecture:check` (0 violaciones nuevas). `ERP.API` y las pruebas Architecture/API
+se compilaron con salida alternativa porque un `ERP.API.exe` ajeno a la sesión (PID 25680) bloqueaba
+`ERP.API/bin`.
+
+Sin E2E funcional (se agrupa con #20, #30 y #31). Pendiente para la cadena integrada: permiso
+efectivo/denegación, aislamiento tenant/empresa, evidencia visible en auditoría, reconsulta real
+contra el SRI de Pruebas y ausencia de reenvío en Ventas/NC tras un fallo de envío. Límite
+aceptado por la decisión: un comprobante que el SRI nunca recibió queda pendiente de conciliación
+sin camino de reenvío. Sin migraciones, staging, commit ni push. **No CLOSED.**
+
 ## Caso #20 — IMPLEMENTADO — PENDIENTE E2E INTEGRADA (2026-10-28)
 
 Anulación documental de cobros erróneos desde CxC, con permiso específico, selección,
@@ -57,9 +177,11 @@ movimiento manual con motivo y asiento, #23 depósito bancario, #21 cierre con a
 reporte de ventas conciliado con caja y contabilidad. Aislamiento entre empresas PASS. Evidencia:
 [r3-cash-sales-e2e-01](docs/evidence/r3-cash-sales-e2e-01/README.md). Tres **BUG REAL** corregidos con
 regresión focal RED → GREEN: (1) un turno abierto en otra empresa del tenant impedía abrir caja; ahora
-hay un turno por TenantId + CompanyId (índice `ux_cash_sessions_open_per_company_user` en la migración
-forward autorizada `20261028210143_CashSessionOpenPerCompanyUser`, que llega a las bases existentes al arrancar la
-API; aplicada a `erp_zh_test`, ver [DATABASE.md](docs/DATABASE.md)); (2) depósito bancario, egreso manual y retiro permitían sobregirar la
+hay un turno por TenantId + CompanyId (índice `ux_cash_sessions_open_per_company_user`, ahora
+consolidado en `20261021162651_InitialProductionBaseline` y su Designer, sin incremental adicional;
+EF Core y ModelSnapshot conservan el mismo índice). Comprobaciones técnicas focales de consolidación
+PASS; estructuras de Compras preservadas. Instalación limpia pendiente del propietario, sin ejecución
+sobre bases ni nueva validación funcional de R3; (2) depósito bancario, egreso manual y retiro permitían sobregirar la
 caja; ahora aplican la misma regla que el pago a proveedor; (3) el arqueo mostraba «Total contado» $0.00
 en la UI. SSOT: [backend.md § Turnos de caja](docs/architecture/backend.md#turnos-de-caja-uno-por-empresa-y-sin-sobregiro)
 y [accounting.md §25](docs/architecture/accounting.md#25-caja-contable-accounting-12c). Gates focales:
@@ -448,7 +570,7 @@ Reglas funcionales únicamente en las [SSOT](docs/architecture/README.md).
 | Ítems: diagnóstico unificado de códigos | Application 423/423, PostgreSQL 22/22, frontend 755 y arquitectura 143/143 PASS; [evidencia](docs/evidence/items-code-conflicts-01/README.md) | Implementado; sin nueva ejecución |
 | Compras: Internos provisionales | Application 63/63, frontend 86/86, PostgreSQL 11/11 PASS; [evidencia](docs/evidence/purchases-internal-barcodes-01/README.md) | Implementado; sin decisiones pendientes en esa entrega |
 | Compras: desglose XML | Commits 478f5cc0b / 77f80985f; Domain 59, Application 121, frontend 77 y objetos SQL 2/2 PASS | Implementado; sin acreditar despliegue |
-| Compras: vinculación estricta por proveedor | dc643c455; PostgreSQL 6/6, Application 100/100, selección manual 6/6 PASS | Implementado |
+| Compras: vinculación estricta por proveedor | dc643c455; PostgreSQL 6/6, Application 100/100, selección manual 6/6 PASS | Implementado para la conciliación de recepción/código de proveedor; no exige que el producto, costo o cantidad operativos coincidan con el XML. Rige la regla única de Compras V1 indicada al inicio |
 | Compras: productos pendientes compactos | 77f80985f; frontend 589/589 y PR-7 PASS; [evidencia](docs/evidence/purchases-pending-products-compact-01/README.md) | Implementado; excepción del modal retirada |
 | Compras: modal Distribuir | Focal 16/16 y gates PASS; [evidencia](docs/evidence/purchases-distribute-cost-01/README.md) | Implementado; no amplía cálculo |
 | Compras: validaciones comerciales | Focal 368 y gates PASS; [evidencia](docs/evidence/purchases-commercial-risk-01/README.md) | Falta decisión sobre precisión del costo mostrado; no se resuelve en esta consolidación |
@@ -547,12 +669,12 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   la confirmación de Gastos, porque no existe flujo de aprobación. Contrato:
   [security.md](docs/architecture/security.md#permisos-vs-política-de-flujo-documental-document-flow-policy-01).
   La aprobación es intención futura en [ROADMAP](docs/ROADMAP.md#etapa-1--completar-erp-core).
-- **Retenciones electrónicas sin respuesta concluyente:** los comprobantes en `Signed`
-  histórico, `Dispatching` o `Received` quedan en "Requiere conciliación" sin procedimiento
-  del ERP para resolverlos. Pendientes sin decisión: procedimiento de conciliación
-  (antes P-2/O-10), tratamiento de comprobantes de retención anteriores al ciclo actual cuyo
-  origen ya fue anulado (antes O-1/O-9) y extensión de la regla de no reenvío a Ventas/NC
-  (antes O-15). Contrato: [backend.md](docs/architecture/backend.md#límites-y-finalización).
+- **Comprobantes electrónicos sin respuesta concluyente (Caso #32, pendiente E2E):** se
+  consultan, nunca se reenvían; la conciliación manual solo registra evidencia y reconsulta.
+  Un comprobante que el SRI nunca recibió queda en "Requiere conciliación" sin camino de
+  reenvío. Sigue sin decisión el tratamiento de comprobantes de retención anteriores al ciclo
+  actual cuyo origen ya fue anulado (antes O-1/O-9): admiten evidencia, no consulta.
+  Contrato: [backend.md](docs/architecture/backend.md#límites-y-finalización).
 - **Logs de autenticación anteriores a la corrección de AUTH sensitive logging:** pueden
   contener el campo `successorHash` del evento de rotación de refresh token. No se acredita
   exposición ni incidente; su revisión o depuración depende de la operación de cada entorno.
