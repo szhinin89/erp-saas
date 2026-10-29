@@ -87,7 +87,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             Mock.Of<IElectronicDocumentXmlStorageService>(MockBehavior.Strict),
             Mock.Of<IElectronicDocumentReceptionService>(MockBehavior.Strict),
             Mock.Of<IElectronicDocumentAuthorizationService>(MockBehavior.Strict),
-            Mock.Of<IFileStorage>(MockBehavior.Strict), new PostgresDatabaseExceptionTranslator(),
+            new PostgresDatabaseExceptionTranslator(),
             guards.Object, new UnitOfWork(db), NullLogger<ElectronicDocumentIssuer>.Instance);
     }
 

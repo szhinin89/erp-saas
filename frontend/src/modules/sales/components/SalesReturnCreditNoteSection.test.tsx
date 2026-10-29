@@ -73,6 +73,7 @@ function diagnostic(
     xmlDraftAvailable: true,
     xmlSignedAvailable: true,
     xmlAuthorizedAvailable: true,
+    requiresReconciliation: false,
     ...overrides,
   };
 }

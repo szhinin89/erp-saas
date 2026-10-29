@@ -50,4 +50,6 @@ export type ElectronicDocumentDiagnosticDto = {
   xmlDraftAvailable: boolean;
   xmlSignedAvailable: boolean;
   xmlAuthorizedAvailable: boolean;
+  /** Caso #32 — resultado SRI desconocido; lo decide el backend (habilita la conciliación manual). */
+  requiresReconciliation: boolean;
 };

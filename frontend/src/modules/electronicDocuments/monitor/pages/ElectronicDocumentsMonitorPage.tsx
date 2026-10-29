@@ -114,12 +114,14 @@ export function ElectronicDocumentsMonitorPage() {
         xmlLoading={m.xmlLoading}
         xmlError={m.xmlError}
         canRetry={m.canRetry}
+        canReconcile={m.canReconcile}
         retryLoading={m.retryLoading}
         canDownloadRide={m.canDownloadRide}
         rideDownloading={m.rideDownloading}
         onClose={m.closeDetail}
         onViewXml={(variant) => void m.viewXml(variant)}
         onRetryNow={m.retryNow}
+        onReconcile={m.reconcile}
         onDownloadRide={() => void m.downloadRide()}
       />
     </ErpPageTemplate>

@@ -171,6 +171,25 @@ de terceros. Se implementa según ADR-038 (D6/D7), con salida XML nueva solo en 
 Issuer, jobs y RIDE. Los tres XML con el campo validan contra los XSD actuales (Factura 1.1.0, NC 1.1.0,
 Retención 1.0.0). Documentos firmados o autorizados no se regeneran.
 
+## Addendum (2026-10-29): Caso #32 — respuestas inciertas del SRI (decisión del propietario)
+
+Un `Signed` de Ventas/NC cuyo envío no obtuvo respuesta pudo haber llegado al SRI; `RetryAsync` lo reenviaba
+sin consultar. Decisión aprobada: consultar antes de reenviar, conservar AUTORIZADO, dejar lo inconcluso
+pendiente de conciliación, nunca reenviar automáticamente un estado desconocido ni marcar autorizado sin
+respuesta válida del SRI.
+
+- `RetryAsync` (sin guard) desde `Signed`/`Received` solo consulta la autorización por clave de acceso, igual
+  que el camino con guard (ADR-036). Se retira la relectura del XML firmado para reenviar. El primer envío
+  del pipeline no cambia.
+- `ElectronicDocument.RequiresSriReconciliation` (Signed/Dispatching/Sent/Received, o DeadLetter que venía de
+  ellos) y `RecordReconciliationEvidence` (sin transición; evento `ReconciliationRecorded` → Entity Audit).
+- Conciliación manual: `POST /api/v1/electronic-documents/{id}/reconciliation`, permiso
+  `electronic-documents.reconcile`, evidencia de texto obligatoria; registra y reconsulta por el mismo
+  `RetryAsync`. Nunca autoriza, rechaza ni libera un reenvío.
+
+**Sin cambios:** estados, transiciones existentes, `SriSoapClient`, firma, XML, jobs y la política de reintentos.
+Contrato: [Backend § Límites y finalización](../architecture/backend.md#límites-y-finalización).
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

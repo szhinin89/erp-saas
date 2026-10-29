@@ -21,7 +21,6 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
     private readonly IElectronicDocumentXmlStorageService _xmlStorageService;
     private readonly IElectronicDocumentReceptionService _receptionService;
     private readonly IElectronicDocumentAuthorizationService _authorizationService;
-    private readonly IFileStorage _fileStorage;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly IElectronicDocumentSourceLifecycleGuardResolver _sourceGuards;
     private readonly IUnitOfWork _unitOfWork;
@@ -35,7 +34,6 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         IElectronicDocumentXmlStorageService xmlStorageService,
         IElectronicDocumentReceptionService receptionService,
         IElectronicDocumentAuthorizationService authorizationService,
-        IFileStorage fileStorage,
         IDatabaseExceptionTranslator dbEx,
         IElectronicDocumentSourceLifecycleGuardResolver sourceGuards,
         IUnitOfWork unitOfWork,
@@ -49,7 +47,6 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         _xmlStorageService = xmlStorageService;
         _receptionService = receptionService;
         _authorizationService = authorizationService;
-        _fileStorage = fileStorage;
         _dbEx = dbEx;
         _sourceGuards = sourceGuards;
         _unitOfWork = unitOfWork;
@@ -477,47 +474,22 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         // A4: MarkRetryAttempted ya persistió arriba, así que RetryCount ya avanzó antes de esta
         // llamada de red — una excepción real aquí no deja el conteo de reintentos desincronizado
         // (a diferencia del tramo previo a la firma, cubierto por el try/catch de RunPipelineAsync).
+        //
+        // Caso #32: un Signed pudo haber llegado al SRI aunque el envío no obtuviera respuesta. Nunca
+        // se reenvía: solo se consulta su autorización por clave de acceso (igual que los orígenes con
+        // guard). AUTORIZADO se conserva; una consulta no concluyente deja el estado intacto
+        // ("Requiere conciliación").
         string? lastFailureReason;
         try
         {
-            if (document.CurrentState == ElectronicDocumentState.Signed)
-            {
-                var signedXmlBytes = await ReadSignedXmlAsync(document, ct);
-                if (signedXmlBytes is null)
-                {
-                    lastFailureReason = "No se pudo releer el XML firmado ya almacenado.";
-                    LogSignedXmlUnavailable(document.Id);
-                }
-                else
-                {
-                    var (reachedReceived, receptionFailureReason) = await TrySendToReceptionAsync(
-                        document,
-                        document.CompanyId,
-                        userId,
-                        signedXmlBytes,
-                        ct
-                    );
-                    lastFailureReason = receptionFailureReason;
-                    if (reachedReceived)
-                        lastFailureReason = await AuthorizeAsync(
-                            document,
-                            tenantId,
-                            document.CompanyId,
-                            userId,
-                            ct
-                        );
-                }
-            }
-            else
-            {
-                lastFailureReason = await AuthorizeAsync(
-                    document,
-                    tenantId,
-                    document.CompanyId,
-                    userId,
-                    ct
-                );
-            }
+            LogQueryOnlyRetry(document.Id, document.CurrentState);
+            lastFailureReason = await AuthorizeAsync(
+                document,
+                tenantId,
+                document.CompanyId,
+                userId,
+                ct
+            );
         }
         catch (Exception ex)
         {
@@ -763,24 +735,6 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         );
     }
 
-    /// <summary>Relee el XML firmado ya almacenado — necesario para reenviar desde Signed sin volver a firmar.</summary>
-    private async Task<byte[]?> ReadSignedXmlAsync(
-        ElectronicDocument document,
-        CancellationToken ct
-    )
-    {
-        if (string.IsNullOrWhiteSpace(document.SignedXmlPath))
-            return null;
-
-        await using var stream = await _fileStorage.GetAsync(document.SignedXmlPath, ct);
-        if (stream is null)
-            return null;
-
-        using var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer, ct);
-        return buffer.ToArray();
-    }
-
     // SOAP-02 (auditoría SRI, Fase 2): código de mensaje oficial del SRI para "Clave acceso en
     // procesamiento" (tabla de errores de la ficha técnica, validación RECEPCIÓN). Nota 2 de esa
     // misma tabla: "no se deberá reenviar el comprobante o generar el comprobante con otra clave
@@ -791,9 +745,8 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
     // y "43 Clave acceso registrada" son la misma tabla oficial de errores de RECEPCIÓN — ya
     // documentados como motivo del índice único uq_electronic_document_access_key (ver BD-01 en
     // ElectronicDocumentConfiguration.cs) — y tienen idéntico significado funcional que el 70: el
-    // SRI ya tiene un envío anterior de esta clave de acceso, no es un rechazo real. Solo pueden
-    // aparecer en un reenvío (Signed→TrySendToReceptionAsync vía RetryAsync, que siempre reutiliza
-    // el mismo XML ya firmado, nunca genera uno nuevo ni vuelve a firmar), y la ficha técnica exige
+    // SRI ya tiene un envío anterior de esta clave de acceso, no es un rechazo real (el ERP ya no
+    // reenvía — caso #32 —, pero el SRI puede informarlo igual), y la ficha técnica exige
     // en ese caso consultar autorización en vez de asumir rechazo. Antes solo el 70 activaba esta
     // rama; el 43/45 caían en el rechazo genérico de más abajo, marcando Rejected un documento que
     // en realidad seguía vivo (o ya autorizado) en el SRI.
@@ -1124,12 +1077,6 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         ElectronicDocumentState state,
         int retryCount
     );
-
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "[ElectronicDocuments] No se pudo releer el XML firmado del documento {ElectronicDocumentId} para reintentar el envío"
-    )]
-    private partial void LogSignedXmlUnavailable(Guid electronicDocumentId);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

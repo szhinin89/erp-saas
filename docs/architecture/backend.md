@@ -664,11 +664,21 @@ El polling, lotes y ownership de recuperación se definen solo en
 antes de marcar la finalización; un fallo contable conserva la obligación Failed sin
 revertir la anulación ni generar reintento contable automático. Contrato: [Accounting](accounting.md).
 
-`Signed` histórico, `Dispatching` o `Received` sin respuesta concluyente del SRI quedan
-en `RequiresReconciliation` ("Requiere conciliación"): no se reenvían ni se descartan.
-El ERP no tiene comando ni procedimiento de conciliación para esos estados; tampoco para
-comprobantes de retención anteriores a este ciclo cuyo origen ya fue anulado. Ventas y NC
-de venta (sin guard) conservan el pipeline v1.0. Pendientes: [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
+**Respuestas inciertas del SRI (Caso #32, todos los orígenes).** Un comprobante que salió o
+pudo salir al SRI sin resultado conocido (`Signed`, `Dispatching`, `Sent`, `Received`, o
+`DeadLetter` que venía de ellos; `ElectronicDocument.RequiresSriReconciliation`) nunca se
+reenvía automáticamente: el reintento (job o Monitor) solo consulta la autorización por clave
+de acceso. AUTORIZADO se conserva; NO AUTORIZADO pasa a `Rejected`; una consulta no concluyente
+deja el estado intacto ("Requiere conciliación"). Solo el primer envío del pipeline transmite.
+
+Conciliación manual: `POST /api/v1/electronic-documents/{id}/reconciliation` (Monitor,
+"Registrar conciliación"), permiso `electronic-documents.reconcile`, evidencia de texto
+obligatoria (referencia ≤ 150 y observación ≤ 300). Registra la evidencia en la auditoría del
+comprobante (`ReconciliationRecorded`, sin cambio de estado) y reconsulta por el mismo reintento.
+Nunca autoriza, rechaza, descarta ni libera un reenvío por declaración del usuario: el estado
+fiscal solo lo decide una respuesta del SRI. En Retenciones con origen que ya no permite
+procesamiento, la evidencia queda registrada y no hay consulta. Un comprobante que el SRI nunca
+recibió permanece pendiente de conciliación. Pendientes: [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
 
 
 ## Configuración organizacional

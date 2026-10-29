@@ -39,7 +39,6 @@ public sealed class SriBoundaryDouble
     public Mock<IElectronicDocumentXmlSupplierResolver> Suppliers { get; } = new();
     public Mock<IElectronicDocumentSchemaValidatorResolver> Validators { get; } = new();
     public Mock<IElectronicDocumentXmlStorageService> Storage { get; } = new();
-    public Mock<IFileStorage> Files { get; } = new();
 
     /// <summary>Si se fija, SendAsync avisa que entró y espera esta señal (ventana después del reclamo).</summary>
     public TaskCompletionSource? HoldSend { get; set; }
@@ -59,16 +58,6 @@ public sealed class SriBoundaryDouble
 
     public SriBoundaryDouble(Guid companyId)
     {
-        Files
-            .Setup(f => f.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
-                new MemoryStream(
-                    Encoding.UTF8.GetBytes(
-                        "<comprobanteRetencion><ds:Signature/></comprobanteRetencion>"
-                    )
-                )
-            );
-
         var supplier = new Mock<IElectronicDocumentXmlSupplier>();
         supplier.SetupGet(s => s.DocumentType).Returns(ElectronicDocumentType.Retention);
         supplier
@@ -339,7 +328,6 @@ public static class RetentionElectronicTestWiring
             sri.Storage.Object,
             sri.Reception.Object,
             sri.Authorization.Object,
-            sri.Files.Object,
             new PostgresDatabaseExceptionTranslator(),
             Guards(db, company),
             new UnitOfWork(db),

@@ -566,12 +566,68 @@ public sealed class ElectronicDocument
     /// conoce: Signed (histórico, ADR-036: ambiguo), Dispatching, Sent o Received. Solo desde aquí
     /// puede registrarse Authorized/Rejected.
     /// </summary>
-    private bool IsAwaitingSriOutcome =>
-        CurrentState
+    private bool IsAwaitingSriOutcome => IsUncertainSriState(CurrentState);
+
+    private static bool IsUncertainSriState(ElectronicDocumentState? state) =>
+        state
             is ElectronicDocumentState.Signed
                 or ElectronicDocumentState.Dispatching
                 or ElectronicDocumentState.Sent
                 or ElectronicDocumentState.Received;
+
+    /// <summary>
+    /// Caso #32 — el comprobante salió o pudo salir al SRI y el ERP no conoce su resultado
+    /// (Signed/Dispatching/Sent/Received, o DeadLetter que venía de ellos). Nunca se reenvía
+    /// automáticamente: solo se consulta, y un usuario autorizado puede registrar evidencia de
+    /// conciliación (<see cref="RecordReconciliationEvidence"/>).
+    /// </summary>
+    public bool RequiresSriReconciliation =>
+        IsUncertainSriState(CurrentState)
+        || (
+            CurrentState == ElectronicDocumentState.DeadLetter
+            && IsUncertainSriState(PreDeadLetterState)
+        );
+
+    public const int ReconciliationReferenceMaxLen = 150;
+    public const int ReconciliationObservationMaxLen = 300;
+
+    /// <summary>
+    /// Caso #32 — conciliación manual: registra la evidencia (referencia de la verificación y
+    /// observación) en la auditoría del comprobante. No cambia el estado, no autoriza, no rechaza
+    /// ni libera un reenvío: el estado fiscal solo lo decide una respuesta del SRI.
+    /// </summary>
+    public void RecordReconciliationEvidence(string reference, string observation, Guid updatedBy)
+    {
+        if (!RequiresSriReconciliation)
+            throw new DomainRuleViolationException(
+                $"Solo se concilia un comprobante con resultado SRI desconocido (estado actual: {CurrentState})."
+            );
+        if (string.IsNullOrWhiteSpace(reference))
+            throw new ArgumentException("La referencia de la evidencia es obligatoria.", nameof(reference));
+        if (string.IsNullOrWhiteSpace(observation))
+            throw new ArgumentException("La observación es obligatoria.", nameof(observation));
+        if (reference.Trim().Length > ReconciliationReferenceMaxLen)
+            throw new ArgumentException(
+                $"La referencia no puede superar {ReconciliationReferenceMaxLen} caracteres.",
+                nameof(reference)
+            );
+        if (observation.Trim().Length > ReconciliationObservationMaxLen)
+            throw new ArgumentException(
+                $"La observación no puede superar {ReconciliationObservationMaxLen} caracteres.",
+                nameof(observation)
+            );
+
+        SetUpdated(updatedBy);
+        RaiseDomainEvent(
+            new ElectronicDocumentReconciliationRecordedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                CurrentState,
+                $"Referencia: {reference.Trim()} — Observación: {observation.Trim()}"
+            )
+        );
+    }
 
     /// <summary>
     /// ADR-036 (D-7) — Transición Authorized→AnnulmentPending: se registró una solicitud de anulación

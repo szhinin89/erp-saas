@@ -1,4 +1,3 @@
-using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Interfaces.SRI;
@@ -55,7 +54,6 @@ public sealed class ElectronicDocumentIssuerRetryTests
         Mock<IElectronicDocumentRepository> repository,
         Mock<IElectronicDocumentReceptionService>? reception = null,
         Mock<IElectronicDocumentAuthorizationService>? authorization = null,
-        Mock<IFileStorage>? fileStorage = null,
         Mock<IElectronicDocumentXmlStorageService>? xmlStorage = null
     )
     {
@@ -63,7 +61,6 @@ public sealed class ElectronicDocumentIssuerRetryTests
             .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        fileStorage ??= DefaultFileStorage();
         xmlStorage ??= new Mock<IElectronicDocumentXmlStorageService>();
         reception ??= UnreachableReception();
         authorization ??= UnreachableAuthorization();
@@ -80,22 +77,11 @@ public sealed class ElectronicDocumentIssuerRetryTests
             xmlStorage.Object,
             reception.Object,
             authorization.Object,
-            fileStorage.Object,
             dbEx.Object,
             ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoGuards(),
             Mock.Of<IUnitOfWork>(),
             NullLogger<ElectronicDocumentIssuer>.Instance
         );
-    }
-
-    private static Mock<IFileStorage> DefaultFileStorage()
-    {
-        var mock = new Mock<IFileStorage>();
-        mock.Setup(f => f.GetAsync("signed/path.xml", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
-                new MemoryStream(Encoding.UTF8.GetBytes("<factura><ds:Signature/></factura>"))
-            );
-        return mock;
     }
 
     private static Mock<IElectronicDocumentReceptionService> UnreachableReception()
@@ -163,27 +149,56 @@ public sealed class ElectronicDocumentIssuerRetryTests
     }
 
     [Fact]
-    public async Task RetryAsync_from_signed_increments_retry_count_and_reads_stored_signed_xml()
+    public async Task RetryAsync_from_signed_queries_authorization_and_keeps_it_without_resending()
     {
+        // Caso #32: el SRI no respondió al envío; antes de cualquier reenvío se consulta, y un
+        // AUTORIZADO se conserva.
         var document = NewSignedDocument();
         var repository = RepositoryReturning(document);
-        byte[]? sentBytes = null;
         var reception = new Mock<IElectronicDocumentReceptionService>();
-        reception
-            .Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, byte[], CancellationToken>((_, bytes, _) => sentBytes = bytes)
+        var authorization = new Mock<IElectronicDocumentAuthorizationService>();
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                Result<SriReceptionResult>.Success(new SriReceptionResult { Status = "RECIBIDA" })
+                Result<SriAuthorizationResult>.Success(
+                    new SriAuthorizationResult
+                    {
+                        Status = "AUTORIZADO",
+                        AuthorizationNumber = ValidAccessKey,
+                        AuthorizationDate = DateTime.UtcNow,
+                    }
+                )
             );
-        var issuer = BuildIssuer(repository, reception: reception);
+        var issuer = BuildIssuer(repository, reception: reception, authorization: authorization);
 
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         document.RetryCount.Should().Be(1);
-        document.CurrentState.Should().Be(ElectronicDocumentState.Received);
-        sentBytes.Should().NotBeNull();
-        Encoding.UTF8.GetString(sentBytes!).Should().Contain("ds:Signature");
+        document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        reception.Verify(
+            r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task RetryAsync_from_signed_with_inconclusive_query_stays_signed_pending_reconciliation_without_resending()
+    {
+        var document = NewSignedDocument();
+        var repository = RepositoryReturning(document);
+        var reception = new Mock<IElectronicDocumentReceptionService>();
+        var issuer = BuildIssuer(repository, reception: reception); // autorización inalcanzable
+
+        var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        document.CurrentState.Should().Be(ElectronicDocumentState.Signed);
+        document.RequiresSriReconciliation.Should().BeTrue();
+        reception.Verify(
+            r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -336,22 +351,5 @@ public sealed class ElectronicDocumentIssuerRetryTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
-    }
-
-    [Fact]
-    public async Task RetryAsync_when_signed_xml_cannot_be_read_stays_signed_without_throwing()
-    {
-        var document = NewSignedDocument();
-        var repository = RepositoryReturning(document);
-        var fileStorage = new Mock<IFileStorage>();
-        fileStorage
-            .Setup(f => f.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Stream?)null);
-        var issuer = BuildIssuer(repository, fileStorage: fileStorage);
-
-        var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
-
-        result.IsSuccess.Should().BeTrue(result.Error);
-        document.CurrentState.Should().Be(ElectronicDocumentState.Signed);
     }
 }

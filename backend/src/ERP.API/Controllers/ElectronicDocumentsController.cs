@@ -7,6 +7,7 @@ using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocument
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentsList;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentTimeline;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentXml;
+using ERP.Application.Modules.ElectronicDocuments.UseCases.ReconcileElectronicDocument;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.RetryElectronicDocument;
 using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
@@ -134,6 +135,22 @@ public sealed class ElectronicDocumentsController : ControllerBase
             "OK"
         );
 
+    /// <summary>Caso #32 — registra evidencia de conciliación manual y reconsulta al SRI; nunca reenvía ni autoriza por declaración.</summary>
+    [HttpPost("{id:guid}/reconciliation")]
+    [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.Reconcile}")]
+    public async Task<IActionResult> Reconcile(
+        Guid id,
+        [FromBody] ReconcileElectronicDocumentRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new ReconcileElectronicDocumentCommand(id, body.Reference, body.Observation),
+                ct
+            ),
+            "OK"
+        );
+
     /// <summary>
     /// Backfill: registra el documento electrónico de un documento de origen ya autorizado
     /// comercialmente que nunca generó uno (p.ej. autorizado antes de que existiera esta
@@ -146,3 +163,5 @@ public sealed class ElectronicDocumentsController : ControllerBase
         CancellationToken ct
     ) => this.ToOkOrBadRequest(await _mediator.Send(command, ct), "OK");
 }
+
+public sealed record ReconcileElectronicDocumentRequest(string Reference, string Observation);

@@ -188,7 +188,6 @@ public sealed class ProviderRucPipelineFailClosedTests
                 Storage.Object,
                 Reception.Object,
                 Authorization.Object,
-                new Mock<IFileStorage>().Object,
                 dbEx.Object,
                 RetentionElectronicTestDoubles.NoGuards(),
                 Mock.Of<IUnitOfWork>(),

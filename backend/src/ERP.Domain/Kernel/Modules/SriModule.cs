@@ -42,6 +42,8 @@ public static class SriModule
         RelatedActionPermissionsCsv = ElectronicDocumentsPermissions.Detail
             + ","
             + ElectronicDocumentsPermissions.Retry
+            + ","
+            + ElectronicDocumentsPermissions.Reconcile
     )]
     public const string ElectronicDocumentsMonitor = "/sri/electronic-documents/monitor";
 

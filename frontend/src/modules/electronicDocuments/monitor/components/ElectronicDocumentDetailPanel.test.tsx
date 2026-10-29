@@ -51,6 +51,7 @@ function detail(
       xmlDraftAvailable: true,
       xmlSignedAvailable: true,
       xmlAuthorizedAvailable: true,
+      requiresReconciliation: false,
     },
     ...overrides,
   };
@@ -138,5 +139,52 @@ describe("ElectronicDocumentDetailPanel — Descargar RIDE", () => {
 
     const btn = screen.getByRole("button", { name: RESEND_EMAIL });
     expect((btn as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  describe("caso #32 — conciliación manual", () => {
+    const RECONCILE = /Registrar conciliación|Record reconciliation/;
+    const uncertain = (requiresReconciliation: boolean) =>
+      detail(
+        {
+          diagnostic: {
+            ...detail({}, "Received").diagnostic,
+            requiresReconciliation,
+          },
+        },
+        "Received",
+      );
+
+    it("solo con reconcile y resultado SRI desconocido informado por el backend", () => {
+      renderPanel({ detail: uncertain(false), canReconcile: true, onReconcile: vi.fn() });
+      expect(screen.queryByRole("button", { name: RECONCILE })).toBeNull();
+      cleanup();
+      renderPanel({ detail: uncertain(true), canReconcile: false, onReconcile: vi.fn() });
+      expect(screen.queryByRole("button", { name: RECONCILE })).toBeNull();
+    });
+
+    it("exige evidencia y envía referencia y observación", async () => {
+      const onReconcile = vi.fn().mockResolvedValue(undefined);
+      renderPanel({ detail: uncertain(true), canReconcile: true, onReconcile });
+
+      fireEvent.click(screen.getByRole("button", { name: RECONCILE }));
+      const submit = screen.getByRole("button", { name: /Registrar y consultar SRI|Record and query SRI/ });
+      fireEvent.click(submit);
+      expect(await screen.findByText(/referencia de la evidencia es obligatoria|evidence reference is required/i)).toBeTruthy();
+      expect(onReconcile).not.toHaveBeenCalled();
+
+      fireEvent.change(screen.getByLabelText(/Referencia de la verificación|Verification reference/), {
+        target: { value: "SRI en Línea 2026-10-29 10:15" },
+      });
+      fireEvent.change(screen.getByLabelText(/^Observación$|^Observation$/), {
+        target: { value: "Sin registro de la clave" },
+      });
+      fireEvent.click(submit);
+      await vi.waitFor(() =>
+        expect(onReconcile).toHaveBeenCalledWith({
+          reference: "SRI en Línea 2026-10-29 10:15",
+          observation: "Sin registro de la clave",
+        }),
+      );
+    });
   });
 });

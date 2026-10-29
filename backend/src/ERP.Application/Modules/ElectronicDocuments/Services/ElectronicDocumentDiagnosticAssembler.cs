@@ -50,7 +50,8 @@ public static class ElectronicDocumentDiagnosticAssembler
             ),
             !string.IsNullOrWhiteSpace(document.XmlDraftPath),
             !string.IsNullOrWhiteSpace(document.SignedXmlPath),
-            !string.IsNullOrWhiteSpace(document.AuthorizedXmlPath)
+            !string.IsNullOrWhiteSpace(document.AuthorizedXmlPath),
+            document.RequiresSriReconciliation
         );
     }
 

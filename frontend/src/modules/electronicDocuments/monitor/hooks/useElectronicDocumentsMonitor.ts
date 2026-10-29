@@ -18,6 +18,7 @@ export function useElectronicDocumentsMonitor() {
   const canView = canShow("electronic-documents.view");
   const canViewDetail = canShow("electronic-documents.detail");
   const canRetry = canShow("electronic-documents.retry");
+  const canReconcile = canShow("electronic-documents.reconcile");
   // Mismo permiso que exige GET /api/v1/ride — sin él la acción no se muestra (evita un 403).
   const canDownloadRide = canShow("ride.view");
 
@@ -178,6 +179,20 @@ export function useElectronicDocumentsMonitor() {
     }
   }, [detail, loadList, loadDashboard]);
 
+  const reconcile = useCallback(
+    async (values: { reference: string; observation: string }) => {
+      if (!detail) return;
+      const updated = await electronicDocumentsMonitorService.reconcile(
+        detail.id,
+        values,
+      );
+      setDetail(updated);
+      void loadList();
+      void loadDashboard();
+    },
+    [detail, loadList, loadDashboard],
+  );
+
   const downloadRide = useCallback(async () => {
     if (!detail) return;
     await handleDownloadRide(
@@ -216,6 +231,7 @@ export function useElectronicDocumentsMonitor() {
     canView,
     canViewDetail,
     canRetry,
+    canReconcile,
     canDownloadRide,
     filters: { dateFrom, dateTo, state, documentType, environment, search },
     setDateFrom,
@@ -251,6 +267,7 @@ export function useElectronicDocumentsMonitor() {
     closeDetail,
     viewXml,
     retryNow,
+    reconcile,
     downloadRide,
     resetFiltersAndReload,
   };

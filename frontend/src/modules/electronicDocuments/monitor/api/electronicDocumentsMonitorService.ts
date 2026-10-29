@@ -117,6 +117,13 @@ export const electronicDocumentsMonitorService = {
       {},
     ),
 
+  /** Caso #32 — registra evidencia de conciliación y reconsulta al SRI; nunca reenvía ni autoriza por declaración. */
+  reconcile: (id: string, body: { reference: string; observation: string }) =>
+    apiPost<ElectronicDocumentDetailDto>(
+      `/api/v1/electronic-documents/${id}/reconciliation`,
+      body,
+    ),
+
   /**
    * Backfill: registra el documento electrónico de un documento de origen ya autorizado
    * comercialmente que nunca generó uno. Idempotente — falla con Conflict si ya existe uno

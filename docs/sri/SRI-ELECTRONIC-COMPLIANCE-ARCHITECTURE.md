@@ -63,7 +63,7 @@ Monitor/diagnóstico:      ElectronicDocumentsController (list/dashboard/detail/
 | XSD | `InvoiceXmlSchemaValidator` 1.1.0 | `CreditNoteXmlSchemaValidator` 1.1.0 | `RetentionXmlSchemaValidator` 1.0.0 |
 | Guard / `Dispatching` | No (pipeline v1.0) | No | Sí (ADR-036) |
 | `infoAdicional` | "Observación" si `invoice.Notes` | `[]` | `[]` |
-| Reintento | `RetryAsync` (reenvío de `Signed` permitido) | ídem | `RetryGuardedAsync` (solo consulta) |
+| Reintento | `RetryAsync` (solo consulta desde `Signed`/`Received`, Caso #32) | ídem | `RetryGuardedAsync` (solo consulta) |
 | Recovery automático | `ElectronicDocumentRetryJob` (**inoperante**: 0 candidatos por filtro de tenant, auditoría §G) | ídem | `RetentionElectronicRecoveryJob` (origen sin ED / ED Draft; verificación de anulaciones) |
 | ConsultaComprobante | No | No | Sí (anulación, `RetentionAnnulmentService`) |
 | Anulación SRI | No aplica (flujo comercial) | No | ADR-036 (`AnnulmentPending` → `Cancelled` con evidencia) |
@@ -581,7 +581,7 @@ Reglas complementarias:
 
 | Es transversal (una sola implementación) | Puede variar por tipo/origen (contribuido, no copiado) | Nunca se duplica |
 |---|---|---|
-| Descubrimiento de candidatos cross-tenant (consulta con `AsPlatformQuery` que devuelve solo ids → un scope `JobExecutionContext` por candidato; patrón de `RetentionElectronicRecoveryJob`) | Si se permite reenviar desde `Signed`/`Dispatching` (guard de origen: hoy Retenciones = solo consulta) | Transiciones de estado (solo `ElectronicDocument` vía `ElectronicDocumentIssuer`) |
+| Descubrimiento de candidatos cross-tenant (consulta con `AsPlatformQuery` que devuelve solo ids → un scope `JobExecutionContext` por candidato; patrón de `RetentionElectronicRecoveryJob`) | Revalidación del origen antes de consultar (guard: hoy Retenciones); ningún origen reenvía desde `Signed`/`Dispatching` (Caso #32) | Transiciones de estado (solo `ElectronicDocument` vía `ElectronicDocumentIssuer`) |
 | Acción por estado del ED: generar / enviar / consultar / DeadLetter | Detección de "origen sin ED" (Retención `Issued` sin ED hoy; Factura/NC autorizada sin ED = gap auditoría §H) mediante un contributor por módulo (patrón `ISourceDocumentSummaryProvider`) | Tratamiento 70/43/45 |
 | Política de ventana/backoff (`ElectronicDocumentRetryPolicy`, a alinear con las 24 h del SRI) | Flujos normativos propios (anulación de retenciones, ADR-036) | Consulta de estado (Gateway §L) |
 | Reintento manual y register manual del Monitor | Preferencia por empresa (`electronic_documents.auto_retry_enabled`) | Regla "timeout/ambiguo nunca autoriza reenvío a ciegas" |

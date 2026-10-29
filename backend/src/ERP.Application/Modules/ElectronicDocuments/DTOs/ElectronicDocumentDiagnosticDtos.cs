@@ -43,5 +43,7 @@ public sealed record ElectronicDocumentDiagnosticDto(
     ElectronicDocumentTechnicalInfoDto TechnicalInfo,
     bool XmlDraftAvailable,
     bool XmlSignedAvailable,
-    bool XmlAuthorizedAvailable
+    bool XmlAuthorizedAvailable,
+    // Caso #32 — resultado SRI desconocido: habilita la conciliación manual (lo decide el backend).
+    bool RequiresReconciliation
 );

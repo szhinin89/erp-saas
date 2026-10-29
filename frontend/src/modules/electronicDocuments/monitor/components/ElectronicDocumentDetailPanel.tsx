@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ZHDrawer } from "../../../../components/zh/ZHDrawer";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
@@ -10,6 +11,7 @@ import type {
   ElectronicDocumentDetailDto,
   ElectronicDocumentXmlVariant,
 } from "../api/electronicDocumentsMonitorService";
+import { ReconcileElectronicDocumentModal } from "./ReconcileElectronicDocumentModal";
 import "./electronic-documents-monitor.css";
 import "../../../../components/zh/electronicDocuments/electronic-documents.css";
 
@@ -38,12 +40,17 @@ type Props = {
   xmlLoading: boolean;
   xmlError: string | null;
   canRetry: boolean;
+  canReconcile?: boolean;
   retryLoading: boolean;
   canDownloadRide: boolean;
   rideDownloading: boolean;
   onClose: () => void;
   onViewXml: (variant: ElectronicDocumentXmlVariant) => void;
   onRetryNow: () => Promise<void>;
+  onReconcile?: (values: {
+    reference: string;
+    observation: string;
+  }) => Promise<void>;
   onDownloadRide: () => void;
 };
 
@@ -57,15 +64,18 @@ export function ElectronicDocumentDetailPanel({
   xmlLoading,
   xmlError,
   canRetry,
+  canReconcile = false,
   retryLoading,
   canDownloadRide,
   rideDownloading,
   onClose,
   onViewXml,
   onRetryNow,
+  onReconcile,
   onDownloadRide,
 }: Props) {
   const { t } = useI18n();
+  const [reconcileOpen, setReconcileOpen] = useState(false);
   const rideUnsupported =
     detail !== null &&
     RIDE_UNSUPPORTED_DOCUMENT_TYPES.has(detail.documentType);
@@ -163,19 +173,34 @@ export function ElectronicDocumentDetailPanel({
             downloadFileBaseName={detail.documentNumber ?? detail.id}
             onViewXml={onViewXml}
             statusExtra={
-              canRetry &&
-              RETRYABLE_STATES.has(detail.diagnostic.currentState) && (
-                <ZHBtn
-                  variant="primary"
-                  size="sm"
-                  type="button"
-                  disabled={retryLoading}
-                  onClick={() => void handleRetryNow()}
-                  className="edm-retry-btn"
-                >
-                  {t("electronicDocuments.monitor.detail.retryNow")}
-                </ZHBtn>
-              )
+              <>
+                {canRetry &&
+                  RETRYABLE_STATES.has(detail.diagnostic.currentState) && (
+                    <ZHBtn
+                      variant="primary"
+                      size="sm"
+                      type="button"
+                      disabled={retryLoading}
+                      onClick={() => void handleRetryNow()}
+                      className="edm-retry-btn"
+                    >
+                      {t("electronicDocuments.monitor.detail.retryNow")}
+                    </ZHBtn>
+                  )}
+                {canReconcile &&
+                  onReconcile &&
+                  detail.diagnostic.requiresReconciliation && (
+                    <ZHBtn
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                      disabled={retryLoading}
+                      onClick={() => setReconcileOpen(true)}
+                    >
+                      {t("electronicDocuments.monitor.reconcile.open")}
+                    </ZHBtn>
+                  )}
+              </>
             }
           />
 
@@ -224,6 +249,12 @@ export function ElectronicDocumentDetailPanel({
             </ZHCard>
           )}
         </>
+      )}
+      {reconcileOpen && onReconcile && (
+        <ReconcileElectronicDocumentModal
+          onClose={() => setReconcileOpen(false)}
+          onSubmit={onReconcile}
+        />
       )}
     </ZHDrawer>
   );

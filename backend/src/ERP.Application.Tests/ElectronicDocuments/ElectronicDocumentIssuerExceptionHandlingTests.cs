@@ -208,7 +208,6 @@ public sealed class ElectronicDocumentIssuerExceptionHandlingTests
             storageService.Object,
             reception.Object,
             authorization.Object,
-            new Mock<IFileStorage>().Object,
             dbEx.Object,
             ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoGuards(),
             Mock.Of<IUnitOfWork>(),
