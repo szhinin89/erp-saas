@@ -37,6 +37,19 @@ import { ZHModal } from 'components/zh/ZHModal';
 </ZHModal>
 ```
 
+### Formularios dentro del modal
+
+- `ZHModal` ya aporta padding, ancho responsive, scroll del cuerpo y footer separado.
+  Los campos se distribuyen con `ZHGrid` (una columna para formularios simples) y `ZHField`;
+  el espacio interno de un campo no sustituye la separación entre campos del grid.
+- Reutilizar los inputs oficiales y `.zh-checkbox-label` para un checkbox con etiqueta.
+  No introducir márgenes por campo ni CSS local para reproducir estos estilos globales.
+- Las acciones se pasan por `footer`, con `ZHBtn` del mismo tamaño, Cancelar antes de la
+  acción principal. Los botones directos heredan el gap, wrap y ancho móvil del footer.
+- Si el formulario vive en el cuerpo y Guardar en el footer, asociarlos mediante `id` del
+  formulario y `form` del botón `type="submit"`. Conservar validación HTML, etiquetas
+  accesibles y el estado deshabilitado de campos y acciones durante el guardado.
+
 ### Props
 
 | Prop | Tipo | Default | Descripción |

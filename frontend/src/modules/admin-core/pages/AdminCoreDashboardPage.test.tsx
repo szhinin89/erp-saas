@@ -6,6 +6,7 @@ import {
   screen,
   fireEvent,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "../../../store/authStore";
@@ -197,6 +198,48 @@ describe("Editar empresa global", () => {
     tradeName: null,
     isActive: true,
   };
+
+  it("usa campos espaciados y acciones en el footer oficial sin perder la asociacion del formulario", async () => {
+    vi.mocked(adminCoreService.listCompanies).mockResolvedValue([company]);
+    renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    const dialog = screen.getByRole("dialog", { name: "Editar empresa" });
+    const form = within(dialog).getByRole("form", { name: "Datos de la empresa" }) as HTMLFormElement;
+    const footer = dialog.querySelector(".zh-modal-footer")!;
+    expect(dialog.querySelector(".zh-modal--md")).toBeTruthy();
+    expect(form.querySelector(".zh-grid--1")).toBeTruthy();
+    const fields = within(form).getAllByRole("textbox");
+    expect(fields).toHaveLength(3);
+    for (const field of fields) expect(field.closest(".zh-field")).toBeTruthy();
+    expect(within(form).getByRole("checkbox", { name: "Empresa activa" }).closest(".zh-checkbox-label")).toBeTruthy();
+    const save = within(footer as HTMLElement).getByRole("button", { name: "Guardar" }) as HTMLButtonElement;
+    expect(save.form).toBe(form);
+    expect(save.type).toBe("submit");
+    expect(form.contains(save)).toBe(false);
+    expect((within(form).getByRole("textbox", { name: "Raz\u00f3n social" }) as HTMLInputElement).required).toBe(true);
+    fireEvent.click(within(footer as HTMLElement).getByRole("button", { name: "Cancelar" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(adminCoreService.updateCompany).not.toHaveBeenCalled();
+  });
+
+  it("mantiene campos y acciones deshabilitados durante el guardado", async () => {
+    vi.mocked(adminCoreService.listCompanies).mockResolvedValue([company]);
+    let finishSave!: () => void;
+    vi.mocked(adminCoreService.updateCompany).mockImplementation(() => new Promise<void>(resolve => { finishSave = resolve; }));
+    renderDashboard();
+    fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() => expect(adminCoreService.updateCompany).toHaveBeenCalledOnce());
+    const dialog = screen.getByRole("dialog");
+    for (const input of within(dialog).getAllByRole("textbox")) expect((input as HTMLInputElement).disabled).toBe(true);
+    expect((within(dialog).getByRole("checkbox") as HTMLInputElement).disabled).toBe(true);
+    expect((within(dialog).getByRole("button", { name: "Guardando..." }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(dialog).getByRole("button", { name: "Cancelar" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    finishSave();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
 
   it("guarda sobre la empresa existente y refresca el RUC pendiente desde backend", async () => {
     vi.mocked(adminCoreService.listCompanies)

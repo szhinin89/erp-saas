@@ -35,7 +35,7 @@ import type {
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import { MasterDataBpFormFields } from "./MasterDataBpFormFields";
-import { ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 
 type Role = "customer" | "supplier";
@@ -93,6 +93,8 @@ interface Props {
    * El wizard normal de MasterData (`MasterDataSuppliersPage`/`MasterDataCustomersPage`) no pasa
    * esta prop y sigue exactamente igual. */
   embedded?: boolean;
+  /** Form association for actions owned by the enclosing ZHModal; presentation only. */
+  modalFormId?: string;
   onSubmitCreate: (
     body: CreateBusinessPartnerBody,
     supplierConfig?: SupplierConfigAtCreation,
@@ -141,6 +143,7 @@ export function MasterDataPartnerWizard({
   editingPartner,
   initialValues,
   embedded = false,
+  modalFormId,
   onSubmitCreate,
   onSubmitUpdate,
   onAssignRole,
@@ -323,6 +326,35 @@ export function MasterDataPartnerWizard({
         );
     }
   };
+
+  if (embedded && modalFormId) {
+    return (
+      <FormProvider {...form}>
+        <form
+          id={modalFormId}
+          aria-label={`Datos del ${roleLabelLower}`}
+          aria-busy={submitting}
+          onSubmit={form.handleSubmit(onValidSubmit)}
+        >
+          <ZHGrid cols={1}>
+            {bannerError && <ZHPageNotice variant="error" message={bannerError} />}
+            <MasterDataBpFormFields
+              section="identity"
+              saving={submitting}
+              usage={role}
+              modalLayout
+            />
+            <ZHPageNotice
+              variant="info"
+              message={role === "customer"
+                ? t("masterdata.wizard.finalNotice.customer", "Quedará disponible para ventas, facturación y cuentas por cobrar.")
+                : t("masterdata.wizard.finalNotice.supplier", "Quedará disponible para compras, gastos, retenciones y cuentas por pagar.")}
+            />
+          </ZHGrid>
+        </form>
+      </FormProvider>
+    );
+  }
 
   return (
     <FormProvider {...form}>

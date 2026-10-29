@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
+import { ZHBtn } from "../../../components/zh/ZHForm";
+import { useI18n } from "../../../i18n/i18n";
 import { message } from "../../../lib/messages";
 import {
   MasterDataPartnerWizard,
@@ -38,6 +40,8 @@ export function CreateSupplierModal({
   onCreated,
 }: Props) {
   const [saving, setSaving] = useState(false);
+  const formId = useId();
+  const { t } = useI18n();
 
   const handleCreate = async (
     body: CreateBusinessPartnerBody,
@@ -83,6 +87,23 @@ export function CreateSupplierModal({
       size="lg"
       title="Crear proveedor"
       subtitle={`RUC ${supplierRuc} · precargado desde el documento de recepción`}
+      footer={
+        <>
+          <ZHBtn type="button" variant="ghost" onClick={onClose}>
+            Cancelar
+          </ZHBtn>
+          <ZHBtn
+            type="submit"
+            form={formId}
+            variant="success"
+            disabled={saving}
+            icon={saving ? undefined : "check"}
+          >
+            {saving ? t("masterdata.wizard.btn.saving", "Guardando…")
+              : t("masterdata.wizard.btn.create", { role: "Proveedor" })}
+          </ZHBtn>
+        </>
+      }
     >
       <MasterDataPartnerWizard
         role="supplier"
@@ -90,6 +111,7 @@ export function CreateSupplierModal({
         submitting={saving}
         editingPartner={null}
         embedded
+        modalFormId={formId}
         initialValues={{
           identificationType: SRI_ID_TYPE_RUC,
           identificationNumber: supplierRuc,

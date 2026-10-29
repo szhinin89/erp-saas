@@ -12,12 +12,14 @@ import { useLegalEntityTypes } from "../api/useLegalEntityTypes";
 
 type Props = {
   saving: boolean;
+  modalLayout?: boolean;
   section?: "identity" | "review";
   usage?: "customer" | "supplier";
 };
 
 export function MasterDataBpFormFields({
   saving,
+  modalLayout = false,
   section = "identity",
   usage,
 }: Props) {
@@ -88,9 +90,9 @@ export function MasterDataBpFormFields({
 
   return (
     <>
-      <div className="md-partner-group">
-        <h4 className="md-partner-group__title">Datos de identificación</h4>
-        <ZHGrid cols={3}>
+      <div className={modalLayout ? "zh-grid zh-grid--1" : "md-partner-group"}>
+        <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>Datos de identificación</h4>
+        <ZHGrid cols={modalLayout ? 2 : 3}>
           <ZHField
             label="Tipo de identificación"
             required
@@ -159,9 +161,9 @@ export function MasterDataBpFormFields({
         </ZHGrid>
       </div>
 
-      <div className="md-partner-group">
-        <h4 className="md-partner-group__title">Datos principales</h4>
-        <ZHGrid cols={3}>
+      <div className={modalLayout ? "zh-grid zh-grid--1" : "md-partner-group"}>
+        <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>Datos principales</h4>
+        <ZHGrid cols={modalLayout ? 2 : 3}>
           <ZHField
             label="Razón social"
             required
@@ -208,8 +210,8 @@ export function MasterDataBpFormFields({
       </div>
 
       {usage === "supplier" && (
-        <div className="md-partner-group">
-          <h4 className="md-partner-group__title">Configuración del proveedor</h4>
+        <div className={modalLayout ? "zh-grid zh-grid--1" : "md-partner-group"}>
+          <h4 className={modalLayout ? "zh-section-title" : "md-partner-group__title"}>Configuración del proveedor</h4>
           <ZHGrid cols={2}>
             <ZHField
               label="Tipo de Proveedor"

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageShell } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
@@ -6,7 +6,8 @@ import {
   ZHDataTable,
   type ZHDataTableColumn,
 } from "../../../components/zh/ZHDataTable";
-import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
+import { ZhTextInput } from "../../../components/zh/inputs";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { adminCoreService } from "../api/adminCoreService";
 import { saveCompanyCreateTenantHint } from "../utils/companyCreateTenantHint";
@@ -52,6 +53,7 @@ function groupByTenant(companies: AdminCoreCompany[]): TenantGroup[] {
  */
 export function AdminCoreDashboardPage() {
   const navigate = useNavigate();
+  const editFormId = useId();
   const login = useAuthStore((s) => s.login);
   const [companies, setCompanies] = useState<AdminCoreCompany[]>([]);
   const [editing, setEditing] = useState<AdminCoreCompany | null>(null);
@@ -198,16 +200,42 @@ export function AdminCoreDashboardPage() {
         open={editing !== null}
         title="Editar empresa"
         onClose={closeEditor}
+        size="md"
+        footer={
+          <>
+            <ZHBtn
+              type="button"
+              variant="ghost"
+              disabled={saving}
+              onClick={closeEditor}
+            >
+              Cancelar
+            </ZHBtn>
+            <ZHBtn
+              type="submit"
+              form={editFormId}
+              variant="primary"
+              disabled={saving}
+            >
+              {saving ? "Guardando..." : "Guardar"}
+            </ZHBtn>
+          </>
+        }
       >
         {editing ? (
-          <form onSubmit={(event) => void handleSave(event)}>
-            {editError ? (
-              <ZHPageNotice variant="error" message={editError} />
-            ) : null}
-            <fieldset disabled={saving}>
+          <form
+            id={editFormId}
+            aria-label="Datos de la empresa"
+            aria-busy={saving}
+            onSubmit={(event) => void handleSave(event)}
+          >
+            <ZHGrid cols={1}>
+              {editError ? (
+                <ZHPageNotice variant="error" message={editError} />
+              ) : null}
               <ZHField label="RUC">
-                <input
-                  className="zh-input"
+                <ZhTextInput
+                  disabled={saving}
                   aria-label="RUC"
                   value={taxId}
                   maxLength={13}
@@ -220,8 +248,8 @@ export function AdminCoreDashboardPage() {
                 />
               </ZHField>
               <ZHField label="Razón social" required>
-                <input
-                  className="zh-input"
+                <ZhTextInput
+                  disabled={saving}
                   aria-label="Razón social"
                   required
                   maxLength={200}
@@ -232,8 +260,8 @@ export function AdminCoreDashboardPage() {
                 />
               </ZHField>
               <ZHField label="Nombre comercial">
-                <input
-                  className="zh-input"
+                <ZhTextInput
+                  disabled={saving}
                   aria-label="Nombre comercial"
                   maxLength={200}
                   value={editing.tradeName ?? ""}
@@ -242,9 +270,10 @@ export function AdminCoreDashboardPage() {
                   }
                 />
               </ZHField>
-              <label>
+              <label className="zh-checkbox-label">
                 <input
                   type="checkbox"
+                  disabled={saving}
                   checked={editing.isActive}
                   onChange={(event) =>
                     setEditing({ ...editing, isActive: event.target.checked })
@@ -252,17 +281,7 @@ export function AdminCoreDashboardPage() {
                 />{" "}
                 Empresa activa
               </label>
-              <ZHBtn type="submit" variant="primary">
-                {saving ? "Guardando..." : "Guardar"}
-              </ZHBtn>
-              <ZHBtn
-                type="button"
-                variant="ghost"
-                onClick={() => setEditing(null)}
-              >
-                Cancelar
-              </ZHBtn>
-            </fieldset>
+            </ZHGrid>
           </form>
         ) : null}
       </ZHModal>
