@@ -40,8 +40,8 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 | Entorno | Política |
 |---------|----------|
-| Development | Puede drop/recreate; baseline único |
-| Staging / Production | Solo forward migrations |
+| Development | Instalación inicial con la baseline V1 única; recreación solo con autorización expresa |
+| Staging / Production | Instalación inicial con la misma baseline V1 única; sin incrementales vigentes |
 
 ---
 
@@ -49,8 +49,7 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ### Baseline EF (ERP ZH V1, GREENFIELD)
 
-Baseline: `20261021162651_InitialProductionBaseline`, la definición inicial vigente de todo el esquema (más las
-migraciones forward autorizadas que se indican abajo),
+Baseline única: `20261021162651_InitialProductionBaseline`, la definición inicial vigente de todo el esquema,
 incluidos los catálogos GLOBAL con todas sus correcciones SRI (`HasData`) y los objetos raw SQL de la tabla siguiente.
 La geografía INEC llega aparte, por el único script de `Seeding/InstallData` (CGE 2026). No existe upgrade-path:
 una BD creada con una baseline anterior (p. ej. `20261018014647_…`) falla de forma explícita en `MigrateAsync`
@@ -62,14 +61,14 @@ orden de filas y columnas). Única diferencia de datos: `sri_normative_source.in
 baseline en las 10 fuentes (la trazabilidad debe nombrar una migración existente, `SriCatalogComplianceTests`).
 Diferencia de esquema: orden físico de columnas en `sri_country` y `sri_ice_rate`, sin efecto.
 
-Mientras no exista una instalación publicada, un cambio de esquema o de catálogo se consolida en la baseline
-(regenerarla con `dotnet ef migrations add` y copiar sin cambios el raw SQL de la tabla siguiente). Tras la primera
-instalación publicada: solo migraciones forward. Excepción autorizada por el propietario (R3, 2026-10-28): un cambio
-que deba llegar a bases existentes sin recrearlas va como migración forward sobre la baseline, que la API aplica al
-arrancar. Vigente: `20261028210143_CashSessionOpenPerCompanyUser` (turnos de caja por empresa,
-`ux_cash_sessions_open_per_user` → `ux_cash_sessions_open_per_company_user`; el índice nuevo es menos restrictivo, así
-que toda base existente lo cumple). Las transformaciones de datos de bases previas (backfills,
-`DROP DEFAULT` transitorios, guards de referencias) nunca forman parte de la baseline.
+ERP ZH V1 utiliza exclusivamente esta baseline para una instalación nueva. El índice vigente
+`ux_cash_sessions_open_per_company_user` sobre `(tenant_id, company_id, user_id)`, único y
+filtrado por `status = 1`, está consolidado en ella y en su Designer, coherentes con EF Core
+y ModelSnapshot. No se conserva el índice anterior ni una migración incremental de Caja.
+Las tablas y estructuras vigentes de Compras y los objetos raw SQL se conservan íntegramente.
+Esta consolidación no modifica bases existentes ni su historial EF, no aplica migraciones y
+no incorpora mecanismos de compatibilidad o reparaciones de instalaciones anteriores.
+La instalación limpia y su validación real quedan pendientes del propietario.
 
 Los archivos de migración se guardan con LF (`.gitattributes`): los raw string literals de C# trasladan el fin de línea al cuerpo de las funciones plpgsql.
 

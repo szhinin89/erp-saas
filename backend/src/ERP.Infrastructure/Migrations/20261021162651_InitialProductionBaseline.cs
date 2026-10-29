@@ -7683,9 +7683,9 @@ namespace ERP.Infrastructure.Migrations
                 filter: "status = 1");
 
             migrationBuilder.CreateIndex(
-                name: "ux_cash_sessions_open_per_user",
+                name: "ux_cash_sessions_open_per_company_user",
                 table: "cash_sessions",
-                columns: new[] { "tenant_id", "user_id" },
+                columns: new[] { "tenant_id", "company_id", "user_id" },
                 unique: true,
                 filter: "status = 1");
 

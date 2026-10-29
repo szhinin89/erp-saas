@@ -4360,13 +4360,13 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId", "Status")
                         .HasDatabaseName("ix_cash_sessions_tenant_status");
 
-                    b.HasIndex("TenantId", "UserId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_cash_sessions_open_per_user")
-                        .HasFilter("status = 1");
-
                     b.HasIndex("TenantId", "CashRegisterId", "Status")
                         .HasDatabaseName("ix_cash_sessions_tenant_register_status");
+
+                    b.HasIndex("TenantId", "CompanyId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cash_sessions_open_per_company_user")
+                        .HasFilter("status = 1");
 
                     b.HasIndex("TenantId", "UserId", "Status")
                         .HasDatabaseName("ix_cash_sessions_tenant_user_status");
