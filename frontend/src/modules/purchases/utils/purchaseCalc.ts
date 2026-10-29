@@ -55,11 +55,7 @@ function fiscalRound(value: Decimal, decimals: number): Decimal {
   return value.toDecimalPlaces(decimals, Decimal.ROUND_HALF_UP);
 }
 
-/**
- * PURCHASES-HARDENING-P0 (B4-B6) — misma condición que el backend
- * (`PurchaseLineNormalizer.MatchesXmlDocument`): la línea conserva cantidad, precio y % descuento
- * de la línea de recepción. Solo entonces los montos IVA/ICE del XML siguen siendo válidos.
- */
+/** Whether operational quantity/price/discount still match the XML, for source comparisons. */
 export function matchesXmlDocument(l: LineWithContext): boolean {
   return (
     l.xmlQuantity != null &&
@@ -71,14 +67,8 @@ export function matchesXmlDocument(l: LineWithContext): boolean {
 }
 
 /**
- * PURCHASES-HARDENING-P0 (B4-B6) — impuestos de la línea tal como los persiste el backend
- * (`PurchaseInvoiceDetail.ApplyTaxes` → `RecalcTaxes` → `SriTaxCalculator.Compute`):
- * - línea XML sin editar: IVA/ICE = montos documentales del XML;
- * - si no: base = round2(subtotal − round6(descuento)), ICE porcentual = round2(base × tarifa),
- *   IVA = round2((base + ICE) × tarifa) — el IVA se calcula sobre base + ICE (regla SRI);
- * - ICE específico (sin tarifa porcentual) e IRBPNR: monto fijo del XML, como en backend.
- * Tarifa por código de la línea (catálogo SRI, igual que el backend); el contexto del ítem es solo
- * respaldo mientras el catálogo no carga.
+ * Linked XML amounts remain fiscal evidence when operational values change. Confirmation
+ * reconciles their header totals by category/rate. Manual lines use the normal tax calculator.
  */
 export function resolveLineTaxes(
   l: LineWithContext,
@@ -91,7 +81,7 @@ export function resolveLineTaxes(
     return { vat: sum("2"), ice: sum("3"), irbpnr: sum("5") };
   }
   const irbpnr = l.xmlIrbpnrAmount ?? 0;
-  const documentMatches = matchesXmlDocument(l);
+  const hasFiscalSnapshot = !!l.purchaseReceptionLineId;
   const gross = new FiscalDecimal(l.quantity ?? 0).times(l.unitPrice ?? 0);
   const discountPct = l.discountPct ?? 0;
   const discount = fiscalRound(
@@ -103,7 +93,7 @@ export function resolveLineTaxes(
   const icePct =
     (l.iceCode ? iceRates?.[l.iceCode] : undefined) ?? l.context?.icePercent ?? 0;
   const ice =
-    documentMatches && l.xmlIceAmount != null
+    hasFiscalSnapshot && l.xmlIceAmount != null
       ? new FiscalDecimal(l.xmlIceAmount)
       : icePct > 0
         ? fiscalRound(base.times(icePct).div(100), 2)
@@ -111,7 +101,7 @@ export function resolveLineTaxes(
 
   const vatPct = vatRates?.[l.vatCode] ?? l.context?.vatPercent ?? 0;
   const vat =
-    documentMatches && l.xmlTaxValue != null
+    hasFiscalSnapshot && l.xmlTaxValue != null
       ? l.xmlTaxValue
       : vatPct > 0
         ? fiscalRound(base.plus(ice).times(vatPct).div(100), 2).toNumber()

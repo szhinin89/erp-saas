@@ -896,6 +896,17 @@ export function usePurchasesPage() {
       const line = currentLines.find((l) => l._key === key);
       if (!line?.purchaseReceptionLineId) return;
 
+      // The purchase owns its operational product; changing it does not rewrite supplier matching.
+      if (line.itemId) {
+        if (line.itemId === itemId) return;
+        setValue("lines", currentLines.map(l => l._key === key
+          ? { ...l, itemId, description: itemLabel, packagingLevelId: packagingLevelId ?? null,
+              xmlOriginPackagingLevelId: null, xmlOriginFactor: undefined, conversionFactor: undefined, context: undefined, _readinessIssue: undefined }
+          : l));
+        void fetchItemContext(key, itemId, line.warehouseId || getValues("globalWarehouseId"));
+        return;
+      }
+
       setMatchingKey(key);
       try {
         const updated = await purchaseReceptionService.matchItem(

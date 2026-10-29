@@ -159,12 +159,30 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
     // ── Calculated (NOT persisted) ──────────────────────────────────────
     public bool IsXmlBreakdown => XmlAllocatedSubtotal.HasValue;
     public decimal LineSubtotal => XmlAllocatedSubtotal ?? Quantity * UnitPrice;
-    public decimal TaxableBase =>
+    public decimal OperationalCostBase =>
         Math.Round(
             LineSubtotal - DiscountAmount,
             FiscalPrecision.TaxAmount,
             MidpointRounding.AwayFromZero
         );
+    // The XML remains in reception. These normal tax rows carry the reconciled fiscal allocation.
+    public decimal TaxableBase => IsXmlBreakdown || PurchaseReceptionLineId is null ? OperationalCostBase
+        : _taxes.FirstOrDefault(t => t.TaxCode == VatSriTaxCode && t.Source == PurchaseTaxSource.Xml)
+            is { } vat ? vat.TaxableBase - IceAmount : OperationalCostBase;
+
+    public void ReconcileXmlTaxes(IReadOnlyList<PurchaseInvoiceDetailTax> taxes)
+    {
+        EnsureNotFrozen();
+        if (PurchaseReceptionLineId is null || IsXmlBreakdown || taxes.Count(t => t.TaxCode == VatSriTaxCode) != 1
+            || taxes.Any(t => t.PurchaseInvoiceDetailId != Id || t.TenantId != TenantId
+                || t.Source != PurchaseTaxSource.Xml || t.TaxableBase < 0 || t.TaxAmount < 0))
+            throw new DomainRuleViolationException("La conciliaci\u00f3n fiscal XML es inv\u00e1lida.");
+        ReplaceTaxes(taxes);
+        var vat = taxes.Single(t => t.TaxCode == VatSriTaxCode);
+        VatAmount = vat.TaxAmount;
+        RecalcCosts();
+    }
+
     public decimal TaxInclusiveTotal =>
         Math.Round(
             // FLOW-READY-02F.2 — IRBPNR forma parte del valor real del XML y de la cuenta por
@@ -282,7 +300,13 @@ public sealed class PurchaseInvoiceDetail : IMustHaveTenant
         };
         if (exactDiscountAmount.HasValue)
         {
-            if (exactDiscountAmount.Value < 0 || exactDiscountAmount.Value > line.LineSubtotal)
+            // XML discounts are fiscal money. A 100% promotion may declare 19.00
+            // against 24 * 0.7915 = 18.9960; compare at the SAME fiscal precision,
+            // without changing the supplier's unit price or exact discount.
+            var discountLimit = purchaseReceptionLineId.HasValue
+                ? Math.Round(line.LineSubtotal, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero)
+                : line.LineSubtotal;
+            if (exactDiscountAmount.Value < 0 || exactDiscountAmount.Value > discountLimit)
                 throw new ArgumentOutOfRangeException(
                     nameof(exactDiscountAmount),
                     "El descuento exacto debe estar entre cero y el subtotal de la línea."

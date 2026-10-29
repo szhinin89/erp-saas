@@ -1,3 +1,12 @@
+using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
+using ERP.Application.MasterData.Services;
+using ERP.Application.Modules.Purchases.UseCases;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.Modules.Items.Interfaces;
+using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Purchases.Interfaces;
+using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
 using ERP.Application.Modules.Purchases.Services;
 using ERP.Application.Tests.TestSupport;
@@ -17,7 +26,7 @@ public sealed class PurchaseXmlConfirmationGuardTests
         <factura><infoTributaria><ruc>1790012345001</ruc><razonSocial>Proveedor</razonSocial>
         <codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000001</secuencial>
         </infoTributaria><infoFactura><fechaEmision>27/09/2026</fechaEmision>
-        <totalSinImpuestos>90.00</totalSinImpuestos><importeTotal>90.00</importeTotal></infoFactura>
+        <totalSinImpuestos>90.00</totalSinImpuestos><importeTotal>90.00</importeTotal><totalConImpuestos><totalImpuesto><codigo>2</codigo><codigoPorcentaje>0</codigoPorcentaje><baseImponible>90</baseImponible><valor>0</valor></totalImpuesto></totalConImpuestos></infoFactura>
         <detalles><detalle><codigoPrincipal>SKU</codigoPrincipal><descripcion>Producto</descripcion>
         <cantidad>2</cantidad><precioUnitario>50</precioUnitario><descuento>10</descuento>
         <precioTotalSinImpuesto>90.00</precioTotalSinImpuesto><impuestos><impuesto>
@@ -94,7 +103,7 @@ public sealed class PurchaseXmlConfirmationGuardTests
             10m,
             90m,
             90m,
-            supplierCode: "SKU"
+            supplierCode: "SKU", taxes: [("2", "0", 0m, 90m, 0m)]
         );
         var transport = PurchaseReceptionLine.Create(
             source.Id,
@@ -110,7 +119,7 @@ public sealed class PurchaseXmlConfirmationGuardTests
             0m,
             10m,
             10m,
-            supplierCode: "FLETE"
+            supplierCode: "FLETE", taxes: [("2", "0", 0m, 10m, 0m)]
         );
         var xml = scenario switch
         {
@@ -161,8 +170,8 @@ public sealed class PurchaseXmlConfirmationGuardTests
             invoice.Id,
             tenant,
             "Producto",
-            scenario == "quantity" ? 3m : 2m,
-            50m,
+            scenario == "quantity" ? 3m : scenario == "operational_price" ? 4m : 2m,
+            scenario == "operational_price" ? 25m : scenario == "financial_cent" ? 50.005m : 50m,
             "0",
             "UNIT",
             discountPct: 10m,
@@ -172,6 +181,8 @@ public sealed class PurchaseXmlConfirmationGuardTests
                 : original.Id,
             exactDiscountAmount: 10m
         );
+        line.ApplyTaxes("0", 0m, "IVA", null, 0m, null);
+        if (scenario == "incompatible_tax") line.ApplyTaxes("4", 15m, "IVA 15", null, 0m, null);
         invoice.ReplaceLines([line], user);
         if (scenario == "duplicate")
             invoice.ReplaceLines(
@@ -212,13 +223,37 @@ public sealed class PurchaseXmlConfirmationGuardTests
         );
     }
 
+    [Fact]
+    public async Task Duplicate_document_is_rejected_before_any_purchase_write()
+    {
+        var (existing, _) = Build("clean");
+        var repo = new Mock<IPurchaseInvoiceRepository>();
+        repo.Setup(r => r.GetByAccessKeyAsync(existing.TenantId, existing.AccessKey!, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        var handler = new CreatePurchaseDraftHandler(repo.Object, Mock.Of<IBusinessPartnerRepository>(),
+            Mock.Of<IBusinessPartnerRoleRepository>(), Mock.Of<IPaymentTermDefaultResolver>(),
+            Mock.Of<IItemRepository>(), Mock.Of<IWarehouseRepository>(), Mock.Of<ISriTaxResolver>(),
+            Mock.Of<IPurchaseReceptionDocumentRepository>(), Mock.Of<IExpenseDocumentRepository>(),
+            Mock.Of<ICurrentTenant>(t => t.TenantId == existing.TenantId),
+            Mock.Of<ICurrentCompany>(c => c.CompanyId == existing.CompanyId),
+            Mock.Of<ICurrentBranch>(b => b.BranchId == existing.BranchId), Mock.Of<ICurrentUser>(),
+            Mock.Of<IDatabaseExceptionTranslator>(), PrecisionPolicyTestDouble.Mock());
+        var result = await handler.Handle(new CreatePurchaseDraftCommand(existing.SupplierId, "01",
+            existing.InvoiceNumber, existing.IssueDate, [new(null, "Producto", 1m, 90m, "0")], AccessKey: existing.AccessKey), default);
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("clave de acceso");
+        repo.Verify(r => r.AddAsync(It.IsAny<PurchaseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Theory]
     [InlineData("clean")]
     [InlineData("informational_warning")]
-    [InlineData("header_rounding")]
+
     [InlineData("processed_same_purchase")]
     [InlineData("manual_imported")]
     [InlineData("resolution_same_item")]
+    [InlineData("operational_price")]
     public async Task Reconciled_xml_allows_confirmation_and_preserves_additional_costs(
         string scenario
     )
@@ -242,18 +277,15 @@ public sealed class PurchaseXmlConfirmationGuardTests
     }
 
     [Fact]
-    public async Task Product_corrected_in_reception_after_saving_requires_saving_again()
+    public async Task Operational_product_can_differ_from_reception_match()
     {
         var (invoice, guard) = Build("resolution_corrected_after_save");
-        (await guard.ValidateAsync(invoice, CancellationToken.None))
-            .Should()
-            .Contain("se corrigió en la recepción XML")
-            .And.Contain("Guarde nuevamente la compra");
-        invoice.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Draft);
+        (await guard.ValidateAsync(invoice, CancellationToken.None)).Should().BeNull();
     }
 
     [Theory]
     [InlineData("missing_line")]
+    [InlineData("header_rounding")]
     [InlineData("net_total")]
     [InlineData("missing_net_total")]
     [InlineData("freight_line_removed")]
@@ -263,6 +295,8 @@ public sealed class PurchaseXmlConfirmationGuardTests
     [InlineData("duplicate")]
     [InlineData("unlinked")]
     [InlineData("wrong_company")]
+    [InlineData("incompatible_tax")]
+    [InlineData("financial_cent")]
     [InlineData("unknown_source")]
     public async Task Critical_inconsistency_requires_reconciliation(string scenario)
     {

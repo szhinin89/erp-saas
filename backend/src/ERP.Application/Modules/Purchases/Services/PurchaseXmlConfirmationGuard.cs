@@ -1,5 +1,4 @@
 using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
-using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -14,8 +13,8 @@ public interface IPurchaseXmlConfirmationGuard
 
 /// <summary>
 /// COMPRAS-METODO-ZH-01A — reconciles the purchase against its authorized XML snapshot before any
-/// confirmation effect (Kardex, AP, accounting). Blocks only what compromises quantities, costs or
-/// totals, or breaks line traceability; informational processing warnings do not block.
+/// confirmation effect (Kardex, AP, accounting). Fiscal evidence and traceability stay immutable;
+/// operational values reconcile by fiscal category/rate rather than equality with each XML line.
 /// </summary>
 public sealed class PurchaseXmlConfirmationGuard(
     IPurchaseReceptionDocumentRepository receptions,
@@ -68,25 +67,11 @@ public sealed class PurchaseXmlConfirmationGuard(
         if (!EveryXmlLineLinkedOnce(source, invoice, linked))
             return "Hay líneas XML omitidas, duplicadas o sin vínculo. Concilie cada línea antes de confirmar; redistribuir un importe no sustituye su trazabilidad.";
 
-        // FASE 3 — "Corregir relación" cambia el producto en la recepción; un borrador guardado antes
-        // conserva el anterior hasta "Guardar". Nunca se confirma ni se corrige solo: se pide guardar.
-        // Solo el producto: la presentación de la línea puede elegirse distinta a la aprendida.
         var breakdownError = await PurchaseXmlBreakdown.ValidateAsync(invoice, invoice.Lines, receptions, ct);
         if (breakdownError is not null)
             return breakdownError;
 
-        var stale = linked.Where(l => !l.IsXmlBreakdown).FirstOrDefault(line =>
-            ResolvedItemChanged(line, source.Lines.Single(l => l.Id == line.PurchaseReceptionLineId))
-        );
-        if (stale is not null)
-            return $"El producto de la línea '{stale.Description}' se corrigió en la recepción XML después de guardar la compra. Guarde nuevamente la compra para aplicar la corrección antes de confirmar.";
-
-        var changed = linked.Where(l => !l.IsXmlBreakdown).FirstOrDefault(line =>
-            !LineMatches(line, source.Lines.Single(l => l.Id == line.PurchaseReceptionLineId))
-        );
-        return changed is null
-            ? null
-            : $"La línea '{changed.Description}' difiere del XML en cantidad, precio, descuento o impuestos. Debe conciliarla antes de confirmar.";
+        return PurchaseXmlFiscalReconciliation.Reconcile(invoice, source, xml);
     }
 
     private static bool BelongsTo(PurchaseReceptionDocument source, PurchaseInvoice invoice) =>
@@ -123,30 +108,26 @@ public sealed class PurchaseXmlConfirmationGuard(
         && source.LinesProcessedCount == source.Lines.Count
         && !string.IsNullOrWhiteSpace(source.XmlContent);
 
-    // Every non-zero line base is part of totalSinImpuestos, so an omitted line cannot hide here.
-    // importeTotal vs line totals may differ by header tax rounding or tip: informational only
-    // (already shown as RoundingDifference in the XML view), never a reason to block.
     private static bool HeaderReconciles(PurchaseReceptionDocument source, ParsedPurchaseXml xml) =>
         xml.SupplierRuc == source.SupplierRuc
         && xml.InvoiceNumber == source.InvoiceNumber
         && xml.IssueDate == source.IssueDate
-        && Money(xml.Lines.Sum(l => l.LineSubtotal)) == Money(xml.TotalWithoutTaxes!.Value);
+        && xml.TotalWithoutTaxes >= 0;
 
     // Compare the persisted detail snapshot with the fresh parser without relying on EF row order.
     private static bool SnapshotMatchesXml(PurchaseReceptionDocument source, ParsedPurchaseXml xml)
     {
-        var storedRows = source
-            .Lines.Select(l => (l.Quantity, l.UnitPrice, l.Discount, l.LineSubtotal, l.TotalLine))
-            .GroupBy(x => x)
-            .ToDictionary(g => g.Key, g => g.Count());
-        var parsedRows = xml
-            .Lines.Select(l => (l.Quantity, l.UnitPrice, l.Discount, l.LineSubtotal, l.TotalLine))
-            .GroupBy(x => x)
-            .ToDictionary(g => g.Key, g => g.Count());
-        return storedRows.Count == parsedRows.Count
-            && storedRows.All(pair =>
-                parsedRows.TryGetValue(pair.Key, out var count) && count == pair.Value
-            );
+        var remaining = xml.Lines.ToList();
+        foreach (var line in source.Lines)
+        {
+            var index = remaining.FindIndex(l => l.Quantity == line.Quantity && l.UnitPrice == line.UnitPrice
+                && l.Discount == line.Discount && l.LineSubtotal == line.LineSubtotal && l.TotalLine == line.TotalLine
+                && l.Taxes.OrderBy(t => t.TaxCode).Select(t => (t.TaxCode, t.TaxRateCode, t.Tarifa, t.TaxableBase, t.TaxAmount))
+                    .SequenceEqual(line.Taxes.OrderBy(t => t.TaxCode).Select(t => (t.TaxCode, t.TaxRateCode, t.Tarifa, t.TaxableBase, t.TaxAmount))));
+            if (index < 0) return false;
+            remaining.RemoveAt(index);
+        }
+        return remaining.Count == 0;
     }
 
     private static bool EveryXmlLineLinkedOnce(
@@ -163,23 +144,4 @@ public sealed class PurchaseXmlConfirmationGuard(
             && source.Lines.All(l => ids.Contains(l.Id));
     }
 
-    private static bool ResolvedItemChanged(
-        PurchaseInvoiceDetail line,
-        PurchaseReceptionLine reception
-    ) =>
-        reception.ItemId is { } resolved
-        && reception.MatchStatus
-            is ItemMatchStatus.AutoMatched
-                or ItemMatchStatus.ManuallyMatched
-        && line.ItemId != resolved;
-
-    private static bool LineMatches(PurchaseInvoiceDetail line, PurchaseReceptionLine original) =>
-        line.Quantity == original.Quantity
-        && line.UnitPrice == original.UnitPrice
-        && Money(line.DiscountAmount) == Money(original.Discount)
-        && Money(line.TaxableBase) == Money(original.LineSubtotal)
-        && Money(line.TaxInclusiveTotal) == Money(original.TotalLine);
-
-    private static decimal Money(decimal value) =>
-        Math.Round(value, FiscalPrecision.TaxAmount, MidpointRounding.AwayFromZero);
 }

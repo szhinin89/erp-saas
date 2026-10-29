@@ -369,6 +369,7 @@ describe("resolveLineTaxes — IVA/ICE/IRBPNR documental vs recalculado (espejo 
   // XML: 3 × 1.11 = 3.33; IVA declarado 0.49 (por tarifa sería 0.50); ICE 1.20; IRBPNR 0.06.
   const xmlLine = {
     ...mkLine(3, 1.11, "4", 0, { vatPercent: 15, icePercent: 0 }),
+    purchaseReceptionLineId: "source",
     xmlQuantity: 3,
     xmlUnitPrice: 1.11,
     xmlDiscountPct: 0,
@@ -382,25 +383,25 @@ describe("resolveLineTaxes — IVA/ICE/IRBPNR documental vs recalculado (espejo 
     expect(resolveLineTaxes(xmlLine)).toEqual({ vat: 0.49, ice: 1.2, irbpnr: 0.06 });
   });
 
-  it("cantidad editada: IVA = round2((base + ICE específico) × tarifa); ICE específico e IRBPNR documentales", () => {
-    // base 4.44; ICE sin tarifa porcentual → 1.20 fijo; IVA = (4.44 + 1.20) × 15% = 0.846 → 0.85
-    expect(resolveLineTaxes({ ...xmlLine, quantity: 4 })).toEqual({ vat: 0.85, ice: 1.2, irbpnr: 0.06 });
+  it("cantidad editada conserva IVA, ICE e IRBPNR fiscales", () => {
+    // Operational edits retain the fiscal amounts; the server reconciles before confirmation.
+    expect(resolveLineTaxes({ ...xmlLine, quantity: 4 })).toEqual({ vat: 0.49, ice: 1.2, irbpnr: 0.06 });
   });
 
-  it("descuento editado también invalida los montos XML", () => {
+  it("descuento operativo editado conserva los montos XML", () => {
     const tx = resolveLineTaxes({ ...xmlLine, xmlIceAmount: undefined, discountPct: 10 });
-    // base = round2(3.33 − round6(0.333)) = 3.00; IVA 0.45
-    expect(tx.vat).toBe(0.45);
+    // The discount is operational; fiscal VAT is retained.
+    expect(tx.vat).toBe(0.49);
   });
 
-  it("ICE porcentual editado: round2(base × tarifa) y el IVA incluye ese ICE", () => {
+  it("precio operativo editado conserva ICE porcentual e IVA fiscales", () => {
     const tx = resolveLineTaxes(
       { ...xmlLine, iceCode: "3011", unitPrice: 2 },
       { "4": 15 },
       { "3011": 10 },
     );
-    // base 6.00; ICE 0.60; IVA (6.60) × 15% = 0.99
-    expect(tx).toEqual({ vat: 0.99, ice: 0.6, irbpnr: 0.06 });
+    // XML ICE and VAT are not recalculated from the new operational price.
+    expect(tx).toEqual({ vat: 0.49, ice: 1.2, irbpnr: 0.06 });
   });
 
   it("la tarifa sale del código de la línea (catálogo), como en backend; contexto solo de respaldo", () => {

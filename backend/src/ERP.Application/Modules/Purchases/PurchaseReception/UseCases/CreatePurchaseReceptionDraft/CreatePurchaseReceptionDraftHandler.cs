@@ -238,7 +238,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
             parseResult.Value!.Lines,
             onAmbiguousGroup: key =>
                 _logger.LogWarning(
-                    "El documento de recepción {DocumentId} tiene una cantidad distinta de líneas persistidas y líneas frescas del XML para la clave '{Key}' — esas líneas no se fusionan, se mantienen tal cual estaban persistidas.",
+                    "Correlacion XML ambigua en recepcion {DocumentId}, clave '{Key}': se conserva el snapshot persistido de cada linea.",
                     document.Id,
                     key
                 )

@@ -1661,34 +1661,8 @@ internal static class ReceptionTaxHelper
                         + "cargado o activo en el catálogo SRI global."
                 );
 
-            // PURCHASES-HARDENING-P0 (B4-B6) — si el usuario cambió cantidad/precio/% descuento, la
-            // base ya no es la del comprobante: IVA e ICE porcentual pasan a Calculated y
-            // ApplyTaxes→RecalcTaxes los recalcula por tarifa (SriTaxCalculator), igual que el
-            // frontend. ICE específico e IRBPNR son montos fijos del XML y se conservan (sin tarifa
-            // proporcional en la regla vigente).
-            if (t.TaxCode == SriIceTaxCode && !matchesXmlDocument
-                && entry.CalculationType != SriTaxCalculationType.Percentage)
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    $"Línea '{line.Description}': no se puede modificar cantidad, precio o descuento del XML con ICE específico o mixto sin bases físicas verificadas.",
-                    "PURCHASE_ICE_XML_EDIT_BLOCKED");
-
-            // Un código ICE inactivo solo se reconoce tal como lo declaró el XML; editar la línea
-            // lo convertiría en selección calculada, que exige código activo.
-            if (t.TaxCode == SriIceTaxCode && activeIce is null && !matchesXmlDocument)
-                return Result<PurchaseInvoiceDto>.ValidationFailure(
-                    $"Línea '{line.Description}': el código ICE {t.TaxRateCode} está inactivo; solo se acepta con los valores declarados en el XML SRI.",
-                    "PURCHASE_ICE_XML_EDIT_BLOCKED");
-
-            var isRateBased =
-                t.TaxCode == SriVatTaxCode
-                || (
-                    t.TaxCode == SriIceTaxCode
-                    && entry.CalculationType == SriTaxCalculationType.Percentage
-                );
-            var source =
-                !matchesXmlDocument && isRateBased
-                    ? PurchaseTaxSource.Calculated
-                    : PurchaseTaxSource.Xml;
+            // Operational edits preserve fiscal amounts and tax classifications from the XML.
+            var source = PurchaseTaxSource.Xml;
             built.Add(
                 PurchaseInvoiceDetailTax.Create(
                     line.Id,
@@ -1696,9 +1670,11 @@ internal static class ReceptionTaxHelper
                     t.TaxCode,
                     t.TaxRateCode,
                     entry.Name,
-                    source == PurchaseTaxSource.Xml ? t.Tarifa : entry.Percentage,
+                    t.Tarifa,
                     entry.CalculationType,
-                    t.TaxableBase,
+                    t.TaxCode == SriVatTaxCode && !matchesXmlDocument
+                        ? line.OperationalCostBase + receptionTaxes.Where(x => x.TaxCode == SriIceTaxCode).Sum(x => x.TaxAmount)
+                        : t.TaxableBase,
                     t.TaxAmount,
                     source
                 )
@@ -1943,8 +1919,7 @@ file sealed record PurchaseLineNormalization(
     decimal UnitPrice,
     decimal DiscountPct,
     decimal? ExactDiscountAmount,
-    // PURCHASES-HARDENING-P0 (B4-B6) — la línea conserva cantidad/precio/% descuento de la línea de
-    // recepción: solo entonces los montos IVA/ICE del XML siguen siendo válidos para esta línea.
+    // Exact documentary discount can be retained when its operating inputs are unchanged.
     bool MatchesXmlDocument = false
 );
 

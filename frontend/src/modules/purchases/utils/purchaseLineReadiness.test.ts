@@ -186,16 +186,16 @@ describe("purchaseLineReadiness", () => {
       ["cantidad", { quantity: 2 }],
       ["precio", { unitPrice: 1.5 }],
       ["descuento", { discountPct: 5 }],
-    ])("bloquea guardar y confirmar al editar %s con ICE no recalculable", (_field, edit) => {
+    ])("permite guardar y conciliar al editar %s conservando ICE fiscal", (_field, edit) => {
       const edited = xmlIceLine(edit);
       const readiness = getPurchaseLineReadiness(edited, options);
 
-      expect(readiness.status).toBe("ICE_XML_EDIT_BLOCKED");
-      expect(readiness.blocking).toBe(true);
-      expect(getPurchaseLineSaveBlockingReasons([edited], options)).toHaveLength(1);
+      expect(readiness.status).toBe("READY");
+      expect(readiness.blocking).toBe(false);
+      expect(getPurchaseLineSaveBlockingReasons([edited], options)).toHaveLength(0);
     });
 
-    it("permite editar una linea XML con ICE porcentual activo (se recalcula por tarifa)", () => {
+    it("permite editar una linea XML conservando ICE porcentual fiscal", () => {
       const readiness = getPurchaseLineReadiness(xmlIceLine({ iceCode: "3011", quantity: 2 }), options);
 
       expect(readiness.status).toBe("READY");

@@ -1334,9 +1334,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         irbpnr.TaxAmount.Should().Be(0.72m);
     }
 
-    // ── Caso 3: dos líneas persistidas con el mismo SupplierCode/Description (grupo count=2) no se
-    // cruzan entre sí — cada una toma el matching y los impuestos frescos que le corresponden por
-    // orden de enumeración dentro del grupo. ──
+    // Los grupos repetidos usan su evidencia persistida por ID, con orden invertido.
     [Fact]
     public async Task Handle_does_not_cross_match_or_taxes_between_lines_sharing_the_same_correlation_key()
     {
@@ -1349,7 +1347,7 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             supplierCode: "999",
             itemId: firstItemId,
             matchStatus: ItemMatchStatus.ManuallyMatched,
-            taxes: null
+            taxes: [("2", "4", 15m, 20m, 3m)]
         );
         var secondLine = SampleLine(
             document.Id,
@@ -1357,14 +1355,14 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             supplierCode: "999",
             itemId: secondItemId,
             matchStatus: ItemMatchStatus.AutoMatched,
-            taxes: null
+            taxes: [("2", "4", 15m, 40m, 6m)]
         );
         document.AttachSriAuthorization(
             "1234567890",
             DateTime.UtcNow,
             DuplicateSupplierCodeXml,
             DateTime.UtcNow,
-            [firstLine, secondLine],
+            [secondLine, firstLine],
             UserId,
             docTypeCode: "01",
             sriPaymentMethodCode: "01",
@@ -1388,25 +1386,15 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
         var lines = result.Value!.Lines;
         lines.Should().HaveCount(2);
 
-        // Cada línea del grupo se fusiona con datos frescos (no se queda con el snapshot vacío) y
-        // conserva ÚNICAMENTE su propio ItemId — nunca el del otro miembro del grupo.
-        var itemIds = lines.Select(l => l.ItemId).ToList();
-        itemIds.Should().Contain(firstItemId);
-        itemIds.Should().Contain(secondItemId);
-
-        var firstDto = lines.Single(l => l.ItemId == firstItemId);
-        var secondDto = lines.Single(l => l.ItemId == secondItemId);
-        // Cada línea debe tener exactamente un impuesto IVA fresco (no ambos vacíos, no duplicados).
-        firstDto.Taxes.Should().ContainSingle(t => t.TaxCode == "2");
-        secondDto.Taxes.Should().ContainSingle(t => t.TaxCode == "2");
-        // Los montos de las dos líneas frescas son distintos (1.50 vs 6.00) — si hubiera cruce, una
-        // de las dos líneas repetiría el monto de la otra o quedaría con el snapshot vacío (0 impuestos).
-        var taxAmounts = lines
-            .SelectMany(l => l.Taxes)
-            .Select(t => t.TaxAmount)
-            .OrderBy(v => v)
-            .ToList();
-        taxAmounts.Should().Equal(1.50m, 6.00m);
+        // Cada ID conserva su propio snapshot, incluso al invertir la enumeracion.
+        var firstDto = lines.Single(l => l.PurchaseReceptionLineId == firstLine.Id);
+        var secondDto = lines.Single(l => l.PurchaseReceptionLineId == secondLine.Id);
+        firstDto.ItemId.Should().Be(firstItemId);
+        secondDto.ItemId.Should().Be(secondItemId);
+        firstDto.Taxes.Single().TaxAmount.Should().Be(3m);
+        secondDto.Taxes.Single().TaxAmount.Should().Be(6m);
+        firstDto.Taxes.Single().PurchaseReceptionLineTaxId.Should().Be(firstLine.Taxes.Single().Id);
+        secondDto.Taxes.Single().PurchaseReceptionLineTaxId.Should().Be(secondLine.Taxes.Single().Id);
     }
 
     // ── Caso 5: XML no parseable — no debe fallar la operación ni perder las líneas persistidas. ──

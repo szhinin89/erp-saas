@@ -75,35 +75,33 @@ public sealed class PurchaseIceSnapshotTests
     [Theory]
     [InlineData(SriTaxCalculationType.Specific)]
     [InlineData(SriTaxCalculationType.Mixed)]
-    public async Task Edited_XML_with_unsafe_ICE_is_rejected_before_replacing_taxes(SriTaxCalculationType mode)
+    public async Task Edited_XML_preserves_specific_or_mixed_fiscal_ICE(SriTaxCalculationType mode)
     {
         var line = Line();
-        var original = line.Taxes.ToArray();
         var rows = new[] {
             PurchaseReceptionLineTax.Create(Guid.NewGuid(), line.TenantId, "2", "4", 15m, 100m, 15m),
             PurchaseReceptionLineTax.Create(Guid.NewGuid(), line.TenantId, "3", "3031", 0m, 35.81m, 0m),
         };
         var error = await ReceptionTaxHelper.ApplyReceptionTaxesAsync(line, rows, false,
             Resolver(mode, null).Object, CancellationToken.None);
-        error.Should().NotBeNull();
-        error!.Error.Should().Contain(line.Description).And.Contain("no se puede modificar");
-        line.Taxes.Should().Equal(original);
+        error.Should().BeNull();
+        line.Taxes.Single(t => t.TaxCode == "3").TaxAmount.Should().Be(0m);
+        line.Taxes.Should().OnlyContain(t => t.Source == PurchaseTaxSource.Xml);
     }
 
     [Fact]
-    public async Task Edited_XML_with_inactive_percentage_ICE_is_rejected()
+    public async Task Edited_XML_preserves_inactive_percentage_ICE()
     {
         var line = Line();
-        var original = line.Taxes.ToArray();
         var rows = new[] {
             PurchaseReceptionLineTax.Create(Guid.NewGuid(), line.TenantId, "2", "4", 15m, 100m, 15m),
             PurchaseReceptionLineTax.Create(Guid.NewGuid(), line.TenantId, "3", "3031", 10m, 100m, 10m),
         };
         var error = await ReceptionTaxHelper.ApplyReceptionTaxesAsync(line, rows, false,
             Resolver(SriTaxCalculationType.Percentage, null).Object, CancellationToken.None);
-        error.Should().NotBeNull();
-        error!.Error.Should().Contain("inactivo");
-        line.Taxes.Should().Equal(original);
+        error.Should().BeNull();
+        line.Taxes.Single(t => t.TaxCode == "3").TaxAmount.Should().Be(10m);
+        line.Taxes.Should().OnlyContain(t => t.Source == PurchaseTaxSource.Xml);
     }
 
     [Fact]

@@ -12,6 +12,37 @@ Código: `ERP.Domain/Modules/Purchases`, `ERP.Application/Modules/Purchases`, `E
 
 ## 2. Borrador
 
+### Compra operativa desde XML (decisión del propietario, 2026-10-29)
+
+- El XML y la recepción fiscal son inmutables. Producto, cantidad, presentación, bodega y
+  precio/costo operativo se editan en el formulario existente antes de confirmar; no se exige
+  identidad ni igualdad literal de cantidades o costos entre una línea operativa y su línea fiscal.
+  La edición manual queda sujeta al cuadre fiscal/financiero del documento, sin exigir restablecer
+  los valores operativos del XML. Se conservan unidades base, conversiones,
+  pertenencia de producto/bodega y trazabilidad de todas las líneas XML. Cambiar un producto ya
+  vinculado en la compra no reescribe el aprendizaje del código del proveedor.
+- `OperationalCostBase` representa cantidad × precio menos descuento a precisión fiscal.
+  `TaxableBase` representa la base final conciliada. La confirmación conserva las clasificaciones
+  y tarifas IVA/ICE/IRBPNR del XML y concilia cada grupo fiscal por separado. Los cambios operativos
+  no recalculan ICE específico/mixto ni inventan bases físicas; sus importes siguen siendo fiscales.
+- Los resúmenes de cabecera se verifican contra el detalle XML. Para impuestos porcentuales se
+  verifica también base × tarifa con `FiscalPrecision.TaxAmount` y `AwayFromZero`. Un descuadre
+  solo admite conciliación automática dentro del intervalo matemático de redondear los sumandos y
+  su suma: diferencia estrictamente menor que `(n + 1) / (2 × 10^TaxAmount)`; no hay tolerancia
+  monetaria configurable ni compensación entre categorías/tarifas diferentes.
+- El residuo verificable se asigna de forma determinista a una línea ordinaria con base operativa
+  positiva (mayor base, desempate por orden), sin alterar promociones gratuitas ni el origen de
+  transporte distribuido. Se reutilizan las filas normales de impuestos, `TotalLineCost` y
+  `LandedUnitCost`; no se crean tablas, historiales, cuentas ni asientos de ajuste. Los costos
+  finales congelados son los usados por inventario, Kardex y contabilidad.
+- El total de CxP cuadra exactamente con `importeTotal` más las distribuciones externas
+  explícitas ya existentes. Se rechazan discrepancias no justificadas, impuestos desconocidos o
+  incompatibles y cabeceras incompletas. Una propina distinta de cero sin representación
+  explícita conciliable se bloquea; no se fabrica su contrapartida.
+- El desglose de combos conserva su implementación y asignaciones fiscales exactas existentes.
+  No se redistribuyen automáticamente sus impuestos para absorber residuos de cabecera; si no hay
+  una línea ordinaria elegible, un residuo se bloquea para revisión.
+
 ### Bodega por línea y aplicación masiva
 
 La bodega pertenece a cada línea Product: una compra admite múltiples bodegas.
@@ -25,7 +56,15 @@ su tratamiento sin inventario y sin exigencia de bodega.
 
 - Requiere un proveedor activo con configuración SRI y una condición de pago (cuotas ≥ 1). Desde una recepción solo una factura genera compra; la NC sigue su propio flujo.
 - Líneas: la bodega debe pertenecer a la sucursal de la compra; el Item debe ser de la empresa; la presentación debe pertenecer al Item y estar activa; el factor de conversión debe ser representable con `ConversionFactorDecimals`; los códigos IVA/ICE seleccionados manualmente deben estar activos en el catálogo SRI. Si el XML trae un impuesto que no está en el catálogo, se rechaza.
-- ICE: el snapshot fiscal de una línea de recepción conserva la tarifa, la base y el importe declarados en el XML (`Source=Xml`); recálculos, prorrateos, confirmación y reapertura no los alteran. Un código ICE inactivo se reconoce solo como dato del XML, nunca como selección manual. La selección manual admite únicamente ICE porcentual activo; ICE específico o mixto sin importe XML se rechaza (`PURCHASE_ICE_DATA_REQUIRED`) y nunca se calcula $0 ni se deriva de la cantidad comercial. No existe cálculo operativo de ICE mixto. Editar cantidad, precio o descuento (de línea o global) de una línea XML con ICE específico, mixto o inactivo se rechaza (`PURCHASE_ICE_XML_EDIT_BLOCKED`) por falta de bases físicas verificables; con ICE porcentual activo la línea pasa a cálculo por tarifa. Las devoluciones prorratean cada fila del snapshot (tarifa conservada).
+- El descuento exacto de una línea vinculada a recepción XML se compara contra el subtotal
+  redondeado con `FiscalPrecision.TaxAmount` y `AwayFromZero`, no contra el producto de cantidad
+  por precio sin redondear. El precio y descuento originales se conservan en el XML inmutable;
+  esto no bloquea editar el costo o la cantidad operativos. Una promoción del
+  100 % de 19.00 sobre 18.9960 tiene base fiscal cero. Un descuento de 19.01 se rechaza.
+  No se introduce tolerancia ni se cambia el control de líneas manuales. Esta validación no
+  concilia diferencias entre la cabecera y la suma de líneas del XML; sigue vigente el guard
+  de conciliación al confirmar.
+- ICE: el XML conserva tarifa, base e importe originales. La compra conserva sus clasificaciones e importes fiscales aunque cambien cantidad, precio o presentación operativos, sujetos a la conciliación anterior. Un código ICE inactivo se reconoce como dato del XML; la selección manual admite solo ICE porcentual activo. ICE específico/mixto sin importe XML se rechaza (`PURCHASE_ICE_DATA_REQUIRED`), sin derivarlo de cantidades comerciales. La protección existente del descuento global para ICE específico/mixto no exige igualdad de costos ni cantidades operativas con el XML ni autoriza recalcular sus bases físicas. Las devoluciones prorratean cada fila fiscal con su tarifa conservada.
 - Costos: descuento global 0–100. Flete y otros costos tienen una única fuente de verdad:
   `PurchaseCostDistribution` (identidad, tipo `Freight`/`OtherCost`, origen opcional, importe,
   `Revision`) con sus asignaciones por línea destino. `FreightAllocated`/`OtherCostsAllocated` por
@@ -66,13 +105,13 @@ su tratamiento sin inventario y sin exigencia de bodega.
 - Una línea fiscal puede originar dos o más `PurchaseInvoiceDetail` operativos. Todos conservan `PurchaseReceptionLineId`; `XmlAllocatedSubtotal` identifica explícitamente los componentes. La promoción permanece exclusivamente como origen fiscal en recepción: no se agrega como otra línea operativa ni genera efectos duplicados. La recepción, su XML y sus impuestos no se modifican.
 - Los comandos existentes de alta/actualización aceptan `XmlAllocation` por componente: `Subtotal` bruto antes del descuento, `Discount` exacto y `Taxes` con `PurchaseReceptionLineTaxId`, `TaxableBase` y `TaxAmount`. Cantidad, presentación y precio unitario son operativos; el subtotal documental asignado es explícito, no se infiere de cantidad × precio. Se devuelve como `XmlAllocatedSubtotal`, junto con los identificadores de impuestos de origen (`PurchaseReceptionLineTaxId`, también en la evidencia XML del borrador), al consultar la compra; la consulta por id incluye la evidencia XML en cualquier estado.
 - Cada impuesto asignado tiene `Source=XmlAllocation`: el servidor obtiene código, tarifa y clasificación del origen/catálogo; el cliente solo asigna bases e importes. No calcula bases físicas, azúcar, volumen ni tributos desde cantidades comerciales. No se aprende una equivalencia proveedor→producto por el desglose, ni se interpreta la promoción como una presentación de sus componentes.
-- Guardar y confirmar exigen igualdad exacta del grupo en subtotal bruto, descuento, base neta y total; además, por cada impuesto documental y código tributario, suma de bases e importes asignados igual al original, conservando tarifa y procedencia. Se rechazan grupos incompletos, impuestos ajenos/duplicados, mezcla de promoción y componentes, y cruces de tenant/empresa/sucursal/proveedor/comprobante. Las cantidades operativas no se comparan con la cantidad comercial de la promoción.
+- Guardar y confirmar exigen cuadre exacto de las asignaciones fiscales del grupo en subtotal bruto, descuento, base neta y total; además, por cada impuesto documental y código tributario, suma de bases e importes fiscales asignados igual al original, conservando tarifa y procedencia. Este cuadre documental del desglose no exige que cada producto, cantidad, presentación o precio operativo coincida con la línea XML. Se rechazan grupos incompletos, impuestos ajenos/duplicados, mezcla de promoción y componentes, y cruces de tenant/empresa/sucursal/proveedor/comprobante. Las cantidades operativas no se comparan con la cantidad comercial de la promoción.
 - Una línea que participa en una distribución de costos no puede desglosarse hasta editar o retirar la distribución.
-- Los componentes se guardan con la misma operación atómica del borrador y se reabren con sus asignaciones. Recalcular, distribuir costos o confirmar no recalcula sus impuestos; modificar el descuento global de un componente se bloquea y requiere reasignar explícitamente el grupo. Las líneas sin desglose conservan sus reglas actuales.
+- Los componentes se guardan con la misma operación atómica del borrador y se reabren con sus asignaciones. Recalcular, distribuir costos o confirmar no recalcula sus impuestos; modificar el descuento global de un componente se bloquea y requiere reasignar explícitamente el grupo. Las líneas sin desglose aplican la regla única de edición operativa y conciliación fiscal de § 2.
 - La confirmación reutiliza los motores existentes: entrada por detalle Product, Kardex/promedio ponderado, una CxP y el hecho contable de la compra. Costo inventariable = base neta asignada + flete + otros costos; IVA, ICE e IRBPNR permanecen separados. Las devoluciones continúan referenciando el detalle operativo y prorrateando su snapshot asignado; no hay conciliación automática de NC promocionales.
 - Precisión de las columnas nuevas: `xml_allocated_subtotal` es monto fiscal, `FiscalPrecision.TaxAmount`, `numeric(18,2)`; representa el subtotal documental asignado sin derivarlo de un precio redondeado. El descuento y las bases/importes tributarios reutilizan las columnas existentes y su precisión fiscal. Los identificadores de origen tributario tienen FK restrictiva e índice único por detalle + impuesto original. El modelo y la instalación se consolidan en la única baseline V1; no se aplican cambios a bases existentes en esta entrega.
 - Interfaz (mismo formulario de Compras, sin pantallas ni tablas paralelas): la acción «Desglosar» aparece solo en líneas XML cuyos impuestos traen su identificador de origen. El modal se titula «Desglosar productos · código XML» con un subtítulo breve, resume en una línea la descripción original, subtotal bruto, descuento, impuestos y total, y ubica el buscador de productos (resultados flotantes sobre el contenido, con SKU, nombre completo y presentación) sobre una tabla compacta: una fila por producto con presentación (o unidad base), cantidad, costo asignado (subtotal bruto) y acceso a sus impuestos. Descuento, bases e importes de cada impuesto original (IVA, ICE, IRBPNR) y flete/otros costos se asignan explícitamente en el detalle de la fila, abierto bajo demanda. Una única barra inferior muestra distribuido y pendiente/excedente, la conciliación por concepto (bajo demanda) y Cancelar/Aplicar; el motivo de bloqueo de «Aplicar» se consulta con el disclosure textual «Ver motivo», accesible por teclado y toque, sin depender de `title`. «Aplicar» exige al menos dos componentes, diferencia cero por concepto y por impuesto, y conservar flete y otros costos asignados del grupo.
-- Al aplicar, los componentes reemplazan la línea promocional en su misma posición como filas normales; sus totales e impuestos salen de la asignación, nunca de cantidad × precio. Producto, cantidad, precio, presentación, descuento, duplicar y eliminar de cada fila se bloquean; se editan solo con «Editar desglose» sobre el grupo completo. La bodega es operativa y sigue editable por fila. El formulario rechaza guardar un grupo descuadrado; borrador, recálculo, reapertura y confirmación usan el mismo payload.
+- Al aplicar, los componentes reemplazan la línea promocional en su misma posición como filas normales; sus totales e impuestos salen de la asignación, nunca de cantidad × precio. Producto, cantidad, precio y presentación operativos se pueden modificar mediante «Editar desglose» sobre el grupo completo; los campos de sus filas quedan protegidos frente a cambios aislados que rompan la asignación fiscal. Descuento, duplicación o eliminación de componentes se resuelven en ese mismo flujo existente. Esta protección del grupo no exige reproducir los valores operativos del XML. La bodega es operativa y sigue editable por fila. El formulario rechaza guardar un grupo descuadrado; borrador, recálculo, reapertura y confirmación usan el mismo payload.
 - Historial: el modal puede consultar, página a página, compras confirmadas del mismo proveedor con componentes del mismo código XML. Solo propone productos, presentación y cantidades; todos los importes fiscales se vuelven a asignar y no se crea ninguna equivalencia ni aprendizaje.
 
 ## Incidencias de linea
@@ -98,7 +137,9 @@ El DS es la fuente unica de presentacion, apertura, accesibilidad, posicionamien
   no hay umbral empresarial configurable.
 - «Cantidad o costo distintos al documento del proveedor» compara en unidad base contra la
   presentación de origen y contra `xmlLineSubtotal` (`precioTotalSinImpuesto`, ya neto de descuento);
-  una conversión válida (30 SIXPACK X6 = 180 unidades) no lo dispara.
+  una conversión válida (30 SIXPACK X6 = 180 unidades) no lo dispara. Es un aviso informativo:
+  una diferencia operativa legítima no bloquea guardar ni confirmar y no obliga a volver al XML.
+  Se mantienen los bloqueos por datos inválidos, presentación sospechosa y falta de conciliación fiscal/contable.
 
 ### Validaciones y errores UX P0
 
@@ -287,7 +328,7 @@ sin bodega y no genera inventario; Product conserva la exigencia de bodega.
   - Product de una línea XML sin presentación.
   - Product sin bodega, o Service con bodega.
   - Cantidad ≤ 0 o línea sin IVA.
-  - Descuadre contra el XML autorizado que afecte cantidades, costos, totales o trazabilidad (`PURCHASE_XML_RECONCILIATION_REQUIRED`).
+  - Descuadre fiscal/financiero no justificable contra el XML autorizado o pérdida de trazabilidad (`PURCHASE_XML_RECONCILIATION_REQUIRED`).
   - Margen contra el precio de venta resuelto < −50 % (presentación o costo sospechoso).
 - **Requisito por empresa:** con `purchases.allow_confirm_without_reception_xml` OFF, al menos una línea debe venir de recepción.
 - **Efectos:**
@@ -364,7 +405,7 @@ Desglose XML backend (2026-10-23): `PurchaseXmlAllocationTests`, `PurchaseXmlBre
 
 Desglose XML frontend (2026-10-23): `purchaseXmlBreakdown.test.ts` (9: elegibilidad, cuadre por concepto/impuesto, diferencia de un centavo, reemplazo en posición, re-desglose, flete, grupo alterado, totales desde la asignación, reapertura) y `PurchaseLineBreakdownModal.test.tsx` (5: cabecera de una línea y resumen sin códigos SRI, filas compactas con impuestos bajo demanda, reapertura cuadrada desde la barra única, bloqueo por impuesto descuadrado con conciliación bajo demanda, búsqueda visible y alta con presentación de compra). Compras frontend 462/462, TypeScript, ESLint, build y gate de arquitectura PASS; backend focal re-ejecutado: Domain 5/5, Application 51/51, PostgreSQL desechable 7/7.
 
-ICE en Compras (2026-10-21): `PurchaseIceSnapshotTests`, `PurchaseIceSpecificResolutionTests`, `PurchaseInvoiceDetailXmlTaxSnapshotTests`, `PurchaseReturnTests` (prorrateo ICE XML) y `PurchaseIceXmlSnapshotPostgreSqlTests` (PostgreSQL real 5/5: persistencia, reapertura, recálculo y descuento bloqueado); frontend `purchaseLineReadiness.test.ts`. Sin migración ni ejecución sobre datos existentes.
+ICE en Compras (2026-10-21): `PurchaseIceSnapshotTests`, `PurchaseIceSpecificResolutionTests`, `PurchaseInvoiceDetailXmlTaxSnapshotTests`, `PurchaseReturnTests` (prorrateo ICE XML) y `PurchaseIceXmlSnapshotPostgreSqlTests` (PostgreSQL real 5/5: persistencia, reapertura y tratamiento fiscal de ICE; este resultado previo no establece restricciones de edición operativa); frontend `purchaseLineReadiness.test.ts`. Sin migración ni ejecución sobre datos existentes.
 
 Unificación de NC (2026-10-21): `PurchaseReturnEndToEndTests.UnifiedCreditNotes.cs` y `.Reprocessing.cs`, PostgreSQL real 21/21 con SRI simulado; contratos API 24/24; Application focal 79/79; contabilización PostgreSQL de devolución/descuento 6/6; frontend focal 35/35 según el registro de entrega. Cubren salida única, descuento sin inventario, idempotencia, concurrencia, vínculo histórico sin efectos, duplicados, cancelación interna, reversas incompletas y SRI anulado/pendiente/no verificable. Build/lint/TypeScript y gate de arquitectura PASS; límite externo del guardrail general en [entrega](../../STATUS.md#estado-de-entrega). Sin migración ni ejecución sobre datos de negocio.
 

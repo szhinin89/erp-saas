@@ -143,15 +143,10 @@ public sealed record PurchaseDraftMergedLine(
 }
 
 /// <summary>
-/// FLOW-READY-02F.2 — fusiona líneas recién parseadas del XML (fuente fiscal/documental fresca, ver
-/// <see cref="IPurchaseXmlDraftParser"/>) con las líneas persistidas de la recepción (fuente de
-/// datos operativos: Item Matching). Clave de correlación: (SupplierCode normalizado, Description
-/// normalizada) — nunca índice de lista, porque <c>purchase_reception_lines</c> no tiene columna de
-/// orden y la navegación EF <c>document.Lines</c> no garantiza orden estable sin <c>OrderBy</c>
-/// explícito. Si para una clave hay N líneas persistidas y M líneas frescas con N != M, esas líneas
-/// específicas NO se fusionan — se devuelven tal cual estaban persistidas (fallback seguro, nunca se
-/// inventa una correlación ambigua). Nunca muta las entidades persistidas — solo lee de ellas, jamás
-/// llama <c>SaveChangesAsync</c>.
+/// Solo claves unicas en ambos lados admiten recuperar evidencia del XML reparseado.
+/// Los grupos repetidos conservan el snapshot persistido de cada ID: ni el conteo igual
+/// ni el orden de enumeracion acreditan identidad entre detalles XML y recepcion.
+/// Nunca modifica las entidades ni persiste cambios.
 /// </summary>
 public static class PurchaseDraftLineMerger
 {
@@ -173,16 +168,12 @@ public static class PurchaseDraftLineMerger
             var persistedList = persistedGroup.ToList();
             if (
                 freshGroups.TryGetValue(persistedGroup.Key, out var freshList)
-                && freshList.Count == persistedList.Count
+                && freshList.Count == 1
+                && persistedList.Count == 1
             )
             {
-                for (var i = 0; i < persistedList.Count; i++)
-                    result.Add(
-                        PurchaseDraftMergedLine.FromFreshXmlWithPersistedMatching(
-                            persistedList[i],
-                            freshList[i]
-                        )
-                    );
+                result.Add(PurchaseDraftMergedLine.FromFreshXmlWithPersistedMatching(
+                    persistedList[0], freshList[0]));
             }
             else
             {

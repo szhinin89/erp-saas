@@ -313,6 +313,42 @@ describe("PURCHASE-DRAFT-RECOVERY B1/F1 — guardar con pendientes y reabrir", (
     }),
   });
 
+  it("conserva normales y promociones repetidas por ID al guardar y reabrir en otro orden", async () => {
+    const saved = [
+      ["SAVILOE", 144, 12], ["SEVEN UP 2000cc", 60, 24], ["PEPSI 1000cc", 240, 60],
+    ].flatMap(([name, normal, free], product) => [false, true].map((promo) => {
+      const id = `rx-${product}-${promo}`;
+      const quantity = Number(promo ? free : normal);
+      const discount = promo ? quantity * 2 : 0;
+      const base = promo ? 0 : quantity * 2;
+      return invoiceLine({ id: `detail-${id}`, description: name, quantity, unitPrice: 2,
+        discountPct: promo ? 100 : 0, purchaseReceptionLineId: id,
+        xmlSource: xmlSource({ purchaseReceptionLineId: id, description: String(name),
+          supplierCode: String(name), quantity, unitPrice: 2, discountPct: promo ? 100 : 0,
+          discount, lineSubtotal: base, taxValue: base * 0.15, totalLine: base,
+          taxes: [{ taxCode: "2", taxRateCode: "4", tarifa: 15, taxableBase: base, taxAmount: base * 0.15 }],
+        }),
+      });
+    }));
+    const result = await setupLoaded({ lines: saved as unknown as PurchaseInvoiceDto["lines"] });
+    vi.mocked(purchaseService.getById).mockResolvedValue(buildInvoice({
+      lines: [...saved].reverse() as unknown as PurchaseInvoiceDto["lines"],
+    }));
+    await act(async () => { await result.current.handleSave(); });
+    const payload = vi.mocked(purchaseService.update).mock.calls[0][1];
+    expect(payload.lines.map(l => l.purchaseReceptionLineId)).toEqual(saved.map(l => l.purchaseReceptionLineId));
+    for (const origin of saved) {
+      const recovered = result.current.lines.find(l => l.purchaseReceptionLineId === origin.purchaseReceptionLineId)!;
+      expect(recovered.lineId).toBe(origin.id);
+      expect(recovered.quantity).toBe(origin.quantity);
+      expect(recovered.unitPrice).toBe(origin.unitPrice);
+      expect(recovered.discountPct).toBe(origin.discountPct);
+      expect(recovered.xmlQuantity).toBe(origin.quantity);
+      expect(recovered.xmlLineSubtotal).toBe(origin.xmlSource.lineSubtotal);
+      expect(recovered.xmlTaxValue).toBe(origin.xmlSource.taxValue);
+    }
+  });
+
   it("reabre mostrando solo los pendientes reales, con su evidencia XML original", async () => {
     const result = await setupLoaded({
       lines: [resolvedLine, invoiceLine()] as unknown as PurchaseInvoiceDto["lines"],
@@ -699,6 +735,17 @@ describe("FASE 5 PURCHASE-UX — presentación de origen XML persistida", () => 
       packagingLevelId: "paca-12",
       conversionFactor: 12,
     }),
+  });
+
+  it("cambia el producto operativo sin reescribir la relacion del proveedor", async () => {
+    const result = await setupLoaded({ lines: [editedLine] as unknown as PurchaseInvoiceDto["lines"] });
+    const before = result.current.lines[0];
+    await act(async () => { await result.current.handleMatchItem(before._key, "item-2", "Otro producto"); });
+    expect(result.current.lines[0].itemId).toBe("item-2");
+    expect(result.current.lines[0].quantity).toBe(before.quantity);
+    expect(result.current.lines[0].unitPrice).toBe(before.unitPrice);
+    expect(result.current.lines[0].xmlUnitPrice).toBe(before.xmlUnitPrice);
+    expect(purchaseReceptionService.matchItem).not.toHaveBeenCalled();
   });
 
   it("al reabrir usa el origen persistido (x6), no el de la recepción (x12)", async () => {

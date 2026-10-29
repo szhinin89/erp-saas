@@ -33,7 +33,11 @@ public sealed class PurchaseXmlBreakdownTests
         <factura><infoTributaria><ruc>1790012345001</ruc><razonSocial>Arca Continental</razonSocial>
         <codDoc>01</codDoc><estab>029</estab><ptoEmi>001</ptoEmi><secuencial>001341832</secuencial>
         </infoTributaria><infoFactura><fechaEmision>01/10/2026</fechaEmision>
-        <totalSinImpuestos>59.74</totalSinImpuestos><importeTotal>80.52</importeTotal></infoFactura>
+        <totalSinImpuestos>59.74</totalSinImpuestos><importeTotal>80.52</importeTotal><totalConImpuestos>
+        <totalImpuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><baseImponible>68.71</baseImponible><valor>10.31</valor></totalImpuesto>
+        <totalImpuesto><codigo>3</codigo><codigoPorcentaje>3053</codigoPorcentaje><baseImponible>49.83</baseImponible><valor>8.97</valor></totalImpuesto>
+        <totalImpuesto><codigo>5</codigo><codigoPorcentaje>5001</codigoPorcentaje><baseImponible>75</baseImponible><valor>1.50</valor></totalImpuesto>
+        </totalConImpuestos></infoFactura>
         <detalles><detalle><codigoPrincipal>13563</codigoPrincipal><descripcion>3sFNT+3sFRESA+3sSP+6sCCSO1.35P</descripcion>
         <cantidad>5</cantidad><precioUnitario>11.948</precioUnitario><descuento>0</descuento>
         <precioTotalSinImpuesto>59.74</precioTotalSinImpuesto><impuestos>

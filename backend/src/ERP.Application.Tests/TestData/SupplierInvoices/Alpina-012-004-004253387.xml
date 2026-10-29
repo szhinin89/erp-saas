@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<factura id="comprobante" version="2.1.0">
+   <infoTributaria>
+      <ambiente>2</ambiente>
+      <tipoEmision>1</tipoEmision>
+      <razonSocial>PROVEEDOR FICTICIO LACTEOS S.A.</razonSocial>
+      <nombreComercial>PROVEEDOR FICTICIO LACTEOS S.A.</nombreComercial>
+      <ruc>0999999902001</ruc>
+      <claveAcceso>1710202601099999990200120120040042533878765432113</claveAcceso><codDoc>01</codDoc>
+      <estab>012</estab>
+      <ptoEmi>004</ptoEmi>
+      <secuencial>004253387</secuencial>
+      <dirMatriz>AV. FICTICIA 100 Y CALLE DE PRUEBA</dirMatriz>
+   </infoTributaria>
+   <infoFactura>
+      <fechaEmision>17/10/2026</fechaEmision>
+      <dirEstablecimiento>AV. FICTICIA 100 Y CALLE DE PRUEBA</dirEstablecimiento>
+      <contribuyenteEspecial>999</contribuyenteEspecial>
+      <obligadoContabilidad>SI</obligadoContabilidad>
+      <tipoIdentificacionComprador>04</tipoIdentificacionComprador>
+      <razonSocialComprador>COMPRADOR FICTICIO DE PRUEBA</razonSocialComprador>
+      <identificacionComprador>0999999999001</identificacionComprador>
+      <direccionComprador>CALLE FICTICIA 200 Y AV. DE PRUEBA</direccionComprador>
+      <totalSinImpuestos>16.15</totalSinImpuestos>
+      <totalDescuento>0.0</totalDescuento>
+      <totalConImpuestos>
+         <totalImpuesto>
+            <codigo>2</codigo>
+            <codigoPorcentaje>0</codigoPorcentaje>
+            <baseImponible>16.15</baseImponible>
+            <tarifa>0.000000000</tarifa>
+            <valor>0.0</valor>
+         </totalImpuesto>
+      </totalConImpuestos>
+      <propina>0.0</propina>
+      <importeTotal>16.15</importeTotal>
+      <moneda>USD</moneda>
+      <pagos>
+         <pago>
+            <formaPago>01</formaPago>
+            <total>16.15 </total>
+            <plazo>000</plazo>
+            <unidadTiempo>DIAS</unidadTiempo>
+         </pago>
+      </pagos>
+   </infoFactura>
+   <detalles>
+      <detalle>
+         <codigoPrincipal>LAC001</codigoPrincipal>
+         <codigoAuxiliar>2000000200001</codigoAuxiliar>
+         <descripcion>YOGUR FRESA CEREAL</descripcion>
+         <unidadMedida>UN</unidadMedida>
+         <cantidad>9.0</cantidad>
+         <precioUnitario>0.86</precioUnitario>
+         <descuento>0.0</descuento>
+         <precioTotalSinImpuesto>7.74</precioTotalSinImpuesto>
+         <impuestos>
+            <impuesto>
+               <codigo>2</codigo>
+               <codigoPorcentaje>0</codigoPorcentaje>
+               <tarifa>0.000000000 </tarifa>
+               <baseImponible>7.74</baseImponible>
+               <valor>0.0</valor>
+            </impuesto>
+         </impuestos>
+      </detalle>
+      <detalle>
+         <codigoPrincipal>LAC002</codigoPrincipal>
+         <codigoAuxiliar>2000000200002</codigoAuxiliar>
+         <descripcion>YOGUR AREQUIPE VASO 165G</descripcion>
+         <unidadMedida>UN</unidadMedida>
+         <cantidad>8.0</cantidad>
+         <precioUnitario>0.86</precioUnitario>
+         <descuento>0.0</descuento>
+         <precioTotalSinImpuesto>6.88</precioTotalSinImpuesto>
+         <impuestos>
+            <impuesto>
+               <codigo>2</codigo>
+               <codigoPorcentaje>0</codigoPorcentaje>
+               <tarifa>0.000000000 </tarifa>
+               <baseImponible>6.88</baseImponible>
+               <valor>0.0</valor>
+            </impuesto>
+         </impuestos>
+      </detalle>
+      <detalle>
+         <codigoPrincipal>LAC003</codigoPrincipal>
+         <codigoAuxiliar>2000000200003</codigoAuxiliar>
+         <descripcion>YOGUR CONFITE 127G</descripcion>
+         <unidadMedida>UN</unidadMedida>
+         <cantidad>1.0</cantidad>
+         <precioUnitario>0.65</precioUnitario>
+         <descuento>0.0</descuento>
+         <precioTotalSinImpuesto>0.65</precioTotalSinImpuesto>
+         <impuestos>
+            <impuesto>
+               <codigo>2</codigo>
+               <codigoPorcentaje>0</codigoPorcentaje>
+               <tarifa>0.000000000 </tarifa>
+               <baseImponible>0.65</baseImponible>
+               <valor>0.0</valor>
+            </impuesto>
+         </impuestos>
+      </detalle>
+      <detalle>
+         <codigoPrincipal>LAC004</codigoPrincipal>
+         <codigoAuxiliar>2000000200004</codigoAuxiliar>
+         <descripcion>YOGUR CANCHITA VASO 105G</descripcion>
+         <unidadMedida>UN</unidadMedida>
+         <cantidad>2.0</cantidad>
+         <precioUnitario>0.44</precioUnitario>
+         <descuento>0.0</descuento>
+         <precioTotalSinImpuesto>0.88</precioTotalSinImpuesto>
+         <impuestos>
+            <impuesto>
+               <codigo>2</codigo>
+               <codigoPorcentaje>0</codigoPorcentaje>
+               <tarifa>0.000000000 </tarifa>
+               <baseImponible>0.88</baseImponible>
+               <valor>0.0</valor>
+            </impuesto>
+         </impuestos>
+      </detalle>
+   </detalles>
+   <infoAdicional>
+      <campoAdicional nombre="RUC Proveedor">0999999990001</campoAdicional>
+      <campoAdicional nombre="Numero">004253387</campoAdicional>
+      <campoAdicional nombre="Gran Contribuyente resolucion">NAC-FICTICIA-00000000-E</campoAdicional>
+   </infoAdicional>
+</factura>

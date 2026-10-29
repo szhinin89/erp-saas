@@ -1,6 +1,5 @@
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PrecisionPolicy } from "../../../lib/config/precisionPolicy.config";
-import { matchesXmlDocument } from "./purchaseCalc";
 import {
   buildMarginRiskWarning,
   buildMissingSalePriceForMarginWarning,
@@ -19,7 +18,6 @@ export type PurchaseLineReadinessStatus =
   | "SUSPICIOUS_PACKAGING_COST"
   | "MISSING_WAREHOUSE"
   | "INVALID_TAX"
-  | "ICE_XML_EDIT_BLOCKED"
   | "READY";
 
 export type PurchaseLineReadinessAction =
@@ -110,20 +108,6 @@ function hasInvalidTax(line: PurchaseLineFormValues, options: PurchaseLineReadin
   return false;
 }
 
-/**
- * Mismo criterio que el backend (PURCHASE_ICE_XML_EDIT_BLOCKED): editar cantidad, precio o
- * descuento de una línea XML con ICE solo es posible si el código es porcentual y activo
- * (`iceRates` contiene únicamente esos). ICE específico/mixto o inactivo no se recalcula.
- */
-function hasBlockedXmlIceEdit(
-  line: PurchaseLineFormValues,
-  options: PurchaseLineReadinessOptions,
-) {
-  if (line.xmlAllocation || !hasXmlIce(line) || matchesXmlDocument(line)) return false;
-  const code = line.iceCode?.trim();
-  return !code || !hasKnownRate(code, options.iceRates);
-}
-
 function requiresPresentation(line: PurchaseLineFormValues) {
   return hasXmlOrigin(line) && !!line.itemId && line.context?.participatesInInventory === true;
 }
@@ -180,14 +164,6 @@ function message(
         detail: t(
           "purchases.lineReadiness.invalidTaxDetail",
           "Revise el código IVA/ICE de la línea antes de guardar.",
-        ),
-      };
-    case "ICE_XML_EDIT_BLOCKED":
-      return {
-        label: t("purchases.lineReadiness.iceXmlEditBlocked", "ICE del XML no recalculable"),
-        detail: t(
-          "purchases.lineReadiness.iceXmlEditBlockedDetail",
-          "El ICE específico, mixto o inactivo del XML no se recalcula sin bases físicas verificadas. Restablezca cantidad, precio y descuento del XML.",
         ),
       };
     case "SUSPICIOUS_PACKAGING_COST":
@@ -330,16 +306,6 @@ function computePrimaryReadiness(
     };
   }
 
-  if (hasBlockedXmlIceEdit(line, options)) {
-    return {
-      status: "ICE_XML_EDIT_BLOCKED",
-      ...message(t, "ICE_XML_EDIT_BLOCKED"),
-      tone: "danger",
-      blocking: true,
-      primaryAction: "REVIEW_TAX",
-    };
-  }
-
   if (hasInvalidTax(line, options)) {
     return {
       status: "INVALID_TAX",
@@ -379,8 +345,7 @@ export function getPurchaseLineBlockingReasons(
 
 /**
  * PURCHASE-DRAFT-RECOVERY B1 — regla de GUARDAR BORRADOR: solo bloquea lo que el backend rechazaría
- * igual al persistir (código IVA/ICE ausente o desconocido, o ICE del XML editado sin poder
- * recalcularse). Una línea XML pendiente o incompleta
+ * igual al persistir (codigo IVA/ICE ausente o desconocido). Una linea XML pendiente o incompleta
  * se guarda para no perder trabajo; Confirmar sigue exigiendo la línea lista.
  */
 export function getPurchaseLineSaveBlockingReasons(
@@ -391,7 +356,7 @@ export function getPurchaseLineSaveBlockingReasons(
     .map((line, index) => ({ line, index }))
     .filter(
       (entry) =>
-        hasInvalidTax(entry.line, options) || hasBlockedXmlIceEdit(entry.line, options),
+        hasInvalidTax(entry.line, options),
     );
 }
 
