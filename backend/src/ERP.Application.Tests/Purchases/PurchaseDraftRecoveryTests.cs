@@ -382,7 +382,7 @@ public sealed class PurchaseDraftRecoveryTests
     // ── B2: editar → guardar → reabrir → volver al XML original ─────────
 
     [Fact]
-    public async Task Volver_exactamente_al_XML_original_recupera_los_impuestos_del_XML()
+    public async Task Editar_y_volver_al_XML_original_conserva_los_impuestos_fiscales()
     {
         var (document, receptionLine) = Reception();
         var inv = DraftWithManualLine();
@@ -395,9 +395,13 @@ public sealed class PurchaseDraftRecoveryTests
         var edited = await UpdateHandler(repo, receptionRepo)
             .Handle(UpdateCommand(inv, [XmlLine(3m)]), CancellationToken.None);
         edited.IsSuccess.Should().BeTrue(edited.Error);
+        // SSOT purchases.md §2 (V1): edición operativa conserva importes fiscales;
+        // el cuadre del documento se valida al confirmar, no recalculando IVA al guardar.
         edited.Value!.Lines.Single().Taxes.Single(t => t.TaxCode == "2").Source
-            .Should().Be("Calculated");
-        edited.Value.Lines.Single().VatAmount.Should().Be(4.50m);
+            .Should().Be("Xml");
+        edited.Value.Lines.Single().Quantity.Should().Be(3m);
+        inv.Lines.Single().OperationalCostBase.Should().Be(30m);
+        edited.Value.Lines.Single().VatAmount.Should().Be(3m);
 
         var restored = await UpdateHandler(repo, receptionRepo)
             .Handle(UpdateCommand(inv, [XmlLine(2m)]), CancellationToken.None);
@@ -406,6 +410,10 @@ public sealed class PurchaseDraftRecoveryTests
         vat.Source.Should().Be("Xml");
         vat.TaxAmount.Should().Be(3m);
         restored.Value.Lines.Single().VatAmount.Should().Be(3m);
+        inv.Lines.Single().OperationalCostBase.Should().Be(20m);
+        receptionLine.Quantity.Should().Be(2m);
+        receptionLine.Taxes.Single().TaxableBase.Should().Be(20m);
+        receptionLine.Taxes.Single().TaxAmount.Should().Be(3m);
     }
 
     // ── F2: cuotas manuales ─────────────────────────────────────────────

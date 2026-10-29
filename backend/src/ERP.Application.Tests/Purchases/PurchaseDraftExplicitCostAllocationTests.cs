@@ -740,7 +740,9 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         line.TaxInclusiveTotal.Should().Be(115m);
     }
 
-    // ── PURCHASES-HARDENING-P0 (B4-B6) — IVA/ICE de una línea XML editada ─────────────────
+    // SSOT purchases.md §2 (V1): editar cantidad/precio conserva los importes fiscales.
+    // Este fixture prueba el guardado del borrador, no acredita conciliación al confirmar:
+    // su IVA declarado difiere de base × tarifa y su XML no contiene cabecera fiscal.
     // XML: 3 × 1.11 = 3.33, IVA declarado 0.49 (≠ 0.50 por tarifa) + IRBPNR 0.06 (3 × 0.02).
     private static (IPurchaseReceptionDocumentRepository Repo, Guid LineId) ReceptionWithTaxedLine()
     {
@@ -823,7 +825,7 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
     }
 
     [Fact]
-    public async Task Linea_XML_con_cantidad_editada_recalcula_IVA_por_tarifa_e_IRBPNR_queda_documental()
+    public async Task Linea_XML_con_cantidad_editada_conserva_IVA_e_IRBPNR_fiscales()
     {
         var (repo, lineId) = ReceptionWithTaxedLine();
 
@@ -834,14 +836,18 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         );
 
         var line = saved.Lines.Single();
+        line.Quantity.Should().Be(4m);
+        line.OperationalCostBase.Should().Be(4.44m);
         line.TaxableBase.Should().Be(4.44m);
-        line.VatAmount.Should().Be(0.67m);
-        line.XmlVatAmount.Should().BeNull();
+        line.VatAmount.Should().Be(0.49m);
+        line.XmlVatAmount.Should().Be(0.49m);
         line.IrbpnrAmount.Should().Be(0.06m);
+        line.Taxes.Should().OnlyContain(t => t.Source == ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml);
+        line.Taxes.Single(t => t.TaxCode == "5").TaxableBase.Should().Be(3m);
     }
 
     [Fact]
-    public async Task Update_linea_XML_con_precio_editado_recalcula_IVA_por_tarifa()
+    public async Task Update_linea_XML_con_precio_editado_conserva_IVA_fiscal()
     {
         var (repo, lineId) = ReceptionWithTaxedLine();
 
@@ -852,7 +858,12 @@ public sealed class PurchaseDraftExplicitCostAllocationTests
         );
 
         var line = invoice.Lines.Single();
-        line.VatAmount.Should().Be(0.90m);
-        line.XmlVatAmount.Should().BeNull();
+        line.UnitPrice.Should().Be(2m);
+        line.OperationalCostBase.Should().Be(6m);
+        line.TaxableBase.Should().Be(6m);
+        line.VatAmount.Should().Be(0.49m);
+        line.XmlVatAmount.Should().Be(0.49m);
+        line.IrbpnrAmount.Should().Be(0.06m);
+        line.Taxes.Should().OnlyContain(t => t.Source == ERP.Domain.Modules.Purchases.Enums.PurchaseTaxSource.Xml);
     }
 }

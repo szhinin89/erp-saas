@@ -1,5 +1,19 @@
 # Project Status
 
+## CI Compras XML V1 — pruebas alineadas; pendiente gate del propietario (2026-10-29)
+
+Reproducidos los 3 FAIL reportados para `217d81cd8` (CI `40969761501`, Backend application).
+Clasificación: BUG REAL en expectativas obsoletas de pruebas; KEEP implementación fiscal V1.
+La SSOT [Compras §2](docs/architecture/purchases.md#2-borrador) conserva importes fiscales
+al editar cantidad/precio operativo y exige conciliación al confirmar. Se retiraron las
+expectativas de IVA recalculado y Source=Calculated de esos tres casos, manteniendo
+comprobaciones de edición operativa, procedencia XML y recepción original intacta.
+Sin cambios productivos, de SSOT, BD ni migraciones. PASS agente: 3/3 corregidas y 76/76
+focales (incluyen esas tres, recuperación, precisión/costos, guard de confirmación,
+XML reales DISURGAL/ALPINA y desglose). Comando para el gate del propietario:
+`dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~PurchaseDraftRecoveryTests|FullyQualifiedName~PurchaseDraftExplicitCostAllocationTests|FullyQualifiedName~PurchaseXmlConfirmationGuardTests|FullyQualifiedName~RealSupplierXmlRegressionTests|FullyQualifiedName~PurchaseXmlBreakdownTests"`.
+Sin suites generales, E2E, navegador, staging, commit ni push; no CLOSED.
+
 
 ## Compras XML: identidad de lineas repetidas — pendiente validacion del propietario (2026-10-29)
 
