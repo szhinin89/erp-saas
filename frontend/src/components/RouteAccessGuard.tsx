@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useI18n } from "../i18n/i18n";
 import { NoAccessPage } from "./PageShell";
 import type { MainMenuGroup } from "./useAppLayoutNavigation";
 import type { NavItem } from "../nav/navConfig";
+import { NavigationAccessContext, buildNavigationAccess } from "./navigationAccess";
 
 /**
  * Rutas de redirección legacy (<Navigate replace>) cuyo primer segmento no coincide
@@ -72,6 +73,11 @@ export function RouteAccessGuard({
 }) {
   const location = useLocation();
   const { t } = useI18n();
+  // Mismo menú ya resuelto, expuesto a las páginas (p. ej. acciones de Readiness) sin otra consulta.
+  const navigationAccess = useMemo(
+    () => buildNavigationAccess(mainMenuGroups, sessionMenuResolved),
+    [mainMenuGroups, sessionMenuResolved],
+  );
 
   if (
     sessionMenuResolved &&
@@ -80,5 +86,9 @@ export function RouteAccessGuard({
     return <NoAccessPage title={t("app.accessDenied.title")} />;
   }
 
-  return <>{children}</>;
+  return (
+    <NavigationAccessContext.Provider value={navigationAccess}>
+      {children}
+    </NavigationAccessContext.Provider>
+  );
 }

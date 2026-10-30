@@ -60,3 +60,30 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+.cfg-opreadiness-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.cfg-opreadiness-hint {
+  margin: 0;
+}
+
+.cfg-opreadiness-cash-registers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cfg-opreadiness-requirement-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

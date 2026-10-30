@@ -1,6 +1,6 @@
 # Preparación operativa de empresa (Company Readiness)
 
-**Estado:** IN REVIEW (Fase 2B-1, backend y contrato). No CLOSED hasta revisión y CI.
+**Estado:** IN REVIEW (Fase 2B-1 backend y contrato; Fase 2B-2 interfaz guiada). No CLOSED hasta revisión y CI.
 
 SSOT funcional del diagnóstico de preparación operativa de la empresa activa en la sucursal activa: qué revisa, de qué fuente única sale cada dato, qué validador decide y qué capacidades condiciona. Las decisiones de emisión electrónica se fundamentan en [ADR-023](../decisions/ADR-023-electronic-documents-v1-closure.md) y [ADR-038](../decisions/ADR-038-sri-electronic-compliance-architecture.md); el modo contable, en [accounting.md](./accounting.md).
 
@@ -154,6 +154,20 @@ La venta física es operativamente posible hoy (el backend la permite y Readines
 | F-4 | El régimen tributario no condiciona el tipo documental | El régimen (p. ej. RIMPE Negocio Popular) solo afecta el monto máximo de Consumidor Final |
 | F-5 | El catálogo mezcla "apto electrónico" con "permitido" | `sri_doc_types` tiene un único flag `IsElectronic`; la factura física pasa porque 01 es electrónica. La nota de venta (02) está inactiva y no electrónica, por lo que se rechaza en cualquier modalidad: no está habilitada por defecto |
 
+## Interfaz (pestaña Preparación de Datos de la empresa)
+
+`OperationalReadinessSection.tsx` solo presenta el contrato: no calcula capacidades, no evalúa reglas fiscales y no contiene formularios de configuración.
+
+- **Sucursal.** La cabecera muestra la sucursal activa (`activeBranchStore`). Una respuesta cuyo `branchId` no es la sucursal activa nunca se muestra (se trata como carga en curso). Se vuelve a consultar al cambiar de sucursal, en cada montaje (al volver de la pantalla donde se corrigió un dato) y con «Volver a verificar» (`useAsync.refetch`); el estado vive solo en `useAsync`.
+- **Capacidades.** Las cuatro capacidades son las del backend. Si alguna está disponible y `overallStatus ≠ Ready`, se aclara que «disponible» significa que existe un camino, no que la configuración esté completa.
+- **Cajas.** Tabla de `cashRegisters[]`: caja, establecimiento-punto, modalidad, estado operativo, estado fiscal y requisitos pendientes (enlaces al ítem, `#readiness-item-{code}`). Contadores de cajas listas y pendientes (`operationalStatus`), y aviso cuando unas pueden operar y otras no.
+- **Estados fiscales.** `Verified` éxito, `Pending` advertencia, `NotVerified` informativo («la autorización fiscal física no se verifica todavía», nunca éxito ni bloqueo), `NotApplicable` neutro (sin punto).
+- **Requisitos.** Cada ítem aparece una vez con: qué falta (`label`), por qué importa (mensaje por estado), operaciones afectadas (`blockingAreas`, con la etiqueta de la capacidad), cajas afectadas (inversa de `requirementCodes[]`) y dónde se corrige.
+- **Destinos y permisos.** `operationalReadinessActionRoutes.ts` traduce `actionTarget` a ruta; la disponibilidad sale del menú autenticado (`GET /api/v1/me/menu`, ya filtrado por el backend) vía `useNavigationAccess()` (`components/navigationAccess.ts`), que `RouteAccessGuard` provee con el mismo menú ya cargado: sin otra consulta ni mapa de permisos. Coincide por ruta completa (sin query), no por primer segmento. Garantía real: un ítem del menú implica el permiso de **vista** de la pantalla (`NavItem.Permission`), no el de edición; por eso la acción se presenta como «Se corrige en: {pantalla}», con el nombre tomado del menú, y la pantalla destino sigue decidiendo qué puede editarse. Sin acceso, se pide asistencia a un administrador; con el menú aún sin resolver, no se ofrece acción.
+
 ## Pruebas
 
-`ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs` (resolver) y `ERP.Application.Tests/Companies/GetCompanyOperationalReadinessQueryHandlerTests.cs` (proyección al DTO, scope del contexto autenticado y exigencia de sucursal).
+- `ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs` (resolver).
+- `ERP.Application.Tests/Companies/GetCompanyOperationalReadinessQueryHandlerTests.cs` (proyección al DTO, scope del contexto autenticado y exigencia de sucursal).
+- `ERP.API.Tests/Integration/CompanyOperationalReadinessBranchHttpTests.cs` (HTTP real con PostgreSQL: cajas por sucursal, aislamiento entre empresas, rechazo sin sucursal, sucursal no autorizada o de otra empresa; solo puntos físicos, sin SRI).
+- `frontend/src/modules/configuracion/empresa/sections/OperationalReadinessSection.test.tsx` (interfaz) y `frontend/src/components/navigationAccess.test.ts` (destinos según el menú).
