@@ -94,6 +94,17 @@ public sealed class ValidateSriConfigurationQueryHandler
             )
         );
 
+        if (certStatus.Installed && string.IsNullOrWhiteSpace(settings.CertPassword))
+        {
+            checks.Add(
+                new SriConfigurationCheckDto(
+                    "certificatePassword",
+                    false,
+                    "No hay contraseña configurada para el certificado."
+                )
+            );
+        }
+
         if (certStatus.Installed && !string.IsNullOrWhiteSpace(settings.CertPassword))
         {
             checks.Add(

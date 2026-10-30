@@ -1,5 +1,24 @@
 # Project Status
 
+## BUG REAL — diagnóstico de certificado SRI — IMPLEMENTADO — PASS FOCAL — PENDIENTE COMMIT/CI (2026-10-30)
+
+`ValidateSriConfigurationQueryHandler` podía devolver `IsValid=true` con certificado
+instalado y contraseña ausente: omitía el control de contraseña. La corrección agrega
+el control obligatorio `certificatePassword=false` en ese caso; contrato vigente en
+[Backend — diagnóstico de configuración SRI](docs/architecture/backend.md#diagnóstico-de-configuración-sri).
+
+Evidencia del agente: RED de la regresión antes de corregir; GREEN 15/15 pruebas focales
+del handler y aislamiento por empresa. `ValidateSriConfigurationQueryHandlerTests`
+comprueba contraseña ausente con resolver real y almacenamiento sintético, y conserva
+los casos de certificado válido, vencido, contraseña incorrecta y archivo no instalado.
+Comando ejecutado desde la raíz:
+`dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~ValidateSriConfigurationQueryHandlerTests|FullyQualifiedName~ElectronicInvoicingCompanyScopeTests" --verbosity minimal`.
+`git diff --check` PASS. El PASS focal no sustituye el gate del propietario ni acredita E2E.
+
+Sin cambios en firma, XML/XSD, SOAP ni transmisión al SRI; sin acceso a certificados
+reales ni secretos, suites generales, migraciones, configuración operativa, staging,
+commit ni push. Pendiente commit/CI; no CLOSED.
+
 ## BUG REAL — recuperación de notas de crédito — IMPLEMENTADO — PASS FOCAL — PENDIENTE COMMIT/CI (2026-10-30)
 
 Una devolución autorizada con número definitivo de nota de crédito, pero sin

@@ -744,6 +744,15 @@ enumerados en `OrgSettingsAccessGuardrailTests` leen o escriben el repositorio; 
 si otro tipo de Application lo referencia o si una entrada del allowlist deja de existir.
 La marca pertenece a Company (`company.branding.*`, `ICompanyBrandingResolver`); RIDE la consume.
 
+### Diagnóstico de configuración SRI
+
+`ValidateSriConfigurationQueryHandler` diagnostica la configuración de la empresa activa.
+Si el certificado está instalado pero falta su contraseña, agrega explícitamente
+`certificatePassword=false` y el resultado global es `IsValid=false`; omitir ese control
+no equivale a aprobarlo. Conserva los controles existentes para certificados con contraseña
+(correcta o incorrecta), vencidos y no instalados. Este diagnóstico no acredita firma ni
+autorización de un comprobante. Evidencia y estado de entrega: [STATUS](../../STATUS.md).
+
 ### Principal y default únicos
 
 Índices únicos filtrados: una sucursal principal por empresa (`uq_branches_tenant_company_main`),
