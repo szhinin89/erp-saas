@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { kardexService } from "../../stock/api/kardexService";
 import type { KardexMovementDetailDto } from "../../stock/api/kardexService";
 import { stockService } from "../../stock/api/stockService";
@@ -24,6 +24,9 @@ export type DocumentMatch = {
   docType: DocumentSubType;
   number: string;
   label: string;
+  status?: string;
+  partnerName?: string;
+  issueDate?: string;
 };
 
 export type InitialDocument = { id: string; docType: DocumentSubType };
@@ -68,6 +71,13 @@ export function useInventoryInvestigationPage(
   const [docNumberQuery, setDocNumberQuery] = useState("");
   const [docMatches, setDocMatches] = useState<DocumentMatch[]>([]);
   const [docSearching, setDocSearching] = useState(false);
+  const documentSearchVersion = useRef(0);
+  useEffect(() => {
+    documentSearchVersion.current += 1;
+    setDocMatches([]);
+    setDocSearching(false);
+    return () => { documentSearchVersion.current += 1; };
+  }, [docNumberQuery, docSubType, searchMode]);
   const [selectedDoc, setSelectedDoc] = useState<DocumentMatch | null>(null);
 
   // ── Resultados ───────────────────────────────────────────────────────────
@@ -112,6 +122,7 @@ export function useInventoryInvestigationPage(
           docType: initialDocument.docType,
           number: inv.invoiceNumber,
           label: `${inv.invoiceNumber} — ${inv.status}`,
+          status: inv.status,
         }),
       )
       .catch(() =>
@@ -157,44 +168,35 @@ export function useInventoryInvestigationPage(
   // ── Búsqueda rápida: Documento — resuelve SIEMPRE en el dominio dueño ──
   const searchDocuments = useCallback(async () => {
     if (!docNumberQuery.trim()) return;
+    const version = ++documentSearchVersion.current;
     setDocSearching(true);
     setDocMatches([]);
     try {
-      if (docSubType === "PurchaseInvoice") {
-        const res = await purchaseLookupFacade.list(
-          docNumberQuery.trim(),
-          undefined,
-          1,
-          10,
-        );
-        setDocMatches(
-          res.items.map((i) => ({
-            id: i.id,
-            docType: "PurchaseInvoice" as const,
-            number: i.invoiceNumber,
-            label: `${i.invoiceNumber} — ${i.status}`,
-          })),
-        );
-      } else {
-        const res = await salesLookupFacade.list(
-          docNumberQuery.trim(),
-          undefined,
-          1,
-          10,
-        );
-        setDocMatches(
-          res.items.map((i) => ({
-            id: i.id,
-            docType: "SalesInvoice" as const,
-            number: i.invoiceNumber,
-            label: `${i.invoiceNumber} — ${i.status}`,
-          })),
-        );
-      }
+      // Filtrar en servidor ANTES de paginar: los borradores no consumen el limite.
+      // Dos paginas acotadas, nunca consultas por resultado ni detalles de factura.
+      const matches = docSubType === "PurchaseInvoice"
+        ? await Promise.all(["Confirmed", "Cancelled"].map(async status => {
+            const res = await purchaseLookupFacade.list(docNumberQuery.trim(), status, 1, 10);
+            return res.items.map(i => ({
+              id: i.id, docType: docSubType, number: i.invoiceNumber,
+              label: `${i.invoiceNumber} — ${i.supplierName}`,
+              partnerName: i.supplierName, issueDate: i.issueDate, status: i.status,
+            }));
+          }))
+        : await Promise.all(["Authorized", "Cancelled"].map(async status => {
+            const res = await salesLookupFacade.list(docNumberQuery.trim(), status, 1, 10);
+            return res.items.map(i => ({
+              id: i.id, docType: docSubType, number: i.invoiceNumber,
+              label: `${i.invoiceNumber} — ${i.customerName}`,
+              partnerName: i.customerName, issueDate: i.issueDate, status: i.status,
+            }));
+          }));
+      if (version === documentSearchVersion.current) setDocMatches(matches.flat());
     } catch {
-      message.error("No se pudo buscar el documento.");
+      if (version === documentSearchVersion.current) message.error("No se pudo buscar el documento.");
+    } finally {
+      if (version === documentSearchVersion.current) setDocSearching(false);
     }
-    setDocSearching(false);
   }, [docNumberQuery, docSubType]);
 
   const selectDocument = useCallback((doc: DocumentMatch) => {

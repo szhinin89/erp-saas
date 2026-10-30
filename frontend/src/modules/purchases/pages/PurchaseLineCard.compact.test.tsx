@@ -7,7 +7,7 @@ import { setPrecisionPolicyForTests } from "../../../lib/config/precisionPolicy.
 import { TEST_PRECISION_POLICY } from "../../../test/precisionPolicyFixture";
 import type { PurchaseLineFormValues } from "../schemas/purchaseInvoiceSchema";
 import type { PurchaseLineReadiness } from "../utils/purchaseLineReadiness";
-import { PurchaseLineCard } from "./PurchasesPage";
+import { PurchaseDetailLines, PurchaseLineCard } from "./PurchasesPage";
 import {
   brokenDownLine,
   manualLineWithoutCommercialData,
@@ -54,6 +54,7 @@ function renderLine(line: PurchaseLineFormValues, readiness?: PurchaseLineReadin
       </I18nProvider>
     </MemoryRouter>,
   );
+  fireEvent.click(screen.getByRole("button", { name: "Detalle" }));
   return { ...utils, ctx };
 }
 
@@ -239,4 +240,35 @@ describe("P0 - field validation on purchase lines", () => {
     expect(screen.getAllByText("Presentation rejected")).toHaveLength(1);
     expect(detailToggle().getAttribute("aria-expanded")).toBe("true");
   });
+});
+
+
+it("detalle principal: inicio contraído, expansión global/individual sin mutar líneas", () => {
+  const { ctx } = renderLine(xmlIceEditedLine);
+  cleanup();
+  const lines = [xmlIceEditedLine, { ...manualLineWithoutCommercialData, _key: 900 }];
+  const snapshot = JSON.stringify(lines);
+  const mount = () => render(<MemoryRouter><I18nProvider>
+    <PurchaseDetailLines ctx={{ ...ctx, lines }} />
+    <PurchaseLineCard line={{ ...xmlIceEditedLine, _key: 901 }} idx={2} ctx={ctx} />
+  </I18nProvider></MemoryRouter>);
+  mount();
+  const states = () => screen.getAllByRole("button", { name: "Detalle" }).map(b => b.getAttribute("aria-expanded"));
+  expect(states()).toEqual(["false", "false", "false"]);
+  expect(screen.queryByText("Producto recibido (XML)")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Expandir todo" }));
+  expect(states()).toEqual(["true", "true", "false"]);
+  const first = screen.getAllByRole("button", { name: "Detalle" })[0];
+  first.focus();
+  fireEvent.click(first);
+  expect(document.activeElement).toBe(first);
+  expect(states()).toEqual(["false", "true", "false"]);
+  fireEvent.click(screen.getByRole("button", { name: "Expandir todo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Contraer todo" }));
+  expect(states()).toEqual(["false", "false", "false"]);
+  expect(JSON.stringify(lines)).toBe(snapshot);
+  expect(ctx.updateLine).not.toHaveBeenCalled();
+  cleanup();
+  mount();
+  expect(states()).toEqual(["false", "false", "false"]);
 });

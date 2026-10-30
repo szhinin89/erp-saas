@@ -140,6 +140,12 @@
   margin-bottom: var(--space-2);
   overflow: visible;
 }
+/* Mismo tono de identificación de filas del ERP; los controles conservan su foco. */
+.pdl-line-card.zh-line-card:is(:hover, :focus-within),
+.pdl-line-card:is(:hover, :focus-within) .pdl-line,
+.pdl-line-card:is(:hover, :focus-within) .zh-line-card__rail {
+  background: var(--color-surface-hover);
+}
 .pdl-line-card.zh-line-card:last-child {
   margin-bottom: 0;
 }

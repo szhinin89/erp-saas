@@ -850,14 +850,7 @@ export function PurchasesPage() {
                 {/* Line Cards */}
                 <div className="pdl-lines" id="purchase-lines" tabIndex={-1}>
                   {(ctx.errors.lines?.message || ctx.errors.lines?.root?.message) && <ZHPageNotice variant="error" message={ctx.errors.lines.message ?? ctx.errors.lines.root?.message ?? ""} />}
-                  {ctx.lines.map((l, idx) => (
-                    <PurchaseLineCard
-                      key={l._key}
-                      line={l}
-                      idx={idx}
-                      ctx={ctx}
-                    />
-                  ))}
+                  <PurchaseDetailLines key={ctx.editing?.id ?? "new"} ctx={ctx} />
                   {ctx.lines.length === 0 && (
                     <div className="pdl-empty">
                       <span className="pdl-empty__icon-wrap">
@@ -1438,14 +1431,46 @@ function ProductLineActionMenu({
   );
 }
 
+/** Composición del detalle existente; expansión efímera por clave, como en el modal de pendientes. */
+export function PurchaseDetailLines({ ctx }: { ctx: ReturnType<typeof usePurchasesPage> }) {
+  const { t } = useI18n();
+  const [expanded, setExpanded] = useState<Set<number>>(() => new Set());
+  const allExpanded = ctx.lines.length > 0 && ctx.lines.every(line => expanded.has(line._key));
+  return (
+    <>
+      {ctx.lines.length > 0 && (
+        <ZHBtn type="button" variant="ghost" size="sm"
+          onClick={() => setExpanded(new Set(allExpanded ? [] : ctx.lines.map(line => line._key)))}>
+          {allExpanded
+            ? t("purchases.pendingProducts.collapseAll", "Contraer todo")
+            : t("purchases.pendingProducts.expandAll", "Expandir todo")}
+        </ZHBtn>
+      )}
+      {ctx.lines.map((line, idx) => (
+        <PurchaseLineCard key={line._key} line={line} idx={idx} ctx={ctx}
+          expanded={expanded.has(line._key)}
+          onExpandedChange={value => setExpanded(current => {
+            const next = new Set(current);
+            if (value) next.add(line._key); else next.delete(line._key);
+            return next;
+          })} />
+      ))}
+    </>
+  );
+}
+
 export function PurchaseLineCard({
   line: l,
   idx,
   ctx,
+  expanded,
+  onExpandedChange,
 }: {
   line: PurchaseLineDraft;
   idx: number;
   ctx: ReturnType<typeof usePurchasesPage>;
+  expanded?: boolean;
+  onExpandedChange?: (value: boolean) => void;
 }) {
   const { t } = useI18n();
   const lineLocked = ctx.fieldDisabled || !!l.xmlAllocation;
@@ -1457,12 +1482,13 @@ export function PurchaseLineCard({
     "La línea participa en una distribución de costos. Edite o retire la distribución antes de eliminarla o desglosarla.");
   const precisionPolicy = usePrecisionPolicy(); // presentación de línea (06)
   const viewMatchedItem = useOpenItemDetail();
-  // Estado local de expandir/colapsar SOLO la banda inferior de detalle
-  // (Producto recibido XML / Presentación e inventario / Información
-  // comercial) — no se persiste (ni backend ni localStorage), vive por
-  // instancia de línea (key={l._key} en el .map() que renderiza esta
-  // card). Inicia expandido para no ocultar información por defecto.
-  const [collapsed, setCollapsed] = useState(false);
+  // Solo presentación: no modifica la línea ni el formulario al ocultar el detalle.
+  const [locallyExpanded, setLocallyExpanded] = useState(false);
+  const collapsed = !(expanded ?? locallyExpanded);
+  const setCollapsed = (value: boolean) => {
+    if (onExpandedChange) onExpandedChange(!value);
+    else setLocallyExpanded(!value);
+  };
   const fieldIssues = purchaseFieldErrors(ctx.errors?.lines?.[idx]);
   const errorId = (field: string) => `purchase-line-${l._key}-${field}-error`;
   const fieldMessage = (fields: string[]) => [...new Set(fieldIssues
@@ -1704,7 +1730,7 @@ export function PurchaseLineCard({
                 size="sm"
                 expanded={!collapsed}
                 aria-controls={detailId}
-                onClick={() => setCollapsed((current) => !current)}
+                onClick={() => setCollapsed(!collapsed)}
               >
                 {t("purchases.lines.detailToggle", "Detalle")}
               </ZHBtn>

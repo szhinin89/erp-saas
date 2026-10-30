@@ -60,7 +60,7 @@ beforeAll(async () => { vi.stubGlobal("localStorage", { getItem: () => null }); 
 afterAll(async () => { await browser?.close(); vi.unstubAllGlobals(); });
 
 for (const width of [390, 1440]) {
-  for (const scenario of ["empty", "loading", "results", "document", "detail", "detail-loading", "picker-results", "picker-empty", "picker-loading", "picker-shell"]) {
+  for (const scenario of ["empty", "loading", "results", "document", "document-picker", "detail", "detail-loading", "picker-results", "picker-empty", "picker-loading", "picker-shell"]) {
     it(`${scenario} at ${width}px keeps controls and content within their regions`, async () => {
       state.current = { ...baseline };
       if (["results", "detail"].includes(scenario)) Object.assign(state.current, {
@@ -70,6 +70,12 @@ for (const width of [390, 1440]) {
       });
       if (scenario === "loading") state.current.movementsLoading = true;
       if (scenario === "document") state.current.searchMode = "document";
+      if (scenario === "document-picker") Object.assign(state.current, {
+        searchMode: "document", docNumberQuery: "000005545",
+        docMatches: ["Confirmed", "Discarded"].map((status, i) => ({
+          id: `doc-${i}`, number: "001-001-000005545", status, label: `001-001-000005545 — ${status}`,
+        })),
+      });
       if (scenario.startsWith("picker-")) Object.assign(state.current, {
         productQuery: "producto", productSearching: scenario === "picker-loading",
         productResults: ["picker-results", "picker-shell"].includes(scenario) ? Array.from({ length: 10 }, (_, i) => ({
@@ -122,6 +128,27 @@ for (const width of [390, 1440]) {
         expect(geometry.controlsFit).toBe(true);
         if (width === 1440) expect(geometry.filterHeight).toBeLessThan(100);
         expect(geometry.modalFits).toBe(true);
+        if (scenario === "document-picker") {
+          const panel = page.getByRole("group", { name: "Documentos encontrados" });
+          const options = panel.getByRole("button");
+          expect(await options.count()).toBe(2);
+          const first = await options.nth(0).boundingBox();
+          const second = await options.nth(1).boundingBox();
+          expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height);
+          const background = () => options.nth(0).evaluate(el => getComputedStyle(el).backgroundColor);
+          const normal = await background();
+          await options.nth(0).hover();
+          await expect.poll(background).not.toBe(normal);
+          await page.locator(".kdx-field-document input").focus();
+          for (const [index, key] of [[0, "Enter"], [1, "Space"]] as const) {
+            await options.nth(index).evaluate(el => el.addEventListener("click", () => el.setAttribute("data-activated", "true")));
+            await page.keyboard.press("Tab");
+            expect(await options.nth(index).evaluate(el => el === document.activeElement)).toBe(true);
+            expect(await options.nth(index).evaluate(el => getComputedStyle(el).outlineStyle)).not.toBe("none");
+            await page.keyboard.press(key);
+            expect(await options.nth(index).getAttribute("data-activated")).toBe("true");
+          }
+        }
         if (scenario.startsWith("picker-")) {
           const positions = await page.locator(".kdx-filter-row input, .kdx-filter-row select").evaluateAll(
             (els) => els.map((el) => ({ x: el.getBoundingClientRect().x, y: el.getBoundingClientRect().y })),

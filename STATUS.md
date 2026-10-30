@@ -1,5 +1,29 @@
 # Project Status
 
+## Compras — detalle compacto y resaltado — IMPLEMENTADO — PENDIENTE VALIDACIÓN VISUAL DEL PROPIETARIO (2026-10-29)
+
+Clasificación: FALTA autorizada en la presentación; KEEP datos, edición, guardado,
+reapertura y lógica operativa/fiscal. `PurchasesPage.tsx` reutiliza las tarjetas y
+botones ZH existentes, con el patrón de expansión por identificador del modal de
+pendientes: inicio contraído, Detalle individual y control alternante Expandir todo /
+Contraer todo limitado a las líneas de la compra. La cabecera esencial permanece
+visible; contraer solo cambia estado de UI. Estado efímero, reiniciado al abrir otra
+compra. `purchases-invoice.css` aplica el token compartido `--color-surface-hover`
+a la tarjeta y rail por hover/focus-within, sin sobrescribir el foco de los controles.
+
+PASS agente: `PurchaseLineCard.compact.test.tsx` 18/18 (incluye inicio contraído,
+expansión global/individual, aislamiento de otra tarjeta, foco conservado, líneas
+sin mutaciones y remontaje contraído); TypeScript y diff --check PASS. ESLint focal
+sin errores; advertencia existente de tamaño de `PurchasesPage.tsx` (max-lines).
+Gate técnico del propietario desde `frontend`:
+`npx.cmd vitest run src/modules/purchases/pages/PurchaseLineCard.compact.test.tsx`;
+`npx.cmd tsc -b --pretty false`;
+`npx.cmd eslint src/modules/purchases/pages/PurchasesPage.tsx src/modules/purchases/pages/PurchaseLineCard.compact.test.tsx`.
+Pendiente revisión visual de hover, foco por teclado y expansión con compra real,
+incluida edición/guardado/reapertura; las pruebas de componente no acreditan ese
+recorrido persistido. Sin navegador, suites generales, backend, BD, migraciones,
+baseline, caso #32, otros módulos, staging, commit ni push; no CLOSED.
+
 ## BUG REAL DISURGAL — corregido; validación funcional del propietario PASS DISURGAL y ALPINA (2026-10-29)
 
 El rechazo reproducido provenía de StockMovement.Create: PurchaseEntry exigía costo > 0
@@ -591,6 +615,33 @@ Limitaciones de fixtures, fuentes e hidratación en las evidencias de
 y [Stock](docs/evidence/stock-report-ux-01/README.md).
 CI: [CI #999](#inventario-v1--evidencia-ci-de-referencia). El workflow frontend no ejecuta las
 pruebas Vitest focales; CI no sustituye esos resultados ni el smoke autenticado.
+
+Buscador de documento (2026-10-29): **IMPLEMENTADO — PENDIENTE VALIDACIÓN
+VISUAL DEL PROPIETARIO**. FALTA autorizada: alternativa A.
+Ajuste visual final: dos lineas agrupadas a la izquierda; numero destacado y badge
+juntos arriba, tercero y fecha con separador discreto debajo. Padding compacto,
+nombres largos con ajuste de linea; hover/foco y ancho del buscador conservados.
+Solo presentacion local sobre ZHPickerResultItem/Badge; logica del hook intacta.
+Cada sugerencia muestra numero completo, proveedor/cliente, fecha (formatDate) y
+estado en espanol: Compras Confirmed/Cancelled (Confirmada/Anulada), Ventas
+Authorized/Cancelled (Autorizada/Anulada). Draft y Discarded quedan excluidos.
+KEEP seleccion por ID, busqueda parcial/completa manual (boton/Enter), scope
+existente y desplegable ZHPickerResultItem/Badge con estilos compartidos.
+Dos consultas mediante las fachadas existentes, filtradas por estado ANTES de
+paginar: pagina 1, 10 por estado, maximo 20 sugerencias. Sin N+1, detalles de
+facturas ni consultas a Kardex para sugerencias. Respuestas antiguas invalidadas
+ante otra busqueda, cambio de texto/tipo/modo o desmontaje.
+Limites: lista no exhaustiva; mas de 10 coincidencias por estado requieren precisar
+el texto. El estado no acredita movimientos: documentos solo de servicios pueden
+aparecer y devolver Kardex vacio. Sin ampliar backend ni alterar inventario.
+PASS agente: 14/14 pruebas focales hook/pagina, TypeScript, ESLint focal y diff --check.
+Gate del propietario desde frontend:
+`npx.cmd vitest run src/modules/inventory/kardex/pages/KardexPage.test.tsx src/modules/inventory/kardex/hooks/useInventoryInvestigationPage.documents.test.ts`;
+`npx.cmd tsc -b --pretty false`;
+`npx.cmd eslint src/modules/inventory/kardex/pages/KardexPage.tsx src/modules/inventory/kardex/pages/KardexPage.test.tsx src/modules/inventory/kardex/hooks/useInventoryInvestigationPage.ts src/modules/inventory/kardex/hooks/useInventoryInvestigationPage.documents.test.ts`.
+Pendiente gate y validacion visual/funcional con datos reales. Mejoras pendientes de
+Compras intactas. Sin suites generales, E2E, backend, BD, migraciones, baseline,
+caso #32, staging, commit ni push; no CLOSED.
 
 ## INVENTARIO V1 — Evidencia CI de referencia
 

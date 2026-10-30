@@ -59,3 +59,60 @@ it("conserva los resultados existentes durante una búsqueda en curso", () => {
   showPage();
   expect(screen.getByRole("button", { name: /SKU-001\s*Producto de prueba/ })).toBeTruthy();
 });
+
+const documents = [
+  { id: "confirmed-id", docType: "PurchaseInvoice", number: "001-001-000005545", status: "Confirmed", label: "001-001-000005545 — Confirmed" },
+  { id: "discarded-id", docType: "PurchaseInvoice", number: "001-001-000005545", status: "Discarded", label: "001-001-000005545 — Discarded" },
+];
+
+function documentMode() {
+  Object.assign(state.current, {
+    searchMode: "document", docSubType: "PurchaseInvoice", docNumberQuery: "000005545",
+    docMatches: documents, docSearching: false, selectDocument: vi.fn(),
+    clearSelectedDocument: vi.fn(), setDocNumberQuery: vi.fn(), searchDocuments: vi.fn(),
+  });
+}
+
+it.each(["000005545", "001-001-000005545"])("conserva la búsqueda documental para %s por botón y Enter", (query) => {
+  documentMode();
+  state.current.docNumberQuery = "";
+  const view = showPage();
+  const input = screen.getByLabelText("Número de documento");
+  fireEvent.change(input, { target: { value: query } });
+  expect(state.current.clearSelectedDocument).toHaveBeenCalledOnce();
+  expect(state.current.setDocNumberQuery).toHaveBeenCalledWith(query);
+  state.current.docNumberQuery = query;
+  view.rerender(<I18nProvider><MemoryRouter><KardexPage /></MemoryRouter></I18nProvider>);
+  fireEvent.keyDown(input, { key: "Enter" });
+  fireEvent.click(screen.getByRole("button", { name: /Resolver documento/ }));
+  expect(state.current.searchDocuments).toHaveBeenCalledTimes(2);
+});
+
+it.each(documents)("distingue $status y selecciona su ID aunque se repita el número", (doc) => {
+  documentMode();
+  showPage();
+  const panel = screen.getByRole("group", { name: "Documentos encontrados" });
+  expect(panel.className).toBe("zh-picker__dropdown");
+  expect(panel.querySelectorAll(".zh-picker-result-item")).toHaveLength(2);
+  const option = screen.getByRole("button", { name: doc.label });
+  option.focus();
+  expect(document.activeElement).toBe(option);
+  expect(option.getAttribute("type")).toBe("button");
+  fireEvent.click(option);
+  expect(state.current.selectDocument).toHaveBeenCalledWith(doc);
+});
+
+it("muestra tercero, fecha y estado traducido", () => {
+  documentMode();
+  state.current.docMatches = [{ ...documents[0], partnerName: "Proveedor prueba", issueDate: "2026-10-29" }];
+  showPage();
+  expect(screen.getByText(/Proveedor prueba/)).toBeTruthy();
+  const badge = screen.getByText("Confirmada");
+  const heading = badge.closest(".zh-picker-result-item__title");
+  expect(heading?.textContent).toContain(documents[0].number);
+  const subtitle = screen.getByText(/Proveedor prueba/).closest(".zh-picker-result-item__subtitle");
+  expect(subtitle?.textContent).toContain("2026");
+  expect(subtitle?.contains(badge)).toBe(false);
+  expect(heading?.closest("button")?.classList.contains("kdx-document-result")).toBe(true);
+  expect(screen.queryByText("Confirmed")).toBeNull();
+});

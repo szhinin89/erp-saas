@@ -366,18 +366,22 @@ export function KardexPage() {
                   }}
                 />
                 {ctx.docMatches.length > 0 && (
-                  <div className="pf-picker-dropdown">
+                  <div className="zh-picker__dropdown" role="group" aria-label="Documentos encontrados">
                     {ctx.docMatches.map((d) => (
-                      <button
+                      <ZHPickerResultItem
                         key={d.id}
-                        type="button"
-                        className="pf-picker-item"
+                        className="kdx-document-result"
+                        title={<span className="kdx-document-result-heading">
+                          <span className="zh-picker__result-code">{d.number}</span>
+                          {d.status && <Badge variant="neutral" label={
+                            ({ Confirmed: "Confirmada", Authorized: "Autorizada", Cancelled: "Anulada" } as Record<string, string>)[d.status] ?? d.status
+                          } />}
+                        </span>}
+                        subtitle={<span>{d.partnerName ?? "—"} · {d.issueDate ? formatDate(d.issueDate) : "—"}</span>}
+                        aria-label={d.label}
+                        aria-selected={undefined}
                         onClick={() => ctx.selectDocument(d)}
-                      >
-                        <div className="pf-picker-item__main">
-                          <div className="pf-picker-item__name">{d.label}</div>
-                        </div>
-                      </button>
+                      />
                     ))}
                   </div>
                 )}
