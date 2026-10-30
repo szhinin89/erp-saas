@@ -145,7 +145,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         {
             await using var discovery = A9Context();
             var batch = await A9Recovery(discovery).GetCandidatesAsync(1, default);
-            seen.Add(batch.Should().ContainSingle().Subject.InvoiceId);
+            seen.Add(batch.Should().ContainSingle().Subject.SourceEntityId);
         }
         seen.Should().BeEquivalentTo(expected);
     }
@@ -294,12 +294,12 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             await using var correct = A9Context(candidate.TenantId, candidate.CompanyId);
             await A9Recovery(correct, candidate.TenantId, candidate.CompanyId).RecoverAsync(candidate, default);
             var document = await correct.ElectronicDocuments.SingleAsync();
-            document.SourceEntityId.Should().Be(candidate.InvoiceId);
+            document.SourceEntityId.Should().Be(candidate.SourceEntityId);
             document.TenantId.Should().Be(candidate.TenantId);
             document.CompanyId.Should().Be(candidate.CompanyId);
             (await correct.SalesInvoices.SingleAsync()).BranchId.Should().Be(candidate.BranchId);
         }
-        candidates.Select(c => c.InvoiceId).Should().BeEquivalentTo([first, second, third]);
+        candidates.Select(c => c.SourceEntityId).Should().BeEquivalentTo([first, second, third]);
     }
 
     [Fact]

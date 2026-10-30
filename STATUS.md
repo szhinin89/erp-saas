@@ -1,5 +1,30 @@
 # Project Status
 
+## BUG REAL — recuperación de notas de crédito — IMPLEMENTADO — PASS FOCAL — PENDIENTE COMMIT/CI (2026-10-30)
+
+Una devolución autorizada con número definitivo de nota de crédito, pero sin
+`ElectronicDocument`, no era recuperada automáticamente: `SalesElectronicDocumentRecovery`
+descubría únicamente facturas. La regresión PostgreSQL
+`Authorized_return_without_electronic_document_is_recovered_once_by_registered_sales_recovery`
+reprodujo FAIL con 0 documentos recuperados, cuando se esperaba exactamente un CreditNote.
+La corrección amplía el recuperador existente a notas de crédito elegibles mediante
+`RegisterMissingAsync` y el mismo job; contrato vigente en
+[Backend — ownership de recuperación](docs/architecture/backend.md#lotes-fairness-y-ownership).
+
+PASS focal del agente: 21/21 pruebas PostgreSQL (regresión y casos A9 del recuperador)
+y 1/1 prueba del job. La regresión comprueba exactamente un CreditNote en ambas
+rondas, estado Draft, número y snapshots comerciales intactos. Se conservan
+aislamiento, idempotencia, protección ante carreras y checkpoint; sin nuevos
+secuenciales ni repetición de efectos comerciales. Sin cambios en el motor SRI ni
+en el esquema de BD. Revisión final: APTO PARA GATE; no sustituye el gate del propietario.
+
+Evidencia local: `artifacts/credit-note-recovery/sales-recovery-focal.trx` y
+`artifacts/credit-note-recovery/sales-recovery-job.trx`. Las pruebas no certifican
+transmisión real al SRI ni E2E comercial completo; el harness usa contexto fijo y
+publisher vacío, y las carreras existentes cubren facturas. Sin suites generales,
+staging, commit ni push. Pendiente commit/CI; no CLOSED. No cambia el alcance ni
+el estado del caso #32 y no reabre otros módulos CLOSED.
+
 ## Compras — detalle compacto y resaltado — IMPLEMENTADO — PENDIENTE VALIDACIÓN VISUAL DEL PROPIETARIO (2026-10-29)
 
 Clasificación: FALTA autorizada en la presentación; KEEP datos, edición, guardado,

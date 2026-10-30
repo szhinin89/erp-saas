@@ -30,8 +30,8 @@ public sealed class SalesElectronicDocumentRecoveryJob(
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 JobMetrics.RecordFailed();
-                logger.LogError(ex, "Sales electronic recovery failed for {InvoiceId} ({TenantId}/{CompanyId}/{BranchId})",
-                    candidate.InvoiceId, candidate.TenantId, candidate.CompanyId, candidate.BranchId);
+                logger.LogError(ex, "Sales electronic recovery failed for {SourceEntityId} ({TenantId}/{CompanyId}/{BranchId})",
+                    candidate.SourceEntityId, candidate.TenantId, candidate.CompanyId, candidate.BranchId);
                 // Absence of the document remains durable work for the next execution.
             }
         }

@@ -559,7 +559,26 @@ Retentions recupera la transmisión inicial únicamente antes del registro de
 ElectronicDocument. Desde que existe, incluido Draft, ElectronicDocuments es el
 único dueño de recuperación fiscal. Retentions excluye cualquier documento por
 origen existente; el issuer canónico conserva unicidad e idempotencia ante carreras.
-Sales recovery permanece create-only.
+Sales recovery permanece create-only: el mismo `SalesElectronicDocumentRecoveryJob`
+descubre facturas y devoluciones autorizadas sin `ElectronicDocument` por origen.
+Las facturas conservan su elegibilidad: emisión electrónica, punto de emisión y
+número definitivo `EST-PTO-SECUENCIAL`, con secuencial distinto de cero. Las
+devoluciones requieren `CreditNoteDocumentNumber` definitivo y distinto de cero;
+su factura origen debe cumplir la elegibilidad anterior y pertenecer al mismo
+tenant y empresa. La sucursal se obtiene de esa factura. Ambos tipos comparten
+el límite del lote y el checkpoint rotativo `sales-recovery`.
+
+Antes de registrar se releen la elegibilidad y el ownership tenant/empresa/sucursal
+en el scope del candidato. `IElectronicDocumentRegistration.RegisterMissingAsync`
+registra Invoice para la factura o CreditNote para la devolución, siempre con
+`SourceModule = "Sales"` y `SourceEntityId` del agregado correspondiente. La ausencia
+se verifica por origen; un documento existente, incluso Draft, excluye la recuperación.
+La unicidad canónica por origen protege ante carreras; el perdedor descarta su tracker
+y verifica la existencia del ganador. No se captura otro secuencial ni se modifica
+el número asignado; tampoco se repiten autorización, inventario, caja, reembolsos,
+CxC ni contabilidad. El registro queda en Draft y su procesamiento posterior
+pertenece exclusivamente al pipeline común de ElectronicDocuments, sin otro job
+ni motor electrónico. Esta recuperación no cambia SOAP, firma, XML/XSD ni esquema de BD.
 
 ### Health y métricas
 
