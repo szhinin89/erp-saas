@@ -100,6 +100,12 @@ public static class DependencyInjection
         // origen: ConfirmExpenseDocumentHandler/CreateConfirmedExpenseHandler y ConfirmPurchaseHandler
         // (ZH-PURCHASE-RETENTION-CONFIRM-01).
         services.AddScoped<IRetentionIssuer, RetentionIssuer>();
+        // READINESS-PREVENTIVE-1B — gate fiscal preventivo único de 01/04/07 (solo repos/resolvers
+        // ya registrados, sin EF directo ni SOAP).
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Readiness.IElectronicEmissionRequirementsValidator,
+            ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementsValidator
+        >();
         services.AddScoped<
             ERP.Application.Modules.Payables.Services.ISupplierPaymentRegistrar,
             ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar

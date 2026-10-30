@@ -110,6 +110,8 @@ public sealed class SalesWarehouseScopeA6Tests(SalesWarehouseA6Fixture f) : ICla
             .ReturnsAsync("000000001");
         var strategy = new Mock<ISalesInvoiceEmissionStrategy>();
         strategy.Setup(r => r.ExecuteAsync(It.IsAny<SalesInvoiceEmissionContext>(), It.IsAny<CancellationToken>())).ReturnsAsync((string?)null);
+        strategy.Setup(r => r.CheckRequirementsAsync(It.IsAny<SalesInvoiceEmissionPreflight>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementsResult.NotApplicable);
         var emission = new Mock<ISalesInvoiceEmissionStrategyResolver>();
         emission.Setup(r => r.Resolve(EmissionType.Physical)).Returns(strategy.Object);
         var authorize = await f.Authorize(db, sequences.Object, emission.Object).Handle(new(id), CancellationToken.None);

@@ -417,7 +417,8 @@ public sealed class SalesReturnRefundHandlerTests
             Mock.Of<ICompanyClock>(c =>
                 c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
                 == Task.FromResult(new DateOnly(2026, 9, 17))
-            )
+            ),
+            EmissionRequirementsTestDoubles.Satisfied()
         );
 
         return (handler, uow, stockRepo);

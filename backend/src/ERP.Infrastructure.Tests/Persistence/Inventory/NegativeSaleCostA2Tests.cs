@@ -156,7 +156,7 @@ public sealed class NegativeSaleCostA2Tests : IAsyncLifetime
             var registers = new Mock<ERP.Domain.Modules.Caja.Interfaces.ICashRegisterRepository>(); registers.Setup(r => r.GetByIdAsync(_tenantId, register.Id, It.IsAny<CancellationToken>())).ReturnsAsync(register);
             var handler = new AuthorizeSalesInvoiceHandler(new SalesInvoiceRepository(db, company), Mock.Of<ISalesReceivableRepository>(), stock,
                 termRepo.Object, tax.Object, Mock.Of<IDocumentSequenceRepository>(), Mock.Of<IEmissionPointRepository>(), Mock.Of<IEstablishmentRepository>(),
-                Mock.Of<ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository>(), Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
+                Mock.Of<ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository>(), EmissionRequirementsTestWiring.PassThroughStrategies(),
                 clock.Object, Mock.Of<IBusinessPartnerRepository>(), policy.Object, methods.Object,
                 Mock.Of<ERP.Domain.Modules.Finance.Interfaces.ICompanyBankAccountRepository>(), sessions.Object, registers.Object, NullLogger<AuthorizeSalesInvoiceHandler>.Instance,
                 new CurrentTenant(_tenantId), company, Mock.Of<ICurrentBranch>(b => b.BranchId == _branchId), Mock.Of<ICurrentUser>(u => u.UserId == _actor),

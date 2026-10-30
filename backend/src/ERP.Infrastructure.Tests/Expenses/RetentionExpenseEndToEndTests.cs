@@ -572,7 +572,8 @@ public sealed partial class RetentionExpenseEndToEndTests : IAsyncLifetime
                 ),
                 new EmissionPointRepository(db),
                 new EstablishmentRepository(db),
-                new DocumentSequenceRepository(db)
+                new DocumentSequenceRepository(db),
+                EmissionRequirementsTestWiring.Satisfied()
             ),
             transmission ?? RetentionElectronicTestWiring.NoOpTransmission(),
             AccountingDispatcher(),

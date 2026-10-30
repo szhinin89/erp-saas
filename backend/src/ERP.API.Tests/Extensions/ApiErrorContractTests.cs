@@ -76,6 +76,8 @@ public sealed class ApiErrorContractTests
         // ZH-SRI-ANEXO26-PROVIDER-RUC-01 (ADR-038 D6/D7): infoAdicional / RUC Proveedor → 422.
         [ApiResponseCodes.ElectronicDocuments.AdditionalInfoInvalid] = 422,
         [ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured] = 422,
+        // READINESS-PREVENTIVE-1B: gate fiscal preventivo 01/04/07 → 422.
+        [ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing] = 422,
         [ApiResponseCodes.Communications.TemplateNotFound] = 422,
         [ApiResponseCodes.Communications.TemplateInvalid] = 422,
         [ApiResponseCodes.Communications.TemplateRenderFailed] = 422,

@@ -63,7 +63,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             new SalesInvoiceRepository(db, company), new SalesReceivableRepository(db, company),
             provider.GetRequiredService<IStockRepository>(), new PaymentTermRepository(db), tax.Object,
             new DocumentSequenceRepository(db), new EmissionPointRepository(db), new EstablishmentRepository(db),
-            new ElectronicDocumentRepository(db, clock.Object), Mock.Of<ISalesInvoiceEmissionStrategyResolver>(),
+            new ElectronicDocumentRepository(db, clock.Object), EmissionRequirementsTestWiring.PassThroughStrategies(),
             clock.Object, new BusinessPartnerRepository(db), Mock.Of<ISalesFiscalPolicyResolver>(),
             new PaymentMethodRepository(db),
             new CompanyBankAccountRepository(db, company), new CashSessionRepository(db, company),

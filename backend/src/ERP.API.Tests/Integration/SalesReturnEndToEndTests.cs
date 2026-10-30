@@ -474,7 +474,7 @@ public sealed class SalesReturnFlowFixture : IAsyncLifetime
 }
 
 [Trait("Category", "PostgreSql")]
-public sealed class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixture>
+public sealed partial class SalesReturnEndToEndTests : IClassFixture<SalesReturnFlowFixture>
 {
     private readonly SalesReturnFlowFixture _f;
 

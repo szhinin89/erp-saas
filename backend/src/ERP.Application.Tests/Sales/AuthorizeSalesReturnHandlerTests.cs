@@ -318,7 +318,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-            CompanyClockCtx()
+            CompanyClockCtx(),
+            EmissionRequirementsTestDoubles.Satisfied()
         );
 
         return (handler, stockRepo, returnRepo);
@@ -720,7 +721,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
             BranchCtx(),
             UserCtx(),
             Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-            CompanyClockCtx()
+            CompanyClockCtx(),
+            EmissionRequirementsTestDoubles.Satisfied()
         );
 
         var result = await handler.Handle(
@@ -1123,7 +1125,8 @@ public sealed class AuthorizeSalesReturnHandlerTests
                 new FixedCurrentBranch(_branchId),
                 new FixedCurrentUser(_createdBy),
                 Mock.Of<ILogger<AuthorizeSalesReturnHandler>>(),
-                CompanyClockCtx()
+                CompanyClockCtx(),
+                EmissionRequirementsTestDoubles.Satisfied()
             );
 
         [Fact]

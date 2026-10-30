@@ -495,10 +495,11 @@ public sealed class AuthorizeSalesInvoiceHandler
         // ventas NUEVAS: antes se leía aquí el EP vivo, mientras el provider electrónico, el DTO,
         // el RIDE y la tirilla leían el snapshot — un borrador creado Electronic y autorizado tras
         // cambiar el punto a Physical (o viceversa) quedaba con estrategia y snapshot divergentes.
-        // Se captura en esta variable hoisted para que el bloque de emisión (más abajo) resuelva
-        // la estrategia correspondiente sin volver a decidir nada por su cuenta.
+        // La estrategia se resuelve una sola vez y queda hoisted: el gate preventivo (antes del
+        // secuencial) y el bloque de emisión (después del commit) usan la misma, sin volver a
+        // decidir nada por su cuenta.
         var epId = inv.EmissionPointId;
-        EmissionType? emissionPointType = null;
+        ISalesInvoiceEmissionStrategy? emissionStrategy = null;
         if (epId.HasValue)
         {
             var ep = await _epRepo.GetByIdForCompanyAsync(tid, cid, epId.Value, ct);
@@ -508,6 +509,17 @@ public sealed class AuthorizeSalesInvoiceHandler
             var est = await _estRepo.GetByIdForCompanyAsync(tid, cid, ep.EstablishmentId, ct);
             if (est is null)
                 return Result<SalesInvoiceDto>.ValidationFailure("Establecimiento no encontrado.");
+
+            // READINESS-PREVENTIVE-1B — gate fiscal preventivo: la estrategia del snapshot
+            // (inv.EmissionType) decide qué requisitos aplican (la física ninguno). Antes del
+            // secuencial, Kardex, Caja, CxC y asientos: un fallo deja la factura en Draft sin efectos.
+            var strategy = _emissionStrategyResolver.Resolve(inv.EmissionType);
+            var requirements = await strategy.CheckRequirementsAsync(
+                new(tid, cid, ep.Id, inv.DocTypeCode),
+                ct
+            );
+            if (requirements.ToFailure<SalesInvoiceDto>() is { } requirementsFailure)
+                return requirementsFailure;
 
             // CaptureNextAsync: atómico (advisory lock + transacción propia).
             // Usa inv.DocTypeCode para soportar facturas, NC, ND, etc. sin hardcode.
@@ -529,7 +541,7 @@ public sealed class AuthorizeSalesInvoiceHandler
                     ep.EmissionType,
                     inv.EmissionType
                 );
-            emissionPointType = inv.EmissionType;
+            emissionStrategy = strategy;
         }
 
         // ── Sincronizar código de pago SRI de cabecera (SALES-INVOICE-FINAL-SEMANTIC-INTEGRITY-01,
@@ -685,21 +697,20 @@ public sealed class AuthorizeSalesInvoiceHandler
         //
         // Único punto de disparo del flujo posterior a la autorización para Ventas — condiciones
         // exigidas: factura autorizada internamente (garantizado, este código solo se alcanza tras
-        // inv.Authorize() exitoso) y con secuencial definitivo (emissionPointType solo tiene valor
+        // inv.Authorize() exitoso) y con secuencial definitivo (emissionStrategy solo tiene valor
         // cuando hubo EmissionPointId y se capturó secuencial SRI). Este handler únicamente
-        // resuelve el tipo de emisión (ya resuelto arriba, desde el snapshot inv.EmissionType) y
-        // delega en la estrategia correspondiente — nunca vuelve a decidir aquí si algo es
-        // electrónico o físico. La completitud de la información específica del comprobante
-        // electrónico la valida el propio proveedor (SalesInvoiceElectronicDocumentDataProvider),
-        // no se duplica esa validación aquí. electronicIssueError viaja únicamente en la respuesta
+        // resuelve la estrategia (ya resuelta arriba, desde el snapshot inv.EmissionType) y
+        // delega en ella — nunca vuelve a decidir aquí si algo es electrónico o físico. Los
+        // requisitos locales del emisor ya pasaron el gate preventivo; la completitud del
+        // comprobante la sigue validando el proveedor (SalesInvoiceElectronicDocumentDataProvider)
+        // como defensa final. electronicIssueError viaja únicamente en la respuesta
         // de ESTA request — informativo para el usuario que autorizó, nunca reinterpretado como
         // fallo del comando (la autorización comercial ya está confirmada e irreversible en este
         // punto).
         string? electronicIssueError = null;
-        if (emissionPointType.HasValue)
+        if (emissionStrategy is not null)
         {
-            var strategy = _emissionStrategyResolver.Resolve(emissionPointType.Value);
-            electronicIssueError = await strategy.ExecuteAsync(
+            electronicIssueError = await emissionStrategy.ExecuteAsync(
                 new SalesInvoiceEmissionContext(tid, cid, uid, inv),
                 ct
             );

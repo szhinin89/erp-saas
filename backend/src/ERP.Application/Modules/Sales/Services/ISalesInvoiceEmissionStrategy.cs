@@ -1,7 +1,19 @@
+using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Application.Modules.Sales.Services;
+
+/// <summary>
+/// READINESS-PREVENTIVE-1B — datos para comprobar requisitos de emisión ANTES de capturar el
+/// secuencial y de cualquier efecto comercial (la factura sigue en Draft).
+/// </summary>
+public sealed record SalesInvoiceEmissionPreflight(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid EmissionPointId,
+    string DocTypeCode
+);
 
 /// <summary>
 /// Datos que necesita cualquier estrategia de emisión para actuar sobre una factura ya
@@ -23,6 +35,15 @@ public sealed record SalesInvoiceEmissionContext(
 public interface ISalesInvoiceEmissionStrategy
 {
     EmissionType SupportedType { get; }
+
+    /// <summary>
+    /// Requisitos locales que <see cref="SupportedType"/> exige para poder iniciar la emisión. Se
+    /// invoca antes de capturar secuencial: nunca contacta al SRI ni produce efectos.
+    /// </summary>
+    Task<ElectronicEmissionRequirementsResult> CheckRequirementsAsync(
+        SalesInvoiceEmissionPreflight preflight,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Ejecuta el flujo posterior a la autorización correspondiente a <see cref="SupportedType"/>.

@@ -259,7 +259,8 @@ public sealed class AuthorizeSalesReturnCreditNoteWiringTests
                 Mock.Of<ICompanyClock>(c =>
                     c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>())
                     == Task.FromResult(new DateOnly(2026, 9, 17))
-                )
+                ),
+                EmissionRequirementsTestDoubles.Satisfied()
             );
         }
     }

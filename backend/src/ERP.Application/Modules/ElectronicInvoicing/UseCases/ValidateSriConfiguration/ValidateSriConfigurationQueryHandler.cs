@@ -161,9 +161,7 @@ public sealed class ValidateSriConfigurationQueryHandler
             );
         }
 
-        var urlValid =
-            Uri.TryCreate(settings.WsdlUrl, UriKind.Absolute, out var uri)
-            && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
+        var urlValid = SriWsdlUrl.IsValid(settings.WsdlUrl);
         checks.Add(
             new SriConfigurationCheckDto(
                 "wsdlUrl",

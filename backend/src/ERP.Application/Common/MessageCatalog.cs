@@ -194,6 +194,12 @@ public static class MessageCatalog
             "SRI system provider RUC (Annex 26) is required and its global configuration is incomplete; electronic document not generated.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing] = new(
+            ApiSeverity.Error,
+            "No se puede emitir el comprobante electrónico porque la configuración fiscal de la empresa está incompleta. Revise el detalle y complete la configuración indicada.",
+            "Local issuer requirements for electronic emission are missing; operation rejected before any sequence or commercial effect.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.Communications.TemplateNotFound] = new(
             ApiSeverity.Error,
             "No existe una plantilla de correo para esta comunicación.",

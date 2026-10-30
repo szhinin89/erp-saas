@@ -3123,6 +3123,16 @@ public sealed class AuthorizeSalesInvoiceHandlerTests
                 )
             )
             .ReturnsAsync((string?)null);
+        strategy
+            .Setup(s =>
+                s.CheckRequirementsAsync(
+                    It.IsAny<SalesInvoiceEmissionPreflight>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementsResult.NotApplicable
+            );
         var resolver = new Mock<ISalesInvoiceEmissionStrategyResolver>();
         resolver
             .Setup(r => r.Resolve(It.IsAny<EmissionType>()))

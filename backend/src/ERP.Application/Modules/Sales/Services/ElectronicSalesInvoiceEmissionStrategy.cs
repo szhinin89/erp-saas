@@ -1,3 +1,4 @@
+using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
@@ -13,18 +14,35 @@ namespace ERP.Application.Modules.Sales.Services;
 public sealed class ElectronicSalesInvoiceEmissionStrategy : ISalesInvoiceEmissionStrategy
 {
     private readonly IElectronicDocumentIssuer _edocIssuer;
+    private readonly IElectronicEmissionRequirementsValidator _requirements;
     private readonly ILogger<ElectronicSalesInvoiceEmissionStrategy> _logger;
 
     public ElectronicSalesInvoiceEmissionStrategy(
         IElectronicDocumentIssuer edocIssuer,
+        IElectronicEmissionRequirementsValidator requirements,
         ILogger<ElectronicSalesInvoiceEmissionStrategy> logger
     )
     {
         _edocIssuer = edocIssuer;
+        _requirements = requirements;
         _logger = logger;
     }
 
     public EmissionType SupportedType => EmissionType.Electronic;
+
+    public Task<ElectronicEmissionRequirementsResult> CheckRequirementsAsync(
+        SalesInvoiceEmissionPreflight preflight,
+        CancellationToken ct
+    ) =>
+        _requirements.ValidateAsync(
+            new ElectronicEmissionRequirementsRequest(
+                preflight.TenantId,
+                preflight.CompanyId,
+                preflight.EmissionPointId,
+                preflight.DocTypeCode
+            ),
+            ct
+        );
 
     public async Task<string?> ExecuteAsync(
         SalesInvoiceEmissionContext context,

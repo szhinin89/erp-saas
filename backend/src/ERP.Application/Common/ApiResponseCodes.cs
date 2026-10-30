@@ -109,6 +109,14 @@ public static class ApiResponseCodes
         /// </summary>
         public const string SystemProviderRucNotConfigured =
             "SRI_SYSTEM_PROVIDER_RUC_NOT_CONFIGURED";
+
+        /// <summary>
+        /// READINESS-PREVENTIVE-1B — gate fiscal preventivo (01/04/07): faltan requisitos locales del
+        /// emisor para iniciar la emisión electrónica. Se devuelve antes de capturar secuencial o
+        /// generar efectos comerciales; el detalle lista cada requisito como <c>[código] mensaje</c>
+        /// (<c>ElectronicEmissionRequirementCodes</c>).
+        /// </summary>
+        public const string EmissionRequirementsMissing = "SRI_EMISSION_REQUIREMENTS_MISSING";
     }
 
     /// <summary>

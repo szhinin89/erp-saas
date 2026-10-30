@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Retentions.UseCases;
+using ERP.Application.Tests.TestSupport;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -908,7 +909,8 @@ public sealed class RetentionIssuerTests
                 EligibilityService.Object,
                 EmissionPointRepo.Object,
                 EstablishmentRepo.Object,
-                SequenceRepo.Object
+                SequenceRepo.Object,
+                EmissionRequirementsTestDoubles.Satisfied()
             ).IssueForExpenseAsync(
                 document,
                 new RetentionIssueRequest(

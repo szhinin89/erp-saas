@@ -1,8 +1,10 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Application.Modules.Sales.Services;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -86,6 +88,7 @@ public sealed class AuthorizeSalesReturnHandler
     private readonly ICurrentUser _u;
     private readonly ILogger<AuthorizeSalesReturnHandler> _logger;
     private readonly ICompanyClock _companyClock;
+    private readonly IElectronicEmissionRequirementsValidator _emissionRequirements;
 
     public AuthorizeSalesReturnHandler(
         ISalesReturnRepository returnRepo,
@@ -102,9 +105,11 @@ public sealed class AuthorizeSalesReturnHandler
         ICurrentBranch b,
         ICurrentUser u,
         ILogger<AuthorizeSalesReturnHandler> logger,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        IElectronicEmissionRequirementsValidator emissionRequirements
     )
     {
+        _emissionRequirements = emissionRequirements;
         _returnRepo = returnRepo;
         _invoiceRepo = invoiceRepo;
         _stockRepo = stockRepo;
@@ -200,6 +205,25 @@ public sealed class AuthorizeSalesReturnHandler
                 {
                     await _uow.RollbackAsync(ct);
                     return Result<SalesReturnDto>.ValidationFailure(remainingError);
+                }
+            }
+
+            // 4b. READINESS-PREVENTIVE-1B — gate fiscal preventivo de la Nota de Crédito 04 de una
+            // factura electrónica: antes del reembolso, el Kardex y el secuencial "04". La NC de una
+            // factura física conserva su comportamiento actual (ver deuda registrada en el reporte
+            // de la Fase 1B).
+            if (invoice.EmissionType == EmissionType.Electronic
+                && invoice.EmissionPointId is { } gateEmissionPointId)
+            {
+                var requirements = await _emissionRequirements.ValidateAsync(
+                    new(tid, cid, gateEmissionPointId,
+                        SalesReturnCreditNoteDataProvider.CreditNoteDocTypeCode),
+                    ct
+                );
+                if (requirements.ToFailure<SalesReturnDto>() is { } requirementsFailure)
+                {
+                    await _uow.RollbackAsync(ct);
+                    return requirementsFailure;
                 }
             }
 

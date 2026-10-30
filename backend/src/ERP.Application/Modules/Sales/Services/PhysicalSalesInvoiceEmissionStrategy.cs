@@ -1,3 +1,4 @@
+using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Domain.Modules.Company.Enums;
 using Microsoft.Extensions.Logging;
 
@@ -19,6 +20,12 @@ public sealed class PhysicalSalesInvoiceEmissionStrategy : ISalesInvoiceEmission
     ) => _logger = logger;
 
     public EmissionType SupportedType => EmissionType.Physical;
+
+    /// <summary>La factura física no exige configuración SRI: conserva su comportamiento.</summary>
+    public Task<ElectronicEmissionRequirementsResult> CheckRequirementsAsync(
+        SalesInvoiceEmissionPreflight preflight,
+        CancellationToken ct
+    ) => Task.FromResult(ElectronicEmissionRequirementsResult.NotApplicable);
 
     public Task<string?> ExecuteAsync(SalesInvoiceEmissionContext context, CancellationToken ct)
     {

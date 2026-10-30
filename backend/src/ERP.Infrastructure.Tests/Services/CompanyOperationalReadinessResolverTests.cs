@@ -533,4 +533,77 @@ public sealed class CompanyOperationalReadinessResolverTests
         );
         f.CompanyRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    // READINESS-PREVENTIVE-1A (caracterización): el bootstrap siembra el establecimiento 001 con
+    // dirección vacía (OrganizationBootstrapStep.PendingAddress = ""), y los builders XML 01/04/07
+    // rechazan dirMatriz/dirEstablecimiento vacíos. Este test fija el comportamiento ACTUAL: el
+    // resolver no revisa la dirección y reporta la emisión electrónica como habilitada. Brecha
+    // vigente y documentada: desde la Fase 1B el gate preventivo (IElectronicEmissionRequirementsValidator,
+    // código electronicEmission.matrixAddress) ya bloquea la emisión; la Fase 2 hará que Readiness
+    // consuma esos mismos códigos y este test debe invertirse entonces (CanIssue... = false).
+    [Fact]
+    public async Task Caracterizacion_matriz_con_direccion_vacia_reporta_CanIssueElectronicInvoices_true()
+    {
+        var f = new Fixture();
+        var establishment = EstablishmentEntity.Create(
+            TenantId,
+            branchId: null,
+            CompanyId,
+            code: "001",
+            name: "Matriz",
+            address: "",
+            phone: null,
+            isMain: true,
+            createdBy: UserId
+        );
+        var emissionPoint = EmissionPointEntity.Create(
+            TenantId,
+            CompanyId,
+            establishment.Id,
+            code: "001",
+            name: "PE-001",
+            emissionType: ERP.Domain.Modules.Company.Enums.EmissionType.Electronic,
+            isDefault: true,
+            createdBy: UserId
+        );
+        var sriSettings = SriSettings.Create(
+            TenantId,
+            CompanyId,
+            environment: 1,
+            emissionType: 1,
+            wsdlUrl: "https://wsdl.example/test",
+            createdBy: UserId
+        );
+        sriSettings.AttachCertificate(
+            "certs/test.p12",
+            "test.p12",
+            1024,
+            DateTime.UtcNow,
+            UserId
+        );
+        f.EstablishmentRepo.Setup(r =>
+                r.GetMainByCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(establishment);
+        f.EmissionPointRepo.Setup(r =>
+                r.GetDefaultForCompanyAsync(TenantId, CompanyId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(emissionPoint);
+        f.SriRepo.Setup(r => r.GetByCompanyIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(sriSettings);
+
+        var result = await f.Build().GetAsync(TenantId, CompanyId, default);
+
+        establishment.Address.Should().BeEmpty();
+        result.CanIssueElectronicInvoices.Should().BeTrue();
+        result
+            .Sections.SelectMany(s => s.Items)
+            .Should()
+            .NotContain(i => i.Code.Contains("address", StringComparison.OrdinalIgnoreCase));
+        result
+            .Sections.Single(s => s.Code == "structure")
+            .Items.Single(i => i.Code == "structure.mainEstablishment")
+            .Status.Should()
+            .Be(ReadinessStatus.Ready);
+    }
 }

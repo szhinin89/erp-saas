@@ -357,7 +357,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
         ErpDbContext db,
         Guid? branchId = null,
         IRetentionElectronicTransmission? transmission = null,
-        IPurchaseXmlConfirmationGuard? confirmationGuard = null
+        IPurchaseXmlConfirmationGuard? confirmationGuard = null,
+        ERP.Application.Modules.ElectronicDocuments.Readiness.IElectronicEmissionRequirementsValidator? emissionRequirements = null
     )
     {
         var company = new FixedCurrentCompany(_companyId);
@@ -406,7 +407,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests : IAsyncLif
                 Eligibility(db),
                 new EmissionPointRepository(db),
                 new EstablishmentRepository(db),
-                new DocumentSequenceRepository(db)
+                new DocumentSequenceRepository(db),
+                emissionRequirements ?? EmissionRequirementsTestWiring.Satisfied()
             ),
             transmission ?? RetentionElectronicTestWiring.NoOpTransmission(),
             new UnitOfWork(db)

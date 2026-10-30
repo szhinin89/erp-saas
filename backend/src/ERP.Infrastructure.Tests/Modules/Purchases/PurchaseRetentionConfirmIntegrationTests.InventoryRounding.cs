@@ -227,7 +227,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
             StandardPrecisionPolicyProvider.Instance,
             xmlGuard.Object,
             new RetentionIssuer(new RetentionDocumentRepository(db, company), Eligibility(db),
-                new EmissionPointRepository(db), new EstablishmentRepository(db), new DocumentSequenceRepository(db)),
+                new EmissionPointRepository(db), new EstablishmentRepository(db), new DocumentSequenceRepository(db),
+                EmissionRequirementsTestWiring.Satisfied()),
             RetentionElectronicTestWiring.NoOpTransmission(),
             new UnitOfWork(db));
     }

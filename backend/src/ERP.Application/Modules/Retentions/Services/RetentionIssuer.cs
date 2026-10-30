@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -105,15 +106,18 @@ public sealed class RetentionIssuer : IRetentionIssuer
     private readonly IEmissionPointRepository _emissionPointRepo;
     private readonly IEstablishmentRepository _establishmentRepo;
     private readonly IDocumentSequenceRepository _sequenceRepo;
+    private readonly IElectronicEmissionRequirementsValidator _emissionRequirements;
 
     public RetentionIssuer(
         IRetentionDocumentRepository retentionRepo,
         IRetentionEligibilityService eligibilityService,
         IEmissionPointRepository emissionPointRepo,
         IEstablishmentRepository establishmentRepo,
-        IDocumentSequenceRepository sequenceRepo
+        IDocumentSequenceRepository sequenceRepo,
+        IElectronicEmissionRequirementsValidator emissionRequirements
     )
     {
+        _emissionRequirements = emissionRequirements;
         _retentionRepo = retentionRepo;
         _eligibilityService = eligibilityService;
         _emissionPointRepo = emissionPointRepo;
@@ -227,6 +231,16 @@ public sealed class RetentionIssuer : IRetentionIssuer
         );
         if (establishment is null)
             return Result<RetentionDocument>.NotFound("Establecimiento no encontrado.");
+
+        // READINESS-PREVENTIVE-1B — la retención siempre se transmite electrónicamente: el gate
+        // fiscal preventivo corre antes de construir el agregado y de capturar el secuencial "07".
+        // Su fallo se propaga al llamador, que no persiste nada (compra/gasto siguen en Draft).
+        var requirements = await _emissionRequirements.ValidateAsync(
+            new(request.TenantId, request.CompanyId, request.EmissionPointId, RetentionDocTypeCode),
+            ct
+        );
+        if (requirements.ToFailure<RetentionDocument>() is { } requirementsFailure)
+            return requirementsFailure;
 
         RetentionDocument retention;
         try
