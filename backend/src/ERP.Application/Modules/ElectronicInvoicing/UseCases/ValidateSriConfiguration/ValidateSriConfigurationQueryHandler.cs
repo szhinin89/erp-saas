@@ -93,18 +93,7 @@ public sealed class ValidateSriConfigurationQueryHandler
                     : "No se encontró ningún certificado cargado para esta empresa."
             )
         );
-
-        if (certStatus.Installed && string.IsNullOrWhiteSpace(settings.CertPassword))
-        {
-            checks.Add(
-                new SriConfigurationCheckDto(
-                    "certificatePassword",
-                    false,
-                    "No hay contraseña configurada para el certificado."
-                )
-            );
-        }
-
+        AddMissingCertificatePasswordCheck(checks, certStatus, settings.CertPassword);
         if (certStatus.Installed && !string.IsNullOrWhiteSpace(settings.CertPassword))
         {
             checks.Add(
@@ -206,5 +195,23 @@ public sealed class ValidateSriConfigurationQueryHandler
         return Result<SriConfigurationValidationDto>.Success(
             new SriConfigurationValidationDto(isValid, checks, certificateInfo)
         );
+    }
+
+    private static void AddMissingCertificatePasswordCheck(
+        List<SriConfigurationCheckDto> checks,
+        SriCertificateStatus certStatus,
+        string? password
+    )
+    {
+        if (certStatus.Installed && string.IsNullOrWhiteSpace(password))
+        {
+            checks.Add(
+                new SriConfigurationCheckDto(
+                    "certificatePassword",
+                    false,
+                    "No hay contraseña configurada para el certificado."
+                )
+            );
+        }
     }
 }
