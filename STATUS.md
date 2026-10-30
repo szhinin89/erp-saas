@@ -1,6 +1,6 @@
 # Project Status
 
-## BUG REAL DISURGAL — corregido; validación funcional del propietario PASS (2026-10-29)
+## BUG REAL DISURGAL — corregido; validación funcional del propietario PASS DISURGAL y ALPINA (2026-10-29)
 
 El rechazo reproducido provenía de StockMovement.Create: PurchaseEntry exigía costo > 0
 sin reconocer las promociones XML legítimas. El repositorio valida evidencia de la compra
@@ -23,8 +23,15 @@ Validación funcional del propietario (DISURGAL `001-001-000005545`): PASS. Conf
 con 13 líneas y promociones del 100 %; inventario 858 unidades en 9 productos; Kardex e
 inventario valorado $473.77; CxP pendiente $544.84; asiento N.º 1 Debe Inventario $473.77 +
 IVA crédito tributario $71.07, Haber CxP $544.84; Libro Diario y Balance de Comprobación PASS;
-diferencia fiscal de $0.01 conciliada al confirmar. El PASS cubre solo este escenario: siguen
-pendientes ALPINA y los demás escenarios de Compras; Compras no CLOSED.
+diferencia fiscal de $0.01 conciliada al confirmar.
+Validación funcional integral del propietario (ALPINA `012-004-004253387`): PASS. XML real con
+4 líneas, IVA 0 % y total $16.15; confirmación PASS; inventario y Kardex 20 unidades en 4 productos,
+$16.15; CxP una cuota de $16.15, sin pagos, saldo $16.15; asiento N.º 2 Debe Inventario $16.15,
+Haber CxP $16.15; Libro Diario, Balance de Comprobación y Balance General PASS. Supera el bloqueo
+de carga ALPINA registrado el 2026-10-28 (informe histórico conservado abajo).
+Acumulado DISURGAL + ALPINA: inventario 878 unidades en 13 productos, $489.92; Debe/Haber
+$560.99 / $560.99. El PASS cubre solo estos dos escenarios: siguen pendientes los demás
+escenarios de Compras; Compras V1 no CLOSED.
 
 ## CI Infrastructure-01/06 Compras XML — fixtures alineados; pendiente gate del propietario (2026-10-29)
 
