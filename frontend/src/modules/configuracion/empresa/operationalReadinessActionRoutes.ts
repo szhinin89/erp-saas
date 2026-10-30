@@ -20,6 +20,7 @@ const ACTION_TARGET_ROUTES: Record<ReadinessActionTarget, string> = {
   PriceLists: "/products/pricing",
   ElectronicInvoicingSettings: "/sri/configuration/electronic-invoicing",
   Items: "/products/items",
+  AccountingSettings: "/accounting/configuration/operational-mode",
 };
 
 export function getOperationalReadinessActionRoute(

@@ -13,7 +13,7 @@ public sealed record CompanyOperationalReadinessItemDto(
     string Code,
     string Status,
     string Severity,
-    string? BlockingArea,
+    IReadOnlyList<string> BlockingAreas,
     string? ActionTarget
 );
 
@@ -23,11 +23,31 @@ public sealed record CompanyOperationalReadinessSectionDto(
     IReadOnlyList<CompanyOperationalReadinessItemDto> Items
 );
 
+/// <summary>
+/// Una caja activa de la sucursal: su punto de emisión, modalidad, estado operativo y fiscal, y los
+/// <c>Code</c> de los ítems de <see cref="CompanyOperationalReadinessDto.Sections"/> que incumple
+/// (referencias, no copias del requisito).
+/// </summary>
+public sealed record CompanyOperationalReadinessCashRegisterDto(
+    Guid CashRegisterId,
+    string Code,
+    string Name,
+    Guid? EmissionPointId,
+    string? EstablishmentCode,
+    string? EmissionPointCode,
+    string? EmissionType,
+    string OperationalStatus,
+    string FiscalStatus,
+    IReadOnlyList<string> RequirementCodes
+);
+
 public sealed record CompanyOperationalReadinessDto(
+    Guid BranchId,
     string OverallStatus,
     bool CanSell,
     bool CanIssueElectronicInvoices,
     bool CanUseInventory,
     bool CanUseCashRegister,
-    IReadOnlyList<CompanyOperationalReadinessSectionDto> Sections
+    IReadOnlyList<CompanyOperationalReadinessSectionDto> Sections,
+    IReadOnlyList<CompanyOperationalReadinessCashRegisterDto> CashRegisters
 );

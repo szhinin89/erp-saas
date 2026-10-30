@@ -1,71 +1,148 @@
-using ERP.Domain.Branches.Interfaces;
+using ERP.Application.Common.Services;
+using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Items.Interfaces;
 using ERP.Domain.Modules.Pricing.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Constants;
+using Microsoft.Extensions.Logging;
+using Area = ERP.Domain.Modules.Company.Interfaces.ReadinessBlockingArea;
 using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
+using EmissionPointEntity = ERP.Domain.Modules.Company.Entities.EmissionPoint;
+using RequirementCodes = ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementCodes;
 
 namespace ERP.Infrastructure.Services;
 
 /// <summary>
 /// COMPANY-OPERATING-SETUP-01: única implementación de <see cref="ICompanyOperationalReadinessResolver"/>.
-/// Orquesta fuentes/resolvers existentes — nunca lee org_settings directamente, nunca persiste.
-/// Ver el doc-comment de la interfaz para las reglas de CanSell/CanIssueElectronicInvoices/
-/// CanUseInventory/CanUseCashRegister.
+/// Orquesta fuentes/resolvers/validadores existentes — nunca lee org_settings directamente, nunca
+/// persiste. Los requisitos de empresa se evalúan una vez; cajas y bodegas, solo las de la sucursal
+/// activa, porque OpenCashSession, CreateSalesDraft, ajustes y compras operan sobre la sucursal del
+/// request. Cada caja se diagnostica con su propio punto de emisión: los requisitos electrónicos los
+/// decide exclusivamente <see cref="IElectronicEmissionRequirementsValidator"/> (una vez por punto) y
+/// el modo contable <see cref="AccountingOperationalDecision"/>.
+/// Matriz completa: docs/architecture/company-readiness.md.
 /// </summary>
 public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalReadinessResolver
 {
+    private const string IdentityTaxId = "identity.taxId";
+    private const string IdentityLegalName = "identity.legalName";
+    private const string StructureMainEstablishment = "structure.mainEstablishment";
+    private const string CashRegisterWithEmissionPoint = "cashRegister.withEmissionPoint";
+    private const string ElectronicActivation = "electronicInvoicing.activation";
+    private const string ElectronicVerificationFailed = "electronicInvoicing.verificationFailed";
+
+    private static readonly Area[] NoArea = [];
+
+    /// <summary>
+    /// Requisitos del validador electrónico sobre un dato que ya tiene un ítem base (mismo dato,
+    /// misma pantalla): el ítem base adopta el veredicto del validador y las cajas lo referencian
+    /// con el código base — un dato, un ítem.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> RequirementsOwnedByBaseItem =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [RequirementCodes.Company] = IdentityTaxId,
+            [RequirementCodes.IssuerTaxId] = IdentityTaxId,
+            [RequirementCodes.IssuerLegalName] = IdentityLegalName,
+            [RequirementCodes.MainEstablishment] = StructureMainEstablishment,
+        };
+
+    /// <summary>
+    /// Una caja activa de la sucursal con su punto de emisión (null si no tiene uno activo en la
+    /// empresa) y el resultado del validador para ese punto (solo puntos electrónicos).
+    /// </summary>
+    private sealed record RegisterCheck(
+        CashRegister Register,
+        EmissionPointEntity? EmissionPoint,
+        IReadOnlyList<ElectronicEmissionRequirementIssue> Issues,
+        bool VerificationFailed
+    )
+    {
+        public bool IsElectronic => EmissionPoint?.EmissionType == EmissionType.Electronic;
+
+        public bool CanIssue =>
+            IsElectronic
+            && !VerificationFailed
+            && Issues.All(i => i.Severity != ElectronicEmissionRequirementSeverity.Required);
+
+        /// <summary>Precondiciones de OpenCashSession + CreateSalesDraft + gate de AuthorizeSales.</summary>
+        public bool CanSell => EmissionPoint is not null && (!IsElectronic || CanIssue);
+
+        public IEnumerable<string> RequiredCodes =>
+            VerificationFailed
+                ? [ElectronicVerificationFailed]
+                : Issues
+                    .Where(i => i.Severity == ElectronicEmissionRequirementSeverity.Required)
+                    .Select(i => i.Code);
+
+        public IEnumerable<string> WarningCodes =>
+            Issues
+                .Where(i => i.Severity == ElectronicEmissionRequirementSeverity.Warning)
+                .Select(i => i.Code);
+    }
+
     private readonly ICompanyRepository _companyRepo;
-    private readonly IBranchRepository _branchRepo;
     private readonly IEstablishmentRepository _establishmentRepo;
     private readonly IEmissionPointRepository _emissionPointRepo;
     private readonly IWarehouseRepository _warehouseRepo;
     private readonly ICashRegisterRepository _cashRegisterRepo;
     private readonly IPriceListRepository _priceListRepo;
-    private readonly ISriSettingsRepository _sriRepo;
     private readonly IItemRepository _itemRepo;
     private readonly IInvoiceDefaultsResolver _invoiceDefaultsResolver;
     private readonly ISalesFiscalPolicyResolver _salesFiscalPolicyResolver;
     private readonly ICompanyBrandingResolver _brandingResolver;
     private readonly ICatalogConfigurationResolver _catalogConfigResolver;
+    private readonly IElectronicEmissionRequirementsValidator _emissionRequirements;
+    private readonly AccountingOperationalDecision _accountingDecision;
+    private readonly ICompanyClock _companyClock;
+    private readonly ILogger<CompanyOperationalReadinessResolver> _logger;
 
     public CompanyOperationalReadinessResolver(
         ICompanyRepository companyRepo,
-        IBranchRepository branchRepo,
         IEstablishmentRepository establishmentRepo,
         IEmissionPointRepository emissionPointRepo,
         IWarehouseRepository warehouseRepo,
         ICashRegisterRepository cashRegisterRepo,
         IPriceListRepository priceListRepo,
-        ISriSettingsRepository sriRepo,
         IItemRepository itemRepo,
         IInvoiceDefaultsResolver invoiceDefaultsResolver,
         ISalesFiscalPolicyResolver salesFiscalPolicyResolver,
         ICompanyBrandingResolver brandingResolver,
-        ICatalogConfigurationResolver catalogConfigResolver
+        ICatalogConfigurationResolver catalogConfigResolver,
+        IElectronicEmissionRequirementsValidator emissionRequirements,
+        AccountingOperationalDecision accountingDecision,
+        ICompanyClock companyClock,
+        ILogger<CompanyOperationalReadinessResolver> logger
     )
     {
         _companyRepo = companyRepo;
-        _branchRepo = branchRepo;
         _establishmentRepo = establishmentRepo;
         _emissionPointRepo = emissionPointRepo;
         _warehouseRepo = warehouseRepo;
         _cashRegisterRepo = cashRegisterRepo;
         _priceListRepo = priceListRepo;
-        _sriRepo = sriRepo;
         _itemRepo = itemRepo;
         _invoiceDefaultsResolver = invoiceDefaultsResolver;
         _salesFiscalPolicyResolver = salesFiscalPolicyResolver;
         _brandingResolver = brandingResolver;
         _catalogConfigResolver = catalogConfigResolver;
+        _emissionRequirements = emissionRequirements;
+        _accountingDecision = accountingDecision;
+        _companyClock = companyClock;
+        _logger = logger;
     }
 
     public async Task<CompanyOperationalReadinessResult> GetAsync(
         Guid tenantId,
         Guid companyId,
+        Guid branchId,
         CancellationToken cancellationToken = default
     )
     {
@@ -75,56 +152,38 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             cancellationToken
         );
 
-        var branches = await _branchRepo.GetByCompanyAsync(
-            tenantId,
-            companyId,
-            activeFilter: true,
-            cancellationToken: cancellationToken
-        );
-        var mainBranch = branches.FirstOrDefault(b => b.IsMainBranch);
-
         var mainEstablishment = await _establishmentRepo.GetMainByCompanyAsync(
             tenantId,
             companyId,
             cancellationToken
         );
 
-        var defaultEmissionPoint = await _emissionPointRepo.GetDefaultForCompanyAsync(
+        // Sin sucursal activa no hay cajas ni bodegas que evaluar (fail-closed: nunca se elige otra).
+        var hasActiveWarehouse =
+            branchId != Guid.Empty
+            && (
+                await _warehouseRepo.GetAsync(
+                    tenantId,
+                    activeFilter: true,
+                    search: null,
+                    branchId: branchId,
+                    cancellationToken: cancellationToken
+                )
+            ).Any(w => w.CompanyId == companyId && w.BranchId == branchId);
+
+        var registerChecks = await CheckBranchCashRegistersAsync(
             tenantId,
             companyId,
+            branchId,
             cancellationToken
         );
 
-        var mainWarehouse = mainBranch is not null
-            ? await _warehouseRepo.GetMainForBranchAsync(tenantId, mainBranch.Id, cancellationToken)
-            : null;
-
-        var companyWarehouses = await _warehouseRepo.GetAsync(
-            tenantId,
-            activeFilter: true,
-            search: null,
-            branchId: null,
-            cancellationToken: cancellationToken
-        );
-        var hasAnyActiveWarehouse = companyWarehouses.Count > 0;
-
-        var companyCashRegisters = await _cashRegisterRepo.GetAllByCompanyAsync(
-            tenantId,
-            companyId,
-            activeFilter: true,
-            search: null,
-            ct: cancellationToken
-        );
-        var hasAnyActiveCashRegister = companyCashRegisters.Count > 0;
-
         var defaultPriceList = await _priceListRepo.GetDefaultAsync(tenantId, cancellationToken);
-
-        var sriSettings = await _sriRepo.GetByCompanyIdAsync(companyId, cancellationToken);
 
         var invoiceDefaults = await _invoiceDefaultsResolver.GetAsync(
             tenantId,
             companyId,
-            mainBranch?.Id,
+            branchId == Guid.Empty ? null : branchId,
             cancellationToken
         );
 
@@ -142,103 +201,280 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         var hasActiveItems =
             (await _itemRepo.GetAllActiveAsync(tenantId, cancellationToken)).Count > 0;
 
-        var identity = BuildIdentitySection(company, branding);
-        var structure = BuildStructureSection(
-            mainBranch,
-            mainEstablishment,
-            defaultEmissionPoint,
-            mainWarehouse,
-            hasAnyActiveCashRegister
-        );
-        var electronicInvoicing = BuildElectronicInvoicingSection(
-            sriSettings,
-            defaultEmissionPoint
-        );
-        var sales = BuildSalesSection(invoiceDefaults, defaultPriceList);
-        var inventory = BuildInventorySection(hasAnyActiveWarehouse, hasActiveItems);
-        var cashRegister = BuildCashRegisterSection(hasAnyActiveCashRegister);
-        var documents = BuildDocumentsSection(branding);
+        // Sin empresa válida en el scope no se consulta nada más con ese scope: fail-closed.
+        var accountingConfigured =
+            company is not null
+            && await _accountingDecision.ResolveAsync(
+                tenantId,
+                companyId,
+                await _companyClock.TodayAsync(companyId, tenantId, cancellationToken),
+                cancellationToken
+            ) != AccountingApplicability.NotConfigured;
+
+        var electronicFindings = BuildElectronicFindings(registerChecks);
         _ = fiscalPolicy; // ya reflejado en sales.consumerFinalPolicy (siempre Ready — tiene fallback DomainDefault).
 
+        var electronicActive = registerChecks.Any(c => c.IsElectronic);
         var sections = new List<ReadinessSection>
         {
-            identity,
-            structure,
-            electronicInvoicing,
-            sales,
-            inventory,
-            cashRegister,
-            documents,
+            BuildIdentitySection(company, electronicFindings),
+            BuildStructureSection(mainEstablishment, electronicFindings),
+            BuildAccountingSection(accountingConfigured),
+            BuildCashRegisterSection(registerChecks),
+            BuildElectronicInvoicingSection(electronicActive, electronicFindings),
+            BuildSalesSection(invoiceDefaults, defaultPriceList),
+            BuildInventorySection(hasActiveWarehouse, hasActiveItems),
+            BuildDocumentsSection(branding),
         };
 
         var allItems = sections.SelectMany(s => s.Items).ToList();
 
-        bool AreaSatisfied(ReadinessBlockingArea area) =>
+        bool AreaSatisfied(Area area) =>
             !allItems.Any(i =>
-                i.BlockingArea == area
-                && i.Severity == ReadinessSeverity.Blocking
-                && i.Status != ReadinessStatus.Ready
+                i.BlockingAreas.Contains(area)
+                && i.Status is ReadinessStatus.Missing or ReadinessStatus.Warning
             );
 
-        var canSell = AreaSatisfied(ReadinessBlockingArea.Sales);
-        var canIssueElectronicInvoices = AreaSatisfied(ReadinessBlockingArea.ElectronicInvoicing);
-        var canUseInventory = hasAnyActiveWarehouse;
-        var canUseCashRegister = hasAnyActiveCashRegister;
-
-        var hasBlockingGap = allItems.Any(i =>
-            i.Severity == ReadinessSeverity.Blocking && i.Status != ReadinessStatus.Ready
-        );
-        var hasWarningGap = allItems.Any(i => i.Status == ReadinessStatus.Warning);
-
-        var overallStatus =
-            hasBlockingGap ? ReadinessStatus.Missing
-            : hasWarningGap ? ReadinessStatus.Warning
-            : ReadinessStatus.Ready;
-
         return new CompanyOperationalReadinessResult(
-            OverallStatus: overallStatus,
-            CanSell: canSell,
-            CanIssueElectronicInvoices: canIssueElectronicInvoices,
-            CanUseInventory: canUseInventory,
-            CanUseCashRegister: canUseCashRegister,
-            Sections: sections
+            BranchId: branchId,
+            OverallStatus: Aggregate(allItems),
+            CanSell: AreaSatisfied(Area.Sales),
+            CanIssueElectronicInvoices: electronicActive
+                && AreaSatisfied(Area.ElectronicInvoicing),
+            CanUseInventory: AreaSatisfied(Area.Inventory),
+            CanUseCashRegister: AreaSatisfied(Area.CashRegister),
+            Sections: sections,
+            CashRegisters: registerChecks.Select(ToCashRegisterResult).ToList()
+        );
+    }
+
+    /// <summary>
+    /// Cajas activas de la empresa en la sucursal activa (OpenCashSession exige
+    /// <c>register.BranchId == sucursal activa</c>), cada una con su punto si existe y está activo
+    /// en la empresa (CreateSalesDraft). Cada punto electrónico distinto se valida una sola vez.
+    /// </summary>
+    private async Task<IReadOnlyList<RegisterCheck>> CheckBranchCashRegistersAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid branchId,
+        CancellationToken ct
+    )
+    {
+        if (branchId == Guid.Empty)
+            return [];
+
+        var registers = (
+            await _cashRegisterRepo.GetAllByCompanyAsync(
+                tenantId,
+                companyId,
+                activeFilter: true,
+                search: null,
+                ct: ct
+            )
+        )
+            .Where(r => r.CompanyId == companyId && r.BranchId == branchId)
+            .ToList();
+
+        var emissionPoints = new Dictionary<Guid, EmissionPointEntity?>();
+        var validations =
+            new Dictionary<Guid, (IReadOnlyList<ElectronicEmissionRequirementIssue> Issues, bool Failed)>();
+        var checks = new List<RegisterCheck>(registers.Count);
+        foreach (var register in registers)
+        {
+            EmissionPointEntity? emissionPoint = null;
+            if (register.EmissionPointId is { } emissionPointId)
+            {
+                if (!emissionPoints.TryGetValue(emissionPointId, out emissionPoint))
+                {
+                    emissionPoint = await _emissionPointRepo.GetByIdForCompanyAsync(
+                        tenantId,
+                        companyId,
+                        emissionPointId,
+                        ct
+                    );
+                    emissionPoints[emissionPointId] = emissionPoint is { IsActive: true }
+                        ? emissionPoint
+                        : null;
+                    emissionPoint = emissionPoints[emissionPointId];
+                }
+            }
+
+            if (emissionPoint?.EmissionType != EmissionType.Electronic)
+            {
+                checks.Add(new(register, emissionPoint, [], false));
+                continue;
+            }
+
+            if (!validations.TryGetValue(emissionPoint.Id, out var validation))
+            {
+                validation = await ValidateEmissionPointAsync(
+                    tenantId,
+                    companyId,
+                    emissionPoint.Id,
+                    ct
+                );
+                validations[emissionPoint.Id] = validation;
+            }
+            checks.Add(new(register, emissionPoint, validation.Issues, validation.Failed));
+        }
+
+        return checks;
+    }
+
+    /// <summary>Gate propietario para el tipo 01 (la capacidad diagnosticada). Un fallo técnico nunca es Ready.</summary>
+    private async Task<(
+        IReadOnlyList<ElectronicEmissionRequirementIssue> Issues,
+        bool Failed
+    )> ValidateEmissionPointAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid emissionPointId,
+        CancellationToken ct
+    )
+    {
+        try
+        {
+            var result = await _emissionRequirements.ValidateAsync(
+                new ElectronicEmissionRequirementsRequest(
+                    tenantId,
+                    companyId,
+                    emissionPointId,
+                    SriDocumentTypeCodes.Invoice
+                ),
+                ct
+            );
+            return (result.Issues, false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(
+                ex,
+                "Electronic emission requirements could not be verified for company {CompanyId}, emission point {EmissionPointId}",
+                companyId,
+                emissionPointId
+            );
+            return ([], true);
+        }
+    }
+
+    /// <summary>
+    /// Un ítem por código de requisito electrónico. Obligatorio incumplido en cualquier caja ⇒
+    /// Missing (un punto correcto nunca oculta otro); solo condiciona una capacidad si la deja sin
+    /// camino en la sucursal: ElectronicInvoicing si ninguna caja electrónica puede emitir, Sales si
+    /// ninguna caja puede vender.
+    /// </summary>
+    private static IReadOnlyDictionary<string, ReadinessItem> BuildElectronicFindings(
+        IReadOnlyList<RegisterCheck> checks
+    )
+    {
+        var targets = checks
+            .SelectMany(c => c.Issues)
+            .GroupBy(i => i.Code, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().ActionTarget, StringComparer.Ordinal);
+        targets.TryAdd(
+            ElectronicVerificationFailed,
+            ReadinessActionTarget.ElectronicInvoicingSettings
+        );
+
+        var requiredAreas = new List<Area>();
+        if (!checks.Any(c => c.CanSell))
+            requiredAreas.Add(Area.Sales);
+        if (!checks.Any(c => c.CanIssue))
+            requiredAreas.Add(Area.ElectronicInvoicing);
+
+        var findings = new Dictionary<string, ReadinessItem>(StringComparer.Ordinal);
+        foreach (var code in checks.SelectMany(c => c.RequiredCodes).Distinct(StringComparer.Ordinal))
+            findings[code] = new(
+                code,
+                ReadinessStatus.Missing,
+                ReadinessSeverity.Blocking,
+                requiredAreas,
+                targets[code]
+            );
+        foreach (var code in checks.SelectMany(c => c.WarningCodes).Distinct(StringComparer.Ordinal))
+            findings.TryAdd(
+                code,
+                new(code, ReadinessStatus.Warning, ReadinessSeverity.Warning, NoArea, targets[code])
+            );
+
+        return findings;
+    }
+
+    private static ReadinessCashRegister ToCashRegisterResult(RegisterCheck check)
+    {
+        var emissionPoint = check.EmissionPoint;
+        var codes = emissionPoint is null
+            ? [CashRegisterWithEmissionPoint]
+            : check
+                .RequiredCodes.Concat(check.WarningCodes)
+                .Select(code => RequirementsOwnedByBaseItem.GetValueOrDefault(code, code))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+        ReadinessFiscalStatus fiscalStatus;
+        if (emissionPoint is null)
+            fiscalStatus = ReadinessFiscalStatus.NotApplicable;
+        else if (!check.IsElectronic)
+            fiscalStatus = ReadinessFiscalStatus.NotVerified; // F-1..F-5: sin política física propietaria.
+        else
+            fiscalStatus = check.CanIssue
+                ? ReadinessFiscalStatus.Verified
+                : ReadinessFiscalStatus.Pending;
+
+        return new ReadinessCashRegister(
+            check.Register.Id,
+            check.Register.Code,
+            check.Register.Name,
+            emissionPoint?.Id,
+            emissionPoint?.Establishment?.Code,
+            emissionPoint?.Code,
+            emissionPoint?.EmissionType,
+            check.CanSell ? ReadinessStatus.Ready : ReadinessStatus.Missing,
+            fiscalStatus,
+            codes
         );
     }
 
     // ── Identidad de empresa ─────────────────────────────────────────────────
+    // RUC y razón social solo los exige la emisión electrónica (validador); para el resto de
+    // operaciones son datos recomendables del perfil.
     private static ReadinessSection BuildIdentitySection(
         CompanyEntity? company,
-        CompanyBrandingSettings branding
+        IReadOnlyDictionary<string, ReadinessItem> electronicFindings
     )
     {
+        // Un RUC provisional del bootstrap (IsTemporaryTaxIdentification) es un valor artificial,
+        // no un RUC configurado.
+        var hasOfficialTaxId =
+            !string.IsNullOrWhiteSpace(company?.TaxIdentificationNumber)
+            && !company.IsTemporaryTaxIdentification;
+
         var items = new List<ReadinessItem>
         {
-            Item(
-                "identity.taxId",
-                !string.IsNullOrWhiteSpace(company?.TaxIdentificationNumber),
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
-                ReadinessActionTarget.CompanyProfile
+            BaseItem(
+                IdentityTaxId,
+                hasOfficialTaxId,
+                ReadinessActionTarget.CompanyProfile,
+                electronicFindings
             ),
-            Item(
-                "identity.legalName",
+            BaseItem(
+                IdentityLegalName,
                 !string.IsNullOrWhiteSpace(company?.LegalName),
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
-                ReadinessActionTarget.CompanyProfile
+                ReadinessActionTarget.CompanyProfile,
+                electronicFindings
             ),
             Item(
                 "identity.tradeName",
                 !string.IsNullOrWhiteSpace(company?.TradeName),
                 ReadinessSeverity.Warning,
-                null,
+                NoArea,
                 ReadinessActionTarget.CompanyProfile
             ),
             Item(
                 "identity.corporateEmail",
                 !string.IsNullOrWhiteSpace(company?.CorporateEmail),
                 ReadinessSeverity.Warning,
-                null,
+                NoArea,
                 ReadinessActionTarget.CompanyProfile
             ),
         };
@@ -247,105 +483,93 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     }
 
     // ── Estructura operativa ─────────────────────────────────────────────────
+    // El establecimiento matriz aporta dirMatriz a la emisión electrónica; ninguna venta física lo exige.
     private static ReadinessSection BuildStructureSection(
-        Domain.Branches.Entities.Branch? mainBranch,
         Domain.Modules.Company.Entities.Establishment? mainEstablishment,
-        Domain.Modules.Company.Entities.EmissionPoint? defaultEmissionPoint,
-        Domain.Modules.Inventory.Entities.Warehouse? mainWarehouse,
-        bool hasAnyActiveCashRegister
-    )
-    {
-        var items = new List<ReadinessItem>
-        {
-            Item(
-                "structure.mainBranch",
-                mainBranch is not null,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
-                ReadinessActionTarget.Branches
-            ),
-            Item(
-                "structure.mainEstablishment",
-                mainEstablishment is not null,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
-                ReadinessActionTarget.Establishments
-            ),
-            Item(
-                "structure.defaultEmissionPoint",
-                defaultEmissionPoint is not null,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
-                ReadinessActionTarget.EmissionPoints
-            ),
-            Item(
-                "structure.mainWarehouse",
-                mainWarehouse is not null,
-                ReadinessSeverity.Warning,
-                ReadinessBlockingArea.Inventory,
-                ReadinessActionTarget.Warehouses
-            ),
-            Item(
-                "structure.mainCashRegister",
-                hasAnyActiveCashRegister,
-                ReadinessSeverity.Warning,
-                ReadinessBlockingArea.CashRegister,
-                ReadinessActionTarget.CashRegisters
-            ),
-        };
+        IReadOnlyDictionary<string, ReadinessItem> electronicFindings
+    ) =>
+        Section(
+            "structure",
+            [
+                BaseItem(
+                    StructureMainEstablishment,
+                    mainEstablishment is not null,
+                    ReadinessActionTarget.Establishments,
+                    electronicFindings
+                ),
+            ]
+        );
 
-        return Section("structure", items);
+    // ── Contabilidad ──────────────────────────────────────────────────────────
+    // AccountingOperationalDecision.NotConfigured: AccountingPostingRecorder lanza dentro de la
+    // transacción de la operación (handlers in-process de ErpDbContext.SaveChangesAsync), así que se
+    // rechaza toda operación que contabiliza: autorizar ventas (y con ello emitir facturas),
+    // confirmar compras y ajustes de stock, movimientos/depósitos de caja y cierres con diferencia.
+    private static ReadinessSection BuildAccountingSection(bool accountingConfigured) =>
+        Section(
+            "accounting",
+            [
+                Item(
+                    "accounting.operationalMode",
+                    accountingConfigured,
+                    ReadinessSeverity.Blocking,
+                    [Area.Sales, Area.ElectronicInvoicing, Area.Inventory, Area.CashRegister],
+                    ReadinessActionTarget.AccountingSettings
+                ),
+            ]
+        );
+
+    // ── Caja ──────────────────────────────────────────────────────────────────
+    // CreateSalesDraft exige una caja abierta y OpenCashSession exige un punto de emisión en la
+    // caja. Una caja de la sucursal sin punto activo deja el requisito pendiente aunque otra caja
+    // esté lista; solo condiciona Sales/CashRegister si ninguna caja de la sucursal tiene punto.
+    private static ReadinessSection BuildCashRegisterSection(IReadOnlyList<RegisterCheck> checks)
+    {
+        var allHavePoint = checks.Count > 0 && checks.All(c => c.EmissionPoint is not null);
+        var anyHasPoint = checks.Any(c => c.EmissionPoint is not null);
+
+        return Section(
+            "cashRegister",
+            [
+                new(
+                    CashRegisterWithEmissionPoint,
+                    allHavePoint ? ReadinessStatus.Ready : ReadinessStatus.Missing,
+                    ReadinessSeverity.Blocking,
+                    anyHasPoint ? NoArea : [Area.Sales, Area.CashRegister],
+                    ReadinessActionTarget.CashRegisters
+                ),
+            ]
+        );
     }
 
     // ── Facturación electrónica ──────────────────────────────────────────────
     private static ReadinessSection BuildElectronicInvoicingSection(
-        Domain.Configuration.Entities.SriSettings? sriSettings,
-        Domain.Modules.Company.Entities.EmissionPoint? defaultEmissionPoint
+        bool electronicActive,
+        IReadOnlyDictionary<string, ReadinessItem> electronicFindings
     )
     {
-        var hasSriConfig =
-            sriSettings is not null && !string.IsNullOrWhiteSpace(sriSettings.WsdlUrl);
-        var hasCertificate = !string.IsNullOrWhiteSpace(sriSettings?.CertP12Path);
-
+        // Activa si alguna caja de la sucursal tiene un punto de emisión electrónico; si no,
+        // NotApplicable (nunca un bloqueo).
         var items = new List<ReadinessItem>
         {
-            Item(
-                "electronicInvoicing.sriConfig",
-                hasSriConfig,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.ElectronicInvoicing,
-                ReadinessActionTarget.ElectronicInvoicingSettings
-            ),
-            Item(
-                "electronicInvoicing.certificate",
-                hasCertificate,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.ElectronicInvoicing,
-                ReadinessActionTarget.ElectronicInvoicingSettings
-            ),
-            Item(
-                "electronicInvoicing.emissionPoint",
-                defaultEmissionPoint is not null,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.ElectronicInvoicing,
+            new(
+                ElectronicActivation,
+                electronicActive ? ReadinessStatus.Ready : ReadinessStatus.NotApplicable,
+                ReadinessSeverity.Info,
+                NoArea,
                 ReadinessActionTarget.EmissionPoints
             ),
-            // No existe fuente real de verificación de conexión/secuenciales SRI en el dominio
-            // actual — nunca se inventa ese estado. Siempre Warning/Info, nunca bloqueante.
-            Item(
-                "electronicInvoicing.connectionCheck",
-                ready: false,
-                ReadinessSeverity.Info,
-                null,
-                ReadinessActionTarget.ElectronicInvoicingSettings,
-                forceWarningNotMissing: true
-            ),
         };
+        items.AddRange(
+            electronicFindings.Values.Where(f => !RequirementsOwnedByBaseItem.ContainsKey(f.Code))
+        );
 
         return Section("electronicInvoicing", items);
     }
 
     // ── Ventas ────────────────────────────────────────────────────────────────
+    // Defaults de captura: recomendables, ninguno bloquea la venta (precio → Item.BaseSalePrice,
+    // tipo de documento → 01, condición de pago → Contado del sistema; ver company-readiness.md).
     private static ReadinessSection BuildSalesSection(
         InvoiceDefaultsResult invoiceDefaults,
         Domain.Modules.Pricing.Entities.PriceList? defaultPriceList
@@ -360,38 +584,38 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             Item(
                 "sales.defaultDocType",
                 !string.IsNullOrWhiteSpace(invoiceDefaults.DefaultDocTypeCode),
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
+                ReadinessSeverity.Warning,
+                NoArea,
                 ReadinessActionTarget.CompanySalesSettings
             ),
             Item(
                 "sales.defaultPaymentMethod",
                 !string.IsNullOrWhiteSpace(invoiceDefaults.DefaultSriPaymentMethodCode),
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
+                ReadinessSeverity.Warning,
+                NoArea,
                 ReadinessActionTarget.CompanySalesSettings
             ),
             Item(
                 "sales.defaultPaymentTerm",
                 invoiceDefaults.DefaultPaymentTermId is not null,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
+                ReadinessSeverity.Warning,
+                NoArea,
                 ReadinessActionTarget.CompanySalesSettings
             ),
             Item(
                 "sales.defaultPriceList",
                 defaultPriceList is not null,
-                ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Sales,
+                ReadinessSeverity.Warning,
+                NoArea,
                 ReadinessActionTarget.PriceLists
             ),
-            // Bodega resuelta por sucursal, o selección manual permitida (nunca bloqueante — ver
-            // IInvoiceDefaultsResolver, RequiresManualWarehouseSelection siempre habilita continuar).
+            // Bodega resuelta para la sucursal activa (BranchSetting → Warehouse.IsMain), o
+            // selección manual permitida (RequiresManualWarehouseSelection siempre habilita continuar).
             Item(
                 "sales.defaultWarehouse",
                 warehouseResolved,
                 ReadinessSeverity.Warning,
-                null,
+                NoArea,
                 ReadinessActionTarget.Branches
             ),
             // Siempre resuelve (FallbackStrategy DomainDefault/Fallback) — informativo, nunca bloqueante.
@@ -399,7 +623,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 "sales.consumerFinalPolicy",
                 true,
                 ReadinessSeverity.Info,
-                null,
+                NoArea,
                 ReadinessActionTarget.CompanyFiscalSettings
             ),
         };
@@ -408,18 +632,19 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     }
 
     // ── Inventario ────────────────────────────────────────────────────────────
+    // Ajustes y compras exigen una bodega de la sucursal activa.
     private static ReadinessSection BuildInventorySection(
-        bool hasAnyActiveWarehouse,
+        bool hasActiveWarehouse,
         bool hasActiveItems
     )
     {
         var items = new List<ReadinessItem>
         {
             Item(
-                "inventory.mainWarehouse",
-                hasAnyActiveWarehouse,
+                "inventory.activeWarehouse",
+                hasActiveWarehouse,
                 ReadinessSeverity.Blocking,
-                ReadinessBlockingArea.Inventory,
+                [Area.Inventory],
                 ReadinessActionTarget.Warehouses
             ),
             // Profundidad de categorías siempre resuelve con SystemDefault — informativo, nunca bloqueante.
@@ -427,36 +652,19 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 "inventory.categoryDepth",
                 true,
                 ReadinessSeverity.Info,
-                null,
+                NoArea,
                 ReadinessActionTarget.Items
             ),
             Item(
                 "inventory.activeItems",
                 hasActiveItems,
                 ReadinessSeverity.Warning,
-                null,
+                NoArea,
                 ReadinessActionTarget.Items
             ),
         };
 
         return Section("inventory", items);
-    }
-
-    // ── Caja ──────────────────────────────────────────────────────────────────
-    private static ReadinessSection BuildCashRegisterSection(bool hasAnyActiveCashRegister)
-    {
-        var items = new List<ReadinessItem>
-        {
-            Item(
-                "cashRegister.mainCashRegister",
-                hasAnyActiveCashRegister,
-                ReadinessSeverity.Warning,
-                ReadinessBlockingArea.CashRegister,
-                ReadinessActionTarget.CashRegisters
-            ),
-        };
-
-        return Section("cashRegister", items);
     }
 
     // ── Documentos y presentación ────────────────────────────────────────────
@@ -468,14 +676,14 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 "documents.branding",
                 !string.IsNullOrWhiteSpace(branding.LogoStoragePath),
                 ReadinessSeverity.Warning,
-                null,
+                NoArea,
                 ReadinessActionTarget.CompanyBranding
             ),
             Item(
                 "documents.footerText",
                 !string.IsNullOrWhiteSpace(branding.DocumentFooterText),
                 ReadinessSeverity.Warning,
-                null,
+                NoArea,
                 ReadinessActionTarget.CompanyBranding
             ),
             // Siempre resuelve con SystemDefault — informativo, nunca bloqueante.
@@ -483,16 +691,8 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 "documents.decimalPrecision",
                 true,
                 ReadinessSeverity.Info,
-                null,
+                NoArea,
                 ReadinessActionTarget.DecimalSettings
-            ),
-            // No hay verificación real de generación de RIDE sin emitir un documento — informativo.
-            Item(
-                "documents.ride",
-                true,
-                ReadinessSeverity.Info,
-                null,
-                ReadinessActionTarget.ElectronicInvoicingSettings
             ),
         };
 
@@ -504,31 +704,56 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         string code,
         bool ready,
         ReadinessSeverity severity,
-        ReadinessBlockingArea? blockingArea,
-        ReadinessActionTarget? actionTarget,
-        bool forceWarningNotMissing = false
+        IReadOnlyList<Area> blockingAreas,
+        ReadinessActionTarget? actionTarget
     )
     {
-        var status =
-            ready ? ReadinessStatus.Ready
-            : forceWarningNotMissing ? ReadinessStatus.Warning
-            : ReadinessStatus.Missing;
+        ReadinessStatus status;
+        if (ready)
+            status = ReadinessStatus.Ready;
+        else
+            status = severity == ReadinessSeverity.Blocking
+                ? ReadinessStatus.Missing
+                : ReadinessStatus.Warning;
 
-        return new ReadinessItem(code, status, severity, blockingArea, actionTarget);
+        return new ReadinessItem(code, status, severity, blockingAreas, actionTarget);
     }
 
-    private static ReadinessSection Section(string code, IReadOnlyList<ReadinessItem> items)
+    /// <summary>
+    /// Ítem de un dato recomendable que además revisa el validador electrónico: si el validador lo
+    /// rechazó en alguna caja, adopta ese veredicto (estado, severidad y capacidades); si no,
+    /// Warning cuando falta.
+    /// </summary>
+    private static ReadinessItem BaseItem(
+        string code,
+        bool ready,
+        ReadinessActionTarget actionTarget,
+        IReadOnlyDictionary<string, ReadinessItem> electronicFindings
+    )
     {
-        var hasBlockingGap = items.Any(i =>
-            i.Severity == ReadinessSeverity.Blocking && i.Status != ReadinessStatus.Ready
-        );
-        var hasWarningGap = items.Any(i => i.Status == ReadinessStatus.Warning);
+        var finding = RequirementsOwnedByBaseItem
+            .Where(kv => kv.Value == code && electronicFindings.ContainsKey(kv.Key))
+            .Select(kv => electronicFindings[kv.Key])
+            .OrderByDescending(f => f.Severity)
+            .FirstOrDefault();
 
-        var status =
-            hasBlockingGap ? ReadinessStatus.Missing
-            : hasWarningGap ? ReadinessStatus.Warning
-            : ReadinessStatus.Ready;
+        return finding is null
+            ? Item(code, ready, ReadinessSeverity.Warning, NoArea, actionTarget)
+            : finding with { Code = code, ActionTarget = actionTarget };
+    }
 
-        return new ReadinessSection(code, status, items);
+    private static ReadinessSection Section(string code, IReadOnlyList<ReadinessItem> items) =>
+        new(code, Aggregate(items), items);
+
+    /// <summary>Missing &gt; Warning &gt; Ready; NotApplicable solo si ningún ítem aplica.</summary>
+    private static ReadinessStatus Aggregate(IReadOnlyCollection<ReadinessItem> items)
+    {
+        if (items.Any(i => i.Status == ReadinessStatus.Missing))
+            return ReadinessStatus.Missing;
+        if (items.Any(i => i.Status == ReadinessStatus.Warning))
+            return ReadinessStatus.Warning;
+        return items.Any(i => i.Status == ReadinessStatus.Ready)
+            ? ReadinessStatus.Ready
+            : ReadinessStatus.NotApplicable;
     }
 }

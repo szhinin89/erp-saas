@@ -5,6 +5,7 @@ import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { useActiveBranchStore } from "../../../../store/activeBranchStore";
 import { companyProfileService } from "../api/companyProfileService";
 import { getOperationalReadinessActionRoute } from "../operationalReadinessActionRoutes";
 import type {
@@ -47,6 +48,7 @@ function overallNoticeVariant(status: ReadinessStatus): "success" | "warning" | 
 function messageKeyForStatus(code: string, status: ReadinessStatus): string {
   if (status === "Warning") return `operationalReadiness.items.${code}.warning`;
   if (status === "Missing") return `operationalReadiness.items.${code}.missing`;
+  if (status === "NotApplicable") return `operationalReadiness.items.${code}.notApplicable`;
   return `operationalReadiness.items.${code}.ready`;
 }
 
@@ -107,14 +109,20 @@ export function OperationalReadinessSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
   const canView = canShow("erp.companies.view");
+  // El diagnóstico es de la sucursal activa (X-Branch-Id): sin sucursal no se consulta ni se
+  // elige otra — el selector de sucursal (useBranchGate) es el único que la define.
+  const branchId = useActiveBranchStore((s) => s.branch)?.id ?? null;
 
   const readinessState = useAsync(
     () => companyProfileService.getOperationalReadiness(),
-    canView,
+    canView && branchId !== null,
+    [branchId],
   );
 
   if (!canView)
     return <NoAccessPage title={t("settings.company.tabs.readiness")} />;
+  if (branchId === null)
+    return <ZHPageNotice variant="warning" message={t("operationalReadiness.branchRequired")} />;
   if (readinessState.loading) return <LoadingState />;
   if (readinessState.error || !readinessState.data)
     return <ZHPageNotice variant="error" message={t("operationalReadiness.loadError")} />;

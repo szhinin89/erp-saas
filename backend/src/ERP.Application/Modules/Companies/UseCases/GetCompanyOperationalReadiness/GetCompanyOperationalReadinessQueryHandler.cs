@@ -11,16 +11,19 @@ public sealed class GetCompanyOperationalReadinessQueryHandler
     private readonly ICompanyOperationalReadinessResolver _resolver;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
+    private readonly ICurrentBranch _currentBranch;
 
     public GetCompanyOperationalReadinessQueryHandler(
         ICompanyOperationalReadinessResolver resolver,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany
+        ICurrentCompany currentCompany,
+        ICurrentBranch currentBranch
     )
     {
         _resolver = resolver;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
+        _currentBranch = currentBranch;
     }
 
     public async Task<Result<CompanyOperationalReadinessDto>> Handle(
@@ -31,11 +34,13 @@ public sealed class GetCompanyOperationalReadinessQueryHandler
         var readiness = await _resolver.GetAsync(
             _currentTenant.TenantId,
             _currentCompany.CompanyId,
+            _currentBranch.BranchId,
             cancellationToken
         );
 
         return Result<CompanyOperationalReadinessDto>.Success(
             new CompanyOperationalReadinessDto(
+                BranchId: readiness.BranchId,
                 OverallStatus: readiness.OverallStatus.ToString(),
                 CanSell: readiness.CanSell,
                 CanIssueElectronicInvoices: readiness.CanIssueElectronicInvoices,
@@ -49,10 +54,26 @@ public sealed class GetCompanyOperationalReadinessQueryHandler
                                 Code: i.Code,
                                 Status: i.Status.ToString(),
                                 Severity: i.Severity.ToString(),
-                                BlockingArea: i.BlockingArea?.ToString(),
+                                BlockingAreas: i
+                                    .BlockingAreas.Select(a => a.ToString())
+                                    .ToList(),
                                 ActionTarget: i.ActionTarget?.ToString()
                             ))
                             .ToList()
+                    ))
+                    .ToList(),
+                CashRegisters: readiness
+                    .CashRegisters.Select(r => new CompanyOperationalReadinessCashRegisterDto(
+                        CashRegisterId: r.CashRegisterId,
+                        Code: r.Code,
+                        Name: r.Name,
+                        EmissionPointId: r.EmissionPointId,
+                        EstablishmentCode: r.EstablishmentCode,
+                        EmissionPointCode: r.EmissionPointCode,
+                        EmissionType: r.EmissionType?.ToString(),
+                        OperationalStatus: r.OperationalStatus.ToString(),
+                        FiscalStatus: r.FiscalStatus.ToString(),
+                        RequirementCodes: r.RequirementCodes
                     ))
                     .ToList()
             )

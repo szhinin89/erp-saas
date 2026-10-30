@@ -146,13 +146,15 @@ export type ReadinessActionTarget =
   | "CashRegisters"
   | "PriceLists"
   | "ElectronicInvoicingSettings"
-  | "Items";
+  | "Items"
+  | "AccountingSettings";
 
 export interface CompanyOperationalReadinessItem {
   code: string;
   status: ReadinessStatus;
   severity: ReadinessSeverity;
-  blockingArea: ReadinessBlockingArea | null;
+  /** Capacidades no disponibles mientras el ítem esté Missing o Warning (vacío si ninguna). */
+  blockingAreas: ReadinessBlockingArea[];
   actionTarget: ReadinessActionTarget | null;
 }
 
@@ -162,11 +164,35 @@ export interface CompanyOperationalReadinessSection {
   items: CompanyOperationalReadinessItem[];
 }
 
+/**
+ * Validación fiscal de la emisión de una caja, separada de su estado operativo. `NotVerified`:
+ * punto físico sin política fiscal propietaria (brechas F-1..F-5) — nunca se presenta como
+ * autorizado.
+ */
+export type ReadinessFiscalStatus = "Verified" | "Pending" | "NotVerified" | "NotApplicable";
+
+/** Caja activa de la sucursal activa; `requirementCodes` referencia `code` de los ítems de `sections`. */
+export interface CompanyOperationalReadinessCashRegister {
+  cashRegisterId: string;
+  code: string;
+  name: string;
+  emissionPointId: string | null;
+  establishmentCode: string | null;
+  emissionPointCode: string | null;
+  emissionType: string | null;
+  operationalStatus: ReadinessStatus;
+  fiscalStatus: ReadinessFiscalStatus;
+  requirementCodes: string[];
+}
+
+/** Preparación de la empresa en la sucursal activa (`branchId`, la enviada como X-Branch-Id). */
 export interface CompanyOperationalReadiness {
+  branchId: string;
   overallStatus: ReadinessStatus;
   canSell: boolean;
   canIssueElectronicInvoices: boolean;
   canUseInventory: boolean;
   canUseCashRegister: boolean;
   sections: CompanyOperationalReadinessSection[];
+  cashRegisters: CompanyOperationalReadinessCashRegister[];
 }
