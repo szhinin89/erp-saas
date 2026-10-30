@@ -59,6 +59,7 @@
         "ERP.Infrastructure.Tests.Communications.CommunicationContractIntegrationTests",
         "ERP.Infrastructure.Tests.Communications.CommunicationTemplateIntegrationTests",
         "ERP.Infrastructure.Tests.Dashboard.DashboardKpiReaderTests",
+        "ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentUncertainSriPostgreSqlTests",
         "ERP.Infrastructure.Tests.Finance.CollectionPostingIntegrationTests",
         "ERP.Infrastructure.Tests.InitialLoad.OpeningBalanceDatePostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.CreateAuthenticatedSessionIntegrationTests",
