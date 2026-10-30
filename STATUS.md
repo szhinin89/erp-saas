@@ -211,19 +211,24 @@ anterior. Sin suites generales, aplicación de migraciones, commit ni push. No C
 ALPINA continúa bloqueada en la carga por tablas ausentes según lo anterior. DISURGAL queda
 pendiente de validación manual del propietario con la regla vigente de conciliación.
 
-## Caso #32 — IMPLEMENTADO — PENDIENTE E2E INTEGRADA (2026-10-29)
+## Caso #32 — IMPLEMENTADO — PASS INTEGRACIÓN FOCAL — PENDIENTE E2E SRI (2026-10-30)
 
-Respuestas inciertas del SRI, con la decisión del propietario: consultar antes de reenviar,
-conservar AUTORIZADO, dejar lo inconcluso pendiente de conciliación, conciliación manual solo
-con permiso y evidencia, y ningún reenvío automático ni autorización sin respuesta válida.
-**KEEP:** consulta de autorización, reintento solo consulta de Retenciones, Monitor y estado
-compacto "Requiere conciliación". **BUG frente a la decisión:** Ventas/NC reenviaban un `Signed`
-sin consultar; ahora solo consultan. **FALTA implementada:** conciliación manual
-(`electronic-documents.reconcile`, evidencia de texto auditada, reconsulta; nunca libera reenvío)
-y acción "Registrar conciliación" en el Monitor. Contrato:
+Validación integrada focal de recuperación y conciliación de respuestas inciertas del SRI.
+Clasificación: **KEEP** implementación existente; cobertura de integración faltante incorporada.
+Sin BUG REAL identificado ni cambios de código productivo en esta validación. Contrato:
 [backend.md](docs/architecture/backend.md#límites-y-finalización); addendum ADR-023.
 
-**PASS técnico del agente:** Domain ElectronicDocuments 52/52 (incluye Kernel/permisos 50/50 en otra
+**PASS focal del agente:** 1/1 integración PostgreSQL en
+`backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentUncertainSriPostgreSqlTests.cs`
+y 16/16 pruebas relacionadas de `ElectronicDocumentIssuerRetryTests` y
+`ReconcileElectronicDocumentCommandHandlerTests`. Evidencias:
+`artifacts/case32/case32-integration.trx` y `artifacts/case32/case32-related.trx`.
+La prueba verificó dos consultas de autorización con la misma clave, cero llamadas a Recepción,
+conservación de `Signed` y conciliación pendiente; evidencia de conciliación persistida con
+usuario, tenant, empresa y fecha, sin autorización ni rechazo manual. Aislamiento comprobado
+entre tenants y empresas mediante repositorios y persistencia PostgreSQL reales.
+
+**Validación técnica previa (no reejecutada en esta fase):** Domain ElectronicDocuments 52/52 (incluye Kernel/permisos 50/50 en otra
 corrida); Application ElectronicDocuments + Retenciones 368/368 y catálogo de permisos +
 conciliación 11/11; Infrastructure ED/Retención electrónica/A9 90/90; API Admin permisos + Monitor
 11/11; Architecture 143/143; vitest Monitor/diagnóstico/NC 25/25 e i18n 15/15; `tsc -b`, ESLint
@@ -231,11 +236,12 @@ focal, build y `architecture:check` (0 violaciones nuevas). `ERP.API` y las prue
 se compilaron con salida alternativa porque un `ERP.API.exe` ajeno a la sesión (PID 25680) bloqueaba
 `ERP.API/bin`.
 
-Sin E2E funcional (se agrupa con #20, #30 y #31). Pendiente para la cadena integrada: permiso
-efectivo/denegación, aislamiento tenant/empresa, evidencia visible en auditoría, reconsulta real
-contra el SRI de Pruebas y ausencia de reenvío en Ventas/NC tras un fallo de envío. Límite
-aceptado por la decisión: un comprobante que el SRI nunca recibió queda pendiente de conciliación
-sin camino de reenvío. Sin migraciones, staging, commit ni push. **No CLOSED.**
+Limitación: la integración focal utiliza el SRI simulado; no acredita comunicación real con
+los servicios del SRI ni E2E funcional. La E2E se agrupa con #20, #30 y #31; siguen pendientes
+permiso efectivo/denegación, evidencia visible en el Monitor y reconsulta real contra el SRI de
+Pruebas con ausencia de reenvío en el recorrido completo de Ventas/NC tras un fallo de envío.
+El PASS del agente no sustituye el gate del propietario. Sin migraciones, staging, commit ni
+push. **No CLOSED.**
 
 ## Caso #20 — IMPLEMENTADO — PENDIENTE E2E INTEGRADA (2026-10-28)
 
@@ -813,7 +819,7 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   la confirmación de Gastos, porque no existe flujo de aprobación. Contrato:
   [security.md](docs/architecture/security.md#permisos-vs-política-de-flujo-documental-document-flow-policy-01).
   La aprobación es intención futura en [ROADMAP](docs/ROADMAP.md#etapa-1--completar-erp-core).
-- **Comprobantes electrónicos sin respuesta concluyente (Caso #32, pendiente E2E):** se
+- **Comprobantes electrónicos sin respuesta concluyente (Caso #32, PASS integración focal; pendiente E2E SRI):** se
   consultan, nunca se reenvían; la conciliación manual solo registra evidencia y reconsulta.
   Un comprobante que el SRI nunca recibió queda en "Requiere conciliación" sin camino de
   reenvío. Sigue sin decisión el tratamiento de comprobantes de retención anteriores al ciclo

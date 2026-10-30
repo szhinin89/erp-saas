@@ -699,6 +699,17 @@ fiscal solo lo decide una respuesta del SRI. En Retenciones con origen que ya no
 procesamiento, la evidencia queda registrada y no hay consulta. Un comprobante que el SRI nunca
 recibió permanece pendiente de conciliación. Pendientes: [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
 
+Cobertura PostgreSQL del Caso #32:
+`ElectronicDocumentUncertainSriPostgreSqlTests.cs` integra repositorios y persistencia reales,
+`RetryAsync` y el handler existente de conciliación desde un documento `Signed` con resultado
+SRI desconocido. Comprueba dos consultas de autorización con la misma clave de acceso y cero
+llamadas a Recepción; ante consultas inconclusas conserva `Signed` y conciliación pendiente.
+Verifica `ReconciliationRecorded` persistido con referencia, observación, usuario, tenant,
+empresa y fecha, sin autorización ni rechazo manual, y aislamiento entre tenants y empresas.
+Solo se simula la frontera externa del SRI: esta cobertura no acredita comunicación real con
+sus servicios. Resultados, evidencias y estado de entrega exclusivamente en
+[STATUS — Caso #32](../../STATUS.md#caso-32--implementado--pass-integración-focal--pendiente-e2e-sri-2026-10-30).
+
 
 ## Configuración organizacional
 
