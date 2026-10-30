@@ -67,11 +67,12 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
     }
 
     /// <summary>
-    /// Cierre FASE 3 — borrador guardado con B; la recepción se corrige a C: Confirmar se rechaza
-    /// (sin tocar el borrador) hasta guardar de nuevo con C; luego confirma normalmente.
+    /// Compras V1 § 2 — borrador guardado con B; la recepción se corrige a C. La corrección no
+    /// reescribe el borrador y el producto operativo guardado puede diferir del vínculo XML:
+    /// confirma con B sin tocar la recepción corregida ni su conciliación fiscal.
     /// </summary>
     [Fact]
-    public async Task Draft_saved_before_a_correction_cannot_be_confirmed_until_saved_again()
+    public async Task Correction_after_saving_keeps_the_saved_operational_product()
     {
         var document = await LoadAsync(await ReceiveInvoiceAsync());
         (await ResolveAsync(BuildBatch(document, "CF-"))).Applied.Should().BeTrue();
@@ -80,14 +81,13 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
         var wrongId = (await LoadCreatedAsync("CF-000")).Id;
         var (rightId, rightLevelId) = _linkTargets["L-000"];
 
-        PurchaseDraftDto draft;
         Guid purchaseId;
         await using (var scope = _services.CreateAsyncScope())
         {
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             var loaded = await mediator.Send(new CreatePurchaseReceptionDraftCommand(document.Id));
             loaded.IsSuccess.Should().BeTrue(loaded.Error);
-            draft = loaded.Value!;
+            var draft = loaded.Value!;
             draft.Lines.Single(l => l.PurchaseReceptionLineId == lineId).ItemId.Should().Be(wrongId);
             var created = await mediator.Send(
                 new CreatePurchaseDraftCommand(
@@ -112,14 +112,6 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
 
         await using (var scope = _services.CreateAsyncScope())
         {
-            var rejected = await scope
-                .ServiceProvider.GetRequiredService<IMediator>()
-                .Send(new ConfirmPurchaseCommand(purchaseId));
-            rejected.IsSuccess.Should().BeFalse();
-            rejected.Error.Should().Contain("Guarde nuevamente la compra");
-        }
-        await using (var scope = _services.CreateAsyncScope())
-        {
             // Nada se modificó solo: el borrador sigue en Draft y con el producto guardado (B).
             var saved = await scope
                 .ServiceProvider.GetRequiredService<ErpDbContext>()
@@ -131,36 +123,21 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests
 
         await using (var scope = _services.CreateAsyncScope())
         {
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            var lines = DraftLines(draft, warehouseId)
-                .Select(l =>
-                    l.PurchaseReceptionLineId == lineId
-                        ? l with { ItemId = rightId, PackagingLevelId = rightLevelId }
-                        : l
-                )
-                .ToList();
-            var updated = await mediator.Send(
-                new UpdatePurchaseDraftCommand(
-                    purchaseId,
-                    _supplierId,
-                    "01",
-                    draft.InvoiceNumber,
-                    draft.IssueDate,
-                    lines,
-                    AccessKey: draft.AccessKey,
-                    GlobalWarehouseId: warehouseId,
-                    PaymentTermId: _paymentTerm.Id
-                )
-            );
-            updated.IsSuccess.Should().BeTrue(updated.Error);
-        }
-        await using (var scope = _services.CreateAsyncScope())
-        {
             var confirmed = await scope
                 .ServiceProvider.GetRequiredService<IMediator>()
                 .Send(new ConfirmPurchaseCommand(purchaseId));
             confirmed.IsSuccess.Should().BeTrue(confirmed.Error);
         }
+        await using (var scope = _services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var saved = await db.PurchaseInvoices.Include(p => p.Lines).SingleAsync(p => p.Id == purchaseId);
+            saved.Status.Should().Be(ERP.Domain.Modules.Purchases.Enums.PurchaseStatus.Confirmed);
+            saved.Lines.Single(l => l.PurchaseReceptionLineId == lineId).ItemId.Should().Be(wrongId);
+            (await db.Set<StockMovement>().AnyAsync(m => m.SourceDocId == purchaseId && m.ProductId == wrongId))
+                .Should().BeTrue();
+        }
+        (await LoadAsync(document.Id)).Lines.Single(l => l.Id == lineId).ItemId.Should().Be(rightId);
     }
 
     private static List<PurchaseLineInput> DraftLines(PurchaseDraftDto draft, Guid warehouseId) =>

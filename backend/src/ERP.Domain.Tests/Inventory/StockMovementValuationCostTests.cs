@@ -19,6 +19,34 @@ namespace ERP.Domain.Tests.Inventory;
 /// </summary>
 public sealed class StockMovementValuationCostTests
 {
+    [Theory]
+    [InlineData(null, false, 1)]
+    [InlineData(0, false, 1)]
+    [InlineData(-1, false, 1)]
+    [InlineData(null, true, 1)]
+    [InlineData(-1, true, 1)]
+    [InlineData(0, true, 0)]
+    [InlineData(0, true, -1)]
+    public void Purchase_entry_rejects_unjustified_zero_unknown_negative_cost_or_invalid_free_quantity(
+        int? cost, bool documented, int quantity)
+    {
+        var create = () => StockMovement.Create(TenantId, BranchId, Guid.NewGuid(), Guid.NewGuid(),
+            StockMovementType.PurchaseEntry, quantity, "UNIT", 0m, 1, 0m, 0m,
+            new DateOnly(2026, 10, 29), null, Guid.NewGuid(), "PurchaseInvoice", UserId, CompanyId,
+            cost, sourceDocLineId: Guid.NewGuid(), documentedFreePurchase: documented);
+        create.Should().Throw<ERP.Domain.Exceptions.DomainRuleViolationException>();
+    }
+
+    [Fact]
+    public void Documented_free_purchase_requires_document_and_line_traceability()
+    {
+        var create = () => StockMovement.Create(TenantId, BranchId, Guid.NewGuid(), Guid.NewGuid(),
+            StockMovementType.PurchaseEntry, 1m, "UNIT", 0m, 1, 0m, 0m,
+            new DateOnly(2026, 10, 29), null, null, "PurchaseInvoice", UserId, CompanyId,
+            0m, documentedFreePurchase: true);
+        create.Should().Throw<ERP.Domain.Exceptions.DomainRuleViolationException>();
+    }
+
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid BranchId = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();

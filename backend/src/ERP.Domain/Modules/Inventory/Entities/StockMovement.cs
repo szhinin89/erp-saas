@@ -111,6 +111,7 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
     /// una salida puede tener <c>TotalCost</c> (necesario para costear COGS en Accounting) sin que
     /// eso implique que capturó un costo manual.
     /// </param>
+    /// <param name="documentedFreePurchase">Internal evidence validated against the confirmed purchase and its XML origin.</param>
     public static StockMovement Create(
         Guid tenantId,
         Guid branchId,
@@ -133,12 +134,17 @@ public sealed class StockMovement : AuditableEntity, ITenantScopedEntity, ICompa
         Guid? lotId = null,
         Guid? serialId = null,
         Guid? sourceDocLineId = null,
-        decimal? valuationUnitCost = null
+        decimal? valuationUnitCost = null,
+        bool documentedFreePurchase = false
     )
     {
         if (branchId == Guid.Empty)
             throw new ArgumentException("La sucursal es obligatoria.", nameof(branchId));
-        if (movementType == StockMovementType.PurchaseEntry && (unitCost is null or <= 0))
+        var knownFreePurchase = documentedFreePurchase && unitCost == 0m && quantity > 0m
+            && sourceDocId is { } doc && doc != Guid.Empty
+            && sourceDocLineId is { } line && line != Guid.Empty && sourceDocType == "PurchaseInvoice";
+        if (movementType == StockMovementType.PurchaseEntry
+            && (unitCost is null or < 0 || (unitCost == 0m && !knownFreePurchase)))
             throw new DomainRuleViolationException(
                 "El costo unitario es obligatorio y debe ser mayor a cero para entradas de compra."
             );

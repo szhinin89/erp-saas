@@ -25,6 +25,8 @@ Código: `ERP.Domain/Modules/Inventory`, `ERP.Application/Modules/Inventory`, `E
 
 - La secuencia, el costo promedio corrido y el valor corrido salen del último movimiento real de la clave, nunca de `CurrentStock`.
 - Las entradas usan el costo unitario del llamador. Las salidas sin costo propio consumen el promedio corrido y no lo alteran.
+  La excepción de costo conocido cero para promociones de compra se valida contra el documento
+  confirmado y su origen XML según [Compras § 4](./purchases.md#4-confirmación); no habilita entradas ordinarias gratuitas.
 - Escalas: el costo promedio usa `AverageCostDecimals` de la política de precisión de la empresa, que es obligatoria y falla cerrada ([data-standards.md](./data-standards.md#estándar-de-precisión-numérica)).
 - Importe monetario único: `StockMovement.TotalCost`, con `AccountingDecimals` de la misma política. El valor corrido es la suma exacta de esos importes; Contabilidad (costo de ventas, ajustes, devoluciones) y las obligaciones A2 usan el mismo importe.
 - Cantidad cero implica valor cero: la salida que vacía la bodega se lleva el valor restante (absorbe el residuo). Si el último movimiento quedó en cantidad cero, el siguiente parte de valor cero; los movimientos históricos no se modifican.

@@ -45,5 +45,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="TestData\NotaCreditoSinDescuento.xml" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\ERP.Application.Tests\TestData\SupplierInvoices\Disurgal-001-001-000005545.xml"
+              Link="TestData\Disurgal-001-001-000005545.xml" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 </Project>

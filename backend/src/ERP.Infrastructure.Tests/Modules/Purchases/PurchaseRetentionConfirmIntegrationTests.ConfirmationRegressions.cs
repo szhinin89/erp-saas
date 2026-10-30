@@ -72,12 +72,15 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
                 _supplierId, invoice.AccessKey!, invoice.InvoiceNumber, IssueDate, null, 100m, 15m, 115m, _userId);
             var sourceLine = PurchaseReceptionLine.Create(source.Id, _tenantId, "Servicio XML",
                 1m, 100m, "4", "2", 15m, 15m, 0m, 0m, 100m, 115m,
-                itemId: service.Id, matchStatus: ItemMatchStatus.ManuallyMatched);
+                itemId: service.Id, matchStatus: ItemMatchStatus.ManuallyMatched,
+                taxes: [("2", "4", 15m, 100m, 15m)]);
             const string xml = """
                 <factura><infoTributaria><ruc>1791352688001</ruc><razonSocial>Proveedor Retenido</razonSocial>
                 <codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000901</secuencial>
                 </infoTributaria><infoFactura><fechaEmision>17/09/2026</fechaEmision>
-                <totalSinImpuestos>100.00</totalSinImpuestos><importeTotal>115.00</importeTotal></infoFactura>
+                <totalSinImpuestos>100.00</totalSinImpuestos><importeTotal>115.00</importeTotal>
+                <totalConImpuestos><totalImpuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje>
+                <baseImponible>100.00</baseImponible><valor>15.00</valor></totalImpuesto></totalConImpuestos></infoFactura>
                 <detalles><detalle><descripcion>Servicio XML</descripcion><cantidad>1</cantidad>
                 <precioUnitario>100</precioUnitario><descuento>0</descuento><precioTotalSinImpuesto>100</precioTotalSinImpuesto>
                 <impuestos><impuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje><tarifa>15</tarifa>

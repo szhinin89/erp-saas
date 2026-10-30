@@ -8,6 +8,8 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Inventory.Policies;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 
 namespace ERP.Infrastructure.Persistence.Repositories.Inventory;
 
@@ -369,7 +371,8 @@ public sealed class StockRepository : IStockRepository
             // no hay costo manual) sigue alimentando SOLO TotalCost — vía el parámetro dedicado
             // valuationUnitCost, nunca UnitCost — para que Accounting pueda costear salidas sin que
             // eso se confunda con "esta salida capturó un costo manual".
-            valuationUnitCost: basis
+            valuationUnitCost: basis,
+            documentedFreePurchase: await IsDocumentedFreePurchaseAsync(r, ct)
         );
 
         var pendingCost = basis is null || (r.MovementType == StockMovementType.SaleExit && resultQty < 0m);
@@ -479,6 +482,25 @@ public sealed class StockRepository : IStockRepository
         stock.ApplyKardexMovement(movement, r.AllowNegativeSale, r.EnforceAvailability);
 
         return movement;
+    }
+
+    private async Task<bool> IsDocumentedFreePurchaseAsync(PendingMovement r, CancellationToken ct)
+    {
+        if (r.MovementType != StockMovementType.PurchaseEntry || r.UnitCost != 0m || r.TotalCost != 0m
+            || r.SourceDocType != "PurchaseInvoice" || r.SourceDocId is null || r.SourceDocLineId is null)
+            return false;
+        // Tracking returns the aggregate already confirmed/frozen by the handler, before its SaveChanges.
+        var invoice = await _db.Set<PurchaseInvoice>().Include(i => i.Lines)
+            .SingleOrDefaultAsync(i => i.TenantId == r.TenantId && i.CompanyId == r.CompanyId
+                && i.Id == r.SourceDocId, ct);
+        var line = invoice?.Lines.SingleOrDefault(l => l.Id == r.SourceDocLineId);
+        if (invoice is null || line?.PurchaseReceptionLineId is null)
+            return false;
+        var source = await _db.Set<PurchaseReceptionDocument>().Include(d => d.Lines)
+            .SingleOrDefaultAsync(d => d.TenantId == r.TenantId && d.CompanyId == r.CompanyId
+                && d.Lines.Any(l => l.Id == line.PurchaseReceptionLineId), ct);
+        return source is not null && PurchasePromotionCost.IsDocumentedFreeEntry(invoice, line, source,
+            r.ProductId, r.WarehouseId, r.Quantity, r.UomCode, r.UnitCost, r.TotalCost);
     }
 
     private async Task LockStockResourceAsync(PendingMovement r, CancellationToken ct)

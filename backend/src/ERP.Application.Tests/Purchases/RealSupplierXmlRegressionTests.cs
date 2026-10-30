@@ -172,6 +172,39 @@ public sealed class RealSupplierXmlRegressionTests
         (posting.CostSubtotal + posting.TotalVat + posting.TotalIce + posting.TotalIrbpnr).Should().Be(posting.GrandTotal);
         lines.Select(l => l.QuantityInBaseUom).Should().Equal(originals.Select(l => l.Quantity));
         lines.Where(l => l.DiscountPct == 100m).Should().OnlyContain(l => l.TotalLineCost == 0m);
+        lines.Should().HaveCount(13);
+        lines.Count(l => l.DiscountPct == 100m).Should().Be(4);
+        foreach (var line in lines)
+        {
+            var free = PurchasePromotionCost.IsDocumentedFreeEntry(invoice, line, source,
+                line.ItemId!.Value, invoice.GlobalWarehouseId!.Value, line.QuantityInBaseUom,
+                line.BaseUomCode, line.LandedUnitCost, line.TotalLineCost);
+            free.Should().Be(line.DiscountPct == 100m);
+            var movement = ERP.Domain.Modules.Inventory.Entities.StockMovement.Create(tenant, branch,
+                line.ItemId.Value, invoice.GlobalWarehouseId.Value,
+                ERP.Domain.Modules.Inventory.Enums.StockMovementType.PurchaseEntry,
+                line.QuantityInBaseUom, line.BaseUomCode, 0m, 1, 0m, 0m, invoice.IssueDate,
+                invoice.InvoiceNumber, invoice.Id, "PurchaseInvoice", user, company,
+                line.LandedUnitCost, sourceDocLineId: line.Id, documentedFreePurchase: free);
+            movement.UnitCost.Should().Be(line.LandedUnitCost);
+            movement.SourceDocLineId.Should().Be(line.Id);
+            if (free)
+            {
+                movement.TotalCost.Should().Be(0m);
+                PurchasePromotionCost.IsDocumentedFreeEntry(invoice, line, source,
+                    line.ItemId.Value, invoice.GlobalWarehouseId.Value, 0m,
+                    line.BaseUomCode, 0m, 0m).Should().BeFalse();
+                PurchasePromotionCost.IsDocumentedFreeEntry(invoice, line, source,
+                    Guid.NewGuid(), invoice.GlobalWarehouseId.Value, line.QuantityInBaseUom,
+                    line.BaseUomCode, 0m, 0m).Should().BeFalse();
+            }
+            else
+            {
+                PurchasePromotionCost.IsDocumentedFreeEntry(invoice, line, source,
+                    line.ItemId.Value, invoice.GlobalWarehouseId.Value, line.QuantityInBaseUom,
+                    line.BaseUomCode, 0m, 0m).Should().BeFalse();
+            }
+        }
         source.XmlContent.Should().Be(content);
         originals.Sum(l => l.LineSubtotal).Should().Be(473.78m);
         originals.Sum(l => l.TaxValue).Should().Be(71.06m);

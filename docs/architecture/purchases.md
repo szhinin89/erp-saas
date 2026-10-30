@@ -335,6 +335,13 @@ sin bodega y no genera inventario; Product conserva la exigencia de bodega.
   - Congela costos y resúmenes de impuestos.
   - Cronograma de pagos: el enviado; si no, el del borrador si cuadra con el total y no vence antes de la emisión; si no, el generado desde la condición. Nunca se ajusta en silencio.
   - `PurchaseEntry` por línea Product al costo unitario con flete/gastos incluidos, con la fecha de emisión.
+    Una entrada con costo cero solo se admite para una promoción XML documentada del 100 %:
+    compra confirmada y detalle congelado, neto y costo finales cero, descuento positivo que
+    agota el subtotal fiscal original y vínculo a esa línea de recepción. Se verifican identidad
+    fiscal, producto, bodega, unidad y cantidad base positiva del movimiento. No exige igualdad
+    de cantidad/precio operativos con el XML. Sin esa evidencia se mantiene el rechazo de costo
+    cero; costo nulo o negativo continúa bloqueado. La promoción conserva su línea, cantidad,
+    procedencia y costo conocido cero, sin ajustes ni costos artificiales.
   - CxP (`AccountsPayable`) si el total > 0. El total incluye los costos externos distribuidos; el transporte XML distribuido ya está en el total y no se suma otra vez.
   - Retención opcional ([backend.md § Retenciones](./backend.md#retenciones-una-capacidad-una-política-de-emisión-zh-retention-emission-ssot-01-zh-purchase-retention-confirm-01)).
   - Actualiza `Item.BaseSalePrice` con el PVP de la línea cuando difiere.

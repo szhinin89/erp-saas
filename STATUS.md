@@ -1,5 +1,52 @@
 # Project Status
 
+## BUG REAL DISURGAL — corregido; validación funcional del propietario PASS (2026-10-29)
+
+El rechazo reproducido provenía de StockMovement.Create: PurchaseEntry exigía costo > 0
+sin reconocer las promociones XML legítimas. El repositorio valida evidencia de la compra
+confirmada/detalle congelado y del origen fiscal antes de habilitar exclusivamente el cero
+documentado; compras ordinarias a cero, costo desconocido y negativo siguen bloqueados.
+Regla vigente: [Compras § 4](docs/architecture/purchases.md#4-confirmación).
+RED: las dos variantes DISURGAL reprodujeron el mensaje exacto; GREEN Application 74/74,
+Domain 13/13 y PostgreSQL desechable 2/2. La prueba real de confirmación conserva 13 líneas,
+4 promociones, XML intacto, Kardex 473.77 y CxP/asiento balanceado 544.84; la compra ordinaria
+con línea a cero revierte sin efectos persistidos. Compilación API con salida aislada PASS
+(la salida habitual estaba bloqueada por la API en ejecución); architecture:check PASS, cero
+infracciones nuevas, y git diff --check PASS. Sin cambios en bases existentes,
+modelo EF, migraciones, baseline, caso #32, staging, commit ni push; sin E2E/navegador/suites generales.
+Gate del propietario desde la raíz:
+`dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~RealSupplierXmlRegressionTests|FullyQualifiedName~ConfirmPurchaseHandlerTests|FullyQualifiedName~PurchaseXmlConfirmationGuardTests"`
+`dotnet test backend/src/ERP.Domain.Tests/ERP.Domain.Tests.csproj --no-restore --filter "FullyQualifiedName~StockMovementValuationCostTests"`
+`dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter "FullyQualifiedName~Disurgal_promotions_confirm|FullyQualifiedName~Ordinary_zero_cost_purchase"`
+El último comando requiere Docker/PostgreSQL desechable.
+Validación funcional del propietario (DISURGAL `001-001-000005545`): PASS. Confirmación real
+con 13 líneas y promociones del 100 %; inventario 858 unidades en 9 productos; Kardex e
+inventario valorado $473.77; CxP pendiente $544.84; asiento N.º 1 Debe Inventario $473.77 +
+IVA crédito tributario $71.07, Haber CxP $544.84; Libro Diario y Balance de Comprobación PASS;
+diferencia fiscal de $0.01 conciliada al confirmar. El PASS cubre solo este escenario: siguen
+pendientes ALPINA y los demás escenarios de Compras; Compras no CLOSED.
+
+## CI Infrastructure-01/06 Compras XML — fixtures alineados; pendiente gate del propietario (2026-10-29)
+
+Reproducidos localmente los 3 FAIL del CI `40973768743` (PostgreSQL desechable). Sin BUG REAL de producción;
+la corrección de promociones (entrada anterior) se conserva intacta.
+- `Xml_service_without_global_warehouse_confirms_without_inventory`: fixture incorrecto; la línea de
+  recepción no persistía su snapshot de impuestos y el XML no tenía `totalConImpuestos`.
+- `Resolved_XML_saves_and_confirms_with_correct_base_stock_cost_and_Kardex`: fixture incorrecto; el XML
+  sintético compartido (`BuildXml`) no tenía `totalConImpuestos`, una cabecera incompleta que
+  [Compras § 2](docs/architecture/purchases.md#2-borrador) rechaza.
+- `Draft_saved_before_a_correction_…`: expectativa desactualizada; `a55057a9c` retiró a propósito la
+  exigencia de volver a guardar (el producto operativo puede diferir del vínculo XML). Decisión del
+  propietario: alinear con la SSOT. El test pasa a llamarse
+  `Correction_after_saving_keeps_the_saved_operational_product` (borrador sin reescritura, confirma con B y
+  la recepción conserva C).
+KEEP: guard de snapshot XML, conciliación fiscal, XML original y código productivo; solo cambian pruebas.
+RED 0/3 → GREEN 3/3. Regresiones PASS: ambas clases de integración PostgreSQL 112/112 (incluyen promociones
+DISURGAL) y Application focal 74/74; `git diff --check` PASS.
+Gate del propietario (Docker):
+`dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter "FullyQualifiedName~ResolvePurchaseReceptionLinesIntegrationTests|FullyQualifiedName~PurchaseRetentionConfirmIntegrationTests"`.
+Sin BD, migraciones, baseline, caso #32, Ítems, suites generales, E2E, navegador, staging, commit ni push; no CLOSED.
+
 ## CI Compras XML V1 — pruebas alineadas; pendiente gate del propietario (2026-10-29)
 
 Reproducidos los 3 FAIL reportados para `217d81cd8` (CI `40969761501`, Backend application).

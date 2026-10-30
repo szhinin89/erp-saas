@@ -413,7 +413,9 @@ public sealed partial class ResolvePurchaseReceptionLinesIntegrationTests : IAsy
         return "<factura><infoTributaria><ruc>1710034065001</ruc><razonSocial>Distribuidora XML</razonSocial>"
             + $"<codDoc>01</codDoc><estab>001</estab><ptoEmi>001</ptoEmi><secuencial>{sequential}</secuencial>"
             + "</infoTributaria><infoFactura><fechaEmision>27/09/2026</fechaEmision>"
-            + $"<totalSinImpuestos>{N(total)}</totalSinImpuestos><importeTotal>{N(total)}</importeTotal></infoFactura>"
+            + $"<totalSinImpuestos>{N(total)}</totalSinImpuestos><importeTotal>{N(total)}</importeTotal>"
+            + "<totalConImpuestos><totalImpuesto><codigo>2</codigo><codigoPorcentaje>0</codigoPorcentaje>"
+            + $"<baseImponible>{N(total)}</baseImponible><valor>0.00</valor></totalImpuesto></totalConImpuestos></infoFactura>"
             + $"<detalles>{detail}</detalles></factura>";
     }
 
