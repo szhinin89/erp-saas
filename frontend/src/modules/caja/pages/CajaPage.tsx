@@ -1,3 +1,5 @@
+import { collectionDetailColumns } from "../components/collectionDetailColumns";
+import { SummaryCard } from "../components/SummaryCard";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
@@ -17,7 +19,7 @@ import {
   type BadgeVariant,
 } from "../../../components/PageShell";
 import { formatMoneyWithSymbol } from "../../../lib/sanitizers";
-import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatters";
+import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { useI18n } from "../../../i18n/i18n";
 import { useCajaPage } from "../hooks/useCajaPage";
 import { useState } from "react";
@@ -27,7 +29,6 @@ import type {
   CashMovementDto,
   CashClosingCountDto,
   CashSessionCollectionByMethodDto,
-  CashSessionCollectionDetailDto,
 } from "../api/cajaService";
 import { cashMovementTypeLabel } from "../constants/cashMovementTypes";
 import { ManualCashMovementModal } from "../components/ManualCashMovementModal";
@@ -234,53 +235,7 @@ export function CajaPage() {
     },
   ];
 
-  const collectionDetailColumns: ZHDataTableColumn<CashSessionCollectionDetailDto>[] = [
-    { key: "authorizedAt", header: t("caja.movements.table.date"), render: (d) => formatDateTime(d.authorizedAt) },
-    { key: "invoiceNumber", header: t("caja.session.invoice"), render: (d) => d.invoiceNumber },
-    { key: "customer", header: t("caja.session.customer"), render: (d) => d.customerName },
-    {
-      key: "invoiceTotal",
-      header: t("caja.session.invoiceTotal"),
-      align: "right",
-      cellClassName: "zh-table-cell--num",
-      render: (d) => <ZHMoneyValue value={d.invoiceTotal} precision="money" />,
-    },
-    {
-      key: "amount",
-      header: t("caja.session.methodAmount"),
-      align: "right",
-      cellClassName: "zh-table-cell--num",
-      render: (d) => <ZHMoneyValue value={d.amount} precision="money" />,
-    },
-    {
-      key: "mixed",
-      header: t("caja.session.paymentScope"),
-      align: "center",
-      render: (d) => (
-        <Badge
-          variant={d.isMixedPayment ? "warning" : "neutral"}
-          label={d.isMixedPayment ? t("caja.session.mixed") : t("caja.session.full")}
-        />
-      ),
-    },
-    { key: "reference", header: t("caja.session.referenceReceipt"), render: (d) => d.reference ?? "—" },
-    {
-      key: "destination",
-      header: t("caja.session.destination"),
-      render: (d) => {
-        if (!d.destinationBankName) return "—";
-        return (
-          <>
-            {d.destinationBankName}
-            {d.destinationAccountMasked ? ` — ${d.destinationAccountMasked}` : ""}
-            {d.transferDate ? (
-              <span className="cj-collection-transfer-date"> ({formatDate(d.transferDate)})</span>
-            ) : null}
-          </>
-        );
-      },
-    },
-  ];
+  const detailColumns = collectionDetailColumns(t);
 
   return (
     <PageShell
@@ -722,7 +677,7 @@ export function CajaPage() {
                           {t("caja.session.methodDetail", { method: expanded.paymentMethodName })}
                         </h5>
                         <ZHDataTable
-                          columns={collectionDetailColumns}
+                          columns={detailColumns}
                           rows={expanded.details}
                           rowKey={(d) => `${d.invoiceId}-${expanded.paymentMethodId}`}
                           tableClassName="table--compact table--neutral"
@@ -910,24 +865,5 @@ export function CajaPage() {
         )}
       </div>
     </PageShell>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`cj-summary-card${highlight ? " cj-summary-card--highlight" : ""}`}
-    >
-      <div className="cj-summary-card__label">{label}</div>
-      <div className="cj-summary-card__value">{value}</div>
-    </div>
   );
 }

@@ -1,5 +1,25 @@
 # Project Status
 
+## CI 2B-3 — corrección focal PR-7 — READY FOR REVIEW (2026-10-30)
+
+Clasificación: BUG REAL del gate en `598941f6f` (CI `41151151161`); KEEP comportamiento
+y cobertura de [2B-3](docs/architecture/company-readiness.md#habilitación-preventiva-de-cajas-apertura-de-jornada).
+Extracción literal de `SummaryCard` y columnas del detalle de cobros a `caja/components`, y de fixtures a
+`useCajaPage.testFixtures.ts`, conservando setup, cleanup y cuerpos de pruebas.
+PR-7: `CajaPage.tsx` 834/886 líneas no vacías; `useCajaPage.test.tsx` 1248/1390.
+Sin cambios en límites, excepciones, ADR-047, reglas fiscales, backend ni contratos.
+
+Evidencia agente: 72/72 pruebas focales, TypeScript, lint (0 errores; 37 advertencias),
+build, architecture:check (140/140 fixtures; cero infracciones nuevas), guardrails PowerShell (árbol completo y chunk) y `git diff --check` PASS.
+Gate del propietario desde `frontend`:
+`npx.cmd vitest run src/modules/caja/hooks/useCajaPage.test.tsx src/modules/caja/hooks/useCajaPage.closingCounts.test.tsx src/modules/caja/pages/CajaPage.openingReadiness.test.tsx`;
+`npx.cmd tsc -b --pretty false`; `npm.cmd run lint`; `npm.cmd run build`;
+`npm.cmd run architecture:check`.
+Desde raíz: `powershell -NoProfile -ExecutionPolicy Bypass -File tools/architecture/check-architecture-guardrails.ps1`;
+`git diff --check`.
+Pendiente revisión/gate del propietario y CI; no CLOSED. Sin staging, commit ni push;
+F-1 a F-5 no iniciadas.
+
 ## BUG REAL — diagnóstico de certificado SRI — IMPLEMENTADO — PASS FOCAL — PENDIENTE COMMIT/CI (2026-10-30)
 
 `ValidateSriConfigurationQueryHandler` podía devolver `IsValid=true` con certificado

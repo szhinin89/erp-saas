@@ -16,16 +16,15 @@ import { useActiveBranchStore } from "../../../store/activeBranchStore";
 import { useAuthStore } from "../../../store/authStore";
 import { cajaService } from "../api/cajaService";
 import type {
-  CashRegisterDto,
   CashSessionDto,
   CashSessionCollectionSummaryDto,
   CashMovementReasonDto,
   CashMovementDto,
 } from "../api/cajaService";
 import { useCajaPage } from "./useCajaPage";
+import { registers, buildSession, buildOperationalPreferences } from "./useCajaPage.testFixtures";
 import { message } from "../../../lib/messages";
 import { operationalPreferencesLookupFacade } from "../../configuracion/facades/operationalPreferencesLookupFacade";
-import type { OperationalPreferencesDto } from "../../configuracion/facades/operationalPreferencesLookupFacade";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
 import type { ElectronicInvoicingStatusDto } from "../../configuracion/facades/electronicInvoicingLookupFacade";
@@ -86,154 +85,6 @@ vi.mock("../../../lib/messages", () => ({
 function renderLastConfirmMessage() {
   const calls = vi.mocked(message.confirm).mock.calls;
   render(<>{calls[calls.length - 1][0].message}</>);
-}
-
-const registers: CashRegisterDto[] = [
-  {
-    id: "reg-1",
-    branchId: "branch-1",
-    branchName: "Matriz",
-    branchCode: "001",
-    emissionPointId: "ep-1",
-    establishmentCode: "001",
-    emissionPointCode: "001",
-    emissionPointName: null,
-    code: "CAJA-01",
-    name: "Caja Principal",
-    notes: null,
-    isActive: true,
-    hasHistory: false,
-    accountingAccountId: null,
-    defaultWarehouseId: null,
-    defaultWarehouseCode: null,
-    defaultWarehouseName: null,
-    defaultCustomerId: null,
-    defaultCustomerName: null,
-    createdAt: "2026-07-01T00:00:00Z",
-    updatedAt: null,
-  },
-  {
-    id: "reg-2",
-    branchId: "branch-1",
-    branchName: "Matriz",
-    branchCode: "001",
-    emissionPointId: "ep-1",
-    establishmentCode: "001",
-    emissionPointCode: "001",
-    emissionPointName: null,
-    code: "CAJA-02",
-    name: "Caja Secundaria",
-    notes: null,
-    isActive: true,
-    hasHistory: false,
-    accountingAccountId: null,
-    defaultWarehouseId: null,
-    defaultWarehouseCode: null,
-    defaultWarehouseName: null,
-    defaultCustomerId: null,
-    defaultCustomerName: null,
-    createdAt: "2026-07-01T00:00:00Z",
-    updatedAt: null,
-  },
-];
-
-function buildSession(overrides: Partial<CashSessionDto> = {}): CashSessionDto {
-  return {
-    id: "session-1",
-    companyId: "company-1",
-    branchId: "branch-1",
-    userId: "user-1",
-    cashRegisterId: "reg-1",
-    cashRegisterCodeSnapshot: "CAJA-01",
-    cashRegisterNameSnapshot: "Caja Principal",
-    emissionPointId: "ep-1",
-    emissionPointCodeSnapshot: "001",
-    emissionType: "Electronic",
-    defaultWarehouseId: null,
-    defaultWarehouseName: null,
-    defaultCustomerId: null,
-    defaultCustomerName: null,
-    openedAt: "2026-07-19T10:00:00Z",
-    openingAmount: 100,
-    status: "Open",
-    notes: null,
-    closedAt: null,
-    closedBy: null,
-    closeNotes: null,
-    expectedAmount: null,
-    countedAmount: null,
-    difference: null,
-    totalIncome: 0,
-    totalExpense: 0,
-    currentBalance: 100,
-    movements: [],
-    closingCounts: [],
-    createdAt: "2026-07-19T10:00:00Z",
-    updatedAt: null,
-    ...overrides,
-  };
-}
-
-/** DTO mínimo de settings.operations — solo `cash.allowManualInOutMovements` importa a Caja;
- * el resto se rellena con valores neutros para satisfacer el tipo del mock. */
-function buildOperationalPreferences(
-  allowManualInOutMovements = true,
-): OperationalPreferencesDto {
-  return {
-    salesPos: {
-      requireOpenCashSession: true,
-      allowManualPrice: false,
-      allowManualDiscount: true,
-      maxDiscountPercent: 0,
-      requireCustomerAboveAmount: null,
-      allowSellWithoutStock: false,
-      askBeforeIssue: false,
-      defaultPriceListId: null,
-      defaultCustomerId: null,
-    },
-    cash: {
-      requireOpeningAmount: true,
-      allowCloseWithDifference: true,
-      maxAllowedDifference: 0,
-      requireReasonForDifference: true,
-      allowManualInOutMovements,
-      requireReasonForMovements: true,
-    },
-    purchases: {
-      defaultWarehouseId: null,
-      allowConfirmWithoutReceptionXml: true,
-      updateCostOnConfirm: true,
-      allowManualCostChange: true,
-      requireReasonForCostChange: false,
-    },
-    payables: { allowSupplierPaymentWithoutPayable: false },
-    inventory: {
-      allowNegativeStock: false,
-      stockControlEnabled: true,
-      requireReasonForAdjustment: true,
-      requireApprovalForLargeAdjustment: false,
-      largeAdjustmentThresholdAmount: 0,
-    },
-    printing: {
-      salesReceiptMode: "AskBeforePrint",
-      salesReceiptCopies: 1,
-      salesReceiptPaperWidth: "80mm",
-      salesReceiptIncludeLogo: false,
-      salesReceiptIncludeAccessKey: true,
-      salesReceiptIncludeCashier: true,
-      salesReceiptOpenCashDrawer: false,
-    },
-    electronicDocuments: {
-      autoRetryEnabled: true,
-      maxRetryAttempts: 3,
-      generateRideOnAuthorization: true,
-      emailOnAuthorization: true,
-    },
-    notifications: {
-      sendCopyToCompanyEmail: false,
-      defaultLanguage: "es",
-    },
-  };
 }
 
 /** Reemplaza el array `closingCounts` completo. El input registrado de la pantalla real cambia la
