@@ -98,19 +98,92 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
     }
 
     [Fact]
-    public async Task Pending_retries_excludes_documents_that_exhausted_max_attempts()
+    public async Task Pending_retries_excludes_exhausted_failures_and_keeps_sri_outcome_pending()
     {
+        // R11: Signed/Received sobre el máximo siguen en consulta automática dentro de la ventana de
+        // 24 h (la cierra el DeadLetter del issuer); Failed agotado sale del contador.
         await SeedAsync(
             _tenantId,
             _companyId,
             (ElectronicDocumentState.Signed, ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default),
+            (ElectronicDocumentState.Received, ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 7),
             (ElectronicDocumentState.Failed, ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 1)
         );
 
         var count = await CountPendingRetriesAsync();
 
-        count.Should().Be(0);
+        count.Should().Be(2);
     }
+
+    [Fact]
+    public async Task Retry_candidates_keep_sri_outcome_pending_past_maximum_with_backoff_capped_at_60_minutes_in_SQL()
+    {
+        var max = ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default;
+        Guid due, inBackoff, exhaustedFailed;
+        await using (var db = NewDbContext(_tenantId, _companyId))
+        {
+            ElectronicDocument Seed(ElectronicDocumentState state, int retryCount, TimeSpan ago)
+            {
+                var document = ElectronicDocument.Create(_tenantId, _companyId,
+                    ElectronicDocumentType.Invoice, "Sales", Guid.NewGuid(), _userId);
+                SetProperty(document, nameof(ElectronicDocument.CurrentState), state);
+                SetProperty(document, nameof(ElectronicDocument.RetryCount), retryCount);
+                SetProperty(document, nameof(ElectronicDocument.LastAttemptUtc), DateTime.UtcNow - ago);
+                db.ElectronicDocuments.Add(document);
+                return document;
+            }
+            due = Seed(ElectronicDocumentState.Received, max + 5, TimeSpan.FromMinutes(61)).Id;
+            inBackoff = Seed(ElectronicDocumentState.Received, max + 5, TimeSpan.FromMinutes(45)).Id;
+            exhaustedFailed = Seed(ElectronicDocumentState.Failed, max, TimeSpan.FromDays(1)).Id;
+            await db.SaveChangesAsync();
+        }
+
+        await using var query = NewDbContext(_tenantId, _companyId);
+        var candidates = (await NewRepository(query).GetRetryCandidatesAsync(50))
+            .Select(c => c.ElectronicDocumentId).ToList();
+
+        candidates.Should().Contain(due);
+        candidates.Should().NotContain(inBackoff, "2^n supera el tope y aplica 60 min, no 16");
+        candidates.Should().NotContain(exhaustedFailed);
+    }
+
+    [Fact]
+    public async Task First_received_at_comes_from_the_document_timeline_within_tenant()
+    {
+        var document = ElectronicDocument.Create(_tenantId, _companyId,
+            ElectronicDocumentType.Invoice, "Sales", Guid.NewGuid(), _userId);
+        var signedAt = DateTime.UtcNow.AddHours(-30);
+        await using (var db = NewDbContext(_tenantId, _companyId))
+        {
+            db.ElectronicDocuments.Add(document);
+            foreach (var (to, at) in new[]
+                     {
+                         (ElectronicDocumentState.Draft, signedAt.AddMinutes(-5)),
+                         (ElectronicDocumentState.Signed, signedAt),
+                         (ElectronicDocumentState.Received, signedAt.AddMinutes(1)),
+                     })
+            {
+                var audit = ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocumentAudit.Create(
+                    new ERP.Domain.Audit.AuditActor(_tenantId, _userId, "test", null, null, null, null, null,
+                        ERP.Domain.Audit.AuditSource.System),
+                    _companyId, document.Id, "StateChanged", ElectronicDocumentType.Invoice, null, to);
+                SetAuditOccurredAt(audit, at);
+                db.Add(audit);
+            }
+            await db.SaveChangesAsync();
+        }
+
+        await using var read = NewDbContext(_tenantId, _companyId);
+        (await NewRepository(read).GetFirstReceivedAtUtcAsync(_tenantId, document.Id))
+            .Should().BeCloseTo(signedAt.AddMinutes(1), TimeSpan.FromMilliseconds(1), "RECIBIDA, no la firma");
+        await using var foreign = NewDbContext(Guid.NewGuid(), _companyId);
+        (await NewRepository(foreign).GetFirstReceivedAtUtcAsync(_tenantId, document.Id)).Should().BeNull();
+    }
+
+    private static void SetAuditOccurredAt(object audit, DateTime value) =>
+        typeof(ERP.Domain.Audit.AuditRecordBase)
+            .GetProperty(nameof(ERP.Domain.Audit.AuditRecordBase.OccurredAtUtc))!
+            .SetMethod!.Invoke(audit, new object[] { value });
 
     [Fact]
     public async Task Pending_retries_excludes_other_company_and_other_tenant()

@@ -1,5 +1,22 @@
 # Project Status
 
+## SRI 2.34 — cierre de conformidad — READY FOR REVIEW (2026-10-31)
+
+Base `main@8e5bfde66`. Matriz R01–R35, evidencia y bloqueos: [SRI-2.34-COMPLIANCE-CLOSURE](docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md).
+Contrato: [backend.md § Límites y finalización](docs/architecture/backend.md#límites-y-finalización);
+addendum 2026-10-31 de [ADR-023](docs/decisions/ADR-023-electronic-documents-v1-closure.md).
+CORREGIDO (focal, núcleo FROZEN): R11 consulta de resultado SRI pendiente durante 24 h desde RECIBIDA (mismo job
+y política), R13 DEVUELTA 50, R14 varias `<autorizacion>`, R16 tamaño del XML firmado (límite provisional), R23
+`contribuyenteEspecial` en 01/04; ambiente ↔ host oficial SRI validado al guardar y antes de emitir.
+
+PASS agente: Application 528/528 (ajustes finales), PostgreSQL real R11 28/28, Infrastructure SRI + PostgreSQL
+185/185 (entrega previa), API job 9/9, Architecture
+143/143, guardrails PowerShell y `architecture:check` (0 nuevas), `git diff --check`; RED controlado de R11, R13
+y R14. Sin SRI real, suites completas, migraciones, frontend, staging, commit ni push.
+
+BLOCKED (detalle en la matriz): R12, R20, R21/R22, R32 (reenvío de lo nunca registrado), §N; limitados: R16
+(unidad), R11 sin evidencia de recepción (consulta sin plazo) y hosts no oficiales. Pendiente aceptación real en `celcer` de 04, 07 y de 01/04 con `contribuyenteEspecial`. No CLOSED.
+
 ## P0 instalación limpia — READY FOR REVIEW (2026-10-31)
 
 Base `main@d462cddde19a0b8196cf75089f388a4316dae2ad`, CI SUCCESS confirmado por el
@@ -907,11 +924,14 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   [security.md](docs/architecture/security.md#permisos-vs-política-de-flujo-documental-document-flow-policy-01).
   La aprobación es intención futura en [ROADMAP](docs/ROADMAP.md#etapa-1--completar-erp-core).
 - **Comprobantes electrónicos sin respuesta concluyente (Caso #32, PASS integración focal; pendiente E2E SRI):** se
-  consultan, nunca se reenvían; la conciliación manual solo registra evidencia y reconsulta.
-  Un comprobante que el SRI nunca recibió queda en "Requiere conciliación" sin camino de
-  reenvío. Sigue sin decisión el tratamiento de comprobantes de retención anteriores al ciclo
+  consultan durante el plazo de 24 h del SRI, nunca se reenvían; la conciliación manual solo registra evidencia
+  y reconsulta. Un comprobante que el SRI nunca recibió queda en "Requiere conciliación" sin camino de
+  reenvío (R32 BLOCKED). Sigue sin decisión el tratamiento de comprobantes de retención anteriores al ciclo
   actual cuyo origen ya fue anulado (antes O-1/O-9): admiten evidencia, no consulta.
   Contrato: [backend.md](docs/architecture/backend.md#límites-y-finalización).
+- **Comprobante electrónico que excede el tamaño admitido (R16):** se bloquea antes del envío y no tiene
+  recuperación automática; Ventas no limita líneas (≈ 420 ítems en el peor caso medido). Decisión pendiente del
+  propietario. Detalle: [matriz SRI §5.6](docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md#5-limitaciones-externas-y-puntos-blocked).
 - **Logs de autenticación anteriores a la corrección de AUTH sensitive logging:** pueden
   contener el campo `successorHash` del evento de rotación de refresh token. No se acredita
   exposición ni incidente; su revisión o depuración depende de la operación de cada entorno.

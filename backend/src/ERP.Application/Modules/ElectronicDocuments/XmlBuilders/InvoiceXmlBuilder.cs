@@ -262,6 +262,10 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
                 data.Emission.IssueDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
             ),
             new XElement("dirEstablecimiento", data.Emission.EstablishmentAddress),
+            // factura_V1.1.0.xsd: contribuyenteEspecial va entre dirEstablecimiento y obligadoContabilidad.
+            string.IsNullOrWhiteSpace(data.Issuer.SpecialTaxpayerNumber)
+                ? null
+                : new XElement("contribuyenteEspecial", data.Issuer.SpecialTaxpayerNumber),
             new XElement("obligadoContabilidad", data.Issuer.IsAccountingRequired ? "SI" : "NO"),
             new XElement("tipoIdentificacionComprador", data.Counterparty.IdentificationType),
             new XElement("razonSocialComprador", data.Counterparty.LegalName),

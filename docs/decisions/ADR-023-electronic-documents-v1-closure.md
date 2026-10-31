@@ -190,6 +190,32 @@ respuesta válida del SRI.
 **Sin cambios:** estados, transiciones existentes, `SriSoapClient`, firma, XML, jobs y la política de reintentos.
 Contrato: [Backend § Límites y finalización](../architecture/backend.md#límites-y-finalización).
 
+## Addendum (2026-10-31): cierre de conformidad SRI 2.34 — cambios focales (causas 1 y 2)
+
+Hallazgos vigentes de la [auditoría 2.34](../sri/SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md), con fuente en la
+Ficha Técnica Offline (tabla de errores y notas 1–2, §7.5, Anexos 1 y 3). Informe:
+[SRI-2.34-COMPLIANCE-CLOSURE](../sri/SRI-2.34-COMPLIANCE-CLOSURE.md).
+
+- **R14 (causa 2):** `SriSoapClient.ParseAutorizacionResponse` elige la `<autorizacion>` AUTORIZADO si la
+  respuesta trae varias (el SRI conserva los NO AUTORIZADO previos de la misma clave); si ninguna lo es, la primera.
+- **R13 (causa 2):** DEVUELTA cuyos mensajes son todos código 50 (error interno del SRI; los devueltos no se
+  guardan) no se marca `Rejected`: el documento conserva su estado como un fallo de transporte y el Caso #32
+  rige (solo consulta, sin reenvío automático).
+- **R16 (causa 1):** XML firmado > 320 × 1024 bytes (§7.5 "320 Kb", error 26; límite provisional, la ficha no
+  define la unidad) → `Failed` antes de almacenar, firmar como `Signed` o transmitir; el secuencial ya fue
+  consumido por el origen.
+- **R11 (causa 1):** el máximo de reintentos de la empresa ya no corta la consulta de `Signed`/`Received` antes
+  del plazo del SRI (24 h desde RECIBIDA, §7.5 y nota 2): siguen en el job (solo consulta, backoff ≤ 60 min)
+  hasta 24 h desde el primer `Received` del timeline; después, DeadLetter con conciliación pendiente. Sin
+  evidencia de recepción no se aplica DeadLetter por plazo (fail-closed).
+- **R23 (causa 1):** `contribuyenteEspecial` en Factura y Nota de crédito ("obligatorio cuando corresponda")
+  desde `ElectronicDocumentIssuerData.SpecialTaxpayerNumber` (← `Company.SpecialTaxpayerNo`), fuente única
+  también para Retención (antes en `RetentionElectronicDocumentInfo`; XML de retención idéntico).
+
+**Sin cambios:** estados y transiciones, firma, endpoints, clave de acceso, secuenciales, tratamiento
+70/43/45, ConsultaComprobante, scheduler/jobs, migraciones, XSD y catálogos. Contrato vigente:
+[backend.md § Límites y finalización](../architecture/backend.md#límites-y-finalización).
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

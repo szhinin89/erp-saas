@@ -9,6 +9,14 @@ public interface IElectronicDocumentRepository
     Task<ElectronicDocument?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// R11 — instante de la primera transición a Received registrada en el timeline del comprobante
+    /// (<see cref="ElectronicDocumentAudit"/>, persistido en la misma transacción que el estado): el ERP
+    /// recibió RECIBIDA (o 70/43/45, envío anterior ya registrado) y desde ahí corre el plazo del SRI.
+    /// <c>null</c> si no hay evidencia de recepción (p. ej. <c>Signed</c> tras un fallo de transporte).
+    /// </summary>
+    Task<DateTime?> GetFirstReceivedAtUtcAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
+    /// <summary>
     /// Busca el documento electrónico registrado para un documento de origen específico —
     /// es el punto de acceso que usarán los módulos consumidores (conocen su propio
     /// SourceModule/SourceEntityId, no el Id interno de ElectronicDocument).
@@ -74,7 +82,8 @@ public interface IElectronicDocumentRepository
     /// <summary>
     /// "Reintentos pendientes": documentos en un estado que el job automático de reintentos
     /// atiende (ElectronicDocumentRetryPolicy.AutomaticRetryStates), con al menos un reintento
-    /// registrado (RetryCount &gt; 0) y que todavía no agotaron el máximo efectivo de empresa. Un documento que ya
+    /// registrado (RetryCount &gt; 0) y que todavía no agotaron el máximo efectivo de empresa (o con resultado
+    /// SRI pendiente, que sigue en consulta hasta la ventana de 24 h — R11). Un documento que ya
     /// salió de esos estados (p.ej. Authorized) no cuenta aunque conserve RetryCount histórico.
     /// </summary>
     Task<int> CountPendingRetriesAsync(

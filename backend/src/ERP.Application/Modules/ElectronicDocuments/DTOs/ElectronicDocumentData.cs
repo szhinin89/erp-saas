@@ -83,7 +83,12 @@ public sealed record ElectronicDocumentIssuerData(
     /// contribuyentes de régimen general o especial (no aplica). El XmlBuilder solo decide si
     /// incluye el elemento; nunca traduce códigos de régimen.</summary>
     string? TaxRegime,
-    bool IsAccountingRequired
+    bool IsAccountingRequired,
+    /// <summary>contribuyenteEspecial — número de resolución copiado tal cual de
+    /// <c>Company.SpecialTaxpayerNo</c>; <c>null</c> si no aplica (el elemento SRI se omite). Fuente
+    /// única para los tres tipos (Factura, Nota de crédito y Retención: "Obligatorio cuando
+    /// corresponda", Ficha Técnica Offline, Anexos 3 y 1); cada builder lo ubica según su XSD.</summary>
+    string? SpecialTaxpayerNumber = null
 );
 
 /// <summary>Cliente/receptor del comprobante — identificación y dirección.</summary>

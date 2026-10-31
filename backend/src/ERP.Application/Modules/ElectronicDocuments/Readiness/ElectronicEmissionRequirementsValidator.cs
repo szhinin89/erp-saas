@@ -116,7 +116,7 @@ public sealed class ElectronicEmissionRequirementsValidator
         if (settings.Environment
             is not (SriEnvironmentCodes.TestingValue or SriEnvironmentCodes.ProductionValue))
             Add(RequirementCodes.SriEnvironment, ReadinessActionTarget.ElectronicInvoicingSettings);
-        if (!SriWsdlUrl.IsValid(settings.WsdlUrl))
+        if (!SriWsdlUrl.IsValidFor(settings.WsdlUrl, settings.Environment))
             Add(RequirementCodes.SriWsdlUrl, ReadinessActionTarget.ElectronicInvoicingSettings);
 
         var certificateIssue = await ResolveCertificateIssueAsync(settings, ct);

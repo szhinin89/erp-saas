@@ -317,7 +317,7 @@ public sealed class ProviderRucXmlComplianceTests
                 null,
                 true
             ),
-            RetentionInfo: new RetentionElectronicDocumentInfo(null, "11/2026"),
+            RetentionInfo: new RetentionElectronicDocumentInfo("11/2026"),
             SubjectWithheld: new ElectronicDocumentCounterpartyData(
                 "04",
                 "1792146739001",

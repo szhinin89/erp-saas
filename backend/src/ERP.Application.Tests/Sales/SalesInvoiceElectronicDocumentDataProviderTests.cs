@@ -296,6 +296,27 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         result.Value.Issuer.LegalName.Should().Be("Empresa Test S.A.");
     }
 
+    [Fact]
+    public async Task GetDataAsync_Issuer_incluye_contribuyente_especial_de_Company()
+    {
+        // R23 (auditoría SRI 2.34): contribuyenteEspecial sale de Company.SpecialTaxpayerNo, la misma
+        // fuente que ya usaba la Retención.
+        var invoice = BuildAuthorizedInvoiceWithPresentationLine();
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        var company = Company.CreateManaged(TenantId, "1790012345001", "Empresa Test S.A.", createdBy: UserId);
+        company.UpdateFiscalSettings(null, true, "5368", false, false, false, UserId);
+        m.CompanyRepo
+            .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Issuer.SpecialTaxpayerNumber.Should().Be("5368");
+    }
+
     // ── TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5C) ──────────────────────────────
 
     private static SalesInvoiceDetail CreateAuthorizedLine(

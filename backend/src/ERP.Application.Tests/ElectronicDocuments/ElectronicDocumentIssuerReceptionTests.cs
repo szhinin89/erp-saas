@@ -9,6 +9,7 @@ using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -51,7 +52,8 @@ public sealed class ElectronicDocumentIssuerReceptionTests
         Mock<IElectronicDocumentRepository> repository,
         Mock<IElectronicDocumentReceptionService> reception,
         Mock<IElectronicDocumentAuthorizationService> authorization,
-        Mock<IElectronicDocumentXmlStorageService>? storageServiceOverride = null
+        Mock<IElectronicDocumentXmlStorageService>? storageServiceOverride = null,
+        string signedXmlContent = "<factura><ds:Signature/></factura>"
     )
     {
         var providerMock = new Mock<IElectronicDocumentDataProvider>();
@@ -102,7 +104,7 @@ public sealed class ElectronicDocumentIssuerReceptionTests
             .Returns(validatorMock.Object);
 
         var signedXml = new SignedElectronicDocumentXml(
-            "<factura><ds:Signature/></factura>",
+            signedXmlContent,
             "UTF-8",
             "1.1.0",
             ElectronicDocumentType.Invoice,
@@ -237,6 +239,29 @@ public sealed class ElectronicDocumentIssuerReceptionTests
         return reception;
     }
 
+    private static Mock<IElectronicDocumentReceptionService> ReceptionReturningMessages(
+        string status,
+        params SriMessage[] messages
+    )
+    {
+        var reception = new Mock<IElectronicDocumentReceptionService>();
+        reception
+            .Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<SriReceptionResult>.Success(
+                    new SriReceptionResult
+                    {
+                        Status = status,
+                        Errors = messages
+                            .Select(m => $"[{m.Code}] {m.Message}: {m.AdditionalInfo}")
+                            .ToList(),
+                        StructuredMessages = messages,
+                    }
+                )
+            );
+        return reception;
+    }
+
     // ── RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: primer tramo vía supplier ──
 
     [Fact]
@@ -358,6 +383,116 @@ public sealed class ElectronicDocumentIssuerReceptionTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.CurrentState.Should().Be(ElectronicDocumentState.Authorized.ToString());
+    }
+
+    // ── R13 (auditoría SRI 2.34): DEVUELTA por error interno del SRI (código 50) ──
+
+    [Fact]
+    public async Task RegisterAsync_when_sri_returns_internal_error_50_does_not_reject_and_stays_signed()
+    {
+        // Código 50 "Error interno general" — "Cuando ocurre un error inesperado en el servidor"
+        // (tabla de errores de RECEPCIÓN). Es una falla del SRI, no del comprobante, y los devueltos no
+        // se guardan en el SRI (nota 1): no es un rechazo definitivo. Igual que un fallo de transporte,
+        // el documento queda en Signed — sin Sent/Rejected, sin consultar autorización en este intento.
+        var repository = new Mock<IElectronicDocumentRepository>();
+        var reception = ReceptionReturningMessages(
+            "DEVUELTA",
+            new SriMessage("50", "ERROR", "ERROR INTERNO GENERAL", "Error inesperado en el servidor")
+        );
+        var authorization = UnreachableAuthorization();
+        ElectronicDocument? added = null;
+        var issuer = BuildIssuer(repository, reception, authorization);
+        repository
+            .Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+            .Callback<ElectronicDocument, CancellationToken>((d, _) => added = d)
+            .Returns(Task.CompletedTask);
+
+        var result = await issuer.RegisterAsync(SampleRequest());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.CurrentState.Should().Be(ElectronicDocumentState.Signed.ToString());
+        added!.RequiresSriReconciliation.Should().BeTrue();
+        added.DomainEvents.Should().NotContain(e => e is ERP.Domain.Modules.ElectronicDocuments.Events.ElectronicDocumentRejectedEvent);
+        authorization.Verify(
+            a => a.CheckAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        repository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task RegisterAsync_when_devuelta_mixes_internal_error_50_with_a_definitive_error_is_rejected()
+    {
+        // Solo una DEVUELTA cuyos mensajes son todos 50 es transitoria; un error de validación del
+        // comprobante en la misma respuesta conserva el rechazo existente.
+        var repository = new Mock<IElectronicDocumentRepository>();
+        var reception = ReceptionReturningMessages(
+            "DEVUELTA",
+            new SriMessage("50", "ERROR", "ERROR INTERNO GENERAL", null),
+            new SriMessage("35", "ERROR", "DOCUMENTO INVALIDO", "estructura incorrecta")
+        );
+        var issuer = BuildIssuer(repository, reception, UnreachableAuthorization());
+
+        var result = await issuer.RegisterAsync(SampleRequest());
+
+        result.Value!.CurrentState.Should().Be(ElectronicDocumentState.Rejected.ToString());
+    }
+
+    // ── R16 (auditoría SRI 2.34): tamaño máximo por comprobante individual (§7.5, error 26) ──
+
+    [Fact]
+    public async Task RegisterAsync_when_signed_xml_exceeds_320_kb_fails_before_storage_and_reception()
+    {
+        var repository = new Mock<IElectronicDocumentRepository>();
+        var reception = ReceptionReturning("RECIBIDA");
+        var storage = new Mock<IElectronicDocumentXmlStorageService>();
+        var oversized = "<factura>" + new string('x', 320 * 1024) + "</factura>";
+        var issuer = BuildIssuer(
+            repository,
+            reception,
+            UnreachableAuthorization(),
+            storage,
+            signedXmlContent: oversized
+        );
+
+        var result = await issuer.RegisterAsync(SampleRequest());
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("320 KB");
+        storage.Verify(
+            s => s.StoreAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<ElectronicDocumentType>(),
+                It.IsAny<Guid>(),
+                It.IsAny<ElectronicDocumentXml>(),
+                It.IsAny<SignedElectronicDocumentXml>(),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Never
+        );
+        reception.Verify(
+            r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task RegisterAsync_when_signed_xml_is_exactly_320_kb_is_transmitted()
+    {
+        var repository = new Mock<IElectronicDocumentRepository>();
+        var reception = ReceptionReturning("RECIBIDA");
+        const string open = "<factura>", close = "</factura>";
+        var atLimit = open + new string('x', 320 * 1024 - open.Length - close.Length) + close;
+        var issuer = BuildIssuer(
+            repository,
+            reception,
+            UnreachableAuthorization(),
+            signedXmlContent: atLimit
+        );
+
+        var result = await issuer.RegisterAsync(SampleRequest());
+
+        result.Value!.CurrentState.Should().Be(ElectronicDocumentState.Received.ToString());
     }
 
     [Fact]

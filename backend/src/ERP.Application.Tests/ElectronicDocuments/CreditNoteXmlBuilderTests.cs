@@ -98,6 +98,34 @@ public sealed class CreditNoteXmlBuilderTests
     }
 
     [Fact]
+    public void Build_con_contribuyente_especial_lo_emite_en_el_orden_del_xsd_y_pasa_el_xsd_oficial()
+    {
+        // R23 (auditoría SRI 2.34): misma fuente única que Factura y Retención
+        // (ElectronicDocumentIssuerData.SpecialTaxpayerNumber ← Company.SpecialTaxpayerNo).
+        var data = ValidData();
+        data = data with { Issuer = data.Issuer with { SpecialTaxpayerNumber = "5368" } };
+
+        var result = new CreditNoteXmlBuilder(TaxResolver().Object).Build(data);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result
+            .Value!.Xml.Should()
+            .Contain(
+                "<identificacionComprador>1710034065</identificacionComprador><contribuyenteEspecial>5368</contribuyenteEspecial><obligadoContabilidad>"
+            );
+        ValidateAgainstOfficialXsd(result.Value.Xml);
+    }
+
+    [Fact]
+    public void Build_sin_contribuyente_especial_omite_el_elemento()
+    {
+        var result = new CreditNoteXmlBuilder(TaxResolver().Object).Build(ValidData());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Xml.Should().NotContain("contribuyenteEspecial");
+    }
+
+    [Fact]
     public void Build_incluye_el_motivo_y_la_referencia_al_comprobante_modificado()
     {
         var builder = new CreditNoteXmlBuilder(TaxResolver().Object);

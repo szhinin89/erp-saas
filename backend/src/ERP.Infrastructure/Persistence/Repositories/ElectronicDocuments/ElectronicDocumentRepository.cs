@@ -27,6 +27,19 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
         CancellationToken ct = default
     ) => _db.ElectronicDocuments.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
 
+    public Task<DateTime?> GetFirstReceivedAtUtcAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default
+    ) =>
+        _db.Set<ElectronicDocumentAudit>()
+            .Where(a =>
+                a.TenantId == tenantId
+                && a.EntityId == id
+                && a.ToState == ElectronicDocumentState.Received
+            )
+            .MinAsync(a => (DateTime?)a.OccurredAtUtc, ct);
+
     public Task<ElectronicDocument?> GetBySourceAsync(
         Guid tenantId,
         string sourceModule,
@@ -189,7 +202,7 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
     private IQueryable<ElectronicDocument> WithinRetryMaximum(IQueryable<ElectronicDocument> documents)
     {
         var settings = RetryMaximumSettings();
-        return documents.Where(ElectronicDocumentRetryPolicy.WithinMaximum(x => settings
+        return documents.Where(ElectronicDocumentRetryPolicy.WithinAutomaticBudget(x => settings
             .Where(s => s.TenantId == x.TenantId && s.CompanyId == x.CompanyId)
             .Select(s => s.Value).FirstOrDefault()));
     }

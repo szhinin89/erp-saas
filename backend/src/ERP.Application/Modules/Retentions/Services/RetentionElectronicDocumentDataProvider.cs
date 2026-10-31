@@ -221,10 +221,10 @@ public sealed class RetentionElectronicDocumentDataProvider
                 TradeName: company.TradeName,
                 MatrixAddress: mainEstablishment!.Address,
                 TaxRegime: ResolveContribuyenteRimpeText(company.TaxRegime),
-                IsAccountingRequired: company.IsAccountingReq
+                IsAccountingRequired: company.IsAccountingReq,
+                SpecialTaxpayerNumber: company.SpecialTaxpayerNo
             ),
             RetentionInfo: new RetentionElectronicDocumentInfo(
-                SpecialTaxpayerNumber: company.SpecialTaxpayerNo,
                 FiscalPeriod: retention.FiscalPeriod!
             ),
             SubjectWithheld: new ElectronicDocumentCounterpartyData(

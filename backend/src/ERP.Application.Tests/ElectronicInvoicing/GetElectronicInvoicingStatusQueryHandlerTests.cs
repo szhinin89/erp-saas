@@ -123,9 +123,23 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             Guid.NewGuid(),
             environment: environment,
             emissionType: 1,
-            wsdlUrl: "https://celcer.sri.gob.ec/wsdl",
+            // Host oficial coherente con el ambiente (Ficha §7.1): celcer = Pruebas, cel = Producción.
+            wsdlUrl: environment == 2 ? "https://cel.sri.gob.ec/wsdl" : "https://celcer.sri.gob.ec/wsdl",
             createdBy: Guid.NewGuid()
         );
+
+    [Fact]
+    public async Task Handle_production_with_the_testing_official_host_is_incomplete()
+    {
+        var settings = SriSettings.Create(Guid.NewGuid(), Guid.NewGuid(), environment: 2, emissionType: 1,
+            wsdlUrl: "https://celcer.sri.gob.ec/wsdl", createdBy: Guid.NewGuid());
+        var handler = BuildHandler(settings, ValidCert);
+
+        var result = await handler.Handle(new GetElectronicInvoicingStatusQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Status.Should().Be(ElectronicInvoicingStatus.Incomplete);
+    }
 
     [Fact]
     public async Task Handle_without_sri_settings_returns_not_configured()

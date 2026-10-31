@@ -188,9 +188,11 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
     {
         var authorized = await SeedAsync(_a1, ElectronicDocumentState.Authorized);
         var deadLetter = await SeedAsync(_a1, ElectronicDocumentState.DeadLetter);
+        // R11: un resultado SRI pendiente (Signed/Received) sigue elegible sobre el máximo; el
+        // agotamiento que excluye al job es el de las etapas previas a la firma.
         var exhausted = await SeedAsync(
             _a1,
-            ElectronicDocumentState.Signed,
+            ElectronicDocumentState.Failed,
             retryAttempts: ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default
         );
         var inBackoff = await SeedAsync(
@@ -212,6 +214,37 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
             .Be(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default);
         (await ReadAsync(inBackoff)).RetryCount.Should().Be(1);
         (await ReadAsync(autoRetryOff)).RetryCount.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData(ElectronicDocumentState.Signed)]
+    [InlineData(ElectronicDocumentState.Received)]
+    public async Task Resultado_SRI_pendiente_sobre_el_maximo_se_sigue_consultando_en_su_contexto(
+        ElectronicDocumentState state
+    )
+    {
+        // R11: el mismo job y el mismo issuer; la ventana de 24 h la cierra el issuer, no el SQL.
+        var pending = await SeedAsync(
+            _a1,
+            state,
+            retryAttempts: ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 2
+        );
+        var otherTenant = await SeedAsync(
+            _b,
+            state,
+            retryAttempts: ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 2
+        );
+
+        await RunJobAsync();
+
+        _issuerLog.Calls.Should().HaveCount(2);
+        var call = _issuerLog.Calls.Single(c => c.ElectronicDocumentId == pending);
+        call.ContextTenantId.Should().Be(_a1.TenantId);
+        call.ContextCompanyId.Should().Be(_a1.CompanyId);
+        call.VisibleUnderContext.Should().BeTrue();
+        var other = _issuerLog.Calls.Single(c => c.ElectronicDocumentId == otherTenant);
+        other.ContextTenantId.Should().Be(_b.TenantId);
+        other.ContextCompanyId.Should().Be(_b.CompanyId);
     }
 
     [Fact]
@@ -303,7 +336,8 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         if (state != ElectronicDocumentState.Draft)
         {
             if (state == ElectronicDocumentState.Failed)
-                document.MarkFailed("Fallo previo a la firma (test)", UserId);
+                for (var i = 0; i < Math.Max(1, retryAttempts); i++)
+                    document.MarkFailed("Fallo previo a la firma (test)", UserId);
             else
             {
                 document.MarkXmlGenerated("sales/draft.xml", "1.1.0", "1.1.0", UserId);

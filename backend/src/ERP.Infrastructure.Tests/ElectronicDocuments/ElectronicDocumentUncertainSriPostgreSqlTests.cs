@@ -40,20 +40,10 @@ public sealed class ElectronicDocumentUncertainSriPostgreSqlTests : IAsyncLifeti
     public Task InitializeAsync() => _postgres.StartAsync();
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
 
-    [Fact]
-    public async Task Signed_unknown_outcome_is_only_queried_and_reconciliation_is_audited_with_scope_isolation()
+    private ServiceProvider BuildProvider(
+        Mock<IElectronicDocumentAuthorizationService> authorization,
+        Mock<IElectronicDocumentReceptionService> reception)
     {
-        var seedActor = Guid.NewGuid();
-        var seedTenant = Tenant.Create("Caso 32", "case32", seedActor);
-        var seedCompany = Company.CreateManaged(seedTenant.Id, "1790012345001", "Caso 32", createdBy: seedActor);
-        var user = IdentityUser.Create("case32", "Caso", "32", null, "TEST_ONLY_HASH", seedActor);
-        _tenant = seedTenant.Id;
-        _company = seedCompany.Id;
-        _user = user.Id;
-        var authorization = new Mock<IElectronicDocumentAuthorizationService>(MockBehavior.Strict);
-        authorization.Setup(x => x.CheckAsync(_company, Key, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<SriAuthorizationResult>.Failure("SRI sin respuesta"));
-        var reception = new Mock<IElectronicDocumentReceptionService>(MockBehavior.Strict);
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddDistributedMemoryCache();
@@ -73,28 +63,54 @@ public sealed class ElectronicDocumentUncertainSriPostgreSqlTests : IAsyncLifeti
             sp.GetRequiredService<ICurrentCompany>()));
         services.AddSingleton(authorization.Object);
         services.AddSingleton(reception.Object);
-        await using var provider = services.BuildServiceProvider();
+        return services.BuildServiceProvider();
+    }
+
+    private void SetContext(IServiceProvider provider, Guid tenant, Guid company)
+    {
         var accessor = provider.GetRequiredService<IHttpContextAccessor>();
-        void SetContext(Guid tenant, Guid company)
-        {
-            accessor.HttpContext = new DefaultHttpContext();
-            accessor.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim("tenant_id", tenant.ToString()),
-             new Claim(ClaimTypes.NameIdentifier, _user.ToString()),
-             new Claim(ClaimTypes.Name, "Caso 32")], "Test"));
-            accessor.HttpContext.Request.Headers["X-Company-Id"] = company.ToString();
-        }
-        SetContext(_tenant, _company);
+        accessor.HttpContext = new DefaultHttpContext();
+        accessor.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+        [new Claim("tenant_id", tenant.ToString()),
+         new Claim(ClaimTypes.NameIdentifier, _user.ToString()),
+         new Claim(ClaimTypes.Name, "Caso 32")], "Test"));
+        accessor.HttpContext.Request.Headers["X-Company-Id"] = company.ToString();
+    }
+
+    private async Task SeedScopeAsync(IServiceProvider provider)
+    {
+        var seedActor = Guid.NewGuid();
+        var seedTenant = Tenant.Create("Caso 32", "case32", seedActor);
+        var seedCompany = Company.CreateManaged(seedTenant.Id, "1790012345001", "Caso 32", createdBy: seedActor);
+        var user = IdentityUser.Create("case32", "Caso", "32", null, "TEST_ONLY_HASH", seedActor);
+        _tenant = seedTenant.Id;
+        _company = seedCompany.Id;
+        _user = user.Id;
+        SetContext(provider, _tenant, _company);
+        await using var scope = provider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        await db.Database.MigrateAsync();
+        db.Tenants.Add(seedTenant);
+        db.Companies.Add(seedCompany);
+        db.IdentityUsers.Add(user);
+        db.CompanyUserMemberships.Add(CompanyUserMembership.Create(_company, _user, "User", null, seedActor));
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Signed_unknown_outcome_is_only_queried_and_reconciliation_is_audited_with_scope_isolation()
+    {
+        var authorization = new Mock<IElectronicDocumentAuthorizationService>(MockBehavior.Strict);
+        var reception = new Mock<IElectronicDocumentReceptionService>(MockBehavior.Strict);
+        await using var provider = BuildProvider(authorization, reception);
+        await SeedScopeAsync(provider);
+        this.SetContext(provider, _tenant, _company); // HttpContext is AsyncLocal
+        authorization.Setup(x => x.CheckAsync(_company, Key, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<SriAuthorizationResult>.Failure("SRI sin respuesta"));
+        void SetContext(Guid tenant, Guid company) => this.SetContext(provider, tenant, company);
         Guid id;
         await using (var scope = provider.CreateAsyncScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            await db.Database.MigrateAsync();
-            db.Tenants.Add(seedTenant);
-            db.Companies.Add(seedCompany);
-            db.IdentityUsers.Add(user);
-            db.CompanyUserMemberships.Add(CompanyUserMembership.Create(_company, _user, "User", null, seedActor));
-            await db.SaveChangesAsync();
             var document = ElectronicDocument.Create(_tenant, _company,
                 ElectronicDocumentType.Invoice, "Sales", Guid.NewGuid(), _user);
             document.MarkXmlGenerated("draft.xml", "1.1.0", "1.1.0", _user);
@@ -161,6 +177,139 @@ public sealed class ElectronicDocumentUncertainSriPostgreSqlTests : IAsyncLifeti
         }
         authorization.Verify(x => x.CheckAsync(_company, Key, It.IsAny<CancellationToken>()), Times.Exactly(2));
         authorization.VerifyNoOtherCalls();
+        reception.VerifyNoOtherCalls();
+    }
+
+    private const string RejectedKey = "2222222222222222222222222222222222222222222222222";
+    private const string ReceivedKey = "3333333333333333333333333333333333333333333333333";
+
+    // R11: the SRI may answer up to 24 h after RECIBIDA (§7.5). A Received document keeps being queried
+    // past the company maximum until 24 h from its persisted Received milestone; then DeadLetter with
+    // reconciliation pending. A Signed document has no reception evidence: no computable window, it keeps
+    // being queried (fail-closed). Never Recepción, never a new key, never Rejected by timeout.
+    [Fact]
+    public async Task Sri_outcome_pending_is_queried_for_the_24h_window_across_worker_restarts_then_requires_reconciliation()
+    {
+        var authorization = new Mock<IElectronicDocumentAuthorizationService>(MockBehavior.Strict);
+        var reception = new Mock<IElectronicDocumentReceptionService>(MockBehavior.Strict);
+        Guid pendingId, rejectedId, receivedId;
+        var overMaximum = ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 2;
+        await using (var provider = BuildProvider(authorization, reception))
+        {
+            await SeedScopeAsync(provider);
+            SetContext(provider, _tenant, _company); // HttpContext is AsyncLocal
+            authorization.Setup(x => x.CheckAsync(_company, Key, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult { Status = "TIMEOUT" }));
+            authorization.Setup(x => x.CheckAsync(_company, ReceivedKey, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<SriAuthorizationResult>.Failure("SRI sin respuesta"));
+            authorization.Setup(x => x.CheckAsync(_company, RejectedKey, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult { Status = "NO AUTORIZADO" }));
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                ElectronicDocument Signed(string key)
+                {
+                    var document = ElectronicDocument.Create(_tenant, _company,
+                        ElectronicDocumentType.Invoice, "Sales", Guid.NewGuid(), _user);
+                    document.MarkXmlGenerated("draft.xml", "1.1.0", "1.1.0", _user);
+                    document.MarkSigned("signed.xml", AccessKey.Create(key), _user);
+                    for (var i = 0; i < overMaximum; i++)
+                        document.MarkRetryAttempted(_user);
+                    return document;
+                }
+                var pending = Signed(Key);
+                var rejected = Signed(RejectedKey);
+                var received = Signed(ReceivedKey);
+                received.MarkSent(_user);
+                received.MarkReceived(_user);
+                pendingId = pending.Id;
+                rejectedId = rejected.Id;
+                receivedId = received.Id;
+                var repository = scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>();
+                await repository.AddAsync(pending);
+                await repository.AddAsync(rejected);
+                await repository.AddAsync(received);
+                await repository.SaveChangesAsync();
+            }
+
+            // Concurrent queries on the same document (worker + Monitor): no Recepción, no corruption.
+            var outcomes = await Task.WhenAll(Enumerable.Range(0, 2).Select(async _ =>
+            {
+                await using var scope = provider.CreateAsyncScope();
+                try
+                {
+                    return (await scope.ServiceProvider.GetRequiredService<IElectronicDocumentIssuer>()
+                        .RetryAsync(_tenant, pendingId, _user)).IsSuccess;
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    return false;
+                }
+            }));
+            outcomes.Should().Contain(true);
+
+            foreach (var id in new[] { rejectedId, receivedId })
+            {
+                await using var scope = provider.CreateAsyncScope();
+                (await scope.ServiceProvider.GetRequiredService<IElectronicDocumentIssuer>()
+                    .RetryAsync(_tenant, id, _user)).IsSuccess.Should().BeTrue();
+            }
+        }
+
+        await using (var provider = BuildProvider(authorization, reception))
+        {
+            SetContext(provider, _tenant, _company);
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+                var pending = await db.ElectronicDocuments.AsNoTracking().SingleAsync(x => x.Id == pendingId);
+                pending.CurrentState.Should().Be(ElectronicDocumentState.Signed);
+                pending.RetryCount.Should().BeGreaterThan(overMaximum);
+                (await db.ElectronicDocuments.AsNoTracking().SingleAsync(x => x.Id == rejectedId))
+                    .CurrentState.Should().Be(ElectronicDocumentState.Rejected);
+                (await db.ElectronicDocuments.AsNoTracking().SingleAsync(x => x.Id == receivedId))
+                    .CurrentState.Should().Be(ElectronicDocumentState.Received, "24 h from RECIBIDA not elapsed");
+
+                // The worker restarted (new provider); 25 h elapse on every persisted milestone.
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE electronic_document_audit SET occurred_at_utc = occurred_at_utc - interval '25 hours' WHERE entity_id IN ({pendingId}, {receivedId})");
+                var repository = scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>();
+                (await repository.GetFirstReceivedAtUtcAsync(_tenant, receivedId))
+                    .Should().BeBefore(DateTime.UtcNow.AddHours(-24));
+                (await repository.GetFirstReceivedAtUtcAsync(_tenant, pendingId))
+                    .Should().BeNull("no reception evidence for a Signed document");
+            }
+            foreach (var id in new[] { pendingId, receivedId })
+            {
+                await using var scope = provider.CreateAsyncScope();
+                (await scope.ServiceProvider.GetRequiredService<IElectronicDocumentIssuer>()
+                    .RetryAsync(_tenant, id, _user)).IsSuccess.Should().BeTrue();
+            }
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+                var received = await db.ElectronicDocuments.AsNoTracking().SingleAsync(x => x.Id == receivedId);
+                received.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
+                received.PreDeadLetterState.Should().Be(ElectronicDocumentState.Received);
+                received.RequiresSriReconciliation.Should().BeTrue();
+                received.AccessKey!.Value.Should().Be(ReceivedKey);
+                received.AuthorizationNumber.Should().BeNull();
+                received.LastError.Should().Contain("24 h");
+
+                var pending = await db.ElectronicDocuments.AsNoTracking().SingleAsync(x => x.Id == pendingId);
+                pending.CurrentState.Should().Be(ElectronicDocumentState.Signed, "fail-closed: no DeadLetter by an assumed date");
+                pending.RequiresSriReconciliation.Should().BeTrue();
+                pending.AccessKey!.Value.Should().Be(Key);
+            }
+
+            // Another tenant/company cannot read the window or act on the document.
+            SetContext(provider, Guid.NewGuid(), _company);
+            await using (var scope = provider.CreateAsyncScope())
+            {
+                (await scope.ServiceProvider.GetRequiredService<IElectronicDocumentRepository>()
+                    .GetFirstReceivedAtUtcAsync(_tenant, receivedId)).Should().BeNull();
+            }
+        }
+
         reception.VerifyNoOtherCalls();
     }
 }

@@ -68,7 +68,6 @@ internal static class RetentionRideRenderingFixtures
                     IsAccountingRequired: true
                 ),
                 RetentionInfo: new RetentionElectronicDocumentInfo(
-                    SpecialTaxpayerNumber: null,
                     FiscalPeriod: "08/2026"
                 ),
                 SubjectWithheld: new ElectronicDocumentCounterpartyData(
@@ -156,7 +155,6 @@ internal static class RetentionRideRenderingFixtures
                     IsAccountingRequired: true
                 ),
                 RetentionInfo: new RetentionElectronicDocumentInfo(
-                    SpecialTaxpayerNumber: null,
                     FiscalPeriod: "08/2026"
                 ),
                 SubjectWithheld: new ElectronicDocumentCounterpartyData(

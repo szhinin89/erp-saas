@@ -109,15 +109,23 @@ public sealed class ElectronicDocumentIssuerRetryTests
     }
 
     private static Mock<IElectronicDocumentRepository> RepositoryReturning(
-        ElectronicDocument? document
+        ElectronicDocument? document,
+        DateTime? receivedAtUtc = null
     )
     {
         var repository = new Mock<IElectronicDocumentRepository>();
         repository
             .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
+        repository
+            .Setup(r => r.GetFirstReceivedAtUtcAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(receivedAtUtc);
         return repository;
     }
+
+    /// <summary>R11: RECIBIDA más antigua que el plazo de procesamiento del SRI (ventana cerrada).</summary>
+    private static DateTime ReceivedBeforeSriWindow() =>
+        DateTime.UtcNow - ElectronicDocumentRetryPolicy.SriProcessingWindow - TimeSpan.FromMinutes(1);
 
     [Fact]
     public async Task RetryAsync_when_document_does_not_exist_returns_not_found()
@@ -238,7 +246,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var document = NewReceivedDocument();
         for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default - 1; i++)
             document.MarkRetryAttempted(UserId);
-        var repository = RepositoryReturning(document);
+        var repository = RepositoryReturning(document, ReceivedBeforeSriWindow());
         var issuer = BuildIssuer(repository); // autorización inalcanzable por defecto
 
         var result = await issuer.RetryAsync(TenantId, document.Id, UserId);
@@ -282,7 +290,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
         var document = NewReceivedDocument();
         for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default - 1; i++)
             document.MarkRetryAttempted(UserId);
-        var repository = RepositoryReturning(document);
+        var repository = RepositoryReturning(document, ReceivedBeforeSriWindow());
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
         authorization
             .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
@@ -313,7 +321,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
     {
         var document = NewReceivedDocument();
         for (var i = 0; i < maximum - 1; i++) document.MarkRetryAttempted(UserId);
-        var repository = RepositoryReturning(document);
+        var repository = RepositoryReturning(document, ReceivedBeforeSriWindow());
         repository.Setup(r => r.GetRetryMaximumSettingAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(raw);
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
@@ -324,6 +332,119 @@ public sealed class ElectronicDocumentIssuerRetryTests
         document.RetryCount.Should().Be(maximum);
         document.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
         document.LastError.Should().Contain($"{maximum} intentos");
+    }
+
+    // ── R11 (auditoría SRI 2.34): consulta hasta el plazo de 24 h del SRI ──
+
+    [Theory]
+    [InlineData(ElectronicDocumentState.Received)]
+    [InlineData(ElectronicDocumentState.Signed)]
+    public async Task RetryAsync_with_sri_outcome_pending_inside_the_24h_window_keeps_querying_past_the_company_maximum(
+        ElectronicDocumentState state
+    )
+    {
+        var document = state == ElectronicDocumentState.Received ? NewReceivedDocument() : NewSignedDocument();
+        for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 3; i++)
+            document.MarkRetryAttempted(UserId);
+        var repository = RepositoryReturning(
+            document,
+            DateTime.UtcNow - ElectronicDocumentRetryPolicy.SriProcessingWindow + TimeSpan.FromMinutes(5)
+        );
+        var reception = new Mock<IElectronicDocumentReceptionService>(MockBehavior.Strict);
+        var authorization = new Mock<IElectronicDocumentAuthorizationService>();
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult { Status = "TIMEOUT" }));
+
+        var result = await BuildIssuer(repository, reception, authorization).RetryAsync(TenantId, document.Id, UserId);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        document.CurrentState.Should().Be(state, "un TIMEOUT nunca es rechazo y la ventana sigue abierta");
+        document.AccessKey!.Value.Should().Be(ValidAccessKey);
+        reception.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RetryAsync_with_sri_outcome_pending_after_the_24h_window_moves_to_dead_letter_requiring_reconciliation()
+    {
+        var document = NewReceivedDocument();
+        for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 3; i++)
+            document.MarkRetryAttempted(UserId);
+        var repository = RepositoryReturning(document, ReceivedBeforeSriWindow());
+
+        var result = await BuildIssuer(repository).RetryAsync(TenantId, document.Id, UserId);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        document.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
+        document.PreDeadLetterState.Should().Be(ElectronicDocumentState.Received);
+        document.RequiresSriReconciliation.Should().BeTrue("estado operativo explícito, recuperable por el reintento/conciliación existentes");
+        document.LastError.Should().Contain("24 h").And.Contain("conciliación");
+        document.AuthorizationNumber.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(ElectronicDocumentState.Signed)]
+    [InlineData(ElectronicDocumentState.Received)]
+    public async Task RetryAsync_without_reception_evidence_never_dead_letters_by_window(ElectronicDocumentState state)
+    {
+        // §7.5 cuenta las 24 h desde RECIBIDA. Sin esa evidencia en el timeline (Signed tras un fallo de
+        // transporte, o un Received sin registro) el plazo no se puede calcular: la consulta sigue.
+        var document = state == ElectronicDocumentState.Received ? NewReceivedDocument() : NewSignedDocument();
+        for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 20; i++)
+            document.MarkRetryAttempted(UserId);
+        var repository = RepositoryReturning(document, receivedAtUtc: null);
+        var reception = new Mock<IElectronicDocumentReceptionService>(MockBehavior.Strict);
+
+        await BuildIssuer(repository, reception).RetryAsync(TenantId, document.Id, UserId);
+
+        document.CurrentState.Should().Be(state);
+        document.RequiresSriReconciliation.Should().BeTrue();
+        reception.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RetryAsync_window_is_counted_from_reception_not_signing()
+    {
+        // Firmado hace 30 h pero RECIBIDA hace 2 h (p. ej. 70/43/45 tras un reintento manual): ventana abierta.
+        var document = NewReceivedDocument();
+        for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 3; i++)
+            document.MarkRetryAttempted(UserId);
+        var repository = RepositoryReturning(document, receivedAtUtc: DateTime.UtcNow.AddHours(-2));
+
+        await BuildIssuer(repository).RetryAsync(TenantId, document.Id, UserId);
+
+        document.CurrentState.Should().Be(ElectronicDocumentState.Received);
+    }
+
+    [Theory]
+    [InlineData("AUTORIZADO", ElectronicDocumentState.Authorized)]
+    [InlineData("NO AUTORIZADO", ElectronicDocumentState.Rejected)]
+    public async Task RetryAsync_past_the_company_maximum_inside_the_window_applies_the_sri_decision(
+        string sriStatus,
+        ElectronicDocumentState expected
+    )
+    {
+        var document = NewReceivedDocument();
+        for (var i = 0; i < ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 3; i++)
+            document.MarkRetryAttempted(UserId);
+        var repository = RepositoryReturning(document, DateTime.UtcNow.AddHours(-2));
+        var reception = new Mock<IElectronicDocumentReceptionService>(MockBehavior.Strict);
+        var authorization = new Mock<IElectronicDocumentAuthorizationService>();
+        authorization
+            .Setup(a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<SriAuthorizationResult>.Success(new SriAuthorizationResult
+            {
+                Status = sriStatus,
+                AuthorizationNumber = ValidAccessKey,
+                AuthorizationDate = DateTime.UtcNow,
+            }));
+
+        var result = await BuildIssuer(repository, reception, authorization).RetryAsync(TenantId, document.Id, UserId);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        document.CurrentState.Should().Be(expected);
+        document.AccessKey!.Value.Should().Be(ValidAccessKey);
+        reception.VerifyNoOtherCalls();
     }
 
     [Fact]

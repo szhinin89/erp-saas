@@ -50,7 +50,6 @@ public sealed class RetentionXmlBuilderTests
                 IsAccountingRequired: true
             ),
             RetentionInfo: new RetentionElectronicDocumentInfo(
-                SpecialTaxpayerNumber: null,
                 FiscalPeriod: "08/2026"
             ),
             SubjectWithheld: new ElectronicDocumentCounterpartyData(
@@ -112,6 +111,23 @@ public sealed class RetentionXmlBuilderTests
         // ElectronicDocumentXml (antes solo estaba en RetentionElectronicDocumentData.Emission.Environment).
         result.Value.Environment.Should().Be("1");
 
+        ValidateAgainstOfficialXsd(result.Value.Xml);
+    }
+
+    [Fact]
+    public void Build_emite_contribuyente_especial_desde_el_emisor_y_pasa_el_xsd_oficial()
+    {
+        // R23: la resolución vive en ElectronicDocumentIssuerData (fuente única para 01/04/07); el
+        // XML de la retención no cambia respecto de cuando se leía de RetentionInfo.
+        var data = ValidData();
+        data = data with { Issuer = data.Issuer with { SpecialTaxpayerNumber = "5368" } };
+
+        var result = new RetentionXmlBuilder().Build(data);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result
+            .Value!.Xml.Should()
+            .Contain("</dirEstablecimiento><contribuyenteEspecial>5368</contribuyenteEspecial><obligadoContabilidad>");
         ValidateAgainstOfficialXsd(result.Value.Xml);
     }
 

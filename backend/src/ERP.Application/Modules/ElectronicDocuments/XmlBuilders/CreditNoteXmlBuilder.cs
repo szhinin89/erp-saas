@@ -238,6 +238,10 @@ public sealed class CreditNoteXmlBuilder : IElectronicDocumentXmlBuilder
             new XElement("tipoIdentificacionComprador", data.Counterparty.IdentificationType),
             new XElement("razonSocialComprador", data.Counterparty.LegalName),
             new XElement("identificacionComprador", data.Counterparty.IdentificationNumber),
+            // NotaCredito_V1.1.0.xsd: contribuyenteEspecial va entre identificacionComprador y obligadoContabilidad.
+            string.IsNullOrWhiteSpace(data.Issuer.SpecialTaxpayerNumber)
+                ? null
+                : new XElement("contribuyenteEspecial", data.Issuer.SpecialTaxpayerNumber),
             new XElement("obligadoContabilidad", data.Issuer.IsAccountingRequired ? "SI" : "NO"),
             new XElement("codDocModificado", modified.DocTypeCode),
             new XElement("numDocModificado", modified.Number),

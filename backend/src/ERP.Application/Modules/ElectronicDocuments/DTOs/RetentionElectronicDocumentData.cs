@@ -86,8 +86,6 @@ public sealed record RetentionElectronicDocumentMetadata(
 /// vienen de <see cref="ElectronicDocumentCounterpartyData"/> (como <c>SubjectWithheld</c>).
 /// </summary>
 public sealed record RetentionElectronicDocumentInfo(
-    /// <summary>contribuyenteEspecial — número de resolución si la empresa es contribuyente especial, <c>null</c> si no aplica (el elemento SRI se omite). Copiado tal cual de <c>Company.SpecialTaxpayerNo</c>.</summary>
-    string? SpecialTaxpayerNumber,
     /// <summary>periodoFiscal, formato SRI "mm/aaaa" — copiado tal cual de <c>RetentionDocument.FiscalPeriod</c> (ya derivado por el agregado al emitir, nunca recalculado aquí).</summary>
     string FiscalPeriod
 );

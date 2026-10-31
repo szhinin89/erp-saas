@@ -377,6 +377,85 @@ public sealed class SriSoapClientTests
             .Be(new DateTime(2012, 3, 5, 21, 57, 34, 997, DateTimeKind.Utc));
     }
 
+    private static string MultipleAuthorizationsSoap(params string[] autorizaciones) => $"""
+        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+          <soap:Body>
+            <ns2:autorizacionComprobanteResponse xmlns:ns2="http://ec.gob.sri.ws.autorizacion">
+              <RespuestaAutorizacionComprobante>
+                <claveAccesoConsultada>0503201201176001321000110010030009900641234567814</claveAccesoConsultada>
+                <numeroComprobantes>{autorizaciones.Length}</numeroComprobantes>
+                <autorizaciones>{string.Concat(autorizaciones)}</autorizaciones>
+              </RespuestaAutorizacionComprobante>
+            </ns2:autorizacionComprobanteResponse>
+          </soap:Body>
+        </soap:Envelope>
+        """;
+
+    private const string NotAuthorizedNode = """
+        <autorizacion>
+          <estado>NO AUTORIZADO</estado>
+          <fechaAutorizacion>2012-03-05T10:00:00.000-05:00</fechaAutorizacion>
+          <mensajes><mensaje><identificador>52</identificador><mensaje>ERROR EN DIFERENCIAS</mensaje><tipo>ERROR</tipo></mensaje></mensajes>
+        </autorizacion>
+        """;
+
+    private const string AuthorizedNode = """
+        <autorizacion>
+          <estado>AUTORIZADO</estado>
+          <numeroAutorizacion>0503201201176001321000110010030009900641234567814</numeroAutorizacion>
+          <fechaAutorizacion>2012-03-05T16:57:34.997-05:00</fechaAutorizacion>
+          <ambiente>PRUEBAS</ambiente>
+          <comprobante><![CDATA[<factura id="comprobante" version="1.1.0"></factura>]]></comprobante>
+        </autorizacion>
+        """;
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CheckAuthorizationAsync_with_previous_not_authorized_and_one_authorized_selects_the_authorized(
+        bool authorizedFirst
+    )
+    {
+        // R14 (auditoría SRI 2.34): el SRI conserva los NO AUTORIZADO de una clave (tabla de errores,
+        // nota 1) y el comprobante corregido y reenviado con la misma clave recibe después su
+        // AUTORIZADO — la respuesta puede traer varias <autorizacion>. El orden no decide: manda la
+        // AUTORIZADA (antes se tomaba la primera y un NAT previo podía marcar Rejected un
+        // comprobante autorizado).
+        var soap = authorizedFirst
+            ? MultipleAuthorizationsSoap(AuthorizedNode, NotAuthorizedNode)
+            : MultipleAuthorizationsSoap(NotAuthorizedNode, AuthorizedNode);
+        var client = BuildClient(new RespondingHandler(soap));
+
+        var result = await client.CheckAuthorizationAsync(
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
+
+        result.Status.Should().Be("AUTORIZADO");
+        result.Authorized.Should().BeTrue();
+        result.AuthorizationNumber.Should().Be("0503201201176001321000110010030009900641234567814");
+        result.DocumentXml.Should().Contain("factura");
+        result.StructuredMessages.Should().BeEmpty();
+        result.ErrorMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CheckAuthorizationAsync_with_only_not_authorized_entries_keeps_not_authorized()
+    {
+        var client = BuildClient(
+            new RespondingHandler(MultipleAuthorizationsSoap(NotAuthorizedNode, NotAuthorizedNode))
+        );
+
+        var result = await client.CheckAuthorizationAsync(
+            new string('1', 49),
+            "https://celcer.sri.gob.ec/fake?wsdl"
+        );
+
+        result.Status.Should().Be("NO AUTORIZADO");
+        result.Authorized.Should().BeFalse();
+        result.StructuredMessages.Should().ContainSingle(m => m.Code == "52");
+    }
+
     [Fact]
     public async Task CheckAuthorizationAsync_polling_stops_immediately_on_recognized_terminal_status()
     {

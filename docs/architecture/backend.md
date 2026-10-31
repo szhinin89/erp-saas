@@ -550,7 +550,8 @@ semántica de `OperationalPreferencesResolver` (`DefaultOnCompanySwitch`: solo u
 que se lee como `false` apaga; faltante/corrupto conserva el default activo). Es la
 única decisión previa al lote: el job de reintentos y el reconciliador no vuelven a
 resolverlas; el servicio de comunicación conserva su guard al encolar. La elegibilidad
-de reintento (estados, máximo efectivo por empresa y backoff `min(1·2^n, 16)` minutos) existe una sola
+de reintento (estados, máximo efectivo por empresa y backoff `min(1·2^n, 16)` minutos; para resultado SRI
+pendiente, ver [ventana de 24 h](#límites-y-finalización)) existe una sola
 vez como predicado de `ElectronicDocumentRetryPolicy`, traducido a SQL. Communications resuelve el perfil de cada
 fila y conserva claims, leases, fencing y política de reintento. No hay preferencias
 por empresa nuevas para procesos técnicos.
@@ -594,7 +595,8 @@ requiere un collector en ese proceso (no se añade un servidor HTTP al worker).
 
 ### Máximo por empresa y preferencia de correo
 
-`electronic_documents.max_retry_attempts` gobierna candidatos y DeadLetter.
+`electronic_documents.max_retry_attempts` gobierna candidatos y DeadLetter, salvo el resultado SRI
+pendiente dentro de la [ventana de 24 h](#límites-y-finalización).
 `ElectronicDocumentRetryMaximum` centraliza default 5, rango 1..10 y la expresión
 única de resolución (faltante/corrupto: default), compilada para el resolver y
 traducida a SQL para candidatos/contador. `ElectronicDocumentRetryPolicy` conserva
@@ -688,7 +690,30 @@ pudo salir al SRI sin resultado conocido (`Signed`, `Dispatching`, `Sent`, `Rece
 `DeadLetter` que venía de ellos; `ElectronicDocument.RequiresSriReconciliation`) nunca se
 reenvía automáticamente: el reintento (job o Monitor) solo consulta la autorización por clave
 de acceso. AUTORIZADO se conserva; NO AUTORIZADO pasa a `Rejected`; una consulta no concluyente
-deja el estado intacto ("Requiere conciliación"). Solo el primer envío del pipeline transmite.
+deja el estado intacto ("Requiere conciliación"). Solo el primer envío del pipeline transmite. Una DEVUELTA cuyos mensajes son todos código 50 (error interno del SRI; los devueltos no se
+guardan, Ficha Técnica Offline, tabla de errores, nota 1) no es rechazo: el documento conserva su estado como
+en un fallo de transporte. Si la autorización trae varias `<autorizacion>`, manda la AUTORIZADO.
+
+**Ventana de 24 h (R11).** El SRI entrega la autorización o el rechazo en un máximo de 24 h desde
+RECIBIDA (Ficha Técnica Offline §7.5; nota 2). `Signed`/`Received` siguen en el job de reintentos (solo
+consulta) aunque superen el máximo de la empresa, con backoff `min(2^n, 60)` minutos. El plazo se cuenta desde
+la primera transición a `Received` del timeline (`ElectronicDocumentAudit`, misma transacción que el estado:
+RECIBIDA, o 70/43/45 con envío anterior registrado, en cuyo caso el plazo real empezó antes y el ERP consulta de
+más, nunca de menos). Cerrado el plazo, el siguiente intento sin respuesta pasa a `DeadLetter` con
+"Requiere conciliación" (recuperable por el reintento y la conciliación de abajo). Sin evidencia de recepción
+(`Signed` tras un fallo de transporte o DEVUELTA 50) no hay plazo calculable: no se aplica DeadLetter por plazo y
+la consulta sigue cada 60 min, sin reenvío. `Dispatching` sigue siendo solo manual (ADR-036). Constantes y
+predicado: `ElectronicDocumentRetryPolicy`.
+
+**Tamaño máximo (R16).** Antes del primer envío, un XML firmado de más de 320 × 1024 bytes pasa a `Failed`
+sin almacenarse, firmarse como `Signed` ni transmitirse (única definición:
+`ElectronicDocumentIssuer.MaxIndividualSignedXmlBytes`). Límite provisional: la ficha dice "320 Kb" sin definir
+la unidad; 320 × 1024 bytes es la mayor de las lecturas en bytes, no un valor garantizado por la norma (si el SRI
+aplicara 320 000 bytes, un XML entre ambos valores pasaría el control local y el SRI lo devolvería con el error
+26). El secuencial ya está consumido: el origen lo capturó con `CaptureNextAsync` y confirmó la venta, NC o
+retención antes de registrar el comprobante (post-commit); el control no captura otro ni lo libera. Regenerar
+produce el mismo XML: no hay recuperación automática; el comprobante queda `Failed` en el Monitor. Riesgo:
+[STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
 
 Conciliación manual: `POST /api/v1/electronic-documents/{id}/reconciliation` (Monitor,
 "Registrar conciliación"), permiso `electronic-documents.reconcile`, evidencia de texto
@@ -752,6 +777,13 @@ Si el certificado está instalado pero falta su contraseña, agrega explícitame
 no equivale a aprobarlo. Conserva los controles existentes para certificados con contraseña
 (correcta o incorrecta), vencidos y no instalados. Este diagnóstico no acredita firma ni
 autorización de un comprobante. Evidencia y estado de entrega: [STATUS](../../STATUS.md).
+
+`SriWsdlUrl` es la regla única de `SriSettings.WsdlUrl`: formato absoluto http/https y coherencia con el
+ambiente. Si el host es uno de los oficiales de la Ficha Técnica (§7.1/§8.1: `celcer.sri.gob.ec` = Pruebas,
+`cel.sri.gob.ec` = Producción) debe corresponder al ambiente configurado; un host no oficial (simulador de
+pruebas automatizadas, cambio futuro del SRI) no se juzga. Se aplica al guardar (422), en el gate preventivo de
+emisión (`electronicEmission.sriWsdlUrl`, antes de capturar el secuencial), en el estado y en este diagnóstico.
+El endpoint efectivo sigue saliendo del `WsdlUrl` configurado; los hosts no se usan para transmitir.
 
 ### Principal y default únicos
 

@@ -292,6 +292,28 @@ public sealed class SalesReturnCreditNoteDataProviderTests
     // caja), nunca QuantityInBaseUom (12 unidades) — esa cantidad es exclusiva de stock/kardex
     // (ver AuthorizeSalesReturnUseCases, SALES-PRESENTATIONS-02).
     [Fact]
+    public async Task GetDataAsync_Issuer_incluye_contribuyente_especial_de_Company()
+    {
+        var (invoice, lines) = BuildAuthorizedInvoice();
+        var salesReturn = BuildAuthorizedReturn(invoice, lines[0]);
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        m.ReturnRepo.Setup(r => r.GetByIdAsync(TenantId, salesReturn.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(salesReturn);
+        var company = Company.CreateManaged(TenantId, "1790012345001", "Empresa Test S.A.", createdBy: UserId);
+        company.UpdateFiscalSettings(null, true, "5368", false, false, false, UserId);
+        m.CompanyRepo
+            .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, salesReturn.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Issuer.SpecialTaxpayerNumber.Should().Be("5368");
+    }
+
+    [Fact]
     public async Task GetDataAsync_devolucion_por_presentacion_usa_Quantity_visible_no_QuantityInBaseUom()
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");

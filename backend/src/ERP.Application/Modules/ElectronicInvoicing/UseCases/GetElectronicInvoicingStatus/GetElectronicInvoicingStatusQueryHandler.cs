@@ -145,7 +145,7 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
             );
         }
 
-        if (!SriWsdlUrl.IsValid(settings.WsdlUrl))
+        if (!SriWsdlUrl.IsValidFor(settings.WsdlUrl, settings.Environment))
         {
             return new ElectronicInvoicingStatusDto(
                 Status: ElectronicInvoicingStatus.Incomplete,

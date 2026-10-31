@@ -18,6 +18,29 @@ public static class ElectronicDocumentRetryPolicy
     public const double MaxBackoffMinutes = 16;
 
     /// <summary>
+    /// R11 (auditoría SRI 2.34) — estados con resultado SRI pendiente que el job atiende (Caso #32: solo
+    /// consulta). "El tiempo estimado de entrega de la autorización o motivos de errores de un
+    /// comprobante, será de un tiempo máximo de 24 horas a partir de la respuesta de RECIBIDA" (Ficha
+    /// Técnica Offline §7.5; nota 2 de la tabla de errores): dentro de <see cref="SriProcessingWindow"/>
+    /// estos estados siguen consultándose aunque superen el máximo de la empresa, con backoff acotado
+    /// a <see cref="SriOutcomePendingMaxBackoffMinutes"/>. Dispatching sigue siendo solo manual (ADR-036).
+    /// </summary>
+    public static readonly IReadOnlyList<ElectronicDocumentState> SriOutcomePendingStates =
+    [
+        ElectronicDocumentState.Signed,
+        ElectronicDocumentState.Received,
+    ];
+
+    /// <summary>Tope del backoff de las consultas de resultado pendiente: 1/2/4/8/16/32/60/60… minutos.</summary>
+    public const double SriOutcomePendingMaxBackoffMinutes = 60;
+
+    /// <summary>
+    /// Plazo máximo de procesamiento del SRI, contado desde RECIBIDA (primera transición a Received del
+    /// timeline). Sin evidencia de recepción no hay plazo calculable: la consulta sigue (fail-closed).
+    /// </summary>
+    public static readonly TimeSpan SriProcessingWindow = TimeSpan.FromHours(24);
+
+    /// <summary>
     /// Estados que el job automático de reintentos recoge como candidatos. Fuente única para
     /// <c>GetRetryCandidatesAsync</c> y para el contador "Reintentos pendientes" del Monitor.
     /// Excluye deliberadamente Dispatching (solo consulta manual, ADR-036), DeadLetter (requiere
@@ -34,16 +57,23 @@ public static class ElectronicDocumentRetryPolicy
 
     /// <summary>
     /// Documento elegible para reintento automático en <paramref name="nowUtc"/>: estado atendido por
-    /// el job, menos de <paramref name="maxAttempts"/> intentos y backoff vencido (sin intento previo,
-    /// siempre elegible). La preferencia por empresa no forma parte de la política.
+    /// el job, menos de <paramref name="maxAttempts"/> intentos (o resultado SRI pendiente, ver
+    /// <see cref="SriOutcomePendingStates"/>: el fin de la ventana lo decide el issuer al pasar a
+    /// DeadLetter) y backoff vencido (sin intento previo, siempre elegible). La preferencia por empresa
+    /// no forma parte de la política.
     /// </summary>
     public static Expression<Func<ElectronicDocument, bool>> AutomaticRetryCandidate(DateTime nowUtc, int maxAttempts = ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default) =>
         x => AutomaticRetryStates.Contains(x.CurrentState)
-            && x.RetryCount < maxAttempts
+            && (x.RetryCount < maxAttempts || SriOutcomePendingStates.Contains(x.CurrentState))
             && (
                 x.LastAttemptUtc == null
                 || x.LastAttemptUtc.Value.AddMinutes(
-                    Math.Min(BaseBackoffMinutes * Math.Pow(2, x.RetryCount), MaxBackoffMinutes)
+                    Math.Min(
+                        BaseBackoffMinutes * Math.Pow(2, x.RetryCount),
+                        SriOutcomePendingStates.Contains(x.CurrentState)
+                            ? SriOutcomePendingMaxBackoffMinutes
+                            : MaxBackoffMinutes
+                    )
                 ) <= nowUtc
             );
     public static Expression<Func<ElectronicDocument, bool>> AutomaticRetryCandidate(
@@ -70,6 +100,20 @@ public static class ElectronicDocumentRetryPolicy
         return Expression.Lambda<Func<ElectronicDocument, bool>>(
             Expression.LessThan(Expression.Property(setting.Parameters[0], nameof(ElectronicDocument.RetryCount)), maximum),
             setting.Parameters);
+    }
+    /// <summary>
+    /// Mismo presupuesto que <see cref="AutomaticRetryCandidate(DateTime, Expression{Func{ElectronicDocument, string?}})"/>
+    /// sin estados ni backoff (contador "Reintentos pendientes" del Monitor): dentro del máximo
+    /// efectivo, o con resultado SRI pendiente (R11).
+    /// </summary>
+    public static Expression<Func<ElectronicDocument, bool>> WithinAutomaticBudget(
+        Expression<Func<ElectronicDocument, string?>> setting)
+    {
+        var maximum = WithinMaximum(setting);
+        Expression<Func<ElectronicDocument, bool>> pending = x => SriOutcomePendingStates.Contains(x.CurrentState);
+        var pendingBody = new Substitute(pending.Parameters[0], maximum.Parameters[0]).Visit(pending.Body)!;
+        return Expression.Lambda<Func<ElectronicDocument, bool>>(
+            Expression.OrElse(maximum.Body, pendingBody), maximum.Parameters);
     }
     private sealed class Substitute(Expression from, Expression to) : ExpressionVisitor
     {

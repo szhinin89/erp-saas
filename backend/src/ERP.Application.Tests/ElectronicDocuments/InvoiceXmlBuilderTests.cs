@@ -1,13 +1,65 @@
+using System.Xml;
 using System.Xml.Linq;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Infrastructure.Services.ElectronicDocuments;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
 
 public sealed class InvoiceXmlBuilderTests
 {
+    // ── R23 (auditoría SRI 2.34): contribuyenteEspecial "obligatorio cuando corresponda" ──
+
+    [Fact]
+    public void Build_con_contribuyente_especial_lo_emite_en_el_orden_del_xsd_y_pasa_el_xsd_oficial()
+    {
+        var data = ValidInvoiceData();
+        data = data with { Issuer = data.Issuer with { SpecialTaxpayerNumber = "5368" } };
+
+        var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var infoFactura = XDocument.Parse(result.Value!.Xml).Descendants("infoFactura").Single();
+        infoFactura.Element("contribuyenteEspecial")!.Value.Should().Be("5368");
+        infoFactura
+            .Elements()
+            .Select(e => e.Name.LocalName)
+            .Take(4)
+            .Should()
+            .Equal("fechaEmision", "dirEstablecimiento", "contribuyenteEspecial", "obligadoContabilidad");
+        ValidateAgainstOfficialXsd(result.Value.Xml);
+    }
+
+    [Fact]
+    public void Build_sin_contribuyente_especial_omite_el_elemento_y_pasa_el_xsd_oficial()
+    {
+        var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(ValidInvoiceData());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Xml.Should().NotContain("contribuyenteEspecial");
+        ValidateAgainstOfficialXsd(result.Value.Xml);
+    }
+
+    private static void ValidateAgainstOfficialXsd(string xml)
+    {
+        var schemaSet = new EmbeddedXmlSchemaProvider(NullLogger<EmbeddedXmlSchemaProvider>.Instance)
+            .GetSchemaSetAsync(ElectronicDocumentType.Invoice, "1.1.0")
+            .GetAwaiter()
+            .GetResult();
+        schemaSet.Should().NotBeNull();
+
+        var errors = new List<string>();
+        var settings = new XmlReaderSettings { ValidationType = ValidationType.Schema, Schemas = schemaSet! };
+        settings.ValidationEventHandler += (_, e) => errors.Add(e.Message);
+        using var reader = XmlReader.Create(new StringReader(xml), settings);
+        while (reader.Read()) { }
+
+        errors.Should().BeEmpty();
+    }
+
     [Fact]
     public void Precision_final_QA_XML_caps_quantity_and_price_at_six_and_fiscal_totals_at_two()
     {

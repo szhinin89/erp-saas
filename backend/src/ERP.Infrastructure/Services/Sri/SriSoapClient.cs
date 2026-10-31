@@ -577,9 +577,15 @@ public sealed partial class SriSoapClient
     {
         var doc = LoadXml(soap);
 
-        var autorizacion = doc.GetElementsByTagName("autorizacion")
-            .OfType<XmlElement>()
-            .FirstOrDefault();
+        // R14 (auditoría SRI 2.34): una misma clave de acceso puede tener varias <autorizacion> —
+        // el SRI conserva los NO AUTORIZADO previos (Ficha Técnica Offline, tabla de errores, nota 1:
+        // "se almacenarán únicamente los comprobantes que no hayan sido autorizados") y el
+        // comprobante corregido y reenviado con la misma clave obtiene después su AUTORIZADO. Si
+        // alguna es AUTORIZADO, esa es la decisión fiscal vigente; si no, se conserva la primera.
+        var autorizaciones = doc.GetElementsByTagName("autorizacion").OfType<XmlElement>().ToList();
+        var autorizacion =
+            autorizaciones.FirstOrDefault(a => NodeText(a, "estado") == "AUTORIZADO")
+            ?? autorizaciones.FirstOrDefault();
 
         if (autorizacion is null)
             return new SriAutorizacionResult

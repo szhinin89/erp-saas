@@ -699,7 +699,7 @@ public sealed class RetentionElectronicDocumentDataProviderTests
         result.Value!.Issuer.TaxId.Should().Be("1790012345001");
         result.Value.Issuer.LegalName.Should().Be("Empresa Retenedora S.A.");
         result.Value.Issuer.MatrixAddress.Should().Be("Av. Principal 123");
-        result.Value.RetentionInfo.SpecialTaxpayerNumber.Should().Be("5368");
+        result.Value.Issuer.SpecialTaxpayerNumber.Should().Be("5368");
         result.Value.AdditionalInfo.Should().BeEmpty();
     }
 

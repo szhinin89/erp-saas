@@ -1,3 +1,4 @@
+using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Domain.Configuration.Entities;
 using FluentValidation;
 
@@ -23,6 +24,8 @@ public sealed class UpsertSriConfigurationCommandValidator
         RuleFor(x => x.WsdlUrl)
             .NotEmpty()
             .WithMessage("La URL de autorización SRI es obligatoria.")
-            .MaximumLength(SriSettings.WsdlUrlMaxLen);
+            .MaximumLength(SriSettings.WsdlUrlMaxLen)
+            .Must((command, url) => !SriWsdlUrl.ContradictsEnvironment(url, command.Environment))
+            .WithMessage("La URL SRI corresponde al otro ambiente (Pruebas/Producción) que el configurado.");
     }
 }

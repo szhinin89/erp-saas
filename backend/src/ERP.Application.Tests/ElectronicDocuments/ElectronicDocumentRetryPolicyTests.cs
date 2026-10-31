@@ -1,6 +1,7 @@
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using FluentAssertions;
 
 namespace ERP.Application.Tests.ElectronicDocuments;
@@ -58,6 +59,45 @@ public sealed class ElectronicDocumentRetryPolicyTests
     {
         var exhausted = Failed(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default);
         Eligible(exhausted, exhausted.LastAttemptUtc!.Value.AddDays(1)).Should().BeFalse();
+    }
+
+    private static ElectronicDocument SignedWithAttempts(int attempts)
+    {
+        var document = Failed(0);
+        document.MarkXmlGenerated("sales/draft.xml", "1.1.0", "1.1.0", UserId);
+        document.MarkSigned("sales/signed.xml", AccessKey.Create(new string('1', 49)), UserId);
+        for (var i = 0; i < attempts; i++)
+            document.MarkRetryAttempted(UserId);
+        return document;
+    }
+
+    [Fact]
+    public void Sri_outcome_pending_stays_eligible_past_the_company_maximum()
+    {
+        // R11: el fin de la consulta lo decide la ventana de 24 h (issuer), no el máximo de empresa.
+        var signed = SignedWithAttempts(ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Default + 4);
+        Eligible(signed, signed.LastAttemptUtc!.Value.AddMinutes(60)).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(5, 32)]
+    [InlineData(6, 60)]
+    [InlineData(12, 60)]
+    public void Sri_outcome_pending_backoff_is_capped_at_60_minutes(int attempts, int backoffMinutes)
+    {
+        var signed = SignedWithAttempts(attempts);
+        var last = signed.LastAttemptUtc!.Value;
+
+        Eligible(signed, last.AddMinutes(backoffMinutes).AddSeconds(-1)).Should().BeFalse();
+        Eligible(signed, last.AddMinutes(backoffMinutes)).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Sri_outcome_pending_states_are_signed_and_received_only()
+    {
+        ElectronicDocumentRetryPolicy.SriOutcomePendingStates.Should().BeEquivalentTo(
+            new[] { ElectronicDocumentState.Signed, ElectronicDocumentState.Received });
+        ElectronicDocumentRetryPolicy.SriProcessingWindow.Should().Be(TimeSpan.FromHours(24));
     }
 
     [Fact]

@@ -168,6 +168,12 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
     /// dejar rastro — reutilizado por <see cref="RegisterAsync"/> y por <see cref="RetryAsync"/>
     /// para no duplicar la lógica del pipeline.
     /// </summary>
+    /// <summary>
+    /// Ficha Técnica Offline §7.5 — "320 Kb" por comprobante en envío individual. La ficha no define la unidad:
+    /// 320 × 1024 bytes es un límite provisional (la mayor lectura en bytes), única definición (R16).
+    /// </summary>
+    private const int MaxIndividualSignedXmlBytes = 320 * 1024;
+
     private async Task<Result<ElectronicDocumentDto>> RunPipelineAsync(
         ElectronicDocument document,
         RegisterElectronicDocumentRequest request,
@@ -281,6 +287,25 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 var reason = signResult.Error ?? "No se pudo firmar el documento electrónico.";
                 LogStageFailed("Signing", request.SourceModule, request.SourceEntityId, reason);
                 return await FailAsync(document, request.UserId, ct, reason, signResult.Code);
+            }
+
+            // R16 (auditoría SRI 2.34): "para el envío individual, el tamaño máximo por comprobante
+            // será de 320 Kb" (Ficha Técnica Offline §7.5; excederlo es el error 26 de RECEPCIÓN). Se
+            // verifica sobre el XML firmado — lo que realmente se transmite — antes de persistirlo
+            // como Signed y del primer envío, con el límite provisional de MaxIndividualSignedXmlBytes.
+            var signedXmlBytes = Encoding.UTF8.GetByteCount(signResult.Value!.SignedXml);
+            if (signedXmlBytes > MaxIndividualSignedXmlBytes)
+            {
+                var reason =
+                    $"El XML firmado ocupa {signedXmlBytes} bytes y supera el máximo de {MaxIndividualSignedXmlBytes} bytes (320 KB, límite provisional de la Ficha Técnica §7.5) por comprobante individual.";
+                LogStageFailed("SizeLimit", request.SourceModule, request.SourceEntityId, reason);
+                return await FailAsync(
+                    document,
+                    request.UserId,
+                    ct,
+                    reason,
+                    isValidationFailure: true
+                );
             }
 
             // El documento ya existe (creado en Draft por RegisterAsync) — su Id se reutiliza como
@@ -532,6 +557,24 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         if (document.RetryCount < maximum)
             return;
 
+        // R11: con resultado SRI pendiente (Caso #32: solo consulta) el máximo de la empresa no cierra
+        // la consulta antes del plazo del SRI (24 h desde RECIBIDA, ElectronicDocumentRetryPolicy.
+        // SriProcessingWindow), contado desde la primera transición a Received del timeline. Sin esa
+        // evidencia (Signed: el ERP nunca supo si el SRI lo recibió) el plazo no puede calcularse y no
+        // se cierra la consulta automática: fail-closed, nunca un DeadLetter por una fecha supuesta.
+        if (document.RequiresSriReconciliation)
+        {
+            var receivedAtUtc =
+                await _repository.GetFirstReceivedAtUtcAsync(document.TenantId, document.Id, ct);
+            if (
+                receivedAtUtc is null
+                || DateTime.UtcNow < receivedAtUtc.Value + ElectronicDocumentRetryPolicy.SriProcessingWindow
+            )
+                return;
+            lastFailureReason =
+                $"Sin resultado definitivo del SRI tras el plazo de {ElectronicDocumentRetryPolicy.SriProcessingWindow.TotalHours:0} h; requiere conciliación. {lastFailureReason}".TrimEnd();
+        }
+
         var reason = lastFailureReason is null
             ? $"Reintentos agotados tras {maximum} intentos."
             : $"Reintentos agotados tras {maximum} intentos. Último error: {lastFailureReason}";
@@ -756,6 +799,10 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
     // — se detecta por ese prefijo literal.
     private static readonly string[] AlreadyExistsErrorPrefixes = ["[70]", "[43]", "[45]"];
 
+    /// <summary>Identificadores de RECEPCIÓN que no constituyen rechazo del comprobante (ver R13 en
+    /// <see cref="TrySendToReceptionAsync"/>).</summary>
+    private static readonly string?[] TransientReturnCodes = ["50"];
+
     /// <summary>
     /// Envía el XML firmado a Recepción del SRI y aplica la transición que corresponda
     /// (Sent→Received, Sent→Received si el SRI reporta que ya existe un envío anterior de esta
@@ -783,9 +830,26 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             return (false, receptionResult.Error);
         }
 
-        document.MarkSent(userId);
-
         var recepcion = receptionResult.Value!;
+
+        // R13 (auditoría SRI 2.34): DEVUELTA solo con el código 50 "Error interno general" ("Cuando
+        // ocurre un error inesperado en el servidor", tabla de errores de RECEPCIÓN) es una falla del
+        // SRI, no un defecto del comprobante, y "los comprobantes devueltos no se guardarán en la base
+        // de datos del SRI" (nota 1). No es un rechazo: igual que un fallo de transporte, el documento
+        // conserva su estado (Signed/Dispatching) y, por el Caso #32, solo se consulta, nunca se
+        // reenvía automáticamente.
+        if (
+            !recepcion.Received
+            && recepcion.StructuredMessages.Count > 0
+            && recepcion.StructuredMessages.All(m => TransientReturnCodes.Contains(m.Code))
+        )
+        {
+            var transientReason = string.Join(" ", recepcion.Errors);
+            LogReceptionReturnedTransient(document.Id, recepcion.Status, transientReason);
+            return (false, transientReason);
+        }
+
+        document.MarkSent(userId);
         if (recepcion.Received)
         {
             document.MarkReceived(userId);
@@ -986,6 +1050,16 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         Message = "[ElectronicDocuments] Documento {ElectronicDocumentId} no pudo enviarse a recepción SRI, permanece en Signed: {Reason}"
     )]
     private partial void LogReceptionNotSent(Guid electronicDocumentId, string? reason);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[ElectronicDocuments] Documento {ElectronicDocumentId} devuelto por error interno del SRI (estado {Status}), conserva su estado y solo se consultará: {Reason}"
+    )]
+    private partial void LogReceptionReturnedTransient(
+        Guid electronicDocumentId,
+        string status,
+        string reason
+    );
 
     [LoggerMessage(
         Level = LogLevel.Information,

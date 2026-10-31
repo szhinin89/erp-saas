@@ -240,9 +240,9 @@ public sealed class RetentionXmlBuilder : IRetentionXmlBuilder
                 data.Emission.IssueDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
             ),
             new XElement("dirEstablecimiento", data.Emission.EstablishmentAddress),
-            string.IsNullOrWhiteSpace(data.RetentionInfo.SpecialTaxpayerNumber)
+            string.IsNullOrWhiteSpace(data.Issuer.SpecialTaxpayerNumber)
                 ? null
-                : new XElement("contribuyenteEspecial", data.RetentionInfo.SpecialTaxpayerNumber),
+                : new XElement("contribuyenteEspecial", data.Issuer.SpecialTaxpayerNumber),
             new XElement("obligadoContabilidad", data.Issuer.IsAccountingRequired ? "SI" : "NO"),
             new XElement(
                 "tipoIdentificacionSujetoRetenido",

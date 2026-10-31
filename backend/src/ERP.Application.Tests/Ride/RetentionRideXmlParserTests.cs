@@ -46,7 +46,6 @@ public sealed class RetentionRideXmlParserTests
                 IsAccountingRequired: true
             ),
             RetentionInfo: new RetentionElectronicDocumentInfo(
-                SpecialTaxpayerNumber: null,
                 FiscalPeriod: "08/2026"
             ),
             SubjectWithheld: new ElectronicDocumentCounterpartyData(

@@ -120,6 +120,58 @@ public sealed class ElectronicEmissionRequirementsValidatorTests
         failure.Error.Should().Contain($"[{RequirementCodes.SriWsdlUrl}] La URL del webservice SRI no es válida.");
     }
 
+    [Theory]
+    [InlineData(1, "https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl")]
+    [InlineData(2, "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl")]
+    public async Task WSDL_oficial_del_otro_ambiente_bloquea_antes_de_capturar_secuencial(int environment, string wsdlUrl)
+    {
+        // Ficha §7.1: celcer = Pruebas, cel = Producción. Configuración persistida contradictoria
+        // (anterior a la validación de guardado): el gate preventivo bloquea la emisión.
+        var f = new Fixture();
+        f.Settings = SriSettings.Create(f.TenantId, f.CompanyId, environment, emissionType: 1, wsdlUrl, UserId);
+        f.Settings.AttachCertificate("certs/x.p12", "x.p12", 10, DateTime.UtcNow, UserId);
+
+        var result = await f.ValidateAsync();
+
+        result.Issues.Select(i => i.Code).Should().Equal(RequirementCodes.SriWsdlUrl);
+    }
+
+    [Theory]
+    [InlineData(1, "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl")]
+    [InlineData(2, "https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl")]
+    [InlineData(2, "https://sri-simulado.test/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl")]
+    public async Task WSDL_coherente_o_de_host_no_oficial_no_bloquea(int environment, string wsdlUrl)
+    {
+        // Un host no oficial (simulador de pruebas automatizadas, o un cambio futuro del SRI) no se juzga.
+        var f = new Fixture();
+        f.Settings = SriSettings.Create(f.TenantId, f.CompanyId, environment, emissionType: 1, wsdlUrl, UserId);
+        f.Settings.AttachCertificate("certs/x.p12", "x.p12", 10, DateTime.UtcNow, UserId);
+
+        var result = await f.ValidateAsync();
+
+        result.Issues.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(1, "https://CEL.sri.gob.ec/x?wsdl", false)]
+    [InlineData(2, "https://cel.sri.gob.ec/x?wsdl", true)]
+    [InlineData(1, "https://celcer.sri.gob.ec/x?wsdl", true)]
+    [InlineData(2, "http://celcer.sri.gob.ec/x?wsdl", false)]
+    [InlineData(1, "no-es-una-url", false)]
+    public void Regla_unica_de_URL_SRI_por_ambiente(int environment, string wsdlUrl, bool expected) =>
+        ERP.Application.Modules.ElectronicInvoicing.Services.SriWsdlUrl.IsValidFor(wsdlUrl, environment)
+            .Should().Be(expected);
+
+    [Theory]
+    [InlineData(1, "https://cel.sri.gob.ec/x?wsdl", false)]
+    [InlineData(2, "https://celcer.sri.gob.ec/x?wsdl", false)]
+    [InlineData(2, "https://cel.sri.gob.ec/x?wsdl", true)]
+    [InlineData(1, "http://localhost:5555/RecepcionComprobantesOffline?wsdl", true)]
+    public void Guardar_configuracion_rechaza_el_host_oficial_del_otro_ambiente(int environment, string wsdlUrl, bool valid) =>
+        new ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSriConfiguration.UpsertSriConfigurationCommandValidator()
+            .Validate(new ERP.Application.Modules.ElectronicInvoicing.UseCases.UpsertSriConfiguration.UpsertSriConfigurationCommand(null, environment, 1, wsdlUrl))
+            .IsValid.Should().Be(valid);
+
     [Fact]
     public async Task Punto_de_emision_fuera_de_la_empresa_bloquea_sin_leer_su_establecimiento()
     {

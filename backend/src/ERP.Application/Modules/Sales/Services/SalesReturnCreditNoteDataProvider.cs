@@ -178,7 +178,8 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
                 TradeName: company.TradeName,
                 MatrixAddress: mainEstablishment!.Address,
                 TaxRegime: ResolveContribuyenteRimpeText(company.TaxRegime),
-                IsAccountingRequired: company.IsAccountingReq
+                IsAccountingRequired: company.IsAccountingReq,
+                SpecialTaxpayerNumber: company.SpecialTaxpayerNo
             ),
             Counterparty: new ElectronicDocumentCounterpartyData(
                 IdentificationType: invoice!.Customer.IdentificationType,

@@ -161,14 +161,15 @@ public sealed class ValidateSriConfigurationQueryHandler
             );
         }
 
-        var urlValid = SriWsdlUrl.IsValid(settings.WsdlUrl);
+        var urlValid = SriWsdlUrl.IsValidFor(settings.WsdlUrl, settings.Environment);
         checks.Add(
             new SriConfigurationCheckDto(
                 "wsdlUrl",
                 urlValid,
-                urlValid
-                    ? "La URL del webservice SRI tiene un formato válido."
-                    : "La URL del webservice SRI no es válida."
+                urlValid ? "La URL del webservice SRI tiene un formato válido."
+                : SriWsdlUrl.IsValid(settings.WsdlUrl)
+                    ? "La URL del webservice SRI corresponde al otro ambiente (Pruebas/Producción) que el configurado."
+                : "La URL del webservice SRI no es válida."
             )
         );
 
