@@ -13,4 +13,10 @@ public static class SriAdditionalInfoFieldNames
     /// de sistemas / servicios de facturación electrónica (Res. NAC-DGERCGC26-00000027).
     /// </summary>
     public const string SystemProviderRuc = "RUC Proveedor";
+
+    /// <summary>
+    /// Ficha Técnica de Comprobantes Electrónicos Offline v2.34, Anexo 24 — leyenda de los emisores
+    /// calificados como Gran Contribuyente; el valor es el número de su resolución.
+    /// </summary>
+    public const string LargeTaxpayer = "Gran Contribuyente";
 }

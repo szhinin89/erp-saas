@@ -555,6 +555,10 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.SystemProviderRucAdditionalInfoContributor
         >();
         services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.IElectronicDocumentAdditionalInfoContributor,
+            ERP.Application.Modules.ElectronicDocuments.AdditionalInfo.LargeTaxpayerAdditionalInfoContributor
+        >();
+        services.AddScoped<
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentXmlSupplier,
             ERP.Application.Modules.ElectronicDocuments.Services.RetentionElectronicDocumentXmlSupplier
         >();

@@ -1,4 +1,5 @@
 using System.Xml;
+using System.Xml.Linq;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.XmlBuilders;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
@@ -123,6 +124,45 @@ public sealed class CreditNoteXmlBuilderTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Xml.Should().NotContain("contribuyenteEspecial");
+    }
+
+    // ── R21 (Ficha 2.34, Anexo 21): agenteRetencion en infoTributaria ──
+
+    [Fact]
+    public void Build_con_agente_de_retencion_lo_emite_tras_dirMatriz_y_antes_de_rimpe_y_pasa_el_xsd_oficial()
+    {
+        var data = ValidData();
+        data = data with
+        {
+            Issuer = data.Issuer with
+            {
+                RetentionAgentResolutionNumber = "6498",
+                TaxRegime = "CONTRIBUYENTE RÉGIMEN RIMPE",
+            },
+        };
+
+        var result = new CreditNoteXmlBuilder(TaxResolver().Object).Build(data);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var infoTributaria = XDocument.Parse(result.Value!.Xml).Descendants("infoTributaria").Single();
+        infoTributaria
+            .Elements()
+            .Select(e => e.Name.LocalName)
+            .TakeLast(3)
+            .Should()
+            .Equal("dirMatriz", "agenteRetencion", "contribuyenteRimpe");
+        infoTributaria.Element("agenteRetencion")!.Value.Should().Be("6498");
+        ValidateAgainstOfficialXsd(result.Value.Xml);
+    }
+
+    [Fact]
+    public void Build_sin_agente_de_retencion_omite_el_elemento_y_pasa_el_xsd_oficial()
+    {
+        var result = new CreditNoteXmlBuilder(TaxResolver().Object).Build(ValidData());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Xml.Should().NotContain("agenteRetencion");
+        ValidateAgainstOfficialXsd(result.Value.Xml);
     }
 
     [Fact]

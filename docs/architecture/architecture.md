@@ -535,6 +535,9 @@ rol devuelve un error explícito en vez de producir un XML que el SRI rechazarí
 `04` Contribuyente Especial no es un régimen: la ficha lo emite como número de resolución
 (`contribuyenteEspecial`, `Company.SpecialTaxpayerNo`), así que queda no seleccionable. Una empresa que lo tenga
 guardado lo conserva; Configuración › Fiscal lo muestra como "no seleccionable" y no lo vacía al guardar.
+Las designaciones por resolución (agente de retención, Anexo 21; Gran Contribuyente, Anexo 24) tampoco son
+regímenes ni catálogo: son datos de cada `Company` (número + vigencia), ver
+[backend.md § Límites y finalización](backend.md#límites-y-finalización).
 
 ### Errores
 

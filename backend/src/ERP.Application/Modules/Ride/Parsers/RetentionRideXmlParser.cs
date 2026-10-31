@@ -74,7 +74,9 @@ public sealed class RetentionRideXmlParser : IRetentionRideXmlParser
                 address: OptionalText(infoTributaria, "dirMatriz"),
                 isAccountingRequired: RequireText(infoCompRetencion, "obligadoContabilidad")
                     .Equals("SI", StringComparison.OrdinalIgnoreCase),
-                taxRegime: OptionalText(infoTributaria, "contribuyenteRimpe")
+                taxRegime: OptionalText(infoTributaria, "contribuyenteRimpe"),
+                specialTaxpayerNumber: OptionalText(infoCompRetencion, "contribuyenteEspecial"),
+                retentionAgentResolution: OptionalText(infoTributaria, "agenteRetencion")
             );
 
             var subjectWithheld = RideParty.Create(

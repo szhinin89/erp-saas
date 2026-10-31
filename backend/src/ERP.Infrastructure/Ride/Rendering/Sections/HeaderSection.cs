@@ -71,10 +71,21 @@ public static class HeaderSection
                             info.Item()
                                 .Text($"Dirección Sucursal: {header.EstablishmentAddress}")
                                 .FontSize(8);
+                            // Orden del RIDE de la ficha 2.34 (Anexo 21, Ejemplo 2).
+                            if (issuer.SpecialTaxpayerNumber is not null)
+                                info.Item()
+                                    .Text($"Contribuyente Especial Nro.: {issuer.SpecialTaxpayerNumber}")
+                                    .FontSize(8);
                             if (issuer.IsAccountingRequired.HasValue)
                                 info.Item()
                                     .Text(
                                         $"Obligado a Llevar Contabilidad: {(issuer.IsAccountingRequired.Value ? "SI" : "NO")}"
+                                    )
+                                    .FontSize(8);
+                            if (issuer.RetentionAgentResolution is not null)
+                                info.Item()
+                                    .Text(
+                                        $"Agente de Retención Resolución No. {issuer.RetentionAgentResolution}"
                                     )
                                     .FontSize(8);
                             if (issuer.TaxRegime is not null)

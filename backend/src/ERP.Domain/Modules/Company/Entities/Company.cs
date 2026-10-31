@@ -41,6 +41,25 @@ public class Company : ITenantScopedEntity
     public bool WithholdsRenta { get; set; } = true;
     public bool WithholdsVat { get; set; } = true;
 
+    // ── Designaciones del emisor por resolución SRI (Ficha Técnica 2.34) ─────────────────────
+    // Independientes de WithholdsRenta/WithholdsVat (práctica operativa de retener) y de
+    // SpecialTaxpayerNo (contribuyente especial): ninguna se deriva de otra. Número y vigencia van
+    // juntos (ambos nulos = no designada); la aplicabilidad se evalúa contra la fecha de emisión.
+
+    /// <summary>Anexo 21 — número de la resolución de designación como agente de retención, sin
+    /// ceros a la izquierda (<c>agenteRetencion</c>: numérico, máximo 8).</summary>
+    public string? RetentionAgentResolutionNo { get; private set; }
+
+    /// <summary>Anexo 21 — fecha de emisión desde la que rige la designación.</summary>
+    public DateOnly? RetentionAgentEffectiveFrom { get; private set; }
+
+    /// <summary>Anexo 24 — resolución de calificación como Gran Contribuyente, tal como la emitió
+    /// el SRI (valor del <c>campoAdicional</c> "Gran Contribuyente", máximo 300).</summary>
+    public string? LargeTaxpayerResolutionNo { get; private set; }
+
+    /// <summary>Anexo 24 — fecha de emisión desde la que rige la calificación.</summary>
+    public DateOnly? LargeTaxpayerEffectiveFrom { get; private set; }
+
     public string? ExtraLegend { get; set; }
 
     /// <summary>Idioma principal de la empresa (es/en/qu).</summary>
@@ -351,18 +370,143 @@ public class Company : ITenantScopedEntity
         Guid? updatedBy
     )
     {
+        var normalizedSpecialTaxpayerNo = string.IsNullOrWhiteSpace(specialTaxpayerNo)
+            ? null
+            : specialTaxpayerNo.Trim();
+        if (
+            normalizedSpecialTaxpayerNo is not null
+            && !IsValidSpecialTaxpayerNo(normalizedSpecialTaxpayerNo)
+        )
+            throw new DomainRuleViolationException(SpecialTaxpayerNoFormatMessage);
+
         TaxRegimeCode = string.IsNullOrWhiteSpace(taxRegimeCode)
             ? null
             : taxRegimeCode.Trim().ToUpperInvariant();
         IsAccountingReq = isAccountingReq;
-        SpecialTaxpayerNo = string.IsNullOrWhiteSpace(specialTaxpayerNo)
-            ? null
-            : specialTaxpayerNo.Trim();
+        SpecialTaxpayerNo = normalizedSpecialTaxpayerNo;
         IsForeignTrade = isForeignTrade;
         WithholdsRenta = withholdsRenta;
         WithholdsVat = withholdsVat;
         UpdatedAt = DateTime.UtcNow;
         UpdatedBy = updatedBy;
+    }
+
+    // ── Formatos exigidos por la Ficha Técnica SRI 2.34 y los XSD oficiales embebidos ─────────
+
+    /// <summary>XSD <c>contribuyenteEspecial</c> (Factura 1.1.0, NC 1.1.0, Retención 1.0.0).</summary>
+    public const int SpecialTaxpayerNoMinLength = 3;
+
+    /// <inheritdoc cref="SpecialTaxpayerNoMinLength"/>
+    public const int SpecialTaxpayerNoMaxLength = 13;
+
+    /// <summary>Anexo 21 / XSD <c>agenteRetencion</c>: numérico, máximo 8.</summary>
+    public const int RetentionAgentResolutionNoMaxLength = 8;
+
+    /// <summary>Anexo 24 / XSD <c>campoAdicional</c>: máximo 300.</summary>
+    public const int LargeTaxpayerResolutionNoMaxLength = 300;
+
+    public const string SpecialTaxpayerNoFormatMessage =
+        "El número de contribuyente especial debe tener entre 3 y 13 caracteres alfanuméricos, sin espacios ni símbolos.";
+
+    public const string RetentionAgentDesignationMessage =
+        "La designación como agente de retención requiere el número de resolución (solo dígitos, máximo 8, sin ceros a la izquierda) y la fecha desde la que rige.";
+
+    public const string LargeTaxpayerDesignationMessage =
+        "La calificación como Gran Contribuyente requiere el número de resolución (máximo 300 caracteres) y la fecha desde la que rige.";
+
+    public static bool IsValidSpecialTaxpayerNo(string? value) =>
+        value is not null
+        && value.Length is >= SpecialTaxpayerNoMinLength and <= SpecialTaxpayerNoMaxLength
+        && value.All(char.IsAsciiLetterOrDigit);
+
+    /// <summary>Forma final del XML: dígitos, sin ceros a la izquierda, entre 1 y 8.</summary>
+    public static bool IsValidRetentionAgentResolutionNo(string? value) =>
+        value is not null
+        && value.Length is >= 1 and <= RetentionAgentResolutionNoMaxLength
+        && value[0] != '0'
+        && value.All(char.IsAsciiDigit);
+
+    public static bool IsValidLargeTaxpayerResolutionNo(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && value.Length <= LargeTaxpayerResolutionNoMaxLength
+        && value == value.Trim();
+
+    /// <summary>Par número + vigencia coherente: ambos nulos, o número válido con fecha.</summary>
+    public bool HasValidRetentionAgentDesignation =>
+        RetentionAgentResolutionNo is null
+            ? RetentionAgentEffectiveFrom is null
+            : RetentionAgentEffectiveFrom is not null
+                && IsValidRetentionAgentResolutionNo(RetentionAgentResolutionNo);
+
+    /// <inheritdoc cref="HasValidRetentionAgentDesignation"/>
+    public bool HasValidLargeTaxpayerDesignation =>
+        LargeTaxpayerResolutionNo is null
+            ? LargeTaxpayerEffectiveFrom is null
+            : LargeTaxpayerEffectiveFrom is not null
+                && IsValidLargeTaxpayerResolutionNo(LargeTaxpayerResolutionNo);
+
+    /// <summary>
+    /// Registra o retira las designaciones por resolución (pestaña "Fiscal"). Cada par es todo o
+    /// nada: número y vigencia juntos, o ninguno. El número de agente de retención se guarda en la
+    /// forma exigida por el Anexo 21 ("omitiendo los ceros a la izquierda"); la resolución de Gran
+    /// Contribuyente, tal cual (sin espacios externos). Nunca se infiere de otros datos fiscales.
+    /// </summary>
+    public void UpdateFiscalDesignations(
+        string? retentionAgentResolutionNo,
+        DateOnly? retentionAgentEffectiveFrom,
+        string? largeTaxpayerResolutionNo,
+        DateOnly? largeTaxpayerEffectiveFrom,
+        Guid? updatedBy
+    )
+    {
+        var retentionAgentNo = NormalizeRetentionAgentResolutionNo(retentionAgentResolutionNo);
+        if (
+            (retentionAgentNo is null) != (retentionAgentEffectiveFrom is null)
+            || (retentionAgentNo is not null && !IsValidRetentionAgentResolutionNo(retentionAgentNo))
+        )
+            throw new DomainRuleViolationException(RetentionAgentDesignationMessage);
+
+        var largeTaxpayerNo = string.IsNullOrWhiteSpace(largeTaxpayerResolutionNo)
+            ? null
+            : largeTaxpayerResolutionNo.Trim();
+        if (
+            (largeTaxpayerNo is null) != (largeTaxpayerEffectiveFrom is null)
+            || (largeTaxpayerNo is not null && !IsValidLargeTaxpayerResolutionNo(largeTaxpayerNo))
+        )
+            throw new DomainRuleViolationException(LargeTaxpayerDesignationMessage);
+
+        RetentionAgentResolutionNo = retentionAgentNo;
+        RetentionAgentEffectiveFrom = retentionAgentEffectiveFrom;
+        LargeTaxpayerResolutionNo = largeTaxpayerNo;
+        LargeTaxpayerEffectiveFrom = largeTaxpayerEffectiveFrom;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
+    }
+
+    /// <summary>Anexo 21 — resolución aplicable a un comprobante con esa fecha de emisión de
+    /// negocio (ADR-034); <c>null</c> si no está designada o la designación rige después.</summary>
+    public string? RetentionAgentResolutionFor(DateOnly issueDate) =>
+        RetentionAgentResolutionNo is not null && RetentionAgentEffectiveFrom <= issueDate
+            ? RetentionAgentResolutionNo
+            : null;
+
+    /// <summary>Anexo 24 — mismo criterio que <see cref="RetentionAgentResolutionFor"/>.</summary>
+    public string? LargeTaxpayerResolutionFor(DateOnly issueDate) =>
+        LargeTaxpayerResolutionNo is not null && LargeTaxpayerEffectiveFrom <= issueDate
+            ? LargeTaxpayerResolutionNo
+            : null;
+
+    /// <summary>Anexo 21: "omitiendo los ceros a la izquierda". Vacío → <c>null</c>.</summary>
+    public static string? NormalizeRetentionAgentResolutionNo(string? value)
+    {
+        var trimmed = value?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return null;
+        if (!trimmed.All(char.IsAsciiDigit))
+            return trimmed;
+        var withoutLeadingZeros = trimmed.TrimStart('0');
+        // "0", "000": no es un número de resolución; se conserva para que la validación lo rechace.
+        return withoutLeadingZeros.Length == 0 ? trimmed : withoutLeadingZeros;
     }
 
     /// <summary>Actualiza el idioma principal (pestaña "Operación" de Configuración → Empresa).</summary>

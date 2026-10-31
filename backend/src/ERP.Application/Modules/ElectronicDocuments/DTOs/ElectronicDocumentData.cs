@@ -88,7 +88,15 @@ public sealed record ElectronicDocumentIssuerData(
     /// <c>Company.SpecialTaxpayerNo</c>; <c>null</c> si no aplica (el elemento SRI se omite). Fuente
     /// única para los tres tipos (Factura, Nota de crédito y Retención: "Obligatorio cuando
     /// corresponda", Ficha Técnica Offline, Anexos 3 y 1); cada builder lo ubica según su XSD.</summary>
-    string? SpecialTaxpayerNumber = null
+    string? SpecialTaxpayerNumber = null,
+    /// <summary>agenteRetencion (Anexo 21) — número de resolución ya evaluado contra la fecha de
+    /// emisión (<c>Company.RetentionAgentResolutionFor</c>); <c>null</c> si no aplica y el elemento
+    /// se omite. Aplica a todos los tipos; va en <c>infoTributaria</c>.</summary>
+    string? RetentionAgentResolutionNumber = null,
+    /// <summary>Gran Contribuyente (Anexo 24) — resolución ya evaluada contra la fecha de emisión;
+    /// <c>null</c> si no aplica. Solo la consume su contributor de <c>infoAdicional</c>, que decide
+    /// los tipos aplicables (venta, NC, ND); los builders no la leen.</summary>
+    string? LargeTaxpayerResolutionNumber = null
 );
 
 /// <summary>Cliente/receptor del comprobante — identificación y dirección.</summary>

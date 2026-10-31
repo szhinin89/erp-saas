@@ -12,7 +12,6 @@ using ERP.Domain.Modules.Purchases;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
-using ERP.Domain.Modules.SriCatalogs.Entities;
 
 namespace ERP.Application.Modules.Sales.Services;
 
@@ -187,14 +186,10 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
                 Sequential: ExtractSequential(invoice.InvoiceNumber),
                 IssueDate: invoice.IssueDate
             ),
-            Issuer: new ElectronicDocumentIssuerData(
-                TaxId: company!.TaxIdentificationNumber,
-                LegalName: company.LegalName,
-                TradeName: company.TradeName,
-                MatrixAddress: mainEstablishment!.Address,
-                TaxRegime: ResolveContribuyenteRimpeText(company.TaxRegime),
-                IsAccountingRequired: company.IsAccountingReq,
-                SpecialTaxpayerNumber: company.SpecialTaxpayerNo
+            Issuer: ElectronicDocumentIssuerProjection.From(
+                company!,
+                mainEstablishment!.Address,
+                invoice.IssueDate
             ),
             Counterparty: new ElectronicDocumentCounterpartyData(
                 IdentificationType: invoice.Customer.IdentificationType,
@@ -227,20 +222,6 @@ public sealed class SalesInvoiceElectronicDocumentDataProvider : IElectronicDocu
 
         return Result<ElectronicDocumentData>.Success(data);
     }
-
-    /// <summary>
-    /// Ficha técnica SRI (ver <c>factura_V2.1.0.xsd</c>, tipo <c>contribuyenteRimpe</c>): el
-    /// elemento &lt;contribuyenteRimpe&gt; solo debe existir para contribuyentes bajo régimen
-    /// RIMPE, y su contenido debe ser exactamente el texto fijo exigido por el SRI — nunca un
-    /// código. "RIMPE" se determina desde el catálogo oficial <c>sri_tax_regime</c> (columna
-    /// <c>Abbrev</c>, ver <see cref="SriTaxRegimeConfiguration"/>: "RIMPE_ME"/"RIMPE_NP"), nunca
-    /// comparando códigos numéricos hardcodeados. Régimen General o Contribuyente Especial
-    /// devuelven <c>null</c> y el elemento se omite por completo.
-    /// </summary>
-    private static string? ResolveContribuyenteRimpeText(SriTaxRegime? taxRegime) =>
-        taxRegime?.Abbrev?.StartsWith("RIMPE", StringComparison.OrdinalIgnoreCase) == true
-            ? "CONTRIBUYENTE RÉGIMEN RIMPE"
-            : null;
 
     /// <summary>
     /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5C) — etiqueta que

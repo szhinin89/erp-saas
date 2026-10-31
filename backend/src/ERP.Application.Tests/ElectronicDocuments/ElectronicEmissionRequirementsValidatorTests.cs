@@ -252,6 +252,74 @@ public sealed class ElectronicEmissionRequirementsValidatorTests
             || t.Name.Contains("Authorization", StringComparison.Ordinal));
     }
 
+    // ── R21/R22/R23: datos fiscales guardados fuera del formato del XSD / ficha ──
+
+    private static void ForcePrivate(Company company, string property, object? value) =>
+        typeof(Company).GetProperty(property)!.SetValue(company, value);
+
+    [Theory]
+    [InlineData("01")]
+    [InlineData("04")]
+    [InlineData("07")]
+    public async Task Contribuyente_especial_guardado_fuera_del_formato_XSD_bloquea_antes_del_secuencial(
+        string docTypeCode
+    )
+    {
+        var f = new Fixture();
+        f.Company.SpecialTaxpayerNo = "Resolución 5368"; // espacio y tilde: el XSD lo rechazaría
+
+        var result = await f.ValidateAsync(docTypeCode);
+
+        result.CanIssue.Should().BeFalse();
+        result.Issues.Should().ContainSingle().Which.Should().Be(
+            new ElectronicEmissionRequirementIssue(RequirementCodes.SpecialTaxpayerNumber,
+                ElectronicEmissionRequirementSeverity.Required, ReadinessActionTarget.CompanyFiscalSettings));
+        result.ToFailure<object>()!.Error.Should().Contain($"[{RequirementCodes.SpecialTaxpayerNumber}]");
+    }
+
+    [Theory]
+    [InlineData("06498", true)]   // ceros a la izquierda: el Anexo 21 los omite
+    [InlineData("123456789", true)]
+    [InlineData("6498", false)]   // número sin vigencia
+    public async Task Agente_de_retencion_guardado_invalido_o_incompleto_bloquea(string number, bool withDate)
+    {
+        var f = new Fixture();
+        ForcePrivate(f.Company, nameof(Company.RetentionAgentResolutionNo), number);
+        ForcePrivate(f.Company, nameof(Company.RetentionAgentEffectiveFrom),
+            withDate ? new DateOnly(2026, 1, 1) : null);
+
+        var result = await f.ValidateAsync();
+
+        result.Issues.Should().ContainSingle().Which.Should().Be(
+            new ElectronicEmissionRequirementIssue(RequirementCodes.RetentionAgentDesignation,
+                ElectronicEmissionRequirementSeverity.Required, ReadinessActionTarget.CompanyFiscalSettings));
+    }
+
+    [Fact]
+    public async Task Gran_Contribuyente_sin_vigencia_bloquea()
+    {
+        var f = new Fixture();
+        ForcePrivate(f.Company, nameof(Company.LargeTaxpayerResolutionNo), "NAC-GCFOIOC21-00000868-E");
+
+        var result = await f.ValidateAsync("04");
+
+        result.Issues.Should().ContainSingle().Which.Code.Should().Be(RequirementCodes.LargeTaxpayerDesignation);
+    }
+
+    [Fact]
+    public async Task Designaciones_validas_y_contribuyente_especial_valido_no_generan_incumplimientos()
+    {
+        var f = new Fixture();
+        f.Company.SpecialTaxpayerNo = "5368";
+        f.Company.UpdateFiscalDesignations("6498", new DateOnly(2026, 1, 1),
+            "NAC-GCFOIOC21-00000868-E", new DateOnly(2026, 1, 1), UserId);
+
+        var result = await f.ValidateAsync("07");
+
+        result.CanIssue.Should().BeTrue();
+        result.Issues.Should().BeEmpty();
+    }
+
     private sealed class Fixture
     {
         public Guid TenantId { get; } = Guid.NewGuid();

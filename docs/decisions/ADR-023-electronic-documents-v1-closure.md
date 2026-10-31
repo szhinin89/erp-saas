@@ -216,6 +216,26 @@ Ficha Técnica Offline (tabla de errores y notas 1–2, §7.5, Anexos 1 y 3). In
 70/43/45, ConsultaComprobante, scheduler/jobs, migraciones, XSD y catálogos. Contrato vigente:
 [backend.md § Límites y finalización](../architecture/backend.md#límites-y-finalización).
 
+## Addendum (2026-10-31): perfil fiscal del emisor — R21/R22 (causa 1)
+
+Ficha Técnica Offline 2.34, Anexos 21 y 24 (contrastados con la 2.32: mismo contenido y ejemplos). Detalle y
+evidencia: [SRI-2.34-COMPLIANCE-CLOSURE §3.1](../sri/SRI-2.34-COMPLIANCE-CLOSURE.md).
+
+- **R21:** `<agenteRetencion>` entre `dirMatriz` y `contribuyenteRimpe` en Factura, NC y Retención, desde
+  `Company.RetentionAgentResolutionNo` cuando `RetentionAgentEffectiveFrom` ≤ fecha de emisión. El bloque
+  `infoTributaria` de los tres builders se extrae a `InfoTributariaXmlBuilder` (ADR-038 D8); sin designación la
+  salida es idéntica.
+- **R22:** `campoAdicional` "Gran Contribuyente" con `Company.LargeTaxpayerResolutionNo` (vigencia ≤ fecha de
+  emisión) mediante el contributor `sri.anexo24.large-taxpayer` del composer (ADR-038 D6); nunca en Retención.
+- **Emisor:** `ElectronicDocumentIssuerProjection` es la proyección única (ADR-038 D5) y reemplaza las tres
+  construcciones y las tres copias de la leyenda RIMPE de los providers (resultado idéntico).
+- **R23 (complemento):** RIDE de 01/04/07 con `contribuyenteEspecial`; su formato XSD se valida al guardar y en el
+  gate de emisión.
+
+**Sin cambios:** estados, firma, SOAP, clave de acceso, secuenciales, jobs, XSD y catálogos. Migración aditiva
+`IssuerFiscalDesignations` (columnas nulas de `company` + `CHECK` de pares). Los comprobantes firmados o
+autorizados no se regeneran.
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

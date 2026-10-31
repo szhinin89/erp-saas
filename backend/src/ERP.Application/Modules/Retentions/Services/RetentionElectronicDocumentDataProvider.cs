@@ -11,7 +11,6 @@ using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Constants;
-using ERP.Domain.Modules.SriCatalogs.Entities;
 
 namespace ERP.Application.Modules.Retentions.Services;
 
@@ -215,14 +214,10 @@ public sealed class RetentionElectronicDocumentDataProvider
                 IssueDate: retention.IssueDate!.Value
             ),
             NumeroCompleto: retention.RetentionNumber!,
-            Issuer: new ElectronicDocumentIssuerData(
-                TaxId: company!.TaxIdentificationNumber,
-                LegalName: company.LegalName,
-                TradeName: company.TradeName,
-                MatrixAddress: mainEstablishment!.Address,
-                TaxRegime: ResolveContribuyenteRimpeText(company.TaxRegime),
-                IsAccountingRequired: company.IsAccountingReq,
-                SpecialTaxpayerNumber: company.SpecialTaxpayerNo
+            Issuer: ElectronicDocumentIssuerProjection.From(
+                company!,
+                mainEstablishment!.Address,
+                retention.IssueDate!.Value
             ),
             RetentionInfo: new RetentionElectronicDocumentInfo(
                 FiscalPeriod: retention.FiscalPeriod!
@@ -258,16 +253,6 @@ public sealed class RetentionElectronicDocumentDataProvider
 
         return Result<RetentionElectronicDocumentData>.Success(data);
     }
-
-    /// <summary>
-    /// Mismo criterio exacto que <c>SalesInvoiceElectronicDocumentDataProvider.ResolveContribuyenteRimpeText</c>
-    /// — el elemento SRI solo debe existir para contribuyentes RIMPE, resuelto desde el catálogo
-    /// oficial <c>sri_tax_regime</c> (columna <c>Abbrev</c>), nunca comparando códigos hardcodeados.
-    /// </summary>
-    private static string? ResolveContribuyenteRimpeText(SriTaxRegime? taxRegime) =>
-        taxRegime?.Abbrev?.StartsWith("RIMPE", StringComparison.OrdinalIgnoreCase) == true
-            ? "CONTRIBUYENTE RÉGIMEN RIMPE"
-            : null;
 
     private static RetentionElectronicDocumentTaxLine BuildTaxLine(
         RetentionDocumentLine line,

@@ -5,6 +5,7 @@ using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
+using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 using RequirementCodes = ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementCodes;
 using Severity = ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementSeverity;
 
@@ -88,6 +89,24 @@ public sealed class ElectronicEmissionRequirementsValidator
                 StringComparison.OrdinalIgnoreCase
             ))
             Add(RequirementCodes.RimpeNegocioPopularLegend, null);
+        // Datos fiscales del emisor que el XML transcribe tal cual: un valor guardado fuera del formato
+        // del XSD/ficha (p. ej. cargado antes de la validación del formulario) haría fallar el
+        // comprobante después del secuencial. Mismas reglas que aplica Company al guardarlos.
+        if (
+            company.SpecialTaxpayerNo is not null
+            && !CompanyEntity.IsValidSpecialTaxpayerNo(company.SpecialTaxpayerNo)
+        )
+            Add(RequirementCodes.SpecialTaxpayerNumber, ReadinessActionTarget.CompanyFiscalSettings);
+        if (!company.HasValidRetentionAgentDesignation)
+            Add(
+                RequirementCodes.RetentionAgentDesignation,
+                ReadinessActionTarget.CompanyFiscalSettings
+            );
+        if (!company.HasValidLargeTaxpayerDesignation)
+            Add(
+                RequirementCodes.LargeTaxpayerDesignation,
+                ReadinessActionTarget.CompanyFiscalSettings
+            );
 
         // ── Dirección matriz (dirMatriz) ──
         var main = await _establishmentRepo.GetMainByCompanyAsync(tid, cid, ct);

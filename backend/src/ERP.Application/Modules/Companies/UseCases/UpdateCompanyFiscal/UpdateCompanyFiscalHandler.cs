@@ -97,6 +97,13 @@ public sealed class UpdateCompanyFiscalHandler
             command.WithholdsVat,
             _currentUser.UserId
         );
+        entity.UpdateFiscalDesignations(
+            command.RetentionAgentResolutionNo,
+            command.RetentionAgentEffectiveFrom,
+            command.LargeTaxpayerResolutionNo,
+            command.LargeTaxpayerEffectiveFrom,
+            _currentUser.UserId
+        );
 
         await _companies.SaveChangesAsync(cancellationToken);
 

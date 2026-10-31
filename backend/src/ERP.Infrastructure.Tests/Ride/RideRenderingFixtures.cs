@@ -98,8 +98,32 @@ internal static class RideRenderingFixtures
         );
 
     /// <summary>Factura completa: nombre comercial, régimen, dirección de comprador, info adicional, dos pagos.</summary>
-    public static InvoiceRideDocumentLayout Full() =>
-        ComposeFrom(
+    public static InvoiceRideDocumentLayout Full()
+    {
+        var (data, branding) = FullData();
+        return ComposeFrom(data, branding);
+    }
+
+    /// <summary>R21/R23 — mismo comprobante que <see cref="Full"/> con contribuyente especial y
+    /// agente de retención en el XML; el RIDE debe mostrarlos en la cabecera del emisor.</summary>
+    public static InvoiceRideDocumentLayout WithIssuerFiscalProfile()
+    {
+        var (data, branding) = FullData();
+        return ComposeFrom(
+            data with
+            {
+                Issuer = data.Issuer with
+                {
+                    SpecialTaxpayerNumber = "5368",
+                    RetentionAgentResolutionNumber = "6498",
+                },
+            },
+            branding
+        );
+    }
+
+    private static (ElectronicDocumentData Data, RideBranding Branding) FullData() =>
+        (
             new ElectronicDocumentData(
                 Emission: new ElectronicDocumentEmissionContext(
                     "2",
@@ -167,7 +191,7 @@ internal static class RideRenderingFixtures
                     new ElectronicDocumentAdditionalField("Teléfono", "0999999999"),
                 ]
             ),
-            branding: RideBranding.Create(
+            Branding: RideBranding.Create(
                 logoStoragePath: "branding/logo.png",
                 primaryColorHex: "#112233",
                 secondaryColorHex: "#445566",

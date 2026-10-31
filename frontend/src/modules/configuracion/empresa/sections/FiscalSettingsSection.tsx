@@ -10,6 +10,7 @@ import {
   ZhTextInput,
   ZhSelect,
   ZhDecimalInput,
+  ZhDateInput,
 } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
@@ -22,6 +23,7 @@ import type { SriTaxRegimeLookup } from "../../../items/facades/sriLookupFacade"
 import {
   companyFiscalSchema,
   defaultCompanyFiscalValues,
+  normalizeRetentionAgentNo,
   type CompanyFiscalValues,
 } from "../schemas/companyFiscalSchema";
 import {
@@ -69,7 +71,7 @@ export function FiscalSettingsSection() {
     reset,
     watch,
     setError: setFieldError,
-    formState: { isDirty },
+    formState: { errors, isDirty },
   } = useForm<CompanyFiscalValues>({
     resolver: zodResolver(companyFiscalSchema),
     defaultValues: defaultCompanyFiscalValues,
@@ -84,6 +86,10 @@ export function FiscalSettingsSection() {
     isForeignTrade: profile.isForeignTrade,
     withholdsRenta: profile.withholdsRenta,
     withholdsVat: profile.withholdsVat,
+    retentionAgentResolutionNo: profile.retentionAgentResolutionNo ?? "",
+    retentionAgentEffectiveFrom: profile.retentionAgentEffectiveFrom ?? "",
+    largeTaxpayerResolutionNo: profile.largeTaxpayerResolutionNo ?? "",
+    largeTaxpayerEffectiveFrom: profile.largeTaxpayerEffectiveFrom ?? "",
   });
 
   useEffect(() => {
@@ -105,6 +111,13 @@ export function FiscalSettingsSection() {
         isForeignTrade: values.isForeignTrade,
         withholdsRenta: values.withholdsRenta,
         withholdsVat: values.withholdsVat,
+        retentionAgentResolutionNo: values.retentionAgentResolutionNo?.trim()
+          ? normalizeRetentionAgentNo(values.retentionAgentResolutionNo)
+          : null,
+        retentionAgentEffectiveFrom: values.retentionAgentEffectiveFrom || null,
+        largeTaxpayerResolutionNo:
+          values.largeTaxpayerResolutionNo?.trim() || null,
+        largeTaxpayerEffectiveFrom: values.largeTaxpayerEffectiveFrom || null,
       });
 
       setSaved(true);
@@ -248,12 +261,62 @@ export function FiscalSettingsSection() {
                 </ZhSelect>
               </ZHField>
 
-              <ZHField label={t("settings.company.fiscal.specialTaxpayerNo")}>
+              <ZHField
+                label={t("settings.company.fiscal.specialTaxpayerNo")}
+                fieldError={errors.specialTaxpayerNo?.message}
+              >
                 <ZhTextInput
                   className="zh-input"
                   placeholder="N° de resolución"
                   disabled={saving || !canEdit}
                   {...register("specialTaxpayerNo")}
+                />
+              </ZHField>
+            </ZHGrid>
+
+            <p className="zh-text-muted zh-text-xs zh-mt-4">
+              {t("settings.company.fiscal.designationsHint")}
+            </p>
+            <ZHGrid cols={2}>
+              <ZHField
+                label={t("settings.company.fiscal.retentionAgentResolutionNo")}
+                fieldError={errors.retentionAgentResolutionNo?.message}
+              >
+                <ZhTextInput
+                  className="zh-input"
+                  inputMode="numeric"
+                  placeholder="N° de resolución"
+                  disabled={saving || !canEdit}
+                  {...register("retentionAgentResolutionNo")}
+                />
+              </ZHField>
+              <ZHField
+                label={t("settings.company.fiscal.effectiveFrom")}
+                fieldError={errors.retentionAgentEffectiveFrom?.message}
+              >
+                <ZhDateInput
+                  disabled={saving || !canEdit}
+                  {...register("retentionAgentEffectiveFrom")}
+                />
+              </ZHField>
+              <ZHField
+                label={t("settings.company.fiscal.largeTaxpayerResolutionNo")}
+                fieldError={errors.largeTaxpayerResolutionNo?.message}
+              >
+                <ZhTextInput
+                  className="zh-input"
+                  placeholder="N° de resolución"
+                  disabled={saving || !canEdit}
+                  {...register("largeTaxpayerResolutionNo")}
+                />
+              </ZHField>
+              <ZHField
+                label={t("settings.company.fiscal.effectiveFrom")}
+                fieldError={errors.largeTaxpayerEffectiveFrom?.message}
+              >
+                <ZhDateInput
+                  disabled={saving || !canEdit}
+                  {...register("largeTaxpayerEffectiveFrom")}
                 />
               </ZHField>
             </ZHGrid>

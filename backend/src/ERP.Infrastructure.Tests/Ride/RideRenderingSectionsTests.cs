@@ -258,4 +258,54 @@ public sealed class RideRenderingSectionsTests
 
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void HeaderSection_muestra_contribuyente_especial_y_agente_de_retencion_del_XML()
+    {
+        // R21 (Anexo 21, Ejemplo 2) y R23: datos del emisor que el XML trae en infoTributaria /
+        // infoFactura. Factura y Nota de crédito comparten esta cabecera.
+        var layout = RideRenderingFixtures.WithIssuerFiscalProfile();
+        var barcodeBytes = CreateBarcodeBytes(layout);
+
+        var text = RenderedText(c => HeaderSection.Compose(c, layout, logoBytes: null, barcodeBytes));
+
+        text.Should().Contain("Contribuyente Especial Nro.: 5368");
+        text.Should().Contain("Agente de Retención Resolución No. 6498");
+    }
+
+    [Fact]
+    public void HeaderSection_sin_designaciones_no_muestra_esas_lineas()
+    {
+        var layout = RideRenderingFixtures.Full();
+        var barcodeBytes = CreateBarcodeBytes(layout);
+
+        var text = RenderedText(c => HeaderSection.Compose(c, layout, logoBytes: null, barcodeBytes));
+
+        text.Should().NotContain("Contribuyente Especial");
+        text.Should().NotContain("Agente de Retención");
+    }
+
+    private static string RenderedText(Action<IContainer> compose)
+    {
+        var svg = string.Join(
+            "",
+            Document
+                .Create(c =>
+                    c.Page(p =>
+                    {
+                        p.Size(PageSizes.A4);
+                        p.Content().Element(compose);
+                    })
+                )
+                .GenerateSvg()
+        );
+        return string.Join(
+            "\n",
+            System
+                .Xml.Linq.XDocument.Parse(svg)
+                .Descendants()
+                .Where(e => e.Name.LocalName == "text")
+                .Select(e => e.Value.Trim())
+        );
+    }
 }

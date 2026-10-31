@@ -144,7 +144,7 @@ Los códigos que revisan un dato con ítem base no se publican aparte: el ítem 
 | `physicalEmission.issuerTaxId` | `identity.taxId` |
 | `physicalEmission.issuerLegalName` | `identity.legalName` |
 
-El resto (`matrixAddress`, `emissionPoint`, `establishmentAddress`, `sriSettings`, `sriEnvironment`, `sriWsdlUrl`, `certificate`, `certificateUnusable`, `certificateExpired`, `certificateExpiring`, `docType`, `rimpeNegocioPopularLegend`) solo los publica el validador. `rimpeNegocioPopularLegend` no tiene pantalla de corrección: bloquea 01/04/07 de empresas RIMPE Negocio Popular mientras la leyenda del Anexo 22 no pase el XSD oficial ([R20](../sri/SRI-2.34-COMPLIANCE-CLOSURE.md)).
+El resto (`matrixAddress`, `emissionPoint`, `establishmentAddress`, `sriSettings`, `sriEnvironment`, `sriWsdlUrl`, `certificate`, `certificateUnusable`, `certificateExpired`, `certificateExpiring`, `docType`, `rimpeNegocioPopularLegend`, `specialTaxpayerNumber`, `retentionAgentDesignation`, `largeTaxpayerDesignation`) solo los publica el validador. Los tres últimos dirigen a Configuración › Empresa › Fiscal: dato fiscal del emisor guardado fuera del formato de la ficha/XSD o designación con número sin vigencia (o al revés) ([R21–R23](../sri/SRI-2.34-COMPLIANCE-CLOSURE.md)). `rimpeNegocioPopularLegend` no tiene pantalla de corrección: bloquea 01/04/07 de empresas RIMPE Negocio Popular mientras la leyenda del Anexo 22 no pase el XSD oficial ([R20](../sri/SRI-2.34-COMPLIANCE-CLOSURE.md)).
 
 ## Habilitación preventiva de cajas (apertura de jornada)
 

@@ -715,6 +715,21 @@ retención antes de registrar el comprobante (post-commit); el control no captur
 produce el mismo XML: no hay recuperación automática; el comprobante queda `Failed` en el Monitor. Riesgo:
 [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
 
+**Perfil fiscal del emisor (R21/R22/R23).** `Company` es el único propietario de los datos fiscales del emisor;
+`ElectronicDocumentIssuerProjection` es la única proyección a `ElectronicDocumentIssuerData` (la usan los
+providers de 01/04/07; ninguno arma el emisor por su cuenta). Las designaciones por resolución son pares número +
+vigencia (ambos o ninguno; dominio, validación y `CHECK`): agente de retención (Ficha 2.34, Anexo 21:
+`<agenteRetencion>`, solo dígitos sin ceros a la izquierda, máx. 8, en el `infoTributaria` común de los tres tipos)
+y Gran Contribuyente (Anexo 24: `campoAdicional` "Gran Contribuyente" con la resolución tal cual, máx. 300, aportado
+por el contributor `sri.anexo24.large-taxpayer` del composer de `infoAdicional`; aplica a 01/03/04/05, nunca a
+06/07). Una designación aplica solo si su vigencia es ≤ a la fecha de emisión de negocio del comprobante; nunca se
+deriva de `WithholdsRenta`/`WithholdsVat` (práctica operativa de retener) ni de `SpecialTaxpayerNo`.
+`contribuyenteEspecial` respeta el XSD (3–13 alfanuméricos). Los formatos viven en `Company` y los reutilizan el
+validador de Configuración › Fiscal y el gate de emisión: un dato guardado fuera de formato o un par incompleto
+bloquea 01/04/07 antes del secuencial (`electronicEmission.specialTaxpayerNumber`,
+`electronicEmission.retentionAgentDesignation`, `electronicEmission.largeTaxpayerDesignation`). El RIDE muestra
+`contribuyenteEspecial` y `agenteRetencion` leyéndolos del XML; Gran Contribuyente sale en Información Adicional.
+
 Conciliación manual: `POST /api/v1/electronic-documents/{id}/reconciliation` (Monitor,
 "Registrar conciliación"), permiso `electronic-documents.reconcile`, evidencia de texto
 obligatoria (referencia ≤ 150 y observación ≤ 300). Registra la evidencia en la auditoría del

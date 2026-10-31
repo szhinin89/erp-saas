@@ -43,6 +43,45 @@ public sealed class InvoiceXmlBuilderTests
         ValidateAgainstOfficialXsd(result.Value.Xml);
     }
 
+    // ── R21 (Ficha 2.34, Anexo 21): agenteRetencion en infoTributaria ──
+
+    [Fact]
+    public void Build_con_agente_de_retencion_lo_emite_tras_dirMatriz_y_antes_de_rimpe_y_pasa_el_xsd_oficial()
+    {
+        var data = ValidInvoiceData();
+        data = data with
+        {
+            Issuer = data.Issuer with
+            {
+                RetentionAgentResolutionNumber = "6498",
+                TaxRegime = "CONTRIBUYENTE RÉGIMEN RIMPE",
+            },
+        };
+
+        var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(data);
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        var infoTributaria = XDocument.Parse(result.Value!.Xml).Descendants("infoTributaria").Single();
+        infoTributaria
+            .Elements()
+            .Select(e => e.Name.LocalName)
+            .TakeLast(3)
+            .Should()
+            .Equal("dirMatriz", "agenteRetencion", "contribuyenteRimpe");
+        infoTributaria.Element("agenteRetencion")!.Value.Should().Be("6498");
+        ValidateAgainstOfficialXsd(result.Value.Xml);
+    }
+
+    [Fact]
+    public void Build_sin_agente_de_retencion_omite_el_elemento_y_pasa_el_xsd_oficial()
+    {
+        var result = new InvoiceXmlBuilder(new FakeTaxCategoryCodeResolver()).Build(ValidInvoiceData());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Xml.Should().NotContain("agenteRetencion");
+        ValidateAgainstOfficialXsd(result.Value.Xml);
+    }
+
     private static void ValidateAgainstOfficialXsd(string xml)
     {
         var schemaSet = new EmbeddedXmlSchemaProvider(NullLogger<EmbeddedXmlSchemaProvider>.Instance)

@@ -4921,6 +4921,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasDefaultValue("es")
                         .HasColumnName("language_code");
 
+                    b.Property<DateOnly?>("LargeTaxpayerEffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("large_taxpayer_effective_from");
+
+                    b.Property<string>("LargeTaxpayerResolutionNo")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("large_taxpayer_resolution_no");
+
                     b.Property<string>("LegalName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -4972,6 +4981,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("phone");
+
+                    b.Property<DateOnly?>("RetentionAgentEffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("retention_agent_effective_from");
+
+                    b.Property<string>("RetentionAgentResolutionNo")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("retention_agent_resolution_no");
 
                     b.Property<string>("SpecialTaxpayerNo")
                         .HasMaxLength(200)
@@ -5052,7 +5070,12 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("TenantId")
                         .HasDatabaseName("ix_company_tenant_id");
 
-                    b.ToTable("company", (string)null);
+                    b.ToTable("company", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_company_large_taxpayer_designation", "(large_taxpayer_resolution_no IS NULL) = (large_taxpayer_effective_from IS NULL)");
+
+                            t.HasCheckConstraint("chk_company_retention_agent_designation", "(retention_agent_resolution_no IS NULL) = (retention_agent_effective_from IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility", b =>

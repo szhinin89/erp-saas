@@ -6,7 +6,10 @@
 > y el addendum 2026-10-31 de [ADR-023](../decisions/ADR-023-electronic-documents-v1-closure.md). Parte de la
 > [auditoría 2.34](SRI-2.34-CURRENT-COMPLIANCE-AUDIT.md) (IDs R01–R35 conservados) y no la repite.
 > Fuente textual consultada: `docs/FICHA TECNICA … Versio232.pdf` (tabla de errores y notas 1–2, §7.5,
-> Anexos 21, 22 y 24, sin cambios en la 2.34 para esos puntos según el historial de la ficha 2.34).
+> Anexos 21, 22 y 24, sin cambios en la 2.34 para esos puntos según el historial de la ficha 2.34). Para R21/R22
+> los Anexos 21 y 24 se contrastaron además con la ficha 2.34 oficial (texto y ejemplos XML/RIDE): mismos
+> contenidos que la 2.32; solo cambia la redacción de la tabla del Anexo 24, con el mismo ejemplo
+> `<campoAdicional nombre="Gran Contribuyente">resolución</campoAdicional>`.
 
 ## 1. Matriz de requisitos (estado en `main` + este cambio)
 
@@ -30,9 +33,9 @@ cambio · **BLOCKED** requiere decisión o dato que no puede inventarse · **FUE
 | R17 | XSD previo fail-closed | CONFORME | Sin cambios. HC: versiones 1.1.0/1.1.0/1.0.0 en builder, validador y `manifest.json` coinciden; triple fuente = deuda ADR-038 fase 3, sin efecto en el comportamiento |
 | R19 | RUC Proveedor (Anexo 26) | RESUELTO | Composer + contributor (ADR-023 addendum 2026-10-02); pendiente solo lo administrativo (§5) |
 | R20 | Leyenda RIMPE (Anexo 22) | CONFORME Emprendedor · **BLOCKED** Negocio Popular (incompatibilidad oficial ficha ↔ XSD) · protección del ERP **IMPLEMENTADA** | Ver §5.3. El gate preventivo de emisión rechaza 01/04/07 de empresas RIMPE Negocio Popular antes del secuencial (`electronicEmission.rimpeNegocioPopularLegend`); Emprendedor y demás regímenes sin cambios. HC: leyenda = protocolo, repetida idéntica en 3 providers (deuda ADR-038 fase 2); régimen resuelto por catálogo `sri_tax_regime` |
-| R21 | `agenteRetencion` (Anexo 21) | **BLOCKED** | Ver §5.4 |
-| R22 | Gran Contribuyente (Anexo 24) | **BLOCKED** | Ver §5.4 |
-| R23 | `contribuyenteEspecial` en 01/04 ("obligatorio cuando corresponda") | **CORREGIDO** | §3 |
+| R21 | `agenteRetencion` (Anexo 21) | **CORREGIDO** (pendiente aceptación real y dato del piloto) | §3.1. 01/04/07, solo con resolución vigente a la fecha de emisión; RIDE de los 3 tipos |
+| R22 | Gran Contribuyente (Anexo 24) | **CORREGIDO** (pendiente aceptación real y dato del piloto) | §3.1. `campoAdicional` "Gran Contribuyente" en 01/04 (05/03 cuando existan), nunca en 07; RIDE sin cambios |
+| R23 | `contribuyenteEspecial` en 01/04 ("obligatorio cuando corresponda") | **CORREGIDO** | §3; RIDE de 01/04/07 y validación preventiva del formato XSD en §3.1 |
 | R24 | Códigos IVA de retención Tabla 20 | RESUELTO | `SriRetentionCodeVersion.XmlCode` (ADR-037); 15 % sin código → no emitible |
 | R25 | Retención 1.0.0 vs 2.0.0 (Anexos 1 y 10) | CONFORME (1.0.0) | La ficha publica ambas; no hay evidencia normativa que prohíba 1.0.0 |
 | R26 | % Renta según catálogo ATS | Limitación externa | Catálogo gobernado por ADR-037; la ficha remite al ATS |
@@ -79,6 +82,25 @@ autorizar por declaración). Commits de referencia: `a965485e3`, `4cdf8cac1`, `3
 | R11 | El máximo de la empresa (default 5, backoff 1–16 min) pasaba a DeadLetter `Signed`/`Received` a los ≈ 31 min y dejaba de consultar, aunque el SRI responde hasta 24 h después de RECIBIDA | Mismo job y política: `Signed`/`Received` siguen candidatos sobre el máximo con backoff ≤ 60 min; el issuer solo aplica DeadLetter cuando pasaron 24 h desde el primer `Received` del timeline (`ElectronicDocumentAudit`); sin evidencia de recepción, nunca por plazo (§5.7) | Unit + job + PostgreSQL (abajo) |
 | C | Nada impedía combinar ambiente Pruebas con el host oficial de Producción (o al revés) | `SriWsdlUrl.IsValidFor` (regla única): rechazo al guardar y en el gate de emisión antes del secuencial; hosts no oficiales permitidos | Unit (regla, validador, gate, estado) |
 | R23 | Factura y NC omitían `contribuyenteEspecial` aunque `Company.SpecialTaxpayerNo` existe | `ElectronicDocumentIssuerData.SpecialTaxpayerNumber` (fuente única 01/04/07); la retención deja de duplicarlo en `RetentionElectronicDocumentInfo` (XML idéntico) | XSD oficial 1.1.0/1.1.0/1.0.0 |
+
+### 3.1 Entrega R21/R22 — perfil fiscal del emisor (2026-10-31, base `main@a65b00310`)
+
+| ID | Defecto | Corrección | Evidencia |
+|---|---|---|---|
+| R21 | `Company` no modelaba la designación como agente de retención; ningún XML emitía `<agenteRetencion>` | `Company.RetentionAgentResolutionNo` (sin ceros a la izquierda, 1–8 dígitos) + `RetentionAgentEffectiveFrom`; el `infoTributaria` común de 01/04/07 lo emite entre `dirMatriz` y `contribuyenteRimpe` cuando la resolución rige a la fecha de emisión; RIDE "Agente de Retención Resolución No." | XSD oficial 1.1.0/1.1.0/1.0.0; RIDE de Factura/NC/Retención |
+| R22 | Sin calificación de Gran Contribuyente | `Company.LargeTaxpayerResolutionNo` (≤ 300, tal cual) + `LargeTaxpayerEffectiveFrom`; contributor `sri.anexo24.large-taxpayer` del composer de `infoAdicional` (01, 03, 04, 05; no 06/07); nombre reservado; RIDE genérico de Información Adicional | XSD oficial + composer + RIDE |
+| R23 | El RIDE no mostraba `contribuyenteEspecial`; el formulario aceptaba 200 caracteres libres aunque el XSD exige 3–13 alfanuméricos (el comprobante fallaba después del secuencial) | Cabeceras RIDE de 01/04/07 lo muestran desde el XML; formato XSD en dominio, FluentValidation, Zod y Readiness | Dominio, formulario, Readiness, RIDE |
+
+Reglas: cada designación es un par número + vigencia (ambos o ninguno: dominio, validación y `CHECK` en base);
+la vigencia se compara con la fecha de emisión de negocio (ADR-034), por lo que una designación posterior no se
+aplica a un comprobante anterior; ninguna designación se deriva de `WithholdsRenta`/`WithholdsVat` (práctica de
+retener) ni de `SpecialTaxpayerNo`. Los XML firmados/autorizados no se regeneran (ADR-038 D11); un `Draft`/`Failed`
+se regenera con el perfil vigente evaluado contra su propia fecha de emisión. Readiness (`specialTaxpayerNumber`,
+`retentionAgentDesignation`, `largeTaxpayerDesignation`, destino Configuración → Empresa → Fiscal) bloquea 01/04/07
+antes del secuencial si un dato guardado está fuera de formato o el par está incompleto. Proyección única del
+emisor (ADR-038 D5): `ElectronicDocumentIssuerProjection`, que reemplaza las tres construcciones de los providers y
+las tres copias de la leyenda RIMPE (mismo resultado: igualdad de record verificada para General, RIMPE ME/NP y
+sin régimen). Migración aditiva `IssuerFiscalDesignations` (4 columnas nulas + 2 `CHECK`); filas existentes intactas.
 
 **R16 — fundamento e incertidumbre.** La ficha (2.32 y 2.34, §7.5) dice "para el envío individual, el tamaño
 máximo por comprobante será de 320 Kb" y el error 26 "Tamaño del archivo supera lo establecido"; no define la
@@ -141,10 +163,11 @@ porcentajes de Renta frente al catálogo ATS vigente.
    SRI publique un XSD que admita la leyenda (`EmbeddedXmlSchemaProviderTests` lo detecta). RIMPE Emprendedor: conforme.
    Nota histórica: el `NotaCredito_V1.1.0.xsd` embebido difiere del oficial solo en la declaración XML (oficial
    `<?xml version="1.1"?>`, embebido `1.0`, desde el commit inicial); esquema y patrón idénticos. No se modifica.
-4. **R21/R22 — agente de retención y Gran Contribuyente.** Exigen el número de resolución, que `Company` no
-   modela (`WithholdsRenta`/`WithholdsVat` no son la designación). Son condicionales al perfil del contribuyente:
-   no se emiten ni se inventan. Acción mínima verificable: perfil fiscal real del piloto (resoluciones) y
-   aprobación de los campos en `Company` (migración). El XSD 1.1.0 ya admite `<agenteRetencion>`.
+4. **R21/R22 — pendientes externos.** Implementado (§3.1). Falta: (a) las resoluciones reales del piloto y su
+   vigencia, que el administrador carga en Configuración → Empresa → Fiscal (el ERP no puede detectar una
+   designación que nadie registró ni inventa números); (b) aceptación real en `celcer` de 01/04/07 con
+   `agenteRetencion` y de 01/04 con "Gran Contribuyente". Limitación: no se modela fecha de fin; retirar una
+   designación afecta a los `Draft`/`Failed` que se regeneren después, aunque su fecha de emisión sea anterior.
 5. **§N — RucValidator.** La ficha no define el algoritmo y trata la identificación incorrecta como
    advertencia 62; requiere fuente oficial y decisión de política.
 6. **R16 — comprobante que excede el tamaño.** Medido sobre el formato del builder: ≈ 450–730 bytes por línea
@@ -177,6 +200,15 @@ Pruebas: `ElectronicDocumentIssuerReceptionTests`, `SriSoapClientTests`, `Invoic
 Documentación: ADR-023 (addendum), `frozen-infrastructure.md`, `backend.md`, este informe, `STATUS.md`.
 Sin migraciones, frontend, XSD, catálogos ni configuración.
 
+Entrega R21/R22 (§3.1) — código: `Company.cs`, `CompanyConfiguration.cs`, migración `IssuerFiscalDesignations`,
+`UpdateCompanyFiscalCommand`/`Validator`/`Handler`, `CompanyProfileDto`, `ElectronicDocumentData.cs`,
+`ElectronicDocumentIssuerProjection.cs` (nuevo), los 3 providers, `InfoTributariaXmlBuilder.cs` (nuevo) y los 3
+builders, `LargeTaxpayerAdditionalInfoContributor.cs` (nuevo), `SriAdditionalInfoFieldNames.cs`,
+`DependencyInjection.cs`, `ElectronicEmissionRequirements*.cs`, `RideParty.cs`, 3 parsers RIDE, `HeaderSection.cs`,
+`RetentionHeaderSection.cs`; frontend: `companyFiscalSchema.ts`, `FiscalSettingsSection.tsx`, `companyProfile.ts`,
+i18n es/en. Guardrails: allowlist de multi-registro (`IElectronicDocumentAdditionalInfoContributor`) y manifiesto CI.
+Sin XSD, catálogos, SOAP, firma, secuenciales ni estados.
+
 ## 7. Sin duplicación
 
 Un solo pipeline (`ElectronicDocumentIssuer`), un solo cliente SOAP (`SriSoapClient`), un solo validador XSD por
@@ -184,15 +216,18 @@ tipo y una sola firma. `contribuyenteEspecial` pasa a tener **una** fuente (ante
 clasificación del código 50 vive junto a la de 70/43/45 en el Issuer. La ventana de 24 h es parte de la misma
 `ElectronicDocumentRetryPolicy` y del mismo job; su inicio sale del timeline existente. No se agregaron estados,
 jobs, schedulers, clientes SOAP, servicios, catálogos, migraciones ni políticas de reintento paralelas.
+R21/R22: `Company` es el único propietario de las designaciones; una sola proyección del emisor, un solo
+`infoTributaria`, el composer existente (un contributor más) y el RIDE existente; las reglas de formato viven en
+`Company` y las reutilizan validador y Readiness (Zod es el nivel frontend de form-validation.md).
 
 ## 8. Estado final
 
 | Documento | Estado |
 |---|---|
-| Factura 01 | Conforme por contrato (XSD 1.1.0, R13/R14/R16/R23); validada antes en `celcer`; nueva salida con `contribuyenteEspecial` pendiente de aceptación real |
-| Nota de crédito 04 | Conforme por contrato; sin aceptación real en `celcer` |
-| Retención 07 | Conforme por contrato (1.0.0, Tabla 20, RUC Proveedor, XML sin cambios por R23); sin aceptación real |
+| Factura 01 | Conforme por contrato (XSD 1.1.0, R13/R14/R16/R21/R22/R23); validada antes en `celcer`; salidas con `contribuyenteEspecial`, `agenteRetencion` y "Gran Contribuyente" pendientes de aceptación real |
+| Nota de crédito 04 | Conforme por contrato (incluye R21/R22); sin aceptación real en `celcer` |
+| Retención 07 | Conforme por contrato (1.0.0, Tabla 20, RUC Proveedor, R21; sin Anexo 24 por norma); sin aceptación real |
 | Caso #32 | Consulta segura durante las 24 h del SRI y conciliación con evidencia: conforme; reenvío de lo nunca registrado: **BLOCKED** (§5.1) |
 
-**READY FOR REVIEW** para las correcciones de §3 (R11, R13, R14, R16, R23). Los puntos de §5 quedan BLOCKED de
-forma individual; ninguno se declara CLOSED.
+**READY FOR REVIEW** para las correcciones de §3 (R11, R13, R14, R16, R23) y §3.1 (R21, R22, R23 RIDE/formato). Los puntos de §5 quedan BLOCKED de
+forma individual, salvo §5.4 (R21/R22), que solo conserva pendientes externos; ninguno se declara CLOSED.

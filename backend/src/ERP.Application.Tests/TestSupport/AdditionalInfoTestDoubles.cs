@@ -29,6 +29,18 @@ public static class AdditionalInfoTestDoubles
             NullLogger<ElectronicDocumentAdditionalInfoComposer>.Instance
         );
 
+    /// <summary>Composer con todos los contributors de producción (Anexo 24 + Anexo 26).</summary>
+    public static IElectronicDocumentAdditionalInfoComposer ProductionComposer(
+        Mock<ISystemProviderSettingsRepository> settings
+    ) =>
+        new ElectronicDocumentAdditionalInfoComposer(
+            [
+                new LargeTaxpayerAdditionalInfoContributor(),
+                new SystemProviderRucAdditionalInfoContributor(settings.Object),
+            ],
+            NullLogger<ElectronicDocumentAdditionalInfoComposer>.Instance
+        );
+
     public const string ProviderRuc = "1792146739001";
 
     /// <summary>Repositorio con <see cref="SystemProviderSettings"/> configurado vía el método de dominio real.</summary>

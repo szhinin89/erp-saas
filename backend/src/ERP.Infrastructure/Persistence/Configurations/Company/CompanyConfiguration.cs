@@ -10,7 +10,21 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
 {
     public void Configure(EntityTypeBuilder<Company> builder)
     {
-        builder.ToTable("company");
+        builder.ToTable(
+            "company",
+            t =>
+            {
+                // R21/R22: cada designación por resolución es un par todo-o-nada (número + vigencia).
+                t.HasCheckConstraint(
+                    "chk_company_retention_agent_designation",
+                    "(retention_agent_resolution_no IS NULL) = (retention_agent_effective_from IS NULL)"
+                );
+                t.HasCheckConstraint(
+                    "chk_company_large_taxpayer_designation",
+                    "(large_taxpayer_resolution_no IS NULL) = (large_taxpayer_effective_from IS NULL)"
+                );
+            }
+        );
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
@@ -80,6 +94,20 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasColumnName("withholds_renta")
             .HasDefaultValue(true);
         builder.Property(x => x.WithholdsVat).HasColumnName("withholds_iva").HasDefaultValue(true);
+        builder
+            .Property(x => x.RetentionAgentResolutionNo)
+            .HasColumnName("retention_agent_resolution_no")
+            .HasMaxLength(ERP.Domain.Modules.Company.Entities.Company.RetentionAgentResolutionNoMaxLength);
+        builder
+            .Property(x => x.RetentionAgentEffectiveFrom)
+            .HasColumnName("retention_agent_effective_from");
+        builder
+            .Property(x => x.LargeTaxpayerResolutionNo)
+            .HasColumnName("large_taxpayer_resolution_no")
+            .HasMaxLength(ERP.Domain.Modules.Company.Entities.Company.LargeTaxpayerResolutionNoMaxLength);
+        builder
+            .Property(x => x.LargeTaxpayerEffectiveFrom)
+            .HasColumnName("large_taxpayer_effective_from");
         builder.Property(x => x.ExtraLegend).HasColumnName("extra_legend").HasMaxLength(500);
         builder
             .Property(x => x.LanguageCode)

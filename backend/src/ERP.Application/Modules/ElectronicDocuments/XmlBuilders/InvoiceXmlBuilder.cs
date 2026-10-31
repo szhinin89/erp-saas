@@ -231,29 +231,7 @@ public sealed class InvoiceXmlBuilder : IElectronicDocumentXmlBuilder
     {
         var totals = data.Totals!;
 
-        var infoTributaria = new XElement(
-            "infoTributaria",
-            new XElement("ambiente", data.Emission.Environment),
-            new XElement("tipoEmision", data.Emission.EmissionType),
-            new XElement("razonSocial", data.Issuer.LegalName),
-            data.Issuer.TradeName is null
-                ? null
-                : new XElement("nombreComercial", data.Issuer.TradeName),
-            new XElement("ruc", data.Issuer.TaxId),
-            new XElement("claveAcceso", accessKey),
-            new XElement("codDoc", data.Emission.DocTypeCode),
-            new XElement("estab", data.Emission.Establishment),
-            new XElement("ptoEmi", data.Emission.EmissionPoint),
-            new XElement("secuencial", data.Emission.Sequential),
-            new XElement("dirMatriz", data.Issuer.MatrixAddress),
-            // Ubicación oficial (ficha técnica, Anexo 22): "Entre la etiqueta <agenteRetencion>
-            // y </infoTributaria>" — no dentro de <infoFactura>. Como el proyecto todavía no
-            // modela <agenteRetencion>, se ubica como último hijo de <infoTributaria>.
-            data.Issuer.TaxRegime
-                is null
-                ? null
-                : new XElement("contribuyenteRimpe", data.Issuer.TaxRegime)
-        );
+        var infoTributaria = InfoTributariaXmlBuilder.Build(data.Emission, data.Issuer, accessKey);
 
         var infoFactura = new XElement(
             "infoFactura",

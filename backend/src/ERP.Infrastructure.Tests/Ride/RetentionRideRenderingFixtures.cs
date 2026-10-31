@@ -36,8 +36,32 @@ internal static class RetentionRideRenderingFixtures
     }
 
     /// <summary>Comprobante completo: nombre comercial, documento sustento, dos líneas de retención, información adicional.</summary>
-    public static RetentionRideDocumentLayout Full() =>
-        ComposeFrom(
+    public static RetentionRideDocumentLayout Full()
+    {
+        var (data, branding) = FullData();
+        return ComposeFrom(data, branding);
+    }
+
+    /// <summary>R21/R23 — mismo comprobante que <see cref="Full"/> con contribuyente especial y
+    /// agente de retención en el XML; el RIDE debe mostrarlos en la cabecera del emisor.</summary>
+    public static RetentionRideDocumentLayout WithIssuerFiscalProfile()
+    {
+        var (data, branding) = FullData();
+        return ComposeFrom(
+            data with
+            {
+                Issuer = data.Issuer with
+                {
+                    SpecialTaxpayerNumber = "5368",
+                    RetentionAgentResolutionNumber = "6498",
+                },
+            },
+            branding
+        );
+    }
+
+    private static (RetentionElectronicDocumentData Data, RideBranding Branding) FullData() =>
+        (
             new RetentionElectronicDocumentData(
                 Metadata: new RetentionElectronicDocumentMetadata(
                     RetentionId: Guid.NewGuid(),
@@ -114,7 +138,7 @@ internal static class RetentionRideRenderingFixtures
                 ),
                 AdditionalInfo: []
             ),
-            branding: RideBranding.Create(
+            Branding: RideBranding.Create(
                 logoStoragePath: null,
                 primaryColorHex: "#112233",
                 secondaryColorHex: "#445566",

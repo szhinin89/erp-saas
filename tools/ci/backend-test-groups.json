@@ -62,6 +62,7 @@
         "ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentUncertainSriPostgreSqlTests",
         "ERP.Infrastructure.Tests.Finance.CollectionPostingIntegrationTests",
         "ERP.Infrastructure.Tests.InitialLoad.OpeningBalanceDatePostgreSqlTests",
+        "ERP.Infrastructure.Tests.Persistence.CompanyFiscalDesignationsPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.CreateAuthenticatedSessionIntegrationTests",
         "ERP.Infrastructure.Tests.Persistence.Inventory.InventoryDocumentConcurrencyPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.Inventory.InventoryValuationPostgreSqlTests",

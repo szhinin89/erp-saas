@@ -12,7 +12,6 @@ using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.SriCatalogs.Constants;
-using ERP.Domain.Modules.SriCatalogs.Entities;
 
 namespace ERP.Application.Modules.Sales.Services;
 
@@ -172,14 +171,10 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
                 Sequential: ExtractSequential(salesReturn.CreditNoteDocumentNumber!),
                 IssueDate: issueDate
             ),
-            Issuer: new ElectronicDocumentIssuerData(
-                TaxId: company!.TaxIdentificationNumber,
-                LegalName: company.LegalName,
-                TradeName: company.TradeName,
-                MatrixAddress: mainEstablishment!.Address,
-                TaxRegime: ResolveContribuyenteRimpeText(company.TaxRegime),
-                IsAccountingRequired: company.IsAccountingReq,
-                SpecialTaxpayerNumber: company.SpecialTaxpayerNo
+            Issuer: ElectronicDocumentIssuerProjection.From(
+                company!,
+                mainEstablishment!.Address,
+                issueDate
             ),
             Counterparty: new ElectronicDocumentCounterpartyData(
                 IdentificationType: invoice!.Customer.IdentificationType,
@@ -210,12 +205,6 @@ public sealed class SalesReturnCreditNoteDataProvider : IElectronicDocumentDataP
 
         return Result<ElectronicDocumentData>.Success(data);
     }
-
-    /// <summary>Ver <see cref="SalesInvoiceElectronicDocumentDataProvider.ResolveContribuyenteRimpeText"/> — mismo criterio exacto.</summary>
-    private static string? ResolveContribuyenteRimpeText(SriTaxRegime? taxRegime) =>
-        taxRegime?.Abbrev?.StartsWith("RIMPE", StringComparison.OrdinalIgnoreCase) == true
-            ? "CONTRIBUYENTE RÉGIMEN RIMPE"
-            : null;
 
     /// <summary>
     /// TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5D-4) — igual criterio que

@@ -317,6 +317,41 @@ public sealed class SalesInvoiceElectronicDocumentDataProviderTests
         result.Value!.Issuer.SpecialTaxpayerNumber.Should().Be("5368");
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetDataAsync_Issuer_proyecta_designaciones_solo_si_rigen_a_la_fecha_de_emision(
+        bool vigenteALaFechaDeEmision
+    )
+    {
+        // R21/R22: la vigencia se compara con la fecha de emisión de negocio; una designación que
+        // rige después del comprobante no se aplica retroactivamente.
+        var invoice = BuildAuthorizedInvoiceWithPresentationLine();
+        var m = new Mocks();
+        m.SeedHappyPath(invoice);
+        var effectiveFrom = vigenteALaFechaDeEmision ? new DateOnly(2000, 1, 1) : new DateOnly(2999, 1, 1);
+        var company = Company.CreateManaged(TenantId, "1790012345001", "Empresa Test S.A.", createdBy: UserId);
+        company.UpdateFiscalDesignations("00006498", effectiveFrom, "NAC-GCFOIOC21-00000868-E", effectiveFrom, UserId);
+        m.CompanyRepo
+            .Setup(r => r.GetByIdForTenantAsync(CompanyId, TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+
+        var result = await m.BuildProvider()
+            .GetDataAsync(new ElectronicDocumentSourceReference(TenantId, CompanyId, invoice.Id));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        if (vigenteALaFechaDeEmision)
+        {
+            result.Value!.Issuer.RetentionAgentResolutionNumber.Should().Be("6498");
+            result.Value.Issuer.LargeTaxpayerResolutionNumber.Should().Be("NAC-GCFOIOC21-00000868-E");
+        }
+        else
+        {
+            result.Value!.Issuer.RetentionAgentResolutionNumber.Should().BeNull();
+            result.Value.Issuer.LargeTaxpayerResolutionNumber.Should().BeNull();
+        }
+    }
+
     // ── TAX-LINE-SSOT-ICE-IRBPNR-01 (ADR-032 §3.5, Subfase 5C) ──────────────────────────────
 
     private static SalesInvoiceDetail CreateAuthorizedLine(

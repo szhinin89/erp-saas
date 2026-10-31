@@ -2,7 +2,8 @@ namespace ERP.Domain.Modules.Ride.ValueObjects;
 
 /// <summary>
 /// Una de las dos contrapartes del comprobante (emisor o receptor). Los campos opcionales
-/// solo aplican al emisor en el XML real (<c>obligadoContabilidad</c>, <c>contribuyenteRimpe</c>) —
+/// solo aplican al emisor en el XML real (<c>obligadoContabilidad</c>, <c>contribuyenteRimpe</c>,
+/// <c>contribuyenteEspecial</c>, <c>agenteRetencion</c>) —
 /// se modelan nullable en vez de crear dos VOs distintos, porque la forma de los datos es la
 /// misma y solo cambia qué subconjunto viene poblado según el rol.
 /// </summary>
@@ -16,6 +17,12 @@ public sealed record RideParty
     public bool? IsAccountingRequired { get; }
     public string? TaxRegime { get; }
 
+    /// <summary><c>contribuyenteEspecial</c> del XML (número de resolución), tal cual.</summary>
+    public string? SpecialTaxpayerNumber { get; }
+
+    /// <summary><c>agenteRetencion</c> del XML (Anexo 21), tal cual.</summary>
+    public string? RetentionAgentResolution { get; }
+
     private RideParty(
         string? identificationType,
         string identificationNumber,
@@ -23,7 +30,9 @@ public sealed record RideParty
         string? tradeName,
         string? address,
         bool? isAccountingRequired,
-        string? taxRegime
+        string? taxRegime,
+        string? specialTaxpayerNumber,
+        string? retentionAgentResolution
     )
     {
         IdentificationType = identificationType;
@@ -33,6 +42,8 @@ public sealed record RideParty
         Address = address;
         IsAccountingRequired = isAccountingRequired;
         TaxRegime = taxRegime;
+        SpecialTaxpayerNumber = specialTaxpayerNumber;
+        RetentionAgentResolution = retentionAgentResolution;
     }
 
     public static RideParty Create(
@@ -42,7 +53,9 @@ public sealed record RideParty
         string? tradeName = null,
         string? address = null,
         bool? isAccountingRequired = null,
-        string? taxRegime = null
+        string? taxRegime = null,
+        string? specialTaxpayerNumber = null,
+        string? retentionAgentResolution = null
     )
     {
         if (string.IsNullOrWhiteSpace(identificationNumber))
@@ -60,7 +73,11 @@ public sealed record RideParty
             string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
             string.IsNullOrWhiteSpace(address) ? null : address.Trim(),
             isAccountingRequired,
-            string.IsNullOrWhiteSpace(taxRegime) ? null : taxRegime.Trim()
+            string.IsNullOrWhiteSpace(taxRegime) ? null : taxRegime.Trim(),
+            string.IsNullOrWhiteSpace(specialTaxpayerNumber) ? null : specialTaxpayerNumber.Trim(),
+            string.IsNullOrWhiteSpace(retentionAgentResolution)
+                ? null
+                : retentionAgentResolution.Trim()
         );
     }
 }

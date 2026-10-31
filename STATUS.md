@@ -15,8 +15,18 @@ PASS agente: Application 528/528 (ajustes finales), PostgreSQL real R11 28/28, I
 y R14. Sin SRI real, suites completas, migraciones, frontend, staging, commit ni push.
 
 BLOCKED (detalle en la matriz): R12, R20 (incompatibilidad oficial ficha ↔ XSD; protección implementada: RIMPE
-Negocio Popular no emite 01/04/07), R21/R22, R32 (reenvío de lo nunca registrado), §N; limitados: R16
+Negocio Popular no emite 01/04/07), R32 (reenvío de lo nunca registrado), §N; limitados: R16
 (unidad), R11 sin evidencia de recepción (consulta sin plazo) y hosts no oficiales. Pendiente aceptación real en `celcer` de 04, 07 y de 01/04 con `contribuyenteEspecial`. No CLOSED.
+
+## SRI 2.34 R21/R22 — perfil fiscal del emisor — READY FOR REVIEW (2026-10-31)
+
+Base `main@a65b00310`. Agente de retención (Anexo 21) y Gran Contribuyente (Anexo 24) como pares número + vigencia
+en `Company` (migración aditiva `IssuerFiscalDesignations`), en Configuración › Empresa › Fiscal; XML 01/04/07
+(`agenteRetencion`) y 01/04 (`campoAdicional` "Gran Contribuyente") solo con resolución vigente a la fecha de
+emisión; RIDE con agente de retención y contribuyente especial; gate de emisión y formulario con el formato XSD de
+`contribuyenteEspecial`. Detalle: [§3.1 de la matriz](docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md); addendum R21/R22 de
+[ADR-023](docs/decisions/ADR-023-electronic-documents-v1-closure.md). Pendiente: resoluciones reales del piloto y
+aceptación en `celcer`. Sin SRI real, suites completas, staging, commit ni push.
 
 ## P0 instalación limpia — READY FOR REVIEW (2026-10-31)
 

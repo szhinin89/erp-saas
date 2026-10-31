@@ -213,25 +213,7 @@ public sealed class RetentionXmlBuilder : IRetentionXmlBuilder
     // ── Construcción del árbol XML ───────────────────────────────────────────
     private static XDocument BuildXDocument(RetentionElectronicDocumentData data, string accessKey)
     {
-        var infoTributaria = new XElement(
-            "infoTributaria",
-            new XElement("ambiente", data.Emission.Environment),
-            new XElement("tipoEmision", data.Emission.EmissionType),
-            new XElement("razonSocial", data.Issuer.LegalName),
-            data.Issuer.TradeName is null
-                ? null
-                : new XElement("nombreComercial", data.Issuer.TradeName),
-            new XElement("ruc", data.Issuer.TaxId),
-            new XElement("claveAcceso", accessKey),
-            new XElement("codDoc", data.Emission.DocTypeCode),
-            new XElement("estab", data.Emission.Establishment),
-            new XElement("ptoEmi", data.Emission.EmissionPoint),
-            new XElement("secuencial", data.Emission.Sequential),
-            new XElement("dirMatriz", data.Issuer.MatrixAddress),
-            data.Issuer.TaxRegime is null
-                ? null
-                : new XElement("contribuyenteRimpe", data.Issuer.TaxRegime)
-        );
+        var infoTributaria = InfoTributariaXmlBuilder.Build(data.Emission, data.Issuer, accessKey);
 
         var infoCompRetencion = new XElement(
             "infoCompRetencion",

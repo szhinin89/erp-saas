@@ -127,6 +127,9 @@ public static class ElectronicEmissionRequirementCodes
     public const string CertificateExpiring = "electronicEmission.certificateExpiring";
     public const string DocType = "electronicEmission.docType";
     public const string RimpeNegocioPopularLegend = "electronicEmission.rimpeNegocioPopularLegend";
+    public const string SpecialTaxpayerNumber = "electronicEmission.specialTaxpayerNumber";
+    public const string RetentionAgentDesignation = "electronicEmission.retentionAgentDesignation";
+    public const string LargeTaxpayerDesignation = "electronicEmission.largeTaxpayerDesignation";
 
     private static readonly IReadOnlyDictionary<string, string> Messages = new Dictionary<
         string,
@@ -155,6 +158,12 @@ public static class ElectronicEmissionRequirementCodes
             "La emisión electrónica para RIMPE Negocio Popular está suspendida temporalmente: la leyenda "
             + "\"CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE\" que exige la ficha técnica SRI 2.34 "
             + "(Anexo 22) no es aceptada por el XSD oficial vigente del comprobante.",
+        [SpecialTaxpayerNumber] =
+            "El número de contribuyente especial configurado no cumple el formato del SRI (3 a 13 caracteres alfanuméricos).",
+        [RetentionAgentDesignation] =
+            "La designación como agente de retención está incompleta o es inválida: requiere el número de resolución (solo dígitos, máximo 8, sin ceros a la izquierda) y su fecha de vigencia.",
+        [LargeTaxpayerDesignation] =
+            "La calificación como Gran Contribuyente está incompleta o es inválida: requiere el número de resolución (máximo 300 caracteres) y su fecha de vigencia.",
     };
 
     public static string MessageFor(string code) =>

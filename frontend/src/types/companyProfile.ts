@@ -28,6 +28,13 @@ export interface CompanyProfile {
   isForeignTrade: boolean;
   withholdsRenta: boolean;
   withholdsVat: boolean;
+  /** Anexo 21 — resolución de agente de retención (sin ceros a la izquierda); null = no designada. */
+  retentionAgentResolutionNo: string | null;
+  /** Fecha de negocio "YYYY-MM-DD" desde la que rige la designación. */
+  retentionAgentEffectiveFrom: string | null;
+  /** Anexo 24 — resolución de Gran Contribuyente; null = no calificada. */
+  largeTaxpayerResolutionNo: string | null;
+  largeTaxpayerEffectiveFrom: string | null;
   languageCode: string;
   operationalStatus: string;
   onboardingCompleted: boolean;
@@ -61,6 +68,10 @@ export interface UpdateCompanyFiscalPayload {
   isForeignTrade: boolean;
   withholdsRenta: boolean;
   withholdsVat: boolean;
+  retentionAgentResolutionNo?: string | null;
+  retentionAgentEffectiveFrom?: string | null;
+  largeTaxpayerResolutionNo?: string | null;
+  largeTaxpayerEffectiveFrom?: string | null;
 }
 
 export interface UpdateCompanyOperationPayload {

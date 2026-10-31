@@ -87,7 +87,9 @@ public sealed class CreditNoteRideXmlParser : IRideXmlParser
                 address: OptionalText(infoTributaria, "dirMatriz"),
                 isAccountingRequired: RequireText(infoNotaCredito, "obligadoContabilidad")
                     .Equals("SI", StringComparison.OrdinalIgnoreCase),
-                taxRegime: OptionalText(infoTributaria, "contribuyenteRimpe")
+                taxRegime: OptionalText(infoTributaria, "contribuyenteRimpe"),
+                specialTaxpayerNumber: OptionalText(infoNotaCredito, "contribuyenteEspecial"),
+                retentionAgentResolution: OptionalText(infoTributaria, "agenteRetencion")
             );
 
             var receiver = RideParty.Create(

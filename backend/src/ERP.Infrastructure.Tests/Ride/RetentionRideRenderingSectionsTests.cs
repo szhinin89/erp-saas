@@ -153,4 +153,41 @@ public sealed class RetentionRideRenderingSectionsTests
 
         act.Should().NotThrow();
     }
+
+    [Fact]
+    public void RetentionHeaderSection_muestra_contribuyente_especial_y_agente_de_retencion_del_XML()
+    {
+        var layout = RetentionRideRenderingFixtures.WithIssuerFiscalProfile();
+
+        var text = RenderedText(c =>
+            RetentionHeaderSection.Compose(c, layout, logoBytes: null, CreateBarcodeBytes())
+        );
+
+        text.Should().Contain("Contribuyente Especial Nro.: 5368");
+        text.Should().Contain("Agente de Retención Resolución No. 6498");
+    }
+
+    private static string RenderedText(Action<IContainer> compose)
+    {
+        var svg = string.Join(
+            "",
+            Document
+                .Create(c =>
+                    c.Page(p =>
+                    {
+                        p.Size(PageSizes.A4);
+                        p.Content().Element(compose);
+                    })
+                )
+                .GenerateSvg()
+        );
+        return string.Join(
+            "\n",
+            System
+                .Xml.Linq.XDocument.Parse(svg)
+                .Descendants()
+                .Where(e => e.Name.LocalName == "text")
+                .Select(e => e.Value.Trim())
+        );
+    }
 }

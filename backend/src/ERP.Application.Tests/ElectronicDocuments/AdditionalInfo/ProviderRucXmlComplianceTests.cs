@@ -27,8 +27,8 @@ namespace ERP.Application.Tests.ElectronicDocuments.AdditionalInfo;
 /// </summary>
 public sealed class ProviderRucXmlComplianceTests
 {
-    private static readonly DateOnly IssueDate = new(2026, 11, 3);
-    private static readonly ElectronicDocumentSourceReference Reference = new(
+    internal static readonly DateOnly IssueDate = new(2026, 11, 3);
+    internal static readonly ElectronicDocumentSourceReference Reference = new(
         Guid.NewGuid(),
         Guid.NewGuid(),
         Guid.NewGuid()
@@ -62,7 +62,7 @@ public sealed class ProviderRucXmlComplianceTests
 
     // ── Factura (01) ─────────────────────────────────────────────────────
 
-    private static ElectronicDocumentData InvoiceData(
+    internal static ElectronicDocumentData InvoiceData(
         IReadOnlyList<ElectronicDocumentAdditionalField> additionalInfo
     ) =>
         new(
@@ -109,7 +109,7 @@ public sealed class ProviderRucXmlComplianceTests
             AdditionalInfo: additionalInfo
         );
 
-    private static ElectronicDocumentData CreditNoteData() =>
+    internal static ElectronicDocumentData CreditNoteData() =>
         InvoiceData([]) with
         {
             Emission = new ElectronicDocumentEmissionContext(
@@ -131,7 +131,7 @@ public sealed class ProviderRucXmlComplianceTests
             ),
         };
 
-    private static async Task<Result<ElectronicDocumentXml>> BuildCommercialAsync(
+    internal static async Task<Result<ElectronicDocumentXml>> BuildCommercialAsync(
         ElectronicDocumentType type,
         ElectronicDocumentData data,
         IElectronicDocumentAdditionalInfoComposer composer
@@ -287,7 +287,7 @@ public sealed class ProviderRucXmlComplianceTests
 
     // ── Retención (07) ───────────────────────────────────────────────────
 
-    private static RetentionElectronicDocumentData RetentionData() =>
+    internal static RetentionElectronicDocumentData RetentionData() =>
         new(
             Metadata: new RetentionElectronicDocumentMetadata(
                 Guid.NewGuid(),
@@ -359,14 +359,15 @@ public sealed class ProviderRucXmlComplianceTests
             AdditionalInfo: []
         );
 
-    private static RetentionElectronicDocumentXmlService RetentionService(
-        IElectronicDocumentAdditionalInfoComposer composer
+    internal static RetentionElectronicDocumentXmlService RetentionService(
+        IElectronicDocumentAdditionalInfoComposer composer,
+        RetentionElectronicDocumentData? data = null
     )
     {
         var provider = new Mock<IRetentionElectronicDocumentDataProvider>();
         provider
             .Setup(p => p.GetDataAsync(Reference, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<RetentionElectronicDocumentData>.Success(RetentionData()));
+            .ReturnsAsync(Result<RetentionElectronicDocumentData>.Success(data ?? RetentionData()));
         return new RetentionElectronicDocumentXmlService(
             provider.Object,
             new RetentionXmlBuilder(),
@@ -433,7 +434,7 @@ public sealed class ProviderRucXmlComplianceTests
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private static IReadOnlyList<(string Name, string Value)> AdditionalFields(string xml) =>
+    internal static IReadOnlyList<(string Name, string Value)> AdditionalFields(string xml) =>
         XDocument
             .Parse(xml)
             .Root!.Element("infoAdicional")
@@ -442,7 +443,7 @@ public sealed class ProviderRucXmlComplianceTests
             .ToList()
         ?? [];
 
-    private static void ValidateAgainstOfficialXsd(
+    internal static void ValidateAgainstOfficialXsd(
         string xml,
         ElectronicDocumentType type,
         string version
