@@ -29,7 +29,7 @@ cambio · **BLOCKED** requiere decisión o dato que no puede inventarse · **FUE
 | R16 | Máx. "320 Kb" por comprobante individual (§7.5, error 26) | **CORREGIDO** con límite provisional (unidad no definida por la ficha) | §3; riesgo residual §5.6 |
 | R17 | XSD previo fail-closed | CONFORME | Sin cambios. HC: versiones 1.1.0/1.1.0/1.0.0 en builder, validador y `manifest.json` coinciden; triple fuente = deuda ADR-038 fase 3, sin efecto en el comportamiento |
 | R19 | RUC Proveedor (Anexo 26) | RESUELTO | Composer + contributor (ADR-023 addendum 2026-10-02); pendiente solo lo administrativo (§5) |
-| R20 | Leyenda RIMPE (Anexo 22) | CONFORME Emprendedor · **BLOCKED** Negocio Popular | Ver §5.3. HC: leyenda = protocolo, repetida idéntica en 3 providers (deuda ADR-038 fase 2, sin efecto en el comportamiento); régimen resuelto por catálogo `sri_tax_regime` |
+| R20 | Leyenda RIMPE (Anexo 22) | CONFORME Emprendedor · **BLOCKED** Negocio Popular (incompatibilidad oficial ficha ↔ XSD) · protección del ERP **IMPLEMENTADA** | Ver §5.3. El gate preventivo de emisión rechaza 01/04/07 de empresas RIMPE Negocio Popular antes del secuencial (`electronicEmission.rimpeNegocioPopularLegend`); Emprendedor y demás regímenes sin cambios. HC: leyenda = protocolo, repetida idéntica en 3 providers (deuda ADR-038 fase 2); régimen resuelto por catálogo `sri_tax_regime` |
 | R21 | `agenteRetencion` (Anexo 21) | **BLOCKED** | Ver §5.4 |
 | R22 | Gran Contribuyente (Anexo 24) | **BLOCKED** | Ver §5.4 |
 | R23 | `contribuyenteEspecial` en 01/04 ("obligatorio cuando corresponda") | **CORREGIDO** | §3 |
@@ -129,11 +129,18 @@ porcentajes de Renta frente al catálogo ATS vigente.
    es terminal y la venta ya está comprometida fiscalmente. Causa: no existe una corrección demostrable que no
    edite la venta. Acción mínima verificable: ADR aprobado que defina qué correcciones son posibles (solo
    configuración del emisor o catálogos), la transición de salida de `Rejected` y su evidencia. Sin cambios.
-3. **R20 Negocio Popular.** El Anexo 22 exige `CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE`, pero el patrón de
-   los XSD embebidos (copia en `Resources/SRI`, sin fecha de publicación) solo admite `CONTRIBUYENTE RÉGIMEN
-   RIMPE`. Causa: no se dispone de los XSD oficiales vigentes para contrastar (no se descargaron: sin contacto con
-   el SRI en esta entrega). Acción mínima verificable: incorporar los XSD oficiales y comparar el patrón; no se
-   altera la leyenda ni el esquema para forzar la validación. RIMPE Emprendedor: conforme.
+3. **R20 Negocio Popular.** El Anexo 22 exige `CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE` (45 caracteres),
+   pero el tipo `contribuyenteRimpe` de los XSD oficiales solo admite `CONTRIBUYENTE RÉGIMEN RIMPE`. Verificado el
+   2026-10-31 con los paquetes descargados de sri.gob.ec/facturacion-electronica (fechados 2022-02-07):
+   Factura 1.1.0 y Retención 1.0.0 son idénticos byte a byte a los embebidos en `Resources/SRI` (SHA-256
+   `62db9bf0…eb8b`, `79547cec…d162`). Causa: la leyenda entró en la ficha con la versión 2.22 (01/09/2022), después
+   de esos XSD; es una contradicción oficial, no una copia desactualizada, y no hay interpretación oficial
+   verificable. No se relaja el XSD ni se sustituye la leyenda por la de Emprendedor. Protección implementada:
+   `ElectronicEmissionRequirementsValidator` bloquea 01/04/07 de empresas con régimen `RIMPE_NP` antes de
+   capturar secuencial o generar efectos, con un mensaje que explica la suspensión temporal. Se levanta cuando el
+   SRI publique un XSD que admita la leyenda (`EmbeddedXmlSchemaProviderTests` lo detecta). RIMPE Emprendedor: conforme.
+   Nota histórica: el `NotaCredito_V1.1.0.xsd` embebido difiere del oficial solo en la declaración XML (oficial
+   `<?xml version="1.1"?>`, embebido `1.0`, desde el commit inicial); esquema y patrón idénticos. No se modifica.
 4. **R21/R22 — agente de retención y Gran Contribuyente.** Exigen el número de resolución, que `Company` no
    modela (`WithholdsRenta`/`WithholdsVat` no son la designación). Son condicionales al perfil del contribuyente:
    no se emiten ni se inventan. Acción mínima verificable: perfil fiscal real del piloto (resoluciones) y

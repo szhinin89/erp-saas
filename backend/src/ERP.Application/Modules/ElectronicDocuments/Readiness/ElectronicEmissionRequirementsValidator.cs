@@ -24,6 +24,12 @@ public sealed class ElectronicEmissionRequirementsValidator
     /// <summary>Longitud exigida por los builders XML para el RUC del emisor.</summary>
     private const int RucLength = 13;
 
+    /// <summary>
+    /// <c>sri_tax_regime.Abbrev</c> de RIMPE Negocio Popular (ver <c>SriTaxRegimeConfiguration</c>),
+    /// la misma columna con la que los providers resuelven <c>contribuyenteRimpe</c>.
+    /// </summary>
+    private const string RimpeNegocioPopularAbbrev = "RIMPE_NP";
+
     private readonly ICompanyRepository _companyRepo;
     private readonly IEstablishmentRepository _establishmentRepo;
     private readonly IEmissionPointRepository _emissionPointRepo;
@@ -73,6 +79,15 @@ public sealed class ElectronicEmissionRequirementsValidator
             Add(RequirementCodes.IssuerTaxId, ReadinessActionTarget.CompanyProfile);
         if (string.IsNullOrWhiteSpace(company.LegalName))
             Add(RequirementCodes.IssuerLegalName, ReadinessActionTarget.CompanyProfile);
+        // R20 (docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md): la leyenda de Negocio Popular del Anexo 22
+        // no pasa el XSD oficial de 01/04/07 y la de Emprendedor no es la exigida. Sin acción del
+        // usuario posible: se levanta solo con un XSD oficial que la admita.
+        if (string.Equals(
+                company.TaxRegime?.Abbrev,
+                RimpeNegocioPopularAbbrev,
+                StringComparison.OrdinalIgnoreCase
+            ))
+            Add(RequirementCodes.RimpeNegocioPopularLegend, null);
 
         // ── Dirección matriz (dirMatriz) ──
         var main = await _establishmentRepo.GetMainByCompanyAsync(tid, cid, ct);

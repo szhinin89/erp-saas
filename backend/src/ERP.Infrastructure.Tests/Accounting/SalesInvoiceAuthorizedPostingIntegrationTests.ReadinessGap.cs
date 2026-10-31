@@ -349,6 +349,57 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
     }
 
     [Fact]
+    public async Task Factura_electronica_RIMPE_Negocio_Popular_se_rechaza_por_R20_sin_secuencial_ni_efectos()
+    {
+        // Configuración fiscal completa: el régimen (catálogo sri_tax_regime "03") es lo único que bloquea.
+        var seed = await SeedReadinessGapAsync(EmissionType.Electronic, withSriSettings: true,
+            address: "Av. Amazonas N24-03");
+        await SetTaxRegimeAsync("03");
+        var boundary = new ReadinessGapSriBoundary();
+
+        await using var gateDb = CreateContext();
+        var result = await AuthorizeWithRealEmissionAsync(seed.InvoiceId, boundary,
+            EmissionRequirementsTestWiring.Real(gateDb));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing);
+        result.Error.Should().Contain($"[{ElectronicEmissionRequirementCodes.RimpeNegocioPopularLegend}]")
+            .And.Contain("Anexo 22");
+
+        await using var verify = CreateContext();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(i => i.Id == seed.InvoiceId))
+            .Status.Should().Be(SalesInvoiceStatus.Draft);
+        (await verify.DocumentSequences.AsNoTracking()
+                .AnyAsync(s => s.EmissionPointId == seed.EmissionPointId && s.DocTypeCode == "01" && s.HasBeenUsed))
+            .Should().BeFalse("el gate corre antes de CaptureNextAsync");
+        (await verify.StockMovements.AsNoTracking().AnyAsync(m => m.SourceDocId == seed.InvoiceId))
+            .Should().BeFalse();
+        (await verify.SalesReceivables.AsNoTracking().AnyAsync(r => r.InvoiceId == seed.InvoiceId))
+            .Should().BeFalse();
+        (await verify.ElectronicDocuments.AsNoTracking().AnyAsync(d => d.SourceEntityId == seed.InvoiceId))
+            .Should().BeFalse();
+        boundary.AssertSriBoundaryNeverReached();
+    }
+
+    [Theory]
+    [InlineData("02")] // RIMPE Emprendedor
+    [InlineData("01")] // Régimen General
+    public async Task Factura_electronica_RIMPE_Emprendedor_o_regimen_general_no_se_bloquea_por_R20(string regimeCode)
+    {
+        var seed = await SeedReadinessGapAsync(EmissionType.Electronic, withSriSettings: true,
+            address: "Av. Amazonas N24-03");
+        await SetTaxRegimeAsync(regimeCode);
+        var boundary = new ReadinessGapSriBoundary();
+
+        await using var gateDb = CreateContext();
+        var result = await AuthorizeWithRealEmissionAsync(seed.InvoiceId, boundary,
+            EmissionRequirementsTestWiring.Real(gateDb));
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.InvoiceNumber.Should().Be("001-001-000000001");
+    }
+
+    [Fact]
     public async Task Gate_fiscal_evalua_solo_la_configuracion_de_la_empresa_y_tenant_del_contexto()
     {
         // Empresa A (fixture): dirección vacía y sin SriSettings. Empresa B (mismo tenant):

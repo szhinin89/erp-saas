@@ -1260,6 +1260,8 @@
   "operationalReadiness.items.electronicEmission.certificateExpired.missing": "The electronic signature certificate has expired.",
   "operationalReadiness.items.electronicEmission.docType.label": "Invoice in the SRI catalog",
   "operationalReadiness.items.electronicEmission.docType.missing": "The invoice is not active for electronic issuing in the SRI catalog.",
+  "operationalReadiness.items.electronicEmission.rimpeNegocioPopularLegend.label": "RIMPE Negocio Popular legend",
+  "operationalReadiness.items.electronicEmission.rimpeNegocioPopularLegend.missing": "Electronic issuing for RIMPE Negocio Popular is temporarily suspended: the official SRI XSD does not accept the legend required by the technical sheet (Annex 22).",
   "operationalReadiness.items.electronicEmission.certificateExpiring.label": "Electronic signature certificate",
   "operationalReadiness.items.electronicEmission.certificateExpiring.warning": "The electronic signature certificate expires soon. Renew it to avoid interrupting issuing.",
   "operationalReadiness.items.sales.defaultDocType.label": "Default document type",

@@ -86,8 +86,8 @@ public sealed record ElectronicEmissionRequirementsResult(
             $"[{i.Code}] {ElectronicEmissionRequirementCodes.MessageFor(i.Code)}"
         );
         return Result<T>.ValidationFailure(
-            "No se puede emitir el comprobante electrónico: la configuración fiscal de la empresa "
-                + "está incompleta. "
+            "No se puede emitir el comprobante electrónico: la empresa no cumple los requisitos "
+                + "de emisión electrónica. "
                 + string.Join(" ", details),
             ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing
         );
@@ -126,6 +126,7 @@ public static class ElectronicEmissionRequirementCodes
     public const string CertificateExpired = "electronicEmission.certificateExpired";
     public const string CertificateExpiring = "electronicEmission.certificateExpiring";
     public const string DocType = "electronicEmission.docType";
+    public const string RimpeNegocioPopularLegend = "electronicEmission.rimpeNegocioPopularLegend";
 
     private static readonly IReadOnlyDictionary<string, string> Messages = new Dictionary<
         string,
@@ -150,6 +151,10 @@ public static class ElectronicEmissionRequirementCodes
         [CertificateExpiring] = "El certificado de firma electrónica vence pronto.",
         [DocType] =
             "El tipo de comprobante no está activo para emisión electrónica en el catálogo SRI.",
+        [RimpeNegocioPopularLegend] =
+            "La emisión electrónica para RIMPE Negocio Popular está suspendida temporalmente: la leyenda "
+            + "\"CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE\" que exige la ficha técnica SRI 2.34 "
+            + "(Anexo 22) no es aceptada por el XSD oficial vigente del comprobante.",
     };
 
     public static string MessageFor(string code) =>

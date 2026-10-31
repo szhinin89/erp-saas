@@ -7,6 +7,7 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Modules.SriCatalogs.Entities;
 using FluentAssertions;
 using Moq;
 using RequirementCodes = ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementCodes;
@@ -182,6 +183,62 @@ public sealed class ElectronicEmissionRequirementsValidatorTests
         result.Issues.Should().ContainSingle().Which.Code.Should().Be(RequirementCodes.EmissionPoint);
     }
 
+    // ── R20: RIMPE Negocio Popular (leyenda del Anexo 22 incompatible con el XSD oficial) ──
+
+    private static SriTaxRegime Regime(string code, string name, string abbrev) =>
+        new() { Code = code, Name = name, Abbrev = abbrev };
+
+    [Theory]
+    [InlineData("01")]
+    [InlineData("04")]
+    [InlineData("07")]
+    public async Task RIMPE_Negocio_Popular_bloquea_la_emision_electronica_con_mensaje_R20(string docTypeCode)
+    {
+        var f = new Fixture();
+        f.Company.TaxRegime = Regime("03", "RIMPE – Negocio Popular", "RIMPE_NP");
+
+        var result = await f.ValidateAsync(docTypeCode);
+
+        result.CanIssue.Should().BeFalse();
+        result.Issues.Should().ContainSingle().Which.Should().Be(
+            new ElectronicEmissionRequirementIssue(RequirementCodes.RimpeNegocioPopularLegend,
+                ElectronicEmissionRequirementSeverity.Required, null));
+        var failure = result.ToFailure<object>()!;
+        failure.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing);
+        failure.Error.Should().Contain($"[{RequirementCodes.RimpeNegocioPopularLegend}]")
+            .And.Contain("Anexo 22").And.Contain("XSD oficial").And.Contain("temporalmente");
+    }
+
+    [Theory]
+    [InlineData("01", "02", "RIMPE – Emprendedor", "RIMPE_ME")]
+    [InlineData("04", "02", "RIMPE – Emprendedor", "RIMPE_ME")]
+    [InlineData("07", "02", "RIMPE – Emprendedor", "RIMPE_ME")]
+    [InlineData("01", "01", "Régimen General", "GENERAL")]
+    [InlineData("04", "01", "Régimen General", "GENERAL")]
+    [InlineData("07", "01", "Régimen General", "GENERAL")]
+    public async Task Emprendedor_y_regimen_general_no_se_bloquean_por_R20(
+        string docTypeCode, string code, string name, string abbrev)
+    {
+        var f = new Fixture();
+        f.Company.TaxRegime = Regime(code, name, abbrev);
+
+        var result = await f.ValidateAsync(docTypeCode);
+
+        result.CanIssue.Should().BeTrue();
+        result.Issues.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Empresa_sin_regimen_no_se_bloquea_por_R20()
+    {
+        var f = new Fixture();
+        f.Company.TaxRegime = null;
+
+        var result = await f.ValidateAsync();
+
+        result.Issues.Should().BeEmpty();
+    }
+
     [Fact]
     public void El_gate_no_depende_de_ningun_servicio_de_red_SRI()
     {
@@ -230,8 +287,8 @@ public sealed class ElectronicEmissionRequirementsValidatorTests
                 EmissionType.Electronic, false, UserId);
         }
 
-        public Task<ElectronicEmissionRequirementsResult> ValidateAsync() =>
-            Build().ValidateAsync(new(TenantId, CompanyId, Point.Id, "01"));
+        public Task<ElectronicEmissionRequirementsResult> ValidateAsync(string docTypeCode = "01") =>
+            Build().ValidateAsync(new(TenantId, CompanyId, Point.Id, docTypeCode));
 
         public ElectronicEmissionRequirementsValidator Build()
         {
@@ -253,7 +310,8 @@ public sealed class ElectronicEmissionRequirementsValidatorTests
             Certificates.Setup(c => c.ResolveAsync(It.IsAny<SriSettings>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => Certificate);
             var docTypes = new Mock<ISriDocTypeCatalogResolver>();
-            docTypes.Setup(d => d.IsActiveElectronicDocTypeAsync("01", It.IsAny<CancellationToken>()))
+            docTypes.Setup(d => d.IsActiveElectronicDocTypeAsync(It.IsIn("01", "04", "07"),
+                    It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
             return new ElectronicEmissionRequirementsValidator(companies.Object, establishments.Object,
                 points.Object, settings.Object, Certificates.Object, docTypes.Object);

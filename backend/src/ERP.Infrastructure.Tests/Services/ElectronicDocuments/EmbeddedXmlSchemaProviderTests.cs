@@ -1,3 +1,5 @@
+using System.Xml;
+using System.Xml.Schema;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Infrastructure.Services.ElectronicDocuments;
 using FluentAssertions;
@@ -70,5 +72,85 @@ public sealed class EmbeddedXmlSchemaProviderTests
 
         result.Should().NotBeNull();
         result!.Count.Should().Be(2); // XSD principal + Common/xmldsig-core-schema.xsd
+    }
+
+    // ── R20 (docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md): leyenda RIMPE frente a los XSD activos ──
+    // Los XSD embebidos de las versiones activas coinciden con los publicados por el SRI (paquetes
+    // de febrero 2022) y solo admiten la leyenda de RIMPE Emprendedor. La ficha 2.34 (Anexo 22,
+    // cambio 2.22 del 01/09/2022) exige además la de Negocio Popular. Si el SRI publica un XSD que
+    // la admita, NegocioPopular_legend_is_rejected falla y R20 debe reabrirse.
+
+    private const string RimpeEmprendedorLegend = "CONTRIBUYENTE RÉGIMEN RIMPE";
+    private const string RimpeNegocioPopularLegend = "CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE";
+
+    private static async Task<XmlSchemaSimpleType> ContribuyenteRimpeTypeAsync(
+        ElectronicDocumentType documentType,
+        string version
+    )
+    {
+        var set = await BuildProvider().GetSchemaSetAsync(documentType, version);
+        set.Should().NotBeNull();
+        return (XmlSchemaSimpleType)set!.GlobalTypes[new XmlQualifiedName("contribuyenteRimpe")]!;
+    }
+
+    private static bool AcceptsValue(XmlSchemaSimpleType type, string value)
+    {
+        try
+        {
+            type.Datatype!.ParseValue(value, new NameTable(), null);
+            return true;
+        }
+        catch (XmlSchemaException)
+        {
+            return false;
+        }
+    }
+
+    [Theory]
+    [InlineData(ElectronicDocumentType.Invoice, "1.1.0")]
+    [InlineData(ElectronicDocumentType.CreditNote, "1.1.0")]
+    [InlineData(ElectronicDocumentType.Retention, "1.0.0")]
+    public async Task Active_schema_accepts_the_RIMPE_Emprendedor_legend(
+        ElectronicDocumentType documentType,
+        string version
+    )
+    {
+        var type = await ContribuyenteRimpeTypeAsync(documentType, version);
+
+        AcceptsValue(type, RimpeEmprendedorLegend).Should().BeTrue();
+        AcceptsValue(type, "RIMPE_ME").Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(ElectronicDocumentType.Invoice, "1.1.0")]
+    [InlineData(ElectronicDocumentType.CreditNote, "1.1.0")]
+    [InlineData(ElectronicDocumentType.Retention, "1.0.0")]
+    public async Task Active_schema_rejects_the_NegocioPopular_legend_required_by_Anexo_22(
+        ElectronicDocumentType documentType,
+        string version
+    )
+    {
+        var type = await ContribuyenteRimpeTypeAsync(documentType, version);
+
+        AcceptsValue(type, RimpeNegocioPopularLegend).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(ElectronicDocumentType.Invoice, "1.1.0")]
+    [InlineData(ElectronicDocumentType.CreditNote, "1.1.0")]
+    [InlineData(ElectronicDocumentType.Retention, "1.0.0")]
+    public async Task Active_schema_keeps_contribuyenteRimpe_optional_for_non_RIMPE_regimes(
+        ElectronicDocumentType documentType,
+        string version
+    )
+    {
+        var set = await BuildProvider().GetSchemaSetAsync(documentType, version);
+        var infoTributaria = (XmlSchemaComplexType)
+            set!.GlobalTypes[new XmlQualifiedName("infoTributaria")]!;
+        var element = ((XmlSchemaSequence)infoTributaria.ContentTypeParticle)
+            .Items.OfType<XmlSchemaElement>()
+            .Single(e => e.Name == "contribuyenteRimpe");
+
+        element.MinOccurs.Should().Be(0);
     }
 }

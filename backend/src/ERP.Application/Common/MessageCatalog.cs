@@ -196,7 +196,7 @@ public static class MessageCatalog
         ),
         [ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing] = new(
             ApiSeverity.Error,
-            "No se puede emitir el comprobante electrónico porque la configuración fiscal de la empresa está incompleta. Revise el detalle y complete la configuración indicada.",
+            "No se puede emitir el comprobante electrónico porque la empresa no cumple los requisitos de emisión electrónica. Revise el detalle indicado.",
             "Local issuer requirements for electronic emission are missing; operation rejected before any sequence or commercial effect.",
             ApiErrorCategory.Validation
         ),

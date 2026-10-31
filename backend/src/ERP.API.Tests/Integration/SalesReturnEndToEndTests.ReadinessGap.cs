@@ -91,4 +91,63 @@ public sealed partial class SalesReturnEndToEndTests
             await db.SaveChangesAsync();
         }
     }
+
+    [Fact]
+    public async Task NC04_de_empresa_RIMPE_Negocio_Popular_se_rechaza_por_R20_sin_devolucion_ni_secuencial()
+    {
+        var userId = await _f.CreateUserWithBranchAccessAsync();
+        _f.SetActiveContext(userId);
+        await OpenCashSessionAsync(openingAmount: 200m);
+        var (invoiceId, lineId, _) = await CreateAndAuthorizeInvoiceAsync(quantity: 1m, unitPrice: 10m);
+        var draft = (
+            await (await CreateDraftAsync(invoiceId, "R20 NC 04", (lineId, 1m)))
+                .Content.ReadFromJsonAsync<SrEnvelope<SalesReturnResponseDto>>(JsonOptions)
+        )!.Data!;
+
+        string? originalRegime;
+        int? sequenceBefore;
+        using (var scope = _f.CreateDbScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE sales_invoices SET emission_type = {(short)EmissionType.Electronic} WHERE id = {invoiceId}");
+            var company = await db.Companies.SingleAsync(c => c.Id == _f.CompanyId);
+            originalRegime = company.TaxRegimeCode;
+            company.TaxRegimeCode = "03";
+            await db.SaveChangesAsync();
+            sequenceBefore = await db.DocumentSequences.AsNoTracking()
+                .Where(s => s.EmissionPointId == _f.EmissionPointId && s.DocTypeCode == "04")
+                .Select(s => (int?)s.CurrentSeq).SingleOrDefaultAsync();
+        }
+
+        try
+        {
+            var authorizeResponse = await AuthorizeReturnAsync(draft.Id, ("Cash", draft.GrandTotal));
+            var body = await authorizeResponse.Content.ReadAsStringAsync();
+
+            authorizeResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, body);
+            body.Should().Contain(ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing)
+                .And.Contain("[electronicEmission.rimpeNegocioPopularLegend]");
+
+            using var verifyScope = _f.CreateDbScope();
+            var verify = verifyScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var persisted = await verify.SalesReturns.AsNoTracking().SingleAsync(r => r.Id == draft.Id);
+            persisted.Status.Should().Be(SalesReturnStatus.Draft);
+            persisted.CreditNoteDocumentNumber.Should().BeNull();
+            (await verify.DocumentSequences.AsNoTracking()
+                    .Where(s => s.EmissionPointId == _f.EmissionPointId && s.DocTypeCode == "04")
+                    .Select(s => (int?)s.CurrentSeq).SingleOrDefaultAsync())
+                .Should().Be(sequenceBefore, "el secuencial 04 no se consume");
+            (await verify.ElectronicDocuments.AsNoTracking()
+                    .AnyAsync(d => d.SourceModule == "Sales" && d.SourceEntityId == draft.Id))
+                .Should().BeFalse();
+        }
+        finally
+        {
+            using var scope = _f.CreateDbScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            (await db.Companies.SingleAsync(c => c.Id == _f.CompanyId)).TaxRegimeCode = originalRegime;
+            await db.SaveChangesAsync();
+        }
+    }
 }

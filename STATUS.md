@@ -14,7 +14,8 @@ PASS agente: Application 528/528 (ajustes finales), PostgreSQL real R11 28/28, I
 143/143, guardrails PowerShell y `architecture:check` (0 nuevas), `git diff --check`; RED controlado de R11, R13
 y R14. Sin SRI real, suites completas, migraciones, frontend, staging, commit ni push.
 
-BLOCKED (detalle en la matriz): R12, R20, R21/R22, R32 (reenvío de lo nunca registrado), §N; limitados: R16
+BLOCKED (detalle en la matriz): R12, R20 (incompatibilidad oficial ficha ↔ XSD; protección implementada: RIMPE
+Negocio Popular no emite 01/04/07), R21/R22, R32 (reenvío de lo nunca registrado), §N; limitados: R16
 (unidad), R11 sin evidencia de recepción (consulta sin plazo) y hosts no oficiales. Pendiente aceptación real en `celcer` de 04, 07 y de 01/04 con `contribuyenteEspecial`. No CLOSED.
 
 ## P0 instalación limpia — READY FOR REVIEW (2026-10-31)

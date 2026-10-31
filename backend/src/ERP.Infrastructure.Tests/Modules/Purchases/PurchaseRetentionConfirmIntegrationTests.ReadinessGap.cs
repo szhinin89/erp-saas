@@ -77,6 +77,40 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     }
 
     [Fact]
+    public async Task Retencion07_RIMPE_Negocio_Popular_rechaza_la_confirmacion_por_R20_sin_secuencial()
+    {
+        var invoiceId = await SeedDraftPurchaseAsync();
+        await SetFiscalConfigurationAsync(address: "Av. Amazonas N24-03", withSriSettings: true);
+        await using (var regime = CreateContext())
+        {
+            (await regime.Companies.SingleAsync(c => c.Id == _companyId)).TaxRegimeCode = "03";
+            await regime.SaveChangesAsync();
+        }
+
+        Result<ERP.Application.Modules.Purchases.DTOs.PurchaseInvoiceDto> result;
+        await using (var gateDb = CreateContext())
+        await using (var db = CreateWiredContext())
+            result = await ConfirmHandler(db,
+                    emissionRequirements: EmissionRequirementsTestWiring.Real(gateDb))
+                .Handle(new ConfirmPurchaseCommand(invoiceId, null, VatIntent()), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing);
+        result.Error.Should().Contain($"[{ElectronicEmissionRequirementCodes.RimpeNegocioPopularLegend}]");
+
+        var s = await ReadAsync(invoiceId);
+        s.Status.Should().Be(PurchaseStatus.Draft);
+        s.Retentions.Should().BeEmpty();
+        s.Payables.Should().BeEmpty();
+        s.StockMovements.Should().Be(0);
+        await using var verify = CreateContext();
+        (await verify.DocumentSequences.AsNoTracking()
+                .AnyAsync(q => q.EmissionPointId == _emissionPointId && q.DocTypeCode == "07" && q.HasBeenUsed))
+            .Should().BeFalse("el gate corre antes de CaptureNextAsync");
+        (await verify.ElectronicDocuments.AsNoTracking().AnyAsync()).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Compra_sin_retencion_no_exige_configuracion_fiscal_electronica()
     {
         var invoiceId = await SeedDraftPurchaseAsync();

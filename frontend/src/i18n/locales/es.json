@@ -1329,6 +1329,8 @@
   "operationalReadiness.items.electronicEmission.certificateExpired.missing": "El certificado de firma electrónica está vencido.",
   "operationalReadiness.items.electronicEmission.docType.label": "Factura en el catálogo SRI",
   "operationalReadiness.items.electronicEmission.docType.missing": "La factura no está activa para emisión electrónica en el catálogo SRI.",
+  "operationalReadiness.items.electronicEmission.rimpeNegocioPopularLegend.label": "Leyenda RIMPE Negocio Popular",
+  "operationalReadiness.items.electronicEmission.rimpeNegocioPopularLegend.missing": "La emisión electrónica para RIMPE Negocio Popular está suspendida temporalmente: el XSD oficial del SRI no acepta la leyenda que exige la ficha técnica (Anexo 22).",
   "operationalReadiness.items.electronicEmission.certificateExpiring.label": "Certificado de firma electrónica",
   "operationalReadiness.items.electronicEmission.certificateExpiring.warning": "El certificado de firma electrónica vence pronto. Renuévalo para no interrumpir la emisión.",
   "operationalReadiness.items.sales.defaultDocType.label": "Tipo de documento predeterminado",
