@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Company.PhysicalEmission;
 using ERP.Application.Modules.ElectronicDocuments.AdditionalInfo;
 using ERP.Application.Modules.ElectronicDocuments.DTOs;
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
@@ -98,10 +99,12 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
     {
         var seed = await SeedReadinessGapAsync(EmissionType.Physical, withSriSettings: false);
         var boundary = new ReadinessGapSriBoundary();
-        // La estrategia física no exige requisitos SRI: el gate nunca se consulta.
+        // La estrategia física nunca consulta el gate electrónico ni toca ElectronicDocuments. La
+        // política física se da por cumplida: hoy ningún régimen la habilita (ver la prueba siguiente).
         var gate = new Mock<IElectronicEmissionRequirementsValidator>(MockBehavior.Strict);
 
-        var result = await AuthorizeWithRealEmissionAsync(seed.InvoiceId, boundary, gate.Object);
+        var result = await AuthorizeWithRealEmissionAsync(seed.InvoiceId, boundary, gate.Object,
+            EmissionRequirementsTestWiring.PhysicalSatisfied());
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be("Authorized");
@@ -115,6 +118,205 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             .Should().BeFalse();
         boundary.SupplierResolveCount.Should().Be(0);
         boundary.AssertSriBoundaryNeverReached();
+    }
+
+    [Fact]
+    public async Task Regimen_general_con_autorizacion_vigente_no_habilita_la_factura_fisica_ordinaria()
+    {
+        var seed = await SeedReadinessGapAsync(EmissionType.Physical, withSriSettings: false);
+        await SeedPhysicalPolicyAsync(seed.EmissionPointId, authorizationExpiresOn: ReadinessGapDate.AddMonths(6));
+        var boundary = new ReadinessGapSriBoundary();
+
+        await using var physicalDb = CreateContext();
+        var result = await AuthorizeWithRealEmissionAsync(seed.InvoiceId, boundary,
+            new Mock<IElectronicEmissionRequirementsValidator>(MockBehavior.Strict).Object,
+            EmissionRequirementsTestWiring.RealPhysical(physicalDb, ReadinessGapDate));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.PhysicalEmission.RequirementsMissing);
+        result.Error.Should().Contain("[physicalEmission.docTypeNotPermitted]")
+            .And.NotContain("[physicalEmission.authorization");
+        await using var verify = CreateContext();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(i => i.Id == seed.InvoiceId))
+            .Status.Should().Be(SalesInvoiceStatus.Draft);
+        (await verify.DocumentSequences.AsNoTracking()
+                .AnyAsync(s => s.EmissionPointId == seed.EmissionPointId && s.DocTypeCode == "01"))
+            .Should().BeFalse("el rechazo ocurre antes de CaptureNextAsync");
+        boundary.AssertSriBoundaryNeverReached();
+    }
+
+    [Fact]
+    public async Task Rango_agotado_entre_la_validacion_y_la_captura_se_rechaza_bajo_el_lock_sin_efectos()
+    {
+        // Otro consumidor tomó el último número autorizado (1) después de que esta factura pasara la
+        // validación previa: la captura acotada lo detecta bajo el lock de la secuencia.
+        var seed = await SeedReadinessGapAsync(EmissionType.Physical, withSriSettings: false);
+        await using (var seqDb = CreateContext())
+            await new DocumentSequenceRepository(seqDb).CaptureNextAsync(_tenantId, _companyId, seed.EmissionPointId, "01");
+        var policy = new Mock<IPhysicalEmissionRequirementsValidator>();
+        policy.Setup(p => p.ValidateAsync(It.IsAny<PhysicalEmissionRequirementsRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ElectronicEmissionRequirementsResult([]) { Modality = EmissionType.Physical });
+        policy.Setup(p => p.GetAuthorizedSequentialRangesAsync(It.IsAny<PhysicalEmissionRequirementsRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new ERP.Domain.Modules.Company.Interfaces.AuthorizedSequentialRange(1, 1)]);
+        var boundary = new ReadinessGapSriBoundary();
+
+        var result = await AuthorizeWithRealEmissionAsync(seed.InvoiceId, boundary,
+            new Mock<IElectronicEmissionRequirementsValidator>(MockBehavior.Strict).Object, policy.Object);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.PhysicalEmission.RequirementsMissing);
+        result.Error.Should().Contain("[physicalEmission.sequentialOutOfRange]");
+        await using var verify = CreateContext();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(i => i.Id == seed.InvoiceId))
+            .Status.Should().Be(SalesInvoiceStatus.Draft);
+        (await verify.DocumentSequences.AsNoTracking()
+                .SingleAsync(s => s.EmissionPointId == seed.EmissionPointId && s.DocTypeCode == "01"))
+            .CurrentSeq.Should().Be(2, "el número fuera de rango no se consume");
+        (await verify.StockMovements.AsNoTracking()
+                .AnyAsync(m => m.SourceDocId == seed.InvoiceId && m.MovementType == StockMovementType.SaleExit))
+            .Should().BeFalse();
+        (await verify.JournalEntries.AsNoTracking().AnyAsync(e => e.SourceEventId == seed.InvoiceId))
+            .Should().BeFalse();
+        boundary.AssertSriBoundaryNeverReached();
+    }
+
+    [Theory]
+    [InlineData(false, "[physicalEmission.authorization]")]
+    [InlineData(true, "[physicalEmission.authorizationExpired]")]
+    public async Task Factura_fisica_sin_autorizacion_vigente_se_rechaza_sin_secuencial_ni_efectos(
+        bool withExpiredAuthorization, string expectedRequirement)
+    {
+        var seed = await SeedReadinessGapAsync(EmissionType.Physical, withSriSettings: false);
+        await SeedPhysicalPolicyAsync(seed.EmissionPointId,
+            authorizationExpiresOn: withExpiredAuthorization ? ReadinessGapDate.AddDays(-1) : null);
+        var boundary = new ReadinessGapSriBoundary();
+
+        await using var physicalDb = CreateContext();
+        var result = await AuthorizeWithRealEmissionAsync(seed.InvoiceId, boundary,
+            new Mock<IElectronicEmissionRequirementsValidator>(MockBehavior.Strict).Object,
+            EmissionRequirementsTestWiring.RealPhysical(physicalDb, ReadinessGapDate));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.PhysicalEmission.RequirementsMissing);
+        result.Error.Should().Contain(expectedRequirement);
+
+        await using var verify = CreateContext();
+        (await verify.SalesInvoices.AsNoTracking().SingleAsync(i => i.Id == seed.InvoiceId))
+            .Status.Should().Be(SalesInvoiceStatus.Draft);
+        (await verify.DocumentSequences.AsNoTracking()
+                .AnyAsync(s => s.EmissionPointId == seed.EmissionPointId && s.DocTypeCode == "01" && s.HasBeenUsed))
+            .Should().BeFalse("la política física corre antes de CaptureNextAsync");
+        (await verify.StockMovements.AsNoTracking()
+                .AnyAsync(m => m.SourceDocId == seed.InvoiceId && m.MovementType == StockMovementType.SaleExit))
+            .Should().BeFalse();
+        (await verify.CashMovements.AsNoTracking().AnyAsync(m => m.ReferenceId == seed.InvoiceId))
+            .Should().BeFalse();
+        (await verify.SalesReceivables.AsNoTracking().AnyAsync(r => r.InvoiceId == seed.InvoiceId))
+            .Should().BeFalse();
+        (await verify.JournalEntries.AsNoTracking().AnyAsync(e => e.SourceEventId == seed.InvoiceId))
+            .Should().BeFalse();
+        boundary.AssertSriBoundaryNeverReached();
+    }
+
+    [Fact]
+    public async Task Politica_fisica_real_aplica_el_catalogo_regimen_tipo_el_rango_y_el_scope_de_empresa()
+    {
+        var seed = await SeedReadinessGapAsync(EmissionType.Physical, withSriSettings: false);
+        await SeedPhysicalPolicyAsync(seed.EmissionPointId, authorizationExpiresOn: ReadinessGapDate.AddMonths(6),
+            lastSequential: 2);
+        // Contexto nuevo por evaluación: cada consulta ve el estado comiteado, nunca una entidad cacheada.
+        async Task<IEnumerable<string>> CodesFor(Guid tenantId, Guid companyId, Guid pointId, string docType = "01")
+        {
+            await using var fresh = CreateContext();
+            var result = await EmissionRequirementsTestWiring.RealPhysical(fresh, ReadinessGapDate)
+                .ValidateAsync(new(tenantId, companyId, pointId, docType));
+            return result.Issues.Select(i => i.Code).ToList();
+        }
+
+        // Régimen General + autorización 1..2 vigente: la factura física ordinaria sigue bloqueada
+        // (fila General → 01 inactiva en el catálogo GLOBAL); la autorización en sí es válida.
+        (await CodesFor(_tenantId, _companyId, seed.EmissionPointId))
+            .Should().Equal(PhysicalEmissionRequirementCodes.DocTypeNotPermitted);
+
+        // Catálogo GLOBAL sembrado: RIMPE Negocio Popular y Emprendedor no tienen factura física;
+        // la nota de venta 02 de Negocio Popular está permitida pero no implementada (inactiva).
+        await SetTaxRegimeAsync("03");
+        (await CodesFor(_tenantId, _companyId, seed.EmissionPointId))
+            .Should().Equal(PhysicalEmissionRequirementCodes.DocTypeNotPermitted);
+        (await CodesFor(_tenantId, _companyId, seed.EmissionPointId, "02"))
+            .Should().Contain(PhysicalEmissionRequirementCodes.DocType)
+            .And.NotContain(PhysicalEmissionRequirementCodes.DocTypeNotPermitted);
+        await SetTaxRegimeAsync("02");
+        (await CodesFor(_tenantId, _companyId, seed.EmissionPointId))
+            .Should().Equal(PhysicalEmissionRequirementCodes.DocTypeNotPermitted);
+        await SetTaxRegimeAsync("01");
+
+        // Rango agotado tras capturas reales de CaptureNextAsync (1 y 2): el siguiente es 3.
+        await using (var seqDb = CreateContext())
+        {
+            var sequences = new DocumentSequenceRepository(seqDb);
+            await sequences.CaptureNextAsync(_tenantId, _companyId, seed.EmissionPointId, "01");
+            await sequences.CaptureNextAsync(_tenantId, _companyId, seed.EmissionPointId, "01");
+        }
+        (await CodesFor(_tenantId, _companyId, seed.EmissionPointId))
+            .Should().Equal(PhysicalEmissionRequirementCodes.DocTypeNotPermitted,
+                PhysicalEmissionRequirementCodes.SequentialOutOfRange);
+
+        // Otra empresa del mismo tenant con su propio punto: la autorización de A no la habilita y
+        // el punto de A no existe en su scope.
+        var companyB = Company.CreateManaged(_tenantId, "1790012345004", "Empresa B S.A.", createdBy: _createdBy);
+        companyB.TaxRegimeCode = "01";
+        await using (var dbA = CreateContext())
+        {
+            dbA.Companies.Add(companyB);
+            await dbA.SaveChangesAsync();
+        }
+        Guid pointB;
+        await using (var dbB = CreateCompanyContext(companyB.Id))
+        {
+            var mainB = Establishment.Create(_tenantId, null, companyB.Id, "001", "Matriz B",
+                "Av. B 100", null, true, _createdBy);
+            dbB.Establishments.Add(mainB);
+            await dbB.SaveChangesAsync();
+            var epB = EmissionPoint.Create(_tenantId, companyB.Id, mainB.Id, "001", "PE-B",
+                EmissionType.Physical, true, _createdBy);
+            dbB.EmissionPoints.Add(epB);
+            await dbB.SaveChangesAsync();
+            pointB = epB.Id;
+        }
+        await using (var dbB = CreateCompanyContext(companyB.Id))
+        {
+            var policyB = EmissionRequirementsTestWiring.RealPhysical(dbB, ReadinessGapDate);
+            (await policyB.ValidateAsync(new(_tenantId, companyB.Id, pointB, "01")))
+                .Issues.Select(i => i.Code).Should().Equal(PhysicalEmissionRequirementCodes.DocTypeNotPermitted,
+                    PhysicalEmissionRequirementCodes.Authorization);
+            (await policyB.ValidateAsync(new(_tenantId, companyB.Id, seed.EmissionPointId, "01")))
+                .Issues.Select(i => i.Code).Should().Equal(PhysicalEmissionRequirementCodes.EmissionPoint);
+        }
+    }
+
+    /// <summary>
+    /// Régimen General y, si se indica caducidad, una autorización de impresión de la factura 01
+    /// del punto (desde un año antes de su caducidad, rango 1..<paramref name="lastSequential"/>).
+    /// </summary>
+    private async Task SeedPhysicalPolicyAsync(Guid emissionPointId, DateOnly? authorizationExpiresOn,
+        int lastSequential = 1000)
+    {
+        await SetTaxRegimeAsync("01");
+        if (authorizationExpiresOn is not { } expiresOn)
+            return;
+        await using var db = CreateContext();
+        db.PhysicalDocumentAuthorizations.Add(PhysicalDocumentAuthorization.Create(_tenantId, _companyId,
+            emissionPointId, "01", "1122334455", expiresOn.AddYears(-1), expiresOn, 1, lastSequential,
+            _createdBy));
+        await db.SaveChangesAsync();
+    }
+
+    private async Task SetTaxRegimeAsync(string regimeCode)
+    {
+        await using var db = CreateContext();
+        (await db.Companies.SingleAsync(c => c.Id == _companyId)).TaxRegimeCode = regimeCode;
+        await db.SaveChangesAsync();
     }
 
     [Fact]
@@ -264,7 +466,8 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
     }
 
     private async Task<Result<ERP.Application.Modules.Sales.DTOs.SalesInvoiceDto>> AuthorizeWithRealEmissionAsync(
-        Guid invoiceId, ReadinessGapSriBoundary boundary, IElectronicEmissionRequirementsValidator gate)
+        Guid invoiceId, ReadinessGapSriBoundary boundary, IElectronicEmissionRequirementsValidator gate,
+        IPhysicalEmissionRequirementsValidator? physicalGate = null)
     {
         var (db, provider) = BuildA7Context(new A8NoOpInterceptor(), "RG-1A");
         using var disposeProvider = provider;
@@ -308,7 +511,8 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
         var strategies = new SalesInvoiceEmissionStrategyResolver(new ISalesInvoiceEmissionStrategy[]
         {
             new ElectronicSalesInvoiceEmissionStrategy(issuer, gate, boundary.StrategyLogger),
-            new PhysicalSalesInvoiceEmissionStrategy(NullLogger<PhysicalSalesInvoiceEmissionStrategy>.Instance),
+            new PhysicalSalesInvoiceEmissionStrategy(physicalGate ?? EmissionRequirementsTestWiring.PhysicalSatisfied(),
+                NullLogger<PhysicalSalesInvoiceEmissionStrategy>.Instance),
         });
 
         var handler = new AuthorizeSalesInvoiceHandler(

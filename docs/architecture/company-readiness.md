@@ -1,6 +1,6 @@
 # Preparación operativa de empresa (Company Readiness)
 
-**Estado:** IN REVIEW (Fase 2B-1 backend y contrato; Fase 2B-2 interfaz guiada; Fase 2B-3 habilitación preventiva de cajas). No CLOSED hasta revisión y CI.
+**Estado:** IN REVIEW (Fase 2B-1 backend y contrato; Fase 2B-2 interfaz guiada; Fase 2B-3 habilitación preventiva de cajas; F-1..F-5 política fiscal de emisión física). No CLOSED hasta revisión y CI.
 
 SSOT funcional del diagnóstico de preparación operativa de la empresa activa en la sucursal activa: qué revisa, de qué fuente única sale cada dato, qué validador decide y qué capacidades condiciona. Las decisiones de emisión electrónica se fundamentan en [ADR-023](../decisions/ADR-023-electronic-documents-v1-closure.md) y [ADR-038](../decisions/ADR-038-sri-electronic-compliance-architecture.md); el modo contable, en [accounting.md](./accounting.md).
 
@@ -24,7 +24,7 @@ La consulta es `IBranchScopedRequest`: la sucursal activa es el header `X-Branch
 |---|---|
 | Empresa (una vez) | Identidad, establecimiento matriz, configuración SRI y certificado, modo contable, catálogo SRI, defaults de venta de empresa, marca y documentos, ítems activos |
 | Sucursal activa | Cajas activas de la sucursal, bodegas activas de la sucursal, bodega por defecto de venta de la sucursal (`IInvoiceDefaultsResolver` con la sucursal activa) |
-| Caja y punto | Punto de emisión asignado y activo, modalidad, resultado del validador electrónico para ese punto (dirección del establecimiento del punto, etc.) |
+| Caja y punto | Punto de emisión asignado y activo, modalidad, resultado del validador de esa modalidad para ese punto (electrónico: dirección del establecimiento, certificado, etc.; físico: [política fiscal física](#política-fiscal-de-emisión-física-f-1f-5)) |
 
 Las cajas y bodegas se filtran por empresa **y** sucursal activa, porque `OpenCashSession` exige `register.BranchId == sucursal activa`, el punto de una caja debe pertenecer a un establecimiento de su sucursal, y ventas, ajustes y compras validan que la bodega sea de la sucursal activa.
 
@@ -46,15 +46,15 @@ Las cajas y bodegas se filtran por empresa **y** sucursal activa, porque `OpenCa
 
 | Campo | Valores |
 |---|---|
-| `operationalStatus` | `Ready` si la caja puede vender con su punto (punto asignado y activo; si es electrónico, sin requisitos obligatorios del validador); `Missing` si no |
-| `fiscalStatus` | `Verified` punto electrónico sin requisitos obligatorios · `Pending` punto electrónico con requisitos obligatorios o verificación fallida · `NotVerified` punto físico: no existe política fiscal propietaria que verificar ([brechas F-1..F-5](#brecha-de-política-fiscal-física-f-1f-5)); nunca se presenta como autorizado · `NotApplicable` caja sin punto activo |
+| `operationalStatus` | `Ready` si la caja puede vender con su punto (punto asignado y activo, sin requisitos obligatorios del validador de su modalidad); `Missing` si no |
+| `fiscalStatus` | `Verified` punto electrónico sin requisitos obligatorios · `Pending` punto (electrónico o físico) con requisitos obligatorios o verificación fallida · `NotVerified` punto físico que cumple los requisitos verificables de la [política fiscal física](#política-fiscal-de-emisión-física-f-1f-5); la autorización del SRI no se certifica y nunca se presenta como autorizado · `NotApplicable` caja sin punto activo |
 | `requirementCodes` | `code` de los ítems de `sections` que la caja incumple (referencia, no copia). Los requisitos que adopta un ítem base se referencian con el código de ese ítem (p. ej. `identity.taxId`) |
 
-Cada punto electrónico distinto se valida una sola vez aunque lo compartan varias cajas.
+Cada punto distinto se valida una sola vez con el validador de su modalidad aunque lo compartan varias cajas.
 
 ### Ejemplos
 
-Sucursal Matriz con caja física `CAJA-01` (001-002) y caja electrónica `CAJA-02` (001-003) sin certificado:
+Sucursal Matriz con caja física `CAJA-01` (001-002) que cumpliera la política física (hoy ningún régimen lo permite: ver BLOCKED) y caja electrónica `CAJA-02` (001-003) sin certificado:
 
 ```json
 {
@@ -82,9 +82,9 @@ Precondiciones verificadas en el código de cada operación. Solo las que depend
 
 | Operación (propietaria) | Precondiciones de configuración reales | Capacidad |
 |---|---|---|
-| Abrir caja (`OpenCashSessionCommand`, branch-scoped) | Caja activa de la sucursal activa con punto de emisión asignado, existente y activo; los requisitos que la estrategia de emisión de ese punto exige para la factura (01): ninguno si es físico, `IElectronicEmissionRequirementsValidator` si es electrónico ([habilitación preventiva](#habilitación-preventiva-de-cajas-apertura-de-jornada)). No contabiliza | Sales, CashRegister |
+| Abrir caja (`OpenCashSessionCommand`, branch-scoped) | Caja activa de la sucursal activa con punto de emisión asignado, existente y activo; los requisitos que la estrategia de emisión de ese punto exige para la factura (01): `IPhysicalEmissionRequirementsValidator` si es físico, `IElectronicEmissionRequirementsValidator` si es electrónico ([habilitación preventiva](#habilitación-preventiva-de-cajas-apertura-de-jornada)). No contabiliza | Sales, CashRegister |
 | Crear borrador de venta (`CreateSalesDraftCommand`, branch-scoped) | Caja abierta; punto de emisión **de la caja** activo en la empresa; bodegas de línea de la sucursal activa. Precio: lista del cliente → lista por defecto → `Item.BaseSalePrice`. Tipo de documento: el enviado (activo en `sri_doc_types`) o 01. Condición de pago: explícita → del cliente → Contado del sistema (o crédito con condición de empresa/vencimiento manual) | Sales |
-| Autorizar venta (`AuthorizeSalesInvoiceCommand`) | Punto y establecimiento del borrador; con emisión **electrónica** (snapshot del borrador), `IElectronicEmissionRequirementsValidator` antes del secuencial; con emisión física, ningún requisito fiscal del emisor (`PhysicalSalesInvoiceEmissionStrategy`). Contabiliza en la misma transacción: sin modo contable se rechaza | Sales, ElectronicInvoicing |
+| Autorizar venta (`AuthorizeSalesInvoiceCommand`) | Punto y establecimiento del borrador; con emisión **electrónica** (snapshot del borrador), `IElectronicEmissionRequirementsValidator` antes del secuencial; con emisión física, la [política fiscal física](#política-fiscal-de-emisión-física-f-1f-5) antes del secuencial (`PhysicalSalesInvoiceEmissionStrategy`). Contabiliza en la misma transacción: sin modo contable se rechaza | Sales, ElectronicInvoicing |
 | Confirmar compra / ajuste de stock (branch-scoped) | Bodega de la sucursal activa. Contabiliza en la misma transacción: sin modo contable se rechaza. Las transferencias no contabilizan | Inventory |
 | Movimiento o depósito de caja, cierre con diferencia | Caja abierta. Contabiliza en la misma transacción: sin modo contable se rechaza. Cerrar sin diferencia no contabiliza | CashRegister |
 
@@ -106,6 +106,8 @@ El punto por defecto de la empresa (`EmissionPoint.IsDefault`) solo alimenta los
 | `electronicInvoicing.activation` | Sucursal | `EmissionPoint.EmissionType` de los puntos de caja | Alguno `Electronic` ⇒ `Ready`; si no ⇒ `NotApplicable` | Info | — | `EmissionPoints` |
 | `electronicEmission.*` | Empresa o punto | Ver [requisitos electrónicos](#requisitos-de-emisión-electrónica) | `IElectronicEmissionRequirementsValidator` | Ver abajo | Ver abajo | Indicado por el validador |
 | `electronicInvoicing.verificationFailed` | Punto | — | El validador lanzó un error técnico (se registra en log); el punto no puede emitir | Blocking | Ver abajo | `ElectronicInvoicingSettings` |
+| `physicalEmission.activation` | Sucursal | `EmissionPoint.EmissionType` de los puntos de caja | Alguno `Physical` ⇒ `Ready`; si no ⇒ `NotApplicable` | Info | — | `EmissionPoints` |
+| `physicalEmission.*` | Empresa o punto | Ver [política fiscal física](#política-fiscal-de-emisión-física-f-1f-5) | `IPhysicalEmissionRequirementsValidator` | Blocking | Sales solo si ninguna caja de la sucursal puede vender | Indicado por la política |
 | `sales.defaultDocType` | Empresa | `invoice.default_doc_type_code` vía `IInvoiceDefaultsResolver` | No vacío (sin él la venta usa 01) | Warning | — | `CompanySalesSettings` |
 | `sales.defaultPaymentMethod` | Empresa | `invoice.default_payment_method_code` | No vacío (la autorización sincroniza el código del método de pago usado) | Warning | — | `CompanySalesSettings` |
 | `sales.defaultPaymentTerm` | Empresa | `invoice.default_payment_term_id` | Existe (sin él, el crédito exige condición o vencimiento manual) | Warning | — | `CompanySalesSettings` |
@@ -139,6 +141,8 @@ Los códigos que revisan un dato con ítem base no se publican aparte: el ítem 
 | `electronicEmission.company`, `electronicEmission.issuerTaxId` | `identity.taxId` |
 | `electronicEmission.issuerLegalName` | `identity.legalName` |
 | `electronicEmission.mainEstablishment` | `structure.mainEstablishment` |
+| `physicalEmission.issuerTaxId` | `identity.taxId` |
+| `physicalEmission.issuerLegalName` | `identity.legalName` |
 
 El resto (`matrixAddress`, `emissionPoint`, `establishmentAddress`, `sriSettings`, `sriEnvironment`, `sriWsdlUrl`, `certificate`, `certificateUnusable`, `certificateExpired`, `certificateExpiring`, `docType`) solo los publica el validador.
 
@@ -146,25 +150,78 @@ El resto (`matrixAddress`, `emissionPoint`, `establishmentAddress`, `sriSettings
 
 Una caja que no puede vender con su propio punto de emisión no inicia la jornada: el rechazo ocurre al abrir la caja, antes de que el cajero comience a vender, y no al autorizar la factura con el cliente esperando.
 
-- **Regla única.** `ICashRegisterOpeningReadinessChecker` (Caja, Application) evalúa la caja con **su** punto de emisión, nunca con el punto por defecto de la empresa: sin punto activo ⇒ `cashRegister.withEmissionPoint`; con punto activo, delega en `ISalesInvoiceEmissionStrategyResolver` para el tipo del punto y el documento 01 — la estrategia física no exige requisitos fiscales del emisor; la electrónica invoca `IElectronicEmissionRequirementsValidator`. No contiene reglas fiscales propias. Un fallo técnico del validador produce `electronicInvoicing.verificationFailed` y nunca habilita la caja.
-- **Autoridad en el backend.** `OpenCashSessionHandler` aplica la regla antes de crear la sesión (sin ningún efecto si rechaza): punto desactivado o fallo de verificación ⇒ `VALIDATION_ERROR`; requisitos electrónicos obligatorios ⇒ `SRI_EMISSION_REQUIREMENTS_MISSING` con el detalle del validador. Los requisitos de advertencia (`certificateExpiring`) no impiden abrir.
+- **Regla única.** `ICashRegisterOpeningReadinessChecker` (Caja, Application) evalúa la caja con **su** punto de emisión, nunca con el punto por defecto de la empresa: sin punto activo ⇒ `cashRegister.withEmissionPoint`; con punto activo, delega en `ISalesInvoiceEmissionStrategyResolver` para el tipo del punto y el documento 01 — la estrategia física invoca la [política fiscal física](#política-fiscal-de-emisión-física-f-1f-5); la electrónica, `IElectronicEmissionRequirementsValidator`. No contiene reglas fiscales propias. Un fallo técnico produce `electronicInvoicing.verificationFailed` o `physicalEmission.verificationFailed` según la modalidad y nunca habilita la caja.
+- **Autoridad en el backend.** `OpenCashSessionHandler` aplica la regla antes de crear la sesión (sin ningún efecto si rechaza): punto desactivado o fallo de verificación ⇒ `VALIDATION_ERROR`; requisitos electrónicos obligatorios ⇒ `SRI_EMISSION_REQUIREMENTS_MISSING`, físicos ⇒ `PHYSICAL_EMISSION_REQUIREMENTS_MISSING`, con el detalle del validador. Los requisitos de advertencia (`certificateExpiring`) no impiden abrir.
 - **Diagnóstico previo.** `GET /api/v1/cash-registers/{id}/opening-readiness` (branch-scoped, permiso `caja.open`, el mismo de la apertura; no exige permisos de configuración) devuelve `CashRegisterOpeningReadinessDto`: `canOpen`, `emissionType`, `fiscalStatus` y `requirements[]` (`code`, `severity` `Required`/`Warning`, `actionTarget`). Una caja de otra sucursal es `NotFound`. Solo lectura y recalculado en cada consulta; la apertura lo vuelve a evaluar.
-- **Mismos códigos que Readiness.** `OperationalReadinessCodes` (Companies, Application) es la única fuente de los códigos de ítem compartidos, del mapeo de requisitos con ítem base (`electronicEmission.company`/`issuerTaxId` ⇒ `identity.taxId`, etc.) y del estado fiscal por modalidad; la usan el resolver de empresa y la caja.
+- **Mismos códigos que Readiness.** `OperationalReadinessCodes` (Companies, Application) es la única fuente de los códigos de ítem compartidos, del mapeo de requisitos con ítem base (`electronicEmission.company`/`issuerTaxId` y `physicalEmission.issuerTaxId` ⇒ `identity.taxId`, etc.) y del estado fiscal por modalidad; la usan el resolver de empresa y la caja.
 - **Interfaz.** En la apertura de caja (`CajaPage`) se consulta el diagnóstico de la caja seleccionada en la sucursal activa (al cambiar de caja o de sucursal, y tras un rechazo de la apertura); una respuesta de otra caja o sucursal no se muestra. Si `canOpen` es `false` se deshabilita la apertura y cada requisito se presenta con el mismo componente que Preparación de Datos (`ReadinessRequirementRow`, vía `configuracion/facades/operationalReadinessGuidanceFacade`): qué falta, por qué importa y «Se corrige en» según el menú autenticado, o la indicación de pedir asistencia si el usuario no tiene acceso a esa pantalla. Si el diagnóstico no puede consultarse, se avisa y la apertura queda a decisión del backend. Las demás cajas no se ven afectadas.
-- **Física.** Una caja física preparada abre con normalidad y se muestra `NotVerified` con su aclaración: no se declara autorización fiscal física ni se resuelven F-1..F-5.
+- **Física.** Una caja física sin régimen que lo permita, sin autorización de impresión vigente o con el siguiente secuencial fuera del rango no abre; si cumple la política, abre y se muestra `NotVerified` con su aclaración (no se certifica ante el SRI).
 - **Después de abrir.** Si la configuración cambia con la caja ya abierta, el gate de `AuthorizeSalesInvoiceCommand` sigue rechazando antes del secuencial y de cualquier efecto (validación definitiva sin cambios).
 
-## Brecha de política fiscal física (F-1..F-5)
+## Política fiscal de emisión física (F-1..F-5)
 
-La venta física es operativamente posible hoy (el backend la permite y Readiness no la bloquea), pero **no existe una política fiscal propietaria que la valide**. Por eso toda caja con punto físico se informa `fiscalStatus: NotVerified`: Readiness no le atribuye una autorización inexistente. Antes de certificar esta modalidad, el módulo propietario (Ventas / configuración documental) debe implementar su política; Readiness solo la proyectará cuando exista.
+Propietario: módulo Company (régimen tributario, punto de emisión, autorización de impresión y secuencia). Implementación única: `IPhysicalEmissionRequirementsValidator` (`ERP.Application/Modules/Company/PhysicalEmission`). La consume `PhysicalSalesInvoiceEmissionStrategy` (Ventas), y con ella la habilitación preventiva de cajas, el diagnóstico de Readiness y el gate de `AuthorizeSalesInvoiceCommand` antes de `CaptureNextAsync`. Readiness y Caja no contienen reglas fiscales físicas: proyectan el resultado. Nunca contacta al SRI.
 
-| ID | Brecha comprobada | Estado actual en el código |
-|---|---|---|
-| F-1 | Sin datos de autorización de impresión, vigencia ni rango de secuenciales autorizado | `EmissionPoint`, `DocumentSequence` y `Establishment` no los modelan; `CaptureNextAsync` solo limita a 999.999.999 |
-| F-2 | Sin política de modalidad por tipo documental | Un punto `Physical` basta para emitir una factura física; `DocumentFlowPolicy` gobierna el flujo, no la modalidad, y Ventas no la consulta |
-| F-3 | La venta física no exige el RUC oficial del emisor | `PhysicalSalesInvoiceEmissionStrategy.CheckRequirementsAsync` devuelve `NotApplicable`; puede emitirse con RUC provisional `TMP-EC-…` |
-| F-4 | El régimen tributario no condiciona el tipo documental | El régimen (p. ej. RIMPE Negocio Popular) solo afecta el monto máximo de Consumidor Final |
-| F-5 | El catálogo mezcla "apto electrónico" con "permitido" | `sri_doc_types` tiene un único flag `IsElectronic`; la factura física pasa porque 01 es electrónica. La nota de venta (02) está inactiva y no electrónica, por lo que se rechaza en cualquier modalidad: no está habilitada por defecto |
+### Fuentes oficiales
+
+| Fuente | Contenido usado |
+|---|---|
+| Reglamento de Comprobantes de Venta, Retención y Documentos Complementarios, D.E. 430 (R.O. 247, 30-VII-2010; texto consolidado gob.ec) | Art. 5: autorización de impresión por establecimientos gráficos autorizados; art. 6: vigencia de un año (tres meses si hay obligaciones pendientes, ampliable hasta doce); art. 7: comprobantes emitidos durante la suspensión no sustentan crédito ni gasto; art. 18: preimpresos — n.º y fecha de autorización (num. 1), RUC del emisor (num. 2), razón social (num. 3), numeración establecimiento-punto-secuencial de 9 dígitos (num. 5), fecha de caducidad (num. 7); art. 49: baja al vencer la vigencia |
+| [sri.gob.ec/facturacion-fisica](https://www.sri.gob.ec/facturacion-fisica) | Notas de venta emitidas exclusivamente por Negocios Populares del Régimen RIMPE |
+| [sri.gob.ec/rimpe](https://www.sri.gob.ec/rimpe) (Res. NAC-DGERCGC21-00000060 y NAC-DGERCGC24-00000027) | Negocio Popular: notas de venta o facturas electrónicas a su elección; al perder la condición, anula las notas de venta autorizadas. Emprendedor: facturas bajo el esquema de comprobantes electrónicos |
+| Res. NAC-DGERCGC22-00000024 (resumen de terceros; texto oficial no consultado) | Desde el 30-XI-2022 los obligados solo pueden solicitar preimpresos si ya tienen autorización de emisión electrónica en producción, y su uso es excepcional (fuerza mayor o caso fortuito). Para Negocios Populares la obligación electrónica rige donde no corresponde nota de venta |
+
+### Modalidades
+
+| Modalidad | Tratamiento en el ERP |
+|---|---|
+| Factura electrónica (01) | Sin cambios: `IElectronicEmissionRequirementsValidator` (ElectronicDocuments FROZEN, no modificado) |
+| Representación impresa de la factura electrónica (RIDE / tirilla) | No es un comprobante físico: pertenece al flujo electrónico |
+| Factura física preimpresa (01) | **No habilitada para ningún régimen.** Régimen General: una autorización registrada no basta — los preimpresos de un emisor obligado solo proceden por fuerza mayor o caso fortuito (ver BLOCKED); RIMPE Negocio Popular y Emprendedor: no previstos |
+| Nota de venta física RIMPE Negocio Popular (02) | Permitida por el catálogo para el régimen 03, pero **no implementada** en Ventas: `sri_doc_type` 02 sigue inactivo y la política la rechaza (`physicalEmission.docType`). No se adapta el flujo de la factura 01 |
+| Documentación física excepcional o de contingencia | Es el único supuesto en que hoy procede un preimpreso para un emisor obligado; no está implementado (sin mecanismo verificable de contingencia) y queda BLOCKED |
+
+### Requisitos que verifica (todos `Required`)
+
+| Código | Brecha | Regla | Pantalla |
+|---|---|---|---|
+| `physicalEmission.issuerTaxId` (ítem base `identity.taxId`) | F-3 | Empresa del scope con RUC de 13 dígitos no provisional | `CompanyProfile` |
+| `physicalEmission.issuerLegalName` (ítem base `identity.legalName`) | F-3 | Razón social | `CompanyProfile` |
+| `physicalEmission.emissionPoint` | — | Punto de la empresa existente y activo (la modalidad la fija quien invoca: tipo del punto en la apertura, snapshot del borrador al autorizar) | `EmissionPoints` |
+| `physicalEmission.taxRegime` | F-4 | `Company.TaxRegimeCode` configurado | `CompanyFiscalSettings` |
+| `physicalEmission.docTypeNotPermitted` | F-4, F-5 | Fila activa en `global.sri_tax_regime_physical_doc_type` para (régimen activo, tipo) | `EmissionPoints` |
+| `physicalEmission.docType` | F-5 | Tipo activo en `sri_doc_type` (habilitado en el ERP; no depende de `is_electronic`) | — |
+| `physicalEmission.authorization` | F-1 | Existe una autorización activa del punto y tipo, en vigor hoy (día de empresa, `ICompanyClock`) | `PhysicalDocumentAuthorizations` |
+| `physicalEmission.authorizationExpired` | F-1 | La autorización que cubre el siguiente secuencial está caducada | `PhysicalDocumentAuthorizations` |
+| `physicalEmission.sequentialOutOfRange` | F-1 | El siguiente secuencial (`DocumentSequence.CurrentSeq`, 1 si no hay fila; solo lectura) no está en ningún rango activo. Al autorizar, la comprobación definitiva ocurre bajo el lock de la secuencia ([captura acotada](#captura-acotada-al-rango-autorizado)) | `PhysicalDocumentAuthorizations` |
+| `physicalEmission.verificationFailed` | — | Fallo técnico de la política (registrado en log); nunca habilita la caja | `PhysicalDocumentAuthorizations` |
+
+El rechazo usa `PHYSICAL_EMISSION_REQUIREMENTS_MISSING` con el detalle `[código] mensaje` (`PhysicalEmissionRequirementCodes`). `fiscalStatus` de una caja física: `Pending` si hay requisitos; `NotVerified` si cumple los verificables — nunca `Verified`. Los requisitos físicos se publican en la sección `physicalEmission` (ítem `physicalEmission.activation`, `Info`) y solo bloquean `Sales` si ninguna caja de la sucursal puede vender.
+
+### Datos persistentes
+
+- `physical_document_authorization` (empresa): punto, tipo, número de autorización (solo dígitos), fecha de autorización, fecha de caducidad (máximo un año, art. 6), primer y último secuencial (1..999.999.999). Inmutable; renovación o corrección = nuevo registro y baja lógica del anterior. Sin solapamiento de rangos activos del mismo punto y tipo. Se administra en Secuencias documentales (`GET/POST /api/v1/settings/physical-document-authorizations`, `PATCH /{id}/disable`, permiso `settings.document-sequences.manage`).
+- `global.sri_tax_regime_physical_doc_type` (catálogo): `03 Negocio Popular → 02 Nota de venta` activa; `01 General → 01 Factura` **inactiva** (documenta el bloqueo en `legal_basis`). Solo una fila activa permite; lo no listado o inactivo no se emite en físico (fail-closed).
+- Migración incremental `PhysicalDocumentAuthorization` (2 tablas, 2 filas de catálogo); su consolidación en la baseline V1 queda a decisión del propietario.
+
+### Captura acotada al rango autorizado
+
+`AuthorizeSalesInvoiceCommand` pide a la estrategia de emisión los rangos de la modalidad (`ResolveAuthorizedSequentialRangesAsync`: la física devuelve los de las autorizaciones activas en vigor hoy, vía `IPhysicalEmissionRequirementsValidator.GetAuthorizedSequentialRangesAsync`; la electrónica, ninguno) y los pasa a `IDocumentSequenceRepository.CaptureNextAsync(…, authorizedRanges, ct)`. El propietario de Secuencias Documentales comprueba el número bajo el mismo advisory lock y en la misma transacción que la reserva: fuera de rango no escribe nada (la transacción propia se revierte; la ambiente queda intacta) y la venta se rechaza con `physicalEmission.sequentialOutOfRange`, en Draft y sin efectos. Con dos o más cajas disputando el último número autorizado, solo una lo obtiene y nunca se entrega uno superior al límite. La numeración electrónica conserva la captura sin límite. Extensión registrada en [frozen-infrastructure.md § Secuencias Documentales](./frozen-infrastructure.md#secuencias-documentales).
+
+### BLOCKED (sin fundamento oficial suficiente; fail-closed)
+
+| Caso | Motivo |
+|---|---|
+| Factura física ordinaria del Régimen General (01) | Una autorización registrada habilitaba la factura física sin más condición. Según copias de terceros de la Res. NAC-DGERCGC22-00000024 (texto oficial no consultado), desde el 30-XI-2022 los preimpresos de un emisor obligado solo se usan excepcionalmente por fuerza mayor o caso fortuito; esa circunstancia no es verificable en el ERP y no existe un mecanismo de contingencia. Fila del catálogo inactiva |
+| Factura física para RIMPE Emprendedor (02) | La ficha RIMPE exige facturas electrónicas y no menciona preimpresos; no se verificó si la excepción de contingencia de la Res. NAC-DGERCGC22-00000024 lo alcanza. Sin fila en el catálogo |
+| Cupo transitorio de preimpresos (Res. NAC-DGERCGC24-00000035, 5 % de los emitidos el año anterior, emergencia eléctrica) | No se verificó su vigencia actual; no se implementa ningún cupo |
+
+### Limitaciones (impiden declarar la emisión física legalmente habilitada)
+
+- La autorización se registra tal como la declara el usuario: el ERP no comprueba su autenticidad ni su suspensión (art. 7) ante el SRI.
+- La circunstancia excepcional (fuerza mayor o caso fortuito) que justifica el preimpreso para un emisor electrónico no es verificable localmente.
+- La nota de venta 02 no está implementada.
+- Con la fila General → 01 inactiva, hoy ningún punto físico puede abrir caja ni emitir: la emisión física queda deshabilitada hasta que el propietario disponga de fundamento oficial y de un flujo de contingencia verificable.
 
 ## Interfaz (pestaña Preparación de Datos de la empresa)
 
@@ -173,7 +230,7 @@ La venta física es operativamente posible hoy (el backend la permite y Readines
 - **Sucursal.** La cabecera muestra la sucursal activa (`activeBranchStore`). Una respuesta cuyo `branchId` no es la sucursal activa nunca se muestra (se trata como carga en curso). Se vuelve a consultar al cambiar de sucursal, en cada montaje (al volver de la pantalla donde se corrigió un dato) y con «Volver a verificar» (`useAsync.refetch`); el estado vive solo en `useAsync`.
 - **Capacidades.** Las cuatro capacidades son las del backend. Si alguna está disponible y `overallStatus ≠ Ready`, se aclara que «disponible» significa que existe un camino, no que la configuración esté completa.
 - **Cajas.** Tabla de `cashRegisters[]`: caja, establecimiento-punto, modalidad, estado operativo, estado fiscal y requisitos pendientes (enlaces al ítem, `#readiness-item-{code}`). Contadores de cajas listas y pendientes (`operationalStatus`), y aviso cuando unas pueden operar y otras no.
-- **Estados fiscales.** `Verified` éxito, `Pending` advertencia, `NotVerified` informativo («la autorización fiscal física no se verifica todavía», nunca éxito ni bloqueo), `NotApplicable` neutro (sin punto).
+- **Estados fiscales.** `Verified` éxito, `Pending` advertencia, `NotVerified` informativo (punto físico que cumple lo verificable; la autorización del SRI y su uso excepcional no se verifican en línea — nunca éxito ni bloqueo), `NotApplicable` neutro (sin punto).
 - **Requisitos.** Cada ítem aparece una vez con: qué falta (`label`), por qué importa (mensaje por estado), operaciones afectadas (`blockingAreas`, con la etiqueta de la capacidad), cajas afectadas (inversa de `requirementCodes[]`) y dónde se corrige.
 - **Destinos y permisos.** `operationalReadinessActionRoutes.ts` traduce `actionTarget` a ruta; la disponibilidad sale del menú autenticado (`GET /api/v1/me/menu`, ya filtrado por el backend) vía `useNavigationAccess()` (`components/navigationAccess.ts`), que `RouteAccessGuard` provee con el mismo menú ya cargado: sin otra consulta ni mapa de permisos. Coincide por ruta completa (sin query), no por primer segmento. Garantía real: un ítem del menú implica el permiso de **vista** de la pantalla (`NavItem.Permission`), no el de edición; por eso la acción se presenta como «Se corrige en: {pantalla}», con el nombre tomado del menú, y la pantalla destino sigue decidiendo qué puede editarse. Sin acceso, se pide asistencia a un administrador; con el menú aún sin resolver, no se ofrece acción.
 
@@ -181,7 +238,10 @@ La venta física es operativamente posible hoy (el backend la permite y Readines
 
 - `ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs` (resolver).
 - `ERP.Application.Tests/Companies/GetCompanyOperationalReadinessQueryHandlerTests.cs` (proyección al DTO, scope del contexto autenticado y exigencia de sucursal).
-- `ERP.Application.Tests/Caja/OpenCashSessionHandlerTests.cs` (habilitación preventiva en la apertura: caja electrónica preparada con su propio punto y tipo 01, sin certificado, punto desactivado, fallo técnico, advertencia que no bloquea, física; rechazo sin crear la sesión) y `GetCashRegisterOpeningReadinessHandlerTests.cs` (dos cajas de una sucursal con resultados distintos, otra sucursal, códigos base, configuración que cambia, `NotVerified` físico).
-- `ERP.API.Tests/Integration/CompanyOperationalReadinessBranchHttpTests.cs` (HTTP real con PostgreSQL: cajas por sucursal, aislamiento entre empresas, rechazo sin sucursal, sucursal no autorizada o de otra empresa; solo puntos físicos, sin SRI).
+- `ERP.Application.Tests/Caja/OpenCashSessionHandlerTests.cs` (habilitación preventiva en la apertura: caja electrónica preparada con su propio punto y tipo 01, sin certificado, punto desactivado, fallo técnico, advertencia que no bloquea, física que cumple y física sin autorización, vencida, fuera de rango o régimen que no lo permite; rechazo sin crear la sesión) y `GetCashRegisterOpeningReadinessHandlerTests.cs` (dos cajas de una sucursal con resultados distintos, otra sucursal, códigos base, configuración que cambia, `NotVerified` físico, física vencida junto a otra lista, fallo técnico físico).
+- `ERP.API.Tests/Integration/CompanyOperationalReadinessBranchHttpTests.cs` (HTTP real con PostgreSQL: cajas por sucursal, caja física del Régimen General con autorización vigente `Pending` por `docTypeNotPermitted` y otra además sin autorización, aislamiento entre empresas, rechazo sin sucursal, sucursal no autorizada o de otra empresa; solo puntos físicos, sin SRI).
 - `frontend/src/modules/configuracion/empresa/sections/OperationalReadinessSection.test.tsx` (interfaz) y `frontend/src/components/navigationAccess.test.ts` (destinos según el menú).
+- `ERP.Application.Tests/Companies/PhysicalEmissionRequirementsValidatorTests.cs` (política física: régimen que permite y que no, nota de venta no implementada, sin régimen, sin autorización, vencida, aún no vigente, último día, rango agotado, bloques sucesivos, otro punto, punto inactivo o ajeno, RUC provisional, scope inválido, mensaje del rechazo) y `PhysicalDocumentAuthorizationUseCasesTests.cs` (registro, punto no físico/inactivo/ajeno, tipo no habilitado, solapamiento, vigencia máxima, baja lógica).
+- `ERP.Infrastructure.Tests/Accounting/SalesInvoiceAuthorizedPostingIntegrationTests.ReadinessGap.cs` (PostgreSQL real: Régimen General con autorización vigente rechazado; factura física sin autorización o vencida rechazada sin secuencial ni efectos; rango agotado entre la validación y la captura rechazado bajo el lock sin consumir número; estrategia física sin documento electrónico; catálogo GLOBAL régimen × tipo y aislamiento entre empresas) y `ERP.Infrastructure.Tests/Persistence/DocumentSequenceAmbientTransactionTests.cs` (concurrencia real por el último número autorizado, con y sin transacción ambiente; captura concurrente dentro del rango; fuera de rango sin crear fila ni alterar la transacción ambiente).
+- `frontend/src/modules/documentSequences/components/PhysicalDocumentAuthorizationsSection.test.tsx` (administración de autorizaciones) y `frontend/src/modules/configuracion/empresa/operationalReadinessActionRoutes.test.ts`.
 - `frontend/src/modules/caja/pages/CajaPage.openingReadiness.test.tsx` (apertura: caja preparada, sin certificado, sin punto, sin acceso a la configuración, dos cajas, cambio de sucursal, respuesta ajena descartada, física `NotVerified`, rechazo que vuelve a diagnosticar, fallo de consulta).

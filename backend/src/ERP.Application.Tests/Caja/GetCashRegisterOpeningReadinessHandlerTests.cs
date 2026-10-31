@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Caja.UseCases;
 using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.Company.PhysicalEmission;
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Modules.Caja.Entities;
@@ -17,8 +18,8 @@ namespace ERP.Application.Tests.Caja;
 
 /// <summary>
 /// READINESS-2B-3 — diagnóstico previo a la apertura: cada caja se evalúa con su propio punto y
-/// la estrategia de emisión real de ese punto (la física, sin requisitos del emisor; la
-/// electrónica, el validador propietario simulado por punto), en la sucursal activa.
+/// la estrategia de emisión real de ese punto (la física, con la política fiscal física simulada
+/// por punto; la electrónica, el validador propietario simulado por punto), en la sucursal activa.
 /// </summary>
 public sealed class GetCashRegisterOpeningReadinessHandlerTests
 {
@@ -30,12 +31,15 @@ public sealed class GetCashRegisterOpeningReadinessHandlerTests
     {
         private readonly Dictionary<Guid, ElectronicEmissionRequirementIssue[]> _issuesByPoint =
             [];
+        private readonly Dictionary<Guid, ElectronicEmissionRequirementIssue[]> _physicalIssuesByPoint =
+            [];
 
         public Mock<ICashRegisterRepository> Registers { get; } = new();
         public Mock<IEmissionPointRepository> Points { get; } = new();
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ISalesInvoiceEmissionStrategy> Electronic { get; } = new();
+        public Mock<IPhysicalEmissionRequirementsValidator> Physical { get; } = new();
 
         public Fixture()
         {
@@ -53,7 +57,28 @@ public sealed class GetCashRegisterOpeningReadinessHandlerTests
                             _issuesByPoint.GetValueOrDefault(p.EmissionPointId) ?? []
                         )
                 );
+            Physical
+                .Setup(v =>
+                    v.ValidateAsync(
+                        It.IsAny<PhysicalEmissionRequirementsRequest>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    (PhysicalEmissionRequirementsRequest r, CancellationToken _) =>
+                        new ElectronicEmissionRequirementsResult(
+                            _physicalIssuesByPoint.GetValueOrDefault(r.EmissionPointId) ?? []
+                        )
+                        {
+                            Modality = EmissionType.Physical,
+                        }
+                );
         }
+
+        public void PhysicalRequirements(
+            Guid pointId,
+            params ElectronicEmissionRequirementIssue[] issues
+        ) => _physicalIssuesByPoint[pointId] = issues;
 
         public void Requirements(Guid pointId, params ElectronicEmissionRequirementIssue[] issues) =>
             _issuesByPoint[pointId] = issues;
@@ -94,6 +119,7 @@ public sealed class GetCashRegisterOpeningReadinessHandlerTests
             Branch.Setup(b => b.BranchId).Returns(activeBranchId);
             var strategies = new SalesInvoiceEmissionStrategyResolver([
                 new PhysicalSalesInvoiceEmissionStrategy(
+                    Physical.Object,
                     NullLogger<PhysicalSalesInvoiceEmissionStrategy>.Instance
                 ),
                 ElectronicStrategy(),
@@ -119,6 +145,13 @@ public sealed class GetCashRegisterOpeningReadinessHandlerTests
 
     private static EmissionPoint Point(EmissionType type, string code) =>
         EmissionPoint.Create(TenantId, CompanyId, Guid.NewGuid(), code, null, type, false, UserId);
+
+    private static ElectronicEmissionRequirementIssue PhysicalRequired(string code) =>
+        new(
+            code,
+            ElectronicEmissionRequirementSeverity.Required,
+            ReadinessActionTarget.PhysicalDocumentAuthorizations
+        );
 
     private static ElectronicEmissionRequirementIssue Required(string code) =>
         new(
@@ -161,17 +194,32 @@ public sealed class GetCashRegisterOpeningReadinessHandlerTests
     }
 
     [Fact]
-    public async Task Caja_fisica_puede_abrir_pero_su_estado_fiscal_es_NotVerified()
+    public async Task Caja_fisica_que_cumple_la_politica_fisica_abre_y_su_estado_fiscal_es_NotVerified()
     {
         var f = new Fixture();
         var branchId = Guid.NewGuid();
-        var register = f.AddRegister(branchId, Point(EmissionType.Physical, "002"), "CAJA-01");
+        var point = Point(EmissionType.Physical, "002");
+        var register = f.AddRegister(branchId, point, "CAJA-01");
 
         var dto = (await f.Query(branchId, register.Id)).Value!;
 
         dto.CanOpen.Should().BeTrue();
         dto.EmissionType.Should().Be("Physical");
-        dto.FiscalStatus.Should().Be("NotVerified", "no existe política fiscal física (F-1..F-5)");
+        dto.FiscalStatus.Should()
+            .Be("NotVerified", "la autorización ante el SRI no se verifica localmente");
+        f.Physical.Verify(
+            v =>
+                v.ValidateAsync(
+                    It.Is<PhysicalEmissionRequirementsRequest>(r =>
+                        r.EmissionPointId == point.Id
+                        && r.CompanyId == CompanyId
+                        && r.TenantId == TenantId
+                        && r.DocTypeCode == "01"
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
         f.Electronic.Verify(
             s =>
                 s.CheckRequirementsAsync(
@@ -238,6 +286,86 @@ public sealed class GetCashRegisterOpeningReadinessHandlerTests
                 (OperationalReadinessCodes.IdentityTaxId, "Required"),
                 (ElectronicEmissionRequirementCodes.CertificateExpiring, "Warning"),
             ]);
+    }
+
+    [Fact]
+    public async Task Caja_fisica_sin_autorizacion_vigente_no_puede_abrir_y_la_otra_caja_si()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var authorized = Point(EmissionType.Physical, "002");
+        var expired = Point(EmissionType.Physical, "003");
+        f.PhysicalRequirements(
+            expired.Id,
+            PhysicalRequired(PhysicalEmissionRequirementCodes.AuthorizationExpired)
+        );
+        var cajaLista = f.AddRegister(branchId, authorized, "CAJA-01");
+        var cajaVencida = f.AddRegister(branchId, expired, "CAJA-02");
+
+        var lista = (await f.Query(branchId, cajaLista.Id)).Value!;
+        var vencida = (await f.Query(branchId, cajaVencida.Id)).Value!;
+
+        lista.CanOpen.Should().BeTrue();
+        vencida.CanOpen.Should().BeFalse();
+        vencida.FiscalStatus.Should().Be("Pending");
+        vencida.Requirements.Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeEquivalentTo(
+                new
+                {
+                    Code = PhysicalEmissionRequirementCodes.AuthorizationExpired,
+                    Severity = "Required",
+                    ActionTarget = "PhysicalDocumentAuthorizations",
+                }
+            );
+    }
+
+    [Fact]
+    public async Task Ruc_provisional_en_caja_fisica_se_publica_con_el_codigo_base_de_Readiness()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var point = Point(EmissionType.Physical, "002");
+        f.PhysicalRequirements(
+            point.Id,
+            new ElectronicEmissionRequirementIssue(
+                PhysicalEmissionRequirementCodes.IssuerTaxId,
+                ElectronicEmissionRequirementSeverity.Required,
+                ReadinessActionTarget.CompanyProfile
+            )
+        );
+        var register = f.AddRegister(branchId, point, "CAJA-01");
+
+        var dto = (await f.Query(branchId, register.Id)).Value!;
+
+        dto.CanOpen.Should().BeFalse();
+        dto.Requirements.Select(r => r.Code)
+            .Should()
+            .Equal(OperationalReadinessCodes.IdentityTaxId);
+    }
+
+    [Fact]
+    public async Task Fallo_tecnico_de_la_politica_fisica_nunca_habilita_la_caja()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var register = f.AddRegister(branchId, Point(EmissionType.Physical, "002"), "CAJA-01");
+        f.Physical.Setup(v =>
+                v.ValidateAsync(
+                    It.IsAny<PhysicalEmissionRequirementsRequest>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(new InvalidOperationException("db down"));
+
+        var dto = (await f.Query(branchId, register.Id)).Value!;
+
+        dto.CanOpen.Should().BeFalse();
+        dto.FiscalStatus.Should().Be("Pending");
+        dto.Requirements.Select(r => r.Code)
+            .Should()
+            .Equal(OperationalReadinessCodes.PhysicalVerificationFailed);
     }
 
     [Fact]

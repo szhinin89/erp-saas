@@ -370,8 +370,8 @@ public sealed record CashRegisterOpeningRequirementDto(
 
 /// <summary>
 /// <c>CanOpen</c>: la caja puede iniciar la jornada con su punto (OpenCashSession lo revalida).
-/// <c>FiscalStatus</c>: Verified · Pending · NotVerified (punto físico, sin política fiscal física)
-/// · NotApplicable.
+/// <c>FiscalStatus</c>: Verified · Pending · NotVerified (punto físico que cumple la política
+/// física; no se certifica ante el SRI) · NotApplicable.
 /// </summary>
 public sealed record CashRegisterOpeningReadinessDto(
     Guid CashRegisterId,

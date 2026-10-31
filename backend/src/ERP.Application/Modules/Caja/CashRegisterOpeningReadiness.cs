@@ -24,8 +24,9 @@ public sealed record CashRegisterOpeningRequirement(
 
 /// <summary>
 /// READINESS-2B-3 — si una caja puede iniciar la jornada de ventas con su propio punto de emisión.
-/// <see cref="FiscalStatus"/> separa preparación operativa de validación fiscal: un punto físico es
-/// <c>NotVerified</c> (brechas F-1..F-5) aunque pueda abrirse.
+/// <see cref="FiscalStatus"/> separa preparación operativa de validación fiscal: un punto físico
+/// que cumple la política física es <c>NotVerified</c> (no se certifica ante el SRI) aunque pueda
+/// abrirse.
 /// </summary>
 public sealed record CashRegisterOpeningReadiness(
     EmissionPoint? ActiveEmissionPoint,
@@ -54,6 +55,12 @@ public sealed record CashRegisterOpeningReadiness(
             return Result<T>.ValidationFailure(
                 "No se pudieron verificar los requisitos de emisión electrónica de la caja. Intente nuevamente o revise la configuración SRI."
             );
+        if (
+            Requirements.Any(r => r.Code == OperationalReadinessCodes.PhysicalVerificationFailed)
+        )
+            return Result<T>.ValidationFailure(
+                "No se pudieron verificar los requisitos de emisión física de la caja. Intente nuevamente o revise las autorizaciones de impresión."
+            );
         return Emission.ToFailure<T>();
     }
 }
@@ -62,7 +69,8 @@ public sealed record CashRegisterOpeningReadiness(
 /// Habilitación preventiva de una caja: misma regla que exigen después CreateSalesDraft (punto
 /// activo) y AuthorizeSales (requisitos de la estrategia de emisión del punto, tipo 01). No
 /// contiene reglas fiscales propias: delega en <see cref="ISalesInvoiceEmissionStrategyResolver"/>
-/// (la física no exige ninguna; la electrónica, <see cref="IElectronicEmissionRequirementsValidator"/>).
+/// (la física, en la política fiscal física del módulo Company; la electrónica, en
+/// <see cref="IElectronicEmissionRequirementsValidator"/>).
 /// Las validaciones definitivas de la autorización siguen intactas.
 /// </summary>
 public interface ICashRegisterOpeningReadinessChecker
@@ -139,9 +147,11 @@ public sealed class CashRegisterOpeningReadinessChecker : ICashRegisterOpeningRe
                 ReadinessFiscalStatus.Pending,
                 [
                     new(
-                        OperationalReadinessCodes.ElectronicVerificationFailed,
+                        OperationalReadinessCodes.VerificationFailedFor(emissionPoint.EmissionType),
                         ElectronicEmissionRequirementSeverity.Required,
-                        ReadinessActionTarget.ElectronicInvoicingSettings
+                        OperationalReadinessCodes.VerificationFailedTargetFor(
+                            emissionPoint.EmissionType
+                        )
                     ),
                 ],
                 ElectronicEmissionRequirementsResult.NotApplicable
@@ -159,10 +169,7 @@ public sealed class CashRegisterOpeningReadinessChecker : ICashRegisterOpeningRe
 
         return new(
             emissionPoint,
-            OperationalReadinessCodes.FiscalStatusFor(
-                emissionPoint.EmissionType,
-                emissionPoint.EmissionType == EmissionType.Electronic && emission.CanIssue
-            ),
+            OperationalReadinessCodes.FiscalStatusFor(emissionPoint.EmissionType, emission.CanIssue),
             requirements,
             emission
         );

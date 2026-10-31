@@ -23,6 +23,7 @@ namespace ERP.API.Tests.Support;
 internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly bool _useHttpCompanyContext;
+    private readonly ERP.Application.Modules.Company.PhysicalEmission.IPhysicalEmissionRequirementsValidator? _physicalEmissionPolicy;
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
@@ -31,9 +32,17 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
         .WithPassword("erp_test_secret")
         .Build();
 
-    public PostgreSqlTestWebAppFactory(bool useHttpCompanyContext = false)
+    /// <param name="physicalEmissionPolicy">
+    /// Sustituye la política fiscal física solo en E2E cuyo objeto no es esa política (ver
+    /// <see cref="PhysicalEmissionTestData.Satisfied"/>); null = política real.
+    /// </param>
+    public PostgreSqlTestWebAppFactory(
+        bool useHttpCompanyContext = false,
+        ERP.Application.Modules.Company.PhysicalEmission.IPhysicalEmissionRequirementsValidator? physicalEmissionPolicy = null
+    )
     {
         _useHttpCompanyContext = useHttpCompanyContext;
+        _physicalEmissionPolicy = physicalEmissionPolicy;
     }
 
     public MutableCurrentTenant MutableTenant { get; } = new();
@@ -126,6 +135,20 @@ internal sealed class PostgreSqlTestWebAppFactory : WebApplicationFactory<Progra
                         new ERP.Infrastructure.Persistence.Interceptors.NewChildEntityTrackingInterceptor()
                     )
             );
+
+            if (_physicalEmissionPolicy is { } physicalEmissionPolicy)
+            {
+                foreach (
+                    var d in services
+                        .Where(x =>
+                            x.ServiceType
+                            == typeof(ERP.Application.Modules.Company.PhysicalEmission.IPhysicalEmissionRequirementsValidator)
+                        )
+                        .ToList()
+                )
+                    services.Remove(d);
+                services.AddSingleton(physicalEmissionPolicy);
+            }
 
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentTenant)).ToList())
                 services.Remove(d);

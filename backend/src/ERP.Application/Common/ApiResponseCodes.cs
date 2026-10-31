@@ -120,6 +120,17 @@ public static class ApiResponseCodes
     }
 
     /// <summary>
+    /// PHYSICAL-FISCAL-F1..F5 — gate fiscal preventivo de la emisión física: faltan requisitos
+    /// verificables (RUC oficial, régimen, autorización de impresión vigente, rango). Se devuelve
+    /// antes de capturar secuencial o generar efectos; el detalle lista cada requisito como
+    /// <c>[código] mensaje</c> (<c>PhysicalEmissionRequirementCodes</c>).
+    /// </summary>
+    public static class PhysicalEmission
+    {
+        public const string RequirementsMissing = "PHYSICAL_EMISSION_REQUIREMENTS_MISSING";
+    }
+
+    /// <summary>
     /// ZH-COMMUNICATIONS-TEMPLATES-01 (ADR-039 D12/D13) — fallos de template al encolar: configuración
     /// o validación, nunca SMTP. Ocurren antes de persistir la comunicación.
     /// </summary>

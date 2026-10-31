@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Caja.UseCases;
+using ERP.Application.Modules.Company.PhysicalEmission;
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Modules.Caja.Entities;
@@ -581,7 +582,7 @@ public sealed class OpenCashSessionHandlerTests
     }
 
     [Fact]
-    public async Task Caja_fisica_abre_con_la_estrategia_fisica_sin_requisitos_fiscales_del_emisor()
+    public async Task Caja_fisica_que_cumple_la_politica_fisica_abre_con_la_estrategia_fisica()
     {
         var f = new Fixture();
         var branchId = Guid.NewGuid();
@@ -592,5 +593,67 @@ public sealed class OpenCashSessionHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         f.EmissionStrategies.Verify(r => r.Resolve(EmissionType.Physical), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(PhysicalEmissionRequirementCodes.Authorization)]
+    [InlineData(PhysicalEmissionRequirementCodes.AuthorizationExpired)]
+    [InlineData(PhysicalEmissionRequirementCodes.SequentialOutOfRange)]
+    [InlineData(PhysicalEmissionRequirementCodes.DocTypeNotPermitted)]
+    public async Task Caja_fisica_sin_requisitos_fiscales_fisicos_se_rechaza_antes_de_crear_la_sesion(
+        string code
+    )
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var (register, _) = Arrange(f, branchId, CreatePoint(EmissionType.Physical));
+        f.EmissionStrategy.Setup(s =>
+                s.CheckRequirementsAsync(
+                    It.IsAny<SalesInvoiceEmissionPreflight>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new ElectronicEmissionRequirementsResult([
+                    new(
+                        code,
+                        ElectronicEmissionRequirementSeverity.Required,
+                        ReadinessActionTarget.PhysicalDocumentAuthorizations
+                    ),
+                ])
+                {
+                    Modality = EmissionType.Physical,
+                }
+            );
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.PhysicalEmission.RequirementsMissing);
+        result.Error.Should().Contain($"[{code}]").And.Contain("comprobante físico");
+        ShouldNotCreateSession(f);
+    }
+
+    [Fact]
+    public async Task Fallo_tecnico_de_la_politica_fisica_nunca_habilita_la_caja()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var (register, _) = Arrange(f, branchId, CreatePoint(EmissionType.Physical));
+        f.EmissionStrategy.Setup(s =>
+                s.CheckRequirementsAsync(
+                    It.IsAny<SalesInvoiceEmissionPreflight>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(new InvalidOperationException("db down"));
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("emisión física");
+        ShouldNotCreateSession(f);
     }
 }

@@ -1,6 +1,7 @@
 using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
@@ -244,6 +245,142 @@ public sealed class DocumentSequenceAmbientTransactionTests : IAsyncLifetime
             .FirstOrDefaultAsync(s => s.EmissionPointId == epId && s.DocTypeCode == "04");
         seq.Should().NotBeNull();
         seq!.CurrentSeq.Should().Be(n + 1);
+    }
+
+    // ── PHYSICAL-FISCAL-F1 — captura acotada a un rango autorizado ────────────────────────────
+
+    /// <summary>Secuencia ya en curso cuyo próximo número es <paramref name="next"/>.</summary>
+    private async Task SeedNextSequentialAsync(Guid epId, string docType, int next)
+    {
+        await using var db = CreateContext();
+        var sequence = DocumentSequence.Create(_tenantId, _companyId, epId, docType);
+        sequence.ConfigureNextNumber(next);
+        db.DocumentSequences.Add(sequence);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<int?> CurrentSeqAsync(Guid epId, string docType)
+    {
+        await using var db = CreateContext();
+        return (
+            await db
+                .DocumentSequences.IgnoreQueryFilters()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.EmissionPointId == epId && s.DocTypeCode == docType)
+        )?.CurrentSeq;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Consumidores_concurrentes_por_el_ultimo_numero_autorizado_nunca_superan_el_limite(
+        bool ambientTransaction
+    )
+    {
+        var epId = await CreateEmissionPointAsync();
+        const int last = 500;
+        const int contenders = 12;
+        await SeedNextSequentialAsync(epId, "01", last);
+        IReadOnlyList<AuthorizedSequentialRange> ranges = [new(1, last)];
+        using var start = new ManualResetEventSlim(false);
+
+        var tasks = Enumerable
+            .Range(0, contenders)
+            .Select(_ =>
+                Task.Run(async () =>
+                {
+                    await using var db = CreateContext();
+                    var repo = new DocumentSequenceRepository(db);
+                    start.Wait();
+                    if (!ambientTransaction)
+                        return await repo.CaptureNextAsync(_tenantId, _companyId, epId, "01", ranges);
+                    await using var tx = await db.Database.BeginTransactionAsync();
+                    var sequential = await repo.CaptureNextAsync(_tenantId, _companyId, epId, "01", ranges);
+                    await tx.CommitAsync();
+                    return sequential;
+                })
+            )
+            .ToArray();
+        start.Set();
+        var results = await Task.WhenAll(tasks);
+
+        results.Where(r => r is not null).Should().Equal("000000500");
+        results.Count(r => r is null).Should().Be(contenders - 1);
+        (await CurrentSeqAsync(epId, "01"))
+            .Should()
+            .Be(last + 1, "solo se reservó el último número autorizado; el rechazo no avanza el contador");
+    }
+
+    [Fact]
+    public async Task Captura_concurrente_dentro_del_rango_entrega_numeros_unicos_y_se_detiene_en_el_limite()
+    {
+        var epId = await CreateEmissionPointAsync();
+        IReadOnlyList<AuthorizedSequentialRange> ranges = [new(1, 5)];
+
+        var results = await Task.WhenAll(
+            Enumerable
+                .Range(0, 10)
+                .Select(async _ =>
+                {
+                    await using var db = CreateContext();
+                    return await new DocumentSequenceRepository(db).CaptureNextAsync(
+                        _tenantId,
+                        _companyId,
+                        epId,
+                        "01",
+                        ranges
+                    );
+                })
+        );
+
+        results.Where(r => r is not null).Should().BeEquivalentTo(
+            ["000000001", "000000002", "000000003", "000000004", "000000005"]
+        );
+        results.Count(r => r is null).Should().Be(5);
+        (await CurrentSeqAsync(epId, "01")).Should().Be(6);
+    }
+
+    [Fact]
+    public async Task Fuera_de_rango_sin_secuencia_previa_no_crea_la_fila()
+    {
+        var epId = await CreateEmissionPointAsync();
+        await using var db = CreateContext();
+
+        var sequential = await new DocumentSequenceRepository(db).CaptureNextAsync(
+            _tenantId,
+            _companyId,
+            epId,
+            "01",
+            [new AuthorizedSequentialRange(851, 1350)]
+        );
+
+        sequential.Should().BeNull();
+        (await CurrentSeqAsync(epId, "01")).Should().BeNull("el número 1 no está autorizado");
+    }
+
+    [Fact]
+    public async Task Fuera_de_rango_dentro_de_transaccion_ambiente_no_escribe_y_el_caller_conserva_su_transaccion()
+    {
+        var epId = await CreateEmissionPointAsync();
+        await SeedNextSequentialAsync(epId, "01", 11);
+        await using var db = CreateContext();
+        var repo = new DocumentSequenceRepository(db);
+        await using var tx = await db.Database.BeginTransactionAsync();
+
+        var rejected = await repo.CaptureNextAsync(_tenantId, _companyId, epId, "01", [new AuthorizedSequentialRange(1, 10)]);
+        // Rangos contiguos: el siguiente bloque autorizado sí lo cubre en la misma transacción.
+        var accepted = await repo.CaptureNextAsync(
+            _tenantId,
+            _companyId,
+            epId,
+            "01",
+            [new AuthorizedSequentialRange(1, 10), new AuthorizedSequentialRange(11, 20)]
+        );
+        await tx.CommitAsync();
+
+        rejected.Should().BeNull();
+        accepted.Should().Be("000000011");
+        (await CurrentSeqAsync(epId, "01")).Should().Be(12);
     }
 
     // ── Infraestructura ──────────────────────────────────────────────────────────────────────

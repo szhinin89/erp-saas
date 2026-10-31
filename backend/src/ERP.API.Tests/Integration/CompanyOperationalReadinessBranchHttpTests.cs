@@ -20,7 +20,8 @@ namespace ERP.API.Tests.Integration;
 /// READINESS-2B-2 — contrato por sucursal de GET /api/v1/companies/operational-readiness contra
 /// PostgreSQL (Testcontainers) y el pipeline HTTP real (X-Company-Id/X-Branch-Id, BranchScopeBehavior,
 /// IBranchAccessGuard). Mismo patrón que <see cref="CompanyBranchIsolationHttpFixture"/>. Solo puntos
-/// físicos: no ejercita el validador electrónico ni transmite nada al SRI.
+/// físicos con la política fiscal física real (catálogo GLOBAL y autorizaciones en PostgreSQL): no
+/// ejercita el validador electrónico ni transmite nada al SRI.
 /// </summary>
 public sealed class CompanyOperationalReadinessBranchHttpFixture : IAsyncLifetime
 {
@@ -104,11 +105,15 @@ public sealed class CompanyOperationalReadinessBranchHttpFixture : IAsyncLifetim
         BranchWithoutAccessId = withoutAccess.Id;
         BranchBId = branchB.Id;
 
-        // Matriz: caja con punto físico 001-002. Norte: caja sin punto. Empresa B: su propia caja.
-        var pointA = await AddPhysicalPointAsync(db, companyA.Id, matriz.Id, "001", "002");
-        var pointB = await AddPhysicalPointAsync(db, companyB.Id, branchB.Id, "001", "009");
+        // Matriz: caja con punto físico 001-002 autorizado y caja con punto físico 001-003 sin
+        // autorización de impresión. Norte: caja sin punto. Empresa B: su propia caja.
+        var (pointA, establishmentA) = await AddPhysicalPointAsync(db, companyA.Id, matriz.Id, "001", "002");
+        var pointA2 = await AddPointToEstablishmentAsync(db, companyA.Id, establishmentA, "003");
+        var (pointB, _) = await AddPhysicalPointAsync(db, companyB.Id, branchB.Id, "001", "009");
+        await PhysicalEmissionTestData.AuthorizeInvoicesAsync(db, TenantId, companyA.Id, pointA, _adminId);
         db.CashRegisters.AddRange(
             CashRegister.Create(TenantId, companyA.Id, matriz.Id, "CAJA-MATRIZ", "Caja Matriz", _adminId, pointA),
+            CashRegister.Create(TenantId, companyA.Id, matriz.Id, "CAJA-MATRIZ-2", "Caja Matriz 2", _adminId, pointA2),
             CashRegister.Create(TenantId, companyA.Id, norte.Id, "CAJA-NORTE", "Caja Norte", _adminId),
             CashRegister.Create(TenantId, companyB.Id, branchB.Id, "CAJA-B", "Caja Empresa B", _adminId, pointB)
         );
@@ -138,7 +143,7 @@ public sealed class CompanyOperationalReadinessBranchHttpFixture : IAsyncLifetim
         await db.SaveChangesAsync();
     }
 
-    private async Task<Guid> AddPhysicalPointAsync(
+    private async Task<(Guid PointId, Guid EstablishmentId)> AddPhysicalPointAsync(
         ErpDbContext db,
         Guid companyId,
         Guid branchId,
@@ -160,14 +165,28 @@ public sealed class CompanyOperationalReadinessBranchHttpFixture : IAsyncLifetim
         db.Establishments.Add(establishment);
         await db.SaveChangesAsync();
 
+        return (
+            await AddPointToEstablishmentAsync(db, companyId, establishment.Id, pointCode, isDefault: true),
+            establishment.Id
+        );
+    }
+
+    private async Task<Guid> AddPointToEstablishmentAsync(
+        ErpDbContext db,
+        Guid companyId,
+        Guid establishmentId,
+        string pointCode,
+        bool isDefault = false
+    )
+    {
         var point = EmissionPoint.Create(
             TenantId,
             companyId,
-            establishment.Id,
+            establishmentId,
             pointCode,
             null,
             EmissionType.Physical,
-            true,
+            isDefault,
             _adminId
         );
         db.EmissionPoints.Add(point);
@@ -223,14 +242,45 @@ public sealed class CompanyOperationalReadinessBranchHttpTests
         var data = await GetReadinessAsync(_f.BranchMatrizId);
 
         data.GetProperty("branchId").GetGuid().Should().Be(_f.BranchMatrizId);
-        var register = data.GetProperty("cashRegisters").EnumerateArray().Should().ContainSingle().Subject;
-        register.GetProperty("code").GetString().Should().Be("CAJA-MATRIZ");
+        var registers = data.GetProperty("cashRegisters").EnumerateArray().ToList();
+        registers.Select(r => r.GetProperty("code").GetString())
+            .Should().BeEquivalentTo("CAJA-MATRIZ", "CAJA-MATRIZ-2");
+
+        var register = registers.Single(r => r.GetProperty("code").GetString() == "CAJA-MATRIZ");
         register.GetProperty("establishmentCode").GetString().Should().Be("001");
         register.GetProperty("emissionPointCode").GetString().Should().Be("002");
         register.GetProperty("emissionType").GetString().Should().Be("Physical");
-        register.GetProperty("operationalStatus").GetString().Should().Be("Ready");
-        register.GetProperty("fiscalStatus").GetString().Should().Be("NotVerified");
+        // Régimen General con autorización de impresión vigente registrada: la factura física
+        // ordinaria sigue sin habilitarse (catálogo GLOBAL real, fila General → 01 inactiva).
+        register.GetProperty("operationalStatus").GetString().Should().Be("Missing");
+        register.GetProperty("fiscalStatus").GetString().Should().Be("Pending");
+        register.GetProperty("requirementCodes").EnumerateArray().Select(c => c.GetString())
+            .Should().Equal("physicalEmission.docTypeNotPermitted");
         ItemStatus(data, "cashRegister.withEmissionPoint").Should().Be("Ready");
+    }
+
+    [Fact]
+    public async Task Caja_fisica_sin_autorizacion_de_impresion_acumula_su_propio_requisito()
+    {
+        var data = await GetReadinessAsync(_f.BranchMatrizId);
+
+        var register = data.GetProperty("cashRegisters").EnumerateArray()
+            .Single(r => r.GetProperty("code").GetString() == "CAJA-MATRIZ-2");
+        register.GetProperty("emissionPointCode").GetString().Should().Be("003");
+        register.GetProperty("operationalStatus").GetString().Should().Be("Missing");
+        register.GetProperty("fiscalStatus").GetString().Should().Be("Pending");
+        register.GetProperty("requirementCodes").EnumerateArray().Select(c => c.GetString())
+            .Should().BeEquivalentTo("physicalEmission.docTypeNotPermitted", "physicalEmission.authorization");
+
+        var item = Item(data, "physicalEmission.authorization");
+        item.GetProperty("status").GetString().Should().Be("Missing");
+        item.GetProperty("actionTarget").GetString().Should().Be("PhysicalDocumentAuthorizations");
+        // Ninguna caja física de la sucursal puede vender: el requisito condiciona Sales.
+        item.GetProperty("blockingAreas").EnumerateArray().Select(a => a.GetString())
+            .Should().Equal("Sales");
+        Item(data, "physicalEmission.docTypeNotPermitted").GetProperty("status").GetString()
+            .Should().Be("Missing");
+        ItemStatus(data, "physicalEmission.activation").Should().Be("Ready");
     }
 
     [Fact]
@@ -298,12 +348,13 @@ public sealed class CompanyOperationalReadinessBranchHttpTests
     }
 
     private static string? ItemStatus(JsonElement data, string code) =>
+        Item(data, code).GetProperty("status").GetString();
+
+    private static JsonElement Item(JsonElement data, string code) =>
         data.GetProperty("sections")
             .EnumerateArray()
             .SelectMany(s => s.GetProperty("items").EnumerateArray())
-            .Single(i => i.GetProperty("code").GetString() == code)
-            .GetProperty("status")
-            .GetString();
+            .Single(i => i.GetProperty("code").GetString() == code);
 
     private async Task<HttpResponseMessage> SendAsync(Guid companyId, string? branchId)
     {

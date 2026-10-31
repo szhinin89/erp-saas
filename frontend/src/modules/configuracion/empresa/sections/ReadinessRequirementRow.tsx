@@ -24,7 +24,7 @@ export function statusBadgeVariant(status: ReadinessStatus): "success" | "warnin
   }
 }
 
-/** NotVerified (punto físico, brechas F-1..F-5) nunca se pinta como éxito ni como bloqueo. */
+/** NotVerified (punto físico sin certificación ante el SRI) nunca se pinta como éxito ni como bloqueo. */
 export function fiscalBadgeVariant(status: ReadinessFiscalStatus): "success" | "warning" | "info" | "neutral" {
   switch (status) {
     case "Verified":

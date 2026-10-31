@@ -63,6 +63,7 @@ public enum ReadinessActionTarget
     ElectronicInvoicingSettings,
     Items,
     AccountingSettings,
+    PhysicalDocumentAuthorizations,
 }
 
 /// <summary>
@@ -92,9 +93,11 @@ public sealed record ReadinessSection(
 /// <summary>
 /// Validación fiscal de la emisión de una caja, separada de su preparación operativa.
 /// Verified: el validador propietario no reporta requisitos obligatorios (punto electrónico).
-/// Pending: el validador reporta requisitos obligatorios o no pudo verificar.
-/// NotVerified: no existe política fiscal propietaria que verificar (punto físico — brechas F-1..F-5
-/// de docs/architecture/company-readiness.md); nunca se presenta como autorizado.
+/// Pending: el validador propietario (electrónico o físico) reporta requisitos obligatorios o no
+/// pudo verificar.
+/// NotVerified: punto físico que cumple los requisitos verificables localmente; la autorización
+/// del SRI y su circunstancia excepcional no se certifican (docs/architecture/company-readiness.md
+/// § Política fiscal de emisión física); nunca se presenta como autorizado.
 /// NotApplicable: la caja no tiene un punto de emisión activo.
 /// </summary>
 public enum ReadinessFiscalStatus

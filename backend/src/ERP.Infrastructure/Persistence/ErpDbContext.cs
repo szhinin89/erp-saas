@@ -272,6 +272,8 @@ public class ErpDbContext : DbContext
     public DbSet<SriNormativeSource> SriNormativeSources => Set<SriNormativeSource>();
     public DbSet<SriPaymentMethod> SriPaymentMethods => Set<SriPaymentMethod>();
     public DbSet<SriTaxRegime> SriTaxRegimes => Set<SriTaxRegime>();
+    public DbSet<SriTaxRegimePhysicalDocType> SriTaxRegimePhysicalDocTypes =>
+        Set<SriTaxRegimePhysicalDocType>();
     public DbSet<SriTaxSupport> SriTaxSupports => Set<SriTaxSupport>();
     public DbSet<SriUom> SriUoms => Set<SriUom>();
     public DbSet<SriErrorCode> SriErrorCodes => Set<SriErrorCode>();
@@ -283,6 +285,8 @@ public class ErpDbContext : DbContext
     public DbSet<Establishment> Establishments => Set<Establishment>();
     public DbSet<EmissionPoint> EmissionPoints => Set<EmissionPoint>();
     public DbSet<DocumentSequence> DocumentSequences => Set<DocumentSequence>();
+    public DbSet<PhysicalDocumentAuthorization> PhysicalDocumentAuthorizations =>
+        Set<PhysicalDocumentAuthorization>();
     public DbSet<ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility> CompanySpecialTaxResponsibilities =>
         Set<ERP.Domain.Modules.Company.Entities.CompanySpecialTaxResponsibility>();
 

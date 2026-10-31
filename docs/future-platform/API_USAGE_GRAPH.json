@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-25T02:30:41.929Z",
+  "generatedAt": "2026-10-31T02:24:38.696Z",
   "summary": {
-    "total": 136,
-    "allowed": 136,
+    "total": 137,
+    "allowed": 137,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -1111,6 +1111,14 @@
       "endpoint": "/api/v1/settings/operations",
       "files": [
         "frontend/src/modules/configuracion/operaciones/api/operationalPreferencesService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/v1/settings/physical-document-authorizations",
+      "files": [
+        "frontend/src/modules/documentSequences/api/physicalDocumentAuthorizationsService.ts"
       ],
       "legacy": false,
       "allowed": true

@@ -1,5 +1,34 @@
 # Project Status
 
+## F-1..F-5 — corrección final: captura acotada y Régimen General — READY FOR REVIEW (2026-10-30)
+
+1. Numeración física: el rango autorizado se comprueba bajo el lock de Secuencias Documentales
+   (sobrecarga `CaptureNextAsync(…, authorizedRanges)`, [extensión](docs/architecture/frozen-infrastructure.md#secuencias-documentales));
+   prueba de concurrencia real PostgreSQL (12 consumidores por el último número: uno lo obtiene, ninguno lo supera;
+   RED confirmado sin la comprobación).
+2. Régimen General: una autorización registrada habilitaba la factura física ordinaria. Fila General → 01
+   inactiva (BLOCKED por falta de fundamento oficial verificable); hoy ningún régimen emite en físico.
+   Nota de venta 02 sigue no implementada. Migración incremental conservada (editada, no aplicada aún).
+Pendiente revisión/gate del propietario y CI; no CLOSED. Sin staging, commit ni push.
+
+## F-1..F-5 — política fiscal de emisión física — READY FOR REVIEW (2026-10-30)
+
+Política propietaria `IPhysicalEmissionRequirementsValidator` (Company), integrada en la apertura de caja,
+Readiness y el gate de autorización de ventas antes de `CaptureNextAsync`; SSOT:
+[Política fiscal de emisión física](docs/architecture/company-readiness.md#política-fiscal-de-emisión-física-f-1f-5).
+Nuevos datos: `physical_document_authorization` y catálogo `global.sri_tax_regime_physical_doc_type`
+(migración incremental `PhysicalDocumentAuthorization`; consolidación en la baseline a decisión del propietario).
+UI: autorizaciones de impresión en Secuencias documentales. ElectronicDocuments sin cambios.
+BLOCKED (fail-closed): factura física ordinaria del Régimen General (ver entrada superior), factura física RIMPE Emprendedor y cupo transitorio de preimpresos 2024.
+Nota de venta 02 no implementada (sigue inactiva). La emisión física no queda certificada legalmente:
+la autorización y su circunstancia excepcional no se verifican ante el SRI.
+
+Evidencia agente (focal): Application 133, Infrastructure 62 + 151 (PostgreSQL real: ReadinessGap,
+catálogos GLOBAL, objetos raw, secuencias), API 86 (E2E de caja/ventas/devoluciones/cobros con la
+política física real), Architecture.Tests 143; frontend vitest 31 + 51, `tsc -b`, lint (0 errores), build,
+`architecture:check` (140/140, gate PASS, 0 violaciones nuevas). Sin suites completas.
+Pendiente revisión/gate del propietario y CI; no CLOSED. Sin staging, commit ni push.
+
 ## CI 2B-3 — corrección focal PR-7 — READY FOR REVIEW (2026-10-30)
 
 Clasificación: BUG REAL del gate en `598941f6f` (CI `41151151161`); KEEP comportamiento
@@ -18,7 +47,7 @@ Gate del propietario desde `frontend`:
 Desde raíz: `powershell -NoProfile -ExecutionPolicy Bypass -File tools/architecture/check-architecture-guardrails.ps1`;
 `git diff --check`.
 Pendiente revisión/gate del propietario y CI; no CLOSED. Sin staging, commit ni push;
-F-1 a F-5 no iniciadas.
+F-1 a F-5 en la entrada superior.
 
 ## BUG REAL — diagnóstico de certificado SRI — IMPLEMENTADO — PASS FOCAL — PENDIENTE COMMIT/CI (2026-10-30)
 

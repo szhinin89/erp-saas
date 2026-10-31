@@ -51,6 +51,7 @@ Rationale: [diseño de configuración](../decisions/DOCUMENT-SEQUENCES-DESIGN-02
 
 ### Reglas de evolución
 
+- **Extensión 2026-10-30 (PHYSICAL-FISCAL-F1, defecto demostrado: dos cajas concurrentes podían consumir un secuencial fuera del rango autorizado de un preimpreso):** sobrecarga `CaptureNextAsync(tenantId, companyId, emissionPointId, docTypeCode, authorizedRanges, ct)` → `string?`. Misma implementación única, advisory lock y transacción; el número se comprueba contra los rangos antes de cualquier escritura y, fuera de rango, devuelve `null` sin INSERT/UPDATE ni commit. La firma sin rangos conserva exactamente su comportamiento. Pruebas PostgreSQL reales en `DocumentSequenceAmbientTransactionTests` (RED sin la comprobación: se entregaban 501..511 con límite 500). Sin cambios de modelo ni migración. Detalle: [company-readiness.md § Captura acotada](./company-readiness.md#captura-acotada-al-rango-autorizado).
 - Todo nuevo tipo documental SRI se incorpora sin cambio de modelo: `CaptureNextAsync(…, "04", …)`.
 - Cualquier cambio en estrategia de concurrencia requiere nueva ADR + repetir suite de pruebas con PostgreSQL real.
 - Los 4 architecture gates CI-bloqueantes (`SEQ-GATE-01..04` en `ERP.Infrastructure.Tests`) garantizan que ningún módulo viole esta regla automáticamente.

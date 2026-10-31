@@ -1,6 +1,7 @@
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using Microsoft.Extensions.Logging;
 
@@ -43,6 +44,12 @@ public sealed class ElectronicSalesInvoiceEmissionStrategy : ISalesInvoiceEmissi
             ),
             ct
         );
+
+    /// <summary>La numeración electrónica no tiene rango autorizado previo: sin límite (sin cambios).</summary>
+    public Task<IReadOnlyList<AuthorizedSequentialRange>?> ResolveAuthorizedSequentialRangesAsync(
+        SalesInvoiceEmissionPreflight preflight,
+        CancellationToken ct
+    ) => Task.FromResult<IReadOnlyList<AuthorizedSequentialRange>?>(null);
 
     public async Task<string?> ExecuteAsync(
         SalesInvoiceEmissionContext context,

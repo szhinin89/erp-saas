@@ -1,5 +1,7 @@
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.Company.PhysicalEmission;
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Branches.Interfaces;
@@ -52,6 +54,7 @@ public sealed class CompanyOperationalReadinessResolverTests
         public Mock<ICompanyBrandingResolver> BrandingResolver { get; } = new();
         public Mock<ICatalogConfigurationResolver> CatalogConfigResolver { get; } = new();
         public Mock<IElectronicEmissionRequirementsValidator> EmissionRequirements { get; } = new();
+        public Mock<IPhysicalEmissionRequirementsValidator> PhysicalRequirements { get; } = new();
         public Mock<IAccountingOperationalPolicyRepository> AccountingPolicies { get; } = new();
         public Mock<ICompanyClock> CompanyClock { get; } = new();
 
@@ -105,6 +108,8 @@ public sealed class CompanyOperationalReadinessResolverTests
                     )
                 )
                 .ReturnsAsync(new ElectronicEmissionRequirementsResult([]));
+            // Por defecto los puntos físicos cumplen la política fiscal física.
+            ConfigurePhysicalIssues();
             AccountingPolicies
                 .Setup(r => r.ListAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Array.Empty<AccountingOperationalPolicy>());
@@ -173,6 +178,7 @@ public sealed class CompanyOperationalReadinessResolverTests
                 BrandingResolver.Object,
                 CatalogConfigResolver.Object,
                 EmissionRequirements.Object,
+                PhysicalRequirements.Object,
                 new AccountingOperationalDecision(AccountingPolicies.Object),
                 CompanyClock.Object,
                 NullLogger<CompanyOperationalReadinessResolver>.Instance
@@ -204,6 +210,21 @@ public sealed class CompanyOperationalReadinessResolverTests
                     )
                 )
                 .ReturnsAsync(new ElectronicEmissionRequirementsResult(issues));
+
+        public void ConfigurePhysicalIssues(params ElectronicEmissionRequirementIssue[] issues) =>
+            PhysicalRequirements
+                .Setup(v =>
+                    v.ValidateAsync(
+                        It.IsAny<PhysicalEmissionRequirementsRequest>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(
+                    new ElectronicEmissionRequirementsResult(issues)
+                    {
+                        Modality = ERP.Domain.Modules.Company.Enums.EmissionType.Physical,
+                    }
+                );
     }
 
     private static Branch BuildMainBranch() =>
@@ -1122,7 +1143,7 @@ public sealed class CompanyOperationalReadinessResolverTests
     // ── FASE 2B-1 · coherencia con las operaciones reales ────────────────────
 
     [Fact]
-    public async Task Ruc_provisional_no_impide_vender_desde_una_caja_fisica()
+    public async Task Ruc_provisional_impide_vender_desde_una_caja_fisica_con_un_solo_requisito()
     {
         var f = new Fixture();
         var (branch, establishment) = ConfigureOperational(f);
@@ -1144,14 +1165,19 @@ public sealed class CompanyOperationalReadinessResolverTests
                 )
             );
 
+        // F-3: la política física exige el RUC oficial (art. 18 num. 2).
+        f.ConfigurePhysicalIssues(
+            Required(PhysicalEmissionRequirementCodes.IssuerTaxId, ReadinessActionTarget.CompanyProfile)
+        );
+
         var result = await f.GetAsync();
 
-        // La autorización física no consulta el RUC del emisor (PhysicalSalesInvoiceEmissionStrategy).
-        result.CanSell.Should().BeTrue();
-        AllItems(result)
-            .Single(i => i.Code == "identity.taxId")
-            .BlockingAreas.Should()
-            .BeEmpty();
+        result.CanSell.Should().BeFalse();
+        var taxId = AllItems(result).Single(i => i.Code == "identity.taxId");
+        taxId.Status.Should().Be(ReadinessStatus.Missing);
+        taxId.BlockingAreas.Should().Equal(ReadinessBlockingArea.Sales);
+        AllItems(result).Should().NotContain(i => i.Code == PhysicalEmissionRequirementCodes.IssuerTaxId);
+        result.CashRegisters.Single().RequirementCodes.Should().Equal("identity.taxId");
     }
 
     [Fact]
@@ -1463,6 +1489,99 @@ public sealed class CompanyOperationalReadinessResolverTests
         register.OperationalStatus.Should().Be(ReadinessStatus.Ready);
         register.FiscalStatus.Should().Be(ReadinessFiscalStatus.NotVerified);
         register.EmissionType.Should().Be(ERP.Domain.Modules.Company.Enums.EmissionType.Physical);
+    }
+
+    [Fact]
+    public async Task Caja_fisica_sin_autorizacion_vigente_no_vende_y_su_requisito_vive_en_emision_fisica()
+    {
+        var f = new Fixture();
+        var (branch, establishment) = ConfigureOperational(f);
+        var physical = BuildEmissionPoint(establishment, "002", ERP.Domain.Modules.Company.Enums.EmissionType.Physical);
+        ConfigureCashRegisters(f, branch, physical);
+        f.ConfigurePhysicalIssues(
+            Required(
+                PhysicalEmissionRequirementCodes.AuthorizationExpired,
+                ReadinessActionTarget.PhysicalDocumentAuthorizations
+            )
+        );
+
+        var result = await f.GetAsync();
+
+        result.CanSell.Should().BeFalse();
+        var register = Register(result, physical.Id);
+        register.OperationalStatus.Should().Be(ReadinessStatus.Missing);
+        register.FiscalStatus.Should().Be(ReadinessFiscalStatus.Pending);
+        register.RequirementCodes.Should().Equal(PhysicalEmissionRequirementCodes.AuthorizationExpired);
+        var section = result.Sections.Single(s => s.Code == "physicalEmission");
+        section.Status.Should().Be(ReadinessStatus.Missing);
+        var item = section.Items.Single(i => i.Code == PhysicalEmissionRequirementCodes.AuthorizationExpired);
+        item.BlockingAreas.Should().Equal(ReadinessBlockingArea.Sales);
+        item.ActionTarget.Should().Be(ReadinessActionTarget.PhysicalDocumentAuthorizations);
+        section.Items.Single(i => i.Code == OperationalReadinessCodes.PhysicalActivation)
+            .Status.Should().Be(ReadinessStatus.Ready);
+        result.Sections.Single(s => s.Code == "electronicInvoicing").Items
+            .Should().NotContain(i => i.Code == PhysicalEmissionRequirementCodes.AuthorizationExpired);
+        f.PhysicalRequirements.Verify(
+            v => v.ValidateAsync(
+                It.Is<PhysicalEmissionRequirementsRequest>(r =>
+                    r.TenantId == TenantId && r.CompanyId == CompanyId
+                    && r.EmissionPointId == physical.Id && r.DocTypeCode == "01"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        f.EmissionRequirements.Verify(
+            v => v.ValidateAsync(It.IsAny<ElectronicEmissionRequirementsRequest>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Caja_fisica_pendiente_no_bloquea_la_venta_si_otra_caja_de_la_sucursal_puede_vender()
+    {
+        var f = new Fixture();
+        var (branch, establishment) = ConfigureOperational(f);
+        var authorized = BuildEmissionPoint(establishment, "002", ERP.Domain.Modules.Company.Enums.EmissionType.Physical);
+        var outOfRange = BuildEmissionPoint(establishment, "003", ERP.Domain.Modules.Company.Enums.EmissionType.Physical);
+        ConfigureCashRegisters(f, branch, authorized, outOfRange);
+        f.PhysicalRequirements
+            .Setup(v => v.ValidateAsync(
+                It.Is<PhysicalEmissionRequirementsRequest>(r => r.EmissionPointId == outOfRange.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ElectronicEmissionRequirementsResult([
+                Required(
+                    PhysicalEmissionRequirementCodes.SequentialOutOfRange,
+                    ReadinessActionTarget.PhysicalDocumentAuthorizations
+                ),
+            ]) { Modality = ERP.Domain.Modules.Company.Enums.EmissionType.Physical });
+
+        var result = await f.GetAsync();
+
+        result.CanSell.Should().BeTrue();
+        Register(result, authorized.Id).FiscalStatus.Should().Be(ReadinessFiscalStatus.NotVerified);
+        Register(result, outOfRange.Id).OperationalStatus.Should().Be(ReadinessStatus.Missing);
+        AllItems(result)
+            .Single(i => i.Code == PhysicalEmissionRequirementCodes.SequentialOutOfRange)
+            .BlockingAreas.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Fallo_tecnico_de_la_politica_fisica_nunca_se_presenta_como_Ready()
+    {
+        var f = new Fixture();
+        var (branch, establishment) = ConfigureOperational(f);
+        var physical = BuildEmissionPoint(establishment, "002", ERP.Domain.Modules.Company.Enums.EmissionType.Physical);
+        ConfigureCashRegisters(f, branch, physical);
+        f.PhysicalRequirements
+            .Setup(v => v.ValidateAsync(It.IsAny<PhysicalEmissionRequirementsRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("db down"));
+
+        var result = await f.GetAsync();
+
+        result.CanSell.Should().BeFalse();
+        Register(result, physical.Id).RequirementCodes
+            .Should().Equal(OperationalReadinessCodes.PhysicalVerificationFailed);
+        var item = AllItems(result).Single(i => i.Code == OperationalReadinessCodes.PhysicalVerificationFailed);
+        item.Status.Should().Be(ReadinessStatus.Missing);
+        item.ActionTarget.Should().Be(ReadinessActionTarget.PhysicalDocumentAuthorizations);
+        result.Sections.Single(s => s.Code == "physicalEmission").Items.Should().Contain(item);
     }
 
     [Fact]

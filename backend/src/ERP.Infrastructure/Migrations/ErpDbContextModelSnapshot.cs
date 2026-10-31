@@ -5348,6 +5348,96 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("establishment", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.PhysicalDocumentAuthorization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AuthorizationNumber")
+                        .IsRequired()
+                        .HasMaxLength(49)
+                        .HasColumnType("character varying(49)")
+                        .HasColumnName("authorization_number");
+
+                    b.Property<DateOnly>("AuthorizedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("authorized_on");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DocTypeCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("doc_type_code");
+
+                    b.Property<Guid>("EmissionPointId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("emission_point_id");
+
+                    b.Property<DateOnly>("ExpiresOn")
+                        .HasColumnType("date")
+                        .HasColumnName("expires_on");
+
+                    b.Property<int>("FirstSequential")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_sequential");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsSystemSeeded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_system_seeded");
+
+                    b.Property<int>("LastSequential")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_sequential");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocTypeCode");
+
+                    b.HasIndex("EmissionPointId");
+
+                    b.HasIndex("TenantId", "CompanyId", "EmissionPointId", "DocTypeCode")
+                        .HasDatabaseName("ix_phys_doc_auth_point_doc_type");
+
+                    b.ToTable("physical_document_authorization", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_phys_doc_auth_dates", "expires_on >= authorized_on");
+
+                            t.HasCheckConstraint("chk_phys_doc_auth_range", "first_sequential >= 1 AND last_sequential >= first_sequential AND last_sequential <= 999999999");
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.DocTypes.Entities.DocType", b =>
                 {
                     b.Property<string>("Code")
@@ -18612,6 +18702,52 @@ namespace ERP.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriTaxRegimePhysicalDocType", b =>
+                {
+                    b.Property<string>("TaxRegimeCode")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("tax_regime_code");
+
+                    b.Property<string>("DocTypeCode")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("doc_type_code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("LegalBasis")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("legal_basis");
+
+                    b.HasKey("TaxRegimeCode", "DocTypeCode");
+
+                    b.HasIndex("DocTypeCode");
+
+                    b.ToTable("sri_tax_regime_physical_doc_type", "global");
+
+                    b.HasData(
+                        new
+                        {
+                            TaxRegimeCode = "01",
+                            DocTypeCode = "01",
+                            IsActive = false,
+                            LegalBasis = "BLOQUEADO: Res. NAC-DGERCGC22-00000024, preimpresos solo por fuerza mayor o caso fortuito (no verificable)"
+                        },
+                        new
+                        {
+                            TaxRegimeCode = "03",
+                            DocTypeCode = "02",
+                            IsActive = true,
+                            LegalBasis = "Res. NAC-DGERCGC21-00000060 (RIMPE Negocio Popular: notas de venta)"
+                        });
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriTaxSupport", b =>
                 {
                     b.Property<string>("Code")
@@ -20248,6 +20384,21 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Branch");
 
                     b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Company.Entities.PhysicalDocumentAuthorization", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriDocType", null)
+                        .WithMany()
+                        .HasForeignKey("DocTypeCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.EmissionPoint", null)
+                        .WithMany()
+                        .HasForeignKey("EmissionPointId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.DocTypes.Entities.DocTypeSriMap", b =>
@@ -21927,6 +22078,21 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriRetentionCode", null)
                         .WithMany()
                         .HasForeignKey("RetentionCodeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriTaxRegimePhysicalDocType", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriDocType", null)
+                        .WithMany()
+                        .HasForeignKey("DocTypeCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriTaxRegime", null)
+                        .WithMany()
+                        .HasForeignKey("TaxRegimeCode")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

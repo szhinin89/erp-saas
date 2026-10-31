@@ -1,4 +1,6 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Company.PhysicalEmission;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Readiness;
@@ -45,6 +47,12 @@ public sealed record ElectronicEmissionRequirementsResult(
     /// <summary>Resultado de un flujo sin emisión electrónica (p. ej. factura física).</summary>
     public static ElectronicEmissionRequirementsResult NotApplicable { get; } = new([]);
 
+    /// <summary>
+    /// PHYSICAL-FISCAL-F1..F5 — modalidad cuyos requisitos se evaluaron. Physical: los produce
+    /// <see cref="IPhysicalEmissionRequirementsValidator"/> y el rechazo usa su código y mensajes.
+    /// </summary>
+    public EmissionType Modality { get; init; } = EmissionType.Electronic;
+
     public bool CanIssue =>
         Issues.All(i => i.Severity != ElectronicEmissionRequirementSeverity.Required);
 
@@ -58,9 +66,25 @@ public sealed record ElectronicEmissionRequirementsResult(
         if (CanIssue)
             return null;
 
-        var details = Issues
-            .Where(i => i.Severity == ElectronicEmissionRequirementSeverity.Required)
-            .Select(i => $"[{i.Code}] {ElectronicEmissionRequirementCodes.MessageFor(i.Code)}");
+        var required = Issues.Where(i =>
+            i.Severity == ElectronicEmissionRequirementSeverity.Required
+        );
+        if (Modality == EmissionType.Physical)
+            return Result<T>.ValidationFailure(
+                "No se puede emitir el comprobante físico: la empresa no cumple los requisitos "
+                    + "fiscales de emisión física. "
+                    + string.Join(
+                        " ",
+                        required.Select(i =>
+                            $"[{i.Code}] {PhysicalEmissionRequirementCodes.MessageFor(i.Code)}"
+                        )
+                    ),
+                ApiResponseCodes.PhysicalEmission.RequirementsMissing
+            );
+
+        var details = required.Select(i =>
+            $"[{i.Code}] {ElectronicEmissionRequirementCodes.MessageFor(i.Code)}"
+        );
         return Result<T>.ValidationFailure(
             "No se puede emitir el comprobante electrónico: la configuración fiscal de la empresa "
                 + "está incompleta. "

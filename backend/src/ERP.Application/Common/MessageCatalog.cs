@@ -200,6 +200,12 @@ public static class MessageCatalog
             "Local issuer requirements for electronic emission are missing; operation rejected before any sequence or commercial effect.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.PhysicalEmission.RequirementsMissing] = new(
+            ApiSeverity.Error,
+            "No se puede emitir el comprobante físico porque faltan requisitos fiscales de emisión física. Revise el detalle y complete la configuración indicada.",
+            "Verifiable requirements for physical emission are missing; operation rejected before any sequence or commercial effect.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.Communications.TemplateNotFound] = new(
             ApiSeverity.Error,
             "No existe una plantilla de correo para esta comunicación.",

@@ -1,4 +1,5 @@
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.Company.PhysicalEmission;
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Application.Modules.Sales.Services;
@@ -6,6 +7,7 @@ using ERP.Domain.Configuration.Entities;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
+using ERP.Infrastructure.Persistence.Services;
 using Moq;
 
 namespace ERP.Infrastructure.Tests.TestData;
@@ -58,6 +60,47 @@ public static class EmissionRequirementsTestWiring
             .Setup(r => r.Resolve(It.IsAny<ERP.Domain.Modules.Company.Enums.EmissionType>()))
             .Returns(strategy.Object);
         return resolver.Object;
+    }
+
+    /// <summary>PHYSICAL-FISCAL-F1..F5 — política física satisfecha (pruebas ajenas a ella).</summary>
+    public static IPhysicalEmissionRequirementsValidator PhysicalSatisfied()
+    {
+        var validator = new Mock<IPhysicalEmissionRequirementsValidator>();
+        validator
+            .Setup(v =>
+                v.ValidateAsync(
+                    It.IsAny<PhysicalEmissionRequirementsRequest>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new ElectronicEmissionRequirementsResult([])
+                {
+                    Modality = ERP.Domain.Modules.Company.Enums.EmissionType.Physical,
+                }
+            );
+        return validator.Object;
+    }
+
+    /// <summary>
+    /// PHYSICAL-FISCAL-F1..F5 — política fiscal física real sobre PostgreSQL: Company, EmissionPoint,
+    /// catálogo GLOBAL sembrado por la migración (tipos y régimen × tipo físico), autorizaciones y
+    /// secuencia documental. Solo el día de empresa es un doble.
+    /// </summary>
+    public static IPhysicalEmissionRequirementsValidator RealPhysical(ErpDbContext db, DateOnly today)
+    {
+        var clock = new Mock<ICompanyClock>();
+        clock
+            .Setup(c => c.TodayAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(today);
+        return new PhysicalEmissionRequirementsValidator(
+            new CompanyRepository(db),
+            new EmissionPointRepository(db),
+            new SriDocTypeCatalogResolver(db),
+            new PhysicalDocumentAuthorizationRepository(db),
+            new DocumentSequenceRepository(db),
+            clock.Object
+        );
     }
 
     public static IElectronicEmissionRequirementsValidator Real(

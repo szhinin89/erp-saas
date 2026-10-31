@@ -1,6 +1,7 @@
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.Company.PhysicalEmission;
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
@@ -26,8 +27,9 @@ namespace ERP.Infrastructure.Services;
 /// persiste. Los requisitos de empresa se evalúan una vez; cajas y bodegas, solo las de la sucursal
 /// activa, porque OpenCashSession, CreateSalesDraft, ajustes y compras operan sobre la sucursal del
 /// request. Cada caja se diagnostica con su propio punto de emisión: los requisitos electrónicos los
-/// decide exclusivamente <see cref="IElectronicEmissionRequirementsValidator"/> (una vez por punto) y
-/// el modo contable <see cref="AccountingOperationalDecision"/>.
+/// decide exclusivamente <see cref="IElectronicEmissionRequirementsValidator"/>, los físicos
+/// <see cref="IPhysicalEmissionRequirementsValidator"/> (una vez por punto), y el modo contable
+/// <see cref="AccountingOperationalDecision"/>.
 /// Matriz completa: docs/architecture/company-readiness.md.
 /// </summary>
 public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalReadinessResolver
@@ -41,12 +43,14 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     private const string ElectronicActivation = OperationalReadinessCodes.ElectronicActivation;
     private const string ElectronicVerificationFailed =
         OperationalReadinessCodes.ElectronicVerificationFailed;
+    private const string PhysicalVerificationFailed =
+        OperationalReadinessCodes.PhysicalVerificationFailed;
 
     private static readonly Area[] NoArea = [];
 
     /// <summary>
     /// Una caja activa de la sucursal con su punto de emisión (null si no tiene uno activo en la
-    /// empresa) y el resultado del validador para ese punto (solo puntos electrónicos).
+    /// empresa) y el resultado del validador de la modalidad de ese punto.
     /// </summary>
     private sealed record RegisterCheck(
         CashRegister Register,
@@ -56,18 +60,19 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     )
     {
         public bool IsElectronic => EmissionPoint?.EmissionType == EmissionType.Electronic;
+        public bool IsPhysical => EmissionPoint?.EmissionType == EmissionType.Physical;
 
-        public bool CanIssue =>
-            IsElectronic
+        /// <summary>Precondiciones de OpenCashSession + CreateSalesDraft + gate de AuthorizeSales.</summary>
+        public bool CanSell =>
+            EmissionPoint is not null
             && !VerificationFailed
             && Issues.All(i => i.Severity != ElectronicEmissionRequirementSeverity.Required);
 
-        /// <summary>Precondiciones de OpenCashSession + CreateSalesDraft + gate de AuthorizeSales.</summary>
-        public bool CanSell => EmissionPoint is not null && (!IsElectronic || CanIssue);
+        public bool CanIssue => IsElectronic && CanSell;
 
         public IEnumerable<string> RequiredCodes =>
             VerificationFailed
-                ? [ElectronicVerificationFailed]
+                ? [OperationalReadinessCodes.VerificationFailedFor(EmissionPoint!.EmissionType)]
                 : Issues
                     .Where(i => i.Severity == ElectronicEmissionRequirementSeverity.Required)
                     .Select(i => i.Code);
@@ -90,6 +95,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     private readonly ICompanyBrandingResolver _brandingResolver;
     private readonly ICatalogConfigurationResolver _catalogConfigResolver;
     private readonly IElectronicEmissionRequirementsValidator _emissionRequirements;
+    private readonly IPhysicalEmissionRequirementsValidator _physicalRequirements;
     private readonly AccountingOperationalDecision _accountingDecision;
     private readonly ICompanyClock _companyClock;
     private readonly ILogger<CompanyOperationalReadinessResolver> _logger;
@@ -107,6 +113,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         ICompanyBrandingResolver brandingResolver,
         ICatalogConfigurationResolver catalogConfigResolver,
         IElectronicEmissionRequirementsValidator emissionRequirements,
+        IPhysicalEmissionRequirementsValidator physicalRequirements,
         AccountingOperationalDecision accountingDecision,
         ICompanyClock companyClock,
         ILogger<CompanyOperationalReadinessResolver> logger
@@ -124,6 +131,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         _brandingResolver = brandingResolver;
         _catalogConfigResolver = catalogConfigResolver;
         _emissionRequirements = emissionRequirements;
+        _physicalRequirements = physicalRequirements;
         _accountingDecision = accountingDecision;
         _companyClock = companyClock;
         _logger = logger;
@@ -201,17 +209,19 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 cancellationToken
             ) != AccountingApplicability.NotConfigured;
 
-        var electronicFindings = BuildElectronicFindings(registerChecks);
+        var emissionFindings = BuildEmissionFindings(registerChecks);
         _ = fiscalPolicy; // ya reflejado en sales.consumerFinalPolicy (siempre Ready — tiene fallback DomainDefault).
 
         var electronicActive = registerChecks.Any(c => c.IsElectronic);
+        var physicalActive = registerChecks.Any(c => c.IsPhysical);
         var sections = new List<ReadinessSection>
         {
-            BuildIdentitySection(company, electronicFindings),
-            BuildStructureSection(mainEstablishment, electronicFindings),
+            BuildIdentitySection(company, emissionFindings),
+            BuildStructureSection(mainEstablishment, emissionFindings),
             BuildAccountingSection(accountingConfigured),
             BuildCashRegisterSection(registerChecks),
-            BuildElectronicInvoicingSection(electronicActive, electronicFindings),
+            BuildElectronicInvoicingSection(electronicActive, emissionFindings),
+            BuildPhysicalEmissionSection(physicalActive, emissionFindings),
             BuildSalesSection(invoiceDefaults, defaultPriceList),
             BuildInventorySection(hasActiveWarehouse, hasActiveItems),
             BuildDocumentsSection(branding),
@@ -241,7 +251,8 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
     /// <summary>
     /// Cajas activas de la empresa en la sucursal activa (OpenCashSession exige
     /// <c>register.BranchId == sucursal activa</c>), cada una con su punto si existe y está activo
-    /// en la empresa (CreateSalesDraft). Cada punto electrónico distinto se valida una sola vez.
+    /// en la empresa (CreateSalesDraft). Cada punto distinto se valida una sola vez con el validador
+    /// de su modalidad.
     /// </summary>
     private async Task<IReadOnlyList<RegisterCheck>> CheckBranchCashRegistersAsync(
         Guid tenantId,
@@ -289,9 +300,9 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 }
             }
 
-            if (emissionPoint?.EmissionType != EmissionType.Electronic)
+            if (emissionPoint is null)
             {
-                checks.Add(new(register, emissionPoint, [], false));
+                checks.Add(new(register, null, [], false));
                 continue;
             }
 
@@ -300,7 +311,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 validation = await ValidateEmissionPointAsync(
                     tenantId,
                     companyId,
-                    emissionPoint.Id,
+                    emissionPoint,
                     ct
                 );
                 validations[emissionPoint.Id] = validation;
@@ -311,49 +322,63 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         return checks;
     }
 
-    /// <summary>Gate propietario para el tipo 01 (la capacidad diagnosticada). Un fallo técnico nunca es Ready.</summary>
+    /// <summary>
+    /// Gate propietario de la modalidad del punto para el tipo 01 (la capacidad diagnosticada). Un
+    /// fallo técnico nunca es Ready.
+    /// </summary>
     private async Task<(
         IReadOnlyList<ElectronicEmissionRequirementIssue> Issues,
         bool Failed
     )> ValidateEmissionPointAsync(
         Guid tenantId,
         Guid companyId,
-        Guid emissionPointId,
+        EmissionPointEntity emissionPoint,
         CancellationToken ct
     )
     {
         try
         {
-            var result = await _emissionRequirements.ValidateAsync(
-                new ElectronicEmissionRequirementsRequest(
-                    tenantId,
-                    companyId,
-                    emissionPointId,
-                    SriDocumentTypeCodes.Invoice
-                ),
-                ct
-            );
+            var result = emissionPoint.EmissionType == EmissionType.Physical
+                ? await _physicalRequirements.ValidateAsync(
+                    new PhysicalEmissionRequirementsRequest(
+                        tenantId,
+                        companyId,
+                        emissionPoint.Id,
+                        SriDocumentTypeCodes.Invoice
+                    ),
+                    ct
+                )
+                : await _emissionRequirements.ValidateAsync(
+                    new ElectronicEmissionRequirementsRequest(
+                        tenantId,
+                        companyId,
+                        emissionPoint.Id,
+                        SriDocumentTypeCodes.Invoice
+                    ),
+                    ct
+                );
             return (result.Issues, false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(
                 ex,
-                "Electronic emission requirements could not be verified for company {CompanyId}, emission point {EmissionPointId}",
+                "{EmissionType} emission requirements could not be verified for company {CompanyId}, emission point {EmissionPointId}",
+                emissionPoint.EmissionType,
                 companyId,
-                emissionPointId
+                emissionPoint.Id
             );
             return ([], true);
         }
     }
 
     /// <summary>
-    /// Un ítem por código de requisito electrónico. Obligatorio incumplido en cualquier caja ⇒
-    /// Missing (un punto correcto nunca oculta otro); solo condiciona una capacidad si la deja sin
-    /// camino en la sucursal: ElectronicInvoicing si ninguna caja electrónica puede emitir, Sales si
-    /// ninguna caja puede vender.
+    /// Un ítem por código de requisito de emisión (electrónico o físico). Obligatorio incumplido en
+    /// cualquier caja ⇒ Missing (un punto correcto nunca oculta otro); solo condiciona una capacidad
+    /// si la deja sin camino en la sucursal: Sales si ninguna caja puede vender, y ElectronicInvoicing
+    /// si lo exige una caja electrónica y ninguna caja electrónica puede emitir.
     /// </summary>
-    private static IReadOnlyDictionary<string, ReadinessItem> BuildElectronicFindings(
+    private static IReadOnlyDictionary<string, ReadinessItem> BuildEmissionFindings(
         IReadOnlyList<RegisterCheck> checks
     )
     {
@@ -363,14 +388,24 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             .ToDictionary(g => g.Key, g => g.First().ActionTarget, StringComparer.Ordinal);
         targets.TryAdd(
             ElectronicVerificationFailed,
-            ReadinessActionTarget.ElectronicInvoicingSettings
+            OperationalReadinessCodes.VerificationFailedTargetFor(EmissionType.Electronic)
+        );
+        targets.TryAdd(
+            PhysicalVerificationFailed,
+            OperationalReadinessCodes.VerificationFailedTargetFor(EmissionType.Physical)
         );
 
-        var requiredAreas = new List<Area>();
-        if (!checks.Any(c => c.CanSell))
-            requiredAreas.Add(Area.Sales);
-        if (!checks.Any(c => c.CanIssue))
-            requiredAreas.Add(Area.ElectronicInvoicing);
+        var noneCanSell = !checks.Any(c => c.CanSell);
+        var noneCanIssue = !checks.Any(c => c.CanIssue);
+        IReadOnlyList<Area> AreasFor(string code)
+        {
+            var areas = new List<Area>();
+            if (noneCanSell)
+                areas.Add(Area.Sales);
+            if (noneCanIssue && checks.Any(c => c.IsElectronic && c.RequiredCodes.Contains(code)))
+                areas.Add(Area.ElectronicInvoicing);
+            return areas;
+        }
 
         var findings = new Dictionary<string, ReadinessItem>(StringComparer.Ordinal);
         foreach (var code in checks.SelectMany(c => c.RequiredCodes).Distinct(StringComparer.Ordinal))
@@ -378,7 +413,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 code,
                 ReadinessStatus.Missing,
                 ReadinessSeverity.Blocking,
-                requiredAreas,
+                AreasFor(code),
                 targets[code]
             );
         foreach (var code in checks.SelectMany(c => c.WarningCodes).Distinct(StringComparer.Ordinal))
@@ -401,10 +436,10 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-        // F-1..F-5: un punto físico es NotVerified (sin política física propietaria).
+        // Físico que cumple la política física ⇒ NotVerified (nunca se certifica ante el SRI).
         var fiscalStatus = OperationalReadinessCodes.FiscalStatusFor(
             emissionPoint?.EmissionType,
-            check.CanIssue
+            check.CanSell
         );
 
         return new ReadinessCashRegister(
@@ -547,11 +582,43 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             ),
         };
         items.AddRange(
-            electronicFindings.Values.Where(f => !OperationalReadinessCodes.IsOwnedByBaseItem(f.Code))
+            electronicFindings.Values.Where(f =>
+                !OperationalReadinessCodes.IsOwnedByBaseItem(f.Code) && !IsPhysicalFinding(f.Code)
+            )
         );
 
         return Section("electronicInvoicing", items);
     }
+
+    // ── Emisión física ───────────────────────────────────────────────────────
+    // Activa si alguna caja de la sucursal tiene un punto físico; sus requisitos los decide la
+    // política fiscal física (IPhysicalEmissionRequirementsValidator), nunca Readiness.
+    private static ReadinessSection BuildPhysicalEmissionSection(
+        bool physicalActive,
+        IReadOnlyDictionary<string, ReadinessItem> emissionFindings
+    )
+    {
+        var items = new List<ReadinessItem>
+        {
+            new(
+                OperationalReadinessCodes.PhysicalActivation,
+                physicalActive ? ReadinessStatus.Ready : ReadinessStatus.NotApplicable,
+                ReadinessSeverity.Info,
+                NoArea,
+                ReadinessActionTarget.EmissionPoints
+            ),
+        };
+        items.AddRange(
+            emissionFindings.Values.Where(f =>
+                !OperationalReadinessCodes.IsOwnedByBaseItem(f.Code) && IsPhysicalFinding(f.Code)
+            )
+        );
+
+        return Section("physicalEmission", items);
+    }
+
+    private static bool IsPhysicalFinding(string code) =>
+        code == PhysicalVerificationFailed || PhysicalEmissionRequirementCodes.IsPhysical(code);
 
     // ── Ventas ────────────────────────────────────────────────────────────────
     // Defaults de captura: recomendables, ninguno bloquea la venta (precio → Item.BaseSalePrice,

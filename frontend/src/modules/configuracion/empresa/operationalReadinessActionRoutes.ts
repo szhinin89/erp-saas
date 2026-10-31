@@ -21,6 +21,8 @@ const ACTION_TARGET_ROUTES: Record<ReadinessActionTarget, string> = {
   ElectronicInvoicingSettings: "/sri/configuration/electronic-invoicing",
   Items: "/products/items",
   AccountingSettings: "/accounting/configuration/operational-mode",
+  // Las autorizaciones de impresión del SRI se registran junto a la numeración por punto y tipo.
+  PhysicalDocumentAuthorizations: "/settings/document-sequences",
 };
 
 export function getOperationalReadinessActionRoute(

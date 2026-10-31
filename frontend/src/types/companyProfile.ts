@@ -147,7 +147,8 @@ export type ReadinessActionTarget =
   | "PriceLists"
   | "ElectronicInvoicingSettings"
   | "Items"
-  | "AccountingSettings";
+  | "AccountingSettings"
+  | "PhysicalDocumentAuthorizations";
 
 export interface CompanyOperationalReadinessItem {
   code: string;
@@ -165,9 +166,10 @@ export interface CompanyOperationalReadinessSection {
 }
 
 /**
- * Validación fiscal de la emisión de una caja, separada de su estado operativo. `NotVerified`:
- * punto físico sin política fiscal propietaria (brechas F-1..F-5) — nunca se presenta como
- * autorizado.
+ * Validación fiscal de la emisión de una caja, separada de su estado operativo. `Pending`: la
+ * política de emisión (electrónica o física) del punto reporta requisitos. `NotVerified`: punto
+ * físico que cumple los requisitos verificables localmente; la autorización del SRI no se
+ * certifica — nunca se presenta como autorizado.
  */
 export type ReadinessFiscalStatus = "Verified" | "Pending" | "NotVerified" | "NotApplicable";
 

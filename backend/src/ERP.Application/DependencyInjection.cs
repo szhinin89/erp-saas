@@ -106,6 +106,12 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.Readiness.IElectronicEmissionRequirementsValidator,
             ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementsValidator
         >();
+        // PHYSICAL-FISCAL-F1..F5 — política fiscal propietaria de la emisión física (Company); la
+        // consume la estrategia física de Ventas, y con ella la apertura de caja y Readiness.
+        services.AddScoped<
+            ERP.Application.Modules.Company.PhysicalEmission.IPhysicalEmissionRequirementsValidator,
+            ERP.Application.Modules.Company.PhysicalEmission.PhysicalEmissionRequirementsValidator
+        >();
         // READINESS-2B-3 — habilitación preventiva de cajas: delega en la estrategia de emisión de
         // Ventas (sin reglas fiscales propias); la consumen OpenCashSession y su diagnóstico previo.
         services.AddScoped<

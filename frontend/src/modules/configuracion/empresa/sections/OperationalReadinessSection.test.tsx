@@ -256,7 +256,7 @@ describe("OperationalReadinessSection — cajas y puntos de emisión", () => {
     expect(within(physical).getByText("Listo")).toBeTruthy();
     expect(within(physical).getByText("No verificado")).toBeTruthy();
     expect(within(physical).queryByText("Verificado")).toBeNull();
-    expect(within(physical).getByText(/autorización fiscal física no se verifica/)).toBeTruthy();
+    expect(within(physical).getByText(/La autorización del SRI y su uso excepcional no se verifican/)).toBeTruthy();
 
     expect(within(rowOf("CAJA-02")).getByText("Verificado")).toBeTruthy();
 

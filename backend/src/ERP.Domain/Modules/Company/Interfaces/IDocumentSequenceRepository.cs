@@ -2,6 +2,15 @@ using ERP.Domain.Modules.Company.Entities;
 
 namespace ERP.Domain.Modules.Company.Interfaces;
 
+/// <summary>
+/// PHYSICAL-FISCAL-F1 — rango de secuenciales autorizado (ambos extremos incluidos), p. ej. el de
+/// una autorización de impresión del SRI para comprobantes preimpresos.
+/// </summary>
+public sealed record AuthorizedSequentialRange(int First, int Last)
+{
+    public bool Contains(int sequential) => sequential >= First && sequential <= Last;
+}
+
 public interface IDocumentSequenceRepository
 {
     /// <summary>
@@ -16,6 +25,23 @@ public interface IDocumentSequenceRepository
         Guid companyId,
         Guid emissionPointId,
         string docTypeCode,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// PHYSICAL-FISCAL-F1 — igual que <see cref="CaptureNextAsync(Guid, Guid, Guid, string, CancellationToken)"/>,
+    /// pero el número solo se reserva si pertenece a alguno de <paramref name="authorizedRanges"/>.
+    /// La comprobación ocurre bajo el mismo advisory lock y en la misma transacción que la reserva:
+    /// con capturas concurrentes nunca se entrega un número fuera del rango. Fuera de rango no se
+    /// escribe nada (la transacción propia se revierte; la ambiente queda intacta).
+    /// </summary>
+    /// <returns>El número formateado en 9 dígitos, o <c>null</c> si queda fuera de los rangos.</returns>
+    Task<string?> CaptureNextAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid emissionPointId,
+        string docTypeCode,
+        IReadOnlyList<AuthorizedSequentialRange> authorizedRanges,
         CancellationToken ct = default
     );
 

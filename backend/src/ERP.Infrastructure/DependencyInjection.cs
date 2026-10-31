@@ -1104,6 +1104,10 @@ public static class DependencyInjection
         >();
         services.AddScoped<IEstablishmentRepository, EstablishmentRepository>();
         services.AddScoped<IEmissionPointRepository, EmissionPointRepository>();
+        services.AddScoped<
+            IPhysicalDocumentAuthorizationRepository,
+            PhysicalDocumentAuthorizationRepository
+        >();
 
         // ── Inventory BC ──────────────────────────────────────────────────────
         services.AddScoped<ERP.Domain.Modules.Inventory.Interfaces.ILotRepository, LotRepository>();

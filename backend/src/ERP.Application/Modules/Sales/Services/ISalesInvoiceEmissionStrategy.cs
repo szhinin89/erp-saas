@@ -1,5 +1,6 @@
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Domain.Modules.Company.Enums;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Application.Modules.Sales.Services;
@@ -41,6 +42,17 @@ public interface ISalesInvoiceEmissionStrategy
     /// invoca antes de capturar secuencial: nunca contacta al SRI ni produce efectos.
     /// </summary>
     Task<ElectronicEmissionRequirementsResult> CheckRequirementsAsync(
+        SalesInvoiceEmissionPreflight preflight,
+        CancellationToken ct
+    );
+
+    /// <summary>
+    /// PHYSICAL-FISCAL-F1 — rangos de secuencial que esta modalidad autoriza para el punto y tipo;
+    /// <c>null</c> = sin límite. Se pasan tal cual a
+    /// <see cref="IDocumentSequenceRepository.CaptureNextAsync(Guid, Guid, Guid, string, IReadOnlyList{AuthorizedSequentialRange}, CancellationToken)"/>,
+    /// que los comprueba bajo el lock de la secuencia.
+    /// </summary>
+    Task<IReadOnlyList<AuthorizedSequentialRange>?> ResolveAuthorizedSequentialRangesAsync(
         SalesInvoiceEmissionPreflight preflight,
         CancellationToken ct
     );

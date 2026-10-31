@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Company.PhysicalEmission;
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Sales.DTOs;
@@ -511,7 +512,7 @@ public sealed class AuthorizeSalesInvoiceHandler
                 return Result<SalesInvoiceDto>.ValidationFailure("Establecimiento no encontrado.");
 
             // READINESS-PREVENTIVE-1B — gate fiscal preventivo: la estrategia del snapshot
-            // (inv.EmissionType) decide qué requisitos aplican (la física ninguno). Antes del
+            // (inv.EmissionType) decide qué requisitos aplican (la física, su política fiscal). Antes del
             // secuencial, Kardex, Caja, CxC y asientos: un fallo deja la factura en Draft sin efectos.
             var strategy = _emissionStrategyResolver.Resolve(inv.EmissionType);
             var requirements = await strategy.CheckRequirementsAsync(
@@ -524,13 +525,25 @@ public sealed class AuthorizeSalesInvoiceHandler
             // CaptureNextAsync: atómico (advisory lock + transacción propia).
             // Usa inv.DocTypeCode para soportar facturas, NC, ND, etc. sin hardcode.
             // Común a Electronic y Physical — ambos consumen secuencial SRI por igual.
-            var sequential = await _seqRepo.CaptureNextAsync(
-                tid,
-                cid,
-                epId.Value,
-                inv.DocTypeCode,
+            // PHYSICAL-FISCAL-F1 — si la modalidad tiene rango autorizado, el repositorio lo
+            // comprueba bajo el mismo lock que la reserva (capturas concurrentes incluidas).
+            var preflight = new SalesInvoiceEmissionPreflight(tid, cid, ep.Id, inv.DocTypeCode);
+            var authorizedRanges = await strategy.ResolveAuthorizedSequentialRangesAsync(
+                preflight,
                 ct
             );
+            var sequential = authorizedRanges is null
+                ? await _seqRepo.CaptureNextAsync(tid, cid, epId.Value, inv.DocTypeCode, ct)
+                : await _seqRepo.CaptureNextAsync(
+                    tid,
+                    cid,
+                    epId.Value,
+                    inv.DocTypeCode,
+                    authorizedRanges,
+                    ct
+                );
+            if (sequential is null)
+                return PhysicalEmissionRequirementCodes.SequentialOutOfRangeResult.ToFailure<SalesInvoiceDto>()!;
             inv.SetInvoiceNumber($"{est.Code}-{ep.Code}-{sequential}");
 
             if (ep.EmissionType != inv.EmissionType)

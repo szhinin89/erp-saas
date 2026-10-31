@@ -70,6 +70,8 @@ Esta consolidación no modifica bases existentes ni su historial EF, no aplica m
 no incorpora mecanismos de compatibilidad o reparaciones de instalaciones anteriores.
 La instalación limpia y su validación real quedan pendientes del propietario.
 
+Incremental vigente pendiente de consolidar (decisión del propietario): `PhysicalDocumentAuthorization` (F-1..F-5; tablas `physical_document_authorization` y `global.sri_tax_regime_physical_doc_type` con sus 2 filas `HasData`, General → 01 inactiva; ver [política fiscal de emisión física](architecture/company-readiness.md#política-fiscal-de-emisión-física-f-1f-5)).
+
 Los archivos de migración se guardan con LF (`.gitattributes`): los raw string literals de C# trasladan el fin de línea al cuerpo de las funciones plpgsql.
 
 #### Objetos raw SQL (fuera del modelo EF)

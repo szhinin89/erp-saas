@@ -28,7 +28,11 @@ namespace ERP.API.Tests.Integration;
 /// </summary>
 public sealed class CashRegisterDefaultsFlowFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlTestWebAppFactory _baseFactory = new();
+    // Punto físico solo para no ejercitar el pipeline SRI; la política fiscal física no es el
+    // objeto de este flujo (la real: CompanyOperationalReadinessBranchHttpTests).
+    private readonly PostgreSqlTestWebAppFactory _baseFactory = new(
+        physicalEmissionPolicy: PhysicalEmissionTestData.Satisfied()
+    );
 
     public Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> Factory => _baseFactory;
     public HttpClient Client { get; private set; } = null!;

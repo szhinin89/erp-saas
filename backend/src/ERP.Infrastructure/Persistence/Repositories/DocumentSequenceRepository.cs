@@ -19,8 +19,48 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
         Guid emissionPointId,
         string docTypeCode,
         CancellationToken ct = default
+    ) =>
+        (await CaptureNextCoreAsync(tenantId, companyId, emissionPointId, docTypeCode, null, ct))!;
+
+    /// <inheritdoc/>
+    public Task<string?> CaptureNextAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid emissionPointId,
+        string docTypeCode,
+        IReadOnlyList<AuthorizedSequentialRange> authorizedRanges,
+        CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(authorizedRanges);
+        return CaptureNextCoreAsync(
+            tenantId,
+            companyId,
+            emissionPointId,
+            docTypeCode,
+            authorizedRanges,
+            ct
+        );
+    }
+
+    /// <summary>
+    /// Única implementación de la captura. <paramref name="authorizedRanges"/> null = sin límite
+    /// (comportamiento histórico). Con rangos, el número calculado bajo el advisory lock se
+    /// comprueba ANTES de cualquier escritura: fuera de rango devuelve null sin INSERT/UPDATE y sin
+    /// commit, de modo que el contador no avanza.
+    /// </summary>
+    private async Task<string?> CaptureNextCoreAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid emissionPointId,
+        string docTypeCode,
+        IReadOnlyList<AuthorizedSequentialRange>? authorizedRanges,
+        CancellationToken ct
+    )
+    {
+        bool OutOfRange(int sequential) =>
+            authorizedRanges is not null && !authorizedRanges.Any(r => r.Contains(sequential));
+
         // Si el caller ya abrió una transacción ambiente (p. ej. para sostener su propio
         // advisory lock durante toda una unidad de trabajo — mismo patrón que
         // IJournalEntryRepository.AcquireIdempotencyLockAsync/JournalEntrySequenceRepository),
@@ -96,9 +136,11 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
                     );
 
                 // Crear secuencia on-demand; primer valor de CurrentSeq es 1 → primer documento = "000000001".
+                seqValue = 1;
+                if (OutOfRange(seqValue))
+                    return null;
                 var newId = Guid.NewGuid();
                 var now = DateTime.UtcNow;
-                seqValue = 1;
                 var nextSeq = 2;
                 await _db.Database.ExecuteSqlInterpolatedAsync(
                     $"""
@@ -114,6 +156,8 @@ public sealed class DocumentSequenceRepository : IDocumentSequenceRepository
             {
                 // GREATEST(CurrentSeq, 1): protección defensiva contra filas antiguas con 0.
                 seqValue = Math.Max(existing.CurrentSeq, 1);
+                if (OutOfRange(seqValue))
+                    return null;
                 var nextSeq = seqValue + 1;
                 var now = DateTime.UtcNow;
                 // has_been_used pasa a TRUE aquí igual que en el INSERT — DOCUMENT-SEQUENCES-CONFIG-03:
