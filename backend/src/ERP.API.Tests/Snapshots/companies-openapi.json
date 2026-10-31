@@ -687,6 +687,10 @@
       "name": "Payables"
     },
     {
+      "description": "PHYSICAL-FISCAL-F1 \u2014 autorizaciones de impresi\u00F3n del SRI por punto de emisi\u00F3n f\u00EDsico y tipo de\r\ncomprobante. Se administran en la pantalla de Secuencias documentales (misma numeraci\u00F3n por\r\npunto y tipo), con su mismo permiso; no tienen \u00EDtem de men\u00FA propio.",
+      "name": "PhysicalDocumentAuthorizations"
+    },
+    {
       "description": "Public configuration endpoint \u2014 no auth required. Consumed by the frontend to detect ERP mode.",
       "name": "Public"
     },

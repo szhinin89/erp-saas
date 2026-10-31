@@ -78,6 +78,8 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.ElectronicDocuments.SystemProviderRucNotConfigured] = 422,
         // READINESS-PREVENTIVE-1B: gate fiscal preventivo 01/04/07 → 422.
         [ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing] = 422,
+        // PHYSICAL-FISCAL-F1..F5: gate fiscal preventivo de la emisión física → 422.
+        [ApiResponseCodes.PhysicalEmission.RequirementsMissing] = 422,
         [ApiResponseCodes.Communications.TemplateNotFound] = 422,
         [ApiResponseCodes.Communications.TemplateInvalid] = 422,
         [ApiResponseCodes.Communications.TemplateRenderFailed] = 422,
