@@ -125,6 +125,19 @@ export const electronicDocumentsMonitorService = {
     ),
 
   /**
+   * R12 Fase B — corrige y retransmite con la misma clave un comprobante rechazado. `idempotencyKey`
+   * identifica la solicitud confirmada: repetirla nunca produce otro envío.
+   */
+  retransmitCorrected: (
+    id: string,
+    body: { reason: string; idempotencyKey: string },
+  ) =>
+    apiPost<ElectronicDocumentDetailDto>(
+      `/api/v1/electronic-documents/${id}/corrected-retransmission`,
+      body,
+    ),
+
+  /**
    * Backfill: registra el documento electrónico de un documento de origen ya autorizado
    * comercialmente que nunca generó uno. Idempotente — falla con Conflict si ya existe uno
    * más allá de Draft/Failed.

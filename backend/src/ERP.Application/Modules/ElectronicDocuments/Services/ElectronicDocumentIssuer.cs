@@ -12,7 +12,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ERP.Application.Modules.ElectronicDocuments.Services;
 
-public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer, IElectronicDocumentRegistration
+public sealed partial class ElectronicDocumentIssuer
+    : IElectronicDocumentIssuer,
+        IElectronicDocumentRegistration,
+        IElectronicDocumentCorrectedRetransmission
 {
     private readonly IElectronicDocumentRepository _repository;
     private readonly IElectronicDocumentXmlSupplierResolver _xmlSupplierResolver;
@@ -224,89 +227,37 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         SignedElectronicDocumentXml signedXml;
         try
         {
-            // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: el supplier ya encapsula "obtener el modelo
-            // común y construir el XML" (camino comercial) o su equivalente propio (Retención) —
-            // este pipeline ya no conoce ElectronicDocumentData ni distingue por tipo aquí.
-            var xmlResult = await supplier.BuildXmlAsync(reference, ct);
-            if (!xmlResult.IsSuccess)
+            var prepared = await PrepareSignedXmlAsync(supplier, request.DocumentType, reference, ct);
+
+            // El ambiente (Pruebas/Producción) recién se conoce al generar el XML — se captura
+            // oportunistamente, sea cual sea el resultado de las etapas siguientes (persiste igual en
+            // un fallo posterior, porque toda salida de este método hace SaveChangesAsync). Viaja en el
+            // propio ElectronicDocumentXml (ver DTOs/ElectronicDocumentXml.cs).
+            if (prepared.Xml is not null)
+                document.SetEnvironment(prepared.Xml.Environment);
+
+            if (prepared.Failure is { } failure)
             {
-                var reason =
-                    xmlResult.Error ?? "No se pudo generar el XML del documento electrónico.";
-                LogStageFailed("XmlSupplier", request.SourceModule, request.SourceEntityId, reason);
-                return await FailAsync(document, request.UserId, ct, reason, xmlResult.Code);
-            }
-
-            // El ambiente (Pruebas/Producción) recién se conoce aquí — se captura oportunistamente,
-            // sea cual sea el resultado de las etapas siguientes (persiste igual en un fallo posterior,
-            // porque toda salida de este método hace SaveChangesAsync). Antes de esta fase se leía
-            // de ElectronicDocumentData.Emission.Environment; ahora viaja en el propio
-            // ElectronicDocumentXml (ver DTOs/ElectronicDocumentXml.cs).
-            document.SetEnvironment(xmlResult.Value!.Environment);
-
-            var schemaValidator = _schemaValidatorResolver.Resolve(request.DocumentType);
-            if (schemaValidator is null)
+                if (failure.Stage is not null)
+                    LogStageFailed(
+                        failure.Stage,
+                        request.SourceModule,
+                        request.SourceEntityId,
+                        failure.Reason
+                    );
                 return await FailAsync(
                     document,
                     request.UserId,
                     ct,
-                    $"No hay un validador de esquema registrado para el tipo de documento '{request.DocumentType}'."
-                );
-
-            // El XML nunca avanza a la siguiente etapa (firma electrónica) sin pasar por esta
-            // validación — incluida la ausencia del XSD oficial, que el validador reporta como
-            // IsValid = false en vez de dejar pasar un documento no verificado.
-            var validation = await schemaValidator.ValidateAsync(xmlResult.Value!, ct);
-            if (!validation.IsValid)
-            {
-                var reason = string.Join(" ", validation.Errors);
-                LogStageFailed(
-                    "SchemaValidator",
-                    request.SourceModule,
-                    request.SourceEntityId,
-                    reason
-                );
-                return await FailAsync(
-                    document,
-                    request.UserId,
-                    ct,
-                    reason,
-                    isValidationFailure: true
+                    failure.Reason,
+                    failure.Code,
+                    failure.IsValidation
                 );
             }
 
-            // Si falla cualquier prerrequisito de firma (configuración SRI, certificado,
-            // contraseña) o la firma en sí, el flujo se detiene aquí.
-            var signResult = await _signingService.SignAsync(
-                request.TenantId,
-                request.CompanyId,
-                xmlResult.Value!,
-                ct
-            );
-            if (!signResult.IsSuccess)
-            {
-                var reason = signResult.Error ?? "No se pudo firmar el documento electrónico.";
-                LogStageFailed("Signing", request.SourceModule, request.SourceEntityId, reason);
-                return await FailAsync(document, request.UserId, ct, reason, signResult.Code);
-            }
-
-            // R16 (auditoría SRI 2.34): "para el envío individual, el tamaño máximo por comprobante
-            // será de 320 Kb" (Ficha Técnica Offline §7.5; excederlo es el error 26 de RECEPCIÓN). Se
-            // verifica sobre el XML firmado — lo que realmente se transmite — antes de persistirlo
-            // como Signed y del primer envío, con el límite provisional de MaxIndividualSignedXmlBytes.
-            var signedXmlBytes = Encoding.UTF8.GetByteCount(signResult.Value!.SignedXml);
-            if (signedXmlBytes > MaxIndividualSignedXmlBytes)
-            {
-                var reason =
-                    $"El XML firmado ocupa {signedXmlBytes} bytes y supera el máximo de {MaxIndividualSignedXmlBytes} bytes (320 KB, límite provisional de la Ficha Técnica §7.5) por comprobante individual.";
-                LogStageFailed("SizeLimit", request.SourceModule, request.SourceEntityId, reason);
-                return await FailAsync(
-                    document,
-                    request.UserId,
-                    ct,
-                    reason,
-                    isValidationFailure: true
-                );
-            }
+            var xml = prepared.Xml!;
+            var schemaVersion = prepared.SchemaVersion ?? string.Empty;
+            var signed = prepared.Signed!;
 
             // El documento ya existe (creado en Draft por RegisterAsync) — su Id se reutiliza como
             // parte de la ruta de IFileStorage, en vez de generar uno nuevo.
@@ -314,8 +265,8 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 request.TenantId,
                 request.DocumentType,
                 document.Id,
-                xmlResult.Value!,
-                signResult.Value!,
+                xml,
+                signed,
                 ct
             );
             if (!storageResult.IsSuccess)
@@ -330,13 +281,13 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             {
                 document.MarkXmlGenerated(
                     storageResult.Value!.DraftXmlPath,
-                    xmlResult.Value!.Version,
-                    validation.SchemaVersion ?? string.Empty,
+                    xml.Version,
+                    schemaVersion,
                     request.UserId
                 );
                 document.MarkSigned(
                     storageResult.Value.SignedXmlPath,
-                    AccessKey.Create(signResult.Value!.AccessKey),
+                    AccessKey.Create(signed.AccessKey),
                     request.UserId
                 );
 
@@ -350,9 +301,9 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                     document,
                     guard,
                     storageResult.Value!,
-                    xmlResult.Value!.Version,
-                    validation.SchemaVersion ?? string.Empty,
-                    signResult.Value!.AccessKey,
+                    xml.Version,
+                    schemaVersion,
+                    signed.AccessKey,
                     request.UserId,
                     ct
                 );
@@ -366,7 +317,7 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 document.AccessKey!.Value
             );
 
-            signedXml = signResult.Value!;
+            signedXml = signed;
         }
         catch (Exception ex)
         {
@@ -414,6 +365,118 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         }
 
         return Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(document));
+    }
+
+    /// <summary>Etapa previa a la firma que no pudo completarse; <see cref="Stage"/> null = sin log de etapa.</summary>
+    private sealed record PipelineStageFailure(
+        string? Stage,
+        string Reason,
+        string? Code = null,
+        bool IsValidation = false
+    );
+
+    /// <summary>
+    /// XML generado + XSD + firma + límite de tamaño. <see cref="Xml"/> existe en cuanto el supplier tuvo
+    /// éxito, aunque una etapa posterior falle (el ambiente se captura igual).
+    /// </summary>
+    private sealed record PreparedSignedXml(
+        ElectronicDocumentXml? Xml,
+        string? SchemaVersion,
+        SignedElectronicDocumentXml? Signed,
+        PipelineStageFailure? Failure
+    );
+
+    /// <summary>
+    /// Única secuencia Provider→XML→XSD→Firma→Tamaño, sin escrituras: la usan el pipeline de emisión
+    /// (<see cref="RunPipelineAsync"/>) y la retransmisión corregida (R12 Fase B). Las excepciones las
+    /// maneja cada llamador.
+    /// </summary>
+    private async Task<PreparedSignedXml> PrepareSignedXmlAsync(
+        IElectronicDocumentXmlSupplier supplier,
+        ElectronicDocumentType documentType,
+        ElectronicDocumentSourceReference reference,
+        CancellationToken ct
+    )
+    {
+        // RETENTIONS-SRI-AUTHORIZATION-WIRING-04D: el supplier ya encapsula "obtener el modelo
+        // común y construir el XML" (camino comercial) o su equivalente propio (Retención) —
+        // este pipeline ya no conoce ElectronicDocumentData ni distingue por tipo aquí.
+        var xmlResult = await supplier.BuildXmlAsync(reference, ct);
+        if (!xmlResult.IsSuccess)
+            return new(
+                null,
+                null,
+                null,
+                new(
+                    "XmlSupplier",
+                    xmlResult.Error ?? "No se pudo generar el XML del documento electrónico.",
+                    xmlResult.Code
+                )
+            );
+        var xml = xmlResult.Value!;
+
+        var schemaValidator = _schemaValidatorResolver.Resolve(documentType);
+        if (schemaValidator is null)
+            return new(
+                xml,
+                null,
+                null,
+                new(
+                    null,
+                    $"No hay un validador de esquema registrado para el tipo de documento '{documentType}'."
+                )
+            );
+
+        // El XML nunca avanza a la siguiente etapa (firma electrónica) sin pasar por esta
+        // validación — incluida la ausencia del XSD oficial, que el validador reporta como
+        // IsValid = false en vez de dejar pasar un documento no verificado.
+        var validation = await schemaValidator.ValidateAsync(xml, ct);
+        if (!validation.IsValid)
+            return new(
+                xml,
+                null,
+                null,
+                new("SchemaValidator", string.Join(" ", validation.Errors), IsValidation: true)
+            );
+
+        // Si falla cualquier prerrequisito de firma (configuración SRI, certificado,
+        // contraseña) o la firma en sí, el flujo se detiene aquí.
+        var signResult = await _signingService.SignAsync(
+            reference.TenantId,
+            reference.CompanyId,
+            xml,
+            ct
+        );
+        if (!signResult.IsSuccess)
+            return new(
+                xml,
+                validation.SchemaVersion,
+                null,
+                new(
+                    "Signing",
+                    signResult.Error ?? "No se pudo firmar el documento electrónico.",
+                    signResult.Code
+                )
+            );
+
+        // R16 (auditoría SRI 2.34): "para el envío individual, el tamaño máximo por comprobante
+        // será de 320 Kb" (Ficha Técnica Offline §7.5; excederlo es el error 26 de RECEPCIÓN). Se
+        // verifica sobre el XML firmado — lo que realmente se transmite — antes de persistirlo
+        // como Signed y del primer envío, con el límite provisional de MaxIndividualSignedXmlBytes.
+        var signedXmlBytes = Encoding.UTF8.GetByteCount(signResult.Value!.SignedXml);
+        if (signedXmlBytes > MaxIndividualSignedXmlBytes)
+            return new(
+                xml,
+                validation.SchemaVersion,
+                null,
+                new(
+                    "SizeLimit",
+                    $"El XML firmado ocupa {signedXmlBytes} bytes y supera el máximo de {MaxIndividualSignedXmlBytes} bytes (320 KB, límite provisional de la Ficha Técnica §7.5) por comprobante individual.",
+                    IsValidation: true
+                )
+            );
+
+        return new(xml, validation.SchemaVersion, signResult.Value, null);
     }
 
     /// <summary>Marca el documento como Failed y persiste antes de devolver el Result de fallo correspondiente.</summary>
@@ -565,10 +628,16 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         // SriProcessingWindow), contado desde la primera transición a Received del timeline. Sin esa
         // evidencia (Signed: el ERP nunca supo si el SRI lo recibió) el plazo no puede calcularse y no
         // se cierra la consulta automática: fail-closed, nunca un DeadLetter por una fecha supuesta.
+        // R12 Fase B: tras una retransmisión corregida el plazo corre por intento, desde la RECIBIDA de
+        // ese intento (TransmissionAttemptStartedUtc es null sin retransmisión: comportamiento v1.0).
         if (document.RequiresSriReconciliation)
         {
-            var receivedAtUtc =
-                await _repository.GetFirstReceivedAtUtcAsync(document.TenantId, document.Id, ct);
+            var receivedAtUtc = await _repository.GetFirstReceivedAtUtcAsync(
+                document.TenantId,
+                document.Id,
+                document.TransmissionAttemptStartedUtc,
+                ct
+            );
             if (
                 receivedAtUtc is null
                 || DateTime.UtcNow < receivedAtUtc.Value + ElectronicDocumentRetryPolicy.SriProcessingWindow
@@ -984,9 +1053,36 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         }
         else if (auth.Status.Equals("NO AUTORIZADO", StringComparison.OrdinalIgnoreCase))
         {
-            var reason = auth.ErrorMessage ?? "El SRI rechazó el comprobante.";
-            document.MarkRejected(reason, userId, auth.StructuredMessages);
-            LogDocumentRejectedAtAuthorization(document.Id, reason);
+            if (document.TransmissionAttempt == 1)
+            {
+                var reason = auth.ErrorMessage ?? "El SRI rechazó el comprobante.";
+                document.MarkRejected(reason, userId, auth.StructuredMessages);
+                LogDocumentRejectedAtAuthorization(document.Id, reason);
+            }
+            else
+            {
+                // R12 Fase B — el SRI conserva los NO AUTORIZADO de intentos anteriores con la misma
+                // clave. Solo una decisión posterior a todas las conocidas antes del intento (reloj del
+                // SRI) lo cierra; si solo hay históricas, el intento sigue pendiente: solo consulta.
+                var current = auth.Decisions
+                    .Where(d => d.IsNotAuthorized && document.IsCurrentAttemptSriDecision(d.DecisionDateUtc))
+                    .OrderByDescending(d => d.DecisionDateUtc)
+                    .FirstOrDefault();
+                if (current is null)
+                {
+                    var pending =
+                        "El SRI solo devolvió respuestas NO AUTORIZADO de intentos anteriores; el intento vigente sigue pendiente de resultado.";
+                    LogHistoricalRejectionIgnored(document.Id, document.TransmissionAttempt);
+                    return pending;
+                }
+
+                var description = current.Describe();
+                var reason = string.IsNullOrWhiteSpace(description)
+                    ? "El SRI rechazó el comprobante."
+                    : description;
+                document.MarkRejected(reason, userId, current.Messages);
+                LogDocumentRejectedAtAuthorization(document.Id, reason);
+            }
         }
         else if (auth.Status.Equals("TIMEOUT", StringComparison.OrdinalIgnoreCase))
         {
@@ -1136,6 +1232,12 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         Guid electronicDocumentId,
         string reason
     );
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[ElectronicDocuments] Documento {ElectronicDocumentId}: el SRI solo devolvió NO AUTORIZADO históricos; el intento {Attempt} sigue pendiente"
+    )]
+    private partial void LogHistoricalRejectionIgnored(Guid electronicDocumentId, int attempt);
 
     [LoggerMessage(
         Level = LogLevel.Error,

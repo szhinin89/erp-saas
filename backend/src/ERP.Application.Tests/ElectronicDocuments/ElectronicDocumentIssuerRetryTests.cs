@@ -118,7 +118,7 @@ public sealed class ElectronicDocumentIssuerRetryTests
             .Setup(r => r.GetByIdAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(document);
         repository
-            .Setup(r => r.GetFirstReceivedAtUtcAsync(TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetFirstReceivedAtUtcAsync(TenantId, It.IsAny<Guid>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(receivedAtUtc);
         return repository;
     }

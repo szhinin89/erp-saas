@@ -25,7 +25,7 @@ cambio · **BLOCKED** requiere decisión o dato que no puede inventarse · **FUE
 | R07–R09 | WS Recepción/Autorización, sin URLs quemadas, espera parametrizable (§7) | CONFORME | `SriSoapClientTests`. HC: namespaces y nombres de servicio = protocolo; endpoints derivados de `SriSettings.WsdlUrl` (configuración por empresa); los presets celcer/cel del frontend son sugerencias editables. Coherencia ambiente ↔ host oficial (§7.1) validada por `SriWsdlUrl` al guardar y en el gate de emisión; hosts no oficiales (simuladores) no se juzgan ([backend.md](../architecture/backend.md#diagnóstico-de-configuración-sri)). Polling interno 5 × 2–16 s y 3 reintentos HTTP = política del ERP; retardo inicial en `SriPolling` |
 | R10 | 70/43/45 → consultar, nunca otra clave (nota 2) | CONFORME | Sin cambios |
 | R11 | Procesamiento SRI hasta 24 h desde RECIBIDA (§7.5, nota 2) | **CORREGIDO** | §3 |
-| R12 | NAT → corregir y reenviar con la misma clave (nota 1) | **BLOCKED** (Fase A de concurrencia implementada) | Ver §5.2 |
+| R12 | NAT → corregir y reenviar con la misma clave (nota 1) | **CORREGIDO** 01/04/07, códigos 35/36/47/48/52/58/67 (Fases A y B); demás códigos bloqueados; pendiente aceptación real | Ver §5.2 |
 | R13 | DEVUELTA 50 "Error interno general" no es defecto del comprobante | **CORREGIDO** | §3 |
 | R14 | Varias `<autorizacion>` por clave; vale la AUTORIZADO (nota 1) | **CORREGIDO** | §3 |
 | R15 | ConsultaComprobante (§8) | CONFORME | Usada por Retenciones; 01/04 se concilian por Autorización (Caso #32) |
@@ -147,14 +147,19 @@ porcentajes de Renta frente al catálogo ATS vigente.
    la política del Caso #32 prohíbe el reenvío automático. Acción mínima verificable: decisión del propietario
    sobre reenviar el **mismo** XML firmado y con la misma clave en esos dos casos (el SRI responde 43/45/70 si
    ya lo tiene); hasta entonces, fail-closed con conciliación.
-2. **R12 — corrección de NO AUTORIZADO.** La ficha permite reenviar con la misma clave tras corregir; `Rejected`
-   es terminal y la venta ya está comprometida fiscalmente. Causa: no existe una corrección demostrable que no
-   edite la venta. Acción mínima verificable: ADR aprobado que defina qué correcciones son posibles (solo
-   configuración del emisor o catálogos), la transición de salida de `Rejected` y su evidencia. Sin cambios.
+2. **R12 — corrección de NO AUTORIZADO.** La ficha permite reenviar con la misma clave tras corregir; la venta
+   ya está comprometida fiscalmente, así que la corrección nunca edita la operación confirmada.
    **Fase A (prerrequisito, 2026-10-31): implementada.** Concurrencia fiscal de 01/04: guard `Sales` (reclamo de
    envío revalidado bajo el lock de la factura/devolución, sin `Dispatching`) y anulación de la factura según el
-   estado del comprobante (`Authorized` e incierto bloquean). Addendum R12 Fase A de ADR-023. La corrección y
-   retransmisión desde `Rejected` (Fase B) sigue BLOCKED.
+   estado del comprobante (`Authorized` e incierto bloquean). Addendum R12 Fase A de ADR-023.
+   **Fase B (2026-10-31): implementada** para 01/04/07 y los errores del archivo 35/36/47/48/52/58/67 (decisión
+   R12 del propietario), con el contrato de [backend.md § Límites y finalización](../architecture/backend.md#límites-y-finalización)
+   y el addendum R12 Fase B de ADR-023: la corrección solo puede venir de datos fuera de la operación (emisor,
+   catálogos, generador); la clave, la fecha de emisión, la contraparte y los valores comerciales se exigen
+   idénticos. Límites: (a) los demás códigos siguen bloqueados preventivamente; (b) una corrección que cambie el
+   formato de un campo protegido (p. ej. `fechaEmisionDocSustento` ante el código 67) se bloquea por diseño; (c) la
+   distinción NO AUTORIZADO histórico/vigente usa la `fechaAutorizacion` del SRI (sin fecha interpretable no se
+   retransmite ni se cierra el intento); (d) pendiente aceptación real en `celcer` de un reenvío corregido.
 3. **R20 Negocio Popular.** El Anexo 22 exige `CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE` (45 caracteres),
    pero el tipo `contribuyenteRimpe` de los XSD oficiales solo admite `CONTRIBUYENTE RÉGIMEN RIMPE`. Verificado el
    2026-10-31 con los paquetes descargados de sri.gob.ec/facturacion-electronica (fechados 2022-02-07):
@@ -234,4 +239,5 @@ R21/R22: `Company` es el único propietario de las designaciones; una sola proye
 | Caso #32 | Consulta segura durante las 24 h del SRI y conciliación con evidencia: conforme; reenvío de lo nunca registrado: **BLOCKED** (§5.1) |
 
 **READY FOR REVIEW** para las correcciones de §3 (R11, R13, R14, R16, R23) y §3.1 (R21, R22, R23 RIDE/formato). Los puntos de §5 quedan BLOCKED de
-forma individual, salvo §5.4 (R21/R22), que solo conserva pendientes externos; ninguno se declara CLOSED.
+forma individual, salvo §5.2 (R12, implementado con límites) y §5.4 (R21/R22), que solo conservan pendientes
+externos; ninguno se declara CLOSED.

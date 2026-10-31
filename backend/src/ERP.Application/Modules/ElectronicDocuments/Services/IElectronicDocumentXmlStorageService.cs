@@ -31,4 +31,24 @@ public interface IElectronicDocumentXmlStorageService
         string authorizedXml,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// R12 Fase B — almacena el XML corregido (borrador y firmado) de un intento de retransmisión en
+    /// rutas versionadas propias. Nunca sobrescribe: si alguna ruta ya existe, falla sin escribir.
+    /// </summary>
+    Task<Result<ElectronicDocumentStoredXmlPaths>> StoreAttemptAsync(
+        Guid tenantId,
+        ElectronicDocumentType documentType,
+        Guid electronicDocumentId,
+        Guid attemptId,
+        ElectronicDocumentXml draftXml,
+        SignedElectronicDocumentXml signedXml,
+        CancellationToken ct = default
+    );
+
+    /// <summary>R12 Fase B — elimina los archivos de un intento cuyo reclamo no llegó a persistirse.</summary>
+    Task DiscardAttemptAsync(ElectronicDocumentStoredXmlPaths paths, CancellationToken ct = default);
+
+    /// <summary>Lee un XML ya almacenado (bytes exactos); falla si no existe.</summary>
+    Task<Result<byte[]>> ReadAsync(string storedPath, CancellationToken ct = default);
 }

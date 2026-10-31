@@ -8,6 +8,7 @@ using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocument
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentTimeline;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.GetElectronicDocumentXml;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.ReconcileElectronicDocument;
+using ERP.Application.Modules.ElectronicDocuments.UseCases.RetransmitCorrectedElectronicDocument;
 using ERP.Application.Modules.ElectronicDocuments.UseCases.RetryElectronicDocument;
 using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
@@ -20,7 +21,8 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Monitor de Documentos Electrónicos — consola de consulta del ciclo electrónico. No emite,
 /// no firma ni cancela documentos. Acciones de escritura: reintentar manualmente un documento
-/// varado (Signed/Received/DeadLetter/Failed), o registrar el documento faltante de un origen ya
+/// varado (Signed/Received/DeadLetter/Failed), conciliar un resultado incierto, corregir y
+/// retransmitir un comprobante rechazado (R12 Fase B), o registrar el documento faltante de un origen ya
 /// autorizado comercialmente que nunca llegó a generar uno (backfill) — el resto de transiciones
 /// las ejecuta <c>ElectronicDocumentIssuer</c>, invocado desde Ventas o desde el job automático
 /// de reintentos.
@@ -152,6 +154,26 @@ public sealed class ElectronicDocumentsController : ControllerBase
         );
 
     /// <summary>
+    /// R12 Fase B — corrige y retransmite con la misma clave un comprobante rechazado: solo si el backend
+    /// lo declara elegible y el XML regenerado demuestra una corrección real; una sola transmisión por
+    /// solicitud (<c>idempotencyKey</c>). Nunca modifica la operación comercial.
+    /// </summary>
+    [HttpPost("{id:guid}/corrected-retransmission")]
+    [Authorize(Policy = $"perm:{ElectronicDocumentsPermissions.RetransmitCorrected}")]
+    public async Task<IActionResult> RetransmitCorrected(
+        Guid id,
+        [FromBody] RetransmitCorrectedElectronicDocumentRequest body,
+        CancellationToken ct
+    ) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(
+                new RetransmitCorrectedElectronicDocumentCommand(id, body.Reason, body.IdempotencyKey),
+                ct
+            ),
+            "OK"
+        );
+
+    /// <summary>
     /// Backfill: registra el documento electrónico de un documento de origen ya autorizado
     /// comercialmente que nunca generó uno (p.ej. autorizado antes de que existiera esta
     /// infraestructura). Idempotente — Conflict si ya existe uno más allá de Draft/Failed.
@@ -165,3 +187,5 @@ public sealed class ElectronicDocumentsController : ControllerBase
 }
 
 public sealed record ReconcileElectronicDocumentRequest(string Reference, string Observation);
+
+public sealed record RetransmitCorrectedElectronicDocumentRequest(string Reason, Guid IdempotencyKey);

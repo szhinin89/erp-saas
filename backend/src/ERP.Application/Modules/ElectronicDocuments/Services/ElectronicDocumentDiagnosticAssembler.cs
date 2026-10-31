@@ -20,7 +20,8 @@ public static class ElectronicDocumentDiagnosticAssembler
         ElectronicDocument document,
         IReadOnlyList<ElectronicDocumentAudit> timelineRecords,
         IAuditReader<ElectronicDocumentSriMessage> sriMessageReader,
-        CancellationToken ct
+        CancellationToken ct,
+        ElectronicDocumentRetransmissionEligibility? retransmission = null
     )
     {
         var timeline = ElectronicDocumentTimelineBuilder.Build(timelineRecords);
@@ -51,7 +52,18 @@ public static class ElectronicDocumentDiagnosticAssembler
             !string.IsNullOrWhiteSpace(document.XmlDraftPath),
             !string.IsNullOrWhiteSpace(document.SignedXmlPath),
             !string.IsNullOrWhiteSpace(document.AuthorizedXmlPath),
-            document.RequiresSriReconciliation
+            document.RequiresSriReconciliation,
+            retransmission is null
+                ? null
+                : new ElectronicDocumentRetransmissionDto(
+                    retransmission.Eligible,
+                    retransmission.TransmissionAttempt,
+                    retransmission.RejectionStage?.ToString(),
+                    retransmission.RejectionCodes,
+                    retransmission
+                        .Blocks.Select(b => new ElectronicDocumentRetransmissionBlockDto(b.Code, b.Message))
+                        .ToList()
+                )
         );
     }
 

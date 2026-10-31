@@ -16,4 +16,16 @@ public interface IElectronicDocumentStorageNamingStrategy
         Guid electronicDocumentId,
         ElectronicDocumentXmlVariant variant
     );
+
+    /// <summary>
+    /// R12 Fase B — ruta versionada de un intento de retransmisión corregida: nunca coincide con la del
+    /// intento original ni con la de otro intento (incluye <paramref name="attemptId"/>).
+    /// </summary>
+    string BuildAttemptRelativePath(
+        Guid tenantId,
+        ElectronicDocumentType documentType,
+        Guid electronicDocumentId,
+        Guid attemptId,
+        ElectronicDocumentXmlVariant variant
+    );
 }

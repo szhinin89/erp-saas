@@ -564,4 +564,164 @@ public sealed class SriSoapClientTests
                 "sin espera configurada (0, el default de SriPollingOptions) no debe introducirse ningún delay"
             );
     }
+
+    // ── R12 Fase B — decisiones por <autorizacion> y consulta única del historial ──────────
+
+    private const string ConsultedKey = "0503201201176001321000110010030009900641234567814";
+
+    private const string LaterNotAuthorizedNode = """
+        <autorizacion>
+          <estado>NO AUTORIZADO</estado>
+          <fechaAutorizacion>2012-03-06T09:30:00.000-05:00</fechaAutorizacion>
+          <mensajes><mensaje><identificador>67</identificador><mensaje>FECHA INVALIDA</mensaje><tipo>ERROR</tipo></mensaje></mensajes>
+        </autorizacion>
+        """;
+
+    private sealed class CountingRespondingHandler(string body) : HttpMessageHandler
+    {
+        public int Calls { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
+        {
+            Calls++;
+            return Task.FromResult(
+                new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(body, System.Text.Encoding.UTF8, "text/xml"),
+                }
+            );
+        }
+    }
+
+    [Fact]
+    public async Task CheckAuthorizationAsync_exposes_every_decision_with_its_utc_date_and_messages()
+    {
+        var client = BuildClient(
+            new RespondingHandler(MultipleAuthorizationsSoap(NotAuthorizedNode, LaterNotAuthorizedNode))
+        );
+
+        var result = await client.CheckAuthorizationAsync(ConsultedKey, "https://celcer.sri.gob.ec/fake?wsdl");
+
+        result.Decisions.Should().HaveCount(2);
+        result.Decisions[0].DecisionDateUtc.Should().Be(new DateTime(2012, 3, 5, 15, 0, 0, DateTimeKind.Utc));
+        result.Decisions[1].DecisionDateUtc.Should().Be(new DateTime(2012, 3, 6, 14, 30, 0, DateTimeKind.Utc));
+        result.Decisions[1].Messages.Should().ContainSingle(m => m.Code == "67");
+        result.StructuredMessages.Should().ContainSingle(m => m.Code == "52", "R14 sin cambios: la primera");
+    }
+
+    [Fact]
+    public async Task QueryAuthorizationDecisionsAsync_makes_a_single_call_and_returns_all_decisions()
+    {
+        var handler = new CountingRespondingHandler(
+            MultipleAuthorizationsSoap(NotAuthorizedNode, AuthorizedNode)
+        );
+        var client = BuildClient(handler, new SriPollingOptions { InitialAuthorizationDelaySeconds = 30 });
+
+        var result = await client.QueryAuthorizationDecisionsAsync(ConsultedKey, "https://celcer.sri.gob.ec/fake?wsdl");
+
+        handler.Calls.Should().Be(1);
+        result.Succeeded.Should().BeTrue();
+        result.Decisions.Select(d => d.Status).Should().Equal("NO AUTORIZADO", "AUTORIZADO");
+    }
+
+    [Fact]
+    public async Task QueryAuthorizationDecisionsAsync_without_decisions_is_valid_only_for_the_consulted_key()
+    {
+        var client = BuildClient(new RespondingHandler(MultipleAuthorizationsSoap()));
+
+        var empty = await client.QueryAuthorizationDecisionsAsync(ConsultedKey, "https://celcer.sri.gob.ec/fake?wsdl");
+        empty.Succeeded.Should().BeTrue();
+        empty.Decisions.Should().BeEmpty();
+
+        var otherKey = await client.QueryAuthorizationDecisionsAsync(new string('1', 49), "https://celcer.sri.gob.ec/fake?wsdl");
+        otherKey.Succeeded.Should().BeFalse("una respuesta de otra clave es incierta");
+    }
+
+    [Fact]
+    public async Task QueryAuthorizationDecisionsAsync_on_transport_or_format_failure_is_uncertain()
+    {
+        (await BuildClient(new ThrowingHandler())
+            .QueryAuthorizationDecisionsAsync(ConsultedKey, "https://celcer.sri.gob.ec/fake?wsdl"))
+            .Succeeded.Should().BeFalse();
+
+        (await BuildClient(new RespondingHandler("502 Bad Gateway"))
+            .QueryAuthorizationDecisionsAsync(ConsultedKey, "https://celcer.sri.gob.ec/fake?wsdl"))
+            .Succeeded.Should().BeFalse();
+    }
+
+    private static string DatedNotAuthorizedNode(string fecha) => $"""
+        <autorizacion><estado>NO AUTORIZADO</estado><fechaAutorizacion>{fecha}</fechaAutorizacion>
+          <mensajes><mensaje><identificador>52</identificador><mensaje>X</mensaje><tipo>ERROR</tipo></mensaje></mensajes>
+        </autorizacion>
+        """;
+
+    [Theory]
+    [InlineData("2026-10-31T10:00:00-05:00", "2026-10-31T15:00:00Z")]
+    [InlineData("2026-10-31T15:00:00Z", "2026-10-31T15:00:00Z")]
+    [InlineData("2026-10-31T16:00:00+01:00", "2026-10-31T15:00:00Z")]
+    [InlineData("2026-10-31T10:00:00.1234567-05:00", "2026-10-31T15:00:00.123456Z")]
+    public async Task Decision_dates_with_explicit_offset_are_normalized_to_the_same_utc_instant(
+        string fecha,
+        string expectedUtc
+    )
+    {
+        var result = await BuildClient(new RespondingHandler(MultipleAuthorizationsSoap(DatedNotAuthorizedNode(fecha))))
+            .QueryAuthorizationDecisionsAsync(ConsultedKey, "https://celcer.sri.gob.ec/fake?wsdl");
+
+        var date = result.Decisions.Single().DecisionDateUtc;
+        date.Should().Be(DateTime.Parse(expectedUtc, null, System.Globalization.DateTimeStyles.AdjustToUniversal));
+        date!.Value.Kind.Should().Be(DateTimeKind.Utc);
+        (date.Value.Ticks % 10).Should().Be(0, "truncada a la precisión de timestamptz");
+    }
+
+    [Theory]
+    [InlineData("2026-10-31T10:00:00")]
+    [InlineData("05/03/2012 10:00:00")]
+    [InlineData("31/10/2026")]
+    [InlineData("")]
+    [InlineData("hoy")]
+    public async Task Ambiguous_or_missing_decision_dates_are_null_never_assumed(string fecha)
+    {
+        var result = await BuildClient(new RespondingHandler(MultipleAuthorizationsSoap(DatedNotAuthorizedNode(fecha))))
+            .QueryAuthorizationDecisionsAsync(ConsultedKey, "https://celcer.sri.gob.ec/fake?wsdl");
+
+        result.Succeeded.Should().BeTrue();
+        result.Decisions.Single().DecisionDateUtc.Should().BeNull();
+    }
+
+    private sealed class CapturingHandler(string body) : HttpMessageHandler
+    {
+        public List<(string Uri, string Body)> Requests { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
+        {
+            Requests.Add((request.RequestUri!.ToString(), await request.Content!.ReadAsStringAsync(cancellationToken)));
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, System.Text.Encoding.UTF8, "text/xml"),
+            };
+        }
+    }
+
+    [Fact]
+    public async Task History_query_only_calls_the_read_only_authorization_operation()
+    {
+        var handler = new CapturingHandler(MultipleAuthorizationsSoap(NotAuthorizedNode));
+
+        await BuildClient(handler).QueryAuthorizationDecisionsAsync(
+            ConsultedKey,
+            "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl"
+        );
+
+        var request = handler.Requests.Should().ContainSingle().Subject;
+        request.Uri.Should().Contain("AutorizacionComprobantesOffline").And.NotContain("Recepcion");
+        request.Body.Should().Contain("autorizacionComprobante").And.Contain(ConsultedKey);
+        request.Body.Should().NotContain("validarComprobante").And.NotContain("<xml>");
+    }
 }

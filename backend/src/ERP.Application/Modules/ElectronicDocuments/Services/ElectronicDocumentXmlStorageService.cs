@@ -30,24 +30,116 @@ public sealed partial class ElectronicDocumentXmlStorageService
         _logger = logger;
     }
 
-    public async Task<Result<ElectronicDocumentStoredXmlPaths>> StoreAsync(
+    public Task<Result<ElectronicDocumentStoredXmlPaths>> StoreAsync(
         Guid tenantId,
         ElectronicDocumentType documentType,
         Guid electronicDocumentId,
         ElectronicDocumentXml draftXml,
         SignedElectronicDocumentXml signedXml,
         CancellationToken ct = default
+    ) =>
+        StoreCoreAsync(
+            electronicDocumentId,
+            _namingStrategy.BuildRelativePath(
+                tenantId,
+                documentType,
+                electronicDocumentId,
+                ElectronicDocumentXmlVariant.Draft
+            ),
+            _namingStrategy.BuildRelativePath(
+                tenantId,
+                documentType,
+                electronicDocumentId,
+                ElectronicDocumentXmlVariant.Signed
+            ),
+            draftXml,
+            signedXml,
+            ct
+        );
+
+    public async Task<Result<ElectronicDocumentStoredXmlPaths>> StoreAttemptAsync(
+        Guid tenantId,
+        ElectronicDocumentType documentType,
+        Guid electronicDocumentId,
+        Guid attemptId,
+        ElectronicDocumentXml draftXml,
+        SignedElectronicDocumentXml signedXml,
+        CancellationToken ct = default
+    )
+    {
+        var draftRelativePath = _namingStrategy.BuildAttemptRelativePath(
+            tenantId,
+            documentType,
+            electronicDocumentId,
+            attemptId,
+            ElectronicDocumentXmlVariant.Draft
+        );
+        var signedRelativePath = _namingStrategy.BuildAttemptRelativePath(
+            tenantId,
+            documentType,
+            electronicDocumentId,
+            attemptId,
+            ElectronicDocumentXmlVariant.Signed
+        );
+
+        // Evidencia versionada: un intento nunca reutiliza una ruta existente.
+        foreach (var path in new[] { draftRelativePath, signedRelativePath })
+        {
+            await using var existing = await _fileStorage.GetAsync(path, ct);
+            if (existing is not null)
+                return Result<ElectronicDocumentStoredXmlPaths>.Failure(
+                    "Ya existe un XML almacenado para este intento de retransmisión; no se sobrescribe la evidencia."
+                );
+        }
+
+        return await StoreCoreAsync(
+            electronicDocumentId,
+            draftRelativePath,
+            signedRelativePath,
+            draftXml,
+            signedXml,
+            ct
+        );
+    }
+
+    public async Task DiscardAttemptAsync(
+        ElectronicDocumentStoredXmlPaths paths,
+        CancellationToken ct = default
+    )
+    {
+        await _fileStorage.DeleteAsync(paths.DraftXmlPath, ct);
+        await _fileStorage.DeleteAsync(paths.SignedXmlPath, ct);
+    }
+
+    public async Task<Result<byte[]>> ReadAsync(string storedPath, CancellationToken ct = default)
+    {
+        try
+        {
+            await using var stream = await _fileStorage.GetAsync(storedPath, ct);
+            if (stream is null)
+                return Result<byte[]>.NotFound("El XML almacenado no existe.");
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            return Result<byte[]>.Success(buffer.ToArray());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Result<byte[]>.Failure($"No se pudo leer el XML almacenado: {ex.Message}");
+        }
+    }
+
+    private async Task<Result<ElectronicDocumentStoredXmlPaths>> StoreCoreAsync(
+        Guid electronicDocumentId,
+        string draftRelativePath,
+        string signedRelativePath,
+        ElectronicDocumentXml draftXml,
+        SignedElectronicDocumentXml signedXml,
+        CancellationToken ct
     )
     {
         string draftStoredPath;
         try
         {
-            var draftRelativePath = _namingStrategy.BuildRelativePath(
-                tenantId,
-                documentType,
-                electronicDocumentId,
-                ElectronicDocumentXmlVariant.Draft
-            );
             using var draftStream = new MemoryStream(Encoding.UTF8.GetBytes(draftXml.Xml));
             draftStoredPath = await _fileStorage.SaveAsync(draftRelativePath, draftStream, ct);
         }
@@ -61,12 +153,6 @@ public sealed partial class ElectronicDocumentXmlStorageService
 
         try
         {
-            var signedRelativePath = _namingStrategy.BuildRelativePath(
-                tenantId,
-                documentType,
-                electronicDocumentId,
-                ElectronicDocumentXmlVariant.Signed
-            );
             using var signedStream = new MemoryStream(Encoding.UTF8.GetBytes(signedXml.SignedXml));
             var signedStoredPath = await _fileStorage.SaveAsync(
                 signedRelativePath,

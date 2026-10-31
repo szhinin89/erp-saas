@@ -80,6 +80,13 @@
                                           ]
                          },
                          {
+                             "name":  "Physical Document Authorizations",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/PhysicalDocumentAuthorizations"
+                                          ]
+                         },
+                         {
                              "name":  "Update Company For Admin Core",
                              "status":  "implemented",
                              "evidence":  [
@@ -1878,6 +1885,13 @@
                                           ]
                          },
                          {
+                             "name":  "Get Cash Register Opening Readiness",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Caja/UseCases/GetCashRegisterOpeningReadinessUseCases.cs"
+                                          ]
+                         },
+                         {
                              "name":  "Open Cash Session",
                              "status":  "implemented",
                              "evidence":  [
@@ -2195,6 +2209,20 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocumentXml"
+                                          ]
+                         },
+                         {
+                             "name":  "Reconcile Electronic Document",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/ReconcileElectronicDocument"
+                                          ]
+                         },
+                         {
+                             "name":  "Retransmit Corrected Electronic Document",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/RetransmitCorrectedElectronicDocument"
                                           ]
                          },
                          {

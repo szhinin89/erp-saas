@@ -87,6 +87,17 @@ public static class ApiResponseCodes
         /// <summary>ZH-RETENTION-SRI-ANNULMENT-01 — el comprobante tiene una anulación en trámite ante el SRI.</summary>
         public const string AnnulmentPending = "ELECTRONIC_DOCUMENT_ANNULMENT_PENDING";
 
+        /// <summary>R12 Fase B — el comprobante rechazado no cumple las condiciones de retransmisión corregida.</summary>
+        public const string RetransmissionNotAllowed = "ELECTRONIC_DOCUMENT_RETRANSMISSION_NOT_ALLOWED";
+
+        /// <summary>R12 Fase B — el XML regenerado no demuestra una corrección compatible con la misma clave.</summary>
+        public const string RetransmissionWithoutCorrection =
+            "ELECTRONIC_DOCUMENT_RETRANSMISSION_WITHOUT_CORRECTION";
+
+        /// <summary>R12 Fase B — el historial del SRI para la clave es incierto, inconsistente o ya autorizado.</summary>
+        public const string RetransmissionSriHistoryBlocked =
+            "ELECTRONIC_DOCUMENT_RETRANSMISSION_SRI_HISTORY_BLOCKED";
+
         /// <summary>
         /// ZH-SRI-RETENTION-CATALOG-SSOT-01 (ADR-037 D7) — el catálogo global SRI no permite resolver una
         /// representación oficial única y coherente (sin versión vigente, ambigua, sin código XML o tasa

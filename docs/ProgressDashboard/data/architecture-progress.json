@@ -1,6 +1,6 @@
 ﻿{
     "source":  "docs/ProgressDashboard/data/architecture-progress-source.json",
-    "generated":  "2026-10-27 07:08:10",
+    "generated":  "2026-10-31 18:07:36",
     "extractionMethod":  "Direct load of architecture-progress-source.json (structured data, no HTML parsing), replicating PROGRESS.html\u0027s own calcPhase/calcStage/calcGlobal/countByStatus/findPhase formulas. No JavaScript executed; no data fabricated.",
     "global":  {
                    "totalTasks":  387,

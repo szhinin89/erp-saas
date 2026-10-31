@@ -619,6 +619,7 @@ public sealed partial class SriSoapClient
 
         var mensajeNodes = SelectMensajeNodes(autorizacion);
 
+        var decisions = autorizaciones.Select(ToDecision).ToList();
         var messages = mensajeNodes
             .Select(m =>
                 $"[{NodeText(m, "identificador")}] {NodeText(m, "mensaje")}: {NodeText(m, "informacionAdicional")}"
@@ -636,7 +637,104 @@ public sealed partial class SriSoapClient
             Messages = messages,
             StructuredMessages = structuredMessages,
             ErrorMessage = status != "AUTORIZADO" ? string.Join("; ", messages) : null,
+            Decisions = decisions,
         };
+    }
+
+    /// <summary>
+    /// R12 Fase B — una <c>&lt;autorizacion&gt;</c> con su fecha en UTC; null si <c>fechaAutorizacion</c>
+    /// falta o no es interpretable (quien la consume la trata como no atribuible a ningún intento).
+    /// </summary>
+    private static SriAuthorizationDecision ToDecision(XmlElement autorizacion) =>
+        new(
+            NodeText(autorizacion, "estado") ?? "DESCONOCIDO",
+            ParseDecisionDateUtc(NodeText(autorizacion, "fechaAutorizacion")),
+            SelectMensajeNodes(autorizacion).Select(ToSriMessage).ToList()
+        );
+
+    /// <summary>ISO 8601 con desplazamiento explícito, el formato real de <c>fechaAutorizacion</c>.</summary>
+    private static readonly System.Text.RegularExpressions.Regex DecisionDateFormat = new(
+        @"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,7})?(Z|[+-]\d{2}:\d{2})$",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant
+    );
+
+    /// <summary>
+    /// R12 Fase B — fecha de la decisión en UTC, o null si es ambigua: sin desplazamiento explícito (no se
+    /// supone una zona) o en otro formato (p. ej. dd/MM, que la cultura invariante leería como MM/dd). Se
+    /// trunca al microsegundo, la precisión de <c>timestamptz</c>: una decisión histórica releída nunca queda
+    /// por encima de la marca persistida. Null nunca cierra un intento ni habilita una retransmisión.
+    /// </summary>
+    private static DateTime? ParseDecisionDateUtc(string? value)
+    {
+        if (
+            value is null
+            || !DecisionDateFormat.IsMatch(value)
+            || !DateTimeOffset.TryParse(
+                value,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out var parsed
+            )
+        )
+            return null;
+        var utc = parsed.UtcDateTime;
+        return utc.AddTicks(-(utc.Ticks % 10));
+    }
+
+    /// <summary>
+    /// R12 Fase B — UNA consulta a AutorizacionComprobantesOffline (sin espera inicial ni polling) para
+    /// conocer las decisiones que el SRI ya registró de la clave. Solo consulta, nunca transmite. Una
+    /// respuesta interpretable sin <c>&lt;autorizacion&gt;</c> es válida (el SRI no guarda los DEVUELTOS)
+    /// solo si declara la clave consultada; todo lo demás es incierto (<c>Succeeded=false</c>).
+    /// </summary>
+    public async Task<SriAuthorizationHistoryResult> QueryAuthorizationDecisionsAsync(
+        string accessKey,
+        string wsdlUrl,
+        CancellationToken cancellationToken = default
+    )
+    {
+        LogSriCheckingAuthorization(1, 1, accessKey);
+        string? response;
+        try
+        {
+            response = await PostSoapAsync(
+                AutorizacionEndpoint(wsdlUrl),
+                BuildAutorizacionEnvelope(accessKey),
+                cancellationToken
+            );
+        }
+        catch (SriSoapFaultException ex)
+        {
+            return SriAuthorizationHistoryResult.Failed(ex.Fault.ToDisplayMessage());
+        }
+
+        if (response is null)
+            return SriAuthorizationHistoryResult.Failed(
+                "No se pudo contactar al servicio de autorización del SRI."
+            );
+
+        try
+        {
+            var doc = LoadXml(response);
+            var consulted = NodeText(doc, "claveAccesoConsultada");
+            if (consulted is null || !string.Equals(consulted, accessKey, StringComparison.Ordinal))
+                return SriAuthorizationHistoryResult.Failed(
+                    "La respuesta del SRI no corresponde a la clave de acceso consultada."
+                );
+
+            var decisions = doc.GetElementsByTagName("autorizacion")
+                .OfType<XmlElement>()
+                .Select(ToDecision)
+                .ToList();
+            return new SriAuthorizationHistoryResult(true, decisions, null);
+        }
+        catch (XmlException ex)
+        {
+            LogSriMalformedResponse(AutorizacionEndpoint(wsdlUrl), ex.Message);
+            return SriAuthorizationHistoryResult.Failed(
+                "El SRI respondió con un contenido que no pudo interpretarse como XML válido."
+            );
+        }
     }
 
     /// <summary>
@@ -891,4 +989,7 @@ public sealed class SriAutorizacionResult
     public List<SriMessage> StructuredMessages { get; init; } = new();
     public string? ErrorMessage { get; set; }
     public bool Authorized => Status.Equals("AUTORIZADO", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>R12 Fase B — todas las <c>&lt;autorizacion&gt;</c> de la respuesta, en el orden recibido.</summary>
+    public List<SriAuthorizationDecision> Decisions { get; init; } = new();
 }

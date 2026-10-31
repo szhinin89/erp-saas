@@ -44,6 +44,8 @@ public static class SriModule
             + ElectronicDocumentsPermissions.Retry
             + ","
             + ElectronicDocumentsPermissions.Reconcile
+            + ","
+            + ElectronicDocumentsPermissions.RetransmitCorrected
     )]
     public const string ElectronicDocumentsMonitor = "/sri/electronic-documents/monitor";
 

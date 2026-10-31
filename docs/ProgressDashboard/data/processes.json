@@ -19,7 +19,7 @@
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs",
                                            "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesCreditRequirementPolicy.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/Services/ISalesInvoiceEmissionStrategy.cs"
                                        ]
                       },
                       {
@@ -57,9 +57,9 @@
                           "module":  "Sales",
                           "status":  "verified",
                           "evidence":  [
-                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesInvoiceElectronicDocumentDataProvider.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/Services/SalesReturnCreditNoteDataProvider.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesReturnUseCases.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesReturnUseCases.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                                           "backend/src/ERP.Application/Modules/Sales/UseCases/CancelSalesUseCases.cs"
                                        ]
                       }
                   ]

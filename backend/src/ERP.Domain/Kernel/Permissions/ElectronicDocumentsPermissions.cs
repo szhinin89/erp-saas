@@ -15,4 +15,10 @@ public static class ElectronicDocumentsPermissions
 
     /// <summary>Caso #32 — registrar evidencia de conciliación manual de un comprobante con resultado SRI desconocido y reconsultarlo.</summary>
     public const string Reconcile = "electronic-documents.reconcile";
+
+    /// <summary>
+    /// R12 Fase B — corregir y retransmitir con la misma clave un comprobante rechazado por el SRI.
+    /// Distinto de <see cref="Retry"/>: es la única acción que vuelve a transmitir un comprobante.
+    /// </summary>
+    public const string RetransmitCorrected = "electronic-documents.retransmit-corrected";
 }

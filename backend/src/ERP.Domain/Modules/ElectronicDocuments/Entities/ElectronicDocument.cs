@@ -80,6 +80,26 @@ public sealed class ElectronicDocument
     /// </summary>
     public Guid? AnnulmentRequestId { get; private set; }
 
+    /// <summary>
+    /// R12 Fase B — número del intento de transmisión vigente (1 = emisión original). Solo lo avanza
+    /// <see cref="ClaimCorrectedRetransmission"/>; cada intento conserva la misma clave de acceso.
+    /// </summary>
+    public int TransmissionAttempt { get; private set; } = 1;
+
+    /// <summary>
+    /// R12 Fase B — instante (reloj del ERP) en que se reclamó el intento vigente. Null en el intento 1.
+    /// Delimita la evidencia del intento (timeline, mensajes SRI, plazo R11 desde su RECIBIDA).
+    /// </summary>
+    public DateTime? TransmissionAttemptStartedUtc { get; private set; }
+
+    /// <summary>
+    /// R12 Fase B — <c>fechaAutorizacion</c> (reloj del SRI, en UTC) más reciente de las respuestas NO
+    /// AUTORIZADO conocidas antes del intento vigente. Toda respuesta NO AUTORIZADO con fecha igual o
+    /// anterior es histórica y nunca cierra el intento vigente (ver <see cref="IsCurrentAttemptSriDecision"/>).
+    /// Null si nunca hubo retransmisión o si el SRI no tenía decisiones previas.
+    /// </summary>
+    public DateTime? SupersededSriDecisionUtc { get; private set; }
+
     private ElectronicDocument() { }
 
     /// <summary>
@@ -344,7 +364,8 @@ public sealed class ElectronicDocument
     }
 
     /// <summary>
-    /// Transición Sent/Received→Rejected: el SRI rechazó el comprobante (sin reintento posible).
+    /// Transición Sent/Received→Rejected: el SRI rechazó el comprobante (sin reintento automático;
+    /// la única salida es la retransmisión corregida explícita, <see cref="ClaimCorrectedRetransmission"/>).
     /// <paramref name="sriMessages"/> es opcional — cuando el rechazo proviene de una respuesta
     /// SRI real (recepción o autorización), lleva los mensajes estructurados tal cual el SRI los
     /// envió, para que <c>ElectronicDocumentSriMessageAuditHandler</c> los persista individualmente.
@@ -380,6 +401,101 @@ public sealed class ElectronicDocument
             )
         );
     }
+
+    public const int RetransmissionReasonMaxLen = 300;
+
+    /// <summary>
+    /// R12 Fase B — Transición Rejected→Signed: reclamo de la retransmisión corregida, persistido antes
+    /// de cualquier llamada al SRI (el llamador lo hace bajo el lock del origen). Exige la MISMA clave de
+    /// acceso (ficha técnica, nota 1 de la tabla de errores: el comprobante corregido se reenvía con la
+    /// misma clave); el XML corregido ya fue validado, firmado y almacenado como una versión nueva — las
+    /// rutas anteriores se conservan en el registro del intento, nunca se sobrescriben. Inicia un intento
+    /// nuevo: su contador de consultas y su plazo R11 empiezan de cero, y
+    /// <paramref name="supersededSriDecisionUtc"/> marca como históricas las respuestas NO AUTORIZADO previas.
+    /// </summary>
+    public void ClaimCorrectedRetransmission(
+        string xmlDraftPath,
+        string signedXmlPath,
+        string xmlVersion,
+        string schemaVersion,
+        AccessKey accessKey,
+        DateTime? supersededSriDecisionUtc,
+        string reason,
+        Guid updatedBy
+    )
+    {
+        if (CurrentState != ElectronicDocumentState.Rejected)
+            throw new DomainRuleViolationException(
+                $"Solo se puede retransmitir un comprobante rechazado (estado actual: {CurrentState})."
+            );
+        ArgumentNullException.ThrowIfNull(accessKey);
+        if (AccessKey is null || AccessKey.Value != accessKey.Value)
+            throw new DomainRuleViolationException(
+                "La retransmisión corregida debe conservar la misma clave de acceso del comprobante rechazado."
+            );
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("El motivo de la retransmisión es obligatorio.", nameof(reason));
+        if (reason.Trim().Length > RetransmissionReasonMaxLen)
+            throw new ArgumentException(
+                $"El motivo no puede superar {RetransmissionReasonMaxLen} caracteres.",
+                nameof(reason)
+            );
+        foreach (var (path, name) in new[] { (xmlDraftPath, nameof(xmlDraftPath)), (signedXmlPath, nameof(signedXmlPath)) })
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("La ruta del XML corregido es obligatoria.", name);
+            if (path.Length > PathMaxLen)
+                throw new ArgumentException(
+                    $"La ruta del XML corregido no puede superar {PathMaxLen} caracteres.",
+                    name
+                );
+        }
+        if (xmlDraftPath == XmlDraftPath || signedXmlPath == SignedXmlPath)
+            throw new DomainRuleViolationException(
+                "El XML corregido debe almacenarse como una versión nueva, sin sobrescribir la evidencia del intento anterior."
+            );
+
+        var fromState = CurrentState;
+        XmlDraftPath = xmlDraftPath;
+        SignedXmlPath = signedXmlPath;
+        XmlVersion = string.IsNullOrWhiteSpace(xmlVersion) ? null : xmlVersion.Trim();
+        SchemaVersion = string.IsNullOrWhiteSpace(schemaVersion) ? null : schemaVersion.Trim();
+        if (
+            supersededSriDecisionUtc is not null
+            && (SupersededSriDecisionUtc is null || supersededSriDecisionUtc > SupersededSriDecisionUtc)
+        )
+            SupersededSriDecisionUtc = supersededSriDecisionUtc;
+        TransmissionAttempt++;
+        TransmissionAttemptStartedUtc = DateTime.UtcNow;
+        RetryCount = 0;
+        LastError = null;
+        PreDeadLetterState = null;
+        CurrentState = ElectronicDocumentState.Signed;
+        LastAttemptUtc = TransmissionAttemptStartedUtc;
+        SetUpdated(updatedBy);
+
+        RaiseDomainEvent(
+            new ElectronicDocumentRetransmissionClaimedEvent(
+                TenantId,
+                Id,
+                DocumentType,
+                fromState,
+                CurrentState,
+                TransmissionAttempt,
+                reason.Trim()
+            )
+        );
+    }
+
+    /// <summary>
+    /// R12 Fase B — true si una respuesta NO AUTORIZADO con <paramref name="sriDecisionUtc"/> (reloj del
+    /// SRI) pertenece al intento vigente: posterior a toda decisión conocida antes del intento. Sin fecha
+    /// interpretable nunca pertenece (fail-closed). Sin retransmisiones previas, toda decisión es vigente.
+    /// </summary>
+    public bool IsCurrentAttemptSriDecision(DateTime? sriDecisionUtc) =>
+        SupersededSriDecisionUtc is null
+            ? TransmissionAttempt == 1 || sriDecisionUtc is not null
+            : sriDecisionUtc is not null && sriDecisionUtc.Value > SupersededSriDecisionUtc.Value;
 
     /// <summary>
     /// Transición Failed/Signed/Sent/Received→DeadLetter: se agotaron los reintentos automáticos

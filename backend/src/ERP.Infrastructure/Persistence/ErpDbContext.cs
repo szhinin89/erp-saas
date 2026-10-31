@@ -358,6 +358,8 @@ public class ErpDbContext : DbContext
         Set<ElectronicDocumentAudit>();
     public DbSet<ElectronicDocumentSriMessage> ElectronicDocumentSriMessages =>
         Set<ElectronicDocumentSriMessage>();
+    public DbSet<ElectronicDocumentTransmissionAttempt> ElectronicDocumentTransmissionAttempts =>
+        Set<ElectronicDocumentTransmissionAttempt>();
 
     // ── Ride BC (walking skeleton — ver Fase 4 del plan de implementación, ADR-025) ────────
     public DbSet<RidePdfDocument> RidePdfDocuments => Set<RidePdfDocument>();

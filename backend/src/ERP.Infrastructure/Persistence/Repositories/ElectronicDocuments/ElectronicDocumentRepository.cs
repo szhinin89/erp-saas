@@ -4,6 +4,7 @@ using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
+using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using ERP.Domain.Configuration.Constants;
 using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -30,15 +31,98 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
     public Task<DateTime?> GetFirstReceivedAtUtcAsync(
         Guid tenantId,
         Guid id,
+        DateTime? sinceUtc = null,
         CancellationToken ct = default
     ) =>
-        _db.Set<ElectronicDocumentAudit>()
-            .Where(a =>
-                a.TenantId == tenantId
-                && a.EntityId == id
-                && a.ToState == ElectronicDocumentState.Received
+        Since(
+                _db.Set<ElectronicDocumentAudit>()
+                    .Where(a =>
+                        a.TenantId == tenantId
+                        && a.EntityId == id
+                        && a.ToState == ElectronicDocumentState.Received
+                    ),
+                sinceUtc
             )
             .MinAsync(a => (DateTime?)a.OccurredAtUtc, ct);
+
+    public async Task<ElectronicDocumentRejectionEvidence?> GetRejectionEvidenceAsync(
+        Guid tenantId,
+        Guid id,
+        DateTime? sinceUtc,
+        CancellationToken ct = default
+    )
+    {
+        var rejection = await Since(
+                _db.Set<ElectronicDocumentAudit>()
+                    .AsNoTracking()
+                    .Where(a =>
+                        a.TenantId == tenantId
+                        && a.EntityId == id
+                        && a.ToState == ElectronicDocumentState.Rejected
+                    ),
+                sinceUtc
+            )
+            .OrderByDescending(a => a.OccurredAtUtc)
+            .Select(a => new { a.FromState, a.OccurredAtUtc })
+            .FirstOrDefaultAsync(ct);
+        if (rejection is null)
+            return null;
+
+        // Un intento termina en a lo sumo un rechazo (Rejected es terminal dentro del intento): los
+        // mensajes registrados desde el inicio del intento son los de ese rechazo.
+        var messages = await Since(
+                _db.Set<ElectronicDocumentSriMessage>()
+                    .AsNoTracking()
+                    .Where(m => m.TenantId == tenantId && m.EntityId == id),
+                sinceUtc
+            )
+            .OrderBy(m => m.OccurredAtUtc)
+            .Select(m => new SriMessage(m.Code, m.MessageType, m.Message, m.AdditionalInfo))
+            .ToListAsync(ct);
+
+        return new ElectronicDocumentRejectionEvidence(
+            rejection.FromState,
+            rejection.OccurredAtUtc,
+            messages
+        );
+    }
+
+    private static IQueryable<T> Since<T>(IQueryable<T> records, DateTime? sinceUtc)
+        where T : ERP.Domain.Audit.AuditRecordBase =>
+        sinceUtc is null ? records : records.Where(a => a.OccurredAtUtc >= sinceUtc.Value);
+
+    public Task<ElectronicDocumentTransmissionAttempt?> GetTransmissionAttemptByIdempotencyKeyAsync(
+        Guid tenantId,
+        Guid electronicDocumentId,
+        Guid idempotencyKey,
+        CancellationToken ct = default
+    ) =>
+        _db.ElectronicDocumentTransmissionAttempts.AsNoTracking()
+            .FirstOrDefaultAsync(
+                a =>
+                    a.TenantId == tenantId
+                    && a.ElectronicDocumentId == electronicDocumentId
+                    && a.IdempotencyKey == idempotencyKey,
+                ct
+            );
+
+    public Task<ElectronicDocumentTransmissionAttempt?> GetLatestTransmissionAttemptAsync(
+        Guid tenantId,
+        Guid electronicDocumentId,
+        CancellationToken ct = default
+    ) =>
+        _db.ElectronicDocumentTransmissionAttempts.AsNoTracking()
+            .Where(a => a.TenantId == tenantId && a.ElectronicDocumentId == electronicDocumentId)
+            .OrderByDescending(a => a.AttemptNumber)
+            .FirstOrDefaultAsync(ct);
+
+    public Task AddTransmissionAttemptAsync(
+        ElectronicDocumentTransmissionAttempt attempt,
+        CancellationToken ct = default
+    ) => _db.ElectronicDocumentTransmissionAttempts.AddAsync(attempt, ct).AsTask();
+
+    public void DiscardTransmissionAttempt(ElectronicDocumentTransmissionAttempt attempt) =>
+        _db.Entry(attempt).State = EntityState.Detached;
 
     public Task<ElectronicDocument?> GetBySourceAsync(
         Guid tenantId,

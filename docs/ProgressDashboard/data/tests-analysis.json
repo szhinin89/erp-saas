@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-10-27 07:07:29",
+    "Generated":  "2026-10-31 18:02:58",
     "Backend":  {
                     "TestProjects":  5,
-                    "TestFiles":  863,
+                    "TestFiles":  898,
                     "Projects":  [
                                      {
                                          "Project":  "ERP.API.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests",
-                                         "TestFiles":  106
+                                         "TestFiles":  111
                                      },
                                      {
                                          "Project":  "ERP.Application.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests",
-                                         "TestFiles":  339
+                                         "TestFiles":  356
                                      },
                                      {
                                          "Project":  "ERP.Architecture.Tests",
@@ -22,16 +22,16 @@
                                      {
                                          "Project":  "ERP.Domain.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain.Tests",
-                                         "TestFiles":  124
+                                         "TestFiles":  127
                                      },
                                      {
                                          "Project":  "ERP.Infrastructure.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests",
-                                         "TestFiles":  260
+                                         "TestFiles":  270
                                      }
                                  ]
                 },
     "Frontend":  {
-                     "TestFiles":  493
+                     "TestFiles":  507
                  }
 }

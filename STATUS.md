@@ -1,5 +1,26 @@
 # Project Status
 
+## SRI 2.34 R12 Fase B — corrección y retransmisión 01/04/07 — READY FOR REVIEW (2026-10-31)
+
+Base `main@6505e5734`. Única salida de `Rejected`: comando explícito del Monitor (permiso
+`electronic-documents.retransmit-corrected`, motivo, clave de idempotencia) para errores del archivo
+35/36/47/48/52/58/67 con procedencia registrada. Consulta única del historial SRI, XML regenerado por el mismo
+pipeline, corrección semántica demostrada (sin firma; clave, contraparte y valores comerciales intactos),
+evidencia versionada con SHA-256, reclamo bajo el lock de Fase A y una transmisión; NO AUTORIZADO históricos
+descartados por fecha del SRI; R11 por intento. Migración aditiva `CorrectedRetransmission`. Contrato:
+[backend.md § Límites y finalización](docs/architecture/backend.md#límites-y-finalización); addendum R12 Fase B
+de [ADR-023](docs/decisions/ADR-023-electronic-documents-v1-closure.md); límites en §5.2 de la
+[matriz](docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md).
+PASS agente: Domain 62/62, Application 992/992 (Sales, Retentions, ElectronicDocuments, Communications, SRI),
+Infrastructure PostgreSQL + SRI 497/497 y nuevas suites 29/29 en el build final, API focal 95/95, Architecture
+143/143, frontend Monitor 20/20, lint, `tsc -b`, build, guardrails PowerShell, `architecture:check` (0 nuevas),
+manifiesto CI (cobertura PASS), `git diff --check`. Cierre previo al commit: `fechaAutorizacion` de cada
+decisión solo se acepta en ISO 8601 con desplazamiento explícito, truncada al microsegundo (sin zona o en otro
+formato → null, fail-closed); recuperación tras reclamo con caída/timeout y reinicio del worker (una sola
+transmisión) y orden historial → commit → Recepción verificados. Re-ejecución: Application 996/996,
+Infrastructure ElectronicDocuments/SRI/Retenciones 456/456. Pendiente: aceptación real en `celcer` de un reenvío
+corregido. Sin SRI real, suites completas, staging, commit ni push.
+
 ## SRI 2.34 R12 Fase A — concurrencia fiscal 01/04 — READY FOR REVIEW (2026-10-31)
 
 Base `main@98f47a750`. Guard `Sales` (Factura 01 y NC 04): el reclamo de envío revalida la factura/devolución bajo

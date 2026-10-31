@@ -13,8 +13,51 @@ public interface IElectronicDocumentRepository
     /// (<see cref="ElectronicDocumentAudit"/>, persistido en la misma transacción que el estado): el ERP
     /// recibió RECIBIDA (o 70/43/45, envío anterior ya registrado) y desde ahí corre el plazo del SRI.
     /// <c>null</c> si no hay evidencia de recepción (p. ej. <c>Signed</c> tras un fallo de transporte).
+    /// R12 Fase B: con <paramref name="sinceUtc"/> (inicio del intento vigente) solo cuenta la RECIBIDA
+    /// de ese intento — el plazo corre por intento. Sin retransmisión es <c>null</c> (sin cambios).
     /// </summary>
-    Task<DateTime?> GetFirstReceivedAtUtcAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<DateTime?> GetFirstReceivedAtUtcAsync(
+        Guid tenantId,
+        Guid id,
+        DateTime? sinceUtc = null,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// R12 Fase B — evidencia persistida del rechazo del intento vigente (desde <paramref name="sinceUtc"/>,
+    /// o todo el historial en el intento 1): la última transición a Rejected del timeline (su estado de
+    /// origen distingue DEVUELTA de NO AUTORIZADO) y los mensajes SRI estructurados registrados.
+    /// <c>null</c> si el timeline no registra ese rechazo.
+    /// </summary>
+    Task<ElectronicDocumentRejectionEvidence?> GetRejectionEvidenceAsync(
+        Guid tenantId,
+        Guid id,
+        DateTime? sinceUtc,
+        CancellationToken ct = default
+    );
+
+    /// <summary>R12 Fase B — reclamo ya registrado para esa solicitud (clave de idempotencia), o null.</summary>
+    Task<ElectronicDocumentTransmissionAttempt?> GetTransmissionAttemptByIdempotencyKeyAsync(
+        Guid tenantId,
+        Guid electronicDocumentId,
+        Guid idempotencyKey,
+        CancellationToken ct = default
+    );
+
+    /// <summary>R12 Fase B — último reclamo de retransmisión registrado del documento, o null.</summary>
+    Task<ElectronicDocumentTransmissionAttempt?> GetLatestTransmissionAttemptAsync(
+        Guid tenantId,
+        Guid electronicDocumentId,
+        CancellationToken ct = default
+    );
+
+    Task AddTransmissionAttemptAsync(
+        ElectronicDocumentTransmissionAttempt attempt,
+        CancellationToken ct = default
+    );
+
+    /// <summary>Deja de trackear un reclamo que no llegó a persistirse (rollback del reclamo).</summary>
+    void DiscardTransmissionAttempt(ElectronicDocumentTransmissionAttempt attempt);
 
     /// <summary>
     /// Busca el documento electrónico registrado para un documento de origen específico —
@@ -111,6 +154,16 @@ public interface IElectronicDocumentRepository
         int batchSize, CancellationToken ct = default
     );
 }
+
+/// <summary>
+/// R12 Fase B — rechazo registrado en el timeline: <see cref="FromState"/> es el estado desde el que se
+/// rechazó (Sent = DEVUELTA de Recepción; Signed/Dispatching/Received = NO AUTORIZADO de Autorización).
+/// </summary>
+public sealed record ElectronicDocumentRejectionEvidence(
+    ElectronicDocumentState? FromState,
+    DateTime RejectedAtUtc,
+    IReadOnlyList<ERP.Domain.Modules.ElectronicDocuments.ValueObjects.SriMessage> Messages
+);
 
 /// <summary>Identidad de un candidato a reintento automático ya elegible.</summary>
 public sealed record ElectronicDocumentRetryCandidate(

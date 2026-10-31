@@ -116,8 +116,19 @@ public sealed class GetElectronicDocumentDetailQueryHandlerTests
             EmptyAuditReader().Object,
             EmptySriMessageReader().Object,
             tenant.Object,
-            company.Object
+            company.Object,
+            NotRejectedRetransmission().Object
         );
+
+    private static Mock<IElectronicDocumentCorrectedRetransmission> NotRejectedRetransmission()
+    {
+        var mock = new Mock<IElectronicDocumentCorrectedRetransmission>();
+        mock.Setup(r => r.EvaluateAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ElectronicDocument d, CancellationToken _) =>
+                ElectronicDocumentRetransmissionPolicy.Evaluate(d, null, null)
+            );
+        return mock;
+    }
 
     [Fact]
     public async Task Detalle_de_la_propia_empresa_se_devuelve()

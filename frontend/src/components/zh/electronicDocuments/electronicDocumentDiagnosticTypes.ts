@@ -52,4 +52,16 @@ export type ElectronicDocumentDiagnosticDto = {
   xmlAuthorizedAvailable: boolean;
   /** Caso #32 — resultado SRI desconocido; lo decide el backend (habilita la conciliación manual). */
   requiresReconciliation: boolean;
+  /** R12 Fase B — elegibilidad de "Corregir y retransmitir" calculada por el backend (null si no se calcula). */
+  retransmission?: ElectronicDocumentRetransmissionDto | null;
+};
+
+/** Espejo de `ElectronicDocumentRetransmissionDto` — la UI nunca decide la elegibilidad. */
+export type ElectronicDocumentRetransmissionDto = {
+  eligible: boolean;
+  transmissionAttempt: number;
+  /** "Reception" (DEVUELTA) o "Authorization" (NO AUTORIZADO). */
+  rejectionStage: string | null;
+  rejectionCodes: string[];
+  blocks: { code: string; message: string }[];
 };

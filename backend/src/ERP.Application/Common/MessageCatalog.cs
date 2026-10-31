@@ -176,6 +176,24 @@ public static class MessageCatalog
             "Electronic document annulment pending at SRI.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.ElectronicDocuments.RetransmissionNotAllowed] = new(
+            ApiSeverity.Error,
+            "El comprobante rechazado no cumple las condiciones para corregirse y retransmitirse. Revise el detalle indicado.",
+            "Rejected electronic document is not eligible for corrected retransmission.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.ElectronicDocuments.RetransmissionWithoutCorrection] = new(
+            ApiSeverity.Error,
+            "El comprobante regenerado no demuestra una corrección compatible con la misma clave de acceso; no se retransmitió.",
+            "Regenerated XML shows no correction compatible with the same access key; nothing was transmitted.",
+            ApiErrorCategory.Validation
+        ),
+        [ApiResponseCodes.ElectronicDocuments.RetransmissionSriHistoryBlocked] = new(
+            ApiSeverity.Error,
+            "El historial del comprobante en el SRI no permite retransmitirlo (autorizado, en proceso, incierto o inconsistente).",
+            "SRI history for the access key blocks retransmission (authorized, pending, uncertain or inconsistent).",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.ElectronicDocuments.FiscalCatalogConfigurationError] = new(
             ApiSeverity.Error,
             "El catálogo fiscal del SRI no permite generar el comprobante electrónico. Revise el código de retención usado o contacte a soporte.",

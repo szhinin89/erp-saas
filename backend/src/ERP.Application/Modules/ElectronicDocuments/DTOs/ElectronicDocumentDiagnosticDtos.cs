@@ -45,5 +45,21 @@ public sealed record ElectronicDocumentDiagnosticDto(
     bool XmlSignedAvailable,
     bool XmlAuthorizedAvailable,
     // Caso #32 — resultado SRI desconocido: habilita la conciliación manual (lo decide el backend).
-    bool RequiresReconciliation
+    bool RequiresReconciliation,
+    // R12 Fase B — elegibilidad de corrección y retransmisión (null si el consumidor no la calcula).
+    ElectronicDocumentRetransmissionDto? Retransmission = null
 );
+
+/// <summary>
+/// R12 Fase B — elegibilidad calculada por el backend para la acción "Corregir y retransmitir".
+/// <see cref="RejectionStage"/>: "Reception" (DEVUELTA) o "Authorization" (NO AUTORIZADO).
+/// </summary>
+public sealed record ElectronicDocumentRetransmissionDto(
+    bool Eligible,
+    int TransmissionAttempt,
+    string? RejectionStage,
+    IReadOnlyList<string> RejectionCodes,
+    IReadOnlyList<ElectronicDocumentRetransmissionBlockDto> Blocks
+);
+
+public sealed record ElectronicDocumentRetransmissionBlockDto(string Code, string Message);

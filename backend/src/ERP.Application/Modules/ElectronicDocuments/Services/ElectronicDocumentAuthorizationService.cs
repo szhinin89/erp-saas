@@ -71,6 +71,29 @@ public sealed partial class ElectronicDocumentAuthorizationService
         );
     }
 
+    public async Task<Result<IReadOnlyList<SriAuthorizationDecision>>> QueryDecisionsAsync(
+        Guid companyId,
+        string accessKey,
+        CancellationToken ct = default
+    )
+    {
+        var sriSettings = await _sriSettingsRepository.GetByCompanyIdAsync(companyId, ct);
+        if (sriSettings is null || string.IsNullOrWhiteSpace(sriSettings.WsdlUrl))
+        {
+            LogAuthorizationPrerequisiteMissing(companyId, "sin configuración SRI o WsdlUrl");
+            return Result<IReadOnlyList<SriAuthorizationDecision>>.ValidationFailure(
+                "La empresa no tiene configuración SRI completa — no se puede consultar el historial del comprobante."
+            );
+        }
+
+        var history = await _client.QueryDecisionsAsync(accessKey, sriSettings.WsdlUrl, ct);
+        return history.Succeeded
+            ? Result<IReadOnlyList<SriAuthorizationDecision>>.Success(history.Decisions)
+            : Result<IReadOnlyList<SriAuthorizationDecision>>.Failure(
+                history.ErrorMessage ?? "No se pudo obtener el historial de decisiones del SRI."
+            );
+    }
+
     [LoggerMessage(
         Level = LogLevel.Warning,
         Message = "[ElectronicDocuments] Consulta de autorización SRI no ejecutada para empresa {CompanyId}: {Reason}"

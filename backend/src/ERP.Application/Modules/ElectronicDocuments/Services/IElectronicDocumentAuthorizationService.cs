@@ -24,4 +24,14 @@ public interface IElectronicDocumentAuthorizationService
         string accessKey,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// R12 Fase B — decisiones que el SRI ya registró para la clave (una sola consulta, sin polling).
+    /// <see cref="Result{T}.Failure"/> si falta la configuración SRI o la respuesta es incierta.
+    /// </summary>
+    Task<Result<IReadOnlyList<SriAuthorizationDecision>>> QueryDecisionsAsync(
+        Guid companyId,
+        string accessKey,
+        CancellationToken ct = default
+    );
 }

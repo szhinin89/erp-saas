@@ -693,7 +693,7 @@ pudo salir al SRI sin resultado conocido (`Signed`, `Dispatching`, `Sent`, `Rece
 `DeadLetter` que venía de ellos; `ElectronicDocument.RequiresSriReconciliation`) nunca se
 reenvía automáticamente: el reintento (job o Monitor) solo consulta la autorización por clave
 de acceso. AUTORIZADO se conserva; NO AUTORIZADO pasa a `Rejected`; una consulta no concluyente
-deja el estado intacto ("Requiere conciliación"). Solo el primer envío del pipeline transmite. Una DEVUELTA cuyos mensajes son todos código 50 (error interno del SRI; los devueltos no se
+deja el estado intacto ("Requiere conciliación"). Solo transmiten el primer envío del pipeline y la retransmisión corregida explícita desde `Rejected` (R12 Fase B, abajo). Una DEVUELTA cuyos mensajes son todos código 50 (error interno del SRI; los devueltos no se
 guardan, Ficha Técnica Offline, tabla de errores, nota 1) no es rechazo: el documento conserva su estado como
 en un fallo de transporte. Si la autorización trae varias `<autorizacion>`, manda la AUTORIZADO.
 
@@ -706,7 +706,37 @@ más, nunca de menos). Cerrado el plazo, el siguiente intento sin respuesta pasa
 "Requiere conciliación" (recuperable por el reintento y la conciliación de abajo). Sin evidencia de recepción
 (`Signed` tras un fallo de transporte o DEVUELTA 50) no hay plazo calculable: no se aplica DeadLetter por plazo y
 la consulta sigue cada 60 min, sin reenvío. `Dispatching` sigue siendo solo manual (ADR-036). Constantes y
-predicado: `ElectronicDocumentRetryPolicy`.
+predicado: `ElectronicDocumentRetryPolicy`. Tras una retransmisión corregida el plazo corre por intento: desde la
+primera `Received` posterior a `TransmissionAttemptStartedUtc` (null sin retransmisión: comportamiento anterior).
+
+**Corrección y retransmisión (R12 Fase B: Factura 01, NC 04, Retención 07).** Ficha Técnica Offline 2.34, tabla de
+errores, nota 1: el comprobante NO AUTORIZADO puede reenviarse corregido con la misma clave. Única salida de
+`Rejected`: el comando explícito `POST /api/v1/electronic-documents/{id}/corrected-retransmission` (permiso
+`electronic-documents.retransmit-corrected`, motivo obligatorio, `idempotencyKey` por solicitud confirmada). Nunca
+lo usan `RetryAsync`, el job ni la conciliación. Elegibilidad (`ElectronicDocumentRetransmissionPolicy`, expuesta en
+el diagnóstico del Monitor con sus motivos): estado `Rejected`, tipo 01/04/07, origen con guard que sigue
+permitiendo procesamiento, procedencia registrada en el timeline (rechazo desde `Sent` = DEVUELTA de Recepción;
+desde `Signed`/`Dispatching`/`Received` = NO AUTORIZADO) y todos los mensajes `ERROR` del rechazo con código en
+35/36/47/48/52/58/67. Cualquier otro código, un error sin código o sin evidencia bloquea. Antes de reclamar:
+(1) una sola consulta a Autorización (sin polling, nunca transmite): una AUTORIZADO, un estado no definitivo, una
+fecha no interpretable o una evidencia contraria a la procedencia (NO AUTORIZADO sin decisión en el SRI, DEVUELTA
+con una decisión nueva) bloquean; (2) el mismo pipeline (supplier → XSD → firma → R16) regenera el XML desde la
+operación confirmada; distinta clave de acceso o ambiente abortan; (3) `ElectronicDocumentXmlCorrectionComparer`
+compara el XML firmado anterior y el nuevo sin `ds:Signature`: sin diferencias, o con cambios en la clave, la
+fecha de emisión, la contraparte o los valores comerciales (Retención: identificación del sujeto retenido, motivo
+propio) aborta sin transmitir; (4) el XML nuevo se almacena en
+`…/{id}/attempts/{attemptId}/{draft|signed}.xml` sin sobrescribir nada, y el hash del firmado anterior se verifica
+contra el intento previo. El reclamo (transacción corta, lock del origen de Fase A / ADR-036, relectura con
+`xmin`, mismo `Rejected` y mismo intento) inserta `ElectronicDocumentTransmissionAttempt` (únicos por intento y por
+clave de idempotencia; motivo, procedencia, códigos, rutas y SHA-256 del anterior, borrador y firmado, diferencias)
+y persiste `Rejected→Signed` (Retenciones: `→Dispatching`) con `TransmissionAttempt + 1`, `RetryCount = 0` y
+`SupersededSriDecisionUtc` = la `fechaAutorizacion` más reciente conocida. Un reclamo perdido o revertido no
+transmite y descarta sus archivos. Después del commit, UNA llamada a Recepción; todo resultado incierto (fallo de
+transporte, DEVUELTA 50, 70/43/45) queda en consulta (Caso #32). Con `TransmissionAttempt > 1`, una NO AUTORIZADO
+solo cierra el intento si su fecha (reloj del SRI) es posterior a `SupersededSriDecisionUtc`; las históricas lo
+dejan pendiente. La anulación de la factura y el reclamo se serializan por el mismo lock: anulada, no es elegible;
+reclamada, la anulación ve un resultado incierto y se bloquea. No modifica inventario, caja, CxC/CxP ni
+contabilidad.
 
 **Tamaño máximo (R16).** Antes del primer envío, un XML firmado de más de 320 × 1024 bytes pasa a `Failed`
 sin almacenarse, firmarse como `Signed` ni transmitirse (única definición:

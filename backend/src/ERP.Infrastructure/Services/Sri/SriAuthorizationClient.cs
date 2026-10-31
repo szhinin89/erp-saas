@@ -37,6 +37,13 @@ public sealed class SriAuthorizationClient : ISriAuthorizationClient
             Messages = result.Messages,
             StructuredMessages = result.StructuredMessages,
             ErrorMessage = result.ErrorMessage,
+            Decisions = result.Decisions,
         };
     }
+
+    public Task<SriAuthorizationHistoryResult> QueryDecisionsAsync(
+        string accessKey,
+        string wsdlUrl,
+        CancellationToken ct = default
+    ) => _client.QueryAuthorizationDecisionsAsync(accessKey, wsdlUrl, ct);
 }

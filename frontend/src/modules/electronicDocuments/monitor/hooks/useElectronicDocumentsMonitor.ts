@@ -19,6 +19,9 @@ export function useElectronicDocumentsMonitor() {
   const canViewDetail = canShow("electronic-documents.detail");
   const canRetry = canShow("electronic-documents.retry");
   const canReconcile = canShow("electronic-documents.reconcile");
+  const canRetransmitCorrected = canShow(
+    "electronic-documents.retransmit-corrected",
+  );
   // Mismo permiso que exige GET /api/v1/ride — sin él la acción no se muestra (evita un 403).
   const canDownloadRide = canShow("ride.view");
 
@@ -193,6 +196,20 @@ export function useElectronicDocumentsMonitor() {
     [detail, loadList, loadDashboard],
   );
 
+  const retransmitCorrected = useCallback(
+    async (values: { reason: string; idempotencyKey: string }) => {
+      if (!detail) return;
+      const updated = await electronicDocumentsMonitorService.retransmitCorrected(
+        detail.id,
+        values,
+      );
+      setDetail(updated);
+      void loadList();
+      void loadDashboard();
+    },
+    [detail, loadList, loadDashboard],
+  );
+
   const downloadRide = useCallback(async () => {
     if (!detail) return;
     await handleDownloadRide(
@@ -232,6 +249,7 @@ export function useElectronicDocumentsMonitor() {
     canViewDetail,
     canRetry,
     canReconcile,
+    canRetransmitCorrected,
     canDownloadRide,
     filters: { dateFrom, dateTo, state, documentType, environment, search },
     setDateFrom,
@@ -268,6 +286,7 @@ export function useElectronicDocumentsMonitor() {
     viewXml,
     retryNow,
     reconcile,
+    retransmitCorrected,
     downloadRide,
     resetFiltersAndReload,
   };

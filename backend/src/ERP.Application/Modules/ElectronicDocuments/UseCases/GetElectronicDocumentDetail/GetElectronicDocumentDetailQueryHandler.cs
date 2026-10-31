@@ -21,6 +21,7 @@ public sealed class GetElectronicDocumentDetailQueryHandler
     private readonly IAuditReader<ElectronicDocumentSriMessage> _sriMessageReader;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
+    private readonly IElectronicDocumentCorrectedRetransmission _retransmission;
 
     public GetElectronicDocumentDetailQueryHandler(
         IElectronicDocumentRepository repository,
@@ -29,7 +30,8 @@ public sealed class GetElectronicDocumentDetailQueryHandler
         IAuditReader<ElectronicDocumentAudit> auditReader,
         IAuditReader<ElectronicDocumentSriMessage> sriMessageReader,
         ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany
+        ICurrentCompany currentCompany,
+        IElectronicDocumentCorrectedRetransmission retransmission
     )
     {
         _repository = repository;
@@ -39,6 +41,7 @@ public sealed class GetElectronicDocumentDetailQueryHandler
         _sriMessageReader = sriMessageReader;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
+        _retransmission = retransmission;
     }
 
     public async Task<Result<ElectronicDocumentDetailDto>> Handle(
@@ -97,7 +100,8 @@ public sealed class GetElectronicDocumentDetailQueryHandler
             document,
             auditRecords,
             _sriMessageReader,
-            cancellationToken
+            cancellationToken,
+            await _retransmission.EvaluateAsync(document, cancellationToken)
         );
 
         var dto = new ElectronicDocumentDetailDto(

@@ -12,6 +12,7 @@ import type {
   ElectronicDocumentXmlVariant,
 } from "../api/electronicDocumentsMonitorService";
 import { ReconcileElectronicDocumentModal } from "./ReconcileElectronicDocumentModal";
+import { RetransmitCorrectedElectronicDocumentModal } from "./RetransmitCorrectedElectronicDocumentModal";
 import "./electronic-documents-monitor.css";
 import "../../../../components/zh/electronicDocuments/electronic-documents.css";
 
@@ -41,6 +42,7 @@ type Props = {
   xmlError: string | null;
   canRetry: boolean;
   canReconcile?: boolean;
+  canRetransmitCorrected?: boolean;
   retryLoading: boolean;
   canDownloadRide: boolean;
   rideDownloading: boolean;
@@ -50,6 +52,10 @@ type Props = {
   onReconcile?: (values: {
     reference: string;
     observation: string;
+  }) => Promise<void>;
+  onRetransmitCorrected?: (values: {
+    reason: string;
+    idempotencyKey: string;
   }) => Promise<void>;
   onDownloadRide: () => void;
 };
@@ -65,6 +71,7 @@ export function ElectronicDocumentDetailPanel({
   xmlError,
   canRetry,
   canReconcile = false,
+  canRetransmitCorrected = false,
   retryLoading,
   canDownloadRide,
   rideDownloading,
@@ -72,10 +79,19 @@ export function ElectronicDocumentDetailPanel({
   onViewXml,
   onRetryNow,
   onReconcile,
+  onRetransmitCorrected,
   onDownloadRide,
 }: Props) {
   const { t } = useI18n();
   const [reconcileOpen, setReconcileOpen] = useState(false);
+  const [retransmitOpen, setRetransmitOpen] = useState(false);
+  // R12 Fase B — la elegibilidad y sus motivos los calcula el backend; la UI solo los muestra.
+  const retransmission = detail?.diagnostic.retransmission ?? null;
+  const showRetransmission =
+    canRetransmitCorrected &&
+    onRetransmitCorrected !== undefined &&
+    detail?.diagnostic.currentState === "Rejected" &&
+    retransmission !== null;
   const rideUnsupported =
     detail !== null &&
     RIDE_UNSUPPORTED_DOCUMENT_TYPES.has(detail.documentType);
@@ -200,9 +216,32 @@ export function ElectronicDocumentDetailPanel({
                       {t("electronicDocuments.monitor.reconcile.open")}
                     </ZHBtn>
                   )}
+                {showRetransmission && retransmission.eligible && (
+                  <ZHBtn
+                    variant="primary"
+                    size="sm"
+                    type="button"
+                    disabled={retryLoading}
+                    onClick={() => setRetransmitOpen(true)}
+                  >
+                    {t("electronicDocuments.monitor.retransmit.open")}
+                  </ZHBtn>
+                )}
               </>
             }
           />
+
+          {showRetransmission && !retransmission.eligible && (
+            <ZHCard
+              title={t("electronicDocuments.monitor.retransmit.blockedTitle")}
+            >
+              <ul className="zh-edoc-hint-sm" aria-label={t("electronicDocuments.monitor.retransmit.blockedTitle")}>
+                {retransmission.blocks.map((block) => (
+                  <li key={block.code}>{block.message}</li>
+                ))}
+              </ul>
+            </ZHCard>
+          )}
 
           {detail.diagnostic.currentState === "Authorized" && (
             <ZHCard
@@ -249,6 +288,13 @@ export function ElectronicDocumentDetailPanel({
             </ZHCard>
           )}
         </>
+      )}
+      {retransmitOpen && onRetransmitCorrected && retransmission && (
+        <RetransmitCorrectedElectronicDocumentModal
+          retransmission={retransmission}
+          onClose={() => setRetransmitOpen(false)}
+          onSubmit={onRetransmitCorrected}
+        />
       )}
       {reconcileOpen && onReconcile && (
         <ReconcileElectronicDocumentModal

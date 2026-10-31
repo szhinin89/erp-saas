@@ -115,6 +115,7 @@ export function ElectronicDocumentsMonitorPage() {
         xmlError={m.xmlError}
         canRetry={m.canRetry}
         canReconcile={m.canReconcile}
+        canRetransmitCorrected={m.canRetransmitCorrected}
         retryLoading={m.retryLoading}
         canDownloadRide={m.canDownloadRide}
         rideDownloading={m.rideDownloading}
@@ -122,6 +123,7 @@ export function ElectronicDocumentsMonitorPage() {
         onViewXml={(variant) => void m.viewXml(variant)}
         onRetryNow={m.retryNow}
         onReconcile={m.reconcile}
+        onRetransmitCorrected={m.retransmitCorrected}
         onDownloadRide={() => void m.downloadRide()}
       />
     </ErpPageTemplate>

@@ -709,7 +709,7 @@ Tests de arquitectura propuestos (`ERP.Architecture.Tests`, ratchet sobre la deu
 | `SriFiscalStatus` / `SriStatusQueryOutcome` | **DO NOT TOUCH** | Modelo a replicar |
 | Preflight XSD fail-closed | **DO NOT TOUCH** | — |
 | ADR-036: `Dispatching`, `Discarded`, `AnnulmentPending`, guard, anulación | **DO NOT TOUCH** | — |
-| `ElectronicDocument` (agregado) | **KEEP / EXTEND** | + `SpecificationVersion` (fase 3); salida de `Rejected` (R12, ticket propio) |
+| `ElectronicDocument` (agregado) | **KEEP / EXTEND** | + `SpecificationVersion` (fase 3); salida de `Rejected` implementada (R12 Fase B, addendum de ADR-023) |
 | `ElectronicDocumentIssuer` | **KEEP / EXTEND** | Interpretación tipada (fase 5); sin conocer composer ni perfil |
 | `IElectronicDocumentXmlSupplier` + resolver | **KEEP** | Costura por tipo |
 | `CommercialElectronicDocumentXmlSupplier` | **EXTEND** (fase 1) | Invoca el composer |

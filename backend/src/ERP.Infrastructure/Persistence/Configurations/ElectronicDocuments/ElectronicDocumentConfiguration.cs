@@ -88,6 +88,19 @@ public sealed class ElectronicDocumentConfiguration : IEntityTypeConfiguration<E
         builder.Property(x => x.LastError).HasColumnName("last_error");
         // ADR-036 (ZH-RETENTION-SRI-ANNULMENT-01) — referencia débil a la solicitud de anulación.
         builder.Property(x => x.AnnulmentRequestId).HasColumnName("annulment_request_id");
+        // R12 Fase B — intento de transmisión vigente y frontera de su evidencia.
+        builder
+            .Property(x => x.TransmissionAttempt)
+            .HasColumnName("transmission_attempt")
+            .HasDefaultValue(1)
+            .ValueGeneratedNever()
+            .IsRequired();
+        builder
+            .Property(x => x.TransmissionAttemptStartedUtc)
+            .HasColumnName("transmission_attempt_started_utc");
+        builder
+            .Property(x => x.SupersededSriDecisionUtc)
+            .HasColumnName("superseded_sri_decision_utc");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

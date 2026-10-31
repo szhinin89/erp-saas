@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-10-27 07:08:14",
+    "generated":  "2026-10-31 18:07:43",
     "coverage":  {
                      "mappedFeaturePoints":  53,
-                     "totalFeaturePoints":  301,
-                     "percentage":  17.61
+                     "totalFeaturePoints":  305,
+                     "percentage":  17.38
                  },
     "domains":  [
                     {
@@ -12,7 +12,7 @@
                                         {
                                             "name":  "Company",
                                             "score":  77.75,
-                                            "features":  14,
+                                            "features":  15,
                                             "processes":  [
 
                                                           ],
@@ -106,7 +106,7 @@
 
                                                           ],
                                             "risks":  [
-                                                          "6 possible secret(s) detected in module source",
+                                                          "7 possible secret(s) detected in module source",
                                                           "1 anonymous-access file(s) detected in module source"
                                                       ],
                                             "risk":  "HIGH"
@@ -239,7 +239,7 @@
                                         {
                                             "name":  "Caja",
                                             "score":  81.5,
-                                            "features":  12,
+                                            "features":  13,
                                             "processes":  [
 
                                                           ],
@@ -261,7 +261,7 @@
 
                                                           ],
                                             "risks":  [
-                                                          "1 large file(s) (\u003e=500 lines)"
+                                                          "2 large file(s) (\u003e=500 lines)"
                                                       ],
                                             "risk":  "MEDIUM"
                                         }
@@ -297,7 +297,7 @@
                                         {
                                             "name":  "ElectronicDocuments",
                                             "score":  81.5,
-                                            "features":  9,
+                                            "features":  11,
                                             "processes":  [
 
                                                           ],

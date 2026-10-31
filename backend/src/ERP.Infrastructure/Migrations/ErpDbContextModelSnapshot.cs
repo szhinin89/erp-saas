@@ -5796,9 +5796,22 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("source_module");
 
+                    b.Property<DateTime?>("SupersededSriDecisionUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("superseded_sri_decision_utc");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
                         .HasColumnName("tenant_id");
+
+                    b.Property<int>("TransmissionAttempt")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("transmission_attempt");
+
+                    b.Property<DateTime?>("TransmissionAttemptStartedUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("transmission_attempt_started_utc");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6011,6 +6024,126 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_electronic_document_sri_message_user_occurred_at");
 
                     b.ToTable("electronic_document_sri_message", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocumentTransmissionAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_number");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("CorrectionSummary")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("correction_summary");
+
+                    b.Property<string>("DraftXmlPath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("draft_xml_path");
+
+                    b.Property<string>("DraftXmlSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("draft_xml_sha256")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("ElectronicDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("electronic_document_id");
+
+                    b.Property<Guid>("IdempotencyKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("PreviousSignedXmlPath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("previous_signed_xml_path");
+
+                    b.Property<string>("PreviousSignedXmlSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("previous_signed_xml_sha256")
+                        .IsFixedLength();
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("RejectionCodes")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("rejection_codes");
+
+                    b.Property<string>("RejectionStage")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("rejection_stage");
+
+                    b.Property<DateTime>("RequestedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at_utc");
+
+                    b.Property<Guid>("RequestedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by");
+
+                    b.Property<string>("SignedXmlPath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("signed_xml_path");
+
+                    b.Property<string>("SignedXmlSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("signed_xml_sha256")
+                        .IsFixedLength();
+
+                    b.Property<DateTime?>("SupersededSriDecisionUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("superseded_sri_decision_utc");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ElectronicDocumentId");
+
+                    b.HasIndex("TenantId", "ElectronicDocumentId", "AttemptNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_electronic_document_transmission_attempt_number");
+
+                    b.HasIndex("TenantId", "ElectronicDocumentId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("uq_electronic_document_transmission_attempt_idempotency");
+
+                    b.ToTable("electronic_document_transmission_attempts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_electronic_document_transmission_attempt_number", "attempt_number >= 2");
+                        });
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Expenses.Entities.ExpenseCategoryNode", b =>
@@ -20444,6 +20577,15 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.DocTypes.Entities.DocType", null)
                         .WithMany()
                         .HasForeignKey("DocumentTypeCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocumentTransmissionAttempt", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.ElectronicDocuments.Entities.ElectronicDocument", null)
+                        .WithMany()
+                        .HasForeignKey("ElectronicDocumentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

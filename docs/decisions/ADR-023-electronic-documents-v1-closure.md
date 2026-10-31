@@ -255,6 +255,31 @@ bajo lock: una anulación concurrente podía terminar con el XML de una venta an
 **Sin cambios:** estados, transiciones, firma, XML, SOAP, clave de acceso, secuenciales, política de reintentos,
 jobs, migraciones y la anulación de retenciones. Contrato: [backend.md § Revertir una venta](../architecture/backend.md#revertir-una-venta-un-solo-camino-por-factura-zh-sales-cancel-authorized-return-rule-01).
 
+## Addendum (2026-10-31): R12 Fase B — corrección y retransmisión desde Rejected (causa 1)
+
+Ficha Técnica Offline 2.34, tabla de errores, nota 1: el comprobante NO AUTORIZADO puede reenviarse corregido con
+la misma clave; `Rejected` no tenía salida. Decisiones R12 del propietario: solo 01/04/07, solo errores del archivo
+35/36/47/48/52/58/67, acción explícita con motivo y permiso, misma clave y operación comercial.
+
+- **Transición nueva** `ElectronicDocument.ClaimCorrectedRetransmission` (`Rejected→Signed`, misma clave, rutas
+  nuevas obligatorias): `TransmissionAttempt`, `TransmissionAttemptStartedUtc` y `SupersededSriDecisionUtc`
+  (reloj del SRI) delimitan el intento; `IsCurrentAttemptSriDecision` descarta las NO AUTORIZADO históricas.
+  Evidencia append-only `ElectronicDocumentTransmissionAttempt` (únicos por intento y por clave de idempotencia).
+- **Emisor:** `IElectronicDocumentCorrectedRetransmission` (implementado por `ElectronicDocumentIssuer`, sin otro
+  motor): elegibilidad pura `ElectronicDocumentRetransmissionPolicy`, consulta única del historial
+  (`ISriAuthorizationClient.QueryDecisionsAsync`, sobre el mismo `SriSoapClient`), pipeline de emisión compartido
+  (`PrepareSignedXmlAsync`, refactor sin cambio de comportamiento), `ElectronicDocumentXmlCorrectionComparer`,
+  almacenamiento versionado (`StoreAttemptAsync`), reclamo bajo el lock del guard de Fase A y una transmisión.
+  `SriAuthorizationResult.Decisions` expone todas las `<autorizacion>`; R14 no cambia.
+- **R11 por intento:** `GetFirstReceivedAtUtcAsync(…, sinceUtc)`; sin retransmisión, `null` (sin cambios).
+- **API/Monitor:** permiso `electronic-documents.retransmit-corrected`; elegibilidad y motivos en
+  `ElectronicDocumentDiagnosticDto.Retransmission`; acción con confirmación.
+
+**Sin cambios:** firma, builders, XSD, clave de acceso, secuenciales, política de reintentos, job, Caso #32,
+anulación de retenciones y el comportamiento de comprobantes sin retransmisión. Migración aditiva
+`CorrectedRetransmission` (3 columnas de `electronic_documents`, tabla nueva). Contrato:
+[backend.md § Límites y finalización](../architecture/backend.md#límites-y-finalización).
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

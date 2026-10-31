@@ -53,6 +53,20 @@ public sealed class ElectronicDocumentAuthorizationServiceTests
             CapturedWsdlUrl = wsdlUrl;
             return Task.FromResult(_behavior(accessKey, wsdlUrl));
         }
+
+        public SriAuthorizationHistoryResult History { get; set; } =
+            new(true, Array.Empty<SriAuthorizationDecision>(), null);
+
+        public Task<SriAuthorizationHistoryResult> QueryDecisionsAsync(
+            string accessKey,
+            string wsdlUrl,
+            CancellationToken ct = default
+        )
+        {
+            CapturedAccessKey = accessKey;
+            CapturedWsdlUrl = wsdlUrl;
+            return Task.FromResult(History);
+        }
     }
 
     private static SriSettings ValidSriSettings(
