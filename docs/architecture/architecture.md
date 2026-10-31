@@ -373,7 +373,9 @@ documentos de `docs/sri/` son auditorías fechadas y las decisiones de origen es
 
 - Un catálogo = una tabla y una entidad tipadas. Canal único de datos: `HasData` materializado por la baseline EF
   única de ERP ZH V1 (`20261021162651_InitialProductionBaseline`, GREENFIELD: incluye todas las correcciones SRI),
-  salvo la geografía INEC, que llega por el único script `Seeding/InstallData` (ver § Geografía INEC). Tras la
+  más la incremental `PhysicalDocumentAuthorization`, conservada para P0 por decisión del propietario
+  (2026-10-31; [cadena vigente](../DATABASE.md#migraciones)), salvo la geografía INEC, que llega por el único
+  script `Seeding/InstallData` (ver § Geografía INEC). Tras la
   primera instalación publicada, cada cambio es una migración incremental. Sin CRUD, UI de edición ni escrituras
   desde Application/API.
 - `is_active` es **disponibilidad operativa** para operaciones nuevas, no validez normativa. Las resoluciones por
@@ -385,7 +387,7 @@ documentos de `docs/sri/` son auditorías fechadas y las decisiones de origen es
 - Cada dato normativo cita su fuente: en `sri_normative_source` cuando el catálogo tiene vigencia; en esta sección
   para los catálogos estables. Ninguna tarifa, código o regla se infiere sin fuente oficial.
 
-**Inventario (27 tablas).** OF = catálogo oficial SRI · INT = interna relacionada con SRI · ERP = propia del ERP.
+**Inventario (28 tablas).** OF = catálogo oficial SRI · INT = interna relacionada con SRI · ERP = propia del ERP.
 
 | Tabla | Clase | Fuente oficial | Definición vigente |
 |---|---|---|---|
@@ -403,6 +405,7 @@ documentos de `docs/sri/` son auditorías fechadas y las decisiones de origen es
 | `sri_emission_type` | OF | Ficha 2.34 Tabla 2 | `1` emisión normal; `2` histórica (no existe en offline), sin consumidores |
 | `sri_id_type_usage` | INT | Notas de la Tabla 6 y XSD | § Identificación |
 | `sri_tax_regime` | INT | Ficha 2.34 Anexo 22 (leyendas RIMPE) | § Régimen tributario |
+| `sri_tax_regime_physical_doc_type` | INT | Resoluciones referenciadas por fila en `legal_basis` | [Política física F-1..F-5](company-readiness.md#política-fiscal-de-emisión-física-f-1f-5); General → 01 bloqueada |
 | `sri_country` | INT | ISO-3166 + Ficha 2.34 Tabla 25 / ATS Tabla 16 | § Países |
 | `sri_uom` | INT | Sin catálogo SRI codificado (`unidadMedida` es texto libre) | Catálogo interno de unidades |
 | `sri_normative_source` | INT | — | Registro de fuentes; sin `is_active` |
@@ -796,7 +799,7 @@ Si cualquier checkbox es "SÍ" (hay violación) → **BLOQUEAR PR**.
 | Subscriber scope (histórico, archivado) | [docs/archive/SUBSCRIBER-SCOPE-SEALED.md](../archive/SUBSCRIBER-SCOPE-SEALED.md) |
 | Política legacy pre-prod | [§ Política de compatibilidad legacy](#política-de-compatibilidad-legacy) más arriba en este documento |
 | Reglas bloqueantes PR | [pr-rules-catalog.md](./pr-rules-catalog.md) (B-07 a B-11) |
-| Catálogos globales | Schema `global` — 27 tablas (inventario en GLOBAL IMMUTABLE) |
+| Catálogos globales | Schema `global` — 28 tablas (inventario en GLOBAL IMMUTABLE) |
 | Ítems (alcance Company, naturaleza, catálogo) | [items.md](./items.md) |
 | Inventario (Kardex, valoración, ajustes, transferencias) | [inventory.md](./inventory.md) |
 | Compras (recepción, compra, devolución, NC, saldo a favor) | [purchases.md](./purchases.md) |

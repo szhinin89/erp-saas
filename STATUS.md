@@ -1,5 +1,24 @@
 # Project Status
 
+## P0 instalación limpia — READY FOR REVIEW (2026-10-31)
+
+Base `main@d462cddde19a0b8196cf75089f388a4316dae2ad`, CI SUCCESS confirmado por el
+propietario. Esta confirmación actualiza los pendientes de commit/CI de las entradas
+históricas incluidas en ese commit (F-1..F-5 y corrección PR-7 `2e0977ec5`, entre ellas);
+no acredita aceptación visual, E2E SRI ni nuevos cierres CLOSED. Se conservan abajo
+las entradas originales como historial de la evidencia disponible en cada entrega.
+
+Decisión del propietario para P0: conservar `PhysicalDocumentAuthorization` incremental,
+sin consolidar la baseline ni modificar bases persistentes. Evidencia de ejecución:
+[P0 instalación limpia](docs/evidence/p0-clean-install-20261031/README.md).
+
+PASS agente: PostgreSQL 16 desechable vacío → ambas migraciones aplicadas, sin cambios
+pendientes del modelo EF; 28 tablas GLOBAL y política física bloqueada preservadas.
+Infrastructure 84/84, API 23/23 (arranque First Run y consulta operativa HTTP real),
+Application 5/5, frontend público 4/4 y cuatro scripts oficiales del launcher PASS.
+Sin error reproducido de instalación. Sin cambios de código ni bases persistentes,
+emisión SRI, staging, commit o push. Pendiente gate/revisión del propietario; no CLOSED.
+
 ## F-1..F-5 — corrección final: captura acotada y Régimen General — READY FOR REVIEW (2026-10-30)
 
 1. Numeración física: el rango autorizado se comprueba bajo el lock de Secuencias Documentales

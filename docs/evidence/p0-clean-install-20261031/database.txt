@@ -1,0 +1,185 @@
+       database        |                                         version
+-----------------------+------------------------------------------------------------------------------------------
+ erp_p0_clean_isolated | PostgreSQL 16.14 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+(1 row)
+
+                 MigrationId                  | ProductVersion
+----------------------------------------------+----------------
+ 20261021162651_InitialProductionBaseline     | 10.0.4
+ 20261031012613_PhysicalDocumentAuthorization | 10.0.4
+(2 rows)
+
+ application_tables
+--------------------
+                217
+(1 row)
+
+ global_tables
+---------------
+            28
+(1 row)
+
+ tax_regime_code | doc_type_code | is_active |                                                legal_basis
+-----------------+---------------+-----------+------------------------------------------------------------------------------------------------------------
+ 01              | 01            | f         | BLOQUEADO: Res. NAC-DGERCGC22-00000024, preimpresos solo por fuerza mayor o caso fortuito (no verificable)
+ 03              | 02            | t         | Res. NAC-DGERCGC21-00000060 (RIMPE Negocio Popular: notas de venta)
+(2 rows)
+
+ code | is_active | is_electronic
+------+-----------+---------------
+ 01   | t         | t
+ 02   | f         | f
+ 03   | t         | t
+ 04   | t         | t
+ 05   | t         | t
+ 06   | t         | t
+ 07   | t         | t
+ 08   | f         | f
+ 09   | f         | f
+ 18   | f         | f
+(10 rows)
+
+ id | company_id | emission_point_id | doc_type_code | authorization_number | authorized_on | expires_on | first_sequential | last_sequential | tenant_id | created_at | updated_at | created_by | updated_by | is_active | is_system_seeded
+----+------------+-------------------+---------------+----------------------+---------------+------------+------------------+-----------------+-----------+------------+------------+------------+------------+-----------+------------------
+(0 rows)
+
+  table_name   | rows
+---------------+------
+ barcode_types |    6
+(1 row)
+
+ table_name | rows
+------------+------
+ doc_type   |   10
+(1 row)
+
+    table_name    | rows
+------------------+------
+ doc_type_sri_map |    4
+(1 row)
+
+ table_name  | rows
+-------------+------
+ geo_cantons |    0
+(1 row)
+
+  table_name  | rows
+--------------+------
+ geo_parishes |    0
+(1 row)
+
+  table_name   | rows
+---------------+------
+ geo_provinces |    0
+(1 row)
+
+      table_name      | rows
+----------------------+------
+ item_margin_statuses |    5
+(1 row)
+
+    table_name     | rows
+-------------------+------
+ legal_entity_type |    3
+(1 row)
+
+      table_name      | rows
+----------------------+------
+ sri_annulment_policy |    1
+(1 row)
+
+          table_name          | rows
+------------------------------+------
+ sri_annulment_policy_version |    2
+(1 row)
+
+ table_name  | rows
+-------------+------
+ sri_country |   29
+(1 row)
+
+  table_name  | rows
+--------------+------
+ sri_doc_type |   10
+(1 row)
+
+    table_name     | rows
+-------------------+------
+ sri_emission_type |    2
+(1 row)
+
+   table_name   | rows
+----------------+------
+ sri_error_code |   36
+(1 row)
+
+  table_name  | rows
+--------------+------
+ sri_ice_rate |   77
+(1 row)
+
+ table_name  | rows
+-------------+------
+ sri_id_type |    6
+(1 row)
+
+    table_name     | rows
+-------------------+------
+ sri_id_type_usage |   13
+(1 row)
+
+   table_name    | rows
+-----------------+------
+ sri_irbpnr_rate |    1
+(1 row)
+
+      table_name      | rows
+----------------------+------
+ sri_normative_source |   10
+(1 row)
+
+     table_name     | rows
+--------------------+------
+ sri_payment_method |    8
+(1 row)
+
+     table_name     | rows
+--------------------+------
+ sri_retention_code |   23
+(1 row)
+
+         table_name         | rows
+----------------------------+------
+ sri_retention_code_version |   32
+(1 row)
+
+    table_name     | rows
+-------------------+------
+ sri_supplier_type |    2
+(1 row)
+
+   table_name   | rows
+----------------+------
+ sri_tax_regime |    4
+(1 row)
+
+            table_name            | rows
+----------------------------------+------
+ sri_tax_regime_physical_doc_type |    2
+(1 row)
+
+   table_name    | rows
+-----------------+------
+ sri_tax_support |   21
+(1 row)
+
+ table_name | rows
+------------+------
+ sri_uom    |   22
+(1 row)
+
+  table_name  | rows
+--------------+------
+ sri_vat_rate |    9
+(1 row)
+

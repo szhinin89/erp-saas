@@ -40,8 +40,8 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 | Entorno | Política |
 |---------|----------|
-| Development | Instalación inicial con la baseline V1 única; recreación solo con autorización expresa |
-| Staging / Production | Instalación inicial con la misma baseline V1 única; sin incrementales vigentes |
+| Development | Instalación inicial con la cadena V1 vigente indicada abajo; recreación solo con autorización expresa |
+| Staging / Production | Instalación inicial con la misma cadena V1 vigente; esta entrega no actúa sobre bases persistentes |
 
 ---
 
@@ -61,16 +61,18 @@ orden de filas y columnas). Única diferencia de datos: `sri_normative_source.in
 baseline en las 10 fuentes (la trazabilidad debe nombrar una migración existente, `SriCatalogComplianceTests`).
 Diferencia de esquema: orden físico de columnas en `sri_country` y `sri_ice_rate`, sin efecto.
 
-ERP ZH V1 utiliza exclusivamente esta baseline para una instalación nueva. El índice vigente
+ERP ZH V1 utiliza esta baseline como inicio de la cadena para una instalación nueva. El índice vigente
 `ux_cash_sessions_open_per_company_user` sobre `(tenant_id, company_id, user_id)`, único y
 filtrado por `status = 1`, está consolidado en ella y en su Designer, coherentes con EF Core
 y ModelSnapshot. No se conserva el índice anterior ni una migración incremental de Caja.
 Las tablas y estructuras vigentes de Compras y los objetos raw SQL se conservan íntegramente.
 Esta consolidación no modifica bases existentes ni su historial EF, no aplica migraciones y
 no incorpora mecanismos de compatibilidad o reparaciones de instalaciones anteriores.
-La instalación limpia y su validación real quedan pendientes del propietario.
+La evidencia histórica anterior no validaba la instalación limpia con la incremental posterior;
+la ejecución P0 del 2026-10-31 se registra en
+[evidencia P0](evidence/p0-clean-install-20261031/README.md), con su estado de entrega en [STATUS](../STATUS.md).
 
-Incremental vigente pendiente de consolidar (decisión del propietario): `PhysicalDocumentAuthorization` (F-1..F-5; tablas `physical_document_authorization` y `global.sri_tax_regime_physical_doc_type` con sus 2 filas `HasData`, General → 01 inactiva; ver [política fiscal de emisión física](architecture/company-readiness.md#política-fiscal-de-emisión-física-f-1f-5)).
+Incremental vigente conservada por decisión del propietario para P0 (2026-10-31), sin consolidación en esta entrega: `20261031012613_PhysicalDocumentAuthorization` (F-1..F-5; tablas `physical_document_authorization` y `global.sri_tax_regime_physical_doc_type` con sus 2 filas `HasData`, General → 01 inactiva; ver [política fiscal de emisión física](architecture/company-readiness.md#política-fiscal-de-emisión-física-f-1f-5)). La instalación nueva aplica ambas migraciones, en orden, con `dotnet ef database update`.
 
 Los archivos de migración se guardan con LF (`.gitattributes`): los raw string literals de C# trasladan el fin de línea al cuerpo de las funciones plpgsql.
 

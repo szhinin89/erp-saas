@@ -1,0 +1,598 @@
+[
+    {
+        "group":  "infrastructure",
+        "trxSha256":  "9008B8CA92474903A9F6044AB97EE6A02064627B9B19DCE5FE0ECF27D30F9077",
+        "start":  "2026-10-31T05:26:35.6672906-05:00",
+        "finish":  "2026-10-31T05:31:24.9764159-05:00",
+        "total":  84,
+        "passed":  84,
+        "failed":  0,
+        "notExecuted":  0,
+        "tests":  [
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Busqueda_por_similitud_de_Item_Matching_funciona_sobre_la_baseline",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.8084720"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Check_de_naturaleza_de_Item_existe_con_su_definicion",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0138914"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Exclusion_de_periodos_contables_existe_con_su_definicion",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0141215"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Extension_pg_trgm_existe",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0114752"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Funcion_A1_existe(functionName: \"a1_inventory_product_scope\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0122761"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Funcion_A1_existe(functionName: \"a1_item_barcode_unique\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0117520"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Funcion_de_exclusividad_Compra_Gasto_existe",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0114344"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Funcion_raw_tiene_su_definicion_vigente(functionName: \"a1_inventory_product_scope\", expectedBody: \"BEGIN IF NOT EXISTS(SELECT 1 FROM items i WHERE i.\"···)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0097611"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Funcion_raw_tiene_su_definicion_vigente(functionName: \"a1_item_barcode_unique\", expectedBody: \"DECLARE barcode_value text; BEGIN IF TG_TABLE_NAME\"···)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0072384"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Funcion_raw_tiene_su_definicion_vigente(functionName: \"enforce_purchase_expense_exclusivity\", expectedBody: \"BEGIN IF NEW.access_key IS NULL THEN RETURN NEW; E\"···)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0122948"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Indice_raw_existe_con_su_definicion(indexName: \"ix_items_description_trgm\", expectedDefinition: \"CREATE INDEX ix_items_description_trgm ON public.i\"···)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0662957"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Indice_raw_existe_con_su_definicion(indexName: \"ix_items_short_name_trgm\", expectedDefinition: \"CREATE INDEX ix_items_short_name_trgm ON public.it\"···)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0142171"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Indice_raw_existe_con_su_definicion(indexName: \"uq_items_tenant_company_sku\", expectedDefinition: \"CREATE UNIQUE INDEX uq_items_tenant_company_sku ON\"···)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0164592"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Indice_raw_existe_con_su_definicion(indexName: \"uq_mbp_identification\", expectedDefinition: \"CREATE UNIQUE INDEX uq_mbp_identification ON publi\"···)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0141599"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Tabla_background_job_progress_existe_con_su_estructura",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0499796"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Trigger_A1_existe_habilitado_sobre_su_tabla(triggerName: \"a1_movement_product_scope\", tableName: \"stock_movements\", functionName: \"a1_inventory_product_scope\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0075067"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Trigger_A1_existe_habilitado_sobre_su_tabla(triggerName: \"a1_packaging_barcode_unique\", tableName: \"item_packaging_levels\", functionName: \"a1_item_barcode_unique\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0064598"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Trigger_A1_existe_habilitado_sobre_su_tabla(triggerName: \"a1_stock_product_scope\", tableName: \"current_stocks\", functionName: \"a1_inventory_product_scope\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0147763"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Trigger_A1_existe_habilitado_sobre_su_tabla(triggerName: \"a1_variant_barcode_unique\", tableName: \"item_variant_barcodes\", functionName: \"a1_item_barcode_unique\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0078922"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Trigger_de_exclusividad_existe_habilitado_sobre_su_tabla(triggerName: \"tr_expense_purchase_exclusivity\", tableName: \"expense_documents\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0077225"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.RawSqlDatabaseObjectsBaselineIntegrationTests.Trigger_de_exclusividad_existe_habilitado_sobre_su_tabla(triggerName: \"tr_purchase_expense_exclusivity\", tableName: \"purchase_invoices\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0110795"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.GlobalCatalogOfficialAlignmentPostgreSqlTests.Catalog_corrections_reach_the_operational_readers",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:23.7075749"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.GlobalCatalogOfficialAlignmentPostgreSqlTests.Fresh_install_loads_only_the_inec_cge_2026_geography_once",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:10.8698547"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Cada_concepto_versionado_tiene_a_lo_sumo_una_regla_vigente_y_exactamente_una_si_no_fue_retirado",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0413416"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Catalogo_de_retenciones_vive_en_esquema_global_sin_query_filters",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0040035"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Codigos_341_342_344_quedan_retirados_sin_version_nueva_pero_conservados",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0181682"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Concepto_728_IVA_15_se_conserva_pero_no_es_emitible",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0057362"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Identidad_interna_y_clave_de_negocio_son_independientes_del_codigo_XML",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0103874"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.La_fuente_ATS_2026_es_trazable_al_archivo_oficial",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0023161"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Los_20_conceptos_originales_conservan_su_identidad_y_codigo",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0217277"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Ninguna_entidad_de_catalogo_SRI_es_de_tenant_ni_de_empresa",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0125919"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"303\", officialRate: 10)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0067832"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"304\", officialRate: 10)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0061578"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"307\", officialRate: 3)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0106778"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"309\", officialRate: 3)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0098358"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"312\", officialRate: 2)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0099890"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"320\", officialRate: 10)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0137776"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"325\", officialRate: 25)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0057751"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Renta_vigente_desde_2026_08_06_tiene_la_tasa_fija_exacta_del_ATS(code: \"343\", officialRate: 1)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0059059"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Retencion_en_cero_y_no_procede_existen_pero_no_son_seleccionables",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0074347"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"721\", percentage: 10, xmlCode: \"9\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0036440"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"723\", percentage: 20, xmlCode: \"10\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0043734"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"725\", percentage: 30, xmlCode: \"1\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0035826"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"726\", percentage: 70, xmlCode: \"2\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0035888"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"727\", percentage: 100, xmlCode: \"3\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0051028"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"IVA-0\", percentage: 0, xmlCode: \"7\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0284170"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"IVA-50\", percentage: 50, xmlCode: \"11\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0030215"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tabla20_IVA_esta_completa_con_porcentaje_y_codigo_oficial(businessCode: \"IVA-NP\", percentage: 0, xmlCode: \"8\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0182573"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tasas_condicionales_nunca_se_convierten_en_tasa_fija(code: \"310\", officialRule: \"1 /0 según resolución NAC-DGERCGC26-00000028\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0062966"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Tasas_condicionales_nunca_se_convierten_en_tasa_fija(code: \"327\", officialRule: \"12 o 14\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0047391"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Toda_version_referencia_una_fuente_normativa_trazable_a_su_migracion",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0562293"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Todo_concepto_habilitado_con_tasa_fija_vigente_tiene_la_misma_tasa_operativa",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0108896"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Todo_concepto_IVA_o_Renta_vigente_es_emitible_salvo_la_excepcion_documentada_728",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0072064"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Versiones_de_Renta_heredadas_conservan_su_codigo_sin_porcentaje_y_cierran_el_2026_08_05",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0106380"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Versiones_del_mismo_concepto_no_se_solapan",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0122926"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriCatalogComplianceTests.Versiones_publicadas_coinciden_con_el_manifiesto_aprobado",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0163496"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Insertar_un_tipo_inactivo_por_EF_persiste_false",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.2236267"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Los_flags_persistidos_coinciden_con_el_seed_declarado",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0262653"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Tipos_electronicos_coinciden_con_tabla_3_de_ficha_234",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0591682"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Un_tipo_activo_sigue_activo",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.6594820"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Un_tipo_declarado_inactivo_permanece_inactivo_para_los_consumidores(code: \"02\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0101291"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Un_tipo_declarado_inactivo_permanece_inactivo_para_los_consumidores(code: \"08\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0113762"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Un_tipo_declarado_inactivo_permanece_inactivo_para_los_consumidores(code: \"09\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0114264"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriDocTypeActiveFlagsPostgreSqlTests.Un_tipo_declarado_inactivo_permanece_inactivo_para_los_consumidores(code: \"18\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0278156"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunFullInstallationTests.Baseline_exclusive_owner_full_real_handler_atomic_commit_and_restart",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:13.0593105"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Backend_loss_stops_owner_and_monitor_does_not_reconnect",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:02.2229480"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Commit_failure_rolls_back_state_and_keeps_owner",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.4136712"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Completion_commits_before_release_and_next_startup_emits_nothing",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.4824249"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Concurrent_startups_with_missing_state_have_one_owner_and_one_insert",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.4263930"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Connection_loss_during_transaction_rolls_back_and_cannot_reopen",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.3430782"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.EF_is_forbidden_to_reopen_a_closed_protected_connection",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.2160076"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Existing_pending_state_is_not_replaced_by_a_second_instance",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.2456694"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Failure_after_successful_commit_is_reconciled_without_reconnecting",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:02.4970211"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Persistence_failure_prints_nothing_and_does_not_release_owner",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.3216822"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Process_shutdown_releases_session_and_replacement_owner_can_start",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.1844255"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Protected_writes_cannot_use_another_already_open_connection",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.2598169"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Real_handler_rolls_back_intermediate_writes_and_keeps_owner_on_provisioning_failure",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.3616472"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests.Simultaneous_requests_wait_and_real_handler_rechecks_initialized_inside_transaction",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.2788154"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupServiceTests.Initialized_state_does_not_save_or_print",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0072943"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupServiceTests.Missing_state_or_token_is_issued_and_printed_only_after_save(existing: False, minutes: 15)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0294313"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupServiceTests.Missing_state_or_token_is_issued_and_printed_only_after_save(existing: True, minutes: 7)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0039144"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupServiceTests.Persistence_failure_does_not_print",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0538583"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupServiceTests.Startup_replaces_active_or_expired_token(previousMinutes: 15)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0012300"
+                      },
+                      {
+                          "name":  "ERP.Infrastructure.Tests.Setup.FirstRunSetupServiceTests.Startup_replaces_active_or_expired_token(previousMinutes: -15)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0025351"
+                      }
+                  ]
+    },
+    {
+        "group":  "api",
+        "trxSha256":  "4936CA40E89250048FE612DB393A87A690BBF946D51E1969106A05A104E50AFB",
+        "start":  "2026-10-31T05:26:59.0246329-05:00",
+        "finish":  "2026-10-31T05:29:07.4901203-05:00",
+        "total":  23,
+        "passed":  23,
+        "failed":  0,
+        "notExecuted":  0,
+        "tests":  [
+                      {
+                          "name":  "ERP.API.Tests.Hosting.FirstRunTokenContractTests.Initialization_invalidates_token_and_prevents_reissue",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0523109"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.FirstRunTokenContractTests.Token_is_required_and_expires_at_the_deadline",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0005785"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Exact_confirmation_accepts_only_the_displayed_target",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0022393"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Missing_or_inexact_confirmation_is_rejected(confirmation: \"\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0001745"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Missing_or_inexact_confirmation_is_rejected(confirmation: \"eliminar localhost:5435/erp_zh_dev Development\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0010083"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Missing_or_inexact_confirmation_is_rejected(confirmation: \"RESETEAR\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0006963"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Missing_or_inexact_confirmation_is_rejected(confirmation: null)",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0002242"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Unauthorized_target_is_rejected_before_confirmation(host: \"localhost\", port: 5432, database: \"erp_zh_dev\", environment: \"Development\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0002836"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Unauthorized_target_is_rejected_before_confirmation(host: \"localhost\", port: 5435, database: \"erp_zh_dev\", environment: \"Production\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0001915"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Unauthorized_target_is_rejected_before_confirmation(host: \"localhost\", port: 5435, database: \"erp_zh_prod\", environment: \"Development\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0011088"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Unauthorized_target_is_rejected_before_confirmation(host: \"localhost\", port: 5435, database: \"erp_zh_test\", environment: \"Development\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0003036"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Unauthorized_target_is_rejected_before_confirmation(host: \"localhost,remote\", port: 5435, database: \"erp_zh_dev\", environment: \"Development\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0002716"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Hosting.LauncherResetGuardTests.Unauthorized_target_is_rejected_before_confirmation(host: \"remote\", port: 5435, database: \"erp_zh_dev\", environment: \"Development\")",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0636399"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.CompanyOperationalReadinessBranchHttpTests.Caja_fisica_sin_autorizacion_de_impresion_acumula_su_propio_requisito",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.4474632"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.CompanyOperationalReadinessBranchHttpTests.Las_cajas_de_otra_empresa_nunca_aparecen",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:01.7746253"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.CompanyOperationalReadinessBranchHttpTests.Sin_X_Branch_Id_se_rechaza_y_no_se_elige_otra_sucursal",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0502241"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.CompanyOperationalReadinessBranchHttpTests.Sucursal_de_la_empresa_sin_autorizacion_del_usuario_se_rechaza",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0878710"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.CompanyOperationalReadinessBranchHttpTests.Sucursal_de_otra_empresa_se_rechaza_sin_filtrar_datos",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.1134082"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.CompanyOperationalReadinessBranchHttpTests.Sucursal_matriz_devuelve_solo_sus_cajas_con_punto_y_estado_fiscal_fisico",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.2434227"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.CompanyOperationalReadinessBranchHttpTests.Sucursal_norte_no_hereda_las_cajas_de_la_matriz",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.1781103"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.FirstRunHttpTests.Missing_token_uses_the_official_validation_error_contract",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:15.2398651"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.FirstRunHttpTests.Pending_invalid_validation_and_expired_tokens_do_not_install_or_leak",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:16.8589794"
+                      },
+                      {
+                          "name":  "ERP.API.Tests.Integration.FirstRunHttpTests.Transactional_failure_concurrent_HTTP_installation_contender_and_restart",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:46.5664494"
+                      }
+                  ]
+    },
+    {
+        "group":  "application",
+        "trxSha256":  "58DF3F8AEBECC784C254AE39A071ED829308B74D7DDCE25E67E6BBFD106B1B8F",
+        "start":  "2026-10-31T05:28:37.6892070-05:00",
+        "finish":  "2026-10-31T05:28:40.5987545-05:00",
+        "total":  5,
+        "passed":  5,
+        "failed":  0,
+        "notExecuted":  0,
+        "tests":  [
+                      {
+                          "name":  "ERP.Application.Tests.Setup.CreateInitialAdminHandlerTests.Autoriza_automaticamente_al_admin_en_la_sucursal_principal_del_bootstrap",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0264141"
+                      },
+                      {
+                          "name":  "ERP.Application.Tests.Setup.CreateInitialAdminHandlerTests.Sin_token_de_instalacion_activo_en_el_servidor_rechaza_la_solicitud",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0056791"
+                      },
+                      {
+                          "name":  "ERP.Application.Tests.Setup.CreateInitialAdminHandlerTests.Sistema_ya_inicializado_rechaza_un_segundo_uso_del_flujo",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0048772"
+                      },
+                      {
+                          "name":  "ERP.Application.Tests.Setup.CreateInitialAdminHandlerTests.Token_de_instalacion_valido_y_sistema_no_inicializado_crea_tenant_y_admin_sin_TenantId_ni_Role_del_cliente",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.2973795"
+                      },
+                      {
+                          "name":  "ERP.Application.Tests.Setup.CreateInitialAdminHandlerTests.Token_incorrecto_no_crea_nada",
+                          "outcome":  "Passed",
+                          "duration":  "00:00:00.0162397"
+                      }
+                  ]
+    }
+]
