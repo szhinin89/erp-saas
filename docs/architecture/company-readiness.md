@@ -1,6 +1,6 @@
 # Preparación operativa de empresa (Company Readiness)
 
-**Estado:** IN REVIEW (Fase 2B-1 backend y contrato; Fase 2B-2 interfaz guiada). No CLOSED hasta revisión y CI.
+**Estado:** IN REVIEW (Fase 2B-1 backend y contrato; Fase 2B-2 interfaz guiada; Fase 2B-3 habilitación preventiva de cajas). No CLOSED hasta revisión y CI.
 
 SSOT funcional del diagnóstico de preparación operativa de la empresa activa en la sucursal activa: qué revisa, de qué fuente única sale cada dato, qué validador decide y qué capacidades condiciona. Las decisiones de emisión electrónica se fundamentan en [ADR-023](../decisions/ADR-023-electronic-documents-v1-closure.md) y [ADR-038](../decisions/ADR-038-sri-electronic-compliance-architecture.md); el modo contable, en [accounting.md](./accounting.md).
 
@@ -82,7 +82,7 @@ Precondiciones verificadas en el código de cada operación. Solo las que depend
 
 | Operación (propietaria) | Precondiciones de configuración reales | Capacidad |
 |---|---|---|
-| Abrir caja (`OpenCashSessionCommand`, branch-scoped) | Caja activa de la sucursal activa con punto de emisión asignado y existente. No contabiliza | Sales, CashRegister |
+| Abrir caja (`OpenCashSessionCommand`, branch-scoped) | Caja activa de la sucursal activa con punto de emisión asignado, existente y activo; los requisitos que la estrategia de emisión de ese punto exige para la factura (01): ninguno si es físico, `IElectronicEmissionRequirementsValidator` si es electrónico ([habilitación preventiva](#habilitación-preventiva-de-cajas-apertura-de-jornada)). No contabiliza | Sales, CashRegister |
 | Crear borrador de venta (`CreateSalesDraftCommand`, branch-scoped) | Caja abierta; punto de emisión **de la caja** activo en la empresa; bodegas de línea de la sucursal activa. Precio: lista del cliente → lista por defecto → `Item.BaseSalePrice`. Tipo de documento: el enviado (activo en `sri_doc_types`) o 01. Condición de pago: explícita → del cliente → Contado del sistema (o crédito con condición de empresa/vencimiento manual) | Sales |
 | Autorizar venta (`AuthorizeSalesInvoiceCommand`) | Punto y establecimiento del borrador; con emisión **electrónica** (snapshot del borrador), `IElectronicEmissionRequirementsValidator` antes del secuencial; con emisión física, ningún requisito fiscal del emisor (`PhysicalSalesInvoiceEmissionStrategy`). Contabiliza en la misma transacción: sin modo contable se rechaza | Sales, ElectronicInvoicing |
 | Confirmar compra / ajuste de stock (branch-scoped) | Bodega de la sucursal activa. Contabiliza en la misma transacción: sin modo contable se rechaza. Las transferencias no contabilizan | Inventory |
@@ -142,6 +142,18 @@ Los códigos que revisan un dato con ítem base no se publican aparte: el ítem 
 
 El resto (`matrixAddress`, `emissionPoint`, `establishmentAddress`, `sriSettings`, `sriEnvironment`, `sriWsdlUrl`, `certificate`, `certificateUnusable`, `certificateExpired`, `certificateExpiring`, `docType`) solo los publica el validador.
 
+## Habilitación preventiva de cajas (apertura de jornada)
+
+Una caja que no puede vender con su propio punto de emisión no inicia la jornada: el rechazo ocurre al abrir la caja, antes de que el cajero comience a vender, y no al autorizar la factura con el cliente esperando.
+
+- **Regla única.** `ICashRegisterOpeningReadinessChecker` (Caja, Application) evalúa la caja con **su** punto de emisión, nunca con el punto por defecto de la empresa: sin punto activo ⇒ `cashRegister.withEmissionPoint`; con punto activo, delega en `ISalesInvoiceEmissionStrategyResolver` para el tipo del punto y el documento 01 — la estrategia física no exige requisitos fiscales del emisor; la electrónica invoca `IElectronicEmissionRequirementsValidator`. No contiene reglas fiscales propias. Un fallo técnico del validador produce `electronicInvoicing.verificationFailed` y nunca habilita la caja.
+- **Autoridad en el backend.** `OpenCashSessionHandler` aplica la regla antes de crear la sesión (sin ningún efecto si rechaza): punto desactivado o fallo de verificación ⇒ `VALIDATION_ERROR`; requisitos electrónicos obligatorios ⇒ `SRI_EMISSION_REQUIREMENTS_MISSING` con el detalle del validador. Los requisitos de advertencia (`certificateExpiring`) no impiden abrir.
+- **Diagnóstico previo.** `GET /api/v1/cash-registers/{id}/opening-readiness` (branch-scoped, permiso `caja.open`, el mismo de la apertura; no exige permisos de configuración) devuelve `CashRegisterOpeningReadinessDto`: `canOpen`, `emissionType`, `fiscalStatus` y `requirements[]` (`code`, `severity` `Required`/`Warning`, `actionTarget`). Una caja de otra sucursal es `NotFound`. Solo lectura y recalculado en cada consulta; la apertura lo vuelve a evaluar.
+- **Mismos códigos que Readiness.** `OperationalReadinessCodes` (Companies, Application) es la única fuente de los códigos de ítem compartidos, del mapeo de requisitos con ítem base (`electronicEmission.company`/`issuerTaxId` ⇒ `identity.taxId`, etc.) y del estado fiscal por modalidad; la usan el resolver de empresa y la caja.
+- **Interfaz.** En la apertura de caja (`CajaPage`) se consulta el diagnóstico de la caja seleccionada en la sucursal activa (al cambiar de caja o de sucursal, y tras un rechazo de la apertura); una respuesta de otra caja o sucursal no se muestra. Si `canOpen` es `false` se deshabilita la apertura y cada requisito se presenta con el mismo componente que Preparación de Datos (`ReadinessRequirementRow`, vía `configuracion/facades/operationalReadinessGuidanceFacade`): qué falta, por qué importa y «Se corrige en» según el menú autenticado, o la indicación de pedir asistencia si el usuario no tiene acceso a esa pantalla. Si el diagnóstico no puede consultarse, se avisa y la apertura queda a decisión del backend. Las demás cajas no se ven afectadas.
+- **Física.** Una caja física preparada abre con normalidad y se muestra `NotVerified` con su aclaración: no se declara autorización fiscal física ni se resuelven F-1..F-5.
+- **Después de abrir.** Si la configuración cambia con la caja ya abierta, el gate de `AuthorizeSalesInvoiceCommand` sigue rechazando antes del secuencial y de cualquier efecto (validación definitiva sin cambios).
+
 ## Brecha de política fiscal física (F-1..F-5)
 
 La venta física es operativamente posible hoy (el backend la permite y Readiness no la bloquea), pero **no existe una política fiscal propietaria que la valide**. Por eso toda caja con punto físico se informa `fiscalStatus: NotVerified`: Readiness no le atribuye una autorización inexistente. Antes de certificar esta modalidad, el módulo propietario (Ventas / configuración documental) debe implementar su política; Readiness solo la proyectará cuando exista.
@@ -169,5 +181,7 @@ La venta física es operativamente posible hoy (el backend la permite y Readines
 
 - `ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs` (resolver).
 - `ERP.Application.Tests/Companies/GetCompanyOperationalReadinessQueryHandlerTests.cs` (proyección al DTO, scope del contexto autenticado y exigencia de sucursal).
+- `ERP.Application.Tests/Caja/OpenCashSessionHandlerTests.cs` (habilitación preventiva en la apertura: caja electrónica preparada con su propio punto y tipo 01, sin certificado, punto desactivado, fallo técnico, advertencia que no bloquea, física; rechazo sin crear la sesión) y `GetCashRegisterOpeningReadinessHandlerTests.cs` (dos cajas de una sucursal con resultados distintos, otra sucursal, códigos base, configuración que cambia, `NotVerified` físico).
 - `ERP.API.Tests/Integration/CompanyOperationalReadinessBranchHttpTests.cs` (HTTP real con PostgreSQL: cajas por sucursal, aislamiento entre empresas, rechazo sin sucursal, sucursal no autorizada o de otra empresa; solo puntos físicos, sin SRI).
 - `frontend/src/modules/configuracion/empresa/sections/OperationalReadinessSection.test.tsx` (interfaz) y `frontend/src/components/navigationAccess.test.ts` (destinos según el menú).
+- `frontend/src/modules/caja/pages/CajaPage.openingReadiness.test.tsx` (apertura: caja preparada, sin certificado, sin punto, sin acceso a la configuración, dos cajas, cambio de sucursal, respuesta ajena descartada, física `NotVerified`, rechazo que vuelve a diagnosticar, fallo de consulta).

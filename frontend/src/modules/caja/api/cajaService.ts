@@ -1,4 +1,5 @@
 import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
+import type { ReadinessActionTarget, ReadinessFiscalStatus } from "../../../types/companyProfile";
 
 const BASE = "/api/v1/cash-sessions";
 const REGISTERS_BASE = "/api/v1/cash-registers";
@@ -178,6 +179,27 @@ export interface CashRegisterDto {
   openSessionUserName?: string | null;
 }
 
+/** READINESS-2B-3 — requisito pendiente de la caja: código de Readiness (textos en
+ * operationalReadiness.items.{code}) y pantalla propietaria; sin texto del backend. */
+export interface CashRegisterOpeningRequirementDto {
+  code: string;
+  severity: "Required" | "Warning";
+  actionTarget: ReadinessActionTarget | null;
+}
+
+/** READINESS-2B-3 — si la caja seleccionada puede iniciar la jornada con su propio punto de
+ * emisión. Orientativo: la apertura lo vuelve a evaluar en el backend. NotVerified (punto físico)
+ * nunca significa autorización fiscal. */
+export interface CashRegisterOpeningReadinessDto {
+  cashRegisterId: string;
+  branchId: string;
+  emissionPointId: string | null;
+  emissionType: string | null;
+  canOpen: boolean;
+  fiscalStatus: ReadinessFiscalStatus;
+  requirements: CashRegisterOpeningRequirementDto[];
+}
+
 export interface EmissionPointLookupForBranchDto {
   id: string;
   code: string;
@@ -335,6 +357,9 @@ export const cajaService = {
 
   getCashRegister: (id: string) =>
     apiGet<CashRegisterDto>(`${REGISTERS_BASE}/${id}`),
+
+  getOpeningReadiness: (id: string) =>
+    apiGet<CashRegisterOpeningReadinessDto>(`${REGISTERS_BASE}/${id}/opening-readiness`),
 
   /** Administración de Cajas: listado empresa-completa (todas las sucursales). */
   listAllCashRegisters: (

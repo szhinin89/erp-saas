@@ -47,6 +47,7 @@ vi.mock("../api/cajaService", () => ({
     recordMovement: vi.fn(),
     getCollectionSummary: vi.fn(),
     getCashMovementReasons: vi.fn(),
+    getOpeningReadiness: vi.fn(),
   },
 }));
 
@@ -283,6 +284,11 @@ beforeEach(() => {
     byPaymentMethod: [],
   });
   vi.mocked(cajaService.getCashMovementReasons).mockResolvedValue([]);
+  // READINESS-2B-3 — por defecto la caja está preparada (CajaPage.openingReadiness.test cubre el resto).
+  vi.mocked(cajaService.getOpeningReadiness).mockImplementation(async (id: string) => ({
+    cashRegisterId: id, branchId: "branch-1", emissionPointId: "ep-1", emissionType: "Electronic",
+    canOpen: true, fiscalStatus: "Verified", requirements: [],
+  }));
   vi.mocked(message.confirm).mockResolvedValue(true);
   vi.mocked(operationalPreferencesLookupFacade.getPreferences).mockResolvedValue(
     buildOperationalPreferences(true),
@@ -1524,7 +1530,7 @@ describe("opening context pre-pilot", () => {
     ["Testing", "Test", true, true, true],
     ["CertificateExpired", "Production", true, false, false],
     ["NotConfigured", null, false, false, false],
-  ] as const)("uses official fiscal state %s without blocking", async (status, environment, installed, valid, canIssue) => {
+  ] as const)("shows official fiscal context %s as information only", async (status, environment, installed, valid, canIssue) => {
     const fiscal: ElectronicInvoicingStatusDto = {
       status, environment, environmentName: environment === "Test" ? "Pruebas" : environment === "Production" ? "Producci\u00f3n" : null,
       configured: status !== "NotConfigured", emissionType: "Normal", certificateInstalled: installed,
@@ -1534,12 +1540,10 @@ describe("opening context pre-pilot", () => {
     useElectronicInvoicingStatusStore.setState({ status: fiscal, isLoaded: true });
     vi.mocked(cajaService.getCashRegisters).mockResolvedValue([{ ...registers[0], emissionType: "Electronic", emissionPointIsActive: true, emissionPointName: "Point Test" }]);
     await openPage();
-    await screen.findByText(dict["caja.openContext.capacity"]);
-    expect(screen.getByText(dict[canIssue ? "caja.openContext.canIssue" : "caja.openContext.cannotIssue"])).toBeTruthy();
+    await screen.findByText(dict["caja.openContext.certificate"]);
     expect(screen.getByText("001 \u2014 Point Test")).toBeTruthy();
     if (environment) expect(screen.getByText(fiscal.environmentName!)).toBeTruthy();
     expect(!!screen.queryByText(dict["caja.openContext.expires"])).toBe(installed);
-    expect(screen.getByText(dict["caja.openContext.fiscalWarning"])).toBeTruthy();
     expect((screen.getByRole("button", { name: dict["caja.session.open"] }) as HTMLButtonElement).disabled).toBe(false);
   });
 

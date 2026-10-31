@@ -358,3 +358,27 @@ public sealed record CashSessionCollectionDetailDto(
     string? TransferReceiptNumber,
     DateOnly? TransferDate
 );
+
+// ── READINESS-2B-3 — habilitación preventiva de la caja seleccionada ──────
+// Sin texto de UI: códigos de Readiness (operationalReadiness.items.{code}) y ActionTarget
+// semántico, igual que CompanyOperationalReadinessDto.
+public sealed record CashRegisterOpeningRequirementDto(
+    string Code,
+    string Severity,
+    string? ActionTarget
+);
+
+/// <summary>
+/// <c>CanOpen</c>: la caja puede iniciar la jornada con su punto (OpenCashSession lo revalida).
+/// <c>FiscalStatus</c>: Verified · Pending · NotVerified (punto físico, sin política fiscal física)
+/// · NotApplicable.
+/// </summary>
+public sealed record CashRegisterOpeningReadinessDto(
+    Guid CashRegisterId,
+    Guid BranchId,
+    Guid? EmissionPointId,
+    string? EmissionType,
+    bool CanOpen,
+    string FiscalStatus,
+    IReadOnlyList<CashRegisterOpeningRequirementDto> Requirements
+);

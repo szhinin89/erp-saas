@@ -58,6 +58,15 @@ public sealed class CashRegisterController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetCashRegisterByIdQuery(id), ct));
 
+    /// <summary>
+    /// READINESS-2B-3 — si la caja de la sucursal activa puede iniciar la jornada de ventas con su
+    /// punto de emisión. Mismo permiso que la apertura; la apertura lo vuelve a evaluar.
+    /// </summary>
+    [HttpGet("{id:guid}/opening-readiness")]
+    [Authorize(Policy = $"perm:{CajaPermissions.Open}")]
+    public async Task<IActionResult> GetOpeningReadiness(Guid id, CancellationToken ct) =>
+        this.ToOkOrNotFound(await _mediator.Send(new GetCashRegisterOpeningReadinessQuery(id), ct));
+
     [HttpPost]
     [Authorize(Policy = $"perm:{CajaPermissions.Manage}")]
     public async Task<IActionResult> Create(

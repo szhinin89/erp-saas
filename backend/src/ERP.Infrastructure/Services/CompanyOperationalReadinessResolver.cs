@@ -1,5 +1,6 @@
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.ElectronicDocuments.Readiness;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Caja.Entities;
@@ -31,28 +32,17 @@ namespace ERP.Infrastructure.Services;
 /// </summary>
 public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalReadinessResolver
 {
-    private const string IdentityTaxId = "identity.taxId";
-    private const string IdentityLegalName = "identity.legalName";
-    private const string StructureMainEstablishment = "structure.mainEstablishment";
-    private const string CashRegisterWithEmissionPoint = "cashRegister.withEmissionPoint";
-    private const string ElectronicActivation = "electronicInvoicing.activation";
-    private const string ElectronicVerificationFailed = "electronicInvoicing.verificationFailed";
+    private const string IdentityTaxId = OperationalReadinessCodes.IdentityTaxId;
+    private const string IdentityLegalName = OperationalReadinessCodes.IdentityLegalName;
+    private const string StructureMainEstablishment =
+        OperationalReadinessCodes.StructureMainEstablishment;
+    private const string CashRegisterWithEmissionPoint =
+        OperationalReadinessCodes.CashRegisterWithEmissionPoint;
+    private const string ElectronicActivation = OperationalReadinessCodes.ElectronicActivation;
+    private const string ElectronicVerificationFailed =
+        OperationalReadinessCodes.ElectronicVerificationFailed;
 
     private static readonly Area[] NoArea = [];
-
-    /// <summary>
-    /// Requisitos del validador electrónico sobre un dato que ya tiene un ítem base (mismo dato,
-    /// misma pantalla): el ítem base adopta el veredicto del validador y las cajas lo referencian
-    /// con el código base — un dato, un ítem.
-    /// </summary>
-    private static readonly IReadOnlyDictionary<string, string> RequirementsOwnedByBaseItem =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            [RequirementCodes.Company] = IdentityTaxId,
-            [RequirementCodes.IssuerTaxId] = IdentityTaxId,
-            [RequirementCodes.IssuerLegalName] = IdentityLegalName,
-            [RequirementCodes.MainEstablishment] = StructureMainEstablishment,
-        };
 
     /// <summary>
     /// Una caja activa de la sucursal con su punto de emisión (null si no tiene uno activo en la
@@ -407,19 +397,15 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             ? [CashRegisterWithEmissionPoint]
             : check
                 .RequiredCodes.Concat(check.WarningCodes)
-                .Select(code => RequirementsOwnedByBaseItem.GetValueOrDefault(code, code))
+                .Select(OperationalReadinessCodes.ForRequirement)
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-        ReadinessFiscalStatus fiscalStatus;
-        if (emissionPoint is null)
-            fiscalStatus = ReadinessFiscalStatus.NotApplicable;
-        else if (!check.IsElectronic)
-            fiscalStatus = ReadinessFiscalStatus.NotVerified; // F-1..F-5: sin política física propietaria.
-        else
-            fiscalStatus = check.CanIssue
-                ? ReadinessFiscalStatus.Verified
-                : ReadinessFiscalStatus.Pending;
+        // F-1..F-5: un punto físico es NotVerified (sin política física propietaria).
+        var fiscalStatus = OperationalReadinessCodes.FiscalStatusFor(
+            emissionPoint?.EmissionType,
+            check.CanIssue
+        );
 
         return new ReadinessCashRegister(
             check.Register.Id,
@@ -561,7 +547,7 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
             ),
         };
         items.AddRange(
-            electronicFindings.Values.Where(f => !RequirementsOwnedByBaseItem.ContainsKey(f.Code))
+            electronicFindings.Values.Where(f => !OperationalReadinessCodes.IsOwnedByBaseItem(f.Code))
         );
 
         return Section("electronicInvoicing", items);
@@ -731,9 +717,11 @@ public sealed class CompanyOperationalReadinessResolver : ICompanyOperationalRea
         IReadOnlyDictionary<string, ReadinessItem> electronicFindings
     )
     {
-        var finding = RequirementsOwnedByBaseItem
-            .Where(kv => kv.Value == code && electronicFindings.ContainsKey(kv.Key))
-            .Select(kv => electronicFindings[kv.Key])
+        var finding = electronicFindings
+            .Values.Where(f =>
+                OperationalReadinessCodes.IsOwnedByBaseItem(f.Code)
+                && OperationalReadinessCodes.ForRequirement(f.Code) == code
+            )
             .OrderByDescending(f => f.Severity)
             .FirstOrDefault();
 

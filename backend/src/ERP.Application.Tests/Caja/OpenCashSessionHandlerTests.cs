@@ -1,12 +1,16 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Persistence;
+using ERP.Application.Modules.Caja;
 using ERP.Application.Modules.Caja.UseCases;
+using ERP.Application.Modules.ElectronicDocuments.Readiness;
+using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace ERP.Application.Tests.Caja;
@@ -56,9 +60,23 @@ public sealed class OpenCashSessionHandlerTests
         public Mock<ICurrentBranch> Branch { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
         public Mock<IDatabaseExceptionTranslator> DbEx { get; } = new();
+        public Mock<ISalesInvoiceEmissionStrategyResolver> EmissionStrategies { get; } = new();
+        public Mock<ISalesInvoiceEmissionStrategy> EmissionStrategy { get; } = new();
 
         public Fixture()
         {
+            // Por defecto el punto no exige requisitos (como la estrategia física).
+            EmissionStrategies
+                .Setup(r => r.Resolve(It.IsAny<EmissionType>()))
+                .Returns(EmissionStrategy.Object);
+            EmissionStrategy
+                .Setup(s =>
+                    s.CheckRequirementsAsync(
+                        It.IsAny<SalesInvoiceEmissionPreflight>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(ElectronicEmissionRequirementsResult.NotApplicable);
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             User.Setup(u => u.UserId).Returns(UserId);
             Repo.Setup(r => r.GetOpenByUserAsync(TenantId, UserId, It.IsAny<CancellationToken>()))
@@ -84,6 +102,10 @@ public sealed class OpenCashSessionHandlerTests
                 Repo.Object,
                 CashRegisterRepo.Object,
                 EmissionPointRepo.Object,
+                new CashRegisterOpeningReadinessChecker(
+                    EmissionStrategies.Object,
+                    NullLogger<CashRegisterOpeningReadinessChecker>.Instance
+                ),
                 Tenant.Object,
                 Branch.Object,
                 User.Object,
@@ -403,5 +425,172 @@ public sealed class OpenCashSessionHandlerTests
             handler.Handle(new OpenCashSessionCommand(register.Id, 50m), CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    // ── READINESS-2B-3 — habilitación preventiva de la caja ─────────────────
+
+    private static EmissionPoint CreatePoint(EmissionType type) =>
+        EmissionPoint.Create(TenantId, CompanyId, EstablishmentId, "002", null, type, false, UserId);
+
+    private static (CashRegister Register, EmissionPoint Point) Arrange(
+        Fixture f,
+        Guid branchId,
+        EmissionPoint point
+    )
+    {
+        var register = CreateRegister(branchId, point.Id);
+        f.CashRegisterRepo.Setup(r =>
+                r.GetByIdAsync(TenantId, register.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(register);
+        f.EmissionPointRepo.Setup(r =>
+                r.GetByIdAsync(point.Id, TenantId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(point);
+        return (register, point);
+    }
+
+    private static void RequirementsFor(Fixture f, params ElectronicEmissionRequirementIssue[] issues) =>
+        f.EmissionStrategy.Setup(s =>
+                s.CheckRequirementsAsync(
+                    It.IsAny<SalesInvoiceEmissionPreflight>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(new ElectronicEmissionRequirementsResult(issues));
+
+    private static void ShouldNotCreateSession(Fixture f)
+    {
+        f.Repo.Verify(
+            r => r.AddAsync(It.IsAny<CashSession>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Caja_electronica_preparada_abre_y_valida_el_punto_propio_de_la_caja_como_factura()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var (register, point) = Arrange(f, branchId, CreatePoint(EmissionType.Electronic));
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        f.EmissionStrategies.Verify(r => r.Resolve(EmissionType.Electronic), Times.Once);
+        // El punto efectivo de la caja, nunca el punto por defecto de la empresa.
+        f.EmissionStrategy.Verify(
+            s =>
+                s.CheckRequirementsAsync(
+                    It.Is<SalesInvoiceEmissionPreflight>(p =>
+                        p.EmissionPointId == point.Id
+                        && p.CompanyId == register.CompanyId
+                        && p.TenantId == TenantId
+                        && p.DocTypeCode == "01"
+                    ),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Caja_electronica_sin_certificado_valido_se_rechaza_antes_de_crear_la_sesion()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var (register, _) = Arrange(f, branchId, CreatePoint(EmissionType.Electronic));
+        RequirementsFor(
+            f,
+            new ElectronicEmissionRequirementIssue(
+                ElectronicEmissionRequirementCodes.Certificate,
+                ElectronicEmissionRequirementSeverity.Required,
+                ReadinessActionTarget.ElectronicInvoicingSettings
+            )
+        );
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionRequirementsMissing);
+        result.Error.Should().Contain(ElectronicEmissionRequirementCodes.Certificate);
+        ShouldNotCreateSession(f);
+    }
+
+    [Fact]
+    public async Task Certificado_proximo_a_vencer_es_advertencia_y_no_impide_abrir()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var (register, _) = Arrange(f, branchId, CreatePoint(EmissionType.Electronic));
+        RequirementsFor(
+            f,
+            new ElectronicEmissionRequirementIssue(
+                ElectronicEmissionRequirementCodes.CertificateExpiring,
+                ElectronicEmissionRequirementSeverity.Warning,
+                ReadinessActionTarget.ElectronicInvoicingSettings
+            )
+        );
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Punto_de_emision_desactivado_se_rechaza_sin_evaluar_requisitos_fiscales()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var point = CreatePoint(EmissionType.Electronic);
+        point.Disable(UserId);
+        var (register, _) = Arrange(f, branchId, point);
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("desactivado");
+        f.EmissionStrategies.Verify(r => r.Resolve(It.IsAny<EmissionType>()), Times.Never);
+        ShouldNotCreateSession(f);
+    }
+
+    [Fact]
+    public async Task Fallo_tecnico_del_validador_nunca_habilita_la_caja()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var (register, _) = Arrange(f, branchId, CreatePoint(EmissionType.Electronic));
+        f.EmissionStrategy.Setup(s =>
+                s.CheckRequirementsAsync(
+                    It.IsAny<SalesInvoiceEmissionPreflight>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ThrowsAsync(new InvalidOperationException("certificado ilegible"));
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        ShouldNotCreateSession(f);
+    }
+
+    [Fact]
+    public async Task Caja_fisica_abre_con_la_estrategia_fisica_sin_requisitos_fiscales_del_emisor()
+    {
+        var f = new Fixture();
+        var branchId = Guid.NewGuid();
+        var (register, _) = Arrange(f, branchId, CreatePoint(EmissionType.Physical));
+
+        var result = await f.BuildHandler(branchId)
+            .Handle(new OpenCashSessionCommand(register.Id, 0m), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        f.EmissionStrategies.Verify(r => r.Resolve(EmissionType.Physical), Times.Once);
     }
 }

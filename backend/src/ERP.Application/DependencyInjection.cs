@@ -106,6 +106,12 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.Readiness.IElectronicEmissionRequirementsValidator,
             ERP.Application.Modules.ElectronicDocuments.Readiness.ElectronicEmissionRequirementsValidator
         >();
+        // READINESS-2B-3 — habilitación preventiva de cajas: delega en la estrategia de emisión de
+        // Ventas (sin reglas fiscales propias); la consumen OpenCashSession y su diagnóstico previo.
+        services.AddScoped<
+            ERP.Application.Modules.Caja.ICashRegisterOpeningReadinessChecker,
+            ERP.Application.Modules.Caja.CashRegisterOpeningReadinessChecker
+        >();
         services.AddScoped<
             ERP.Application.Modules.Payables.Services.ISupplierPaymentRegistrar,
             ERP.Application.Modules.Payables.Services.SupplierPaymentRegistrar

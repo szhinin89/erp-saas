@@ -33,6 +33,8 @@ import { cashMovementTypeLabel } from "../constants/cashMovementTypes";
 import { ManualCashMovementModal } from "../components/ManualCashMovementModal";
 import { CashBankDepositModal } from "../components/CashBankDepositModal";
 import { CashFundingRequestsPendingNotice } from "../components/CashFundingRequestsPendingNotice";
+import { CashRegisterOpeningReadinessNotice } from "../components/CashRegisterOpeningReadinessNotice";
+import { fiscalBadgeVariant } from "../../configuracion/facades/operationalReadinessGuidanceFacade";
 import "../../../styles/shared/erp-form-core.css";
 import "../../../styles/shared/items-catalog.css";
 import "./CajaPage.css";
@@ -484,17 +486,26 @@ export function CajaPage() {
                     <SummaryCard label={t("caja.session.emissionPoint")} value={[ctx.selectedRegister.emissionPointCode, ctx.selectedRegister.emissionPointName].filter(Boolean).join(" — ") || "—"} />
                     <SummaryCard label={t("caja.openContext.pointState")} value={ctx.selectedRegister.emissionPointIsActive == null ? "—" : t(ctx.selectedRegister.emissionPointIsActive ? "common.active" : "common.inactive")} />
                     <SummaryCard label={t("caja.openContext.electronic")} value={ctx.selectedRegister.emissionType == null ? "—" : t(ctx.selectedRegister.emissionType === "Electronic" ? "common.yes" : "common.no")} />
+                    {ctx.openingReadiness && (
+                      <ZHField label={t("caja.openReadiness.fiscalStatus")} density="compact">
+                        <Badge variant={fiscalBadgeVariant(ctx.openingReadiness.fiscalStatus)}
+                          label={t(`operationalReadiness.fiscalStatus.${ctx.openingReadiness.fiscalStatus.toLowerCase()}.label`)} />
+                      </ZHField>
+                    )}
                   </div>
                   {ctx.selectedRegister.emissionType === "Electronic" && <>
                     <ZHElectronicEnvironmentBanner />
                     <div className="cj-summary-grid cj-opening-summary">
                       <SummaryCard label={t("caja.openContext.environment")} value={fiscal?.environmentName ?? "—"} />
-                      <SummaryCard label={t("caja.openContext.capacity")} value={fiscal ? t(fiscal.canIssue ? "caja.openContext.canIssue" : "caja.openContext.cannotIssue") : "—"} />
                       <SummaryCard label={t("caja.openContext.certificate")} value={!fiscal || fiscal.status === "Error" ? "—" : fiscal.certificateValid ? t("caja.openContext.validCertificate") : !fiscal.certificateInstalled ? t("caja.openContext.notConfigured") : t(ELECTRONIC_INVOICING_STATUS_REGISTRY[fiscal.status].messageKey)} />
                       {fiscal?.certificateExpiresAt && <SummaryCard label={t("caja.openContext.expires")} value={formatDateTime(fiscal.certificateExpiresAt)} />}
                     </div>
-                    <ZHPageNotice variant="neutral" message={t("caja.openContext.fiscalWarning")} />
                   </>}
+                  <CashRegisterOpeningReadinessNotice
+                    readiness={ctx.openingReadiness}
+                    loading={ctx.openingReadinessLoading}
+                    error={ctx.openingReadinessError}
+                  />
                 </>}
               </section>
               </div>

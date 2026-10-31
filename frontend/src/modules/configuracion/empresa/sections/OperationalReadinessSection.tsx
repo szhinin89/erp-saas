@@ -1,22 +1,23 @@
-import { Link } from "react-router-dom";
 import { Badge, LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
-import { useNavigationAccess } from "../../../../components/navigationAccess";
 import { useI18n } from "../../../../i18n/i18n";
 import { useAsync } from "../../../../hooks/useAsync";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { useActiveBranchStore } from "../../../../store/activeBranchStore";
 import { companyProfileService } from "../api/companyProfileService";
-import { getOperationalReadinessActionRoute } from "../operationalReadinessActionRoutes";
+import {
+  ReadinessRequirementRow,
+  fiscalBadgeVariant,
+  statusBadgeVariant,
+} from "./ReadinessRequirementRow";
 import type {
   CompanyOperationalReadinessCashRegister,
   CompanyOperationalReadinessItem,
   CompanyOperationalReadinessSection,
   ReadinessBlockingArea,
-  ReadinessFiscalStatus,
   ReadinessStatus,
 } from "../../../../types/companyProfile";
 import "../../../../styles/shared/items-catalog.css";
@@ -43,44 +44,10 @@ const AREA_CAPABILITY_KEY: Record<ReadinessBlockingArea, string> = {
 
 type Register = CompanyOperationalReadinessCashRegister;
 
-function statusBadgeVariant(status: ReadinessStatus): "success" | "warning" | "error" | "neutral" {
-  switch (status) {
-    case "Ready":
-      return "success";
-    case "Warning":
-      return "warning";
-    case "Missing":
-      return "error";
-    default:
-      return "neutral";
-  }
-}
-
-/** NotVerified (punto físico, brechas F-1..F-5) nunca se pinta como éxito ni como bloqueo. */
-function fiscalBadgeVariant(status: ReadinessFiscalStatus): "success" | "warning" | "info" | "neutral" {
-  switch (status) {
-    case "Verified":
-      return "success";
-    case "Pending":
-      return "warning";
-    case "NotVerified":
-      return "info";
-    default:
-      return "neutral";
-  }
-}
-
 function overallNoticeVariant(status: ReadinessStatus): "success" | "warning" | "error" {
   if (status === "Ready") return "success";
   if (status === "Warning") return "warning";
   return "error";
-}
-
-function messageKeyForStatus(code: string, status: ReadinessStatus): string {
-  if (status === "Warning") return `operationalReadiness.items.${code}.warning`;
-  if (status === "Missing") return `operationalReadiness.items.${code}.missing`;
-  if (status === "NotApplicable") return `operationalReadiness.items.${code}.notApplicable`;
-  return `operationalReadiness.items.${code}.ready`;
 }
 
 function itemAnchorId(code: string): string {
@@ -105,34 +72,6 @@ function registersByRequirement(registers: Register[]): Map<string, Register[]> 
   return map;
 }
 
-function ReadinessItemAction({ item }: { item: CompanyOperationalReadinessItem }) {
-  const { t } = useI18n();
-  const navigation = useNavigationAccess();
-  const route = getOperationalReadinessActionRoute(item.actionTarget);
-  if (!route || !navigation.resolved) return null;
-
-  const destination = navigation.findDestination(route);
-  const isReady = item.status === "Ready";
-  if (!destination) {
-    // Un requisito ya listo no necesita acción: el aviso solo aparece si hay algo que corregir.
-    if (isReady) return null;
-    return (
-      <p className="cfg-opreadiness-item-message zh-text-muted zh-text-xs">
-        {t("operationalReadiness.item.noAccess")}
-      </p>
-    );
-  }
-
-  return (
-    <p className="cfg-opreadiness-item-message zh-text-xs">
-      {t(isReady ? "operationalReadiness.item.reviewIn" : "operationalReadiness.item.fixIn")}{" "}
-      <Link to={destination.to} className="zh-link">
-        {destination.label}
-      </Link>
-    </p>
-  );
-}
-
 function ReadinessItemRow({
   item,
   affectedRegisters,
@@ -141,8 +80,6 @@ function ReadinessItemRow({
   affectedRegisters: Register[];
 }) {
   const { t } = useI18n();
-  const label = t(`operationalReadiness.items.${item.code}.label`);
-  const message = t(messageKeyForStatus(item.code, item.status));
   const pending = item.status === "Missing" || item.status === "Warning";
   const areas = item.blockingAreas
     .map((area) => t(`operationalReadiness.capabilities.${AREA_CAPABILITY_KEY[area]}`))
@@ -155,29 +92,25 @@ function ReadinessItemRow({
     .join(", ");
 
   return (
-    <div id={itemAnchorId(item.code)} className="cfg-opreadiness-item-row">
-      <Badge
-        label={t(`operationalReadiness.statusBadge.${item.status.toLowerCase()}`, item.status)}
-        variant={statusBadgeVariant(item.status)}
-      />
-      <div className="cfg-opreadiness-item-text">
-        <p className="cfg-opreadiness-item-label">{label}</p>
-        <p className="cfg-opreadiness-item-message zh-text-muted zh-text-xs">{message}</p>
-        {pending && (
-          <p className="cfg-opreadiness-item-message zh-text-xs">
-            {areas
-              ? t("operationalReadiness.item.blocks", { areas })
-              : t("operationalReadiness.item.blocksNone")}
-          </p>
-        )}
-        {registers && (
-          <p className="cfg-opreadiness-item-message zh-text-xs">
-            {t("operationalReadiness.item.affectedRegisters", { registers })}
-          </p>
-        )}
-        <ReadinessItemAction item={item} />
-      </div>
-    </div>
+    <ReadinessRequirementRow
+      code={item.code}
+      status={item.status}
+      actionTarget={item.actionTarget}
+      anchorId={itemAnchorId(item.code)}
+    >
+      {pending && (
+        <p className="cfg-opreadiness-item-message zh-text-xs">
+          {areas
+            ? t("operationalReadiness.item.blocks", { areas })
+            : t("operationalReadiness.item.blocksNone")}
+        </p>
+      )}
+      {registers && (
+        <p className="cfg-opreadiness-item-message zh-text-xs">
+          {t("operationalReadiness.item.affectedRegisters", { registers })}
+        </p>
+      )}
+    </ReadinessRequirementRow>
   );
 }
 

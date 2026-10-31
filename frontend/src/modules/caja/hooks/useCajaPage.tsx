@@ -7,6 +7,7 @@ import type {
   CashSessionListItemDto,
   CashRegisterDto,
   CashSessionCollectionSummaryDto,
+  CashRegisterOpeningReadinessDto,
 } from "../api/cajaService";
 import { useManualCashMovementFlow } from "./useManualCashMovementFlow";
 import { useCashBankDepositFlow } from "./useCashBankDepositFlow";
@@ -57,7 +58,9 @@ export function useCajaPage() {
   const [registersError, setRegistersError] = useState("");
   const [mySessionLoading, setMySessionLoading] = useState(true);
   const [mySessionError, setMySessionError] = useState("");
-  const branchName = useActiveBranchStore((s) => s.branch)?.name ?? null;
+  const activeBranch = useActiveBranchStore((s) => s.branch);
+  const branchName = activeBranch?.name ?? null;
+  const branchId = activeBranch?.id ?? null;
   const currentUserName = useAuthStore((s) => s.user?.fullName) ?? null;
 
   // ── Forms ──────────────────────────────────────────────────────────
@@ -79,9 +82,42 @@ export function useCajaPage() {
   const selectedRegister =
     cashRegisters.find((r) => r.id === selectedRegisterId) ?? null;
 
+  // ── READINESS-2B-3 — habilitación preventiva de la caja seleccionada ──
+  // El backend evalúa la caja con su propio punto de emisión (misma regla que la apertura). Solo se
+  // usa la respuesta de la caja y sucursal actuales; la apertura vuelve a decidir en el backend.
+  const [openingReadinessState, setOpeningReadinessState] = useState<{
+    key: string;
+    readiness: CashRegisterOpeningReadinessDto | null;
+    error: boolean;
+  } | null>(null);
+  const readinessKey = selectedRegisterId && branchId ? `${branchId}:${selectedRegisterId}` : null;
+
+  const fetchOpeningReadiness = useCallback(async (registerId: string, key: string) => {
+    try {
+      const readiness = await cajaService.getOpeningReadiness(registerId);
+      setOpeningReadinessState({ key, readiness, error: false });
+    } catch {
+      setOpeningReadinessState({ key, readiness: null, error: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (readinessKey) fetchOpeningReadiness(selectedRegisterId, readinessKey);
+  }, [readinessKey, selectedRegisterId, fetchOpeningReadiness]);
+
+  const currentReadiness =
+    openingReadinessState?.key === readinessKey ? openingReadinessState : null;
+  const openingReadiness =
+    currentReadiness?.readiness &&
+    currentReadiness.readiness.cashRegisterId === selectedRegisterId &&
+    currentReadiness.readiness.branchId === branchId
+      ? currentReadiness.readiness
+      : null;
+  const openingReadinessLoading = !!readinessKey && !currentReadiness;
+  const openingReadinessError = !!currentReadiness?.error;
+
   // ── Init ───────────────────────────────────────────────────────────
   useEffect(() => {
-    fetchRegisters();
     fetchMySession();
     fetchList();
   }, []);
@@ -100,6 +136,11 @@ export function useCajaPage() {
       setRegistersLoading(false);
     }
   }, [openForm, t]);
+
+  // Las cajas son de la sucursal activa: se vuelven a cargar al cambiar de sucursal.
+  useEffect(() => {
+    fetchRegisters();
+  }, [branchId, fetchRegisters]);
 
   // ── Fetch list ─────────────────────────────────────────────────────
   const fetchList = useCallback(async () => {
@@ -131,9 +172,11 @@ export function useCajaPage() {
     }
   }, [t]);
 
+  // Un fallo al consultar el diagnóstico no bloquea: la apertura lo decide el backend.
   const canOpen = !saving && !registersLoading && !registersError &&
     !mySessionLoading && !mySessionError && !mySession &&
-    !!selectedRegister && !selectedRegister.hasOpenSession;
+    !!selectedRegister && !selectedRegister.hasOpenSession &&
+    !openingReadinessLoading && openingReadiness?.canOpen !== false;
 
   // ── Load detail ────────────────────────────────────────────────────
   const loadDetail = useCallback(async (id: string) => {
@@ -222,6 +265,8 @@ export function useCajaPage() {
         setSaveError(
           formatApiRequestError(err, { unauthorized: t("caja.session.unauthorized"), generic: t("caja.session.openError") }),
         );
+      // La configuración pudo cambiar desde la consulta previa: se vuelve a diagnosticar la caja.
+      if (readinessKey) fetchOpeningReadiness(data.cashRegisterId, readinessKey);
     }
     setSaving(false);
   });
@@ -353,6 +398,9 @@ export function useCajaPage() {
     fetchRegisters,
     fetchMySession,
     canOpen,
+    openingReadiness,
+    openingReadinessLoading,
+    openingReadinessError,
     currentUserName,
     branchName,
     selectedRegister,

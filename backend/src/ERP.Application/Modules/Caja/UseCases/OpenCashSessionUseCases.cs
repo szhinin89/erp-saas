@@ -46,6 +46,7 @@ public sealed class OpenCashSessionHandler
     private readonly ICashSessionRepository _repo;
     private readonly ICashRegisterRepository _cashRegisterRepo;
     private readonly IEmissionPointRepository _emissionPointRepo;
+    private readonly ICashRegisterOpeningReadinessChecker _openingReadiness;
     private readonly ICurrentTenant _t;
     private readonly ICurrentBranch _b;
     private readonly ICurrentUser _u;
@@ -55,6 +56,7 @@ public sealed class OpenCashSessionHandler
         ICashSessionRepository repo,
         ICashRegisterRepository cashRegisterRepo,
         IEmissionPointRepository emissionPointRepo,
+        ICashRegisterOpeningReadinessChecker openingReadiness,
         ICurrentTenant t,
         ICurrentBranch b,
         ICurrentUser u,
@@ -64,6 +66,7 @@ public sealed class OpenCashSessionHandler
         _repo = repo;
         _cashRegisterRepo = cashRegisterRepo;
         _emissionPointRepo = emissionPointRepo;
+        _openingReadiness = openingReadiness;
         _t = t;
         _b = b;
         _u = u;
@@ -113,6 +116,13 @@ public sealed class OpenCashSessionHandler
             return Result<CashSessionDto>.ValidationFailure(
                 "El punto de emisión configurado en la caja ya no existe."
             );
+
+        // READINESS-2B-3 — habilitación preventiva: la caja solo inicia la jornada si su propio
+        // punto puede vender (activo y, según su estrategia de emisión, sin requisitos obligatorios
+        // pendientes). Antes de crear la sesión: un rechazo no deja ningún efecto.
+        var readiness = await _openingReadiness.CheckAsync(register, emissionPoint, ct);
+        if (readiness.ToFailure<CashSessionDto>() is { } notReady)
+            return notReady;
 
         var session = CashSession.Open(
             tid,
