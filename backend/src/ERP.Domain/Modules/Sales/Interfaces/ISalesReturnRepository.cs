@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 
 namespace ERP.Domain.Modules.Sales.Interfaces;
 
@@ -45,6 +46,19 @@ public interface ISalesReturnRepository
     Task<bool> ExistsAuthorizedBySalesInvoiceIdAsync(
         Guid tenantId,
         Guid salesInvoiceId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// R12 Fase A (ADR-036) — estado ACTUAL en BD de la devolución (escalar), filtrado por tenant y
+    /// empresa; <c>null</c> si no existe en ese alcance. Con <paramref name="forUpdate"/> toma
+    /// <c>SELECT … FOR UPDATE</c> sobre la fila: serializa el reclamo de envío de su Nota de Crédito.
+    /// </summary>
+    Task<SalesReturnStatus?> GetCurrentStatusAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        bool forUpdate,
         CancellationToken ct = default
     );
 

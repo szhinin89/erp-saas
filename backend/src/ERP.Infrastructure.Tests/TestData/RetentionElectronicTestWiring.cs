@@ -56,10 +56,15 @@ public sealed class SriBoundaryDouble
     /// <summary>Si true, la recepción falla por transporte (no se sabe si el SRI recibió).</summary>
     public bool ReceptionTransportFailure { get; set; }
 
-    public SriBoundaryDouble(Guid companyId)
+    /// <param name="documentType">Tipo emitido por el proveedor simulado (R12 Fase A: Factura 01 y Nota de
+    /// Crédito 04 reutilizan la misma frontera; por defecto Retención).</param>
+    public SriBoundaryDouble(
+        Guid companyId,
+        ElectronicDocumentType documentType = ElectronicDocumentType.Retention
+    )
     {
         var supplier = new Mock<IElectronicDocumentXmlSupplier>();
-        supplier.SetupGet(s => s.DocumentType).Returns(ElectronicDocumentType.Retention);
+        supplier.SetupGet(s => s.DocumentType).Returns(documentType);
         supplier
             .Setup(s =>
                 s.BuildXmlAsync(
@@ -73,14 +78,14 @@ public sealed class SriBoundaryDouble
                         "<comprobanteRetencion/>",
                         "UTF-8",
                         "2.0.0",
-                        ElectronicDocumentType.Retention,
+                        documentType,
                         "1",
                         NewAccessKey(),
                         DateTime.UtcNow
                     )
                 )
             );
-        Suppliers.Setup(r => r.Resolve(ElectronicDocumentType.Retention)).Returns(supplier.Object);
+        Suppliers.Setup(r => r.Resolve(documentType)).Returns(supplier.Object);
 
         var validator = new Mock<IElectronicDocumentSchemaValidator>();
         validator
@@ -93,11 +98,11 @@ public sealed class SriBoundaryDouble
                     Array.Empty<string>(),
                     Array.Empty<string>(),
                     "2.0.0",
-                    ElectronicDocumentType.Retention
+                    documentType
                 )
             );
         Validators
-            .Setup(r => r.Resolve(ElectronicDocumentType.Retention))
+            .Setup(r => r.Resolve(documentType))
             .Returns(validator.Object);
 
         Signing

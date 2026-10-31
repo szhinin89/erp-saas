@@ -1,5 +1,17 @@
 # Project Status
 
+## SRI 2.34 R12 Fase A — concurrencia fiscal 01/04 — READY FOR REVIEW (2026-10-31)
+
+Base `main@98f47a750`. Guard `Sales` (Factura 01 y NC 04): el reclamo de envío revalida la factura/devolución bajo
+su lock y persiste `Signed` (sin `Dispatching`; job, consulta, R11 y Caso #32 sin cambios). `CancelSalesInvoice`
+decide por el estado fiscal: `Authorized` e incierto bloquean; `Draft`/`Failed` → `Discarded`; `Rejected` anula.
+Contrato: [backend.md § Revertir una venta](docs/architecture/backend.md#revertir-una-venta-un-solo-camino-por-factura-zh-sales-cancel-authorized-return-rule-01);
+addendum R12 Fase A de [ADR-023](docs/decisions/ADR-023-electronic-documents-v1-closure.md).
+PASS agente: Application focal 512/512, PostgreSQL real 274/274 (nueva suite 19/19 + regresión 01/04/07, R11/#32),
+API focal 33/33, Architecture 143/143, guardrails y `architecture:check` (0 nuevas), `git diff --check`; RED
+controlado (protocolo Dispatching en Ventas: 4 FAIL; sin decisión fiscal: 9 FAIL). Fase B (corrección y
+retransmisión desde `Rejected`) no implementada. Sin SRI real, suites completas, migraciones, staging, commit ni push.
+
 ## SRI 2.34 — cierre de conformidad — READY FOR REVIEW (2026-10-31)
 
 Base `main@8e5bfde66`. Matriz R01–R35, evidencia y bloqueos: [SRI-2.34-COMPLIANCE-CLOSURE](docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md).

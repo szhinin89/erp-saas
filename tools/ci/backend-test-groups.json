@@ -60,6 +60,7 @@
         "ERP.Infrastructure.Tests.Communications.CommunicationTemplateIntegrationTests",
         "ERP.Infrastructure.Tests.Dashboard.DashboardKpiReaderTests",
         "ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentUncertainSriPostgreSqlTests",
+        "ERP.Infrastructure.Tests.ElectronicDocuments.SalesElectronicSourceConcurrencyPostgreSqlTests",
         "ERP.Infrastructure.Tests.Finance.CollectionPostingIntegrationTests",
         "ERP.Infrastructure.Tests.InitialLoad.OpeningBalanceDatePostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.CompanyFiscalDesignationsPostgreSqlTests",

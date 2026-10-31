@@ -21,6 +21,8 @@ public sealed class RetentionElectronicSourceLifecycleGuard
 
     public string SourceModule => RetentionElectronicDocumentSource.SourceModule;
 
+    public bool UsesDispatchProtocol => true;
+
     public async Task<ElectronicDocumentSourceLifecycle> EvaluateAsync(
         Guid tenantId,
         Guid companyId,

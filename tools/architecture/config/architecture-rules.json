@@ -186,7 +186,8 @@
         "IPricingAdjustmentStrategy",
         "IGlobalBootstrapStep",
         "IRetentionOriginCancellation",
-        "IElectronicDocumentAdditionalInfoContributor"
+        "IElectronicDocumentAdditionalInfoContributor",
+        "IElectronicDocumentSourceLifecycleGuard"
       ]
     },
     "subscriber": {

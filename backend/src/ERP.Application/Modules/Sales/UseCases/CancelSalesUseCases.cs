@@ -1,9 +1,12 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.DTOs;
+using ERP.Application.Modules.Sales.Services;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Modules.Sales.Policies;
 using MediatR;
@@ -22,6 +25,7 @@ public sealed class CancelSalesInvoiceHandler
     private readonly ISalesReturnRepository _returnRepo;
     private readonly IStockRepository _stockRepo;
     private readonly ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository _edocRepo;
+    private readonly IElectronicDocumentSourceCancellation _edocCancellation;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentBranch _b;
@@ -35,6 +39,7 @@ public sealed class CancelSalesInvoiceHandler
         ISalesReturnRepository returnRepo,
         IStockRepository stockRepo,
         ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
+        IElectronicDocumentSourceCancellation edocCancellation,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentBranch b,
@@ -48,6 +53,7 @@ public sealed class CancelSalesInvoiceHandler
         _returnRepo = returnRepo;
         _stockRepo = stockRepo;
         _edocRepo = edocRepo;
+        _edocCancellation = edocCancellation;
         _t = t;
         _c = c;
         _b = b;
@@ -102,6 +108,28 @@ public sealed class CancelSalesInvoiceHandler
             await _returnRepo.ExistsAuthorizedBySalesInvoiceIdAsync(_t.TenantId, inv.Id, ct)
         );
 
+        // ── Estado fiscal del comprobante (R12 Fase A, ADR-036 D-2/D-5/D-6) — bajo el mismo lock de
+        // la factura que toma el reclamo de envío electrónico, antes de cualquier efecto. Sin
+        // comprobante o Rejected: se anula. Sin intento externo (Draft/Failed): queda Discarded en
+        // este mismo SaveChanges. Autorizado o con resultado SRI incierto: no se anula localmente.
+        if (inv.Status == SalesInvoiceStatus.Authorized)
+        {
+            var fiscal = await _edocCancellation.PrepareAsync(
+                _t.TenantId,
+                inv.CompanyId,
+                SalesElectronicSourceLifecycleGuard.SalesSourceModule,
+                inv.Id,
+                $"Factura anulada: {cmd.Reason}",
+                _u.UserId,
+                ct
+            );
+            if (!fiscal.IsSuccess)
+                return Result<SalesInvoiceDto>.ValidationFailure(
+                    InvoiceCancellationMessage(fiscal.Code),
+                    fiscal.Code
+                );
+        }
+
         // ── Cancelar CxC asociada si existe (bloqueada antes de validar sus cobros) ──
         var receivable = await _rxRepo.GetByInvoiceIdForUpdateAsync(_t.TenantId, inv.Id, ct);
         if (receivable is not null)
@@ -155,4 +183,15 @@ public sealed class CancelSalesInvoiceHandler
         var edoc = await _edocRepo.GetBySourceAsync(_t.TenantId, "Sales", inv.Id, ct);
         return Result<SalesInvoiceDto>.Success(SalesMapper.ToDto(inv, edoc));
     }
+
+    public const string AuthorizedElectronicDocumentMessage =
+        "La factura tiene su comprobante electrónico AUTORIZADO por el SRI y no puede anularse localmente. Para revertir la venta registre una devolución (Nota de Crédito).";
+
+    public const string ElectronicDocumentInProcessMessage =
+        "La factura tiene su comprobante electrónico en proceso ante el SRI. Primero debe resolverse su estado en el Monitor de Documentos Electrónicos.";
+
+    private static string InvoiceCancellationMessage(string? code) =>
+        code == ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment
+            ? AuthorizedElectronicDocumentMessage
+            : ElectronicDocumentInProcessMessage;
 }

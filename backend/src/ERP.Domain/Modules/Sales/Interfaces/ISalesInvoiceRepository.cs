@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 
 namespace ERP.Domain.Modules.Sales.Interfaces;
 
@@ -15,6 +16,20 @@ public interface ISalesInvoiceRepository
     Task<SalesInvoice?> GetByIdForUpdateAsync(
         Guid tenantId,
         Guid id,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// R12 Fase A (ADR-036) — estado ACTUAL en BD de la factura (escalar, nunca la instancia trackeada),
+    /// filtrado por tenant y empresa; <c>null</c> si no existe en ese alcance. Con <paramref name="forUpdate"/>
+    /// toma <c>SELECT … FOR UPDATE</c> sobre la misma fila que <see cref="GetByIdForUpdateAsync"/>: serializa
+    /// el reclamo de envío electrónico contra la anulación de la factura.
+    /// </summary>
+    Task<SalesInvoiceStatus?> GetCurrentStatusAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        bool forUpdate,
         CancellationToken ct = default
     );
     Task<(IReadOnlyList<SalesInvoice> Items, int Total)> GetPagedAsync(

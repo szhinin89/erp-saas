@@ -97,6 +97,29 @@ public sealed class SalesReturnRepository : ISalesReturnRepository
                 ct
             );
 
+    public async Task<SalesReturnStatus?> GetCurrentStatusAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        bool forUpdate,
+        CancellationToken ct = default
+    )
+    {
+        // Mismo patrón que SalesInvoiceRepository.GetCurrentStatusAsync (escalar, FOR UPDATE de nivel superior).
+        var statuses = forUpdate
+            ? await _db
+                .Database.SqlQuery<int>(
+                    $"SELECT status AS \"Value\" FROM sales_returns WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id} FOR UPDATE"
+                )
+                .ToListAsync(ct)
+            : await _db
+                .Database.SqlQuery<int>(
+                    $"SELECT status AS \"Value\" FROM sales_returns WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id}"
+                )
+                .ToListAsync(ct);
+        return statuses.Count == 0 ? null : (SalesReturnStatus)statuses[0];
+    }
+
     public async Task AcquireReturnLockAsync(
         Guid tenantId,
         Guid salesInvoiceId,

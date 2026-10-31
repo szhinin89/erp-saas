@@ -134,6 +134,13 @@ public static class DependencyInjection
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentSourceLifecycleGuard,
             RetentionElectronicSourceLifecycleGuard
         >();
+        // R12 Fase A — gate del origen "Sales" (Factura 01 y Nota de Crédito 04): revalidación bajo el
+        // lock de la factura/devolución en el reclamo de envío y decisión de anulación de la factura
+        // según el estado fiscal. Sin protocolo Dispatching: el pipeline v1.0 de Ventas no cambia.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentSourceLifecycleGuard,
+            ERP.Application.Modules.Sales.Services.SalesElectronicSourceLifecycleGuard
+        >();
         services.AddScoped<IRetentionElectronicTransmission, RetentionElectronicTransmission>();
         services.AddScoped<IRetentionSourceAccess, RetentionSourceAccess>();
         // ZH-RETENTION-SRI-ANNULMENT-01/01B — anulación ante el SRI de retenciones autorizadas (solicitud

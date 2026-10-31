@@ -236,6 +236,25 @@ evidencia: [SRI-2.34-COMPLIANCE-CLOSURE §3.1](../sri/SRI-2.34-COMPLIANCE-CLOSUR
 `IssuerFiscalDesignations` (columnas nulas de `company` + `CHECK` de pares). Los comprobantes firmados o
 autorizados no se regeneran.
 
+## Addendum (2026-10-31): R12 Fase A — concurrencia fiscal de Factura 01 / Nota de crédito 04 (causa 2)
+
+Defecto demostrado: Ventas no tenía guard (ADR-036), así que `CancelSalesInvoice` anulaba la factura sin
+consultar su comprobante (incluso `Authorized` o con resultado SRI incierto) y el envío no revalidaba el origen
+bajo lock: una anulación concurrente podía terminar con el XML de una venta anulada en el SRI.
+
+- `SalesElectronicSourceLifecycleGuard` (origen `Sales`, compartido por Factura y NC): solo una factura o
+  devolución `Authorized` procesa; lock = la fila de la factura (la misma de `CancelSalesInvoice`) o de la devolución.
+- `IElectronicDocumentSourceLifecycleGuard.UsesDispatchProtocol` (único cambio de contrato): Retenciones `true`
+  (sin cambios); Ventas `false`. El reclamo bajo lock persiste `Signed` (no `Dispatching`) y `RetryAsync` de Ventas
+  sigue el camino v1.0: el job, la consulta por clave de acceso, R11 y el Caso #32 no cambian.
+- `CancelSalesInvoice` decide con `IElectronicDocumentSourceCancellation` bajo el lock de la factura, antes de
+  cualquier efecto: sin comprobante o `Rejected` → anula; `Draft`/`Failed` (o DeadLetter de ellos) → `Discarded`
+  en la misma transacción; `Authorized` → bloquea (revertir la venta = devolución con Nota de Crédito); resultado
+  incierto → bloquea hasta resolverlo.
+
+**Sin cambios:** estados, transiciones, firma, XML, SOAP, clave de acceso, secuenciales, política de reintentos,
+jobs, migraciones y la anulación de retenciones. Contrato: [backend.md § Revertir una venta](../architecture/backend.md#revertir-una-venta-un-solo-camino-por-factura-zh-sales-cancel-authorized-return-rule-01).
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

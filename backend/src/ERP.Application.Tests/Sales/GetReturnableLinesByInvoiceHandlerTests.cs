@@ -383,6 +383,14 @@ public sealed class GetReturnableLinesByInvoiceHandlerTests
             CancellationToken ct = default
         ) => throw new NotSupportedException();
 
+        public Task<ERP.Domain.Modules.Sales.Enums.SalesReturnStatus?> GetCurrentStatusAsync(
+            Guid tenantId,
+            Guid companyId,
+            Guid id,
+            bool forUpdate,
+            CancellationToken ct = default
+        ) => throw new NotSupportedException();
+
         public Task AddAsync(SalesReturn salesReturn, CancellationToken ct = default) =>
             throw new NotSupportedException();
 

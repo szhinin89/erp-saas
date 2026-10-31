@@ -78,7 +78,7 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         );
 
         // ADR-036 (I-1) — un origen que ya no permite procesamiento electrónico nunca registra
-        // (ni reanuda) su comprobante. Solo aplica a orígenes con guard (hoy Retenciones).
+        // (ni reanuda) su comprobante. Solo aplica a orígenes con guard (Retenciones y Ventas).
         var guard = _sourceGuards.Resolve(request.SourceModule);
         if (guard is not null)
         {
@@ -344,8 +344,8 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
             }
             else
             {
-                // ADR-036 (D-3) — XmlGenerated→Signed→Dispatching persistidos juntos, bajo el lock del
-                // origen y solo si sigue permitiendo procesamiento, ANTES de cualquier llamada externa.
+                // ADR-036 (D-3) — XmlGenerated→Signed(→Dispatching) persistidos juntos, bajo el lock
+                // del origen y solo si sigue permitiendo procesamiento, ANTES de cualquier llamada externa.
                 var claim = await ClaimDispatchAsync(
                     document,
                     guard,
@@ -453,8 +453,11 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
         if (document is null)
             return Result<ElectronicDocumentDto>.NotFound("El documento electrónico no existe.");
 
+        // R12 Fase A — un guard sin protocolo Dispatching (Ventas) no cambia el reintento v1.0: Signed/
+        // Received solo se consultan (R11, Caso #32) y Draft/Failed reanudan el pipeline, cuyo reclamo
+        // sí revalida el origen bajo su lock (ClaimDispatchAsync).
         var guard = _sourceGuards.Resolve(document.SourceModule);
-        if (guard is not null)
+        if (guard is { UsesDispatchProtocol: true })
             return await RetryGuardedAsync(document, guard, userId, ct);
 
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
@@ -690,8 +693,9 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
     /// <summary>
     /// ADR-036 (D-3) — reclamo de despacho: en una transacción corta toma el lock del origen
     /// (<c>FOR UPDATE</c>, el mismo que toma la anulación del origen), revalida que siga permitiendo
-    /// procesamiento, relee el documento bajo ese lock y persiste XmlGenerated→Signed→Dispatching en
-    /// un solo SaveChanges. Solo después del commit se llama al SRI — nunca se sostiene el lock ni la
+    /// procesamiento, relee el documento bajo ese lock y persiste XmlGenerated→Signed→Dispatching (o
+    /// solo hasta Signed si el guard no usa el protocolo Dispatching: Ventas, R12 Fase A) en un solo
+    /// SaveChanges. Solo después del commit se llama al SRI — nunca se sostiene el lock ni la
     /// transacción durante SOAP. Devuelve <c>null</c> si el reclamo quedó persistido, o el Result de
     /// fallo (sin escrituras) si el origen ya no lo permite o el documento cambió concurrentemente.
     /// </summary>
@@ -749,10 +753,16 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
                 document.SetEnvironment(environment);
             document.MarkXmlGenerated(storedPaths.DraftXmlPath, xmlVersion, schemaVersion, userId);
             document.MarkSigned(storedPaths.SignedXmlPath, AccessKey.Create(accessKey), userId);
-            document.MarkDispatching(userId);
+            if (guard.UsesDispatchProtocol)
+                document.MarkDispatching(userId);
             await _repository.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
-            LogDispatchClaimed(document.Id, document.SourceModule, document.SourceEntityId);
+            LogDispatchClaimed(
+                document.Id,
+                document.CurrentState,
+                document.SourceModule,
+                document.SourceEntityId
+            );
             return null;
         }
         catch
@@ -1164,10 +1174,11 @@ public sealed partial class ElectronicDocumentIssuer : IElectronicDocumentIssuer
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "[ElectronicDocuments] Despacho reclamado (Dispatching) para {ElectronicDocumentId}, origen {SourceModule}/{SourceEntityId}"
+        Message = "[ElectronicDocuments] Despacho reclamado ({State}) para {ElectronicDocumentId}, origen {SourceModule}/{SourceEntityId}"
     )]
     private partial void LogDispatchClaimed(
         Guid electronicDocumentId,
+        ElectronicDocumentState state,
         string sourceModule,
         Guid sourceEntityId
     );

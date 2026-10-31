@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Services;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Application.Tests.Common;
 using ERP.Domain.Modules.Company.Enums;
@@ -41,7 +42,9 @@ public sealed class CancelSalesInvoiceHandlerTests
         Guid itemId,
         Guid warehouseId,
         Guid? activeBranchId = null,
-        bool withPaidReceivable = false
+        bool withPaidReceivable = false,
+        Result<ElectronicDocumentSourceCancellationOutcome>? fiscal = null,
+        Mock<IElectronicDocumentSourceCancellation>? edocCancellation = null
     )
     {
         var customer = CustomerSnapshot.Create("Cliente Test", "1710034065", "05");
@@ -124,6 +127,26 @@ public sealed class CancelSalesInvoiceHandlerTests
             )
             .ReturnsAsync((ElectronicDocument?)null);
 
+        edocCancellation ??= new Mock<IElectronicDocumentSourceCancellation>();
+        edocCancellation
+            .Setup(c =>
+                c.PrepareAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    inv.Id,
+                    It.IsAny<string>(),
+                    UserId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                fiscal
+                    ?? Result<ElectronicDocumentSourceCancellationOutcome>.Success(
+                        ElectronicDocumentSourceCancellationOutcome.NoElectronicDocument
+                    )
+            );
+
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
         var company = new Mock<ICurrentCompany>();
@@ -143,6 +166,7 @@ public sealed class CancelSalesInvoiceHandlerTests
             Mock.Of<ISalesReturnRepository>(),
             stockRepo.Object,
             edocRepo.Object,
+            edocCancellation.Object,
             tenant.Object,
             company.Object,
             branch.Object,
@@ -341,5 +365,86 @@ public sealed class CancelSalesInvoiceHandlerTests
                 "No se puede anular: No se puede cancelar una cuenta por cobrar con pagos registrados."
             );
         inv.Status.Should().NotBe(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Cancelled);
+    }
+
+    // R12 Fase A: el estado fiscal del comprobante se decide en ElectronicDocuments
+    // (IElectronicDocumentSourceCancellation, bajo el lock de la factura) antes de cualquier efecto. Un
+    // bloqueo deja la factura, el Kardex y la CxC intactos, con el código canónico y el mensaje de Ventas.
+    [Theory]
+    [InlineData(
+        ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment,
+        CancelSalesInvoiceHandler.AuthorizedElectronicDocumentMessage
+    )]
+    [InlineData(
+        ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess,
+        CancelSalesInvoiceHandler.ElectronicDocumentInProcessMessage
+    )]
+    public async Task Comprobante_autorizado_o_en_proceso_bloquea_la_anulacion_sin_efectos(
+        string code,
+        string expectedMessage
+    )
+    {
+        var (handler, stockRepo, inv) = BuildHandler(
+            quantity: 5m,
+            conversionFactor: 1m,
+            itemId: Guid.NewGuid(),
+            warehouseId: Guid.NewGuid(),
+            fiscal: Result<ElectronicDocumentSourceCancellationOutcome>.ValidationFailure(
+                "mensaje de ElectronicDocuments",
+                code
+            )
+        );
+
+        var result = await handler.Handle(
+            new CancelSalesInvoiceCommand(inv.Id, "Motivo de prueba"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(code);
+        result.Error.Should().Be(expectedMessage);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Authorized);
+        // Ni Kardex ni SaveChanges: el bloqueo ocurre antes de cualquier efecto.
+        stockRepo.Invocations.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(ElectronicDocumentSourceCancellationOutcome.NoElectronicDocument)]
+    [InlineData(ElectronicDocumentSourceCancellationOutcome.Discarded)]
+    [InlineData(ElectronicDocumentSourceCancellationOutcome.NothingInForce)]
+    public async Task Sin_comprobante_vigente_la_anulacion_continua_y_consulta_el_estado_fiscal_del_origen_Sales(
+        ElectronicDocumentSourceCancellationOutcome outcome
+    )
+    {
+        var edocCancellation = new Mock<IElectronicDocumentSourceCancellation>();
+        var (handler, _, inv) = BuildHandler(
+            quantity: 5m,
+            conversionFactor: 1m,
+            itemId: Guid.NewGuid(),
+            warehouseId: Guid.NewGuid(),
+            fiscal: Result<ElectronicDocumentSourceCancellationOutcome>.Success(outcome),
+            edocCancellation: edocCancellation
+        );
+
+        var result = await handler.Handle(
+            new CancelSalesInvoiceCommand(inv.Id, "Motivo de prueba"),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        inv.Status.Should().Be(Domain.Modules.Sales.Enums.SalesInvoiceStatus.Cancelled);
+        edocCancellation.Verify(
+            c =>
+                c.PrepareAsync(
+                    TenantId,
+                    CompanyId,
+                    "Sales",
+                    inv.Id,
+                    It.Is<string>(r => r.Contains("Motivo de prueba")),
+                    UserId,
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
     }
 }

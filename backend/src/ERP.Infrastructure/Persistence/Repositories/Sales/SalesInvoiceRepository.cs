@@ -45,6 +45,30 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
         return invoice;
     }
 
+    public async Task<SalesInvoiceStatus?> GetCurrentStatusAsync(
+        Guid tenantId,
+        Guid companyId,
+        Guid id,
+        bool forUpdate,
+        CancellationToken ct = default
+    )
+    {
+        // Escalar leído de la BD (no de la instancia trackeada, que puede ser previa al lock).
+        // ToListAsync no compone la consulta: el FOR UPDATE queda en la sentencia de nivel superior.
+        var statuses = forUpdate
+            ? await _db
+                .Database.SqlQuery<int>(
+                    $"SELECT status AS \"Value\" FROM sales_invoices WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id} FOR UPDATE"
+                )
+                .ToListAsync(ct)
+            : await _db
+                .Database.SqlQuery<int>(
+                    $"SELECT status AS \"Value\" FROM sales_invoices WHERE tenant_id = {tenantId} AND company_id = {companyId} AND id = {id}"
+                )
+                .ToListAsync(ct);
+        return statuses.Count == 0 ? null : (SalesInvoiceStatus)statuses[0];
+    }
+
     public Task<SalesInvoice?> GetByIdAsync(
         Guid tenantId,
         Guid id,
