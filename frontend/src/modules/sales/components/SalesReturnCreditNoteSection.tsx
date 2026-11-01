@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ZHCard } from "../../../components/zh/ZHCard";
+import { ZHSriServiceHealth } from "../../../components/zh/ZHSriServiceHealth";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { LoadingState } from "../../../components/PageShell";
@@ -25,6 +26,9 @@ type Props = {
   salesReturnId: string;
   returnNumber: string;
 };
+
+/** Estados del comprobante que todavía dependen de una respuesta del SRI: solo ahí la salud técnica del SRI aporta. */
+const SRI_IN_FLIGHT_STATES = new Set(["Signed", "Dispatching", "Sent", "Received"]);
 
 /**
  * P0-01 Fase 14 — sección "Nota de Crédito Electrónica" del detalle de SalesReturn. Reutiliza
@@ -148,6 +152,12 @@ export function SalesReturnCreditNoteSection({
           Todavía no se ha registrado un documento electrónico para esta
           devolución.
         </p>
+      )}
+
+      {diagnostic && !loading && SRI_IN_FLIGHT_STATES.has(diagnostic.currentState) && (
+        <div className="zh-mb-8">
+          <ZHSriServiceHealth />
+        </div>
       )}
 
       {diagnostic && !loading && (

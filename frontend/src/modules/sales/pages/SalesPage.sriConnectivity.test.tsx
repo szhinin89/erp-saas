@@ -6,9 +6,10 @@ import { MemoryRouter } from "react-router-dom";
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { withPosDerivedCtx } from "../test/salesPageCtxTestUtils";
 import type { SalesInvoiceDto } from "../api/salesService";
+import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
 
-// ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: estado discreto de conectividad SRI en
-// /sales (badge "SRI disponible" / "SRI no disponible" / "SRI no verificado") — puramente
+// Salud técnica SRI en /sales: el indicador visible es el componente compartido
+// ZHSriServiceHealth (monitor central, Recepción/Autorización + ambiente) — puramente
 // informativo, nunca bloquea la captura de productos ni la emisión (ver useSalesPage.ts:
 // refreshSriConnectivity solo advierte con message.warning, no cambia canEmit).
 vi.mock("../components/CustomerPicker", () => ({ CustomerPicker: () => null }));
@@ -208,7 +209,6 @@ function buildCtx(
     totalDiscount: 0,
     taxBreakdown: [],
     isElectronic: true,
-    sriAvailability: "Unknown",
     selectedPt: null,
 
     fetchList: vi.fn(),
@@ -279,56 +279,101 @@ function buildCtx(
   return withPosDerivedCtx({ ...base, ...overrides });
 }
 
-describe("SalesPage — estado discreto de conectividad SRI (ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01)", () => {
+type SriServiceHealthDto = NonNullable<
+  ReturnType<typeof useElectronicInvoicingStatusStore.getState>["health"]
+>;
+
+function setHealth(overrides: Partial<SriServiceHealthDto> = {}) {
+  const health: SriServiceHealthDto = {
+    environment: "Test",
+    environmentName: "Pruebas",
+    reception: {
+      state: "Available",
+      reason: "RecentResponses",
+      evidence: "Call",
+      lastObservedAtUtc: "2026-11-01T15:00:00Z",
+    },
+    authorization: {
+      state: "Unverified",
+      reason: "NoRecentEvidence",
+      evidence: "None",
+      lastObservedAtUtc: null,
+    },
+    ...overrides,
+  };
+  // healthLoadedAt vigente → refreshHealth() es no-op (sin red en el test).
+  useElectronicInvoicingStatusStore.setState({ health, healthLoadedAt: Date.now() });
+}
+
+describe("SalesPage — salud técnica SRI (ZHSriServiceHealth)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setHealth();
   });
 
   afterEach(() => {
     cleanup();
+    useElectronicInvoicingStatusStore.getState().clear();
   });
 
-  it('muestra "SRI disponible" cuando sriAvailability es Available', () => {
-    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Available" }));
+  it("muestra ambiente y estado de Recepción/Autorización por separado", () => {
+    useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
 
-    expect(screen.getByText("SRI disponible")).toBeTruthy();
-  });
-
-  it('muestra "SRI no disponible" cuando sriAvailability es Unavailable', () => {
-    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Unavailable" }));
-    renderSalesPage();
-
-    expect(screen.getByText("SRI no disponible")).toBeTruthy();
-  });
-
-  it('muestra "SRI no verificado" cuando sriAvailability es Unknown (aún no se verificó)', () => {
-    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Unknown" }));
-    renderSalesPage();
-
-    expect(screen.getByText("SRI no verificado")).toBeTruthy();
-  });
-
-  it("no muestra el badge cuando la factura no es electrónica (Physical no necesita SRI)", () => {
-    useSalesPageMock.mockReturnValue(
-      buildCtx({ isElectronic: false, sriAvailability: "Unavailable" }),
+    expect(screen.getByText("Pruebas")).toBeTruthy();
+    expect(screen.getByTestId("sri-health-reception").textContent).toBe("Recepción: Disponible");
+    expect(screen.getByTestId("sri-health-authorization").textContent).toBe(
+      "Autorización: Sin verificar",
     );
+  });
+
+  it("incluye motivo, última observación y la aclaración fiscal en el tooltip", () => {
+    useSalesPageMock.mockReturnValue(buildCtx());
     renderSalesPage();
 
+    const title = screen.getByTestId("sri-health-reception").getAttribute("title")!;
+    expect(title).toContain("El SRI respondió correctamente");
+    expect(title).toContain("Última observación:");
+    expect(title).toContain("no indica si un comprobante fue autorizado");
+  });
+
+  it("muestra un único indicador SRI (sin el badge básico anterior)", () => {
+    setHealth({
+      reception: {
+        state: "Intermittent",
+        reason: "ProbeUnreachable",
+        evidence: "Probe",
+        lastObservedAtUtc: "2026-11-01T15:00:00Z",
+      },
+    });
+    useSalesPageMock.mockReturnValue(buildCtx());
+    renderSalesPage();
+
+    expect(screen.getByTestId("sri-health-reception").textContent).toBe("Recepción: Intermitente");
     expect(screen.queryByText("SRI no disponible")).toBeNull();
     expect(screen.queryByText("SRI disponible")).toBeNull();
     expect(screen.queryByText("SRI no verificado")).toBeNull();
   });
 
+  it("no muestra el indicador cuando la factura no es electrónica (Physical no necesita SRI)", () => {
+    useSalesPageMock.mockReturnValue(buildCtx({ isElectronic: false }));
+    renderSalesPage();
+
+    expect(screen.queryByTestId("sri-health-reception")).toBeNull();
+    expect(screen.queryByTestId("sri-health-authorization")).toBeNull();
+  });
+
   it("SRI no disponible NO deshabilita el botón Emitir (solo advierte, no bloquea) — canEmit sigue siendo la única autoridad", () => {
+    setHealth({
+      reception: {
+        state: "Unavailable",
+        reason: "ConsecutiveTransportFailures",
+        evidence: "Call",
+        lastObservedAtUtc: "2026-11-01T15:00:00Z",
+      },
+    });
     const openIssueFlow = vi.fn();
-    useSalesPageMock.mockReturnValue(
-      buildCtx({
-        sriAvailability: "Unavailable",
-        canEmit: true,
-        openIssueFlow,
-      }),
-    );
+    useSalesPageMock.mockReturnValue(buildCtx({ canEmit: true, openIssueFlow }));
     renderSalesPage();
 
     const btn = screen
@@ -339,15 +384,14 @@ describe("SalesPage — estado discreto de conectividad SRI (ELECTRONIC-INVOICIN
     expect(openIssueFlow).toHaveBeenCalledTimes(1);
   });
 
-  it("no hay estilos inline en el badge de conectividad SRI", () => {
-    useSalesPageMock.mockReturnValue(buildCtx({ sriAvailability: "Available" }));
-    const { container } = renderSalesPage();
+  it("no hay estilos inline en el indicador de salud SRI", () => {
+    useSalesPageMock.mockReturnValue(buildCtx());
+    renderSalesPage();
 
-    const badge = screen.getByText("SRI disponible").closest(".sf-bottombar__sri");
-    expect(badge).not.toBeNull();
-    badge!.querySelectorAll("*").forEach((el) => {
+    const bar = screen.getByTestId("sri-health-reception").closest(".sf-bottombar__sri");
+    expect(bar).not.toBeNull();
+    bar!.querySelectorAll("*").forEach((el) => {
       expect(el.getAttribute("style")).toBeNull();
     });
-    expect(container).toBeTruthy();
   });
 });

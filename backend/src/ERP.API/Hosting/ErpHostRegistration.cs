@@ -139,6 +139,7 @@ public static class ErpHostRegistration
         );
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.Section));
         services.Configure<SriPollingOptions>(configuration.GetSection(SriPollingOptions.Section));
+        services.Configure<SriHealthOptions>(configuration.GetSection(SriHealthOptions.Section));
 
         // Política de expiración de UserSession (Fase 9) — plain class inyectable directamente
         // en ExpireUserSessionsHandler (Application).

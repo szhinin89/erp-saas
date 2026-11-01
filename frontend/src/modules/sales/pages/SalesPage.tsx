@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
 import { Badge, type BadgeVariant } from "../../../components/PageShell";
+import { ZHSriServiceHealth } from "../../../components/zh/ZHSriServiceHealth";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
@@ -39,18 +40,6 @@ import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import "../styles/sales-invoice.css";
 import "../../../styles/shared/erp-form-core.css";
 import "./SalesPage.css";
-
-/** ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: solo presentación — el valor real
- * (`sriAvailability`) lo calcula el backend, nunca se recalcula acá. "Unknown" cubre tanto "aún
- * no se verificó" como el caso sin datos todavía cargados. */
-const SRI_AVAILABILITY_BADGE: Record<
-  "Available" | "Unavailable" | "Unknown",
-  { label: string; variant: BadgeVariant }
-> = {
-  Available: { label: "SRI disponible", variant: "success" },
-  Unavailable: { label: "SRI no disponible", variant: "warning" },
-  Unknown: { label: "SRI no verificado", variant: "neutral" },
-};
 
 export function SalesPage() {
   const ctx = useSalesPage();
@@ -427,15 +416,10 @@ export function SalesPage() {
                 <span className="sf-bottombar__sri-key zh-code-value">
                   {ctx.editing?.accessKey ?? "— se genera al emitir —"}
                 </span>
-                {/* ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: estado discreto de
-                    conectividad SRI, verificado al entrar a esta pantalla (ver
-                    refreshSriConnectivity en useSalesPage.ts) — nunca bloquea la captura de
-                    productos ni la emisión, solo informa. */}
-                <Badge
-                  label={SRI_AVAILABILITY_BADGE[ctx.sriAvailability].label}
-                  variant={SRI_AVAILABILITY_BADGE[ctx.sriAvailability].variant}
-                  size="md"
-                />
+                {/* Salud técnica SRI (monitor central): único indicador visible. El ping de
+                    entrada y el aviso al emitir (refreshSriConnectivity en useSalesPage.ts) se
+                    conservan y alimentan el mismo monitor — nunca bloquea la captura ni la emisión. */}
+                <ZHSriServiceHealth />
               </div>
             )}
 

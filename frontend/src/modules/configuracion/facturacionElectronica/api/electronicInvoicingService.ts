@@ -81,6 +81,45 @@ export type ElectronicInvoicingStatusDto = {
   canIssue: boolean;
 };
 
+/** Espejo de `SriServiceHealthState` (backend) — estado técnico, nunca una decisión fiscal. */
+export type SriServiceHealthState =
+  | "Unverified"
+  | "Available"
+  | "Slow"
+  | "Intermittent"
+  | "Unavailable";
+
+/** Espejo de `SriServiceHealthReason` (backend); el texto visible sale de `sriServiceHealthRegistry`. */
+export type SriServiceHealthReason =
+  | "NotConfigured"
+  | "NoRecentEvidence"
+  | "RecentResponses"
+  | "RespondedWithoutDecision"
+  | "SlowResponse"
+  | "RecentTransportFailure"
+  | "RecentInvalidResponse"
+  | "RecentUndeterminedFailure"
+  | "RecoveredAfterFailures"
+  | "ConsecutiveTransportFailures"
+  | "ProbeReachable"
+  | "ProbeUnreachable"
+  | "ProbeReachableAfterFailures";
+
+export type SriServiceStatusDto = {
+  state: SriServiceHealthState;
+  reason: SriServiceHealthReason;
+  evidence: "None" | "Call" | "Probe";
+  lastObservedAtUtc: string | null;
+};
+
+/** Salud técnica de Recepción/Autorización SRI en el ambiente de la empresa — sin datos sensibles. */
+export type SriServiceHealthDto = {
+  environment: "Production" | "Test" | null;
+  environmentName: string | null;
+  reception: SriServiceStatusDto;
+  authorization: SriServiceStatusDto;
+};
+
 export const electronicInvoicingService = {
   getSriConfiguration: () =>
     apiGet<SriConfigurationDto | null>(
@@ -138,4 +177,8 @@ export const electronicInvoicingService = {
         ? "/api/v1/electronic-invoicing/status?checkConnectivity=true"
         : "/api/v1/electronic-invoicing/status",
     ),
+
+  /** Lee el monitor central de salud SRI (en memoria del servidor) — nunca dispara SOAP ni ping. */
+  getSriHealth: () =>
+    apiGet<SriServiceHealthDto>("/api/v1/electronic-invoicing/sri-health"),
 };

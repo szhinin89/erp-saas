@@ -18,5 +18,6 @@ export type {
   RetentionTaxType,
 } from "../api/retentionsService";
 export { RetentionElectronicStatusBadge } from "../components/RetentionElectronicStatusBadge";
+export { RetentionSriServiceHealth } from "../components/RetentionSriServiceHealth";
 export { SRI_ANNULMENT_REQUIRED_CODE } from "../api/retentionsService";
 export { RetentionAnnulmentPanel } from "../components/RetentionAnnulmentPanel";

@@ -242,6 +242,8 @@ export function useSriConfigPage() {
       );
     } finally {
       setValidating(false);
+      // El diagnóstico hace el ping existente al WSDL, que queda como evidencia en el monitor central.
+      void useElectronicInvoicingStatusStore.getState().refreshHealth({ force: true });
     }
   };
 

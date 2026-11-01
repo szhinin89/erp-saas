@@ -2,6 +2,7 @@ import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { NoAccessPage } from "../../../../components/PageShell";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
+import { ZHSriServiceHealth } from "../../../../components/zh/ZHSriServiceHealth";
 import { useI18n } from "../../../../i18n/i18n";
 import { useElectronicDocumentsMonitor } from "../hooks/useElectronicDocumentsMonitor";
 import { ElectronicDocumentsDashboardCards } from "../components/ElectronicDocumentsDashboardCards";
@@ -40,6 +41,9 @@ export function ElectronicDocumentsMonitorPage() {
           detail={m.dashboardError}
         />
       )}
+      <div className="zh-mb-8">
+        <ZHSriServiceHealth variant="detail" />
+      </div>
       <ElectronicDocumentsDashboardCards
         dashboard={m.dashboard}
         loading={m.dashboardLoading}

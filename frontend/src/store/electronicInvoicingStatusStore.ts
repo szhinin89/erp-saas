@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   electronicInvoicingService,
   type ElectronicInvoicingStatusDto,
+  type SriServiceHealthDto,
 } from "../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
 
 /**
@@ -10,6 +11,13 @@ import {
  * ventana, entrar/salir de /sales o reintentar emitir no dispara un nuevo ping externo.
  */
 export const SRI_CONNECTIVITY_TTL_MS = 3 * 60 * 1000; // 3 minutos
+
+/**
+ * Vigencia en el cliente de la última lectura del monitor central de salud SRI. La lectura es
+ * barata (memoria del servidor, sin SOAP ni ping), así que solo evita repetirla al montar varias
+ * pantallas/componentes seguidos; la vigencia de la evidencia la decide el backend.
+ */
+export const SRI_HEALTH_TTL_MS = 60 * 1000; // 1 minuto
 
 interface ElectronicInvoicingStatusState {
   status: ElectronicInvoicingStatusDto | null;
@@ -26,11 +34,21 @@ interface ElectronicInvoicingStatusState {
    * `force: true`. Deduplica llamadas concurrentes igual que `refresh`.
    */
   refreshConnectivity: (opts?: { force?: boolean }) => Promise<void>;
+  /** Salud técnica de Recepción/Autorización SRI (monitor central del backend) — `null` si aún no se leyó. */
+  health: SriServiceHealthDto | null;
+  /** Epoch ms de la última lectura de `health`. */
+  healthLoadedAt: number | null;
+  /**
+   * Lee el monitor central de salud SRI. No-op dentro de `SRI_HEALTH_TTL_MS` salvo `force: true`;
+   * deduplica llamadas concurrentes. Nunca dispara SOAP ni ping: solo lee evidencia ya observada.
+   */
+  refreshHealth: (opts?: { force?: boolean }) => Promise<void>;
   clear: () => void;
 }
 
 let inFlight: Promise<void> | null = null;
 let connectivityInFlight: Promise<void> | null = null;
+let healthInFlight: Promise<void> | null = null;
 
 /**
  * Estado de facturación electrónica (ambiente, certificado) para el banner transversal
@@ -48,6 +66,8 @@ export const useElectronicInvoicingStatusStore =
     isLoaded: false,
     isLoading: false,
     connectivityCheckedAt: null,
+    health: null,
+    healthLoadedAt: null,
 
     refresh: async () => {
       if (inFlight) return inFlight;
@@ -93,8 +113,34 @@ export const useElectronicInvoicingStatusStore =
         } finally {
           connectivityInFlight = null;
         }
+        // El ping recién hecho ya quedó como evidencia en el monitor central: releerlo mantiene
+        // coherentes el aviso de Ventas y el indicador de salud.
+        void get().refreshHealth({ force: true });
       })();
       return connectivityInFlight;
+    },
+
+    refreshHealth: async (opts) => {
+      const { healthLoadedAt } = get();
+      if (
+        opts?.force !== true &&
+        healthLoadedAt != null &&
+        Date.now() - healthLoadedAt < SRI_HEALTH_TTL_MS
+      ) {
+        return;
+      }
+      if (healthInFlight) return healthInFlight;
+      healthInFlight = (async () => {
+        try {
+          const health = await electronicInvoicingService.getSriHealth();
+          set({ health, healthLoadedAt: Date.now() });
+        } catch {
+          // Sin lectura: el indicador conserva el último valor o queda "Sin verificar".
+        } finally {
+          healthInFlight = null;
+        }
+      })();
+      return healthInFlight;
     },
 
     clear: () =>
@@ -103,5 +149,7 @@ export const useElectronicInvoicingStatusStore =
         isLoaded: false,
         isLoading: false,
         connectivityCheckedAt: null,
+        health: null,
+        healthLoadedAt: null,
       }),
   }));

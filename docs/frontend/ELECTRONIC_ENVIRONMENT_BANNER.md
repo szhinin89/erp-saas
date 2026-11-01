@@ -98,6 +98,48 @@ Sin props, sin configuración adicional. Integrado hoy en `SalesPage.tsx`; para 
 Notas de Crédito/Débito, Retenciones o Guías de Remisión basta con importar y colocar la misma
 línea.
 
+## Salud técnica SRI — monitor central (`ZHSriServiceHealth`)
+
+Indicador separado del banner: **disponibilidad técnica** de Recepción y Autorización del SRI en el
+ambiente de la empresa. Nunca expresa una decisión fiscal (DEVUELTA / NO AUTORIZADO son respuestas
+válidas del servicio).
+
+**Fuente (backend).** `SriServiceHealthMonitor` (Application, singleton en memoria) agrupado por
+(host del `WsdlUrl`, servicio): `celcer` (Pruebas) y `cel` (Producción) quedan separados. Lo
+alimentan solo decoradores de DI sobre los adaptadores existentes — `ObservedSriReceptionClient`,
+`ObservedSriAuthorizationClient`, `ObservedSriConnectivityChecker` (`ERP.Infrastructure/Services/Sri/Health/`)
+— que devuelven el resultado intacto y registran solo servicio, clasificación, duración e instante
+(sin clave de acceso, XML, empresa ni mensajes del SRI). No agrega llamadas SOAP ni pings, ni
+persiste nada: un reinicio vuelve a "Sin verificar". ConsultaComprobante (anulación de
+retenciones) no se observa: no es Recepción ni Autorización.
+
+**Clasificación de una llamada** (`SriObservationOutcome`): respuesta válida; polling de
+autorización agotado sin decisión (respuestas SOAP válidas → **no** es lentitud ni caída, y su
+duración no se mide porque incluye esperas deliberadas); SOAP Fault / respuesta no interpretable;
+fallo de transporte (`ERROR_CONEXION`, ya tras los reintentos del cliente); no determinable (consulta
+de decisiones fallida, que solo trae texto); ping alcanzable / no alcanzable (evidencia débil).
+
+**Estados** (`SriServiceHealthEvaluator`, umbrales en appsettings `SriHealth`):
+
+| Estado | Regla |
+|---|---|
+| Sin verificar | Sin observaciones en `EvidenceFreshnessMinutes` (15) o configuración SRI incompleta |
+| No disponible | `ConsecutiveTransportFailuresForUnavailable` (2) llamadas reales seguidas con fallo de transporte, sin un ping alcanzable posterior |
+| Intermitente | Último fallo aislado, SOAP Fault, fallo no determinable, fallos recientes con recuperación, o solo pings fallidos (un ping nunca diagnostica caída) |
+| Lento | Todo responde, pero la última llamada medible tardó ≥ `SlowCallThresholdSeconds` (8 s) |
+| Disponible | Respuestas válidas vigentes (o solo un ping alcanzable, marcado como evidencia `Probe`) |
+
+**Contrato.** `GET /api/v1/electronic-invoicing/sri-health` (`SriServiceHealthController`,
+autenticado + empresa propia, igual que `/status`): `environment`, `environmentName`, y por servicio
+`state`, `reason`, `evidence`, `lastObservedAtUtc`. Solo lee memoria.
+
+**Frontend.** Slice `health` + `refreshHealth()` del mismo `electronicInvoicingStatusStore` (TTL 60 s,
+deduplicado; se relee tras `refreshConnectivity` y tras "Validar configuración"). Presentación única en
+`sriServiceHealthRegistry.ts`; `ZHSriServiceHealth` (`compact` con motivo y fecha en el tooltip,
+`detail` con motivo y fecha visibles). Integrado en Ventas (reemplaza el badge básico; el ping de
+entrada y el aviso al emitir se conservan), Nota de crédito y Retenciones (Compra/Gasto) solo mientras
+el comprobante depende del SRI, Monitor y Configuración SRI (`detail`).
+
 ## Nota de gobernanza
 
 Este documento describe el contrato tal como quedó implementado. Formalizarlo como una entrada

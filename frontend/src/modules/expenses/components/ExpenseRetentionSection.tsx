@@ -21,6 +21,7 @@ import {
 import {
   RetentionAnnulmentPanel,
   RetentionElectronicStatusBadge,
+  RetentionSriServiceHealth,
   type RetentionDocumentDto,
 } from "../../retentions/facades/retentionDocumentFacade";
 import {
@@ -488,6 +489,7 @@ function RetentionDocumentSummary({
           <p>
             <RetentionElectronicStatusBadge status={retention.electronicStatus} />
           </p>
+          <RetentionSriServiceHealth status={retention.electronicStatus} />
         </div>
       </ZHGrid>
 

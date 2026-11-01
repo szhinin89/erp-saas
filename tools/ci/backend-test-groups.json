@@ -140,6 +140,7 @@
         "ERP.Infrastructure.Tests.Seeding.RetentionsPostingRuleSeedIntegrationTests",
         "ERP.Infrastructure.Tests.Services.CurrentUserServiceTests",
         "ERP.Infrastructure.Tests.Services.Sri.SriAuthorizationClientTests",
+        "ERP.Infrastructure.Tests.Services.Sri.Health.ObservedSriClientDecoratorTests",
         "ERP.Infrastructure.Tests.Services.UserAccessRevocationServiceTests",
         "ERP.Infrastructure.Tests.Setup.FirstRunSetupConcurrencyTests"
       ]

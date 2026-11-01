@@ -3,9 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   useElectronicInvoicingStatusStore,
   SRI_CONNECTIVITY_TTL_MS,
+  SRI_HEALTH_TTL_MS,
 } from "./electronicInvoicingStatusStore";
 import { electronicInvoicingService } from "../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
-import type { ElectronicInvoicingStatusDto } from "../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
+import type {
+  ElectronicInvoicingStatusDto,
+  SriServiceHealthDto,
+} from "../modules/configuracion/facturacionElectronica/api/electronicInvoicingService";
 
 // ELECTRONIC-INVOICING-SRI-CONNECTIVITY-CHECK-SCOPE-01: `refresh()` (bootstrap global) nunca debe
 // pedir ping externo al SRI; `refreshConnectivity()` (acotado a Ventas) sí lo pide, pero cachea
@@ -17,6 +21,7 @@ vi.mock(
   () => ({
     electronicInvoicingService: {
       getStatus: vi.fn(),
+      getSriHealth: vi.fn(),
     },
   }),
 );
@@ -46,7 +51,25 @@ function resetStore() {
     isLoaded: false,
     isLoading: false,
     connectivityCheckedAt: null,
+    health: null,
+    healthLoadedAt: null,
   });
+}
+
+const unverified = {
+  state: "Unverified",
+  reason: "NoRecentEvidence",
+  evidence: "None",
+  lastObservedAtUtc: null,
+} as const;
+
+function baseHealth(): SriServiceHealthDto {
+  return {
+    environment: "Test",
+    environmentName: "Pruebas",
+    reception: unverified,
+    authorization: unverified,
+  };
 }
 
 beforeEach(() => {
@@ -167,5 +190,79 @@ describe("electronicInvoicingStatusStore.clear", () => {
 
     expect(useElectronicInvoicingStatusStore.getState().status).toBeNull();
     expect(useElectronicInvoicingStatusStore.getState().connectivityCheckedAt).toBeNull();
+  });
+});
+
+describe("electronicInvoicingStatusStore.refreshHealth (monitor central de salud SRI)", () => {
+  it("lee el monitor y no vuelve a pedirlo dentro del TTL", async () => {
+    vi.mocked(electronicInvoicingService.getSriHealth).mockResolvedValue(baseHealth());
+
+    await useElectronicInvoicingStatusStore.getState().refreshHealth();
+    await useElectronicInvoicingStatusStore.getState().refreshHealth();
+
+    expect(electronicInvoicingService.getSriHealth).toHaveBeenCalledTimes(1);
+    expect(useElectronicInvoicingStatusStore.getState().health?.environment).toBe("Test");
+  });
+
+  it("vuelve a leer al vencer el TTL o con force:true", async () => {
+    vi.mocked(electronicInvoicingService.getSriHealth).mockResolvedValue(baseHealth());
+    await useElectronicInvoicingStatusStore.getState().refreshHealth();
+
+    await useElectronicInvoicingStatusStore.getState().refreshHealth({ force: true });
+    useElectronicInvoicingStatusStore.setState({
+      healthLoadedAt: Date.now() - SRI_HEALTH_TTL_MS - 1,
+    });
+    await useElectronicInvoicingStatusStore.getState().refreshHealth();
+
+    expect(electronicInvoicingService.getSriHealth).toHaveBeenCalledTimes(3);
+  });
+
+  it("deduplica lecturas concurrentes", async () => {
+    vi.mocked(electronicInvoicingService.getSriHealth).mockResolvedValue(baseHealth());
+
+    await Promise.all([
+      useElectronicInvoicingStatusStore.getState().refreshHealth(),
+      useElectronicInvoicingStatusStore.getState().refreshHealth(),
+    ]);
+
+    expect(electronicInvoicingService.getSriHealth).toHaveBeenCalledTimes(1);
+  });
+
+  it("nunca pide ping ni estado al leer la salud", async () => {
+    vi.mocked(electronicInvoicingService.getSriHealth).mockResolvedValue(baseHealth());
+
+    await useElectronicInvoicingStatusStore.getState().refreshHealth();
+
+    expect(electronicInvoicingService.getStatus).not.toHaveBeenCalled();
+  });
+
+  it("tras un check de conectividad relee la salud (el ping quedó como evidencia)", async () => {
+    vi.mocked(electronicInvoicingService.getStatus).mockResolvedValue(baseStatus());
+    vi.mocked(electronicInvoicingService.getSriHealth).mockResolvedValue(baseHealth());
+
+    await useElectronicInvoicingStatusStore.getState().refreshConnectivity();
+    await vi.waitFor(() =>
+      expect(electronicInvoicingService.getSriHealth).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it("si la lectura falla conserva el valor previo", async () => {
+    vi.mocked(electronicInvoicingService.getSriHealth).mockResolvedValueOnce(baseHealth());
+    await useElectronicInvoicingStatusStore.getState().refreshHealth();
+    vi.mocked(electronicInvoicingService.getSriHealth).mockRejectedValueOnce(new Error("red"));
+
+    await useElectronicInvoicingStatusStore.getState().refreshHealth({ force: true });
+
+    expect(useElectronicInvoicingStatusStore.getState().health?.environment).toBe("Test");
+  });
+
+  it("clear limpia la salud", async () => {
+    vi.mocked(electronicInvoicingService.getSriHealth).mockResolvedValue(baseHealth());
+    await useElectronicInvoicingStatusStore.getState().refreshHealth();
+
+    useElectronicInvoicingStatusStore.getState().clear();
+
+    expect(useElectronicInvoicingStatusStore.getState().health).toBeNull();
+    expect(useElectronicInvoicingStatusStore.getState().healthLoadedAt).toBeNull();
   });
 });

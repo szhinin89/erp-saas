@@ -703,7 +703,6 @@ export function useSalesPage() {
   // concurrentes, así que refreshSriConnectivity() puede llamarse sin miedo a multiplicar pings;
   // el efecto solo depende de isElectronic, no de cliente/producto/cantidad, para no repetir la
   // llamada por cada edición del formulario.
-  const sriStatus = useElectronicInvoicingStatusStore((s) => s.status);
   const refreshSriConnectivity = useElectronicInvoicingStatusStore(
     (s) => s.refreshConnectivity,
   );
@@ -2130,9 +2129,6 @@ export function useSalesPage() {
     isElectronic,
     emissionType,
     sessionEmissionType,
-    // Estado discreto de conectividad SRI (ver refreshSriConnectivity arriba) — "Available" /
-    // "Unavailable" / "Unknown" ("no verificado", incl. antes de que resuelva el primer check).
-    sriAvailability: sriStatus?.sriAvailability ?? "Unknown",
     selectedPt,
     isCreditTerm,
 

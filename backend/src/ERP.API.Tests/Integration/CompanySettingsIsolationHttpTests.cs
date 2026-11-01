@@ -245,6 +245,7 @@ public sealed class CompanySettingsIsolationHttpTests
     private const string OperationalPreferences = "/api/v1/settings/operations";
     private const string CompanyInvoiceDefaults = "/api/v1/org-config/company/invoice-defaults";
     private const string ElectronicInvoicingStatus = "/api/v1/electronic-invoicing/status?checkConnectivity=false";
+    private const string SriServiceHealth = "/api/v1/electronic-invoicing/sri-health";
     private const string Retentions = "/api/v1/retentions";
     private const string CompanyScopeForbidden = "COMPANY_SCOPE_FORBIDDEN";
 
@@ -472,6 +473,28 @@ public sealed class CompanySettingsIsolationHttpTests
     }
 
     [Fact]
+    public async Task Salud_SRI_exige_empresa_propia_y_no_expone_datos_sensibles()
+    {
+        using var asB = _f.CreateClient(_f.CompanyBId);
+        await AssertCompanyScopeForbiddenAsync(await asB.GetAsync(SriServiceHealth));
+
+        using var asA = _f.CreateClient(_f.CompanyAId);
+        var own = await asA.GetAsync(SriServiceHealth);
+        var body = await own.Content.ReadAsStringAsync();
+        own.StatusCode.Should().Be(HttpStatusCode.OK, body);
+
+        using var doc = JsonDocument.Parse(body);
+        var data = doc.RootElement.GetProperty("data");
+        data.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo(
+            "environment", "environmentName", "reception", "authorization"
+        );
+        data.GetProperty("reception").EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo(
+            "state", "reason", "evidence", "lastObservedAtUtc"
+        );
+        body.Should().NotContainAny("sri.gob.ec", "wsdl", "accessKey", "companyId", "tenantId");
+    }
+
+    [Fact]
     public async Task Sin_empresa_seleccionada_se_rechaza_y_las_operaciones_TENANT_siguen_funcionando()
     {
         using var noCompany = _f.CreateClient(null);
@@ -480,6 +503,7 @@ public sealed class CompanySettingsIsolationHttpTests
         await AssertCompanyScopeForbiddenAsync(await noCompany.GetAsync(OperationalPreferences));
         await AssertCompanyScopeForbiddenAsync(await noCompany.GetAsync(CompanyInvoiceDefaults));
         await AssertCompanyScopeForbiddenAsync(await noCompany.GetAsync(ElectronicInvoicingStatus));
+        await AssertCompanyScopeForbiddenAsync(await noCompany.GetAsync(SriServiceHealth));
 
         // BusinessPartner es TENANT (ITenantScopedRequest): no exige empresa operativa.
         var tenantScoped = await noCompany.GetAsync("/api/v1/master/business-partners");

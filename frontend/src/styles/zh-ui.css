@@ -2298,6 +2298,19 @@ select.zh-input--compact {
   flex-direction: column;
 }
 
+/* ZHSriServiceHealth — fila de badges/motivo (compacto) y bloque apilado (detalle). */
+.zh-sri-health {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.zh-sri-health-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 /* Spacing */
 /* .zh-m-0 ELIMINADO (Bloque 12B) — sin consumidores. */
 .zh-mt-4 {

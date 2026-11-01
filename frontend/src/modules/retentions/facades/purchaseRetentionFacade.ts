@@ -33,6 +33,7 @@ export type {
 export { SRI_ANNULMENT_REQUIRED_CODE } from "../api/retentionsService";
 export { RetentionAnnulmentPanel } from "../components/RetentionAnnulmentPanel";
 export { RetentionElectronicStatusBadge } from "../components/RetentionElectronicStatusBadge";
+export { RetentionSriServiceHealth } from "../components/RetentionSriServiceHealth";
 
 export const purchaseRetentionFacade = {
   getForPurchase: retentionsService.getForPurchase,

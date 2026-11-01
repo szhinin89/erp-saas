@@ -1,6 +1,7 @@
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
+import { ZHSriServiceHealth } from "../../../../components/zh/ZHSriServiceHealth";
 import { useI18n } from "../../../../i18n/i18n";
 import { SriConfigPageDataTab } from "./SriConfigPageDataTab";
 import { useSriConfigPage } from "./useSriConfigPage";
@@ -42,6 +43,13 @@ export function SriConfigurationSection() {
           variant="success"
           message={t("settings.electronicInvoicing.sri.saved")}
         />
+      )}
+      {page.sriState.data && (
+        <div className="pg-section sri-section-mb">
+          <div className="pg-section-body">
+            <ZHSriServiceHealth variant="detail" />
+          </div>
+        </div>
       )}
       {page.validationError && (
         <ZHPageNotice

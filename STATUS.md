@@ -1,5 +1,37 @@
 # Project Status
 
+## Salud técnica SRI centralizada — READY FOR REVIEW (2026-11-01)
+
+FALTA implementada: estado técnico único de Recepción y Autorización SRI por ambiente (Disponible, Lento,
+Intermitente, No disponible, Sin verificar), con motivo y última observación. Monitor en memoria por host+servicio
+alimentado solo por decoradores de DI sobre los adaptadores existentes (resultado intacto, sin clave de acceso,
+XML ni empresa); polling agotado con respuestas válidas = respuesta válida; un ping fallido nunca diagnostica caída.
+Endpoint `GET /api/v1/electronic-invoicing/sri-health` (autenticado, empresa propia). Componente
+`ZHSriServiceHealth` en Ventas (reemplaza el badge básico; ping y aviso al emitir se conservan), NC y Retenciones
+(solo en tránsito al SRI), Monitor y Configuración SRI. Contrato:
+[ELECTRONIC_ENVIRONMENT_BANNER.md § Salud técnica SRI](docs/frontend/ELECTRONIC_ENVIRONMENT_BANNER.md#salud-técnica-sri--monitor-central-zhsriservicehealth);
+extensión registrada en [frozen-infrastructure.md](docs/architecture/frozen-infrastructure.md#electronicdocuments-v10-facturación-electrónica-sri).
+PASS agente: Application 36/36 (monitor, handler, estado previo), Infrastructure decoradores 17/17, API
+aislamiento 8/8, Architecture 143/143; frontend focal 205 + 119 + 15 + 14 (Ventas, Configuración, NC,
+Retenciones, Monitor, Caja, store, componente), `tsc -b`, lint (0 errores), build, `architecture:check` 140/140.
+Limitaciones: estado por proceso (reinicio o varias instancias → vistas independientes, "Sin verificar" al arrancar);
+ConsultaComprobante no se observa; la consulta de decisiones fallida solo puede producir "Intermitente".
+Sin migraciones, tablas, jobs, SOAP nuevo, cambios R11/R12/R32, staging, commit ni push. Pendiente gate del propietario.
+
+Gate focal del propietario (PowerShell desde la raíz; Docker para la prueba API):
+```powershell
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~SriServiceHealth|FullyQualifiedName~GetSriServiceHealthQueryHandlerTests|FullyQualifiedName~GetElectronicInvoicingStatusQueryHandlerTests" --verbosity quiet
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter FullyQualifiedName~ObservedSriClientDecoratorTests --verbosity quiet
+dotnet test backend/src/ERP.API.Tests/ERP.API.Tests.csproj --no-restore --filter FullyQualifiedName~CompanySettingsIsolationHttpTests --verbosity quiet
+Push-Location frontend
+npm.cmd run test:unit -- src/components/zh/ZHSriServiceHealth.test.tsx src/store/electronicInvoicingStatusStore.test.ts src/modules/sales/pages/SalesPage.sriConnectivity.test.tsx
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run architecture:check
+Pop-Location
+git diff --check
+```
+
 ## Compras — plazos XML y cuotas — READY FOR REVIEW (2026-10-31)
 
 BUG REAL: plazo XML desconectado del formulario y default del proveedor omitido al cargar recepción.

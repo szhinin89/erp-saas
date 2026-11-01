@@ -120,10 +120,24 @@ public static class DependencyInjection
         // reimplementación (ver auditoría del refactor de Settings → Electronic Invoicing).
         services.AddHttpClient("sri", client => client.Timeout = TimeSpan.FromSeconds(20));
         services.AddScoped<ERP.Infrastructure.Services.Sri.SriSoapClient>();
-        services.AddScoped<
-            ERP.Application.Common.Interfaces.SRI.ISriConnectivityChecker,
-            ERP.Infrastructure.Services.Sri.SriConnectivityChecker
-        >();
+
+        // Monitor central de salud SRI (en memoria, por host+servicio): lo alimentan solo los
+        // decoradores Observed* sobre los adaptadores existentes — nunca origina llamadas al SRI.
+        services.AddSingleton<ERP.Application.Modules.ElectronicInvoicing.Health.SriServiceHealthMonitor>();
+        services.AddSingleton<ERP.Application.Common.Interfaces.SRI.ISriServiceHealthRecorder>(sp =>
+            sp.GetRequiredService<ERP.Application.Modules.ElectronicInvoicing.Health.SriServiceHealthMonitor>()
+        );
+        services.AddSingleton<ERP.Application.Modules.ElectronicInvoicing.Health.ISriServiceHealthReader>(sp =>
+            sp.GetRequiredService<ERP.Application.Modules.ElectronicInvoicing.Health.SriServiceHealthMonitor>()
+        );
+
+        services.AddScoped<ERP.Infrastructure.Services.Sri.SriConnectivityChecker>();
+        services.AddScoped<ERP.Application.Common.Interfaces.SRI.ISriConnectivityChecker>(sp =>
+            new ERP.Infrastructure.Services.Sri.Health.ObservedSriConnectivityChecker(
+                sp.GetRequiredService<ERP.Infrastructure.Services.Sri.SriConnectivityChecker>(),
+                sp.GetRequiredService<ERP.Application.Common.Interfaces.SRI.ISriServiceHealthRecorder>()
+            )
+        );
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<RefreshTokenRateLimiter>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
@@ -590,10 +604,15 @@ public static class DependencyInjection
 
         // Fase 8: adapta SriSoapClient (ya registrado arriba) a la interfaz que consume
         // Application — Application nunca conoce SriSoapClient/HttpClient directamente.
-        services.AddScoped<
-            ERP.Application.Common.Interfaces.SRI.ISriReceptionClient,
-            ERP.Infrastructure.Services.Sri.SriReceptionClient
-        >();
+        // Decorador Observed*: mismo adaptador FROZEN, resultado intacto; solo registra evidencia de salud SRI.
+        services.AddScoped<ERP.Infrastructure.Services.Sri.SriReceptionClient>();
+        services.AddScoped<ERP.Application.Common.Interfaces.SRI.ISriReceptionClient>(sp =>
+            new ERP.Infrastructure.Services.Sri.Health.ObservedSriReceptionClient(
+                sp.GetRequiredService<ERP.Infrastructure.Services.Sri.SriReceptionClient>(),
+                sp.GetRequiredService<ERP.Application.Common.Interfaces.SRI.ISriServiceHealthRecorder>(),
+                sp.GetRequiredService<TimeProvider>()
+            )
+        );
         services.AddScoped<
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentReceptionService,
             ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentReceptionService
@@ -601,10 +620,14 @@ public static class DependencyInjection
 
         // Fase 9: mismo patrón adaptador para la consulta de autorización — reutiliza el mismo
         // SriSoapClient (ya registrado arriba), nunca un segundo cliente SOAP.
-        services.AddScoped<
-            ERP.Application.Common.Interfaces.SRI.ISriAuthorizationClient,
-            ERP.Infrastructure.Services.Sri.SriAuthorizationClient
-        >();
+        services.AddScoped<ERP.Infrastructure.Services.Sri.SriAuthorizationClient>();
+        services.AddScoped<ERP.Application.Common.Interfaces.SRI.ISriAuthorizationClient>(sp =>
+            new ERP.Infrastructure.Services.Sri.Health.ObservedSriAuthorizationClient(
+                sp.GetRequiredService<ERP.Infrastructure.Services.Sri.SriAuthorizationClient>(),
+                sp.GetRequiredService<ERP.Application.Common.Interfaces.SRI.ISriServiceHealthRecorder>(),
+                sp.GetRequiredService<TimeProvider>()
+            )
+        );
         // ZH-RETENTION-SRI-ANNULMENT-01B: ConsultaComprobante (estado fiscal oficial) — mismo SriSoapClient.
         services.AddScoped<
             ERP.Application.Common.Interfaces.SRI.ISriDocumentStatusQuery,

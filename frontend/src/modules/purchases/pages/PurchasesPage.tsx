@@ -31,6 +31,7 @@ import { PurchaseRetentionDraft } from "../components/PurchaseRetentionDraft";
 import {
   RetentionAnnulmentPanel,
   RetentionElectronicStatusBadge,
+  RetentionSriServiceHealth,
 } from "../../retentions/facades/purchaseRetentionFacade";
 import { ResolvePendingProductsModal } from "../components/ResolvePendingProductsModal";
 import { PurchaseLineIssuesTag } from "../components/PurchaseLineIssuesTag";
@@ -2915,6 +2916,7 @@ export function RetentionSection({
                 {t("retentions.electronicStatus.label", "Estado electrónico")}:{" "}
                 <RetentionElectronicStatusBadge status={ctx.retention.electronicStatus} />
               </span>
+              <RetentionSriServiceHealth status={ctx.retention.electronicStatus} />
             </div>
             {ctx.retention.annulment ? (
               <RetentionAnnulmentPanel
