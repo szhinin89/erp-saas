@@ -223,6 +223,8 @@ export function usePurchasesPage() {
   // eliminadas o regeneradas con nro./días distintos a la condición de pago, o restauradas desde el
   // borrador guardado). Solo las manuales se guardan con el borrador; las generadas se recalculan.
   const [ptManual, setPtManual] = useState(false);
+  const [xmlPaymentProposal, setXmlPaymentProposal] = useState<PurchaseDraftDto | null>(null);
+  const paymentDecisionRevision = useRef(0);
 
   // ── Retención ────────────────────────────────────────────────────
   // ZH-PURCHASE-RETENTION-CONFIRM-01: la retención se define en el BORRADOR y se emite dentro de
@@ -536,7 +538,14 @@ export function usePurchasesPage() {
     roundToTotalAmount(ptRowsSum) !== roundToTotalAmount(localTotal);
   // PURCHASE-DRAFT-RECOVERY F2 — cuotas que no cuadran (p. ej. cambió el total o la condición): el
   // borrador se guarda igual, tal cual (nunca se ajustan solas); solo Confirmar exige corregirlas.
-  const scheduleBlocksConfirm = ptMismatch;
+  const selectedTerm = paymentTermsList.find(p => p.id === formWatch.paymentTermId);
+  const cashCondition = selectedTerm
+    ? selectedTerm.installments === 1 && selectedTerm.daysBetweenInstallments === 0
+    : editing?.paymentTermInstallments === 1 && editing.paymentTermDaysBetween === 0;
+  const scheduleConditionError = cashCondition && ptRows.some(r => r.dueDate > formWatch.issueDate)
+    ? "La condición Contado no admite vencimientos posteriores a la emisión. Seleccione una condición de crédito activa."
+    : null;
+  const scheduleBlocksConfirm = ptMismatch || !!scheduleConditionError || !!xmlPaymentProposal?.suggestedDueDate;
   const scheduleMismatchConfirmMessage = t(
     "purchases.schedule.mismatchBlocksConfirm",
     "Las cuotas no cuadran con el total de la compra. Regenere o corrija las cuotas antes de confirmar.",
@@ -1169,11 +1178,13 @@ export function usePurchasesPage() {
         );
         setValue("taxSupportCode", profile.config.defaultTaxSupportCode ?? "");
       }
-      if (!profile.purchaseDefaultPaymentTermId) return;
+      if (ptManual || !profile.purchaseDefaultPaymentTermId) return;
       try {
+        const revision = paymentDecisionRevision.current;
         const pt = await paymentTermLookupFacade.getById(
           profile.purchaseDefaultPaymentTermId,
         );
+        if (!pt.isActive || revision !== paymentDecisionRevision.current) return;
         setValue("paymentTermId", pt.id);
         setPtInstallments(pt.installments);
         setPtDaysBetween(pt.daysBetweenInstallments);
@@ -1191,7 +1202,7 @@ export function usePurchasesPage() {
         /* PaymentTerm load failed */
       }
     },
-    [setValue, getValues, localTotal],
+    [setValue, getValues, localTotal, ptManual],
   );
 
   const supplierInactiveDetail = t(
@@ -1228,6 +1239,7 @@ export function usePurchasesPage() {
 
   const handleSupplierChange = useCallback(
     async (s: SupplierPickerRow | null) => {
+      const revision = ++paymentDecisionRevision.current;
       setValue("supplierId", s?.id ?? "", { shouldValidate: true });
       if (!s) {
         setSupplierProfile(null);
@@ -1235,6 +1247,7 @@ export function usePurchasesPage() {
       }
       try {
         const profile = await resolveSupplierProfile(s.id);
+        if (revision !== paymentDecisionRevision.current) return;
         setSupplierProfile(profile);
         applySupplierDefaults(profile);
       } catch {
@@ -1278,6 +1291,7 @@ export function usePurchasesPage() {
 
   // ── Form reset ─────────────────────────────────────────────────────
   const resetForm = useCallback(() => {
+    setXmlPaymentProposal(null);
     reset(emptyPurchaseInvoiceForm());
     setEditing(null);
     setSavedDraftSnapshot(null);
@@ -1304,6 +1318,7 @@ export function usePurchasesPage() {
   // ── Load for edit ──────────────────────────────────────────────────
   const loadForEdit = useCallback(
     async (id: string) => {
+      setXmlPaymentProposal(null);
       try {
         setDuplicateAccessKey(null);
         setDuplicateAccessKeyChecking(false);
@@ -1545,10 +1560,15 @@ export function usePurchasesPage() {
           );
         }
 
+        let defaultTerm: PaymentTermDto | null = null;
         if (draft.supplierId) {
           try {
             const profile = await resolveSupplierProfile(draft.supplierId);
             setSupplierProfile(profile);
+            if (profile.purchaseDefaultPaymentTermId) {
+              const pt = await paymentTermLookupFacade.getById(profile.purchaseDefaultPaymentTermId);
+              if (pt.isActive) defaultTerm = pt;
+            }
           } catch {
             /* profile load failed */
           }
@@ -1588,6 +1608,7 @@ export function usePurchasesPage() {
           docTypeCode: draft.docTypeCode ?? "",
           invoiceNumber: draft.invoiceNumber,
           issueDate: draft.issueDate,
+          paymentTermId: defaultTerm?.id ?? "",
           accessKey: draft.accessKey ?? "",
           authorizationNumber: draft.authorizationNumber ?? "",
           authorizationDate: toDateTimeLocalInputValue(draft.authorizationDate),
@@ -1597,11 +1618,12 @@ export function usePurchasesPage() {
 
         setLineKey(mappedLines.length + 1);
         setShowElectronic(!!(draft.accessKey || draft.authorizationNumber));
-        setPtInstallments(1);
-        setPtDaysBetween(0);
+        setPtInstallments(defaultTerm?.installments ?? 1);
+        setPtDaysBetween(defaultTerm?.daysBetweenInstallments ?? 0);
         setPtRows([]);
-        setPtLoaded(false);
+        setPtLoaded(!!defaultTerm);
         setPtManual(false);
+        setXmlPaymentProposal(draft.suggestedDueDate || draft.xmlPaymentTerm || (draft.xmlPaymentCount ?? 0) > 1 ? draft : null);
         setWhPreview(null);
         setRetentionIntent(emptyPurchaseRetentionIntent(todayIso()));
         setRetention(null);
@@ -1642,6 +1664,10 @@ export function usePurchasesPage() {
   // ── Save (create/update) ───────────────────────────────────────────
   const handleSave = handleSubmit(async (data) => {
     showSaveError("");
+    if (xmlPaymentProposal?.suggestedDueDate) {
+      showSaveError("Acepte la propuesta del XML o elija usar la condición seleccionada antes de guardar.");
+      return;
+    }
     const duplicate = await checkAccessKeyDuplicate(data.accessKey ?? "", true);
     if (duplicate) return;
     const inactiveSupplier = await validateSupplierIsActive(
@@ -1764,7 +1790,7 @@ export function usePurchasesPage() {
       return;
     }
     if (scheduleBlocksConfirm) {
-      showSaveError(scheduleMismatchConfirmMessage);
+      showSaveError(scheduleConditionError ?? (xmlPaymentProposal?.suggestedDueDate ? "Resuelva la propuesta de vencimiento del XML." : scheduleMismatchConfirmMessage));
       return;
     }
     // ZH-PURCHASE-RETENTION-CONFIRM-01 — si el usuario pidió la retención, viaja como intención de
@@ -1820,6 +1846,8 @@ export function usePurchasesPage() {
     lineReadinessBlockerDetails,
     scheduleBlocksConfirm,
     scheduleMismatchConfirmMessage,
+    scheduleConditionError,
+    xmlPaymentProposal,
     ptRows,
     whPreview,
     retentionIntent,
@@ -2072,7 +2100,27 @@ export function usePurchasesPage() {
   }, [retention, showSaveError]);
 
   // ── Schedule operations ────────────────────────────────────────────
+  useEffect(() => {
+    if (ptLoaded && !ptManual) {
+      setPtRows(generateScheduleRows(ptInstallments, ptDaysBetween, localTotal, formWatch.issueDate));
+    }
+  }, [ptLoaded, ptManual, ptInstallments, ptDaysBetween, localTotal, formWatch.issueDate]);
+
+  const acceptXmlPaymentProposal = () => {
+    if (!xmlPaymentProposal?.suggestedDueDate) return;
+    paymentDecisionRevision.current++;
+    setPtRows([{ number: 1, dueDate: xmlPaymentProposal.suggestedDueDate, amount: localTotal, notes: "" }]);
+    setValue("dueDate", xmlPaymentProposal.suggestedDueDate);
+    setPtInstallments(1);
+    setPtDaysBetween(Number(xmlPaymentProposal.xmlPaymentTerm));
+    setPtLoaded(true);
+    setPtManual(true);
+    setXmlPaymentProposal(null);
+  };
+
   const regenerateSchedule = useCallback(() => {
+    paymentDecisionRevision.current++;
+    setXmlPaymentProposal(null);
     setPtRows(
       generateScheduleRows(
         ptInstallments,
@@ -2092,6 +2140,8 @@ export function usePurchasesPage() {
   }, [ptInstallments, ptDaysBetween, localTotal, getValues, paymentTermsList]);
 
   const addInstallment = useCallback(() => {
+    paymentDecisionRevision.current++;
+    setXmlPaymentProposal(null);
     const issueDate = getValues("issueDate");
     if (!issueDate) return;
     const lastRow = ptRows.length > 0 ? ptRows[ptRows.length - 1] : null;
@@ -2112,6 +2162,8 @@ export function usePurchasesPage() {
 
   const removeInstallment = useCallback(
     (idx: number) => {
+      paymentDecisionRevision.current++;
+      setXmlPaymentProposal(null);
       if (ptRows.length <= 1) return;
       setPtRows((prev) =>
         prev
@@ -2130,18 +2182,21 @@ export function usePurchasesPage() {
       field: "dueDate" | "amount" | "notes",
       value: string | number,
     ) => {
+      paymentDecisionRevision.current++;
       setPtRows((prev) =>
         prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)),
       );
       setPtManual(true);
+      setXmlPaymentProposal(null);
     },
     [],
   );
 
   const handlePaymentTermChange = useCallback(
     (ptId: string) => {
+      paymentDecisionRevision.current++;
       setValue("paymentTermId", ptId);
-      if (!ptId) return;
+      if (ptManual || !ptId) return;
       const pt = paymentTermsList.find((p) => p.id === ptId);
       if (pt) {
         setPtInstallments(pt.installments);
@@ -2158,7 +2213,7 @@ export function usePurchasesPage() {
         );
       }
     },
-    [setValue, paymentTermsList, localTotal, getValues],
+    [setValue, paymentTermsList, localTotal, getValues, ptManual],
   );
 
   // ── Return ─────────────────────────────────────────────────────────
@@ -2276,10 +2331,14 @@ export function usePurchasesPage() {
     pendingReceptionItems,
 
     // Schedule
+    xmlPaymentProposal,
+    acceptXmlPaymentProposal,
+    dismissXmlPaymentProposal: () => setXmlPaymentProposal(null),
+    scheduleConditionError,
     ptInstallments,
-    setPtInstallments,
+    setPtInstallments: (value: number) => { paymentDecisionRevision.current++; setPtManual(true); setPtInstallments(value); },
     ptDaysBetween,
-    setPtDaysBetween,
+    setPtDaysBetween: (value: number) => { paymentDecisionRevision.current++; setPtManual(true); setPtDaysBetween(value); },
     ptRows,
     setPtRows,
     ptLoaded,

@@ -98,6 +98,19 @@ su tratamiento sin inventario y sin exigencia de bodega.
     referenciada se deshabilita con el motivo. El resumen muestra "Costos adicionales externos" (suman
     al total) y el transporte XML redistribuido como dato informativo (ya incluido en las líneas).
 - Las cuotas manuales del borrador se guardan solo con validación estructural (número ≥ 1 sin duplicados, monto > 0).
+- Plazo de recepción XML: un único `<pago>` con plazo entero no negativo y unidad días
+  propone emisión + plazo; el operador debe aceptar la propuesta o elegir usar la condición
+  seleccionada antes de guardar. No se busca ni selecciona una condición por coincidencia de días.
+  Unidades distintas, plazos inválidos y múltiples pagos se muestran como información sin inferir
+  fechas. Sin propuesta válida se aplica el default activo de empresa/proveedor; sin él se exige
+  selección explícita. La condición activa sigue siendo obligatoria en todos los casos.
+- Precedencia de vencimientos: edición manual explícita → propuesta XML aceptada → condición
+  predeterminada del proveedor → selección obligatoria. Las cuotas aceptadas se guardan como
+  cronograma documental existente, se recuperan al reabrir y no se sobrescriben al cambiar la
+  condición. Contado (una cuota, cero días) con vencimientos posteriores a emisión bloquea confirmar
+  y requiere una condición de crédito activa. `PurchaseInvoice.DueDate` refleja el último
+  vencimiento del cronograma guardado/generado; CxP recibe exactamente sus cuotas.
+  No se modifican documentos confirmados ni se conserva nueva procedencia estructurada XML/default/manual.
 - Descartar: Draft → Discarded, con motivo opcional (`Borrador descartado.` por defecto). Sin reversos; libera la clave de acceso, el número y la recepción de origen.
 
 ### Desglose documental XML

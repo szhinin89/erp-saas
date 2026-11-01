@@ -11,6 +11,9 @@ import {
   type PurchaseDraftLineDto,
 } from "../api/purchaseReceptionService";
 import { businessPartnerLookupFacade } from "../../masterData/facades/businessPartnerLookupFacade";
+import { businessPartnerPurchaseSettingsFacade } from "../../masterData/facades/businessPartnerPurchaseSettingsFacade";
+import { paymentTermLookupFacade } from "../../masterData/facades/paymentTermLookupFacade";
+import type { PurchaseDraftDto } from "../api/purchaseReceptionService";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 
 /**
@@ -195,9 +198,9 @@ function buildInvoice(overrides: Partial<PurchaseInvoiceDto> = {}): PurchaseInvo
     purchaseOrderNumber: null,
     globalWarehouseId: "wh-1",
     paymentTermId: "term-1",
-    paymentTermName: "Contado",
+    paymentTermName: "30 días",
     paymentTermInstallments: 1,
-    paymentTermDaysBetween: 0,
+    paymentTermDaysBetween: 30,
     creditTermDays: 0,
     dueDate: null,
     notes: null,
@@ -298,6 +301,68 @@ async function setupLoaded(overrides: Partial<PurchaseInvoiceDto> = {}) {
   await waitFor(() => expect(result.current.canUseSriDocTypes).toBe(true));
   return result;
 }
+
+describe("Plazo XML y default del proveedor", () => {
+  const credit = { id: "credit-8", name: "8 días", installments: 1, daysBetweenInstallments: 8, isActive: true, summary: "8 días" };
+  const cash = { ...credit, id: "cash", name: "Contado", daysBetweenInstallments: 0, summary: "Contado" };
+  async function reception(suggestedDueDate: string | null, defaultTerm = credit) {
+    vi.mocked(paymentTermLookupFacade.list).mockResolvedValue([credit, cash] as never);
+    vi.mocked(paymentTermLookupFacade.getById).mockResolvedValue(defaultTerm as never);
+    vi.mocked(businessPartnerPurchaseSettingsFacade.getPurchaseSettings).mockResolvedValue({ paymentTermId: defaultTerm.id } as never);
+    vi.mocked(purchaseReceptionService.createDraft).mockResolvedValue({
+      supplierId: "supplier-1", supplierRuc: "0999999999001", supplierName: "Proveedor Uno",
+      docTypeCode: "01", invoiceNumber: "001-001-000005545", issueDate: "2026-10-19",
+      accessKey: null, authorizationNumber: null, authorizationDate: null, sriPaymentMethodCode: null,
+      processingStatus: "PROCESSED", processingNotes: null, lines: [xmlSource()],
+      xmlPaymentTerm: suggestedDueDate ? "8" : null, xmlPaymentTimeUnit: suggestedDueDate ? "dias" : null,
+      xmlPaymentCount: 1, suggestedDueDate,
+    } satisfies PurchaseDraftDto);
+    const { result } = renderHook(() => usePurchasesPage(), { wrapper });
+    await act(async () => { await result.current.loadFromReception("reception-1"); });
+    await waitFor(() => expect(result.current.canUseSriDocTypes).toBe(true));
+    return result;
+  }
+
+  it("propone 27/10 sin seleccionar por días; aceptar y editar prevalece al cambiar la condición", async () => {
+    const result = await reception("2026-10-27", cash);
+    expect(result.current.formWatch.paymentTermId).toBe("cash");
+    expect(result.current.xmlPaymentProposal?.suggestedDueDate).toBe("2026-10-27");
+    await act(async () => { await result.current.handleSave(); });
+    expect(purchaseService.create).not.toHaveBeenCalled();
+    act(() => result.current.acceptXmlPaymentProposal());
+    expect(result.current.ptRows[0].dueDate).toBe("2026-10-27");
+    expect(result.current.scheduleConditionError).toContain("Contado");
+    act(() => result.current.handlePaymentTermChange("credit-8"));
+    expect(result.current.scheduleConditionError).toBeNull();
+    act(() => result.current.updateScheduleRow(0, "dueDate", "2026-10-30"));
+    act(() => result.current.handlePaymentTermChange("credit-8"));
+    expect(result.current.ptRows[0].dueDate).toBe("2026-10-30");
+    vi.mocked(purchaseService.create).mockResolvedValue(buildInvoice());
+    vi.mocked(purchaseService.getById).mockResolvedValue(buildInvoice());
+    await act(async () => { await result.current.handleSave(); });
+    expect(vi.mocked(purchaseService.create).mock.calls[0][0].schedule?.[0].dueDate).toBe("2026-10-30");
+  });
+
+  it("sin plazo aplica el default activo y genera cuotas con el total actual", async () => {
+    const result = await reception(null);
+    expect(result.current.formWatch.paymentTermId).toBe("credit-8");
+    expect(result.current.xmlPaymentProposal).toBeNull();
+    expect(result.current.ptRows[0]).toMatchObject({ dueDate: "2026-10-27", amount: result.current.localTotal });
+  });
+
+  it("sin default activo no inventa condición ni fecha de crédito", async () => {
+    const result = await reception(null, { ...credit, isActive: false });
+    expect(result.current.formWatch.paymentTermId).toBe("");
+    expect(result.current.ptRows).toEqual([]);
+  });
+
+  it("permite descartar la propuesta y conservar el default", async () => {
+    const result = await reception("2026-10-27", cash);
+    act(() => result.current.dismissXmlPaymentProposal());
+    expect(result.current.xmlPaymentProposal).toBeNull();
+    expect(result.current.ptRows[0].dueDate).toBe("2026-10-19");
+  });
+});
 
 describe("PURCHASE-DRAFT-RECOVERY B1/F1 — guardar con pendientes y reabrir", () => {
   const resolvedLine = invoiceLine({

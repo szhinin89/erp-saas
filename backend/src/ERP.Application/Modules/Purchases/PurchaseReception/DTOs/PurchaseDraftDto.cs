@@ -76,5 +76,9 @@ public sealed record PurchaseDraftDto(
     string? SriPaymentMethodCode,
     List<PurchaseDraftLineDto> Lines,
     string ProcessingStatus,
-    string? ProcessingNotes
+    string? ProcessingNotes,
+    string? XmlPaymentTerm = null,
+    string? XmlPaymentTimeUnit = null,
+    int XmlPaymentCount = 0,
+    DateOnly? SuggestedDueDate = null
 );

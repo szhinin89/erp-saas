@@ -1,5 +1,53 @@
 # Project Status
 
+## Compras — plazos XML y cuotas — READY FOR REVIEW (2026-10-31)
+
+BUG REAL: plazo XML desconectado del formulario y default del proveedor omitido al cargar recepción.
+Implementado: propuesta explícita para un pago con días enteros válidos (19/10 + 8 = 27/10),
+default activo por empresa/proveedor como fallback, edición manual prioritaria, conservación al
+guardar/reabrir, veto de Contado con vencimientos a crédito y cabecera alineada al último vencimiento.
+KEEP: condición activa obligatoria, validación de cuotas, permisos y traslado del cronograma a CxP.
+SSOT: [Compras § 2](docs/architecture/purchases.md#2-borrador). Sin interpretación de otras unidades
+ni múltiples pagos; sin selección de catálogo por coincidencia de días.
+
+PASS agente: Application focal 94/94 (propuesta XML, recepción, defaults y confirmación), frontend
+focal 75/75 (cuotas, reapertura, formulario y retención), PostgreSQL 16 desechable 4/4 (27/10,
+vencimiento manual 30/10, reapertura, CxP, rechazo de Contado y cuotas inconsistentes con rollback),
+lint (0 errores; 37 advertencias existentes), build con TypeScript, `architecture:check` (140/140,
+0 nuevas violaciones), `git diff --check`. Las pruebas PostgreSQL usan Testcontainers y el handler
+real de confirmación; no usan bases persistentes ni SRI real.
+
+Limitación de regresión ampliada: Compras frontend 587/594; reejecución aislada de los tres archivos
+afectados 77/83 (el timeout del lote desaparece). Persisten 5 fallos en
+`purchaseLinePresentation.test.ts` y 1 en `PurchaseFormFeedback.test.tsx`, con pruebas/lógica
+correspondientes sin cambios en esta tarea. Fuera del alcance de plazos; no se investigaron ni
+modificaron reglas de presentación, impuestos o importes. No se acredita suite general verde.
+FALTA opcional: procedencia estructurada del vencimiento XML/default/manual requeriría persistencia
+nueva; no implementada ni necesaria para el vencimiento operativo.
+
+Archivos de implementación: `PurchaseDraftDto.cs`, `CreatePurchaseReceptionDraftHandler.cs`,
+`PurchaseXmlPaymentTerms.cs`, `ConfirmPurchaseUseCases.cs`, `PurchaseInvoice.cs`,
+`purchaseReceptionService.ts`, `usePurchasesPage.ts`, `PurchasesPage.tsx`.
+Pruebas: `PurchaseXmlPaymentTermsTests.cs`, `PurchaseRetentionConfirmIntegrationTests.PaymentTerms.cs`,
+`usePurchasesPage.draftRecovery.test.ts`, `PaymentScheduleSection.test.tsx`.
+Documentación existente: esta entrada, `docs/architecture/purchases.md`, `docs/agent/WORK_QUEUE.md`.
+Sin migraciones, tablas/columnas, bases persistentes, históricos confirmados, cambios en lógica de
+inventario/contabilidad/fiscalidad, formas de pago SRI, redondeos, staging, commit ni push.
+Pendiente gate focal y validación funcional del propietario; no CLOSED.
+
+Gate del propietario desde la raíz (Docker requerido únicamente para PostgreSQL desechable):
+```powershell
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~PurchaseXmlPaymentTermsTests|FullyQualifiedName~CreatePurchaseReceptionDraftHandlerTests|FullyQualifiedName~ConfirmPurchaseHandlerTests|FullyQualifiedName~PaymentTermDefaultResolverTests" --verbosity quiet
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter FullyQualifiedName~Payment_terms_ --verbosity quiet
+Push-Location frontend
+npm.cmd run test:unit -- src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts src/modules/purchases/pages/PaymentScheduleSection.test.tsx src/modules/purchases/hooks/usePurchasesPage.pilotFix.test.ts src/modules/purchases/hooks/usePurchasesPage.retention.test.ts
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run architecture:check
+Pop-Location
+git diff --check
+```
+
 ## SRI 2.34 R32 — cierre operativo de conciliación — READY FOR REVIEW (2026-10-31)
 
 Base `main@fe5d20b8a`. BUG REAL documental corregido en §5.1 de la matriz SRI; decisión del propietario sustituye

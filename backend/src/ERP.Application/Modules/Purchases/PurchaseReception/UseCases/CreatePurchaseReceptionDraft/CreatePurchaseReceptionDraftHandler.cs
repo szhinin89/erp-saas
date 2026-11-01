@@ -186,7 +186,8 @@ public sealed class CreatePurchaseReceptionDraftHandler
             cancellationToken
         );
 
-        return Result<PurchaseDraftDto>.Success(DraftMapper.ToDto(draft, packagingByLine));
+        return Result<PurchaseDraftDto>.Success(PurchaseXmlPaymentTerms.Apply(
+            DraftMapper.ToDto(draft, packagingByLine), document.XmlContent));
     }
 
     /// <summary>

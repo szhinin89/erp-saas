@@ -57,6 +57,18 @@ beforeEach(() => setPrecisionPolicyForTests(TEST_PRECISION_POLICY));
 afterEach(cleanup);
 
 describe("PaymentScheduleSection — monto de cuota", () => {
+  it("muestra el vencimiento XML y exige una aceptación explícita", () => {
+    const ctx = buildCtx([row(115)]);
+    ctx.xmlPaymentProposal = { suggestedDueDate: "2026-10-27" } as NonNullable<Ctx["xmlPaymentProposal"]>;
+    ctx.acceptXmlPaymentProposal = vi.fn();
+    ctx.dismissXmlPaymentProposal = vi.fn();
+    const view = render(ui(ctx));
+    expect(view.getByText(/Propuesta del XML: vencimiento 27\/10\/2026/)).toBeTruthy();
+    expect(ctx.acceptXmlPaymentProposal).not.toHaveBeenCalled();
+    fireEvent.click(view.getByRole("button", { name: "Aceptar propuesta XML" }));
+    expect(ctx.acceptXmlPaymentProposal).toHaveBeenCalledOnce();
+  });
+
   it("muestra el monto regenerado aunque el input ya estuviera montado", () => {
     const { container, rerender } = render(ui(buildCtx([row(0)])));
     expect(amountInput(container).value).toBe("0.00");

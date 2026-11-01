@@ -332,6 +332,7 @@ public sealed class ConfirmPurchaseHandler
             {
                 inv.GeneratePaymentSchedule();
             }
+            inv.ValidatePaymentScheduleCondition();
         }
         catch (ArgumentException ex)
         {

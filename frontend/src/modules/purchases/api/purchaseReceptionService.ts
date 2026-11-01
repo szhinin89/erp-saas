@@ -244,6 +244,10 @@ export interface PurchaseDraftLineDto {
 
 /** Borrador de compra armado desde el PurchaseReceptionDocument ya verificado — para precargar el formulario de Nueva Compra. */
 export interface PurchaseDraftDto {
+  xmlPaymentTerm?: string | null;
+  xmlPaymentTimeUnit?: string | null;
+  xmlPaymentCount?: number;
+  suggestedDueDate?: string | null;
   supplierId: string | null;
   supplierIsActive?: boolean | null;
   supplierRuc: string;

@@ -615,6 +615,7 @@ public sealed partial class PurchaseInvoice
         }
 
         ValidateScheduleTotal(total);
+        DueDate = _paymentSchedules.Max(s => s.DueDate);
     }
 
     public void ReplacePaymentSchedule(
@@ -669,6 +670,7 @@ public sealed partial class PurchaseInvoice
                 )
             );
         }
+        DueDate = _paymentSchedules.Max(s => s.DueDate);
     }
 
     /// <summary>
@@ -712,6 +714,7 @@ public sealed partial class PurchaseInvoice
                     inst.Notes
                 )
             );
+        DueDate = _paymentSchedules.Max(s => s.DueDate);
     }
 
     /// <summary>
@@ -733,6 +736,15 @@ public sealed partial class PurchaseInvoice
         _paymentSchedules.Count > 0
         && _paymentSchedules.Sum(s => s.Amount) == GrandTotal
         && _paymentSchedules.All(s => s.DueDate >= IssueDate);
+
+    public void ValidatePaymentScheduleCondition()
+    {
+        if (PaymentTermInstallments == 1 && PaymentTermDaysBetween == 0
+            && _paymentSchedules.Any(s => s.DueDate > IssueDate))
+            throw new ArgumentException(
+                "La condición Contado no admite vencimientos posteriores a la emisión. Seleccione una condición de crédito activa.");
+        DueDate = _paymentSchedules.Max(s => s.DueDate);
+    }
 
     public void SetRetentionIntentDraft(bool applies, Guid? emissionPointId, DateOnly? issueDate)
     {

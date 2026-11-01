@@ -2604,6 +2604,22 @@ export function PaymentScheduleSection({
       </div>
       <div className="pf-card__body">
         {ctx.isDraft && !ctx.hasPersistedSchedule && (
+          <>
+            {ctx.xmlPaymentProposal && (
+              <ZHPageNotice variant="warning" message={ctx.xmlPaymentProposal.suggestedDueDate
+                ? `Propuesta del XML: vencimiento ${formatDate(ctx.xmlPaymentProposal.suggestedDueDate)}. Revise la condición activa y las cuotas antes de confirmar.`
+                : `Plazo XML: ${ctx.xmlPaymentProposal.xmlPaymentTerm ?? "—"} ${ctx.xmlPaymentProposal.xmlPaymentTimeUnit ?? ""}; pagos: ${ctx.xmlPaymentProposal.xmlPaymentCount ?? 0}. No se propone fecha para unidades no admitidas, plazos inválidos o múltiples pagos.`} />
+            )}
+            {ctx.xmlPaymentProposal?.suggestedDueDate && (
+              <div className="pf-schedule-actions">
+                <ZHBtn type="button" size="xs" onClick={ctx.acceptXmlPaymentProposal} disabled={ctx.fieldDisabled}>Aceptar propuesta XML</ZHBtn>
+                <ZHBtn type="button" size="xs" variant="secondary" onClick={ctx.dismissXmlPaymentProposal} disabled={ctx.fieldDisabled}>Usar condición seleccionada</ZHBtn>
+              </div>
+            )}
+            {ctx.scheduleConditionError && <ZHPageNotice variant="warning" message={ctx.scheduleConditionError} />}
+          </>
+        )}
+        {ctx.isDraft && !ctx.hasPersistedSchedule && (
           <div className="pf-schedule-setup">
             <ZHField
               density="compact"

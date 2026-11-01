@@ -4,6 +4,9 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- BUG REAL plazos de pago en Compras: conexión XML/default con cuotas implementada;
+  pendiente gate focal y validación funcional del propietario. Véase [STATUS](../../STATUS.md).
+
 - BUG REAL DISURGAL: corrección de confirmación de promociones XML al 100 % implementada;
   pendiente gate focal y validación funcional del propietario. Evidencia y comandos en [STATUS](../../STATUS.md).
 
