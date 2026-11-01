@@ -4264,6 +4264,8 @@
   "electronicDocuments.monitor.timelineAction.AnnulmentPending": "Anulación solicitada ante el SRI",
   "electronicDocuments.monitor.timelineAction.AnnulmentReverted": "Anulación no prosperó",
   "electronicDocuments.monitor.timelineAction.ReconciliationRecorded": "Conciliación registrada",
+  "electronicDocuments.monitor.reconcile.pendingTitle": "Requiere conciliación",
+  "electronicDocuments.monitor.reconcile.pendingGuidance": "El SRI no ha confirmado el resultado. Reintentar ahora solo consulta; no reenvía. Si las consultas siguen sin respuesta concluyente, escale el caso al responsable fiscal o soporte y registre la referencia y las gestiones en Registrar conciliación. No encontrar el comprobante, incluso después de 24 horas, no demuestra que no fue recibido. El caso permanece pendiente hasta obtener evidencia fiscal concluyente.",
   "electronicDocuments.monitor.reconcile.open": "Registrar conciliación",
   "electronicDocuments.monitor.reconcile.title": "Conciliación manual",
   "electronicDocuments.monitor.reconcile.subtitle": "El SRI no confirmó el resultado. La evidencia queda en la auditoría y se vuelve a consultar al SRI; el comprobante no se reenvía ni se autoriza manualmente.",

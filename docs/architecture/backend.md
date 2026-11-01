@@ -767,6 +767,14 @@ Conciliación manual: `POST /api/v1/electronic-documents/{id}/reconciliation` (M
 "Registrar conciliación"), permiso `electronic-documents.reconcile`, evidencia de texto
 obligatoria (referencia ≤ 150 y observación ≤ 300). Registra la evidencia en la auditoría del
 comprobante (`ReconciliationRecorded`, sin cambio de estado) y reconsulta por el mismo reintento.
+El historial del diagnóstico muestra el motivo ya persistido en auditoría (`Reason`), incluida
+la referencia y observación de la investigación, junto con usuario y fecha. El Monitor identifica
+el resultado incierto mediante `requiresReconciliation` y explica que, si las consultas siguen
+inconclusas, se escala al responsable fiscal o soporte y se registran referencia y gestiones
+con la misma acción de conciliación. El escalamiento no cierra fiscalmente el comprobante:
+permanece en «Requiere conciliación» hasta evidencia fiscal concluyente. Una DEVUELTA 50 o la
+ausencia de registro tras consultas reiteradas, incluso después de 24 h, no demuestra que no
+exista una transmisión anterior.
 Nunca autoriza, rechaza, descarta ni libera un reenvío por declaración del usuario: el estado
 fiscal solo lo decide una respuesta del SRI. En Retenciones con origen que ya no permite
 procesamiento, la evidencia queda registrada y no hay consulta. Un comprobante que el SRI nunca

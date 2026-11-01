@@ -4264,6 +4264,8 @@
   "electronicDocuments.monitor.timelineAction.AnnulmentPending": "Annulment requested at SRI",
   "electronicDocuments.monitor.timelineAction.AnnulmentReverted": "Annulment did not proceed",
   "electronicDocuments.monitor.timelineAction.ReconciliationRecorded": "Reconciliation recorded",
+  "electronicDocuments.monitor.reconcile.pendingTitle": "Reconciliation required",
+  "electronicDocuments.monitor.reconcile.pendingGuidance": "The SRI has not confirmed the outcome. Retry now only queries; it does not resend. If queries remain inconclusive, escalate to the tax owner or support and record the reference and investigation in Record reconciliation. Not finding the document, even after 24 hours, does not prove it was not received. The case remains pending until conclusive fiscal evidence is obtained.",
   "electronicDocuments.monitor.reconcile.open": "Record reconciliation",
   "electronicDocuments.monitor.reconcile.title": "Manual reconciliation",
   "electronicDocuments.monitor.reconcile.subtitle": "The SRI did not confirm the outcome. The evidence is kept in the audit trail and the SRI is queried again; the document is never resent or manually authorized.",

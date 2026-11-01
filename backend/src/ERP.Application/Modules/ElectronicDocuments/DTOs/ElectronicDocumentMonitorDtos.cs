@@ -32,7 +32,8 @@ public sealed record ElectronicDocumentTimelineEventDto(
     string ToState,
     DateTime OccurredAtUtc,
     string UserName,
-    double? DurationSinceLastMinutes
+    double? DurationSinceLastMinutes,
+    string? Reason = null
 );
 
 /// <summary>

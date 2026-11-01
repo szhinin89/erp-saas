@@ -142,6 +142,24 @@ describe("ElectronicDocumentDetailPanel — Descargar RIDE", () => {
   });
 
   describe("caso #32 — conciliación manual", () => {
+    it("muestra evidencia auditada y guía de escalamiento solo mientras requiere conciliación", () => {
+      const pending = detail({}, "Signed");
+      pending.diagnostic.requiresReconciliation = true;
+      pending.diagnostic.timeline = [{
+        action: "ReconciliationRecorded", fromState: "Signed", toState: "Signed",
+        occurredAtUtc: "2026-10-31T10:00:00Z", userName: "Administrador",
+        durationSinceLastMinutes: null, reason: "Ticket-32: investigación pendiente <script>",
+      }];
+      renderPanel({ detail: pending, canRetry: true });
+      expect(screen.getByText(/Ticket-32: investigación pendiente <script>/)).toBeTruthy();
+      expect(screen.getByText(/escale el caso|escalate to the tax owner/)).toBeTruthy();
+      expect(screen.getByRole("button", { name: /Reintentar ahora|Retry now/ })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /^Corregir y retransmitir$|^Correct and retransmit$/ })).toBeNull();
+      cleanup();
+      renderPanel();
+      expect(screen.queryByText(/escale el caso|escalate to the tax owner/)).toBeNull();
+    });
+
     const RECONCILE = /Registrar conciliación|Record reconciliation/;
     const uncertain = (requiresReconciliation: boolean) =>
       detail(

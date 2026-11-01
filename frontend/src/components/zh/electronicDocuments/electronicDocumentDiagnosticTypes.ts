@@ -8,6 +8,7 @@ export type ElectronicDocumentTimelineEventDto = {
   occurredAtUtc: string;
   userName: string;
   durationSinceLastMinutes: number | null;
+  reason?: string | null;
 };
 
 /**

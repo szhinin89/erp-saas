@@ -34,6 +34,7 @@ export function ElectronicDocumentTimeline({ timeline }: Props) {
                 </>
               )}
             </div>
+            {ev.reason && <p className="zh-edoc-hint-sm">{ev.reason}</p>}
             <div className="zh-edoc-timeline-meta">
               {formatDateTime(ev.occurredAtUtc)} · {ev.userName}
               {ev.durationSinceLastMinutes !== null && (

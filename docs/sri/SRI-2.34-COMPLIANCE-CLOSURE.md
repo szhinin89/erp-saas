@@ -43,7 +43,7 @@ cambio · **BLOCKED** requiere decisión o dato que no puede inventarse · **FUE
 | R28 | Fundas ICE 3680 (Anexo 18) | FUERA DE ALCANCE | Depende de ≥ 3 establecimientos o franquicia (dato de negocio) |
 | R30 | Envío al receptor (§4.7) | RESUELTO | ZH-EDOC-COMMUNICATIONS-01 (01/04/07) |
 | R31 | Reintento automático operativo | RESUELTO | Descubrimiento cross-tenant + scope por candidato (`ElectronicDocumentRetryJob`) |
-| R32 | Estado incierto / Caso #32 | RESUELTO (consulta segura 24 h + conciliación) · **BLOCKED** reenvío de lo nunca registrado | Ver §5.1 |
+| R32 | Estado incierto / Caso #32 | Consulta segura y conciliación; sin evidencia concluyente permanece pendiente | Ver §5.1 |
 | R33–R35 | 03/05/06, lote, anexos sectoriales | FUERA DE ALCANCE | FUTURE |
 | §H | Factura/NC autorizadas sin ED tras caída | RESUELTO | `SalesElectronicDocumentRecovery` (facturas y NC) |
 | §K | `manifest.json` `Retention.activeVersion = null` | CONFORME | Sin consumidor funcional; marca deliberada de "sin autorización real verificada" (ver §5) |
@@ -142,11 +142,13 @@ aceptación real del SRI. Pendientes externos: aceptación en `celcer` de NC (04
 `contribuyenteEspecial`; registro de ZH Technologies como proveedor y fecha legal de `EffectiveDate` (Anexo 26);
 porcentajes de Renta frente al catálogo ATS vigente.
 
-1. **R32 — comprobantes que el SRI nunca registró.** La consulta automática ya cubre las 24 h (R11). Queda
-   sin camino de reenvío un comprobante cuya ausencia consta (DEVUELTA 50, o sin registro tras 24 h). Causa:
-   la política del Caso #32 prohíbe el reenvío automático. Acción mínima verificable: decisión del propietario
-   sobre reenviar el **mismo** XML firmado y con la misma clave en esos dos casos (el SRI responde 43/45/70 si
-   ya lo tiene); hasta entonces, fail-closed con conciliación.
+1. **R32 — transmisión incierta pendiente de conciliación.** Decisión aprobada del propietario:
+   sin evidencia fiscal concluyente, el comprobante permanece en «Requiere conciliación» y no se retransmite.
+   DEVUELTA 50 o consultas sin registro, incluso tras 24 h, no prueban que no exista una transmisión anterior.
+   El plazo R11 solo corre desde evidencia de RECIBIDA; sin ella no hay plazo calculable. El Monitor permite
+   reconsultar y registrar evidencia en la auditoría existente. Si el resultado sigue inconcluso, se escala
+   al responsable fiscal o soporte, registrando referencia y gestiones, sin cierre fiscal manual, otra clave
+   ni secuencial. Contrato: [backend.md § Límites y finalización](../architecture/backend.md#límites-y-finalización).
 2. **R12 — corrección de NO AUTORIZADO.** La ficha permite reenviar con la misma clave tras corregir; la venta
    ya está comprometida fiscalmente, así que la corrección nunca edita la operación confirmada.
    **Fase A (prerrequisito, 2026-10-31): implementada.** Concurrencia fiscal de 01/04: guard `Sales` (reclamo de
@@ -186,7 +188,7 @@ porcentajes de Renta frente al catálogo ATS vigente.
 7. **R11 — `Signed` sin evidencia de recepción.** El plazo de §7.5 corre desde RECIBIDA; si el ERP nunca obtuvo
    respuesta de Recepción (fallo de transporte, DEVUELTA 50) no hay fecha de inicio persistida. Fail-closed: no
    hay DeadLetter por plazo y la consulta sigue cada 60 min hasta AUTORIZADO, NO AUTORIZADO o conciliación; no
-   se reenvía (Caso #32). Limitación: consulta indefinida mientras el propietario no decida R32.
+   se reenvía (Caso #32). Decisión R32: permanece pendiente y se escala sin retransmitir hasta obtener evidencia fiscal concluyente.
 8. **C — host no oficial.** La coherencia ambiente ↔ endpoint solo se garantiza con los hosts oficiales de la
    ficha; una URL de otro host (proxy, simulador, cambio del SRI) es responsabilidad de la configuración.
 
@@ -236,8 +238,8 @@ R21/R22: `Company` es el único propietario de las designaciones; una sola proye
 | Factura 01 | Conforme por contrato (XSD 1.1.0, R13/R14/R16/R21/R22/R23); validada antes en `celcer`; salidas con `contribuyenteEspecial`, `agenteRetencion` y "Gran Contribuyente" pendientes de aceptación real |
 | Nota de crédito 04 | Conforme por contrato (incluye R21/R22); sin aceptación real en `celcer` |
 | Retención 07 | Conforme por contrato (1.0.0, Tabla 20, RUC Proveedor, R21; sin Anexo 24 por norma); sin aceptación real |
-| Caso #32 | Consulta segura durante las 24 h del SRI y conciliación con evidencia: conforme; reenvío de lo nunca registrado: **BLOCKED** (§5.1) |
+| Caso #32 | Consulta segura durante las 24 h del SRI y conciliación con evidencia: conforme; sin evidencia concluyente permanece pendiente y se escala, sin retransmitir (§5.1) |
 
 **READY FOR REVIEW** para las correcciones de §3 (R11, R13, R14, R16, R23) y §3.1 (R21, R22, R23 RIDE/formato). Los puntos de §5 quedan BLOCKED de
-forma individual, salvo §5.2 (R12, implementado con límites) y §5.4 (R21/R22), que solo conservan pendientes
+forma individual, salvo §5.1 (R32, decisión operativa aprobada), §5.2 (R12, implementado con límites) y §5.4 (R21/R22), que solo conservan pendientes
 externos; ninguno se declara CLOSED.

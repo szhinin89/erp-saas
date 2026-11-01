@@ -42,7 +42,8 @@ public static class ElectronicDocumentTimelineBuilder
                     record.ToState.ToString(),
                     record.OccurredAtUtc,
                     record.UserName,
-                    durationMinutes
+                    durationMinutes,
+                    record.Reason
                 )
             );
 

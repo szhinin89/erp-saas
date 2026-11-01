@@ -180,6 +180,14 @@ export function ElectronicDocumentDetailPanel({
             </div>
           </ZHCard>
 
+          {detail.diagnostic.requiresReconciliation && (
+            <ZHPageNotice
+              variant="warning"
+              message={t("electronicDocuments.monitor.reconcile.pendingTitle")}
+              detail={t("electronicDocuments.monitor.reconcile.pendingGuidance")}
+            />
+          )}
+
           <ElectronicDocumentDiagnosticPanel
             diagnostic={detail.diagnostic}
             xmlContent={xmlContent}

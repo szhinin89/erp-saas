@@ -17,6 +17,27 @@ namespace ERP.Application.Tests.ElectronicDocuments;
 /// </summary>
 public sealed class GetElectronicDocumentTimelineQueryHandlerTests
 {
+    [Theory]
+    [InlineData("Referencia: ticket-32; Observación: investigación pendiente")]
+    [InlineData(null)]
+    public void Timeline_preserva_evidencia_y_motivos_sin_inventar_estado(string? reason)
+    {
+        var actor = new ERP.Domain.Audit.AuditActor(Guid.NewGuid(), Guid.NewGuid(),
+            "administrador", null, null, null, null, null, ERP.Domain.Audit.AuditSource.UserAction);
+        var audit = ElectronicDocumentAudit.Create(actor, Guid.NewGuid(), Guid.NewGuid(),
+            "ReconciliationRecorded", ElectronicDocumentType.Invoice,
+            ElectronicDocumentState.Signed, ElectronicDocumentState.Signed, reason);
+
+        var item = ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentTimelineBuilder
+            .Build([audit]).Single();
+
+        item.Reason.Should().Be(reason);
+        item.Action.Should().Be("ReconciliationRecorded");
+        item.FromState.Should().Be("Signed");
+        item.ToState.Should().Be("Signed");
+        item.UserName.Should().Be("administrador");
+    }
+
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid OtherTenantId = Guid.NewGuid();
     private static readonly Guid CompanyAId = Guid.NewGuid();

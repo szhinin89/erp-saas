@@ -1,5 +1,30 @@
 # Project Status
 
+## SRI 2.34 R32 — cierre operativo de conciliación — READY FOR REVIEW (2026-10-31)
+
+Base `main@fe5d20b8a`. BUG REAL documental corregido en §5.1 de la matriz SRI; decisión del propietario sustituye
+las menciones inferiores a una decisión pendiente de R32 o reenvío de lo nunca registrado.
+KEEP: Monitor con reconsulta, mensajes, intentos y registro de evidencia con permisos existentes.
+FALTA resuelta: el timeline ahora muestra el motivo persistido de auditoría (referencia y observación);
+aviso de conciliación y escalamiento en el detalle, sin nuevas acciones fiscales ni infraestructura.
+Contrato: [backend.md § Límites y finalización](docs/architecture/backend.md#límites-y-finalización).
+PASS agente: Application timeline 5/5, frontend Monitor 18/18, lint (0 errores, advertencias existentes),
+build (`tsc -b`, guard de plataforma y Vite), `architecture:check` (140/140, 0 nuevas), `git diff --check`.
+Sin migraciones, bases de datos, lógica R11/R12, SRI real, staging, commit ni push.
+CI de la consolidación anterior pendiente según el propietario; no CLOSED, pendiente gate del propietario.
+
+Gate focal del propietario (PowerShell desde la raíz; sin BD ni SRI real):
+```powershell
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter FullyQualifiedName~GetElectronicDocumentTimelineQueryHandlerTests --verbosity quiet
+Push-Location frontend
+npm.cmd run test:unit -- src/modules/electronicDocuments/monitor/components/ElectronicDocumentDetailPanel.test.tsx src/modules/electronicDocuments/monitor/components/ElectronicDocumentsTable.test.tsx
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run architecture:check
+Pop-Location
+git diff --check
+```
+
 ## Consolidación de migraciones EF — migración única — READY FOR REVIEW (2026-11-01)
 
 Base `main@8ded8783e`. Decisión del propietario: las 4 migraciones (`20261021162651_InitialProductionBaseline`,
