@@ -763,6 +763,30 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
+    public void Navigation_contains_document_sequences_under_settings_document_flows_group()
+    {
+        // DOCUMENT-SEQUENCES-NAV-01: la pantalla /settings/document-sequences debe ser alcanzable
+        // desde Configuración > Documentos y flujos con el permiso existente del controller.
+        var navigation = KernelRegistry.Navigation;
+        var manage = ERP.Domain.Kernel.Permissions.SettingsPermissions.DocumentSequencesManage;
+
+        var group = navigation.Single(n => n.RoutePath == "/settings/document-flows/group");
+        group.GroupCode.Should().Be("settings");
+        group.PermissionKeysAnyJson.Should().Contain(manage);
+
+        var sequences = navigation.SingleOrDefault(n =>
+            n.RoutePath == "/settings/document-sequences"
+        );
+        sequences
+            .Should()
+            .NotBeNull("Secuencias documentales debe estar en el menú de Configuración");
+        sequences!.GroupCode.Should().Be("settings");
+        sequences.ParentItemId.Should().Be(group.Id);
+        sequences.PermissionKey.Should().Be(manage);
+        KernelRegistry.AssignablePermissionKeys.Should().Contain(manage);
+    }
+
+    [Fact]
     public void Navigation_contains_settings_catalogs_banks_with_dedicated_permissions()
     {
         // BANK-CATALOG-01: Configuración > Catálogos > Bancos — permisos dedicados

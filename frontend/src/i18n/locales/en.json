@@ -549,6 +549,7 @@
   "app.nav.item.settings.geography": "Geography",
   "app.nav.item.settings.documentFlowsGroup": "Document Flows",
   "app.nav.item.settings.documentFlows": "Document Flows",
+  "app.nav.item.settings.documentSequences": "Document Sequences",
   "app.nav.item.settings.banks": "Banks",
   "documentFlows.editButtonTitle": "Edit flow for {{document}}",
   "app.nav.item.settings.communicationsEmail": "SMTP Email",

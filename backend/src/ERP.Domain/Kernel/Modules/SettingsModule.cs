@@ -126,6 +126,8 @@ public static class SettingsModule
         SortOrder = 60,
         Id = "8f0f7a10-0000-4000-8000-000000000001",
         PermissionsAnyCsv = SettingsPermissions.DocumentFlowsView
+            + ","
+            + SettingsPermissions.DocumentSequencesManage
     )]
     public const string DocumentFlowsGroup = "/settings/document-flows/group";
 
@@ -143,6 +145,19 @@ public static class SettingsModule
         RelatedActionPermissionsCsv = SettingsPermissions.DocumentFlowsUpdate
     )]
     public const string DocumentFlows = "/settings/document-flows";
+
+    // DOCUMENT-SEQUENCES-NAV-01: la pantalla existía (ruta + [AppFeature] del controller) pero sin
+    // [NavItem], así que nunca llegaba a ui_nav_items ni al menú (ver nota INITIAL-LOAD-ARCH-01).
+    // Mismo permiso que protege el controller — sin permiso nuevo.
+    [NavItem(
+        "Secuencias documentales",
+        Permission = SettingsPermissions.DocumentSequencesManage,
+        LabelKey = "app.nav.item.settings.documentSequences",
+        SortOrder = 20,
+        Id = "8f0f7a10-0000-4000-8000-000000000002",
+        ParentId = "8f0f7a10-0000-4000-8000-000000000001"
+    )]
+    public const string DocumentSequences = "/settings/document-sequences";
 
     // MAPA-MENU-ERP-SSOT-01: "Facturación electrónica" (grupo + pantalla) se movió a
     // SriModule (tile "SRI/Documentos electrónicos" > Configuración) — mismos Ids
