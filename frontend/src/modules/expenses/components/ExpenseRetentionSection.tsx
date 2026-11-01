@@ -24,10 +24,7 @@ import {
   RetentionSriServiceHealth,
   type RetentionDocumentDto,
 } from "../../retentions/facades/retentionDocumentFacade";
-import {
-  newRetentionIntentLine,
-  type RetentionIntentFormState,
-} from "../utils/expenseRetentionModel";
+import { newRetentionIntentLine, type RetentionIntentFormState } from "../utils/expenseRetentionModel";
 
 const RETENTION_STATUS_LABEL: Record<string, string> = {
   Draft: "Borrador",
