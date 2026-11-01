@@ -1,53 +1,23 @@
 ﻿{
-    "Generated":  "2026-10-31 18:03:03",
+    "Generated":  "2026-10-31 20:38:19",
     "Summary":  {
-                    "TotalFiles":  9
+                    "TotalFiles":  3
                 },
     "Migrations":  [
                        {
-                           "Name":  "20261021162651_InitialProductionBaseline",
-                           "SizeKB":  687.57,
-                           "Modified":  "2026-10-29 06:46:27"
+                           "Name":  "20261101012214_InitialProductionBaseline",
+                           "SizeKB":  697.43,
+                           "Modified":  "2026-10-31 20:22:55"
                        },
                        {
-                           "Name":  "20261021162651_InitialProductionBaseline.Designer",
-                           "SizeKB":  918.65,
-                           "Modified":  "2026-10-29 06:46:27"
-                       },
-                       {
-                           "Name":  "20261031012613_PhysicalDocumentAuthorization",
-                           "SizeKB":  6.74,
-                           "Modified":  "2026-10-30 21:08:20"
-                       },
-                       {
-                           "Name":  "20261031012613_PhysicalDocumentAuthorization.Designer",
-                           "SizeKB":  925.62,
-                           "Modified":  "2026-10-30 21:08:20"
-                       },
-                       {
-                           "Name":  "20261031145058_IssuerFiscalDesignations",
-                           "SizeKB":  2.72,
-                           "Modified":  "2026-10-31 09:50:58"
-                       },
-                       {
-                           "Name":  "20261031145058_IssuerFiscalDesignations.Designer",
-                           "SizeKB":  948.71,
-                           "Modified":  "2026-10-31 09:50:58"
-                       },
-                       {
-                           "Name":  "20261031221006_CorrectedRetransmission",
-                           "SizeKB":  5.54,
-                           "Modified":  "2026-10-31 17:10:07"
-                       },
-                       {
-                           "Name":  "20261031221006_CorrectedRetransmission.Designer",
-                           "SizeKB":  955.06,
-                           "Modified":  "2026-10-31 17:10:07"
+                           "Name":  "20261101012214_InitialProductionBaseline.Designer",
+                           "SizeKB":  933.09,
+                           "Modified":  "2026-10-31 20:22:55"
                        },
                        {
                            "Name":  "ErpDbContextModelSnapshot",
-                           "SizeKB":  954.94,
-                           "Modified":  "2026-10-31 17:10:07"
+                           "SizeKB":  932.97,
+                           "Modified":  "2026-10-31 20:22:56"
                        }
                    ]
 }

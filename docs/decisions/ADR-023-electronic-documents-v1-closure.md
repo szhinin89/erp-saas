@@ -232,8 +232,8 @@ evidencia: [SRI-2.34-COMPLIANCE-CLOSURE §3.1](../sri/SRI-2.34-COMPLIANCE-CLOSUR
 - **R23 (complemento):** RIDE de 01/04/07 con `contribuyenteEspecial`; su formato XSD se valida al guardar y en el
   gate de emisión.
 
-**Sin cambios:** estados, firma, SOAP, clave de acceso, secuenciales, jobs, XSD y catálogos. Migración aditiva
-`IssuerFiscalDesignations` (columnas nulas de `company` + `CHECK` de pares). Los comprobantes firmados o
+**Sin cambios:** estados, firma, SOAP, clave de acceso, secuenciales, jobs, XSD y catálogos. Esquema
+(columnas nulas de `company` + `CHECK` de pares) en la migración única `InitialProductionBaseline`. Los comprobantes firmados o
 autorizados no se regeneran.
 
 ## Addendum (2026-10-31): R12 Fase A — concurrencia fiscal de Factura 01 / Nota de crédito 04 (causa 2)
@@ -276,8 +276,8 @@ la misma clave; `Rejected` no tenía salida. Decisiones R12 del propietario: sol
   `ElectronicDocumentDiagnosticDto.Retransmission`; acción con confirmación.
 
 **Sin cambios:** firma, builders, XSD, clave de acceso, secuenciales, política de reintentos, job, Caso #32,
-anulación de retenciones y el comportamiento de comprobantes sin retransmisión. Migración aditiva
-`CorrectedRetransmission` (3 columnas de `electronic_documents`, tabla nueva). Contrato:
+anulación de retenciones y el comportamiento de comprobantes sin retransmisión. Esquema
+(3 columnas de `electronic_documents`, tabla nueva) en la migración única `InitialProductionBaseline`. Contrato:
 [backend.md § Límites y finalización](../architecture/backend.md#límites-y-finalización).
 
 ## Cierre oficial

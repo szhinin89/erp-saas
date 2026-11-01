@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-31 18:08:04",
+    "generated":  "2026-10-31 20:39:25",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -437,7 +437,7 @@
                                                   "Refactor large file (571 lines): backend/src/ERP.API.Tests/Integration/SalesCancelAuthorizedReturnRuleTests.cs",
                                                   "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
                                                   "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
-                                                  "Review possible secrets in source files (82 real matches, excluding node_modules)"
+                                                  "Review possible secrets in source files (66 real matches, excluding node_modules)"
                                               ]
                          },
                          {

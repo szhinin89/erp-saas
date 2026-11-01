@@ -43,27 +43,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "access_profiles",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    description = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_access_profiles", x => x.id);
-                    table.UniqueConstraint("ak_access_profiles_company_id", x => new { x.company_id, x.id });
-                });
-
-            migrationBuilder.CreateTable(
                 name: "accounting_operational_policies",
                 columns: table => new
                 {
@@ -548,6 +527,9 @@ namespace ERP.Infrastructure.Migrations
                     pre_dead_letter_state = table.Column<int>(type: "integer", nullable: true),
                     last_error = table.Column<string>(type: "text", nullable: true),
                     annulment_request_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    transmission_attempt = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    transmission_attempt_started_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    superseded_sri_decision_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -2320,6 +2302,42 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "electronic_document_transmission_attempts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    electronic_document_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    attempt_number = table.Column<int>(type: "integer", nullable: false),
+                    idempotency_key = table.Column<Guid>(type: "uuid", nullable: false),
+                    reason = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    requested_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    requested_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    rejection_stage = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    rejection_codes = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    superseded_sri_decision_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    previous_signed_xml_path = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    previous_signed_xml_sha256 = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    draft_xml_path = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    draft_xml_sha256 = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    signed_xml_path = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    signed_xml_sha256 = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    correction_summary = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_electronic_document_transmission_attempts", x => x.id);
+                    table.CheckConstraint("ck_electronic_document_transmission_attempt_number", "attempt_number >= 2");
+                    table.ForeignKey(
+                        name: "FK_electronic_document_transmission_attempts_electronic_docume~",
+                        column: x => x.electronic_document_id,
+                        principalTable: "electronic_documents",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "global_user_roles",
                 schema: "access",
                 columns: table => new
@@ -2806,6 +2824,35 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "sri_tax_regime_physical_doc_type",
+                schema: "global",
+                columns: table => new
+                {
+                    tax_regime_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
+                    doc_type_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
+                    legal_basis = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_sri_tax_regime_physical_doc_type", x => new { x.tax_regime_code, x.doc_type_code });
+                    table.ForeignKey(
+                        name: "FK_sri_tax_regime_physical_doc_type_sri_doc_type_doc_type_code",
+                        column: x => x.doc_type_code,
+                        principalSchema: "global",
+                        principalTable: "sri_doc_type",
+                        principalColumn: "code",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_sri_tax_regime_physical_doc_type_sri_tax_regime_tax_regime_~",
+                        column: x => x.tax_regime_code,
+                        principalSchema: "global",
+                        principalTable: "sri_tax_regime",
+                        principalColumn: "code",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "sale_cost_obligations",
                 columns: table => new
                 {
@@ -2863,6 +2910,10 @@ namespace ERP.Infrastructure.Migrations
                     is_foreign_trade = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     withholds_renta = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     withholds_iva = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    retention_agent_resolution_no = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: true),
+                    retention_agent_effective_from = table.Column<DateOnly>(type: "date", nullable: true),
+                    large_taxpayer_resolution_no = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    large_taxpayer_effective_from = table.Column<DateOnly>(type: "date", nullable: true),
                     extra_legend = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     language_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false, defaultValue: "es"),
                     legal_rep_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
@@ -2884,6 +2935,8 @@ namespace ERP.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_company", x => x.id);
+                    table.CheckConstraint("chk_company_large_taxpayer_designation", "(large_taxpayer_resolution_no IS NULL) = (large_taxpayer_effective_from IS NULL)");
+                    table.CheckConstraint("chk_company_retention_agent_designation", "(retention_agent_resolution_no IS NULL) = (retention_agent_effective_from IS NULL)");
                     table.ForeignKey(
                         name: "FK_company_sri_country_country_code",
                         column: x => x.country_code,
@@ -3277,6 +3330,33 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "access_profiles",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    description = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_access_profiles", x => x.id);
+                    table.UniqueConstraint("ak_access_profiles_company_id", x => new { x.company_id, x.id });
+                    table.ForeignKey(
+                        name: "fk_access_profiles_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "company_bank_accounts",
                 columns: table => new
                 {
@@ -3379,32 +3459,6 @@ namespace ERP.Infrastructure.Migrations
                     table.PrimaryKey("PK_company_special_tax_responsibilities", x => x.id);
                     table.ForeignKey(
                         name: "FK_company_special_tax_responsibilities_company_company_id",
-                        column: x => x.company_id,
-                        principalTable: "company",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "company_user_memberships",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    identity_user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    profile_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_company_user_memberships", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_company_user_memberships_company_company_id",
                         column: x => x.company_id,
                         principalTable: "company",
                         principalColumn: "id",
@@ -3722,6 +3776,38 @@ namespace ERP.Infrastructure.Migrations
                         column: x => x.canton_id,
                         principalSchema: "global",
                         principalTable: "geo_cantons",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "company_user_memberships",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    identity_user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    profile_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_company_user_memberships", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_company_user_memberships_access_profiles_company_profile",
+                        columns: x => new { x.company_id, x.profile_id },
+                        principalTable: "access_profiles",
+                        principalColumns: new[] { "company_id", "id" },
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_company_user_memberships_company_company_id",
+                        column: x => x.company_id,
+                        principalTable: "company",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -4647,6 +4733,47 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "physical_document_authorization",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    emission_point_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    doc_type_code = table.Column<string>(type: "character varying(5)", maxLength: 5, nullable: false),
+                    authorization_number = table.Column<string>(type: "character varying(49)", maxLength: 49, nullable: false),
+                    authorized_on = table.Column<DateOnly>(type: "date", nullable: false),
+                    expires_on = table.Column<DateOnly>(type: "date", nullable: false),
+                    first_sequential = table.Column<int>(type: "integer", nullable: false),
+                    last_sequential = table.Column<int>(type: "integer", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
+                    updated_by = table.Column<Guid>(type: "uuid", nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    is_system_seeded = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_physical_document_authorization", x => x.id);
+                    table.CheckConstraint("chk_phys_doc_auth_dates", "expires_on >= authorized_on");
+                    table.CheckConstraint("chk_phys_doc_auth_range", "first_sequential >= 1 AND last_sequential >= first_sequential AND last_sequential <= 999999999");
+                    table.ForeignKey(
+                        name: "FK_physical_document_authorization_emission_point_emission_poi~",
+                        column: x => x.emission_point_id,
+                        principalTable: "emission_point",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_physical_document_authorization_sri_doc_type_doc_type_code",
+                        column: x => x.doc_type_code,
+                        principalSchema: "global",
+                        principalTable: "sri_doc_type",
+                        principalColumn: "code",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "cash_registers",
                 columns: table => new
                 {
@@ -4991,7 +5118,8 @@ namespace ERP.Infrastructure.Migrations
                     ordered_quantity = table.Column<decimal>(type: "numeric(20,6)", nullable: true),
                     purchase_reception_line_id = table.Column<Guid>(type: "uuid", nullable: true),
                     notes = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    sort_order = table.Column<short>(type: "smallint", nullable: false)
+                    sort_order = table.Column<short>(type: "smallint", nullable: false),
+                    xml_allocated_subtotal = table.Column<decimal>(type: "numeric(18,2)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -5388,29 +5516,34 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "purchase_invoice_detail_taxes",
+                name: "purchase_cost_distributions",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    purchase_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tax_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    tax_rate_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    tax_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    rate = table.Column<decimal>(type: "numeric(10,4)", nullable: true),
-                    calculation_type = table.Column<int>(type: "integer", nullable: false),
-                    taxable_base = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    tax_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    source = table.Column<int>(type: "integer", nullable: false)
+                    purchase_invoice_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    cost_type = table.Column<int>(type: "integer", nullable: false),
+                    source_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    revision = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_purchase_invoice_detail_taxes", x => x.id);
+                    table.PrimaryKey("PK_purchase_cost_distributions", x => x.id);
+                    table.UniqueConstraint("AK_purchase_cost_distributions_tenant_id_purchase_invoice_id_id", x => new { x.tenant_id, x.purchase_invoice_id, x.id });
+                    table.CheckConstraint("ck_purchase_cost_distribution_amount", "amount > 0 AND revision > 0");
+                    table.CheckConstraint("ck_purchase_cost_distribution_type", "cost_type IN (1, 2)");
                     table.ForeignKey(
-                        name: "FK_purchase_invoice_detail_taxes_purchase_invoice_details_purc~",
-                        column: x => x.purchase_invoice_detail_id,
+                        name: "FK_purchase_cost_distributions_purchase_invoice_details_tenant~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.source_invoice_detail_id },
                         principalTable: "purchase_invoice_details",
-                        principalColumn: "id",
+                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_purchase_cost_distributions_purchase_invoices_tenant_id_pur~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id },
+                        principalTable: "purchase_invoices",
+                        principalColumns: new[] { "tenant_id", "id" },
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -5887,6 +6020,34 @@ namespace ERP.Infrastructure.Migrations
                         column: x => x.sales_invoice_id,
                         principalTable: "sales_invoices",
                         principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "purchase_cost_distribution_allocations",
+                columns: table => new
+                {
+                    distribution_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    target_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    purchase_invoice_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_purchase_cost_distribution_allocations", x => new { x.distribution_id, x.target_invoice_detail_id });
+                    table.CheckConstraint("ck_purchase_cost_allocation_amount", "amount >= 0");
+                    table.ForeignKey(
+                        name: "FK_purchase_cost_distribution_allocations_purchase_cost_distri~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.distribution_id },
+                        principalTable: "purchase_cost_distributions",
+                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_purchase_cost_distribution_allocations_purchase_invoice_det~",
+                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.target_invoice_detail_id },
+                        principalTable: "purchase_invoice_details",
+                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -6453,6 +6614,40 @@ namespace ERP.Infrastructure.Migrations
                         principalTable: "sales_returns",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "purchase_invoice_detail_taxes",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    purchase_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tax_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    tax_rate_code = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    tax_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    rate = table.Column<decimal>(type: "numeric(10,4)", nullable: true),
+                    calculation_type = table.Column<int>(type: "integer", nullable: false),
+                    taxable_base = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    tax_amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    source = table.Column<int>(type: "integer", nullable: false),
+                    purchase_reception_line_tax_id = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_purchase_invoice_detail_taxes", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_purchase_invoice_detail_taxes_purchase_invoice_details_purc~",
+                        column: x => x.purchase_invoice_detail_id,
+                        principalTable: "purchase_invoice_details",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_purchase_invoice_detail_taxes_purchase_reception_line_taxes~",
+                        column: x => x.purchase_reception_line_tax_id,
+                        principalTable: "purchase_reception_line_taxes",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -7273,6 +7468,16 @@ namespace ERP.Infrastructure.Migrations
                     { new Guid("43000000-0000-0000-0000-000000000012"), "343", new Guid("40000000-0000-0000-0000-000000000003"), 1.00m, 1, null, new Guid("20000000-0000-0000-0000-000000000012"), new DateOnly(2026, 8, 6), null, "343" }
                 });
 
+            migrationBuilder.InsertData(
+                schema: "global",
+                table: "sri_tax_regime_physical_doc_type",
+                columns: new[] { "doc_type_code", "tax_regime_code", "is_active", "legal_basis" },
+                values: new object[,]
+                {
+                    { "01", "01", false, "BLOQUEADO: Res. NAC-DGERCGC22-00000024, preimpresos solo por fuerza mayor o caso fortuito (no verificable)" },
+                    { "02", "03", true, "Res. NAC-DGERCGC21-00000060 (RIMPE Negocio Popular: notas de venta)" }
+                });
+
             migrationBuilder.CreateIndex(
                 name: "ix_access_profile_permissions_subscriber_key",
                 table: "access_profile_permissions",
@@ -7676,16 +7881,16 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "tenant_id", "user_id", "status" });
 
             migrationBuilder.CreateIndex(
-                name: "ux_cash_sessions_open_per_register",
+                name: "ux_cash_sessions_open_per_company_user",
                 table: "cash_sessions",
-                columns: new[] { "tenant_id", "cash_register_id" },
+                columns: new[] { "tenant_id", "company_id", "user_id" },
                 unique: true,
                 filter: "status = 1");
 
             migrationBuilder.CreateIndex(
-                name: "ux_cash_sessions_open_per_company_user",
+                name: "ux_cash_sessions_open_per_register",
                 table: "cash_sessions",
-                columns: new[] { "tenant_id", "company_id", "user_id" },
+                columns: new[] { "tenant_id", "cash_register_id" },
                 unique: true,
                 filter: "status = 1");
 
@@ -7822,32 +8027,15 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_company_user_memberships_company_identity_user",
-                table: "company_user_memberships",
-                columns: new[] { "company_id", "identity_user_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_company_user_memberships_company_id_profile_id",
                 table: "company_user_memberships",
                 columns: new[] { "company_id", "profile_id" });
 
-            // SEC-05: perfiles por empresa — el perfil de una membership pertenece a su misma empresa.
-            migrationBuilder.AddForeignKey(
-                name: "fk_access_profiles_company_company_id",
-                table: "access_profiles",
-                column: "company_id",
-                principalTable: "company",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
-
-            migrationBuilder.AddForeignKey(
-                name: "fk_company_user_memberships_access_profiles_company_profile",
+            migrationBuilder.CreateIndex(
+                name: "ux_company_user_memberships_company_identity_user",
                 table: "company_user_memberships",
-                columns: new[] { "company_id", "profile_id" },
-                principalTable: "access_profiles",
-                principalColumns: new[] { "company_id", "id" },
-                onDelete: ReferentialAction.Restrict);
+                columns: new[] { "company_id", "identity_user_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_company_user_preferences_company",
@@ -7994,6 +8182,23 @@ namespace ERP.Infrastructure.Migrations
                 name: "ix_electronic_document_sri_message_user_occurred_at",
                 table: "electronic_document_sri_message",
                 columns: new[] { "tenant_id", "user_id", "occurred_at_utc" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_electronic_document_transmission_attempts_electronic_docume~",
+                table: "electronic_document_transmission_attempts",
+                column: "electronic_document_id");
+
+            migrationBuilder.CreateIndex(
+                name: "uq_electronic_document_transmission_attempt_idempotency",
+                table: "electronic_document_transmission_attempts",
+                columns: new[] { "tenant_id", "electronic_document_id", "idempotency_key" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "uq_electronic_document_transmission_attempt_number",
+                table: "electronic_document_transmission_attempts",
+                columns: new[] { "tenant_id", "electronic_document_id", "attempt_number" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "idx_electronic_document_company",
@@ -9051,6 +9256,21 @@ namespace ERP.Infrastructure.Migrations
                 filter: "client_request_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "ix_phys_doc_auth_point_doc_type",
+                table: "physical_document_authorization",
+                columns: new[] { "tenant_id", "company_id", "emission_point_id", "doc_type_code" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_physical_document_authorization_doc_type_code",
+                table: "physical_document_authorization",
+                column: "doc_type_code");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_physical_document_authorization_emission_point_id",
+                table: "physical_document_authorization",
+                column: "emission_point_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_posting_rule_lines_posting_rule",
                 table: "posting_rule_lines",
                 column: "posting_rule_id");
@@ -9183,6 +9403,23 @@ namespace ERP.Infrastructure.Migrations
                 name: "ix_purchase_communications_purchase",
                 table: "purchase_communications",
                 column: "purchase_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_cost_distribution_allocations_tenant_id_purchase_~1",
+                table: "purchase_cost_distribution_allocations",
+                columns: new[] { "tenant_id", "purchase_invoice_id", "target_invoice_detail_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_cost_distribution_allocations_tenant_id_purchase_i~",
+                table: "purchase_cost_distribution_allocations",
+                columns: new[] { "tenant_id", "purchase_invoice_id", "distribution_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_cost_distributions_tenant_id_purchase_invoice_id_s~",
+                table: "purchase_cost_distributions",
+                columns: new[] { "tenant_id", "purchase_invoice_id", "source_invoice_detail_id" },
+                unique: true,
+                filter: "source_invoice_detail_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_purchase_credit_note_details_purchase_credit_note_id",
@@ -9366,6 +9603,18 @@ namespace ERP.Infrastructure.Migrations
                 name: "ix_purchase_invoice_detail_taxes_detail",
                 table: "purchase_invoice_detail_taxes",
                 column: "purchase_invoice_detail_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_invoice_detail_taxes_purchase_invoice_detail_id_pu~",
+                table: "purchase_invoice_detail_taxes",
+                columns: new[] { "purchase_invoice_detail_id", "purchase_reception_line_tax_id" },
+                unique: true,
+                filter: "purchase_reception_line_tax_id IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_purchase_invoice_detail_taxes_purchase_reception_line_tax_id",
+                table: "purchase_invoice_detail_taxes",
+                column: "purchase_reception_line_tax_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_purchase_invoice_detail_taxes_tenant",
@@ -10260,6 +10509,12 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_sri_tax_regime_physical_doc_type_doc_type_code",
+                schema: "global",
+                table: "sri_tax_regime_physical_doc_type",
+                column: "doc_type_code");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_stock_adjustment_lines_adjustment",
                 table: "stock_adjustment_lines",
                 column: "stock_adjustment_id");
@@ -10917,144 +11172,11 @@ namespace ERP.Infrastructure.Migrations
                 );
                 """
             );
-            migrationBuilder.AddColumn<decimal>(
-                name: "xml_allocated_subtotal",
-                table: "purchase_invoice_details",
-                type: "numeric(18,2)",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "purchase_reception_line_tax_id",
-                table: "purchase_invoice_detail_taxes",
-                type: "uuid",
-                nullable: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_purchase_invoice_detail_taxes_purchase_invoice_detail_id_pu~",
-                table: "purchase_invoice_detail_taxes",
-                columns: new[] { "purchase_invoice_detail_id", "purchase_reception_line_tax_id" },
-                unique: true,
-                filter: "purchase_reception_line_tax_id IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_purchase_invoice_detail_taxes_purchase_reception_line_tax_id",
-                table: "purchase_invoice_detail_taxes",
-                column: "purchase_reception_line_tax_id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_purchase_invoice_detail_taxes_purchase_reception_line_taxes~",
-                table: "purchase_invoice_detail_taxes",
-                column: "purchase_reception_line_tax_id",
-                principalTable: "purchase_reception_line_taxes",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
-
-            migrationBuilder.CreateTable(
-                name: "purchase_cost_distributions",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    purchase_invoice_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    cost_type = table.Column<int>(type: "integer", nullable: false),
-                    source_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    revision = table.Column<long>(type: "bigint", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_purchase_cost_distributions", x => x.id);
-                    table.UniqueConstraint("AK_purchase_cost_distributions_tenant_id_purchase_invoice_id_id", x => new { x.tenant_id, x.purchase_invoice_id, x.id });
-                    table.CheckConstraint("ck_purchase_cost_distribution_amount", "amount > 0 AND revision > 0");
-                    table.CheckConstraint("ck_purchase_cost_distribution_type", "cost_type IN (1, 2)");
-                    table.ForeignKey(
-                        name: "FK_purchase_cost_distributions_purchase_invoice_details_tenant~",
-                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.source_invoice_detail_id },
-                        principalTable: "purchase_invoice_details",
-                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_purchase_cost_distributions_purchase_invoices_tenant_id_pur~",
-                        columns: x => new { x.tenant_id, x.purchase_invoice_id },
-                        principalTable: "purchase_invoices",
-                        principalColumns: new[] { "tenant_id", "id" },
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "purchase_cost_distribution_allocations",
-                columns: table => new
-                {
-                    distribution_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    target_invoice_detail_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    purchase_invoice_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,6)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_purchase_cost_distribution_allocations", x => new { x.distribution_id, x.target_invoice_detail_id });
-                    table.CheckConstraint("ck_purchase_cost_allocation_amount", "amount >= 0");
-                    table.ForeignKey(
-                        name: "FK_purchase_cost_distribution_allocations_purchase_cost_distri~",
-                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.distribution_id },
-                        principalTable: "purchase_cost_distributions",
-                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_purchase_cost_distribution_allocations_purchase_invoice_det~",
-                        columns: x => new { x.tenant_id, x.purchase_invoice_id, x.target_invoice_detail_id },
-                        principalTable: "purchase_invoice_details",
-                        principalColumns: new[] { "tenant_id", "purchase_invoice_id", "id" },
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_purchase_cost_distribution_allocations_tenant_id_purchase_~1",
-                table: "purchase_cost_distribution_allocations",
-                columns: new[] { "tenant_id", "purchase_invoice_id", "target_invoice_detail_id" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_purchase_cost_distribution_allocations_tenant_id_purchase_i~",
-                table: "purchase_cost_distribution_allocations",
-                columns: new[] { "tenant_id", "purchase_invoice_id", "distribution_id" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_purchase_cost_distributions_tenant_id_purchase_invoice_id_s~",
-                table: "purchase_cost_distributions",
-                columns: new[] { "tenant_id", "purchase_invoice_id", "source_invoice_detail_id" },
-                unique: true,
-                filter: "source_invoice_detail_id IS NOT NULL");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "purchase_cost_distribution_allocations");
-
-            migrationBuilder.DropTable(
-                name: "purchase_cost_distributions");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_purchase_invoice_detail_taxes_purchase_reception_line_taxes~",
-                table: "purchase_invoice_detail_taxes");
-
-            migrationBuilder.DropIndex(
-                name: "IX_purchase_invoice_detail_taxes_purchase_invoice_detail_id_pu~",
-                table: "purchase_invoice_detail_taxes");
-
-            migrationBuilder.DropIndex(
-                name: "IX_purchase_invoice_detail_taxes_purchase_reception_line_tax_id",
-                table: "purchase_invoice_detail_taxes");
-
-            migrationBuilder.DropColumn(
-                name: "xml_allocated_subtotal",
-                table: "purchase_invoice_details");
-
-            migrationBuilder.DropColumn(
-                name: "purchase_reception_line_tax_id",
-                table: "purchase_invoice_detail_taxes");
             // Raw SQL en orden inverso al Up (bloque final del Up).
             migrationBuilder.Sql(
                 """
@@ -11078,15 +11200,8 @@ namespace ERP.Infrastructure.Migrations
                 """
             );
 
-            migrationBuilder.DropForeignKey(
-                name: "fk_company_user_memberships_access_profiles_company_profile",
-                table: "company_user_memberships");
-
             migrationBuilder.DropTable(
                 name: "access_profile_permissions");
-
-            migrationBuilder.DropTable(
-                name: "access_profiles");
 
             migrationBuilder.DropTable(
                 name: "accounting_operational_policies");
@@ -11168,7 +11283,7 @@ namespace ERP.Infrastructure.Migrations
                 name: "electronic_document_sri_message");
 
             migrationBuilder.DropTable(
-                name: "electronic_documents");
+                name: "electronic_document_transmission_attempts");
 
             migrationBuilder.DropTable(
                 name: "expense_lines");
@@ -11311,6 +11426,9 @@ namespace ERP.Infrastructure.Migrations
                 name: "payment_transfer_details");
 
             migrationBuilder.DropTable(
+                name: "physical_document_authorization");
+
+            migrationBuilder.DropTable(
                 name: "posting_rule_lines");
 
             migrationBuilder.DropTable(
@@ -11335,6 +11453,9 @@ namespace ERP.Infrastructure.Migrations
                 name: "purchase_communications");
 
             migrationBuilder.DropTable(
+                name: "purchase_cost_distribution_allocations");
+
+            migrationBuilder.DropTable(
                 name: "purchase_credit_note_details");
 
             migrationBuilder.DropTable(
@@ -11354,9 +11475,6 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "purchase_reception_line_additional_fields");
-
-            migrationBuilder.DropTable(
-                name: "purchase_reception_line_taxes");
 
             migrationBuilder.DropTable(
                 name: "purchase_return_audit");
@@ -11443,6 +11561,10 @@ namespace ERP.Infrastructure.Migrations
                 schema: "global");
 
             migrationBuilder.DropTable(
+                name: "sri_tax_regime_physical_doc_type",
+                schema: "global");
+
+            migrationBuilder.DropTable(
                 name: "sri_tax_support",
                 schema: "global");
 
@@ -11510,8 +11632,7 @@ namespace ERP.Infrastructure.Migrations
                 schema: "global");
 
             migrationBuilder.DropTable(
-                name: "sri_doc_type",
-                schema: "global");
+                name: "electronic_documents");
 
             migrationBuilder.DropTable(
                 name: "expense_category_nodes");
@@ -11545,10 +11666,13 @@ namespace ERP.Infrastructure.Migrations
                 name: "posting_rules");
 
             migrationBuilder.DropTable(
+                name: "purchase_cost_distributions");
+
+            migrationBuilder.DropTable(
                 name: "purchase_credit_note_tax_summaries");
 
             migrationBuilder.DropTable(
-                name: "purchase_reception_lines");
+                name: "purchase_reception_line_taxes");
 
             migrationBuilder.DropTable(
                 name: "purchase_return_details");
@@ -11582,6 +11706,10 @@ namespace ERP.Infrastructure.Migrations
                 schema: "global");
 
             migrationBuilder.DropTable(
+                name: "sri_doc_type",
+                schema: "global");
+
+            migrationBuilder.DropTable(
                 name: "stock_adjustments");
 
             migrationBuilder.DropTable(
@@ -11609,10 +11737,16 @@ namespace ERP.Infrastructure.Migrations
                 name: "journal_entries");
 
             migrationBuilder.DropTable(
+                name: "access_profiles");
+
+            migrationBuilder.DropTable(
                 name: "purchase_credit_notes");
 
             migrationBuilder.DropTable(
                 name: "purchase_invoice_tax_summaries");
+
+            migrationBuilder.DropTable(
+                name: "purchase_reception_lines");
 
             migrationBuilder.DropTable(
                 name: "purchase_invoice_details");

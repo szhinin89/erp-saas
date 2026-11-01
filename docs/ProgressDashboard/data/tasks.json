@@ -2403,7 +2403,7 @@
                      ]
     },
     {
-        "task":  "Review possible secrets in source files (82 real matches, excluding node_modules)",
+        "task":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
         "category":  "Security",
         "priority":  "HIGH",
         "source":  "Security.SecretFiles",

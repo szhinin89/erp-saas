@@ -1,18 +1,18 @@
 ﻿{
-    "Generated":  "2026-10-31 18:07:34",
+    "Generated":  "2026-10-31 20:39:03",
     "EngineeringScore":  {
-                             "Generated":  "2026-10-31 18:07:31",
+                             "Generated":  "2026-10-31 20:39:00",
                              "Architecture":  100,
                              "ModuleHealth":  79.82,
-                             "Quality":  7.45,
-                             "Security":  12.4,
+                             "Quality":  7.6,
+                             "Security":  15.6,
                              "Dependencies":  100,
-                             "Overall":  57.92
+                             "Overall":  58.59
                          },
     "QualityGate":  {
-                        "Generated":  "2026-10-31 18:07:33",
+                        "Generated":  "2026-10-31 20:39:02",
                         "Status":  "RED",
-                        "EngineeringScore":  57.92,
+                        "EngineeringScore":  58.59,
                         "Warnings":  [
                                          "Engineering score below 60%",
                                          "High number of possible secrets detected",
@@ -25,8 +25,8 @@
                                       ]
                     },
     "Trend":  {
-                  "Generated":  "2026-10-31 18:07:33",
-                  "Snapshots":  38,
+                  "Generated":  "2026-10-31 20:39:02",
+                  "Snapshots":  39,
                   "History":  [
                                   {
                                       "Date":  "2026-07-15 20:38:00",
@@ -217,6 +217,11 @@
                                       "Date":  "2026-10-31 18:07:31",
                                       "File":  "dashboard-2026-10-31-1807-v2.json",
                                       "Score":  57.92
+                                  },
+                                  {
+                                      "Date":  "2026-10-31 20:39:01",
+                                      "File":  "dashboard-2026-10-31-2039-v2.json",
+                                      "Score":  58.59
                                   }
                               ]
               },
@@ -568,9 +573,9 @@
                    "Count":  38
                },
     "Security":  {
-                     "Generated":  "2026-10-31 18:07:29",
-                     "FilesAnalyzed":  12443,
-                     "SecretsFound":  198,
+                     "Generated":  "2026-10-31 20:38:58",
+                     "FilesAnalyzed":  12125,
+                     "SecretsFound":  182,
                      "SecretFiles":  [
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API\\Program.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Extensions\\ApiErrorContractTests.cs",
@@ -597,26 +602,10 @@
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Constants\\OrgSettingKeys.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Configuration\\Entities\\SriSettings.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Communications\\CommunicationSettingsResolver.cs",
-                                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.cs",
+                                         "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Seeding\\E2E\\E2ESeedService.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Security\\BcryptPasswordHasherTests.cs",
                                          "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Services\\Sri\\TestP12CertificateFactory.cs",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\AdminCoreLoginPage-BToBqPQc.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\api-imM-S7tu.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\App-C4wcddqu.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\authService-CUGfDHJT.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CommunicationsEmailSettingsPage-Bl6YIBHg.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\CompletePasswordResetPage-DWV__58G.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ElectronicInvoicingPage-CpKT6S_1.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\electronicInvoicingStatusStore-CSUP8QZy.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\index-4wukVJOi.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\LoginPage-B1L-1rWw.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\loginSchema-Q6S9K3PS.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\ResetPasswordPage-DGmEXM2m.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SalesPage-YmrzDqwo.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\SetupPage-CMK0WEgM.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UserConfigPage-Bc8QCLDt.js",
-                                         "C:\\ProyectCursor\\erp-saas\\frontend\\dist\\assets\\UsersPage-DvaYMgfm.js",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\helpers\\api.ts",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\e2e\\enterprise-auth.spec.ts",
                                          "C:\\ProyectCursor\\erp-saas\\frontend\\node_modules\\.vite\\deps\\axios.js",
@@ -801,11 +790,11 @@
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunFullInstallationTests.cs",
                                                    "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Setup\\FirstRunSetupConcurrencyTests.cs"
                                                ],
-                     "Warnings":  222
+                     "Warnings":  206
                  },
     "TechnicalDebt":  {
-                          "Generated":  "2026-10-31 18:06:57",
-                          "FilesAnalyzed":  12330,
+                          "Generated":  "2026-10-31 20:38:37",
+                          "FilesAnalyzed":  12045,
                           "TODO":  732,
                           "FIXME":  30,
                           "HACK":  1,
@@ -1348,23 +1337,11 @@
                                                  "Lines":  502
                                              },
                                              {
-                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.cs",
-                                                 "Lines":  11748
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                                                 "Lines":  11882
                                              },
                                              {
-                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.Designer.cs",
-                                                 "Lines":  22167
-                                             },
-                                             {
-                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261031012613_PhysicalDocumentAuthorization.Designer.cs",
-                                                 "Lines":  22333
-                                             },
-                                             {
-                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261031145058_IssuerFiscalDesignations.Designer.cs",
-                                                 "Lines":  22356
-                                             },
-                                             {
-                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261031221006_CorrectedRetransmission.Designer.cs",
+                                                 "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
                                                  "Lines":  22498
                                              },
                                              {
@@ -3819,25 +3796,25 @@
                           "CriticalFindings":  38
                       },
     "Architecture":  {
-                         "Generated":  "2026-10-31 18:02:58",
+                         "Generated":  "2026-10-31 20:38:16",
                          "Layers":  {
                                         "Domain":  {
-                                                       "Files":  704
+                                                       "Files":  701
                                                    },
                                         "Application":  {
                                                             "Commands":  0,
                                                             "Validators":  6,
                                                             "Queries":  5,
-                                                            "Files":  1184
+                                                            "Files":  1181
                                                         },
                                         "Infrastructure":  {
-                                                               "DbContext":  105,
-                                                               "Files":  511,
+                                                               "DbContext":  102,
+                                                               "Files":  502,
                                                                "Repository":  91
                                                            },
                                         "API":  {
                                                     "Controllers":  495,
-                                                    "Files":  156
+                                                    "Files":  152
                                                 }
                                     },
                          "Violations":  [
@@ -3845,7 +3822,7 @@
                                         ]
                      },
     "Dependencies":  {
-                         "Generated":  "2026-10-31 18:03:01",
+                         "Generated":  "2026-10-31 20:38:17",
                          "Violations":  [
 
                                         ],

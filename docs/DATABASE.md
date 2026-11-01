@@ -49,30 +49,26 @@ Conexión: `ConnectionStrings:DefaultConnection`. En Development, `Database.Migr
 
 ### Baseline EF (ERP ZH V1, GREENFIELD)
 
-Baseline única: `20261021162651_InitialProductionBaseline`, la definición inicial vigente de todo el esquema,
+Migración única: `20261101012214_InitialProductionBaseline`, la definición inicial vigente de todo el esquema,
 incluidos los catálogos GLOBAL con todas sus correcciones SRI (`HasData`) y los objetos raw SQL de la tabla siguiente.
 La geografía INEC llega aparte, por el único script de `Seeding/InstallData` (CGE 2026). No existe upgrade-path:
-una BD creada con una baseline anterior (p. ej. `20261018014647_…`) falla de forma explícita en `MigrateAsync`
+una BD creada con una cadena anterior (p. ej. `20261021162651_…`) falla de forma explícita en `MigrateAsync`
 (tablas ya existentes) y se recrea con autorización del propietario.
 
-Verificada contra un oráculo (PostgreSQL 16 desechable: baseline anterior + sus 6 migraciones GLOBAL del
-2026-10-21 frente a la baseline nueva): `pg_dump --schema-only` y hash de datos de las 212 tablas (independiente del
-orden de filas y columnas). Única diferencia de datos: `sri_normative_source.introduced_in_migration` nombra la
-baseline en las 10 fuentes (la trazabilidad debe nombrar una migración existente, `SriCatalogComplianceTests`).
-Diferencia de esquema: orden físico de columnas en `sri_country` y `sri_ice_rate`, sin efecto.
+Consolidación del 2026-11-01 (decisión del propietario): sustituye la baseline `20261021162651_…` y sus tres
+incrementales del 2026-10-31 (documentos físicos F-1..F-5, designaciones fiscales R21/R22 y retransmisión corregida
+R12). Verificada contra un oráculo (PostgreSQL 16 desechable: cadena anterior de 4 migraciones frente a la migración
+única): catálogo de PostgreSQL idéntico (2985 columnas, 547 restricciones —PK/FK/CHECK/UNIQUE/EXCLUDE—, 887 índices,
+6 triggers, 3 funciones con cuerpo idéntico, extensiones `btree_gist`/`pg_trgm`, 217 tablas) y hash de datos de las
+217 tablas idéntico (independiente del orden de filas y columnas). Única diferencia de `pg_dump --schema-only`: orden
+físico de las columnas antes añadidas con `AddColumn` en `company` y `electronic_documents`, sin efecto.
+`sri_normative_source.introduced_in_migration` conserva el nombre `InitialProductionBaseline`.
 
-ERP ZH V1 utiliza esta baseline como inicio de la cadena para una instalación nueva. El índice vigente
-`ux_cash_sessions_open_per_company_user` sobre `(tenant_id, company_id, user_id)`, único y
-filtrado por `status = 1`, está consolidado en ella y en su Designer, coherentes con EF Core
-y ModelSnapshot. No se conserva el índice anterior ni una migración incremental de Caja.
-Las tablas y estructuras vigentes de Compras y los objetos raw SQL se conservan íntegramente.
-Esta consolidación no modifica bases existentes ni su historial EF, no aplica migraciones y
-no incorpora mecanismos de compatibilidad o reparaciones de instalaciones anteriores.
-La evidencia histórica anterior no validaba la instalación limpia con la incremental posterior;
-la ejecución P0 del 2026-10-31 se registra en
-[evidencia P0](evidence/p0-clean-install-20261031/README.md), con su estado de entrega en [STATUS](../STATUS.md).
-
-Incremental vigente conservada por decisión del propietario para P0 (2026-10-31), sin consolidación en esta entrega: `20261031012613_PhysicalDocumentAuthorization` (F-1..F-5; tablas `physical_document_authorization` y `global.sri_tax_regime_physical_doc_type` con sus 2 filas `HasData`, General → 01 inactiva; ver [política fiscal de emisión física](architecture/company-readiness.md#política-fiscal-de-emisión-física-f-1f-5)). La instalación nueva aplica ambas migraciones, en orden, con `dotnet ef database update`.
+ERP ZH V1 utiliza esta migración como única cadena para una instalación nueva (`dotnet ef database update` o
+`MigrateAsync` al arrancar la API). El índice `ux_cash_sessions_open_per_company_user` sobre
+`(tenant_id, company_id, user_id)`, único y filtrado por `status = 1`, las estructuras de Compras y los objetos raw SQL
+se conservan íntegramente. La consolidación no incorpora mecanismos de compatibilidad ni reparaciones de instalaciones
+anteriores.
 
 Los archivos de migración se guardan con LF (`.gitattributes`): los raw string literals de C# trasladan el fin de línea al cuerpo de las funciones plpgsql.
 

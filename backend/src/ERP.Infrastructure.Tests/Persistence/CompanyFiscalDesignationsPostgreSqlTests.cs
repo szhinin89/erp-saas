@@ -13,7 +13,7 @@ using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 namespace ERP.Infrastructure.Tests.Persistence;
 
 /// <summary>
-/// R21/R22 — PostgreSQL 16 + migraciones completas (incluida <c>IssuerFiscalDesignations</c>):
+/// R21/R22 — PostgreSQL 16 + migración completa:
 /// las designaciones por resolución se persisten tal cual las normaliza el dominio, una empresa sin
 /// designación conserva sus columnas nulas, y la base rechaza un par número/vigencia incompleto
 /// aunque se escriba por fuera del dominio.

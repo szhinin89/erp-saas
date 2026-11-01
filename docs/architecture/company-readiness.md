@@ -202,7 +202,7 @@ El rechazo usa `PHYSICAL_EMISSION_REQUIREMENTS_MISSING` con el detalle `[código
 
 - `physical_document_authorization` (empresa): punto, tipo, número de autorización (solo dígitos), fecha de autorización, fecha de caducidad (máximo un año, art. 6), primer y último secuencial (1..999.999.999). Inmutable; renovación o corrección = nuevo registro y baja lógica del anterior. Sin solapamiento de rangos activos del mismo punto y tipo. Se administra en Secuencias documentales (`GET/POST /api/v1/settings/physical-document-authorizations`, `PATCH /{id}/disable`, permiso `settings.document-sequences.manage`).
 - `global.sri_tax_regime_physical_doc_type` (catálogo): `03 Negocio Popular → 02 Nota de venta` activa; `01 General → 01 Factura` **inactiva** (documenta el bloqueo en `legal_basis`). Solo una fila activa permite; lo no listado o inactivo no se emite en físico (fail-closed).
-- Migración incremental `PhysicalDocumentAuthorization` (2 tablas, 2 filas de catálogo); su consolidación en la baseline V1 queda a decisión del propietario.
+- Esquema y las 2 filas de catálogo en la migración única `InitialProductionBaseline` ([DATABASE.md](../DATABASE.md#migraciones)).
 
 ### Captura acotada al rango autorizado
 

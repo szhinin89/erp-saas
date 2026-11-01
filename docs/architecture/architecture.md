@@ -372,9 +372,8 @@ documentos de `docs/sri/` son auditorías fechadas y las decisiones de origen es
 **Reglas (ADR-037 D1–D14, ADR-042):**
 
 - Un catálogo = una tabla y una entidad tipadas. Canal único de datos: `HasData` materializado por la baseline EF
-  única de ERP ZH V1 (`20261021162651_InitialProductionBaseline`, GREENFIELD: incluye todas las correcciones SRI),
-  más la incremental `PhysicalDocumentAuthorization`, conservada para P0 por decisión del propietario
-  (2026-10-31; [cadena vigente](../DATABASE.md#migraciones)), salvo la geografía INEC, que llega por el único
+  única de ERP ZH V1 (`20261101012214_InitialProductionBaseline`, GREENFIELD: incluye todas las correcciones SRI;
+  [migración vigente](../DATABASE.md#migraciones)), salvo la geografía INEC, que llega por el único
   script `Seeding/InstallData` (ver § Geografía INEC). Tras la
   primera instalación publicada, cada cambio es una migración incremental. Sin CRUD, UI de edición ni escrituras
   desde Application/API.

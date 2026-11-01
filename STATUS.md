@@ -1,5 +1,21 @@
 # Project Status
 
+## Consolidación de migraciones EF — migración única — READY FOR REVIEW (2026-11-01)
+
+Base `main@8ded8783e`. Decisión del propietario: las 4 migraciones (`20261021162651_InitialProductionBaseline`,
+`…_PhysicalDocumentAuthorization`, `…_IssuerFiscalDesignations`, `…_CorrectedRetransmission`) se sustituyen por la
+única `20261101012214_InitialProductionBaseline` + ModelSnapshot regenerado; los objetos raw SQL (Up y Down) se
+copiaron byte a byte. Deja sin efecto la decisión P0 de conservar la incremental `PhysicalDocumentAuthorization` y
+las menciones a migraciones aditivas de R12, R21/R22 y F-1..F-5 en las entradas inferiores. Sin cambios de modelo,
+módulos, reglas SRI ni bootstrap. Detalle y equivalencia: [DATABASE.md § Migraciones](docs/DATABASE.md#migraciones).
+PASS agente: oráculo PostgreSQL 16 desechable (cadena anterior frente a la única) con catálogo y hash de datos de las
+217 tablas idénticos; `has-pending-model-changes` sin cambios; ensayo de `Down`; Architecture 2/2 (raw SQL),
+Infrastructure PostgreSQL 165/165 (raw SQL físicos, First Run, catálogos SRI, R12, R21/R22, Compras, precisión),
+API 12/12 (First Run HTTP, readiness), build de la solución, `architecture:check` (0 nuevas), `git diff --check`.
+Base local `erp_zh_dev` (localhost:5435, vacía) recreada con la migración única. `erp_zh_test` **no** se recreó:
+contiene datos (1 tenant, 2 empresas, 7 ventas, 4 compras) y una cadena anterior; queda a decisión del propietario.
+Sin producción, suites completas, staging, commit ni push. No CLOSED.
+
 ## SRI 2.34 R12 Fase B — corrección y retransmisión 01/04/07 — READY FOR REVIEW (2026-10-31)
 
 Base `main@6505e5734`. Única salida de `Rejected`: comando explícito del Monitor (permiso

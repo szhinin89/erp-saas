@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-31 18:08:07",
+    "generated":  "2026-10-31 20:39:28",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -432,39 +432,29 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  105,
+                                             "DbContext":  102,
                                              "DbSets":  199,
                                              "EntityConfigurations":  0,
                                              "Repositories":  91,
-                                             "Migrations":  9
+                                             "Migrations":  3
                                          },
                        "migrations":  {
-                                          "totalFiles":  9,
+                                          "totalFiles":  3,
                                           "mostRecent":  [
                                                              {
-                                                                 "name":  "20261031221006_CorrectedRetransmission",
-                                                                 "modified":  "2026-10-31 17:10:07",
-                                                                 "sizeKB":  5.54
-                                                             },
-                                                             {
-                                                                 "name":  "20261031221006_CorrectedRetransmission.Designer",
-                                                                 "modified":  "2026-10-31 17:10:07",
-                                                                 "sizeKB":  955.06
-                                                             },
-                                                             {
                                                                  "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-10-31 17:10:07",
-                                                                 "sizeKB":  954.94
+                                                                 "modified":  "2026-10-31 20:22:56",
+                                                                 "sizeKB":  932.97
                                                              },
                                                              {
-                                                                 "name":  "20261031145058_IssuerFiscalDesignations.Designer",
-                                                                 "modified":  "2026-10-31 09:50:58",
-                                                                 "sizeKB":  948.71
+                                                                 "name":  "20261101012214_InitialProductionBaseline",
+                                                                 "modified":  "2026-10-31 20:22:55",
+                                                                 "sizeKB":  697.43
                                                              },
                                                              {
-                                                                 "name":  "20261031145058_IssuerFiscalDesignations",
-                                                                 "modified":  "2026-10-31 09:50:58",
-                                                                 "sizeKB":  2.72
+                                                                 "name":  "20261101012214_InitialProductionBaseline.Designer",
+                                                                 "modified":  "2026-10-31 20:22:55",
+                                                                 "sizeKB":  933.09
                                                              }
                                                          ]
                                       },

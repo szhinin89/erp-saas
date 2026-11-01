@@ -1,6 +1,6 @@
 ﻿{
-    "Generated":  "2026-10-31 18:06:57",
-    "FilesAnalyzed":  12330,
+    "Generated":  "2026-10-31 20:38:37",
+    "FilesAnalyzed":  12045,
     "TODO":  732,
     "FIXME":  30,
     "HACK":  1,
@@ -543,23 +543,11 @@
                            "Lines":  502
                        },
                        {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.cs",
-                           "Lines":  11748
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.cs",
+                           "Lines":  11882
                        },
                        {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261021162651_InitialProductionBaseline.Designer.cs",
-                           "Lines":  22167
-                       },
-                       {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261031012613_PhysicalDocumentAuthorization.Designer.cs",
-                           "Lines":  22333
-                       },
-                       {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261031145058_IssuerFiscalDesignations.Designer.cs",
-                           "Lines":  22356
-                       },
-                       {
-                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261031221006_CorrectedRetransmission.Designer.cs",
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure\\Migrations\\20261101012214_InitialProductionBaseline.Designer.cs",
                            "Lines":  22498
                        },
                        {

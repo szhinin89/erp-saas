@@ -100,7 +100,7 @@ se regenera con el perfil vigente evaluado contra su propia fecha de emisión. R
 antes del secuencial si un dato guardado está fuera de formato o el par está incompleto. Proyección única del
 emisor (ADR-038 D5): `ElectronicDocumentIssuerProjection`, que reemplaza las tres construcciones de los providers y
 las tres copias de la leyenda RIMPE (mismo resultado: igualdad de record verificada para General, RIMPE ME/NP y
-sin régimen). Migración aditiva `IssuerFiscalDesignations` (4 columnas nulas + 2 `CHECK`); filas existentes intactas.
+sin régimen). Esquema: 4 columnas nulas + 2 `CHECK` en la migración única `InitialProductionBaseline`.
 
 **R16 — fundamento e incertidumbre.** La ficha (2.32 y 2.34, §7.5) dice "para el envío individual, el tamaño
 máximo por comprobante será de 320 Kb" y el error 26 "Tamaño del archivo supera lo establecido"; no define la
@@ -209,7 +209,7 @@ Pruebas: `ElectronicDocumentIssuerReceptionTests`, `SriSoapClientTests`, `Invoic
 Documentación: ADR-023 (addendum), `frozen-infrastructure.md`, `backend.md`, este informe, `STATUS.md`.
 Sin migraciones, frontend, XSD, catálogos ni configuración.
 
-Entrega R21/R22 (§3.1) — código: `Company.cs`, `CompanyConfiguration.cs`, migración `IssuerFiscalDesignations`,
+Entrega R21/R22 (§3.1) — código: `Company.cs`, `CompanyConfiguration.cs`, migración única `InitialProductionBaseline`,
 `UpdateCompanyFiscalCommand`/`Validator`/`Handler`, `CompanyProfileDto`, `ElectronicDocumentData.cs`,
 `ElectronicDocumentIssuerProjection.cs` (nuevo), los 3 providers, `InfoTributariaXmlBuilder.cs` (nuevo) y los 3
 builders, `LargeTaxpayerAdditionalInfoContributor.cs` (nuevo), `SriAdditionalInfoFieldNames.cs`,
