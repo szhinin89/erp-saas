@@ -647,7 +647,7 @@
       "name": "DocumentSequences"
     },
     {
-      "description": "Monitor de Documentos Electr\u00F3nicos \u2014 consola de consulta del ciclo electr\u00F3nico. No emite,\r\nno firma ni cancela documentos. Acciones de escritura: reintentar manualmente un documento\r\nvarado (Signed/Received/DeadLetter/Failed), o registrar el documento faltante de un origen ya\r\nautorizado comercialmente que nunca lleg\u00F3 a generar uno (backfill) \u2014 el resto de transiciones\r\nlas ejecuta \u0060ElectronicDocumentIssuer\u0060, invocado desde Ventas o desde el job autom\u00E1tico\r\nde reintentos.",
+      "description": "Monitor de Documentos Electr\u00F3nicos \u2014 consola de consulta del ciclo electr\u00F3nico. No emite,\r\nno firma ni cancela documentos. Acciones de escritura: reintentar manualmente un documento\r\nvarado (Signed/Received/DeadLetter/Failed), conciliar un resultado incierto, corregir y\r\nretransmitir un comprobante rechazado (R12 Fase B), o registrar el documento faltante de un origen ya\r\nautorizado comercialmente que nunca lleg\u00F3 a generar uno (backfill) \u2014 el resto de transiciones\r\nlas ejecuta \u0060ElectronicDocumentIssuer\u0060, invocado desde Ventas o desde el job autom\u00E1tico\r\nde reintentos.",
       "name": "ElectronicDocuments"
     },
     {
