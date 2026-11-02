@@ -727,6 +727,10 @@
       "name": "Setup"
     },
     {
+      "description": "Salud t\u00E9cnica de los servicios SRI (Recepci\u00F3n/Autorizaci\u00F3n) para el ambiente de la empresa actual.\r\nVisible para cualquier usuario autenticado de la empresa \u2014 mismo criterio que\r\n\u0060GET electronic-invoicing/status\u0060: no expone datos sensibles. Solo lee el monitor en memoria:\r\nnunca ejecuta SOAP, ping ni env\u00EDos.",
+      "name": "SriServiceHealth"
+    },
+    {
       "description": "P0-02 Fase 11 \u2014 expone los casos de uso ya implementados de \u0060SupplierCredit\u0060 (Fases 2, 7,\r\n8) \u2014 sin permisos nuevos: reutiliza ERP.Domain.Kernel.Permissions.FinancePermissions (dise\u00F1o \u00A720.2: aplicar\r\ncr\u00E9dito a otra CxP, reembolsar y revertir son operaciones que mueven dinero/afectan CxP,\r\nseparadas deliberadamente de \u0022autorizar la devoluci\u00F3n f\u00EDsica\u0022 que vive en\r\nERP.API.Controllers.PurchaseReturnController con ERP.Domain.Kernel.Permissions.PurchasePermissions \u2014 mismo riesgo\r\noperativo que \u0060RegisterPayment\u0060, ya en Finance). Controller delgado: solo mapea\r\nHTTP \u2192 MediatR \u2192 \u0060Result\u0060; toda la l\u00F3gica de negocio (locks A\u2192B, idempotencia,\r\nrevalidaci\u00F3n de saldo) vive en los handlers ya construidos, reutilizados sin cambios.",
       "name": "SupplierCredit"
     },
