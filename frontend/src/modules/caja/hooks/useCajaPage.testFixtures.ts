@@ -141,6 +141,7 @@ export function buildOperationalPreferences(
       maxRetryAttempts: 3,
       generateRideOnAuthorization: true,
       emailOnAuthorization: true,
+      emissionEnabled: true,
     },
     notifications: {
       sendCopyToCompanyEmail: false,

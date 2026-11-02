@@ -97,7 +97,9 @@ public sealed record ElectronicDocumentsPreferences(
     bool AutoRetryEnabled,
     int MaxRetryAttempts,
     bool GenerateRideOnAuthorization,
-    bool EmailOnAuthorization
+    bool EmailOnAuthorization,
+    // SRI-TOGGLE-02 — default OFF: sin valor persistido la empresa no transmite al SRI.
+    bool EmissionEnabled = false
 );
 
 /// <summary>DefaultLanguage reutiliza OrgSettingKeys.Communications.DefaultLanguage (no una key nueva) — ver plan CONFIG-DYNAMIC-OPERATIONS-01.</summary>

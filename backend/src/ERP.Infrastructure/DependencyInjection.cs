@@ -475,6 +475,11 @@ public static class DependencyInjection
             ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository,
             ERP.Infrastructure.Persistence.Repositories.ElectronicDocuments.ElectronicDocumentRepository
         >();
+        // SRI-TOGGLE-02 — interruptor de emisión por empresa (default OFF), consultado por el issuer.
+        services.AddScoped<
+            ERP.Application.Modules.ElectronicDocuments.Services.IElectronicEmissionSwitch,
+            ERP.Infrastructure.Services.ElectronicEmissionSwitch
+        >();
         services.AddScoped<
             ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer,
             ERP.Application.Modules.ElectronicDocuments.Services.ElectronicDocumentIssuer

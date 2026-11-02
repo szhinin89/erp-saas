@@ -558,6 +558,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     [Fact]
     public async Task Retention_Draft_has_only_electronic_document_retry_owner()
     {
+        // SRI-TOGGLE-04 — habilitada antes de emitir: la actividad del origen es posterior.
+        await using (var seed = CreateContext())
+            await ElectronicEmissionTestSupport.EnableSinceYesterdayAsync(seed, _tenantId, _companyId, _userId);
         var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
         var documentId = await SeedElectronicDocumentAsync(retentionId, ElectronicDocumentState.Draft);
         (await RecoveryCandidatesAsync()).Should().NotContain(c => c.RetentionId == retentionId);
@@ -641,6 +644,9 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     {
         // ZH-ELECTRONIC-RETRY-TENANT-CONTEXT-01 (antes: hallazgo de ADR-036 §23.3, 0 filas). La consulta
         // es cross-tenant y devuelve solo identificadores; el job procesa cada uno bajo su contexto.
+        // SRI-TOGGLE-02 — habilitada desde antes del último intento del documento.
+        await using (var seed = CreateContext())
+            await ElectronicEmissionTestSupport.EnableSinceYesterdayAsync(seed, _tenantId, _companyId, _userId);
         var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
         var documentId = await SeedElectronicDocumentAsync(
             retentionId,

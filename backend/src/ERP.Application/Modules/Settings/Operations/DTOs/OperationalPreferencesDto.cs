@@ -65,7 +65,8 @@ public sealed record ElectronicDocumentsPreferencesDto(
     bool AutoRetryEnabled,
     int MaxRetryAttempts,
     bool GenerateRideOnAuthorization,
-    bool EmailOnAuthorization
+    bool EmailOnAuthorization,
+    bool EmissionEnabled
 );
 
 public sealed record NotificationsPreferencesDto(

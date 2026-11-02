@@ -133,8 +133,17 @@ describe("printingPreferencesSchema", () => {
 describe("electronicDocumentsPreferencesSchema", () => {
   it("acepta un booleano válido", () => {
     expect(
+      electronicDocumentsPreferencesSchema.safeParse({
+        emailOnAuthorization: true,
+        emissionEnabled: false,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("SRI-TOGGLE-02: exige el interruptor de emisión explícito (nunca se asume habilitado)", () => {
+    expect(
       electronicDocumentsPreferencesSchema.safeParse({ emailOnAuthorization: true })
         .success,
-    ).toBe(true);
+    ).toBe(false);
   });
 });

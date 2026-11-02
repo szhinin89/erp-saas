@@ -62,6 +62,8 @@ export type ElectronicDocumentsPreferencesDto = {
   maxRetryAttempts: number;
   generateRideOnAuthorization: boolean;
   emailOnAuthorization: boolean;
+  /** SRI-TOGGLE-02 — emisión electrónica de la empresa (ausente en BD = false). */
+  emissionEnabled: boolean;
 };
 
 export type NotificationsPreferencesDto = {

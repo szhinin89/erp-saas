@@ -11,6 +11,9 @@ namespace ERP.Domain.Configuration.Definitions.Modules;
 /// sigue disponible siempre).
 ///
 /// GenerateRideOnAuthorization: sin consumidor todavía (Fase C).
+///
+/// EmissionEnabled (SRI-TOGGLE-02, ElectronicDocumentIssuer + jobs): default "false" — sin valor
+/// persistido la empresa no transmite al SRI. Auditado: cada cambio queda en el historial.
 /// </summary>
 public static class ElectronicDocumentsConfigurationDefinitions
 {
@@ -24,6 +27,7 @@ public static class ElectronicDocumentsConfigurationDefinitions
         );
         yield return Bool(OrgSettingKeys.ElectronicDocuments.GenerateRideOnAuthorization, "true");
         yield return Bool(OrgSettingKeys.ElectronicDocuments.EmailOnAuthorization, "true");
+        yield return Bool(OrgSettingKeys.ElectronicDocuments.EmissionEnabled, "false");
     }
 
     private static ConfigurationDefinition Bool(string key, string defaultValue) =>

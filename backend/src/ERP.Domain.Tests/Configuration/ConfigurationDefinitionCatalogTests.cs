@@ -77,6 +77,7 @@ public sealed class ConfigurationDefinitionCatalogTests
             OrgSettingKeys.ElectronicDocuments.GenerateRideOnAuthorization,
         };
         yield return new object[] { OrgSettingKeys.ElectronicDocuments.EmailOnAuthorization };
+        yield return new object[] { OrgSettingKeys.ElectronicDocuments.EmissionEnabled };
     }
 
     [Theory]

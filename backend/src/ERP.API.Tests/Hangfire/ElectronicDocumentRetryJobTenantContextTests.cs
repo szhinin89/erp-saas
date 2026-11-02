@@ -98,6 +98,17 @@ public sealed class ElectronicDocumentRetryJobTenantContextTests : IAsyncLifetim
         _a1 = (tenantA.Id, companyA1.Id);
         _a2 = (tenantA.Id, companyA2.Id);
         _b = (tenantB.Id, companyB.Id);
+
+        // SRI-TOGGLE-02 — estos casos prueban contexto/política, no el interruptor: emisión habilitada
+        // desde antes de cualquier documento sembrado (el interruptor tiene sus propios tests).
+        foreach (var owner in new[] { _a1, _a2, _b })
+            db.OrgSettings.Add(ERP.Domain.Configuration.Entities.OrgSetting.Create(owner.TenantId, owner.CompanyId,
+                ERP.Domain.Configuration.Enums.OrgScope.Company, owner.CompanyId,
+                ERP.Domain.Configuration.Constants.OrgSettingKeys.ElectronicDocuments.EmissionEnabled,
+                "True", ERP.Domain.Configuration.Enums.SettingDataType.Bool, UserId));
+        await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE org_settings SET created_at = created_at - interval '1 day' WHERE key = 'electronic_documents.emission_enabled'");
     }
 
     public async Task DisposeAsync()

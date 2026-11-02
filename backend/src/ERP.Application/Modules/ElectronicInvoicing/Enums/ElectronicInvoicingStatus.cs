@@ -34,7 +34,7 @@ public enum ElectronicInvoicingStatus
     /// <summary>Configuración y certificado correctos, pero el webservice del SRI no respondió.</summary>
     SriUnavailable = 6,
 
-    /// <summary>Reservado para cuando exista un flujo de habilitar/deshabilitar emisión electrónica por empresa — ningún camino actual del handler lo produce todavía.</summary>
+    /// <summary>SRI-TOGGLE-02 — la empresa tiene deshabilitada la emisión electrónica (<c>electronic_documents.emission_enabled</c> ausente o false). Precede a certificado y conectividad.</summary>
     Disabled = 7,
 
     /// <summary>No fue posible determinar el estado (excepción inesperada al resolverlo) — fallback seguro, nunca se propaga como error HTTP.</summary>

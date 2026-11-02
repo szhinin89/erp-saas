@@ -1542,6 +1542,8 @@
   "settings.operations.printing.modeNeverAutoPrint": "No imprimir automáticamente",
   "settings.operations.printing.copiesLabel": "Copias por tirilla",
   "settings.operations.electronicDocuments.title": "Documentos electrónicos",
+  "settings.operations.electronicDocuments.emissionEnabledLabel": "Emisión electrónica habilitada",
+  "settings.operations.electronicDocuments.emissionEnabledDesc": "Si está desactivada, no se transmite ningún comprobante nuevo al SRI; las ventas y compras continúan y los pendientes se reanudan manualmente desde el Monitor al habilitarla.",
   "settings.operations.electronicDocuments.emailOnAuthorizationLabel": "Enviar correo al autorizar",
   "settings.operations.electronicDocuments.emailOnAuthorizationDesc": "Si está desactivado, no se envía el correo de factura autorizada al cliente.",
   "settings.electronicInvoicing.sri.certPassword": "Contraseña del certificado",

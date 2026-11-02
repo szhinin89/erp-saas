@@ -1,5 +1,33 @@
 # Project Status
 
+## SRI-TOGGLE-04 — reanudación automática solo con actividad posterior a la habilitación — READY FOR REVIEW (2026-11-02)
+
+Cierra sin migración las ventanas de Retenciones y de la recuperación de Ventas, incluida la re-habilitación entre
+precheck e INSERT del Draft; sustituye los parches de SRI-TOGGLE-03. La decisión automática usa el último intento o el
+instante persistido del origen (`UpdatedAt` de autorización/emisión), nunca la creación del comprobante; lecturas y
+cambios del interruptor se serializan con lock consultivo por empresa (exclusivo antes de fechar el registro auditado).
+Contrato: [backend.md § Límites y finalización](docs/architecture/backend.md#límites-y-finalización),
+[ADR-023 addendum SRI-TOGGLE-02/03/04](docs/decisions/ADR-023-electronic-documents-v1-closure.md). Sin migraciones,
+XML/XAdES/SOAP/secuencias, SRI real, commit ni push. Pendiente gate del propietario.
+
+## SRI-TOGGLE-02 — emisión electrónica habilitable por empresa — READY FOR REVIEW (2026-11-02)
+
+FALTA implementada con intervención FROZEN autorizada y limitada al control: `electronic_documents.emission_enabled`
+(org_settings, scope Company, auditado, **ausente = deshabilitada**) en Preferencias operativas
+(`settings.operations.configure`). `ElectronicDocumentIssuer` consulta `IElectronicEmissionSwitch` antes de toda
+transmisión nueva (pipeline Draft/Failed, reclamo de envío y de retransmisión con `FOR SHARE`, reactivación de
+DeadLetter) y responde `ELECTRONIC_DOCUMENT_EMISSION_DISABLED` (422) sin escribir. Consultas de autorización,
+conciliación y operaciones comerciales siguen. Al rehabilitar, los pendientes solo se reanudan explícitamente:
+los jobs (reintentos, recuperación Sales/Retentions) excluyen actividad anterior a la habilitación. Banner `Disabled`.
+Contrato: [backend.md § Límites y finalización](docs/architecture/backend.md#límites-y-finalización),
+[ADR-023 addendum SRI-TOGGLE-02](docs/decisions/ADR-023-electronic-documents-v1-closure.md).
+PASS agente: Application 124/124 (issuer, retransmisión, estado, preferencias, política), Domain 169/169
+(configuración/ED), API 136/136 (contrato de errores, snapshots, job de reintentos PostgreSQL, ElectronicInvoicing),
+Architecture 87/87 (filtro), Infrastructure PostgreSQL 209/209 (interruptor, candidatos, recuperación, reclamos,
+retenciones); frontend `tsc -b`, lint (0 errores), vitest focal 523/523, build, `architecture:check` PASS.
+**Impacto de despliegue:** toda empresa deja de transmitir al SRI hasta habilitar el interruptor.
+Sin migraciones, cambios XML/XAdES/SOAP/secuencias/estados, SRI real, staging, commit ni push. Pendiente gate del propietario.
+
 ## RESP-01 — código SRI 45 por colisión de secuencial — READY FOR REVIEW (2026-11-02)
 
 BUG demostrado (logs 2026-10-31): `[45] SECUENCIAL REGISTRADO` se trataba como "ya existe" y las facturas 001/002

@@ -190,6 +190,7 @@ public sealed class ProviderRucPipelineFailClosedTests
                 Authorization.Object,
                 dbEx.Object,
                 RetentionElectronicTestDoubles.NoGuards(),
+                ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
                 Mock.Of<IUnitOfWork>(),
                 NullLogger<ElectronicDocumentIssuer>.Instance
             );

@@ -181,6 +181,7 @@ public sealed class ElectronicDocumentIssuerReceptionTests
             authorization.Object,
             dbEx.Object,
             ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.NoGuards(),
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             Mock.Of<IUnitOfWork>(),
             NullLogger<ElectronicDocumentIssuer>.Instance
         );

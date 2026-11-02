@@ -26,6 +26,7 @@ public sealed partial class ElectronicDocumentIssuer
     private readonly IElectronicDocumentAuthorizationService _authorizationService;
     private readonly IDatabaseExceptionTranslator _dbEx;
     private readonly IElectronicDocumentSourceLifecycleGuardResolver _sourceGuards;
+    private readonly IElectronicEmissionSwitch _emissionSwitch;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ElectronicDocumentIssuer> _logger;
 
@@ -39,6 +40,7 @@ public sealed partial class ElectronicDocumentIssuer
         IElectronicDocumentAuthorizationService authorizationService,
         IDatabaseExceptionTranslator dbEx,
         IElectronicDocumentSourceLifecycleGuardResolver sourceGuards,
+        IElectronicEmissionSwitch emissionSwitch,
         IUnitOfWork unitOfWork,
         ILogger<ElectronicDocumentIssuer> logger
     )
@@ -52,6 +54,7 @@ public sealed partial class ElectronicDocumentIssuer
         _authorizationService = authorizationService;
         _dbEx = dbEx;
         _sourceGuards = sourceGuards;
+        _emissionSwitch = emissionSwitch;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -203,6 +206,14 @@ public sealed partial class ElectronicDocumentIssuer
                 );
         }
 
+        // SRI-TOGGLE-02 — sin emisión habilitada (o pendiente sin reanudación explícita) no se genera,
+        // firma ni transmite nada: sin escrituras, el documento conserva Draft/Failed y sus intentos.
+        if (
+            await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct)
+            is { } emissionBlocked
+        )
+            return emissionBlocked;
+
         var supplier = _xmlSupplierResolver.Resolve(request.DocumentType);
         if (supplier is null)
             return await FailAsync(
@@ -279,6 +290,12 @@ public sealed partial class ElectronicDocumentIssuer
 
             if (guard is null)
             {
+                // SRI-TOGGLE-02 — revalidación inmediatamente antes de persistir Signed (sin lock de origen).
+                if (
+                    await EmissionBlockedAsync(document, request.UserId, lockForShare: false, ct)
+                    is { } claimBlocked
+                )
+                    return claimBlocked;
                 document.MarkXmlGenerated(
                     storageResult.Value!.DraftXmlPath,
                     xml.Version,
@@ -525,6 +542,8 @@ public sealed partial class ElectronicDocumentIssuer
 
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
         {
+            if (await ReactivationBlockedAsync(document, userId, ct) is { } emissionBlocked)
+                return emissionBlocked;
             document.Reactivate(userId);
             await _repository.SaveChangesAsync(ct);
             LogDocumentReactivated(document.Id, document.CurrentState);
@@ -545,7 +564,9 @@ public sealed partial class ElectronicDocumentIssuer
                 document.SourceEntityId,
                 userId
             );
-            await RunPipelineAsync(document, request, ct);
+            var pipeline = await RunPipelineAsync(document, request, ct);
+            if (pipeline.Code == ApiResponseCodes.ElectronicDocuments.EmissionDisabled)
+                return pipeline;
             await ApplyDeadLetterIfExhaustedAsync(document, userId, document.LastError, ct);
             return Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(document));
         }
@@ -682,6 +703,8 @@ public sealed partial class ElectronicDocumentIssuer
 
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
         {
+            if (await ReactivationBlockedAsync(document, userId, ct) is { } emissionBlocked)
+                return emissionBlocked;
             document.Reactivate(userId);
             await _repository.SaveChangesAsync(ct);
             LogDocumentReactivated(document.Id, document.CurrentState);
@@ -700,7 +723,11 @@ public sealed partial class ElectronicDocumentIssuer
                 userId
             );
             var pipeline = await RunPipelineAsync(document, request, ct);
-            if (pipeline.Code == ApiResponseCodes.ElectronicDocuments.SourceNotProcessable)
+            if (
+                pipeline.Code
+                is ApiResponseCodes.ElectronicDocuments.SourceNotProcessable
+                    or ApiResponseCodes.ElectronicDocuments.EmissionDisabled
+            )
                 return pipeline;
             await ApplyDeadLetterIfExhaustedAsync(document, userId, document.LastError, ct);
             return Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(document));
@@ -818,6 +845,17 @@ public sealed partial class ElectronicDocumentIssuer
                 );
             }
 
+            // SRI-TOGGLE-02/04 — dentro del mismo reclamo: el lock compartido del interruptor (hasta el commit)
+            // serializa con su apagado/habilitación.
+            if (
+                await EmissionBlockedAsync(document, userId, lockForShare: true, ct)
+                is { } emissionBlocked
+            )
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                return emissionBlocked;
+            }
+
             if (environment is not null)
                 document.SetEnvironment(environment);
             document.MarkXmlGenerated(storedPaths.DraftXmlPath, xmlVersion, schemaVersion, userId);
@@ -841,6 +879,71 @@ public sealed partial class ElectronicDocumentIssuer
             throw;
         }
     }
+
+    /// <summary>
+    /// SRI-TOGGLE-02 — control previo a toda transmisión NUEVA al SRI (emisión, reanudación desde
+    /// Draft/Failed y retransmisión corregida); las consultas de autorización/estado no pasan por aquí.
+    /// null = puede transmitirse; si no, el Result de bloqueo, sin escrituras. Usuario
+    /// <see cref="Guid.Empty"/> = proceso automático: además exige actividad posterior a la habilitación,
+    /// de modo que los pendientes solo se reanudan por una acción explícita de un usuario.
+    /// </summary>
+    private async Task<Result<ElectronicDocumentDto>?> EmissionBlockedAsync(
+        ElectronicDocument document,
+        Guid userId,
+        bool lockForShare,
+        CancellationToken ct
+    )
+    {
+        var automatic = userId == Guid.Empty;
+        var emission = await _emissionSwitch.GetAsync(
+            document.TenantId,
+            document.CompanyId,
+            lockForShare,
+            ct
+        );
+        // SRI-TOGGLE-04 — sin intentos previos, la actividad de un proceso automático es el instante
+        // persistido del origen (autorización/emisión), nunca la creación del comprobante.
+        var sourceActivity =
+            automatic && emission.Enabled && document.LastAttemptUtc is null
+                ? await _emissionSwitch.GetSourceActivityUtcAsync(
+                    document.TenantId,
+                    document.CompanyId,
+                    document.SourceModule,
+                    document.DocumentType,
+                    document.SourceEntityId,
+                    ct
+                )
+                : null;
+        return emission.AllowsTransmission(document.LastAttemptUtc, sourceActivity, automatic)
+            ? null
+            : EmissionBlocked(emission, document.Id, document.CompanyId);
+    }
+
+    private Result<ElectronicDocumentDto> EmissionBlocked(
+        ElectronicEmissionState emission,
+        Guid documentId,
+        Guid companyId
+    )
+    {
+        var reason = emission.Enabled
+            ? "El comprobante quedó pendiente antes de habilitar la emisión electrónica: requiere reanudación explícita desde el Monitor."
+            : "La emisión electrónica está deshabilitada para esta empresa: el comprobante no se transmitirá al SRI hasta habilitarla y reanudarlo.";
+        LogEmissionBlocked(documentId, companyId, emission.Enabled);
+        return Result<ElectronicDocumentDto>.ValidationFailure(
+            reason,
+            ApiResponseCodes.ElectronicDocuments.EmissionDisabled
+        );
+    }
+
+    /// <summary>SRI-TOGGLE-02 — reactivar un DeadLetter hacia Draft/Failed reanudaría una transmisión: se controla antes de escribir.</summary>
+    private Task<Result<ElectronicDocumentDto>?> ReactivationBlockedAsync(
+        ElectronicDocument document,
+        Guid userId,
+        CancellationToken ct
+    ) =>
+        document.PreDeadLetterState is ElectronicDocumentState.Draft or ElectronicDocumentState.Failed
+            ? EmissionBlockedAsync(document, userId, lockForShare: false, ct)
+            : Task.FromResult<Result<ElectronicDocumentDto>?>(null);
 
     private Result<ElectronicDocumentDto> SourceNotProcessable(
         string sourceModule,
@@ -1288,6 +1391,16 @@ public sealed partial class ElectronicDocumentIssuer
         string sourceModule,
         Guid sourceEntityId,
         string reason
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "[ElectronicDocuments] Transmisión de {ElectronicDocumentId} no iniciada (empresa {CompanyId}, emisión habilitada={EmissionEnabled}): deshabilitada o pendiente sin reanudación explícita"
+    )]
+    private partial void LogEmissionBlocked(
+        Guid electronicDocumentId,
+        Guid companyId,
+        bool emissionEnabled
     );
 
     [LoggerMessage(

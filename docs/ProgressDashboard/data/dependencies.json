@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-31 20:39:24",
+    "generated":  "2026-11-02 11:46:53",
     "source":  "Static scan of backend/src/ERP.Application/Modules, ERP.Domain/Modules, ERP.Infrastructure (using ERP.* directives) + git log authorship per module folder",
     "method":  {
                    "edgeDetection":  "Regex match on \u0027using ERP.(Application|Domain|Infrastructure).(Modules.)?\u003cName\u003e\u0027 per .cs line; edge kept only if \u003cName\u003e matches an existing modules.json id",
@@ -193,15 +193,16 @@
                       "id":  "Settings",
                       "filesScanned":  6,
                       "fanIn":  0,
-                      "fanOut":  2,
-                      "coupling":  2,
+                      "fanOut":  3,
+                      "coupling":  3,
                       "instability":  1,
-                      "cohesionApprox":  0.308,
+                      "cohesionApprox":  0.286,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
                                         "Common",
-                                        "Configuration"
+                                        "Configuration",
+                                        "ElectronicDocuments"
                                     ],
                       "dependedOnBy":  [
 
@@ -345,12 +346,12 @@
                   },
                   {
                       "id":  "Purchases",
-                      "filesScanned":  159,
+                      "filesScanned":  160,
                       "fanIn":  9,
                       "fanOut":  13,
                       "coupling":  22,
                       "instability":  0.591,
-                      "cohesionApprox":  0.521,
+                      "cohesionApprox":  0.522,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -696,18 +697,19 @@
                   },
                   {
                       "id":  "ElectronicInvoicing",
-                      "filesScanned":  29,
+                      "filesScanned":  36,
                       "fanIn":  1,
-                      "fanOut":  3,
-                      "coupling":  4,
-                      "instability":  0.75,
-                      "cohesionApprox":  0.304,
+                      "fanOut":  4,
+                      "coupling":  5,
+                      "instability":  0.8,
+                      "cohesionApprox":  0.352,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
                                         "Common",
                                         "Company",
-                                        "Configuration"
+                                        "Configuration",
+                                        "ElectronicDocuments"
                                     ],
                       "dependedOnBy":  [
                                            "ElectronicDocuments"
@@ -836,12 +838,12 @@
                   },
                   {
                       "id":  "ElectronicDocuments",
-                      "filesScanned":  129,
-                      "fanIn":  7,
+                      "filesScanned":  130,
+                      "fanIn":  9,
                       "fanOut":  8,
-                      "coupling":  15,
-                      "instability":  0.533,
-                      "cohesionApprox":  0.57,
+                      "coupling":  17,
+                      "instability":  0.471,
+                      "cohesionApprox":  0.571,
                       "busFactor":  1,
                       "isolated":  false,
                       "dependsOn":  [
@@ -858,10 +860,12 @@
                                            "Caja",
                                            "Communications",
                                            "Company",
+                                           "ElectronicInvoicing",
                                            "Purchases",
                                            "Retentions",
                                            "Ride",
-                                           "Sales"
+                                           "Sales",
+                                           "Settings"
                                        ]
                   },
                   {
@@ -1388,12 +1392,12 @@
                   {
                       "from":  "ElectronicInvoicing",
                       "to":  "Configuration",
-                      "referenceCount":  21,
+                      "referenceCount":  22,
                       "evidence":  [
                                        "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/ISriCertificateStatusResolver.cs",
                                        "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriCertificateStatusResolver.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriEnvironmentDisplay.cs",
                                        "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriWsdlUrl.cs",
-                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs",
                                        "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs"
                                    ]
                   },
@@ -1538,6 +1542,14 @@
                                        "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContracts.cs",
                                        "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationContributorResolver.cs",
                                        "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs",
+                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs"
+                                   ]
+                  },
+                  {
+                      "from":  "Communications",
+                      "to":  "Company",
+                      "referenceCount":  1,
+                      "evidence":  [
                                        "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs"
                                    ]
                   },
@@ -1833,6 +1845,14 @@
                                    ]
                   },
                   {
+                      "from":  "Settings",
+                      "to":  "ElectronicDocuments",
+                      "referenceCount":  1,
+                      "evidence":  [
+                                       "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs"
+                                   ]
+                  },
+                  {
                       "from":  "Companies",
                       "to":  "Common",
                       "referenceCount":  45,
@@ -1936,13 +1956,13 @@
                   {
                       "from":  "ElectronicInvoicing",
                       "to":  "Common",
-                      "referenceCount":  26,
+                      "referenceCount":  33,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriCertificateStatusResolver.cs",
-                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriCertificateStatusResolver.cs",
-                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQuery.cs",
-                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs",
-                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs"
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Health/SriServiceHealthEvaluator.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Health/SriServiceHealthEvaluator.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Health/SriServiceHealthMonitor.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Health/SriServiceHealthMonitor.cs",
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/Services/SriCertificateStatusResolver.cs"
                                    ]
                   },
                   {
@@ -2116,11 +2136,11 @@
                                    ]
                   },
                   {
-                      "from":  "Communications",
-                      "to":  "Company",
+                      "from":  "ElectronicInvoicing",
+                      "to":  "ElectronicDocuments",
                       "referenceCount":  1,
                       "evidence":  [
-                                       "backend/src/ERP.Application/Modules/Communications/ElectronicDocuments/ElectronicDocumentCommunicationService.cs"
+                                       "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetElectronicInvoicingStatus/GetElectronicInvoicingStatusQueryHandler.cs"
                                    ]
                   },
                   {
@@ -3267,9 +3287,10 @@
                    "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                    "Communications -\u003e ElectronicDocuments -\u003e Communications",
                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
+                   "ElectronicDocuments -\u003e ElectronicInvoicing -\u003e ElectronicDocuments",
                    "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                    "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                   "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                    "Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Pricing",
                    "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                    "Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Purchases",

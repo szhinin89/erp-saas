@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces.SRI;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.Enums;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
@@ -25,6 +26,7 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
     private readonly ICurrentCompany _currentCompany;
     private readonly ISriCertificateStatusResolver _certStatusResolver;
     private readonly ISriConnectivityChecker _connectivityChecker;
+    private readonly IElectronicEmissionSwitch _emissionSwitch;
     private readonly ILogger<GetElectronicInvoicingStatusQueryHandler> _logger;
 
     public GetElectronicInvoicingStatusQueryHandler(
@@ -32,6 +34,7 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         ICurrentCompany currentCompany,
         ISriCertificateStatusResolver certStatusResolver,
         ISriConnectivityChecker connectivityChecker,
+        IElectronicEmissionSwitch emissionSwitch,
         ILogger<GetElectronicInvoicingStatusQueryHandler> logger
     )
     {
@@ -39,6 +42,7 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
         _currentCompany = currentCompany;
         _certStatusResolver = certStatusResolver;
         _connectivityChecker = connectivityChecker;
+        _emissionSwitch = emissionSwitch;
         _logger = logger;
     }
 
@@ -55,6 +59,16 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
             );
             if (settings is null)
                 return Result<ElectronicInvoicingStatusDto>.Success(NotConfiguredDto());
+
+            // SRI-TOGGLE-02 — emisión deshabilitada precede a certificado/ambiente/conectividad: sin ping.
+            var emission = await _emissionSwitch.GetAsync(
+                settings.TenantId,
+                settings.CompanyId,
+                lockForShare: false,
+                cancellationToken
+            );
+            if (!emission.Enabled)
+                return Result<ElectronicInvoicingStatusDto>.Success(DisabledDto(settings));
 
             return Result<ElectronicInvoicingStatusDto>.Success(
                 await ResolveConfiguredStatusAsync(
@@ -218,6 +232,24 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
             CertificateDaysRemaining: daysRemaining,
             SriAvailability: SriAvailability.Available,
             CanIssue: true
+        );
+    }
+
+    private static ElectronicInvoicingStatusDto DisabledDto(SriSettings settings)
+    {
+        var (environment, environmentName) = SriEnvironmentDisplay.Resolve(settings.Environment);
+        return new ElectronicInvoicingStatusDto(
+            Status: ElectronicInvoicingStatus.Disabled,
+            Configured: true,
+            environment,
+            environmentName,
+            EmissionType: settings.EmissionType == 1 ? "Normal" : null,
+            CertificateInstalled: !string.IsNullOrWhiteSpace(settings.CertP12Path),
+            CertificateValid: false,
+            CertificateExpiresAt: null,
+            CertificateDaysRemaining: null,
+            SriAvailability: SriAvailability.Unknown,
+            CanIssue: false
         );
     }
 

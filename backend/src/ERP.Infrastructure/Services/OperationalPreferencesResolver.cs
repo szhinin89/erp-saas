@@ -219,6 +219,7 @@ public sealed class OperationalPreferencesResolver : IOperationalPreferencesReso
 
         var electronicDocuments = new ElectronicDocumentsPreferences(
             AutoRetryEnabled: Bool(OrgSettingKeys.ElectronicDocuments.AutoRetryEnabled, true),
+            EmissionEnabled: Bool(OrgSettingKeys.ElectronicDocuments.EmissionEnabled, false),
             MaxRetryAttempts: ERP.Domain.Configuration.Definitions.Modules.ElectronicDocumentRetryMaximum.Resolve(
                 lookup.GetValueOrDefault(OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts)),
             GenerateRideOnAuthorization: Bool(

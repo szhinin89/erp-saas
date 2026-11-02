@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-31 20:39:28",
+    "generated":  "2026-11-02 11:46:57",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -104,9 +104,9 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  1170,
+                                                                "SourceFiles":  1174,
                                                                 "Pages":  0,
-                                                                "Components":  140,
+                                                                "Components":  142,
                                                                 "Hooks":  8,
                                                                 "Services":  0,
                                                                 "Stores":  0,
@@ -432,10 +432,10 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  102,
+                                             "DbContext":  107,
                                              "DbSets":  199,
                                              "EntityConfigurations":  0,
-                                             "Repositories":  91,
+                                             "Repositories":  92,
                                              "Migrations":  3
                                          },
                        "migrations":  {

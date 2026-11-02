@@ -43,6 +43,7 @@ export type PrintingPreferencesValues = z.infer<typeof printingPreferencesSchema
 
 export const electronicDocumentsPreferencesSchema = z.object({
   emailOnAuthorization: z.boolean(),
+  emissionEnabled: z.boolean(),
 });
 export type ElectronicDocumentsPreferencesValues = z.infer<
   typeof electronicDocumentsPreferencesSchema

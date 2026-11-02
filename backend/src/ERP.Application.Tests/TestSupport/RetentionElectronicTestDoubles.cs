@@ -53,6 +53,50 @@ public static class RetentionElectronicTestDoubles
         return mock;
     }
 
+    /// <summary>SRI-TOGGLE-02 — interruptor fijo (habilitada desde siempre por defecto): conserva el comportamiento previo.</summary>
+    public static IElectronicEmissionSwitch Emission(bool enabled = true, DateTime? enabledSinceUtc = null) =>
+        new FixedEmissionSwitch(
+            enabled
+                ? new ElectronicEmissionState(true, enabledSinceUtc ?? DateTime.MinValue)
+                : ElectronicEmissionState.Disabled
+        );
+
+    public sealed class FixedEmissionSwitch(ElectronicEmissionState state) : IElectronicEmissionSwitch
+    {
+        public ElectronicEmissionState State { get; set; } = state;
+        public List<(Guid TenantId, Guid CompanyId, bool LockForShare)> Calls { get; } = [];
+
+        /// <summary>Instante persistido del origen (por defecto: ahora, posterior a toda habilitación fija).</summary>
+        public DateTime? SourceActivityUtc { get; set; } = DateTime.UtcNow;
+        public List<(Guid TenantId, Guid CompanyId)> ChangeLocks { get; } = [];
+
+        public Task<DateTime?> GetSourceActivityUtcAsync(
+            Guid tenantId,
+            Guid companyId,
+            string sourceModule,
+            ERP.Domain.Modules.ElectronicDocuments.Enums.ElectronicDocumentType documentType,
+            Guid sourceEntityId,
+            CancellationToken ct = default
+        ) => Task.FromResult(SourceActivityUtc);
+
+        public Task LockForChangeAsync(Guid tenantId, Guid companyId, CancellationToken ct = default)
+        {
+            ChangeLocks.Add((tenantId, companyId));
+            return Task.CompletedTask;
+        }
+
+        public Task<ElectronicEmissionState> GetAsync(
+            Guid tenantId,
+            Guid companyId,
+            bool lockForShare,
+            CancellationToken ct = default
+        )
+        {
+            Calls.Add((tenantId, companyId, lockForShare));
+            return Task.FromResult(State);
+        }
+    }
+
     /// <summary>Resolver sin guards: el emisor conserva el comportamiento de ElectronicDocuments v1.0.</summary>
     public static IElectronicDocumentSourceLifecycleGuardResolver NoGuards() =>
         new ElectronicDocumentSourceLifecycleGuardResolver(

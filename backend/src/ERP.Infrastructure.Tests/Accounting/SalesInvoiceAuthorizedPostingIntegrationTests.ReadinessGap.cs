@@ -557,7 +557,7 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             boundary.Validators.Object, boundary.Signing.Object, boundary.Storage.Object,
             boundary.Reception.Object, boundary.Authorization.Object,
             new PostgresDatabaseExceptionTranslator(),
-            new ElectronicDocumentSourceLifecycleGuardResolver([]), new UnitOfWork(edocDb),
+            new ElectronicDocumentSourceLifecycleGuardResolver([]), ERP.Infrastructure.Tests.TestData.EnabledElectronicEmissionSwitch.Instance, new UnitOfWork(edocDb),
             NullLogger<ElectronicDocumentIssuer>.Instance);
         var strategies = new SalesInvoiceEmissionStrategyResolver(new ISalesInvoiceEmissionStrategy[]
         {

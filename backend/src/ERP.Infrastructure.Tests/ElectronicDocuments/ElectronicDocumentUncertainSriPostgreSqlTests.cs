@@ -12,6 +12,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using ERP.Domain.Modules.ElectronicDocuments.Interfaces;
 using ERP.Domain.Modules.ElectronicDocuments.ValueObjects;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Tests.TestData;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -63,6 +64,8 @@ public sealed class ElectronicDocumentUncertainSriPostgreSqlTests : IAsyncLifeti
             sp.GetRequiredService<ICurrentCompany>()));
         services.AddSingleton(authorization.Object);
         services.AddSingleton(reception.Object);
+        // SRI-TOGGLE-02 — fuera de alcance aquí: emisión habilitada desde siempre (comportamiento previo).
+        services.AddSingleton<IElectronicEmissionSwitch>(EnabledElectronicEmissionSwitch.Instance);
         return services.BuildServiceProvider();
     }
 

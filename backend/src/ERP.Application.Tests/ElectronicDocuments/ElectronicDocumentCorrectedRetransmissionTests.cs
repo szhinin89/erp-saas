@@ -139,6 +139,7 @@ public sealed class ElectronicDocumentCorrectedRetransmissionTests
                 Authorization.Object,
                 dbEx.Object,
                 new ElectronicDocumentSourceLifecycleGuardResolver([Guard.Object]),
+                ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
                 UnitOfWork.Object,
                 NullLogger<ElectronicDocumentIssuer>.Instance
             );

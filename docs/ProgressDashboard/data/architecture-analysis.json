@@ -1,5 +1,5 @@
 ﻿{
-    "Generated":  "2026-10-31 20:38:16",
+    "Generated":  "2026-11-02 11:41:22",
     "Layers":  {
                    "Domain":  {
                                   "Files":  701
@@ -8,16 +8,16 @@
                                        "Commands":  0,
                                        "Validators":  6,
                                        "Queries":  5,
-                                       "Files":  1181
+                                       "Files":  1192
                                    },
                    "Infrastructure":  {
-                                          "DbContext":  102,
-                                          "Files":  502,
-                                          "Repository":  91
+                                          "DbContext":  107,
+                                          "Files":  507,
+                                          "Repository":  92
                                       },
                    "API":  {
-                               "Controllers":  495,
-                               "Files":  152
+                               "Controllers":  499,
+                               "Files":  153
                            }
                },
     "Violations":  [

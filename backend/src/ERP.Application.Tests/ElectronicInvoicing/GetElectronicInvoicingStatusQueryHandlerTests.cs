@@ -114,6 +114,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             new FixedCurrentCompany(settings?.CompanyId ?? Guid.NewGuid()),
             new FakeCertificateStatusResolver(certStatus),
             new FakeConnectivityChecker(sriReachable),
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
         );
 
@@ -243,6 +244,31 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
     }
 
     [Fact]
+    public async Task Handle_SRI_TOGGLE_emision_deshabilitada_reporta_Disabled_sin_ping_al_SRI()
+    {
+        var settings = NewSettings(environment: 2);
+        var connectivity = new FakeConnectivityChecker(true);
+        var emission = (ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.FixedEmissionSwitch)
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(enabled: false);
+        var handler = new GetElectronicInvoicingStatusQueryHandler(
+            new FakeSriSettingsRepository(settings),
+            new FixedCurrentCompany(settings.CompanyId),
+            new FakeCertificateStatusResolver(ValidCert),
+            connectivity,
+            emission,
+            NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
+        );
+
+        var result = await handler.Handle(new GetElectronicInvoicingStatusQuery(), CancellationToken.None);
+
+        result.Value!.Status.Should().Be(ElectronicInvoicingStatus.Disabled);
+        result.Value.Configured.Should().BeTrue();
+        result.Value.CanIssue.Should().BeFalse();
+        connectivity.CallCount.Should().Be(0);
+        emission.Calls.Should().ContainSingle().Which.Should().Be((settings.TenantId, settings.CompanyId, false));
+    }
+
+    [Fact]
     public async Task Handle_when_sri_unreachable_reports_sri_unavailable()
     {
         var settings = NewSettings(environment: 1);
@@ -273,6 +299,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             new FixedCurrentCompany(settings.CompanyId),
             new FakeCertificateStatusResolver(ValidCert),
             connectivityChecker,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
         );
 
@@ -298,6 +325,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             new FixedCurrentCompany(settings.CompanyId),
             new FakeCertificateStatusResolver(InvalidCert),
             connectivityChecker,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
         );
 
@@ -320,6 +348,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             new FixedCurrentCompany(settings.CompanyId),
             new FakeCertificateStatusResolver(ValidCert),
             connectivityChecker,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
         );
 
@@ -342,6 +371,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             new FixedCurrentCompany(settings.CompanyId),
             new FakeCertificateStatusResolver(ValidCert),
             connectivityChecker,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
         );
 
@@ -366,6 +396,7 @@ public sealed class GetElectronicInvoicingStatusQueryHandlerTests
             new FixedCurrentCompany(settings.CompanyId),
             new ThrowingCertificateStatusResolver(),
             new FakeConnectivityChecker(true),
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             NullLogger<GetElectronicInvoicingStatusQueryHandler>.Instance
         );
 

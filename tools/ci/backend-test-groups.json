@@ -61,6 +61,7 @@
         "ERP.Infrastructure.Tests.Dashboard.DashboardKpiReaderTests",
         "ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests",
         "ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentUncertainSriPostgreSqlTests",
+        "ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicEmissionSwitchPostgreSqlTests",
         "ERP.Infrastructure.Tests.ElectronicDocuments.SalesElectronicSourceConcurrencyPostgreSqlTests",
         "ERP.Infrastructure.Tests.Finance.CollectionPostingIntegrationTests",
         "ERP.Infrastructure.Tests.InitialLoad.OpeningBalanceDatePostgreSqlTests",

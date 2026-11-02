@@ -1965,6 +1965,13 @@
                                           ]
                          },
                          {
+                             "name":  "Get Sri Service Health",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetSriServiceHealth"
+                                          ]
+                         },
+                         {
                              "name":  "Get System Provider Settings",
                              "status":  "implemented",
                              "evidence":  [

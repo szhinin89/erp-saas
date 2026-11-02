@@ -66,6 +66,8 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Common.InvalidDateTimeKind] = 500,
         // ZH-RETENTION-ELECTRONIC-LIFECYCLE-01A (ADR-036): reglas de ciclo electrónico → 422.
         [ApiResponseCodes.ElectronicDocuments.SourceNotProcessable] = 422,
+        // SRI-TOGGLE-02 — emisión deshabilitada / reanudación explícita requerida → 422.
+        [ApiResponseCodes.ElectronicDocuments.EmissionDisabled] = 422,
         [ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess] = 422,
         [ApiResponseCodes.ElectronicDocuments.SourceCancellationRequiresSriAnnulment] = 422,
         // ZH-RETENTION-SRI-ANNULMENT-01.

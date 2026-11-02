@@ -164,6 +164,12 @@ public static class MessageCatalog
             "Electronic document source no longer allows processing.",
             ApiErrorCategory.Validation
         ),
+        [ApiResponseCodes.ElectronicDocuments.EmissionDisabled] = new(
+            ApiSeverity.Error,
+            "La emisión electrónica está deshabilitada para esta empresa o el comprobante requiere reanudación explícita.",
+            "Company electronic emission disabled (or pending document requires explicit resume); no SRI transmission started.",
+            ApiErrorCategory.Validation
+        ),
         [ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess] = new(
             ApiSeverity.Error,
             "El comprobante electrónico está en proceso ante el SRI. Primero debe resolverse su estado.",

@@ -320,10 +320,12 @@ public static class RetentionElectronicTestWiring
             new UnitOfWork(db)
         );
 
+    /// <param name="emission">SRI-TOGGLE-03 — null = habilitada desde siempre; el interruptor real en sus tests.</param>
     public static ElectronicDocumentIssuer Issuer(
         ErpDbContext db,
         ICurrentCompany company,
-        SriBoundaryDouble sri
+        SriBoundaryDouble sri,
+        IElectronicEmissionSwitch? emission = null
     ) =>
         new(
             new ElectronicDocumentRepository(db, new CompanyClock(db)),
@@ -335,6 +337,7 @@ public static class RetentionElectronicTestWiring
             sri.Authorization.Object,
             new PostgresDatabaseExceptionTranslator(),
             Guards(db, company),
+            emission ?? EnabledElectronicEmissionSwitch.Instance,
             new UnitOfWork(db),
             NullLogger<ElectronicDocumentIssuer>.Instance
         );
@@ -342,10 +345,11 @@ public static class RetentionElectronicTestWiring
     public static IRetentionElectronicTransmission Transmission(
         ErpDbContext db,
         ICurrentCompany company,
-        SriBoundaryDouble sri
+        SriBoundaryDouble sri,
+        IElectronicEmissionSwitch? emission = null
     ) =>
         new RetentionElectronicTransmission(
-            Issuer(db, company, sri),
+            Issuer(db, company, sri, emission),
             NullLogger<RetentionElectronicTransmission>.Instance
         );
 

@@ -1,5 +1,6 @@
 using System.Globalization;
 using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Settings.Operations.DTOs;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;
@@ -17,13 +18,17 @@ public sealed class UpdateOperationalPreferencesCommandHandler
     private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
     private readonly IOperationalPreferencesResolver _resolver;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IElectronicEmissionSwitch _emissionSwitch;
 
     public UpdateOperationalPreferencesCommandHandler(
         IOrgSettingsRepository repo,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ICurrentUser currentUser,
-        IOperationalPreferencesResolver resolver
+        IOperationalPreferencesResolver resolver,
+        IUnitOfWork unitOfWork,
+        IElectronicEmissionSwitch emissionSwitch
     )
     {
         _repo = repo;
@@ -31,6 +36,8 @@ public sealed class UpdateOperationalPreferencesCommandHandler
         _currentCompany = currentCompany;
         _currentUser = currentUser;
         _resolver = resolver;
+        _unitOfWork = unitOfWork;
+        _emissionSwitch = emissionSwitch;
     }
 
     public async Task<Result<OperationalPreferencesDto>> Handle(
@@ -42,6 +49,90 @@ public sealed class UpdateOperationalPreferencesCommandHandler
         var companyId = _currentCompany.CompanyId;
         var userId = _currentUser.UserId;
 
+        // SRI-TOGGLE-04 — una sola transacción: el lock exclusivo del interruptor de emisión se toma ANTES
+        // de que el repositorio feche el registro auditado, así ninguna lectura que vio el valor anterior
+        // queda fechada después de la habilitación (IElectronicEmissionSwitch).
+        await _unitOfWork.ExecuteInTransactionAsync(
+            async ct =>
+            {
+                if (command.ElectronicDocuments is not null)
+                    await _emissionSwitch.LockForChangeAsync(tenantId, companyId, ct);
+                await WriteAsync(command, tenantId, companyId, userId, ct);
+            },
+            cancellationToken
+        );
+
+        var p = await _resolver.ResolveAsync(cancellationToken);
+        return Result<OperationalPreferencesDto>.Success(
+            new OperationalPreferencesDto(
+                SalesPos: new SalesPosPreferencesDto(
+                    p.SalesPos.RequireOpenCashSession,
+                    p.SalesPos.AllowManualPrice,
+                    p.SalesPos.AllowManualDiscount,
+                    p.SalesPos.MaxDiscountPercent,
+                    p.SalesPos.RequireCustomerAboveAmount,
+                    p.SalesPos.AllowSellWithoutStock,
+                    p.SalesPos.AskBeforeIssue,
+                    p.SalesPos.DefaultPriceListId,
+                    p.SalesPos.DefaultCustomerId
+                ),
+                Cash: new CashPreferencesDto(
+                    p.Cash.RequireOpeningAmount,
+                    p.Cash.AllowCloseWithDifference,
+                    p.Cash.MaxAllowedDifference,
+                    p.Cash.RequireReasonForDifference,
+                    p.Cash.AllowManualInOutMovements,
+                    p.Cash.RequireReasonForMovements
+                ),
+                Purchases: new PurchasesPreferencesDto(
+                    p.Purchases.DefaultWarehouseId,
+                    p.Purchases.AllowConfirmWithoutReceptionXml,
+                    p.Purchases.UpdateCostOnConfirm,
+                    p.Purchases.AllowManualCostChange,
+                    p.Purchases.RequireReasonForCostChange
+                ),
+                Inventory: new InventoryPreferencesDto(
+                    p.Inventory.AllowNegativeStock,
+                    p.Inventory.RequireReasonForAdjustment,
+                    p.Inventory.RequireApprovalForLargeAdjustment,
+                    p.Inventory.LargeAdjustmentThresholdAmount,
+                    p.Inventory.StockControlEnabled
+                ),
+                Printing: new PrintingPreferencesDto(
+                    p.Printing.SalesReceiptMode,
+                    p.Printing.SalesReceiptCopies,
+                    p.Printing.SalesReceiptPaperWidth,
+                    p.Printing.SalesReceiptIncludeLogo,
+                    p.Printing.SalesReceiptIncludeAccessKey,
+                    p.Printing.SalesReceiptIncludeCashier,
+                    p.Printing.SalesReceiptOpenCashDrawer
+                ),
+                ElectronicDocuments: new ElectronicDocumentsPreferencesDto(
+                    p.ElectronicDocuments.AutoRetryEnabled,
+                    p.ElectronicDocuments.MaxRetryAttempts,
+                    p.ElectronicDocuments.GenerateRideOnAuthorization,
+                    p.ElectronicDocuments.EmailOnAuthorization,
+                    p.ElectronicDocuments.EmissionEnabled
+                ),
+                Notifications: new NotificationsPreferencesDto(
+                    p.Notifications.SendCopyToCompanyEmail,
+                    p.Notifications.DefaultLanguage
+                ),
+                Payables: new PayablesPreferencesDto(
+                    p.Payables?.AllowSupplierPaymentWithoutPayable ?? false
+                )
+            )
+        );
+    }
+
+    private async Task WriteAsync(
+        UpdateOperationalPreferencesCommand command,
+        Guid tenantId,
+        Guid companyId,
+        Guid userId,
+        CancellationToken cancellationToken
+    )
+    {
         if (command.SalesPos is { } salesPos)
         {
             await UpsertAsync(
@@ -401,6 +492,16 @@ public sealed class UpdateOperationalPreferencesCommandHandler
                 userId,
                 cancellationToken
             );
+            // SRI-TOGGLE-02 — interruptor de emisión: auditado por el repositorio (solo si cambia).
+            await UpsertAsync(
+                tenantId,
+                companyId,
+                OrgSettingKeys.ElectronicDocuments.EmissionEnabled,
+                Bool(ed.EmissionEnabled),
+                SettingDataType.Bool,
+                userId,
+                cancellationToken
+            );
         }
 
         if (command.Notifications is { } notifications)
@@ -424,69 +525,6 @@ public sealed class UpdateOperationalPreferencesCommandHandler
                 cancellationToken
             );
         }
-
-        await _repo.SaveChangesAsync(cancellationToken);
-
-        var p = await _resolver.ResolveAsync(cancellationToken);
-        return Result<OperationalPreferencesDto>.Success(
-            new OperationalPreferencesDto(
-                SalesPos: new SalesPosPreferencesDto(
-                    p.SalesPos.RequireOpenCashSession,
-                    p.SalesPos.AllowManualPrice,
-                    p.SalesPos.AllowManualDiscount,
-                    p.SalesPos.MaxDiscountPercent,
-                    p.SalesPos.RequireCustomerAboveAmount,
-                    p.SalesPos.AllowSellWithoutStock,
-                    p.SalesPos.AskBeforeIssue,
-                    p.SalesPos.DefaultPriceListId,
-                    p.SalesPos.DefaultCustomerId
-                ),
-                Cash: new CashPreferencesDto(
-                    p.Cash.RequireOpeningAmount,
-                    p.Cash.AllowCloseWithDifference,
-                    p.Cash.MaxAllowedDifference,
-                    p.Cash.RequireReasonForDifference,
-                    p.Cash.AllowManualInOutMovements,
-                    p.Cash.RequireReasonForMovements
-                ),
-                Purchases: new PurchasesPreferencesDto(
-                    p.Purchases.DefaultWarehouseId,
-                    p.Purchases.AllowConfirmWithoutReceptionXml,
-                    p.Purchases.UpdateCostOnConfirm,
-                    p.Purchases.AllowManualCostChange,
-                    p.Purchases.RequireReasonForCostChange
-                ),
-                Inventory: new InventoryPreferencesDto(
-                    p.Inventory.AllowNegativeStock,
-                    p.Inventory.RequireReasonForAdjustment,
-                    p.Inventory.RequireApprovalForLargeAdjustment,
-                    p.Inventory.LargeAdjustmentThresholdAmount,
-                    p.Inventory.StockControlEnabled
-                ),
-                Printing: new PrintingPreferencesDto(
-                    p.Printing.SalesReceiptMode,
-                    p.Printing.SalesReceiptCopies,
-                    p.Printing.SalesReceiptPaperWidth,
-                    p.Printing.SalesReceiptIncludeLogo,
-                    p.Printing.SalesReceiptIncludeAccessKey,
-                    p.Printing.SalesReceiptIncludeCashier,
-                    p.Printing.SalesReceiptOpenCashDrawer
-                ),
-                ElectronicDocuments: new ElectronicDocumentsPreferencesDto(
-                    p.ElectronicDocuments.AutoRetryEnabled,
-                    p.ElectronicDocuments.MaxRetryAttempts,
-                    p.ElectronicDocuments.GenerateRideOnAuthorization,
-                    p.ElectronicDocuments.EmailOnAuthorization
-                ),
-                Notifications: new NotificationsPreferencesDto(
-                    p.Notifications.SendCopyToCompanyEmail,
-                    p.Notifications.DefaultLanguage
-                ),
-                Payables: new PayablesPreferencesDto(
-                    p.Payables?.AllowSupplierPaymentWithoutPayable ?? false
-                )
-            )
-        );
     }
 
     private static string Bool(bool value) => value.ToString(CultureInfo.InvariantCulture);

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-10-31 20:39:39",
+    "generated":  "2026-11-02 11:47:12",
     "source":  "modules.json, features.json, processes.json, tasks.json, domains.json, dependencies.json, critical-path.json, impact.json, dashboard-model-v12.json, completion-intelligence.json, git log",
     "method":  {
                    "changeRiskFormula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
@@ -301,6 +301,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -483,7 +484,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (573 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs"
                                                         ],
-                                       "percentOfErp":  103.28,
+                                       "percentOfErp":  103.27,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -904,6 +905,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -1333,6 +1335,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -1515,7 +1518,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.36,
+                                       "percentOfErp":  98.37,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -1661,8 +1664,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Pricing",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Purchases",
@@ -1858,6 +1861,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -2040,7 +2044,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs"
                                                         ],
-                                       "percentOfErp":  104.92,
+                                       "percentOfErp":  104.9,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -2420,6 +2424,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -2604,7 +2609,7 @@
                                                             "Refactor large file (720 lines): backend/src/ERP.Application.Tests/Auth/SwitchCompanyHandlerTests.cs",
                                                             "Review anonymous-access endpoints (12 found)"
                                                         ],
-                                       "percentOfErp":  103.28,
+                                       "percentOfErp":  103.27,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "8 possible secret(s) detected in module source"
                                    },
@@ -2648,7 +2653,7 @@
                                      "largeFiles":  [
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
-                                                            "lines":  520
+                                                            "lines":  558
                                                         }
                                                     ],
                                      "largeFilesCount":  1,
@@ -2669,14 +2674,15 @@
                         "dependencies":  {
                                              "dependsOn":  [
                                                                "Common",
-                                                               "Configuration"
+                                                               "Configuration",
+                                                               "ElectronicDocuments"
                                                            ],
                                              "dependedOnBy":  {
 
                                                               },
-                                             "coupling":  2,
+                                             "coupling":  3,
                                              "fanIn":  0,
-                                             "fanOut":  2,
+                                             "fanOut":  3,
                                              "instability":  1,
                                              "criticalDependencies":  [
                                                                           "Common",
@@ -2701,19 +2707,19 @@
 
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (520 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs"
+                                                            "Refactor large file (558 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs"
                                                         ],
-                                       "percentOfErp":  0.66,
+                                       "percentOfErp":  0.65,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
                         "changeRisk":  {
-                                           "score":  23.12,
+                                           "score":  24.12,
                                            "band":  "Low Risk",
                                            "formula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
                                            "inputs":  {
                                                           "score":  81.5,
-                                                          "coupling":  2,
+                                                          "coupling":  3,
                                                           "largeFilesCount":  1,
                                                           "riskOfModifying":  "MEDIUM",
                                                           "transitiveDependentCount":  0,
@@ -2863,6 +2869,10 @@
                                                             "lines":  696
                                                         },
                                                         {
+                                                            "file":  "backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                                                            "lines":  513
+                                                        },
+                                                        {
                                                             "file":  "backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
                                                             "lines":  690
                                                         },
@@ -2899,7 +2909,7 @@
                                                             "lines":  511
                                                         }
                                                     ],
-                                     "largeFilesCount":  13,
+                                     "largeFilesCount":  14,
                                      "globalTodo":  732,
                                      "globalFixme":  30,
                                      "globalHack":  1,
@@ -2965,10 +2975,11 @@
                                                             "Refactor large file (574 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                             "Refactor large file (571 lines): backend/src/ERP.API.Tests/Integration/SalesCancelAuthorizedReturnRuleTests.cs",
                                                             "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
+                                                            "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                                                             "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
-                                                            "Review possible secrets in source files (66 real matches, excluding node_modules)"
+                                                            "Review possible secrets in source files (82 real matches, excluding node_modules)"
                                                         ],
-                                       "percentOfErp":  0.66,
+                                       "percentOfErp":  0.65,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -2979,7 +2990,7 @@
                                            "inputs":  {
                                                           "score":  77.75,
                                                           "coupling":  3,
-                                                          "largeFilesCount":  13,
+                                                          "largeFilesCount":  14,
                                                           "riskOfModifying":  "MEDIUM",
                                                           "transitiveDependentCount":  0,
                                                           "busFactor":  1
@@ -3290,6 +3301,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -3476,7 +3488,7 @@
                                                             "Refactor large file (527 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx",
                                                             "Refactor large file (512 lines): frontend/src/modules/access/users/pages/UserConfigPage.tsx"
                                                         ],
-                                       "percentOfErp":  106.56,
+                                       "percentOfErp":  106.54,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "7 possible secret(s) detected in module source",
@@ -3691,19 +3703,19 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/sales/hooks/useSalesPage.ts",
-                                                            "lines":  2233
+                                                            "lines":  2229
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
-                                                            "lines":  652
+                                                            "lines":  651
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
-                                                            "lines":  601
+                                                            "lines":  600
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/sales/pages/SalesPage.tsx",
-                                                            "lines":  812
+                                                            "lines":  796
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/sales/utils/salesCalc.test.ts",
@@ -3806,8 +3818,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Pricing",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Purchases",
@@ -3987,6 +3999,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -4169,22 +4182,22 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (3296 lines): backend/src/ERP.Application.Tests/Sales/AuthorizeSalesInvoiceHandlerTests.cs",
                                                             "Refactor large file (2619 lines): backend/src/ERP.Application.Tests/Sales/CreateSalesDraftHandlerTests.cs",
-                                                            "Refactor large file (2233 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
+                                                            "Refactor large file (2229 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
                                                             "Refactor large file (1862 lines): backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs",
                                                             "Refactor large file (1250 lines): backend/src/ERP.Application.Tests/Sales/AuthorizeSalesReturnHandlerTests.cs",
                                                             "Refactor large file (1103 lines): backend/src/ERP.Application.Tests/Sales/UpdateSalesDraftScheduleTests.cs",
                                                             "Refactor large file (946 lines): backend/src/ERP.Application.Tests/Sales/SalesInvoiceElectronicDocumentDataProviderTests.cs",
                                                             "Refactor large file (895 lines): frontend/src/modules/sales/utils/salesCalc.test.ts",
                                                             "Refactor large file (875 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnCreditNoteDataProviderTests.cs",
-                                                            "Refactor large file (812 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
+                                                            "Refactor large file (796 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
                                                             "Refactor large file (736 lines): backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
                                                             "Refactor large file (690 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/UpdateSalesDraftAtomicityPostgreSqlTests.cs",
-                                                            "Refactor large file (652 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                             "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
+                                                            "Refactor large file (651 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                             "Refactor large file (650 lines): frontend/src/modules/sales/hooks/useSalesCustomerRepricing.test.ts",
                                                             "Refactor large file (618 lines): backend/src/ERP.Application.Tests/Sales/GetSalesReceiptPrintPayloadHandlerTests.cs",
                                                             "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnDraftHandlerTests.cs",
-                                                            "Refactor large file (601 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
+                                                            "Refactor large file (600 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
                                                             "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
                                                             "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Sales/SalesDraftSpecialTaxTests.cs",
                                                             "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
@@ -4196,7 +4209,7 @@
                                                             "Refactor large file (521 lines): backend/src/ERP.Application/Modules/Sales/UseCases/PaymentMethodUseCases.cs",
                                                             "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx"
                                                         ],
-                                       "percentOfErp":  104.59,
+                                       "percentOfErp":  104.58,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "3 large file(s) (\u003e=500 lines)",
@@ -4351,8 +4364,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Branches",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Configuration",
@@ -4539,6 +4552,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -4725,7 +4739,7 @@
                                                             "Refactor large file (552 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Items/ItemRepository.cs",
                                                             "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx"
                                                         ],
-                                       "percentOfErp":  106.56,
+                                       "percentOfErp":  106.54,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -4755,9 +4769,9 @@
                         "documentation":  70,
                         "backend":  90,
                         "frontend":  70,
-                        "filesScanned":  159,
+                        "filesScanned":  160,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-10-29",
+                        "lastEvidenceDate":  "2026-10-31",
                         "featuresCount":  34,
                         "featureNames":  [
                                              "Get Purchase Item Context",
@@ -4856,7 +4870,7 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
-                                                            "lines":  598
+                                                            "lines":  599
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteDraftUseCases.cs",
@@ -4944,7 +4958,7 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
-                                                            "lines":  828
+                                                            "lines":  840
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
@@ -4980,7 +4994,7 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
-                                                            "lines":  670
+                                                            "lines":  676
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
@@ -4992,7 +5006,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/api/purchaseReceptionService.ts",
-                                                            "lines":  555
+                                                            "lines":  559
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
@@ -5008,7 +5022,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
-                                                            "lines":  832
+                                                            "lines":  897
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.pilotFix.test.ts",
@@ -5020,7 +5034,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
-                                                            "lines":  2374
+                                                            "lines":  2433
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
@@ -5032,7 +5046,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "lines":  2996
+                                                            "lines":  3014
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/purchases/utils/purchaseLinePresentation.registration.test.ts",
@@ -5128,8 +5142,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Purchases",
                                                                     "Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Branches",
@@ -5323,6 +5337,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -5503,8 +5518,8 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (2996 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
-                                                            "Refactor large file (2374 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                            "Refactor large file (3014 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                            "Refactor large file (2433 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                             "Refactor large file (2171 lines): backend/src/ERP.Application.Tests/Purchases/ConfirmPurchaseHandlerTests.cs",
                                                             "Refactor large file (1973 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseDraftUseCases.cs",
                                                             "Refactor large file (1629 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/CreatePurchaseReceptionDraftHandlerTests.cs",
@@ -5516,19 +5531,19 @@
                                                             "Refactor large file (1145 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseHandlerTests.cs",
                                                             "Refactor large file (995 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteDraftUseCases.cs",
                                                             "Refactor large file (945 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseReception/ResolvePurchaseReceptionLinesIntegrationTests.cs",
+                                                            "Refactor large file (897 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
                                                             "Refactor large file (870 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
                                                             "Refactor large file (852 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
                                                             "Refactor large file (841 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
-                                                            "Refactor large file (832 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
-                                                            "Refactor large file (828 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
+                                                            "Refactor large file (840 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
                                                             "Refactor large file (806 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseCreditNoteTests.cs",
                                                             "Refactor large file (760 lines): frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.test.ts",
                                                             "Refactor large file (721 lines): backend/src/ERP.Application.Tests/Purchases/CancelPurchaseReturnUseCasesTests.cs",
                                                             "Refactor large file (719 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                                                             "Refactor large file (709 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReturnDraftUseCasesTests.cs",
                                                             "Refactor large file (702 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/GetPurchaseReceptionXmlViewHandlerTests.cs",
+                                                            "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
                                                             "Refactor large file (670 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
-                                                            "Refactor large file (670 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
                                                             "Refactor large file (643 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseCreditNoteTaxSummaryDraftUseCasesTests.cs",
                                                             "Refactor large file (639 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/DownloadPurchaseReceptionXmlHandlerTests.cs",
                                                             "Refactor large file (632 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.pilotFix.test.ts",
@@ -5538,12 +5553,12 @@
                                                             "Refactor large file (622 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseReturn.cs",
                                                             "Refactor large file (605 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
                                                             "Refactor large file (602 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
-                                                            "Refactor large file (598 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
+                                                            "Refactor large file (599 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
                                                             "Refactor large file (591 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnDraftUseCases.cs",
                                                             "Refactor large file (580 lines): frontend/src/modules/purchases/components/PurchaseReceptionXmlViewModal.tsx",
                                                             "Refactor large file (578 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseCreditNoteHandlerTests.cs",
                                                             "Refactor large file (562 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.registration.test.ts",
-                                                            "Refactor large file (555 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                                                            "Refactor large file (559 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
                                                             "Refactor large file (549 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/AuthorizePurchaseReturnUseCases.cs",
                                                             "Refactor large file (543 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReception/PurchaseReceptionDocumentTests.cs",
                                                             "Refactor large file (538 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Purchases/PurchaseReceptionDocumentRepositoryTests.cs",
@@ -5553,7 +5568,7 @@
                                                             "Refactor large file (511 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
                                                             "Refactor large file (501 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/ImportPurchaseReceptionHandlerTests.cs"
                                                         ],
-                                       "percentOfErp":  109.51,
+                                       "percentOfErp":  109.48,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "5 large file(s) (\u003e=500 lines)"
                                    },
@@ -5800,6 +5815,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -5982,7 +5998,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  98.36,
+                                       "percentOfErp":  98.37,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -6415,6 +6431,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -6919,6 +6936,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -7289,8 +7307,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Pricing",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Purchases",
@@ -7473,6 +7491,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -7661,7 +7680,7 @@
                                                             "Refactor large file (523 lines): frontend/src/modules/inventory/adjustments/hooks/useStockAdjustmentFormPage.ts",
                                                             "Refactor large file (512 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx"
                                                         ],
-                                       "percentOfErp":  110.16,
+                                       "percentOfErp":  110.13,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "1 large file(s) (\u003e=500 lines)"
                                    },
@@ -7978,6 +7997,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -8167,7 +8187,7 @@
                                                             "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                                                             "Refactor large file (505 lines): frontend/src/modules/finance/pages/CreditTermsPage.tsx"
                                                         ],
-                                       "percentOfErp":  101.64,
+                                       "percentOfErp":  101.63,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "2 large file(s) (\u003e=500 lines)"
                                    },
@@ -8457,6 +8477,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -8639,7 +8660,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (573 lines): frontend/src/modules/branches/components/BranchGeneralSection.tsx"
                                                         ],
-                                       "percentOfErp":  101.64,
+                                       "percentOfErp":  101.63,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -8880,6 +8901,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -9183,8 +9205,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Pricing",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Purchases",
@@ -9371,6 +9393,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -9881,6 +9904,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -10073,7 +10097,7 @@
                                                             "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
                                                             "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs"
                                                         ],
-                                       "percentOfErp":  102.62,
+                                       "percentOfErp":  102.61,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "2 large file(s) (\u003e=500 lines)"
                                    },
@@ -10157,7 +10181,7 @@
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
-                                                            "lines":  546
+                                                            "lines":  545
                                                         },
                                                         {
                                                             "file":  "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
@@ -10403,6 +10427,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -10594,7 +10619,7 @@
                                                             "Refactor large file (667 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Categories/ExpenseCategoryUseCases.cs",
                                                             "Refactor large file (581 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
                                                             "Refactor large file (566 lines): backend/src/ERP.Application.Tests/Expenses/CreateConfirmedExpenseUseCasesTests.cs",
-                                                            "Refactor large file (546 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
+                                                            "Refactor large file (545 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
                                                             "Refactor large file (510 lines): backend/src/ERP.Domain.Tests/Expenses/ExpenseDocumentTests.cs"
                                                         ],
                                        "percentOfErp":  99.02,
@@ -10625,13 +10650,14 @@
                         "documentation":  70,
                         "backend":  65,
                         "frontend":  70,
-                        "filesScanned":  29,
+                        "filesScanned":  36,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-10-31",
-                        "featuresCount":  8,
+                        "lastEvidenceDate":  "2026-11-01",
+                        "featuresCount":  9,
                         "featureNames":  [
                                              "Get Electronic Invoicing Status",
                                              "Get Sri Configuration",
+                                             "Get Sri Service Health",
                                              "Get System Provider Settings",
                                              "Inspect Sri Certificate",
                                              "Upload Sri Certificate",
@@ -10669,13 +10695,14 @@
                                              "dependsOn":  [
                                                                "Common",
                                                                "Company",
-                                                               "Configuration"
+                                                               "Configuration",
+                                                               "ElectronicDocuments"
                                                            ],
                                              "dependedOnBy":  "ElectronicDocuments",
-                                             "coupling":  4,
+                                             "coupling":  5,
                                              "fanIn":  1,
-                                             "fanOut":  3,
-                                             "instability":  0.75,
+                                             "fanOut":  4,
+                                             "instability":  0.8,
                                              "criticalDependencies":  [
                                                                           "Common",
                                                                           "Company",
@@ -10683,6 +10710,7 @@
                                                                       ],
                                              "cyclesInvolved":  [
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
+                                                                    "ElectronicDocuments -\u003e ElectronicInvoicing -\u003e ElectronicDocuments",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company"
                                                                 ]
                                          },
@@ -10847,6 +10875,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -11029,17 +11058,17 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  100.98,
+                                       "percentOfErp":  101.31,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "3 possible secret(s) detected in module source"
                                    },
                         "changeRisk":  {
-                                           "score":  42.06,
+                                           "score":  43.06,
                                            "band":  "Medium Risk",
                                            "formula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
                                            "inputs":  {
                                                           "score":  77.75,
-                                                          "coupling":  4,
+                                                          "coupling":  5,
                                                           "largeFilesCount":  0,
                                                           "riskOfModifying":  "HIGH",
                                                           "transitiveDependentCount":  29,
@@ -11125,7 +11154,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  0.66,
+                                       "percentOfErp":  0.65,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -11235,8 +11264,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Branches",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Configuration",
@@ -11426,6 +11455,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -11868,6 +11898,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -12350,6 +12381,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -12539,7 +12571,7 @@
                                                             "Refactor large file (554 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                                                             "Refactor large file (527 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialPayableImportProcessorTests.cs"
                                                         ],
-                                       "percentOfErp":  101.97,
+                                       "percentOfErp":  101.96,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -12664,9 +12696,9 @@
                         "documentation":  70,
                         "backend":  90,
                         "frontend":  70,
-                        "filesScanned":  129,
+                        "filesScanned":  130,
                         "busFactor":  1,
-                        "lastEvidenceDate":  "2026-10-31",
+                        "lastEvidenceDate":  "2026-11-02",
                         "featuresCount":  11,
                         "featureNames":  [
                                              "Create Electronic Document",
@@ -12689,15 +12721,15 @@
                                      "largeFiles":  [
                                                         {
                                                             "file":  "backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
-                                                            "lines":  1307
+                                                            "lines":  1436
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs",
-                                                            "lines":  578
+                                                            "lines":  579
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
-                                                            "lines":  796
+                                                            "lines":  868
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Domain/Modules/ElectronicDocuments/Entities/ElectronicDocument.cs",
@@ -12705,11 +12737,11 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
-                                                            "lines":  743
+                                                            "lines":  744
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
-                                                            "lines":  732
+                                                            "lines":  733
                                                         }
                                                     ],
                                      "largeFilesCount":  6,
@@ -12743,15 +12775,17 @@
                                                                   "Caja",
                                                                   "Communications",
                                                                   "Company",
+                                                                  "ElectronicInvoicing",
                                                                   "Purchases",
                                                                   "Retentions",
                                                                   "Ride",
-                                                                  "Sales"
+                                                                  "Sales",
+                                                                  "Settings"
                                                               ],
-                                             "coupling":  15,
-                                             "fanIn":  7,
+                                             "coupling":  17,
+                                             "fanIn":  9,
                                              "fanOut":  8,
-                                             "instability":  0.533,
+                                             "instability":  0.471,
                                              "criticalDependencies":  [
                                                                           "Audit",
                                                                           "Common",
@@ -12801,6 +12835,7 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Communications -\u003e ElectronicDocuments -\u003e Communications",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
+                                                                    "ElectronicDocuments -\u003e ElectronicInvoicing -\u003e ElectronicDocuments",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company"
                                                                 ]
                                          },
@@ -12809,10 +12844,12 @@
                                                                 "Caja",
                                                                 "Communications",
                                                                 "Company",
+                                                                "ElectronicInvoicing",
                                                                 "Purchases",
                                                                 "Retentions",
                                                                 "Ride",
-                                                                "Sales"
+                                                                "Sales",
+                                                                "Settings"
                                                             ],
                                        "transitiveDependents":  [
                                                                     "Access",
@@ -12973,6 +13010,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -13153,14 +13191,14 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (1307 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                                                            "Refactor large file (1436 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                                                            "Refactor large file (868 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
                                                             "Refactor large file (858 lines): backend/src/ERP.Domain/Modules/ElectronicDocuments/Entities/ElectronicDocument.cs",
-                                                            "Refactor large file (796 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
-                                                            "Refactor large file (743 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
-                                                            "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
-                                                            "Refactor large file (578 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs"
+                                                            "Refactor large file (744 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
+                                                            "Refactor large file (733 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
+                                                            "Refactor large file (579 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs"
                                                         ],
-                                       "percentOfErp":  101.97,
+                                       "percentOfErp":  101.96,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "1 large file(s) (\u003e=500 lines)",
@@ -13168,12 +13206,12 @@
                                                        ]
                                    },
                         "changeRisk":  {
-                                           "score":  61.12,
+                                           "score":  63.12,
                                            "band":  "High Risk",
                                            "formula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
                                            "inputs":  {
                                                           "score":  81.5,
-                                                          "coupling":  15,
+                                                          "coupling":  17,
                                                           "largeFilesCount":  6,
                                                           "riskOfModifying":  "HIGH",
                                                           "transitiveDependentCount":  29,
@@ -13401,8 +13439,8 @@
                                                                     "Communications -\u003e ElectronicDocuments -\u003e Communications",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
-                                                                    "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company"
+                                                                    "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration"
                                                                 ]
                                          },
                         "impact":  {
@@ -13571,6 +13609,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -13757,7 +13796,7 @@
                                                             "Refactor large file (605 lines): backend/src/ERP.Infrastructure.Tests/Communications/ElectronicDocumentCommunicationIntegrationTests.cs",
                                                             "Refactor large file (552 lines): backend/src/ERP.Infrastructure.Tests/Communications/CommunicationContractIntegrationTests.cs"
                                                         ],
-                                       "percentOfErp":  99.34,
+                                       "percentOfErp":  99.35,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -14022,8 +14061,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Pricing",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Purchases",
@@ -14217,6 +14256,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -14541,8 +14581,8 @@
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e Company",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e ElectronicDocuments -\u003e ElectronicInvoicing -\u003e Company",
-                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Company",
+                                                                    "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Communications -\u003e Configuration",
                                                                     "Company -\u003e Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Company",
                                                                     "Branches -\u003e Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Branches",
                                                                     "Configuration -\u003e SriCatalogs -\u003e Items -\u003e Purchases -\u003e Pricing -\u003e Companies -\u003e Accounting -\u003e Inventory -\u003e Sales -\u003e Configuration",
@@ -14729,6 +14769,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -14912,7 +14953,7 @@
                                                             "Refactor large file (686 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriRetentionCatalogResolutionIntegrationTests.cs",
                                                             "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs"
                                                         ],
-                                       "percentOfErp":  98.36,
+                                       "percentOfErp":  98.37,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -15176,6 +15217,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -15593,6 +15635,7 @@
                                                                  "ElectronicDocuments / Retry Electronic Document",
                                                                  "ElectronicInvoicing / Get Electronic Invoicing Status",
                                                                  "ElectronicInvoicing / Get Sri Configuration",
+                                                                 "ElectronicInvoicing / Get Sri Service Health",
                                                                  "ElectronicInvoicing / Get System Provider Settings",
                                                                  "ElectronicInvoicing / Inspect Sri Certificate",
                                                                  "ElectronicInvoicing / Upload Sri Certificate",
@@ -15849,7 +15892,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "ElectronicDocuments",
-                                                          "label":  "Refactor large file (578 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs",
+                                                          "label":  "Refactor large file (579 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs",
                                                           "domainId":  "electronic-documents",
                                                           "domainName":  "Electronic Documents"
                                                       }
@@ -15945,7 +15988,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (670 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
+                                                          "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -16005,7 +16048,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "ElectronicDocuments",
-                                                          "label":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
+                                                          "label":  "Refactor large file (733 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
                                                           "domainId":  "electronic-documents",
                                                           "domainName":  "Electronic Documents"
                                                       }
@@ -16113,7 +16156,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "ElectronicDocuments",
-                                                          "label":  "Refactor large file (796 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
+                                                          "label":  "Refactor large file (868 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
                                                           "domainId":  "electronic-documents",
                                                           "domainName":  "Electronic Documents"
                                                       }
@@ -16444,7 +16487,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (82 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -16480,7 +16523,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Expenses",
-                                                          "label":  "Refactor large file (546 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
+                                                          "label":  "Refactor large file (545 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -16844,7 +16887,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Refactor large file (728 lines): backend/src/ERP.Infrastructure.Tests/Services/Sri/SriSoapClientTests.cs",
+                                                          "label":  "Refactor large file (730 lines): backend/src/ERP.Infrastructure.Tests/Services/Sri/SriSoapClientTests.cs",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -16880,7 +16923,14 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Integration",
-                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
+                                                          "label":  "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                                                          "domainId":  "unmapped",
+                                                          "domainName":  null
+                                                      },
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  "Integration",
+                                                          "label":  "Review possible secrets in source files (82 real matches, excluding node_modules)",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -16988,9 +17038,21 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Refactor large file (996 lines): backend/src/ERP.Infrastructure/Services/Sri/SriSoapClient.cs",
+                                                          "label":  "Refactor large file (1010 lines): backend/src/ERP.Infrastructure/Services/Sri/SriSoapClient.cs",
                                                           "domainId":  null,
                                                           "domainName":  null
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetSriServiceHealth",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Feature",
+                                                          "module":  "ElectronicInvoicing",
+                                                          "label":  "Get Sri Service Health",
+                                                          "domainId":  "electronic-documents",
+                                                          "domainName":  "Electronic Documents"
                                                       }
                                                   ]
                              },
@@ -17319,7 +17381,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Sales",
-                                                          "label":  "Refactor large file (652 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
+                                                          "label":  "Refactor large file (651 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                           "domainId":  "sales",
                                                           "domainName":  "Sales"
                                                       }
@@ -17403,7 +17465,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (2996 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                                                          "label":  "Refactor large file (3014 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -17561,14 +17623,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
+                                 "file":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
                                  "referencedBy":  [
                                                       {
-                                                          "type":  "Process",
-                                                          "module":  "Sales",
-                                                          "label":  "Venta / Quote / Draft",
-                                                          "domainId":  "sales",
-                                                          "domainName":  "Sales"
+                                                          "type":  "Feature",
+                                                          "module":  "Company",
+                                                          "label":  "Create Emission Point",
+                                                          "domainId":  "configuration",
+                                                          "domainName":  "Configuration"
                                                       }
                                                   ]
                              },
@@ -17758,7 +17820,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Sales",
-                                                          "label":  "Refactor large file (601 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
+                                                          "label":  "Refactor large file (600 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
                                                           "domainId":  "sales",
                                                           "domainName":  "Sales"
                                                       }
@@ -17892,14 +17954,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
+                                 "file":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
                                  "referencedBy":  [
                                                       {
-                                                          "type":  "Feature",
-                                                          "module":  "Company",
-                                                          "label":  "Create Emission Point",
-                                                          "domainId":  "configuration",
-                                                          "domainName":  "Configuration"
+                                                          "type":  "Task",
+                                                          "module":  null,
+                                                          "label":  "Refactor large file (1644 lines): backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
+                                                          "domainId":  null,
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -18288,7 +18350,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Refactor large file (1210 lines): backend/src/ERP.Infrastructure/DependencyInjection.cs",
+                                                          "label":  "Refactor large file (1238 lines): backend/src/ERP.Infrastructure/DependencyInjection.cs",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -18518,7 +18580,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (832 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                                                          "label":  "Refactor large file (897 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -18530,7 +18592,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "ElectronicDocuments",
-                                                          "label":  "Refactor large file (1307 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                                                          "label":  "Refactor large file (1436 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
                                                           "domainId":  "electronic-documents",
                                                           "domainName":  "Electronic Documents"
                                                       }
@@ -18549,7 +18611,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Integration",
-                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (82 real matches, excluding node_modules)",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -19069,7 +19131,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (598 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
+                                                          "label":  "Refactor large file (599 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -20115,7 +20177,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Settings",
-                                                          "label":  "Refactor large file (520 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
+                                                          "label":  "Refactor large file (558 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -20278,18 +20340,6 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Task",
-                                                          "module":  null,
-                                                          "label":  "Refactor large file (1644 lines): backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
-                                                          "domainId":  null,
-                                                          "domainName":  null
-                                                      }
-                                                  ]
-                             },
-                             {
                                  "file":  "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordReset",
                                  "referencedBy":  [
                                                       {
@@ -20319,7 +20369,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (2374 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                                                          "label":  "Refactor large file (2433 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -20559,7 +20609,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (555 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                                                          "label":  "Refactor large file (559 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -20811,7 +20861,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Refactor large file (1150 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
+                                                          "label":  "Refactor large file (1174 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -21146,7 +21196,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (82 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -21182,7 +21232,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Sales",
-                                                          "label":  "Refactor large file (2233 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
+                                                          "label":  "Refactor large file (2229 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
                                                           "domainId":  "sales",
                                                           "domainName":  "Sales"
                                                       }
@@ -21410,7 +21460,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
+                                                          "label":  "Review possible secrets in source files (82 real matches, excluding node_modules)",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -21746,7 +21796,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Sales",
-                                                          "label":  "Refactor large file (812 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
+                                                          "label":  "Refactor large file (796 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
                                                           "domainId":  "sales",
                                                           "domainName":  "Sales"
                                                       }
@@ -21945,7 +21995,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Purchases",
-                                                          "label":  "Refactor large file (828 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
+                                                          "label":  "Refactor large file (840 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
                                                       }
@@ -22359,7 +22409,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "ElectronicDocuments",
-                                                          "label":  "Refactor large file (743 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
+                                                          "label":  "Refactor large file (744 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
                                                           "domainId":  "electronic-documents",
                                                           "domainName":  "Electronic Documents"
                                                       }
@@ -22566,6 +22616,18 @@
                                                           "label":  "Get Sales Fiscal Policy",
                                                           "domainId":  "configuration",
                                                           "domainName":  "Configuration"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Process",
+                                                          "module":  "Sales",
+                                                          "label":  "Venta / Quote / Draft",
+                                                          "domainId":  "sales",
+                                                          "domainName":  "Sales"
                                                       }
                                                   ]
                              },
@@ -22931,14 +22993,14 @@
                              }
                          ],
     "executive":  {
-                      "engineeringScoreOverall":  58.59,
+                      "engineeringScoreOverall":  57.94,
                       "erpCompletion":  84,
                       "productionDecision":  "NOT READY",
                       "overallStatus":  "NOT READY",
                       "nextMilestone":  "Complete remaining Fiscal / SRI phases (75% done, 80 / 106 tareas)",
                       "blockers":  [
-                                       "Security Score bajo: 15.6% (Secrets detectados: 182, endpoints anonimos: 12)",
-                                       "Quality Score bajo: 7.6%",
+                                       "Security Score bajo: 12.4% (Secrets detectados: 198, endpoints anonimos: 12)",
+                                       "Quality Score bajo: 7.55%",
                                        "Technical Debt alta: 38 critical findings (TODO: 732, FIXME: 30)",
                                        "Etapa incompleta: Futuro al 70% (35 / 50 tareas)",
                                        "Etapa incompleta: Fiscal / SRI al 75% (80 / 106 tareas)",
@@ -22961,6 +23023,11 @@
                                             "band":  "High Risk"
                                         },
                                         {
+                                            "module":  "ElectronicDocuments",
+                                            "riskScore":  63.12,
+                                            "band":  "High Risk"
+                                        },
+                                        {
                                             "module":  "Access",
                                             "riskScore":  61.62,
                                             "band":  "High Risk"
@@ -22968,11 +23035,6 @@
                                         {
                                             "module":  "Caja",
                                             "riskScore":  61.62,
-                                            "band":  "High Risk"
-                                        },
-                                        {
-                                            "module":  "ElectronicDocuments",
-                                            "riskScore":  61.12,
                                             "band":  "High Risk"
                                         },
                                         {
@@ -23010,11 +23072,11 @@
                                             "largeFilesCount":  28
                                         },
                                         {
-                                            "module":  "Expenses",
-                                            "largeFilesCount":  13
+                                            "module":  "Integration",
+                                            "largeFilesCount":  14
                                         },
                                         {
-                                            "module":  "Integration",
+                                            "module":  "Expenses",
                                             "largeFilesCount":  13
                                         },
                                         {
@@ -24635,6 +24697,11 @@
                           },
                           {
                               "type":  "Feature",
+                              "label":  "ElectronicInvoicing / Get Sri Service Health",
+                              "moduleId":  "ElectronicInvoicing"
+                          },
+                          {
+                              "type":  "Feature",
                               "label":  "ElectronicInvoicing / Get System Provider Settings",
                               "moduleId":  "ElectronicInvoicing"
                           },
@@ -24945,7 +25012,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (2996 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
+                              "label":  "Refactor large file (3014 lines): frontend/src/modules/purchases/pages/PurchasesPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -24960,12 +25027,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (2374 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
+                              "label":  "Refactor large file (2433 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.ts",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (2233 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
+                              "label":  "Refactor large file (2229 lines): frontend/src/modules/sales/hooks/useSalesPage.ts",
                               "moduleId":  null
                           },
                           {
@@ -25040,6 +25107,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (1436 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (1428 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
                               "moduleId":  null
                           },
@@ -25056,11 +25128,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (1308 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (1307 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
                               "moduleId":  null
                           },
                           {
@@ -25090,22 +25157,22 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (1238 lines): backend/src/ERP.Infrastructure/DependencyInjection.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (1214 lines): backend/src/ERP.Application.Tests/Accounting/JournalEntrySourceResolverTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (1210 lines): backend/src/ERP.Infrastructure/DependencyInjection.cs",
+                              "label":  "Refactor large file (1174 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (1169 lines): frontend/src/modules/purchases/utils/purchaseLinePresentation.ts",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (1150 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25170,7 +25237,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (996 lines): backend/src/ERP.Infrastructure/Services/Sri/SriSoapClient.cs",
+                              "label":  "Refactor large file (1010 lines): backend/src/ERP.Infrastructure/Services/Sri/SriSoapClient.cs",
                               "moduleId":  null
                           },
                           {
@@ -25225,6 +25292,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (897 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (895 lines): frontend/src/modules/sales/utils/salesCalc.test.ts",
                               "moduleId":  null
                           },
@@ -25255,12 +25327,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (870 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (870 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (870 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                              "label":  "Refactor large file (868 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25280,12 +25357,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (858 lines): backend/src/ERP.Domain/Modules/ElectronicDocuments/Entities/ElectronicDocument.cs",
+                              "label":  "Refactor large file (858 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditApplyPayablesIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (858 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditApplyPayablesIntegrationTests.cs",
+                              "label":  "Refactor large file (858 lines): backend/src/ERP.Domain/Modules/ElectronicDocuments/Entities/ElectronicDocument.cs",
                               "moduleId":  null
                           },
                           {
@@ -25305,22 +25382,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (841 lines): backend/src/ERP.Application.Tests/Ride/RidePipelineTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (841 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (832 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
+                              "label":  "Refactor large file (841 lines): backend/src/ERP.Application.Tests/Ride/RidePipelineTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (828 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
+                              "label":  "Refactor large file (840 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
                               "moduleId":  null
                           },
                           {
@@ -25345,17 +25417,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (813 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (813 lines): backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (812 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
+                              "label":  "Refactor large file (813 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
                               "moduleId":  null
                           },
                           {
@@ -25370,17 +25437,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (799 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (799 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Documents/ExpenseDocumentConfirmUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (796 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
+                              "label":  "Refactor large file (799 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (796 lines): frontend/src/modules/sales/pages/SalesPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -25410,17 +25477,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (743 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
+                              "label":  "Refactor large file (744 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (739 lines): backend/src/ERP.Application/Modules/Caja/FundingRequests/CashFundingRequestUseCases.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (736 lines): backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -25435,12 +25497,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (736 lines): backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (735 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/Reports/GetAccountingReportsUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (732 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
+                              "label":  "Refactor large file (733 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25455,7 +25522,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (728 lines): backend/src/ERP.Infrastructure.Tests/Services/Sri/SriSoapClientTests.cs",
+                              "label":  "Refactor large file (730 lines): backend/src/ERP.Infrastructure.Tests/Services/Sri/SriSoapClientTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25470,12 +25537,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (719 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
+                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
+                              "label":  "Refactor large file (719 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -25490,12 +25557,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
+                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Finance/RegisterCollectionCommandHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Finance/RegisterCollectionCommandHandlerTests.cs",
+                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25540,12 +25607,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (685 lines): backend/src/ERP.Application/Modules/InitialLoad/Processors/ItemImportProcessor.cs",
+                              "label":  "Refactor large file (685 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (685 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
+                              "label":  "Refactor large file (685 lines): backend/src/ERP.Application/Modules/InitialLoad/Processors/ItemImportProcessor.cs",
                               "moduleId":  null
                           },
                           {
@@ -25556,6 +25623,11 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
                               "moduleId":  null
                           },
                           {
@@ -25576,11 +25648,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (670 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (670 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
                               "moduleId":  null
                           },
                           {
@@ -25625,12 +25692,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (652 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
+                              "label":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
+                              "label":  "Refactor large file (651 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -25655,12 +25722,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
+                              "label":  "Refactor large file (639 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/DownloadPurchaseReceptionXmlHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (639 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/DownloadPurchaseReceptionXmlHandlerTests.cs",
+                              "label":  "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25720,12 +25787,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (624 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
+                              "label":  "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs",
+                              "label":  "Refactor large file (624 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
                               "moduleId":  null
                           },
                           {
@@ -25770,12 +25837,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (605 lines): frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
+                              "label":  "Refactor large file (605 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (605 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
+                              "label":  "Refactor large file (605 lines): frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
                               "moduleId":  null
                           },
                           {
@@ -25795,7 +25862,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (602 lines): backend/src/ERP.Application/Modules/Payables/Services/SupplierPaymentRegistrar.cs",
+                              "label":  "Refactor large file (602 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnSequenceConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25805,12 +25872,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (602 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnSequenceConcurrencyTests.cs",
+                              "label":  "Refactor large file (602 lines): backend/src/ERP.Application/Modules/Payables/Services/SupplierPaymentRegistrar.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (601 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
+                              "label":  "Refactor large file (600 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (599 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -25820,17 +25892,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (598 lines): backend/src/ERP.Domain/Modules/Payables/Entities/AccountsPayable.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (598 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/ConfirmPurchaseUseCases.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (598 lines): backend/src/ERP.Domain/Modules/Payables/Entities/AccountsPayable.cs",
                               "moduleId":  null
                           },
                           {
@@ -25890,12 +25957,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
+                              "label":  "Refactor large file (579 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (578 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseCreditNoteHandlerTests.cs",
+                              "label":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -25905,7 +25972,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (578 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs",
+                              "label":  "Refactor large file (578 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseCreditNoteHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25955,6 +26022,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (559 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
                               "moduleId":  null
                           },
@@ -25965,12 +26037,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (558 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (555 lines): backend/src/ERP.Infrastructure.Tests/Persistence/AuthorizePurchaseReturnLockAConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (555 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                              "label":  "Refactor large file (554 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                               "moduleId":  null
                           },
                           {
@@ -25981,11 +26058,6 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (554 lines): backend/src/ERP.Application/Modules/Accounting/Queries/JournalEntrySourceResolution.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (554 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                               "moduleId":  null
                           },
                           {
@@ -26015,17 +26087,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (546 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/Accounts/AccountUseCases.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (546 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/SalesReturnRepositoryTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (546 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (546 lines): backend/src/ERP.Application/Modules/Accounting/UseCases/Accounts/AccountUseCases.cs",
+                              "label":  "Refactor large file (545 lines): frontend/src/modules/expenses/components/ExpenseRetentionSection.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26080,12 +26152,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (527 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx",
+                              "label":  "Refactor large file (527 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialPayableImportProcessorTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (527 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialPayableImportProcessorTests.cs",
+                              "label":  "Refactor large file (527 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26115,11 +26187,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (520 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (520 lines): backend/src/ERP.Infrastructure/Services/RefreshTokenService.cs",
                               "moduleId":  null
                           },
@@ -26130,12 +26197,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx",
+                              "label":  "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
+                              "label":  "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26160,6 +26227,11 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (513 lines): backend/src/ERP.Application/Modules/Finance/UseCases/Payments/PaymentUseCases.cs",
                               "moduleId":  null
                           },
@@ -26175,22 +26247,22 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (511 lines): frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.ts",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (511 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
+                              "label":  "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (511 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26255,7 +26327,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Review possible secrets in source files (66 real matches, excluding node_modules)",
+                              "label":  "Review possible secrets in source files (82 real matches, excluding node_modules)",
                               "moduleId":  null
                           },
                           {
@@ -26750,6 +26822,11 @@
                           },
                           {
                               "type":  "File",
+                              "label":  "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/GetSriServiceHealth",
+                              "moduleId":  "ElectronicInvoicing"
+                          },
+                          {
+                              "type":  "File",
                               "label":  "backend/src/ERP.Domain.Tests/Payables/SupplierPaymentTests.cs",
                               "moduleId":  "Payables"
                           },
@@ -26980,8 +27057,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
-                              "moduleId":  "Sales"
+                              "label":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
+                              "moduleId":  "Company"
                           },
                           {
                               "type":  "File",
@@ -27115,8 +27192,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
-                              "moduleId":  "Company"
+                              "label":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
+                              "moduleId":  null
                           },
                           {
                               "type":  "File",
@@ -28080,11 +28157,6 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Auth/UseCases/PasswordReset",
                               "moduleId":  "Auth"
                           },
@@ -28997,6 +29069,11 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Companies/UseCases/GetSalesFiscalPolicy",
                               "moduleId":  "Companies"
+                          },
+                          {
+                              "type":  "File",
+                              "label":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
+                              "moduleId":  "Sales"
                           },
                           {
                               "type":  "File",

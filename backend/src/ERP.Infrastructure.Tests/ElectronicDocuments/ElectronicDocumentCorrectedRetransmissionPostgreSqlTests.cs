@@ -514,6 +514,7 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
             sri.Authorization.Object,
             new PostgresDatabaseExceptionTranslator(),
             guards,
+            ERP.Infrastructure.Tests.TestData.EnabledElectronicEmissionSwitch.Instance,
             new UnitOfWork(db),
             NullLogger<ElectronicDocumentIssuer>.Instance
         );
@@ -533,7 +534,7 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
                 new ElectronicDocumentRepository(db, new CompanyClock(db)),
                 sri.Suppliers.Object, sri.Validators.Object, sri.Signing.Object, Storage(),
                 sri.Reception.Object, sri.Authorization.Object, new PostgresDatabaseExceptionTranslator(),
-                guards, new UnitOfWork(db), NullLogger<ElectronicDocumentIssuer>.Instance)
+                guards, ERP.Infrastructure.Tests.TestData.EnabledElectronicEmissionSwitch.Instance, new UnitOfWork(db), NullLogger<ElectronicDocumentIssuer>.Instance)
             .RetryAsync(_tenantId, documentId, _userId);
     }
 

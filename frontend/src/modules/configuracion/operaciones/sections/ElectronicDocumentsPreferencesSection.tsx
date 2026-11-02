@@ -43,6 +43,13 @@ export function ElectronicDocumentsPreferencesSection() {
         </div>
         <div className="pg-section-body">
           <ZHToggle
+            label={t("settings.operations.electronicDocuments.emissionEnabledLabel")}
+            description={t("settings.operations.electronicDocuments.emissionEnabledDesc")}
+            value={page.emissionEnabledValue}
+            onChange={(next) => page.setValue("emissionEnabled", next, { shouldDirty: true })}
+            disabled={page.saving || !page.canEdit}
+          />
+          <ZHToggle
             label={t("settings.operations.electronicDocuments.emailOnAuthorizationLabel")}
             description={t("settings.operations.electronicDocuments.emailOnAuthorizationDesc")}
             value={page.emailOnAuthorizationValue}

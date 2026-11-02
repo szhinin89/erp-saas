@@ -1473,6 +1473,8 @@
   "settings.operations.printing.modeNeverAutoPrint": "Never auto-print",
   "settings.operations.printing.copiesLabel": "Copies per receipt",
   "settings.operations.electronicDocuments.title": "Electronic documents",
+  "settings.operations.electronicDocuments.emissionEnabledLabel": "Electronic issuance enabled",
+  "settings.operations.electronicDocuments.emissionEnabledDesc": "When off, no new document is transmitted to the SRI; sales and purchases continue and pending documents are resumed manually from the Monitor once enabled.",
   "settings.operations.electronicDocuments.emailOnAuthorizationLabel": "Send email on authorization",
   "settings.operations.electronicDocuments.emailOnAuthorizationDesc": "If disabled, the authorized-invoice email is not sent to the customer.",
   "settings.electronicInvoicing.sri.certPassword": "Certificate password",

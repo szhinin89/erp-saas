@@ -44,10 +44,10 @@ Nunca expone rutas de certificado, contraseñas ni ningún dato sensible.
 | `CertificateExpired` | Certificado válido pero `NotAfterUtc` ya pasó | Rojo |
 | `CertificateExpiring` | Certificado válido, vence dentro de `CertificateExpiringThresholdDays` (30 días) | Ámbar |
 | `SriUnavailable` | Todo lo demás correcto, pero `ISriConnectivityChecker.PingAsync` falla | Naranja |
-| `Disabled` | **Reservado** — ningún camino del handler lo produce hoy; para cuando exista un toggle de habilitar/deshabilitar emisión por empresa | Gris |
+| `Disabled` | Existe `SriSettings` pero `electronic_documents.emission_enabled` está ausente o en `false` (SRI-TOGGLE-02): no se transmite nada nuevo al SRI | Gris |
 | `Error` | Excepción inesperada al resolver el estado (ver try/catch del handler) — nunca se propaga como 500 | Rojo |
 
-Orden de precedencia en el handler: certificado (instalado/password) → vencimiento → vencimiento
+Orden de precedencia en el handler: `NotConfigured` → `Disabled` (sin evaluar certificado ni hacer ping) → certificado (instalado/password) → vencimiento → vencimiento
 próximo → formato de WSDL → conectividad SRI → `Ready`/`Testing`. El ping al SRI **solo** se
 ejecuta cuando todo lo anterior ya es válido, para no gastar una llamada de red cuando el estado
 ya está determinado por otra causa.

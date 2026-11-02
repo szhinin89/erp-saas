@@ -1,9 +1,9 @@
 ﻿{
-    "generated":  "2026-10-31 20:39:10",
+    "generated":  "2026-11-02 11:46:33",
     "coverage":  {
                      "mappedFeaturePoints":  53,
-                     "totalFeaturePoints":  305,
-                     "percentage":  17.38
+                     "totalFeaturePoints":  306,
+                     "percentage":  17.32
                  },
     "domains":  [
                     {
@@ -273,7 +273,7 @@
                                         {
                                             "name":  "ElectronicInvoicing",
                                             "score":  77.75,
-                                            "features":  8,
+                                            "features":  9,
                                             "processes":  [
 
                                                           ],

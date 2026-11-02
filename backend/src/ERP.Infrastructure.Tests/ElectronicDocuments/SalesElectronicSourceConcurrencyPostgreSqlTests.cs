@@ -482,6 +482,7 @@ public sealed class SalesElectronicSourceConcurrencyPostgreSqlTests : IAsyncLife
             sri.Authorization.Object,
             new PostgresDatabaseExceptionTranslator(),
             Guards(db, _companyId),
+            ERP.Infrastructure.Tests.TestData.EnabledElectronicEmissionSwitch.Instance,
             new UnitOfWork(db),
             NullLogger<ElectronicDocumentIssuer>.Instance
         );

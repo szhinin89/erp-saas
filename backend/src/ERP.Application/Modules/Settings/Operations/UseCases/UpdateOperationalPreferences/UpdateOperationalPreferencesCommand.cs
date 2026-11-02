@@ -75,7 +75,8 @@ public sealed record ElectronicDocumentsPreferencesInput(
     bool AutoRetryEnabled,
     int MaxRetryAttempts,
     bool GenerateRideOnAuthorization,
-    bool EmailOnAuthorization
+    bool EmailOnAuthorization,
+    bool EmissionEnabled
 );
 
 public sealed record NotificationsPreferencesInput(

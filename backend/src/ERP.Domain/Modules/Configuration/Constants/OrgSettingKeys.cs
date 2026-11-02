@@ -201,5 +201,11 @@ public static class OrgSettingKeys
         public const string GenerateRideOnAuthorization =
             "electronic_documents.generate_ride_on_authorization";
         public const string EmailOnAuthorization = "electronic_documents.email_on_authorization";
+
+        /// <summary>
+        /// SRI-TOGGLE-02 — interruptor de emisión electrónica de la empresa. Ausente = deshabilitada:
+        /// ninguna transmisión nueva al SRI; consultas y operaciones comerciales siguen.
+        /// </summary>
+        public const string EmissionEnabled = "electronic_documents.emission_enabled";
     }
 }

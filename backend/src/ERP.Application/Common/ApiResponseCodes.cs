@@ -77,6 +77,9 @@ public static class ApiResponseCodes
         /// <summary>El documento de origen ya no permite procesamiento electrónico (p.ej. retención anulada).</summary>
         public const string SourceNotProcessable = "ELECTRONIC_DOCUMENT_SOURCE_NOT_PROCESSABLE";
 
+        /// <summary>SRI-TOGGLE-02 — la empresa tiene deshabilitada la emisión electrónica (o el pendiente requiere reanudación explícita).</summary>
+        public const string EmissionDisabled = "ELECTRONIC_DOCUMENT_EMISSION_DISABLED";
+
         /// <summary>El comprobante salió o pudo salir al SRI y su resultado no es definitivo: el origen no puede anularse.</summary>
         public const string SourceCancellationInProcess = "ELECTRONIC_DOCUMENT_IN_PROCESS";
 

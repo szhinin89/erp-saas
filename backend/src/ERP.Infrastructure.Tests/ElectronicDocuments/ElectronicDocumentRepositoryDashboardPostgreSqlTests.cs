@@ -40,6 +40,9 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
         await _postgres.StartAsync();
         await using var db = NewDbContext(_tenantId, _companyId);
         await db.Database.MigrateAsync();
+        // SRI-TOGGLE-02 — la política de candidatos se prueba con la emisión habilitada desde antes.
+        await ERP.Infrastructure.Tests.TestData.ElectronicEmissionTestSupport.EnableSinceYesterdayAsync(
+            db, _tenantId, _companyId, _userId);
     }
 
     public async Task DisposeAsync() => await _postgres.DisposeAsync();
@@ -259,6 +262,8 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
             ERP.Domain.Configuration.Constants.OrgSettingKeys.ElectronicDocuments.MaxRetryAttempts,
             "7", ERP.Domain.Configuration.Enums.SettingDataType.Int, _userId));
         await db.SaveChangesAsync();
+        await ERP.Infrastructure.Tests.TestData.ElectronicEmissionTestSupport.EnableSinceYesterdayAsync(
+            db, _tenantId, otherCompany, _userId);
         var repository = NewRepository(db);
         var candidates = await repository.GetRetryCandidatesAsync(1);
         candidates.Should().ContainSingle().Which.CompanyId.Should().Be(otherCompany);
@@ -292,6 +297,9 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
             );
             SetProperty(document, nameof(ElectronicDocument.CurrentState), state);
             SetProperty(document, nameof(ElectronicDocument.RetryCount), retryCount);
+            // SRI-TOGGLE-04 — sin origen persistido, la actividad de Draft/Failed es su último intento:
+            // posterior a la habilitación sembrada (ayer) y fuera del backoff.
+            SetProperty(document, nameof(ElectronicDocument.LastAttemptUtc), DateTime.UtcNow.AddHours(-1));
             db.ElectronicDocuments.Add(document);
         }
         await db.SaveChangesAsync();

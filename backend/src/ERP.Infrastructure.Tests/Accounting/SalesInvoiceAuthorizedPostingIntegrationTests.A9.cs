@@ -88,7 +88,8 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             Mock.Of<IElectronicDocumentReceptionService>(MockBehavior.Strict),
             Mock.Of<IElectronicDocumentAuthorizationService>(MockBehavior.Strict),
             new PostgresDatabaseExceptionTranslator(),
-            guards.Object, new UnitOfWork(db), NullLogger<ElectronicDocumentIssuer>.Instance);
+            guards.Object, ERP.Infrastructure.Tests.TestData.EnabledElectronicEmissionSwitch.Instance,
+            new UnitOfWork(db), NullLogger<ElectronicDocumentIssuer>.Instance);
     }
 
     private SalesElectronicDocumentRecovery A9Recovery(ErpDbContext db,
@@ -148,6 +149,33 @@ public sealed partial class SalesInvoiceAuthorizedPostingIntegrationTests
             seen.Add(batch.Should().ContainSingle().Subject.SourceEntityId);
         }
         seen.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public async Task A9_SRI_TOGGLE_04_recovered_draft_of_a_sale_authorized_before_enabling_is_not_retried_automatically()
+    {
+        var before = await SeedA9Async(number: "001-001-000000081");
+        await using (var seed = CreateContext())
+            await ElectronicEmissionTestSupport.SetAuditedAsync(seed, _tenantId, _companyId, true, _createdBy);
+        var after = await SeedA9Async(number: "001-001-000000082");
+
+        // Recuperación (create-only) de ambas DESPUÉS de habilitar: los dos Draft nacen posteriores al corte.
+        foreach (var id in new[] { before, after })
+            await using (var restarted = A9Context())
+                await A9Recovery(restarted).RecoverAsync(A9Candidate(id), default);
+
+        Guid beforeDraft, afterDraft;
+        await using (var verify = CreateContext())
+        {
+            beforeDraft = await verify.ElectronicDocuments.Where(d => d.SourceEntityId == before).Select(d => d.Id).SingleAsync();
+            afterDraft = await verify.ElectronicDocuments.Where(d => d.SourceEntityId == after).Select(d => d.Id).SingleAsync();
+        }
+        await using var job = A9Context(Guid.Empty, Guid.Empty);
+        var candidates = (await new ElectronicDocumentRepository(job, new ERP.Infrastructure.Persistence.Services.CompanyClock(job))
+            .GetRetryCandidatesAsync(50)).Select(c => c.ElectronicDocumentId).ToList();
+
+        candidates.Should().Contain(afterDraft, "venta autorizada después de habilitar");
+        candidates.Should().NotContain(beforeDraft, "autorizada antes: el Draft tardío no la vuelve posterior");
     }
 
     [Fact]

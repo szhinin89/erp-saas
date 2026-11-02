@@ -304,6 +304,80 @@ Regresión: `ElectronicDocumentIssuerReceptionTests` (45 en primera transmisión
 autorización; 43+45 → consulta; 45 tras POST incierto → consulta), `ElectronicDocumentCorrectedRetransmissionTests`
 (45 en retransmisión → solo consulta, sin cambios) y `SriSoapClientTests` (reintento HTTP → `PrecededByUncertainPost`).
 
+## Addendum (2026-11-02): SRI-TOGGLE-02 — emisión electrónica habilitable por empresa (decisión del propietario)
+
+**Causa.** No es una de las cuatro causas de la regla permanente: el propietario autorizó expresamente una
+intervención en el núcleo FROZEN **limitada al control de emisión** (SRI-TOGGLE-01 aprobado con cambios:
+valor ausente = deshabilitada; sin reanudación automática al rehabilitar).
+
+**Decisión.**
+- Fuente única: `electronic_documents.emission_enabled` en `org_settings` (scope Company, `RequiresAudit`), escrita
+  por `PUT /api/v1/settings/operations` (`settings.operations.configure`) a través de `OrgSettingsRepository`
+  (historial en `ConfigurationChangeLog`). Sin migración: la key es una fila más de `org_settings`.
+- Un único control, `IElectronicEmissionSwitch` (Application) / `ElectronicEmissionSwitch` (Infrastructure), leído con
+  el `TenantId`+`CompanyId` del comprobante, nunca del body. Lo consulta solo `ElectronicDocumentIssuer`:
+  inicio de `RunPipelineAsync` (antes de XML/firma), dentro de `ClaimDispatchAsync` y `ClaimRetransmissionAsync`
+  con el lock compartido del interruptor hasta su commit (serializa con el apagado; en 02 era `FOR SHARE` sobre la
+  fila, sustituido en 04 por un lock consultivo por empresa), revalidación previa a `Signed` en
+  orígenes sin guard, `RetransmitCorrectedAsync` y antes de `Reactivate` de un DeadLetter hacia Draft/Failed.
+- Bloqueado: `ELECTRONIC_DOCUMENT_EMISSION_DISABLED` (422), sin escrituras sobre el comprobante (sigue Draft/Failed,
+  sin clave, sin intento ni DeadLetter). Ventas/NC/Retenciones conservan su confirmación comercial (aviso).
+- Reanudación explícita: un proceso automático (usuario `Guid.Empty`) solo transmite si la última actividad del
+  comprobante (`LastAttemptUtc ?? CreatedAt`) es posterior a la última habilitación (último cambio auditado a
+  `true`; sin historial, escritura de la fila). Los jobs filtran igual en SQL (`ElectronicEmissionSwitchQuery`):
+  reintentos (Draft/Failed), recuperación de Sales y de Retentions (orígenes anteriores a la habilitación).
+- Sin bloqueo: consultas de autorización/estado (Caso #32, R11), conciliación, anulación por consulta, RIDE, correo.
+- Banner: `ElectronicInvoicingStatus.Disabled` (ya reservado) precede a certificado y conectividad.
+
+**Sin cambios:** XML, XAdES, SOAP (`ElectronicDocumentReceptionService` y clientes), secuencias, máquina de estados,
+eventos, `ElectronicInvoicingController`, R11/R12/Caso #32 y migraciones. No se agrega bloqueo en
+`ElectronicDocumentReceptionService`: bloquear tras `Signed` dejaría comprobantes firmados nunca enviados que el
+Caso #32 solo consultaría.
+
+**Riesgos aceptados.** (1) Despliegue: toda empresa sin la key deja de transmitir hasta habilitarla (decisión
+fail-closed del propietario). (2) Un reclamo ya confirmado antes del apagado completa su único envío. (3) Orígenes sin
+guard (no existen en producción) revalidan sin lock. (4) ~~Carrera en la recuperación de Retentions~~ — cerrada
+por SRI-TOGGLE-03 (abajo).
+
+**SRI-TOGGLE-03/04 (2026-11-02, mismo alcance autorizado).** La reanudación automática decidía con
+`coalesce(LastAttemptUtc, CreatedAt)` del comprobante: un Draft creado tarde (recuperación de Retentions o Sales tras una
+caída) para un origen anterior a la habilitación nacía "posterior" y se transmitía solo, también si la habilitación se
+confirmaba entre el control previo y el INSERT del Draft. 03 lo mitigó con filtros y una revalidación en la
+recuperación (quedaba la ventana precheck→INSERT); 04 lo cierra sin migración y sustituye esos parches:
+- **Actividad = dato persistido del origen, nunca la creación del comprobante.** Último intento del comprobante (solo
+  existe si un intento pasó el control) o, sin intentos, el `UpdatedAt` que el dominio fija en `SalesInvoice.Authorize`,
+  `SalesReturn.Authorize` y `RetentionDocument.Issue` (después solo lo mueve `Cancel`, que deja el origen no procesable
+  bajo el lock del guard; no hay auto-estampado ni updates masivos sobre esas tablas). Origen desconocido = sin
+  transmisión automática. Misma regla en el issuer (`IElectronicEmissionSwitch.GetSourceActivityUtcAsync`) y en el SQL
+  del job (`ElectronicEmissionSwitchQuery.SourceActivity`).
+- **Serialización por lock consultivo de empresa.** Toda lectura del interruptor toma el lock compartido (el reclamo lo
+  sostiene hasta su commit; una lectura puntual usa una transacción corta) y todo cambio, en una transacción
+  (`UpdateOperationalPreferencesCommandHandler`), toma el exclusivo antes de que el repositorio feche el registro
+  auditado. Cubre también la primera habilitación (INSERT sin fila que bloquear con `FOR SHARE`).
+- **Integridad de la fecha de corte:** solo el último registro auditado de la misma key/empresa/scope
+  (`OrgSetting`/`Value`) y solo si explica el valor vigente; si no, la última escritura de la fila.
+- Se retiran de 02/03: los filtros por corte de las recuperaciones de Sales/Retentions, la revalidación de
+  `SalesElectronicDocumentRecovery.RecoverAsync`, `RegisterElectronicDocumentRequest.SourceActivityUtc`,
+  `IRetentionElectronicTransmission.StartRecoveryAsync` y `RetentionElectronicStartCandidate.IssuedAtUtc` (los contratos
+  vuelven a su forma previa). Las recuperaciones vuelven a registrar el Draft (visible en el Monitor) y el issuer decide.
+- El corte y la actividad viven en PostgreSQL: un reinicio de API o workers no los altera.
+
+Regresión 04: `PurchaseRetentionConfirmIntegrationTests` (`SRI_TOGGLE_04_*`: anteriores/posteriores con Draft tardío,
+re-habilitación entre la lectura del job y el INSERT, re-habilitación durante la firma, reinicio),
+`ElectronicEmissionSwitchPostgreSqlTests` (apagado serializado con un reclamo abierto, lectura durante una habilitación
+en curso, aislamiento por empresa, candidatos con origen desconocido), A9 (venta autorizada antes de habilitar con Draft
+recuperado después), `ElectronicDocumentIssuerEmissionSwitchTests`, `UpdateOperationalPreferencesCommandHandlerTests`
+(lock antes del upsert). Riesgos residuales: (i) los instantes comparados son relojes de aplicación; con varios nodos se
+requiere sincronización (NTP): una desviación entre nodos mayor que el tiempo entre la emisión del origen y su control
+podría invertir el orden; (ii) una escritura futura de `UpdatedAt` en `SalesInvoice`/`SalesReturn`/`RetentionDocument`
+después de autorizar/emitir rompería la premisa (hoy la garantiza el dominio; todo cambio debe revisar esta regla);
+(iii) escrituras de la key fuera de `PUT /settings/operations` (SQL directo) no toman el lock; su corte cae en la
+escritura de la fila.
+
+**Regresión:** `ElectronicDocumentIssuerEmissionSwitchTests`, `ElectronicEmissionSwitchPostgreSqlTests`,
+`GetElectronicInvoicingStatusQueryHandlerTests`, `UpdateOperationalPreferencesCommandHandlerTests`, A9 y
+`PurchaseRetentionConfirmIntegrationTests` (recuperación), `ElectronicDocumentRetryJobTenantContextTests`.
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

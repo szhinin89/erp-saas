@@ -33,7 +33,7 @@ export function useElectronicDocumentsPreferencesSection() {
 
   const form = useForm<ElectronicDocumentsPreferencesValues>({
     resolver: zodResolver(electronicDocumentsPreferencesSchema),
-    defaultValues: { emailOnAuthorization: true },
+    defaultValues: { emailOnAuthorization: true, emissionEnabled: false },
   });
 
   const {
@@ -44,10 +44,14 @@ export function useElectronicDocumentsPreferencesSection() {
     formState: { isDirty },
   } = form;
   const emailOnAuthorizationValue = watch("emailOnAuthorization");
+  const emissionEnabledValue = watch("emissionEnabled");
 
   const resetFromData = (dto: ElectronicDocumentsPreferencesDto) => {
     setFullGroup(dto);
-    reset({ emailOnAuthorization: dto.emailOnAuthorization });
+    reset({
+      emailOnAuthorization: dto.emailOnAuthorization,
+      emissionEnabled: dto.emissionEnabled,
+    });
   };
 
   useEffect(() => {
@@ -99,6 +103,7 @@ export function useElectronicDocumentsPreferencesSection() {
     form,
     isDirty,
     emailOnAuthorizationValue,
+    emissionEnabledValue,
     setValue,
     onSubmit,
     handleDiscard,

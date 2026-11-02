@@ -352,7 +352,10 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
                 .Where(s => s.TenantId == x.TenantId && s.CompanyId == x.CompanyId)
                 .Select(s => s.Value).FirstOrDefault()))
             .Where(x => !autoRetryDisabled.Any(setting =>
-                setting.TenantId == x.TenantId && setting.CompanyId == x.CompanyId));
+                setting.TenantId == x.TenantId && setting.CompanyId == x.CompanyId))
+            // SRI-TOGGLE-02 — Draft/Failed (iniciarían transmisión) solo con emisión habilitada y actividad
+            // posterior a la habilitación; Signed/Received (solo consulta) no dependen del interruptor.
+            .WhereAutomaticTransmissionAllowed(_db);
         return await BackgroundJobProgress.ReadBatchAsync(_db, "electronic-retry", query,
             x => new ElectronicDocumentRetryCandidate(x.TenantId, x.CompanyId, x.Id),
             x => x.ElectronicDocumentId, x => x.CreatedAt, batchSize, ct);

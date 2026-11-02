@@ -559,6 +559,18 @@ vez como predicado de `ElectronicDocumentRetryPolicy`, traducido a SQL. Communic
 fila y conserva claims, leases, fencing y política de reintento. No hay preferencias
 por empresa nuevas para procesos técnicos.
 
+`electronic_documents.emission_enabled` (SRI-TOGGLE-02/04) es una preferencia de negocio con la semántica
+inversa (`ElectronicEmissionSwitchQuery`, default OFF: solo un valor que se lee como `true` habilita;
+faltante/corrupto = deshabilitada). Se aplica en SQL antes del límite solo en el job de reintentos: Draft/Failed
+son candidatos con la empresa habilitada y actividad posterior a la habilitación —`last_attempt_utc` o, sin
+intentos, el instante persistido del origen (`UpdatedAt` de `SalesInvoice`/`SalesReturn` autorizados o de la
+`RetentionDocument` emitida), nunca `created_at` del comprobante; sin origen conocido no hay candidato—.
+Signed/Received no dependen de él. Las recuperaciones de Sales y Retentions no filtran: registran el Draft y el
+issuer decide con la misma regla. Fecha de corte: el último registro de `ConfigurationChangeLog` de la
+key/empresa/scope (`OrgSetting`/`Value`) si dice `true`; sin historial o con historial incoherente con el valor
+vigente, la última escritura de la fila (nunca anterior). Contrato en
+[Límites y finalización](#límites-y-finalización).
+
 Retentions recupera la transmisión inicial únicamente antes del registro de
 ElectronicDocument. Desde que existe, incluido Draft, ElectronicDocuments es el
 único dueño de recuperación fiscal. Retentions excluye cualquier documento por
@@ -701,6 +713,26 @@ en un fallo de transporte. Una DEVUELTA 70/43 (clave ya registrada) pasa a `Rece
 un POST incierto del mismo envío (`SriReceptionResult.PrecededByUncertainPost`), el 45 se trata como 70/43
 ([ADR-023, addendum 2026-11-02](../decisions/ADR-023-electronic-documents-v1-closure.md)). Si la autorización trae
 varias `<autorizacion>`, manda la AUTORIZADO.
+
+**Emisión electrónica por empresa (SRI-TOGGLE-02).** `electronic_documents.emission_enabled` (org_settings, scope
+Company, `RequiresAudit`, editable por `PUT /api/v1/settings/operations` con `settings.operations.configure`;
+ausente = deshabilitada) controla toda transmisión NUEVA al SRI. Un único control, `IElectronicEmissionSwitch`,
+lo consulta el issuer con el `TenantId`/`CompanyId` del propio comprobante: al iniciar el pipeline (Draft/Failed,
+antes de XML/firma), dentro del reclamo de envío y del reclamo de retransmisión corregida (con el lock compartido del
+interruptor: un apagado confirmado bloquea todo reclamo posterior; un reclamo ya confirmado termina su único
+envío) y antes de reactivar un DeadLetter hacia Draft/Failed. Serialización (SRI-TOGGLE-04): toda lectura del
+interruptor toma un lock consultivo compartido por empresa (en el reclamo, hasta su commit) y todo cambio
+(`PUT /settings/operations`, una transacción) toma el exclusivo ANTES de fechar su registro auditado; una lectura
+que vio "deshabilitada" siempre precede a la fecha de la habilitación siguiente. Bloqueado responde
+`ELECTRONIC_DOCUMENT_EMISSION_DISABLED` (422) sin escribir sobre el comprobante (sin clave de acceso, intentos ni
+DeadLetter). Las consultas de autorización/estado, la conciliación, la anulación por consulta y las operaciones
+comerciales (venta, NC, compra/gasto con retención) no dependen del interruptor: el negocio se confirma y el
+comprobante queda en Draft. Al habilitar, los pendientes NO se transmiten solos: un proceso automático (usuario
+`Guid.Empty`) solo transmite actividad posterior a la última habilitación: último intento del comprobante o, sin
+intentos, el instante persistido de autorización/emisión del origen (nunca la creación del comprobante: un Draft
+creado tarde por una recuperación no vuelve "posterior" un origen anterior; sin origen conocido no transmite); la reanudación es explícita por un usuario (`POST .../{id}/retry`,
+`POST /electronic-documents/register`, `POST /retentions/{id}/electronic/register`). El estado del banner es
+`Disabled` ([ADR-023, addendum SRI-TOGGLE-02](../decisions/ADR-023-electronic-documents-v1-closure.md)).
 
 **Ventana de 24 h (R11).** El SRI entrega la autorización o el rechazo en un máximo de 24 h desde
 RECIBIDA (Ficha Técnica Offline §7.5; nota 2). `Signed`/`Received` siguen en el job de reintentos (solo

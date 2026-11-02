@@ -68,7 +68,8 @@ public sealed class GetOperationalPreferencesQueryHandler
                     p.ElectronicDocuments.AutoRetryEnabled,
                     p.ElectronicDocuments.MaxRetryAttempts,
                     p.ElectronicDocuments.GenerateRideOnAuthorization,
-                    p.ElectronicDocuments.EmailOnAuthorization
+                    p.ElectronicDocuments.EmailOnAuthorization,
+                    p.ElectronicDocuments.EmissionEnabled
                 ),
                 Notifications: new NotificationsPreferencesDto(
                     p.Notifications.SendCopyToCompanyEmail,
