@@ -695,13 +695,18 @@ reenvía automáticamente: el reintento (job o Monitor) solo consulta la autoriz
 de acceso. AUTORIZADO se conserva; NO AUTORIZADO pasa a `Rejected`; una consulta no concluyente
 deja el estado intacto ("Requiere conciliación"). Solo transmiten el primer envío del pipeline y la retransmisión corregida explícita desde `Rejected` (R12 Fase B, abajo). Una DEVUELTA cuyos mensajes son todos código 50 (error interno del SRI; los devueltos no se
 guardan, Ficha Técnica Offline, tabla de errores, nota 1) no es rechazo: el documento conserva su estado como
-en un fallo de transporte. Si la autorización trae varias `<autorizacion>`, manda la AUTORIZADO.
+en un fallo de transporte. Una DEVUELTA 70/43 (clave ya registrada) pasa a `Received` y se consulta. Una DEVUELTA 45
+(secuencial registrado) sin 70/43 en el primer envío (`TransmissionAttempt == 1`) es colisión con otra clave:
+`Rejected` con el mensaje original, sin consulta. En la retransmisión corregida (R12), o si la respuesta llegó tras
+un POST incierto del mismo envío (`SriReceptionResult.PrecededByUncertainPost`), el 45 se trata como 70/43
+([ADR-023, addendum 2026-11-02](../decisions/ADR-023-electronic-documents-v1-closure.md)). Si la autorización trae
+varias `<autorizacion>`, manda la AUTORIZADO.
 
 **Ventana de 24 h (R11).** El SRI entrega la autorización o el rechazo en un máximo de 24 h desde
 RECIBIDA (Ficha Técnica Offline §7.5; nota 2). `Signed`/`Received` siguen en el job de reintentos (solo
 consulta) aunque superen el máximo de la empresa, con backoff `min(2^n, 60)` minutos. El plazo se cuenta desde
 la primera transición a `Received` del timeline (`ElectronicDocumentAudit`, misma transacción que el estado:
-RECIBIDA, o 70/43/45 con envío anterior registrado, en cuyo caso el plazo real empezó antes y el ERP consulta de
+RECIBIDA, o 70/43 (45 solo en retransmisión corregida) con envío anterior registrado, en cuyo caso el plazo real empezó antes y el ERP consulta de
 más, nunca de menos). Cerrado el plazo, el siguiente intento sin respuesta pasa a `DeadLetter` con
 "Requiere conciliación" (recuperable por el reintento y la conciliación de abajo). Sin evidencia de recepción
 (`Signed` tras un fallo de transporte o DEVUELTA 50) no hay plazo calculable: no se aplica DeadLetter por plazo y

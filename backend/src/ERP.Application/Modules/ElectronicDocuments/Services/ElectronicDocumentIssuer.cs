@@ -863,20 +863,25 @@ public sealed partial class ElectronicDocumentIssuer
     // de acceso y secuencial hasta recibir una respuesta de autorización o rechazo del mismo, en
     // un tiempo máximo de 24 horas".
     //
-    // RESP-01 (cierre ElectronicDocuments v1.0, robustez de reenvío): "45 Secuencial registrado"
-    // y "43 Clave acceso registrada" son la misma tabla oficial de errores de RECEPCIÓN — ya
-    // documentados como motivo del índice único uq_electronic_document_access_key (ver BD-01 en
-    // ElectronicDocumentConfiguration.cs) — y tienen idéntico significado funcional que el 70: el
-    // SRI ya tiene un envío anterior de esta clave de acceso, no es un rechazo real (el ERP ya no
-    // reenvía — caso #32 —, pero el SRI puede informarlo igual), y la ficha técnica exige
-    // en ese caso consultar autorización en vez de asumir rechazo. Antes solo el 70 activaba esta
-    // rama; el 43/45 caían en el rechazo genérico de más abajo, marcando Rejected un documento que
-    // en realidad seguía vivo (o ya autorizado) en el SRI.
+    // RESP-01 (cierre ElectronicDocuments v1.0, robustez de reenvío): "43 Clave acceso registrada"
+    // es la misma tabla oficial de errores de RECEPCIÓN y tiene idéntico significado funcional que
+    // el 70: el SRI ya tiene un envío anterior de esta clave de acceso, no es un rechazo real, y la
+    // ficha técnica exige en ese caso consultar autorización en vez de asumir rechazo.
     //
     // Cada mensaje de <see cref="SriReceptionResult.Errors"/> se construye como
     // "[identificador] mensaje: informacionAdicional" (ver SriSoapClient.ParseRecepcionResponse)
     // — se detecta por ese prefijo literal.
-    private static readonly string[] AlreadyExistsErrorPrefixes = ["[70]", "[43]", "[45]"];
+    private static readonly string[] AlreadyExistsErrorPrefixes = ["[70]", "[43]"];
+
+    // RESP-01 / código 45 (corrección 2026-11-02): "45 Secuencial registrado" NO identifica esta clave
+    // de acceso, sino OTRA clave con el mismo secuencial (colisión, p. ej. secuencia reiniciada). En
+    // la primera transmisión (TransmissionAttempt 1) la clave nunca salió antes — Signed solo se
+    // consulta (caso #32) y Failed nunca sigue a Signed —, y si el SRI la tuviera respondería 43/70:
+    // un 45 sin 43/70 es colisión confirmada y se rechaza con el mensaje original (consultar
+    // autorización de una clave que el SRI nunca guardó no termina nunca). Excepciones, que conservan
+    // la consulta de autorización: retransmisión corregida (R12, misma clave que ya llegó al SRI) y
+    // respuesta posterior a un POST incierto del mismo envío (SriReceptionResult.PrecededByUncertainPost).
+    private const string SequentialRegisteredErrorPrefix = "[45]";
 
     /// <summary>Identificadores de RECEPCIÓN que no constituyen rechazo del comprobante (ver R13 en
     /// <see cref="TrySendToReceptionAsync"/>).</summary>
@@ -885,7 +890,8 @@ public sealed partial class ElectronicDocumentIssuer
     /// <summary>
     /// Envía el XML firmado a Recepción del SRI y aplica la transición que corresponda
     /// (Sent→Received, Sent→Received si el SRI reporta que ya existe un envío anterior de esta
-    /// clave de acceso — códigos 70/43/45, ver <see cref="AlreadyExistsErrorPrefixes"/> — o
+    /// clave de acceso — códigos 70/43, ver <see cref="AlreadyExistsErrorPrefixes"/>, y 45 solo en una
+    /// retransmisión corregida, ver <see cref="SequentialRegisteredErrorPrefix"/> — o
     /// Sent→Rejected solo cuando el SRI devuelve evidencia de rechazo definitivo). Devuelve
     /// <c>ReachedReceived=true</c> si el documento llegó a Received (listo para consultar
     /// autorización); si no, <c>FailureReason</c> trae el motivo real (nunca genérico) para que el
@@ -937,14 +943,24 @@ public sealed partial class ElectronicDocumentIssuer
             return (true, null);
         }
 
-        // Códigos 70/43/45 — "Clave acceso en procesamiento" / "Clave acceso registrada" /
-        // "Secuencial registrado": el SRI ya tiene un envío anterior de este mismo comprobante.
-        // NO es un rechazo: el comprobante sigue vivo (o ya autorizado) en el SRI y debe tratarse
-        // como si hubiera llegado a Received, para que el siguiente paso del pipeline consulte
-        // autorización directamente, sin reenviar ni generar una nueva clave de acceso.
+        // Códigos 70/43 — "Clave acceso en procesamiento" / "Clave acceso registrada": el SRI ya
+        // tiene un envío anterior de este mismo comprobante. NO es un rechazo: el comprobante sigue
+        // vivo (o ya autorizado) en el SRI y debe tratarse como si hubiera llegado a Received, para
+        // que el siguiente paso del pipeline consulte autorización directamente, sin reenviar ni
+        // generar una nueva clave de acceso. El 45 solo entra aquí en una retransmisión corregida o si
+        // la respuesta llegó tras un POST incierto del mismo envío (reintento HTTP de SriSoapClient:
+        // el POST anterior pudo haber llegado al SRI); si no, cae en el rechazo de abajo.
         var matchedPrefix = AlreadyExistsErrorPrefixes.FirstOrDefault(prefix =>
             recepcion.Errors.Any(e => e.StartsWith(prefix, StringComparison.Ordinal))
         );
+        if (
+            matchedPrefix is null
+            && (document.TransmissionAttempt > 1 || recepcion.PrecededByUncertainPost)
+            && recepcion.Errors.Any(e =>
+                e.StartsWith(SequentialRegisteredErrorPrefix, StringComparison.Ordinal)
+            )
+        )
+            matchedPrefix = SequentialRegisteredErrorPrefix;
         if (matchedPrefix is not null)
         {
             document.MarkReceived(userId);

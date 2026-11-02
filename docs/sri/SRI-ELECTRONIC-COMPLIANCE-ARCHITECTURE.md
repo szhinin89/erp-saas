@@ -43,7 +43,7 @@ Módulo origen ──post-commit──► IElectronicDocumentIssuer.RegisterAsyn
                                    ├─ sin guard: MarkXmlGenerated(xmlVersion, schemaVersion) + MarkSigned → SaveChanges
                                    │  con guard: ClaimDispatchAsync → XmlGenerated→Signed→Dispatching bajo lock del origen
                                    ├─ TrySendToReceptionAsync                  IElectronicDocumentReceptionService → ISriReceptionClient → SriSoapClient.SendAsync
-                                   │    RECIBIDA → Received · [70]/[43]/[45] → Received · resto → Rejected
+                                   │    RECIBIDA → Received · [70]/[43] → Received · [45] → Received solo si TransmissionAttempt > 1 · resto → Rejected
                                    └─ AuthorizeAsync                           IElectronicDocumentAuthorizationService → ISriAuthorizationClient → SriSoapClient.CheckAuthorizationAsync
                                         AUTORIZADO → StoreAuthorized + Authorized · NO AUTORIZADO → Rejected · TIMEOUT → sigue Received
 Estado fiscal posterior:  ISriDocumentStatusQuery → SriDocumentStatusQuery → SriSoapClient.QueryDocumentStatusAsync (ConsultaComprobante)
@@ -554,7 +554,7 @@ Reglas complementarias:
 | Respuesta | Interpretación | Forma |
 |---|---|---|
 | ConsultaComprobante | `SriSoapClient` → `SriStatusQueryOutcome` (técnico) + `SriFiscalStatus` (fiscal) | ✅ tipada; modelo a replicar |
-| Recepción | `SriReceptionResult.Received` = `Status == "RECIBIDA"`; Issuer: `AlreadyExistsErrorPrefixes = ["[70]","[43]","[45]"]` con `StartsWith` sobre strings formateados | 🟠 strings |
+| Recepción | `SriReceptionResult.Received` = `Status == "RECIBIDA"`; Issuer: `AlreadyExistsErrorPrefixes = ["[70]","[43]"]` (+ `[45]` solo con `TransmissionAttempt > 1`; en la primera transmisión 45 = colisión → Rejected, ADR-023 addendum 2026-11-02) con `StartsWith` sobre strings formateados | 🟠 strings |
 | Autorización | `ElectronicDocumentAuthorizationService.TerminalOutcomeStatuses = ["AUTORIZADO","NO AUTORIZADO","TIMEOUT"]`; Issuer compara `auth.Status` con literales; `SriSoapClient` sintetiza `TIMEOUT`/`SIN_RESPUESTA` | 🟠 strings |
 | Mensajes | `SriMessage(Code, MessageType, Message, AdditionalInfo)` estructurado (ADR-024) + `LastError` texto | ✅ estructura disponible, no usada para decidir |
 | Catálogo `sri_error_code` (33 códigos) | sin consumidor | ⚪ |
@@ -565,10 +565,11 @@ Reglas complementarias:
 2. **Resultados tipados** para recepción y autorización, simétricos a la consulta:
    `technical outcome` (Success / Timeout / Unavailable / Unknown) separado de `fiscal disposition`
    (Received / AlreadyExists / ReturnedDefinitive / ReturnedTransient / Authorized / NotAuthorized / Pending).
-3. **Una sola clasificación de códigos** (70/43/45 = ya existe; 50 = transitorio; resto = definitivo), basada en
+3. **Una sola clasificación de códigos** (70/43 = ya existe; 45 = colisión en el primer envío, ya existe en la
+   retransmisión corregida; 50 = transitorio; resto = definitivo), basada en
    `SriMessage.Code`, no en `StartsWith`/`Contains`. Por ser conocimiento normativo, se evalúa como atributo del
    catálogo `sri_error_code` (ADR-037, slice propio) con un único intérprete en Application.
-4. **Invariantes que no cambian:** 70/43/45 → consultar, nunca regenerar clave; timeout nunca es rechazo; una
+4. **Invariantes que no cambian:** 70/43 (y 45 en retransmisión) → consultar, nunca regenerar clave; timeout nunca es rechazo; una
    consulta no exitosa nunca trae estado fiscal; `RECHAZADA` (99) nunca es `NotAuthorized`.
 5. **ConsultaComprobante = SSOT transversal del estado fiscal** de cualquier tipo (el contrato no depende del
    tipo; rango de fechas limitado por el SRI, error 99).

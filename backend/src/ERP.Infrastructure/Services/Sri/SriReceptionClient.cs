@@ -26,6 +26,7 @@ public sealed class SriReceptionClient : ISriReceptionClient
             Status = result.Status,
             Errors = result.Errors,
             StructuredMessages = result.StructuredMessages,
+            PrecededByUncertainPost = result.PrecededByUncertainPost,
         };
     }
 }

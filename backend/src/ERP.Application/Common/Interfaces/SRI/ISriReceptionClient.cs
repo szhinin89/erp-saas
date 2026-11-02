@@ -14,6 +14,12 @@ public sealed class SriReceptionResult
 
     /// <summary>Mismos mensajes de <see cref="Errors"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
     public IReadOnlyList<SriMessage> StructuredMessages { get; init; } = Array.Empty<SriMessage>();
+
+    /// <summary>
+    /// La respuesta llegó en un reintento HTTP tras un POST fallido por red/timeout que pudo haber
+    /// llegado al SRI: un código de "ya existe" puede referirse a ese envío anterior del mismo XML.
+    /// </summary>
+    public bool PrecededByUncertainPost { get; init; }
     public bool Received => Status.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
 }
 

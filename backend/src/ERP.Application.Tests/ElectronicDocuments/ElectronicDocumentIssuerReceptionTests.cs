@@ -356,17 +356,16 @@ public sealed class ElectronicDocumentIssuerReceptionTests
 
     [Theory]
     [InlineData("[43] Clave acceso registrada: comprobante ya existe.")]
-    [InlineData("[45] Secuencial registrado: comprobante ya existe.")]
+    [InlineData("[43] Clave acceso registrada: comprobante ya existe.", "[45] Secuencial registrado: comprobante ya existe.")]
     public async Task RegisterAsync_when_sri_reports_already_registered_codes_does_not_reject_and_proceeds_to_authorization(
-        string alreadyExistsError
+        params string[] alreadyExistsErrors
     )
     {
-        // RESP-01 (cierre ElectronicDocuments v1.0): igual que el código 70, los códigos 43
-        // ("Clave acceso registrada") y 45 ("Secuencial registrado") indican que el SRI ya tiene
-        // un envío anterior de esta clave de acceso — nunca un rechazo real. Antes de este fix
-        // solo el 70 evitaba el MarkRejected automático; 43/45 caían en el rechazo genérico.
+        // RESP-01 (cierre ElectronicDocuments v1.0): igual que el código 70, el código 43
+        // ("Clave acceso registrada") indica que el SRI ya tiene un envío anterior de esta clave de
+        // acceso — nunca un rechazo real, aunque venga acompañado de un 45.
         var repository = new Mock<IElectronicDocumentRepository>();
-        var reception = ReceptionReturning("DEVUELTA", alreadyExistsError);
+        var reception = ReceptionReturning("DEVUELTA", alreadyExistsErrors);
 
         var authorization = new Mock<IElectronicDocumentAuthorizationService>();
         authorization
@@ -383,6 +382,78 @@ public sealed class ElectronicDocumentIssuerReceptionTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.CurrentState.Should().Be(ElectronicDocumentState.Authorized.ToString());
+    }
+
+    [Fact]
+    public async Task RegisterAsync_when_sri_reports_sequential_collision_45_on_first_transmission_rejects_without_querying_authorization()
+    {
+        // RESP-01 / código 45 (regresión real 2026-10-31, secuencia reiniciada): "45 Secuencial
+        // registrado" sin 43/70 en la primera transmisión significa que OTRA clave de acceso ocupa el
+        // secuencial. Antes se trataba como Received y la consulta de autorización de una clave que el
+        // SRI nunca guardó quedaba en TIMEOUT indefinidamente; ahora es Rejected con el mensaje original.
+        var repository = new Mock<IElectronicDocumentRepository>();
+        var collision = new SriMessage(
+            "45",
+            "ERROR",
+            "SECUENCIAL REGISTRADO",
+            "El secuencial ya se encuentra registrado"
+        );
+        var reception = ReceptionReturningMessages("DEVUELTA", collision);
+        var authorization = UnreachableAuthorization();
+        ElectronicDocument? added = null;
+        var issuer = BuildIssuer(repository, reception, authorization);
+        repository
+            .Setup(r => r.AddAsync(It.IsAny<ElectronicDocument>(), It.IsAny<CancellationToken>()))
+            .Callback<ElectronicDocument, CancellationToken>((d, _) => added = d)
+            .Returns(Task.CompletedTask);
+
+        var result = await issuer.RegisterAsync(SampleRequest());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.CurrentState.Should().Be(ElectronicDocumentState.Rejected.ToString());
+        added!.RequiresSriReconciliation.Should().BeFalse();
+        added.LastError.Should().StartWith("[45] SECUENCIAL REGISTRADO");
+        added.DomainEvents.OfType<ERP.Domain.Modules.ElectronicDocuments.Events.ElectronicDocumentRejectedEvent>()
+            .Should().ContainSingle()
+            .Which.SriMessages.Should().ContainSingle().Which.Should().Be(collision);
+        authorization.Verify(
+            a => a.CheckAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task RegisterAsync_when_45_follows_an_uncertain_post_of_the_same_send_does_not_reject_and_queries_authorization()
+    {
+        // RESP-01 / código 45: SriSoapClient reintenta el POST tras un fallo de red/timeout dentro de
+        // la misma transmisión. El POST anterior pudo haber llegado al SRI, así que el 45 del
+        // reintento puede referirse a este mismo XML: nunca Rejected, se consulta autorización.
+        var repository = new Mock<IElectronicDocumentRepository>();
+        var reception = new Mock<IElectronicDocumentReceptionService>();
+        reception
+            .Setup(r => r.SendAsync(CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                Result<SriReceptionResult>.Success(
+                    new SriReceptionResult
+                    {
+                        Status = "DEVUELTA",
+                        Errors = ["[45] SECUENCIAL REGISTRADO: null"],
+                        StructuredMessages = [new SriMessage("45", "ERROR", "SECUENCIAL REGISTRADO", null)],
+                        PrecededByUncertainPost = true,
+                    }
+                )
+            );
+        var authorization = UnreachableAuthorization();
+        var issuer = BuildIssuer(repository, reception, authorization);
+
+        var result = await issuer.RegisterAsync(SampleRequest());
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.CurrentState.Should().Be(ElectronicDocumentState.Received.ToString());
+        authorization.Verify(
+            a => a.CheckAsync(CompanyId, ValidAccessKey, It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce
+        );
     }
 
     // ── R13 (auditoría SRI 2.34): DEVUELTA por error interno del SRI (código 50) ──

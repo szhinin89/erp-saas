@@ -66,9 +66,12 @@ public sealed partial class SriSoapClient
         LogSriSending(endpointUrl);
 
         string? response;
+        bool precededByUncertainPost;
         try
         {
-            response = await PostSoapAsync(endpointUrl, envelope, cancellationToken);
+            var posted = await PostSoapCoreAsync(endpointUrl, envelope, cancellationToken);
+            response = posted.Body;
+            precededByUncertainPost = posted.PrecededByUncertainPost;
         }
         catch (SriSoapFaultException ex)
         {
@@ -95,7 +98,9 @@ public sealed partial class SriSoapClient
 
         try
         {
-            return ParseRecepcionResponse(response);
+            var parsed = ParseRecepcionResponse(response);
+            parsed.PrecededByUncertainPost = precededByUncertainPost;
+            return parsed;
         }
         catch (XmlException ex)
         {
@@ -403,7 +408,8 @@ public sealed partial class SriSoapClient
     private readonly record struct SoapPostResult(
         string? Body,
         SoapTransportFailure Failure,
-        string? Detail
+        string? Detail,
+        bool PrecededByUncertainPost = false
     );
 
     /// <summary>
@@ -417,6 +423,9 @@ public sealed partial class SriSoapClient
         CancellationToken cancellationToken
     )
     {
+        // RESP-01 / código 45: un POST previo fallido por red/timeout pudo haber llegado al SRI, así
+        // que la respuesta de un reintento puede referirse a ese envío anterior del mismo XML.
+        var precededByUncertainPost = false;
         for (var attempt = 1; attempt <= HttpRetryAttempts; attempt++)
         {
             try
@@ -429,7 +438,7 @@ public sealed partial class SriSoapClient
                 var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (response.IsSuccessStatusCode)
-                    return new SoapPostResult(body, SoapTransportFailure.None, null);
+                    return new SoapPostResult(body, SoapTransportFailure.None, null, precededByUncertainPost);
 
                 if (TryParseSoapFault(body, out var fault))
                 {
@@ -448,6 +457,7 @@ public sealed partial class SriSoapClient
                     LogSriHttpRequestFailed(url, ex.Message);
                     return new SoapPostResult(null, SoapTransportFailure.Network, ex.Message);
                 }
+                precededByUncertainPost = true;
                 LogSriRetryingAfterTransientFailure(attempt, HttpRetryAttempts, url, ex.Message);
             }
             catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
@@ -460,6 +470,7 @@ public sealed partial class SriSoapClient
                     LogSriRequestTimedOut(url, ex.Message);
                     return new SoapPostResult(null, SoapTransportFailure.Timeout, ex.Message);
                 }
+                precededByUncertainPost = true;
                 LogSriRetryingAfterTransientFailure(attempt, HttpRetryAttempts, url, ex.Message);
             }
 
@@ -974,6 +985,9 @@ public sealed class SriRecepcionResult
 
     /// <summary>Mismos mensajes de <see cref="Errors"/>, sin aplanar — código/tipo/mensaje/información adicional por separado.</summary>
     public List<SriMessage> StructuredMessages { get; init; } = new();
+
+    /// <summary>La respuesta llegó en un reintento tras un POST fallido por red/timeout que pudo haber llegado al SRI.</summary>
+    public bool PrecededByUncertainPost { get; set; }
     public bool Received => Status.Equals("RECIBIDA", StringComparison.OrdinalIgnoreCase);
 }
 

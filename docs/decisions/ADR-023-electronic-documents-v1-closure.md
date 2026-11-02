@@ -280,6 +280,30 @@ anulación de retenciones y el comportamiento de comprobantes sin retransmisión
 (3 columnas de `electronic_documents`, tabla nueva) en la migración única `InitialProductionBaseline`. Contrato:
 [backend.md § Límites y finalización](../architecture/backend.md#límites-y-finalización).
 
+## Addendum (2026-11-02): RESP-01 — código 45 por colisión de secuencial (bug demostrado, causa 2)
+
+Corrige en parte el addendum RESP-01 del 2026-07-11. El código `[45]` "Secuencial registrado" no identifica la clave
+de acceso enviada, sino **otra** clave con el mismo secuencial. Evidencia real (logs del 2026-10-31, tras reiniciar la
+secuencia en una instalación nueva): las facturas 001 y 002 recibieron `[45]` en su primera transmisión, el emisor las
+marcó `Received` y la consulta de autorización de una clave que el SRI nunca guardó respondió `TIMEOUT`
+indefinidamente (8+ reintentos).
+
+**Corrección:** `AlreadyExistsErrorPrefixes` queda en `["[70]", "[43]"]`. En la primera transmisión
+(`TransmissionAttempt == 1`), un `[45]` sin `[43]`/`[70]` es colisión confirmada y sigue el rechazo genérico
+existente (`MarkRejected` con el mensaje y los `SriMessage` originales). Esa clave nunca salió antes: `Signed` solo
+se consulta (Caso #32) y `Failed` nunca sigue a `Signed`. Si el SRI la tuviera, respondería `[43]`/`[70]`. En una
+retransmisión corregida (R12, `TransmissionAttempt > 1`, misma clave que ya llegó al SRI), `[45]` conserva la
+consulta de autorización. Lo mismo ocurre si la respuesta llegó tras un POST incierto del mismo envío: `SriSoapClient`
+reintenta hasta 3 POST ante red/timeout, el anterior pudo haber llegado al SRI y lo declara
+`SriReceptionResult.PrecededByUncertainPost`. `[45]` no es corregible en R12 (`CorrectableCodes`), así que el comprobante rechazado
+requiere un nuevo secuencial vía el flujo normal del documento de origen.
+
+**Sin cambios:** estados, transiciones, guards, contratos públicos, R12, Caso #32, BD y migraciones. Los
+comprobantes históricos ya marcados `Received` por un `[45]` no se migran: se resuelven operativamente.
+Regresión: `ElectronicDocumentIssuerReceptionTests` (45 en primera transmisión → Rejected sin consultar
+autorización; 43+45 → consulta; 45 tras POST incierto → consulta), `ElectronicDocumentCorrectedRetransmissionTests`
+(45 en retransmisión → solo consulta, sin cambios) y `SriSoapClientTests` (reintento HTTP → `PrecededByUncertainPost`).
+
 ## Cierre oficial
 
 **Estado: CLOSED.** **Versión: v1.0.** **Fecha de cierre: 2026-07-11.** **Responsable: Sebastian Zhinin (Lead/Architect del proyecto).**

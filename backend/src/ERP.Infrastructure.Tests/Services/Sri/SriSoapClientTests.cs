@@ -158,6 +158,8 @@ public sealed class SriSoapClientTests
 
         result.Status.Should().Be("RECIBIDA");
         result.Received.Should().BeTrue();
+        // RESP-01 / código 45: el POST fallido pudo haber llegado al SRI — la respuesta lo declara.
+        result.PrecededByUncertainPost.Should().BeTrue();
     }
 
     /// <summary>Confirma el número real de intentos (no solo el resultado final) ante una falla persistente.</summary>

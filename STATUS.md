@@ -1,5 +1,22 @@
 # Project Status
 
+## RESP-01 — código SRI 45 por colisión de secuencial — READY FOR REVIEW (2026-11-02)
+
+BUG demostrado (logs 2026-10-31): `[45] SECUENCIAL REGISTRADO` se trataba como "ya existe" y las facturas 001/002
+(secuencia reiniciada) quedaron en `Received` consultando una clave que el SRI nunca guardó. Ahora un 45 sin 43/70
+en el primer envío → `Rejected` con el mensaje original, sin consulta. Conservan la consulta: retransmisión corregida
+R12 (`TransmissionAttempt > 1`) y respuesta tras un POST incierto del mismo envío (reintento HTTP de `SriSoapClient`,
+`SriReceptionResult.PrecededByUncertainPost`). Contrato: [backend.md § Caso #32](docs/architecture/backend.md),
+[ADR-023 addendum 2026-11-02](docs/decisions/ADR-023-electronic-documents-v1-closure.md).
+PASS agente: Application 91/91 (Reception, CorrectedRetransmission, IssuerRetry, RetransmissionPolicy,
+ReceptionService), Infrastructure 48/48 (SriSoapClient, SriReceptionClient, decoradores), `architecture:check`.
+Sin migraciones, BD, R12/R32 ni rutas de retransmisión nuevas; 001/002 históricas sin tocar (resolución operativa
+pendiente). Sin commit. Pendiente gate del propietario.
+
+Pendiente P0 aparte: facturas del 01/11/2026 (010–013) con SOAP Fault `GenericJDBCException` en Recepción de
+Pruebas. XML, XSD, XAdES y SOAP verificados conformes; diagnóstico de bloqueo externo del SRI, pendiente prueba
+discriminante autorizada por el propietario y reporte al SRI.
+
 ## Salud técnica SRI centralizada — READY FOR REVIEW (2026-11-01)
 
 FALTA implementada: estado técnico único de Recepción y Autorización SRI por ambiente (Disponible, Lento,
