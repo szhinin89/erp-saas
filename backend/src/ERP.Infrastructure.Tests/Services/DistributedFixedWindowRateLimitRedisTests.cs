@@ -119,7 +119,7 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
             node,
             counters,
             TimeSpan.FromMinutes(15),
-            DateTimeOffset.UtcNow,
+            DateTime.UtcNow,
             CancellationToken.None
         );
 
@@ -167,11 +167,11 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
         var key = first!.Keys[0];
         var db = _nodeA.GetDatabase();
 
-        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, second!, DateTimeOffset.UtcNow, default);
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, second!, DateTime.UtcNow, default);
         ((int)await db.StringGetAsync(key)).Should().Be(1);
-        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, first, DateTimeOffset.UtcNow, default);
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, first, DateTime.UtcNow, default);
         (await db.KeyExistsAsync(key)).Should().BeFalse();
-        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, first, DateTimeOffset.UtcNow, default);
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, first, DateTime.UtcNow, default);
         (await db.KeyExistsAsync(key)).Should().BeFalse();
     }
 
@@ -180,13 +180,13 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
     {
         var window = TimeSpan.FromMinutes(15);
         var old = await DistributedFixedWindowRateLimit.TryReserveAllAsync(
-            LocalCache(), _nodeA, [("sec:late", 5)], window, WindowStart, default);
+            LocalCache(), _nodeA, [("sec:late", 5)], window, WindowStart.UtcDateTime, default);
         var current = await DistributedFixedWindowRateLimit.TryReserveAllAsync(
-            LocalCache(), _nodeA, [("sec:late", 5)], window, WindowStart + window, default);
+            LocalCache(), _nodeA, [("sec:late", 5)], window, (WindowStart + window).UtcDateTime, default);
         var db = _nodeA.GetDatabase();
         await db.KeyDeleteAsync(old!.Keys[0]); // simula la expiración de la ventana anterior
 
-        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, old, WindowStart + window, default);
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, old, (WindowStart + window).UtcDateTime, default);
 
         current!.Keys[0].Should().NotBe(old.Keys[0]);
         ((int)await db.StringGetAsync(current.Keys[0])).Should().Be(1);

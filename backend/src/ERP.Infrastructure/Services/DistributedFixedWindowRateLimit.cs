@@ -162,12 +162,12 @@ public static class DistributedFixedWindowRateLimit
         IConnectionMultiplexer? redis,
         IReadOnlyList<(string Key, int Limit)> counters,
         TimeSpan window,
-        DateTimeOffset now,
+        DateTime nowUtc,
         CancellationToken cancellationToken
     )
     {
         var windowMs = (long)window.TotalMilliseconds;
-        var nowMs = now.ToUnixTimeMilliseconds();
+        var nowMs = UnixMilliseconds(nowUtc);
         var windowId = nowMs / windowMs;
         var windowEndMs = (windowId + 1) * windowMs;
         var keys = counters
@@ -226,7 +226,7 @@ public static class DistributedFixedWindowRateLimit
         IDistributedCache cache,
         IConnectionMultiplexer? redis,
         WindowReservation reservation,
-        DateTimeOffset now,
+        DateTime nowUtc,
         CancellationToken cancellationToken
     )
     {
@@ -244,7 +244,7 @@ public static class DistributedFixedWindowRateLimit
         await ReservationGate.WaitAsync(cancellationToken);
         try
         {
-            var nowMs = now.ToUnixTimeMilliseconds();
+            var nowMs = UnixMilliseconds(nowUtc);
             if (nowMs >= reservation.WindowEndMs)
                 return;
 
@@ -268,6 +268,12 @@ public static class DistributedFixedWindowRateLimit
             ReservationGate.Release();
         }
     }
+
+    // Instante UTC → ms Unix sin conversiones de zona horaria (Kind distinto de Utc = error).
+    private static long UnixMilliseconds(DateTime nowUtc) =>
+        nowUtc.Kind == DateTimeKind.Utc
+            ? (nowUtc - DateTime.UnixEpoch).Ticks / TimeSpan.TicksPerMillisecond
+            : throw new ArgumentException("Se requiere DateTime con Kind=Utc.", nameof(nowUtc));
 
     private static DistributedCacheEntryOptions ExpiryUntil(long windowEndMs, long nowMs) =>
         new()

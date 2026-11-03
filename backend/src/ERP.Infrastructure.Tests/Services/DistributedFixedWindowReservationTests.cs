@@ -32,7 +32,7 @@ public sealed class DistributedFixedWindowReservationTests
             null,
             counters,
             Window,
-            now,
+            now.UtcDateTime,
             CancellationToken.None
         );
 
@@ -41,7 +41,7 @@ public sealed class DistributedFixedWindowReservationTests
             _cache,
             null,
             reservation,
-            now,
+            now.UtcDateTime,
             CancellationToken.None
         );
 

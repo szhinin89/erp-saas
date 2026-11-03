@@ -91,7 +91,7 @@ public sealed class LoginAttemptThrottle : ILoginAttemptThrottle, IDisposable
                 _redis,
                 Counters(identifier, clientIp),
                 TimeSpan.FromMinutes(Math.Max(1, _options.WindowMinutes)),
-                _time.GetUtcNow(),
+                _time.GetUtcNow().UtcDateTime,
                 cancellationToken
             );
         }
@@ -154,7 +154,7 @@ public sealed class LoginAttemptThrottle : ILoginAttemptThrottle, IDisposable
                 _cache,
                 _redis,
                 reservation,
-                _time.GetUtcNow(),
+                _time.GetUtcNow().UtcDateTime,
                 CancellationToken.None
             );
         }
