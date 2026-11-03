@@ -1,6 +1,6 @@
 # Project Status
 
-## AUTH-INTERCEPTOR-FIX-01 — corrección focal; pendiente gate del propietario (2026-11-03)
+## AUTH-INTERCEPTOR-FIX-01 — corrección focal — CLOSED (2026-11-03)
 
 BUG REAL reproducido antes del fix: 401 de `global-login` y `complete-password-reset`
 activaban refresh automático; las dos regresiones nuevas fallaron (15/17 PASS).
@@ -13,7 +13,12 @@ y flujos públicos), TypeScript (`tsc -b`, incluido en build), lint (0 errores, 
 en archivos no modificados), build y architecture:check (140/140 pruebas, gate con 0
 violaciones nuevas), `git diff --check`. Build conserva advertencias de chunk y de import
 dinámico de fullLogout; sin cambios para resolverlas. No acredita despliegue.
-Sin staging, commit ni push. Gate del propietario desde `frontend/`:
+Publicado por el propietario en `bdd2f8915291901a6ef93369dfee40ba04812dc4`;
+[CI #1067](https://github.com/szhinin89/erp-saas/actions/runs/41645351527) SUCCESS
+(19 jobs success; despliegue Azure omitido). El CI cubre lint, `tsc -b`/build y
+`architecture:check`, no Vitest. Gate focal del propietario: Vitest 39/39 PASS en los cinco
+archivos (primer comando); lint, TypeScript, build y arquitectura acreditados por CI #1067.
+Cierre aprobado expresamente por el propietario. Gate del propietario desde `frontend/`:
 
 ```powershell
 node node_modules/vitest/vitest.mjs run src/modules/lib/api.test.ts src/modules/lib/authRefreshPolicy.test.ts src/lib/session/authRefreshManager.test.ts src/lib/session/reauthenticate.test.ts src/modules/auth/api/authPublicFlows.test.ts --no-file-parallelism --maxWorkers=1 --no-cache
