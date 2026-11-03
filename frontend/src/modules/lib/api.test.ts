@@ -6,6 +6,7 @@ import { refreshSessionToken } from "../../lib/session/refreshSessionToken";
 import { fullLogout } from "../../lib/session/fullLogout";
 import {
   clearAccessToken,
+  getAccessToken,
   setAccessToken,
 } from "../../lib/session/authTokenMemory";
 
@@ -187,6 +188,54 @@ describe("api response interceptor — refresh y reintento tras 401", () => {
 
     await expect(rejected(error)).rejects.toBe(error);
     expect(refreshSessionToken).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "/api/v1/auth/login",
+    "/api/v1/auth/global-login",
+    "/api/v1/auth/complete-password-reset",
+    "/api/v1/auth/forgot-password",
+    "/api/v1/auth/reset-password",
+    "/api/v1/auth/refresh",
+  ])("401 público en %s conserva la sesión sin refresh ni reintento", async (url) => {
+    const error = makeError(401, { code: "UNAUTHORIZED" }, url);
+    // Si el interceptor intenta renovar, reproduciría la pérdida de sesión original.
+    vi.mocked(refreshSessionToken).mockRejectedValue({ response: { status: 401 } });
+    const originalAdapter = api.defaults.adapter;
+    const adapterSpy = vi.fn();
+    api.defaults.adapter = adapterSpy;
+    try {
+      await expect(getResponseErrorHandler()(error)).rejects.toBe(error);
+      expect(refreshSessionToken).not.toHaveBeenCalled();
+      expect(adapterSpy).not.toHaveBeenCalled();
+      expect(error.config).not.toHaveProperty("_retry");
+      expect(fullLogout).not.toHaveBeenCalled();
+      expect(getAccessToken()).toBe("stale-expired-token");
+      expect(window.location.href).toBe("");
+    } finally {
+      api.defaults.adapter = originalAdapter;
+    }
+  });
+
+  it.each([
+    "/api/v1/auth/global-login",
+    "/api/v1/auth/complete-password-reset",
+    "/api/v1/items",
+  ])("429 en %s conserva la sesión sin refresh ni reintento", async (url) => {
+    const error = makeError(429, { code: "RATE_LIMITED" }, url);
+    const originalAdapter = api.defaults.adapter;
+    const adapterSpy = vi.fn();
+    api.defaults.adapter = adapterSpy;
+    try {
+      await expect(getResponseErrorHandler()(error)).rejects.toBe(error);
+      expect(refreshSessionToken).not.toHaveBeenCalled();
+      expect(adapterSpy).not.toHaveBeenCalled();
+      expect(fullLogout).not.toHaveBeenCalled();
+      expect(getAccessToken()).toBe("stale-expired-token");
+      expect(window.location.href).toBe("");
+    } finally {
+      api.defaults.adapter = originalAdapter;
+    }
   });
 
   it("si el refresh falla, no reintenta infinito, limpia la sesión y redirige a login", async () => {

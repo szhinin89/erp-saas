@@ -4,6 +4,9 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- AUTH-INTERCEPTOR-FIX-01: exclusiones públicas corregidas; pendiente gate del propietario.
+  Evidencia y comandos en [STATUS](../../STATUS.md). No declara SEC-A01 CLOSED.
+
 - Caso #20: implementación de anulación documental de cobros terminada; pendiente E2E integrada
   con los demás procesos, por instrucción expresa del propietario. No ejecutar ahora E2E de
   navegador/API/PostgreSQL ni declarar CLOSED. Estado y gates en [STATUS](../../STATUS.md).

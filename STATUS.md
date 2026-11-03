@@ -1,5 +1,29 @@
 # Project Status
 
+## AUTH-INTERCEPTOR-FIX-01 — corrección focal; pendiente gate del propietario (2026-11-03)
+
+BUG REAL reproducido antes del fix: 401 de `global-login` y `complete-password-reset`
+activaban refresh automático; las dos regresiones nuevas fallaron (15/17 PASS).
+Añadidas ambas rutas a la lista pública existente, sin cambiar el interceptor ni backend.
+Contrato: [Seguridad — Refresh rotation](docs/architecture/security.md#refresh-rotation).
+Sin rate limiting SEC-A01 ni cambios en sesiones/permisos. No declara SEC-A01 CLOSED.
+
+PASS agente: Vitest focal 39/39 (política, interceptor, gestor de refresh, reautenticación
+y flujos públicos), TypeScript (`tsc -b`, incluido en build), lint (0 errores, 37 warnings
+en archivos no modificados), build y architecture:check (140/140 pruebas, gate con 0
+violaciones nuevas), `git diff --check`. Build conserva advertencias de chunk y de import
+dinámico de fullLogout; sin cambios para resolverlas. No acredita despliegue.
+Sin staging, commit ni push. Gate del propietario desde `frontend/`:
+
+```powershell
+node node_modules/vitest/vitest.mjs run src/modules/lib/api.test.ts src/modules/lib/authRefreshPolicy.test.ts src/lib/session/authRefreshManager.test.ts src/lib/session/reauthenticate.test.ts src/modules/auth/api/authPublicFlows.test.ts --no-file-parallelism --maxWorkers=1 --no-cache
+npx.cmd tsc -b
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run architecture:check
+git diff --check
+```
+
 ## DOC-CLEANUP-COMPRAS-01 — Compras V1 aprobado y CLOSED (2026-11-03)
 
 El propietario confirma Compras V1 aprobado y **CLOSED** en esta tarea. Este es el

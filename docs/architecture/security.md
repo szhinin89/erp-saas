@@ -73,6 +73,10 @@ Una empresa no consulta, modifica, usa ni afecta datos operativos de otra, aunqu
 - Reuso sospechoso → `RevokeFamilyAsync` (no logout global)
 - Multi-tab: Web Locks `erp-refresh` + BroadcastChannel `erp.auth`
 - Frontend: solo `authRefreshManager`
+- El interceptor HTTP consulta `frontend/src/modules/lib/authRefreshPolicy.ts`: las rutas
+  públicas, incluidas `global-login` y `complete-password-reset`, propagan su 401 sin
+  refresh automático, reintento ni limpieza de sesión. Un 429 directo tampoco inicia
+  refresh ni logout. Los 401 de solicitudes protegidas conservan el refresh y un único reintento.
 
 ---
 

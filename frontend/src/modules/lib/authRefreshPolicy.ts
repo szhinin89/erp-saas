@@ -1,6 +1,8 @@
 /** Rutas de auth que no deben disparar el interceptor de refresh (evita loops). */
 export const PUBLIC_AUTH_PATHS = [
   "/api/v1/auth/login",
+  "/api/v1/auth/global-login",
+  "/api/v1/auth/complete-password-reset",
   "/api/v1/auth/forgot-password",
   "/api/v1/auth/reset-password",
   "/api/v1/auth/refresh",

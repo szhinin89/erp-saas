@@ -5,6 +5,14 @@ import {
 } from "./authRefreshPolicy";
 
 describe("authRefreshPolicy", () => {
+  it.each([
+    "/api/v1/auth/global-login",
+    "/api/v1/auth/complete-password-reset",
+  ])("excluye %s del refresh automático ante 401", (url) => {
+    expect(isPublicAuthPath(url)).toBe(true);
+    expect(shouldAttemptTokenRefresh(401, url, false)).toBe(false);
+  });
+
   it("marca /api/v1/auth/refresh como ruta pública (sin reintento recursivo)", () => {
     expect(isPublicAuthPath("/api/v1/auth/refresh")).toBe(true);
     expect(shouldAttemptTokenRefresh(401, "/api/v1/auth/refresh", false)).toBe(
