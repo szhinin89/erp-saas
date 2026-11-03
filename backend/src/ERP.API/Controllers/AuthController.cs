@@ -13,6 +13,7 @@ using ERP.Application.Auth.UseCases.Reauthenticate;
 using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Auth.UseCases.SwitchCompany;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,20 +44,11 @@ public sealed class AuthController : ControllerBase
 
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Login(
+    public Task<IActionResult> Login(
         [FromBody] LoginCommand command,
+        [FromServices] ILoginAttemptThrottle loginThrottle,
         CancellationToken cancellationToken
-    )
-    {
-        var result = await _mediator.Send(command, cancellationToken);
-        if (result.IsSuccess)
-        {
-            AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
-            return this.ApiOk(result.Value);
-        }
-
-        return this.ApiFailure(result, ApiResponseCodes.Common.Unauthorized);
-    }
+    ) => ThrottledLoginAsync(loginThrottle, command.Username, command, cancellationToken);
 
     /// <summary>
     /// Fase H — cierra el flujo de primer inicio de sesión: recibe el PasswordResetToken que
@@ -66,14 +58,51 @@ public sealed class AuthController : ControllerBase
     [HttpPost("global-login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GlobalLogin(
+    public Task<IActionResult> GlobalLogin(
         [FromBody] GlobalLoginCommand command,
+        [FromServices] ILoginAttemptThrottle loginThrottle,
+        CancellationToken cancellationToken
+    ) => ThrottledLoginAsync(loginThrottle, command.Username, command, cancellationToken);
+
+    /// <summary>
+    /// SEC-A01 — admisión compartida de login y global-login ANTES del handler (sin cambiarlo):
+    /// límite excedido o cola llena → 429 <c>RATE_LIMITED</c>; Redis de límites no disponible → 503
+    /// <c>LOGIN_THROTTLE_UNAVAILABLE</c>. Solo un login exitoso devuelve el cupo reservado.
+    /// </summary>
+    private async Task<IActionResult> ThrottledLoginAsync(
+        ILoginAttemptThrottle loginThrottle,
+        string username,
+        IRequest<Result<AuthResponseDto>> command,
         CancellationToken cancellationToken
     )
     {
+        using var attempt = await loginThrottle.BeginAsync(
+            username ?? string.Empty,
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            cancellationToken
+        );
+        switch (attempt.Status)
+        {
+            case LoginAdmissionStatus.RateLimited:
+                return this.ApiFailure(
+                    Result<AuthResponseDto>.Failure(
+                        "Demasiados intentos.",
+                        ApiResponseCodes.Common.RateLimited
+                    )
+                );
+            case LoginAdmissionStatus.Unavailable:
+                return this.ApiFailure(
+                    Result<AuthResponseDto>.Failure(
+                        "Límites de login no disponibles.",
+                        ApiResponseCodes.Auth.LoginThrottleUnavailable
+                    )
+                );
+        }
+
         var result = await _mediator.Send(command, cancellationToken);
         if (result.IsSuccess)
         {
+            await attempt.MarkSucceededAsync();
             AuthRefreshCookieHelper.SetRefreshCookieIfIssued(HttpContext, result.Value);
             return this.ApiOk(result.Value);
         }

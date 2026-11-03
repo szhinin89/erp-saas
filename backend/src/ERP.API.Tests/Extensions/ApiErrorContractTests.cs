@@ -59,6 +59,7 @@ public sealed class ApiErrorContractTests
         [ApiResponseCodes.Common.BranchScopeForbidden] = 403,
         [ApiResponseCodes.Common.DatabaseUnavailable] = 503,
         [ApiResponseCodes.Access.PermissionsInvalidationUnavailable] = 503,
+        [ApiResponseCodes.Auth.LoginThrottleUnavailable] = 503,
         [ApiResponseCodes.Access.PermissionsInvalidationIncomplete] = 503,
         [ApiResponseCodes.Common.SriCommunicationError] = 502,
         [ApiResponseCodes.Common.RateLimited] = 429,
@@ -310,6 +311,7 @@ public sealed class ApiErrorContractTests
                             or ApiResponseCodes.Common.DatabaseUnavailable
                             or ApiResponseCodes.Access.PermissionsInvalidationUnavailable
                             or ApiResponseCodes.Access.PermissionsInvalidationIncomplete
+                            or ApiResponseCodes.Auth.LoginThrottleUnavailable
                         ),
                     code
                 );

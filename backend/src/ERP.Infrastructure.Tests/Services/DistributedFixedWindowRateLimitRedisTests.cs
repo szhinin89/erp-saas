@@ -106,6 +106,116 @@ public sealed class DistributedFixedWindowRateLimitRedisTests : IAsyncLifetime
             .And.BeLessThanOrEqualTo(TimeSpan.FromMinutes(60));
     }
 
+    // ── SEC-A01: reserva/liberación multi-clave (Lua) ─────────────────────────
+
+    private static readonly DateTimeOffset WindowStart = new(2026, 11, 3, 10, 0, 0, TimeSpan.Zero);
+
+    private static Task<WindowReservation?> Reserve(
+        IConnectionMultiplexer node,
+        params (string Key, int Limit)[] counters
+    ) =>
+        DistributedFixedWindowRateLimit.TryReserveAllAsync(
+            LocalCache(),
+            node,
+            counters,
+            TimeSpan.FromMinutes(15),
+            DateTimeOffset.UtcNow,
+            CancellationToken.None
+        );
+
+    [Fact]
+    public async Task Redis_reserva_rechazada_no_modifica_ningun_contador_ni_crea_claves()
+    {
+        var full = await Reserve(_nodeA, ("sec:b", 1));
+        var window = full!.Keys[0].Split(':')[^1];
+
+        var rejected = await Reserve(_nodeA, ("sec:a", 5), ("sec:b", 1), ("sec:c", 5));
+
+        rejected.Should().BeNull();
+        var db = _nodeA.GetDatabase();
+        (await db.KeyExistsAsync($"sec:a:{window}")).Should().BeFalse();
+        (await db.KeyExistsAsync($"sec:c:{window}")).Should().BeFalse();
+        ((int)await db.StringGetAsync(full.Keys[0])).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Redis_dos_nodos_50_reservas_concurrentes_con_limite_5_admiten_5()
+    {
+        using var start = new ManualResetEventSlim(false);
+        var tasks = Enumerable
+            .Range(0, 50)
+            .Select(i =>
+                Task.Run(async () =>
+                {
+                    start.Wait();
+                    return await Reserve(i % 2 == 0 ? _nodeA : _nodeB, ("sec:ip", 100), ("sec:pair", 5));
+                })
+            )
+            .ToArray();
+        start.Set();
+
+        var results = await Task.WhenAll(tasks);
+
+        results.Count(r => r is not null).Should().Be(5);
+    }
+
+    [Fact]
+    public async Task Redis_liberar_decrementa_elimina_en_cero_y_nunca_queda_negativo()
+    {
+        var first = await Reserve(_nodeA, ("sec:rel", 5));
+        var second = await Reserve(_nodeA, ("sec:rel", 5));
+        var key = first!.Keys[0];
+        var db = _nodeA.GetDatabase();
+
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, second!, DateTimeOffset.UtcNow, default);
+        ((int)await db.StringGetAsync(key)).Should().Be(1);
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, first, DateTimeOffset.UtcNow, default);
+        (await db.KeyExistsAsync(key)).Should().BeFalse();
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, first, DateTimeOffset.UtcNow, default);
+        (await db.KeyExistsAsync(key)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Redis_liberacion_tardia_no_toca_la_ventana_siguiente_y_la_clave_expira_al_fin_de_su_ventana()
+    {
+        var window = TimeSpan.FromMinutes(15);
+        var old = await DistributedFixedWindowRateLimit.TryReserveAllAsync(
+            LocalCache(), _nodeA, [("sec:late", 5)], window, WindowStart, default);
+        var current = await DistributedFixedWindowRateLimit.TryReserveAllAsync(
+            LocalCache(), _nodeA, [("sec:late", 5)], window, WindowStart + window, default);
+        var db = _nodeA.GetDatabase();
+        await db.KeyDeleteAsync(old!.Keys[0]); // simula la expiración de la ventana anterior
+
+        await DistributedFixedWindowRateLimit.ReleaseAllAsync(LocalCache(), _nodeA, old, WindowStart + window, default);
+
+        current!.Keys[0].Should().NotBe(old.Keys[0]);
+        ((int)await db.StringGetAsync(current.Keys[0])).Should().Be(1);
+        (await db.KeyExistsAsync(old.Keys[0])).Should().BeFalse();
+        var ttl = await db.KeyTimeToLiveAsync(current.Keys[0]);
+        ttl.Should().NotBeNull();
+        ttl!.Value.Should().BeLessThanOrEqualTo(window);
+    }
+
+    [Fact]
+    public async Task Redis_login_throttle_usa_claves_sin_usuario_ni_IP_en_claro()
+    {
+        var throttle = new LoginAttemptThrottle(
+            LocalCache(),
+            MsOptions.Create(new ERP.Application.Common.Config.LoginThrottleOptions { IpLimit = 10 }),
+            new LoginAttemptThrottleTests.StubHostEnvironment("Production"),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<LoginAttemptThrottle>.Instance,
+            _nodeA
+        );
+
+        using (var attempt = await throttle.BeginAsync("Cajero.Privado", "198.51.100.77", default))
+            attempt.Status.Should().Be(ERP.Application.Common.Interfaces.LoginAdmissionStatus.Admitted);
+
+        var server = _nodeA.GetServer(_nodeA.GetEndPoints()[0]);
+        var keys = server.Keys(pattern: "erp:auth:login:*").Select(k => k.ToString()).ToList();
+        keys.Should().HaveCount(3);
+        keys.Should().OnlyContain(k => !k.Contains("cajero", StringComparison.OrdinalIgnoreCase) && !k.Contains("198.51"));
+    }
+
     [Fact]
     public async Task Redis_refresh_rate_limiter_tambien_es_atomico()
     {

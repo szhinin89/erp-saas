@@ -95,12 +95,12 @@ public sealed class AuthRefreshCookieContractTests
             case "login":
                 {
                     var c = WithContext(new AuthController(mediator), https);
-                    return (await c.Login(new LoginCommand("ana", "pw"), default), c);
+                    return (await c.Login(new LoginCommand("ana", "pw"), StubLoginAttemptThrottle.AdmitAll, default), c);
                 }
             case "global-login":
                 {
                     var c = WithContext(new AuthController(mediator), https);
-                    return (await c.GlobalLogin(new GlobalLoginCommand("ana", "pw"), default), c);
+                    return (await c.GlobalLogin(new GlobalLoginCommand("ana", "pw"), StubLoginAttemptThrottle.AdmitAll, default), c);
                 }
             case "complete-password-reset":
                 {

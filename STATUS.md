@@ -1,5 +1,22 @@
 # Project Status
 
+## SEC-A01 — límites de intentos de login — IMPLEMENTADO EN LOCAL, NO CLOSED (2026-11-03)
+
+`login` y `global-login` con admisión previa al handler: reserva atómica K1 cuenta+IP (5/15 min),
+K2 IP (desactivado) y K3 cuenta (30/15 min), concurrencia por instancia configurable, 429
+`RATE_LIMITED` y 503 `LOGIN_THROTTLE_UNAVAILABLE` (Redis configurado e inaccesible, o sin Redis
+fuera de Development/Testing). `X-Forwarded-For` solo desde proxies declarados (lista vacía).
+Handlers, BCrypt, JWT, refresh, sesiones, permisos y frontend sin cambios.
+Contrato: [Seguridad — Límites de intentos de login](docs/architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-local-no-closed).
+
+PASS agente (focales): Infrastructure 22/22 (reserva en memoria, throttle de login, regresión
+`TryAcquireAsync`) y 9/9 Redis vía Testcontainers; API 233/233 (contrato 429/503, proxies
+confiables, AuthController, cookie de refresh, matriz de errores); arquitectura 10/10 (controllers,
+contrato de respuestas, superficie de auth); HTTP real de login 1/1. Sin suite completa.
+Pendiente: revisión y commit del propietario, CI, y gates de producción — valores medidos
+(`t_bcrypt`, concurrencia, cola), IP real verificada detrás del proxy antes de activar K2 y
+declarar proxies, Redis en producción. Riesgo residual: bloqueo dirigido temporal vía K3.
+
 ## AUTH-INTERCEPTOR-FIX-01 — corrección focal — CLOSED (2026-11-03)
 
 BUG REAL reproducido antes del fix: 401 de `global-login` y `complete-password-reset`

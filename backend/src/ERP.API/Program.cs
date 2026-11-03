@@ -528,6 +528,11 @@ if (
         .SyncFeaturesAsync();
 }
 
+// SEC-A01: primero del pipeline, solo con proxies confiables declarados (vacío = desactivado).
+var forwardedHeadersOptions = TrustedProxyForwardedHeaders.Create(builder.Configuration);
+if (forwardedHeadersOptions is not null)
+    app.UseForwardedHeaders(forwardedHeadersOptions);
+
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();

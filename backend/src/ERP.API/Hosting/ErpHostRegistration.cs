@@ -137,6 +137,9 @@ public static class ErpHostRegistration
         services.Configure<PasswordResetOptions>(
             configuration.GetSection(PasswordResetOptions.SectionName)
         );
+        services.Configure<LoginThrottleOptions>(
+            configuration.GetSection(LoginThrottleOptions.SectionName)
+        );
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.Section));
         services.Configure<SriPollingOptions>(configuration.GetSection(SriPollingOptions.Section));
         services.Configure<SriHealthOptions>(configuration.GetSection(SriHealthOptions.Section));

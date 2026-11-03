@@ -9,3 +9,6 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   navegador/API/PostgreSQL ni declarar CLOSED. Estado y gates en [STATUS](../../STATUS.md).
 - Caso #32: manejo de respuestas inciertas del SRI implementado; pendiente E2E integrada junto con
   #20, #30 y #31. No declarar CLOSED. Estado y gates en [STATUS](../../STATUS.md).
+- SEC-A01: límites de login implementados en local; pendiente revisión del propietario y los gates
+  de producción (IP real tras proxy, parámetros medidos). No declarar CLOSED. Estado y gates en
+  [STATUS](../../STATUS.md).

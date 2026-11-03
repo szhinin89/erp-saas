@@ -87,6 +87,40 @@ Una empresa no consulta, modifica, usa ni afecta datos operativos de otra, aunqu
 
 Detalle endpoints y claims: `docs/IDENTITY.md`.
 
+### Límites de intentos de login (SEC-A01 — implementación local, no CLOSED)
+
+`POST /api/v1/auth/login` y `POST /api/v1/auth/global-login` pasan por `ILoginAttemptThrottle`
+(`LoginAttemptThrottle`) en el controller **antes** del handler; handlers, BCrypt, JWT, refresh y
+sesiones no cambian. Ambas rutas comparten contadores (prefijo `erp:auth:login:`, claves con
+SHA-256 del usuario normalizado y de la IP, nunca en claro) y configuración (`LoginThrottle`).
+
+- **Contadores** (ventana fija alineada de `WindowMinutes`, el número de ventana forma parte de la
+  clave): K1 cuenta + IP (`AccountIpLimit`, siempre activo), K2 IP (`IpLimit`, 0 = desactivado),
+  K3 cuenta (`AccountLimit`, 0 = desactivado).
+- **Admisión atómica**: `DistributedFixedWindowRateLimit.TryReserveAllAsync` comprueba todos los
+  contadores y solo entonces reserva uno en cada uno (Lua con Redis; lock único en el respaldo en
+  memoria). Un rechazo no modifica ni crea ningún contador.
+- **Concurrencia**: `ConcurrencyLimiter` único por instancia (`MaxConcurrentVerifications`,
+  `QueueLimit`, `MaxQueueWaitMilliseconds`), pedido después de la reserva; sin permiso se devuelve la
+  reserva.
+- **Liberación**: solo un login exitoso devuelve la reserva (`ReleaseAllAsync`, nunca negativo; una
+  liberación tardía no toca la ventana siguiente). Credenciales inválidas, otros fallos, excepciones
+  o cancelación durante el handler la conservan hasta que vence la ventana. No hay bloqueo
+  permanente.
+- **Respuestas**: límite excedido o sin capacidad → 429 `RATE_LIMITED`; Redis configurado pero
+  inaccesible → 503 `LOGIN_THROTTLE_UNAVAILABLE` sin verificar la contraseña. Sin Redis
+  configurado, el respaldo en memoria solo se usa en Development/Testing; en otro entorno → 503.
+- **IP del cliente**: `Connection.RemoteIpAddress`. `X-Forwarded-For` solo se procesa desde
+  `ForwardedHeaders:KnownProxies`/`KnownNetworks` (vacío por defecto = no se procesa; sin loopback
+  implícito; `ForwardLimit = 1`).
+- **Riesgo residual aceptado**: sin cookie de dispositivo, un atacante que conoce un usuario puede
+  bloquearlo temporalmente desde cualquier origen al llenar K3, y desde la misma IP al llenar K1.
+
+**Gates pendientes antes de producción**: valores definitivos de límites, concurrencia y cola
+(`t_bcrypt` medido en el hardware real); IP real del cliente verificada detrás del proxy de
+despliegue y `KnownProxies`/`KnownNetworks` reales antes de activar K2; Redis disponible y
+`Redis:Required` acorde al número de instancias; HTTPS/`X-Forwarded-Proto` fuera de este alcance.
+
 ---
 
 ## Roles — fuente única (`SecurityRoles` / `isAdminRole`)

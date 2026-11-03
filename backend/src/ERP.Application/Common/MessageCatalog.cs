@@ -146,6 +146,12 @@ public static class MessageCatalog
             "Rate limit exceeded.",
             ApiErrorCategory.RateLimit
         ),
+        [ApiResponseCodes.Auth.LoginThrottleUnavailable] = new(
+            ApiSeverity.Error,
+            "El inicio de sesión no está disponible temporalmente. Reintente en unos segundos.",
+            "Login throttle store unavailable; credentials not verified.",
+            ApiErrorCategory.Infrastructure
+        ),
         [ApiResponseCodes.Access.PermissionsInvalidationUnavailable] = new(
             ApiSeverity.Error,
             "No se pudo garantizar la actualización de permisos. No se aplicó ningún cambio; reintente en unos segundos.",

@@ -343,11 +343,13 @@ public sealed class AuthControllerTests
         var a = await BuildController(_ => failure)
             .Login(
                 new ERP.Application.Auth.UseCases.Login.LoginCommand("no-existe", "x"),
+                StubLoginAttemptThrottle.AdmitAll,
                 CancellationToken.None
             );
         var b = await BuildController(_ => failure)
             .Login(
                 new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "mala"),
+                StubLoginAttemptThrottle.AdmitAll,
                 CancellationToken.None
             );
 
@@ -366,6 +368,7 @@ public sealed class AuthControllerTests
         var response = await BuildController(_ => conflict)
             .Login(
                 new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"),
+                StubLoginAttemptThrottle.AdmitAll,
                 CancellationToken.None
             );
 
@@ -385,6 +388,7 @@ public sealed class AuthControllerTests
         var response = await BuildController(_ => failure)
             .Login(
                 new ERP.Application.Auth.UseCases.Login.LoginCommand("ana.perez", "ok"),
+                StubLoginAttemptThrottle.AdmitAll,
                 CancellationToken.None
             );
 

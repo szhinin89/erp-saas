@@ -70,6 +70,14 @@ El Redis local (`infrastructure/docker/compose.base.yml`) ya declara esa configu
 existente conserva la anterior hasta recrearlo (`docker compose up -d redis`). Redis solo contiene
 cachés y contadores efímeros (permisos, consultas, rate limits): perder su contenido es seguro.
 
+## Límites de login (SEC-A01)
+
+Fuera de Development/Testing, `login` y `global-login` responden 503 `LOGIN_THROTTLE_UNAVAILABLE`
+si Redis no está configurado o no responde. `LoginThrottle__*` trae valores candidatos (K2 por IP
+desactivado). `ForwardedHeaders__KnownProxies__N`/`ForwardedHeaders__KnownNetworks__N` están vacíos:
+no declarar proxies sin haber verificado la IP/red real del proxy del despliegue. Contrato y gates:
+[Seguridad — Límites de intentos de login](../architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-local-no-closed).
+
 ## Configuración compartida y específica
 
 El anchor común de Compose comparte conexión ERP, `Hangfire__StorageConnectionString`,

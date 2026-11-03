@@ -128,7 +128,8 @@ Interceptor / applicator: `DbSessionContextApplicator` (`ISessionContext`).
 
 ### Rate limiting
 
-Política `per-tenant` (`Program.cs`).
+Política `per-tenant` (`Program.cs`). `login` y `global-login`: límites de intentos y concurrencia
+(SEC-A01) — contrato en [Seguridad — Límites de intentos de login](architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-local-no-closed).
 
 ### Observabilidad
 

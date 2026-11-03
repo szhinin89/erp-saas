@@ -148,6 +148,8 @@ public static class DependencyInjection
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IPasswordResetLinkSender, LoggingPasswordResetLinkSender>();
         services.AddScoped<IPasswordResetRequestThrottle, PasswordResetRequestThrottle>();
+        // SEC-A01: singleton — el ConcurrencyLimiter de login es único por instancia.
+        services.AddSingleton<ILoginAttemptThrottle, LoginAttemptThrottle>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentCompany, CurrentCompanyService>();

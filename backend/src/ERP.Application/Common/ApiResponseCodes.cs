@@ -57,6 +57,15 @@ public static class ApiResponseCodes
     }
 
     /// <summary>
+    /// SEC-A01 — Redis de los límites de login configurado pero no disponible: el login se rechaza
+    /// (fail-closed) sin verificar la contraseña.
+    /// </summary>
+    public static class Auth
+    {
+        public const string LoginThrottleUnavailable = "LOGIN_THROTTLE_UNAVAILABLE";
+    }
+
+    /// <summary>
     /// SEC-06 — invalidación de la caché de permisos efectivos (fail-closed). Estables: el cliente
     /// distingue "no se aplicó nada" de "se guardó con propagación en modo protegido".
     /// </summary>
