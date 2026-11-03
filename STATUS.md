@@ -1,5 +1,58 @@
 # Project Status
 
+## SRI-TOGGLE-08 — gate final de SRI-TOGGLE-06/07 — PASS agente, listo para gate del propietario (2026-11-02)
+
+PostgreSQL afectado 300/300 (interruptor, candidatos, recuperación y anulaciones de retenciones/gastos, reclamos,
+SRI incierto, retransmisión corregida, decoradores y XML de proveedores). Architecture 145/145, `architecture:check`
+140/140, `tsc -b` y `git diff --check` limpios. Sin cambios en XML, XAdES, firma, SOAP, migraciones, secuenciales ni
+históricos (`docs/archive`, snapshots previos del Dashboard).
+**Fallos de vitest de Compras — preexistentes, no regresión:** reproducidos en el commit base `fa1890bc4` (código
+extraído con `git archive` en un directorio aislado, mismas dependencias) con resultado idéntico al árbol actual.
+6 deterministas: 5 en `purchaseLinePresentation.test.ts` (PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01: IVA/Total
+de cabecera quedan en el snapshot XML, p. ej. IVA 6.13 en lugar de 15) y 1 en `PurchaseFormFeedback.test.tsx`
+(equivalencia en unidad base). El 7.º es intermitente bajo carga y cambia de archivo entre corridas
+(`ResolvePendingProductsModal.flows` en la base, `ProductPicker` en el árbol actual); ambos pasan 3/3 aislados en los
+dos árboles. Ningún archivo involucrado difiere de la base. Quedan como deuda del módulo Compras (CLOSED), fuera de
+este alcance; no se corrigieron.
+
+## SRI-TOGGLE-07 — pausa total sin excepciones y corte garantizado — READY FOR REVIEW (2026-11-02)
+
+Con `electronic_documents.emission_enabled=false` tampoco se descarga XML de proveedores (422
+`ELECTRONIC_DOCUMENT_EMISSION_DISABLED`, el comprobante sigue Importado), ni se verifica la vigencia de NC de proveedor
+(reprocesamiento bloqueado fail-closed, sin suponer vigencia), ni se hace ping de diagnóstico (conectividad "no
+verificada"). Garantía de corte: todo consumidor llama al SRI dentro de `IElectronicEmissionSwitch.EnterSriCallAsync`
+(lock consultivo compartido de sesión por empresa, desde el control hasta el fin de la llamada); el cambio del
+interruptor espera a las llamadas en curso y, confirmado el apagado, no inicia ninguna nueva. Inventario cerrado
+sin excepciones (`SriAccessEmissionSwitchBoundaryTests`). UI: recepción de compras muestra la pausa y deshabilita la
+consulta/descarga de XML. Contrato: [backend.md § Límites y finalización](docs/architecture/backend.md#límites-y-finalización),
+[ADR-023 addendum SRI-TOGGLE-07](docs/decisions/ADR-023-electronic-documents-v1-closure.md). Sin migraciones,
+XML/XAdES/firma/SOAP/secuenciales, SRI real, commit ni push. Pendiente gate del propietario.
+PASS agente: Application 1242/1242 (ElectronicDocuments, Retentions, SalesReturn, ElectronicInvoicing, preferencias,
+Purchase*), API 186/186 (job de reintentos, contrato de errores incl. download-xml pausado, ElectronicInvoicing,
+OpenAPI, PurchaseReturnEndToEnd incl. reprocesamiento con interruptor real, recepción), Architecture 145/145,
+Infrastructure PostgreSQL 299/300 + rerun 6/6 del test de 04 adaptado al nuevo contrato; frontend `tsc -b`, lint
+(0 errores), build, `architecture:check` 140/140, vitest focal 722/729 (fallos preexistentes, ver SRI-TOGGLE-08).
+Dashboard regenerado.
+
+## SRI-TOGGLE-06 — pausa total de la emisión electrónica por empresa — READY FOR REVIEW (2026-11-02)
+
+`electronic_documents.emission_enabled` en OFF bloquea toda llamada al SRI sobre comprobantes propios de la empresa:
+transmisiones, reintentos, consultas de autorización manuales y automáticas, historial R12, retransmisiones,
+ConsultaComprobante (anulaciones de retención) y los jobs (reintentos y polling de anulaciones filtran en SQL en todo
+estado). Conserva datos, estados, secuenciales, auditoría, lectura local y operaciones comerciales; sin DeadLetter
+por exhaución mientras está pausada. ON restablece funciones, pero los procesos automáticos no retoman pendientes
+anteriores a la última habilitación (transmisión ni consulta): requieren acción explícita. UI: aviso de pausa y
+acciones SRI deshabilitadas en Monitor y anulación. Inventario de rutas SRI verificado por reflexión
+(`SriAccessEmissionSwitchBoundaryTests`); fuera del alcance: XML/NC de proveedores. Contrato:
+[backend.md § Límites y finalización](docs/architecture/backend.md#límites-y-finalización),
+[ADR-023 addendum SRI-TOGGLE-06](docs/decisions/ADR-023-electronic-documents-v1-closure.md). Sin migraciones,
+XML/XAdES/firma/SOAP/secuenciales, SRI real, commit ni push. Pendiente gate del propietario.
+PASS agente: Application 617/617 (ElectronicDocuments, Retentions, SalesReturn, estado, preferencias), API 131/131
+(job de reintentos PostgreSQL, contrato de errores, ElectronicInvoicing, OpenAPI), Architecture 18/18 (incl.
+`SriAccessEmissionSwitchBoundaryTests`), Infrastructure PostgreSQL 258/259 + rerun del interruptor 15/15 (el único
+fallo era la siembra de un test nuevo, corregida); frontend `tsc -b`, lint, vitest focal 72/72, build,
+`architecture:check` 140/140; Dashboard regenerado.
+
 ## SRI-TOGGLE-04 — reanudación automática solo con actividad posterior a la habilitación — READY FOR REVIEW (2026-11-02)
 
 Cierra sin migración las ventanas de Retenciones y de la recuperación de Ventas, incluida la re-habilitación entre

@@ -166,8 +166,8 @@ public static class MessageCatalog
         ),
         [ApiResponseCodes.ElectronicDocuments.EmissionDisabled] = new(
             ApiSeverity.Error,
-            "La emisión electrónica está deshabilitada para esta empresa o el comprobante requiere reanudación explícita.",
-            "Company electronic emission disabled (or pending document requires explicit resume); no SRI transmission started.",
+            "La emisión electrónica está deshabilitada para esta empresa (no se envía ni consulta nada en el SRI) o el pendiente requiere reanudación explícita.",
+            "Company electronic emission paused (no SRI transmission or query), or the pending item requires explicit resume.",
             ApiErrorCategory.Validation
         ),
         [ApiResponseCodes.ElectronicDocuments.SourceCancellationInProcess] = new(

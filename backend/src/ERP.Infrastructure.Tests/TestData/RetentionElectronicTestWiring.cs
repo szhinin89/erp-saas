@@ -389,6 +389,15 @@ public static class RetentionElectronicTestWiring
         ICurrentCompany company,
         ISriDocumentStatusQuery sriStatus,
         params IRetentionOriginCancellation[] origins
+    ) => AnnulmentService(db, company, sriStatus, EnabledElectronicEmissionSwitch.Instance, origins);
+
+    /// <summary>SRI-TOGGLE-06 — mismo ciclo con un interruptor de emisión explícito (real en PostgreSQL).</summary>
+    public static IRetentionAnnulmentService AnnulmentService(
+        ErpDbContext db,
+        ICurrentCompany company,
+        ISriDocumentStatusQuery sriStatus,
+        IElectronicEmissionSwitch emission,
+        params IRetentionOriginCancellation[] origins
     ) =>
         new RetentionAnnulmentService(
             new RetentionAnnulmentRequestRepository(db),
@@ -399,6 +408,7 @@ public static class RetentionElectronicTestWiring
             origins,
             sriStatus,
             SriSettings(company.CompanyId),
+            emission,
             new CompanyClock(db),
             AccountingContinuityTestWiring.DispatcherFor(db),
             NullLogger<RetentionAnnulmentService>.Instance

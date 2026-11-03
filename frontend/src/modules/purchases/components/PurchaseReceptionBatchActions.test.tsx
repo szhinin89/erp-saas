@@ -81,3 +81,14 @@ describe("FASE 5 PURCHASE-UX — barra compacta de acciones del lote", () => {
     expect(screen.getByTestId("progress")).toBeTruthy();
   });
 });
+
+describe("SRI-TOGGLE-07 — emisión pausada", () => {
+  it("deshabilita la descarga de XML pendientes (consulta el SRI) y mantiene Actualizar estados", () => {
+    const { onDownloadPendingXml } = show({ sriPaused: true });
+    expect(downloadButton().disabled).toBe(true);
+    expect(downloadButton().title).toMatch(/pausada/);
+    fireEvent.click(downloadButton());
+    expect(onDownloadPendingXml).not.toHaveBeenCalled();
+    expect(refreshButton().disabled).toBe(false);
+  });
+});

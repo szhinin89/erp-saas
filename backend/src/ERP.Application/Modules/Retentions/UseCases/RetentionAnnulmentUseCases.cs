@@ -242,7 +242,10 @@ public sealed class SubmitRetentionAnnulmentHandler
                 ? verified
                 : Result<RetentionAnnulmentRequest>.Success(
                     current,
-                    ApiResponseCodes.Retentions.SriVerificationFailed
+                    // SRI-TOGGLE-06 — pausa: la presentación queda registrada, sin consulta al SRI.
+                    verified.Code == ApiResponseCodes.ElectronicDocuments.EmissionDisabled
+                        ? ApiResponseCodes.ElectronicDocuments.EmissionDisabled
+                        : ApiResponseCodes.Retentions.SriVerificationFailed
                 ),
             ct
         );

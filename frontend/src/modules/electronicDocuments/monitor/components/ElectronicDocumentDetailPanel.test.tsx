@@ -282,4 +282,26 @@ describe("ElectronicDocumentDetailPanel — Descargar RIDE", () => {
       expect(second.idempotencyKey).toBe(first.idempotencyKey);
     });
   });
+
+  describe("SRI-TOGGLE-06 — emisión pausada", () => {
+    it("reintentar y conciliar quedan deshabilitados (el permiso no cambia)", () => {
+      const pending = detail({}, "Received");
+      pending.diagnostic.requiresReconciliation = true;
+      renderPanel({
+        detail: pending,
+        canRetry: true,
+        canReconcile: true,
+        onReconcile: vi.fn(),
+        sriPaused: true,
+      });
+      const retry = screen.getByRole("button", { name: /Reintentar ahora|Retry now/ }) as HTMLButtonElement;
+      const reconcile = screen.getByRole("button", { name: /Registrar conciliación|Record reconciliation/ }) as HTMLButtonElement;
+      expect(retry.disabled).toBe(true);
+      expect(reconcile.disabled).toBe(true);
+      expect(retry.title).toMatch(/pausada|paused/);
+      cleanup();
+      renderPanel({ detail: pending, canRetry: true });
+      expect((screen.getByRole("button", { name: /Reintentar ahora|Retry now/ }) as HTMLButtonElement).disabled).toBe(false);
+    });
+  });
 });

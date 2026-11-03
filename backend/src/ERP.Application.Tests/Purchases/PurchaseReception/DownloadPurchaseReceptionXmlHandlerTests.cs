@@ -64,7 +64,10 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         Mock<IBusinessPartnerRepository> bpRepo,
         Mock<ISriReceptionXmlProvider> provider,
         Mock<IPurchaseReceptionDetailProcessor> detailProcessor
-    ) BuildHandler(bool useRealInvoiceProcessor = false)
+    ) BuildHandler(
+        bool useRealInvoiceProcessor = false,
+        ERP.Application.Modules.ElectronicDocuments.Services.IElectronicEmissionSwitch? emission = null
+    )
     {
         var repo = new Mock<IPurchaseReceptionDocumentRepository>();
         var purchaseRepo = new Mock<IPurchaseInvoiceRepository>();
@@ -114,6 +117,7 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
             tenant.Object,
             company.Object,
             user.Object,
+            emission ?? ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(),
             logger.Object
         );
 
@@ -328,6 +332,30 @@ public sealed class DownloadPurchaseReceptionXmlHandlerTests
         document.LinesProcessedCount.Should().Be(1);
         document.Lines.Should().ContainSingle().Which.TotalLine.Should().Be(11.5m);
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_07_emision_pausada_no_consulta_el_SRI_y_el_documento_sigue_Importado()
+    {
+        var document = SampleDocument();
+        var emission = (ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.FixedEmissionSwitch)
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(enabled: false);
+        var (handler, repo, _, _, provider, _) = BuildHandler(emission: emission);
+        repo.Setup(r => r.GetByIdAsync(TenantId, document.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(document);
+
+        var result = await handler.Handle(
+            new DownloadPurchaseReceptionXmlCommand(document.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
+        document.Status.Should().Be(PurchaseReceptionDocumentStatus.Imported, "nunca se supone autorización");
+        provider.VerifyNoOtherCalls();
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        emission.SriCallsEntered.Should().Equal((TenantId, CompanyId));
+        emission.OpenSriCalls.Should().Be(0);
     }
 
     [Fact]

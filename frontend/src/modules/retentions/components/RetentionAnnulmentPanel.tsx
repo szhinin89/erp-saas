@@ -9,6 +9,10 @@ import { formatDate, formatDateTime } from "../../../lib/formatters/dateFormatte
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import {
+  selectElectronicEmissionPaused,
+  useElectronicInvoicingStatusStore,
+} from "../../../store/electronicInvoicingStatusStore";
+import {
   retentionsService,
   type RetentionAnnulmentRequestDto,
   type RetentionAnnulmentStatus,
@@ -63,6 +67,8 @@ const SRI_STILL_AUTHORIZED = "El SRI todavía mantiene vigente el comprobante";
 const SRI_PENDING_ANNULMENT = "Pendiente de anulación en SRI";
 const SRI_NOT_AUTHORIZED = "El SRI informa NO AUTORIZADO para el comprobante. No se realizó ningún cambio; requiere revisión.";
 const SRI_VERIFICATION_FAILED = "No fue posible verificar el estado en SRI";
+/** SRI-TOGGLE-06 — emisión electrónica de la empresa pausada: el ERP no consulta ConsultaComprobante. */
+const SRI_PAUSED = "Emisión electrónica pausada: el ERP no consulta el estado en el SRI hasta habilitarla.";
 
 function statusPresentation(
   a: RetentionAnnulmentRequestDto,
@@ -103,13 +109,21 @@ function lastSriCheckText(a: RetentionAnnulmentRequestDto): string | null {
 }
 
 /** Mensaje tras presentar/verificar: lo que informó el SRI, o que no pudo verificarse. */
-function notifyVerification(updated: RetentionAnnulmentRequestDto, text: (typeof ANNULMENT_ORIGIN_TEXT)["purchase"]) {
+function notifyVerification(
+  updated: RetentionAnnulmentRequestDto,
+  text: (typeof ANNULMENT_ORIGIN_TEXT)["purchase"],
+  sriPaused: boolean,
+) {
   if (updated.status === "Accepted") {
     if (updated.finalizedAtUtc) message.success(text.cancelled);
     else message.warning(`El SRI confirmó ANULADO; la anulación de ${text.the} quedó pendiente y se reintentará.`);
     return;
   }
   if (updated.status !== "PendingSriResolution") return;
+  if (!updated.lastSriCheckAtUtc && sriPaused) {
+    message.info(SRI_PAUSED);
+    return;
+  }
   if (!updated.lastSriCheckAtUtc || updated.lastSriQueryOutcome !== "Success") {
     message.warning(SRI_VERIFICATION_FAILED);
     return;
@@ -150,9 +164,10 @@ export function RetentionAnnulmentPanel({
   const isOpen = annulment.status === "PendingSubmission" || annulment.status === "PendingSriResolution";
   const text = ANNULMENT_ORIGIN_TEXT[origin];
   const sriCheck = lastSriCheckText(annulment);
+  const sriPaused = useElectronicInvoicingStatusStore(selectElectronicEmissionPaused);
 
   const handleVerified = (updated: RetentionAnnulmentRequestDto) => {
-    notifyVerification(updated, text);
+    notifyVerification(updated, text, sriPaused);
     onChanged(updated);
   };
 
@@ -191,6 +206,7 @@ export function RetentionAnnulmentPanel({
           }
         />
       ) : null}
+      {isOpen && sriPaused ? <ZHPageNotice variant="neutral" icon="pause_circle" message={SRI_PAUSED} /> : null}
       {annulment.status === "Accepted" && annulment.finalizedAtUtc ? (
         <ZHPageNotice variant="success" message={text.cancelled} />
       ) : null}
@@ -261,7 +277,13 @@ export function RetentionAnnulmentPanel({
             </ZHBtn>
           ) : null}
           {annulment.status === "PendingSriResolution" ? (
-            <ZHBtn type="button" variant="primary" size="sm" disabled={busy !== null} onClick={() => void verifyWithSri()}>
+            <ZHBtn
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={busy !== null || sriPaused}
+              onClick={() => void verifyWithSri()}
+            >
               {busy === "verify" ? "Consultando al SRI..." : "Verificar estado en SRI"}
             </ZHBtn>
           ) : null}

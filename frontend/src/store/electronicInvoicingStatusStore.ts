@@ -153,3 +153,11 @@ export const useElectronicInvoicingStatusStore =
         healthLoadedAt: null,
       }),
   }));
+
+/**
+ * SRI-TOGGLE-06 — la empresa tiene la emisión electrónica pausada (`status === "Disabled"`, calculado por
+ * el backend): el ERP no envía ni consulta comprobantes en el SRI. Solo orienta la UI; el backend bloquea
+ * igual cualquier llamada.
+ */
+export const selectElectronicEmissionPaused = (s: ElectronicInvoicingStatusState): boolean =>
+  s.status?.status === "Disabled";

@@ -17,10 +17,10 @@ using Moq;
 namespace ERP.Application.Tests.ElectronicDocuments;
 
 /// <summary>
-/// SRI-TOGGLE-02 — control de emisión por empresa en <see cref="ElectronicDocumentIssuer"/>: sin emisión
-/// habilitada no hay XML, firma ni transmisión nueva (sin escrituras sobre el comprobante); las consultas
-/// de autorización siguen; un proceso automático no reanuda pendientes anteriores a la habilitación; el
-/// reclamo revalida con FOR SHARE dentro de su transacción.
+/// SRI-TOGGLE-02/06 — control de emisión por empresa en <see cref="ElectronicDocumentIssuer"/>: sin emisión
+/// habilitada no hay XML, firma, transmisión NI consulta al SRI (pausa total, sin escrituras sobre el
+/// comprobante); un proceso automático no reanuda pendientes anteriores a la habilitación; el reclamo
+/// revalida con FOR SHARE dentro de su transacción y la consulta de autorización se revalida justo antes.
 /// </summary>
 public sealed class ElectronicDocumentIssuerEmissionSwitchTests
 {
@@ -139,6 +139,14 @@ public sealed class ElectronicDocumentIssuerEmissionSwitchTests
         return document;
     }
 
+    private static ElectronicDocument NewReceived()
+    {
+        var document = NewSigned();
+        document.MarkSent(UserId);
+        document.MarkReceived(UserId);
+        return document;
+    }
+
     [Fact]
     public async Task Deshabilitada_registrar_crea_Draft_sin_XML_firma_ni_transmision()
     {
@@ -188,18 +196,144 @@ public sealed class ElectronicDocumentIssuerEmissionSwitchTests
         h.Repository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Fact]
-    public async Task Deshabilitada_un_Signed_sigue_consultando_autorizacion_sin_reenviar()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SRI_TOGGLE_06_deshabilitada_un_Signed_no_se_consulta_ni_registra_intento(bool automatic)
     {
         var document = NewSigned();
+        var retries = document.RetryCount;
         var h = new Harness(ElectronicEmissionState.Disabled);
         h.Returns(document);
 
-        await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+        var result = await h.Issuer.RetryAsync(TenantId, document.Id, automatic ? Guid.Empty : UserId);
 
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
+        result.Error.Should().Contain("no se envía ni se consulta");
+        document.CurrentState.Should().Be(ElectronicDocumentState.Signed);
+        document.RetryCount.Should().Be(retries);
+        h.Authorization.VerifyNoOtherCalls();
+        h.Reception.VerifyNoOtherCalls();
+        h.Repository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_deshabilitada_un_Received_con_dispatch_protocol_no_se_consulta()
+    {
+        var guard = new Mock<IElectronicDocumentSourceLifecycleGuard>();
+        guard.SetupGet(g => g.SourceModule).Returns("Sales");
+        guard.SetupGet(g => g.UsesDispatchProtocol).Returns(true);
+        guard
+            .Setup(g => g.EvaluateAsync(TenantId, CompanyId, SourceId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ElectronicDocumentSourceLifecycle.Allowed);
+        var document = NewReceived();
+        var h = new Harness(ElectronicEmissionState.Disabled, guard.Object);
+        h.Returns(document);
+
+        var result = await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
+        document.CurrentState.Should().Be(ElectronicDocumentState.Received);
+        h.Authorization.VerifyNoOtherCalls();
+        h.Repository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_deshabilitada_reactivar_DeadLetter_de_consulta_se_bloquea_antes_de_escribir()
+    {
+        var document = NewReceived();
+        document.MarkDeadLetter("agotado (test)", UserId);
+        var h = new Harness(ElectronicEmissionState.Disabled);
+        h.Returns(document);
+
+        var result = await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
+        document.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
+        h.Authorization.VerifyNoOtherCalls();
+        h.Repository.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_habilitada_consulta_automatica_de_un_Received_anterior_requiere_accion_explicita()
+    {
+        var document = NewReceived();
+        var h = new Harness(Enabled(since: DateTime.UtcNow.AddMinutes(1)));
+        h.Returns(document);
+
+        var automatic = await h.Issuer.RetryAsync(TenantId, document.Id, Guid.Empty);
+
+        automatic.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
+        automatic.Error.Should().Contain("reanudación explícita");
+        h.Authorization.VerifyNoOtherCalls();
+
+        var manual = await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        manual.IsSuccess.Should().BeTrue();
         h.Authorization.Verify(a => a.CheckAsync(CompanyId, AccessKeyValue, It.IsAny<CancellationToken>()), Times.Once);
         h.Reception.VerifyNoOtherCalls();
-        h.Emission.Calls.Should().BeEmpty("una consulta no es una transmisión nueva");
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_habilitada_consulta_automatica_de_actividad_posterior_continua()
+    {
+        var document = NewReceived();
+        var h = new Harness(Enabled(since: DateTime.UtcNow.AddHours(-1)));
+        h.Returns(document);
+
+        var automatic = await h.Issuer.RetryAsync(TenantId, document.Id, Guid.Empty);
+
+        automatic.IsSuccess.Should().BeTrue();
+        h.Authorization.Verify(a => a.CheckAsync(CompanyId, AccessKeyValue, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_apagado_confirmado_tras_el_control_omite_la_consulta_de_autorizacion()
+    {
+        var document = NewSigned();
+        var h = new Harness(Enabled());
+        h.Returns(document);
+        // El apagado se confirma después del control inicial (al persistir el intento).
+        h.Repository.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => h.Emission.State = ElectronicEmissionState.Disabled)
+            .Returns(Task.CompletedTask);
+
+        await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        document.CurrentState.Should().Be(ElectronicDocumentState.Signed);
+        h.Authorization.VerifyNoOtherCalls();
+        h.Reception.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_apagado_durante_el_intento_no_cierra_el_pendiente_por_exhaucion()
+    {
+        var document = NewFailed(failures: 4);
+        var h = new Harness(Enabled());
+        h.Returns(document);
+        // Sin generador de XML el intento falla (5.º fallo = máximo por defecto); el apagado llega durante él.
+        h.Suppliers.Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
+            .Callback(() => h.Emission.State = ElectronicEmissionState.Disabled)
+            .Returns((IElectronicDocumentXmlSupplier?)null);
+
+        await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        document.CurrentState.Should().Be(ElectronicDocumentState.Failed, "la pausa conserva los estados");
+        document.RetryCount.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_habilitada_el_mismo_fallo_si_cierra_por_exhaucion()
+    {
+        var document = NewFailed(failures: 4);
+        var h = new Harness(Enabled());
+        h.Returns(document);
+        h.Suppliers.Setup(r => r.Resolve(ElectronicDocumentType.Invoice))
+            .Returns((IElectronicDocumentXmlSupplier?)null);
+
+        await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        document.CurrentState.Should().Be(ElectronicDocumentState.DeadLetter);
     }
 
     [Fact]
@@ -345,17 +479,47 @@ public sealed class ElectronicDocumentIssuerEmissionSwitchTests
         h.Emission.Calls.Select(c => c.LockForShare).Should().Equal(false, true);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SRI_TOGGLE_07_todo_reintento_corre_en_el_ambito_SRI_y_siempre_lo_libera(bool enabled)
+    {
+        var document = NewReceived();
+        var h = new Harness(enabled ? Enabled() : ElectronicEmissionState.Disabled);
+        h.Returns(document);
+
+        await h.Issuer.RetryAsync(TenantId, document.Id, UserId);
+
+        h.Emission.SriCallsEntered.Should().Equal((TenantId, CompanyId));
+        h.Emission.OpenSriCalls.Should().Be(0);
+        if (enabled)
+            h.Authorization.Verify(a => a.CheckAsync(CompanyId, AccessKeyValue, It.IsAny<CancellationToken>()), Times.Once);
+        else
+            h.Authorization.VerifyNoOtherCalls();
+    }
+
     [Fact]
-    public void Regla_de_transmision_automatica_vs_explicita()
+    public async Task SRI_TOGGLE_07_registrar_corre_el_pipeline_dentro_del_ambito_SRI()
+    {
+        var h = new Harness(ElectronicEmissionState.Disabled);
+
+        await h.Issuer.RegisterAsync(Register(UserId));
+
+        h.Emission.SriCallsEntered.Should().Equal((TenantId, CompanyId));
+        h.Emission.OpenSriCalls.Should().Be(0);
+    }
+
+    [Fact]
+    public void Regla_de_acceso_al_SRI_automatico_vs_explicito()
     {
         var since = new DateTime(2026, 11, 2, 12, 0, 0, DateTimeKind.Utc);
         var state = new ElectronicEmissionState(true, since);
 
-        state.AllowsTransmission(null, since.AddMinutes(-5), automatic: true).Should().BeFalse();
-        state.AllowsTransmission(since.AddMinutes(1), since.AddMinutes(-5), automatic: true).Should().BeTrue();
-        state.AllowsTransmission(null, since, automatic: true).Should().BeTrue();
-        state.AllowsTransmission(null, null, automatic: true).Should().BeFalse("sin actividad conocida");
-        state.AllowsTransmission(null, since.AddMinutes(-5), automatic: false).Should().BeTrue();
-        ElectronicEmissionState.Disabled.AllowsTransmission(since, since, automatic: false).Should().BeFalse();
+        state.AllowsSriAccess(null, since.AddMinutes(-5), automatic: true).Should().BeFalse();
+        state.AllowsSriAccess(since.AddMinutes(1), since.AddMinutes(-5), automatic: true).Should().BeTrue();
+        state.AllowsSriAccess(null, since, automatic: true).Should().BeTrue();
+        state.AllowsSriAccess(null, null, automatic: true).Should().BeFalse("sin actividad conocida");
+        state.AllowsSriAccess(null, since.AddMinutes(-5), automatic: false).Should().BeTrue();
+        ElectronicEmissionState.Disabled.AllowsSriAccess(since, since, automatic: false).Should().BeFalse();
     }
 }

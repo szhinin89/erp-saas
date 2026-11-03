@@ -112,6 +112,7 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
     private readonly IEnumerable<IRetentionOriginCancellation> _origins;
     private readonly ISriDocumentStatusQuery _statusQuery;
     private readonly ISriSettingsRepository _sriSettings;
+    private readonly IElectronicEmissionSwitch _emissionSwitch;
     private readonly ICompanyClock _clock;
     private readonly IAccountingPostingDispatcher _accountingPostings;
     private readonly ILogger<RetentionAnnulmentService> _logger;
@@ -125,6 +126,7 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         IEnumerable<IRetentionOriginCancellation> origins,
         ISriDocumentStatusQuery statusQuery,
         ISriSettingsRepository sriSettings,
+        IElectronicEmissionSwitch emissionSwitch,
         ICompanyClock clock,
         IAccountingPostingDispatcher accountingPostings,
         ILogger<RetentionAnnulmentService> logger
@@ -139,6 +141,7 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         _origins = origins;
         _statusQuery = statusQuery;
         _sriSettings = sriSettings;
+        _emissionSwitch = emissionSwitch;
         _clock = clock;
         _logger = logger;
     }
@@ -177,8 +180,34 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         if (request.Status != RetentionAnnulmentStatus.PendingSriResolution)
             return await NotVerifiableAsync(request, userId, ct);
 
-        // Consulta SOAP fuera de cualquier transacción/lock (puede tardar: reintentos HTTP del cliente).
-        var sri = await QuerySriAsync(companyId, request.AccessKey, ct);
+        // SRI-TOGGLE-06 — ConsultaComprobante es una llamada al SRI sobre un comprobante propio: con la emisión
+        // pausada no se consulta (ni se registra la consulta). Un proceso automático (job) además exige
+        // actividad posterior a la última habilitación (última consulta o presentación). SRI-TOGGLE-07: control y
+        // consulta dentro del ámbito SRI de la empresa (un apagado espera a que termine la consulta).
+        SriDocumentStatusResult sri;
+        await using (var sriCall = await _emissionSwitch.EnterSriCallAsync(tenantId, companyId, ct))
+        {
+            var emission = await _emissionSwitch.GetAsync(tenantId, companyId, lockForShare: false, ct);
+            if (
+                !emission.AllowsSriAccess(
+                    request.LastSriCheckAtUtc,
+                    request.SubmittedAtUtc,
+                    automatic: userId == Guid.Empty
+                )
+            )
+            {
+                LogVerificationPaused(request.Id, companyId, emission.Enabled);
+                return Result<RetentionAnnulmentRequest>.ValidationFailure(
+                    emission.Enabled
+                        ? "La solicitud quedó pendiente antes de habilitar la emisión electrónica: verifíquela explícitamente."
+                        : "La emisión electrónica está deshabilitada para esta empresa: no se consulta el estado en el SRI hasta habilitarla.",
+                    ApiResponseCodes.ElectronicDocuments.EmissionDisabled
+                );
+            }
+
+            // Consulta SOAP fuera de cualquier transacción/lock de negocio (puede tardar: reintentos HTTP del cliente).
+            sri = await QuerySriAsync(companyId, request.AccessKey, ct);
+        }
         LogVerified(
             request.Id,
             sri.Outcome,
@@ -533,6 +562,12 @@ public sealed partial class RetentionAnnulmentService : IRetentionAnnulmentServi
         SriFiscalStatus fiscalStatus,
         string? raw
     );
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "[Retentions] Anulación SRI {RequestId}: ConsultaComprobante omitida, emisión de la empresa {CompanyId} pausada o sin reanudación explícita (habilitada: {Enabled})"
+    )]
+    private partial void LogVerificationPaused(Guid requestId, Guid companyId, bool enabled);
 
     [LoggerMessage(
         Level = LogLevel.Information,

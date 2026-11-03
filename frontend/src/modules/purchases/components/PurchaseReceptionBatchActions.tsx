@@ -16,6 +16,7 @@ export function PurchaseReceptionBatchActions({
   onRefreshStatuses,
   onDownloadPendingXml,
   progress,
+  sriPaused = false,
 }: {
   /** Comprobantes importados; null = todavía no hay importación (la barra no se muestra). */
   importedCount: number | null;
@@ -26,6 +27,8 @@ export function PurchaseReceptionBatchActions({
   onDownloadPendingXml: () => void;
   /** Progreso de la descarga de XML; null/undefined = no se renderiza nada debajo de la fila. */
   progress?: ReactNode;
+  /** SRI-TOGGLE-07 — emisión de la empresa pausada: la descarga consulta el SRI y se deshabilita. */
+  sriPaused?: boolean;
 }) {
   const { t } = useI18n();
   if (importedCount === null) return null;
@@ -59,7 +62,8 @@ export function PurchaseReceptionBatchActions({
             variant="secondary"
             size="sm"
             type="button"
-            disabled={busy}
+            disabled={busy || sriPaused}
+            title={sriPaused ? t("purchases.reception.sriPaused.actionHint", "Emisión electrónica pausada: no se consulta el SRI.") : undefined}
             onClick={onDownloadPendingXml}
           >
             <span className="material-symbols-outlined zh-icon-md">download</span>

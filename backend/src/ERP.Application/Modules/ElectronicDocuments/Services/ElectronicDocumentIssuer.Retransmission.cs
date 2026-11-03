@@ -59,6 +59,9 @@ public sealed partial class ElectronicDocumentIssuer
         if (document is null)
             return Result<ElectronicDocumentDto>.NotFound("El documento electrónico no existe.");
 
+        // SRI-TOGGLE-07 — historial, reclamo, envío y consulta dentro del ámbito SRI de la empresa.
+        await using var sriCall = await _emissionSwitch.EnterSriCallAsync(document.TenantId, document.CompanyId, ct);
+
         // Idempotencia: la misma solicitud ya reclamada devuelve el estado actual, sin otro envío.
         if (await IsReplayAsync(document, request.IdempotencyKey, ct))
             return Result<ElectronicDocumentDto>.Success(ElectronicDocumentMapper.ToDto(document));

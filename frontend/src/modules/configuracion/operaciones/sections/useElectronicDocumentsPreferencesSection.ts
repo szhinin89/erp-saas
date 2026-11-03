@@ -6,6 +6,7 @@ import { useI18n } from "../../../../i18n/i18n";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
+import { useElectronicInvoicingStatusStore } from "../../../../store/electronicInvoicingStatusStore";
 import {
   operationalPreferencesService,
   type ElectronicDocumentsPreferencesDto,
@@ -72,6 +73,8 @@ export function useElectronicDocumentsPreferencesSection() {
       });
       setSaved(true);
       resetFromData(updated.electronicDocuments);
+      // SRI-TOGGLE-06 — el estado global (banner, Monitor, anulaciones) refleja la pausa sin cambiar de empresa.
+      void useElectronicInvoicingStatusStore.getState().refresh();
     } catch (err) {
       const applied = applyServerErrors(err, form.setError, (msg) => setSaveError(msg));
       if (!applied) {

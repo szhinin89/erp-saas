@@ -85,6 +85,26 @@ public static class RetentionElectronicTestDoubles
             return Task.CompletedTask;
         }
 
+        /// <summary>SRI-TOGGLE-07 — ámbitos abiertos (entradas) y cerrados (salidas) por empresa.</summary>
+        public List<(Guid TenantId, Guid CompanyId)> SriCallsEntered { get; } = [];
+        public int OpenSriCalls { get; private set; }
+
+        public Task<IAsyncDisposable> EnterSriCallAsync(Guid tenantId, Guid companyId, CancellationToken ct = default)
+        {
+            SriCallsEntered.Add((tenantId, companyId));
+            OpenSriCalls++;
+            return Task.FromResult<IAsyncDisposable>(new Exit(this));
+        }
+
+        private sealed class Exit(FixedEmissionSwitch owner) : IAsyncDisposable
+        {
+            public ValueTask DisposeAsync()
+            {
+                owner.OpenSriCalls--;
+                return ValueTask.CompletedTask;
+            }
+        }
+
         public Task<ElectronicEmissionState> GetAsync(
             Guid tenantId,
             Guid companyId,

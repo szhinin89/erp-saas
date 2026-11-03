@@ -1,7 +1,7 @@
 ﻿{
-    "Generated":  "2026-11-02 11:45:48",
-    "FilesAnalyzed":  12337,
-    "TODO":  732,
+    "Generated":  "2026-11-02 17:03:45",
+    "FilesAnalyzed":  12339,
+    "TODO":  733,
     "FIXME":  30,
     "HACK":  1,
     "NotImplemented":  8,
@@ -16,7 +16,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\ApiErrorContractHttpTests.cs",
-                           "Lines":  574
+                           "Lines":  617
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.API.Tests\\Integration\\CajaVentasEndToEndTests.cs",
@@ -104,7 +104,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\ElectronicDocuments\\Services\\ElectronicDocumentIssuer.cs",
-                           "Lines":  1436
+                           "Lines":  1458
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Expenses\\UseCases\\Categories\\ExpenseCategoryUseCases.cs",
@@ -164,7 +164,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Retentions\\Services\\RetentionAnnulmentService.cs",
-                           "Lines":  685
+                           "Lines":  720
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Sales\\UseCases\\AuthorizeSalesUseCases.cs",
@@ -259,6 +259,10 @@
                            "Lines":  579
                        },
                        {
+                           "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentIssuerEmissionSwitchTests.cs",
+                           "Lines":  526
+                       },
+                       {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\ElectronicDocuments\\ElectronicDocumentIssuerReceptionTests.cs",
                            "Lines":  868
                        },
@@ -340,7 +344,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
-                           "Lines":  511
+                           "Lines":  512
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\CreatePurchaseReceptionDraftHandlerTests.cs",
@@ -348,7 +352,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\DownloadPurchaseReceptionXmlHandlerTests.cs",
-                           "Lines":  639
+                           "Lines":  667
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests\\Purchases\\PurchaseReception\\GetPurchaseReceptionXmlViewHandlerTests.cs",
@@ -720,7 +724,7 @@
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Modules\\Purchases\\PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
-                           "Lines":  852
+                           "Lines":  854
                        },
                        {
                            "File":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Infrastructure.Tests\\Payables\\SupplierPaymentEndToEndTests.cs",

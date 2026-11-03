@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-02 11:46:54",
+    "generated":  "2026-11-02 17:04:41",
     "source":  "modules.json (completion proxy = module score), dependencies.json (real dependency graph), impact.json (features/processes/risk), tasks.json (evidence-matched tasks)",
     "disclaimer":  "No effort/velocity data exists in this pipeline, so no completion dates or durations are estimated here -- only real relationship counts (dependents, features, processes).",
     "method":  {
@@ -432,11 +432,11 @@
                                                   "Refactor large file (696 lines): backend/src/ERP.API.Tests/Integration/CompanyAccessProfilesIsolationHttpTests.cs",
                                                   "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
                                                   "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
+                                                  "Refactor large file (617 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                   "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
-                                                  "Refactor large file (574 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                   "Refactor large file (571 lines): backend/src/ERP.API.Tests/Integration/SalesCancelAuthorizedReturnRuleTests.cs",
-                                                  "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
                                                   "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                                                  "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
                                                   "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                                                   "Review possible secrets in source files (82 real matches, excluding node_modules)"
                                               ]
@@ -725,7 +725,7 @@
                                                   "Refactor large file (945 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseReception/ResolvePurchaseReceptionLinesIntegrationTests.cs",
                                                   "Refactor large file (897 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.draftRecovery.test.ts",
                                                   "Refactor large file (870 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
-                                                  "Refactor large file (852 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
+                                                  "Refactor large file (854 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.SriAnnulment.cs",
                                                   "Refactor large file (841 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
                                                   "Refactor large file (840 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoice.cs",
                                                   "Refactor large file (806 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseCreditNoteTests.cs",
@@ -736,8 +736,8 @@
                                                   "Refactor large file (702 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/GetPurchaseReceptionXmlViewHandlerTests.cs",
                                                   "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
                                                   "Refactor large file (670 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteDetailPage.tsx",
+                                                  "Refactor large file (667 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/DownloadPurchaseReceptionXmlHandlerTests.cs",
                                                   "Refactor large file (643 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseCreditNoteTaxSummaryDraftUseCasesTests.cs",
-                                                  "Refactor large file (639 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/DownloadPurchaseReceptionXmlHandlerTests.cs",
                                                   "Refactor large file (632 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.pilotFix.test.ts",
                                                   "Refactor large file (629 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/PurchaseXmlDraftParserTests.cs",
                                                   "Refactor large file (626 lines): frontend/src/modules/purchases/pages/PurchaseCreditNoteFormPage.tsx",
@@ -756,8 +756,8 @@
                                                   "Refactor large file (538 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Purchases/PurchaseReceptionDocumentRepositoryTests.cs",
                                                   "Refactor large file (519 lines): backend/src/ERP.Application.Tests/Purchases/GetPurchaseReturnByIdHandlerTests.cs",
                                                   "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
+                                                  "Refactor large file (512 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
                                                   "Refactor large file (511 lines): frontend/src/modules/purchases/hooks/usePurchaseReceptionPage.ts",
-                                                  "Refactor large file (511 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs",
                                                   "Refactor large file (501 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/ImportPurchaseReceptionHandlerTests.cs"
                                               ]
                          },
@@ -895,7 +895,7 @@
                              "relatedTasks":  [
                                                   "Refactor large file (1013 lines): backend/src/ERP.Application.Tests/Retentions/RetentionIssuerTests.cs",
                                                   "Refactor large file (813 lines): backend/src/ERP.Application.Tests/Retentions/RetentionElectronicDocumentDataProviderTests.cs",
-                                                  "Refactor large file (685 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
+                                                  "Refactor large file (720 lines): backend/src/ERP.Application/Modules/Retentions/Services/RetentionAnnulmentService.cs",
                                                   "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
                                                   "Refactor large file (502 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionSriAnnulmentDomainTests.cs"
                                               ]
@@ -1751,12 +1751,13 @@
                              "percentOfErp":  101.96,
                              "riskOfModifying":  "HIGH",
                              "relatedTasks":  [
-                                                  "Refactor large file (1436 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
+                                                  "Refactor large file (1458 lines): backend/src/ERP.Application/Modules/ElectronicDocuments/Services/ElectronicDocumentIssuer.cs",
                                                   "Refactor large file (868 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerReceptionTests.cs",
                                                   "Refactor large file (858 lines): backend/src/ERP.Domain/Modules/ElectronicDocuments/Entities/ElectronicDocument.cs",
                                                   "Refactor large file (744 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.cs",
                                                   "Refactor large file (733 lines): backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/SalesElectronicSourceConcurrencyPostgreSqlTests.cs",
-                                                  "Refactor large file (579 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs"
+                                                  "Refactor large file (579 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs",
+                                                  "Refactor large file (526 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerEmissionSwitchTests.cs"
                                               ]
                          },
                          {

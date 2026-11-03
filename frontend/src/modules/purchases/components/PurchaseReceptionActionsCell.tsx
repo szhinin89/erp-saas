@@ -16,6 +16,7 @@ export function PurchaseReceptionActionsCell({
   onViewXml,
   onProcessCreditNote,
   resolvingCreditNoteId,
+  sriPaused = false,
 }: {
   row: PurchaseReceptionItem;
   xmlState: "loading" | "error" | undefined;
@@ -23,6 +24,8 @@ export function PurchaseReceptionActionsCell({
   onViewXml: (documentId: string) => void;
   onProcessCreditNote: (row: PurchaseReceptionItem) => void;
   resolvingCreditNoteId: string | null;
+  /** SRI-TOGGLE-07 — emisión de la empresa pausada: "Consultar XML" llama al SRI y se deshabilita. */
+  sriPaused?: boolean;
 }) {
   const { t } = useI18n();
   // FASE 5 PURCHASE-UX — estado REAL de la compra relacionada (SSOT): textos y acciones.
@@ -47,7 +50,8 @@ export function PurchaseReceptionActionsCell({
 
   const consultXmlButton = row.documentStatus === "IMPORTED" && (
     <ZHBtn variant="secondary" size="xs" type="button"
-      disabled={xmlState === "loading"}
+      disabled={xmlState === "loading" || sriPaused}
+      title={sriPaused ? t("purchases.reception.sriPaused.actionHint", "Emisión electrónica pausada: no se consulta el SRI.") : undefined}
       onClick={() => onDownloadXml(row.documentId)}>
       {t("purchases.reception.actions.consultXml", "Consultar XML")}
     </ZHBtn>
@@ -208,7 +212,8 @@ export function PurchaseReceptionActionsCell({
           variant="secondary"
           size="xs"
           type="button"
-          disabled={xmlState === "loading"}
+          disabled={xmlState === "loading" || sriPaused}
+          title={sriPaused ? t("purchases.reception.sriPaused.actionHint", "Emisión electrónica pausada: no se consulta el SRI.") : undefined}
           onClick={() => onDownloadXml(row.documentId)}
         >
           {t("purchases.reception.actions.consultXml", "Consultar XML")}

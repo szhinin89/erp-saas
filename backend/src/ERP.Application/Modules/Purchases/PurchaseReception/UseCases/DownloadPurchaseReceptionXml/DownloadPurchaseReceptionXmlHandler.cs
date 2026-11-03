@@ -1,6 +1,7 @@
 using ERP.Domain.Modules.Purchases.PurchaseReception.Services;
 using System.Xml;
 using ERP.Application.Common;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.XmlParsing;
@@ -9,6 +10,7 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +31,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
+    private readonly IElectronicEmissionSwitch _emissionSwitch;
     private readonly ILogger<DownloadPurchaseReceptionXmlHandler> _logger;
 
     public DownloadPurchaseReceptionXmlHandler(
@@ -41,6 +44,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
         ICurrentTenant tenant,
         ICurrentCompany company,
         ICurrentUser user,
+        IElectronicEmissionSwitch emissionSwitch,
         ILogger<DownloadPurchaseReceptionXmlHandler> logger
     )
     {
@@ -53,6 +57,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
         _tenant = tenant;
         _company = company;
         _user = user;
+        _emissionSwitch = emissionSwitch;
         _logger = logger;
     }
 
@@ -99,13 +104,37 @@ public sealed class DownloadPurchaseReceptionXmlHandler
                 "El documento no tiene clave de acceso."
             );
 
-        // 4. Consultar XML — nunca lanza, siempre un resultado tipado.
-        var queryResult = await _xmlProvider.GetAuthorizedXmlAsync(
-            _tenant.TenantId,
-            _company.CompanyId,
-            document.AccessKey,
-            cancellationToken
-        );
+        // 4. Consultar XML — nunca lanza, siempre un resultado tipado. SRI-TOGGLE-07: pausa total — con la
+        //    emisión de la empresa pausada no se consulta el SRI; el documento conserva su estado (sin
+        //    suponer autorización) y puede registrarse manualmente.
+        SriReceptionXmlQueryResult queryResult;
+        await using (
+            var sriCall = await _emissionSwitch.EnterSriCallAsync(
+                _tenant.TenantId,
+                _company.CompanyId,
+                cancellationToken
+            )
+        )
+        {
+            var emission = await _emissionSwitch.GetAsync(
+                _tenant.TenantId,
+                _company.CompanyId,
+                lockForShare: false,
+                cancellationToken
+            );
+            if (!emission.Enabled)
+                return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure(
+                    "La emisión electrónica de la empresa está pausada: no se consulta el XML en el SRI. El comprobante sigue Importado.",
+                    ApiResponseCodes.ElectronicDocuments.EmissionDisabled
+                );
+
+            queryResult = await _xmlProvider.GetAuthorizedXmlAsync(
+                _tenant.TenantId,
+                _company.CompanyId,
+                document.AccessKey,
+                cancellationToken
+            );
+        }
 
         if (
             !queryResult.Authorized

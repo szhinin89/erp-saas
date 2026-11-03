@@ -1,6 +1,7 @@
 using ERP.API.Tests.Support;
 using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Modules.Accounting.Continuity;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Purchases.UseCases;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -16,6 +17,7 @@ using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Repositories.Inventory;
 using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
+using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,15 +28,16 @@ public sealed partial class PurchaseReturnEndToEndTests
     private const string ReprocessingKey = "2110202604179135268800110010010000000991234567810";
 
     private PurchaseCreditNoteReprocessingGuard ReprocessingGuard(ErpDbContext db,
-        SriFiscalStatus status = SriFiscalStatus.Authorized) => new(
+        SriFiscalStatus status = SriFiscalStatus.Authorized, IElectronicEmissionSwitch? emission = null,
+        ReprocessingSriQuery? sri = null) => new(
         new PurchaseCreditNoteRepository(db, new FixedCurrentCompany(() => _companyId)),
         new PurchaseReturnRepository(db, new FixedCurrentCompany(() => _companyId)),
         new AccountsPayableRepository(db), new SupplierCreditRepository(db, new FixedCurrentCompany(() => _companyId)),
         new StockRepository(db, new FixedCurrentCompany(() => _companyId), new RealDatabaseExceptionTranslator(), StandardPrecisionPolicyProvider.Instance),
         new JournalEntryRepository(db), new AccountingPostingRepository(db),
         new AccountingOperationalDecision(new AccountingOperationalPolicyRepository(db)),
-        new SriSettingsRepository(db), new ReprocessingSriQuery(status), new UnitOfWork(db),
-        StandardPrecisionPolicyProvider.Instance);
+        new SriSettingsRepository(db), sri ?? new ReprocessingSriQuery(status), new UnitOfWork(db),
+        StandardPrecisionPolicyProvider.Instance, emission ?? AlwaysEnabledEmission.Instance);
 
     private async Task<(CreateDraftPurchaseCreditNoteCommand Command, Guid NoteId)> CancelledNoteForReprocessing(
         bool discount = false, bool cancel = true, decimal unitPrice = 100m, decimal quantity = 10m,
@@ -130,6 +133,23 @@ public sealed partial class PurchaseReturnEndToEndTests
         var result = await UnifiedDraftHandler(db, ReprocessingGuard(db, status)).Handle(command with { ClientRequestId = Guid.NewGuid() }, default);
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("SRI");
+        (await db.PurchaseCreditNotes.CountAsync()).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_07_emision_pausada_bloquea_el_reprocesamiento_sin_consultar_el_SRI()
+    {
+        var (command, _) = await CancelledNoteForReprocessing();
+        await using var db = CreateContext();
+        var sri = new ReprocessingSriQuery(SriFiscalStatus.Authorized);
+        // Interruptor REAL: la empresa no tiene emission_enabled (deshabilitada por defecto).
+        var guard = ReprocessingGuard(db, emission: new ElectronicEmissionSwitch(db), sri: sri);
+
+        var result = await UnifiedDraftHandler(db, guard).Handle(command with { ClientRequestId = Guid.NewGuid() }, default);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("emisión electrónica de la empresa está pausada");
+        sri.Calls.Should().Be(0, "nunca se consulta ni se supone vigencia");
         (await db.PurchaseCreditNotes.CountAsync()).Should().Be(1);
     }
 
@@ -242,9 +262,40 @@ public sealed partial class PurchaseReturnEndToEndTests
 
     private sealed class ReprocessingSriQuery(SriFiscalStatus status) : ISriDocumentStatusQuery
     {
-        public Task<SriDocumentStatusResult> QueryAsync(string accessKey, string wsdlUrl, CancellationToken ct = default) =>
-            Task.FromResult(new SriDocumentStatusResult { Outcome = status == SriFiscalStatus.Unknown
+        public int Calls { get; private set; }
+
+        public Task<SriDocumentStatusResult> QueryAsync(string accessKey, string wsdlUrl, CancellationToken ct = default)
+        {
+            Calls++;
+            return Task.FromResult(new SriDocumentStatusResult { Outcome = status == SriFiscalStatus.Unknown
                 ? SriStatusQueryOutcome.Unavailable : SriStatusQueryOutcome.Success,
                 FiscalStatus = status, AccessKey = accessKey, DocumentType = "04", IssuerRuc = "1791352688001" });
+        }
+    }
+
+    /// <summary>SRI-TOGGLE-07 — emisión habilitada desde siempre: conserva el comportamiento previo de estos tests.</summary>
+    private sealed class AlwaysEnabledEmission : IElectronicEmissionSwitch
+    {
+        public static readonly AlwaysEnabledEmission Instance = new();
+
+        public Task<ElectronicEmissionState> GetAsync(Guid tenantId, Guid companyId, bool lockForShare,
+            CancellationToken ct = default) => Task.FromResult(new ElectronicEmissionState(true, DateTime.MinValue));
+
+        public Task<DateTime?> GetSourceActivityUtcAsync(Guid tenantId, Guid companyId, string sourceModule,
+            ElectronicDocumentType documentType, Guid sourceEntityId, CancellationToken ct = default) =>
+            Task.FromResult<DateTime?>(DateTime.UtcNow);
+
+        public Task<IAsyncDisposable> EnterSriCallAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
+            Task.FromResult<IAsyncDisposable>(NoScope.Instance);
+
+        public Task LockForChangeAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        private sealed class NoScope : IAsyncDisposable
+        {
+            public static readonly NoScope Instance = new();
+
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
     }
 }

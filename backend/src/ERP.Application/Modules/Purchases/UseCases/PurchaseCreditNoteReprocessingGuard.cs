@@ -2,6 +2,7 @@ using ERP.Application.Common.Interfaces.SRI;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.Continuity;
 using ERP.Application.Modules.Companies;
+using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -22,7 +23,7 @@ public sealed class PurchaseCreditNoteReprocessingGuard(
     IAccountsPayableRepository payables, ISupplierCreditRepository credits, IStockRepository stock,
     IJournalEntryRepository journal, IAccountingPostingRepository postings,
     AccountingOperationalDecision accounting, ISriSettingsRepository settings, ISriDocumentStatusQuery sri,
-    IUnitOfWork unitOfWork, ICompanyPrecisionPolicyProvider precision)
+    IUnitOfWork unitOfWork, ICompanyPrecisionPolicyProvider precision, IElectronicEmissionSwitch emission)
 {
     public async Task<string?> CheckAsync(Guid tenantId, Guid companyId, Guid supplierId,
         string number, string? accessKey, Guid? receptionId, CancellationToken ct)
@@ -55,10 +56,16 @@ public sealed class PurchaseCreditNoteReprocessingGuard(
         }
         // Cancelación interna ≠ anulación tributaria. Para documentos electrónicos se exige
         // AUTORIZADO de ConsultaComprobante; no se infiere vigencia desde el XML descargado.
-        foreach (var key in cancelled.Select(n => n.AccessKey).Append(accessKey)
-            .Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.Ordinal))
+        var keys = cancelled.Select(n => n.AccessKey).Append(accessKey)
+            .Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.Ordinal).ToList();
+        if (cancelled.Count == 0 || keys.Count == 0) return null;
+        // SRI-TOGGLE-07 — pausa total: con la emisión de la empresa pausada no se consulta el SRI; sin esa
+        // verificación el reprocesamiento queda bloqueado (fail-closed, nunca se supone vigencia).
+        await using var sriCall = await emission.EnterSriCallAsync(tenantId, companyId, ct);
+        if (!(await emission.GetAsync(tenantId, companyId, lockForShare: false, ct)).Enabled)
+            return "Reprocesamiento bloqueado: la emisión electrónica de la empresa está pausada; no se consulta la vigencia tributaria en el SRI.";
+        foreach (var key in keys)
         {
-            if (cancelled.Count == 0) break;
             var config = await settings.GetByCompanyIdAsync(companyId, ct);
             if (config is null || string.IsNullOrWhiteSpace(config.WsdlUrl))
                 return "Reprocesamiento bloqueado: no se puede verificar la vigencia tributaria ante el SRI.";

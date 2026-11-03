@@ -20,9 +20,10 @@ using Testcontainers.PostgreSql;
 namespace ERP.Infrastructure.Tests.ElectronicDocuments;
 
 /// <summary>
-/// SRI-TOGGLE-02 — interruptor <c>electronic_documents.emission_enabled</c> contra PostgreSQL real:
+/// SRI-TOGGLE-02/06 — interruptor <c>electronic_documents.emission_enabled</c> contra PostgreSQL real:
 /// default OFF, aislamiento por TenantId+CompanyId, fecha de habilitación desde el historial auditado,
-/// serialización FOR SHARE frente al apagado y filtro de candidatos del job de reintentos.
+/// serialización FOR SHARE frente al apagado y filtro de candidatos del job de reintentos (pausa total:
+/// también las consultas de autorización).
 /// </summary>
 [Trait("Category", "PostgreSql")]
 public sealed class ElectronicEmissionSwitchPostgreSqlTests : IAsyncLifetime
@@ -227,32 +228,134 @@ public sealed class ElectronicEmissionSwitchPostgreSqlTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Candidatos_del_job_solo_transmiten_actividad_posterior_a_la_habilitacion()
+    public async Task Candidatos_del_job_solo_llegan_al_SRI_con_actividad_posterior_a_la_habilitacion()
     {
         var enabledAt = DateTime.UtcNow.AddHours(-2);
         var disabledCompany = Guid.NewGuid();
+        var otherTenant = Guid.NewGuid();
         await using (var seed = NewDbContext(_tenantId, _companyId))
             await ElectronicEmissionTestSupport.SetAsync(seed, _tenantId, _companyId, "True", enabledAt, _userId);
 
         var pendingBefore = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Failed, DateTime.UtcNow.AddHours(-3));
         var failedAfter = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Failed, DateTime.UtcNow.AddHours(-1));
         var draftAfter = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Draft, DateTime.UtcNow.AddMinutes(-30));
+        var receivedAfter = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Received, DateTime.UtcNow.AddMinutes(-30));
         // SRI-TOGGLE-04 — Draft sin intentos y sin origen persistido: creado "ahora" (posterior a la
         // habilitación) y aun así no es candidato: la creación del comprobante nunca cuenta como actividad.
         var draftUnknownSource = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Draft, null);
         var signedBefore = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Signed, DateTime.UtcNow.AddHours(-3));
+        var receivedBefore = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Received, DateTime.UtcNow.AddHours(-3));
         var disabledDraft = await SeedDocumentAsync(disabledCompany, ElectronicDocumentState.Draft, DateTime.UtcNow.AddMinutes(-30));
-        var disabledReceived = await SeedDocumentAsync(disabledCompany, ElectronicDocumentState.Received, DateTime.UtcNow.AddHours(-3));
+        var disabledReceived = await SeedDocumentAsync(disabledCompany, ElectronicDocumentState.Received, DateTime.UtcNow.AddMinutes(-30));
+        // Mismo CompanyId en otro tenant (no habilitado): la habilitación nunca cruza tenants.
+        var otherTenantReceived = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Received,
+            DateTime.UtcNow.AddMinutes(-30), otherTenant);
 
         await using var job = NewDbContext(Guid.Empty, Guid.Empty);
         var candidates = (await new ElectronicDocumentRepository(job, Mock.Of<ICompanyClock>())
             .GetRetryCandidatesAsync(50)).Select(c => c.ElectronicDocumentId).ToList();
 
-        candidates.Should().Contain([failedAfter, draftAfter], "actividad posterior a la habilitación");
-        candidates.Should().Contain([signedBefore, disabledReceived], "Signed/Received solo consultan autorización");
+        candidates.Should().Contain([failedAfter, draftAfter, receivedAfter], "actividad posterior a la habilitación");
         candidates.Should().NotContain(pendingBefore, "pendiente previo: solo reanudación explícita");
+        candidates.Should().NotContain([signedBefore, receivedBefore],
+            "SRI-TOGGLE-06: tampoco se consulta automáticamente un pendiente anterior a la habilitación");
         candidates.Should().NotContain(draftUnknownSource, "sin actividad conocida no hay transmisión automática");
-        candidates.Should().NotContain(disabledDraft, "empresa deshabilitada: ninguna transmisión nueva");
+        candidates.Should().NotContain([disabledDraft, disabledReceived],
+            "SRI-TOGGLE-06: empresa deshabilitada, ni transmisión ni consulta");
+        candidates.Should().NotContain(otherTenantReceived, "aislamiento por TenantId+CompanyId");
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_06_apagar_retira_del_lote_todos_los_pendientes_y_rehabilitar_no_los_retoma()
+    {
+        // Habilitada hace 1 h; actividad hace 30 min (posterior y ya fuera del backoff de la política).
+        await using (var seed = NewDbContext(_tenantId, _companyId))
+            await ElectronicEmissionTestSupport.SetAsync(seed, _tenantId, _companyId, "True",
+                DateTime.UtcNow.AddHours(-1), _userId);
+        var received = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Received, DateTime.UtcNow.AddMinutes(-30));
+        var failed = await SeedDocumentAsync(_companyId, ElectronicDocumentState.Failed, DateTime.UtcNow.AddMinutes(-30));
+        (await CandidatesAsync()).Should().Contain([received, failed]);
+
+        await SetAuditedInNewContextAsync(_companyId, false);
+        (await CandidatesAsync()).Should().NotContain([received, failed], "pausa total");
+
+        await SetAuditedInNewContextAsync(_companyId, true);
+        (await CandidatesAsync()).Should().NotContain([received, failed],
+            "anteriores a la última habilitación: solo una acción explícita los reanuda");
+    }
+
+    private async Task<IReadOnlyList<Guid>> CandidatesAsync()
+    {
+        await using var job = NewDbContext(Guid.Empty, Guid.Empty);
+        return (await new ElectronicDocumentRepository(job, Mock.Of<ICompanyClock>())
+            .GetRetryCandidatesAsync(50)).Select(c => c.ElectronicDocumentId).ToList();
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_07_una_llamada_SRI_en_curso_retiene_el_apagado_y_ninguna_posterior_ve_habilitada()
+    {
+        var otherCompany = Guid.NewGuid();
+        await using (var seed = NewDbContext(_tenantId, _companyId))
+            await ElectronicEmissionTestSupport.EnableSinceYesterdayAsync(seed, _tenantId, _companyId, _userId);
+
+        // Llamada SRI en curso (ámbito abierto, sin transacción: así se sostiene durante el SOAP).
+        await using var inFlight = NewDbContext(_tenantId, _companyId);
+        var emission = new ElectronicEmissionSwitch(inFlight);
+        var call = await emission.EnterSriCallAsync(_tenantId, _companyId);
+        (await emission.GetAsync(_tenantId, _companyId, false)).Enabled.Should().BeTrue();
+
+        // Reentrante, y un reclamo (lock de transacción) del mismo backend no se autobloquea.
+        await using (await emission.EnterSriCallAsync(_tenantId, _companyId))
+        {
+            await using var claim = await inFlight.Database.BeginTransactionAsync();
+            (await emission.GetAsync(_tenantId, _companyId, true).WaitAsync(TimeSpan.FromSeconds(5)))
+                .Enabled.Should().BeTrue();
+            await claim.CommitAsync();
+        }
+
+        // El apagado no se confirma mientras la llamada siga en curso (tampoco tras el commit del reclamo).
+        var disable = SetAuditedInNewContextAsync(_companyId, false);
+        (await Task.WhenAny(disable, Task.Delay(TimeSpan.FromSeconds(1)))).Should().NotBe(disable);
+
+        // Una llamada nueva queda detrás del apagado pendiente; otra empresa no espera.
+        var late = EnterAndReadInNewContextAsync(_companyId);
+        (await Task.WhenAny(late, Task.Delay(TimeSpan.FromSeconds(1)))).Should().NotBe(late);
+        (await EnterAndReadInNewContextAsync(otherCompany).WaitAsync(TimeSpan.FromSeconds(5)))
+            .Enabled.Should().BeFalse("otra empresa, sin valor: deshabilitada y sin esperar");
+
+        await call.DisposeAsync();
+        inFlight.Database.GetDbConnection().State.Should().Be(System.Data.ConnectionState.Closed,
+            "el ámbito devuelve la conexión al salir");
+        await disable.WaitAsync(TimeSpan.FromSeconds(30));
+        (await late.WaitAsync(TimeSpan.FromSeconds(30))).Enabled
+            .Should().BeFalse("ninguna llamada iniciada después de confirmar el apagado ve habilitada");
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_07_la_habilitacion_tambien_espera_a_las_llamadas_en_curso()
+    {
+        await using var inFlight = NewDbContext(_tenantId, _companyId);
+        var emission = new ElectronicEmissionSwitch(inFlight);
+        var call = await emission.EnterSriCallAsync(_tenantId, _companyId);
+        (await emission.GetAsync(_tenantId, _companyId, false)).Enabled.Should().BeFalse();
+
+        var enable = SetAuditedInNewContextAsync(_companyId, true);
+        (await Task.WhenAny(enable, Task.Delay(TimeSpan.FromSeconds(1)))).Should().NotBe(enable);
+        (await emission.GetAsync(_tenantId, _companyId, false)).Enabled
+            .Should().BeFalse("el estado es estable durante toda la llamada");
+
+        await call.DisposeAsync();
+        await enable.WaitAsync(TimeSpan.FromSeconds(30));
+        (await EnterAndReadInNewContextAsync(_companyId)).Enabled.Should().BeTrue();
+    }
+
+    private async Task<ERP.Application.Modules.ElectronicDocuments.Services.ElectronicEmissionState> EnterAndReadInNewContextAsync(
+        Guid companyId)
+    {
+        await using var db = NewDbContext(_tenantId, companyId);
+        var emission = new ElectronicEmissionSwitch(db);
+        await using var call = await emission.EnterSriCallAsync(_tenantId, companyId);
+        return await emission.GetAsync(_tenantId, companyId, false);
     }
 
     private async Task SetAuditedInNewContextAsync(Guid companyId, bool enabled)
@@ -279,10 +382,12 @@ public sealed class ElectronicEmissionSwitchPostgreSqlTests : IAsyncLifetime
             $"UPDATE configuration_change_log SET changed_at_utc = {changedAtUtc} WHERE id = {log.Id}");
     }
 
-    private async Task<Guid> SeedDocumentAsync(Guid companyId, ElectronicDocumentState state, DateTime? lastAttemptUtc)
+    private async Task<Guid> SeedDocumentAsync(Guid companyId, ElectronicDocumentState state, DateTime? lastAttemptUtc,
+        Guid? tenantId = null)
     {
-        await using var db = NewDbContext(_tenantId, companyId);
-        var document = ElectronicDocument.Create(_tenantId, companyId, ElectronicDocumentType.Invoice,
+        var tenant = tenantId ?? _tenantId;
+        await using var db = NewDbContext(tenant, companyId);
+        var document = ElectronicDocument.Create(tenant, companyId, ElectronicDocumentType.Invoice,
             "Sales", Guid.NewGuid(), _userId);
         SetProperty(document, nameof(ElectronicDocument.CurrentState), state);
         SetProperty(document, nameof(ElectronicDocument.LastAttemptUtc), lastAttemptUtc);

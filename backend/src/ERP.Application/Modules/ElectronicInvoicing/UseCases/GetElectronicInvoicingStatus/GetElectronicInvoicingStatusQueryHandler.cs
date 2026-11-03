@@ -61,6 +61,12 @@ public sealed partial class GetElectronicInvoicingStatusQueryHandler
                 return Result<ElectronicInvoicingStatusDto>.Success(NotConfiguredDto());
 
             // SRI-TOGGLE-02 — emisión deshabilitada precede a certificado/ambiente/conectividad: sin ping.
+            // SRI-TOGGLE-07 — control y ping dentro del ámbito SRI: un apagado espera al ping en curso.
+            await using var sriCall = await _emissionSwitch.EnterSriCallAsync(
+                settings.TenantId,
+                settings.CompanyId,
+                cancellationToken
+            );
             var emission = await _emissionSwitch.GetAsync(
                 settings.TenantId,
                 settings.CompanyId,

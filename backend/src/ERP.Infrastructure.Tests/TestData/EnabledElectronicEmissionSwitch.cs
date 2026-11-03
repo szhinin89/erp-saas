@@ -29,4 +29,14 @@ public sealed class EnabledElectronicEmissionSwitch : IElectronicEmissionSwitch
 
     public Task LockForChangeAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
         Task.CompletedTask;
+
+    public Task<IAsyncDisposable> EnterSriCallAsync(Guid tenantId, Guid companyId, CancellationToken ct = default) =>
+        Task.FromResult<IAsyncDisposable>(NoScope.Instance);
+
+    private sealed class NoScope : IAsyncDisposable
+    {
+        public static readonly NoScope Instance = new();
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
 }

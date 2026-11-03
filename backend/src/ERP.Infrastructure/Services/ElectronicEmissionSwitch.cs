@@ -33,7 +33,7 @@ public sealed class ElectronicDocumentSourceActivity
 /// SRI-TOGGLE-02/04 — forma SQL única del interruptor <c>electronic_documents.emission_enabled</c>
 /// (default OFF, al revés que <see cref="DefaultOnCompanySwitch"/>): solo un valor persistido que se lee
 /// como <c>true</c> la habilita; ausente, vacío o corrupto = deshabilitada. La usan el servicio del
-/// issuer y el filtro del job de reintentos (ADR-043), para que ambos decidan igual.
+/// issuer y los filtros de los jobs (reintentos ADR-043 y verificación de anulaciones), para que decidan igual.
 /// </summary>
 public static class ElectronicEmissionSwitchQuery
 {
@@ -136,12 +136,13 @@ public static class ElectronicEmissionSwitchQuery
             );
 
     /// <summary>
-    /// Candidatos de un job: los que INICIARÍAN una transmisión (Draft/Failed) solo con la empresa
-    /// habilitada y actividad posterior a la habilitación (último intento o, sin intentos, el instante del
-    /// origen; nunca la creación del comprobante). Los demás estados (consultas de autorización) no dependen
-    /// del interruptor. Misma regla que <see cref="ElectronicEmissionState.AllowsTransmission"/> con automatic=true.
+    /// SRI-TOGGLE-06 — candidatos del job de reintentos: TODO estado (transmisión Draft/Failed y consulta
+    /// Signed/Dispatching/Received) solo con la empresa habilitada y actividad posterior a la habilitación
+    /// (último intento o, sin intentos, el instante del origen; nunca la creación del comprobante). Un
+    /// pendiente de una empresa pausada no ocupa el lote de las demás. Misma regla que
+    /// <see cref="ElectronicEmissionState.AllowsSriAccess"/> con automatic=true.
     /// </summary>
-    public static IQueryable<ElectronicDocument> WhereAutomaticTransmissionAllowed(
+    public static IQueryable<ElectronicDocument> WhereAutomaticSriAccessAllowed(
         this IQueryable<ElectronicDocument> documents,
         ErpDbContext db
     )
@@ -149,11 +150,7 @@ public static class ElectronicEmissionSwitchQuery
         var enabled = Enabled(db);
         var sources = SourceActivity(db);
         return documents.Where(x =>
-            (
-                x.CurrentState != ElectronicDocumentState.Draft
-                && x.CurrentState != ElectronicDocumentState.Failed
-            )
-            || enabled.Any(e =>
+            enabled.Any(e =>
                 e.TenantId == x.TenantId
                 && e.CompanyId == x.CompanyId
                 && (
@@ -172,12 +169,35 @@ public static class ElectronicEmissionSwitchQuery
             )
         );
     }
+
+    /// <summary>
+    /// SRI-TOGGLE-06 — solicitudes de anulación de retención que el job puede verificar en ConsultaComprobante:
+    /// empresa habilitada y actividad posterior a la habilitación (última consulta o, sin consultas, la
+    /// presentación). Misma regla que <see cref="ElectronicEmissionState.AllowsSriAccess"/> con automatic=true.
+    /// </summary>
+    public static IQueryable<RetentionAnnulmentRequest> WhereAutomaticSriAccessAllowed(
+        this IQueryable<RetentionAnnulmentRequest> requests,
+        ErpDbContext db
+    )
+    {
+        var enabled = Enabled(db);
+        return requests.Where(x =>
+            enabled.Any(e =>
+                e.TenantId == x.TenantId
+                && e.CompanyId == x.CompanyId
+                && (x.LastSriCheckAtUtc ?? x.SubmittedAtUtc) >= e.EnabledSinceUtc
+            )
+        );
+    }
 }
 
 /// <summary>SRI-TOGGLE-02/04 — implementación de <see cref="IElectronicEmissionSwitch"/> sobre org_settings.</summary>
 public sealed class ElectronicEmissionSwitch : IElectronicEmissionSwitch
 {
     private readonly ErpDbContext _db;
+
+    // SRI-TOGGLE-07 — ámbitos de llamada SRI abiertos en este scope (profundidad por empresa).
+    private readonly Dictionary<(Guid TenantId, Guid CompanyId), int> _sriCalls = new();
 
     public ElectronicEmissionSwitch(ErpDbContext db) => _db = db;
 
@@ -225,6 +245,77 @@ public sealed class ElectronicEmissionSwitch : IElectronicEmissionSwitch
             .Select(s => s.ActivityUtc)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<IAsyncDisposable> EnterSriCallAsync(
+        Guid tenantId,
+        Guid companyId,
+        CancellationToken ct = default
+    )
+    {
+        var key = (tenantId, companyId);
+        if (_sriCalls.TryGetValue(key, out var depth))
+        {
+            _sriCalls[key] = depth + 1;
+            return new SriCallScope(this, key);
+        }
+
+        // Lock de SESIÓN sobre la conexión del contexto (abierta explícitamente hasta salir del ámbito): sobrevive
+        // a los commits del reclamo y a las lecturas con lock de transacción del mismo backend (ya concedido).
+        await _db.Database.OpenConnectionAsync(ct);
+        try
+        {
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_lock_shared(hashtext({LockNamespace}), hashtext({Scope(tenantId, companyId)}))",
+                ct
+            );
+        }
+        catch
+        {
+            await _db.Database.CloseConnectionAsync();
+            throw;
+        }
+        _sriCalls[key] = 1;
+        return new SriCallScope(this, key);
+    }
+
+    private async ValueTask ExitSriCallAsync((Guid TenantId, Guid CompanyId) key)
+    {
+        if (!_sriCalls.TryGetValue(key, out var depth))
+            return;
+        if (depth > 1)
+        {
+            _sriCalls[key] = depth - 1;
+            return;
+        }
+
+        _sriCalls.Remove(key);
+        try
+        {
+            await _db.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_unlock_shared(hashtext({LockNamespace}), hashtext({Scope(key.TenantId, key.CompanyId)}))",
+                CancellationToken.None
+            );
+        }
+        finally
+        {
+            // Si el unlock falló (conexión rota/transacción abortada), cerrar devuelve la conexión al pool, que
+            // reinicia la sesión (DISCARD ALL libera los locks consultivos de sesión).
+            await _db.Database.CloseConnectionAsync();
+        }
+    }
+
+    private sealed class SriCallScope(ElectronicEmissionSwitch owner, (Guid TenantId, Guid CompanyId) key)
+        : IAsyncDisposable
+    {
+        private ElectronicEmissionSwitch? _owner = owner;
+
+        public ValueTask DisposeAsync()
+        {
+            var current = _owner;
+            _owner = null;
+            return current?.ExitSriCallAsync(key) ?? ValueTask.CompletedTask;
+        }
+    }
+
     public async Task LockForChangeAsync(Guid tenantId, Guid companyId, CancellationToken ct = default)
     {
         if (_db.Database.CurrentTransaction is null)
@@ -256,7 +347,7 @@ public sealed class ElectronicEmissionSwitch : IElectronicEmissionSwitch
     // sin fila que bloquear). Una colisión de hash entre empresas solo serializa de más, nunca de menos.
     private Task AcquireAsync(Guid tenantId, Guid companyId, bool exclusive, CancellationToken ct)
     {
-        var scope = $"{tenantId:N}:{companyId:N}";
+        var scope = Scope(tenantId, companyId);
         return exclusive
             ? _db.Database.ExecuteSqlInterpolatedAsync(
                 $"SELECT pg_advisory_xact_lock(hashtext('erp.sri.emission_enabled'), hashtext({scope}))",
@@ -267,4 +358,10 @@ public sealed class ElectronicEmissionSwitch : IElectronicEmissionSwitch
                 ct
             );
     }
+
+    // Mismo lock (misma clave) que AcquireAsync: el de sesión de los ámbitos SRI y el de transacción del cambio
+    // del interruptor se excluyen entre sí.
+    private const string LockNamespace = "erp.sri.emission_enabled";
+
+    private static string Scope(Guid tenantId, Guid companyId) => $"{tenantId:N}:{companyId:N}";
 }

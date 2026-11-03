@@ -5,6 +5,9 @@ using ERP.API.Tests.Support;
 using ERP.Application.Access.Authorization;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.Configuration.Constants;
+using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -112,6 +115,12 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
             await db.SaveChangesAsync();
             _companyId = company.Id;
             _foreignCompanyId = foreignCompany.Id;
+            // SRI-TOGGLE-07 — la descarga de XML consulta el SRI solo con la emisión habilitada.
+            db.OrgSettings.Add(
+                OrgSetting.Create(_tenantId, company.Id, OrgScope.Company, company.Id,
+                    OrgSettingKeys.ElectronicDocuments.EmissionEnabled, "True", SettingDataType.Bool, _adminId)
+            );
+            await db.SaveChangesAsync();
 
             var branch = NewBranch(company.Id, "Matriz A", "SUC-A");
             var foreignBranch = NewBranch(foreignCompany.Id, "Matriz B", "SUC-B");
@@ -222,6 +231,40 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
             .PurchaseReceptionDocuments.IgnoreQueryFilters()
             .SingleAsync(d => d.Id == _documentId);
         document.Status.Should().Be(PurchaseReceptionDocumentStatus.Imported);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_07_download_xml_con_emision_pausada_no_consulta_el_SRI_y_no_toca_el_documento()
+    {
+        await SetEmissionAsync("False");
+        try
+        {
+            var (status, code, _) = await SendAsync(
+                HttpMethod.Post,
+                $"/api/v1/purchases/reception/{_documentId}/download-xml",
+                _branchId
+            );
+
+            status.Should().Be(HttpStatusCode.UnprocessableEntity);
+            code.Should().Be("ELECTRONIC_DOCUMENT_EMISSION_DISABLED");
+            using var scope = _factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            (await db.PurchaseReceptionDocuments.IgnoreQueryFilters().SingleAsync(d => d.Id == _documentId))
+                .Status.Should().Be(PurchaseReceptionDocumentStatus.Imported);
+        }
+        finally
+        {
+            await SetEmissionAsync("True");
+        }
+    }
+
+    private async Task SetEmissionAsync(string value)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE org_settings SET value = {value} WHERE company_id = {_companyId} AND key = {OrgSettingKeys.ElectronicDocuments.EmissionEnabled}"
+        );
     }
 
     [Fact]

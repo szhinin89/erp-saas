@@ -44,7 +44,7 @@ Nunca expone rutas de certificado, contraseñas ni ningún dato sensible.
 | `CertificateExpired` | Certificado válido pero `NotAfterUtc` ya pasó | Rojo |
 | `CertificateExpiring` | Certificado válido, vence dentro de `CertificateExpiringThresholdDays` (30 días) | Ámbar |
 | `SriUnavailable` | Todo lo demás correcto, pero `ISriConnectivityChecker.PingAsync` falla | Naranja |
-| `Disabled` | Existe `SriSettings` pero `electronic_documents.emission_enabled` está ausente o en `false` (SRI-TOGGLE-02): no se transmite nada nuevo al SRI | Gris |
+| `Disabled` | Existe `SriSettings` pero `electronic_documents.emission_enabled` está ausente o en `false` (SRI-TOGGLE-02/06/07): pausa total, ninguna llamada de la empresa al SRI (comprobantes propios, XML/NC de proveedores, ping) | Gris |
 | `Error` | Excepción inesperada al resolver el estado (ver try/catch del handler) — nunca se propaga como 500 | Rojo |
 
 Orden de precedencia en el handler: `NotConfigured` → `Disabled` (sin evaluar certificado ni hacer ping) → certificado (instalado/password) → vencimiento → vencimiento

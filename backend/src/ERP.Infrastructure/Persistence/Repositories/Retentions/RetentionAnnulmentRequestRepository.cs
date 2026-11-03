@@ -1,4 +1,5 @@
 using ERP.Infrastructure.BackgroundProcessing;
+using ERP.Infrastructure.Services;
 using ERP.Domain.Modules.Retentions.Entities;
 using ERP.Domain.Modules.Retentions.Enums;
 using ERP.Domain.Modules.Retentions.Interfaces;
@@ -99,7 +100,10 @@ public sealed class RetentionAnnulmentRequestRepository : IRetentionAnnulmentReq
             .Where(x =>
                 x.Status == RetentionAnnulmentStatus.PendingSriResolution
                 && (x.LastSriCheckAtUtc == null || x.LastSriCheckAtUtc < checkedBeforeUtc)
-            );
+            )
+            // SRI-TOGGLE-06 — sin ConsultaComprobante automática en empresas con la emisión pausada, ni para
+            // solicitudes sin actividad posterior a la última habilitación (requieren verificación explícita).
+            .WhereAutomaticSriAccessAllowed(_db);
         var rows = await BackgroundJobProgress.ReadBatchAsync(_db, "retention-verification", query,
             x => new { x.TenantId, x.CompanyId, x.Id }, x => x.Id,
             x => x.SubmittedAtUtc, take, ct);

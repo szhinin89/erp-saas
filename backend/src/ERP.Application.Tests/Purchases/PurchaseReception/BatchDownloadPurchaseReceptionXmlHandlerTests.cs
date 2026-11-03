@@ -114,6 +114,7 @@ public sealed class BatchDownloadPurchaseReceptionXmlHandlerTests
         services.AddSingleton(tenant.Object);
         services.AddSingleton(company.Object);
         services.AddSingleton(user.Object);
+        services.AddScoped(_ => ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission());
         // Escaneo de ensamblado real (mismo mecanismo que ERP.Application.DependencyInjection),
         // deliberadamente sin registrar CompanyScopeBehavior/BranchScopeBehavior: ambos ya se
         // prueban en su propio archivo y aquí solo interesa la orquestación del lote.

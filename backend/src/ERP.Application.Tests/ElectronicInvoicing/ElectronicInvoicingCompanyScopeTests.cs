@@ -174,7 +174,8 @@ public sealed class ElectronicInvoicingCompanyScopeTests
             tenant.Object,
             new FixedCurrentCompany(ActiveCompanyId),
             certStatusResolver.Object,
-            connectivityChecker.Object
+            connectivityChecker.Object,
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission()
         );
 
         var result = await handler.Handle(

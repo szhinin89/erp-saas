@@ -4,6 +4,10 @@ import { formatApiError } from "../../../lib/formatApiError";
 import { todayIso } from "../../../../lib/formatters/dateFormatters";
 import { useRideActions } from "../../../ride/facades/rideGenerationFacade";
 import {
+  selectElectronicEmissionPaused,
+  useElectronicInvoicingStatusStore,
+} from "../../../../store/electronicInvoicingStatusStore";
+import {
   electronicDocumentsMonitorService,
   type ElectronicDocumentDetailDto,
   type ElectronicDocumentsDashboardDto,
@@ -24,6 +28,8 @@ export function useElectronicDocumentsMonitor() {
   );
   // Mismo permiso que exige GET /api/v1/ride — sin él la acción no se muestra (evita un 403).
   const canDownloadRide = canShow("ride.view");
+  // SRI-TOGGLE-06 — pausa de la empresa (no es un permiso): las acciones que llaman al SRI se deshabilitan.
+  const sriPaused = useElectronicInvoicingStatusStore(selectElectronicEmissionPaused);
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -251,6 +257,7 @@ export function useElectronicDocumentsMonitor() {
     canReconcile,
     canRetransmitCorrected,
     canDownloadRide,
+    sriPaused,
     filters: { dateFrom, dateTo, state, documentType, environment, search },
     setDateFrom,
     setDateTo,

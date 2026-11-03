@@ -41,6 +41,14 @@ export function ElectronicDocumentsMonitorPage() {
           detail={m.dashboardError}
         />
       )}
+      {m.sriPaused && (
+        <ZHPageNotice
+          variant="neutral"
+          icon="pause_circle"
+          message={t("electronicDocuments.monitor.sriPaused.message")}
+          detail={t("electronicDocuments.monitor.sriPaused.detail")}
+        />
+      )}
       <div className="zh-mb-8">
         <ZHSriServiceHealth variant="detail" />
       </div>
@@ -121,6 +129,7 @@ export function ElectronicDocumentsMonitorPage() {
         canReconcile={m.canReconcile}
         canRetransmitCorrected={m.canRetransmitCorrected}
         retryLoading={m.retryLoading}
+        sriPaused={m.sriPaused}
         canDownloadRide={m.canDownloadRide}
         rideDownloading={m.rideDownloading}
         onClose={m.closeDetail}

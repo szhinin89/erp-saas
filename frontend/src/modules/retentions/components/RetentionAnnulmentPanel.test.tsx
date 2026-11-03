@@ -5,6 +5,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { RetentionAnnulmentPanel } from "./RetentionAnnulmentPanel";
 import { retentionsService, type RetentionAnnulmentRequestDto } from "../api/retentionsService";
 import { message } from "../../../lib/messages";
+import { useElectronicInvoicingStatusStore } from "../../../store/electronicInvoicingStatusStore";
 
 configure({ asyncUtilTimeout: 5000 });
 
@@ -212,5 +213,38 @@ describe("RetentionAnnulmentPanel (ZH-RETENTION-SRI-ANNULMENT-01/01B)", () => {
 
     expect(screen.getByText("Ya presenté la solicitud en el SRI")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Registrar y verificar en SRI" })).toBeTruthy();
+  });
+
+  describe("SRI-TOGGLE-06 — emisión pausada", () => {
+    const PAUSED = "Emisión electrónica pausada: el ERP no consulta el estado en el SRI hasta habilitarla.";
+    beforeEach(() =>
+      useElectronicInvoicingStatusStore.setState({
+        status: { status: "Disabled" } as NonNullable<
+          ReturnType<typeof useElectronicInvoicingStatusStore.getState>["status"]
+        >,
+      }),
+    );
+    afterEach(() => useElectronicInvoicingStatusStore.getState().clear());
+
+    it("informa la pausa y no permite verificar en el SRI", () => {
+      renderPanel(submitted());
+
+      expect(screen.getByText(PAUSED)).toBeTruthy();
+      const verify = screen.getByRole("button", { name: "Verificar estado en SRI" }) as HTMLButtonElement;
+      expect(verify.disabled).toBe(true);
+      fireEvent.click(verify);
+      expect(retentionsService.verifyAnnulmentWithSri).not.toHaveBeenCalled();
+    });
+
+    it("la presentación se registra y se informa que no hubo consulta (no un fallo del SRI)", async () => {
+      vi.mocked(retentionsService.submitAnnulment).mockResolvedValue(submitted());
+      renderPanel(annulment());
+
+      fireEvent.click(screen.getByRole("button", { name: "Ya presenté la solicitud" }));
+      fireEvent.click(screen.getByRole("button", { name: "Registrar y verificar en SRI" }));
+
+      await waitFor(() => expect(message.info).toHaveBeenCalledWith(PAUSED));
+      expect(message.warning).not.toHaveBeenCalled();
+    });
   });
 });

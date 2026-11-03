@@ -326,7 +326,8 @@ valor ausente = deshabilitada; sin reanudación automática al rehabilitar).
   comprobante (`LastAttemptUtc ?? CreatedAt`) es posterior a la última habilitación (último cambio auditado a
   `true`; sin historial, escritura de la fila). Los jobs filtran igual en SQL (`ElectronicEmissionSwitchQuery`):
   reintentos (Draft/Failed), recuperación de Sales y de Retentions (orígenes anteriores a la habilitación).
-- Sin bloqueo: consultas de autorización/estado (Caso #32, R11), conciliación, anulación por consulta, RIDE, correo.
+- ~~Sin bloqueo: consultas de autorización/estado (Caso #32, R11), conciliación, anulación por consulta~~ — sustituido
+  por SRI-TOGGLE-06 (pausa total, abajo). Sin bloqueo: RIDE, correo y lectura local.
 - Banner: `ElectronicInvoicingStatus.Disabled` (ya reservado) precede a certificado y conectividad.
 
 **Sin cambios:** XML, XAdES, SOAP (`ElectronicDocumentReceptionService` y clientes), secuencias, máquina de estados,
@@ -377,6 +378,79 @@ escritura de la fila.
 **Regresión:** `ElectronicDocumentIssuerEmissionSwitchTests`, `ElectronicEmissionSwitchPostgreSqlTests`,
 `GetElectronicInvoicingStatusQueryHandlerTests`, `UpdateOperationalPreferencesCommandHandlerTests`, A9 y
 `PurchaseRetentionConfirmIntegrationTests` (recuperación), `ElectronicDocumentRetryJobTenantContextTests`.
+
+**SRI-TOGGLE-06 (2026-11-02, mismo alcance autorizado) — pausa total.** 02/04 solo controlaban transmisiones
+nuevas: con la emisión deshabilitada el job y el Monitor seguían consultando autorización (Signed/Received), se
+reactivaban DeadLetter de consulta y ConsultaComprobante verificaba anulaciones de retención. Ahora OFF = ninguna
+llamada al SRI sobre comprobantes propios de la empresa; ON restablece las funciones, pero los procesos automáticos
+nunca retoman pendientes anteriores a la última habilitación (transmisión ni consulta): requieren una acción explícita.
+- **Una regla** (`ElectronicEmissionState.AllowsSriAccess`, antes `AllowsTransmission`): deshabilitada = nunca;
+  usuario = solo habilitada; automático = habilitada y última actividad (último intento / última consulta) o, sin
+  ella, instante del origen (autorización/emisión / presentación de la anulación) ≥ corte. Misma regla en SQL
+  (`ElectronicEmissionSwitchQuery.WhereAutomaticSriAccessAllowed`, para comprobantes y solicitudes de anulación).
+- **Issuer:** control al inicio de TODO reintento (v1.0 y con dispatch protocol), antes de reactivar un DeadLetter
+  de cualquier estado previo, registrar el intento o consultar (sustituye el control limitado a reactivaciones hacia
+  Draft/Failed); revalidación inmediatamente antes de cada consulta de autorización (pipeline, reintento, R12): un
+  apagado confirmado durante el intento omite la consulta sin escribir; sin DeadLetter por exhaución mientras esté
+  deshabilitada. Historial R12 ya estaba detrás del control de 02.
+- **ConsultaComprobante:** `RetentionAnnulmentService.VerifyWithSriAsync` (en línea, "Ya presenté la solicitud" y job)
+  controla antes de consultar, sin registrar la consulta (`ELECTRONIC_DOCUMENT_EMISSION_DISABLED`); la presentación
+  se registra igual. El polling (`GetDueForSriVerificationAsync`) filtra por el interruptor.
+- **Jobs:** `GetRetryCandidatesAsync` filtra en todo estado (una empresa pausada no ocupa el lote de las demás).
+  Recuperación de Retentions/Sales: solo registran Draft (local) y el issuer decide; finalización de anulaciones ya
+  confirmadas: local, sin SRI.
+- **Fuera del alcance (06; incorporado por SRI-TOGGLE-07, abajo):** descarga del XML autorizado de un proveedor
+  (`SriReceptionXmlProvider`) y vigencia de una NC de proveedor (`PurchaseCreditNoteReprocessingGuard`). El ping de
+  diagnóstico explícito (`ValidateSriConfiguration`) no consulta comprobantes; el estado del banner ya lo omitía.
+  Inventario cerrado y verificado por reflexión: `SriAccessEmissionSwitchBoundaryTests`.
+- **UI:** aviso de pausa en el Monitor y en el panel de anulación; reintentar/conciliar/retransmitir/verificar
+  deshabilitados (el permiso no cambia; el backend bloquea igual); guardar el interruptor refresca el estado global.
+
+**Concurrencia (06; sustituida por el ámbito de llamada de SRI-TOGGLE-07, abajo).** El apagado (lock exclusivo) espera a los reclamos abiertos; un envío ya reclamado se completa (no se
+aborta una transmisión en vuelo: bloquearla tras `Signed` dejaría comprobantes nunca enviados que el Caso #32 solo
+consultaría). Toda consulta de autorización posterior se revalida y se omite si el apagado ya se confirmó.
+**Riesgos residuales:** (1) una consulta/envío cuya llamada HTTP ya empezó cuando se confirma el apagado termina
+(la ventana es la de una llamada); (2) una solicitud de anulación presentada en el ERP antes de rehabilitar no se
+verifica sola hasta una verificación explícita; (3) los de 04 (relojes de aplicación, premisa de `UpdatedAt`).
+Regresión 06: `ElectronicDocumentIssuerEmissionSwitchTests` (`SRI_TOGGLE_06_*`), `ElectronicEmissionSwitchPostgreSqlTests`
+(candidatos en todo estado, aislamiento por tenant, apagar/rehabilitar), `PurchaseRetentionConfirmIntegrationTests`
+(`SRI_TOGGLE_06_*`: ConsultaComprobante manual/automática y polling), `SriAccessEmissionSwitchBoundaryTests`, vitest
+del Monitor y del panel de anulación. Sin migraciones; XML, XAdES, firma, SOAP, BD y secuenciales sin cambios.
+
+**SRI-TOGGLE-07 (2026-11-02, mismo alcance autorizado) — pausa total sin excepciones y garantía de corte.** 06 dejaba
+fuera la descarga del XML de proveedores, la verificación de vigencia de NC de proveedores y el ping de diagnóstico,
+y su corte era "control y después llamada": un apagado confirmado entre ambos (o tras el reclamo de envío) no detenía
+esa llamada.
+- **Alcance:** con OFF, `DownloadPurchaseReceptionXmlHandler` responde `ELECTRONIC_DOCUMENT_EMISSION_DISABLED` sin
+  consultar (el comprobante sigue Importado; también por el lote, documento a documento);
+  `PurchaseCreditNoteReprocessingGuard` bloquea el reprocesamiento sin consultar (fail-closed: nunca supone vigencia);
+  `ValidateSriConfiguration` informa la conectividad "no verificada" sin ping; el estado ya devolvía `Disabled` sin
+  ping. Registro manual de compras/gastos/NC y lectura local sin cambios.
+- **Ámbito de llamada SRI** (`IElectronicEmissionSwitch.EnterSriCallAsync`): el lock consultivo de empresa de 04, en
+  modo compartido y de SESIÓN sobre la conexión del contexto, sostenido desde el control hasta que termina la llamada
+  (reentrante; sin transacción ni locks de filas durante el SOAP; el reclamo del mismo backend obtiene su lock de
+  transacción sin esperar). El cambio del interruptor (exclusivo) espera a todas las llamadas en curso de la empresa;
+  una llamada nueva que llega mientras un cambio espera queda detrás de él y ve el valor confirmado. Con ello: tras
+  confirmar el apagado no se inicia ninguna llamada nueva; las ya iniciadas terminaron antes de la confirmación
+  (incluido el único envío de un reclamo y su consulta posterior). Las revalidaciones de 06 quedan como defensa en
+  profundidad (el estado es estable durante el ámbito). Ámbitos: pipeline, reintento y retransmisión del issuer,
+  verificación de anulación, descarga de XML, verificación de NC de proveedor, estado y validación SRI.
+- **Inventario:** `SriAccessEmissionSwitchBoundaryTests` ya no admite excepciones de alcance y exige que todo
+  consumidor de Application que origina llamadas dependa del interruptor.
+- **UI:** recepción de compras muestra la pausa y deshabilita "Consultar XML" y "Descargar XML pendientes".
+
+**Riesgos residuales 07.** (1) El guardado del interruptor espera a las llamadas SRI en curso de la empresa (acotado
+por los timeouts HTTP y el polling de autorización del cliente). (2) El ámbito usa una conexión del pool durante
+el SOAP (una por llamada en curso; el lote de recepción usa hasta 3). (3) Si la conexión del ámbito se rompe durante
+la llamada, PostgreSQL libera el lock y un cambio podría confirmarse antes de que esa llamada termine (no hay
+estrategia de reintento de conexión configurada). (4) Escrituras de la key por SQL directo no toman el lock (04).
+Regresión 07: `ElectronicEmissionSwitchPostgreSqlTests` (`SRI_TOGGLE_07_*`: llamada en curso retiene apagado y
+habilitación, llamada posterior ve el valor confirmado, reentrancia, reclamo del mismo backend, otra empresa no
+espera), `ElectronicDocumentIssuerEmissionSwitchTests`, `ValidateSriConfigurationQueryHandlerTests`,
+`DownloadPurchaseReceptionXmlHandlerTests`, `PurchaseReturnEndToEndTests` (reprocesamiento con interruptor real),
+`ApiErrorContractHttpTests` (download-xml pausado → 422), `SriAccessEmissionSwitchBoundaryTests`, vitest de recepción;
+`PurchaseRetentionConfirmIntegrationTests.SRI_TOGGLE_07_un_cambio_durante_la_firma_*` sustituye al test de 04 de
+re-habilitación durante la firma (esa ventana ya no existe: el cambio espera a la llamada en curso).
 
 ## Cierre oficial
 

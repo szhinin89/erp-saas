@@ -20,6 +20,10 @@ import {
 } from "../../../lib/formatters/dateFormatters";
 import { useI18n } from "../../../i18n/i18n";
 import {
+  selectElectronicEmissionPaused,
+  useElectronicInvoicingStatusStore,
+} from "../../../store/electronicInvoicingStatusStore";
+import {
   usePurchaseReceptionPage,
   type ReceptionDateSortOrder,
   type ReceptionSupplierOption,
@@ -44,6 +48,8 @@ const getReceptionSupplierChipLabel = (o: ReceptionSupplierOption) => `${o.name}
 
 export function PurchaseReceptionPage() {
   const ctx = usePurchaseReceptionPage();
+  // SRI-TOGGLE-07 — pausa de la emisión de la empresa: sin consultas de XML al SRI (registro manual sigue).
+  const sriPaused = useElectronicInvoicingStatusStore(selectElectronicEmissionPaused);
   const { t } = useI18n();
 
   const columns: ZHDataTableColumn<PurchaseReceptionItem>[] = [
@@ -198,6 +204,7 @@ export function PurchaseReceptionPage() {
           onViewXml={ctx.openXmlView}
           onProcessCreditNote={ctx.processCreditNote}
           resolvingCreditNoteId={ctx.resolvingCreditNoteId}
+          sriPaused={sriPaused}
         />
       ),
     },
@@ -326,8 +333,20 @@ export function PurchaseReceptionPage() {
         </div>
       )}
 
+      {sriPaused && ctx.result && (
+        <ZHPageNotice
+          variant="neutral"
+          icon="pause_circle"
+          message={t("purchases.reception.sriPaused.message", "Emisión electrónica pausada para esta empresa")}
+          detail={t(
+            "purchases.reception.sriPaused.detail",
+            "No se consulta ni descarga XML en el SRI. Los comprobantes importados se conservan y pueden registrarse manualmente.",
+          )}
+        />
+      )}
       {/* FASE 5 PURCHASE-UX — acciones del lote: fila compacta (ver PurchaseReceptionBatchActions). */}
       <PurchaseReceptionBatchActions
+        sriPaused={sriPaused}
         importedCount={ctx.result ? ctx.result.items.length : null}
         uploading={ctx.uploading}
         downloadingXml={ctx.batchXmlRunning}

@@ -186,6 +186,18 @@ public sealed partial class ElectronicDocumentIssuer
         CancellationToken ct
     )
     {
+        // SRI-TOGGLE-07 — controles y llamadas al SRI dentro del ámbito de la empresa: un apagado espera a que
+        // termine y ninguna llamada posterior a su confirmación ve "habilitada".
+        await using var sriCall = await _emissionSwitch.EnterSriCallAsync(document.TenantId, document.CompanyId, ct);
+        return await RunPipelineCoreAsync(document, request, ct);
+    }
+
+    private async Task<Result<ElectronicDocumentDto>> RunPipelineCoreAsync(
+        ElectronicDocument document,
+        RegisterElectronicDocumentRequest request,
+        CancellationToken ct
+    )
+    {
         // ADR-036 (I-1) — antes de generar XML: el origen debe seguir permitiendo procesamiento.
         // Sin escrituras si no lo permite (no es un fallo del pipeline: el documento no pasa a Failed).
         var guard = _sourceGuards.Resolve(document.SourceModule);
@@ -533,6 +545,9 @@ public sealed partial class ElectronicDocumentIssuer
         if (document is null)
             return Result<ElectronicDocumentDto>.NotFound("El documento electrónico no existe.");
 
+        // SRI-TOGGLE-07 — todo el reintento (control, reactivación, pipeline o consulta) en el ámbito SRI.
+        await using var sriCall = await _emissionSwitch.EnterSriCallAsync(document.TenantId, document.CompanyId, ct);
+
         // R12 Fase A — un guard sin protocolo Dispatching (Ventas) no cambia el reintento v1.0: Signed/
         // Received solo se consultan (R11, Caso #32) y Draft/Failed reanudan el pipeline, cuyo reclamo
         // sí revalida el origen bajo su lock (ClaimDispatchAsync).
@@ -540,10 +555,14 @@ public sealed partial class ElectronicDocumentIssuer
         if (guard is { UsesDispatchProtocol: true })
             return await RetryGuardedAsync(document, guard, userId, ct);
 
+        // SRI-TOGGLE-06 — todo reintento termina en el SRI (pipeline o consulta de autorización): con la
+        // emisión pausada (o un pendiente anterior a la habilitación, si es automático) no hay reactivación,
+        // intento ni consulta — cero escrituras.
+        if (await EmissionBlockedAsync(document, userId, lockForShare: false, ct) is { } emissionBlocked)
+            return emissionBlocked;
+
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
         {
-            if (await ReactivationBlockedAsync(document, userId, ct) is { } emissionBlocked)
-                return emissionBlocked;
             document.Reactivate(userId);
             await _repository.SaveChangesAsync(ct);
             LogDocumentReactivated(document.Id, document.CurrentState);
@@ -644,6 +663,12 @@ public sealed partial class ElectronicDocumentIssuer
         if (document.RetryCount < maximum)
             return;
 
+        // SRI-TOGGLE-06 — la pausa conserva los estados: un apagado confirmado durante el intento no cierra
+        // el pendiente por exhaución (el intento no llegó al SRI).
+        var emission = await _emissionSwitch.GetAsync(document.TenantId, document.CompanyId, lockForShare: false, ct);
+        if (!emission.Enabled)
+            return;
+
         // R11: con resultado SRI pendiente (Caso #32: solo consulta) el máximo de la empresa no cierra
         // la consulta antes del plazo del SRI (24 h desde RECIBIDA, ElectronicDocumentRetryPolicy.
         // SriProcessingWindow), contado desde la primera transición a Received del timeline. Sin esa
@@ -701,10 +726,12 @@ public sealed partial class ElectronicDocumentIssuer
         if (!lifecycle.AllowsProcessing)
             return SourceNotProcessable(document.SourceModule, document.SourceEntityId, lifecycle);
 
+        // SRI-TOGGLE-06 — mismo control que el reintento v1.0: sin reactivación, intento ni consulta.
+        if (await EmissionBlockedAsync(document, userId, lockForShare: false, ct) is { } emissionBlocked)
+            return emissionBlocked;
+
         if (document.CurrentState == ElectronicDocumentState.DeadLetter)
         {
-            if (await ReactivationBlockedAsync(document, userId, ct) is { } emissionBlocked)
-                return emissionBlocked;
             document.Reactivate(userId);
             await _repository.SaveChangesAsync(ct);
             LogDocumentReactivated(document.Id, document.CurrentState);
@@ -881,9 +908,9 @@ public sealed partial class ElectronicDocumentIssuer
     }
 
     /// <summary>
-    /// SRI-TOGGLE-02 — control previo a toda transmisión NUEVA al SRI (emisión, reanudación desde
-    /// Draft/Failed y retransmisión corregida); las consultas de autorización/estado no pasan por aquí.
-    /// null = puede transmitirse; si no, el Result de bloqueo, sin escrituras. Usuario
+    /// SRI-TOGGLE-02/06 — control previo a TODA llamada al SRI de un comprobante: transmisión (emisión,
+    /// reanudación desde Draft/Failed, retransmisión corregida), reintento y consulta de autorización o de
+    /// historial. null = puede llamarse; si no, el Result de bloqueo, sin escrituras. Usuario
     /// <see cref="Guid.Empty"/> = proceso automático: además exige actividad posterior a la habilitación,
     /// de modo que los pendientes solo se reanudan por una acción explícita de un usuario.
     /// </summary>
@@ -914,7 +941,7 @@ public sealed partial class ElectronicDocumentIssuer
                     ct
                 )
                 : null;
-        return emission.AllowsTransmission(document.LastAttemptUtc, sourceActivity, automatic)
+        return emission.AllowsSriAccess(document.LastAttemptUtc, sourceActivity, automatic)
             ? null
             : EmissionBlocked(emission, document.Id, document.CompanyId);
     }
@@ -927,23 +954,13 @@ public sealed partial class ElectronicDocumentIssuer
     {
         var reason = emission.Enabled
             ? "El comprobante quedó pendiente antes de habilitar la emisión electrónica: requiere reanudación explícita desde el Monitor."
-            : "La emisión electrónica está deshabilitada para esta empresa: el comprobante no se transmitirá al SRI hasta habilitarla y reanudarlo.";
+            : "La emisión electrónica está deshabilitada para esta empresa: el comprobante no se envía ni se consulta en el SRI hasta habilitarla y reanudarlo.";
         LogEmissionBlocked(documentId, companyId, emission.Enabled);
         return Result<ElectronicDocumentDto>.ValidationFailure(
             reason,
             ApiResponseCodes.ElectronicDocuments.EmissionDisabled
         );
     }
-
-    /// <summary>SRI-TOGGLE-02 — reactivar un DeadLetter hacia Draft/Failed reanudaría una transmisión: se controla antes de escribir.</summary>
-    private Task<Result<ElectronicDocumentDto>?> ReactivationBlockedAsync(
-        ElectronicDocument document,
-        Guid userId,
-        CancellationToken ct
-    ) =>
-        document.PreDeadLetterState is ElectronicDocumentState.Draft or ElectronicDocumentState.Failed
-            ? EmissionBlockedAsync(document, userId, lockForShare: false, ct)
-            : Task.FromResult<Result<ElectronicDocumentDto>?>(null);
 
     private Result<ElectronicDocumentDto> SourceNotProcessable(
         string sourceModule,
@@ -1103,6 +1120,11 @@ public sealed partial class ElectronicDocumentIssuer
         CancellationToken ct
     )
     {
+        // SRI-TOGGLE-06 — revalidación inmediatamente antes de consultar: un apagado confirmado después del
+        // control previo omite la consulta; el documento conserva su estado (sin escrituras).
+        if (await EmissionBlockedAsync(document, userId, lockForShare: false, ct) is { } emissionBlocked)
+            return emissionBlocked.Error;
+
         var authResult = await _authorizationService.CheckAsync(
             companyId,
             document.AccessKey!.Value,

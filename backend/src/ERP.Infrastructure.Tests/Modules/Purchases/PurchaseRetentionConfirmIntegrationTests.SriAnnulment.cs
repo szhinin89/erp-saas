@@ -821,6 +821,8 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     [Fact]
     public async Task Polling_encuentra_entre_tenants_solo_las_presentadas_no_verificadas_recientemente()
     {
+        // SRI-TOGGLE-06 — el polling solo considera empresas con la emisión habilitada.
+        await SetEmissionAuditedAsync(true);
         var (invoiceId, retentionId) = await ConfirmWithAuthorizedRetentionAsync();
         (await RequestSriAnnulmentAsync(invoiceId)).IsSuccess.Should().BeTrue();
         var request = (await ReadAnnulmentAsync(retentionId))!;

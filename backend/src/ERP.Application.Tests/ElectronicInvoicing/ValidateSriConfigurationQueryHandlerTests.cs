@@ -55,7 +55,7 @@ public sealed class ValidateSriConfigurationQueryHandlerTests
             .ReturnsAsync(true);
         var handler = new ValidateSriConfigurationQueryHandler(
             repository.Object, companyRepository.Object, tenant.Object, company.Object,
-            resolver, connectivity.Object);
+            resolver, connectivity.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission());
 
         var result = await handler.Handle(new ValidateSriConfigurationQuery(), CancellationToken.None);
 
@@ -119,7 +119,7 @@ public sealed class ValidateSriConfigurationQueryHandlerTests
         connectivity.Setup(c => c.PingAsync(settings.WsdlUrl, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         var handler = new ValidateSriConfigurationQueryHandler(
             repository.Object, companyRepository.Object, tenant.Object, company.Object,
-            resolver.Object, connectivity.Object);
+            resolver.Object, connectivity.Object, ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission());
 
         var result = await handler.Handle(new ValidateSriConfigurationQuery(), CancellationToken.None);
 
@@ -152,5 +152,39 @@ public sealed class ValidateSriConfigurationQueryHandlerTests
         }
         resolver.Verify(r => r.ResolveAsync(settings, It.IsAny<CancellationToken>()), Times.Once);
         connectivity.Verify(c => c.PingAsync(settings.WsdlUrl, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SRI_TOGGLE_07_emision_pausada_no_hace_ping_y_la_conectividad_queda_no_verificada()
+    {
+        var tenantId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
+        var settings = SriSettings.Create(
+            tenantId, companyId, 1, 1, "https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl",
+            Guid.NewGuid());
+        var repository = new Mock<ISriSettingsRepository>();
+        repository.Setup(r => r.GetByCompanyIdAsync(companyId, It.IsAny<CancellationToken>())).ReturnsAsync(settings);
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.SetupGet(t => t.TenantId).Returns(tenantId);
+        var company = new Mock<ICurrentCompany>();
+        company.SetupGet(c => c.CompanyId).Returns(companyId);
+        var resolver = new Mock<ISriCertificateStatusResolver>();
+        resolver.Setup(r => r.ResolveAsync(settings, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SriCertificateStatus(false, false, false, null, null, null, null));
+        var connectivity = new Mock<ISriConnectivityChecker>(MockBehavior.Strict);
+        var emission = (ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.FixedEmissionSwitch)
+            ERP.Application.Tests.TestSupport.RetentionElectronicTestDoubles.Emission(enabled: false);
+        var handler = new ValidateSriConfigurationQueryHandler(
+            repository.Object, Mock.Of<ICompanyRepository>(), tenant.Object, company.Object,
+            resolver.Object, connectivity.Object, emission);
+
+        var result = await handler.Handle(new ValidateSriConfigurationQuery(), CancellationToken.None);
+
+        var reachability = Assert.Single(result.Value!.Checks, c => c.Code == "wsdlReachable");
+        Assert.False(reachability.Passed);
+        Assert.StartsWith("No verificado", reachability.Message);
+        connectivity.VerifyNoOtherCalls();
+        Assert.Equal([(tenantId, companyId)], emission.SriCallsEntered);
+        Assert.Equal(0, emission.OpenSriCalls);
     }
 }

@@ -16,13 +16,13 @@ const row: PurchaseReceptionItem = {
   affectedPurchaseExists: true, affectedPurchaseId: "invoice-1",
   status: "PENDING", processingStatus: "PENDING", processingNotes: null, supplierTradeName: null,
 };
-function show(overrides: Partial<PurchaseReceptionItem> = {}) {
+function show(overrides: Partial<PurchaseReceptionItem> = {}, sriPaused = false) {
   const download = vi.fn();
   const view = vi.fn();
   const processCreditNote = vi.fn();
   render(<I18nProvider><PurchaseReceptionActionsCell row={{ ...row, ...overrides }}
     xmlState={undefined} onDownloadXml={download} onViewXml={view}
-    onProcessCreditNote={processCreditNote} resolvingCreditNoteId={null} /></I18nProvider>);
+    onProcessCreditNote={processCreditNote} resolvingCreditNoteId={null} sriPaused={sriPaused} /></I18nProvider>);
   return { download, view, processCreditNote };
 }
 describe("Purchase reception document actions", () => {
@@ -58,6 +58,14 @@ describe("Purchase reception document actions", () => {
     expect(download).toHaveBeenCalledWith("nc-1");
     expect(screen.getByRole("button", { name: "Procesar NC" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Crear compra" })).toBeNull();
+  });
+  it("SRI-TOGGLE-07: con la emisión pausada no consulta XML y conserva el procesamiento local", () => {
+    const { download } = show({}, true);
+    const consult = screen.getByRole("button", { name: "Consultar XML" }) as HTMLButtonElement;
+    expect(consult.disabled).toBe(true);
+    fireEvent.click(consult);
+    expect(download).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Procesar NC" })).toBeTruthy();
   });
   it("consults XML even before the affected invoice exists", () => {
     show({ affectedPurchaseExists: false, affectedPurchaseId: null });

@@ -44,6 +44,8 @@ type Props = {
   canReconcile?: boolean;
   canRetransmitCorrected?: boolean;
   retryLoading: boolean;
+  /** SRI-TOGGLE-06 — emisión de la empresa pausada: reintentar, conciliar y retransmitir llaman al SRI. */
+  sriPaused?: boolean;
   canDownloadRide: boolean;
   rideDownloading: boolean;
   onClose: () => void;
@@ -73,6 +75,7 @@ export function ElectronicDocumentDetailPanel({
   canReconcile = false,
   canRetransmitCorrected = false,
   retryLoading,
+  sriPaused = false,
   canDownloadRide,
   rideDownloading,
   onClose,
@@ -204,7 +207,8 @@ export function ElectronicDocumentDetailPanel({
                       variant="primary"
                       size="sm"
                       type="button"
-                      disabled={retryLoading}
+                      disabled={retryLoading || sriPaused}
+                      title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
                       onClick={() => void handleRetryNow()}
                       className="edm-retry-btn"
                     >
@@ -218,7 +222,8 @@ export function ElectronicDocumentDetailPanel({
                       variant="secondary"
                       size="sm"
                       type="button"
-                      disabled={retryLoading}
+                      disabled={retryLoading || sriPaused}
+                      title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
                       onClick={() => setReconcileOpen(true)}
                     >
                       {t("electronicDocuments.monitor.reconcile.open")}
@@ -229,7 +234,8 @@ export function ElectronicDocumentDetailPanel({
                     variant="primary"
                     size="sm"
                     type="button"
-                    disabled={retryLoading}
+                    disabled={retryLoading || sriPaused}
+                    title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
                     onClick={() => setRetransmitOpen(true)}
                   >
                     {t("electronicDocuments.monitor.retransmit.open")}

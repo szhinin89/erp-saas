@@ -67,26 +67,35 @@ public sealed partial class PurchaseRetentionConfirmIntegrationTests
     }
 
     [Fact]
-    public async Task SRI_TOGGLE_04_rehabilitacion_durante_la_firma_la_detecta_el_reclamo_y_el_job_no_la_retoma()
+    public async Task SRI_TOGGLE_07_un_cambio_durante_la_firma_espera_a_la_llamada_en_curso_y_despues_no_hay_llamadas_nuevas()
     {
         await SetEmissionAuditedAsync(true);
         var (_, retentionId) = await ConfirmWithIssuedRetentionAsync();
         var sri = new SriBoundaryDouble(_companyId) { HoldSign = new(TaskCreationOptions.RunContinuationsAsynchronously) };
 
-        // El control inicial pasa (emitida después de la habilitación); la firma se retiene antes del reclamo.
+        // La recuperación automática (emitida después de la habilitación) entra al ámbito SRI; la firma se retiene.
         var recovery = StartWithRealSwitchAsync(retentionId, Guid.Empty, sri);
         await sri.SignEntered.Task.WaitAsync(TimeSpan.FromSeconds(30));
-        await SetEmissionAuditedAsync(false);
-        await SetEmissionAuditedAsync(true);
+
+        // SRI-TOGGLE-07 (sustituye la ventana de 04): apagado + re-habilitación no se confirman mientras la llamada
+        // siga en curso; la llamada ve un estado estable y termina su único envío.
+        var toggle = Task.Run(async () =>
+        {
+            await SetEmissionAuditedAsync(false);
+            await SetEmissionAuditedAsync(true);
+        });
+        (await Task.WhenAny(toggle, Task.Delay(TimeSpan.FromSeconds(1)))).Should().NotBe(toggle);
         sri.HoldSign.SetResult();
 
-        (await recovery.WaitAsync(TimeSpan.FromSeconds(30))).Code
-            .Should().Be(ApiResponseCodes.ElectronicDocuments.EmissionDisabled);
-        sri.SendCalls.Should().Be(0);
-        var draft = await DocumentOfAsync(retentionId);
-        draft.CurrentState.Should().Be(ElectronicDocumentState.Draft);
-        draft.AccessKey.Should().BeNull();
-        (await RetryCandidateIdsAsync()).Should().NotContain(draft.Id);
+        (await recovery.WaitAsync(TimeSpan.FromSeconds(30))).IsSuccess.Should().BeTrue();
+        await toggle.WaitAsync(TimeSpan.FromSeconds(30));
+        sri.SendCalls.Should().Be(1, "la llamada iniciada antes del cambio terminó antes de su confirmación");
+
+        // Confirmados los cambios, ningún proceso automático vuelve a llamar por este comprobante.
+        var document = await DocumentOfAsync(retentionId);
+        (await RetryCandidateIdsAsync()).Should().NotContain(document.Id);
+        await RetryWithRealSwitchAsync(document.Id, Guid.Empty, sri);
+        sri.SendCalls.Should().Be(1);
     }
 
     [Fact]
