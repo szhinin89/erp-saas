@@ -59,7 +59,7 @@ un despliegue. Las tareas abiertas de otros ámbitos conservan su estado.
 Verificación documental: `run-dashboard-final.ps1` completo, terminado con
 `Dashboard completed successfully`; `git diff --check` PASS. Sin staging, commit ni push.
 
-## CI-FIX-SRI-01 — C-03 corregido; pendiente gate del propietario (2026-11-03)
+## CI-FIX-SRI-01 — C-03 corregido — CLOSED (2026-11-03)
 
 BUG REAL reproducido en `d81e2adbf`: dos techos excedidos y una excepción obsoleta.
 Extracción focal de diagnóstico del certificado, análisis/cotejo de NC y composición de respuesta de descarga.
@@ -68,8 +68,12 @@ UpdateOperationalPreferences 80 (sin cambiar código). Retiradas las tres excepc
 sin elevar límites ni cambiar contratos, pausa SRI, XML/XAdES/SOAP, BD o secuenciales.
 PASS agente: Application focal 32/32, frontera SRI Architecture 2/2, fixtures C-03/integridad 59/59,
 PostgreSQL real 26/26 (interruptor/locks/scope y repositorio de recepción), check-handler-size,
-integridad grandfather y `git diff --check`. Sin llamadas reales al SRI, staging, commit ni push.
-Gate reproducible del propietario desde raíz:
+integridad grandfather y `git diff --check`. Sin llamadas reales al SRI.
+Publicado por el propietario en `8d4301fb32f73926a4b209014fd62f11e66f3139`;
+[CI #1065](https://github.com/szhinin89/erp-saas/actions/runs/41626052962) SUCCESS
+(19 jobs success; despliegue Azure omitido), con handler-size, integridad grandfather y
+grupos backend. El propietario acepta expresamente CI #1065 como gate técnico y aprueba el
+cierre. No acredita despliegue. Gate reproducible desde raíz:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/quality/check-handler-size.ps1
