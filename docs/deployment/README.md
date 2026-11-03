@@ -76,7 +76,7 @@ Fuera de Development/Testing, `login` y `global-login` responden 503 `LOGIN_THRO
 si Redis no está configurado o no responde. `LoginThrottle__*` trae valores candidatos (K2 por IP
 desactivado). `ForwardedHeaders__KnownProxies__N`/`ForwardedHeaders__KnownNetworks__N` están vacíos:
 no declarar proxies sin haber verificado la IP/red real del proxy del despliegue. Contrato y gates:
-[Seguridad — Límites de intentos de login](../architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-local-no-closed).
+[Seguridad — Límites de intentos de login](../architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-v1-closed--producción-no-go).
 
 ## Configuración compartida y específica
 

@@ -1,21 +1,38 @@
 # Project Status
 
-## SEC-A01 — límites de intentos de login — IMPLEMENTADO EN LOCAL, NO CLOSED (2026-11-03)
+## SEC-A01 — límites de intentos de login — IMPLEMENTACIÓN V1 CLOSED / PRODUCCIÓN NO-GO (2026-11-03)
 
 `login` y `global-login` con admisión previa al handler: reserva atómica K1 cuenta+IP (5/15 min),
 K2 IP (desactivado) y K3 cuenta (30/15 min), concurrencia por instancia configurable, 429
 `RATE_LIMITED` y 503 `LOGIN_THROTTLE_UNAVAILABLE` (Redis configurado e inaccesible, o sin Redis
 fuera de Development/Testing). `X-Forwarded-For` solo desde proxies declarados (lista vacía).
 Handlers, BCrypt, JWT, refresh, sesiones, permisos y frontend sin cambios.
-Contrato: [Seguridad — Límites de intentos de login](docs/architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-local-no-closed).
+Contrato: [Seguridad — Límites de intentos de login](docs/architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-v1-closed--producción-no-go).
 
 PASS agente (focales): Infrastructure 22/22 (reserva en memoria, throttle de login, regresión
 `TryAcquireAsync`) y 9/9 Redis vía Testcontainers; API 233/233 (contrato 429/503, proxies
 confiables, AuthController, cookie de refresh, matriz de errores); arquitectura 10/10 (controllers,
 contrato de respuestas, superficie de auth); HTTP real de login 1/1. Sin suite completa.
-Pendiente: revisión y commit del propietario, CI, y gates de producción — valores medidos
-(`t_bcrypt`, concurrencia, cola), IP real verificada detrás del proxy antes de activar K2 y
-declarar proxies, Redis en producción. Riesgo residual: bloqueo dirigido temporal vía K3.
+Corrección CI #1070 (guardrail temporal: instante como `DateTime` UTC, no `DateTimeOffset`):
+guardrail 1/1, Infrastructure 22/22 y Redis 9/9.
+Publicado por el propietario: implementación `dc239ebc3573b8508e878cbd7603af986a37b4ae` y
+corrección `db87df627d8de52cdc96248edfd69f157038c477`;
+[CI #1071](https://github.com/szhinin89/erp-saas/actions/runs/41737883781) SUCCESS (19 jobs
+success, 0 fallidos; despliegue Azure omitido; backend architecture/API/infrastructure, frontend e
+identity guardrails PASS). Cierre de la implementación aprobado expresamente por el propietario.
+No acredita despliegue ni ERP V1 listo para producción.
+
+**Producción NO-GO — requisitos abiertos antes del despliegue:**
+- Verificar la IP real del cliente detrás del proxy y configurar `ForwardedHeaders:KnownProxies`/
+  `KnownNetworks` reales; K2 por IP sigue desactivado hasta entonces.
+- Verificar Redis disponible en el entorno de despliegue y el número real de instancias API
+  (`Redis:Required` acorde).
+- Medir `t_bcrypt` en el hardware real y validar los parámetros definitivos de concurrencia, cola
+  y límites (los actuales son candidatos).
+- Evaluar el riesgo residual de bloqueo temporal dirigido contra cuentas (K3, sin cookie de
+  dispositivo).
+- Validar en el entorno de despliegue los aspectos sin evidencia (proxy, HTTPS/
+  `X-Forwarded-Proto`, mensajes 429/503 en la pantalla de login).
 
 ## AUTH-INTERCEPTOR-FIX-01 — corrección focal — CLOSED (2026-11-03)
 

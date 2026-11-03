@@ -87,7 +87,7 @@ Una empresa no consulta, modifica, usa ni afecta datos operativos de otra, aunqu
 
 Detalle endpoints y claims: `docs/IDENTITY.md`.
 
-### Límites de intentos de login (SEC-A01 — implementación local, no CLOSED)
+### Límites de intentos de login (SEC-A01 — IMPLEMENTACIÓN V1 CLOSED / PRODUCCIÓN NO-GO)
 
 `POST /api/v1/auth/login` y `POST /api/v1/auth/global-login` pasan por `ILoginAttemptThrottle`
 (`LoginAttemptThrottle`) en el controller **antes** del handler; handlers, BCrypt, JWT, refresh y
