@@ -15,12 +15,6 @@
       "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
     },
     {
-      "file": "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/ValidateSriConfiguration/ValidateSriConfigurationQueryHandler.cs",
-      "maxHandleLines": 155,
-      "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
-      "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
-    },
-    {
       "file": "backend/src/ERP.Application/Modules/InitialLoad/UseCases/ConfirmImportBatch/ConfirmImportBatchHandler.cs",
       "maxHandleLines": 155,
       "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
@@ -29,18 +23,6 @@
     {
       "file": "backend/src/ERP.Application/Modules/Items/UseCases/CreateItem/CreateItemCommandHandler.cs",
       "maxHandleLines": 191,
-      "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
-      "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
-    },
-    {
-      "file": "backend/src/ERP.Application/Modules/Purchases/PurchaseReception/UseCases/DownloadPurchaseReceptionXml/DownloadPurchaseReceptionXmlHandler.cs",
-      "maxHandleLines": 168,
-      "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
-      "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
-    },
-    {
-      "file": "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
-      "maxHandleLines": 451,
       "baselineCommit": "9afc6c56e7eaf1f87cbcc426a9e31f6a031ada77",
       "adr": "docs/decisions/ADR-046-historical-handler-size-debt.md"
     }

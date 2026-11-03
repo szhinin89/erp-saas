@@ -5,6 +5,7 @@ using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.ElectronicInvoicing.DTOs;
 using ERP.Application.Modules.ElectronicInvoicing.Services;
 using ERP.Domain.Configuration.Constants;
+using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
@@ -86,6 +87,77 @@ public sealed class ValidateSriConfigurationQueryHandler
             )
         );
 
+        certificateInfo = await ValidateCertificateAsync(settings, companyId, checks, cancellationToken);
+
+        var urlValid = SriWsdlUrl.IsValidFor(settings.WsdlUrl, settings.Environment);
+        checks.Add(
+            new SriConfigurationCheckDto(
+                "wsdlUrl",
+                urlValid,
+                urlValid ? "La URL del webservice SRI tiene un formato válido."
+                : SriWsdlUrl.IsValid(settings.WsdlUrl)
+                    ? "La URL del webservice SRI corresponde al otro ambiente (Pruebas/Producción) que el configurado."
+                : "La URL del webservice SRI no es válida."
+            )
+        );
+
+        if (urlValid)
+        {
+            // SRI-TOGGLE-07 — pausa total: con la emisión pausada no se contacta al SRI; la conectividad
+            // queda "no verificada" (nunca se informa como alcanzable ni como caída).
+            await using var sriCall = await _emissionSwitch.EnterSriCallAsync(
+                settings.TenantId,
+                settings.CompanyId,
+                cancellationToken
+            );
+            var emission = await _emissionSwitch.GetAsync(
+                settings.TenantId,
+                settings.CompanyId,
+                lockForShare: false,
+                cancellationToken
+            );
+            if (!emission.Enabled)
+            {
+                checks.Add(
+                    new SriConfigurationCheckDto(
+                        "wsdlReachable",
+                        false,
+                        "No verificado: la emisión electrónica de la empresa está pausada y no se contacta al SRI."
+                    )
+                );
+            }
+            else
+            {
+                var reachable = await _connectivityChecker.PingAsync(
+                    settings.WsdlUrl,
+                    cancellationToken
+                );
+                checks.Add(
+                    new SriConfigurationCheckDto(
+                        "wsdlReachable",
+                        reachable,
+                        reachable
+                            ? "El webservice del SRI respondió correctamente."
+                            : "No se pudo conectar al webservice del SRI."
+                    )
+                );
+            }
+        }
+
+        var isValid = checks.All(c => c.Passed);
+        return Result<SriConfigurationValidationDto>.Success(
+            new SriConfigurationValidationDto(isValid, checks, certificateInfo)
+        );
+    }
+
+    private async Task<SriCertificateInfoDto?> ValidateCertificateAsync(
+        SriSettings settings,
+        Guid companyId,
+        List<SriConfigurationCheckDto> checks,
+        CancellationToken cancellationToken
+    )
+    {
+        SriCertificateInfoDto? certificateInfo = null;
         var certStatus = await _certStatusResolver.ResolveAsync(settings, cancellationToken);
 
         checks.Add(
@@ -165,65 +237,7 @@ public sealed class ValidateSriConfigurationQueryHandler
             );
         }
 
-        var urlValid = SriWsdlUrl.IsValidFor(settings.WsdlUrl, settings.Environment);
-        checks.Add(
-            new SriConfigurationCheckDto(
-                "wsdlUrl",
-                urlValid,
-                urlValid ? "La URL del webservice SRI tiene un formato válido."
-                : SriWsdlUrl.IsValid(settings.WsdlUrl)
-                    ? "La URL del webservice SRI corresponde al otro ambiente (Pruebas/Producción) que el configurado."
-                : "La URL del webservice SRI no es válida."
-            )
-        );
-
-        if (urlValid)
-        {
-            // SRI-TOGGLE-07 — pausa total: con la emisión pausada no se contacta al SRI; la conectividad
-            // queda "no verificada" (nunca se informa como alcanzable ni como caída).
-            await using var sriCall = await _emissionSwitch.EnterSriCallAsync(
-                settings.TenantId,
-                settings.CompanyId,
-                cancellationToken
-            );
-            var emission = await _emissionSwitch.GetAsync(
-                settings.TenantId,
-                settings.CompanyId,
-                lockForShare: false,
-                cancellationToken
-            );
-            if (!emission.Enabled)
-            {
-                checks.Add(
-                    new SriConfigurationCheckDto(
-                        "wsdlReachable",
-                        false,
-                        "No verificado: la emisión electrónica de la empresa está pausada y no se contacta al SRI."
-                    )
-                );
-            }
-            else
-            {
-                var reachable = await _connectivityChecker.PingAsync(
-                    settings.WsdlUrl,
-                    cancellationToken
-                );
-                checks.Add(
-                    new SriConfigurationCheckDto(
-                        "wsdlReachable",
-                        reachable,
-                        reachable
-                            ? "El webservice del SRI respondió correctamente."
-                            : "No se pudo conectar al webservice del SRI."
-                    )
-                );
-            }
-        }
-
-        var isValid = checks.All(c => c.Passed);
-        return Result<SriConfigurationValidationDto>.Success(
-            new SriConfigurationValidationDto(isValid, checks, certificateInfo)
-        );
+        return certificateInfo;
     }
 
     private static void AddMissingCertificatePasswordCheck(

@@ -1,5 +1,27 @@
 # Project Status
 
+## CI-FIX-SRI-01 — C-03 corregido; pendiente gate del propietario (2026-11-03)
+
+BUG REAL reproducido en `d81e2adbf`: dos techos excedidos y una excepción obsoleta.
+Extracción focal de diagnóstico del certificado, análisis/cotejo de NC y composición de respuesta de descarga.
+`Handle`: ValidateSriConfiguration 180 → 103; DownloadPurchaseReceptionXml 192 → 131;
+UpdateOperationalPreferences 80 (sin cambiar código). Retiradas las tres excepciones C-03;
+sin elevar límites ni cambiar contratos, pausa SRI, XML/XAdES/SOAP, BD o secuenciales.
+PASS agente: Application focal 32/32, frontera SRI Architecture 2/2, fixtures C-03/integridad 59/59,
+PostgreSQL real 26/26 (interruptor/locks/scope y repositorio de recepción), check-handler-size,
+integridad grandfather y `git diff --check`. Sin llamadas reales al SRI, staging, commit ni push.
+Gate reproducible del propietario desde raíz:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/quality/check-handler-size.ps1
+node tools/architecture/check-grandfather-integrity.mjs
+node --test tools/quality/check-handler-size.test.mjs tools/architecture/check-grandfather-integrity.test.mjs
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~ValidateSriConfigurationQueryHandlerTests|FullyQualifiedName~DownloadPurchaseReceptionXmlHandlerTests|FullyQualifiedName~UpdateOperationalPreferencesCommandHandlerTests"
+dotnet test backend/src/ERP.Architecture.Tests/ERP.Architecture.Tests.csproj --no-restore --filter FullyQualifiedName~SriAccessEmissionSwitchBoundaryTests
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter "FullyQualifiedName~ElectronicEmissionSwitchPostgreSqlTests|FullyQualifiedName~PurchaseReceptionDocumentRepositoryTests"
+git diff --check
+```
+
 ## SRI-TOGGLE-08 — gate final de SRI-TOGGLE-06/07 — PASS agente, listo para gate del propietario (2026-11-02)
 
 PostgreSQL afectado 300/300 (interruptor, candidatos, recuperación y anulaciones de retenciones/gastos, reclamos,

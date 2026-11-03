@@ -9,6 +9,7 @@ using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using MediatR;
@@ -161,35 +162,10 @@ public sealed class DownloadPurchaseReceptionXmlHandler
         PurchaseReceptionDetailProcessingResult processed;
         if (document.SourceDocType == PurchaseReceptionSourceDocType.CreditNote)
         {
-            try
-            {
-                var creditNote = PurchaseCreditNoteXmlParser.Parse(
-                    queryResult.XmlContent,
-                    document.Id,
-                    _tenant.TenantId
-                );
-                if (
-                    creditNote.AccessKey != document.AccessKey
-                    || creditNote.SupplierRuc != document.SupplierRuc
-                    || creditNote.DocumentNumber != document.InvoiceNumber
-                )
-                    return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure(
-                        "El XML de la nota de crédito no coincide con el documento recibido."
-                    );
-                processed = creditNote.Detail;
-            }
-            catch (Exception ex)
-                when (ex
-                        is FormatException
-                            or ArgumentException
-                            or XmlException
-                            or OverflowException
-                )
-            {
-                return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure(
-                    $"No se pudo interpretar el XML de la nota de crédito: {ex.Message}"
-                );
-            }
+            var creditNoteResult = ParseCreditNote(document, queryResult.XmlContent);
+            if (!creditNoteResult.IsSuccess)
+                return Result<DownloadPurchaseReceptionXmlResultDto>.ValidationFailure(creditNoteResult.Error!);
+            processed = creditNoteResult.Value!;
         }
         else
         {
@@ -219,6 +195,51 @@ public sealed class DownloadPurchaseReceptionXmlHandler
         );
         await _documentRepo.SaveChangesAsync(cancellationToken);
 
+        return await BuildDownloadResultAsync(document, processed.SupplierTradeName, cancellationToken);
+    }
+
+    private Result<PurchaseReceptionDetailProcessingResult> ParseCreditNote(
+        PurchaseReceptionDocument document,
+        string xmlContent
+    )
+    {
+        try
+        {
+            var creditNote = PurchaseCreditNoteXmlParser.Parse(
+                xmlContent,
+                document.Id,
+                _tenant.TenantId
+            );
+            if (
+                creditNote.AccessKey != document.AccessKey
+                || creditNote.SupplierRuc != document.SupplierRuc
+                || creditNote.DocumentNumber != document.InvoiceNumber
+            )
+                return Result<PurchaseReceptionDetailProcessingResult>.ValidationFailure(
+                    "El XML de la nota de crédito no coincide con el documento recibido."
+                );
+            return Result<PurchaseReceptionDetailProcessingResult>.Success(creditNote.Detail);
+        }
+        catch (Exception ex)
+            when (ex
+                    is FormatException
+                        or ArgumentException
+                        or XmlException
+                        or OverflowException
+            )
+        {
+            return Result<PurchaseReceptionDetailProcessingResult>.ValidationFailure(
+                $"No se pudo interpretar el XML de la nota de crédito: {ex.Message}"
+            );
+        }
+    }
+
+    private async Task<Result<DownloadPurchaseReceptionXmlResultDto>> BuildDownloadResultAsync(
+        PurchaseReceptionDocument document,
+        string? supplierTradeName,
+        CancellationToken cancellationToken
+    )
+    {
         var purchase = await PurchaseReceptionPurchaseStateResolver.ResolveAsync(
             _purchaseRepo,
             _tenant.TenantId,
@@ -249,7 +270,7 @@ public sealed class DownloadPurchaseReceptionXmlHandler
             document.ProcessingNotes,
             purchase.PurchaseId,
             supplierIsActive,
-            processed.SupplierTradeName,
+            supplierTradeName,
             expenseExists,
             PurchaseReceptionMapper.ToPurchaseStateCode(purchase.State),
             purchase.CancelledPurchaseId
