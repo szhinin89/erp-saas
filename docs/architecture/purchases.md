@@ -397,6 +397,10 @@ sin bodega y no genera inventario; Product conserva la exigencia de bodega.
 
 ## 9. Evidencia
 
+Gates y cierre vigente: [Compras V1 CLOSED](../../STATUS.md#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+Los resultados y pendientes fechados siguientes son evidencia histórica; no acreditan
+nuevas ejecuciones ni reabren el módulo aprobado por el propietario.
+
 Distribución canónica de costos, FASE A backend (2026-10-25): cuatro probes de negocio contra la
 API previa (HEAD) FAIL: reintento 20 ≠ 10, edición 25 ≠ 15, transporte XML total 120 ≠ 110 (CxP
 duplicada), descuento 5 ≠ 0 en línea excluida. Después: Domain 34/34, Application 99/99, API 8/8,

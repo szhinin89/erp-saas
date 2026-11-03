@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-02 17:04:44",
+    "generated":  "2026-11-03 06:36:56",
     "source":  "dashboard-model-v12.json, completion-intelligence.json",
     "method":  {
                    "productionReadinessScore":  "avg(Architecture, ModuleHealth, Quality, Security, Dependencies) -- same formula analyze-completion.ps1 uses internally to derive its published band",

@@ -1,5 +1,35 @@
 # Project Status
 
+## DOC-CLEANUP-COMPRAS-01 — Compras V1 aprobado y CLOSED (2026-11-03)
+
+El propietario confirma Compras V1 aprobado y **CLOSED** en esta tarea. Este es el
+estado vigente del módulo y prevalece sobre los registros anteriores READY FOR REVIEW,
+PENDING, pendientes de validación o «no CLOSED» de Compras. Esos registros conservan
+el estado y la evidencia de su fecha; no representan trabajo funcional abierto.
+No reauditar ni rediseñar salvo BUG REAL directamente relacionado.
+
+Conciliación documental:
+
+- **BUG REAL documental:** retirados de WORK_QUEUE los plazos XML/cuotas y las promociones
+  DISURGAL al 100 %, incluidos en el módulo aprobado. La aceptación específica ya registrada
+  de DISURGAL y ALPINA se conserva; la confirmación global no inventa gates focales,
+  aceptación visual específica, CI, commits ni ejecuciones adicionales.
+- **KEEP:** evidencia de detalle compacto, XML V1, identidad de líneas repetidas,
+  fixtures XML, distribución de costos, NC y cierres R2/CxP. Sus límites y resultados
+  históricos permanecen; sus pendientes funcionales de Compras quedan superados por
+  el cierre global, sin extenderlo a SRI, otros módulos o ampliaciones FUTURE.
+- **DEBT:** se conservan los fallos técnicos históricos de Vitest (plazos XML y
+  SRI-TOGGLE-08), incluido el intermitente. No se corrigieron ni se declaran PASS;
+  tampoco reabren automáticamente Compras ni autorizan trabajo adicional.
+- **FALTA:** procedencia estructurada XML/default/manual y ampliaciones no operativas
+  siguen fuera del alcance implementado; no se convierten en obligaciones V1.
+
+Solo documentación y derivados del Dashboard, cuyas métricas no son autoridad de cierre.
+Sin nuevas pruebas funcionales, BD ni validación SRI. El cierre confirmado no acredita
+un despliegue. Las tareas abiertas de otros ámbitos conservan su estado.
+Verificación documental: `run-dashboard-final.ps1` completo, terminado con
+`Dashboard completed successfully`; `git diff --check` PASS. Sin staging, commit ni push.
+
 ## CI-FIX-SRI-01 — C-03 corregido; pendiente gate del propietario (2026-11-03)
 
 BUG REAL reproducido en `d81e2adbf`: dos techos excedidos y una excepción obsoleta.
@@ -153,6 +183,9 @@ git diff --check
 ```
 
 ## Compras — plazos XML y cuotas — READY FOR REVIEW (2026-10-31)
+
+> Registro histórico: estado vigente [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Los pendientes corresponden a su fecha; se conservan resultados y límites sin acreditar nuevos gates.
 
 BUG REAL: plazo XML desconectado del formulario y default del proveedor omitido al cargar recepción.
 Implementado: propuesta explícita para un pago con días enteros válidos (19/10 + 8 = 27/10),
@@ -416,6 +449,9 @@ el estado del caso #32 y no reabre otros módulos CLOSED.
 
 ## Compras — detalle compacto y resaltado — IMPLEMENTADO — PENDIENTE VALIDACIÓN VISUAL DEL PROPIETARIO (2026-10-29)
 
+> Registro histórico: estado vigente [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Los pendientes corresponden a su fecha; se conservan resultados y límites sin acreditar nuevos gates.
+
 Clasificación: FALTA autorizada en la presentación; KEEP datos, edición, guardado,
 reapertura y lógica operativa/fiscal. `PurchasesPage.tsx` reutiliza las tarjetas y
 botones ZH existentes, con el patrón de expansión por identificador del modal de
@@ -439,6 +475,9 @@ recorrido persistido. Sin navegador, suites generales, backend, BD, migraciones,
 baseline, caso #32, otros módulos, staging, commit ni push; no CLOSED.
 
 ## BUG REAL DISURGAL — corregido; validación funcional del propietario PASS DISURGAL y ALPINA (2026-10-29)
+
+> Registro histórico: el estado funcional vigente es [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Pendientes y límites de esta entrada corresponden a su fecha; no acreditan nuevos gates ni reabren el módulo.
 
 El rechazo reproducido provenía de StockMovement.Create: PurchaseEntry exigía costo > 0
 sin reconocer las promociones XML legítimas. El repositorio valida evidencia de la compra
@@ -473,6 +512,9 @@ escenarios de Compras; Compras V1 no CLOSED.
 
 ## CI Infrastructure-01/06 Compras XML — fixtures alineados; pendiente gate del propietario (2026-10-29)
 
+> Registro histórico: el estado funcional vigente es [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Pendientes y límites de esta entrada corresponden a su fecha; no acreditan nuevos gates ni reabren el módulo.
+
 Reproducidos localmente los 3 FAIL del CI `40973768743` (PostgreSQL desechable). Sin BUG REAL de producción;
 la corrección de promociones (entrada anterior) se conserva intacta.
 - `Xml_service_without_global_warehouse_confirms_without_inventory`: fixture incorrecto; la línea de
@@ -494,6 +536,9 @@ Sin BD, migraciones, baseline, caso #32, Ítems, suites generales, E2E, navegado
 
 ## CI Compras XML V1 — pruebas alineadas; pendiente gate del propietario (2026-10-29)
 
+> Registro histórico: el estado funcional vigente es [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Pendientes y límites de esta entrada corresponden a su fecha; no acreditan nuevos gates ni reabren el módulo.
+
 Reproducidos los 3 FAIL reportados para `217d81cd8` (CI `40969761501`, Backend application).
 Clasificación: BUG REAL en expectativas obsoletas de pruebas; KEEP implementación fiscal V1.
 La SSOT [Compras §2](docs/architecture/purchases.md#2-borrador) conserva importes fiscales
@@ -508,6 +553,9 @@ Sin suites generales, E2E, navegador, staging, commit ni push; no CLOSED.
 
 
 ## Compras XML: identidad de lineas repetidas — pendiente validacion del propietario (2026-10-29)
+
+> Registro histórico: el estado funcional vigente es [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Pendientes y límites de esta entrada corresponden a su fecha; no acreditan nuevos gates ni reabren el módulo.
 
 BUG REAL: el merger emparejaba por posicion grupos de igual codigo/descripcion y conteo,
 cruzando normales/promociones cuando cambiaba la enumeracion de la recepcion.
@@ -534,6 +582,9 @@ sin commit ni push. Contrato de composición: [modales](docs/architecture/modal-
 
 ## Compras XML V1 — IMPLEMENTADO — PENDIENTE VALIDACIÓN FUNCIONAL DEL PROPIETARIO (2026-10-29)
 
+> Registro histórico: estado vigente [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Los pendientes corresponden a su fecha; se conservan resultados y límites sin acreditar nuevos gates.
+
 - Regla única vigente: producto, cantidad, presentación, bodega y costo operativo editables
   antes de confirmar, sin igualdad literal con las líneas XML. Se mantienen conversiones reales,
   conciliación fiscal por categoría/tarifa, CxP exacta y persistencia normal de los costos finales
@@ -553,6 +604,9 @@ sin commit ni push. Contrato de composición: [modales](docs/architecture/modal-
 
 
 ## Compras XML reales — antecedentes DISURGAL y bloqueo de esquema ALPINA (2026-10-28)
+
+> Registro histórico: estado vigente [Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
+> Los pendientes corresponden a su fecha; se conservan resultados y límites sin acreditar nuevos gates.
 
 Revisión focal de DISURGAL `001-001-000005545` y ALPINA `012-004-004253387`;
 no reabre el cierre histórico R2 ni continúa #32.
@@ -1112,7 +1166,7 @@ Reglas funcionales únicamente en las [SSOT](docs/architecture/README.md).
 | Compras: vinculación estricta por proveedor | dc643c455; PostgreSQL 6/6, Application 100/100, selección manual 6/6 PASS | Implementado para la conciliación de recepción/código de proveedor; no exige que el producto, costo o cantidad operativos coincidan con el XML. Rige la regla única de Compras V1 indicada al inicio |
 | Compras: productos pendientes compactos | 77f80985f; frontend 589/589 y PR-7 PASS; [evidencia](docs/evidence/purchases-pending-products-compact-01/README.md) | Implementado; excepción del modal retirada |
 | Compras: modal Distribuir | Focal 16/16 y gates PASS; [evidencia](docs/evidence/purchases-distribute-cost-01/README.md) | Implementado; no amplía cálculo |
-| Compras: validaciones comerciales | Focal 368 y gates PASS; [evidencia](docs/evidence/purchases-commercial-risk-01/README.md) | Falta decisión sobre precisión del costo mostrado; no se resuelve en esta consolidación |
+| Compras: validaciones comerciales | Focal 368 y gates PASS; [evidencia](docs/evidence/purchases-commercial-risk-01/README.md) | Observación histórica sobre precisión del costo mostrado, no resuelta en aquella consolidación; no constituye trabajo abierto tras el cierre global de Compras V1 |
 | Design System: incidencias de línea | [Evidencia](docs/evidence/zh-ds-line-issues-01/README.md) | Capturas con límites de fuentes/iconos; sin nueva aceptación visual |
 | Unificación de NC de compra | PostgreSQL 21/21 con SRI simulado + contabilización 6/6, API 24/24, Application 79/79, frontend 35/35; build/lint/TypeScript/arquitectura PASS | **CLOSED (2026-10-27)**; aceptación funcional expresa del propietario para el alcance implementado de [Compras §§6–7](docs/architecture/purchases.md#6-nota-de-crédito-del-proveedor--entrada-única), publicado en `51678b165`. Recuento frontend conciliado en [evidencia SSOT](docs/architecture/purchases.md#9-evidencia). El límite histórico externo de Gastos (516 > 514) ya no se observa: conteo puntual actual 514, techo 514; no acredita un nuevo gate completo. Sin nuevas pruebas, validación SRI real ni despliegue. |
 | Anulación completa de compra | Validación focal PostgreSQL PASS | Implementada; calendario oficial y ventana interna Company siguen fuera del comportamiento operativo |
