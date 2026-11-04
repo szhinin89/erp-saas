@@ -780,6 +780,15 @@ no modifica el alcance ni el estado de #32, #30 o #31 y no acredita despliegue n
 Los pendientes históricos de este caso descritos debajo quedan superados por este cierre.
 **KEEP:** implementación productiva existente; sin BUG REAL productivo reproducible detectado.
 
+Test y cierre documental incorporados en `469bd053ad2d889b99f77e159bc6d2ffdbd5233e`.
+Confirmación posterior de publicación: `main` limpio y sincronizado con `origin/main`
+en `ab8f4fb1bbb9a0690c83f64067bc481d14f84aaf`;
+[CI #1076](https://github.com/szhinin89/erp-saas/actions/runs/41765246734) **SUCCESS**
+(run `41765246734`, intento 1: 19 jobs exitosos, 0 fallidos y 1 omitido:
+Deploy — Azure Web App). Incluye API e `infrastructure-01` exitosos. No acredita
+despliegue ni amplía los límites de TestServer y datos sintéticos indicados debajo.
+En esta confirmación no se repiten pruebas ni se vuelven a incorporar archivos ya versionados.
+
 **Pruebas efectivamente ejecutadas y aprobadas:** 11 escenarios API/PostgreSQL PASS
 en `CollectionReversalTechnicalTests.cs`, reutilizando `FinancialCommandIdempotencyFixture`
 y `PostgreSqlTestWebAppFactory`, más 3 pruebas PostgreSQL existentes PASS de
