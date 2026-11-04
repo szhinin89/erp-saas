@@ -1,8 +1,8 @@
 # Architecture Gates — ERP SaaS (obligatorio)
 
-**Fuente de verdad:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`ERP_CORE_FREEZE.md`](ERP_CORE_FREEZE.md)
+**Jerarquía:** [`CLAUDE.md`](CLAUDE.md#jerarquía-documental). Reglas completas: [catálogo PR](docs/architecture/pr-rules-catalog.md) y [enforcement](docs/architecture/enforcement.md).
 
-Este archivo define **puertas de arquitectura** (gates) para PR, CI, revisiones humanas y agentes (Cursor / assistants). Incumplir una regla **prohibida** bloquea merge salvo ADR + entrada en `tools/architecture/architecture-grandfather.json`.
+Este archivo es un índice de gates para PR, CI, revisiones humanas y agentes. Las tablas son recordatorios; no redefinen reglas ni autorizan excepciones generales. La especificación y las excepciones admitidas pertenecen a las fuentes canónicas enlazadas.
 
 ---
 
@@ -20,7 +20,7 @@ Este archivo define **puertas de arquitectura** (gates) para PR, CI, revisiones 
 | G-P08 | **No entidades de dominio en contratos API** | Review + `ARCHITECTURE-RULES` |
 | G-P09 | **No DELETE físico** en entidades de negocio (soft delete) | Review + dominio |
 | G-P10 | **No UUID de tenant en URL compartible** | Regla `saas-navigation-no-sensitive-url` |
-| G-P11 | **No herramientas fuera del stack** (`docs/HERRAMIENTAS-ERP-SAAS.md`) | Stack allowlist CI |
+| G-P11 | **No herramientas fuera del stack** ([stack oficial](docs/DEVELOPMENT.md#stack-oficial)) | Stack allowlist CI |
 | G-P12 | **No AutoMapper** — mapeos manuales en handlers | Review |
 
 ---
@@ -29,14 +29,14 @@ Este archivo define **puertas de arquitectura** (gates) para PR, CI, revisiones 
 
 | ID | Regla | Referencia |
 |----|-------|------------|
-| G-O01 | Módulo backend = **vertical slice** por capas: Domain → Application → Infrastructure → API | `docs/ARCHITECTURE.md` |
-| G-O02 | Todo endpoint mutante/lectura persistida pasa por **Application** (Command/Query + Validator) | CQRS ADR-002 |
-| G-O03 | Toda feature frontend nueva vive bajo **`frontend/src/modules/{dominio}/`** (api, schemas, hooks, pages) | ADR-006 |
+| G-O01 | Módulo backend = **vertical slice** por capas, con dependencias Clean Architecture | [Arquitectura](docs/architecture/architecture.md) |
+| G-O02 | Todo endpoint mutante/lectura persistida pasa por **Application** (Command/Query + Validator) | [ADR-013](docs/decisions/ADR-013-cqrs-mediatr.md) |
+| G-O03 | Toda feature frontend nueva vive bajo **`frontend/src/modules/{dominio}/`** (api, schemas, hooks, pages) | [ADR-016](docs/decisions/ADR-016-frontend-modularization.md) |
 | G-O04 | Validación **4 capas** para datos persistidos (Zod, FluentValidation, Domain, EF config) | `CLAUDE.md` |
-| G-O05 | Multi-tenant: **`TenantId`** en queries; empresa operativa vía **`CompanyId`** cuando aplique | ADR-004 |
+| G-O05 | Multi-tenant: **`TenantId`** en queries; empresa operativa vía **`CompanyId`** cuando aplique | [Seguridad](docs/architecture/security.md) |
 | G-O06 | Integraciones explícitas (SRI, Redis, Hangfire) vía Infrastructure + interfaces en Application | Review |
 | G-O07 | i18n: claves nuevas en **`es.json`** y **`en.json`** | Reglas frontend |
-| G-O08 | Módulo/pantalla comercializable: **`SaasFeatureDefinition`** + planes antes de cerrar | Reglas SaaS |
+| G-O08 | Planes y capacidades comerciales pertenecen a una futura Platform externa; no son requisito de cierre de módulos ERP | [Frontera ERP ↔ Platform](docs/architecture/architecture.md#reglas-de-arquitectura-que-no-se-rompen) |
 | G-O09 | Controllers usan **`ApiResultExtensions`** (`ToOkOrBadRequest`, etc.) | `backend-api-contracts` |
 | G-O10 | Entidades de dominio instanciadas solo vía **`Create(...)`** factories | Domain rules |
 
@@ -53,22 +53,19 @@ Este archivo define **puertas de arquitectura** (gates) para PR, CI, revisiones 
 | Patrones repo | `tools/architecture/check-architecture-guardrails.ps1` | `architecture.yml` + `frontend-ci.yml` |
 | Identity legacy | `tools/architecture/check-identity-guardrails.ps1` | `architecture.yml`, `security.yml` |
 | Backend tests | `dotnet test` | `backend-ci.yml` |
-| Frontend | lint, build, chunk, Playwright | `frontend-ci.yml` |
+| Frontend | lint, build y guardrails (sin E2E) | `frontend-ci.yml` |
+| E2E manual | PostgreSQL, API y Playwright | `e2e.yml` → `e2e-manual.yml` |
 
-**Pre-PR local (mínimo):**
-
-```powershell
-./scripts/ci/verify-stack-allowlist.ps1
-dotnet test backend/src/ERP.slnx -c Release
-cd frontend; npm run lint; npm run build
-./tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk
-```
+**Validación local:** aplicar los checks según el tipo de cambio en
+[enforcement](docs/architecture/enforcement.md), incluido el gate oficial
+`npm run architecture:check` desde `frontend/`. Este índice no mantiene otra lista
+de comandos mínimos. Para trabajo documental: referencias y `git diff --check`.
 
 ---
 
 ## Excepciones (legacy tolerado)
 
-Solo vía **`tools/architecture/architecture-grandfather.json`** con justificación en ADR. Objetivo: **vaciar** el grandfather, no ampliarlo.
+Consultar [excepciones e integridad del grandfather](docs/architecture/enforcement.md#guardrails-automatizados). Una entrada solo es válida para la regla y el checker que la consumen; no exime del ratchet ni de las reglas globales.
 
 ---
 
@@ -79,7 +76,7 @@ Checklist PR (además de [`CONTRIBUTING.md`](CONTRIBUTING.md)):
 1. ¿Respeta gates G-P* y G-O*?
 2. ¿Añadió excepción al grandfather sin ADR? → rechazar
 3. ¿Cambió estructura raíz del monorepo? → requiere actualización `docs/ARCHITECTURE.md` + release note
-4. ¿Nuevo módulo SaaS? → planes confirmados
+4. ¿Respeta la frontera ERP ↔ Platform?
 
 ---
 
@@ -88,4 +85,4 @@ Checklist PR (además de [`CONTRIBUTING.md`](CONTRIBUTING.md)):
 Antes de implementar: leer **`docs/ARCHITECTURE.md`** + **`CLAUDE.md`**.  
 No proponer herramientas fuera del stack.  
 No crear paths paralelos (`scripts/sql/`, duplicar `services/`).  
-Tras feature: actualizar `STATUS.md` y `PROGRESS.html` si aplica.
+Avance y cierres: [sincronización documental](docs/architecture/enforcement.md#sincronización-docs-de-avance) y [flujo por fase](docs/architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).

@@ -1,6 +1,7 @@
 # CONTEXT.md — ZH Technologies ERP
 
-Índice maestro. Lee primero este archivo; luego abre **solo** el documento de tu tarea.
+Índice maestro de navegación. La jerarquía y las lecturas obligatorias están en
+[`CLAUDE.md`](CLAUDE.md#jerarquía-documental) y [`AGENTS.md`](AGENTS.md); este índice no las sustituye.
 
 ---
 
@@ -9,9 +10,9 @@
 | Qué necesito | Archivo | Contenido |
 |--------------|---------|-----------|
 | **Reglas de implementación (canónico)** | [`docs/architecture/README.md`](./docs/architecture/README.md) | Fuente única: arquitectura, FE/BE, SaaS, enforcement, PR |
-| **Verdad arquitectónica (baseline)** | [`ERP_CORE_FREEZE.md`](./ERP_CORE_FREEZE.md), [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Congelamiento ERP Core, arquitectura vigente |
+| **Arquitectura y acta de freeze** | [`ERP_CORE_FREEZE.md`](./ERP_CORE_FREEZE.md), [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Acta fechada del freeze, descripción arquitectónica vigente |
 | **Gates bloqueantes** | [`ARCHITECTURE_GATES.md`](./ARCHITECTURE_GATES.md) | Reglas prohibidas/obligatorias + CI |
-| **Baseline sellada** | [`RELEASES/`](./RELEASES/) | `architecture-v1.0`, `frontend-governance-v1.0` |
+| **Baselines históricas** | [`RELEASES/`](./RELEASES/) | Tags `architecture-v1.0`, `frontend-governance-v1.0`; no definen comportamiento vigente |
 | **Frontend baseline (UI)** | [`docs/FRONTEND_ARCHITECTURE_BASELINE.md`](./docs/FRONTEND_ARCHITECTURE_BASELINE.md) | Shells, templates, CSS, governance |
 | **Frontend QA checklist** | [`docs/FRONTEND_QA_CHECKLIST.md`](./docs/FRONTEND_QA_CHECKLIST.md) | Validación manual pre-release |
 | **Entrada GitHub / visión producto** | [`README.md`](./README.md) | Monorepo, stack, CI, troubleshooting |
@@ -28,7 +29,9 @@
 | **Base de datos** | [`docs/DATABASE.md`](./docs/DATABASE.md) | EF, RLS |
 | **ADRs** | [`docs/decisions/`](./docs/decisions/) | Decisiones arquitectura |
 
-> Los **7 archivos canónicos** siguen en `docs/` raíz. Subcarpetas (`adr/`, `diagrams/`, …) amplían sin reemplazar.
+> Reglas completas en [`docs/architecture/`](docs/architecture/README.md);
+> decisiones en [`docs/decisions/`](docs/decisions/README.md). Los índices y las
+> descripciones generales no sustituyen las SSOT.
 
 ---
 
@@ -39,7 +42,7 @@ erp-saas/
 ├── backend/          → backend/README.md
 ├── frontend/         → baseline UI: `docs/FRONTEND_ARCHITECTURE_BASELINE.md`, `docs/frontend-layout-conventions.md`
 ├── infrastructure/   → Docker, postgres, deployment
-├── docs/             → 7 canónicos + architecture/ (reglas canónicas), decisions/, diagrams/, …
+├── docs/             → architecture/ (reglas canónicas), decisions/, diagrams/, …
 ├── scripts/          → dev/, ci/, db/
 ├── tools/            → architecture/, quality/, generators/
 ├── monitoring/       → preparación observabilidad
@@ -92,7 +95,7 @@ Orquestador: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) → `archi
 
 1. **`CLAUDE.md`** + **`docs/DEVELOPMENT.md`** antes de implementar.
 2. PR bloqueantes → **`docs/architecture/pr-rules-catalog.md`** / **`docs/ARCHITECTURE-RULES.md`**.
-3. Estado → **`STATUS.md`** + **`PROGRESS.html`** al cerrar tareas.
+3. Avance → [sincronización documental](docs/architecture/enforcement.md#sincronización-docs-de-avance); estado y cierres en **`STATUS.md`**.
 4. Stack → **`docs/DEVELOPMENT.md#stack-oficial`** + allowlist.
 
 Copilot: [`.github/INSTRUCCIONES-COPILOT.md`](./.github/INSTRUCCIONES-COPILOT.md).

@@ -11,7 +11,11 @@
 
 ---
 
-## Estado arquitectónico
+## Evidencia al momento del freeze (2026-06-08)
+
+Los recuentos, carpetas y módulos de esta acta describen esa fecha, no el inventario
+actual ni una nueva ejecución. Estado actual: [STATUS](STATUS.md); capacidades:
+[FEATURES](FEATURES.md); reglas vigentes: [Arquitectura](docs/architecture/architecture.md).
 
 - **Clean Architecture intacta**: dependencias unidireccionales `API → Application/Infrastructure → Domain`. `ERP.Domain` sin `ProjectReference` externas. `ERP.Application` sin dependencia de `ERP.Infrastructure`. `ERP.Infrastructure` sin lógica de negocio. `ERP.API` solo expone HTTP/DTOs.
 - **CQRS (MediatR)** vigente: pipeline `ValidationBehavior → CompanyScopeBehavior → CachingBehavior`; comandos/queries en `Modules/{Module}/UseCases/`.
@@ -21,7 +25,7 @@
 
 ---
 
-## Módulos incluidos (ERP Core vigente)
+## Módulos incluidos al momento del freeze
 
 | Dominio | Carpeta / namespace | Scope |
 |---------|---------------------|-------|
@@ -38,7 +42,7 @@
 
 ---
 
-## Módulos excluidos (no existen como código — backlog futuro)
+## Módulos no implementados al momento del freeze
 
 `Sales`, `Accounting`, `HR`, `CRM`, `Production`, `Reporting` — no tienen implementación en este freeze. Se incorporarán como nuevos módulos `company_id`-scoped siguiendo el patrón CQRS existente, sin reintroducir conceptos SaaS.
 
@@ -84,12 +88,11 @@ Excluidos permanentemente del ERP Core (viven en Platform, repositorio futuro se
 
 ---
 
-## Reglas arquitectónicas obligatorias (BLOQUEANTES)
+## Referencia normativa vigente
 
-> Vinculantes — ver [docs/architecture/architecture.md § Frontera ERP ↔ Platform](docs/architecture/architecture.md#reglas-de-arquitectura-que-no-se-rompen).
-
-1. **"ERP NEVER DEPENDS ON PLATFORM"**
-2. **"PLATFORM MAY CONSUME ERP APIs ONLY"**
+La especificación de la frontera y sus restricciones se mantiene en
+[Arquitectura](docs/architecture/architecture.md#reglas-de-arquitectura-que-no-se-rompen),
+bajo la jerarquía de [CLAUDE.md](CLAUDE.md#jerarquía-documental).
 
 ---
 
