@@ -1,0 +1,382 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="fdc3df5b-789e-4691-bde6-4052f2769ed0" name="Sebas@SEBASTIAN 2026-11-04 07:56:16" runUser="SEBASTIAN\Sebas" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-11-04T07:56:16.3398204-05:00" queuing="2026-11-04T07:56:16.3398212-05:00" start="2026-11-04T07:55:54.8808268-05:00" finish="2026-11-04T07:58:21.4258955-05:00" />
+  <TestSettings name="default" id="8a365b36-819c-48ca-86a5-93f300f4f88f">
+    <Deployment runDeploymentRoot="Sebas_SEBASTIAN_2026-11-04_07_56_16" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="9d89fda9-76fb-4a1a-91e1-7f0a0a1563e8" testId="bbdcaa64-58ba-36cd-f734-f13b35136c5e" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;posting_pending&quot;)" computerName="SEBASTIAN" duration="00:00:00.5243665" startTime="2026-11-04T07:56:40.9932210-05:00" endTime="2026-11-04T07:56:41.7347866-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9d89fda9-76fb-4a1a-91e1-7f0a0a1563e8" />
+    <UnitTestResult executionId="9cc6f99f-248f-4d87-8656-b2eed8d30776" testId="8a114486-60cf-efbd-6a2d-e1a74d69edcc" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;company.branding.primary_color&quot;, value: &quot;#1E88E5&quot;, dataType: String, scope: Company)" computerName="SEBASTIAN" duration="00:00:00.0165338" startTime="2026-11-04T07:56:58.4855526-05:00" endTime="2026-11-04T07:57:04.8503217-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9cc6f99f-248f-4d87-8656-b2eed8d30776" />
+    <UnitTestResult executionId="13444406-df1e-49ea-8632-7e47a9fb5b83" testId="b9fc6a12-6029-28ca-7f5c-983651161b16" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Catalog_max_category_depth_fuera_de_rango_se_rechaza" computerName="SEBASTIAN" duration="00:00:00.0053299" startTime="2026-11-04T07:56:34.0235148-05:00" endTime="2026-11-04T07:56:42.2912582-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="13444406-df1e-49ea-8632-7e47a9fb5b83" />
+    <UnitTestResult executionId="c2e82bd1-018c-43e5-b791-9b204ed19e6c" testId="b135863f-4905-a0b2-aed8-455cbaa15402" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Scope_no_permitido_se_rechaza" computerName="SEBASTIAN" duration="00:00:00.0056537" startTime="2026-11-04T07:57:24.3321616-05:00" endTime="2026-11-04T07:57:30.6158691-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c2e82bd1-018c-43e5-b791-9b204ed19e6c" />
+    <UnitTestResult executionId="cb3382b6-651c-4e39-a7c2-60de468e291c" testId="afe264d7-f79f-74f6-20f4-4316ba921666" testName="ERP.Infrastructure.Tests.Persistence.Configuration.ConfigurationChangeLogTransactionalIntegrityTests.Handle_con_usuario_autenticado_real_guarda_ChangedBy_igual_al_usuario_no_vacio" computerName="SEBASTIAN" duration="00:00:00.9365679" startTime="2026-11-04T07:55:57.0267603-05:00" endTime="2026-11-04T07:56:16.9403531-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cb3382b6-651c-4e39-a7c2-60de468e291c" />
+    <UnitTestResult executionId="f186cb8e-2f75-46f9-9bd1-2535bee56bc2" testId="b4c06743-1281-6c15-3595-9508d80aa734" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Company_branding_color_null_o_vacio_es_valido_ausencia_de_configuracion" computerName="SEBASTIAN" duration="00:00:00.0240102" startTime="2026-11-04T07:57:37.2501008-05:00" endTime="2026-11-04T07:57:43.7644171-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f186cb8e-2f75-46f9-9bd1-2535bee56bc2" />
+    <UnitTestResult executionId="45d9ebdc-fd3a-4907-b7bb-9685fdcfc0d5" testId="694bd733-3972-ebed-4558-fcc4693cd7ae" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escribir_el_mismo_valor_no_crea_un_segundo_log" computerName="SEBASTIAN" duration="00:00:00.0361215" startTime="2026-11-04T07:57:43.7656307-05:00" endTime="2026-11-04T07:57:49.9124497-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="45d9ebdc-fd3a-4907-b7bb-9685fdcfc0d5" />
+    <UnitTestResult executionId="66963d9f-3871-4a2b-ae7a-675a47b623c7" testId="54d1505c-1f75-da68-c7aa-46b5cf772927" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;asi_reversed&quot;)" computerName="SEBASTIAN" duration="00:00:00.6312503" startTime="2026-11-04T07:56:39.5690980-05:00" endTime="2026-11-04T07:56:40.4002211-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="66963d9f-3871-4a2b-ae7a-675a47b623c7" />
+    <UnitTestResult executionId="1cf50844-22b3-43be-8e70-e3337605f5bb" testId="bc420a53-5db6-c30e-1c70-758f17bebcd3" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Cambiar_el_valor_dos_veces_crea_dos_logs_con_old_new_encadenados" computerName="SEBASTIAN" duration="00:00:00.0372953" startTime="2026-11-04T07:58:10.7407288-05:00" endTime="2026-11-04T07:58:21.2492786-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1cf50844-22b3-43be-8e70-e3337605f5bb" />
+    <UnitTestResult executionId="4703c6a5-ba80-4452-87b7-3dc42d327a16" testId="e4e45c85-1bfb-fda5-1065-a03ca051ae12" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;sales.consumer_final.max_amount&quot;, value: &quot;200.00&quot;, dataType: Decimal, scope: Company)" computerName="SEBASTIAN" duration="00:00:00.0187564" startTime="2026-11-04T07:57:04.8517320-05:00" endTime="2026-11-04T07:57:11.2730989-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4703c6a5-ba80-4452-87b7-3dc42d327a16" />
+    <UnitTestResult executionId="20714504-a381-4d24-be9f-d98828054dac" testId="53dbd318-c49f-950b-e8db-52b5a0fb9710" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cierre_sin_blockers_es_definitivo_idempotente_y_visible_en_la_conciliacion" computerName="SEBASTIAN" duration="00:00:00.6839884" startTime="2026-11-04T07:56:45.4254614-05:00" endTime="2026-11-04T07:56:46.3992753-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="20714504-a381-4d24-be9f-d98828054dac" />
+    <UnitTestResult executionId="f7acc175-e98e-4dc2-875f-6cec190f743f" testId="e5192449-2a60-33c1-d287-faa3fd769930" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Cambiar_key_RequiresAudit_false_no_crea_ConfigurationChangeLog" computerName="SEBASTIAN" duration="00:00:00.0218290" startTime="2026-11-04T07:57:56.5924781-05:00" endTime="2026-11-04T07:58:03.1713927-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f7acc175-e98e-4dc2-875f-6cec190f743f" />
+    <UnitTestResult executionId="333fc33e-980a-40bb-99ba-c964ba75e32a" testId="ef1a56ec-a8b1-e8eb-e2b7-fbdf5145b47e" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.ASI_vigente_publicado_es_obligatorio_aun_sin_lotes" computerName="SEBASTIAN" duration="00:00:00.3664734" startTime="2026-11-04T07:56:41.7350305-05:00" endTime="2026-11-04T07:56:42.3971767-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="333fc33e-980a-40bb-99ba-c964ba75e32a" />
+    <UnitTestResult executionId="23accc22-c159-4842-bf68-86a9ce117f73" testId="382bafad-06a5-70a2-c1d1-fbce1dfd6c2c" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Cambiar_key_RequiresAudit_true_crea_ConfigurationChangeLog" computerName="SEBASTIAN" duration="00:00:00.0247984" startTime="2026-11-04T07:58:03.1719122-05:00" endTime="2026-11-04T07:58:10.7399901-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="23accc22-c159-4842-bf68-86a9ce117f73" />
+    <UnitTestResult executionId="2caa56eb-d54b-4794-b723-d8553ad765df" testId="2c188fb4-2a26-0e6b-6f08-bf6e22c54809" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.C05_apertura_en_Disabled_no_publica_asientos_y_permite_cerrar_la_carga_inicial" computerName="SEBASTIAN" duration="00:00:00.4800798" startTime="2026-11-04T07:56:43.5053859-05:00" endTime="2026-11-04T07:56:44.2220696-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2caa56eb-d54b-4794-b723-d8553ad765df" />
+    <UnitTestResult executionId="30f10297-adbb-4cbd-a0e4-a3a2f5e57fab" testId="fcf3fa0b-27d8-81f0-cb29-ca7b9b27837e" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Keys_legacy_eliminadas_se_rechazan_como_desconocidas(legacyKey: &quot;ride.branding.logo_storage_path&quot;)" computerName="SEBASTIAN" duration="00:00:00.0022078" startTime="2026-11-04T07:56:25.3707020-05:00" endTime="2026-11-04T07:56:34.0230325-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="30f10297-adbb-4cbd-a0e4-a3a2f5e57fab" />
+    <UnitTestResult executionId="f0af6731-96ba-4b34-93d4-8f0d54d13efd" testId="805ec460-400e-9a67-ccb2-5854cbaf945c" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;invoice.default_warehouse_id&quot;, value: &quot;3f35e302-a339-4793-9bd6-bdcf2523db74&quot;, dataType: Guid, scope: Branch)" computerName="SEBASTIAN" duration="00:00:00.0178959" startTime="2026-11-04T07:56:50.3882693-05:00" endTime="2026-11-04T07:56:58.4843657-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f0af6731-96ba-4b34-93d4-8f0d54d13efd" />
+    <UnitTestResult executionId="9ca4a8ed-950d-47aa-8ddd-f8d12368a248" testId="3835ee5a-befd-d0c6-c9fd-a8e2ff393e9f" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;catalog.max_category_depth&quot;, value: &quot;4&quot;, dataType: Int, scope: Company)" computerName="SEBASTIAN" duration="00:00:00.0197113" startTime="2026-11-04T07:56:42.2921245-05:00" endTime="2026-11-04T07:56:50.3867896-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9ca4a8ed-950d-47aa-8ddd-f8d12368a248" />
+    <UnitTestResult executionId="740c7b70-c134-40d2-973e-7166b15f8328" testId="2febb0d8-a8a9-f17d-4199-bbe5faba2146" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;invoice.default_doc_type_code&quot;, value: &quot;01&quot;, dataType: String, scope: Company)" computerName="SEBASTIAN" duration="00:00:00.0176408" startTime="2026-11-04T07:57:11.2740961-05:00" endTime="2026-11-04T07:57:17.8020727-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="740c7b70-c134-40d2-973e-7166b15f8328" />
+    <UnitTestResult executionId="0cccaa69-61ae-46cf-acde-dded165308f7" testId="c6fc91ea-f91b-6a60-2664-e17237e6c643" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Lote_en_curso_bloquea_hasta_cancelarlo" computerName="SEBASTIAN" duration="00:00:00.8400378" startTime="2026-11-04T07:56:42.3974741-05:00" endTime="2026-11-04T07:56:43.5050264-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0cccaa69-61ae-46cf-acde-dded165308f7" />
+    <UnitTestResult executionId="ce34ff17-53fc-4081-98e5-860f23bd5bf8" testId="d139c603-3d5f-a14d-30a8-ee870342cfa9" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;batch_in_progress&quot;)" computerName="SEBASTIAN" duration="00:00:03.3678992" startTime="2026-11-04T07:56:33.6820870-05:00" endTime="2026-11-04T07:56:39.5678608-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ce34ff17-53fc-4081-98e5-860f23bd5bf8" />
+    <UnitTestResult executionId="fe1c1fec-eb40-4427-82de-0d760b800595" testId="c5936f53-7880-e5bd-fc67-1786c7e7b1ad" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Despues_del_cierre_fecha_IL7B_IL8A_e_IL8B_rechazan_sin_dejar_rastro" computerName="SEBASTIAN" duration="00:00:01.0221781" startTime="2026-11-04T07:56:44.2223530-05:00" endTime="2026-11-04T07:56:45.4251165-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="fe1c1fec-eb40-4427-82de-0d760b800595" />
+    <UnitTestResult executionId="ec229638-1acd-4d7c-9cd5-11cf5c491fd4" testId="13869ebb-5edc-b438-d59c-1b734dec4d27" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;company.branding.slogan&quot;, value: &quot;Confianza y calidad&quot;, dataType: String, scope: Company)" computerName="SEBASTIAN" duration="00:00:00.0140177" startTime="2026-11-04T07:57:17.8027068-05:00" endTime="2026-11-04T07:57:24.3313765-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ec229638-1acd-4d7c-9cd5-11cf5c491fd4" />
+    <UnitTestResult executionId="66dc40cf-2edf-4077-adb2-51e95fd7f5e7" testId="b5e9d6d9-bfb2-85d1-7a1a-8eead763b837" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Keys_legacy_eliminadas_se_rechazan_como_desconocidas(legacyKey: &quot;ride.branding.primary_color_hex&quot;)" computerName="SEBASTIAN" duration="00:00:00.0061782" startTime="2026-11-04T07:56:16.3096785-05:00" endTime="2026-11-04T07:56:25.3696302-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="66dc40cf-2edf-4077-adb2-51e95fd7f5e7" />
+    <UnitTestResult executionId="50661eb6-723f-4d06-8c42-99f4d0b6c429" testId="922558f5-86ff-87f5-0027-695a4d17ec2b" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Key_desconocida_se_rechaza_sin_persistir_nada" computerName="SEBASTIAN" duration="00:00:00.0098054" startTime="2026-11-04T07:57:49.9138913-05:00" endTime="2026-11-04T07:57:56.5915901-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="50661eb6-723f-4d06-8c42-99f4d0b6c429" />
+    <UnitTestResult executionId="12db5c0e-0770-4f2c-b822-75245111e073" testId="fc98808b-2833-15c2-0d89-c519424709b2" testName="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;bridge_without_asi&quot;)" computerName="SEBASTIAN" duration="00:00:00.4055996" startTime="2026-11-04T07:56:40.4005585-05:00" endTime="2026-11-04T07:56:40.9926471-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="12db5c0e-0770-4f2c-b822-75245111e073" />
+    <UnitTestResult executionId="e715292f-d75a-462b-8a07-de9e0f29dc2a" testId="3dcf7f63-726f-cd6a-ce23-5a4109ee8380" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.DataType_incorrecto_se_rechaza" computerName="SEBASTIAN" duration="00:00:00.3184052" startTime="2026-11-04T07:55:57.0190961-05:00" endTime="2026-11-04T07:56:16.2607990-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e715292f-d75a-462b-8a07-de9e0f29dc2a" />
+    <UnitTestResult executionId="0fefe294-1836-4dec-b1c9-770330ebcb0e" testId="3e2ba246-867d-6c36-1c9e-cdcae868bd2a" testName="ERP.Infrastructure.Tests.Persistence.Configuration.ConfigurationChangeLogTransactionalIntegrityTests.Fallo_al_insertar_el_log_revierte_el_cambio_critico_en_org_settings" computerName="SEBASTIAN" duration="00:00:00.1809731" startTime="2026-11-04T07:56:16.9429394-05:00" endTime="2026-11-04T07:56:25.8869138-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0fefe294-1836-4dec-b1c9-770330ebcb0e" />
+    <UnitTestResult executionId="b66c3cca-1b76-4cfd-85c4-98ca79bbdf0a" testId="8c0e813c-c19a-837f-c671-33fae6c16a32" testName="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Company_branding_color_invalido_se_rechaza" computerName="SEBASTIAN" duration="00:00:00.0044138" startTime="2026-11-04T07:57:30.6177450-05:00" endTime="2026-11-04T07:57:37.2488200-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b66c3cca-1b76-4cfd-85c4-98ca79bbdf0a" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;bridge_without_asi&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="fc98808b-2833-15c2-0d89-c519424709b2">
+      <Execution id="12db5c0e-0770-4f2c-b822-75245111e073" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="Cada_blocker_impide_cerrar" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.ConfigurationChangeLogTransactionalIntegrityTests.Handle_con_usuario_autenticado_real_guarda_ChangedBy_igual_al_usuario_no_vacio" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="afe264d7-f79f-74f6-20f4-4316ba921666">
+      <Execution id="cb3382b6-651c-4e39-a7c2-60de468e291c" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.ConfigurationChangeLogTransactionalIntegrityTests" name="Handle_con_usuario_autenticado_real_guarda_ChangedBy_igual_al_usuario_no_vacio" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Cambiar_el_valor_dos_veces_crea_dos_logs_con_old_new_encadenados" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="bc420a53-5db6-c30e-1c70-758f17bebcd3">
+      <Execution id="1cf50844-22b3-43be-8e70-e3337605f5bb" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Cambiar_el_valor_dos_veces_crea_dos_logs_con_old_new_encadenados" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Company_branding_color_invalido_se_rechaza" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="8c0e813c-c19a-837f-c671-33fae6c16a32">
+      <Execution id="b66c3cca-1b76-4cfd-85c4-98ca79bbdf0a" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Company_branding_color_invalido_se_rechaza" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;invoice.default_warehouse_id&quot;, value: &quot;3f35e302-a339-4793-9bd6-bdcf2523db74&quot;, dataType: Guid, scope: Branch)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="805ec460-400e-9a67-ccb2-5854cbaf945c">
+      <Execution id="f0af6731-96ba-4b34-93d4-8f0d54d13efd" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Escritura_valida_de_cada_seccion_actual_sigue_funcionando" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.C05_apertura_en_Disabled_no_publica_asientos_y_permite_cerrar_la_carga_inicial" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="2c188fb4-2a26-0e6b-6f08-bf6e22c54809">
+      <Execution id="2caa56eb-d54b-4794-b723-d8553ad765df" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="C05_apertura_en_Disabled_no_publica_asientos_y_permite_cerrar_la_carga_inicial" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escribir_el_mismo_valor_no_crea_un_segundo_log" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="694bd733-3972-ebed-4558-fcc4693cd7ae">
+      <Execution id="45d9ebdc-fd3a-4907-b7bb-9685fdcfc0d5" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Escribir_el_mismo_valor_no_crea_un_segundo_log" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Despues_del_cierre_fecha_IL7B_IL8A_e_IL8B_rechazan_sin_dejar_rastro" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="c5936f53-7880-e5bd-fc67-1786c7e7b1ad">
+      <Execution id="fe1c1fec-eb40-4427-82de-0d760b800595" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="Despues_del_cierre_fecha_IL7B_IL8A_e_IL8B_rechazan_sin_dejar_rastro" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.DataType_incorrecto_se_rechaza" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="3dcf7f63-726f-cd6a-ce23-5a4109ee8380">
+      <Execution id="e715292f-d75a-462b-8a07-de9e0f29dc2a" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="DataType_incorrecto_se_rechaza" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;catalog.max_category_depth&quot;, value: &quot;4&quot;, dataType: Int, scope: Company)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="3835ee5a-befd-d0c6-c9fd-a8e2ff393e9f">
+      <Execution id="9ca4a8ed-950d-47aa-8ddd-f8d12368a248" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Escritura_valida_de_cada_seccion_actual_sigue_funcionando" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Catalog_max_category_depth_fuera_de_rango_se_rechaza" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="b9fc6a12-6029-28ca-7f5c-983651161b16">
+      <Execution id="13444406-df1e-49ea-8632-7e47a9fb5b83" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Catalog_max_category_depth_fuera_de_rango_se_rechaza" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Cambiar_key_RequiresAudit_true_crea_ConfigurationChangeLog" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="382bafad-06a5-70a2-c1d1-fbce1dfd6c2c">
+      <Execution id="23accc22-c159-4842-bf68-86a9ce117f73" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Cambiar_key_RequiresAudit_true_crea_ConfigurationChangeLog" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Keys_legacy_eliminadas_se_rechazan_como_desconocidas(legacyKey: &quot;ride.branding.logo_storage_path&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="fcf3fa0b-27d8-81f0-cb29-ca7b9b27837e">
+      <Execution id="30f10297-adbb-4cbd-a0e4-a3a2f5e57fab" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Keys_legacy_eliminadas_se_rechazan_como_desconocidas" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Key_desconocida_se_rechaza_sin_persistir_nada" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="922558f5-86ff-87f5-0027-695a4d17ec2b">
+      <Execution id="50661eb6-723f-4d06-8c42-99f4d0b6c429" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Key_desconocida_se_rechaza_sin_persistir_nada" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;company.branding.slogan&quot;, value: &quot;Confianza y calidad&quot;, dataType: String, scope: Company)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="13869ebb-5edc-b438-d59c-1b734dec4d27">
+      <Execution id="ec229638-1acd-4d7c-9cd5-11cf5c491fd4" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Escritura_valida_de_cada_seccion_actual_sigue_funcionando" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Scope_no_permitido_se_rechaza" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="b135863f-4905-a0b2-aed8-455cbaa15402">
+      <Execution id="c2e82bd1-018c-43e5-b791-9b204ed19e6c" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Scope_no_permitido_se_rechaza" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;company.branding.primary_color&quot;, value: &quot;#1E88E5&quot;, dataType: String, scope: Company)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="8a114486-60cf-efbd-6a2d-e1a74d69edcc">
+      <Execution id="9cc6f99f-248f-4d87-8656-b2eed8d30776" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Escritura_valida_de_cada_seccion_actual_sigue_funcionando" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cierre_sin_blockers_es_definitivo_idempotente_y_visible_en_la_conciliacion" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="53dbd318-c49f-950b-e8db-52b5a0fb9710">
+      <Execution id="20714504-a381-4d24-be9f-d98828054dac" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="Cierre_sin_blockers_es_definitivo_idempotente_y_visible_en_la_conciliacion" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;asi_reversed&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="54d1505c-1f75-da68-c7aa-46b5cf772927">
+      <Execution id="66963d9f-3871-4a2b-ae7a-675a47b623c7" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="Cada_blocker_impide_cerrar" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.ConfigurationChangeLogTransactionalIntegrityTests.Fallo_al_insertar_el_log_revierte_el_cambio_critico_en_org_settings" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="3e2ba246-867d-6c36-1c9e-cdcae868bd2a">
+      <Execution id="0fefe294-1836-4dec-b1c9-770330ebcb0e" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.ConfigurationChangeLogTransactionalIntegrityTests" name="Fallo_al_insertar_el_log_revierte_el_cambio_critico_en_org_settings" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;posting_pending&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="bbdcaa64-58ba-36cd-f734-f13b35136c5e">
+      <Execution id="9d89fda9-76fb-4a1a-91e1-7f0a0a1563e8" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="Cada_blocker_impide_cerrar" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Cambiar_key_RequiresAudit_false_no_crea_ConfigurationChangeLog" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="e5192449-2a60-33c1-d287-faa3fd769930">
+      <Execution id="f7acc175-e98e-4dc2-875f-6cec190f743f" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Cambiar_key_RequiresAudit_false_no_crea_ConfigurationChangeLog" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Lote_en_curso_bloquea_hasta_cancelarlo" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="c6fc91ea-f91b-6a60-2664-e17237e6c643">
+      <Execution id="0cccaa69-61ae-46cf-acde-dded165308f7" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="Lote_en_curso_bloquea_hasta_cancelarlo" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Company_branding_color_null_o_vacio_es_valido_ausencia_de_configuracion" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="b4c06743-1281-6c15-3595-9508d80aa734">
+      <Execution id="f186cb8e-2f75-46f9-9bd1-2535bee56bc2" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Company_branding_color_null_o_vacio_es_valido_ausencia_de_configuracion" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;invoice.default_doc_type_code&quot;, value: &quot;01&quot;, dataType: String, scope: Company)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="2febb0d8-a8a9-f17d-4199-bbe5faba2146">
+      <Execution id="740c7b70-c134-40d2-973e-7166b15f8328" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Escritura_valida_de_cada_seccion_actual_sigue_funcionando" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker_impide_cerrar(scenario: &quot;batch_in_progress&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="d139c603-3d5f-a14d-30a8-ee870342cfa9">
+      <Execution id="ce34ff17-53fc-4081-98e5-860f23bd5bf8" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="Cada_blocker_impide_cerrar" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Keys_legacy_eliminadas_se_rechazan_como_desconocidas(legacyKey: &quot;ride.branding.primary_color_hex&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="b5e9d6d9-bfb2-85d1-7a1a-8eead763b837">
+      <Execution id="66dc40cf-2edf-4077-adb2-51e95fd7f5e7" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Keys_legacy_eliminadas_se_rechazan_como_desconocidas" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests.ASI_vigente_publicado_es_obligatorio_aun_sin_lotes" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="ef1a56ec-a8b1-e8eb-e2b7-fbdf5145b47e">
+      <Execution id="333fc33e-980a-40bb-99ba-c964ba75e32a" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.InitialLoad.PublishOpeningJournalEntryPostgreSqlTests" name="ASI_vigente_publicado_es_obligatorio_aun_sin_lotes" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests.Escritura_valida_de_cada_seccion_actual_sigue_funcionando(key: &quot;sales.consumer_final.max_amount&quot;, value: &quot;200.00&quot;, dataType: Decimal, scope: Company)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="e4e45c85-1bfb-fda5-1065-a03ca051ae12">
+      <Execution id="4703c6a5-ba80-4452-87b7-3dc42d327a16" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.Persistence.Configuration.OrgSettingsRepositoryConfigurationGuardrailTests" name="Escritura_valida_de_cada_seccion_actual_sigue_funcionando" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="bbdcaa64-58ba-36cd-f734-f13b35136c5e" executionId="9d89fda9-76fb-4a1a-91e1-7f0a0a1563e8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8a114486-60cf-efbd-6a2d-e1a74d69edcc" executionId="9cc6f99f-248f-4d87-8656-b2eed8d30776" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b9fc6a12-6029-28ca-7f5c-983651161b16" executionId="13444406-df1e-49ea-8632-7e47a9fb5b83" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b135863f-4905-a0b2-aed8-455cbaa15402" executionId="c2e82bd1-018c-43e5-b791-9b204ed19e6c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="afe264d7-f79f-74f6-20f4-4316ba921666" executionId="cb3382b6-651c-4e39-a7c2-60de468e291c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b4c06743-1281-6c15-3595-9508d80aa734" executionId="f186cb8e-2f75-46f9-9bd1-2535bee56bc2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="694bd733-3972-ebed-4558-fcc4693cd7ae" executionId="45d9ebdc-fd3a-4907-b7bb-9685fdcfc0d5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="54d1505c-1f75-da68-c7aa-46b5cf772927" executionId="66963d9f-3871-4a2b-ae7a-675a47b623c7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bc420a53-5db6-c30e-1c70-758f17bebcd3" executionId="1cf50844-22b3-43be-8e70-e3337605f5bb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e4e45c85-1bfb-fda5-1065-a03ca051ae12" executionId="4703c6a5-ba80-4452-87b7-3dc42d327a16" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="53dbd318-c49f-950b-e8db-52b5a0fb9710" executionId="20714504-a381-4d24-be9f-d98828054dac" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e5192449-2a60-33c1-d287-faa3fd769930" executionId="f7acc175-e98e-4dc2-875f-6cec190f743f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ef1a56ec-a8b1-e8eb-e2b7-fbdf5145b47e" executionId="333fc33e-980a-40bb-99ba-c964ba75e32a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="382bafad-06a5-70a2-c1d1-fbce1dfd6c2c" executionId="23accc22-c159-4842-bf68-86a9ce117f73" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2c188fb4-2a26-0e6b-6f08-bf6e22c54809" executionId="2caa56eb-d54b-4794-b723-d8553ad765df" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fcf3fa0b-27d8-81f0-cb29-ca7b9b27837e" executionId="30f10297-adbb-4cbd-a0e4-a3a2f5e57fab" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="805ec460-400e-9a67-ccb2-5854cbaf945c" executionId="f0af6731-96ba-4b34-93d4-8f0d54d13efd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3835ee5a-befd-d0c6-c9fd-a8e2ff393e9f" executionId="9ca4a8ed-950d-47aa-8ddd-f8d12368a248" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2febb0d8-a8a9-f17d-4199-bbe5faba2146" executionId="740c7b70-c134-40d2-973e-7166b15f8328" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c6fc91ea-f91b-6a60-2664-e17237e6c643" executionId="0cccaa69-61ae-46cf-acde-dded165308f7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d139c603-3d5f-a14d-30a8-ee870342cfa9" executionId="ce34ff17-53fc-4081-98e5-860f23bd5bf8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c5936f53-7880-e5bd-fc67-1786c7e7b1ad" executionId="fe1c1fec-eb40-4427-82de-0d760b800595" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="13869ebb-5edc-b438-d59c-1b734dec4d27" executionId="ec229638-1acd-4d7c-9cd5-11cf5c491fd4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b5e9d6d9-bfb2-85d1-7a1a-8eead763b837" executionId="66dc40cf-2edf-4077-adb2-51e95fd7f5e7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="922558f5-86ff-87f5-0027-695a4d17ec2b" executionId="50661eb6-723f-4d06-8c42-99f4d0b6c429" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fc98808b-2833-15c2-0d89-c519424709b2" executionId="12db5c0e-0770-4f2c-b822-75245111e073" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3dcf7f63-726f-cd6a-ce23-5a4109ee8380" executionId="e715292f-d75a-462b-8a07-de9e0f29dc2a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3e2ba246-867d-6c36-1c9e-cdcae868bd2a" executionId="0fefe294-1836-4dec-b1c9-770330ebcb0e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8c0e813c-c19a-837f-c671-33fae6c16a32" executionId="b66c3cca-1b76-4cfd-85c4-98ca79bbdf0a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Resultados sin formato de lista" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Todos los resultados cargados" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="29" executed="29" passed="29" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)&#xD;
+[xUnit.net 00:00:01.05]   Discovering: ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:01.39]   Discovered:  ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:01.44]   Starting:    ERP.Infrastructure.Tests&#xD;
+[testcontainers.org 00:00:00.15] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 26.1.4&#xD;
+  Kernel Version: 6.18.54.1-microsoft-standard-WSL2&#xD;
+  API Version: 1.45&#xD;
+  Operating System: Docker Desktop (containerized)&#xD;
+  Total Memory: 15.24 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.45] Docker container 90d3241c483c created&#xD;
+[testcontainers.org 00:00:00.55] Start Docker container 90d3241c483c&#xD;
+[testcontainers.org 00:00:02.01] Wait for Docker container 90d3241c483c to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.02] Docker container 90d3241c483c ready&#xD;
+[testcontainers.org 00:00:02.27] Docker container 80f517041460 created&#xD;
+[testcontainers.org 00:00:02.27] Docker container 14c86b26b213 created&#xD;
+[testcontainers.org 00:00:02.28] Start Docker container 14c86b26b213&#xD;
+[testcontainers.org 00:00:02.28] Start Docker container 80f517041460&#xD;
+[testcontainers.org 00:00:03.67] Wait for Docker container 14c86b26b213 to complete readiness checks&#xD;
+[testcontainers.org 00:00:03.67] Wait for Docker container 80f517041460 to complete readiness checks&#xD;
+[testcontainers.org 00:00:03.69] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 14c86b26b213&#xD;
+[testcontainers.org 00:00:03.69] Execute "pg_isready --host localhost --dbname erp_config_change_log_tx_test --username erp" at Docker container 80f517041460&#xD;
+[testcontainers.org 00:00:04.81] Execute "pg_isready --host localhost --dbname erp_config_change_log_tx_test --username erp" at Docker container 80f517041460&#xD;
+[testcontainers.org 00:00:04.81] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 14c86b26b213&#xD;
+[testcontainers.org 00:00:05.88] Execute "pg_isready --host localhost --dbname erp_config_change_log_tx_test --username erp" at Docker container 80f517041460&#xD;
+[testcontainers.org 00:00:05.88] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 14c86b26b213&#xD;
+[testcontainers.org 00:00:05.97] Docker container 80f517041460 ready&#xD;
+[testcontainers.org 00:00:05.97] Docker container 14c86b26b213 ready&#xD;
+     Warning:&#xD;
+     The component "Fluent Assertions" is governed by the rules defined in the Xceed License Agreement and&#xD;
+     the Xceed Fluent Assertions Community License. You may use Fluent Assertions free of charge for&#xD;
+     non-commercial use only. An active subscription is required to use Fluent Assertions for commercial use.&#xD;
+     Please contact Xceed Sales mailto:sales@xceed.com to acquire a subscription at a very low cost.&#xD;
+     A paid commercial license supports the development and continued increasing support of&#xD;
+     Fluent Assertions users under both commercial and community licenses. Help us&#xD;
+     keep Fluent Assertions at the forefront of unit testing.&#xD;
+     For more information, visit https://xceed.com/products/unit-testing/fluent-assertions/&#xD;
+[testcontainers.org 00:00:18.74] Delete Docker container 14c86b26b213&#xD;
+[testcontainers.org 00:00:19.33] Docker container 2fd3d9e450a1 created&#xD;
+[testcontainers.org 00:00:19.34] Start Docker container 2fd3d9e450a1&#xD;
+[testcontainers.org 00:00:19.36] Delete Docker container 80f517041460&#xD;
+[testcontainers.org 00:00:19.99] Docker container b703e8e75b00 created&#xD;
+[testcontainers.org 00:00:20.00] Start Docker container b703e8e75b00&#xD;
+[testcontainers.org 00:00:20.69] Wait for Docker container 2fd3d9e450a1 to complete readiness checks&#xD;
+[testcontainers.org 00:00:20.70] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 2fd3d9e450a1&#xD;
+[testcontainers.org 00:00:21.36] Wait for Docker container b703e8e75b00 to complete readiness checks&#xD;
+[testcontainers.org 00:00:21.37] Execute "pg_isready --host localhost --dbname erp_config_change_log_tx_test --username erp" at Docker container b703e8e75b00&#xD;
+[testcontainers.org 00:00:21.78] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 2fd3d9e450a1&#xD;
+[testcontainers.org 00:00:22.45] Execute "pg_isready --host localhost --dbname erp_config_change_log_tx_test --username erp" at Docker container b703e8e75b00&#xD;
+[testcontainers.org 00:00:22.88] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 2fd3d9e450a1&#xD;
+[testcontainers.org 00:00:23.01] Docker container 2fd3d9e450a1 ready&#xD;
+[testcontainers.org 00:00:23.52] Execute "pg_isready --host localhost --dbname erp_config_change_log_tx_test --username erp" at Docker container b703e8e75b00&#xD;
+[testcontainers.org 00:00:23.69] Docker container b703e8e75b00 ready&#xD;
+[testcontainers.org 00:00:27.64] Delete Docker container 2fd3d9e450a1&#xD;
+[testcontainers.org 00:00:28.31] Delete Docker container b703e8e75b00&#xD;
+[testcontainers.org 00:00:28.46] Docker container 53cc3b1cd236 created&#xD;
+[testcontainers.org 00:00:28.47] Start Docker container 53cc3b1cd236&#xD;
+[testcontainers.org 00:00:28.92] Docker container d79ab7db8d55 created&#xD;
+[testcontainers.org 00:00:28.93] Start Docker container d79ab7db8d55&#xD;
+[testcontainers.org 00:00:29.83] Wait for Docker container 53cc3b1cd236 to complete readiness checks&#xD;
+[testcontainers.org 00:00:29.85] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 53cc3b1cd236&#xD;
+[testcontainers.org 00:00:30.24] Wait for Docker container d79ab7db8d55 to complete readiness checks&#xD;
+[testcontainers.org 00:00:30.25] Execute "pg_isready --host localhost --dbname il1b_atomic --username erp" at Docker container d79ab7db8d55&#xD;
+[testcontainers.org 00:00:30.94] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 53cc3b1cd236&#xD;
+[testcontainers.org 00:00:31.35] Execute "pg_isready --host localhost --dbname il1b_atomic --username erp" at Docker container d79ab7db8d55&#xD;
+[testcontainers.org 00:00:32.03] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 53cc3b1cd236&#xD;
+[testcontainers.org 00:00:32.13] Docker container 53cc3b1cd236 ready&#xD;
+[testcontainers.org 00:00:32.44] Execute "pg_isready --host localhost --dbname il1b_atomic --username erp" at Docker container d79ab7db8d55&#xD;
+[testcontainers.org 00:00:32.52] Docker container d79ab7db8d55 ready&#xD;
+[testcontainers.org 00:00:36.23] Delete Docker container 53cc3b1cd236&#xD;
+[testcontainers.org 00:00:37.07] Docker container 93e230970ffd created&#xD;
+[testcontainers.org 00:00:37.08] Start Docker container 93e230970ffd&#xD;
+[testcontainers.org 00:00:38.39] Wait for Docker container 93e230970ffd to complete readiness checks&#xD;
+[testcontainers.org 00:00:38.40] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 93e230970ffd&#xD;
+[testcontainers.org 00:00:39.50] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 93e230970ffd&#xD;
+[testcontainers.org 00:00:40.57] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 93e230970ffd&#xD;
+[testcontainers.org 00:00:40.64] Docker container 93e230970ffd ready&#xD;
+[testcontainers.org 00:00:44.61] Delete Docker container 93e230970ffd&#xD;
+[testcontainers.org 00:00:45.34] Docker container a993b3a29843 created&#xD;
+[testcontainers.org 00:00:45.35] Start Docker container a993b3a29843&#xD;
+[testcontainers.org 00:00:46.73] Wait for Docker container a993b3a29843 to complete readiness checks&#xD;
+[testcontainers.org 00:00:46.75] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container a993b3a29843&#xD;
+[testcontainers.org 00:00:47.83] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container a993b3a29843&#xD;
+[testcontainers.org 00:00:48.92] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container a993b3a29843&#xD;
+[testcontainers.org 00:00:49.01] Docker container a993b3a29843 ready&#xD;
+[testcontainers.org 00:00:49.25] Delete Docker container d79ab7db8d55&#xD;
+[testcontainers.org 00:00:52.75] Delete Docker container a993b3a29843&#xD;
+[testcontainers.org 00:00:53.42] Docker container 49d112dce7b7 created&#xD;
+[testcontainers.org 00:00:53.43] Start Docker container 49d112dce7b7&#xD;
+[testcontainers.org 00:00:54.77] Wait for Docker container 49d112dce7b7 to complete readiness checks&#xD;
+[testcontainers.org 00:00:54.79] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 49d112dce7b7&#xD;
+[testcontainers.org 00:00:55.90] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 49d112dce7b7&#xD;
+[testcontainers.org 00:00:56.98] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 49d112dce7b7&#xD;
+[testcontainers.org 00:00:57.09] Docker container 49d112dce7b7 ready&#xD;
+[testcontainers.org 00:01:00.91] Delete Docker container 49d112dce7b7&#xD;
+[testcontainers.org 00:01:01.53] Docker container 0f6d4f37ec36 created&#xD;
+[testcontainers.org 00:01:01.54] Start Docker container 0f6d4f37ec36&#xD;
+[testcontainers.org 00:01:02.85] Wait for Docker container 0f6d4f37ec36 to complete readiness checks&#xD;
+[testcontainers.org 00:01:02.87] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 0f6d4f37ec36&#xD;
+[testcontainers.org 00:01:04.03] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 0f6d4f37ec36&#xD;
+[testcontainers.org 00:01:04.12] Docker container 0f6d4f37ec36 ready&#xD;
+[testcontainers.org 00:01:07.27] Delete Docker container 0f6d4f37ec36&#xD;
+[testcontainers.org 00:01:07.93] Docker container 2161706a8fb1 created&#xD;
+[testcontainers.org 00:01:07.94] Start Docker container 2161706a8fb1&#xD;
+[testcontainers.org 00:01:09.26] Wait for Docker container 2161706a8fb1 to complete readiness checks&#xD;
+[testcontainers.org 00:01:09.27] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 2161706a8fb1&#xD;
+[testcontainers.org 00:01:10.37] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 2161706a8fb1&#xD;
+[testcontainers.org 00:01:10.44] Docker container 2161706a8fb1 ready&#xD;
+[testcontainers.org 00:01:13.69] Delete Docker container 2161706a8fb1&#xD;
+[testcontainers.org 00:01:14.32] Docker container e715fa9fda0e created&#xD;
+[testcontainers.org 00:01:14.33] Start Docker container e715fa9fda0e&#xD;
+[testcontainers.org 00:01:15.60] Wait for Docker container e715fa9fda0e to complete readiness checks&#xD;
+[testcontainers.org 00:01:15.62] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container e715fa9fda0e&#xD;
+[testcontainers.org 00:01:16.73] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container e715fa9fda0e&#xD;
+[testcontainers.org 00:01:16.81] Docker container e715fa9fda0e ready&#xD;
+[testcontainers.org 00:01:20.21] Delete Docker container e715fa9fda0e&#xD;
+[testcontainers.org 00:01:20.88] Docker container e6691ff3e7e7 created&#xD;
+[testcontainers.org 00:01:20.89] Start Docker container e6691ff3e7e7&#xD;
+[testcontainers.org 00:01:22.20] Wait for Docker container e6691ff3e7e7 to complete readiness checks&#xD;
+[testcontainers.org 00:01:22.21] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container e6691ff3e7e7&#xD;
+[testcontainers.org 00:01:23.30] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container e6691ff3e7e7&#xD;
+[testcontainers.org 00:01:23.38] Docker container e6691ff3e7e7 ready&#xD;
+[testcontainers.org 00:01:26.73] Delete Docker container e6691ff3e7e7&#xD;
+[testcontainers.org 00:01:27.34] Docker container f567e61f89e8 created&#xD;
+[testcontainers.org 00:01:27.36] Start Docker container f567e61f89e8&#xD;
+[testcontainers.org 00:01:28.67] Wait for Docker container f567e61f89e8 to complete readiness checks&#xD;
+[testcontainers.org 00:01:28.68] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container f567e61f89e8&#xD;
+[testcontainers.org 00:01:29.77] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container f567e61f89e8&#xD;
+[testcontainers.org 00:01:29.85] Docker container f567e61f89e8 ready&#xD;
+[testcontainers.org 00:01:33.05] Delete Docker container f567e61f89e8&#xD;
+[testcontainers.org 00:01:33.68] Docker container 1a8e0047f37e created&#xD;
+[testcontainers.org 00:01:33.70] Start Docker container 1a8e0047f37e&#xD;
+[testcontainers.org 00:01:35.01] Wait for Docker container 1a8e0047f37e to complete readiness checks&#xD;
+[testcontainers.org 00:01:35.03] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 1a8e0047f37e&#xD;
+[testcontainers.org 00:01:36.18] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 1a8e0047f37e&#xD;
+[testcontainers.org 00:01:36.25] Docker container 1a8e0047f37e ready&#xD;
+[testcontainers.org 00:01:39.61] Delete Docker container 1a8e0047f37e&#xD;
+[testcontainers.org 00:01:40.30] Docker container d5c169632081 created&#xD;
+[testcontainers.org 00:01:40.32] Start Docker container d5c169632081&#xD;
+[testcontainers.org 00:01:41.63] Wait for Docker container d5c169632081 to complete readiness checks&#xD;
+[testcontainers.org 00:01:41.65] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container d5c169632081&#xD;
+[testcontainers.org 00:01:42.77] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container d5c169632081&#xD;
+[testcontainers.org 00:01:42.85] Docker container d5c169632081 ready&#xD;
+[testcontainers.org 00:01:46.19] Delete Docker container d5c169632081&#xD;
+[testcontainers.org 00:01:46.79] Docker container e94c06aa6134 created&#xD;
+[testcontainers.org 00:01:46.80] Start Docker container e94c06aa6134&#xD;
+[testcontainers.org 00:01:48.10] Wait for Docker container e94c06aa6134 to complete readiness checks&#xD;
+[testcontainers.org 00:01:48.11] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container e94c06aa6134&#xD;
+[testcontainers.org 00:01:49.20] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container e94c06aa6134&#xD;
+[testcontainers.org 00:01:49.28] Docker container e94c06aa6134 ready&#xD;
+[testcontainers.org 00:01:52.35] Delete Docker container e94c06aa6134&#xD;
+[testcontainers.org 00:01:52.97] Docker container 062fed5e0026 created&#xD;
+[testcontainers.org 00:01:52.98] Start Docker container 062fed5e0026&#xD;
+[testcontainers.org 00:01:54.30] Wait for Docker container 062fed5e0026 to complete readiness checks&#xD;
+[testcontainers.org 00:01:54.32] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 062fed5e0026&#xD;
+[testcontainers.org 00:01:55.39] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 062fed5e0026&#xD;
+[testcontainers.org 00:01:55.46] Docker container 062fed5e0026 ready&#xD;
+[testcontainers.org 00:01:58.98] Delete Docker container 062fed5e0026&#xD;
+[testcontainers.org 00:01:59.68] Docker container fdf2df3fe602 created&#xD;
+[testcontainers.org 00:01:59.69] Start Docker container fdf2df3fe602&#xD;
+[testcontainers.org 00:02:01.01] Wait for Docker container fdf2df3fe602 to complete readiness checks&#xD;
+[testcontainers.org 00:02:01.02] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container fdf2df3fe602&#xD;
+[testcontainers.org 00:02:02.14] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container fdf2df3fe602&#xD;
+[testcontainers.org 00:02:02.21] Docker container fdf2df3fe602 ready&#xD;
+[testcontainers.org 00:02:05.60] Delete Docker container fdf2df3fe602&#xD;
+[testcontainers.org 00:02:06.19] Docker container 187ede9ce8db created&#xD;
+[testcontainers.org 00:02:06.20] Start Docker container 187ede9ce8db&#xD;
+[testcontainers.org 00:02:07.50] Wait for Docker container 187ede9ce8db to complete readiness checks&#xD;
+[testcontainers.org 00:02:07.51] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 187ede9ce8db&#xD;
+[testcontainers.org 00:02:08.59] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 187ede9ce8db&#xD;
+[testcontainers.org 00:02:08.66] Docker container 187ede9ce8db ready&#xD;
+[testcontainers.org 00:02:12.08] Delete Docker container 187ede9ce8db&#xD;
+[testcontainers.org 00:02:14.17] Docker container 4b5131db0311 created&#xD;
+[testcontainers.org 00:02:14.19] Start Docker container 4b5131db0311&#xD;
+[testcontainers.org 00:02:15.97] Wait for Docker container 4b5131db0311 to complete readiness checks&#xD;
+[testcontainers.org 00:02:15.98] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 4b5131db0311&#xD;
+[testcontainers.org 00:02:17.72] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 4b5131db0311&#xD;
+[testcontainers.org 00:02:18.81] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 4b5131db0311&#xD;
+[testcontainers.org 00:02:19.92] Execute "pg_isready --host localhost --dbname erp_org_settings_guardrail_test --username erp" at Docker container 4b5131db0311&#xD;
+[testcontainers.org 00:02:19.99] Docker container 4b5131db0311 ready&#xD;
+[testcontainers.org 00:02:23.67] Delete Docker container 4b5131db0311&#xD;
+[xUnit.net 00:02:25.74]   Finished:    ERP.Infrastructure.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

@@ -1052,14 +1052,14 @@
       "scope": "v1",
       "implementation": {
         "path": "FEATURES.md",
-        "contains": "adopción del contrato uniforme pendiente"
+        "contains": "| Carga Inicial — Apertura contable |"
       },
       "approval": {
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:InitialLoad-05]"
       },
-      "missing": "Falta adopción del contrato uniforme y aceptación del cierre irreversible; R1 conserva la carga abierta y conciliada.",
-      "implemented": false
+      "missing": "Requiere aprobación vigente del cierre irreversible y del alcance uniforme que conserva OpeningBalancePosting/ASI.",
+      "implemented": true
     },
     {
       "id": "FirstRun-01",
@@ -1090,7 +1090,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Configuration-01]"
       },
-      "missing": "Sin evidencia PASS registrada de preferencias organizacionales ni del historial de cambios; sin cierre específico en STATUS."
+      "missing": "Requiere aprobación vigente del alcance API de preferencias organizacionales e historial, sin pantalla nueva."
     },
     {
       "id": "Future-01",

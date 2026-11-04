@@ -967,6 +967,23 @@ Rationale: [ADR-025](../decisions/ADR-025-ride-design-freeze.md).
 
 ## Carga Inicial
 
+### Alcance V1 de InitialLoad-05
+
+«Contrato uniforme» designa la aplicación de la política operativa común a la apertura,
+conservando `OpeningBalancePosting`/ASI como autoridad propia; no exige migrarla a
+`AccountingPosting`. Alcance confirmado por el propietario el 2026-11-04. La decisión
+por fecha y modo, conciliación y precondiciones contables se especifican únicamente en
+[Accounting §20](accounting.md#20-costos-apertura-y-disabled-accounting-continuity-05).
+
+El cierre existente (`POST /api/v1/initial-load/close`, permisos `initialload.batches.confirm`
+y `accounting.create`) persiste
+actor e instante en Company, es definitivo e idempotente y conserva el historial.
+`InitialLoadClosedGuard` rechaza con `INITIAL_LOAD_CLOSED` crear/subir/validar/confirmar
+lotes de saldos de inventario/CxC/CxP, contabilizarlos y publicar/reversar el ASI;
+la fecha de apertura queda bloqueada con el mismo mensaje. Los catálogos de
+productos/clientes/proveedores siguen disponibles. No existe operación de reapertura.
+Evidencia y aprobación: [STATUS](../../STATUS.md#v1-configuration-initialload-01--capacidades-aprobadas--ready-for-review-2026-11-04).
+
 Contrato vigente trasladado desde el catálogo de capacidades de `FEATURES.md`;
 no cambia el comportamiento ni acredita nuevas pruebas. Estado: [STATUS](../../STATUS.md).
 Contabilización: [Accounting](accounting.md). Reglas de ítems e inventario:

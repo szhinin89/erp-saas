@@ -1,5 +1,56 @@
 # Project Status
 
+## V1-CONFIGURATION-INITIALLOAD-01 — capacidades aprobadas — READY FOR REVIEW (2026-11-04)
+
+Aceptaciones expresas del propietario en esta sesión, condicionadas a los PASS focales:
+Configuration-01 mantiene la API actual sin pantalla de historial; InitialLoad-05
+conserva OpeningBalancePosting/ASI sin migración ni cambio de arquitectura. Condiciones
+funcionales satisfechas con datos sintéticos en contenedores PostgreSQL 16 desechables.
+No se ejecutó el cierre sobre empresas existentes ni se accedió a sus bases operativas.
+
+| Capacidad | Resultado y evidencia |
+|---|---|
+| Configuración organizacional [V1-APPROVED:Configuration-01] | API y persistencia existentes, catálogo de keys/scopes/tipos, auditoría con actor real, no-op sin log duplicado y rollback ante fallo del log. Historial consultable por HTTP; guardar/reabrir conserva valores, inválido devuelve 422 sin alterar valor ni historial, acceso ajeno 403 y anónimo 401. Pruebas: 20 PostgreSQL de repositorio/auditoría, 2 HTTP, 2 Application de scope y 4 guardrails arquitectónicos PASS. Alcance exclusivamente en [Backend](docs/architecture/backend.md#configuración-organizacional) y [defaults congelados](docs/architecture/frozen-infrastructure.md#valores-por-defecto-de-facturación). |
+| Carga inicial [V1-APPROVED:InitialLoad-05] | 9 casos PostgreSQL PASS de cierre: Enabled con ASI/conciliación, Disabled sin asientos, actor/instante persistidos, idempotencia, ASI ausente, cuatro blockers sin rastro, cancelar lote en curso y rechazo posterior de fecha/posting/publicación/reverso sin consumir números ni cambiar historial. 8 casos Application PASS del guard: saldos bloqueados y catálogos disponibles. Se reutiliza R1 únicamente para importaciones ya aprobadas; R1 no se usa como prueba del cierre. [Alcance uniforme aprobado](docs/architecture/backend.md#alcance-v1-de-initialload-05); reglas contables en [Accounting §20](docs/architecture/accounting.md#20-costos-apertura-y-disabled-accounting-continuity-05). |
+
+**45/45 PASS, 0 omitidas**, ejecución focal del agente (no suite general):
+
+- [PostgreSQL: 29/29](TestResults/configuration-initialload-01/configuration-initialload.trx).
+- [API aislamiento: 1/1](TestResults/configuration-initialload-01/configuration-http.trx).
+- [API guardar/reabrir e historial: 1/1](TestResults/configuration-initialload-01/configuration-workflow-http.trx).
+- [Application: 10/10](TestResults/configuration-initialload-01/configuration-initialload-application.trx).
+- [Guardrails de configuración: 4/4](TestResults/configuration-initialload-01/configuration-architecture.trx).
+
+Clasificación: **KEEP** implementación y navegación; **BUG REAL: ninguno reproducido**;
+**FALTA funcional: ninguna** dentro de estos dos alcances. La expresión ambigua del
+catálogo se resolvió mediante la decisión del propietario, sin requisitos nuevos.
+Se añadió solo una prueba HTTP focal; no se modificaron implementaciones CLOSED/FROZEN.
+El primer intento de esa prueba falló por consultar fuera del contexto de empresa del
+test; la verificación final usa HTTP autenticado y pasa. Se conserva ese resultado
+como diagnóstico del test, no como defecto productivo ni evidencia PASS.
+
+Matriz y Dashboard consolidados una sola vez al finalizar: **Web 67/70 = 95.71 %**
+(antes 65/70 = 92.86 %); **Core 40/43 = 93.02 %**; **InitialLoad 7/7 = 100 %**;
+**Configuration 1/1 = 100 %**. Pendientes funcionales V1 exactos: Retentions-02,
+ElectronicDocuments-04 y ElectronicDocuments-07; conservan sus gates SRI y decisiones
+ya registrados, sin reauditoría. **GO funcional para las dos capacidades; producción
+NO-GO** por los bloqueos SRI y de despliegue existentes.
+
+La aprobación por capacidad no declara CLOSED la fase acumulada: revisión/gate del
+propietario y staging/commit siguen a su cargo conforme a enforcement. Sin staging,
+commit ni push. Comandos focales para el gate del propietario desde la raíz:
+
+```powershell
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-build --filter "FullyQualifiedName~ConfigurationChangeLogTransactionalIntegrityTests|FullyQualifiedName~OrgSettingsRepositoryConfigurationGuardrailTests|FullyQualifiedName~PublishOpeningJournalEntryPostgreSqlTests.Cierre_|FullyQualifiedName~PublishOpeningJournalEntryPostgreSqlTests.Cada_blocker|FullyQualifiedName~PublishOpeningJournalEntryPostgreSqlTests.Despues_del_cierre|FullyQualifiedName~PublishOpeningJournalEntryPostgreSqlTests.C05_apertura|FullyQualifiedName~PublishOpeningJournalEntryPostgreSqlTests.ASI_vigente|FullyQualifiedName~PublishOpeningJournalEntryPostgreSqlTests.Lote_en_curso"
+dotnet test backend/src/ERP.API.Tests/ERP.API.Tests.csproj --no-build --filter "FullyQualifiedName~OrganizationalConfigurationV1HttpTests|FullyQualifiedName~CompanySettingsIsolationHttpTests.OrgConfig_de_empresa_y_sucursal_no_cruza_a_B"
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-build --filter "FullyQualifiedName~CompanyInvoiceOrgSettingsCompanyScopeTests|FullyQualifiedName~InitialLoadClosedGuardTests"
+dotnet test backend/src/ERP.Architecture.Tests/ERP.Architecture.Tests.csproj --no-build --filter "FullyQualifiedName~OrgSettingsAccessGuardrailTests|FullyQualifiedName~ConfigurationChangeLogGuardrailTests"
+node tools/architecture/run-all.mjs --only documentation
+node --test tools/dashboard/functional-v1.test.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/test-curated-dashboard.ps1
+git diff --check
+```
+
 ## V1-LANG-FINANCE-ACCOUNTING-01 — bloque acumulado — READY FOR REVIEW (2026-11-04)
 
 Alcance autorizado: Navigation-03, Finance-05/06 y Accounting-05/06/07/08. Se conservan

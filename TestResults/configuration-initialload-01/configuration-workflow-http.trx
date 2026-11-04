@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="4b8f76fa-e61b-4fbe-8da7-f448d33e38fe" name="Sebas@SEBASTIAN 2026-11-04 08:00:13" runUser="SEBASTIAN\Sebas" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-11-04T08:00:13.0526397-05:00" queuing="2026-11-04T08:00:13.0526403-05:00" start="2026-11-04T07:59:48.5497760-05:00" finish="2026-11-04T08:00:13.5453551-05:00" />
+  <TestSettings name="default" id="01bcdb9c-496f-4ea9-a246-2e00f51a3d28">
+    <Deployment runDeploymentRoot="Sebas_SEBASTIAN_2026-11-04_08_00_13" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="0c5150f6-1a35-48a9-bf4b-4e9856c98bd8" testId="f8749a2d-ec0b-6e03-5b75-ffb1d0293b0d" testName="ERP.API.Tests.Integration.OrganizationalConfigurationV1HttpTests.Defaults_persisten_historial_es_consultable_y_acceso_es_restringido" computerName="SEBASTIAN" duration="00:00:01.4077210" startTime="2026-11-04T08:00:11.5262840-05:00" endTime="2026-11-04T08:00:12.9156457-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0c5150f6-1a35-48a9-bf4b-4e9856c98bd8" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ERP.API.Tests.Integration.OrganizationalConfigurationV1HttpTests.Defaults_persisten_historial_es_consultable_y_acceso_es_restringido" storage="c:\proyectcursor\erp-saas\backend\src\erp.api.tests\bin\debug\net10.0\erp.api.tests.dll" id="f8749a2d-ec0b-6e03-5b75-ffb1d0293b0d">
+      <Execution id="0c5150f6-1a35-48a9-bf4b-4e9856c98bd8" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.API.Tests\bin\Debug\net10.0\ERP.API.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.API.Tests.Integration.OrganizationalConfigurationV1HttpTests" name="Defaults_persisten_historial_es_consultable_y_acceso_es_restringido" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="f8749a2d-ec0b-6e03-5b75-ffb1d0293b0d" executionId="0c5150f6-1a35-48a9-bf4b-4e9856c98bd8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Resultados sin formato de lista" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Todos los resultados cargados" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)&#xD;
+[xUnit.net 00:00:00.24]   Discovering: ERP.API.Tests&#xD;
+[xUnit.net 00:00:00.55]   Discovered:  ERP.API.Tests&#xD;
+[xUnit.net 00:00:00.60]   Starting:    ERP.API.Tests&#xD;
+[testcontainers.org 00:00:00.15] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 26.1.4&#xD;
+  Kernel Version: 6.18.54.1-microsoft-standard-WSL2&#xD;
+  API Version: 1.45&#xD;
+  Operating System: Docker Desktop (containerized)&#xD;
+  Total Memory: 15.24 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.40] Docker container 4a4ff214b3f1 created&#xD;
+[testcontainers.org 00:00:00.52] Start Docker container 4a4ff214b3f1&#xD;
+[testcontainers.org 00:00:01.87] Wait for Docker container 4a4ff214b3f1 to complete readiness checks&#xD;
+[testcontainers.org 00:00:01.88] Docker container 4a4ff214b3f1 ready&#xD;
+[testcontainers.org 00:00:02.05] Docker container 9f2ef8ddbbf8 created&#xD;
+[testcontainers.org 00:00:02.09] Start Docker container 9f2ef8ddbbf8&#xD;
+[testcontainers.org 00:00:03.44] Wait for Docker container 9f2ef8ddbbf8 to complete readiness checks&#xD;
+[testcontainers.org 00:00:03.46] Execute "pg_isready --host localhost --dbname erp_test --username erp" at Docker container 9f2ef8ddbbf8&#xD;
+[testcontainers.org 00:00:04.56] Execute "pg_isready --host localhost --dbname erp_test --username erp" at Docker container 9f2ef8ddbbf8&#xD;
+[testcontainers.org 00:00:04.65] Docker container 9f2ef8ddbbf8 ready&#xD;
+[08:00:10 INF] InstallData aplicado: ERP.Infrastructure.Seeding.InstallData.001_inec_cge_2026_geography.sql&#xD;
+[08:00:11 INF] Startup scope audit: todos los requests ERP operativos tienen marcador expl�cito.&#xD;
+[08:00:11 INF] Application started. Press Ctrl+C to shut down.&#xD;
+[08:00:11 INF] Hosting environment: Testing&#xD;
+[08:00:11 INF] Content root path: C:\ProyectCursor\erp-saas\backend\src\ERP.API&#xD;
+[08:00:12 INF] HTTP PUT /api/v1/org-config/company/invoice-defaults responded 200 in 601.9327 ms&#xD;
+[08:00:12 INF] HTTP GET /api/v1/org-config/company/invoice-defaults responded 200 in 88.3423 ms&#xD;
+     Warning:&#xD;
+     The component "Fluent Assertions" is governed by the rules defined in the Xceed License Agreement and&#xD;
+     the Xceed Fluent Assertions Community License. You may use Fluent Assertions free of charge for&#xD;
+     non-commercial use only. An active subscription is required to use Fluent Assertions for commercial use.&#xD;
+     Please contact Xceed Sales mailto:sales@xceed.com to acquire a subscription at a very low cost.&#xD;
+     A paid commercial license supports the development and continued increasing support of&#xD;
+     Fluent Assertions users under both commercial and community licenses. Help us&#xD;
+     keep Fluent Assertions at the forefront of unit testing.&#xD;
+     For more information, visit https://xceed.com/products/unit-testing/fluent-assertions/&#xD;
+[08:00:12 INF] HTTP GET /api/v1/configuration/change-log responded 200 in 168.7468 ms&#xD;
+[08:00:12 INF] HTTP PUT /api/v1/org-config/company/invoice-defaults responded 200 in 98.4802 ms&#xD;
+[08:00:12 WRN] Validaci�n fallida (1 error(es)): PUT /api/v1/org-config/company/invoice-defaults&#xD;
+[08:00:12 INF] HTTP PUT /api/v1/org-config/company/invoice-defaults responded 422 in 40.4403 ms&#xD;
+[08:00:12 INF] HTTP GET /api/v1/org-config/company/invoice-defaults responded 200 in 48.9800 ms&#xD;
+[08:00:12 INF] HTTP GET /api/v1/configuration/change-log responded 200 in 49.2567 ms&#xD;
+[08:00:12 ERR] Error no controlado en GET /api/v1/configuration/change-log&#xD;
+ERP.Domain.Exceptions.CompanyScopeException: No tiene acceso a esta empresa.&#xD;
+   at ERP.Application.Access.Authorization.RuntimePermissionAuthorizer.IsAuthorizedAsync(String permissionKey, Guid userId, String role, CancellationToken cancellationToken) in C:\ProyectCursor\erp-saas\backend\src\ERP.Application\Access\Authorization\RuntimePermissionAuthorizer.cs:line 61&#xD;
+   at ERP.API.Authorization.PermissionHandler.HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement) in C:\ProyectCursor\erp-saas\backend\src\ERP.API\Authorization\PermissionHandler.cs:line 34&#xD;
+   at Microsoft.AspNetCore.Authorization.AuthorizationHandler`1.HandleAsync(AuthorizationHandlerContext context)&#xD;
+   at Microsoft.AspNetCore.Authorization.DefaultAuthorizationService.AuthorizeAsync(ClaimsPrincipal user, Object resource, IEnumerable`1 requirements)&#xD;
+   at Microsoft.AspNetCore.Authorization.DefaultAuthorizationServiceImpl.AuthorizeAsync(ClaimsPrincipal user, Object resource, IEnumerable`1 requirements)&#xD;
+   at Microsoft.AspNetCore.Authorization.Policy.PolicyEvaluator.AuthorizeAsync(AuthorizationPolicy policy, AuthenticateResult authenticationResult, HttpContext context, Object resource)&#xD;
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)&#xD;
+   at ERP.API.Middleware.EnterpriseDiagnosticMiddleware.InvokeAsync(HttpContext context, ICurrentTenant tenant, ICurrentCompany company, ICurrentUser user) in C:\ProyectCursor\erp-saas\backend\src\ERP.API\Middleware\EnterpriseDiagnosticMiddleware.cs:line 80&#xD;
+   at ERP.API.Middleware.SecurityCorrelationMiddleware.InvokeAsync(HttpContext context) in C:\ProyectCursor\erp-saas\backend\src\ERP.API\Middleware\SecurityCorrelationMiddleware.cs:line 48&#xD;
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)&#xD;
+   at ERP.API.Middleware.ExceptionMiddleware.InvokeAsync(HttpContext context) in C:\ProyectCursor\erp-saas\backend\src\ERP.API\Middleware\ExceptionMiddleware.cs:line 55&#xD;
+[08:00:12 INF] HTTP GET /api/v1/configuration/change-log responded 403 in 23.9019 ms&#xD;
+[08:00:12 INF] HTTP GET /api/v1/configuration/change-log responded 401 in 9.1663 ms&#xD;
+[08:00:12 INF] Application is shutting down...&#xD;
+[testcontainers.org 00:00:22.78] Delete Docker container 9f2ef8ddbbf8&#xD;
+[xUnit.net 00:00:24.05]   Finished:    ERP.API.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

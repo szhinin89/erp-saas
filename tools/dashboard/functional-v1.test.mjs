@@ -6,7 +6,7 @@ import { calculate, projectRoot } from './analyze-functional-v1.mjs';
 const source=()=>JSON.parse(fs.readFileSync(path.join(projectRoot,'docs/ProgressDashboard/data/functional-v1-source.json'),'utf8'));
 test('unique global denominator, exact module union and Core membership',()=>{
  const d=calculate();
- assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[65,70,92.86]);
+ assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[67,70,95.71]);
  assert.deepEqual([d.core.approved,d.core.total,d.core.pct],[40,43,93.02]);
  assert.equal(new Set(d.global.ids).size,d.global.total);
  assert.equal(Object.values(d.modules).reduce((n,m)=>n+m.total,0),d.global.total);
@@ -14,7 +14,10 @@ test('unique global denominator, exact module union and Core membership',()=>{
  assert.equal(d.modules.Caja.approved,3); // R3 scope, no invented global closure.
  assert.equal(d.modules.Accounting.approved,8); // Additional focal evidence closes the scopes not covered by R4.
  assert.equal(d.features.find(f=>f.id==='ElectronicDocuments-04').state,'blocked');
- assert.equal(d.features.find(f=>f.id==='InitialLoad-05').state,'planned');
+ assert.equal(d.features.find(f=>f.id==='InitialLoad-05').state,'approved');
+ assert.equal(d.features.find(f=>f.id==='Configuration-01').state,'approved');
+ assert.equal(d.modules.InitialLoad.pct,100);
+ assert.equal(d.modules.Configuration.pct,100);
  for(const f of d.features.filter(f=>f.state==='approved'))assert.ok(f.evidence.some(e=>e.found));
 });
 test('future/production never affect denominator or approved totals',()=>{
