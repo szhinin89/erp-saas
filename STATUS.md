@@ -796,6 +796,13 @@ API/PostgreSQL. El gate técnico integrado sigue pendiente junto con #32, #30 y 
 sin duplicar la tarea ni cambiar sus estados. Se conserva debajo la evidencia técnica
 de la implementación del 2026-10-28 y sus límites.
 
+Publicado en `6b590644ca0b6ccad97b8eca57d18b2ab3e78b10`;
+[CI #1074](https://github.com/szhinin89/erp-saas/actions/runs/41757329707) SUCCESS
+(run `41757329707`: 19 jobs exitosos, 0 fallidos y 1 omitido: Azure Web App Deploy),
+según evidencia verificada en GitHub por el propietario. No acredita despliegue ni
+cierre del gate técnico integrado API/PostgreSQL. Todas las pruebas que dependan
+del SRI permanecen suspendidas hasta autorización expresa del propietario.
+
 Anulación documental de cobros erróneos desde CxC, con permiso específico, selección,
 confirmación y motivo obligatorio. **KEEP:** `ReverseCollectionCommand`, restauración de
 CxC, locks, auditoría y traducción contable existentes. **FALTA autorizada implementada:**
