@@ -6,6 +6,7 @@ using ERP.Application.Modules.Ride.Parsers;
 using ERP.Application.Modules.Ride.Rendering;
 using ERP.Application.Modules.Ride.Services;
 using ERP.Application.Modules.Ride.Templates;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Ride.ValueObjects;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,6 +81,7 @@ public sealed class RetentionWiringDependencyInjectionTests
             )
             .ReturnsAsync(Result<RideBranding>.Success(RideBranding.Empty()));
         services.AddScoped(_ => brandingProviderMock.Object);
+        services.AddScoped(_ => Mock.Of<ICompanyRepository>());
         services.AddScoped<IRetentionRidePdfService, RetentionRidePdfService>();
 
         // ── Regresión: el resolver comercial de Factura/Nota de Crédito no cambia en esta fase ──
