@@ -22,7 +22,7 @@
 |------------------------------------------------|---------------|
 | **platform**, **operador platform**, **PlatformOperator** | `SuperAdmin`, `superadmin`, `superAdmin*`, `isSuperAdmin`, `SuperAdminController` |
 
-**Zero legacy en código (2026-05-25):** no hay aliases wire, redirects `/superadmin/*` ni `/companies/*`, ni lectura de JWT `SuperAdmin`. Schema greenfield: baseline único `20260525224928_InitialEnterpriseBaseline` (sin valores wire legacy).
+**Zero legacy en código (2026-05-25):** no hay aliases wire, redirects `/superadmin/*` ni `/companies/*`, ni lectura de JWT `SuperAdmin`. Schema greenfield: baseline única vigente en [DATABASE.md § Migraciones](../DATABASE.md#migraciones) (sin valores wire legacy).
 
 ---
 

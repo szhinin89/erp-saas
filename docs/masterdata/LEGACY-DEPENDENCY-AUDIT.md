@@ -1,7 +1,7 @@
 # Legacy Dependency Audit — customers / suppliers → BusinessPartner
 
 **Fecha:** 2026-05-23  
-**Estado:** Activo — coexistencia strangler en curso  
+**Estado:** HISTÓRICO — auditoría del 2026-05-23; no describe el esquema vigente. Las migraciones citadas (§11) fueron consolidadas en la baseline única; ver [DATABASE.md § Migraciones](../DATABASE.md#migraciones)\
 **Restricciones absolutas:** NO DROP TABLE · NO eliminar CustomerId/SupplierId · NO romper historial
 
 ---
@@ -382,6 +382,9 @@ Operaciones: Search, GetById, Create, Disable.
 ---
 
 ## 11. Migraciones EF
+
+> Histórico: estas migraciones ya no existen; fueron consolidadas en la baseline única vigente
+> ([DATABASE.md § Migraciones](../DATABASE.md#migraciones)).
 
 | Archivo | Nombre | Impacto |
 |---------|--------|---------|

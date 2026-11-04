@@ -203,7 +203,7 @@ Decisión arquitectónica congelada 2026-07-04. Reemplaza el enum C# fijo `ItemT
 | `IItemTypeRepository`/`ItemTypeRepository` | `ERP.Domain` / `ERP.Infrastructure/Persistence/Repositories/Items/` | FROZEN |
 | `ItemTypeUseCases.cs` (CQRS completo) | `ERP.Application/Modules/Items/UseCases/` | FROZEN |
 | `ItemTypesController.cs` (`api/v1/item-types`) | `ERP.API/Controllers/` | FROZEN |
-| FK `items.item_type_id → item_types.id` | Migración `20260704193028_AddItemTypeIdForeignKey` | FROZEN |
+| FK `items.item_type_id → item_types.id` | `FK_items_item_types_item_type_id` en la baseline única `20261101012214_InitialProductionBaseline` | FROZEN |
 | `itemTypeService.ts` / `useItemTypeOptions.ts` | `frontend/src/modules/items/api/` y `hooks/` | FROZEN |
 | `ItemTypesPage.tsx` (`/inventory/item-types`) | `frontend/src/modules/items/pages/` | FROZEN |
 

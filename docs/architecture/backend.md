@@ -535,7 +535,8 @@ Todas las consultas de candidatos usan LIMIT/Take explícito. Retentions distrib
 el presupuesto total B entre floor(B/3) finalizaciones, B−2×floor(B/3) transmisiones
 y floor(B/3) verificaciones. B mínimo=3; cada stream tiene progreso independiente.
 
-La migración `20261015000000_BackgroundJobProgress` crea checkpoints técnicos en
+La tabla `background_job_progress` (raw SQL de la baseline única `20261101012214_InitialProductionBaseline`;
+ver [DATABASE.md § Objetos raw SQL](../DATABASE.md#objetos-raw-sql-fuera-del-modelo-ef)) guarda checkpoints técnicos en
 PostgreSQL, sin datos de negocio ni preferencias por empresa. Reintentos, Sales y
 Retentions rotan por UUID estable después del último lote descubierto, incluyendo
 los candidatos fallidos. Guardar antes de procesar evita que un poison item acapare
