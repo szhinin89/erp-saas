@@ -1,5 +1,66 @@
 # Project Status
 
+## RIDE-GOLDEN-DETERMINISM-01 — READY FOR REVIEW (2026-11-04)
+
+Casos iniciales exactos: `Invoice_with_mixed_vat_rates_matches_the_approved_golden_file`
+(`03-invoice-with-vat.pdf`) e `Invoice_with_additional_info_matches_the_approved_golden_file`
+(`05-invoice-with-additional-info.pdf`), registrados en `tmp/pdfs/infrastructure.log`.
+Investigación exclusivamente focal: la intermitencia se reprodujo y se capturó en 03
+y también en 01 (estándar); el 05 inicial solo conserva el log, no el binario fallido.
+
+**Causa confirmada de la intermitencia:** render concurrente QuestPDF/Skia con estado
+de fuentes compartido. En las capturas fallidas solo difieren streams `/ToUnicode`
+(03: objetos 16 y 20; 01: objeto 24), con asociaciones Unicode sustituidas por `0000`.
+Los demás objetos PDF serializados coinciden; metadata normalizada idéntica y píxeles
+idénticos al rasterizar a escala 2. Es un defecto de extracción de texto, no un cambio
+visual ni una diferencia de fechas. No se atribuye a un método interno de la biblioteca
+sin evidencia: aislar únicamente SVG siguió fallando con PDF concurrente.
+
+Fix mínimo de pruebas: colección xUnit `RideGoldenRendering` sin ejecución paralela
+para la clase golden; comparación binaria y golden originales intactos. Ningún cambio
+productivo en esta investigación; ajustes de barras y NC preservados.
+**PASS: 6 ejecuciones conjuntas consecutivas de 14/14 (84/84)**; los 36 candidatos
+golden exportados coinciden byte a byte con los seis originales. Capturas y logs locales
+en `tmp/pdfs/golden-investigation/` y `tmp/pdfs/golden-investigation-*.log`.
+Este aislamiento estabiliza el gate; no acredita corregir la biblioteca ni probar
+renderizado productivo concurrente. Sin suites generales, SRI, staging, commit ni push.
+**Producción NO-GO**; gate/aprobación del propietario pendientes, no CLOSED.
+
+Repetición desde la raíz:
+
+```powershell
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter "FullyQualifiedName~AccessKeyBarcodeRenderingTests|FullyQualifiedName~RideGoldenFileTests|FullyQualifiedName~QuestPdfRideRendererRetentionTests"
+node tools/architecture/run-all.mjs --only documentation
+git diff --check
+```
+
+## RIDE-CREDIT-NOTE-01 — READY FOR REVIEW (2026-11-04)
+
+BUG REAL reproducido: título fijo «FACTURA» y omisión de referencia/motivo en NC.
+Corregidos en presentación desde el modelo existente; contrato en
+[Backend — RIDE](docs/architecture/backend.md#ride). `AccessKeyBarcodeSection` se conserva.
+Revisión de caché `credit-note-layout-3`. Sin cambios de XML, firmas, datos fiscales ni llamadas al SRI.
+
+Validación focal del agente: Application **25/25 PASS**; render y barras 01/04/07 +
+retención **8/8 PASS**; golden de factura **6/6 PASS** en ejecución separada.
+La ejecución conjunta inicial tuvo dos discrepancias binarias golden (12/14 PASS);
+resueltas para el gate en RIDE-GOLDEN-DETERMINISM-01, arriba. No se sustituyeron los golden.
+Revisión visual de las tres páginas **PASS**: título, referencia, motivo y barras legibles;
+decodificación Code128 exacta de 49 dígitos en los tres tipos.
+Muestras sintéticas no versionadas en `output/pdf/ride-credit-note/`.
+
+**Producción NO-GO.** Pendientes aprobación visual y gate del propietario; no CLOSED.
+Sin staging, commit ni push. Repetición focal desde la raíz (golden por separado):
+
+```powershell
+$env:RIDE_BARCODE_SAMPLES = "$PWD/output/pdf/ride-credit-note"
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter "FullyQualifiedName~AccessKeyBarcodeRenderingTests|FullyQualifiedName~QuestPdfRideRendererRetentionTests"
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-build --no-restore --filter "FullyQualifiedName~RideGoldenFileTests"
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~RidePipelineTests|FullyQualifiedName~CreditNoteRideXmlParserTests|FullyQualifiedName~CreditNoteRideTemplateTests"
+node tools/architecture/run-all.mjs --only documentation
+git diff --check
+```
+
 ## RIDE-BARCODE-LAYOUT-01 — IMPLEMENTADA Y APROBADA TÉCNICAMENTE (2026-11-04)
 
 Mejora global del código de barras Code128 de la clave de acceso en los RIDE de
@@ -16,9 +77,8 @@ Resultados: infraestructura RIDE **58/58 PASS** (incluye los **seis golden PDF P
 de crédito y retención. `git diff --check` PASS. Muestras para revisión visual en
 `output/pdf/ride-barcode/` (no versionadas).
 
-**Pendiente independiente (defecto preexistente, sin implementar):** el RIDE de nota
-de crédito muestra el encabezado «FACTURA» y omite el documento modificado y el motivo.
-Requiere autorización del propietario como entrega separada.
+El defecto independiente de presentación de nota de crédito se atiende en
+RIDE-CREDIT-NOTE-01, arriba, pendiente de revisión del propietario.
 
 **Producción NO-GO.** Sin staging, commit ni push. Repetición focal desde la raíz:
 

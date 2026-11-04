@@ -31,7 +31,7 @@ public sealed class RidePipeline
     public const string RideSpecificationVersion = "1.0.0";
 
     private const string NeutralBrandingVersion = "unversioned";
-    private const string CurrentRendererVersion = "barcode-layout-2";
+    private const string CurrentRendererVersion = "credit-note-layout-3";
 
     /// <summary>
     /// Versión de plantilla = escalas de precisión + huella de la metadata de autorización

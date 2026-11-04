@@ -571,7 +571,7 @@ public sealed class RidePipelineTests
                     documentType.ToString(),
                     It.Is<string>(v => v.StartsWith(version + "-a1-")),
                     "unversioned",
-                    "barcode-layout-2",
+                    "credit-note-layout-3",
                     RidePipeline.RideSpecificationVersion,
                     It.IsAny<CancellationToken>()
                 ),

@@ -1,3 +1,4 @@
+using System.Globalization;
 using ERP.Application.Modules.Ride.Templates;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
@@ -45,6 +46,15 @@ public static class BuyerSection
                     });
 
                 column.Item().Text($"Dirección: {receiver.Address ?? string.Empty}").FontSize(9);
+                if (header.ModifiedDocument is { } modified)
+                {
+                    column.Item().PaddingTop(4)
+                        .Text($"Tipo de comprobante modificado: {modified.DocumentTypeCode}").FontSize(9);
+                    column.Item().Text($"Número de comprobante modificado: {modified.Number}").FontSize(9);
+                    column.Item().Text($"Fecha de emisión del comprobante modificado: {modified.IssueDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}").FontSize(9);
+                }
+                if (header.Reason is not null)
+                    column.Item().Text($"Motivo de modificación: {header.Reason}").FontSize(9);
             });
     }
 }

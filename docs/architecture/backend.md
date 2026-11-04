@@ -968,7 +968,12 @@ Factura, nota de crédito y retención reutilizan `AccessKeyBarcodeSection`: tí
 Code128 proporcional con márgenes laterales y clave completa de 49 dígitos centrados.
 El adaptador pide un PNG de 680×120 px al generador existente, con módulos enteros;
 QuestPDF conserva su proporción y los bytes originales. La revisión de renderer
-`barcode-layout-2` invalida los PDFs anteriores del pipeline al consultarlos.
+`credit-note-layout-3` invalida los PDFs anteriores del pipeline al consultarlos.
+El título del layout Factura/NC corresponde al código fiscal (`01`/`04`). El bloque
+del comprador muestra el código de tipo, número y fecha del comprobante modificado
+y el motivo cuando el modelo los contiene: `CreditNoteRideXmlParser` los obtiene de
+`codDocModificado`, `numDocModificado`, `fechaEmisionDocSustento` y `motivo` del XML.
+No se completa información fiscal desde otra fuente ni se inventa autorización del documento original.
 La metadata de autorización se compone fuera del parser; la fecha se presenta en Company.Timezone,
 con ausencia explícita cuando no está disponible. Su huella afecta la versión de plantilla;
 SourceXmlHash sigue representando únicamente XML. No hay otro caché.

@@ -101,7 +101,7 @@ public static class HeaderSection
                     right.Spacing(2);
 
                     right.Item().Text($"R.U.C.: {issuer.IdentificationNumber}").Bold().FontSize(10);
-                    right.Item().PaddingTop(4).Text("FACTURA").Bold().FontSize(13);
+                    right.Item().PaddingTop(4).Text(layout.DocumentTitle).Bold().FontSize(13);
                     right
                         .Item()
                         .PaddingTop(4)

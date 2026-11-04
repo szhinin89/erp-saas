@@ -13,6 +13,12 @@ public sealed class InvoiceRideDocumentLayout : IRideDocumentLayout
 {
     public RideLinePrecision Precision { get; }
     public RideHeader Header { get; }
+    public string DocumentTitle => Header.DocumentTypeCode switch
+    {
+        "01" => "FACTURA",
+        "04" => "NOTA DE CRÉDITO",
+        _ => throw new NotSupportedException($"Tipo de comprobante RIDE no soportado: {Header.DocumentTypeCode}"),
+    };
     public RideParty Issuer { get; }
     public RideParty Receiver { get; }
     public IReadOnlyList<RideLine> Lines { get; }

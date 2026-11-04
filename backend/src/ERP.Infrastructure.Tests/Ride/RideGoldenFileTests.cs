@@ -5,6 +5,9 @@ using FluentAssertions;
 
 namespace ERP.Infrastructure.Tests.Ride;
 
+[CollectionDefinition("RideGoldenRendering", DisableParallelization = true)]
+public sealed class RideGoldenRenderingCollection;
+
 /// <summary>
 /// Fase 10 (ADR-025, Release Readiness): compara el PDF producido por <see cref="QuestPdfRideRenderer"/>
 /// contra un archivo de referencia ("golden file") aprobado y versionado en el repositorio, para las
@@ -22,6 +25,10 @@ namespace ERP.Infrastructure.Tests.Ride;
 /// de detectar cualquier cambio visual involuntario.
 /// </para>
 /// </summary>
+// El render concurrente QuestPDF/Skia puede producir mapas de fuentes ToUnicode
+// con valores 0000. Aislar los golden conserva la comparación binaria estricta;
+// no normalizar esos mapas: también protegen la extracción de texto del PDF.
+[Collection("RideGoldenRendering")]
 public sealed class RideGoldenFileTests
 {
     private const string NormalizedDate = "D:20260101000000+00'00'";

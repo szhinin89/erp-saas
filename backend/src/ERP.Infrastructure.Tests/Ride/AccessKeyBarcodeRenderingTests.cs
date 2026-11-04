@@ -48,6 +48,28 @@ public sealed class AccessKeyBarcodeRenderingTests
         svg.Descendants().Where(e => e.Name.LocalName == "text")
             .Should().Contain(e => e.Value.Trim() == key.Value, "los 49 dígitos deben permanecer juntos");
 
+        var headerText = string.Join(" ", svg.Descendants().Where(e => e.Name.LocalName == "text").Select(e => e.Value));
+        headerText.Should().Contain(kind == "credit-note" ? "NOTA DE CRÉDITO"
+            : kind == "retention" ? "COMPROBANTE DE RETENCIÓN" : "FACTURA");
+        if (layout is InvoiceRideDocumentLayout invoice)
+        {
+            var body = Document.Create(d => d.Page(p =>
+            {
+                p.Size(PageSizes.A4);
+                p.DefaultTextStyle(t => t.DisableFontFeature(FontFeatures.StandardLigatures));
+                p.Content().Element(c => BuyerSection.Compose(c, invoice));
+            }));
+            var bodySvg = System.Xml.Linq.XDocument.Parse(body.GenerateSvg().Single());
+            var bodyText = string.Join(" ", bodySvg.Descendants().Where(e => e.Name.LocalName == "text").Select(e => e.Value));
+            if (kind == "credit-note")
+                bodyText.Should().Contain("Tipo de comprobante modificado: 01")
+                    .And.Contain("Número de comprobante modificado: 001-001-000000001")
+                    .And.Contain("Fecha de emisión del comprobante modificado: 01/07/2026")
+                    .And.Contain("Motivo de modificación: Devolución de prueba");
+            else
+                bodyText.Should().NotContain("comprobante modificado").And.NotContain("Motivo de modificación");
+        }
+
         // Decodifica el encabezado compuesto, no el PNG original del generador.
         var png = header.GenerateImages(new ImageGenerationSettings { RasterDpi = 300 }).Single();
         if (Environment.GetEnvironmentVariable("RIDE_BARCODE_SAMPLES") is { Length: > 0 } preview)
