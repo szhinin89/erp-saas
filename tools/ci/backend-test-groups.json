@@ -282,6 +282,7 @@
         "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriRetentionCatalogResolutionIntegrationTests",
         "ERP.Infrastructure.Tests.Persistence.SriCatalogs.SriVatRateActiveFlagsPostgreSqlTests",
         "ERP.Infrastructure.Tests.Persistence.StockMovementBranchOwnershipIntegrationTests",
+        "ERP.Infrastructure.Tests.Ride.AccessKeyBarcodeRenderingTests",
         "ERP.Infrastructure.Tests.Ride.QuestPdfRideRendererRetentionTests",
         "ERP.Infrastructure.Tests.Ride.QuestPdfRideRendererTests",
         "ERP.Infrastructure.Tests.Ride.RideRenderingSectionsTests",

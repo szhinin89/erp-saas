@@ -23,7 +23,7 @@ namespace ERP.Application.Modules.Ride.Services;
 /// con <c>ReasonCode</c> explícito), nunca una excepción.
 ///
 /// The template version includes company presentation scales to invalidate older PDFs.
-/// Branding and renderer retain their neutral versions.
+/// Branding retains its neutral version; renderer revisions invalidate existing PDFs.
 /// </summary>
 public sealed class RidePipeline
 {
@@ -31,7 +31,7 @@ public sealed class RidePipeline
     public const string RideSpecificationVersion = "1.0.0";
 
     private const string NeutralBrandingVersion = "unversioned";
-    private const string NeutralRendererVersion = "unversioned";
+    private const string CurrentRendererVersion = "barcode-layout-2";
 
     /// <summary>
     /// Versión de plantilla = escalas de precisión + huella de la metadata de autorización
@@ -198,7 +198,7 @@ public sealed class RidePipeline
             templateId,
             templateVersion,
             NeutralBrandingVersion,
-            NeutralRendererVersion,
+            CurrentRendererVersion,
             RideSpecificationVersion,
             ct
         );
@@ -215,7 +215,7 @@ public sealed class RidePipeline
                 sourceXmlHash,
                 templateVersion,
                 NeutralBrandingVersion,
-                NeutralRendererVersion,
+                CurrentRendererVersion,
                 RideSpecificationVersion,
                 ct
             );
@@ -297,7 +297,7 @@ public sealed class RidePipeline
             sourceXmlHash,
             templateVersion,
             NeutralBrandingVersion,
-            NeutralRendererVersion,
+            CurrentRendererVersion,
             RideSpecificationVersion,
             ct
         );
@@ -314,7 +314,7 @@ public sealed class RidePipeline
                 templateId,
                 templateVersion,
                 NeutralBrandingVersion,
-                NeutralRendererVersion,
+                CurrentRendererVersion,
                 RideSpecificationVersion,
                 userId
             );
@@ -338,7 +338,7 @@ public sealed class RidePipeline
             templateId,
             templateVersion,
             NeutralBrandingVersion,
-            NeutralRendererVersion,
+            CurrentRendererVersion,
             sourceXmlHash.Value,
             generatedAtUtc,
             WasCached: false

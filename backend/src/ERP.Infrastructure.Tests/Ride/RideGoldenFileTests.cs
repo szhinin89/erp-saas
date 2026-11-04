@@ -76,6 +76,13 @@ public sealed class RideGoldenFileTests
         );
         var actual = Normalize(await renderer.RenderAsync(fixture()));
 
+        // Solo exporta candidatos para revisión; nunca sobrescribe ni omite la comparación.
+        if (Environment.GetEnvironmentVariable("RIDE_GOLDEN_CANDIDATES") is { Length: > 0 } output)
+        {
+            Directory.CreateDirectory(output);
+            await File.WriteAllBytesAsync(Path.Combine(output, scenarioFileName), actual);
+        }
+
         var goldenPath = Path.Combine(GoldenFilesDirectory(), scenarioFileName);
         File.Exists(goldenPath)
             .Should()

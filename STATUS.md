@@ -1,5 +1,34 @@
 # Project Status
 
+## RIDE-BARCODE-LAYOUT-01 — IMPLEMENTADA Y APROBADA TÉCNICAMENTE (2026-11-04)
+
+Mejora global del código de barras Code128 de la clave de acceso en los RIDE de
+factura, nota de crédito y retención: bloque compartido `AccessKeyBarcodeSection`
+(título, barras centradas con márgenes laterales y clave de 49 dígitos centrada),
+PNG de 680×120 px con módulos enteros y revisión de renderer `barcode-layout-2`,
+que invalida los PDFs anteriores en caché. Contrato en
+[backend — RIDE](docs/architecture/backend.md). XML, firmas, autorizaciones SRI,
+datos tributarios y lógica fiscal sin cambios; no se llamó al SRI.
+
+Resultados: infraestructura RIDE **58/58 PASS** (incluye los **seis golden PDF PASS**),
+`RidePipelineTests` **16/16 PASS**, inventario CI (`infrastructure-08`, descubrimiento)
+**PASS** y decodificación Code128 a 300 dpi de los **49 dígitos PASS** en factura, nota
+de crédito y retención. `git diff --check` PASS. Muestras para revisión visual en
+`output/pdf/ride-barcode/` (no versionadas).
+
+**Pendiente independiente (defecto preexistente, sin implementar):** el RIDE de nota
+de crédito muestra el encabezado «FACTURA» y omite el documento modificado y el motivo.
+Requiere autorización del propietario como entrega separada.
+
+**Producción NO-GO.** Sin staging, commit ni push. Repetición focal desde la raíz:
+
+```powershell
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --filter "FullyQualifiedName~ERP.Infrastructure.Tests.Ride.AccessKeyBarcodeRenderingTests|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.QuestPdfRideRenderer|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.RetentionRideRenderingSectionsTests|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.RideGoldenFileTests|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.RideRenderingSectionsTests"
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --filter "FullyQualifiedName~ERP.Application.Tests.Ride.RidePipelineTests"
+python tools/ci/backend_tests.py --group infrastructure-08 --verify-only
+git diff --check
+```
+
 ## V1-FUNCTIONAL-CLOSE-01 — cierre funcional aprobado (2026-11-04)
 
 **Retentions-02 APROBADA [V1-APPROVED:Retentions-02]**, por instrucción expresa del

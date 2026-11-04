@@ -25,8 +25,10 @@ public sealed class RideBarcodeGenerator : IRideBarcodeGenerator
         var request = new BarcodeGenerationRequest(
             accessKey.Value,
             BarcodeSymbology.Code128,
-            width: 600,
-            height: 100
+            // Dos píxeles por módulo evitan el relleno lateral excesivo del lienzo de 600 px.
+            // ZXing conserva módulos enteros y amplía el ancho si la codificación lo requiere.
+            width: 680,
+            height: 120
         );
         return _barcodeGenerator.Generate(request).PngBytes;
     }

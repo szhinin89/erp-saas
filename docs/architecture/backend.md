@@ -964,6 +964,11 @@ Parsers por tipo producen un modelo neutro; plantilla, branding, renderer y stor
 son contratos separados. QuestPDF es implementación Infrastructure, no contrato de Application.
 El PDF físico se guarda por IFileStorage y su estrategia de nombres; la BD conserva metadatos.
 La caché considera XML, plantilla, branding, renderer y versión de especificación.
+Factura, nota de crédito y retención reutilizan `AccessKeyBarcodeSection`: título,
+Code128 proporcional con márgenes laterales y clave completa de 49 dígitos centrados.
+El adaptador pide un PNG de 680×120 px al generador existente, con módulos enteros;
+QuestPDF conserva su proporción y los bytes originales. La revisión de renderer
+`barcode-layout-2` invalida los PDFs anteriores del pipeline al consultarlos.
 La metadata de autorización se compone fuera del parser; la fecha se presenta en Company.Timezone,
 con ausencia explícita cuando no está disponible. Su huella afecta la versión de plantilla;
 SourceXmlHash sigue representando únicamente XML. No hay otro caché.

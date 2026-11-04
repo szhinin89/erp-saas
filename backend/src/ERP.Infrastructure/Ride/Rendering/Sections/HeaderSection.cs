@@ -151,9 +151,8 @@ public static class HeaderSection
                                     : "INDISPONIBILIDAD DEL SISTEMA"
                             );
                         });
-                    right.Item().PaddingTop(4).Text("CLAVE DE ACCESO").Bold().FontSize(8);
-                    right.Item().PaddingTop(2).Image(barcodeImageBytes).FitWidth();
-                    right.Item().AlignCenter().Text(header.AccessKey.Value).FontSize(7);
+                    right.Item().Element(c =>
+                        AccessKeyBarcodeSection.Compose(c, header.AccessKey, barcodeImageBytes));
                 });
         });
     }
