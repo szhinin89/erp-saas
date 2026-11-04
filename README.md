@@ -12,7 +12,8 @@ ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inven
 |----------|-----------|
 | Índice maestro | [`CONTEXT.md`](CONTEXT.md) |
 | Arquitectura vigente | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — ver jerarquía documental en [`CLAUDE.md`](CLAUDE.md#jerarquía-documental) |
-| Reglas IA canónicas (Cursor, Claude, PR) | [`docs/architecture/README.md`](docs/architecture/README.md) |
+| Reglas globales de agentes | [`CLAUDE.md`](CLAUDE.md); entrada Codex: [`AGENTS.md`](AGENTS.md) |
+| Reglas técnicas canónicas (Codex, Claude, Cursor, PR) | [`docs/architecture/README.md`](docs/architecture/README.md) |
 | Gates bloqueantes PR / CI / agentes | [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md) |
 | Congelamiento arquitectura ERP Core | [`ERP_CORE_FREEZE.md`](ERP_CORE_FREEZE.md) |
 | Estado delivery | [`STATUS.md`](STATUS.md) |

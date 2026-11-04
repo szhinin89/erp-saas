@@ -1,62 +1,13 @@
-# Frontend — reglas de implementación
+# Frontend — entrada del agente
 
-Este archivo complementa [`../CLAUDE.md`](../CLAUDE.md). Si hay conflicto, prevalece `../CLAUDE.md`.
+Aplicar las [reglas globales y jerarquía](../CLAUDE.md).
+Este adaptador no define reglas técnicas propias.
 
-Cuerpo normativo completo: [`../docs/architecture/frontend.md`](../docs/architecture/frontend.md) · [`../docs/architecture/modal-standard.md`](../docs/architecture/modal-standard.md) · [`../docs/architecture/visual-messages.md`](../docs/architecture/visual-messages.md) · [`../docs/architecture/pr-rules-catalog.md`](../docs/architecture/pr-rules-catalog.md).
-
-No repetir aquí el `CLAUDE.md` raíz. No incluir estado de avance ni lista histórica de bloques de migración (14A/14B/15A/…) — eso vive en `STATUS.md`.
-
----
-
-## Design System SSOT
-
-**ZH Visual Discipline:** misma disciplina de escalas que Tailwind con Design System propio para ERP — `Primitive tokens → Semantic tokens → Contracts → ZH Components → ERP Patterns → Modules`. Los módulos no inventan color, spacing, radius, sombra, motion, foco, estilo de estado ni presentación numérica si existe contrato; consumen tokens semánticos (nunca `--color-neutral-N`). Guards `F-04-primitive`/`F-04-rgb`/`F-04-motion`. Detalle: [`../docs/architecture/frontend.md § ZH Visual Discipline`](../docs/architecture/frontend.md#zh-visual-discipline-principio).
-
-Usar componentes oficiales:
-
-- `ZhTextInput`, `ZhNumberInput`, `ZhDecimalInput`, `ZhDateInput`, `ZhPhoneInput`, `ZhSelect`, `ZhTextarea`
-- `ZHBtn`, `ZHIconButton`, `Badge`, `ReportKpiCard`
-- `ZHField` / `ZHForm` cuando aplique
-- `ZHDataTable` (`components/zh/ZHDataTable.tsx`) es el componente estándar del Design System para **cualquier** listado tabular de registros — administrativo, transaccional, de detalle o dentro de un formulario — siempre que las filas puedan expresarse con columnas tipadas sin hacks (ZH-LISTING-GLOBAL-STANDARD-06; ver [ChartOfAccountsPage](../frontend/src/modules/accounting/pages/ChartOfAccountsPage.tsx), [DocumentFlowPoliciesPage](../frontend/src/modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx), [PurchasesPage](../frontend/src/modules/purchases/pages/PurchasesPage.tsx), [SalesPage](../frontend/src/modules/sales/pages/SalesPage.tsx)). Las tablas HTML manuales (`<table className="table">`) solo se permiten como excepción justificada y documentada en el código: fila de alta inline sin entidad real, tabla editable compleja por celda/fila, preview técnico calculado en vivo, matriz dinámica no basada en registros, reporte composable con columnas libres, o un `<tfoot>`/comportamiento que `ZHDataTable` no expone.
-- `ZHDataTable` soporta `showRowNumber` para mostrar una columna auxiliar "N°". Debe usarse en listados principales donde ayude a ubicar registros. **No** usarla cuando la primera columna ya es un número funcional del negocio (número de factura/documento, secuencia real) ni en tablas internas de detalle/líneas de documento/previews técnicos. No representa el Id del registro y debe mantenerse visualmente secundario.
-- `ZHDataTable` acepta `tableClassName` (variantes ya documentadas en zh-ui.css: `table--compact`, `table--neutral`, `table--align-top`, `table--matrix`, `table--sticky-column`) y, por columna, `cellClassName` (p. ej. `zh-table-cell--num` para celdas numéricas con cifras tabulares; `zh-table-cell--actions` para la columna de acciones — patrones ERP en [`../docs/architecture/frontend.md § Patrones visuales ERP`](../docs/architecture/frontend.md#patrones-visuales-erp-zh-ds-erp-patterns-01)) — usarlas en vez de crear CSS local nuevo.
-- Las tablas manuales existentes deben migrarse gradualmente a `ZHDataTable`. En migraciones nuevas, usar `showRowNumber` para listados principales salvo excepción justificada.
-
-Tabla completa de estándares únicos (incluye modal, tabs, tabla, grid, toggle, íconos) y sus equivalentes deprecados: [`../docs/architecture/frontend.md § Design System`](../docs/architecture/frontend.md#design-system--estándares-únicos-obligatorios).
-
-## Prohibiciones
-
-- No crear otro input/select/textarea custom si existe componente ZH.
-- No crear otro badge/botón/KPI si existe equivalente.
-- No usar inline styles estáticos (`style={{...}}`) — excepción única: valores dinámicos (dimensiones calculadas, transforms, colores de datos).
-- No crear CSS local para estilos ya resueltos por `zh-ui.css`.
-- No duplicar tokens de `design-tokens.css`.
-- No borrar CSS por prefijo sin verificar consumidores TSX reales.
-- No modificar flujos auth/session sin auditoría (`authRefreshManager`, `fullLogout()` son las únicas puertas de entrada/salida de sesión).
-
-## CSS
-
-- `design-tokens.css` contiene tokens (colores, spacing, tipografía, sombras, radios).
-- `zh-ui.css` contiene componentes visuales reutilizables (`zh-*`).
-- `page-template.css` contiene patrones de página (`pg-*`).
-- CSS local (`{pagina}-page.css`) solo para layout/dominio específico de esa pantalla — prefijo propio del módulo.
-
-## Formularios
-
-- Todo nuevo formulario debe iniciar con componentes ZH (React Hook Form + Zod + `ZHField`/`ZhDecimalInput`/etc.).
-- HTML crudo permitido solo para:
-  - `email`, `password`, `checkbox` (fuera de `ZHToggle`), `radio`, `file`, `color`
-  - scanner/picker/autocomplete especializado (`ZhWarehouseSelector`, `CustomerPicker`, `SupplierSearchSelect`)
-  - tablas editables
-  - SRI crítico
-  - IAM/permisos
-  - stock/logística crítica (cuando el control tiene semántica de negocio que un input genérico ZH no captura — documentar el motivo en el código, nunca asumir por nombre de módulo)
-
-## Launcher
-
-- Mantener apertura en nueva pestaña si el flujo existente lo requiere.
-- No cambiar comportamiento `target="_blank"` sin aprobación.
-
-## Auditoría de reutilización obligatoria
-
-Antes de escribir UI nueva, declarar explícitamente: (1) qué plantillas oficiales se revisaron, (2) qué componentes existentes se reutilizan, (3) qué se extiende y cómo, (4) justificación técnica de cualquier componente nuevo, (5) confirmación de que no existe un equivalente. Detalle: [`../docs/architecture/frontend.md § Reutilización obligatoria`](../docs/architecture/frontend.md#reutilización-obligatoria--auditoría-previa-a-crear-ui).
+| Tarea | Fuente oficial |
+|---|---|
+| Módulos, componentes, CSS, tablas, i18n y reutilización | [Frontend](../docs/architecture/frontend.md) |
+| Formularios | [Validación](../docs/architecture/form-validation.md) |
+| Modales y mensajes | [Modal](../docs/architecture/modal-standard.md), [mensajes](../docs/architecture/visual-messages.md) |
+| Precisión y fechas | [Estándares de datos](../docs/architecture/data-standards.md) |
+| Auth/session y errores | [Seguridad](../docs/architecture/security.md), [errores](../docs/architecture/error-handling.md) |
+| Gates de revisión | [Catálogo PR](../docs/architecture/pr-rules-catalog.md), [enforcement](../docs/architecture/enforcement.md) |

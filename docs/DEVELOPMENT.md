@@ -1,6 +1,6 @@
 # Desarrollo — arranque, stack y operación
 
-Guía operativa para contribuidores y agentes (arranque local, Docker, tests, versiones de stack). Reglas normativas (naming, multi-tenant, migraciones, capas): [`docs/architecture/`](architecture/README.md) — no repetidas aquí, ver Bloque 16A/16B.
+Guía operativa para contribuidores y agentes (arranque local, Docker, tests, versiones de stack). Reglas normativas (naming, multi-tenant, migraciones, capas): [`docs/architecture/`](architecture/README.md) — no repetidas aquí.
 
 **Stack permitido:** sección [Stack oficial](#stack-oficial) (verificado por `scripts/ci/verify-stack-allowlist.ps1` y `scripts/stack-allowlist.json`). Reglas: [`docs/architecture/stack.md`](architecture/stack.md).
 
@@ -16,12 +16,11 @@ Reglas multi-tenant (`IgnoreQueryFilters()`, `company_id` del body, `ICurrentTen
 
 > **Fuera del ERP Core (histórico / futura Platform externa):** `ICommercialPlanLimitService`, `IBillingGovernanceService` e invalidación de cache de entitlements pertenecían al Control Plane SaaS eliminado en FASE 1 (ver [`ERP_CORE_FREEZE.md`](../ERP_CORE_FREEZE.md), [`STATUS.md`](../STATUS.md)). No son reglas vigentes del ERP Core — se conservan como referencia histórica y como posible contrato de una futura Platform externa, no como requisito de desarrollo actual.
 
-### Checklist caso de uso ERP nuevo
+### Caso de uso ERP nuevo
 
-1. Handler en namespace acotado (Sales, Inventory, …) **o** `ICompanyScopedRequest`
-2. Pasar `companyId` desde `ICurrentCompany` a factories (Wave 1+)
-3. `ITenantOnlyRequest` solo en endpoints platform reales
-4. Seed de permiso si aplica nuevo `perm:*`
+Aplicar el [flujo por fase](architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase)
+y los contratos de [scope y seguridad](architecture/security.md).
+Contribución y Git: [CONTRIBUTING](../CONTRIBUTING.md).
 
 ---
 
@@ -119,7 +118,7 @@ Datos de instalación: `InstallData/*.sql` — ver [DATABASE.md](./DATABASE.md).
 
 ## Stack oficial
 
-Fuente de verdad para agentes: [`docs/architecture/stack.md`](architecture/stack.md) · `.cursor/rules/stack-tools-source-of-truth.mdc`.
+Esta sección mantiene la lista y versiones oficiales. La [política de herramientas](architecture/stack.md) la referencia; los adaptadores no mantienen otra lista.
 
 ### Runtime
 
@@ -144,7 +143,7 @@ Fuente de verdad para agentes: [`docs/architecture/stack.md`](architecture/stack
 
 ### Frontend
 
-React 19, TypeScript, Vite, React Router v7, React Hook Form + Zod, Axios, Zustand, Recharts, i18next (`es`, `en`, `qu`), ESLint, Vitest, Playwright, `decimal.js` (aritmética decimal de `lib/sanitizers.ts` y cálculos de compras/ventas). Tests unitarios: Vitest + `jsdom` + `@testing-library/react` (con su peer `@testing-library/dom`).
+React 19, TypeScript, Vite, React Router v7, React Hook Form + Zod, Axios, Zustand, Recharts, i18next (`es`, `en`), ESLint, Vitest, Playwright, `decimal.js` (aritmética decimal de `lib/sanitizers.ts` y cálculos de compras/ventas). Tests unitarios: Vitest + `jsdom` + `@testing-library/react` (con su peer `@testing-library/dom`).
 
 ### Tests backend
 
@@ -173,16 +172,8 @@ Kubernetes, Terraform, RabbitMQ, Kafka, Prometheus, Datadog, SQL Server — bloq
 
 Política completa: [DATABASE.md](./DATABASE.md#migraciones).
 
-Fresh DB (solo dev):
-
-```sql
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
-GRANT ALL ON SCHEMA public TO postgres;
-GRANT ALL ON SCHEMA public TO public;
-```
-
-Luego `dotnet ef database update`.
+Reset local y sus autorizaciones: [First Run](architecture/first-run.md#reset-local).
+No mantener procedimientos SQL alternativos al launcher oficial.
 
 ---
 
@@ -237,12 +228,11 @@ Primer usuario del sistema: ver [First Run](architecture/first-run.md).
 | 3 | Login → JWT con `tenant_id` |
 | 4 | Switch company → `AuthResponseDto.CompanyId` actualizado |
 | 5 | ERP sin header `X-Company-Id` → 403 |
-| 6 | Crear company sobre `MAX_COMPANIES` → 403 |
+| 6 | Validar permisos de creación de empresa según [Seguridad](architecture/security.md) |
 
 ---
 
-## Patrones futuros (no implementados)
+## Planificación
 
-- Transactional outbox
-- Distributed locks para cuotas
-- Concurrencia optimista en agregados calientes
+Consultar [ROADMAP](ROADMAP.md). El comportamiento vigente de Domain Events y
+Outbox se define en [events.md](architecture/events.md).

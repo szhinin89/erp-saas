@@ -6,20 +6,8 @@ alwaysApply: false
 
 # CQRS y validación (adaptador Cursor)
 
-**Canónico:** [`docs/architecture/backend.md`](../../docs/architecture/backend.md) · [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md)
+- [Reglas globales](../../CLAUDE.md).
+- [CQRS y Result](../../docs/architecture/backend.md).
+- [Validación y gates](../../docs/architecture/enforcement.md).
 
-- Commands/Queries deben pasar por MediatR (evitar handlers inyectados directo en controller).
-- Cada command/query con entrada de usuario debe tener validator (FluentValidation).
-- Mantener `ValidationBehavior` en pipeline para ejecutar validadores.
-- Casos de uso retornan `Result<T>` para errores esperados de negocio.
-
-## Contratos HTTP asociados
-
-- Las reglas HTTP de controllers viven en `backend-api-contracts.mdc`.
-- Mantener consistencia de errores para que API pueda mapear `Result<T>` sin ambiguedades.
-
-## Evitar
-
-- Validación sólo en frontend.
-- Throw genérico para errores de negocio esperados.
-- Respuestas HTTP armadas manualmente en cada controller.
+Este adaptador conserva su activación y remite a las fuentes oficiales; no define reglas propias.

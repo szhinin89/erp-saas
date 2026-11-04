@@ -14,13 +14,9 @@
 
 ## 0. Precedencia
 
-| Orden | Fuente | Aplica cuando |
-|-------|--------|----------------|
-| 1 | Seguridad / multi-tenant / billing | Siempre |
-| 2 | Este documento (`docs/architecture/pr-rules-catalog.md`) | Diseño e implementación |
-| 3 | Otros `docs/architecture/*` por área | Detalle operativo |
-| 4 | `.cursor/rules/*.mdc` | Hints Cursor por glob |
-| 5 | [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) | Contexto y diagramas |
+Aplicar la [jerarquía oficial de CLAUDE.md](../../CLAUDE.md#jerarquía-documental).
+Los [gates técnicos](enforcement.md#jerarquía-de-documentación-y-precedencia)
+se aplican bajo esa jerarquía; este catálogo no establece otro orden.
 
 ---
 
@@ -909,7 +905,7 @@ Sesión vía patrón existente + refresh en interceptor Axios; secretos solo bac
 ## SEC-01b — Roles: fuente única `SecurityRoles` / `isAdminRole`
 
 ### RULE
-Comparaciones de rol Admin **solo** vía `ERP.Domain.Kernel.Security.SecurityRoles.Admin` (backend) o `isAdminRole(role)` de `frontend/src/access/permissionUi.ts` (frontend). **Prohibido** literal `"Admin"`/`"admin"`/`role === 'Admin'`/`role.toLowerCase() === 'admin'` ad-hoc fuera de esos puntos únicos. Contrato completo: [SECURITY.md — Security & Access Contract V1 — LOCKED](SECURITY.md#security--access-contract-v1--locked).
+Comparaciones de rol Admin **solo** vía `ERP.Domain.Kernel.Security.SecurityRoles.Admin` (backend) o `isAdminRole(role)` de `frontend/src/access/permissionUi.ts` (frontend). **Prohibido** literal `"Admin"`/`"admin"`/`role === 'Admin'`/`role.toLowerCase() === 'admin'` ad-hoc fuera de esos puntos únicos. Contrato completo: [Seguridad — Security & Access Contract V1 — LOCKED](security.md#security--access-contract-v1--locked).
 
 ### WHY
 Comparaciones de rol duplicadas divergen (ej. `ConfigContext` comparaba `role.toLowerCase() === 'admin'` mientras `isAdminRole` usaba `'Admin'` exacto) y generan accesos inconsistentes entre pantallas.

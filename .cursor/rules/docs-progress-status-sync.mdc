@@ -4,13 +4,10 @@ globs: "{STATUS.md}"
 alwaysApply: false
 ---
 
-# Sincronización de documentación de avance
+# Documentación de avance (adaptador Cursor)
 
-**Canónico:** [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md#sincronización-docs-de-avance). Este adaptador no agrega reglas.
+- [Reglas globales](../../CLAUDE.md).
+- [Actualización de código, pruebas y documentación](../../docs/architecture/enforcement.md#ssot-por-módulo).
+- [Sincronización de avance](../../docs/architecture/enforcement.md#sincronización-docs-de-avance).
 
-- **`STATUS.md`** — única autoridad de estado de entrega, gates, cierres y riesgos vigentes.
-- **`FEATURES.md`** — capacidades actuales con enlace a su SSOT.
-- **`docs/agent/WORK_QUEUE.md`** — solo trabajo abierto autorizado.
-- **`docs/ROADMAP.md`** — planificación futura, sin autoridad funcional.
-
-Las reglas funcionales viven únicamente en `docs/architecture/*`; no copiarlas en estos documentos.
+Este adaptador conserva su activación y remite a las fuentes oficiales; no define reglas propias.

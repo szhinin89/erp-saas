@@ -8,15 +8,8 @@ Este archivo existe para compatibilidad con enlaces históricos, CI y revisores 
 
 ## Jerarquía
 
-| Prioridad | Fuente |
-|-----------|--------|
-| 1 | Seguridad / multi-tenant / billing |
-| 2 | [`docs/architecture/pr-rules-catalog.md`](architecture/pr-rules-catalog.md) |
-| 3 | Otros [`docs/architecture/`](architecture/README.md) por área |
-| 4 | `.cursor/rules/*.mdc` (hints Cursor) |
-| 5 | [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) (contexto) |
-
-Ver [docs/architecture/enforcement.md § Jerarquía](architecture/enforcement.md#jerarquía-de-documentación-y-precedencia).
+Jerarquía oficial: [CLAUDE.md](../CLAUDE.md#jerarquía-documental).
+Gates técnicos: [enforcement](architecture/enforcement.md#jerarquía-de-documentación-y-precedencia).
 
 ---
 

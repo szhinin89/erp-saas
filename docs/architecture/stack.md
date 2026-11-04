@@ -17,34 +17,11 @@ Cursor adapter: `.cursor/rules/stack-tools-source-of-truth.mdc`
 
 ---
 
-## Resumen runtime
+## Referencias por responsabilidad
 
-| Área | Herramienta |
-|------|-------------|
-| Backend | .NET 10 (`global.json` raíz) |
-| ORM | EF Core + Npgsql |
-| CQRS | MediatR |
-| Validación | FluentValidation |
-| Auth | JWT Bearer |
-| Cache | Redis 7 |
-| Jobs | Hangfire + PostgreSQL |
-| Logs | Serilog |
-| BD | PostgreSQL 16 (Docker, puerto 5435) |
-| Contenedores | Docker Compose (raíz repo) |
-| Frontend | React 19, TS, Vite, React Router v7, RHF + Zod, Axios, Zustand, i18next (`es`,`en`) |
-| Tests BE | xUnit, Moq, FluentAssertions, `WebApplicationFactory` |
-| Tests FE | Vitest, Playwright, ESLint |
-
----
-
-## NEVER (stack / schema)
-
-Ver también `docs/DEVELOPMENT.md`:
-
-- Migraciones `.cs` a mano sin `dotnet ef migrations add`
-- `Subscriber` en código o schema nuevo (retirado, usar `Tenant`)
-- Stripe SDK dentro de handlers MediatR
-- Mezclar billing SaaS con facturas ERP
+Lista y versiones: [DEVELOPMENT](../DEVELOPMENT.md#stack-oficial).
+Migraciones: [DATABASE](../DATABASE.md#migraciones).
+Frontera ERP ↔ Platform: [Arquitectura](architecture.md#reglas-de-arquitectura-que-no-se-rompen).
 
 ---
 
@@ -53,4 +30,4 @@ Ver también `docs/DEVELOPMENT.md`:
 1. Actualizar `docs/DEVELOPMENT.md#stack-oficial`
 2. Actualizar `scripts/stack-allowlist.json`
 3. Documentar decisión (ADR si aplica)
-4. **No** duplicar la lista completa fuera de `docs/DEVELOPMENT.md` y este resumen
+4. Mantener la lista completa únicamente en `docs/DEVELOPMENT.md#stack-oficial`.

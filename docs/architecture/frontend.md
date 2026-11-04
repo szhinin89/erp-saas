@@ -150,6 +150,22 @@ y debe migrarse al tocar el archivo.
 
 Nota: `pf-badge`, `prd-status-badge`, `pg-kpi-badge`, `md-badge` **no** están deprecados — son variantes con semántica propia (status dot de 2 estados, tendencia de KPI) no consolidadas todavía en `Badge`. No copiar su patrón para casos nuevos que sí encajen en `Badge` (etiqueta simple con color semántico).
 
+### Uso y mantenimiento de los estándares existentes
+
+- `showRowNumber` muestra una columna auxiliar «N°» en listados principales donde
+  ayude a ubicar registros. No usarla si la primera columna ya es un número funcional
+  del negocio, ni en detalles/líneas de documento o previews técnicos. No representa el
+  Id y debe mantenerse visualmente secundaria. Adoptarla en nuevas migraciones de
+  listados principales salvo excepción justificada; las tablas manuales existentes
+  se migran gradualmente, respetando las excepciones del estándar.
+- No borrar CSS por prefijo sin verificar consumidores TSX reales.
+- No usar inline styles estáticos (`style={{...}}`); la excepción son valores
+  dinámicos (dimensiones calculadas, transforms, colores de datos).
+- Mantener la apertura en nueva pestaña cuando el flujo existente lo requiera;
+  no cambiar `target="_blank"` sin aprobación.
+- No modificar flujos auth/session sin auditoría; `authRefreshManager` y
+  `fullLogout()` son las puertas únicas de entrada/salida de sesión.
+
 ### Incidencias flotantes de linea (ZH-DS-LINE-ISSUES-01)
 
 Componente unico: `ZHLineIssuesTag`, exportado por `components/zh/notices`. Compone
@@ -490,7 +506,7 @@ Solo `authRefreshManager` (Web Locks + BroadcastChannel). Detalle tokens: [SECUR
 
 ## Validación formularios
 
-Zod + `zodResolver` + react-hook-form. Schema en `schemas/{modulo}/`. Ver [ENFORCEMENT.md](./ENFORCEMENT.md).
+Zod + `zodResolver` + react-hook-form. Schema en `schemas/{modulo}/`. Ver [enforcement](./enforcement.md).
 
 ---
 
@@ -502,4 +518,5 @@ Ningún componente/página interpreta `error.response.data` directamente. Pipeli
 
 ## CI frontend
 
-`npm run lint`, `npx tsc --noEmit`, `npm run build`, Playwright smoke (`.github/workflows/frontend-ci.yml`).
+Checks según el cambio y distribución CI/E2E: [enforcement](enforcement.md#tests-pre-merge)
+y [Desarrollo](../DEVELOPMENT.md#e2e-playwright). El workflow frontend no ejecuta Playwright.

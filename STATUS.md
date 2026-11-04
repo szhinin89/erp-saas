@@ -1,5 +1,30 @@
 # Project Status
 
+## DOC-GOVERNANCE-CONSOLIDATION — READY FOR REVIEW (2026-11-04)
+
+BUG REAL documental: entradas Cursor/Copilot y catálogo PR con jerarquías paralelas,
+requisitos SaaS/i18n obsoletos, enlaces con mayúsculas incorrectas y procedimientos
+alternativos de reset/validación. Consolidación bajo CLAUDE.md; entradas Codex y Claude
+separadas, con las mismas lecturas. Detalles únicos de adaptadores y Carga Inicial
+trasladados a las SSOT existentes; no cambia el comportamiento del ERP.
+KEEP: documentos con consumidores y evidencia histórica; ninguno eliminado.
+FALTA cubierta: el runner de arquitectura incorpora enlaces/anclas y referencias
+estructurales de autoridad; el analizador del dashboard no ofrecía ese gate.
+DEBT: la coherencia semántica de negocio requiere revisión humana; no se automatiza
+mediante heurísticas ni se reabren módulos CLOSED/FROZEN.
+
+Validación focal agente: check documentation PASS; pruebas del control, ratchet e
+integridad grandfather 31/31 PASS. Sin suites generales, BD ni migraciones.
+Revisión final del diff y git diff --check PASS. Gate reproducible del propietario:
+
+```powershell
+node tools/architecture/run-all.mjs --only documentation
+node --test tools/architecture/ratchet.test.mjs tools/architecture/check-grandfather-integrity.test.mjs
+git diff --check
+```
+
+Sin staging, commit ni push; gate del propietario pendiente, no CLOSED.
+
 ## CUSTOMER-SALES-SETTINGS-UX-FIX-01 — READY FOR REVIEW (2026-11-03)
 
 BUG REAL: `saveSettings()` iniciaba `openSettings()` sin esperarlo; su respuesta

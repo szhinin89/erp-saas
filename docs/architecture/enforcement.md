@@ -30,8 +30,8 @@ Reglas estrictas:
 3. **Sin documentación obsoleta:** eliminar documentos sustituidos, reglas antiguas y
    contradicciones. En preproducción no se conservan reglas por compatibilidad histórica.
 4. **Referencias, no duplicaciones:** los documentos generales enlazan a la SSOT.
-5. **Actualización obligatoria:** toda modificación funcional actualiza la SSOT
-   correspondiente dentro de la misma fase.
+5. **Actualización obligatoria:** código, pruebas pertinentes y SSOT correspondiente
+   se actualizan en el mismo ciclo de trabajo y fase; no posponer su sincronización.
 6. **Sin enlaces rotos:** antes de cerrar una fase, verificar que los enlaces modificados,
    sus anclas y los documentos referenciados existen.
 7. **Sin rutas paralelas:** no conservar implementaciones antiguas, fallbacks ni adaptadores
@@ -68,12 +68,12 @@ Regla de trabajo del agente acordada con el propietario (2026-10-25):
 
 Protocolo obligatorio: **revisar lo implementado → validar funcionalmente → corregir únicamente bugs reales → documentar → cerrar → avanzar**, respetando los gates y responsables siguientes.
 
-1. Leer `CLAUDE.md`, `STATUS.md`, `FEATURES.md` y la SSOT vigente del módulo, además de las lecturas requeridas por `AGENTS.md`.
+1. Leer `CLAUDE.md`, `STATUS.md`, `FEATURES.md` y la SSOT vigente del módulo, además de las lecturas comunes de [CLAUDE.md](../../CLAUDE.md#antes-de-actuar).
 2. Trabajar en un chat nuevo por fase, con alcance acotado.
 3. Revisar de forma focal lo implementado dentro del alcance autorizado, sin auditorías generales, y clasificar los hallazgos como `KEEP`, `BUG REAL`, `DEBT` o `FALTA`. Validar funcionalmente según el tipo de cambio y los checks aplicables; una tarea exclusivamente documental no requiere pruebas funcionales.
 4. Resolver las decisiones funcionales con el propietario antes de implementar. Ante contradicción de negocio o dominio no definido, detenerse y reportar únicamente la decisión necesaria; no asumir reglas.
 5. En la revisión de lo implementado, corregir únicamente BUG REAL: reproducir antes y aplicar el fix mínimo mediante una implementación corta y focalizada, sin refactors fuera de alcance.
-6. Ejecutar pruebas focales pequeñas y entregar al propietario los comandos concretos para el gate intermedio en su PowerShell. Mantener los checks obligatorios aplicables; usar PostgreSQL real para concurrencia, transacciones, scope, locks e invariantes de persistencia.
+6. Ejecutar pruebas focales pequeñas y entregar al propietario los comandos concretos para el gate intermedio en su PowerShell. Mantener los checks obligatorios aplicables; usar PostgreSQL real para concurrencia, transacciones, scope, locks e invariantes de persistencia; no sustituirlo por SQLite, in-memory ni mocks para esos casos.
 7. Esperar el resultado del gate ejecutado por el propietario: `PASS` o `FAIL`. Las pruebas del agente no sustituyen este gate.
 8. Si es `FAIL`, corregir de forma focalizada, ejecutar las pruebas pertinentes y volver al gate del propietario. Si es `PASS`, realizar la revisión final del diff y la documentación.
 9. El propietario realiza staging y commit. El agente no ejecuta esas operaciones.
@@ -144,16 +144,29 @@ Cursor hint: `.cursor/rules/docs-progress-status-sync.mdc`.
 
 ## Tests pre-merge
 
-```powershell
-cd backend
-dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj
-dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj
-cd frontend && npx tsc --noEmit && npm run build && npm run architecture:check
-```
+Aplicar únicamente los checks correspondientes al cambio:
+
+| Cambio | Gate técnico |
+|---|---|
+| Backend | `dotnet test` de los proyectos/filtros afectados; PostgreSQL real para los casos del flujo por fase |
+| Frontend | Desde `frontend/`: `npm run lint`, `npx tsc --noEmit`, `npm run build` |
+| Arquitectura/código | Desde `frontend/`: `npm run architecture:check` (ratchet oficial) |
+| Solo documentación | `node tools/architecture/run-all.mjs --only documentation`, referencias modificadas y `git diff --check`; sin pruebas funcionales |
+
+Pruebas focales y gate del propietario: [flujo por fase](#flujo-obligatorio-del-agente-por-fase).
+Comandos de operación y distribución CI/E2E: [DEVELOPMENT](../DEVELOPMENT.md#tests).
 
 ---
 
 ## Guardrails automatizados
+
+### Documentación (control focal sin red)
+
+El check `documentation` de `run-all.mjs`, incorporado al runner y CI existentes,
+protege los destinos y anclas Markdown de las entradas principales, fuentes técnicas
+y adaptadores. Valida referencias de autoridad y rechaza listas de precedencia
+paralelas en las entradas. [Alcance, límites y pruebas](../../tools/architecture/README.md#protección-documental).
+No pretende inferir contradicciones de negocio ni validar todos los archivos históricos.
 
 ### Backend / monorepo (PowerShell + .NET)
 
@@ -169,7 +182,8 @@ cd frontend && npx tsc --noEmit && npm run build && npm run architecture:check
 
 | Script | Comando | Qué valida |
 |--------|---------|------------|
-| Runner | `npm run architecture:check` (desde `frontend/`) | Ratchet tests + 20 checks + score + JSON report |
+| Runner | `npm run architecture:check` (desde `frontend/`) | Pruebas de guardrails + checks registrados + ratchet + score + JSON report |
+| Documentación | `node tools/architecture/run-all.mjs --only documentation` (raíz) | Enlaces locales, anclas y referencias de autoridad de las entradas de agentes; sin red |
 | Pages wrapper | `npm run architecture:pages` | `pages/**/*.tsx` ≤15 líneas, sin hooks/api |
 | Import boundaries | `npm run architecture:imports` | Imports prohibidos, profundidad relativa |
 | Module boundaries | `npm run architecture:modules` | Pares de módulos que nunca pueden depender entre sí (`forbiddenCrossImports`) |
@@ -277,11 +291,11 @@ Ramas y CI: ver [architecture.md § CI y ramas](./architecture.md#ci-y-ramas) (c
 
 # Compatibilidad multi-agente
 
-Arquitectura para que **Cursor**, **Claude** y futuros agentes lean la misma verdad sin drift documental.
+Entradas para que **Codex**, **Claude**, **Cursor** y futuros agentes consuman la [misma jerarquía](../../CLAUDE.md#jerarquía-documental).
 
 ## Fuente canónica
 
-**`docs/architecture/*`** es la única fuente donde viven las reglas completas (sustituye al antiguo `AI-RULES/*`, ver [`docs/architecture/README.md`](README.md)).
+Reglas globales: [CLAUDE.md](../../CLAUDE.md). Arquitectura y contratos por dominio: [índice canónico](README.md), bajo esa jerarquía.
 
 Ningún agente debe inventar convenciones fuera de estos archivos sin confirmación explícita del usuario.
 
@@ -290,6 +304,7 @@ Ningún agente debe inventar convenciones fuera de estos archivos sin confirmaci
 | Agente | Punto de entrada | Qué lee en la práctica |
 |--------|------------------|------------------------|
 | **Cursor** | `.cursor/rules/*.mdc` (`alwaysApply`, `globs`) | Adaptadores livianos → enlaces a `docs/architecture/*` |
+| **Codex** | [`AGENTS.md`](../../AGENTS.md) → [`CLAUDE.md`](../../CLAUDE.md) | Mismas reglas globales, lecturas y fuentes técnicas |
 | **Claude Code** | `CLAUDE.md`, `backend/CLAUDE.md`, `frontend/CLAUDE.md` | Onboarding + índice → enlaces a `docs/architecture/*` |
 | **Humanos / PR** | `CONTEXT.md` | Índice → [pr-rules-catalog.md](./pr-rules-catalog.md) |
 | **Futuros agentes** | [`docs/architecture/README.md`](./README.md) | Mismo índice canónico |
@@ -304,7 +319,8 @@ Los adaptadores **no duplican** reglas extensas. Solo:
 
 | Adaptador | Propósito |
 |-----------|-----------|
-| `CLAUDE.md` | Entrada Claude; jerarquía documental, precedencia, resumen de reglas globales |
+| `AGENTS.md` | Entrada Codex; enlace a las reglas y lecturas comunes |
+| `CLAUDE.md` | Entrada Claude y autoridad global común para todos los agentes |
 | `backend/CLAUDE.md` | Entrada backend; complementa `CLAUDE.md`, enlaza a `docs/architecture/*` |
 | `frontend/CLAUDE.md` | Entrada frontend; complementa `CLAUDE.md`, enlaza a `docs/architecture/*` |
 | `erp-unified-rules.mdc` | Regla transversal Cursor (`alwaysApply: true`) |
@@ -329,18 +345,16 @@ Detalle por check: [§ Guardrails automatizados](#guardrails-automatizados) más
 
 ## CI Authority
 
-Si entran en conflicto **prompts de IA**, **documentación** o **código sugerido** con el resultado de CI:
-
-1. **Scripts ejecutables** (`tools/architecture/*.mjs`, guardrails PowerShell, tests) son el gate técnico obligatorio. Su resultado no redefine las reglas globales del propietario ni autoriza omitirlas; una discrepancia se resuelve explícitamente, sin ignorar el gate.
-2. **`CLAUDE.md`** conserva la precedencia global del propietario. `docs/architecture/*` contiene el detalle canónico y prevalece sobre adaptadores de capa y `.mdc` cuando no contradice esas reglas globales.
-3. **ADRs** (`docs/decisions/`) explican el *por qué*; no anulan un check que falla en CI sin ADR + cambio de config.
-4. Los agentes deben **corregir el código** o **proponer cambio en config/ADR**, no ignorar el fallo del pipeline.
+Aplicar [CLAUDE.md](../../CLAUDE.md#jerarquía-documental) y los
+[gates técnicos](#jerarquía-de-documentación-y-precedencia). Un agente corrige el
+incumplimiento o propone un cambio explícito de configuración/ADR; no ignora CI.
+Los ADRs no anulan un check sin el cambio de configuración correspondiente.
 
 Rationale histórico: [`docs/decisions/ADR-006-multi-agent-governance.md`](../decisions/ADR-006-multi-agent-governance.md).
 
 ## Integrar un agente nuevo
 
-1. Leer este documento y [`docs/architecture/README.md`](./README.md).
+1. Leer [CLAUDE.md](../../CLAUDE.md), este documento y el [índice canónico](./README.md).
 2. Crear un adaptador mínimo (≤80 líneas) que enlace a `docs/architecture/*`.
 3. **No** copiar cuerpos completos de reglas al adaptador.
 4. Registrar el adaptador en [`docs/architecture/README.md`](./README.md) y `CONTEXT.md`.
@@ -349,22 +363,17 @@ Rationale histórico: [`docs/decisions/ADR-006-multi-agent-governance.md`](../de
 
 # Jerarquía de documentación y precedencia
 
-Orden de autoridad cuando varias fuentes aplican al mismo cambio.
+La [jerarquía documental única está en CLAUDE.md](../../CLAUDE.md#jerarquía-documental). Esta sección detalla la aplicación técnica bajo esas reglas globales.
 
 ## Capas de aplicación bajo las reglas globales
 
-| # | Capa | Ubicación | Rol |
-|---|------|-----------|-----|
-| 0 | **Reglas globales del propietario** | `CLAUDE.md` | Precedencia documental global |
-| 1 | **Scripts ejecutables + CI** | `tools/architecture/*.mjs`, guardrails PS | Bloquean merge si fallan |
-| 2 | **Seguridad / multi-tenant** | [security.md](./security.md) | Innegociable |
-| 3 | **Catálogo PR bloqueante** | [pr-rules-catalog.md](./pr-rules-catalog.md) | B-xx / F-xx |
-| 4 | **Reglas canónicas por área** | [architecture.md](./architecture.md), [backend.md](./backend.md), [frontend.md](./frontend.md), este documento | Implementación diaria |
-| 5 | **Stack y herramientas** | [stack.md](./stack.md) → `docs/DEVELOPMENT.md#stack-oficial` | Solo herramientas aprobadas |
-| 6 | **Adaptadores de agente** | `backend/CLAUDE.md`, `frontend/CLAUDE.md`, `.cursor/rules/*.mdc` | Índice + hints bajo CLAUDE.md |
-| 7 | **Contexto descriptivo** | `CONTEXT.md`, `docs/ARCHITECTURE.md`, `STATUS.md` | Estado, diagramas |
-| 8 | **ADRs (rationale)** | [`docs/decisions/`](../decisions/README.md) | **Por qué** se decidió (no enforcement) |
-| 9 | **Docs feature-specific** | `docs/*` | Detalle de dominio |
+- CI y scripts ejecutables son gates obligatorios; su resultado no redefine las
+  reglas globales ni permite omitirlas. Una discrepancia se resuelve explícitamente.
+- Seguridad y aislamiento multi-tenant son innegociables; el catálogo PR define las
+  reglas bloqueantes y cada SSOT conserva su detalle específico.
+- Entre reglas técnicas compatibles se aplica la más específica del área.
+- Los `globs` seleccionan qué referencia de agente se lee; no dan precedencia a
+  una copia frente a su fuente oficial.
 
 ### ADRs vs docs/architecture/*
 
@@ -376,11 +385,9 @@ Orden de autoridad cuando varias fuentes aplican al mismo cambio.
 
 ## Resolución de conflictos
 
-1. **Resultado de CI/scripts** prevalece sobre sugerencias de agentes IA.
-2. **Seguridad / tenant / billing** prevalece sobre conveniencia o velocidad.
-3. Entre reglas canónicas: la regla **más específica por área** gana.
-4. `CLAUDE.md` prevalece como regla global del propietario; `docs/architecture/*` es el detalle canónico. Un conflicto se corrige y nunca autoriza omitir un gate de CI.
-5. `.cursor/rules/*.mdc` con `globs` aplican sobre reglas generales **solo en su alcance**.
+Aplicar la [jerarquía oficial](../../CLAUDE.md#jerarquía-documental) y el
+[flujo de decisiones del propietario](#flujo-obligatorio-del-agente-por-fase).
+No inventar soluciones a contradicciones de negocio ni omitir gates fallidos.
 
 ## Qué NO es fuente de verdad
 

@@ -4,36 +4,10 @@ globs: frontend/src/**/*.{ts,tsx}
 alwaysApply: false
 ---
 
-# Frontend sin dialogs nativos
+# Diálogos frontend (adaptador Cursor)
 
-**Canónico:** [`docs/architecture/frontend.md`](../../docs/architecture/frontend.md#diálogos)
+- [Reglas globales](../../CLAUDE.md).
+- [Diálogos](../../docs/architecture/frontend.md#diálogos).
+- [Modal oficial](../../docs/architecture/modal-standard.md).
 
-## Regla
-
-- No usar `window.prompt`, `window.confirm`, `window.alert`, ni sus aliases globales (`prompt`, `confirm`, `alert`) en UI.
-- Usar componentes reutilizables del sistema:
-  - Confirmaciones: `ZHConfirmModal`
-  - Entrada de texto tipo prompt: `ZHPromptModal`
-  - Flujos complejos: `Modal` + controles `ZH*`
-
-## Patrón requerido
-
-- El modal se controla con estado React (`isOpen`, `pendingAction`, `draft`, etc.).
-- Las acciones de confirmación/cancelación deben vivir en callbacks explícitos (`onConfirm`, `onCancel`).
-- El texto de confirmación debe ser claro y específico del dominio (ej. “¿Cancelar transferencia?”).
-
-## Ejemplos
-
-```tsx
-// ❌ NO
-if (confirm('¿Eliminar?')) onDelete();
-
-// ✅ SI
-<ZHConfirmModal
-  title="Eliminar registro"
-  message="¿Deseas eliminar este registro?"
-  onConfirm={onDelete}
-  onCancel={() => setOpen(false)}
-/>
-```
-
+Este adaptador conserva su activación y remite a las fuentes oficiales; no define reglas propias.

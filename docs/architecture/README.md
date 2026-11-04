@@ -2,7 +2,7 @@
 
 **Única fuente de verdad** de comportamiento y contratos implementados, bajo las reglas globales de `CLAUDE.md`.
 
-Cursor, Claude y futuros agentes deben leer **estos archivos** antes de inventar convenciones. `CLAUDE.md`, `backend/CLAUDE.md` y `frontend/CLAUDE.md` son **adaptadores** que enlazan aquí — no duplican el cuerpo de las reglas.
+La [jerarquía oficial](../../CLAUDE.md#jerarquía-documental) y las reglas globales son comunes a Codex, Claude y Cursor. `AGENTS.md` y los adaptadores de capa remiten a esas reglas y a este índice; no definen otra normativa.
 
 Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECTURE.md). ADRs (decisiones arquitectónicas vigentes y su justificación, no otra especificación funcional): [`../decisions/`](../decisions/README.md).
 
@@ -24,6 +24,9 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 | [security.md](./security.md) | Auth, JWT, tokens, aislamiento tenant, **SaaS — IDs sensibles fuera de la URL** |
 | [company-readiness.md](./company-readiness.md) | Preparación operativa de empresa: matriz dato → propietario → validador → capacidades, estados y contrato del diagnóstico |
 | [first-run.md](./first-run.md) | Instalación inicial: token de un solo uso, propietario exclusivo, alta inicial, `/setup`, launcher y reset local |
+| [data-standards.md](./data-standards.md) | Precisión numérica y contrato temporal único |
+| [form-validation.md](./form-validation.md) | Contrato de validación de formularios |
+| [frozen-infrastructure.md](./frozen-infrastructure.md) | Restricciones de infraestructura CLOSED/FROZEN |
 | [stack.md](./stack.md) | Herramientas permitidas (detalle en `docs/DEVELOPMENT.md`) |
 | [naming.md](./naming.md) | Convenciones de nombres (BD, código, i18n, CSS) |
 | [pr-rules-catalog.md](./pr-rules-catalog.md) | Catálogo normativo B-xx / F-xx (bloqueante PR) |
@@ -33,7 +36,6 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 | [visual-messages.md](./visual-messages.md) | **FROZEN** — API `message.*`, store encapsulado (ADR-018) |
 | [modal-standard.md](./modal-standard.md) | **FROZEN** — Componente oficial `ZHModal` |
 | [error-handling.md](./error-handling.md) | Contrato único de errores Backend↔Frontend, categorías, mapeo HTTP, reglas E-B/E-F (ADR-027) |
-| [saas-commercial-flow.md](./saas-commercial-flow.md) | Flujo comercial SaaS (histórico/Platform, fuera de alcance ERP Core — ver `ERP_CORE_FREEZE.md`) |
 | [`docs/decisions/`](../decisions/README.md) | ADRs — rationale arquitectónico (no duplicar reglas de enforcement aquí) |
 
 ---
@@ -42,6 +44,7 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 
 | Agente / entrada | Archivo |
 |------------------|---------|
+| Codex | [AGENTS.md](../../AGENTS.md) → [CLAUDE.md](../../CLAUDE.md) |
 | Claude Code (global) | [`/CLAUDE.md`](../../CLAUDE.md) |
 | Claude Code (backend) | [`/backend/CLAUDE.md`](../../backend/CLAUDE.md) |
 | Claude Code (frontend) | [`/frontend/CLAUDE.md`](../../frontend/CLAUDE.md) |
@@ -53,6 +56,12 @@ Diagramas/estado descriptivo (no normativo): [`../ARCHITECTURE.md`](../ARCHITECT
 
 ## Política anti-drift
 
-> **NO DUPLICAR REGLAS.** Cada regla existe **una vez** en `docs/architecture/*`. Otros archivos (`CLAUDE.md`, `backend/CLAUDE.md`, `frontend/CLAUDE.md`, `.mdc`) solo enlazan o resumen en ≤5 líneas operativas para el agente.
+Política completa: [SSOT por módulo](enforcement.md#ssot-por-módulo). Reglas globales y responsabilidades: [CLAUDE.md](../../CLAUDE.md#jerarquía-documental).
 
 Al cambiar una regla: editar el archivo canónico correspondiente → actualizar adaptadores si cambia la ruta o el índice → no copiar el cuerpo completo a `CLAUDE.md`, `backend/CLAUDE.md`, `frontend/CLAUDE.md` ni a `.mdc`.
+
+## Referencia histórica fuera de la normativa
+
+[saas-commercial-flow.md](saas-commercial-flow.md) conserva un diseño del Control
+Plane eliminado; no es una SSOT del ERP ni una capacidad operativa. La frontera
+vigente se define en [Arquitectura](architecture.md#reglas-de-arquitectura-que-no-se-rompen).

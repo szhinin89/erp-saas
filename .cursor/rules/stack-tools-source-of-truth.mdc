@@ -5,14 +5,8 @@ alwaysApply: true
 
 # Stack permitido (adaptador Cursor)
 
-**Canónico:** [`docs/architecture/stack.md`](../../docs/architecture/stack.md) · Detalle versiones: [`docs/DEVELOPMENT.md#stack-oficial`](../../docs/DEVELOPMENT.md#stack-oficial)
+- [Reglas globales](../../CLAUDE.md).
+- [Política de herramientas](../../docs/architecture/stack.md).
+- [Stack y versiones](../../docs/DEVELOPMENT.md#stack-oficial).
 
-## Reglas operativas
-
-- No proponer herramientas fuera de la lista oficial sin autorización explícita del usuario.
-- Si una necesidad no está cubierta, pedir confirmación y ofrecer alternativas dentro del stack.
-- Antes de migraciones/scripts/config nueva, verificar herramienta en `docs/DEVELOPMENT.md`.
-- Entorno oficial: Docker Compose (PostgreSQL + Redis), CI GitHub Actions, xUnit/Playwright.
-- CI: `scripts/ci/verify-stack-allowlist.ps1` + `scripts/stack-allowlist.json`.
-
-Si hay conflicto, prevalece [`docs/architecture/stack.md`](../../docs/architecture/stack.md) hasta nueva instrucción del usuario.
+Este adaptador conserva su activación y remite a las fuentes oficiales; no define reglas propias.

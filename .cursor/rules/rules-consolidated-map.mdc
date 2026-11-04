@@ -3,34 +3,10 @@ description: Mapa consolidado de reglas y precedencia del proyecto
 alwaysApply: true
 ---
 
-# Rule Map (consolidado)
+# Mapa de reglas (adaptador Cursor)
 
-**Canónico:** [`docs/architecture/enforcement.md`](../../docs/architecture/enforcement.md) · [`docs/architecture/README.md`](../../docs/architecture/README.md)
+- [Jerarquía oficial](../../CLAUDE.md#jerarquía-documental).
+- [Gates técnicos bajo esa jerarquía](../../docs/architecture/enforcement.md#jerarquía-de-documentación-y-precedencia).
+- [Índice por área](../../docs/architecture/README.md).
 
-Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
-
-1. **`docs/architecture/pr-rules-catalog.md`** — reglas normativas bloqueantes (PR, auditoría). Entrada: `docs/ARCHITECTURE-RULES.md`.
-2. Regla de alcance más específico (por `globs`) gana sobre regla general.
-3. Si hay conflicto, aplicar la regla más estricta de seguridad/tenant/contrato API.
-4. **`docs/architecture/*`** por área prevalece sobre adaptadores si hay contradicción.
-
-## Reglas por área
-
-| Área | Canónico | Adaptador Cursor |
-|------|----------|------------------|
-| Normativa PR | `docs/architecture/pr-rules-catalog.md` | `docs/ARCHITECTURE-RULES.md` |
-| Arquitectura core | `docs/architecture/architecture.md` | `erp-unified-rules.mdc` |
-| Backend API | `docs/architecture/backend.md` | `backend-api-contracts.mdc` |
-| Backend capas | `docs/architecture/backend.md` | `backend-clean-architecture-strict.mdc` |
-| CQRS/validación | `docs/architecture/backend.md`, `ENFORCEMENT.md` | `backend-cqrs-validation-result.mdc` |
-| Multi-tenant | `docs/architecture/security.md` | `backend-multitenancy-jwt-source.mdc` |
-| Frontend | `docs/architecture/frontend.md` | `frontend-modules-i18n-validation.mdc` |
-| Diálogos | `docs/architecture/frontend.md` | `frontend-no-native-dialogs.mdc` |
-| SaaS URL | `docs/architecture/security.md` | `saas-navigation-no-sensitive-url.mdc` |
-| Stack | `docs/architecture/stack.md` | `stack-tools-source-of-truth.mdc` |
-| Docs avance | `docs/architecture/enforcement.md` | `docs-progress-status-sync.mdc` |
-
-## Nota de mantenimiento
-
-- **NO duplicar reglas** — editar `docs/architecture/*`; adaptadores solo enlazan.
-- Mapa humano: **`CONTEXT.md`** (raíz); no abrir índices paralelos.
+Este adaptador conserva su activación y remite a las fuentes oficiales; no define reglas propias.

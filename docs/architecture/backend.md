@@ -21,6 +21,19 @@ ERP.API → ERP.Application → ERP.Domain ← ERP.Infrastructure
 
 ---
 
+## Persistencia
+
+- Cambios estructurales mediante EF migrations (`dotnet ef migrations add`), nunca
+  SQL manual; política de instalación vigente: [DATABASE](../DATABASE.md#migraciones).
+- Repositorios en Infrastructure, implementando interfaces de Domain.
+- `IUnitOfWork` cuando la operación requiere una transacción de varios pasos;
+  nunca en el controller.
+
+Registro seguro (regla conservada del adaptador backend): no secretos en logs;
+no JWT, email ni password en logs o métricas. Autorización y roles: [Seguridad](security.md).
+
+---
+
 ## Patrones obligatorios
 
 ### Entidades — factory, nunca `new` público
@@ -45,7 +58,6 @@ db.Remove(entidad);   // ❌ en entidades de negocio
 | Entidad | Motivo |
 |---------|--------|
 | `ExpenseCategory` | Configuración contable, no documento de negocio |
-| `SaasPlan` | Catálogo planes; solo sin suscripciones activas (`DeletePlanAsync`) |
 
 ### Result&lt;T&gt; — no throw al controller
 
@@ -952,3 +964,19 @@ contrato interno de ElectronicDocuments; Ride no referencia Sales ni sus reposit
 Adjuntos de Communications conservan PendingSource reintentable y omisión opcional;
 fallos registran etapa/tipo de excepción, nunca XML, tokens, destinatarios ni rutas sensibles.
 Rationale: [ADR-025](../decisions/ADR-025-ride-design-freeze.md).
+
+## Carga Inicial
+
+Contrato vigente trasladado desde el catálogo de capacidades de `FEATURES.md`;
+no cambia el comportamiento ni acredita nuevas pruebas. Estado: [STATUS](../../STATUS.md).
+Contabilización: [Accounting](accounting.md). Reglas de ítems e inventario:
+[Ítems](items.md) e [Inventario](inventory.md).
+
+| Capacidad | Rutas / API | Contrato |
+|---|---|---|
+| Carga Inicial — Productos (IL-1) | `/initial-load/products`, `/api/v1/initial-load/*` | Catálogo de productos desde plantilla Excel: crea naturaleza Product; tipo de ítem, unidad base, IVA venta/compra y tipo de barcode por código de catálogo vigente, sin valores asumidos; categoría y marca por nombre (creación automática opcional); hasta 3 barcodes; PVP obligatorio si Disponible POS=SI; proveedor y código de proveedor opcionales; el costo no se aplica y el stock se carga en IL-4; lote todo-o-nada en una transacción. Estado de entrega en `STATUS.md` |
+| Carga Inicial — Clientes (IL-2) | `/initial-load/customers`, `/api/v1/initial-load/*` | Plantilla Excel validada con las mismas reglas que la confirmación; lote todo-o-nada en una transacción; reutiliza BP existente (asigna rol Cliente o idempotente, nunca duplica); condición de pago obligatoria por Company (`CompanyBpSalesSettings`); idempotente y seguro ante concurrencia/retry/cancelación. Estado de entrega en `STATUS.md` |
+| Carga Inicial — Proveedores (IL-3) | `/initial-load/suppliers`, `/api/v1/initial-load/*` | Solo RUC (04) y Exterior (08); validación con las mismas reglas que la confirmación; datos fiscales SI/NO explícitos sin default; reutiliza BP existente (asigna o reactiva rol Proveedor, idempotente, nunca duplica ni sobrescribe datos fiscales); condición de pago obligatoria por Company (`CompanyBpPurchaseSettings`); lote todo-o-nada, idempotente y seguro ante concurrencia/retry/cancelación. Estado de entrega en `STATUS.md` |
+| Carga Inicial — Inventario (IL-4) | `/initial-load/initial-stock`, `/api/v1/initial-load/*` | Saldo inicial al corte (nunca compras ficticias): un documento de apertura por bodega con movimiento propio `InitialBalance` ("Saldo Inicial") y la Fecha de Corte como fecha efectiva; solo ítem+bodega sin historia, sucursal activa y bodega por código; decimales invariantes sin redondeo; lote todo-o-nada, idempotente y seguro ante concurrencia/retry/cancelación; el documento no se anula desde Ajustes. Estado de entrega en `STATUS.md` |
+| Carga Inicial — Cuentas por Pagar (IL-6) | `/initial-load/initial-payables`, `/api/v1/initial-load/*` | Saldos NETOS pendientes al corte, nunca compras/gastos/pagos/retenciones históricas: `AccountsPayable` con origen `InitialBalance` (tipo SRI real del documento, número normalizado y lote propios, una cuota por el saldo, `OriginId` = fila del lote). IL-6A: modelo + migración, plantilla, validación y preview (proveedor existente con rol Proveedor, tipo SRI activo y de deuda, duplicados normalizados contra CxP de cualquier origen, emisión ≤ corte ≤ hoy, solo USD, corte = `Company.OpeningBalanceDate`, sucursal activa). IL-6B: confirmación todo-o-nada en una transacción con revalidación; saldo a favor de proveedor aplicable a la CxP inicial; la CxP inicial confirmada protege la fecha de apertura; listado/detalle muestran "Saldo inicial". IL-6C: idempotente y seguro ante concurrencia/retry/cancelación. Sin retención |
+| Carga Inicial — Cuentas por Cobrar (IL-5) | `/initial-load/initial-receivables`, `/api/v1/initial-load/*` | Saldos pendientes al corte, nunca ventas históricas: `SalesReceivable` con origen `InitialBalance` (sin factura; número, emisión, sucursal y lote propios; una cuota por el saldo). IL-5A: plantilla, validación y preview (cliente existente con rol Cliente, duplicados normalizados contra CxC de factura y saldo inicial, emisión ≤ corte ≤ hoy, moneda obligatoria solo USD, corte único e igual a `Company.OpeningBalanceDate`). IL-5B: confirmación todo-o-nada en una transacción con revalidación; listado CxC muestra el saldo inicial con número, cliente, sucursal y emisión propios. IL-5C: idempotente y seguro ante concurrencia/retry/cancelación. |

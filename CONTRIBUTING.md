@@ -2,15 +2,14 @@
 
 ## Antes de abrir PR
 
-1. Leer [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md), [`CONTEXT.md`](CONTEXT.md) y [`CLAUDE.md`](CLAUDE.md).
-2. Consultar [CI y ramas](docs/architecture/architecture.md#ci-y-ramas): `main` para integración estable, `development` para features diarias, `release/*` para estabilización y `hotfix/*` para urgencias. Esta última es un tipo de rama, no una base de partida definida por esta guía.
+1. Leer primero [CLAUDE.md](CLAUDE.md) y sus lecturas comunes; localizar la SSOT desde [CONTEXT](CONTEXT.md) y el [índice técnico](docs/architecture/README.md).
+2. Elegir el tipo de rama según [CI y ramas](docs/architecture/architecture.md#ci-y-ramas); esa sección conserva los roles de cada rama.
 3. Aplicar el [flujo obligatorio por fase](docs/architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase), incluido el gate PASS/FAIL del propietario antes de la revisión final. Staging y commit corresponden al propietario; el agente no hace push sin autorización expresa. No declarar CLOSED antes de completar el flujo.
 4. Ejecutar los checks aplicables al tipo de cambio según [enforcement](docs/architecture/enforcement.md). Para una tarea exclusivamente documental: verificar referencias y `git diff --check`, sin pruebas funcionales.
 
 ## Naming
 
-- Backend: PascalCase, módulos bajo `ERP.*/Modules/{Nombre}/`
-- Frontend: módulos en kebab/camel según carpeta existente; prefijos CSS por página
+- Nombres de código y CSS: [Naming](docs/architecture/naming.md).
 - Commits: `feat(scope):`, `fix(scope):`, `docs:`, `refactor:` — imperativo, español o inglés consistente con repo
 
 ## Reglas de implementación
@@ -21,9 +20,9 @@ Consultar el [catálogo PR bloqueante](docs/architecture/pr-rules-catalog.md), e
 
 ## Testing
 
-- Backend: xUnit + FluentAssertions; integración en `ERP.API.Tests`
-- Frontend: Vitest (unit) + Playwright (e2e en CI)
-- Architecture: `backend/src/ERP.Architecture.Tests/` (índice: `backend/tests/README.md`), guardrails PowerShell
+Herramientas y comandos de pruebas: [DEVELOPMENT](docs/DEVELOPMENT.md#tests).
+Checks obligatorios según el cambio: [enforcement](docs/architecture/enforcement.md#tests-pre-merge).
+E2E completo: [procedimiento manual](docs/DEVELOPMENT.md#e2e-playwright).
 
 ## Documentación
 

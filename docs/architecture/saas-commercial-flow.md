@@ -1,7 +1,12 @@
 # SaaS Commercial Flow — Architecture Reference
 
-> **Estado:** Production-ready en modo manual/simulado (Stripe/Kushki no conectados)
-> **Última actualización:** 2026-05
+> **Referencia histórica no normativa.** El Control Plane descrito fue eliminado en
+> ERP Kernel Cleanup; no está operativo ni es «production-ready». No utilizar sus
+> entidades, procedimientos o dependencias para implementar el ERP. Se conserva el
+> contenido fechado por su información histórica; frontera vigente:
+> [Arquitectura](architecture.md#reglas-de-arquitectura-que-no-se-rompen), bajo
+> [CLAUDE.md](../../CLAUDE.md#jerarquía-documental).
+> **Fecha del contenido conservado:** 2026-05.
 
 ---
 

@@ -13,6 +13,7 @@ node tools/architecture/run-all.mjs
 node tools/architecture/run-all.mjs --json
 node tools/architecture/run-all.mjs --annotate   # GitHub ::error/::warning
 node tools/architecture/run-all.mjs --only backend-layering
+node tools/architecture/run-all.mjs --only documentation
 ```
 
 Desde `frontend/`:
@@ -33,7 +34,7 @@ Cada ejecución completa de `run-all.mjs` produce:
 
 ## Ratchet
 
-`npm run architecture:check` ejecuta primero las pruebas del comparador y del scanner y luego el conjunto completo de checks. La única fuente versionada de baseline es [`architecture-baseline.json`](./architecture-baseline.json): 217 ocurrencias agrupadas por identidad estable `(check, rule, file, message)`. La línea no forma parte de la identidad; ocurrencias idénticas sí cuentan con multiplicidad. El baseline se reduce solo por findings auditados y validados; nunca se incrementa automáticamente.
+`npm run architecture:check` ejecuta primero las pruebas del comparador y del scanner y luego el conjunto completo de checks. La única fuente versionada de baseline es [`architecture-baseline.json`](./architecture-baseline.json): el inventario de ocurrencias agrupadas por identidad estable `(check, rule, file, message)`. La línea no forma parte de la identidad; ocurrencias idénticas sí cuentan con multiplicidad. El baseline se reduce solo por findings auditados y validados; nunca se incrementa automáticamente.
 
 El baseline no se genera ni se incrementa desde el código. Una violación nueva siempre falla, incluso si el total no cambia por una violación histórica resuelta. Resolver deuda pasa y se informa; reducir el snapshot requiere editarlo explícitamente después de revisar la resolución. Baseline inválido/ausente falla cerrado. Un gate PASS significa “sin regresiones nuevas”, no que las violaciones históricas estén aprobadas; el score y los checks crudos continúan mostrándolas.
 
@@ -55,6 +56,25 @@ Ejemplo anotación GitHub:
 ```
 ::warning file=backend/src/ERP.API/Controllers/AccessController.cs::B-controller-warn: controller has 381 lines (warning threshold 150)
 ```
+
+## Protección documental
+
+El check `documentation` del runner existente valida las entradas principales,
+`docs/architecture/*.md` y `.cursor/rules/*.mdc`: destinos Markdown locales
+(incluidas referencias), mayúsculas exactas y anclas en Markdown. No accede a red;
+ignora ejemplos en bloques/inline code y comentarios. No recorre archivos históricos
+como fuentes, aunque comprueba los destinos que estos documentos enlazan.
+
+Comprueba también que las entradas de agentes enlacen `CLAUDE.md`, que esta fuente
+enlace los documentos oficiales y que los adaptadores no mantengan listas de
+precedencia propias. No interpreta contradicciones semánticas o de negocio: siguen
+requiriendo revisión humana. Alcance y entradas obligatorias: `DOCUMENT_ENTRIES`
+en [run-all.mjs](run-all.mjs).
+
+Se ejecuta en `npm run architecture:check` y en el job de arquitectura existente,
+sin nuevas dependencias ni jobs. Pruebas focales del control y del ratchet:
+`node --test tools/architecture/ratchet.test.mjs` desde la raíz. El score de una
+invocación `--only` corresponde a ese subconjunto; no acredita salud global.
 
 ## Checks
 

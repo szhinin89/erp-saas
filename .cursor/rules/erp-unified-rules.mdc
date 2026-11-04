@@ -1,47 +1,15 @@
 ---
 description: >-
   ZH Technologies ERP — adaptador Cursor hacia docs/architecture (fuente canónica).
-  Flujo jerárquico, arquitectura, validación, ZH Form, SaaS, i18n qu.
+  Jerarquía común y referencias canónicas según la tarea.
 alwaysApply: true
 ---
 
 # Reglas del proyecto ERP (adaptador Cursor)
 
-**Fuente canónica:** [`docs/architecture/README.md`](../../docs/architecture/README.md) — **no duplicar reglas aquí.**
+- [Reglas globales y jerarquía](../../CLAUDE.md).
+- [Entrada Codex](../../AGENTS.md).
+- [Índice técnico](../../docs/architecture/README.md).
+- [Flujo por fase](../../docs/architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 
-## Precedencia
-
-1. [docs/architecture/enforcement.md](../../docs/architecture/enforcement.md)
-2. [docs/architecture/pr-rules-catalog.md](../../docs/architecture/pr-rules-catalog.md) (B-xx/F-xx bloqueante)
-3. Reglas `.mdc` con `globs` más específicas
-4. Mapa: `rules-consolidated-map.mdc`
-
-## Índice canónico (leer según tarea)
-
-| Tarea | Archivo |
-|-------|---------|
-| Flujo feature / monorepo | [CORE-ARCHITECTURE.md](../../docs/architecture/architecture.md) |
-| Backend | [BACKEND-RULES.md](../../docs/architecture/backend.md) |
-| Frontend / ZH Form / tabs | [FRONTEND-RULES.md](../../docs/architecture/frontend.md) |
-| SaaS / planes / URL | [security.md](../../docs/architecture/security.md) |
-| Auth / tenant | [SECURITY.md](../../docs/architecture/security.md) |
-| Stack | [STACK.md](../../docs/architecture/stack.md) |
-| Validación 4 capas / CI | [ENFORCEMENT.md](../../docs/architecture/enforcement.md) |
-| Naming | [NAMING.md](../../docs/architecture/naming.md) |
-
-## Reglas operativas Cursor (mínimas)
-
-1. **Antes de actuar:** `CONTEXT.md` + comprobar si el archivo ya existe.
-2. **Frontend:** ZH Form → tabs Datos→listado → Copy UX; claves `{modulo}.tabList` en es/en/qu.
-3. **Backend:** Validator + dominio + EF; `ApiResultExtensions`; `Result<T>`.
-4. **SaaS:** IDs tenant en `sessionStorage` (`erp.saas.*`), no en URL; panel platform = `/platform/*` (ver `TEAM-NAMING-GUIDE.md`, no `SuperAdmin` en nombres).
-5. **Módulo nuevo:** preguntar planes SaaS antes de cerrar.
-6. **Al terminar:** sync docs → `docs-progress-status-sync.mdc`; validar → `npm run architecture:check` (desde `frontend/`).
-
-## Adaptadores por área (globs)
-
-- `backend-api-contracts.mdc`, `backend-clean-architecture-strict.mdc`, `backend-cqrs-validation-result.mdc`, `backend-multitenancy-jwt-source.mdc`
-- `frontend-modules-i18n-validation.mdc`, `frontend-no-native-dialogs.mdc`
-- `stack-tools-source-of-truth.mdc`
-
-**Anti-drift:** editar reglas solo en `docs/architecture/*`. Este archivo solo enlaza.
+Este adaptador conserva su activación y remite a las fuentes oficiales; no define reglas propias.

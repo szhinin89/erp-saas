@@ -16,7 +16,7 @@
 | **Frontend baseline (UI)** | [`docs/FRONTEND_ARCHITECTURE_BASELINE.md`](./docs/FRONTEND_ARCHITECTURE_BASELINE.md) | Shells, templates, CSS, governance |
 | **Frontend QA checklist** | [`docs/FRONTEND_QA_CHECKLIST.md`](./docs/FRONTEND_QA_CHECKLIST.md) | Validación manual pre-release |
 | **Entrada GitHub / visión producto** | [`README.md`](./README.md) | Monorepo, stack, CI, troubleshooting |
-| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md), [`backend/CLAUDE.md`](./backend/CLAUDE.md), [`frontend/CLAUDE.md`](./frontend/CLAUDE.md) | Adaptadores → [`docs/architecture/`](./docs/architecture/README.md) |
+| **Reglas globales y entradas de agentes** | [`CLAUDE.md`](./CLAUDE.md), [`AGENTS.md`](./AGENTS.md), [`backend/CLAUDE.md`](./backend/CLAUDE.md), [`frontend/CLAUDE.md`](./frontend/CLAUDE.md) | Jerarquía global común y referencias al [índice técnico](./docs/architecture/README.md) |
 | **Estado delivery** | [`STATUS.md`](./STATUS.md) | Fuente de verdad MVP |
 | **Reglas PR** | [`docs/architecture/pr-rules-catalog.md`](./docs/architecture/pr-rules-catalog.md) | Catálogo B-xx/F-xx |
 | **Backend / Frontend / Auth / DB** | [`docs/architecture/backend.md`](./docs/architecture/backend.md), [`docs/architecture/frontend.md`](./docs/architecture/frontend.md), [`docs/architecture/security.md`](./docs/architecture/security.md), [`docs/DATABASE.md`](./docs/DATABASE.md) | Reglas canónicas por dominio |
