@@ -1463,6 +1463,13 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   Retirado (2026-11-03): `UpdateCustomerRoleConfigValidator` (request TENANT) ya no revela
   códigos de otra empresa; SEC-04 rechaza con 403 un `X-Company-Id` sin membership activa antes
   del validator y, sin header, la consulta de catálogo no devuelve filas.
+  Verificación de cobertura (2026-11-03): fuera de los namespaces de `INV_E2`, los requests que
+  operan datos de una empresa declaran marcador o validan con el guard en el handler; el guardrail
+  no impide que un request nuevo de esos módulos omita ambos. Corregido (2026-11-03):
+  `UpdateCompany` (`PUT /companies/{id}`) evaluaba `erp.companies.update` solo en la empresa del
+  header — un Admin de A con membership limitada en B podía renombrar o desactivar B; ahora exige
+  el permiso también en la empresa del id (`CrossCompanyAdminPrivilegeHttpTests`,
+  `UpdateCompanyHandlerTests`).
 - **Seguridad — revocación de permisos con caché (SEC-06):** garantías y
   contrato en [security.md](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
   Límites: (1) cumplir "Redis obligatorio con varias instancias" depende de que el despliegue declare

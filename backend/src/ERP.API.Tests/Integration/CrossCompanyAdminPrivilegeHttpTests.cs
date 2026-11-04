@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using ERP.API.Tests.Support;
@@ -10,6 +11,7 @@ using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ERP.API.Tests.Integration;
@@ -362,6 +364,49 @@ public sealed class CrossCompanyAdminPrivilegeHttpTests
             );
             PermissionsOf(mine.Body).Should().BeEquivalentTo(["*"]);
         }
+    }
+
+    [Fact]
+    public async Task Admin_en_A_no_actualiza_la_empresa_B_donde_no_tiene_el_permiso()
+    {
+        async Task<Company> ReadAsync(Guid id)
+        {
+            using var scope = _f.Factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            return await db.Companies.IgnoreQueryFilters().AsNoTracking().SingleAsync(c => c.Id == id);
+        }
+
+        async Task<(HttpStatusCode Status, string Body)> PutAsync(
+            Guid targetId,
+            Guid headerCompanyId,
+            bool isActive
+        )
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/companies/{targetId}")
+            {
+                Content = JsonContent.Create(
+                    new { id = targetId, legalName = "Renombrada SEC03", tradeName = (string?)null, isActive }
+                ),
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", MultiUserJwtFromA());
+            request.Headers.Add("X-Company-Id", headerCompanyId.ToString());
+            using var response = await _f.Client.SendAsync(request);
+            return (response.StatusCode, await response.Content.ReadAsStringAsync());
+        }
+
+        var before = await ReadAsync(_f.CompanyBId);
+
+        // El permiso se evalúa en A (Admin); en B el perfil no incluye erp.companies.update.
+        var foreign = await PutAsync(_f.CompanyBId, _f.CompanyAId, isActive: false);
+        foreign.Status.Should().Be(HttpStatusCode.Forbidden, foreign.Body);
+        var after = await ReadAsync(_f.CompanyBId);
+        after.LegalName.Should().Be(before.LegalName);
+        after.IsActive.Should().Be(before.IsActive);
+
+        // Control: en A (Admin) la actualización procede.
+        var own = await PutAsync(_f.CompanyAId, _f.CompanyAId, isActive: true);
+        own.Status.Should().Be(HttpStatusCode.OK, own.Body);
+        (await ReadAsync(_f.CompanyAId)).LegalName.Should().Be("Renombrada SEC03");
     }
 
     [Fact]
