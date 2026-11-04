@@ -84,7 +84,7 @@ public sealed class RetentionSourceAccessTests
                         It.IsAny<Guid>(),
                         It.IsAny<Guid?>(),
                         It.IsAny<Guid?>(),
-                        It.IsAny<CancellationToken>()
+                        null, It.IsAny<CancellationToken>()
                     )
                 )
                 .ReturnsAsync(Result<byte[]>.Success([1, 2, 3]));
@@ -117,8 +117,16 @@ public sealed class RetentionSourceAccessTests
             Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId);
         private RetentionSourceAccess Access { get; }
 
-        public Task<Result<ElectronicDocumentXml>> GetXmlAsync() =>
-            new GenerateRetentionXmlHandler(XmlService.Object, Tenant, Company, Access).Handle(
+        private static IElectronicDocumentInternalReader Reader()
+        {
+            var reader = new Mock<IElectronicDocumentInternalReader>();
+            reader.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), "Retentions", It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<ElectronicDocumentDto?>.Success(null));
+            return reader.Object;
+        }
+
+        public Task<Result<string>> GetXmlAsync() =>
+            new GenerateRetentionXmlHandler(XmlService.Object, Tenant, Company, Access, Reader()).Handle(
                 new GenerateRetentionXmlQuery(Retention.Id),
                 CancellationToken.None
             );
@@ -129,7 +137,8 @@ public sealed class RetentionSourceAccessTests
                 PdfService.Object,
                 Tenant,
                 Company,
-                Access
+                Access,
+                Reader()
             ).Handle(new GenerateRetentionRidePdfQuery(Retention.Id), CancellationToken.None);
 
         public void VerifyNothingGenerated()
@@ -150,7 +159,7 @@ public sealed class RetentionSourceAccessTests
                         It.IsAny<Guid>(),
                         It.IsAny<Guid?>(),
                         It.IsAny<Guid?>(),
-                        It.IsAny<CancellationToken>()
+                        null, It.IsAny<CancellationToken>()
                     ),
                 Times.Never
             );

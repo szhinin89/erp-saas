@@ -1,4 +1,5 @@
 import { ZHDataValue } from "../../../components/zh/ZHDataValue";
+import { ZHElectronicEnvironmentBanner } from "../../../components/zh/ZHElectronicEnvironmentBanner";
 import { Badge } from "../../../components/PageShell";
 import { ZHBtn, ZHField, ZHGrid } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
@@ -114,6 +115,7 @@ export function PurchaseRetentionDraft({ ctx }: { ctx: PurchaseRetentionDraftCon
           />
           {intent.appliesRetention && (
             <>
+              <ZHElectronicEnvironmentBanner />
               {!ctx.canReadEmissionPoints && (
                 <ZHPageNotice
                   variant="warning"

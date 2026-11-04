@@ -10,8 +10,8 @@ using Moq;
 namespace ERP.Application.Tests.Retentions;
 
 /// <summary>
-/// RETENTIONS-ELECTRONIC-ENDPOINTS-03F — cubre <see cref="GenerateRetentionXmlHandler"/>: delega
-/// íntegramente en <see cref="IRetentionElectronicDocumentXmlService"/>, resolviendo
+/// Cubre la vista previa sin documento autorizado en <see cref="GenerateRetentionXmlHandler"/>:
+/// delega en <see cref="IRetentionElectronicDocumentXmlService"/>, resolviendo
 /// tenant/company del contexto actual (nunca del body/query).
 /// </summary>
 public sealed class GenerateRetentionXmlHandlerTests
@@ -55,6 +55,12 @@ public sealed class GenerateRetentionXmlHandlerTests
     private sealed class Fixture
     {
         public Mock<IRetentionSourceAccess> Access { get; } = ViewableAccess();
+        public Mock<IElectronicDocumentInternalReader> Reader { get; } = new();
+        public Fixture()
+        {
+            Reader.Setup(r => r.GetAsync(TenantId, CompanyId, "Retentions", RetentionId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<ElectronicDocumentDto?>.Success(null));
+        }
         public Mock<IRetentionElectronicDocumentXmlService> XmlService { get; } = new();
 
         public GenerateRetentionXmlHandler Handler =>
@@ -62,7 +68,8 @@ public sealed class GenerateRetentionXmlHandlerTests
                 XmlService.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
-                Access.Object
+                Access.Object,
+                Reader.Object
             );
     }
 
@@ -85,7 +92,7 @@ public sealed class GenerateRetentionXmlHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value.Should().Be(xml);
+        result.Value.Should().Be(xml.Xml);
         fx.XmlService.Verify(
             s =>
                 s.GenerateXmlAsync(

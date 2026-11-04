@@ -56,6 +56,12 @@ public sealed class GenerateRetentionRidePdfHandlerTests
     private sealed class Fixture
     {
         public Mock<IRetentionSourceAccess> Access { get; } = ViewableAccess();
+        public Mock<IElectronicDocumentInternalReader> Reader { get; } = new();
+        public Fixture()
+        {
+            Reader.Setup(r => r.GetAsync(TenantId, CompanyId, "Retentions", RetentionId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result<ElectronicDocumentDto?>.Success(null));
+        }
         public Mock<IRetentionElectronicDocumentXmlService> XmlService { get; } = new();
         public Mock<IRetentionRidePdfService> PdfService { get; } = new();
 
@@ -65,7 +71,8 @@ public sealed class GenerateRetentionRidePdfHandlerTests
                 PdfService.Object,
                 Mock.Of<ICurrentTenant>(t => t.TenantId == TenantId),
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
-                Access.Object
+                Access.Object,
+                Reader.Object
             );
 
         public void SetupSuccessfulXml(ElectronicDocumentXml xml) =>
@@ -91,6 +98,7 @@ public sealed class GenerateRetentionRidePdfHandlerTests
                     xml.Xml,
                     TenantId,
                     CompanyId,
+                    null,
                     null,
                     null,
                     It.IsAny<CancellationToken>()
@@ -139,6 +147,7 @@ public sealed class GenerateRetentionRidePdfHandlerTests
                     It.IsAny<Guid>(),
                     It.IsAny<Guid?>(),
                     It.IsAny<Guid?>(),
+                    null,
                     It.IsAny<CancellationToken>()
                 ),
             Times.Never
@@ -156,6 +165,7 @@ public sealed class GenerateRetentionRidePdfHandlerTests
                     xml.Xml,
                     TenantId,
                     CompanyId,
+                    null,
                     null,
                     null,
                     It.IsAny<CancellationToken>()

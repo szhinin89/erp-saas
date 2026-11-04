@@ -2,6 +2,8 @@ using ERP.Application.Common;
 using ERP.Application.Modules.ElectronicDocuments.Services;
 using ERP.Application.Modules.Retentions.Services;
 using ERP.Application.Modules.Ride.Services;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
+using ERP.Domain.Modules.Retentions;
 using FluentValidation;
 using MediatR;
 
@@ -10,10 +12,8 @@ namespace ERP.Application.Modules.Retentions.UseCases;
 // ── Query ───────────────────────────────────────────────────────────────
 
 /// <summary>
-/// RETENTIONS-ELECTRONIC-ENDPOINTS-03F — genera el PDF RIDE del Comprobante de Retención
-/// on-demand para QA/diagnóstico/vista previa: XML (<see cref="IRetentionElectronicDocumentXmlService"/>,
-/// 03E) → PDF (<see cref="IRetentionRidePdfService"/>, 03E). Sin lógica propia, sin cache: cada
-/// llamada genera XML y PDF de nuevo. No firma, no envía al SRI, no persiste nada.
+/// RIDE de lectura: usa el XML autorizado almacenado y la fecha oficial de ElectronicDocuments.
+/// Sin autorización conserva la vista previa. No firma, no envía al SRI ni persiste nada.
 /// </summary>
 public sealed record GenerateRetentionRidePdfQuery(Guid RetentionId)
     : IRequest<Result<byte[]>>,
@@ -40,16 +40,19 @@ public sealed class GenerateRetentionRidePdfHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentCompany _currentCompany;
     private readonly IRetentionSourceAccess _sourceAccess;
+    private readonly IElectronicDocumentInternalReader _reader;
 
     public GenerateRetentionRidePdfHandler(
         IRetentionElectronicDocumentXmlService xmlService,
         IRetentionRidePdfService pdfService,
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
-        IRetentionSourceAccess sourceAccess
+        IRetentionSourceAccess sourceAccess,
+        IElectronicDocumentInternalReader reader
     )
     {
         _sourceAccess = sourceAccess;
+        _reader = reader;
         _xmlService = xmlService;
         _pdfService = pdfService;
         _currentTenant = currentTenant;
@@ -65,6 +68,20 @@ public sealed class GenerateRetentionRidePdfHandler
         // expenses.documents.view). Sin acceso = inexistente (fail-closed).
         if (await _sourceAccess.FindViewableAsync(request.RetentionId, cancellationToken) is null)
             return Result<byte[]>.NotFound("La retención no existe.");
+
+        var document = await _reader.GetAsync(_currentTenant.TenantId, _currentCompany.CompanyId,
+            RetentionElectronicDocumentSource.SourceModule, request.RetentionId, cancellationToken);
+        if (!document.IsSuccess)
+            return Result<byte[]>.Failure(document.Error!, document.Code);
+        if (document.Value?.CurrentState == nameof(ElectronicDocumentState.Authorized))
+        {
+            var authorized = await _reader.GetXmlAsync(_currentTenant.TenantId, _currentCompany.CompanyId,
+                RetentionElectronicDocumentSource.SourceModule, request.RetentionId, ElectronicDocumentXmlVariant.Authorized, cancellationToken);
+            if (!authorized.IsSuccess)
+                return Result<byte[]>.Failure(authorized.Error!, authorized.Code);
+            return await _pdfService.GeneratePdfAsync(authorized.Value!, _currentTenant.TenantId,
+                _currentCompany.CompanyId, ct: cancellationToken, authorizationDateUtc: document.Value.AuthorizationDate);
+        }
 
         var xmlResult = await _xmlService.GenerateXmlAsync(
             new ElectronicDocumentSourceReference(

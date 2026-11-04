@@ -135,7 +135,8 @@ public sealed class RetentionRidePdfServiceTests
             new RetentionRideXmlParser(),
             new RetentionRideTemplate(),
             renderer.Object,
-            brandingProvider.Object
+            brandingProvider.Object,
+            Mock.Of<ERP.Domain.Modules.Company.Interfaces.ICompanyRepository>()
         );
 
         var result = await service.GeneratePdfAsync(
@@ -172,7 +173,8 @@ public sealed class RetentionRidePdfServiceTests
             new RetentionRideXmlParser(),
             new RetentionRideTemplate(),
             renderer.Object,
-            brandingProvider.Object
+            brandingProvider.Object,
+            Mock.Of<ERP.Domain.Modules.Company.Interfaces.ICompanyRepository>()
         );
 
         await service.GeneratePdfAsync(
@@ -197,7 +199,8 @@ public sealed class RetentionRidePdfServiceTests
             new RetentionRideXmlParser(),
             new RetentionRideTemplate(),
             renderer.Object,
-            brandingProvider.Object
+            brandingProvider.Object,
+            Mock.Of<ERP.Domain.Modules.Company.Interfaces.ICompanyRepository>()
         );
 
         var act = async () =>
@@ -220,7 +223,8 @@ public sealed class RetentionRidePdfServiceTests
             new RetentionRideXmlParser(),
             new RetentionRideTemplate(),
             renderer.Object,
-            brandingProvider.Object
+            brandingProvider.Object,
+            Mock.Of<ERP.Domain.Modules.Company.Interfaces.ICompanyRepository>()
         );
 
         var result = await service.GeneratePdfAsync(
@@ -259,7 +263,8 @@ public sealed class RetentionRidePdfServiceTests
             new RetentionRideXmlParser(),
             new RetentionRideTemplate(),
             renderer.Object,
-            brandingProvider.Object
+            brandingProvider.Object,
+            Mock.Of<ERP.Domain.Modules.Company.Interfaces.ICompanyRepository>()
         );
 
         var result = await service.GeneratePdfAsync(

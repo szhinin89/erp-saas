@@ -6,8 +6,8 @@ import { calculate, projectRoot } from './analyze-functional-v1.mjs';
 const source=()=>JSON.parse(fs.readFileSync(path.join(projectRoot,'docs/ProgressDashboard/data/functional-v1-source.json'),'utf8'));
 test('unique global denominator, exact module union and Core membership',()=>{
  const d=calculate();
- assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[69,70,98.57]);
- assert.deepEqual([d.core.approved,d.core.total,d.core.pct],[42,43,97.67]);
+ assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[70,70,100]);
+ assert.deepEqual([d.core.approved,d.core.total,d.core.pct],[43,43,100]);
  assert.equal(new Set(d.global.ids).size,d.global.total);
  assert.equal(Object.values(d.modules).reduce((n,m)=>n+m.total,0),d.global.total);
  assert.equal(Object.values(d.modules).reduce((n,m)=>n+m.approved,0),d.global.approved);
@@ -15,7 +15,10 @@ test('unique global denominator, exact module union and Core membership',()=>{
  assert.equal(d.modules.Accounting.approved,8); // Additional focal evidence closes the scopes not covered by R4.
  assert.equal(d.features.find(f=>f.id==='ElectronicDocuments-04').state,'approved'); // ED-V1-CLOSE-04 2026-11-04.
  assert.equal(d.features.find(f=>f.id==='ElectronicDocuments-07').state,'approved'); // ED-V1-CLOSE-07 2026-11-04.
- assert.equal(d.features.find(f=>f.id==='Retentions-02').state,'validation_pending');
+ const retention=d.features.find(f=>f.id==='Retentions-02');
+ assert.equal(retention.state,'approved');
+ assert.ok(retention.evidence.some(e=>e.found&&e.contains==='[V1-APPROVED:Retentions-02]'&&e.section==='V1-FUNCTIONAL-CLOSE-01'));
+ assert.deepEqual([d.modules.Retentions.approved,d.modules.Retentions.total,d.modules.Retentions.pct],[2,2,100]);
  assert.equal(d.features.find(f=>f.id==='InitialLoad-05').state,'approved');
  assert.equal(d.features.find(f=>f.id==='Configuration-01').state,'approved');
  assert.equal(d.modules.InitialLoad.pct,100);

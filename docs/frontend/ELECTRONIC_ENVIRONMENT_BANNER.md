@@ -2,7 +2,7 @@
 
 Infraestructura transversal del ERP. Componente de Design System sin props, que muestra el
 estado operativo de facturación electrónica en cualquier pantalla emisora de documentos
-electrónicos (Ventas, y a futuro Notas de Crédito/Débito, Retenciones, Guías de Remisión).
+electrónicos (Ventas, Caja y Retenciones de Compras; a futuro Notas de Crédito/Débito y Guías de Remisión).
 
 ## Contrato — backend es la única fuente de verdad
 
@@ -94,9 +94,11 @@ variante — necesario porque varios estados comparten color pero deben distingu
 <ZHElectronicEnvironmentBanner />
 ```
 
-Sin props, sin configuración adicional. Integrado hoy en `SalesPage.tsx`; para incorporarlo a
-Notas de Crédito/Débito, Retenciones o Guías de Remisión basta con importar y colocar la misma
-línea.
+Sin props, sin configuración adicional. Integrado en Ventas, Caja y `RetentionSection` de
+Compras mediante `PurchaseRetentionDraft`: en borrador, con retención aplicable y la opción
+«Emitir la retención al confirmar la compra» activa, aparece junto al punto y fecha de emisión,
+antes de «Confirmar compra». Usa el store global y el registro visual existentes, sin valores
+de ambiente fijos. Para incorporarlo a otras pantallas basta con importar y colocar la misma línea.
 
 ## Salud técnica SRI — monitor central (`ZHSriServiceHealth`)
 

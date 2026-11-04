@@ -1,5 +1,115 @@
 # Project Status
 
+## V1-FUNCTIONAL-CLOSE-01 — cierre funcional aprobado (2026-11-04)
+
+**Retentions-02 APROBADA [V1-APPROVED:Retentions-02]**, por instrucción expresa del
+propietario y con la evidencia real que confirma: retención 07 **001-001-000000001**,
+compra origen **001-001-000006222**, ambiente SRI **Pruebas**, estado **AUTORIZADO**,
+fecha oficial **2026-11-04T13:56:35-05:00** (`2026-11-04T18:56:35Z`), número de
+autorización igual a la clave de acceso, comprobante firmado XAdES descargado y
+comprobado y RIDE con **04/11/2026 13:56:35**. La respuesta no contiene errores.
+La comprobación operativa fue aportada por el propietario; este cierre no ejecuta
+llamadas al SRI ni modifica la retención real. Evidencia de aceptación en el
+[registro SRI existente](docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md#8-estado-final);
+corrección y pruebas en [RETENTION-AUTHORIZED-EVIDENCE-01](#retention-authorized-evidence-01--ready-for-review-2026-11-04).
+
+Se aprueba la capacidad catalogada completa, conservando la evidencia previa de su
+implementación y de anulación asistida; la aceptación real del comprobante 07 resuelve
+el último pendiente funcional, sin afirmar una nueva anulación SRI en esta sesión.
+El pendiente Retentions-02 de los registros anteriores queda sustituido por esta aceptación.
+Matriz única: **Web 70/70 = 100 % funcional V1; Core 43/43 = 100 %; Retentions 2/2 = 100 %**.
+No se añaden capacidades ni se cambian denominadores, fórmulas o diseño del dashboard.
+
+**Producción NO-GO.** La aprobación funcional no sustituye los controles independientes
+de seguridad, despliegue y operación, ni cierra otros incidentes o pendientes SRI.
+Se conservan los cambios locales de banner SRI, XML autorizado/RIDE y extracción PR-7
+del CI #1087. No se cambian ADR-047, sus límites ni el gate. Sin staging, commit ni push;
+el propietario realizará la revisión final y ambas operaciones. No se declara CLOSED
+la entrega Git acumulada.
+
+Validación focal repetida en este cierre: **Application 25/25 PASS**, **controlador
+17/17 PASS**, **frontend 36/36 PASS** (cuatro archivos de Ventas y `RetentionSection`),
+**matriz funcional 6/6 PASS**, gate `check-architecture-guardrails.ps1 -SkipFrontendChunk`
+**PASS** y documentación **PASS**. PR-7: `moneyValues` **545/597** y `ride` **527/533**;
+archivos extraídos **316** y **390** líneas, sin pérdida de casos. Los intentos iniciales
+backend con `--no-build` no se ejecutaron por ausencia de binarios; la repetición con
+compilación focal produjo los PASS indicados. No son fallos funcionales ni se ocultan
+como ejecuciones exitosas. Los comandos focales exactos permanecen en las entradas
+CI-1087-PR7 y RETENTION-AUTHORIZED-EVIDENCE-01 siguientes.
+
+Regeneración y revisión de la salida por el pipeline oficial:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/render-dashboard.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/test-curated-dashboard.ps1
+node tools/dashboard/test-functional-v1-ui.mjs
+git diff --check
+```
+
+## CI-1087-PR7 — READY FOR REVIEW (2026-11-04)
+
+Extracción exclusiva de pruebas de Ventas: `SalesPage.moneyValues.test.tsx` queda en
+545/597 líneas no vacías y `SalesPage.ride.test.tsx` en 527/533. Los archivos nuevos
+`SalesPage.discountConsistency.test.tsx` (316) y `SalesPage.electronicStatus.test.tsx`
+(390) conservan los casos extraídos. **34/34 PASS** antes y después;
+`check-architecture-guardrails.ps1 -SkipFrontendChunk` **PASS**. No se ejecutó build
+ni suites generales. ADR-047, límites y gate sin cambios; cambios locales previos de
+retenciones/banner preservados. Sin staging, commit ni push. Gate del propietario
+pendiente; no CLOSED. Repetición desde la raíz:
+
+```powershell
+Push-Location frontend
+npx.cmd vitest run src/modules/sales/pages/SalesPage.moneyValues.test.tsx src/modules/sales/pages/SalesPage.discountConsistency.test.tsx src/modules/sales/pages/SalesPage.ride.test.tsx src/modules/sales/pages/SalesPage.electronicStatus.test.tsx
+Pop-Location
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk
+```
+
+## RETENTION-AUTHORIZED-EVIDENCE-01 — READY FOR REVIEW (2026-11-04)
+
+BUG REAL: la descarga XML de Retenciones regeneraba el comprobante sin firma; el RIDE
+usaba esa vista previa y el parser dejaba la fecha de autorización en null. Se corrigieron
+las lecturas existentes mediante `IElectronicDocumentInternalReader`, sin nuevo pipeline.
+Contrato en [Retenciones — XML/RIDE](docs/architecture/backend.md#retenciones-una-capacidad-una-política-de-emisión-zh-retention-emission-ssot-01-zh-purchase-retention-confirm-01).
+KEEP: permisos por origen, XML firmado, firma, transmisión, secuenciales, cálculos y
+contabilidad. No se llamó al SRI ni se leyó/modificó la retención operativa.
+
+Pruebas focales: Application **25/25 PASS**, controlador API **17/17 PASS**; cero fallos
+u omitidas. Se reconstruyó una respuesta SOAP sanitizada a partir de la referencia del
+propietario, con identidades sintéticas y marcadores XAdES (sin validar criptografía).
+El parser SOAP existente conserva el comprobante y convierte la fecha de referencia a
+`2026-11-04T18:56:35Z`; el layout que recibe el renderer muestra **04/11/2026 13:56:35**
+en `America/Guayaquil`. Se comprueban igualdad exacta del XML, variantes separadas y
+404 sin regeneración cuando falta la evidencia autorizada. Repositorio/almacenamiento
+simulados para lectura; no acredita una nueva prueba de persistencia real ni una
+descarga del PDF de la retención operativa. Documentación y `git diff --check` PASS.
+Sin suites generales, staging, commit ni push. Gate del propietario pendiente; no CLOSED.
+Repetición focal desde la raíz:
+
+```powershell
+dotnet test backend/src/ERP.Application.Tests/ERP.Application.Tests.csproj --no-restore --filter "FullyQualifiedName~RetentionAuthorizedEvidenceTests|FullyQualifiedName~GenerateRetentionXmlHandlerTests|FullyQualifiedName~GenerateRetentionRidePdfHandlerTests|FullyQualifiedName~RetentionRidePdfServiceTests|FullyQualifiedName~RetentionSourceAccessTests"
+dotnet test backend/src/ERP.API.Tests/ERP.API.Tests.csproj --no-restore --filter "FullyQualifiedName~RetentionsControllerTests"
+node tools/architecture/run-all.mjs --only documentation
+git diff --check
+```
+
+## PURCHASE-RETENTION-ENVIRONMENT-01 — READY FOR REVIEW (2026-11-04)
+
+FALTA de presentación resuelta: reutilización del banner global en la configuración de
+retención del borrador de Compra. Contrato en
+[banner electrónico](docs/frontend/ELECTRONIC_ENVIRONMENT_BANNER.md#reutilización).
+KEEP: lógica funcional, permisos, cálculos y pipeline fiscal sin cambios.
+Una prueba focal nueva de visibilidad **1/1 PASS**, con cambio Pruebas→Producción desde
+el store global y ocultación al desactivar la intención o confirmar la compra.
+ESLint de los dos archivos TypeScript afectados, documentación y `git diff --check` PASS.
+Sin suites generales, staging, commit ni push. Gate del propietario pendiente; no CLOSED.
+Repetición focal desde `frontend/`:
+
+```powershell
+npx.cmd vitest run src/modules/purchases/pages/RetentionSection.test.tsx -t 'muestra el ambiente del store'
+npx.cmd eslint src/modules/purchases/components/PurchaseRetentionDraft.tsx src/modules/purchases/pages/RetentionSection.test.tsx
+git diff --check
+```
+
 
 ## COMPANY-FISCAL-HELP-01 — READY FOR REVIEW (2026-11-04)
 

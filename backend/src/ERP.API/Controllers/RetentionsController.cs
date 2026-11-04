@@ -1,6 +1,7 @@
 using ERP.API.Extensions;
 using ERP.Application.Modules.Retentions.UseCases;
 using ERP.Domain.Kernel.Permissions;
+using ERP.Domain.Modules.ElectronicDocuments.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,8 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// RETENTIONS-ELECTRONIC-ENDPOINTS-03F — expone la generación on-demand del XML/RIDE de
-/// Comprobante de Retención para QA/diagnóstico/vista previa. Controller delgado: recibe el
+/// Expone la descarga del XML fiscal y la generación on-demand del RIDE de
+/// Comprobante de Retención. Controller delgado: recibe el
 /// request, delega íntegramente a MediatR (<see cref="GenerateRetentionXmlQuery"/>/
 /// <see cref="GenerateRetentionRidePdfQuery"/>, RETENTIONS-ELECTRONIC-WIRING-03E) y solo decide el
 /// content-type de la respuesta — nunca consulta <c>RetentionDocument</c> ni ningún repositorio
@@ -28,8 +29,8 @@ namespace ERP.API.Controllers;
 /// RECUPERACIÓN — la transmisión es automática al confirmar Compra/Gasto): disparo explícito del
 /// registro electrónico real (firma + SOAP + autorización, vía
 /// <see cref="ERP.Application.Modules.ElectronicDocuments.Services.IElectronicDocumentIssuer"/>) —
-/// deliberadamente separado de los dos endpoints de arriba, que siguen siendo preview/on-demand
-/// y nunca firman ni envían nada. Usa <see cref="ElectronicDocumentsPermissions.Retry"/> (no un
+/// deliberadamente separado de las lecturas XML/RIDE, que nunca firman ni envían nada.
+/// Usa <see cref="ElectronicDocumentsPermissions.Retry"/> (no un
 /// permiso nuevo): es el mismo permiso que ya protege la acción de registro/reintento manual
 /// equivalente para Factura/Nota de Crédito en <c>ElectronicDocumentsController.Register</c>/
 /// <c>Retry</c>, y ya es asignable desde el catálogo de permisos (ligado al <c>[NavItem]</c> del
@@ -46,19 +47,20 @@ public sealed class RetentionsController : ControllerBase
     public RetentionsController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>
-    /// Genera el XML <c>comprobanteRetencion</c> on-demand (sin firmar, sin autorizar, sin
-    /// persistir) y lo devuelve como archivo descargable. El nombre de archivo usa el
+    /// Descarga el XML autorizado almacenado si existe autorización; en otro estado ofrece
+    /// una vista previa generada. Una variante explícita nunca se sustituye por otra.
+    /// El nombre de archivo usa el
     /// <paramref name="id"/> (no el número de retención) — evita una consulta adicional solo para
     /// resolverlo, mismo criterio de "controller delgado" que el resto del endpoint.
     /// </summary>
     [HttpGet("{id:guid}/electronic/xml")]
-    public async Task<IActionResult> GetElectronicXml(Guid id, CancellationToken ct)
+    public async Task<IActionResult> GetElectronicXml(Guid id, CancellationToken ct, [FromQuery] ElectronicDocumentXmlVariant? variant = null)
     {
-        var result = await _mediator.Send(new GenerateRetentionXmlQuery(id), ct);
+        var result = await _mediator.Send(new GenerateRetentionXmlQuery(id, variant), ct);
         if (!result.IsSuccess)
             return this.ApiFailure(result);
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes(result.Value!.Xml);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(result.Value!);
         return File(bytes, "application/xml; charset=utf-8", $"retencion-{id:N}.xml");
     }
 

@@ -166,7 +166,7 @@ export const retentionsService = {
   getForPurchase: (purchaseInvoiceId: string) =>
     apiGet<RetentionDocumentDto | null>(`${PURCHASES_BASE}/${purchaseInvoiceId}/retention`),
 
-  /** XML de comprobante de retención, on-demand (sin firmar, sin autorizar, sin persistir). */
+  /** XML fiscal almacenado si está autorizado; en otro estado, vista previa generada. Solo lectura. */
   async getElectronicXmlBlob(retentionId: string): Promise<Blob> {
     const { data } = await api.get<Blob>(`${RETENTIONS_BASE}/${retentionId}/electronic/xml`, {
       responseType: "blob",
@@ -174,7 +174,7 @@ export const retentionsService = {
     return data;
   },
 
-  /** RIDE PDF del comprobante de retención, on-demand (mismo criterio que el XML). */
+  /** RIDE on-demand: XML fiscal y fecha oficial si está autorizado; en otro estado, vista previa. */
   async getRidePdfBlob(retentionId: string): Promise<Blob> {
     const { data } = await api.get<Blob>(`${RETENTIONS_BASE}/${retentionId}/ride/pdf`, {
       responseType: "blob",

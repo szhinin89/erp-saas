@@ -411,6 +411,9 @@ Ciclo de vida: `Draft` (solo en memoria, dentro de la emisión) → `Issued` (na
   - Permisos: anular el origen (`purchases.update` / `expenses.documents.cancel`).
   - Plazo ordinario: política versionada GLOBAL por fecha de emisión; detalle en [Compras](purchases.md#5-anulación-confirmed--cancelled). Sin calendario oficial, es informativo.
 - **XML/RIDE:** autorizados por el origen, server-side (`IRetentionSourceAccess`): Compra → `purchases.view`, Gasto → `expenses.documents.view`; sin acceso → 404.
+  - `GET /retentions/{id}/electronic/xml` usa, si `ElectronicDocument` está `Authorized`, exclusivamente el `comprobante` devuelto por el SRI, conservado en `AuthorizedXmlPath` (incluida su firma), mediante `IElectronicDocumentInternalReader`. No lo regenera ni lo reserializa. Sin autorización conserva la vista previa generada, que no se presenta como evidencia autorizada.
+  - El parámetro opcional `variant=Draft|Signed|Authorized` selecciona la variante almacenada exacta. Si falta su ruta o archivo devuelve 404, sin sustituirla por otra variante ni regenerarla; lo mismo aplica a la descarga automática y al RIDE de una retención `Authorized` sin archivo fiscal.
+  - `GET /retentions/{id}/ride/pdf` usa ese mismo XML fiscal para una retención `Authorized` y recibe por separado `ElectronicDocument.AuthorizationDate` (UTC oficial). El servicio RIDE conserva el parser existente y compone la fecha fuera de él, con `CompanyTimeZone` en `Company.Timezone`, segundos incluidos. Una retención sin autorización conserva su vista previa sin fecha inventada. Solo lectura: sin firma, transmisión, escrituras ni caché nuevos.
 
 ## Estructura por módulo
 

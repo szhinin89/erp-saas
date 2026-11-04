@@ -16,7 +16,7 @@ namespace ERP.API.Tests.Retentions;
 /// <summary>
 /// RETENTIONS-ELECTRONIC-ENDPOINTS-03F — contrato de <see cref="RetentionsController"/> con
 /// <see cref="StubMediator"/>: prueba únicamente que el controller transforma
-/// <c>Result&lt;ElectronicDocumentXml&gt;</c>/<c>Result&lt;byte[]&gt;</c> a HTTP con el
+/// <c>Result&lt;string&gt;</c>/<c>Result&lt;byte[]&gt;</c> a HTTP con el
 /// content-type/nombre de archivo correctos, sin abrir Postgres ni el wiring real de Retención.
 /// </summary>
 public sealed class RetentionsControllerTests
@@ -62,10 +62,27 @@ public sealed class RetentionsControllerTests
     // ── GET {id}/electronic/xml ──────────────────────────────────────────
 
     [Fact]
+    public async Task GetElectronicXml_authorized_variant_preserves_the_fiscal_xml()
+    {
+        const string xml = "<?xml version=\"1.0\"?><comprobanteRetencion><Signature>sanitized</Signature></comprobanteRetencion>";
+        GenerateRetentionXmlQuery? captured = null;
+        var controller = BuildController(request =>
+        {
+            captured = (GenerateRetentionXmlQuery)request;
+            return Result<string>.Success(xml);
+        });
+        var result = await controller.GetElectronicXml(Guid.NewGuid(), CancellationToken.None,
+            ElectronicDocumentXmlVariant.Authorized);
+        captured!.Variant.Should().Be(ElectronicDocumentXmlVariant.Authorized);
+        result.Should().BeOfType<FileContentResult>().Which.FileContents
+            .Should().Equal(System.Text.Encoding.UTF8.GetBytes(xml));
+    }
+
+    [Fact]
     public async Task GetElectronicXml_success_returns_application_xml_with_a_safe_filename()
     {
         var id = Guid.NewGuid();
-        var controller = BuildController(_ => Result<ElectronicDocumentXml>.Success(SampleXml()));
+        var controller = BuildController(_ => Result<string>.Success(SampleXml().Xml));
 
         var response = await controller.GetElectronicXml(id, CancellationToken.None);
 
@@ -82,7 +99,7 @@ public sealed class RetentionsControllerTests
         var controller = BuildController(req =>
         {
             captured = (GenerateRetentionXmlQuery)req;
-            return Result<ElectronicDocumentXml>.Success(SampleXml());
+            return Result<string>.Success(SampleXml().Xml);
         });
         var id = Guid.NewGuid();
 
@@ -96,7 +113,7 @@ public sealed class RetentionsControllerTests
     public async Task GetElectronicXml_validation_failure_returns_422_with_the_error_never_a_file()
     {
         var controller = BuildController(_ =>
-            Result<ElectronicDocumentXml>.ValidationFailure(
+            Result<string>.ValidationFailure(
                 "La retención debe estar emitida para generar el documento electrónico."
             )
         );
@@ -120,7 +137,7 @@ public sealed class RetentionsControllerTests
         // es que inexistente y de otro tenant/empresa producen el MISMO NotFound (data provider con
         // scope de tenant + empresa); ambos salen 404 NOT_FOUND por la tabla única.
         var controller = BuildController(_ =>
-            Result<ElectronicDocumentXml>.NotFound("La retención no existe.")
+            Result<string>.NotFound("La retención no existe.")
         );
 
         var response = await controller.GetElectronicXml(Guid.NewGuid(), CancellationToken.None);

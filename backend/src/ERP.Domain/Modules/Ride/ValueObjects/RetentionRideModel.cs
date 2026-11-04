@@ -14,7 +14,7 @@ namespace ERP.Domain.Modules.Ride.ValueObjects;
 /// </summary>
 public sealed record RetentionRideModel
 {
-    public RetentionRideHeader Header { get; }
+    public RetentionRideHeader Header { get; private init; }
     public RideParty Issuer { get; }
     public RideParty SubjectWithheld { get; }
     public RetentionRideSourceDocument SourceDocument { get; }
@@ -25,6 +25,8 @@ public sealed record RetentionRideModel
     /// <c>RetentionDocument</c> ni recalcula bases/porcentajes).</summary>
     public decimal TotalRetained { get; }
     public IReadOnlyList<RideAdditionalInfo> AdditionalInfo { get; }
+
+    public RetentionRideModel WithAuthorizationDate(DateTime? value) => this with { Header = Header.WithAuthorizationDate(value) };
 
     private RetentionRideModel(
         RetentionRideHeader header,

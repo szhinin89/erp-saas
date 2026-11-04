@@ -737,9 +737,10 @@
       },
       "approval": {
         "path": "STATUS.md",
-        "contains": "[V1-APPROVED:Retentions-02]"
+        "contains": "[V1-APPROVED:Retentions-02]",
+        "section": "V1-FUNCTIONAL-CLOSE-01"
       },
-      "missing": "Falta la aceptación real en celcer de un comprobante 07 (transmisión, AUTORIZADO, XML y RIDE) en un entorno aislado; R2 (#31) se detuvo antes del XML y no acredita transmisión. Requiere antes la resolución de SRI-INCIDENT-01 y autorización del propietario."
+      "missing": "Sin pendiente funcional V1 tras la aceptación expresa del propietario del comprobante 07 autorizado en Pruebas, XML firmado y RIDE. Los controles de producción se mantienen independientes."
     },
     {
       "id": "ElectronicDocuments-01",

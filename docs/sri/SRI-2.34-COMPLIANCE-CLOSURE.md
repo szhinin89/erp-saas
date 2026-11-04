@@ -138,7 +138,8 @@ contactó al SRI.
 ## 5. Limitaciones externas y puntos BLOCKED
 
 Conformidad por contrato (XSD embebidos, respuestas SOAP representativas, PostgreSQL real) **no equivale** a
-aceptación real del SRI. Pendientes externos: aceptación en `celcer` de NC (04) y Retención (07), y de 01/04 con
+aceptación real del SRI. La Retención (07) cuenta con aceptación real aportada por el propietario el
+2026-11-04 (véase §8). Pendientes externos: aceptación en `celcer` de NC (04), y de 01/04 con
 `contribuyenteEspecial`; registro de ZH Technologies como proveedor y fecha legal de `EffectiveDate` (Anexo 26);
 porcentajes de Renta frente al catálogo ATS vigente.
 
@@ -239,8 +240,22 @@ R21/R22: `Company` es el único propietario de las designaciones; una sola proye
 |---|---|
 | Factura 01 | Conforme por contrato (XSD 1.1.0, R13/R14/R16/R21/R22/R23); validada antes en `celcer`; salidas con `contribuyenteEspecial`, `agenteRetencion` y "Gran Contribuyente" pendientes de aceptación real |
 | Nota de crédito 04 | Conforme por contrato (incluye R21/R22); sin aceptación real en `celcer` |
-| Retención 07 | Conforme por contrato (1.0.0, Tabla 20, RUC Proveedor, R21; sin Anexo 24 por norma); sin aceptación real |
+| Retención 07 | Conforme por contrato (1.0.0, Tabla 20, RUC Proveedor, R21; sin Anexo 24 por norma); aceptación real en Pruebas confirmada por el propietario el 2026-11-04; Retentions-02 aprobada |
 | Caso #32 | Consulta segura durante las 24 h del SRI y conciliación con evidencia: conforme; sin evidencia concluyente permanece pendiente y se escala, sin retransmitir (§5.1) |
+
+**Evidencia de aceptación 07 (2026-11-04, aportada y comprobada por el propietario):**
+retención **001-001-000000001**, compra origen **001-001-000006222**; respuesta SOAP
+**AUTORIZADO**, ambiente **Pruebas**, fecha **2026-11-04T13:56:35-05:00**, número de
+autorización igual a la clave de acceso y sin mensajes de error. El `comprobante`
+contiene la firma XAdES; XML firmado descargado y comprobado y RIDE con fecha
+**04/11/2026 13:56:35**. No se incorpora al repositorio XML operativo, claves de acceso
+ni certificados. El agente no volvió a consultar ni transmitir al SRI ni modificó la
+retención real. Corrección de lecturas XML/RIDE: Application **25/25 PASS** y controlador
+**17/17 PASS**, con respuesta SOAP sanitizada y sin red; no sustituyen la aceptación real.
+La aprobación y el porcentaje global viven en
+[STATUS — cierre funcional V1](../../STATUS.md#v1-functional-close-01--cierre-funcional-aprobado-2026-11-04).
+Esta evidencia no acredita una anulación real nueva, ni aprueba producción o resuelve
+otros incidentes y pendientes externos.
 
 **READY FOR REVIEW** para las correcciones de §3 (R11, R13, R14, R16, R23) y §3.1 (R21, R22, R23 RIDE/formato). Los puntos de §5 quedan BLOCKED de
 forma individual, salvo §5.1 (R32, decisión operativa aprobada), §5.2 (R12, implementado con límites) y §5.4 (R21/R22), que solo conservan pendientes

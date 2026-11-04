@@ -29,7 +29,9 @@ public sealed record RetentionRideHeader
     public string FiscalPeriod { get; }
     public RideAccessKey AccessKey { get; }
     public string AuthorizationNumber { get; }
-    public DateTime? AuthorizationDate { get; }
+    public DateTime? AuthorizationDate { get; private init; }
+
+    public RetentionRideHeader WithAuthorizationDate(DateTime? value) => this with { AuthorizationDate = value };
 
     private RetentionRideHeader(
         string environment,
