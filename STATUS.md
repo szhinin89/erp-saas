@@ -771,7 +771,59 @@ Pruebas con ausencia de reenvío en el recorrido completo de Ventas/NC tras un f
 El PASS del agente no sustituye el gate del propietario. Sin migraciones, staging, commit ni
 push. **No CLOSED.**
 
-## Caso #20 — VALIDACIÓN FUNCIONAL MANUAL CLOSED / GATE TÉCNICO INTEGRADO PENDIENTE (2026-11-03)
+## Caso #20 — CLOSED integral por aprobación del propietario (2026-11-03)
+
+**CASO-20-CLOSE:** el propietario aprueba expresamente el cierre integral de la anulación
+documental de cobros, incluida la evidencia técnica de CASO-20-DEV-E2E-01 y la aceptación
+funcional manual previa. Queda retirado el pendiente técnico del caso #20. Este cierre
+no modifica el alcance ni el estado de #32, #30 o #31 y no acredita despliegue ni SRI.
+Los pendientes históricos de este caso descritos debajo quedan superados por este cierre.
+**KEEP:** implementación productiva existente; sin BUG REAL productivo reproducible detectado.
+
+**Pruebas efectivamente ejecutadas y aprobadas:** 11 escenarios API/PostgreSQL PASS
+en `CollectionReversalTechnicalTests.cs`, reutilizando `FinancialCommandIdempotencyFixture`
+y `PostgreSqlTestWebAppFactory`, más 3 pruebas PostgreSQL existentes PASS de
+`CollectionPostingIntegrationTests` (restauración del saldo, asiento inverso y republicación
+del evento sin duplicar el reverso).
+
+| Escenario API/PostgreSQL | Evidencia | Resultado |
+|---|---|---|
+| Permiso específico y denegación | Sin permiso 403; usuario con permiso específico 200 | PASS |
+| Contexto de otro tenant | 403; cobro Applied y CxC sin alteración | PASS |
+| Contexto de otra empresa | 403; cobro Applied y CxC sin alteración | PASS |
+| Contexto válido sobre cobro de empresa ajena | 404; cobro Applied conservado | PASS |
+| Concurrencia, auditoría, cuotas, nuevo cobro y contabilidad | Dos reversas: 200/422; motivo, actor, fecha UTC y Reversed persistidos; dos cuotas restauradas, saldo 100; nuevo cobro 25 con 201; original conservado y único reverso con débitos/créditos intercambiados | PASS |
+| Período efectivo cerrado | 422; rollback de cobro/CxC y ausencia de asiento inverso | PASS |
+| Destino bancario | Reversa 200; cuenta bancaria y movimientos de caja conservados | PASS |
+| Turno cerrado sin movimiento vinculado | Reversa 200; turno, movimientos y saldo operativo conservados | PASS |
+| Turno cerrado con movimiento vinculado | Reversa 422; cobro y estado operativo conservados | PASS |
+| Histórico de caja sin trazabilidad | 422; cobro y CxC conservados | PASS |
+| Histórico bancario sin trazabilidad | 422; cobro y CxC conservados | PASS |
+
+Evidencias locales no versionadas (no implican nuevas ejecuciones de CI):
+- [caso20-http-final.trx](.local/caso20-results/caso20-http-final.trx): 10 PASS y un fallo
+  de preparación del escenario de empresa ajena por modo/contexto contable incompletos.
+- [caso20-foreign-company-final.trx](.local/caso20-results/caso20-foreign-company-final.trx):
+  ese único escenario repetido tras completar sus datos/contexto sintéticos, 1/1 PASS.
+  Los 11 escenarios quedan acreditados entre ambas ejecuciones; no se presenta una
+  ejecución única 11/11 ni se ocultan los fallos anteriores del arnés/aserciones.
+- [caso20-posting.trx](.local/caso20-results/caso20-posting.trx): 3/3 PASS.
+
+**Entorno y límites:** API iniciada en proceso mediante TestServer, pipeline HTTP,
+autorización, handlers y persistencia reales; JWT, usuarios y proveedores de contexto
+tenant/empresa/actor sintéticos de la fábrica existente. No acredita login real ni un
+servidor Kestrel accesible por red. PostgreSQL real vía Testcontainers `postgres:16-alpine`,
+en bases nuevas y efímeras `erp_test` y `erp_collection_posting_test`, separadas del
+PostgreSQL habitual. Migraciones y escrituras exclusivamente en esas bases autorizadas;
+contenedores PostgreSQL de pruebas eliminados automáticamente. Sin uso de `erp_zh_test`,
+base habitual ni producción. Sin llamadas al SRI, repetición de la prueba manual ni pruebas
+de #32/#30/#31. El único cambio de código es el archivo de pruebas; sin código productivo.
+
+En CASO-20-CLOSE no se repiten pruebas aprobadas: solo documentación de cierre,
+revisión del diff y `git diff --check`. El propietario autoriza expresamente al agente
+a preparar un único commit local del test y estos dos documentos; sin despliegue ni push.
+
+### Evidencia histórica — aceptación manual e implementación
 
 Aceptación expresa del propietario el 03/11/2026: la anulación documental del cobro
 funcionó correctamente en navegador real y se aprueba el cierre funcional manual
