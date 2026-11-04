@@ -243,7 +243,6 @@ export function useMasterDataCustomersPage() {
       setSaving(false);
     }
     listState.refetch();
-    openSettings({ ...settingsBp!, id }).catch(() => {});
   };
 
   // ── Customer Config (CRM fields) ──────────────────────────────────────────

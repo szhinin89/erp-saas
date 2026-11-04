@@ -1,5 +1,20 @@
 # Project Status
 
+## CUSTOMER-SALES-SETTINGS-UX-FIX-01 — READY FOR REVIEW (2026-11-03)
+
+BUG REAL: `saveSettings()` iniciaba `openSettings()` sin esperarlo; su respuesta
+restablecía el modal después del cierre. Eliminada esa recarga automática;
+confirmación de éxito y cierre tras guardar, error visible sin cerrar y bloqueo
+de cierre/envíos duplicados durante la solicitud. Reapertura manual conserva el GET.
+Sin backend, endpoints, reglas de crédito ni cambios de condiciones de pago.
+
+Vitest focal agente: 12/12 PASS (4 nuevas). Antes del fix, 2 regresiones fallaron
+por el GET adicional. APIs simuladas para comprobar el ciclo de vida de la UI;
+no acredita persistencia PostgreSQL ni smoke manual. Gate del propietario pendiente;
+no CLOSED. Lint PASS (0 errores, 37 warnings ajenos al cambio); TypeScript y build
+PASS (advertencias de chunks y fullLogout existentes). Architecture:check PASS
+(140/140, 0 violaciones nuevas); git diff --check PASS. Sin staging, commit, push ni despliegue.
+
 ## SEC-A01 — límites de intentos de login — IMPLEMENTACIÓN V1 CLOSED / PRODUCCIÓN NO-GO (2026-11-03)
 
 `login` y `global-login` con admisión previa al handler: reserva atómica K1 cuenta+IP (5/15 min),

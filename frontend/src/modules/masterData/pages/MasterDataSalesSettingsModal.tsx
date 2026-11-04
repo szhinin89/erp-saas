@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHField, ZHFormActions } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { paymentTermService, type PaymentTermDto } from "../api/paymentTermService";
 import type { BusinessPartnerSummaryDto, CompanyBpSalesSettingsDto } from "../types/businessPartner.types";
 import { formatApiRequestError } from "../../lib/apiError";
+import { message } from "../../../lib/messages";
 
 type Props = {
   partner: BusinessPartnerSummaryDto;
@@ -33,18 +34,24 @@ export function MasterDataSalesSettingsModal({ partner, initialSettings, saving,
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+  const submitting = useRef(false);
+  const handleClose = () => { if (!submitting.current) onClose(); };
   const invalidSelection = !!paymentTermId && !terms.some((pt) => pt.id === paymentTermId && pt.isActive);
   return (
-    <ZHModal open onClose={onClose} title="Condición predeterminada para ventas" subtitle={partner.legalName} closeOnBackdrop={false}>
+    <ZHModal open onClose={handleClose} title="Condición predeterminada para ventas" subtitle={partner.legalName} closeOnBackdrop={false}>
       <form onSubmit={async (event) => {
         event.preventDefault();
-        if (loading || loadFailed || invalidSelection || saving) return;
+        if (loading || loadFailed || invalidSelection || saving || submitting.current) return;
+        submitting.current = true;
         setFormError(null);
         try {
           await onSave({ paymentTermId: paymentTermId || null });
+          message.success("Condición de ventas guardada correctamente.");
           onClose();
         } catch (err) {
           setFormError(formatApiRequestError(err, { generic: "No se pudo guardar la condición de ventas." }));
+        } finally {
+          submitting.current = false;
         }
       }}>
         {(error || formError) && <ZHPageNotice variant="error" message={error ?? formError!} />}
@@ -56,7 +63,7 @@ export function MasterDataSalesSettingsModal({ partner, initialSettings, saving,
             {terms.filter((pt) => pt.isActive).map((pt) => <option key={pt.id} value={pt.id}>{pt.code} — {pt.name} ({pt.summary})</option>)}
           </select>
         </ZHField>
-        <ZHFormActions onCancel={onClose} saveButtonType="submit" disableSave={loading || saving || loadFailed || invalidSelection} labels={{ cancel: "Cerrar", save: saving ? "Guardando..." : "Guardar" }} />
+        <ZHFormActions onCancel={handleClose} saveButtonType="submit" disableSave={loading || saving || loadFailed || invalidSelection} labels={{ cancel: "Cerrar", save: saving ? "Guardando..." : "Guardar" }} />
       </form>
     </ZHModal>
   );
