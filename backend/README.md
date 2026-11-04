@@ -38,4 +38,4 @@ Ver [ADR-041](../docs/decisions/ADR-041-negative-sale-inventory-cost-obligations
 
 ## Reglas
 
-[`AI-RULES/BACKEND-RULES.md`](../AI-RULES/BACKEND-RULES.md) · [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+[`docs/architecture/backend.md`](../docs/architecture/backend.md) · [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)

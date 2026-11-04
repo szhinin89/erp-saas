@@ -48,7 +48,7 @@ ERP.AI.Infrastructure/
 
 ## Stack preferido (a confirmar via ADR)
 
-- **LLM principal:** Claude API (Anthropic) — ver `AI-RULES/STACK.md` cuando se defina
+- **LLM principal:** Claude API (Anthropic) — ver `docs/architecture/stack.md` cuando se defina
 - **Embeddings:** por definir
 - **Vector DB:** por definir (candidatos: pgvector in PostgreSQL, Qdrant)
 
@@ -59,4 +59,4 @@ ERP.AI.Infrastructure/
 No implementar hasta que `ERP.AI.Application` tenga al menos un caso de uso concreto
 aprobado via ADR.
 
-Ver: [AI-RULES/AI-FOUNDATION.md](../../AI-RULES/AI-FOUNDATION.md)
+Ver: [docs/architecture/ai-foundation.md](../../../docs/architecture/ai-foundation.md)

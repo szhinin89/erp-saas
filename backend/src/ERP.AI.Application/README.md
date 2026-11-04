@@ -60,4 +60,4 @@ Antes de añadir código aquí, crear un ADR que documente:
 3. El stack de vector DB (si aplica)
 4. La política de privacidad de datos del tenant
 
-Ver: [AI-RULES/AI-FOUNDATION.md](../../AI-RULES/AI-FOUNDATION.md)
+Ver: [docs/architecture/ai-foundation.md](../../../docs/architecture/ai-foundation.md)
