@@ -771,7 +771,30 @@ Pruebas con ausencia de reenvío en el recorrido completo de Ventas/NC tras un f
 El PASS del agente no sustituye el gate del propietario. Sin migraciones, staging, commit ni
 push. **No CLOSED.**
 
-## Caso #20 — IMPLEMENTADO — PENDIENTE E2E INTEGRADA (2026-10-28)
+## Caso #20 — VALIDACIÓN FUNCIONAL MANUAL CLOSED / GATE TÉCNICO INTEGRADO PENDIENTE (2026-11-03)
+
+Aceptación expresa del propietario el 03/11/2026: la anulación documental del cobro
+funcionó correctamente en navegador real y se aprueba el cierre funcional manual
+(CASO-20-FUNCTIONAL-CLOSE-01). Cliente: Sebastian Zhinin; factura `001-001-000000016`;
+cobro de referencia `001458848`.
+
+| Evidencia manual | Antes de anular | Después de anular |
+|---|---|---|
+| Factura | $21,00 | $21,00 |
+| Cobrado | $10,50 | $0,00 |
+| Pendiente | $10,50 | $21,00 |
+| Estado de factura | Parcial | Pendiente |
+| Asiento original | 21 | 21 conservado |
+
+Cobro observado como **Anulado**, motivo `anulacion de pruebas`, fecha visible
+03/11/2026 20:41:13. Asiento inverso 22 contabilizado por $10,50; balance de
+comprobación: Debe $79,77 / Haber $79,77.
+
+El cierre acredita exclusivamente el comportamiento funcional observado y aceptado
+por el propietario; no acredita E2E completa ni nuevas verificaciones técnicas de
+API/PostgreSQL. El gate técnico integrado sigue pendiente junto con #32, #30 y #31,
+sin duplicar la tarea ni cambiar sus estados. Se conserva debajo la evidencia técnica
+de la implementación del 2026-10-28 y sus límites.
 
 Anulación documental de cobros erróneos desde CxC, con permiso específico, selección,
 confirmación y motivo obligatorio. **KEEP:** `ReverseCollectionCommand`, restauración de
@@ -794,14 +817,17 @@ cd frontend
 npx.cmd vitest run src/modules/finance/components/ReverseCollectionModal.test.tsx
 ```
 
-Por ajuste expreso del propietario, **no se ejecutó E2E funcional de navegador, HTTP ni
-PostgreSQL**. Pendiente para la cadena integrada: permiso efectivo/denegación, aislamiento
+En la entrega del 2026-10-28, por ajuste expreso del propietario, **no se ejecutó E2E
+funcional de navegador, HTTP ni PostgreSQL**. La aceptación manual del 03/11/2026
+registrada arriba no sustituye el gate técnico. Pendiente para la cadena integrada:
+permiso efectivo/denegación, aislamiento
 tenant/empresa, duplicados concurrentes, persistencia de motivo/actor/fecha, restauración de
 cuotas y nuevo cobro, reversión contable/gate de período y ausencia de cambios operativos
 en caja/banco (incluidos turnos cerrados e históricos bloqueados). Estas propiedades no se
 acreditan con mocks. Sin modificaciones de bases, migraciones, repetición de R1–R4,
-suites funcionales completas, staging, commit ni push. **No CLOSED**; queda pendiente el
-gate integrado y la aprobación del propietario conforme al protocolo.
+suites funcionales completas, staging, commit ni push en aquella entrega. **Validación
+funcional manual CLOSED; gate técnico integrado pendiente**, incluida su aprobación
+por el propietario conforme al protocolo. No se declara el caso validado E2E completo.
 
 ## R4 — Contabilidad — CLOSED (2026-10-28)
 
