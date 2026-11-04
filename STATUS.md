@@ -35,6 +35,9 @@ corrección `db87df627d8de52cdc96248edfd69f157038c477`;
 [CI #1071](https://github.com/szhinin89/erp-saas/actions/runs/41737883781) SUCCESS (19 jobs
 success, 0 fallidos; despliegue Azure omitido; backend architecture/API/infrastructure, frontend e
 identity guardrails PASS). Cierre de la implementación aprobado expresamente por el propietario.
+Cierre documental publicado en `9cb872adac3cd82992c52ba76387c69b969cb3e5`;
+[CI #1072](https://github.com/szhinin89/erp-saas/actions/runs/41743143238) SUCCESS
+(ejecución `41743143238`: 19 jobs exitosos, 0 fallidos y 1 omitido: Deploy — Azure Web App).
 No acredita despliegue ni ERP V1 listo para producción.
 
 **Producción NO-GO — requisitos abiertos antes del despliegue:**
