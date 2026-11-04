@@ -11,6 +11,7 @@ export function resolveHelp(
   const entry = HELP_REGISTRY[key];
   if (!entry) return null;
   return {
+    i18nPrefix: entry.i18nPrefix,
     title: entry.title,
     short: interpolateHelp(entry.short, vars),
     long: entry.long ? interpolateHelp(entry.long, vars) : undefined,

@@ -29,6 +29,27 @@ export function electronicDocumentStateBadgeVariant(
   }
 }
 
+/**
+ * SALES-ELECTRONIC-STATUS-CLARITY-01 — estados que pueden confundirse con un comprobante ya
+ * autorizado (p. ej. Borrador = sin emitir, Firmado ≠ autorizado). Devuelve la clave i18n de su
+ * explicación breve, o null si el estado no la necesita.
+ */
+const STATES_WITH_HELP = new Set([
+  "Draft",
+  "XmlGenerated",
+  "Signed",
+  "Dispatching",
+  "Sent",
+  "Received",
+  "Authorized",
+]);
+
+export function electronicDocumentStateHelpKey(state: string): string | null {
+  return STATES_WITH_HELP.has(state)
+    ? `electronicDocuments.monitor.stateHelp.${state}`
+    : null;
+}
+
 /** Ícono Material Symbols por estado — acompaña el badge para reconocimiento visual rápido. */
 export function electronicDocumentStateIcon(state: string): string {
   switch (state) {

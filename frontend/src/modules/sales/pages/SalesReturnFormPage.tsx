@@ -75,6 +75,7 @@ export function SalesReturnFormPage() {
             grandTotal: inv.grandTotal,
             createdAt: inv.createdAt,
             emissionType: inv.emissionType,
+            electronicStatus: inv.electronicStatus,
           });
         } catch {
           // La factura pudo no cargarse (p. ej. permisos) — no bloquea la vista de la devolución.

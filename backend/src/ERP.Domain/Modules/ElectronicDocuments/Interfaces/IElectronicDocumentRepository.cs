@@ -71,6 +71,19 @@ public interface IElectronicDocumentRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// SALES-ELECTRONIC-STATUS-CLARITY-01 — lectura en lote (una sola consulta, sin tracking)
+    /// del estado real de los documentos electrónicos de una página de documentos de origen.
+    /// Los orígenes sin documento electrónico registrado no aparecen en el diccionario; el
+    /// consumidor decide cómo presentarlos (nunca se infiere un estado).
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, ElectronicDocumentState>> GetCurrentStatesBySourcesAsync(
+        Guid tenantId,
+        string sourceModule,
+        IReadOnlyCollection<Guid> sourceEntityIds,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(ElectronicDocument document, CancellationToken ct = default);
 
     /// <summary>Relee de la BD los valores (y el <c>xmin</c>) de una instancia ya trackeada, descartando cambios en memoria.</summary>

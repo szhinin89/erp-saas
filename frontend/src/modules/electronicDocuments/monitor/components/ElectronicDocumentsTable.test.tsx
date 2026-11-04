@@ -90,3 +90,27 @@ describe("ElectronicDocumentsTable — ZH-LISTING-COMPLIANCE-AUDIT-08", () => {
     expect(onSelect).toHaveBeenCalledWith("doc-1");
   });
 });
+
+
+// SALES-ELECTRONIC-STATUS-CLARITY-01 — explicación breve de los estados que se confunden con
+// un comprobante ya autorizado (Borrador = sin emitir; Firmado ≠ autorizado).
+describe("ElectronicDocumentsTable — explicación de estados", () => {
+  it("Borrador explica que aún no se emite (sin XML firmado ni autorización SRI)", () => {
+    renderTable({ items: [{ ...ITEM, currentState: "Draft" }] });
+    const badge = screen.getByText("Borrador").closest("[title]");
+    expect(badge?.getAttribute("title")).toBe(
+      "Sin emitir: aún no tiene XML firmado ni autorización del SRI.",
+    );
+  });
+
+  it("Firmado aclara que todavía no está autorizado por el SRI", () => {
+    renderTable({ items: [{ ...ITEM, currentState: "Signed" }] });
+    const badge = screen.getByText("Firmado").closest("[title]");
+    expect(badge?.getAttribute("title")).toBe("XML firmado, pero aún no autorizado por el SRI.");
+  });
+
+  it("Rechazado no lleva explicación (no se presta a confusión)", () => {
+    renderTable({ items: [{ ...ITEM, currentState: "Rejected" }] });
+    expect(screen.getByText("Rechazado").closest("[title]")).toBeNull();
+  });
+});

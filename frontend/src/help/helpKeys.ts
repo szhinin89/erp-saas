@@ -1,5 +1,16 @@
 /** SSOT de claves de ayuda contextual. Las pantallas consumen ayuda solo por clave, nunca con texto hardcodeado. */
 export const HELP_KEYS = {
+  COMPANY_FISCAL_TAX_REGIME: "company.fiscal.taxRegime",
+  COMPANY_FISCAL_SPECIAL_TAXPAYER: "company.fiscal.specialTaxpayer",
+  COMPANY_FISCAL_RETENTION_AGENT_RESOLUTION: "company.fiscal.retentionAgentResolution",
+  COMPANY_FISCAL_RETENTION_AGENT_EFFECTIVE_FROM: "company.fiscal.retentionAgentEffectiveFrom",
+  COMPANY_FISCAL_LARGE_TAXPAYER_RESOLUTION: "company.fiscal.largeTaxpayerResolution",
+  COMPANY_FISCAL_LARGE_TAXPAYER_EFFECTIVE_FROM: "company.fiscal.largeTaxpayerEffectiveFrom",
+  COMPANY_FISCAL_ACCOUNTING_REQUIRED: "company.fiscal.accountingRequired",
+  COMPANY_FISCAL_FOREIGN_TRADE: "company.fiscal.foreignTrade",
+  COMPANY_FISCAL_WITHHOLDS_RENTA: "company.fiscal.withholdsRenta",
+  COMPANY_FISCAL_WITHHOLDS_VAT: "company.fiscal.withholdsVat",
+
   SALES_CUSTOMER_CONSUMER_FINAL: "sales.customer.consumerFinal",
   SALES_EMISSION_SECTION: "sales.emission.section",
   SALES_EMISSION_TYPE: "sales.emission.type",

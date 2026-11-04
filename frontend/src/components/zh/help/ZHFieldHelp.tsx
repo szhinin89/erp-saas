@@ -1,3 +1,4 @@
+import { useOptionalI18n } from "../../../i18n/i18n";
 import { resolveHelp, type HelpKeyId, type HelpVariables } from "../../../help";
 import { ZHHelpIcon } from "./ZHHelpIcon";
 import { ZHHelpPopover } from "./ZHHelpPopover";
@@ -12,7 +13,13 @@ interface ZHFieldHelpProps {
 export function ZHFieldHelp({ helpKey, variables }: ZHFieldHelpProps) {
   const { open, pinned, triggerRef, titleId, openByHover, toggleByClick, close } =
     useHelpDisclosure();
-  const content = resolveHelp(helpKey, variables);
+  const { t } = useOptionalI18n();
+  const resolved = resolveHelp(helpKey, variables);
+  const content = resolved?.i18nPrefix ? {
+    title: t(`${resolved.i18nPrefix}.title`, resolved.title),
+    short: t(`${resolved.i18nPrefix}.short`, resolved.short),
+    long: t(`${resolved.i18nPrefix}.long`, resolved.long ?? ""),
+  } : resolved;
   if (!content) return null;
 
   return (

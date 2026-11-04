@@ -192,6 +192,9 @@ export interface SalesListItemDto {
   createdAt: string;
   /** POS-EMISSION-TYPE-SNAPSHOT-01: snapshot de la factura ("Electronic" | "Physical"). */
   emissionType: string;
+  /** SALES-ELECTRONIC-STATUS-CLARITY-01: estado real de ElectronicDocument ("None" si no existe) —
+   * independiente de `status` (comercial). Nunca se infiere en el frontend. */
+  electronicStatus: string;
 }
 
 export interface SalesListResponse {

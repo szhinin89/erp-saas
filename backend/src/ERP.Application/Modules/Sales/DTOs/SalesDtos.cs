@@ -282,7 +282,10 @@ public sealed record SalesListDto(
     DateTime CreatedAt,
     // POS-EMISSION-TYPE-SNAPSHOT-01: snapshot SalesInvoice.EmissionType — permite al listado
     // decidir acciones electrónicas (RIDE) por la factura, nunca por la caja abierta actual.
-    string EmissionType
+    string EmissionType,
+    // SALES-ELECTRONIC-STATUS-CLARITY-01: estado REAL de ElectronicDocument (misma fuente y mismo
+    // valor "None" que SalesInvoiceDto.ElectronicStatus). Independiente de Status (comercial).
+    string ElectronicStatus
 );
 
 /// <summary>

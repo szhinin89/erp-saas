@@ -311,6 +311,7 @@ describe("SalesPage — acciones de RIDE", () => {
               grandTotal: 10,
               createdAt: "",
               emissionType: "Electronic",
+              electronicStatus: "None",
             },
             {
               id: "inv-draft",
@@ -323,6 +324,7 @@ describe("SalesPage — acciones de RIDE", () => {
               grandTotal: 10,
               createdAt: "",
               emissionType: "Electronic",
+              electronicStatus: "None",
             },
           ],
         }),
@@ -350,6 +352,7 @@ describe("SalesPage — acciones de RIDE", () => {
               grandTotal: 10,
               createdAt: "",
               emissionType: "Electronic",
+              electronicStatus: "None",
             },
           ],
         }),
@@ -584,6 +587,7 @@ describe("SalesPage — visibilidad Electrónica/Física por snapshot de la fact
       grandTotal: 10,
       createdAt: "",
       emissionType,
+      electronicStatus: "None",
     });
     useSalesPageMock.mockReturnValue(
       buildCtx({
@@ -595,5 +599,116 @@ describe("SalesPage — visibilidad Electrónica/Física por snapshot de la fact
     renderSalesPage();
     expect(screen.getByLabelText("Ver RIDE de factura 001-001-000000001")).toBeTruthy();
     expect(screen.queryByLabelText("Ver RIDE de factura 001-001-000000002")).toBeNull();
+  });
+});
+
+// SALES-ELECTRONIC-STATUS-CLARITY-01 — el estado comercial («Confirmada») y el estado SRI real se
+// muestran por separado; «Autorizada por SRI» solo cuando el documento electrónico lo está.
+describe("SalesPage — claridad entre estado de la venta y estado SRI", () => {
+  afterEach(() => cleanup());
+
+  const listRow = (
+    id: string,
+    electronicStatus: string,
+    emissionType = "Electronic",
+  ): SalesListItemDto => ({
+    id,
+    invoiceNumber: `001-001-${id}`,
+    issueDate: "2026-07-01",
+    customerId: "c1",
+    customerName: "A",
+    status: "Authorized",
+    lineCount: 1,
+    grandTotal: 10,
+    createdAt: "",
+    emissionType,
+    electronicStatus,
+  });
+
+  it("listado: columnas separadas «Estado venta» / «Estado SRI» con el estado electrónico real", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        tab: "listado",
+        listItems: [
+          listRow("000000015", "Draft"),
+          listRow("000000016", "Signed"),
+          listRow("000000017", "Authorized"),
+          listRow("000000018", "None", "Physical"),
+        ],
+      }),
+    );
+    renderSalesPage();
+
+    const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
+    expect(headers).toContain("Estado venta");
+    expect(headers).toContain("Estado SRI");
+
+    const commercial = screen.getAllByTestId("sales-commercial-status").map((b) => b.textContent);
+    expect(commercial).toEqual(["Confirmada", "Confirmada", "Confirmada", "Confirmada"]);
+
+    const electronic = screen.getAllByTestId("sales-electronic-status");
+    expect(electronic.map((b) => b.textContent)).toEqual([
+      "Sin emitir",
+      "Firmada, sin autorizar",
+      "Autorizada por SRI",
+      "No aplica",
+    ]);
+    expect(electronic[0].getAttribute("title")).toBe(
+      "Aún no tiene XML firmado ni autorización del SRI.",
+    );
+    // La autorización SRI aparece una sola vez (la única fila realmente autorizada).
+    expect(screen.getAllByText("Autorizada por SRI")).toHaveLength(1);
+    // La etiqueta comercial antigua «Autorizada» ya no se usa.
+    expect(screen.queryByText("Autorizada")).toBeNull();
+  });
+
+  it("detalle: venta Confirmada con documento electrónico en Draft → «Sin emitir», nunca «Autorizada por SRI»", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        tab: "nuevo",
+        isDraft: false,
+        readOnly: true,
+        editing: buildInvoice({ status: "Authorized", electronicStatus: "Draft" }),
+      }),
+    );
+    renderSalesPage();
+
+    expect(screen.getByTestId("sales-commercial-status").textContent).toBe("Confirmada");
+    expect(screen.getByTestId("sales-electronic-status").textContent).toBe("Sin emitir");
+    expect(screen.queryByText("Autorizada por SRI")).toBeNull();
+  });
+
+  it("detalle: documento electrónico autorizado → «Autorizada por SRI»", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        tab: "nuevo",
+        isDraft: false,
+        readOnly: true,
+        editing: buildInvoice({ status: "Authorized", electronicStatus: "Authorized" }),
+      }),
+    );
+    renderSalesPage();
+
+    expect(screen.getByTestId("sales-electronic-status").textContent).toBe("Autorizada por SRI");
+  });
+
+  it("detalle de una venta física: muestra el estado de la venta y ningún estado SRI", () => {
+    useSalesPageMock.mockReturnValue(
+      buildCtx({
+        tab: "nuevo",
+        isDraft: false,
+        readOnly: true,
+        isElectronic: false,
+        editing: buildInvoice({
+          status: "Authorized",
+          emissionType: "Physical",
+          electronicStatus: "None",
+        }),
+      }),
+    );
+    renderSalesPage();
+
+    expect(screen.getByTestId("sales-commercial-status").textContent).toBe("Confirmada");
+    expect(screen.queryByTestId("sales-electronic-status")).toBeNull();
   });
 });

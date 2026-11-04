@@ -1083,11 +1083,17 @@ public sealed class GetSalesInvoiceListHandler
     : IRequestHandler<GetSalesInvoiceListQuery, Result<SalesListResponse>>
 {
     private readonly ISalesInvoiceRepository _repo;
+    private readonly ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository _edocRepo;
     private readonly ICurrentTenant _t;
 
-    public GetSalesInvoiceListHandler(ISalesInvoiceRepository repo, ICurrentTenant t)
+    public GetSalesInvoiceListHandler(
+        ISalesInvoiceRepository repo,
+        ERP.Domain.Modules.ElectronicDocuments.Interfaces.IElectronicDocumentRepository edocRepo,
+        ICurrentTenant t
+    )
     {
         _repo = repo;
+        _edocRepo = edocRepo;
         _t = t;
     }
 
@@ -1104,6 +1110,13 @@ public sealed class GetSalesInvoiceListHandler
             q.PageSize,
             ct
         );
+        // SALES-ELECTRONIC-STATUS-CLARITY-01: una sola consulta por página (nunca N+1).
+        var electronicStates = await _edocRepo.GetCurrentStatesBySourcesAsync(
+            _t.TenantId,
+            "Sales",
+            items.Select(i => i.Id).ToList(),
+            ct
+        );
         var dtos = items
             .Select(i => new SalesListDto(
                 i.Id,
@@ -1115,7 +1128,8 @@ public sealed class GetSalesInvoiceListHandler
                 i.Lines.Count,
                 i.GrandTotal,
                 i.CreatedAt,
-                i.EmissionType.ToString()
+                i.EmissionType.ToString(),
+                electronicStates.TryGetValue(i.Id, out var state) ? state.ToString() : "None"
             ))
             .ToList();
         return Result<SalesListResponse>.Success(

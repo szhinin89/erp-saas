@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { renderSalesUi } from "../test/renderSalesUi";
 import type { SalesInvoiceDto } from "../api/salesService";
 import { issueStepsFor } from "../utils/salesIssueSteps";
 
@@ -72,7 +73,7 @@ function invoice(overrides: Partial<SalesInvoiceDto> = {}): SalesInvoiceDto {
 }
 
 function renderModal(props: Partial<Parameters<typeof SalesIssueModal>[0]> = {}) {
-  return render(
+  return renderSalesUi(
     <SalesIssueModal
       phase="success"
       isElectronic={false}
@@ -171,7 +172,7 @@ describe("SalesIssueModal — resultado", () => {
       }),
     });
     expect(screen.getByText("Estado electrónico")).toBeTruthy();
-    expect(screen.getByText("Autorizado")).toBeTruthy();
+    expect(screen.getByText("Autorizada por SRI")).toBeTruthy();
     expect(screen.getByText("Imprimir RIDE")).toBeTruthy();
     expect(screen.getByText("Descargar XML")).toBeTruthy();
   });
@@ -181,7 +182,7 @@ describe("SalesIssueModal — resultado", () => {
       isElectronic: true,
       result: invoice({ emissionType: "Electronic", electronicStatus: "Sent" }),
     });
-    expect(screen.getByText("Enviado")).toBeTruthy();
+    expect(screen.getByText("Enviada al SRI")).toBeTruthy();
     expect(screen.getByText(/pendiente de autorización/)).toBeTruthy();
     expect(screen.queryByText("Imprimir RIDE")).toBeNull();
     expect(screen.getByText("Descargar XML")).toBeTruthy();

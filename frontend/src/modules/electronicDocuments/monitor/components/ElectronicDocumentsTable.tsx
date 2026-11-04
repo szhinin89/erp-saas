@@ -10,6 +10,7 @@ import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import type { ElectronicDocumentListItemDto } from "../api/electronicDocumentsMonitorService";
 import {
   electronicDocumentStateBadgeVariant,
+  electronicDocumentStateHelpKey,
   electronicDocumentStateIcon,
 } from "../utils/stateBadge";
 import { copyToClipboard } from "../../../../lib/clipboard";
@@ -58,6 +59,11 @@ export function ElectronicDocumentsTable({
     );
   };
 
+  const stateHelp = (state: string) => {
+    const key = electronicDocumentStateHelpKey(state);
+    return key ? t(key) : undefined;
+  };
+
   const columns: ZHDataTableColumn<ElectronicDocumentListItemDto>[] = [
     {
       key: "state",
@@ -65,6 +71,7 @@ export function ElectronicDocumentsTable({
       render: (row) => (
         <Badge
           variant={electronicDocumentStateBadgeVariant(row.currentState)}
+          title={stateHelp(row.currentState)}
           label={
             <span className="zh-edoc-state-badge-label">
               <span className="material-symbols-outlined zh-icon-sm">

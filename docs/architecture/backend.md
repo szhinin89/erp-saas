@@ -337,6 +337,13 @@ autoselección existente del POS. No requiere coincidencia adicional por SKU o n
 - **Fail-closed al crear**: si la caja no tiene punto de emisión, el punto no existe para la empresa o está desactivado → `ValidationFailure` claro. Prohibido el fallback silencioso a `Electronic` en cualquier capa: `SalesInvoice.CreateDraft` exige `emissionType` explícito (sin parámetro por defecto; un valor no definido lanza) y `sales_invoices.emission_type` no tiene default de BD.
 - El frontend deriva el tipo efectivo igual: venta nueva = caja abierta; venta existente = snapshot de la factura (`resolveSalesEmissionType`). La UI electrónica (SRI, clave de acceso, RIDE, XML, diagnóstico, Forma de pago SRI) depende de ese tipo, nunca de la caja actual.
 
+### Estado comercial vs. estado SRI de una venta (SALES-ELECTRONIC-STATUS-CLARITY-01)
+
+`SalesInvoice.Status` (comercial) y `ElectronicDocument.CurrentState` (tributario) son estados independientes; ninguno se infiere del otro.
+
+- Detalle (`SalesInvoiceDto.ElectronicStatus`) y listado (`SalesListDto.ElectronicStatus`) exponen el estado real del documento electrónico, o `"None"` si la factura no lo tiene. El listado lo resuelve con una sola lectura en lote por página (`IElectronicDocumentRepository.GetCurrentStatesBySourcesAsync`, sin tracking), nunca una consulta por factura.
+- UI de Ventas (solo presentación, `salesStatusPresentation.ts`): comercial `Authorized` = «Confirmada»; electrónico `Draft` = «Sin emitir» (sin XML firmado ni autorización SRI); «Autorizada por SRI» solo para `Authorized`; venta física = «No aplica»; dato ausente = «No disponible». El Monitor conserva sus etiquetas y explica los estados confundibles (Borrador, Firmado, en trámite).
+
 ### Efectivo entregado: dato operacional del settlement (POS-CASH-TENDERED-01)
 
 El efectivo entregado es dato operacional del settlement y **no modifica el importe aplicado ni el total financiero**.

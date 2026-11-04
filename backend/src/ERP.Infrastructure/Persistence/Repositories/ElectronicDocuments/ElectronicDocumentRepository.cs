@@ -138,6 +138,34 @@ public sealed class ElectronicDocumentRepository : IElectronicDocumentRepository
             ct
         );
 
+    public async Task<IReadOnlyDictionary<Guid, ElectronicDocumentState>> GetCurrentStatesBySourcesAsync(
+        Guid tenantId,
+        string sourceModule,
+        IReadOnlyCollection<Guid> sourceEntityIds,
+        CancellationToken ct = default
+    )
+    {
+        if (sourceEntityIds.Count == 0)
+            return new Dictionary<Guid, ElectronicDocumentState>();
+
+        var ids = sourceEntityIds.Distinct().ToList();
+        var rows = await _db.ElectronicDocuments
+            .AsNoTracking()
+            .Where(x =>
+                x.TenantId == tenantId
+                && x.SourceModule == sourceModule
+                && ids.Contains(x.SourceEntityId)
+            )
+            .Select(x => new { x.SourceEntityId, x.CurrentState })
+            .ToListAsync(ct);
+
+        // Un origen tiene a lo sumo un documento electrónico (mismo contrato que GetBySourceAsync);
+        // el agrupamiento solo evita una excepción si existiera un duplicado histórico.
+        return rows
+            .GroupBy(x => x.SourceEntityId)
+            .ToDictionary(g => g.Key, g => g.First().CurrentState);
+    }
+
     public Task AddAsync(ElectronicDocument document, CancellationToken ct = default) =>
         _db.ElectronicDocuments.AddAsync(document, ct).AsTask();
 

@@ -183,6 +183,43 @@ public sealed class ElectronicDocumentRepositoryDashboardPostgreSqlTests : IAsyn
         (await NewRepository(foreign).GetFirstReceivedAtUtcAsync(_tenantId, document.Id)).Should().BeNull();
     }
 
+    [Fact]
+    public async Task Current_states_by_sources_returns_real_state_per_source_within_tenant_and_module()
+    {
+        // SALES-ELECTRONIC-STATUS-CLARITY-01 — lectura en lote del listado de Ventas (Contains en SQL).
+        Guid draftSource = Guid.NewGuid(), authorizedSource = Guid.NewGuid(), withoutDocument = Guid.NewGuid();
+        Guid otherModuleSource = Guid.NewGuid(), otherTenantSource = Guid.NewGuid();
+        async Task SeedSourceAsync(Guid tenantId, string module, Guid sourceId, ElectronicDocumentState state)
+        {
+            await using var db = NewDbContext(tenantId, _companyId);
+            var document = ElectronicDocument.Create(tenantId, _companyId,
+                ElectronicDocumentType.Invoice, module, sourceId, _userId);
+            SetProperty(document, nameof(ElectronicDocument.CurrentState), state);
+            db.ElectronicDocuments.Add(document);
+            await db.SaveChangesAsync();
+        }
+        await SeedSourceAsync(_tenantId, "Sales", draftSource, ElectronicDocumentState.Draft);
+        await SeedSourceAsync(_tenantId, "Sales", authorizedSource, ElectronicDocumentState.Authorized);
+        await SeedSourceAsync(_tenantId, "Retentions", otherModuleSource, ElectronicDocumentState.Authorized);
+        await SeedSourceAsync(Guid.NewGuid(), "Sales", otherTenantSource, ElectronicDocumentState.Authorized);
+
+        await using var read = NewDbContext(_tenantId, _companyId);
+        var states = await NewRepository(read).GetCurrentStatesBySourcesAsync(
+            _tenantId,
+            "Sales",
+            new[] { draftSource, authorizedSource, withoutDocument, otherModuleSource, otherTenantSource }
+        );
+
+        states.Should().BeEquivalentTo(new Dictionary<Guid, ElectronicDocumentState>
+        {
+            [draftSource] = ElectronicDocumentState.Draft,
+            [authorizedSource] = ElectronicDocumentState.Authorized,
+        }, "sin documento, otro módulo u otro tenant nunca aportan un estado");
+
+        (await NewRepository(read).GetCurrentStatesBySourcesAsync(_tenantId, "Sales", Array.Empty<Guid>()))
+            .Should().BeEmpty();
+    }
+
     private static void SetAuditOccurredAt(object audit, DateTime value) =>
         typeof(ERP.Domain.Audit.AuditRecordBase)
             .GetProperty(nameof(ERP.Domain.Audit.AuditRecordBase.OccurredAtUtc))!

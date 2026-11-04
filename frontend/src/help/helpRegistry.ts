@@ -3,6 +3,67 @@ import type { HelpContent } from "./helpTypes";
 
 /** Único punto de datos de ayuda contextual (equivalente a messageCatalog.ts). 1 helpKey = 1 entrada. */
 export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
+  [HELP_KEYS.COMPANY_FISCAL_TAX_REGIME]: {
+    i18nPrefix: "help.companyFiscal.taxRegime",
+    title: "Régimen tributario",
+    short: "Clasificación tributaria de la empresa. Seleccione el régimen que consta en su información fiscal vigente.",
+    long: "El ERP lo guarda en el perfil fiscal y lo utiliza al resolver la política de Consumidor Final."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_SPECIAL_TAXPAYER]: {
+    i18nPrefix: "help.companyFiscal.specialTaxpayer",
+    title: "Contribuyente especial",
+    short: "Número de resolución que acredita la designación de contribuyente especial. Complételo solo si la empresa tiene esa designación.",
+    long: "El ERP conserva este dato fiscal para los comprobantes; ingresarlo no otorga la designación del SRI."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_RETENTION_AGENT_RESOLUTION]: {
+    i18nPrefix: "help.companyFiscal.retentionAgentResolution",
+    title: "Agente de retención: resolución",
+    short: "Resolución de designación como agente de retención. Complete su número y vigencia cuando exista una designación aplicable a la empresa.",
+    long: "El ERP registra la designación del emisor con su vigencia para los comprobantes. Es distinta de las casillas operativas de retención de renta e IVA."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_RETENTION_AGENT_EFFECTIVE_FROM]: {
+    i18nPrefix: "help.companyFiscal.retentionAgentEffectiveFrom",
+    title: "Agente de retención: vigencia",
+    short: "Fecha desde la que rige la resolución de agente de retención. Complétela junto con el número de resolución, según la designación recibida.",
+    long: "El ERP conserva la fecha para determinar la vigencia de la designación del emisor en los comprobantes."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_LARGE_TAXPAYER_RESOLUTION]: {
+    i18nPrefix: "help.companyFiscal.largeTaxpayerResolution",
+    title: "Gran contribuyente: resolución",
+    short: "Resolución de designación como gran contribuyente. Complétela con su vigencia solo cuando la empresa tenga esa designación.",
+    long: "El ERP registra esta condición fiscal del emisor para los comprobantes; el registro no concede una calificación del SRI."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_LARGE_TAXPAYER_EFFECTIVE_FROM]: {
+    i18nPrefix: "help.companyFiscal.largeTaxpayerEffectiveFrom",
+    title: "Gran contribuyente: vigencia",
+    short: "Fecha desde la que rige la resolución de gran contribuyente. Complétela junto con la resolución según la designación recibida.",
+    long: "El ERP conserva la fecha para determinar la vigencia de esta condición del emisor en los comprobantes."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_ACCOUNTING_REQUIRED]: {
+    i18nPrefix: "help.companyFiscal.accountingRequired",
+    title: "Obligación de llevar contabilidad",
+    short: "Indica si la empresa está obligada a llevar contabilidad. Actívela cuando esa obligación conste en su información fiscal vigente.",
+    long: "El ERP registra la obligación fiscal para los comprobantes. El modo de operación contable se configura por separado."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_FOREIGN_TRADE]: {
+    i18nPrefix: "help.companyFiscal.foreignTrade",
+    title: "Comercio exterior",
+    short: "Indica que la empresa realiza operaciones de comercio exterior. Actívela si corresponde a su actividad.",
+    long: "El ERP guarda este indicador en el perfil fiscal. No activa, desactiva ni oculta las retenciones de renta o IVA."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_WITHHOLDS_RENTA]: {
+    i18nPrefix: "help.companyFiscal.withholdsRenta",
+    title: "Retención de renta",
+    short: "Indicador operativo de que la empresa practica retenciones de impuesto a la renta. Actívelo cuando corresponda a sus obligaciones y operaciones.",
+    long: "El ERP lo consulta para evaluar si procede retener renta en compras, junto con las demás reglas aplicables. Es independiente de comercio exterior y de IVA; no acredita una designación oficial del SRI como agente de retención."
+  },
+  [HELP_KEYS.COMPANY_FISCAL_WITHHOLDS_VAT]: {
+    i18nPrefix: "help.companyFiscal.withholdsVat",
+    title: "Retención de IVA",
+    short: "Indicador operativo de que la empresa practica retenciones de IVA. Actívelo cuando corresponda a sus obligaciones y operaciones.",
+    long: "El ERP lo consulta para evaluar si procede retener IVA en compras, junto con las demás reglas aplicables. Es independiente de comercio exterior y de renta; no acredita una designación oficial del SRI como agente de retención."
+  },
+
   [HELP_KEYS.SALES_CUSTOMER_CONSUMER_FINAL]: {
     title: "Consumidor Final",
     short: "Solo para ventas a contado hasta {maxConsumerFinalAmount}.",

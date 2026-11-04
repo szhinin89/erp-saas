@@ -111,6 +111,12 @@
   gap: var(--space-2);
 }
 
+/* SALES-ELECTRONIC-STATUS-CLARITY-01: explicación breve del estado (Borrador, Firmado…). */
+.zh-edoc-state-help {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+
 .zh-edoc-diagnostic-summary__meta {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

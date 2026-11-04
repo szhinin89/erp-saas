@@ -3,7 +3,9 @@ import { ZHModal } from "../../../components/zh/ZHModal";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
-import { Badge, type BadgeVariant } from "../../../components/PageShell";
+import { useI18n } from "../../../i18n/i18n";
+import { SalesElectronicStatusBadge } from "./SalesStatusBadges";
+import { salesElectronicStatusPresentation } from "../utils/salesStatusPresentation";
 import { formatDateTime } from "../../../lib/formatters/dateFormatters";
 import { salesService, type SalesInvoiceDto } from "../api/salesService";
 import {
@@ -53,24 +55,6 @@ interface SalesIssueModalProps {
   onNewSale: () => void;
 }
 
-function electronicStatusVariant(status: string): BadgeVariant {
-  if (status === "Authorized") return "green";
-  if (status === "Rejected" || status === "Failed") return "red";
-  if (status === "None") return "gray";
-  return "orange"; // Draft/Signed/Sent/Received — en trámite ante el SRI
-}
-
-const ELECTRONIC_STATUS_LABEL: Record<string, string> = {
-  None: "Sin generar",
-  Draft: "Borrador",
-  Signed: "Firmado",
-  Sent: "Enviado",
-  Received: "Recibido",
-  Authorized: "Autorizado",
-  Rejected: "Rechazado",
-  Failed: "Fallido",
-};
-
 type ReceiptPrintState = "idle" | "printing" | "success" | "error";
 
 export function SalesIssueModal({
@@ -99,6 +83,7 @@ export function SalesIssueModal({
   // Durante la emisión no se puede cerrar el flujo (Escape, backdrop y la X
   // del header quedan neutralizados porque onClose ignora la llamada).
   const canClose = phase !== "processing";
+  const { t } = useI18n();
   // POS-CASH-TENDERED-01: Recibido/Vuelto salen de lo PERSISTIDO en los pagos de la factura
   // emitida (mismo dato que la tirilla y la reimpresión), nunca del estado del POS.
   const cashTendered = persistedCashTendered(result?.payments);
@@ -397,12 +382,9 @@ export function SalesIssueModal({
               <>
                 <dt>Estado electrónico</dt>
                 <dd>
-                  <Badge
-                    label={
-                      ELECTRONIC_STATUS_LABEL[result.electronicStatus] ??
-                      result.electronicStatus
-                    }
-                    variant={electronicStatusVariant(result.electronicStatus)}
+                  <SalesElectronicStatusBadge
+                    emissionType={result.emissionType}
+                    electronicStatus={result.electronicStatus}
                     size="md"
                   />
                 </dd>
@@ -450,7 +432,7 @@ export function SalesIssueModal({
               message={
                 result.electronicIssueError
                   ? `El documento electrónico quedó pendiente de autorización: ${result.electronicIssueError} Puede reintentarlo desde el Monitor de Documentos Electrónicos.`
-                  : `El documento electrónico quedó en estado "${ELECTRONIC_STATUS_LABEL[result.electronicStatus] ?? result.electronicStatus}", pendiente de autorización. Puede reintentarlo desde el Monitor de Documentos Electrónicos.`
+                  : `El documento electrónico quedó en estado "${salesElectronicStatusPresentation(result.emissionType, result.electronicStatus, t).label}", pendiente de autorización. Puede reintentarlo desde el Monitor de Documentos Electrónicos.`
               }
             />
           )}

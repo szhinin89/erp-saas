@@ -2,7 +2,11 @@ import { salesLineCorrectionSummary } from "../utils/salesLineIssues";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
-import { Badge, type BadgeVariant } from "../../../components/PageShell";
+import { useI18n } from "../../../i18n/i18n";
+import {
+  SalesCommercialStatusBadge,
+  SalesElectronicStatusBadge,
+} from "../components/SalesStatusBadges";
 import { ZHSriServiceHealth } from "../../../components/zh/ZHSriServiceHealth";
 import { ZHIconButton } from "../../../components/zh/ZHIconButton";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
@@ -49,6 +53,7 @@ export function SalesPage() {
   const openedFromParam = useRef(false);
   const [sriDiagnosticOpen, setSriDiagnosticOpen] = useState(false);
   const moneyDecimals = usePrecisionDecimals("money"); // texto de ayuda (04E)
+  const { t } = useI18n();
 
   // Esta pantalla tiene layout propio (sf-layout) y no pasa por PageShell, así que
   // debe sincronizar el título de la pestaña explícitamente. Los textos de esta
@@ -69,14 +74,6 @@ export function SalesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const statusLabel = (s: string) =>
-    s === "Draft" ? "Borrador" : s === "Authorized" ? "Autorizada" : "Anulada";
-  const statusBadgeVariant = (s: string): BadgeVariant =>
-    s === "Draft"
-      ? "warning"
-      : s === "Authorized"
-        ? "success"
-        : "error";
 
   // ZH-LISTING-MAIN-ROW-NUMBER-FIX-07: showRowNumber activo — "Nro. Factura" sigue siendo el
   // identificador funcional del documento; "N°" es solo el índice visual de fila (primera
@@ -97,10 +94,22 @@ export function SalesPage() {
       render: (inv) => <ZHMoneyValue value={inv.grandTotal} precision="money" />,
     },
     { key: "lines", header: "Líneas", align: "center", render: (inv) => inv.lineCount },
+    // SALES-ELECTRONIC-STATUS-CLARITY-01: estado comercial y estado SRI en columnas separadas —
+    // «Confirmada» (venta) nunca se confunde con «Autorizada por SRI» (comprobante).
     {
       key: "status",
-      header: "Estado",
-      render: (inv) => <Badge variant={statusBadgeVariant(inv.status)} label={statusLabel(inv.status)} />,
+      header: t("sales.status.column.commercial"),
+      render: (inv) => <SalesCommercialStatusBadge status={inv.status} />,
+    },
+    {
+      key: "electronicStatus",
+      header: t("sales.status.column.electronic"),
+      render: (inv) => (
+        <SalesElectronicStatusBadge
+          emissionType={inv.emissionType}
+          electronicStatus={inv.electronicStatus}
+        />
+      ),
     },
     {
       key: "actions",

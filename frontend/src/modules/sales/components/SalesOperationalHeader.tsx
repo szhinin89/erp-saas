@@ -13,6 +13,7 @@ import {
 import type { SalesPageContext } from "../hooks/useSalesPage";
 import { resolveSalesOperationalContext } from "../utils/salesOperationalContext";
 import { SalesEmissionConfigModal } from "./SalesEmissionConfigSection";
+import { SalesCommercialStatusBadge, SalesElectronicStatusBadge } from "./SalesStatusBadges";
 
 /** Traducción de la severidad visual del registro de facturación electrónica a variante de Badge. */
 const ALERT_TO_BADGE: Record<ZHFormAlertType, BadgeVariant> = {
@@ -97,6 +98,7 @@ function ContextItem({ label, value, code }: { label: string; value: string | nu
  * (ctx.configStatus) y contexto (resolveSalesOperationalContext) vienen ya resueltos.
  */
 export function SalesOperationalHeader({ ctx }: { ctx: SalesPageContext }) {
+  const { t } = useI18n();
   const [configOpen, setConfigOpen] = useState(false);
   const registers = useSessionRegisters(ctx.myCashSession?.cashRegisterId);
   const operational = resolveSalesOperationalContext(ctx.editing, ctx.myCashSession, registers);
@@ -142,6 +144,24 @@ export function SalesOperationalHeader({ ctx }: { ctx: SalesPageContext }) {
               />
             )}
             {ctx.isElectronic && <ElectronicEnvironmentBadge />}
+            {/* SALES-ELECTRONIC-STATUS-CLARITY-01: factura abierta → estado de la venta y estado SRI
+                por separado (el SRI solo si la factura es electrónica, por su propio snapshot). */}
+            {ctx.editing && (
+              <span className="sf-ophead__item">
+                <span className="sf-ophead__label">{t("sales.status.column.commercial")}</span>
+                <SalesCommercialStatusBadge status={ctx.editing.status} size="md" />
+              </span>
+            )}
+            {ctx.editing?.emissionType === "Electronic" && (
+              <span className="sf-ophead__item">
+                <span className="sf-ophead__label">{t("sales.status.column.electronic")}</span>
+                <SalesElectronicStatusBadge
+                  emissionType={ctx.editing.emissionType}
+                  electronicStatus={ctx.editing.electronicStatus}
+                  size="md"
+                />
+              </span>
+            )}
             {status.level === "incomplete" && (
               <Badge
                 variant="error"

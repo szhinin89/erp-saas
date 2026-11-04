@@ -69,6 +69,7 @@ export function ElectronicDocumentDiagnosticPanel({
           <div className="zh-edoc-diagnostic-summary__state">
             <ElectronicDocumentStatusBadge
               currentState={diagnostic.currentState}
+              showHelp
             />
             {statusExtra}
           </div>

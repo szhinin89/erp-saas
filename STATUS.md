@@ -1,5 +1,39 @@
 # Project Status
 
+
+## COMPANY-FISCAL-HELP-01 — READY FOR REVIEW (2026-11-04)
+
+BUG REAL corregido: dependencia visual de retenciones respecto de comercio exterior.
+KEEP: bindings, payload y persistencia actuales. Ayuda fiscal bilingüe incorporada
+con los componentes existentes; contrato en
+[Frontend](docs/architecture/frontend.md#ayuda-fiscal-de-empresa).
+Validación del agente: **51/51 PASS** en tres archivos focales; lint de los siete
+archivos TypeScript afectados **PASS**, cero errores y una advertencia preexistente
+(`toFormValues`, exhaustive-deps); `git diff --check` **PASS**. La prueba de guardado
+verifica payload y recarga del formulario con servicio simulado; no acredita una
+nueva prueba de persistencia PostgreSQL. Sin cambios de backend, datos operativos,
+XML, firma, SRI, migraciones ni configuración de SUMAK ZH. Sin staging, commit o push.
+Gate del propietario pendiente; no se declara CLOSED. Repetición desde `frontend/`:
+
+```powershell
+npx.cmd vitest run src/modules/configuracion/empresa/sections/FiscalSettingsSection.test.tsx src/components/zh/help/ZHHelpPopover.test.tsx src/modules/configuracion/empresa/pages/CompanySettingsHubPage.i18n.test.tsx
+npx.cmd eslint src/modules/configuracion/empresa/sections/FiscalSettingsSection.tsx src/modules/configuracion/empresa/sections/FiscalSettingsSection.test.tsx src/help/helpKeys.ts src/help/helpRegistry.ts src/help/helpResolver.ts src/help/helpTypes.ts src/components/zh/help/ZHFieldHelp.tsx
+git diff --check
+```
+
+## SALES-ELECTRONIC-STATUS-CLARITY-01 — estado de la venta vs. estado SRI — READY FOR REVIEW (2026-11-04)
+
+Solo presentación, más una lectura aditiva: Ventas muestra el estado comercial `Authorized` como
+«Confirmada» y, en una columna o etiqueta separada, el estado SRI real (`Draft` = «Sin emitir»;
+«Autorizada por SRI» solo si `ElectronicDocument` está `Authorized`). El listado recibe
+`SalesListDto.ElectronicStatus` mediante una lectura en lote por página. El Monitor explica
+Borrador, Firmado y los estados en trámite. Sin cambios en enums, estados persistidos, contabilidad,
+secuenciales, firma, transmisión, reintentos ni reglas SRI; sin migraciones; las facturas 015/016 no
+se procesaron. Pruebas focales: Vitest 26 archivos, 213/213; Application 4/4; PostgreSQL 1/1;
+Architecture 145/145; `tsc -b`, lint (0 errores) y build en PASS. Regla en
+[backend.md](docs/architecture/backend.md#estado-comercial-vs-estado-sri-de-una-venta-sales-electronic-status-clarity-01).
+Sin staging, commit ni push.
+
 ## ED-V1-CLOSE — ElectronicDocuments-04 y -07 aprobadas — READY FOR REVIEW (2026-11-04)
 
 Aprobación expresa del propietario, condicionada a PASS focal (cumplida): ElectronicDocuments-04

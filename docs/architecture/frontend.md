@@ -522,3 +522,15 @@ Ningún componente/página interpreta `error.response.data` directamente. Pipeli
 
 Checks según el cambio y distribución CI/E2E: [enforcement](enforcement.md#tests-pre-merge)
 y [Desarrollo](../DEVELOPMENT.md#e2e-playwright). El workflow frontend no ejecuta Playwright.
+
+
+### Ayuda fiscal de Empresa
+
+En Empresa → Fiscal / Tributario, comercio exterior, retención de renta y retención
+de IVA permanecen visibles y se editan de forma independiente; se conservan los
+bindings y el contrato de guardado existentes. `ZHFieldHelp` consume las claves
+`COMPANY_FISCAL_*` de `HELP_KEYS`, con contenido español/inglés del catálogo i18n:
+régimen, contribuyente especial, resoluciones y vigencias de agente de retención y
+gran contribuyente, obligación contable y los tres indicadores. Las ayudas distinguen
+las casillas operativas de retención de la designación oficial del SRI. No se agregan
+banners informativos; los errores usan `ZHPageNotice` y el guardado un estado accesible.

@@ -30,6 +30,7 @@ const invoice: SalesListItemDto = {
   grandTotal: 115,
   createdAt: "2026-07-01T00:00:00Z",
   emissionType: "Electronic",
+  electronicStatus: "None",
 };
 
 describe("SalesReturnInvoicePicker — botón limpiar selección (SALES-DS-BUTTONS-04)", () => {
@@ -165,6 +166,7 @@ const secondInvoice: SalesListItemDto = {
   grandTotal: 45.5,
   createdAt: "2026-07-10T00:00:00Z",
   emissionType: "Electronic",
+  electronicStatus: "None",
 };
 
 const oneItemResponse = {

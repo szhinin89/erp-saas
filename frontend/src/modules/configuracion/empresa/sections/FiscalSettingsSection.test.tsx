@@ -2,6 +2,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { I18nProvider } from "../../../../i18n/i18n";
+import { ensureLocaleLoaded, storageKey } from "../../../../i18n/dictionaries";
+import { HELP_KEYS, resolveHelp } from "../../../../help";
+import es from "../../../../i18n/locales/es.json";
+import en from "../../../../i18n/locales/en.json";
 
 // GLOBAL — sri_tax_regime 04 is no longer selectable; a company that saved it must keep it.
 
@@ -160,5 +164,64 @@ describe("FiscalSettingsSection — designaciones del emisor", () => {
       largeTaxpayerResolutionNo: null,
       largeTaxpayerEffectiveFrom: null,
     });
+  });
+});
+
+
+describe("FiscalSettingsSection — indicadores independientes y ayuda", () => {
+  afterEach(() => { cleanup(); updateFiscal.mockReset(); localStorage.removeItem(storageKey); });
+  const names = ["isForeignTrade", "withholdsRenta", "withholdsVat"] as const;
+  const input = (name: string) => document.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
+
+  it.each(Array.from({ length: 8 }, (_, mask) => [mask]))("conserva y guarda la combinación %i sin dependencias", async (mask) => {
+    const initial = names.map((_, i) => Boolean(mask & (1 << i)));
+    await renderWith("01", Object.fromEntries(names.map((name, i) => [name, initial[i]])));
+    await waitFor(() => names.forEach((name, i) => expect(input(name).checked).toBe(initial[i])));
+    names.forEach((name, i) => {
+      const before = names.map((other) => input(other).checked);
+      fireEvent.click(input(name));
+      names.forEach((other, j) => expect(input(other).checked).toBe(i === j ? !before[j] : before[j]));
+    });
+    const stored = profile("01", Object.fromEntries(names.map((name, i) => [name, !initial[i]])));
+    updateFiscal.mockImplementation(async () => { getProfile.mockResolvedValue(stored); });
+    fireEvent.click(screen.getAllByRole("button", { name: /Guardar Configuraci\u00f3n/ })[0]);
+    await waitFor(() => expect(updateFiscal).toHaveBeenCalledTimes(1));
+    expect(updateFiscal.mock.calls[0][0]).toEqual({
+      taxRegimeCode: "01", isAccountingReq: true, specialTaxpayerNo: null,
+      ...Object.fromEntries(names.map((name, i) => [name, !initial[i]])),
+      retentionAgentResolutionNo: null, retentionAgentEffectiveFrom: null,
+      largeTaxpayerResolutionNo: null, largeTaxpayerEffectiveFrom: null,
+    });
+    cleanup();
+    await renderWith("01", stored);
+    await waitFor(() => names.forEach((name, i) => expect(input(name).checked).toBe(!initial[i])));
+  });
+
+  it.each(["es", "en"] as const)("muestra las diez ayudas en %s sin cambiar casillas", async (locale) => {
+    await ensureLocaleLoaded(locale);
+    localStorage.setItem(storageKey, locale);
+    await renderWith("01");
+    const dictionary = locale === "es" ? es : en;
+    const keys = Object.entries(HELP_KEYS).filter(([key]) => key.startsWith("COMPANY_FISCAL_"));
+    expect(keys).toHaveLength(10);
+    for (const [, key] of keys) {
+      const entry = resolveHelp(key)!;
+      const title = dictionary[`${entry.i18nPrefix}.title` as keyof typeof dictionary];
+      const short = dictionary[`${entry.i18nPrefix}.short` as keyof typeof dictionary];
+      const long = dictionary[`${entry.i18nPrefix}.long` as keyof typeof dictionary];
+      expect(title).toBeTruthy(); expect(short).toBeTruthy(); expect(long).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: title }));
+      expect(screen.getByRole("dialog").textContent).toContain(short);
+      expect(screen.getByRole("dialog").textContent).toContain(long);
+      fireEvent.keyDown(window, { key: "Escape" });
+    }
+    names.forEach((name) => expect(input(name).checked).toBe(false));
+    expect(updateFiscal).not.toHaveBeenCalled();
+    for (const key of [HELP_KEYS.COMPANY_FISCAL_WITHHOLDS_RENTA, HELP_KEYS.COMPANY_FISCAL_WITHHOLDS_VAT]) {
+      const entry = resolveHelp(key)!;
+      expect(dictionary[`${entry.i18nPrefix}.long` as keyof typeof dictionary]).toContain(
+        locale === "es" ? "no acredita una designación oficial del SRI" : "does not certify official SRI",
+      );
+    }
   });
 });

@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoadingState, NoAccessPage } from "../../../../components/PageShell";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHBtn, ZHField, ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZHFieldHelp } from "../../../../components/zh/help";
+import { HELP_KEYS } from "../../../../help";
 import { ZHInfoRow } from "../../../../components/zh/ZHInfoRow";
 import { ZHDataValue } from "../../../../components/zh/ZHDataValue";
 import {
@@ -69,7 +71,6 @@ export function FiscalSettingsSection() {
     register,
     handleSubmit,
     reset,
-    watch,
     setError: setFieldError,
     formState: { errors, isDirty },
   } = useForm<CompanyFiscalValues>({
@@ -203,8 +204,6 @@ export function FiscalSettingsSection() {
   if (!canView) return <NoAccessPage title={t("settings.company.title")} />;
   if (profileState.loading) return <LoadingState />;
 
-  const isForeignTrade = watch("isForeignTrade");
-
   return (
     <>
       {profileState.error && (
@@ -222,7 +221,7 @@ export function FiscalSettingsSection() {
         />
       )}
       {saved && (
-        <ZHPageNotice variant="success" message={t("settings.company.saved")} />
+        <p role="status" className="zh-text-muted">{t("settings.company.saved")}</p>
       )}
 
       <form onSubmit={onSubmit}>
@@ -239,7 +238,7 @@ export function FiscalSettingsSection() {
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
-              <ZHField label={t("settings.company.fiscal.taxRegime")}>
+              <ZHField label={<>{t("settings.company.fiscal.taxRegime")} <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_TAX_REGIME} /></>}>
                 <ZhSelect
                   disabled={saving || !canEdit}
                   {...register("taxRegimeCode")}
@@ -262,7 +261,7 @@ export function FiscalSettingsSection() {
               </ZHField>
 
               <ZHField
-                label={t("settings.company.fiscal.specialTaxpayerNo")}
+                label={<>{t("settings.company.fiscal.specialTaxpayerNo")} <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_SPECIAL_TAXPAYER} /></>}
                 fieldError={errors.specialTaxpayerNo?.message ? t(errors.specialTaxpayerNo?.message) : undefined}
               >
                 <ZhTextInput
@@ -279,7 +278,7 @@ export function FiscalSettingsSection() {
             </p>
             <ZHGrid cols={2}>
               <ZHField
-                label={t("settings.company.fiscal.retentionAgentResolutionNo")}
+                label={<>{t("settings.company.fiscal.retentionAgentResolutionNo")} <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_RETENTION_AGENT_RESOLUTION} /></>}
                 fieldError={errors.retentionAgentResolutionNo?.message ? t(errors.retentionAgentResolutionNo?.message) : undefined}
               >
                 <ZhTextInput
@@ -291,7 +290,7 @@ export function FiscalSettingsSection() {
                 />
               </ZHField>
               <ZHField
-                label={t("settings.company.fiscal.effectiveFrom")}
+                label={<>{t("settings.company.fiscal.effectiveFrom")} <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_RETENTION_AGENT_EFFECTIVE_FROM} /></>}
                 fieldError={errors.retentionAgentEffectiveFrom?.message ? t(errors.retentionAgentEffectiveFrom?.message) : undefined}
               >
                 <ZhDateInput
@@ -300,7 +299,7 @@ export function FiscalSettingsSection() {
                 />
               </ZHField>
               <ZHField
-                label={t("settings.company.fiscal.largeTaxpayerResolutionNo")}
+                label={<>{t("settings.company.fiscal.largeTaxpayerResolutionNo")} <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_LARGE_TAXPAYER_RESOLUTION} /></>}
                 fieldError={errors.largeTaxpayerResolutionNo?.message ? t(errors.largeTaxpayerResolutionNo?.message) : undefined}
               >
                 <ZhTextInput
@@ -311,7 +310,7 @@ export function FiscalSettingsSection() {
                 />
               </ZHField>
               <ZHField
-                label={t("settings.company.fiscal.effectiveFrom")}
+                label={<>{t("settings.company.fiscal.effectiveFrom")} <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_LARGE_TAXPAYER_EFFECTIVE_FROM} /></>}
                 fieldError={errors.largeTaxpayerEffectiveFrom?.message ? t(errors.largeTaxpayerEffectiveFrom?.message) : undefined}
               >
                 <ZhDateInput
@@ -322,42 +321,50 @@ export function FiscalSettingsSection() {
             </ZHGrid>
 
             <div className="zh-checkbox-grid">
-              <label className="zh-checkbox-label">
-                <input
-                  type="checkbox"
-                  disabled={saving || !canEdit}
-                  {...register("isAccountingReq")}
-                />
-                {t("settings.company.fiscal.isAccountingReq")}
-              </label>
-              <label className="zh-checkbox-label">
-                <input
-                  type="checkbox"
-                  disabled={saving || !canEdit}
-                  {...register("isForeignTrade")}
-                />
-                {t("settings.company.fiscal.isForeignTrade")}
-              </label>
-              {isForeignTrade && (
-                <>
-                  <label className="zh-checkbox-label">
-                    <input
-                      type="checkbox"
-                      disabled={saving || !canEdit}
-                      {...register("withholdsRenta")}
-                    />
-                    {t("settings.company.fiscal.withholdsRenta")}
-                  </label>
-                  <label className="zh-checkbox-label">
-                    <input
-                      type="checkbox"
-                      disabled={saving || !canEdit}
-                      {...register("withholdsVat")}
-                    />
-                    {t("settings.company.fiscal.withholdsVat")}
-                  </label>
-                </>
-              )}
+              <div className="zh-checkbox-label">
+                <label className="zh-checkbox-label">
+                  <input
+                    type="checkbox"
+                    disabled={saving || !canEdit}
+                    {...register("isAccountingReq")}
+                  />
+                  {t("settings.company.fiscal.isAccountingReq")}
+                </label>
+                <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_ACCOUNTING_REQUIRED} />
+              </div>
+              <div className="zh-checkbox-label">
+                <label className="zh-checkbox-label">
+                  <input
+                    type="checkbox"
+                    disabled={saving || !canEdit}
+                    {...register("isForeignTrade")}
+                  />
+                  {t("settings.company.fiscal.isForeignTrade")}
+                </label>
+                <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_FOREIGN_TRADE} />
+              </div>
+              <div className="zh-checkbox-label">
+                <label className="zh-checkbox-label">
+                  <input
+                    type="checkbox"
+                    disabled={saving || !canEdit}
+                    {...register("withholdsRenta")}
+                  />
+                  {t("settings.company.fiscal.withholdsRenta")}
+                </label>
+                <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_WITHHOLDS_RENTA} />
+              </div>
+              <div className="zh-checkbox-label">
+                <label className="zh-checkbox-label">
+                  <input
+                    type="checkbox"
+                    disabled={saving || !canEdit}
+                    {...register("withholdsVat")}
+                  />
+                  {t("settings.company.fiscal.withholdsVat")}
+                </label>
+                <ZHFieldHelp helpKey={HELP_KEYS.COMPANY_FISCAL_WITHHOLDS_VAT} />
+              </div>
             </div>
           </div>
         </div>
@@ -401,7 +408,7 @@ export function FiscalSettingsSection() {
         />
       )}
       {policySaved && (
-        <ZHPageNotice variant="success" message={t("settings.company.saved")} />
+        <p role="status" className="zh-text-muted">{t("settings.company.saved")}</p>
       )}
 
       <form onSubmit={onPolicySubmit}>
