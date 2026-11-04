@@ -1,5 +1,37 @@
 # Project Status
 
+## V1-EVIDENCE-CLOSE-01 — cierre por evidencia PASS + corrección CI #1083 — READY FOR REVIEW (2026-11-04)
+
+**BUG REAL CI #1083:** `ratchet.test.mjs` (Architecture guardrails) fallaba porque
+[Caso #20](#caso-20--closed-integral-por-aprobación-del-propietario-2026-11-03) enlazaba
+como Markdown tres `.trx` de `.local/caso20-results/`, no versionados. Ahora son rutas de
+evidencia local en texto; contenido y resultados históricos intactos. Guardrail sin cambios.
+
+**Cierres V1 autorizados por el propietario en esta tarea**, con el criterio implementación
+completa + PASS que cubre el alcance + sin requisitos ni bloqueos pendientes (sin exigir una
+aceptación duplicada; no reabre módulos CLOSED/FROZEN):
+
+- Pausa total de emisión por empresa y reanudación explícita [V1-APPROVED:ElectronicDocuments-05]:
+  [SRI-TOGGLE-02](#sri-toggle-02--emisión-electrónica-habilitable-por-empresa--ready-for-review-2026-11-02),
+  -04, [-06](#sri-toggle-06--pausa-total-de-la-emisión-electrónica-por-empresa--ready-for-review-2026-11-02)
+  y [-07](#sri-toggle-07--pausa-total-sin-excepciones-y-corte-garantizado--ready-for-review-2026-11-02),
+  con el gate [SRI-TOGGLE-08](#sri-toggle-08--gate-final-de-sri-toggle-0607--pass-agente-listo-para-gate-del-propietario-2026-11-02):
+  PostgreSQL 300/300, Architecture 145/145 (incl. `SriAccessEmissionSwitchBoundaryTests`),
+  Application 1242/1242, API 186/186, `architecture:check` 140/140; C-03 publicado en
+  [CI #1065](#ci-fix-sri-01--c-03-corregido--closed-2026-11-03) SUCCESS. Los fallos Vitest
+  conservados son deuda de Compras, fuera de este alcance.
+- Salud técnica SRI centralizada [V1-APPROVED:ElectronicDocuments-06]:
+  [entrada](#salud-técnica-sri-centralizada--ready-for-review-2026-11-01) con Application
+  36/36, decoradores 17/17, API aislamiento 8/8, Architecture 143/143 y frontend focal
+  (Ventas, Configuración, NC, Retenciones, Monitor, store, componente). Sus límites
+  declarados (estado por proceso, ConsultaComprobante no observada) son de diseño, no requisitos abiertos.
+
+Las otras 19 siguen pendientes por evidencia parcial o bloqueo; motivo por capacidad en
+[functional-v1-source.json](docs/ProgressDashboard/data/functional-v1-source.json).
+Resultado: 51/70 capacidades V1 (72.86 %); Core 34/43 (79.07 %). Focales: `ratchet.test.mjs`,
+`functional-v1.test.mjs`, regeneración del Dashboard y `git diff --check`. Sin SRI real,
+suites generales, staging, commit ni push.
+
 ## DASHBOARD-V1-FINAL — READY FOR REVIEW (2026-11-04)
 
 BUG REAL: el dibujo no calculaba avance funcional verificable. KEEP: las once tarjetas,
@@ -889,13 +921,13 @@ del evento sin duplicar el reverso).
 | Histórico bancario sin trazabilidad | 422; cobro y CxC conservados | PASS |
 
 Evidencias locales no versionadas (no implican nuevas ejecuciones de CI):
-- [caso20-http-final.trx](.local/caso20-results/caso20-http-final.trx): 10 PASS y un fallo
+- `.local/caso20-results/caso20-http-final.trx`: 10 PASS y un fallo
   de preparación del escenario de empresa ajena por modo/contexto contable incompletos.
-- [caso20-foreign-company-final.trx](.local/caso20-results/caso20-foreign-company-final.trx):
+- `.local/caso20-results/caso20-foreign-company-final.trx`:
   ese único escenario repetido tras completar sus datos/contexto sintéticos, 1/1 PASS.
   Los 11 escenarios quedan acreditados entre ambas ejecuciones; no se presenta una
   ejecución única 11/11 ni se ocultan los fallos anteriores del arnés/aserciones.
-- [caso20-posting.trx](.local/caso20-results/caso20-posting.trx): 3/3 PASS.
+- `.local/caso20-results/caso20-posting.trx`: 3/3 PASS.
 
 **Entorno y límites:** API iniciada en proceso mediante TestServer, pipeline HTTP,
 autorización, handlers y persistencia reales; JWT, usuarios y proveedores de contexto

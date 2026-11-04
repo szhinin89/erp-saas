@@ -31,7 +31,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Companies-01]"
       },
-      "missing": "Falta aceptación del perfil completo de empresa; el modal Editar empresa sigue pendiente de validación visual en STATUS."
+      "missing": "Sin prueba que cubra el perfil completo: el modal Editar empresa solo tiene PASS de componentes 15/15, sin navegador ni E2E; R21/R22 (perfil fiscal del emisor) pendiente de resoluciones reales y aceptación en celcer."
     },
     {
       "id": "Branches-01",
@@ -527,7 +527,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Finance-05]"
       },
-      "missing": "Falta aceptación específica del anticipo ADR-035; el cierre de pagos del 12 de septiembre no se extiende a ampliaciones posteriores."
+      "missing": "Sin evidencia PASS registrada del anticipo ADR-035: las E2E de pagos (17/17, 40/40, 46/46) registran anticipo 0.00 y excluyen saldo a favor; el cierre del 12 de septiembre no cubre esta ampliación."
     },
     {
       "id": "Finance-06",
@@ -542,7 +542,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Finance-06]"
       },
-      "missing": "Falta aprobación del reembolso de SupplierCredit y su continuidad durable; no extender el cierre anterior de pagos."
+      "missing": "Sin evidencia PASS registrada del reembolso/reversa de SupplierCredit ni de su continuidad durable; las E2E de pagos excluyen saldo a favor aplicado."
     },
     {
       "id": "Accounting-01",
@@ -626,7 +626,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-05]"
       },
-      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+      "missing": "Sin evidencia PASS que cubra plan de cuentas y reglas fuera de R4 (#26, #27, #28, #42); STATUS las registra como capacidades implementadas, no cierres."
     },
     {
       "id": "Accounting-06",
@@ -642,7 +642,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-06]"
       },
-      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+      "missing": "Sin evidencia PASS registrada del modo operativo por empresa (incl. modo Deshabilitado y sus precondiciones); STATUS lo registra como capacidad implementada, no cierre."
     },
     {
       "id": "Accounting-07",
@@ -658,7 +658,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-07]"
       },
-      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+      "missing": "R4 #28 acredita un reproceso individual; falta evidencia PASS del reproceso por lote y de la continuidad durable en su alcance completo."
     },
     {
       "id": "Accounting-08",
@@ -674,7 +674,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-08]"
       },
-      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+      "missing": "Sin ejecución del cierre anual: R4 solo verificó el bloqueo por ejercicio no terminado; no se cerró ningún período."
     },
     {
       "id": "Expenses-01",
@@ -739,7 +739,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Retentions-02]"
       },
-      "missing": "Falta E2E SRI integrada de #31; R2 se detuvo antes del XML y no acredita transmisión. WORK_QUEUE conserva el gate integrado."
+      "missing": "Falta E2E SRI integrada de #31 y aceptación real en celcer de 07; R2 se detuvo antes del XML y no acredita transmisión. WORK_QUEUE conserva el gate integrado."
     },
     {
       "id": "ElectronicDocuments-01",
@@ -851,7 +851,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:ElectronicDocuments-07]"
       },
-      "missing": "Falta aceptación funcional R12 Fase B y validación integrada SRI; STATUS conserva READY FOR REVIEW."
+      "missing": "Falta aceptación real en celcer de un reenvío corregido (R12 Fase B); los PASS usan SRI simulado."
     },
     {
       "id": "Dashboard-01",
@@ -866,7 +866,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Dashboard-01]"
       },
-      "missing": "Existe implementación y pruebas de KPIs, pero no consta aprobación funcional del Dashboard ERP en STATUS."
+      "missing": "Sin resultados PASS registrados en STATUS para los KPIs reales del ERP; la implementación por sí sola no acredita el alcance."
     },
     {
       "id": "Security-01",
@@ -881,7 +881,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Security-01]"
       },
-      "missing": "Falta aprobación integral de administración de accesos; SEC-05 registra revisión técnica PASS, no cierre funcional global."
+      "missing": "SEC-03..06 acreditan aislamiento, anti-escalamiento y revocación; falta evidencia PASS del flujo funcional de administración (alta de usuario, membership, sucursales, perfiles y permisos) de extremo a extremo."
     },
     {
       "id": "Security-02",
@@ -913,7 +913,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Session-01]"
       },
-      "missing": "Falta aceptación del flujo completo; AUTH-INTERCEPTOR-FIX-01 solo cierra la corrección de dos rutas públicas."
+      "missing": "SEC-A01 y AUTH-INTERCEPTOR-FIX-01 cubren límites de intentos y dos rutas públicas; falta evidencia PASS del flujo completo de login, JWT y refresh rotation."
     },
     {
       "id": "Session-02",
@@ -928,7 +928,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Session-02]"
       },
-      "missing": "Falta aceptación del flujo completo; AUTH-INTERCEPTOR-FIX-01 solo cierra la corrección de dos rutas públicas."
+      "missing": "Sin evidencia PASS registrada de la sesión operativa (empresa/sucursal/terminal) ni de las preferencias de login por usuario."
     },
     {
       "id": "Session-03",
@@ -960,7 +960,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Navigation-01]"
       },
-      "missing": "Falta aceptación funcional completa de esta capacidad de navegación/UI; no usar los porcentajes históricos del dibujo."
+      "missing": "Sin evidencia PASS que cubra el menú jerárquico y la navegación filtrada por permisos; no usar los porcentajes históricos del dibujo."
     },
     {
       "id": "Navigation-02",
@@ -975,7 +975,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Navigation-02]"
       },
-      "missing": "Falta aceptación funcional completa de esta capacidad de navegación/UI; no usar los porcentajes históricos del dibujo."
+      "missing": "Sin evidencia PASS de conjunto del Design System ZH y tablas compactas; las evidencias visuales existentes declaran límites de fuentes/iconos."
     },
     {
       "id": "InitialLoad-01",
@@ -1090,7 +1090,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Configuration-01]"
       },
-      "missing": "Falta aprobación funcional de configuración organizacional e historial, sin cierre específico acreditado en STATUS."
+      "missing": "Sin evidencia PASS registrada de preferencias organizacionales ni del historial de cambios; sin cierre específico en STATUS."
     },
     {
       "id": "Future-01",
@@ -1164,7 +1164,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Navigation-03]"
       },
-      "missing": "Falta aceptación funcional del alcance bilingüe declarado en FEATURES; las correcciones de claves aisladas no acreditan el conjunto."
+      "missing": "Sin evidencia PASS del alcance bilingüe completo declarado en FEATURES; las correcciones de claves aisladas no acreditan el conjunto."
     }
   ],
   "method": "Registro único de capacidades del catálogo FEATURES y del detalle existente del dibujo, conciliado con cierres por alcance de STATUS. Cada fila tiene un único módulo propietario; integraciones no duplican la capacidad en el consumidor. No es un conteo de handlers ni certificación de producción. Nuevas aprobaciones sin cierre previo usan [V1-APPROVED:<id>] en STATUS, solo con aceptación explícita del propietario y evidencia.",
