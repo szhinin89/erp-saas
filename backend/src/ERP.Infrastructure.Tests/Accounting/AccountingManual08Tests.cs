@@ -261,7 +261,7 @@ public sealed class AccountingManual08Fixture : IAsyncLifetime
             Mock.Of<ICurrentCompany>(c => c.CompanyId == companyId && c.HasCompanyContext == (companyId != Guid.Empty) && c.IsAuthenticated));
     }
 
-    public async Task<ManualBook> BookAsync(bool enabled = true, Guid? existingTenant = null)
+    public async Task<ManualBook> BookAsync(bool enabled = true, Guid? existingTenant = null, int fiscalYear = 2026)
     {
         var user = Guid.NewGuid();
         var tenant = Tenant.Create("Manual08", $"m08-{Guid.NewGuid():N}"[..16], user);
@@ -274,10 +274,10 @@ public sealed class AccountingManual08Fixture : IAsyncLifetime
         await using var db = Db(tenantId, company.Id);
         var debit = Account.Create(tenantId, company.Id, AccountCode.Create("1.1.01"), "Debe", null, AccountType.Asset, AccountNature.Debit, true, user);
         var credit = Account.Create(tenantId, company.Id, AccountCode.Create("4.1.01"), "Haber", null, AccountType.Income, AccountNature.Credit, true, user);
-        var period = AccountingPeriod.Create(tenantId, company.Id, 2026, 1, new(2026, 1, 1), new(2026, 12, 31), user);
+        var period = AccountingPeriod.Create(tenantId, company.Id, fiscalYear, 1, new(fiscalYear, 1, 1), new(fiscalYear, 12, 31), user);
         db.Accounts.AddRange(debit, credit); db.AccountingPeriods.Add(period);
         db.AccountingOperationalPolicies.Add(AccountingOperationalPolicy.Create(tenantId, company.Id,
-            enabled ? AccountingOperationalMode.Enabled : AccountingOperationalMode.Disabled, new(2026, 1, 1), "test", user));
+            enabled ? AccountingOperationalMode.Enabled : AccountingOperationalMode.Disabled, new(fiscalYear, 1, 1), "test", user));
         await db.SaveChangesAsync();
         return new(this, tenantId, company.Id, user, debit.Id, credit.Id, period.Id);
     }

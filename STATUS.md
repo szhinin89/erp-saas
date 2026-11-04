@@ -1,5 +1,211 @@
 # Project Status
 
+## V1-LANG-FINANCE-ACCOUNTING-01 — bloque acumulado — READY FOR REVIEW (2026-11-04)
+
+Alcance autorizado: Navigation-03, Finance-05/06 y Accounting-05/06/07/08. Se conservan
+todos los cambios locales y las aprobaciones anteriores. Base CI #1084 SUCCESS aportada
+por el propietario; R2/R4 y las pruebas previas se reutilizan exclusivamente para sus
+alcances. Sin suites generales, auditorías globales, reapertura de módulos ni cambios
+de reglas fiscales/contables. Sin staging, commit o push; cierre de la fase acumulada
+y entrega conjunta a cargo del propietario.
+
+**Siete aprobaciones V1 acreditadas individualmente:**
+
+| Capacidad | Evidencia PASS exacta y cobertura |
+|---|---|
+| Interfaz español/inglés [V1-APPROVED:Navigation-03] | Alcance de interfaz solicitado en este bloque: pantalla Empresa completa (ocho pestañas) y Dashboard del bloque previo. `CompanySettingsHubPage.i18n.test.tsx` **21/21**: es/en, cambios de idioma, modal Ventas, errores de Fiscal/Marca/Documentos/Precisión y formato de imagen. `CompanyProfileSettingsSection.test.tsx` **5/5**: perfil completo es/en, edición y errores conservados al cambiar idioma, guardar/reabrir y correo inválido. Los KPIs es/en **4/4** previos permanecen acreditados. No se afirma una auditoría del resto de pantallas. |
+| Anticipo/remanente [V1-APPROVED:Finance-05] | `Excedente_confirmado_aplica_la_CxP_crea_SupplierCredit_por_el_remanente_y_postea_Anticipos_una_sola_vez`: pago **320**, aplicación **300**, anticipo **20**; persistencia de crédito/origen y un asiento balanceado. Caso nuevo `Anticipo_100_aplica_30_reembolsa_40_y_reversa_restaura_70_sin_duplicados`: anticipo real de origen SupplierPayment **100**, aplicación idempotente **30**, saldo **70**, reembolso **40**, saldo **30**, reversa y saldo **70**, CxP restante **30**, tres movimientos/obligaciones/asientos sin duplicación. |
+| Reembolso/reversa [V1-APPROVED:Finance-06] | `Reembolso_banco_parcial_Debe_banco_real_Haber_anticipos_de_la_regla` y `Reversa_banco_es_espejo_exacto_con_la_cuenta_congelada_aunque_el_banco_cambie_de_cuenta` PASS; el caso encadenado anterior agrega consistencia tras aplicar parte del mismo anticipo, obligaciones durables Posted y reverso histórico. Nunca se usó anticipo 0.00 como prueba del remanente. |
+| Plan y reglas [V1-APPROVED:Accounting-05] | `Plan_y_reglas_CRUD_persistidos_jerarquia_scope_y_cuentas_en_uso_por_HTTP` PASS: alta de raíz/hija, edición y reapertura, unicidad y rechazo de ciclo; crear/editar/desactivar/reactivar regla con líneas; bloqueo de baja de cuenta referenciada, baja/reactivación tras desactivar regla y denegación en otra empresa. `Cada_posting_rule_referencia_solo_cuentas_del_plan_sembrado` PASS. Se reutilizan AccountUseCasesTests/PostingRuleUseCasesTests del CI para negativos y contrato de catálogo. |
+| Modo operativo [V1-APPROVED:Accounting-06] | `Empresa_nueva_elige_Enabled_explicitamente_con_vigencia_y_sin_historia` y `C05_Disabled_se_bloquea_por_pendientes_y_retroactividad_y_procede_al_resolverlas` PASS PostgreSQL: decisión explícita, vigencia, rechazo retroactivo/con pendientes, transición válida e historial. Las invariantes fiscales y de primera activación restantes se reutilizan de AccountingContinuityIntegrationTests/05 del CI. |
+| Continuidad/lote [V1-APPROVED:Accounting-07] | `Batch_mixed_deduplicates_and_records_actor_reason_correlation`, `Batch_concurrent_same_ids_posts_once` y `Batch_internal_failure_does_not_stop_next_obligation` PASS: lote mixto Failed/Posted, deduplicación, otra empresa/tenant/ID inexistente, ya resueltas, historial/actor/motivo/correlación, concurrencia sin doble asiento y fallo aislado que permite continuar. Continuidad de productores y cancelación se reutilizan del CI; no se atribuye a R4 la prueba del lote. |
+| Cierre anual [V1-APPROVED:Accounting-08] | `A12D_06_ejercicio_2025_terminado_publica_cierre_y_cierra_periodo_sin_duplicar_resultado` PASS PostgreSQL: empresa/libro aislados, ejercicio **2025** y fecha Company de prueba **2026-11-04**; ingresos **1000**, gasto **150.25**, resultado **849.75**, generación Draft, publicación, nominales a cero, Estado de Resultados conserva utilidad, Balance la refleja una sola vez, período Closed persistido y reversa tardía rechazada. Casos 12D anteriores de utilidad/pérdida, duplicado/desactualizado, precondiciones y reverso se reutilizan del CI. No se cerró un ejercicio de datos reales ni el 2026 en curso. |
+
+**BUG REAL corregido (solo presentación):** textos fijos de Empresa, incluido «Guardar
+Configuración». Etiquetas, opciones, ayudas, placeholders, acciones, avisos y validación
+local usan el proveedor/diccionarios existentes; los errores locales cambian con el
+idioma sin perder la edición. Límites, regex, tipos y reglas de negocio se conservan.
+Contrato en [Frontend — i18n](docs/architecture/frontend.md#i18n). No se creó traductor,
+estado de idioma ni mecanismo de mensajes paralelo.
+
+**Finanzas/Contabilidad KEEP:** no se modificó código funcional backend. Se añadieron
+solo tres recorridos focales, reutilizando fixtures/repositorios/handlers existentes;
+el fixture Manual08 acepta ahora año explícito con su default previo intacto. El
+primer FAIL del ciclo financiero era una lectura de saldo derivado sin cargar cuotas
+en el arnés; corregida con Include, sin alterar el cálculo. Fallos iniciales de imports
+y sincronización de formularios fueron del arnés y quedaron resueltos. Ningún FAIL
+funcional permanece en estas siete capacidades.
+
+**Ejecuciones nuevas:** **12 casos PostgreSQL PASS** (nueve focales existentes + cierre
+2025 + ciclo del anticipo + configuración HTTP), **26 frontend PASS**, sin omitidas
+en los resultados finales. Evidencias locales, no enlaces Markdown a archivos ignorados:
+`.local/v1-finance-accounting/finance-accounting-focal.trx` (9/9),
+`finance-year2025-gap.trx` (cierre 2025 PASS y FAIL histórico del arnés de saldo),
+`advance-lifecycle.trx` (ciclo corregido 1/1), `accounting-configuration-http.trx` (1/1),
+y `.local/v1-finance-accounting-ui.json` (26/26). Referencias versionadas:
+[cierre 12D](backend/src/ERP.Infrastructure.Tests/Accounting/AccountingFiscalYearClosing12DTests.cs),
+[ciclo del anticipo](backend/src/ERP.Infrastructure.Tests/Accounting/SupplierCreditRefundPostingIntegrationTests.AdvanceLifecycle.cs),
+[plan/reglas HTTP](backend/src/ERP.API.Tests/Integration/InternalCapabilitiesHttpTests.AccountingConfiguration.cs)
+y [pantalla Empresa](frontend/src/modules/configuracion/empresa/pages/CompanySettingsHubPage.i18n.test.tsx).
+
+Persistencia y concurrencia sobre PostgreSQL 16 Testcontainers migrado, datos sintéticos
+por empresa y almacenamiento efímero; sin conexiones a bases instaladas, modificación
+de información real ni cambios de reloj del sistema. Para dinero/fechas se conservan
+la política única y el reloj Company; el cierre no calcula impuestos ni participación.
+
+**Resultado acumulado: 65/70 V1 (92.86 %); Core 40/43 (93.02 %).** Este bloque no deja
+ninguna de sus siete capacidades pendiente. Las cinco restantes de la matriz conservan
+sus razones y estados, fuera de alcance. Dashboard: una sola regeneración al finalizar,
+manteniendo diseño, navegación, once nodos, conexiones y breadcrumbs.
+
+Gates técnicos: TypeScript/build PASS, ESLint PASS (0 errores, 37 advertencias previas),
+i18n-keys, frontend-precision y documentación PASS; cálculo focal **6/6 PASS** y
+`git diff --check` PASS. Composición curada y navegación del Dashboard se verifican
+tras su única regeneración final. Estado exacto Git y resultados en la entrega del bloque.
+
+## V1-INTERNAL-SOLUTIONS-01 — bloque acumulado — READY FOR REVIEW (2026-11-04)
+
+> Su pendiente Navigation-03 queda resuelto por V1-LANG-FINANCE-ACCOUNTING-01. Evidencia
+> del ciclo anterior conservada; no se sustituyen sus cinco aprobaciones.
+
+Conserva íntegros los cambios del ciclo anterior y sus dos aprobaciones. Esta entrada
+actualiza exclusivamente las seis pendientes de V1-INTERNAL-CLOSE-01. CI #1084 SUCCESS
+se reutiliza como base comunicada por el propietario; no se repitieron sus suites ni
+R1–R4. Sin cambios funcionales de seguridad, permisos, persistencia ni diseño del
+ProgressDashboard; sin staging, commit o push. No declara CLOSED la fase acumulada.
+
+**BUG REAL corregido:** DashboardPage tenía literales españoles en KPIs, conteos,
+avisos, antigüedad, resumen anual y pie. Usa ahora `dashboard.*` en los diccionarios
+existentes es/en y el mismo I18nProvider. Regresión RED de inglés antes del fix →
+GREEN **4/4**: español, inglés, cambio es→en→es sin remount y precisión monetaria.
+Contrato en [Frontend — i18n](docs/architecture/frontend.md#i18n).
+
+**Cinco aprobaciones V1 acreditadas**, sin aceptación duplicada:
+
+| Capacidad | Evidencia PASS y alcance interno cerrado |
+|---|---|
+| Login, JWT y refresh [V1-APPROVED:Session-01] | `Login_JWT_rotacion_y_reuso_de_familia_persisten_por_HTTP`: alta de usuario de prueba/primer login, JWT aceptado por endpoint protegido, refresh HTTP con cookie, sucesor persistido con familia/padre/profundidad/límite absoluto; reuso inmediato 401 sin revocar sucesor; reuso tardío revoca familia y rechaza sucesor; otra familia sigue operativa. PostgreSQL real; sin fake de repositorio. |
+| Administración de acceso [V1-APPROVED:Security-01] | `Alta_membership_sucursales_perfiles_menu_y_autorizacion_por_HTTP`: alta por endpoint administrativo, perfil y permisos, membership, sucursal autorizada, preferencia DirectToDefault y contexto del usuario; comprobación de persistencia mediante nuevo contexto/lectura HTTP. Dos perfiles reales: consulta de perfiles y consulta de sesiones, con 200/403 complementarios. |
+| Menú con permisos [V1-APPROVED:Navigation-01] | Mismo recorrido: GET `/me/menu` real contiene `/admin/roles` para el lector de perfiles y `/admin/access/sessions` para el lector de sesiones, excluyendo el destino opuesto. Se reutilizan 58/58 del ciclo anterior para jerarquía/destinos/bootstrap; ningún árbol backend simulado. |
+| Design System y tablas compactas [V1-APPROVED:Navigation-02] | Chromium **2/2**, a 390/1440 px: componentes reales y CSS productivo, carga efectiva de Inter y Material Symbols originales de index.html, ligadura del icono, formulario, error, toggle, botones/disabled, aviso y `ZHDataTable` con `table--compact`; sin overflow. Capturas inspeccionadas visualmente, sin defectos reproducibles ni rediseño. ZHDataTable/ZHModal **22/22** (interacción/estados). |
+| Perfil, branding y fiscal interno [V1-APPROVED:Companies-01] | HTTP: identidad comercial, contacto, representante, moneda/zona, fiscal/designaciones, idioma, leyenda y branding; guardar y GET con nueva sesión/contexto conserva todos los valores y normaliza resolución. Otro caso sube logos principal/alterno y verifica IDs, MIME y bytes al reabrir/descargar. UI **2/2**: envío de campos, recarga/reapertura y bloqueo por correo inválido. Modal global 15/15 previo reutilizado. |
+
+Pruebas HTTP acreditadas: [InternalCapabilitiesHttpTests](backend/src/ERP.API.Tests/Integration/InternalCapabilitiesHttpTests.cs),
+**4/4 PASS, 0 omitidas**, resultado local `.local/internal-v1/internal-final.trx`.
+Reutilizan el fixture SEC-04 con PostgreSQL 16 Testcontainers y migraciones; el host
+de prueba resuelve usuario/tenant del JWT real. Altas, sesiones, cambio inicial de
+contraseña y archivos son exclusivamente sintéticos en el entorno desechable;
+no se consumieron credenciales existentes ni se modificaron bases instaladas.
+El reloj de reuso se simula envejeciendo solo el timestamp del token del test.
+
+**Separación interna/externa de Companies-01:** los datos fiscales sintéticos validan
+formato, normalización y persistencia interna, nunca validez de una resolución ni
+aceptación del SRI/celcer. Esa comprobación externa R21/R22 conserva su pendiente y no
+bloquea este comportamiento interno. La precondición de Contabilidad se respetó:
+el intento de marcar obligación contable con Accounting deshabilitado fue rechazado
+422 como exige el contrato; la prueba usa el catálogo fiscal existente y configuración
+compatible, sin modificar Accounting. Los fallos iniciales por régimen inexistente y
+lectura de sucursales sin contexto fueron del arnés; corregidos sin tocar código ERP.
+
+**Navigation-03 continúa pendiente.** El defecto de KPIs está resuelto, pero la capacidad
+registrada es «Interfaz en español e inglés». En la misma validación del perfil se
+reprodujo otro defecto con `en` cargado: CompanyProfileSettingsSection conserva
+«Identificación», «Información Corporativa», «Descartar Cambios» y «Guardar Configuración»
+en español. Prueba focal temporal **1/1 FAIL** al exigir ausencia de este último literal
+(`.local/internal-v1-english-company.log`); retirada después de reproducir. No se convirtió
+el PASS del Dashboard en aprobación global ni se inició auditoría del resto de pantallas.
+
+Frontend focal: **30 PASS** en cinco archivos (Dashboard 4, perfil 2, tabla/modal 22,
+visual 2). Evidencia visual local: `.local/internal-v1/visual/zh-components-390.png` y
+`zh-components-1440.png`; se verificó carga real de fuentes, no solo fallback.
+La primera ejecución visual restringida no cargó las fuentes; fuera del sandbox,
+ambas resoluciones PASS. Se conserva la distinción entre error de entorno y defecto UI.
+
+Resultado acumulado: **58/70 V1 (82.86 %); Core 34/43 (79.07 %)**. Los siete cierres
+internos acumulados no cambian el denominador Core. Matriz actualizada solo por los
+cinco nuevos cierres; Dashboard regenerado una única vez al finalizar este bloque.
+El propietario conserva el cierre del bloque y la autorización de su único commit.
+
+Gates técnicos ejecutados: TypeScript y build frontend PASS; ESLint PASS (0 errores,
+37 advertencias existentes, sin ampliación de alcance); checks focales i18n-keys,
+design-system y documentation PASS; cálculo funcional **6/6 PASS** y `git diff --check`
+PASS. Sin suite general ERP ni nueva auditoría de módulos. Gate final reproducible
+del Dashboard: renderer oficial, test-curated-dashboard y test-functional-v1-ui;
+se conservan las once tarjetas, CSS, conexiones, rutas y breadcrumbs.
+
+Gate HTTP focal reproducible desde la raíz:
+`dotnet test backend/src/ERP.API.Tests/ERP.API.Tests.csproj --no-restore --filter FullyQualifiedName~InternalCapabilitiesHttpTests`.
+Frontend desde `frontend/`: `npx.cmd vitest run src/modules/dashboard/pages/DashboardPage.test.tsx
+src/modules/configuracion/empresa/sections/CompanyProfileSettingsSection.test.tsx
+src/components/zh/ZHDataTable.test.tsx src/components/zh/ZHModal.test.tsx
+src/components/zh/InternalCapabilities.visual.test.tsx` (el visual requiere acceso a Google Fonts).
+
+## V1-INTERNAL-CLOSE-01 — bloque interno 1 — READY FOR REVIEW (2026-11-04)
+
+> Evidencia del ciclo anterior preservada. Estado posterior de sus seis pendientes:
+> [bloque acumulado](#v1-internal-solutions-01--bloque-acumulado--ready-for-review-2026-11-04).
+
+Alcance exclusivo: Companies-01, Dashboard-01, Security-01, Session-01, Session-02 y
+Navigation-01/02/03. Base: **CI #1084 SUCCESS comunicada por el propietario**, commit
+`d42990d95f36df42ac0b81e10ce82d14080bf632`. No se descargaron sus TRX: el conector no
+devolvió runs para el commit y gh local carece de autenticación. Se reutiliza esa base
+declarada, con correspondencia de clases en el [inventario CI](tools/ci/backend-test-groups.json)
+y el [workflow](.github/workflows/backend-ci.yml), cuyo reporte verifica cobertura y
+rechaza resultados fallidos/omitidos. No se atribuyen nuevas ejecuciones backend.
+R1–R4 conservan sus alcances; no se repitieron ni se usaron para aprobar estas capacidades.
+
+Cierres acreditados conforme a la autorización de esta tarea (implementación completa
++ PASS del alcance, sin aceptación duplicada; no cierre global de módulos):
+
+- **KPIs reales del ERP [V1-APPROVED:Dashboard-01].** KEEP. La brecha era no haber
+  conciliado las pruebas existentes: `DashboardKpiReaderTests` (grupo infrastructure-02)
+  cubre PostgreSQL real: ceros, ventas del mes/año, exclusión de anuladas, CxC/CxP
+  pendientes/vencidas, stock bajo/sin stock sin duplicar bodegas y aislamiento de CxP
+  entre empresas. `GetDashboardKpisQueryHandlerTests` (application) cubre fecha operativa
+  y AsOf explícito. Focal nueva: `DashboardPage.test.tsx` PASS, presentación de montos,
+  conteos y cambio de precisión. No equivale a certificar producción ni todo el Dashboard.
+- **Sesión operativa y preferencias [V1-APPROVED:Session-02].** KEEP. Cobertura existente
+  CI: `LoginHandlerTests` (DirectToDefault, AskBranch, ausencia de preferencias y sucursal
+  no autorizada), `CompanyUserPreferencesTests`, `CreateAuthenticatedSessionTests`,
+  handlers de contexto/cambio de sucursal; PostgreSQL real en
+  `CreateAuthenticatedSessionIntegrationTests` (enlace refresh/sesión y login concurrente),
+  `UserSessionAndCompanyUserBranchRepositoryTests` (empresa/sucursal/terminal, autorización
+  y unicidad), `CompanyUserPreferencesRepositoryTests` (persistencia, AskBranch, unicidad
+  y aislamiento), más `SessionContextCompanyBranchIsolationHttpTests` (api).
+  Brecha UI cubierta focalmente: `SessionBootstrap.test.tsx`, `CompanySelectPage.test.tsx`,
+  `BranchSelectorModal.test.tsx` y `useBranchGate.test.ts` PASS; selección, contexto en carga,
+  error/reintento y bloqueo hasta resolver contexto/política. No se recrearon datos persistidos.
+
+Pendientes, sin autorización de implementación:
+
+| Capacidad | Clasificación y brecha exacta restante |
+|---|---|
+| Companies-01 | FALTA de validación: el 15/15 de componentes no verifica guardar/reabrir perfil completo, branding y datos fiscales; R21/R22 conserva la comprobación con resoluciones reales en celcer pendiente. No se usaron datos fiscales inventados ni se cambiaron empresas. |
+| Security-01 | FALTA de validación: SEC-03..06 y la focal de SecuritySettings (PASS) no enlazan alta de usuario → membership → sucursales/preferencias → perfil/permisos → acceso efectivo del usuario. No existe en la evidencia revisada un PASS integrado de ese recorrido completo. |
+| Session-01 | FALTA de validación integrada: CI cubre login/JWT, contrato cookie y RefreshTokenService con repositorio fake; falta acreditar login HTTP → JWT utilizable → rotación persistida → reutilización/revocación de familia en PostgreSQL real. No se presentó el fake como prueba de persistencia ni se consumieron credenciales. |
+| Navigation-01 | FALTA de validación integrada: navigationAccess y launcherHierarchy PASS prueban destinos anidados, rutas ausentes/fail-closed, jerarquía y favoritos; falta el recorrido del menú real generado por permisos para dos perfiles y acceso/denegación correspondientes. El árbol simulado no acredita el filtrado backend. |
+| Navigation-02 | FALTA de validación visual: los PASS de componentes no acreditan el conjunto ZH/tablas compactas con fuentes e iconos reales cargados; se conserva la limitación visual registrada. No se ejecutó otra suite general ni se alteró el diseño. |
+| Navigation-03 | BUG REAL reproducido: con locale activo `en`, DashboardPage conserva «Ventas del mes», «Cuentas por cobrar/pagar», «vencido», «sin stock» y «Resumen Anual» en español. El check i18n-keys PASS y lazyLocale PASS solo acreditan claves/carga, no traducción de literales JSX. |
+
+Validación nueva: **74/74 PASS** en nueve archivos Vitest focales (los siete de
+DashboardPage, SessionBootstrap, CompanySelectPage, SecuritySettingsPage, navigationAccess,
+launcherHierarchy y lazyLocale: 58/58; BranchSelectorModal/useBranchGate: 16/16).
+Navigation-03: **1/1 FAIL esperado** en prueba temporal sobre el mismo fixture de
+DashboardPage, `ensureLocaleLoaded("en")` + storageKey=`en`; verificado locale=`en`, falla
+`expect(text).not.toContain("Ventas del mes")`. Fixture temporal retirado tras reproducir;
+código funcional intacto. Sin E2E contra datos reales, cambios de BD ni suites generales.
+
+Resultado: **53/70 V1 (75.71 %); Core 34/43 (79.07 %)**. Los dos cierres son internos,
+fuera del denominador Core. Matriz y derivados actualizados únicamente por ellos;
+diagrama y navegación del ProgressDashboard preservados. Sin staging, commit ni push.
+
+Gates focales PASS: cálculo 6/6 (expectativas actualizadas a 53 y fixture sintético de
+aprobación independiente del cierre real), regeneración oficial, composición curada,
+Chromium (21 rutas de módulos, Web/Core, evidencias, breadcrumbs, once nodos y hashes
+de estructura/CSS protegidos), documentation y `git diff --check`. GO para un único
+commit documental/de evidencia con sus derivados y ajuste de expectativas del cálculo;
+no acredita cierre de las seis pendientes ni GO de producción.
+
 ## V1-EVIDENCE-CLOSE-01 — cierre por evidencia PASS + corrección CI #1083 — READY FOR REVIEW (2026-11-04)
 
 **BUG REAL CI #1083:** `ratchet.test.mjs` (Architecture guardrails) fallaba porque

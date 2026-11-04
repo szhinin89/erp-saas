@@ -51,7 +51,7 @@ export function DashboardPage() {
       {kpis.error && (
         <ZHPageNotice
           variant="error"
-          message="Error al cargar KPIs"
+          message={t("dashboard.kpis.loadError")}
           detail={kpis.error}
         />
       )}
@@ -62,11 +62,11 @@ export function DashboardPage() {
           icon="payments"
           tone="primary"
           badge={periodLabel ? <Badge label={periodLabel} variant="info" /> : undefined}
-          label="Ventas del mes"
+          label={t("dashboard.kpis.salesMonth")}
           value={loading ? "…" : fmt(d?.salesMtd, moneyDecimals)}
           sub={
             <p className="subtle">
-              {loading ? "" : `${fmtN(d?.invoicesMtd)} facturas`}
+              {loading ? "" : t("dashboard.kpis.invoiceCount", { count: fmtN(d?.invoicesMtd) })}
             </p>
           }
         />
@@ -74,13 +74,13 @@ export function DashboardPage() {
         <ReportKpiCard
           icon="account_balance"
           tone="warning"
-          label="Cuentas por cobrar"
+          label={t("dashboard.kpis.receivables")}
           value={loading ? "…" : fmt(d?.pendingArTotal, moneyDecimals)}
           trend={
             !loading && !!d?.overdueArTotal
               ? {
                   icon: "warning",
-                  label: `${fmt(d.overdueArTotal, moneyDecimals)} vencido`,
+                  label: t("dashboard.kpis.overdueAmount", { amount: fmt(d.overdueArTotal, moneyDecimals) }),
                   tone: "warning",
                 }
               : undefined
@@ -94,7 +94,7 @@ export function DashboardPage() {
           value={loading ? "…" : fmtN(d?.lowStockSkuCount)}
           sub={
             <p className="subtle">
-              {loading ? "" : `${fmtN(d?.outOfStockSkuCount)} sin stock`}
+              {loading ? "" : t("dashboard.kpis.outOfStockCount", { count: fmtN(d?.outOfStockSkuCount) })}
             </p>
           }
         />
@@ -102,13 +102,13 @@ export function DashboardPage() {
         <ReportKpiCard
           icon="shopping_cart"
           tone="primary"
-          label="Cuentas por pagar"
+          label={t("dashboard.kpis.payables")}
           value={loading ? "…" : fmt(d?.pendingApTotal, moneyDecimals)}
           trend={
             !loading && !!d?.overdueApTotal
               ? {
                   icon: "warning",
-                  label: `${fmt(d.overdueApTotal, moneyDecimals)} vencido`,
+                  label: t("dashboard.kpis.overdueAmount", { amount: fmt(d.overdueApTotal, moneyDecimals) }),
                   tone: "warning",
                 }
               : undefined
@@ -123,12 +123,12 @@ export function DashboardPage() {
           <div className="card card--xl">
             <div className="dsh-activity-head">
               <h2 className="dsh-section-title">
-                Antigüedad de cuentas por cobrar
+                {t("dashboard.aging.receivables")}
               </h2>
             </div>
             <div className="dsh-chart-wrap">
               <p className="dsh-chart-placeholder">
-                No hay cuentas por cobrar pendientes.
+                {t("dashboard.aging.noReceivables")}
               </p>
             </div>
           </div>
@@ -137,12 +137,12 @@ export function DashboardPage() {
           <div className="card card--xl">
             <div className="dsh-activity-head">
               <h2 className="dsh-section-title">
-                Antigüedad de cuentas por pagar
+                {t("dashboard.aging.payables")}
               </h2>
             </div>
             <div className="dsh-chart-wrap">
               <p className="dsh-chart-placeholder">
-                No hay cuentas por pagar pendientes.
+                {t("dashboard.aging.noPayables")}
               </p>
             </div>
           </div>
@@ -237,25 +237,25 @@ export function DashboardPage() {
           {/* Resumen anual */}
           <div className="card card--xl">
             <div className="card-header">
-              <h2 className="dsh-section-title">Resumen Anual</h2>
+              <h2 className="dsh-section-title">{t("dashboard.summary.title")}</h2>
               {d && <Badge label={d.year} variant="info" />}
             </div>
             <div className="dsh-card-body">
               <div className="dsh-summary-row">
-                <span className="dsh-summary-label">Ventas del año</span>
+                <span className="dsh-summary-label">{t("dashboard.summary.salesYear")}</span>
                 <span className="dsh-summary-value">
                   {loading ? "…" : fmt(d?.salesYtd, moneyDecimals)}
                 </span>
               </div>
               <div className="dsh-summary-row">
-                <span className="dsh-summary-label">Facturas del mes</span>
+                <span className="dsh-summary-label">{t("dashboard.summary.invoicesMonth")}</span>
                 <span className="dsh-summary-value">
                   {loading ? "…" : fmtN(d?.invoicesMtd)}
                 </span>
               </div>
               <div className="dsh-summary-row">
                 <span className="dsh-summary-label">
-                  Cuentas por cobrar vencidas
+                  {t("dashboard.summary.overdueReceivables")}
                 </span>
                 <span className="dsh-summary-value dsh-summary-value--warn">
                   {loading ? "…" : fmt(d?.overdueArTotal, moneyDecimals)}
@@ -263,7 +263,7 @@ export function DashboardPage() {
               </div>
               <div className="dsh-summary-row">
                 <span className="dsh-summary-label">
-                  Cuentas por pagar vencidas
+                  {t("dashboard.summary.overduePayables")}
                 </span>
                 <span className="dsh-summary-value dsh-summary-value--warn">
                   {loading ? "…" : fmt(d?.overdueApTotal, moneyDecimals)}
@@ -278,7 +278,7 @@ export function DashboardPage() {
         <div className="dsh-footer-left">
           <span className="dsh-footer-brand">{brandConfig.companyName}</span>
           <span className="dsh-footer-copy">
-            {getCopyrightText()}. Todos los derechos reservados.
+            {getCopyrightText()}. {t("dashboard.rightsReserved")}
           </span>
         </div>
       </footer>

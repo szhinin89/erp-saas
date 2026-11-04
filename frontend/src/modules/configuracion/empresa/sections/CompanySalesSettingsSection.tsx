@@ -113,7 +113,7 @@ export function CompanySalesSettingsSection() {
       ) {
         await priceListDefaultFacade.setDefault(values.defaultPriceListId);
       }
-      message.success("Configuración de ventas guardada.");
+      message.success(t("settings.company.sales.saved"));
       settingsState.refetch();
       priceListsState.refetch();
       setModalOpen(false);
@@ -304,7 +304,7 @@ export function CompanySalesSettingsSection() {
             <ZHGrid cols={1}>
               <ZHField
                 label={t("settings.company.sales.defaultPriceList")}
-                error={errors.defaultPriceListId?.message}
+                error={errors.defaultPriceListId?.message ? t(errors.defaultPriceListId?.message) : undefined}
               >
                 <ZhSelect
                   disabled={saving || !canEdit || priceLists.length === 0}
@@ -328,7 +328,7 @@ export function CompanySalesSettingsSection() {
 
               <ZHField
                 label={t("settings.company.sales.defaultDocType")}
-                error={errors.defaultDocTypeCode?.message}
+                error={errors.defaultDocTypeCode?.message ? t(errors.defaultDocTypeCode?.message) : undefined}
               >
                 <ZhSelect
                   disabled={saving || !canEdit}
@@ -347,7 +347,7 @@ export function CompanySalesSettingsSection() {
 
               <ZHField
                 label={t("settings.company.sales.defaultSriPaymentMethod")}
-                error={errors.defaultSriPaymentMethodCode?.message}
+                error={errors.defaultSriPaymentMethodCode?.message ? t(errors.defaultSriPaymentMethodCode?.message) : undefined}
               >
                 <ZhSelect
                   disabled={saving || !canEdit}
@@ -366,7 +366,7 @@ export function CompanySalesSettingsSection() {
 
               <ZHField
                 label={t("settings.company.sales.defaultPaymentTerm")}
-                error={errors.defaultPaymentTermId?.message}
+                error={errors.defaultPaymentTermId?.message ? t(errors.defaultPaymentTermId?.message) : undefined}
               >
                 <ZhSelect
                   disabled={saving || !canEdit}

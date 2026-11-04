@@ -31,6 +31,51 @@ public sealed class AccountingFiscalYearClosing12DTests : IClassFixture<Accounti
     public AccountingFiscalYearClosing12DTests(AccountingManual08Fixture fixture) => _fixture = fixture;
 
     [Fact]
+    public async Task A12D_06_ejercicio_2025_terminado_publica_cierre_y_cierra_periodo_sin_duplicar_resultado()
+    {
+        var today = new DateOnly(2026, 11, 4);
+        var end = new DateOnly(2025, 12, 31);
+        var book = await _fixture.BookAsync(fiscalYear: 2025);
+        var resultAccount = await AccountAsync(book, "3.1.03.001", "Resultado del ejercicio", AccountType.Equity, AccountNature.Credit);
+        var expense = await AccountAsync(book, "6.1.01", "Gasto sintético", AccountType.Expense, AccountNature.Debit);
+        await PostAsync(book, new(2025, 3, 1), book.DebitId, book.CreditId, 1000m, today);
+        await PostAsync(book, new(2025, 4, 1), expense, book.DebitId, 150.25m, today);
+        await using var db = book.Db();
+        var closing = await book.GenerateClosing(db, today).Handle(new(2025), Ct);
+        closing.IsSuccess.Should().BeTrue(closing.Error);
+        closing.Value!.Result.Should().Be(849.75m);
+        var closingId = closing.Value.JournalEntryId!.Value;
+        var posted = await book.Handler(db, today).Handle(new PostManualJournalCommand(closingId, 1, Guid.NewGuid()), Ct);
+        posted.IsSuccess.Should().BeTrue(posted.Error);
+        var tenant = Mock.Of<ICurrentTenant>(t => t.TenantId == book.TenantId);
+        var company = Mock.Of<ICurrentCompany>(c => c.CompanyId == book.CompanyId && c.HasCompanyContext && c.IsAuthenticated);
+        var user = Mock.Of<ICurrentUser>(u => u.UserId == book.UserId);
+        var completeness = AccountingCompletenessTestSupport.Create(db, book.CompanyId);
+        var journal = new JournalEntryRepository(db);
+        var accounts = new AccountRepository(db);
+        var income = await new GetIncomeStatementReportHandler(journal, accounts, tenant, company, completeness)
+            .Handle(new(new(2025, 1, 1), end), Ct);
+        income.Value!.NetProfit.Should().Be(849.75m);
+        var balance = await new GetBalanceSheetReportHandler(journal, accounts, tenant, company, completeness)
+            .Handle(new(end), Ct);
+        balance.Value!.CurrentYearResult.Should().Be(0m);
+        balance.Value.EquityLines.Single(l => l.AccountId == resultAccount).Amount.Should().Be(849.75m);
+        balance.Value.IsBalanced.Should().BeTrue();
+        var closed = await new CloseAccountingPeriodHandler(new AccountingPeriodRepository(db), completeness,
+            new AccountingOperationalPolicyRepository(db), new UnitOfWork(db), book.Clock(today), tenant, company, user)
+            .Handle(new(book.PeriodId), Ct);
+        closed.IsSuccess.Should().BeTrue(closed.Error);
+        await using var verify = book.Db();
+        (await verify.AccountingPeriods.SingleAsync(p => p.Id == book.PeriodId)).Status.ToString().Should().Be("Closed");
+        var nominal = await new JournalEntryRepository(verify).GetAccountLineTotalsAsync(book.TenantId, book.CompanyId,
+            new(2025, 1, 1), end, [book.CreditId, expense], Ct);
+        nominal.Values.Should().OnlyContain(v => v.TotalDebit == v.TotalCredit);
+        (await verify.JournalEntries.CountAsync(e => e.SourceEventType == JournalEntry.FiscalYearClosingFact)).Should().Be(1);
+        (await book.Handler(verify, today).Handle(new ReverseManualJournalCommand(closingId, end, "cerrado"), Ct))
+            .Code.Should().Be("PERIOD_NOT_OPEN");
+    }
+
+    [Fact]
     public async Task A12D_01_utilidad_genera_draft_balanceado_con_resultado_al_haber()
     {
         var (book, result, cost, expense) = await ProfitBookAsync();

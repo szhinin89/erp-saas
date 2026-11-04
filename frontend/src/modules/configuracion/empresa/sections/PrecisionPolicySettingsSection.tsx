@@ -28,9 +28,9 @@ import {
 type ProfileValues = Omit<PrecisionPolicyFormValues, "profileType">;
 
 const PROFILE_TITLES: Record<PrecisionProfileType, string> = {
-  StandardCommercial: "Estándar comercial",
-  HighPrecision: "Alta precisión",
-  Custom: "Personalizado",
+  StandardCommercial: "settings.company.precision.profileTitle.StandardCommercial",
+  HighPrecision: "settings.company.precision.profileTitle.HighPrecision",
+  Custom: "settings.company.precision.profileTitle.Custom",
 };
 
 const PROFILE_ORDER: PrecisionProfileType[] = ["StandardCommercial", "HighPrecision", "Custom"];
@@ -47,7 +47,7 @@ async function loadPrecisionScreenData(): Promise<PrecisionScreenData> {
 }
 
 const DISCLAIMER_TEXT =
-  "Esta configuración define cómo la empresa captura y calcula valores unitarios, cantidades, costos y tolerancia operativa. No modifica impuestos, totales fiscales, caja, CxC/CxP, contabilidad ni documentos ya autorizados.";
+  "settings.company.precision.disclaimer";
 
 export function PrecisionPolicySettingsSection() {
   const { canShow } = usePermissionsUi();
@@ -98,7 +98,7 @@ function PrecisionPolicyForm({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const schema = useMemo(() => buildPrecisionPolicySchema(metadata), [metadata]);
+  const schema = useMemo(() => buildPrecisionPolicySchema(metadata, t), [metadata, t]);
   const profiles = useMemo(() => buildProfiles(metadata), [metadata]);
 
   const {
@@ -108,7 +108,8 @@ function PrecisionPolicyForm({
     watch,
     setValue,
     setError: setFieldError,
-    formState: { errors, isDirty },
+    trigger,
+    formState: { errors, isDirty, isSubmitted },
   } = useForm<PrecisionPolicyFormValues>({
     resolver: zodResolver(schema),
     defaultValues: toFormValues(policy),
@@ -122,6 +123,10 @@ function PrecisionPolicyForm({
   useEffect(() => {
     reset(toFormValues(policy));
   }, [policy, reset]);
+
+  useEffect(() => {
+    if (isSubmitted) void trigger();
+  }, [t, isSubmitted, trigger]);
 
   const profileType = watch("profileType");
 
@@ -205,13 +210,13 @@ function PrecisionPolicyForm({
               <span className="material-symbols-outlined pg-section-icon">
                 decimal_increase
               </span>
-              <p className="pg-section-label">Precisión operativa</p>
+              <p className="pg-section-label">{t("settings.company.precision.title")}</p>
             </div>
           </div>
           <div className="pg-section-body">
-            <p className="zh-text-muted zh-mb-16">{DISCLAIMER_TEXT}</p>
+            <p className="zh-text-muted zh-mb-16">{t(DISCLAIMER_TEXT)}</p>
 
-            <div role="radiogroup" aria-label="Perfil de precisión" className="zh-mb-16">
+            <div role="radiogroup" aria-label={t("settings.company.precision.profileLabel")} className="zh-mb-16">
               <ZHGrid cols={3}>
                 {PROFILE_ORDER.map((id) => {
                   const active = profileType === id;
@@ -234,7 +239,7 @@ function PrecisionPolicyForm({
                         gap: 4,
                       }}
                     >
-                      <strong>{PROFILE_TITLES[id]}</strong>
+                      <strong>{t(PROFILE_TITLES[id])}</strong>
                       <span className="zh-text-muted" style={{ fontSize: "0.85em", fontWeight: 400 }}>
                         {profileSummary(id, profiles, t)}
                       </span>
@@ -286,7 +291,7 @@ function PrecisionPolicyForm({
                   <ZHField
                     label={t("settings.company.precision.field.tolerance.label")}
                     hint={t("settings.company.precision.field.tolerance.desc")}
-                    error={errors.settlementToleranceAmount?.message}
+                    error={errors.settlementToleranceAmount?.message ? t(errors.settlementToleranceAmount?.message) : undefined}
                   >
                     <ZhDecimalInput
                       disabled={fieldsDisabled}
@@ -321,7 +326,7 @@ function PrecisionPolicyForm({
                 disabled={saving || !isDirty}
                 onClick={handleDiscard}
               >
-                Descartar Cambios
+                {t("settings.company.actions.discard")}
               </ZHBtn>
               <ZHBtn
                 variant="primary"
@@ -330,7 +335,7 @@ function PrecisionPolicyForm({
                 disabled={saving || !canEdit || !isDirty}
               >
                 <span className="material-symbols-outlined">save</span>
-                {saving ? t("common.saving") : "Guardar Configuración"}
+                {saving ? t("common.saving") : t("settings.company.actions.save")}
               </ZHBtn>
             </div>
           </div>

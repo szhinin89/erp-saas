@@ -165,7 +165,7 @@ export function BrandingSettingsSection() {
     }
 
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setLogoError(t("settings.company.logo.formatError"));
+      setLogoError("settings.company.logo.formatError");
       setLogoFile(null);
       setLogoPreviewUrl(null);
       if (logoFileInputRef.current) logoFileInputRef.current.value = "";
@@ -173,7 +173,7 @@ export function BrandingSettingsSection() {
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setLogoError(t("settings.company.logo.sizeError"));
+      setLogoError("settings.company.logo.sizeError");
       setLogoFile(null);
       setLogoPreviewUrl(null);
       if (logoFileInputRef.current) logoFileInputRef.current.value = "";
@@ -226,7 +226,7 @@ export function BrandingSettingsSection() {
     }
 
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setAltLogoError(t("settings.company.logo.formatError"));
+      setAltLogoError("settings.company.logo.formatError");
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
       if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
@@ -234,7 +234,7 @@ export function BrandingSettingsSection() {
     }
 
     if (file.size > MAX_LOGO_SIZE_BYTES) {
-      setAltLogoError(t("settings.company.logo.sizeError"));
+      setAltLogoError("settings.company.logo.sizeError");
       setAltLogoFile(null);
       setAltLogoPreviewUrl(null);
       if (altLogoFileInputRef.current) altLogoFileInputRef.current.value = "";
@@ -333,7 +333,7 @@ export function BrandingSettingsSection() {
         <ZHPageNotice
           variant="error"
           message={t("common.errorPrefix")}
-          detail={logoError}
+          detail={t(logoError)}
         />
       )}
       {logoSaved && (
@@ -346,7 +346,7 @@ export function BrandingSettingsSection() {
         <ZHPageNotice
           variant="error"
           message={t("common.errorPrefix")}
-          detail={altLogoError}
+          detail={t(altLogoError)}
         />
       )}
       {altLogoSaved && (
@@ -527,7 +527,7 @@ export function BrandingSettingsSection() {
             <ZHGrid cols={2}>
               <ZHField
                 label={t("settings.company.branding.identity.primaryColor")}
-                error={errors.primaryColor?.message}
+                error={errors.primaryColor?.message ? t(errors.primaryColor?.message) : undefined}
               >
                 <div
                   className="zh-flex-end zh-gap-8 cfg-branding-color-row"
@@ -551,7 +551,7 @@ export function BrandingSettingsSection() {
 
               <ZHField
                 label={t("settings.company.branding.identity.secondaryColor")}
-                error={errors.secondaryColor?.message}
+                error={errors.secondaryColor?.message ? t(errors.secondaryColor?.message) : undefined}
               >
                 <div
                   className="zh-flex-end zh-gap-8 cfg-branding-color-row"
@@ -575,7 +575,7 @@ export function BrandingSettingsSection() {
 
               <ZHField
                 label={t("settings.company.branding.identity.slogan")}
-                error={errors.slogan?.message}
+                error={errors.slogan?.message ? t(errors.slogan?.message) : undefined}
               >
                 <ZhTextInput
                   className="zh-input"
@@ -590,7 +590,7 @@ export function BrandingSettingsSection() {
                 hint={t(
                   "settings.company.branding.identity.documentFooterTextHint",
                 )}
-                error={errors.documentFooterText?.message}
+                error={errors.documentFooterText?.message ? t(errors.documentFooterText?.message) : undefined}
               >
                 <ZhTextarea
                   className="zh-input"

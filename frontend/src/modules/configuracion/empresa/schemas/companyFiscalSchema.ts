@@ -25,7 +25,7 @@ export const companyFiscalSchema = z
       .string()
       .optional()
       .refine((v) => !v?.trim() || SPECIAL_TAXPAYER_NO.test(v.trim()), {
-        message: "Entre 3 y 13 caracteres alfanuméricos, sin espacios ni símbolos.",
+        message: "settings.company.validation.specialTaxpayer",
       }),
     isForeignTrade: z.boolean(),
     withholdsRenta: z.boolean(),
@@ -39,12 +39,12 @@ export const companyFiscalSchema = z
           const n = normalizeRetentionAgentNo(v);
           return /^[1-9]\d*$/.test(n) && n.length <= RETENTION_AGENT_NO_MAX;
         },
-        { message: "Solo dígitos, máximo 8 sin contar los ceros a la izquierda." },
+        { message: "settings.company.validation.retentionAgent" },
       ),
     retentionAgentEffectiveFrom: z.string().optional(),
     largeTaxpayerResolutionNo: z
       .string()
-      .max(LARGE_TAXPAYER_NO_MAX, "Máximo 300 caracteres")
+      .max(LARGE_TAXPAYER_NO_MAX, "settings.company.validation.max300")
       .optional(),
     largeTaxpayerEffectiveFrom: z.string().optional(),
   })
@@ -60,13 +60,13 @@ export const companyFiscalSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: [dateField],
-          message: "Indique desde qué fecha rige la resolución.",
+          message: "settings.company.validation.effectiveFrom",
         });
       if (hasDate && !hasNumber)
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: [numberField],
-          message: "Indique el número de resolución o borre la fecha.",
+          message: "settings.company.validation.resolution",
         });
     }
   });

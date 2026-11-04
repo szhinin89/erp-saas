@@ -27,18 +27,18 @@ const TIMEZONES = [
   { value: "America/Guayaquil", label: "(GMT-05:00) Guayaquil / Ecuador" },
   { value: "America/Bogota", label: "(GMT-05:00) Bogotá / Colombia" },
   { value: "America/Lima", label: "(GMT-05:00) Lima / Perú" },
-  { value: "America/New_York", label: "(GMT-05:00) Eastern Time" },
+  { value: "America/New_York", labelKey: "settings.company.profile.easternTime" },
 ];
 
 const CURRENCIES = [
-  { value: "USD", label: "USD — Dólar Estadounidense" },
-  { value: "EUR", label: "EUR — Euro" },
+  { value: "USD", labelKey: "settings.company.profile.currencyUSD" },
+  { value: "EUR", labelKey: "settings.company.profile.currencyEUR" },
 ];
 
 const TAX_STATUS_LABELS: Record<string, string> = {
-  Pending: "Pendiente",
-  Verified: "Verificado",
-  Invalid: "Inválido",
+  Pending: "settings.company.profile.taxStatus.Pending",
+  Verified: "settings.company.profile.taxStatus.Verified",
+  Invalid: "settings.company.profile.taxStatus.Invalid",
 };
 
 export function CompanyProfileSettingsSection() {
@@ -164,21 +164,20 @@ export function CompanyProfileSettingsSection() {
               <span className="material-symbols-outlined pg-section-icon">
                 badge
               </span>
-              <p className="pg-section-label">Identificación</p>
+              <p className="pg-section-label">{t("settings.company.profile.identification")}</p>
             </div>
             {profile && (
               <div className="zh-flex-end zh-gap-8">
                 <Badge
                   variant={profile.isActive ? "success" : "neutral"}
-                  label={profile.isActive ? "Activa" : "Inactiva"}
+                  label={t(profile.isActive ? "settings.company.operation.statusActive" : "settings.company.operation.statusInactive")}
                 />
                 <Badge
                   variant="neutral"
                   label={
                     <>
                       RUC:{" "}
-                      {TAX_STATUS_LABELS[profile.taxIdentificationStatus] ??
-                        profile.taxIdentificationStatus}
+                      {t(TAX_STATUS_LABELS[profile.taxIdentificationStatus] ?? profile.taxIdentificationStatus)}
                     </>
                   }
                 />
@@ -187,7 +186,7 @@ export function CompanyProfileSettingsSection() {
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
-              <ZHField label="Razón Social">
+              <ZHField label={t("settings.company.profile.legalName")}>
                 <ZhTextInput
                   className="zh-input"
                   value={profile?.legalName ?? ""}
@@ -196,7 +195,7 @@ export function CompanyProfileSettingsSection() {
                 />
               </ZHField>
 
-              <ZHField label="Nombre Comercial">
+              <ZHField label={t("settings.company.profile.tradeName")}>
                 <ZhTextInput
                   className="zh-input"
                   value={profile?.tradeName ?? ""}
@@ -205,7 +204,7 @@ export function CompanyProfileSettingsSection() {
                 />
               </ZHField>
 
-              <ZHField label="RUC">
+              <ZHField label={t("settings.company.profile.taxId")}>
                 <ZhTextInput
                   className="zh-input"
                   value={profile?.taxIdentificationNumber ?? ""}
@@ -215,9 +214,9 @@ export function CompanyProfileSettingsSection() {
               </ZHField>
             </ZHGrid>
             <p className="zh-text-muted zh-text-xs zh-mt-8">
-              Razón social, nombre comercial y RUC se administran desde{" "}
+              {t("settings.company.profile.identityHint")} {" "}
               <Link to="/companies" className="zh-link">
-                Administración de Empresas
+                {t("settings.company.profile.management")}
               </Link>
               .
             </p>
@@ -230,34 +229,34 @@ export function CompanyProfileSettingsSection() {
               <span className="material-symbols-outlined pg-section-icon">
                 business_center
               </span>
-              <p className="pg-section-label">Información Corporativa</p>
+              <p className="pg-section-label">{t("settings.company.profile.corporate")}</p>
             </div>
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
               <ZHField
-                label="Correo Corporativo"
-                error={errors.corporateEmail?.message}
+                label={t("settings.company.profile.email")}
+                error={errors.corporateEmail?.message ? t(errors.corporateEmail?.message) : undefined}
               >
                 <input
                   className="zh-input"
                   type="email"
-                  placeholder="contacto@empresa.com"
+                  placeholder={t("settings.company.profile.emailPlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("corporateEmail")}
                 />
               </ZHField>
 
-              <ZHField label="Sitio Web" error={errors.website?.message}>
+              <ZHField label={t("settings.company.profile.website")} error={errors.website?.message ? t(errors.website?.message) : undefined}>
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="https://www.empresa.com"
+                  placeholder={t("settings.company.profile.websitePlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("website")}
                 />
               </ZHField>
 
-              <ZHField label="Teléfono Principal" error={errors.phone?.message}>
+              <ZHField label={t("settings.company.profile.phone")} error={errors.phone?.message ? t(errors.phone?.message) : undefined}>
                 <Controller
                   name="phone"
                   control={control}
@@ -276,52 +275,52 @@ export function CompanyProfileSettingsSection() {
               <span className="material-symbols-outlined pg-section-icon">
                 person
               </span>
-              <p className="pg-section-label">Representante Legal</p>
+              <p className="pg-section-label">{t("settings.company.profile.representative")}</p>
             </div>
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
-              <ZHField label="Nombre" error={errors.legalRepName?.message}>
+              <ZHField label={t("settings.company.profile.name")} error={errors.legalRepName?.message ? t(errors.legalRepName?.message) : undefined}>
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="Nombre completo"
+                  placeholder={t("settings.company.profile.namePlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("legalRepName")}
                 />
               </ZHField>
 
-              <ZHField label="Cargo" error={errors.legalRepPosition?.message}>
+              <ZHField label={t("settings.company.profile.position")} error={errors.legalRepPosition?.message ? t(errors.legalRepPosition?.message) : undefined}>
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="Cargo dentro de la empresa"
+                  placeholder={t("settings.company.profile.positionPlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("legalRepPosition")}
                 />
               </ZHField>
 
               <ZHField
-                label="Identificación"
-                error={errors.legalRepIdNumber?.message}
+                label={t("settings.company.profile.identification")}
+                error={errors.legalRepIdNumber?.message ? t(errors.legalRepIdNumber?.message) : undefined}
               >
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="Cédula o pasaporte"
+                  placeholder={t("settings.company.profile.idPlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("legalRepIdNumber")}
                 />
               </ZHField>
 
-              <ZHField label="Correo" error={errors.legalRepEmail?.message}>
+              <ZHField label={t("settings.company.profile.repEmail")} error={errors.legalRepEmail?.message ? t(errors.legalRepEmail?.message) : undefined}>
                 <input
                   className="zh-input"
                   type="email"
-                  placeholder="representante@empresa.com"
+                  placeholder={t("settings.company.profile.repEmailPlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("legalRepEmail")}
                 />
               </ZHField>
 
-              <ZHField label="Teléfono" error={errors.legalRepPhone?.message}>
+              <ZHField label={t("settings.company.profile.repPhone")} error={errors.legalRepPhone?.message ? t(errors.legalRepPhone?.message) : undefined}>
                 <Controller
                   name="legalRepPhone"
                   control={control}
@@ -340,29 +339,29 @@ export function CompanyProfileSettingsSection() {
               <span className="material-symbols-outlined pg-section-icon">
                 public
               </span>
-              <p className="pg-section-label">Configuración Regional</p>
+              <p className="pg-section-label">{t("settings.company.profile.region")}</p>
             </div>
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
-              <ZHField label="Moneda Base">
+              <ZHField label={t("settings.company.profile.currency")}>
                 <select
                   disabled={saving || !canEdit}
                   {...register("currencyCode")}
                 >
                   {CURRENCIES.map((c) => (
                     <option key={c.value} value={c.value}>
-                      {c.label}
+                      {t(c.labelKey)}
                     </option>
                   ))}
                 </select>
               </ZHField>
 
-              <ZHField label="Zona Horaria">
+              <ZHField label={t("settings.company.profile.timezone")}>
                 <select disabled={saving || !canEdit} {...register("timezone")}>
                   {TIMEZONES.map((z) => (
                     <option key={z.value} value={z.value}>
-                      {z.label}
+                      {z.labelKey ? t(z.labelKey) : z.label}
                     </option>
                   ))}
                 </select>
@@ -373,7 +372,7 @@ export function CompanyProfileSettingsSection() {
 
         {profile && (
           <p className="zh-text-muted zh-text-xs zh-mt-8">
-            Última actualización: {formatDateTime(profile.updatedAt)}
+            {t("settings.company.profile.updatedAt")} {formatDateTime(profile.updatedAt)}
           </p>
         )}
 
@@ -386,7 +385,7 @@ export function CompanyProfileSettingsSection() {
               disabled={saving || !isDirty}
               onClick={handleDiscard}
             >
-              Descartar Cambios
+              {t("settings.company.actions.discard")}
             </ZHBtn>
             <ZHBtn
               variant="primary"
@@ -395,7 +394,7 @@ export function CompanyProfileSettingsSection() {
               disabled={saving || !canEdit || !isDirty}
             >
               <span className="material-symbols-outlined">save</span>
-              {saving ? t("common.saving") : "Guardar Configuración"}
+              {saving ? t("common.saving") : t("settings.company.actions.save")}
             </ZHBtn>
           </div>
         </div>

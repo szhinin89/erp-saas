@@ -50,7 +50,7 @@ namespace ERP.Infrastructure.Tests.Accounting;
 /// segundo asiento, y rollback total (saldo, transacción, caja, asiento) si el posting falla.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
+public sealed partial class SupplierCreditRefundPostingIntegrationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")

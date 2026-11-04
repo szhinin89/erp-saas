@@ -34,9 +34,9 @@ import type { ConsumerFinalMaxAmountSource } from "../../../../types/companyProf
 
 const CONSUMER_FINAL_SOURCE_LABELS: Record<ConsumerFinalMaxAmountSource, string> =
   {
-    Manual: "Manual",
-    TaxRegimeDefault: "Default por régimen",
-    Fallback: "Fallback (régimen no configurado/reconocido)",
+    Manual: "settings.company.fiscal.source.Manual",
+    TaxRegimeDefault: "settings.company.fiscal.source.TaxRegimeDefault",
+    Fallback: "settings.company.fiscal.source.Fallback",
   };
 
 export function FiscalSettingsSection() {
@@ -244,7 +244,7 @@ export function FiscalSettingsSection() {
                   disabled={saving || !canEdit}
                   {...register("taxRegimeCode")}
                 >
-                  <option value="">Sin especificar</option>
+                  <option value="">{t("settings.company.fiscal.unspecified")}</option>
                   {/* A saved regime that is no longer selectable stays visible so saving never clears it. */}
                   {savedTaxRegimeCode &&
                     !taxRegimes.some((r) => r.code === savedTaxRegimeCode) && (
@@ -263,11 +263,11 @@ export function FiscalSettingsSection() {
 
               <ZHField
                 label={t("settings.company.fiscal.specialTaxpayerNo")}
-                fieldError={errors.specialTaxpayerNo?.message}
+                fieldError={errors.specialTaxpayerNo?.message ? t(errors.specialTaxpayerNo?.message) : undefined}
               >
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="N° de resolución"
+                  placeholder={t("settings.company.fiscal.resolutionPlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("specialTaxpayerNo")}
                 />
@@ -280,19 +280,19 @@ export function FiscalSettingsSection() {
             <ZHGrid cols={2}>
               <ZHField
                 label={t("settings.company.fiscal.retentionAgentResolutionNo")}
-                fieldError={errors.retentionAgentResolutionNo?.message}
+                fieldError={errors.retentionAgentResolutionNo?.message ? t(errors.retentionAgentResolutionNo?.message) : undefined}
               >
                 <ZhTextInput
                   className="zh-input"
                   inputMode="numeric"
-                  placeholder="N° de resolución"
+                  placeholder={t("settings.company.fiscal.resolutionPlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("retentionAgentResolutionNo")}
                 />
               </ZHField>
               <ZHField
                 label={t("settings.company.fiscal.effectiveFrom")}
-                fieldError={errors.retentionAgentEffectiveFrom?.message}
+                fieldError={errors.retentionAgentEffectiveFrom?.message ? t(errors.retentionAgentEffectiveFrom?.message) : undefined}
               >
                 <ZhDateInput
                   disabled={saving || !canEdit}
@@ -301,18 +301,18 @@ export function FiscalSettingsSection() {
               </ZHField>
               <ZHField
                 label={t("settings.company.fiscal.largeTaxpayerResolutionNo")}
-                fieldError={errors.largeTaxpayerResolutionNo?.message}
+                fieldError={errors.largeTaxpayerResolutionNo?.message ? t(errors.largeTaxpayerResolutionNo?.message) : undefined}
               >
                 <ZhTextInput
                   className="zh-input"
-                  placeholder="N° de resolución"
+                  placeholder={t("settings.company.fiscal.resolutionPlaceholder")}
                   disabled={saving || !canEdit}
                   {...register("largeTaxpayerResolutionNo")}
                 />
               </ZHField>
               <ZHField
                 label={t("settings.company.fiscal.effectiveFrom")}
-                fieldError={errors.largeTaxpayerEffectiveFrom?.message}
+                fieldError={errors.largeTaxpayerEffectiveFrom?.message ? t(errors.largeTaxpayerEffectiveFrom?.message) : undefined}
               >
                 <ZhDateInput
                   disabled={saving || !canEdit}
@@ -371,7 +371,7 @@ export function FiscalSettingsSection() {
               disabled={saving || !isDirty}
               onClick={handleDiscard}
             >
-              Descartar Cambios
+              {t("settings.company.actions.discard")}
             </ZHBtn>
             <ZHBtn
               variant="primary"
@@ -380,7 +380,7 @@ export function FiscalSettingsSection() {
               disabled={saving || !canEdit || !isDirty}
             >
               <span className="material-symbols-outlined">save</span>
-              {saving ? t("common.saving") : "Guardar Configuración"}
+              {saving ? t("common.saving") : t("settings.company.actions.save")}
             </ZHBtn>
           </div>
         </div>
@@ -411,7 +411,7 @@ export function FiscalSettingsSection() {
               <span className="material-symbols-outlined pg-section-icon">
                 block
               </span>
-              <p className="pg-section-label">Reglas Consumidor Final</p>
+              <p className="pg-section-label">{t("settings.company.fiscal.consumerRules")}</p>
             </div>
           </div>
           <div className="pg-section-body">
@@ -420,26 +420,25 @@ export function FiscalSettingsSection() {
             ) : (
               <>
                 <ZHInfoRow
-                  label="Crédito a Consumidor Final"
+                  label={t("settings.company.fiscal.consumerCredit")}
                   value={
                     <ZHDataValue variant="strong" tone="danger">
-                      Bloqueado
+                      {t("settings.company.fiscal.blocked")}
                     </ZHDataValue>
                   }
                   wide
                 />
                 <p className="zh-text-muted zh-text-xs zh-mt-4">
-                  Consumidor Final no puede registrar ventas a crédito porque
-                  no identifica un deudor para cuentas por cobrar.
+                  {t("settings.company.fiscal.consumerCreditHint")}
                 </p>
 
                 <ZHGrid cols={2}>
                   <ZHField
-                    label="Monto máximo Consumidor Final"
+                    label={t("settings.company.fiscal.consumerMax")}
                     fieldError={
-                      policyErrors.consumerFinalMaxAmount?.message
+                      policyErrors.consumerFinalMaxAmount?.message ? t(policyErrors.consumerFinalMaxAmount.message) : undefined
                     }
-                    hint="Si una venta a Consumidor Final supera este monto, debe seleccionarse un cliente identificado."
+                    hint={t("settings.company.fiscal.consumerMaxHint")}
                   >
                     <ZhDecimalInput
                       precision="money"
@@ -449,12 +448,10 @@ export function FiscalSettingsSection() {
                     />
                   </ZHField>
 
-                  <ZHField label="Fuente del valor">
+                  <ZHField label={t("settings.company.fiscal.sourceLabel")}>
                     <ZHDataValue variant="muted">
                       {policyState.data
-                        ? CONSUMER_FINAL_SOURCE_LABELS[
-                            policyState.data.consumerFinalMaxAmountSource
-                          ]
+                        ? t(CONSUMER_FINAL_SOURCE_LABELS[policyState.data.consumerFinalMaxAmountSource])
                         : "—"}
                     </ZHDataValue>
                   </ZHField>
@@ -473,7 +470,7 @@ export function FiscalSettingsSection() {
               disabled={policySaving || !policyDirty}
               onClick={handlePolicyDiscard}
             >
-              Descartar Cambios
+              {t("settings.company.actions.discard")}
             </ZHBtn>
             <ZHBtn
               variant="primary"
@@ -482,7 +479,7 @@ export function FiscalSettingsSection() {
               disabled={policySaving || !canEdit || !policyDirty}
             >
               <span className="material-symbols-outlined">save</span>
-              {policySaving ? t("common.saving") : "Guardar Configuración"}
+              {policySaving ? t("common.saving") : t("settings.company.actions.save")}
             </ZHBtn>
           </div>
         </div>

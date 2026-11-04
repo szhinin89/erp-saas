@@ -6,13 +6,13 @@ import { calculate, projectRoot } from './analyze-functional-v1.mjs';
 const source=()=>JSON.parse(fs.readFileSync(path.join(projectRoot,'docs/ProgressDashboard/data/functional-v1-source.json'),'utf8'));
 test('unique global denominator, exact module union and Core membership',()=>{
  const d=calculate();
- assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[51,70,72.86]);
- assert.deepEqual([d.core.approved,d.core.total,d.core.pct],[34,43,79.07]);
+ assert.deepEqual([d.global.approved,d.global.total,d.global.pct],[65,70,92.86]);
+ assert.deepEqual([d.core.approved,d.core.total,d.core.pct],[40,43,93.02]);
  assert.equal(new Set(d.global.ids).size,d.global.total);
  assert.equal(Object.values(d.modules).reduce((n,m)=>n+m.total,0),d.global.total);
  assert.equal(Object.values(d.modules).reduce((n,m)=>n+m.approved,0),d.global.approved);
  assert.equal(d.modules.Caja.approved,3); // R3 scope, no invented global closure.
- assert.equal(d.modules.Accounting.approved,4); // R4 does not close annual/batch capabilities.
+ assert.equal(d.modules.Accounting.approved,8); // Additional focal evidence closes the scopes not covered by R4.
  assert.equal(d.features.find(f=>f.id==='ElectronicDocuments-04').state,'blocked');
  assert.equal(d.features.find(f=>f.id==='InitialLoad-05').state,'planned');
  for(const f of d.features.filter(f=>f.state==='approved'))assert.ok(f.evidence.some(e=>e.found));
@@ -22,8 +22,10 @@ test('future/production never affect denominator or approved totals',()=>{
  assert.deepEqual(calculate(projectRoot,s).global,calculate().global);
 });
 test('new explicit STATUS acceptance recalculates; implementation alone does not',()=>{
- const before=calculate();
- const after=calculate(projectRoot,source(),file=>fs.readFileSync(file,'utf8')+(path.basename(file)==='STATUS.md'?'\nPropietario aprueba KPIs con evidencia focal [V1-APPROVED:Dashboard-01]\n':''));
+ const s=source();
+ s.features.find(f=>f.id==='Dashboard-01').approval.contains='[TEST-APPROVED:Dashboard-01]';
+ const before=calculate(projectRoot,s);
+ const after=calculate(projectRoot,s,file=>fs.readFileSync(file,'utf8')+(path.basename(file)==='STATUS.md'?'\nAprobación sintética del fixture [TEST-APPROVED:Dashboard-01]\n':''));
  assert.equal(before.modules.Dashboard.approved,0);
  assert.equal(after.modules.Dashboard.approved,1);
  assert.equal(after.global.approved,before.global.approved+1);
@@ -32,7 +34,7 @@ test('new explicit STATUS acceptance recalculates; implementation alone does not
 });
 test('withdrawn approval stops contributing without removing denominator',()=>{
  const s=source();s.features.find(f=>f.id==='Purchases-01').approval.contains='[V1-APPROVED:withdrawn]';
- const d=calculate(projectRoot,s);assert.equal(d.global.approved,50);assert.equal(d.global.total,70);
+ const d=calculate(projectRoot,s);assert.equal(d.global.approved,calculate().global.approved-1);assert.equal(d.global.total,70);
  assert.equal(d.features.find(f=>f.id==='Purchases-01').state,'validation_pending');
 });
 test('duplicate ids, duplicate capabilities, missing evidence and ambiguous sections fail closed',()=>{

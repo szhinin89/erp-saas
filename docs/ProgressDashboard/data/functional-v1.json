@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "formula": "approved / unique planned V1 capabilities * 100; equal weight; rounded to 2 decimals only for display",
   "global": {
-    "approved": 51,
+    "approved": 65,
     "total": 70,
-    "pct": 72.86,
+    "pct": 92.86,
     "ids": [
       "Companies-01",
       "Branches-01",
@@ -79,9 +79,9 @@
     ]
   },
   "core": {
-    "approved": 34,
+    "approved": 40,
     "total": 43,
-    "pct": 79.07,
+    "pct": 93.02,
     "ids": [
       "Sales-01",
       "Sales-02",
@@ -130,9 +130,9 @@
   },
   "modules": {
     "Companies": {
-      "approved": 0,
+      "approved": 1,
       "total": 1,
-      "pct": 0,
+      "pct": 100,
       "ids": [
         "Companies-01"
       ]
@@ -220,9 +220,9 @@
       ]
     },
     "Finance": {
-      "approved": 4,
+      "approved": 6,
       "total": 6,
-      "pct": 66.67,
+      "pct": 100,
       "ids": [
         "Finance-01",
         "Finance-02",
@@ -233,9 +233,9 @@
       ]
     },
     "Accounting": {
-      "approved": 4,
+      "approved": 8,
       "total": 8,
-      "pct": 50,
+      "pct": 100,
       "ids": [
         "Accounting-01",
         "Accounting-02",
@@ -280,26 +280,26 @@
       ]
     },
     "Dashboard": {
-      "approved": 0,
+      "approved": 1,
       "total": 1,
-      "pct": 0,
+      "pct": 100,
       "ids": [
         "Dashboard-01"
       ]
     },
     "Security": {
-      "approved": 1,
+      "approved": 2,
       "total": 2,
-      "pct": 50,
+      "pct": 100,
       "ids": [
         "Security-01",
         "Security-02"
       ]
     },
     "Session": {
-      "approved": 1,
+      "approved": 3,
       "total": 3,
-      "pct": 33.33,
+      "pct": 100,
       "ids": [
         "Session-01",
         "Session-02",
@@ -307,9 +307,9 @@
       ]
     },
     "Navigation": {
-      "approved": 0,
+      "approved": 3,
       "total": 3,
-      "pct": 0,
+      "pct": 100,
       "ids": [
         "Navigation-01",
         "Navigation-02",
@@ -358,9 +358,9 @@
       "module": "Companies",
       "name": "Perfil, branding y configuración fiscal de empresa",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin prueba que cubra el perfil completo: el modal Editar empresa solo tiene PASS de componentes 15/15, sin navegador ni E2E; R21/R22 (perfil fiscal del emisor) pendiente de resoluciones reales y aceptación en celcer.",
+      "missing": "",
       "evidence": [
         {
           "path": "FEATURES.md",
@@ -371,8 +371,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Companies-01]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 91
         }
       ]
     },
@@ -465,7 +465,7 @@
           "contains": "A1 Ítems | CLOSED",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1532
+          "line": 1738
         }
       ]
     },
@@ -644,14 +644,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         }
       ]
     },
@@ -669,14 +669,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         }
       ]
     },
@@ -694,14 +694,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         }
       ]
     },
@@ -725,7 +725,7 @@
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 195
+          "line": 401
         }
       ]
     },
@@ -749,7 +749,7 @@
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 195
+          "line": 401
         }
       ]
     },
@@ -773,7 +773,7 @@
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 195
+          "line": 401
         }
       ]
     },
@@ -797,7 +797,7 @@
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 195
+          "line": 401
         }
       ]
     },
@@ -821,7 +821,7 @@
           "contains": "Compras V1 aprobado y CLOSED",
           "section": "DOC-CLEANUP-COMPRAS-01",
           "found": true,
-          "line": 195
+          "line": 401
         }
       ]
     },
@@ -845,7 +845,7 @@
           "contains": "B1/B2 Inventario | CLOSED",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1534
+          "line": 1740
         }
       ]
     },
@@ -863,14 +863,14 @@
           "contains": "aislamiento entre empresas PASS",
           "section": "R2 —",
           "found": true,
-          "line": 1057
+          "line": 1263
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R2 —",
           "found": true,
-          "line": 1054
+          "line": 1260
         }
       ]
     },
@@ -888,14 +888,14 @@
           "contains": "aislamiento entre empresas PASS",
           "section": "R2 —",
           "found": true,
-          "line": 1057
+          "line": 1263
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R2 —",
           "found": true,
-          "line": 1054
+          "line": 1260
         }
       ]
     },
@@ -913,14 +913,14 @@
           "contains": "CLOSED",
           "section": "INVENTARIO V1 — B4:",
           "found": true,
-          "line": 1330
+          "line": 1536
         },
         {
           "path": "STATUS.md",
           "contains": "CLOSED",
           "section": "INVENTARIO V1 — B4:",
           "found": true,
-          "line": 1330
+          "line": 1536
         }
       ]
     },
@@ -938,14 +938,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         }
       ]
     },
@@ -963,14 +963,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         }
       ]
     },
@@ -988,14 +988,14 @@
           "contains": "6/6 PASS",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R3 —",
           "found": true,
-          "line": 1031
+          "line": 1237
         }
       ]
     },
@@ -1019,7 +1019,7 @@
           "contains": "CxC y cobros, cierre 2026-10-27 | **CLOSED**",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1538
+          "line": 1744
         }
       ]
     },
@@ -1043,7 +1043,7 @@
           "contains": "el propietario aprueba expresamente el cierre integral",
           "section": "Caso #20 —",
           "found": true,
-          "line": 887
+          "line": 1093
         }
       ]
     },
@@ -1061,14 +1061,14 @@
           "contains": "Compras/Gastos/CxP/Pagos",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1537
+          "line": 1743
         },
         {
           "path": "STATUS.md",
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1537
+          "line": 1743
         }
       ]
     },
@@ -1086,14 +1086,14 @@
           "contains": "Compras/Gastos/CxP/Pagos",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1537
+          "line": 1743
         },
         {
           "path": "STATUS.md",
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1537
+          "line": 1743
         }
       ]
     },
@@ -1102,9 +1102,9 @@
       "module": "Finance",
       "name": "Anticipo por remanente del pago a proveedor",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS registrada del anticipo ADR-035: las E2E de pagos (17/17, 40/40, 46/46) registran anticipo 0.00 y excluyen saldo a favor; el cierre del 12 de septiembre no cubre esta ampliación.",
+      "missing": "",
       "evidence": [
         {
           "path": "FEATURES.md",
@@ -1115,8 +1115,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Finance-05]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 17
         }
       ]
     },
@@ -1125,9 +1125,9 @@
       "module": "Finance",
       "name": "Reembolso y reversa de saldo a favor del proveedor",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS registrada del reembolso/reversa de SupplierCredit ni de su continuidad durable; las E2E de pagos excluyen saldo a favor aplicado.",
+      "missing": "",
       "evidence": [
         {
           "path": "FEATURES.md",
@@ -1138,8 +1138,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Finance-06]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 18
         }
       ]
     },
@@ -1157,14 +1157,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         }
       ]
     },
@@ -1182,14 +1182,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         }
       ]
     },
@@ -1207,14 +1207,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         }
       ]
     },
@@ -1232,14 +1232,14 @@
           "contains": "4/4 PASS",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         },
         {
           "path": "STATUS.md",
           "contains": "El propietario aprueba",
           "section": "R4 —",
           "found": true,
-          "line": 1023
+          "line": 1229
         }
       ]
     },
@@ -1248,22 +1248,22 @@
       "module": "Accounting",
       "name": "Plan de cuentas y reglas de contabilización",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS que cubra plan de cuentas y reglas fuera de R4 (#26, #27, #28, #42); STATUS las registra como capacidades implementadas, no cierres.",
+      "missing": "",
       "evidence": [
         {
           "path": "STATUS.md",
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 1494
+          "line": 1700
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-05]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 19
         }
       ]
     },
@@ -1272,22 +1272,22 @@
       "module": "Accounting",
       "name": "Modo operativo por empresa",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS registrada del modo operativo por empresa (incl. modo Deshabilitado y sus precondiciones); STATUS lo registra como capacidad implementada, no cierre.",
+      "missing": "",
       "evidence": [
         {
           "path": "STATUS.md",
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 1494
+          "line": 1700
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-06]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 20
         }
       ]
     },
@@ -1296,22 +1296,22 @@
       "module": "Accounting",
       "name": "Continuidad durable y reproceso por lote",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "R4 #28 acredita un reproceso individual; falta evidencia PASS del reproceso por lote y de la continuidad durable en su alcance completo.",
+      "missing": "",
       "evidence": [
         {
           "path": "STATUS.md",
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 1494
+          "line": 1700
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-07]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 21
         }
       ]
     },
@@ -1320,22 +1320,22 @@
       "module": "Accounting",
       "name": "Cierre anual",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin ejecución del cierre anual: R4 solo verificó el bloqueo por ejercicio no terminado; no se cerró ningún período.",
+      "missing": "",
       "evidence": [
         {
           "path": "STATUS.md",
           "contains": "Accounting: capacidades implementadas",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 1494
+          "line": 1700
         },
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Accounting-08]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 22
         }
       ]
     },
@@ -1359,7 +1359,7 @@
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1537
+          "line": 1743
         }
       ]
     },
@@ -1383,7 +1383,7 @@
           "contains": "LISTO / CERRADO para ese alcance",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1537
+          "line": 1743
         }
       ]
     },
@@ -1401,14 +1401,14 @@
           "contains": "#31 retención funcional",
           "section": "R2 —",
           "found": true,
-          "line": 1055
+          "line": 1261
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R2 —",
           "found": true,
-          "line": 1054
+          "line": 1260
         }
       ]
     },
@@ -1426,7 +1426,7 @@
           "contains": "Retenciones: emisión, XML/RIDE, transmisión y anulación asistida implementados",
           "section": "Contabilidad y Retenciones",
           "found": true,
-          "line": 1499
+          "line": 1705
         },
         {
           "path": "STATUS.md",
@@ -1519,7 +1519,7 @@
           "contains": "IMPLEMENTADO",
           "section": "Caso #32 —",
           "found": true,
-          "line": 853
+          "line": 1059
         },
         {
           "path": "STATUS.md",
@@ -1532,7 +1532,7 @@
           "section": "Riesgos y limitaciones vigentes",
           "contains": "R32 BLOCKED",
           "found": true,
-          "line": 1558
+          "line": 1764
         }
       ]
     },
@@ -1555,7 +1555,7 @@
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:ElectronicDocuments-05]",
           "found": true,
-          "line": 14
+          "line": 220
         }
       ]
     },
@@ -1578,7 +1578,7 @@
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:ElectronicDocuments-06]",
           "found": true,
-          "line": 23
+          "line": 229
         }
       ]
     },
@@ -1596,7 +1596,7 @@
           "contains": "READY FOR REVIEW",
           "section": "SRI 2.34 R12 Fase B",
           "found": true,
-          "line": 473
+          "line": 679
         },
         {
           "path": "STATUS.md",
@@ -1611,9 +1611,9 @@
       "module": "Dashboard",
       "name": "KPIs reales del ERP",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin resultados PASS registrados en STATUS para los KPIs reales del ERP; la implementación por sí sola no acredita el alcance.",
+      "missing": "",
       "evidence": [
         {
           "path": "backend/src/ERP.Application/Modules/Dashboard/GetDashboardKpisQuery.cs",
@@ -1624,8 +1624,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Dashboard-01]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 160
         }
       ]
     },
@@ -1634,9 +1634,9 @@
       "module": "Security",
       "name": "administración de memberships, perfiles y permisos por empresa",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "SEC-03..06 acreditan aislamiento, anti-escalamiento y revocación; falta evidencia PASS del flujo funcional de administración (alta de usuario, membership, sucursales, perfiles y permisos) de extremo a extremo.",
+      "missing": "",
       "evidence": [
         {
           "path": "FEATURES.md",
@@ -1647,8 +1647,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Security-01]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 88
         }
       ]
     },
@@ -1666,14 +1666,14 @@
           "contains": "CLOSED",
           "section": "SEGURIDAD — SEC-06",
           "found": true,
-          "line": 1216
+          "line": 1422
         },
         {
           "path": "STATUS.md",
           "contains": "CLOSED",
           "section": "SEGURIDAD — SEC-06",
           "found": true,
-          "line": 1216
+          "line": 1422
         }
       ]
     },
@@ -1682,9 +1682,9 @@
       "module": "Session",
       "name": "Login, JWT y refresh rotation",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "SEC-A01 y AUTH-INTERCEPTOR-FIX-01 cubren límites de intentos y dos rutas públicas; falta evidencia PASS del flujo completo de login, JWT y refresh rotation.",
+      "missing": "",
       "evidence": [
         {
           "path": "FEATURES.md",
@@ -1695,8 +1695,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Session-01]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 87
         }
       ]
     },
@@ -1705,9 +1705,9 @@
       "module": "Session",
       "name": "sesión operativa y preferencias de login",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS registrada de la sesión operativa (empresa/sucursal/terminal) ni de las preferencias de login por usuario.",
+      "missing": "",
       "evidence": [
         {
           "path": "FEATURES.md",
@@ -1718,8 +1718,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Session-02]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 167
         }
       ]
     },
@@ -1737,14 +1737,14 @@
           "contains": "IMPLEMENTACIÓN V1 CLOSED",
           "section": "SEC-A01 —",
           "found": true,
-          "line": 129
+          "line": 335
         },
         {
           "path": "STATUS.md",
           "contains": "Cierre de la implementación aprobado expresamente",
           "section": "SEC-A01 —",
           "found": true,
-          "line": 148
+          "line": 354
         }
       ]
     },
@@ -1753,9 +1753,9 @@
       "module": "Navigation",
       "name": "Menu jerárquico y navegación con permisos",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS que cubra el menú jerárquico y la navegación filtrada por permisos; no usar los porcentajes históricos del dibujo.",
+      "missing": "",
       "evidence": [
         {
           "path": "docs/ARCHITECTURE.md",
@@ -1766,8 +1766,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Navigation-01]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 89
         }
       ]
     },
@@ -1776,9 +1776,9 @@
       "module": "Navigation",
       "name": "Design System ZH y tablas compactas",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS de conjunto del Design System ZH y tablas compactas; las evidencias visuales existentes declaran límites de fuentes/iconos.",
+      "missing": "",
       "evidence": [
         {
           "path": "docs/ARCHITECTURE.md",
@@ -1789,8 +1789,8 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Navigation-02]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 90
         }
       ]
     },
@@ -1808,14 +1808,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         }
       ]
     },
@@ -1833,14 +1833,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         }
       ]
     },
@@ -1858,14 +1858,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         }
       ]
     },
@@ -1883,14 +1883,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         }
       ]
     },
@@ -1937,7 +1937,7 @@
           "contains": "First Run | Cerrado",
           "section": "Cierres acreditados y límites",
           "found": true,
-          "line": 1535
+          "line": 1741
         }
       ]
     },
@@ -1995,7 +1995,7 @@
           "contains": "PRODUCCIÓN NO-GO",
           "section": "SEC-A01 —",
           "found": true,
-          "line": 129
+          "line": 335
         }
       ]
     },
@@ -2013,14 +2013,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         }
       ]
     },
@@ -2038,14 +2038,14 @@
           "contains": "5/5 PASS",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         },
         {
           "path": "STATUS.md",
           "contains": "aprobado expresamente por el propietario",
           "section": "R1 —",
           "found": true,
-          "line": 1080
+          "line": 1286
         }
       ]
     },
@@ -2054,9 +2054,9 @@
       "module": "Navigation",
       "name": "Interfaz en español e inglés",
       "scope": "v1",
-      "state": "validation_pending",
+      "state": "approved",
       "implemented": true,
-      "missing": "Sin evidencia PASS del alcance bilingüe completo declarado en FEATURES; las correcciones de claves aisladas no acreditan el conjunto.",
+      "missing": "",
       "evidence": [
         {
           "path": "FEATURES.md",
@@ -2067,17 +2067,17 @@
         {
           "path": "STATUS.md",
           "contains": "[V1-APPROVED:Navigation-03]",
-          "found": false,
-          "line": 1
+          "found": true,
+          "line": 16
         }
       ]
     }
   ],
   "inputs": {
     "FEATURES.md": "dca19157067b3662f163abac80034bb62dbf0c2277952a6e1007b0e13fda6d16",
-    "STATUS.md": "5c5f53e1f6843e860b4eb94064b7ccf3bb87e0072e33793df6e9761931d8cb62",
+    "STATUS.md": "689909bab2e328a14f31cf511fbb3267c9fa14ebedde5be84885511041caaf44",
     "docs/agent/WORK_QUEUE.md": "5479c1c40f58cce882ab908bea0d2c5aafd85b1b9ade9a1f3fcb9a03cf728bd8",
-    "docs/ProgressDashboard/data/functional-v1-source.json": "0522e75a85545185df983659b62a4e797f44681e5b6cf74b87de8e0ed612d90e",
+    "docs/ProgressDashboard/data/functional-v1-source.json": "4017edc3b5f0d4781bee9b79d74649739082ad8ac7f526ee4d297b2902e75f01",
     "docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md": "41892aced337e683f1616ed63803c833a57b6639d529a963dd56f93f26ef3403",
     "docs/decisions/ADR-023-electronic-documents-v1-closure.md": "88a02642cfb5192cab4989688612d57fd1671f4e3ec7e1e5f000dd2ba686d399",
     "backend/src/ERP.Application/Modules/Dashboard/GetDashboardKpisQuery.cs": "755a18c991a611441a89dd5e152c14a41d64119afc715e0f2df02d08bc202e74",

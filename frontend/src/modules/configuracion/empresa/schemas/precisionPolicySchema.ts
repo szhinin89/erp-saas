@@ -43,7 +43,10 @@ export function assertPrecisionMetadata(metadata: PrecisionPolicyMetadata): void
   }
 }
 
-export function buildPrecisionPolicySchema(metadata: PrecisionPolicyMetadata) {
+export function buildPrecisionPolicySchema(
+  metadata: PrecisionPolicyMetadata,
+  t: (key: string, params?: Record<string, number>) => string,
+) {
   const range = (key: PrecisionValueKey) => {
     const f = metadata.fields.find((x) => x.key === key);
     if (!f) throw new Error(`Metadata de precisión incompleta: falta '${key}'.`);
@@ -51,11 +54,15 @@ export function buildPrecisionPolicySchema(metadata: PrecisionPolicyMetadata) {
   };
   const decimals = (key: PrecisionValueKey) => {
     const { min, max } = range(key);
-    return z.coerce.number().int().min(min).max(max);
+    return z.coerce.number().int(t("settings.company.validation.integer"))
+      .min(min, t("settings.company.validation.min", { value: min }))
+      .max(max, t("settings.company.validation.max", { value: max }));
   };
   const amount = (key: PrecisionValueKey) => {
     const { min, max } = range(key);
-    return z.coerce.number().min(min).max(max);
+    return z.coerce.number()
+      .min(min, t("settings.company.validation.min", { value: min }))
+      .max(max, t("settings.company.validation.max", { value: max }));
   };
 
   return z.object({

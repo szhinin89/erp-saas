@@ -122,7 +122,7 @@ export function DocumentsSettingsSection() {
               <ZHField
                 label={t("settings.company.documents.extraLegend")}
                 hint={t("settings.company.documents.extraLegendHint")}
-                error={errors.extraLegend?.message}
+                error={errors.extraLegend?.message ? t(errors.extraLegend?.message) : undefined}
               >
                 <ZhTextarea
                   className="zh-input"
@@ -145,7 +145,7 @@ export function DocumentsSettingsSection() {
               disabled={saving || !isDirty}
               onClick={handleDiscard}
             >
-              Descartar Cambios
+              {t("settings.company.actions.discard")}
             </ZHBtn>
             <ZHBtn
               variant="primary"
@@ -154,7 +154,7 @@ export function DocumentsSettingsSection() {
               disabled={saving || !canEdit || !isDirty}
             >
               <span className="material-symbols-outlined">save</span>
-              {saving ? t("common.saving") : "Guardar Configuración"}
+              {saving ? t("common.saving") : t("settings.company.actions.save")}
             </ZHBtn>
           </div>
         </div>

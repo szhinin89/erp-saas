@@ -31,7 +31,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Companies-01]"
       },
-      "missing": "Sin prueba que cubra el perfil completo: el modal Editar empresa solo tiene PASS de componentes 15/15, sin navegador ni E2E; R21/R22 (perfil fiscal del emisor) pendiente de resoluciones reales y aceptación en celcer."
+      "missing": "Comportamiento interno acreditado en V1-INTERNAL-SOLUTIONS-01: guardar/reabrir perfil, branding, fiscal y ambos logos por HTTP/PostgreSQL, más UI 2/2 PASS. Validez externa de resoluciones/celcer separada."
     },
     {
       "id": "Branches-01",
@@ -527,7 +527,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Finance-05]"
       },
-      "missing": "Sin evidencia PASS registrada del anticipo ADR-035: las E2E de pagos (17/17, 40/40, 46/46) registran anticipo 0.00 y excluyen saldo a favor; el cierre del 12 de septiembre no cubre esta ampliación."
+      "missing": "Cierre acreditado en V1-LANG-FINANCE-ACCOUNTING-01: pago 320/CxP 300/anticipo 20 y ciclo de anticipo 100 con aplicación 30, reembolso 40 y reversa; PostgreSQL PASS."
     },
     {
       "id": "Finance-06",
@@ -542,7 +542,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Finance-06]"
       },
-      "missing": "Sin evidencia PASS registrada del reembolso/reversa de SupplierCredit ni de su continuidad durable; las E2E de pagos excluyen saldo a favor aplicado."
+      "missing": "Cierre acreditado en V1-LANG-FINANCE-ACCOUNTING-01: reembolso parcial, reverso histórico con cuenta congelada y saldo consistente 100→70→30→70 con obligaciones Posted; PostgreSQL PASS."
     },
     {
       "id": "Accounting-01",
@@ -626,7 +626,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-05]"
       },
-      "missing": "Sin evidencia PASS que cubra plan de cuentas y reglas fuera de R4 (#26, #27, #28, #42); STATUS las registra como capacidades implementadas, no cierres."
+      "missing": "Cierre acreditado en V1-LANG-FINANCE-ACCOUNTING-01: CRUD de cuentas/reglas y líneas por HTTP/PostgreSQL, jerarquía, unicidad, baja referenciada y scope, más plan sembrado; PASS."
     },
     {
       "id": "Accounting-06",
@@ -642,7 +642,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-06]"
       },
-      "missing": "Sin evidencia PASS registrada del modo operativo por empresa (incl. modo Deshabilitado y sus precondiciones); STATUS lo registra como capacidad implementada, no cierre."
+      "missing": "Cierre acreditado en V1-LANG-FINANCE-ACCOUNTING-01: elección Enabled explícita, vigencia, Disabled bloqueado por pendientes/retroactividad y transición válida con historial; PostgreSQL PASS."
     },
     {
       "id": "Accounting-07",
@@ -658,7 +658,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-07]"
       },
-      "missing": "R4 #28 acredita un reproceso individual; falta evidencia PASS del reproceso por lote y de la continuidad durable en su alcance completo."
+      "missing": "Cierre acreditado en V1-LANG-FINANCE-ACCOUNTING-01: lote mixto, deduplicación, scope, historial/actor/correlación, concurrencia sin duplicación y fallo aislado; PostgreSQL PASS."
     },
     {
       "id": "Accounting-08",
@@ -674,7 +674,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Accounting-08]"
       },
-      "missing": "Sin ejecución del cierre anual: R4 solo verificó el bloqueo por ejercicio no terminado; no se cerró ningún período."
+      "missing": "Cierre acreditado en V1-LANG-FINANCE-ACCOUNTING-01: ejercicio sintético 2025 terminado, utilidad 849.75, cierre Draft→Posted, nominales a cero, reportes sin duplicar y período Closed persistido; PostgreSQL PASS."
     },
     {
       "id": "Expenses-01",
@@ -866,7 +866,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Dashboard-01]"
       },
-      "missing": "Sin resultados PASS registrados en STATUS para los KPIs reales del ERP; la implementación por sí sola no acredita el alcance."
+      "missing": "Cierre acreditado en V1-INTERNAL-CLOSE-01: base CI #1084 SUCCESS declarada, DashboardKpiReaderTests PostgreSQL y handler; focal DashboardPage PASS."
     },
     {
       "id": "Security-01",
@@ -881,7 +881,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Security-01]"
       },
-      "missing": "SEC-03..06 acreditan aislamiento, anti-escalamiento y revocación; falta evidencia PASS del flujo funcional de administración (alta de usuario, membership, sucursales, perfiles y permisos) de extremo a extremo."
+      "missing": "Cierre acreditado en V1-INTERNAL-SOLUTIONS-01: recorrido HTTP/PostgreSQL real de alta, membership, sucursal/preferencia, perfiles/permisos y autorización efectiva 200/403 PASS."
     },
     {
       "id": "Security-02",
@@ -913,7 +913,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Session-01]"
       },
-      "missing": "SEC-A01 y AUTH-INTERCEPTOR-FIX-01 cubren límites de intentos y dos rutas públicas; falta evidencia PASS del flujo completo de login, JWT y refresh rotation."
+      "missing": "Cierre acreditado en V1-INTERNAL-SOLUTIONS-01: HTTP login/JWT/cookie y rotación persistida PostgreSQL, reuso inmediato/tardío y aislamiento de otra familia PASS."
     },
     {
       "id": "Session-02",
@@ -928,7 +928,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Session-02]"
       },
-      "missing": "Sin evidencia PASS registrada de la sesión operativa (empresa/sucursal/terminal) ni de las preferencias de login por usuario."
+      "missing": "Cierre acreditado en V1-INTERNAL-CLOSE-01: CI #1084 SUCCESS declarada, login/preferencias/contexto y persistencia PostgreSQL; focales UI bootstrap, empresa y gate/selector de sucursal PASS."
     },
     {
       "id": "Session-03",
@@ -960,7 +960,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Navigation-01]"
       },
-      "missing": "Sin evidencia PASS que cubra el menú jerárquico y la navegación filtrada por permisos; no usar los porcentajes históricos del dibujo."
+      "missing": "Cierre acreditado en V1-INTERNAL-SOLUTIONS-01: menú backend real de dos perfiles con destinos incluidos/excluidos y autorización 200/403 PASS; jerarquía y navegación focales previas reutilizadas."
     },
     {
       "id": "Navigation-02",
@@ -975,7 +975,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Navigation-02]"
       },
-      "missing": "Sin evidencia PASS de conjunto del Design System ZH y tablas compactas; las evidencias visuales existentes declaran límites de fuentes/iconos."
+      "missing": "Cierre acreditado en V1-INTERNAL-SOLUTIONS-01: Chromium 390/1440 px, Inter y Material Symbols originales cargados, componentes ZH y tabla compacta sin overflow 2/2; tabla/modal 22/22 PASS."
     },
     {
       "id": "InitialLoad-01",
@@ -1164,7 +1164,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Navigation-03]"
       },
-      "missing": "Sin evidencia PASS del alcance bilingüe completo declarado en FEATURES; las correcciones de claves aisladas no acreditan el conjunto."
+      "missing": "Cierre acreditado en V1-LANG-FINANCE-ACCOUNTING-01: pantalla Empresa completa (ocho pestañas), español/inglés, cambio de idioma y errores locales 26/26 PASS; Dashboard 4/4 previo conservado."
     }
   ],
   "method": "Registro único de capacidades del catálogo FEATURES y del detalle existente del dibujo, conciliado con cierres por alcance de STATUS. Cada fila tiene un único módulo propietario; integraciones no duplican la capacidad en el consumidor. No es un conteo de handlers ni certificación de producción. Nuevas aprobaciones sin cierre previo usan [V1-APPROVED:<id>] en STATUS, solo con aceptación explícita del propietario y evidencia.",

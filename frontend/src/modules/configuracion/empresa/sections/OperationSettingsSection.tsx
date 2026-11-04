@@ -193,7 +193,7 @@ export function OperationSettingsSection() {
               disabled={saving || !isDirty}
               onClick={handleDiscard}
             >
-              Descartar Cambios
+              {t("settings.company.actions.discard")}
             </ZHBtn>
             <ZHBtn
               variant="primary"
@@ -202,7 +202,7 @@ export function OperationSettingsSection() {
               disabled={saving || !canEdit || !isDirty}
             >
               <span className="material-symbols-outlined">save</span>
-              {saving ? t("common.saving") : "Guardar Configuración"}
+              {saving ? t("common.saving") : t("settings.company.actions.save")}
             </ZHBtn>
           </div>
         </div>

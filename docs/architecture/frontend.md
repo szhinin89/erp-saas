@@ -494,6 +494,8 @@ Clases frecuentes (no recrear): `.pg-page`, `.table`, `.badge`, `.zh-status`, `.
 - Claves nuevas: **siempre** `es.json` y `en.json`.
 - `es.json` es la fuente de verdad y el gate arquitectónico valida paridad con `en.json`.
 - Carga (P-01): `es` viaja en el bundle inicial; `en` se descarga bajo demanda con `ensureLocaleLoaded` (`i18n/dictionaries.ts`). `main.tsx` carga el idioma guardado antes del primer render (un intento, sin reintentos automáticos). Si la descarga falla, toda lectura de textos (UI y `formatApiError`, vía `getDictionary`) usa `es` y la preferencia guardada se conserva hasta que el usuario elija otro idioma; solo la última selección se aplica. Nunca importar `en.json` estáticamente fuera de tests.
+- El Dashboard operativo traduce sus KPIs, conteos, avisos, antigüedad y resumen anual mediante las claves `dashboard.*` del mismo proveedor; cambiar el idioma actualiza los textos conservando la política de precisión de los importes.
+- La pantalla Empresa (General, Marca, Fiscal, Operación, Documentos, Precisión, Ventas y Preparación operativa) usa el mismo proveedor para etiquetas, opciones, ayudas, placeholders, acciones y validación local. Los mensajes locales de los schemas se presentan con sus claves `settings.company.validation.*`; cambiar idioma conserva la edición y traduce los errores visibles. Nombres y datos ingresados por el usuario o devueltos por catálogos no se traducen.
 - Prohibido texto duro visible al usuario.
 
 ---
