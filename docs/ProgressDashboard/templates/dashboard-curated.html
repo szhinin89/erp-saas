@@ -289,7 +289,7 @@ li{margin-bottom:4px}
 <a href='#' class='nav-link' data-nav='security' onclick="showGroup('security');return false;">Riesgos</a>
 <a href='#' class='nav-link' data-nav='roadmap' onclick="showGroup('roadmap');return false;">Roadmap</a>
 </nav>
-<main class='main'><p class='muted-note'>Vista curada histórica conservada de c395ec6c (antes de la regeneración del 2026-09-26). Sus porcentajes, planes y diagnósticos fechados no son mediciones actuales. El buscador y la evidencia técnica se actualizan con cada regeneración; las rutas ausentes del código se identifican como históricas.</p><p class='muted-note'>Revisión vigente: 2026-09-16, HEAD 8121a0d3. Compras, Gastos, CxP y pagos proveedor: LISTO / CERRADO en el alcance de STATUS.md. La arquitectura y sus planes futuros se conservan; los diagnósticos técnicos históricos están identificados como tales; consultar <a href="#module=Purchases">Compras</a> y la pestaña Estado actualizado para el cierre vigente.</p>
+<main class='main'><p class='muted-note'>WEB ERP y Servicios Core: capacidades V1 aprobadas / capacidades V1 previstas, sin ponderaciones. Cada módulo muestra el denominador, lo que falta y las evidencias en su detalle. Futuro y preparación productiva se excluyen. Los demás paneles conservan referencias históricas identificadas.</p><p class='muted-note'>Vista curada histórica conservada de c395ec6c (antes de la regeneración del 2026-09-26). Sus planes y diagnósticos fechados no son mediciones actuales; los porcentajes funcionales de Web/Core y sus módulos se recalculan con evidencia vigente. El buscador y la evidencia técnica se actualizan con cada regeneración; las rutas ausentes del código se identifican como históricas.</p><p class='muted-note'>Referencia histórica: 2026-09-16, HEAD 8121a0d3. Compras, Gastos, CxP y pagos proveedor: LISTO / CERRADO en el alcance de STATUS.md. La arquitectura y sus planes futuros se conservan; los diagnósticos técnicos históricos están identificados como tales; consultar <a href="#module=Purchases">Compras</a> y la pestaña Estado actualizado para el cierre vigente.</p>
 <div class='kpi-strip'>
 <div class='kpi-tile'>
 <div class='kpi-top'>
@@ -302,10 +302,10 @@ li{margin-bottom:4px}
 <div class='kpi-tile'>
 <div class='kpi-top'>
 <span class='kpi-label'>ERP Core</span>
-<span class='badge' style='background:#16a34a;color:#fff'>85-90%</span>
+<span class='badge'>Fuente oficial</span>
 </div>
-<div class='kpi-value' style='color:#16a34a'>88%</div>
-<div class='kpi-bar'><div class='kpi-bar-fill' style='width:88%;background:#16a34a'></div></div>
+<div class='kpi-value' style='font-size:1rem'><a href='../../STATUS.md'>Estado V1: consultar STATUS.md</a></div>
+<p class='muted-note'>Referencia histórica: 88% (histórico, septiembre de 2026).</p>
 </div>
 <div class='kpi-tile'>
 <div class='kpi-top'>
@@ -348,14 +348,14 @@ li{margin-bottom:4px}
 <div class='kpi-bar'><div class='kpi-bar-fill' style='width:88%;background:#16a34a'></div></div>
 </div>
 </div>
-<div class='compact-strip'><div class='compact-chip' onclick="showGroup('architecture');selectLayer('web')" style='border-color:#16a34a;color:#16a34a' title='Web ERP'>88%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('mobile')" style='border-color:#d97706;color:#d97706' title='Mobile App'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('chat')" style='border-color:#d97706;color:#d97706' title='Chat Interface'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('intelligence')" style='border-color:#d97706;color:#d97706' title='ERP Intelligence Layer'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-assistant')" style='border-color:#d97706;color:#d97706' title='User Assistant AI'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-analyst')" style='border-color:#d97706;color:#d97706' title='Business Analyst AI'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-automation')" style='border-color:#d97706;color:#d97706' title='Process Automation AI'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('core')" style='border-color:#16a34a;color:#16a34a' title='ERP Core Services'>88%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('db')" style='border-color:#16a34a;color:#16a34a' title='Base de Datos'>93%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('data-warehouse')" style='border-color:#d97706;color:#d97706' title='Data Warehouse'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-advanced')" style='border-color:#d97706;color:#d97706' title='IA Modelos Avanzados'>0%</div></div>
+<div class='compact-strip'><div class='compact-chip' onclick="showGroup('architecture');selectLayer('web')" style='border-color:#16a34a;color:#16a34a' title='Web ERP' data-v1-score='global'></div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('mobile')" style='border-color:#d97706;color:#d97706' title='Mobile App'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('chat')" style='border-color:#d97706;color:#d97706' title='Chat Interface'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('intelligence')" style='border-color:#d97706;color:#d97706' title='ERP Intelligence Layer'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-assistant')" style='border-color:#d97706;color:#d97706' title='User Assistant AI'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-analyst')" style='border-color:#d97706;color:#d97706' title='Business Analyst AI'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-automation')" style='border-color:#d97706;color:#d97706' title='Process Automation AI'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('core')" style='border-color:#16a34a;color:#16a34a' title='ERP Core Services' data-v1-score='core'></div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('db')" style='border-color:#16a34a;color:#16a34a' title='Base de Datos'>Infra</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('data-warehouse')" style='border-color:#d97706;color:#d97706' title='Data Warehouse'>0%</div><div class='compact-chip' onclick="showGroup('architecture');selectLayer('ai-advanced')" style='border-color:#d97706;color:#d97706' title='IA Modelos Avanzados'>0%</div></div>
 <div id='view-architecture'>
 <div class='explorer-grid'>
 <div class='diagram-wrap'>
-<h1 class='architecture-live-title'>&#9638; Arquitectura del Sistema &mdash; Progreso en Vivo</h1>
+<h1 class='architecture-live-title'>&#9638; Arquitectura del Sistema &mdash; Avance funcional verificable ERP ZH V1</h1>
 <div class='diagram-row'>
 <div class='diagram-node live-node live-node-dark' id='diagramnode-web' onclick="selectLayer('web')">
-<span class='pct-badge good'>88%</span>
+<span class='pct-badge warn' data-v1-score='global'></span>
 <div class='live-node-icon'>&#9636;</div>
 <span class='diagram-node-title'>Web ERP</span>
 <span class='diagram-node-sub'>React 19 + Vite 8</span>
@@ -405,23 +405,23 @@ li{margin-bottom:4px}
 <div class='live-arrows live-arrows-tight'><span>&#9660;</span><span>&#9660;</span><span>&#9660;</span></div>
 <div class='diagram-row'>
 <div class='diagram-node diagram-node-wide live-core-box' id='diagramnode-core' onclick="selectLayer('core')">
-<span class='pct-badge warn'>88%</span>
+<span class='pct-badge warn' data-v1-score='core'></span>
 <span class='diagram-node-title'>Servicios Core ERP</span>
 <div class='core-chip-row'>
-<span class='core-chip'>Ventas <b>88%</b></span>
-<span class='core-chip'>Compras <b>86%</b></span>
-<span class='core-chip'>Inventario <b>86%</b></span>
-<span class='core-chip'>Caja <b>85%</b></span>
-<span class='core-chip'>Contabilidad <b>88%</b></span>
-<span class='core-chip'>Gastos <b>88%</b></span>
-<span class='core-chip pending'>Retenciones <b>80%</b></span>
+<span class='core-chip'>Ventas <b data-v1-module='Sales'></b></span>
+<span class='core-chip'>Compras <b data-v1-module='Purchases'></b></span>
+<span class='core-chip'>Inventario <b data-v1-module='Inventory'></b></span>
+<span class='core-chip'>Caja <b data-v1-module='Caja'></b></span>
+<span class='core-chip'>Contabilidad <b data-v1-module='Accounting'></b></span>
+<span class='core-chip'>Gastos <b data-v1-module='Expenses'></b></span>
+<span class='core-chip pending'>Retenciones <b data-v1-module='Retentions'></b></span>
 </div>
 </div>
 </div>
 <div class='live-arrows'><span>&#9660;</span><span>&#9660;</span></div>
 <div class='diagram-row live-data-row'>
 <div class='diagram-node live-node' id='diagramnode-db' onclick="selectLayer('db')">
-<span class='pct-badge good'>93%</span>
+<span class='pct-badge good'>Infra</span>
 <div class='live-node-icon'>&#9639;</div>
 <span class='diagram-node-title'>Base de Datos</span>
 <span class='diagram-node-sub'>PostgreSQL 16 + EF Core 10</span>
@@ -551,7 +551,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='panel-grid-2'>
 <div class='sub-card'>
 <h4>Estado funcional</h4><p class='big-status' style='color:#16a34a'>EN PILOTO</p>
-<h4>ERP Core</h4><p>85-90% (rango documentado; valor de tablero: 88%)</p>
+<h4>ERP Core</h4><p>88% (estimación histórica de septiembre de 2026; rango documentado: 85-90%)</p>
 <h4>Decision de Produccion</h4><p>Piloto tecnico; produccion general pendiente de validaciones externas</p>
 <h4>Riesgo global</h4><p style='color:#d97706'>MEDIO</p>
 <h4>Siguiente hito</h4><p>Completar fases restantes Fiscal / SRI (75% completado, 80 / 106 tareas)</p>
@@ -580,7 +580,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='sub-card'>
 <h3>Etapas del Roadmap Maestro (7)</h3>
 <p>No iniciado: <b>2</b> &middot; En progreso / Parcial: <b>3</b> &middot; Completado/Piloto: <b style='color:#16a34a'>2</b></p>
-<p>Etapa actual: <b>Completar ERP Core Operativo</b> (85-90%; retenciones y accounting avanzaron despues del snapshot historico del generador)</p>
+<p>Etapa histórica (septiembre de 2026): <b>Completar ERP Core Operativo</b> (85-90%; retenciones y accounting avanzaron despues del snapshot historico del generador)</p>
 </div>
 <div class='sub-card'>
 <h3>Consistencia tecnica</h3>
@@ -597,7 +597,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='sub-card'>
 <h3>Modulos</h3>
 <p>Total trackeado por pipeline: <b>31</b> (snapshot historico)</p>
-<p>Estado funcional vigente: <b style='color:#16a34a'>ERP Core 85-90%, en piloto tecnico</b></p>
+<p>Estado funcional histórico (septiembre de 2026): <b style='color:#16a34a'>ERP Core 85-90%, en piloto tecnico</b></p>
 <p>Operativos/piloto destacados: ventas, compras, inventario, caja, dashboard, monitor electronico, accounting, CxC, CxP, pagos proveedor y gastos.</p>
 <p>En desarrollo avanzado: retenciones en gastos y extension electronic document codDoc 07.</p>
 </div>
@@ -704,7 +704,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <table class='sortable'>
 <tr><th>Modulo</th><th>Estado funcional</th><th>Nivel madurez</th><th>Congelamiento</th><th>Madurez</th><th>Test Quality Score</th><th>Prioridad</th><th>Fase actual</th><th>Proxima fase</th><th>Dependencias</th><th>Bloqueadores</th><th>ADR relacionados</th><th>Observaciones</th><th>Ultima auditoria</th></tr>
 <tr><td>Access</td><td>Frozen</td><td>Alta</td><td>FROZEN -- Access/IAM: cierre final del modulo (2026-07-17)</td><td style='color:#16a34a'>81.5%</td><td>80%</td><td>-- (ya congelado, sin prioridad de roadmap activa)</td><td>FASE 1 -- ERP Core (cerrado)</td><td>Pendiente de evaluacion</td><td>Auth, Branches, Common, Company, Navigation, Tenants</td><td>Deuda cosmetica subscriber_* en naming interno, no bloqueante</td><td>Pendiente de evaluacion (sin ADR especifico citado)</td><td>Confirmado en docs/STATUS.md (Access/IAM, 2026-07-17) y docs/ROADMAP.md fila 'IAM / Access' (FASE 1, FROZEN, Madurez Alta).</td><td>2026-07-24</td></tr>
-<tr><td>Accounting</td><td>En piloto</td><td>Alta</td><td>Operativo avanzado -- ADR-026; no congelado como cierre contable final</td><td style='color:#16a34a'>88%</td><td>80%</td><td>Alta</td><td>Accounting operativo: plan, periodos, reglas, asientos, reversos, reportes y trazabilidad</td><td>Cierre contable, flujo de efectivo y conciliacion bancaria; configuración de cobros de ventas ya implementada</td><td>Audit, Common, Purchases, Sales, Finance, Payables, Expenses, Retentions</td><td>Sin cierre contable formal ni conciliacion bancaria; integración contable de movimientos propios de Caja pendiente de cierre</td><td>ADR-026-accounting-core.md</td><td>Evidencia: FEATURES.md y STATUS.md registran reportes, reversos, COGS, cobros/pagos, supplier payments, expenses y retentions posting. Ya no es "Pendiente de evaluacion".</td><td>2026-09-04</td></tr>
+<tr><td>Accounting</td><td>En piloto</td><td>Alta</td><td>Operativo avanzado -- ADR-026; no congelado como cierre contable final</td><td style='color:#16a34a'>88% (histórico, septiembre de 2026)</td><td>80%</td><td>Alta</td><td>Accounting operativo: plan, periodos, reglas, asientos, reversos, reportes y trazabilidad</td><td>Cierre contable, flujo de efectivo y conciliacion bancaria; configuración de cobros de ventas ya implementada</td><td>Audit, Common, Purchases, Sales, Finance, Payables, Expenses, Retentions</td><td>Sin cierre contable formal ni conciliacion bancaria; integración contable de movimientos propios de Caja pendiente de cierre</td><td>ADR-026-accounting-core.md</td><td>Evidencia: FEATURES.md y STATUS.md registran reportes, reversos, COGS, cobros/pagos, supplier payments, expenses y retentions posting. Ya no es "Pendiente de evaluacion".</td><td>2026-09-04</td></tr>
 <tr><td>Audit</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td style='color:#d97706'>77.75%</td><td>80%</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Common</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>ADR-022 congela la infraestructura de Entity Audit (AuditRecordBase/IAuditWriter/IAuditReader/IAuditService, contratos comunes reutilizables), no el modulo 'Audit' en si (Get Entity Activity / Get My Activity feed). No se encontro cita que declare el modulo Audit (feed) FROZEN/CLOSED especificamente -- no confundir ambos conceptos.</td><td>2026-07-24</td></tr>
 <tr><td>Auth</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td style='color:#16a34a'>81.5%</td><td>80%</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Access, Branches, Common, Company, Tenants</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>ADR-014 (rotacion de refresh tokens) esta Accepted pero no cita explicitamente al modulo Auth como FROZEN/CLOSED en CLAUDE.md/docs/STATUS.md. Sin evidencia de freeze module-especifico encontrada.</td><td>2026-07-24</td></tr>
 <tr><td>Auxiliary</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td style='color:#d97706'>77.75%</td><td>80%</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td></td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>0 features en explorer-index.json, domainId sin mapear. Sin mencion en CLAUDE.md/docs/STATUS.md/FEATURES.md/docs/ROADMAP.md/docs/adr/*.md.</td><td>2026-07-24</td></tr>
@@ -716,7 +716,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <tr><td>Company</td><td>Frozen</td><td>Alta</td><td>FROZEN -- Establecimientos SRI + Puntos de Emision (2026-06-16)</td><td style='color:#d97706'>77.75%</td><td>80%</td><td>-- (ya congelado)</td><td>FASE 1 -- ERP Core (cerrado, parte de la fila 'Organizacion: Tenant/Company/Sucursales/Establecimientos/PE')</td><td>Pendiente de evaluacion</td><td>Branches, Common, SriCatalogs</td><td>Ninguno activo (ver docs/ROADMAP.md fila 'Organizacion')</td><td>Pendiente de evaluacion (sin ADR especifico citado, solo tabla Modulos FROZEN de docs/STATUS.md)</td><td>Confirmado por codigo: backend/src/ERP.Domain/Modules/Company/Entities/Establishment.cs y EmissionPoint.cs. docs/STATUS.md: 'Establecimientos SRI' y 'Puntos de Emision' FROZEN 2026-06-16.</td><td>2026-07-24</td></tr>
 <tr><td>Configuration</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td style='color:#d97706'>77.75%</td><td>80%</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Common</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>0 features en explorer-index.json. FEATURES.md solo menciona 'Configuracion / SRI' como fila generica, sin lenguaje de freeze. Sin evidencia de proposito/alcance especifico del modulo en la documentacion revisada.</td><td>2026-07-24</td></tr>
 <tr><td>Dashboard</td><td>En piloto</td><td>Media-Alta</td><td>Operativo -- dashboard real y reportes minimos auditados</td><td style='color:#16a34a'>85%</td><td>80%</td><td>Media</td><td>Dashboard KPI real + 8 reportes minimos</td><td>BI/Data Warehouse futuro</td><td>Common, Sales, Purchases, Inventory, Cash, Receivables, Payables, ElectronicDocuments</td><td>BI consolidado fuera de alcance actual</td><td>Pendiente de ADR especifico</td><td>ERP-CORE-CLOSEOUT-08 valido dashboard/reportes reales con filtros company-scoped y correcciones en CxP/reportes.</td><td>2026-09-04</td></tr>
-<tr><td>ElectronicDocuments</td><td>Frozen + extension en desarrollo</td><td>Alta</td><td>FROZEN -- factura electronica SRI v1.0; extensiones aditivas para NC/Retenciones</td><td style='color:#16a34a'>88%</td><td>80%</td><td>Critica</td><td>Factura/monitor/retry/diagnostico cerrados; NC y retencion con avance real</td><td>Guia de remision, nota de debito, liquidacion compra 03 y produccion SRI</td><td>Audit, Common, Company, Configuration, Retentions, Ride</td><td>Nucleo Frozen solo modificable por causas ADR-023; validacion productiva de retenciones no verificada</td><td>ADR-023, ADR-024, ADR-031, RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B</td><td>HEAD incluye builder XML, RIDE, endpoints y schema validator de retenciones. Worktree modifica issuer/builders/DI/tests para wiring adicional.</td><td>2026-09-04</td></tr>
+<tr><td>ElectronicDocuments</td><td>Frozen + extension en desarrollo</td><td>Alta</td><td>FROZEN -- factura electronica SRI v1.0; extensiones aditivas para NC/Retenciones</td><td style='color:#16a34a'>88% (histórico, septiembre de 2026)</td><td>80%</td><td>Critica</td><td>Factura/monitor/retry/diagnostico cerrados; NC y retencion con avance real</td><td>Guia de remision, nota de debito, liquidacion compra 03 y produccion SRI</td><td>Audit, Common, Company, Configuration, Retentions, Ride</td><td>Nucleo Frozen solo modificable por causas ADR-023; validacion productiva de retenciones no verificada</td><td>ADR-023, ADR-024, ADR-031, RETENTIONS-SRI-AUTHORIZATION-WIRING-DESIGN-04B</td><td>HEAD incluye builder XML, RIDE, endpoints y schema validator de retenciones. Worktree modifica issuer/builders/DI/tests para wiring adicional.</td><td>2026-09-04</td></tr>
 <tr><td>ElectronicInvoicing</td><td>Operativo</td><td>Pendiente de evaluacion</td><td>CLOSED (alcance acotado) -- Infraestructura de Valores por Defecto de Facturacion (2026-07-01), migrada a org_settings; el resto del modulo (Sri Configuration, Certificado, Estado) no esta declarado FROZEN</td><td style='color:#d97706'>77.75%</td><td>80%</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Common, Company, Configuration</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion (citado en CLAUDE.md, sin numero de ADR formal)</td><td>Distinto de ElectronicDocuments: featureNames (Get/Upsert Sri Configuration, Inspect/Upload Sri Certificate, Electronic Invoicing Status) viven en ERP.Application/Modules/ElectronicInvoicing/. El CLOSED 2026-07-01 cubre unicamente los 5 valores por defecto de factura (hoy en org_settings, expuestos via ElectronicInvoicingController), no la totalidad del modulo.</td><td>2026-07-24</td></tr>
 <tr><td>Finance</td><td>En piloto</td><td>Media-Alta</td><td>Operativo para CxC/CxP, cobros, pagos y destinos financieros; no es modulo bancario completo</td><td style='color:#16a34a'>86%</td><td>80%</td><td>Alta</td><td>Collections, Supplier Payments, Financial Destinations y source resolver contable</td><td>Conciliacion bancaria, bancos y flujo de efectivo</td><td>Common, Accounting, Sales, Purchases, Payables</td><td>Sin conciliacion bancaria ni automatización adicional de destinos (mapeo contable por medio de pago ya implementado en Ventas)</td><td>ADR-026 relacionado por posting</td><td>STATUS/FEATURES: ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14 y Supplier Payments operan con destino financiero y posting.</td><td>2026-09-04</td></tr>
 <tr><td>Integration</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td style='color:#d97706'>77.75%</td><td>80%</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Common, Company, Tenants</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>featureNames: Company Integration, Tenant Integration. domainId sin mapear. Las menciones a /api/integration/v1/* en ERP_CORE_FREEZE.md se refieren a la frontera ERP-Platform (fuera de este repo), no a este modulo especificamente -- no confundir.</td><td>2026-07-24</td></tr>
@@ -729,7 +729,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <tr><td>Pricing</td><td>Frozen</td><td>Alta</td><td>FROZEN -- Motor de Pricing v2 (2026-07-05) + Pricing Administration (2026-07-07)</td><td style='color:#16a34a'>81.5%</td><td>80%</td><td>-- (ya congelado)</td><td>FASE 1 -- ERP Core (cerrado, 'Productos / Items / Pricing')</td><td>Integracion con Ventas/Compras/POS/Facturacion (consumo real de IPricingResolver) queda como trabajo de esos modulos consumidores, sin reabrir este dominio (docs/STATUS.md)</td><td>Audit, Common, Items</td><td>Ninguno activo</td><td>ADR-021-pricing-engine-ssot.md</td><td>Item.BaseSalePrice es el SSOT; PricingRule reemplaza a ItemPrice; PricingResolver es la unica API publica de resolucion de precio. Reabre parcialmente el freeze de Items v1.0/Fase 7 solo en lo referente a precios.</td><td>2026-07-24</td></tr>
 <tr><td>Purchases</td><td>Listo / cerrado (2026-09-12)</td><td>Media-Alta</td><td>Cierre funcional aprobado: compras, XML, NC, devoluciones, CxP, pagos e inventario; no implica freeze global</td><td style='color:#16a34a'>86%</td><td>80%</td><td>Alta</td><td>FASE 1 -- ERP Core operativo; mejoras SRI pendientes</td><td>Liquidacion de compra (tipo SRI 03), recepcion fisica sin factura y cierre de retenciones fuera de gastos</td><td>Audit, Common, Companies, Company, Inventory, Items, Pricing, Payables, Accounting</td><td>Sin liquidacion de compra SRI 03; recepcion fisica sin factura pendiente</td><td>Pendiente de ADR especifico</td><td>Compras confirma CxP, inventario y asiento contable; Supplier Payments ya aplica pagos contra CxP. Retenciones de gasto avanzan en modulo Retentions, no se declara retencion completa de compras.</td><td>2026-09-04</td></tr>
 <tr><td>Ride</td><td>En piloto parcial</td><td>Media-Alta</td><td>Diseno FROZEN -- ADR-025; implementacion base y RIDE de retencion con avance real</td><td style='color:#16a34a'>84%</td><td>80%</td><td>Media</td><td>Get/Generate y Regenerate RIDE base; RIDE PDF de retenciones implementado en commits recientes</td><td>QA visual por cada codDoc adicional y produccion SRI real</td><td>Audit, Common, Configuration, ElectronicDocuments, Retentions</td><td>Depende de que cada tipo documental exponga datos completos y plantillas validadas</td><td>ADR-025-ride-design-freeze.md</td><td>La fila historica decia implementacion no iniciada; ya no aplica para el estado actual. Se conserva como modulo en piloto parcial porque no todos los documentos SRI futuros tienen RIDE cerrado.</td><td>2026-09-04</td></tr>
-<tr><td>Sales</td><td>En piloto</td><td>Alta</td><td>FROZEN en factura/CxC base; cobros y destino financiero ya implementados posteriormente</td><td style='color:#16a34a'>88%</td><td>80%</td><td>Alta</td><td>Ventas/POS, CxC, cobros, inventario, COGS, pricing y documentos electronicos base</td><td>Produccion SRI real, mejoras de cobros/bancos y cierre contable futuro</td><td>Common, Company, Configuration, ElectronicDocuments, Inventory, Items, Pricing, SriCatalogs, Finance, Accounting</td><td>No se considera bloqueo MVP el antiguo pendiente de cobros; queda bancos/conciliacion como futuro</td><td>ADR-026 relacionado por posting</td><td>STATUS/FEATURES registran CollectionApplied, destino financiero, CxC y posting; la nota antigua de ventas previa a cobros quedo historica.</td><td>2026-09-04</td></tr>
+<tr><td>Sales</td><td>En piloto</td><td>Alta</td><td>FROZEN en factura/CxC base; cobros y destino financiero ya implementados posteriormente</td><td style='color:#16a34a'>88% (histórico, septiembre de 2026)</td><td>80%</td><td>Alta</td><td>Ventas/POS, CxC, cobros, inventario, COGS, pricing y documentos electronicos base</td><td>Produccion SRI real, mejoras de cobros/bancos y cierre contable futuro</td><td>Common, Company, Configuration, ElectronicDocuments, Inventory, Items, Pricing, SriCatalogs, Finance, Accounting</td><td>No se considera bloqueo MVP el antiguo pendiente de cobros; queda bancos/conciliacion como futuro</td><td>ADR-026 relacionado por posting</td><td>STATUS/FEATURES registran CollectionApplied, destino financiero, CxC y posting; la nota antigua de ventas previa a cobros quedo historica.</td><td>2026-09-04</td></tr>
 <tr><td>Security</td><td>Completado</td><td>Alta</td><td>Operativo -- permisos jerarquicos SSOT y anti-escalamiento cerrados</td><td style='color:#16a34a'>90%</td><td>80%</td><td>Alta</td><td>NAV-PERMISSION-HIERARCHY-SSOT-01 + SECURITY-PERMISSION-SCOPE-01 cerrados</td><td>Planes/billing/enforcement real por entitlements queda para plataforma SaaS externa</td><td>Access, Common, Integration</td><td>NoOpExternalEntitlementService es seam futuro, no enforcement comercial activo</td><td>Arquitectura security.md; ERP_CORE_FREEZE.md</td><td>Backend es SSOT de menu/permisos; se bloqueo escalamiento por usuarios no Admin y se dejo punto de extension externo sin acoplar SaaS al ERP Core.</td><td>2026-09-04</td></tr>
 <tr><td>Session</td><td>Completado</td><td>Alta</td><td>Operativo -- auth/sesion y contexto empresa/sucursal estabilizados</td><td style='color:#16a34a'>90%</td><td>80%</td><td>Alta</td><td>Logout backend, expiracion absoluta 8h, overlay inactividad 30 min, reauth modal, select-company sincronizado</td><td>Sin fase funcional activa</td><td>Access, Auth, Branches, Common, Companies, Company, Media, Tenants</td><td>Ninguno bloqueante reportado para piloto</td><td>ADR-014 relacionado</td><td>Contexto operativo limpia empresa/sucursal al cambiar de sesion y el header muestra Empresa/Sucursal.</td><td>2026-09-04</td></tr>
 <tr><td>SriCatalogs</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td style='color:#d97706'>77.75%</td><td>80%</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>Items</td><td>Pendiente de evaluacion</td><td>Pendiente de evaluacion</td><td>CLAUDE.md (Infraestructura Tributaria CLOSED, 2026-07-01) nombra las TABLAS de catalogo sri_vat_rates/sri_ice_rates como fuente de datos (Regla 5), pero no declara el modulo/dominio 'SriCatalogs' en si mismo CLOSED. 0 featureNames en explorer-index.json para este id. No atribuir el freeze de Infraestructura Tributaria a este modulo sin una cita textual directa.</td><td>2026-07-24</td></tr>
@@ -746,9 +746,9 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <circle cx='60' cy='60' r='52' fill='none' stroke='#e2e8f0' stroke-width='10'/>
 <circle cx='60' cy='60' r='52' fill='none' stroke='#16a34a' stroke-width='10' stroke-linecap='round' stroke-dasharray='326.73' stroke-dashoffset='39.21' transform='rotate(-90 60 60)'/>
 </svg>
-<div class='gpct'>88<small>%</small></div>
+<div class='gpct'>88<small>% histórico</small></div>
 </div>
-<p>ERP Core -- estimacion funcional vigente para piloto tecnico</p>
+<p>ERP Core &mdash; estimación histórica de septiembre de 2026. <a href="../../STATUS.md">Estado V1: consultar STATUS.md</a></p>
 <p>Completados/Frozen + en piloto: <b style='color:#16a34a'>mayoria del nucleo operativo</b> &middot; En desarrollo local: <b style='color:#d97706'>Cuentas bancarias de empresa</b> &middot; Pendientes/Futuro: <b style='color:#dc2626'>SRI restantes, operaciones bancarias avanzadas, CRM/RRHH/produccion</b></p>
 <p>Modulos completos/frozen destacados: Access/IAM, Items, Pricing, MasterData BP, ElectronicDocuments factura base, org fiscal, taxes ADR-032.</p>
 <p>Modulos en piloto destacados: Sales, Purchases, Inventory/Kardex, Cash Sessions, Dashboard, Accounting, CxC, CxP, Supplier Payments, Expenses.</p>
@@ -1217,7 +1217,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='phase-info'>
 <span class='phase-name'>Contabilidad (Accounting)</span>
 <span class='pill pill-d'>d</span>
-<span class='phase-pct'>88% (en piloto)</span>
+<span class='phase-pct'>88% (histórico, septiembre de 2026) (en piloto)</span>
 </div>
 <div class='phase-desc'>Plan de cuentas, asientos, reglas, posting, reversos, Libro Diario/Mayor, Balance de Comprobacion, Estado de Resultados y Balance General ya operativos; faltan cierre contable, flujo de efectivo y conciliacion bancaria.</div>
 </div>
@@ -2884,7 +2884,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <td>Completar Accounting</td>
 <td>En piloto avanzado (plan, periodos, reglas, asientos, reversos, reportes, CxC/CxP, cobros, pagos, gastos y retenciones)</td>
 <td>Alta</td>
-<td>88% estimado vigente; docs/ROADMAP.md base queda historico</td>
+<td>88% (histórico, septiembre de 2026); docs/ROADMAP.md base queda historico</td>
 <td>Accounting, Company</td>
 <td>Plan de cuentas depende de Company; Periodos contables y Reglas de contabilizacion dependen de Plan de cuentas</td>
 <td>Quedan fuera del piloto cerrado: cierre contable formal, flujo de efectivo, conciliacion bancaria, automatización adicional de destinos (mapeo contable por medio de pago ya implementado en Ventas) y algunas decisiones finas del plan de cuentas.</td>
@@ -2895,7 +2895,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <td>Automatización Contable</td>
 <td>En piloto avanzado (posting, reversos, numeracion, reportes y consumidores principales implementados)</td>
 <td>Alta</td>
-<td>88% estimado vigente</td>
+<td>88% (histórico, septiembre de 2026)</td>
 <td>Accounting, Caja, Sales, Purchases, Inventory</td>
 <td>Plan de cuentas, documentos transaccionales, CxC/CxP, cobros/pagos, gastos, retenciones y reportes; Cash & Banks depende de cierre de Caja y alcance financiero futuro</td>
 <td>Movimientos propios de Caja y valoracion completa de Inventory no estan cerrados; bancos/conciliacion/flujo efectivo quedan fuera del piloto tecnico actual.</td>
@@ -2949,7 +2949,7 @@ Overall: <b style='color:#dc2626'>HIGH</b></p>
 <div class='sub-card'>
 <h3>Completar ERP Core Operativo</h3>
 <p>Cierre del ERP Core para piloto tecnico: modulos FROZEN u operativos en Organizacion, IAM/Access, Items/Pricing, Ventas, Compras, Inventario, Caja, Facturacion Electronica, Finance, Accounting, Gastos y Retenciones. El nucleo ya es operable; produccion final depende de cierres fiscales, externos y contables especificos.</p>
-<p>Estado: <b>En piloto tecnico (ERP Core ~85-90%)</b> &middot; Prioridad: <b>Alta</b> &middot; Avance: <b>88% estimado vigente</b></p>
+<p>Estado: <b>En piloto tecnico (ERP Core ~85-90%)</b> &middot; Prioridad: <b>Alta</b> &middot; Avance: <b>88% (histórico, septiembre de 2026)</b></p>
 <p>Modulos involucrados: Company, Branches, Access, Items, Pricing, Inventory, Purchases, Sales, Caja, ElectronicDocuments, ElectronicInvoicing, BusinessPartner <span style='color:#d97706' title='No trackeado por explorer-index.json'>&#9888;</span></p>
 <h4>Bloqueadores</h4>
 <p>Liquidacion de compra tipo SRI 03 y recepcion fisica sin factura; guia de remision y nota de debito; cierre formal de Caja; validacion SRI en ambiente de produccion real; validacion productiva de retenciones no verificada; bancos/conciliacion/cierre contable fuera del piloto actual.</p>
@@ -3170,43 +3170,83 @@ var suppressHashRoute = false;
 var LEVEL_LABELS = { layer: 'Capa', domain: 'Dominio', module: 'Modulo', feature: 'Funcionalidad', process: 'Proceso', file: 'Archivo' };
 var CONCISE_NAV = {
   layers: {
-    web: { title:'Web ERP', pct:88, status:'En piloto', subtitle:'React 19 + TypeScript + Vite 8', children:['Companies','Branches','Items','Pricing','MasterData','Sales','Purchases','Inventory','Caja','Finance','Accounting','Expenses','Retentions','ElectronicDocuments','Dashboard','Security','Session','Navigation'] },
+    web: { title:'Web ERP', status:'PENDIENTE', subtitle:'React 19 + TypeScript + Vite 8', children:['Companies','Branches','Items','Pricing','MasterData','Sales','Purchases','Inventory','Caja','Finance','Accounting','Expenses','Retentions','ElectronicDocuments','Dashboard','Security','Session','Navigation'] },
     mobile: { title:'App Movil', pct:0, status:'Futuro', subtitle:'Sin modulo movil implementado', children:[] },
     chat: { title:'Interfaz Chat', pct:0, status:'Futuro', subtitle:'Sin interfaz conversacional implementada', children:[] },
     intelligence: { title:'Capa Inteligencia ERP', pct:0, status:'Futuro', subtitle:'Modulos y servicios IA no iniciados como producto', children:['ai-assistant','ai-analyst','ai-automation'] },
     'ai-assistant': { title:'Asistente IA', pct:0, status:'Futuro', subtitle:'Consultas, reportes y acciones conversacionales', children:[] },
     'ai-analyst': { title:'Analista IA', pct:0, status:'Futuro', subtitle:'Analisis, predicciones y alertas futuras', children:[] },
     'ai-automation': { title:'Automatizacion IA', pct:0, status:'Futuro', subtitle:'Flujos, alertas y acciones automatizadas', children:[] },
-    core: { title:'Servicios Core ERP', pct:88, status:'En piloto', subtitle:'Nucleo operativo multi-tenant Ecuador/SRI', children:['Sales','Purchases','Inventory','Caja','Accounting','Finance','Expenses','Retentions','ElectronicDocuments'] },
+    core: { title:'Servicios Core ERP', status:'PENDIENTE', subtitle:'Nucleo operativo multi-tenant Ecuador/SRI', children:['Sales','Purchases','Inventory','Caja','Accounting','Finance','Expenses','Retentions','ElectronicDocuments'] },
     db: { title:'Base de Datos', pct:93, status:'En piloto', subtitle:'PostgreSQL 16 + EF Core 10', children:['DbSchema','EfCore','MultiTenant','BackgroundJobs'] },
     'data-warehouse': { title:'Almacen Analitico', pct:0, status:'Futuro', subtitle:'Analitica avanzada fuera del MVP actual', children:[] },
     'ai-advanced': { title:'IA Modelos Avanzados', pct:0, status:'Futuro', subtitle:'Prediccion, analisis y optimizacion futuros', children:[] }
   },
   modules: {
-    Companies:{ title:'Perfil de Empresa', pct:85, status:'En piloto', summary:'Perfil, branding, fiscal, precisión por empresa y provisioning global.', done:['Perfil de empresa','Branding/logo','Configuracion fiscal','Provisioning global'], pending:['Cierre de gobernanza Frozen'] },
-    Branches:{ title:'Sucursales / Establecimientos / Puntos de Emision', pct:90, status:'Completado', summary:'Sucursales, establecimientos SRI y puntos de emision.', done:['CRUD y soft-disable','Secuencias documentales','Datos fiscales SRI'], pending:[] },
-    Items:{ title:'Productos / Items', pct:90, status:'Completado', summary:'Items, variantes, atributos, empaques y catalogos base.', done:['Items y variantes','Atributos y marcas','Empaques y conversiones'], pending:[] },
-    Pricing:{ title:'Motor de Precios v2', pct:90, status:'Completado', summary:'PricingRule/Resolver como SSOT de precios.', done:['Price lists','Pricing rules','Simulacion de precios'], pending:[] },
-    MasterData:{ title:'Datos Maestros / Socios de Negocio', pct:85, status:'En piloto', summary:'Clientes/proveedores y catalogos maestros operativos.', done:['Business partners','Catalogos base','Datos fiscales'], pending:['CRM futuro'] },
-    Sales:{ title:'Ventas', pct:88, status:'En piloto', summary:"Ventas/POS con precios históricos, crédito según liquidación y medios de pago SRI; HEAD 85dc5b55.", done:["Factura, anulación, CxC y cobros", "Precios y descuentos históricos por línea", "Validación de crédito según liquidación", "Medios de pago SRI", "Integridad contable de factura"], pending:['SRI produccion real','Bancos/conciliacion futuro'], features:['Sales::Authorize Sales','Sales::Cancel Sales','Sales::Sales Receivable','Sales::Payment Method'] },
-    Purchases:{ title:'Compras', pct:86, status:"Completado", summary:"Cierre funcional 2026-09-12: compra normal/XML, NC, devolución, Kardex, CxP y contabilidad.", done:["Compra normal y recepción XML", "Productos/presentaciones y Kardex", "NC por devolución y descuento", "CxP, pagos y anulación controlada"], pending:["Fuera del cierre: liquidación SRI 03 y recepción física sin factura", "Verificar migraciones en el ambiente"], features:['Purchases::Purchase Draft','Purchases::Confirm Purchase','Purchases::Cancel Purchase','Purchases::Purchase Cost'], shortStatus:"Listo / cerrado" },
-    Inventory:{ title:'Inventario / Kardex', pct:86, status:'En piloto', summary:'Stock, Kardex, costo promedio y reportes operativos.', done:['Bodegas','Movimientos stock','Kardex por producto/documento','Costo promedio'], pending:['Accounting completo de valoracion','Aprobaciones/reversos avanzados'], features:['Inventory::Get Stock','Inventory::Get Kardex By Product','Inventory::Create Stock Adjustment','Inventory::Confirm Stock Transfer'] },
-    Caja:{ title:'Caja', pct:85, status:'En piloto', summary:'Sesiones de caja, apertura, movimientos y cierre operativo.', done:['Apertura/cierre','Movimientos','Vinculo con ventas'], pending:['ADR/freeze propio','Posting directo de movimientos propios'], features:['Caja::Open Cash Session','Caja::Close Cash Session','Caja::Record Cash Movement'] },
-    Finance:{ title:'Finanzas / CxC / CxP', pct:86, status:'En piloto', summary:"CxP y pagos proveedor listos/cerrados (2026-09-12); CxC operativa. Catálogo de bancos implementado; cuentas bancarias en desarrollo local. No implica cierre bancario.", done:["CxP desde compras y gastos", "Pagos parciales/totales y reversas", "Bloqueo con pagos activos", "Aislamiento por empresa", "CxC y cobros"], pending:["Saldos iniciales banco/caja/capital", "Conciliación bancaria futura"] },
-    Accounting:{ title:'Contabilidad', pct:88, status:'En piloto', summary:"Operativo; cierre de compras/gastos/pagos y reversas aprobado el 2026-09-12. Cierre contable global pendiente.", done:['Plan de cuentas','Posting engine','Reversos/numeracion','Libro mayor y reportes','Cuentas por medio de pago y empresa; UX Cobros de ventas'], pending:["Saldos iniciales", "Cierre utilidad/pérdida a patrimonio", "Flujo de efectivo y conciliación futura"], features:['Accounting::Accounts','Accounting::Accounting Periods','Accounting::Posting Rules'] },
-    Expenses:{ title:'Gastos', pct:88, status:"Completado", summary:"Cierre funcional 2026-09-12: gasto manual/XML, catálogos SRI, CxP y anulación.", done:["Manual y XML", "IVA y tipo documental desde catálogo SRI", "CxP y posting", "Anulación controlada con reversa"], pending:[], shortStatus:"Listo / cerrado" },
-    Retentions:{ title:'Retenciones', pct:80, status:"En desarrollo", shortStatus:"Cierre por verificar", summary:"Issuer, XML, RIDE, validador y wiring integrado en git (5d1c801e).", done:['Foundation/dominio','UI en gastos','QA E2E','XML/RIDE/schema validator'], pending:["Validación productiva y cierre formal no verificados"] },
-    ElectronicDocuments:{ title:'Documentos Electronicos', pct:88, status:'En desarrollo', summary:'Factura/monitor/retry cerrados; NC y retenciones con avance real.', done:['Factura electronica','Monitor y retry','XML/RIDE retenciones','Schema validator'], pending:['Guia remision','Nota debito','Liquidacion compra 03'], features:['ElectronicDocuments::Get Electronic Documents Dashboard','ElectronicDocuments::Get Electronic Document Xml','ElectronicDocuments::Retry Electronic Document'] },
-    Dashboard:{ title:'Dashboard real', pct:85, status:'En piloto', summary:'KPIs reales y reportes minimos auditados.', done:['Dashboard KPI','Reportes ventas/compras/inventario','Monitor documentos'], pending:['BI/Data Warehouse futuro'] },
-    Security:{ title:'Seguridad / Permisos', pct:90, status:'Completado', summary:'Permisos jerarquicos backend SSOT y anti-escalamiento.', done:['Menu server-driven','Matriz de permisos','Anti-escalamiento','Entitlements NoOp seam'], pending:[] },
-    Session:{ title:'Auth / Sesion', pct:90, status:'Completado', summary:'Logout backend, expiracion absoluta, inactividad y reautenticacion.', done:['Logout backend','Expiracion 8h','Overlay 30 min','Header Empresa/Sucursal'], pending:[] },
-    Navigation:{ title:'Navegacion / UI', pct:90, status:'Completado', summary:'Design System ZH compacto, ZHDataTable y menu jerarquico.', done:['ZHDataTable','Menu jerarquico','Permisos jerarquicos','UI compacta'], pending:[] },
+    Companies:{ title:'Perfil de Empresa' },
+    Branches:{ title:'Sucursales / Establecimientos / Puntos de Emision' },
+    Items:{ title:'Productos / Items' },
+    Pricing:{ title:'Motor de Precios v2' },
+    MasterData:{ title:'Datos Maestros / Socios de Negocio' },
+    Sales:{ title:'Ventas', features:['Sales::Authorize Sales','Sales::Cancel Sales','Sales::Sales Receivable','Sales::Payment Method'] },
+    Purchases:{ title:'Compras', features:['Purchases::Purchase Draft','Purchases::Confirm Purchase','Purchases::Cancel Purchase','Purchases::Purchase Cost'] },
+    Inventory:{ title:'Inventario / Kardex', features:['Inventory::Get Stock','Inventory::Get Kardex By Product','Inventory::Create Stock Adjustment','Inventory::Confirm Stock Transfer'] },
+    Caja:{ title:'Caja', features:['Caja::Open Cash Session','Caja::Close Cash Session','Caja::Record Cash Movement'] },
+    Finance:{ title:'Finanzas / CxC / CxP' },
+    Accounting:{ title:'Contabilidad', features:['Accounting::Accounts','Accounting::Accounting Periods','Accounting::Posting Rules'] },
+    Expenses:{ title:'Gastos' },
+    Retentions:{ title:'Retenciones' },
+    ElectronicDocuments:{ title:'Documentos Electronicos', features:['ElectronicDocuments::Get Electronic Documents Dashboard','ElectronicDocuments::Get Electronic Document Xml','ElectronicDocuments::Retry Electronic Document'] },
+    Dashboard:{ title:'Dashboard real' },
+    Security:{ title:'Seguridad / Permisos' },
+    Session:{ title:'Auth / Sesion' },
+    Navigation:{ title:'Navegacion / UI' },
     DbSchema:{ title:'Esquema PostgreSQL', pct:93, status:'En piloto', summary:'Tablas y migraciones principales listas para piloto.', done:['PostgreSQL 16','Migraciones EF','Repositorios'], pending:['Backups productivos'] },
     EfCore:{ title:'EF Core', pct:93, status:'Completado', summary:'EF Core 10 + Npgsql, filtros tenant y warnings sentinel cerrados.', done:['Query filters tenant','Npgsql','Enum sentinels cerrados'], pending:[] },
     MultiTenant:{ title:'Multi-tenant', pct:90, status:'Completado', summary:'Aislamiento por tenant_id en backend y DbContext.', done:['Claim tenant_id','CurrentTenant','Query filters'], pending:['RLS PostgreSQL wave futura'] },
     BackgroundJobs:{ title:'Jobs en Segundo Plano', pct:80, status:'En piloto', summary:'Hangfire con PostgreSQL para jobs tecnicos.', done:['Hangfire','Storage PostgreSQL'], pending:['Politica operativa produccion'] }
   }
 };
+
+var FUNCTIONAL_V1 = {{DATA:FUNCTIONAL_V1}};
+function v1Escape(value){ return String(value).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function v1Evidence(feature){
+  return feature.evidence.filter(function(e){return e.found;}).map(function(e){
+    return '<a href="../../' + v1Escape(e.path) + '">' + v1Escape(e.path) + ':' + e.line + '</a> — ' + v1Escape(e.contains);
+  }).join('<br>');
+}
+function v1FeatureItem(feature){
+  var labels={approved:'Terminada y aprobada',validation_pending:'Implementada; falta validación',blocked:'Implementada; bloqueo abierto',planned:'Trabajo funcional pendiente'};
+  return '<b>' + v1Escape(feature.id + ' · ' + feature.name) + '</b> — ' + labels[feature.state] +
+    (feature.missing ? '<br>' + v1Escape(feature.missing) : '') + '<br>' + v1Evidence(feature);
+}
+Object.keys(FUNCTIONAL_V1.modules).forEach(function(id){
+  var score=FUNCTIONAL_V1.modules[id];
+  var entry=CONCISE_NAV.modules[id] || {title:FUNCTIONAL_V1.moduleTitles[id] || id};
+  var features=FUNCTIONAL_V1.features.filter(function(f){return f.scope==='v1' && f.module===id;});
+  entry.pct=score.pct;
+  entry.status=score.approved===score.total ? 'Capacidades aprobadas' : 'Aceptación parcial';
+  entry.shortStatus=score.approved + '/' + score.total + ' aprobadas';
+  entry.summary='Avance funcional V1 verificable: ' + entry.shortStatus + '. No declara cierre global ni producción.';
+  entry.done=features.filter(function(f){return f.state==='approved';}).map(v1FeatureItem);
+  entry.pending=features.filter(function(f){return f.state!=='approved';}).map(v1FeatureItem);
+  CONCISE_NAV.modules[id]=entry;
+  if(CONCISE_NAV.layers.web.children.indexOf(id)<0) CONCISE_NAV.layers.web.children.push(id);
+});
+['web','core'].forEach(function(id){
+  var score=id==='web' ? FUNCTIONAL_V1.global : FUNCTIONAL_V1.core;
+  CONCISE_NAV.layers[id].pct=score.pct;
+  CONCISE_NAV.layers[id].status=score.approved + '/' + score.total + ' capacidades V1 aprobadas';
+});
+['DbSchema','EfCore','MultiTenant','BackgroundJobs'].forEach(function(id){
+  delete CONCISE_NAV.modules[id].pct;
+  CONCISE_NAV.modules[id].status='Infraestructura';
+  CONCISE_NAV.modules[id].summary='Fuera del denominador funcional V1. Evidencia técnica disponible en la ficha generada.';
+});
+delete CONCISE_NAV.layers.db.pct;
+CONCISE_NAV.layers.db.status='Infraestructura';
+document.querySelectorAll('[data-v1-score]').forEach(function(el){el.textContent=FUNCTIONAL_V1[el.dataset.v1Score].pct + '%';});
+document.querySelectorAll('[data-v1-module]').forEach(function(el){el.textContent=FUNCTIONAL_V1.modules[el.dataset.v1Module].pct + '%';});
 
 function resetBreadcrumb(){
   breadcrumbStack = [];
@@ -3271,9 +3311,9 @@ function renderBreadcrumb(){
 }
 
 function statusClass(status){
-  if(status === 'Completado') return 'status-done';
+  if(status === 'CLOSED' || status === 'Completado') return 'status-done';
   if(status === 'En piloto') return 'status-pilot';
-  if(status === 'Futuro' || status === 'Pendiente') return 'status-pending';
+  if(status === 'PENDIENTE' || status === 'NO IMPLEMENTADO' || status === 'Futuro' || status === 'Pendiente') return 'status-pending';
   return 'status-progress';
 }
 
@@ -3291,7 +3331,7 @@ function renderChildCard(id){
   var onclick = type === 'module'
     ? "pushLevel('module','" + id + "','" + child.title.replace(/'/g, "\\'") + "')"
     : "selectLayer('" + id + "')";
-  return '<div class="child-card" onclick="' + onclick + '"><div class="child-card-top"><span class="status-badge ' + statusClass(child.status) + '">' + badgeText + '</span><span class="child-card-pct" style="' + pctStyle(child.pct) + '">' + child.pct + '%</span></div><div class="child-card-title">' + child.title + '</div><div class="child-card-sub">' + (child.summary || child.subtitle || '') + '</div></div>';
+  return '<div class="child-card" onclick="' + onclick + '"><div class="child-card-top"><span class="status-badge ' + statusClass(child.status) + '">' + badgeText + '</span><span class="child-card-pct" style="' + (child.pct == null ? '' : pctStyle(child.pct)) + '">' + (child.pct == null ? '' : child.pct + '%') + '</span></div><div class="child-card-title">' + child.title + '</div><div class="child-card-sub">' + (child.summary || child.subtitle || '') + '</div></div>';
 }
 
 function listItems(items){
@@ -3300,6 +3340,7 @@ function listItems(items){
 }
 
 function renderPageShell(entry, body, actions){
+  if(entry.pct == null && entry.status !== 'Infraestructura') body += '<p class="muted-note">Evidencia: <a href="../../STATUS.md">STATUS.md</a> ? <a href="../../FEATURES.md">FEATURES.md</a>. CLOSED se limita al alcance aprobado; no acredita producci?n. PENDIENTE indica que no consta cierre global.</p>';
   return '<div class="layer-page-toolbar"><div><div class="layer-page-title">' + entry.title + '</div><div class="muted-note">' + (entry.subtitle || entry.summary || '') + '</div></div><div class="layer-page-actions"><button class="page-btn" onclick="resetBreadcrumb()">Volver al mapa</button><button class="page-btn" onclick="showGroup(\'home\');showSubGroup(\'home\',\'estado-actual\')">Estado actualizado</button>' + (actions || '') + '</div></div>' + body;
 }
 
@@ -3307,7 +3348,7 @@ function renderConciseLayer(id){
   var layer = CONCISE_NAV.layers[id];
   if(!layer) return null;
   var children = layer.children || [];
-  var body = '<div class="page-summary"><div class="page-score"><div class="page-score-value" style="' + pctStyle(layer.pct) + '">' + layer.pct + '%</div><div class="page-score-label">Estimación histórica ? ' + layer.status + '</div></div><div class="note-box"><h4>Alcance</h4><p class="muted-note">Hijos directos de ' + layer.title + '. Detalle tecnico bajo demanda.</p></div></div>';
+  var body = '<div class="page-summary"><div class="page-score"><div class="page-score-value" style="' + (layer.pct == null ? '' : pctStyle(layer.pct)) + '">' + (layer.pct == null ? layer.status : layer.pct + '%') + '</div><div class="page-score-label">Avance verificable - ' + layer.status + '</div></div><div class="note-box"><h4>Alcance</h4><p class="muted-note">Hijos directos de ' + layer.title + '. Detalle tecnico bajo demanda.</p></div></div>';
   if(children.length > 0){
     body += '<div class="page-section-title">Siguiente nivel</div><div class="child-grid">' + children.map(renderChildCard).join('') + '</div>';
   } else {
@@ -3328,7 +3369,7 @@ function renderFeatureCards(module){
 function renderConciseModule(id){
   var module = CONCISE_NAV.modules[id];
   if(!module) return null;
-  var body = '<div class="page-summary"><div class="page-score"><div class="page-score-value" style="' + pctStyle(module.pct) + '">' + module.pct + '%</div><div class="page-score-label">Estimación histórica ? ' + module.status + '</div></div><div class="page-notes"><div class="note-box"><h4>Implementado</h4>' + listItems(module.done) + '</div><div class="note-box"><h4>Pendiente / futuro</h4>' + listItems(module.pending) + '</div></div></div>';
+  var body = '<div class="page-summary"><div class="page-score"><div class="page-score-value" style="' + (module.pct == null ? '' : pctStyle(module.pct)) + '">' + (module.pct == null ? module.status : module.pct + '%') + '</div><div class="page-score-label">Estado por alcance - ' + module.status + '</div></div><div class="page-notes"><div class="note-box"><h4>Terminadas y aprobadas</h4>' + listItems(module.done) + '</div><div class="note-box"><h4>Qué falta para V1</h4>' + listItems(module.pending) + '</div></div></div>';
   body += renderFeatureCards(module);
   var actions = MODULE_SUMMARIES[id] ? '<button class="page-btn" onclick="showGeneratedDetail(\'' + id + '\')">Ficha tecnica generada</button>' : '';
   return renderPageShell(module, body, actions);

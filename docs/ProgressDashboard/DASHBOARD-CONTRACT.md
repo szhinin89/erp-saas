@@ -8,6 +8,86 @@ Si algo en el código contradice este documento, el código gana y este document
 
 ---
 
+## DASHBOARD-V1-FINAL — contrato vigente del avance funcional
+
+Cambio autorizado por el propietario (2026-11-04). Esta sección sustituye exclusivamente
+el tratamiento histórico de los indicadores funcionales Web/Core y sus módulos descrito
+en DH-004 y las restricciones anteriores que congelaban sus fórmulas.
+
+**Diseño protegido:** se mantienen las once tarjetas del dibujo, posiciones, colores,
+clases CSS, flechas, conexiones, eventos de selección, panel lateral, breadcrumbs y rutas
+por hash. No se crea otra página. Los textos, porcentajes, denominadores, estados,
+listas y referencias son datos actualizables. Las capas futuras y la infraestructura
+no participan del avance funcional. Las fichas de Carga inicial, Instalación inicial y
+Configuración reutilizan el mismo detalle y las tarjetas hijas de Web.
+
+### Registro y criterio verificable
+
+- [functional-v1-source.json](data/functional-v1-source.json) es el registro único de
+  capacidades para este indicador: ID estable, módulo propietario, alcance, evidencia
+  de implementación, selector de aprobación y dato concreto que falta. Reutiliza las
+  capacidades de FEATURES y el detalle existente; no cuenta archivos, handlers,
+  correcciones, tests ni etapas como nuevas funcionalidades. `catalogCoverage` asigna
+  cada fila actual del catálogo FEATURES a su propietario; un cambio del catálogo
+  sin conciliación detiene el cálculo. Los IL-1 a IL-6 se cuentan por separado.
+- Una fila representa la capacidad descrita completa. Las operaciones incluidas en
+  una misma capacidad no se vuelven a sumar por endpoint. Una integración pertenece
+  a su productor: las capacidades de CxC/CxP son de Finance, las de carga inicial de
+  InitialLoad, las de transmisión de ElectronicDocuments/Retentions; consumirlas no
+  genera otra fila en Accounting. El registro no declara cierres globales de módulos.
+- `approved`: implementación acreditada y aprobación literal vigente para ese alcance.
+  Se respetan los cierres FROZEN/CLOSED documentados en FEATURES, STATUS y ADR-023.
+  R1–R4 solo aprueban las capacidades efectivamente cubiertas; por ejemplo R4 no
+  aprueba el cierre anual ni el reproceso por lote.
+- `validation_pending`: capacidad implementada sin aprobación acreditada. No equivale
+  a código faltante. El detalle indica exactamente la aceptación o prueba ausente.
+  `blocked`: implementación con bloqueo documentado (R32); `planned`: trabajo funcional
+  pendiente (adopción uniforme/cierre irreversible de carga inicial).
+- `future` y `production` se conservan identificados y **se excluyen** del numerador y
+  denominador. SEC-A01 implementado y aprobado sí cuenta; su preparación de despliegue
+  no cuenta. Que WORK_QUEUE no enumere una capacidad no acredita su aprobación ni
+  autoriza implementarla. Una ausencia de aprobación nunca se rellena con un porcentaje
+  histórico, una estimación o un estado Frozen de infraestructura.
+- Los selectores existentes citan literalmente su aprobación y sección. Una aprobación
+  nueva sin selector histórico se registra en STATUS con el marcador
+  '[V1-APPROVED:<id>]', únicamente después de aceptación explícita del propietario,
+  con alcance y evidencia enlazada en esa misma entrada. El marcador no puede usarse
+  en ejemplos de STATUS ni generarse automáticamente. Añadir una fila o cambiar su
+  alcance/selector requiere conciliación documental; regenerar no inventa decisiones.
+
+### Fórmula y automatización
+
+'porcentaje = 100 × capacidades V1 aprobadas / capacidades V1 previstas únicas'.
+Todas pesan uno. Se conservan numerador, denominador e IDs; se redondea a dos decimales
+solo para presentar. Web usa el conjunto global único, no el promedio de módulos.
+Core usa la unión de Sales, Purchases, Inventory, Caja, Accounting, Finance, Expenses,
+Retentions y ElectronicDocuments. Cada módulo filtra por propietario único.
+Un 0 % significa cero aprobaciones registradas para su denominador, incluso si existe
+implementación; un 100 % acredita las capacidades registradas, no producción ni cierre
+global del dominio. No se certifica un alcance no catalogado ni una suite actual del ERP.
+
+`analyze-functional-v1.ps1` / `analyze-functional-v1.mjs` se ejecutan dentro de los
+orquestadores existentes y antes de componer cada render rápido. Generan
+[functional-v1.json](data/functional-v1.json) con las fórmulas, filas resueltas, referencias
+con número de línea y SHA-256 de los insumos. El compositor embebe el dataset escapado;
+la navegación existente lo consume. No hay servicio, almacenamiento ni dashboard paralelo.
+
+Falta de archivo, cita de implementación desaparecida, sección ambigua, ID/capacidad
+repetida, denominador vacío o cobertura de catálogo incompleta detienen la generación.
+Una cita de aprobación retirada deja de sumar; una aprobación nueva registrada actualiza
+el porcentaje al regenerar. Los datos derivados nunca se editan manualmente.
+
+Gate focal desde la raíz (sin backend/frontend ni suites generales):
+
+~~~powershell
+node --test tools/dashboard/functional-v1.test.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/render-dashboard.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/test-curated-dashboard.ps1
+node tools/dashboard/test-functional-v1-ui.mjs
+node tools/architecture/run-all.mjs --only documentation
+git diff --check
+~~~
+
 ## Corrección DH-004 — presentación curada (2026-09-26)
 
 La regeneración de `51f52f21` perdió cambios hechos directamente al HTML entre
@@ -15,8 +95,8 @@ La regeneración de `51f52f21` perdió cambios hechos directamente al HTML entre
 las secciones `guia-lectura`, `estado-actual` y `module-families`.
 
 `templates/dashboard-curated.html` es ahora la fuente explícita de esa presentación,
-recuperada de `c395ec6c`. Sus 32 secciones curadas y sus porcentajes se conservan como
-históricos fechados, no como mediciones actuales. El aviso visible distingue ambos.
+recuperada de `c395ec6c`. Sus 32 secciones curadas se conservan; los porcentajes funcionales Web/Core y sus módulos
+se recalculan según DASHBOARD-V1-FINAL. Los demás paneles mantienen referencias históricas. El aviso visible distingue ambos.
 `templates/dashboard-curated.json` declara la procedencia, las 7 secciones técnicas
 sin edición manual que siguen regenerándose y las referencias históricas del explorador.
 La clasificación se obtuvo comparando cada sección con `f171b820` (último HTML del
@@ -30,7 +110,7 @@ análisis actual se retienen con una etiqueta histórica. No se escriben datos h
 en los JSON dinámicos de `data/`. No se requiere Git para regenerar.
 
 La composición falla si falta una fuente, un dataset, una sección, quedan slots sin
-resolver o cambia una sección curada. Nunca toma el `index.html` de salida como fuente.
+resolver o cambia una sección curada fuera de los slots de datos declarados. Nunca toma el `index.html` de salida como fuente.
 Para cambiar contenido editorial, editar la plantilla y su manifiesto; para evidencia
 actual, corregir los analizadores. `PROGRESS.html` y `architecture-progress-source.json`
 se mantienen independientes e intactos. Las menciones anteriores a 36 secciones describen

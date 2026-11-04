@@ -1,0 +1,1290 @@
+{
+  "schemaVersion": 1,
+  "inventoryBasis": [
+    "FEATURES.md",
+    "STATUS.md",
+    "docs/agent/WORK_QUEUE.md",
+    "docs/ProgressDashboard/templates/dashboard-curated.html"
+  ],
+  "coreModules": [
+    "Sales",
+    "Purchases",
+    "Inventory",
+    "Caja",
+    "Accounting",
+    "Finance",
+    "Expenses",
+    "Retentions",
+    "ElectronicDocuments"
+  ],
+  "features": [
+    {
+      "id": "Companies-01",
+      "module": "Companies",
+      "name": "Perfil, branding y configuración fiscal de empresa",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Empresas |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Companies-01]"
+      },
+      "missing": "Falta aceptación del perfil completo de empresa; el modal Editar empresa sigue pendiente de validación visual en STATUS."
+    },
+    {
+      "id": "Branches-01",
+      "module": "Branches",
+      "name": "Sucursales: CRUD y desactivación",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Sucursales |"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "organizativas, no fiscales. FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Branches-02",
+      "module": "Branches",
+      "name": "Establecimientos SRI",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Establecimientos SRI |"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "disable bloqueado si tiene PEs activos. FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Branches-03",
+      "module": "Branches",
+      "name": "Puntos de emisión y secuencias",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Puntos de Emisión |"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "DocumentSequence automático. FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Items-01",
+      "module": "Items",
+      "name": "catálogo Product/Service por empresa",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Catálogo / Ítems |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "A1 Ítems | CLOSED",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Items-02",
+      "module": "Items",
+      "name": "Variantes y empaques",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "variantes, empaques, códigos de proveedor. FROZEN"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "variantes, empaques, códigos de proveedor. FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Items-03",
+      "module": "Items",
+      "name": "códigos de proveedor",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "variantes, empaques, códigos de proveedor. FROZEN"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "variantes, empaques, códigos de proveedor. FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Pricing-01",
+      "module": "Pricing",
+      "name": "Reglas, listas y resolución de precios",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Motor de Pricing v2 |"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "CLOSED (ADR-021"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "MasterData-01",
+      "module": "MasterData",
+      "name": "Socios de negocio Customer/Supplier",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Master data"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "roles Customer/Supplier — FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Sales-01",
+      "module": "Sales",
+      "name": "Factura: borrador, autorización y anulación",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Ventas |"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "facturación electrónica. FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Sales-02",
+      "module": "Sales",
+      "name": "Snapshot fiscal IVA/ICE y numeración",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Ventas |"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "facturación electrónica. FROZEN"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Sales-03",
+      "module": "Sales",
+      "name": "devolución parcial/total y nota de crédito",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Devolución de Ventas"
+      },
+      "approval": {
+        "path": "FEATURES.md",
+        "contains": "P0-01 — COMPLETED/CLOSED"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Sales-04",
+      "module": "Sales",
+      "name": "Venta de contado con vuelto",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "6/6 PASS",
+        "section": "R3 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R3 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Sales-05",
+      "module": "Sales",
+      "name": "devolución con reembolso en efectivo",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "6/6 PASS",
+        "section": "R3 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R3 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Sales-06",
+      "module": "Sales",
+      "name": "Reporte de ventas conciliado",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "6/6 PASS",
+        "section": "R3 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R3 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Purchases-01",
+      "module": "Purchases",
+      "name": "Compra normal: borrador, confirmación y anulación",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Compras |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "Compras V1 aprobado y CLOSED",
+        "section": "DOC-CLEANUP-COMPRAS-01"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Purchases-02",
+      "module": "Purchases",
+      "name": "recepción XML y conciliación de productos/presentaciones",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Compras |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "Compras V1 aprobado y CLOSED",
+        "section": "DOC-CLEANUP-COMPRAS-01"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Purchases-03",
+      "module": "Purchases",
+      "name": "distribución de costos Product/Service",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Compras |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "Compras V1 aprobado y CLOSED",
+        "section": "DOC-CLEANUP-COMPRAS-01"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Purchases-04",
+      "module": "Purchases",
+      "name": "NC de proveedor por devolución",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Compras |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "Compras V1 aprobado y CLOSED",
+        "section": "DOC-CLEANUP-COMPRAS-01"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Purchases-05",
+      "module": "Purchases",
+      "name": "NC de proveedor por descuento/bonificación",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Compras |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "Compras V1 aprobado y CLOSED",
+        "section": "DOC-CLEANUP-COMPRAS-01"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Inventory-01",
+      "module": "Inventory",
+      "name": "Bodegas, stock y Kardex con promedio ponderado",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Inventario |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "B1/B2 Inventario | CLOSED",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Inventory-02",
+      "module": "Inventory",
+      "name": "Ajustes con anulación",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "aislamiento entre empresas PASS",
+        "section": "R2 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R2 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Inventory-03",
+      "module": "Inventory",
+      "name": "Transferencias entre bodegas",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "aislamiento entre empresas PASS",
+        "section": "R2 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R2 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Inventory-04",
+      "module": "Inventory",
+      "name": "Valor monetario canónico y cuadre Compras/Kardex/Contabilidad",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "CLOSED",
+        "section": "INVENTARIO V1 — B4:"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "CLOSED",
+        "section": "INVENTARIO V1 — B4:"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Caja-01",
+      "module": "Caja",
+      "name": "Apertura/cierre y arqueo",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "6/6 PASS",
+        "section": "R3 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R3 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Caja-02",
+      "module": "Caja",
+      "name": "Movimiento manual con motivo y asiento",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "6/6 PASS",
+        "section": "R3 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R3 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Caja-03",
+      "module": "Caja",
+      "name": "depósito bancario sin sobregiro",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "6/6 PASS",
+        "section": "R3 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R3 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Finance-01",
+      "module": "Finance",
+      "name": "CxC: consulta, cuotas y cobros parciales/totales",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Cuentas por cobrar"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "CxC y cobros, cierre 2026-10-27 | **CLOSED**",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Finance-02",
+      "module": "Finance",
+      "name": "Reversa documental de cobros",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Cuentas por cobrar"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "el propietario aprueba expresamente el cierre integral",
+        "section": "Caso #20 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Finance-03",
+      "module": "Finance",
+      "name": "CxP desde compras/gastos y pagos parciales/totales",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "Compras/Gastos/CxP/Pagos",
+        "section": "Cierres acreditados y límites"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "LISTO / CERRADO para ese alcance",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Finance-04",
+      "module": "Finance",
+      "name": "Reversa de pagos y bloqueo de anulación con pagos activos",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "Compras/Gastos/CxP/Pagos",
+        "section": "Cierres acreditados y límites"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "LISTO / CERRADO para ese alcance",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Finance-05",
+      "module": "Finance",
+      "name": "Anticipo por remanente del pago a proveedor",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Pagos a proveedor — anticipo"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Finance-05]"
+      },
+      "missing": "Falta aceptación específica del anticipo ADR-035; el cierre de pagos del 12 de septiembre no se extiende a ampliaciones posteriores."
+    },
+    {
+      "id": "Finance-06",
+      "module": "Finance",
+      "name": "Reembolso y reversa de saldo a favor del proveedor",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Saldos a favor de proveedor"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Finance-06]"
+      },
+      "missing": "Falta aprobación del reembolso de SupplierCredit y su continuidad durable; no extender el cierre anterior de pagos."
+    },
+    {
+      "id": "Accounting-01",
+      "module": "Accounting",
+      "name": "Asientos manuales y reversos",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "4/4 PASS",
+        "section": "R4 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "El propietario aprueba",
+        "section": "R4 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Accounting-02",
+      "module": "Accounting",
+      "name": "Diario, Mayor, Balance y Resultados",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "4/4 PASS",
+        "section": "R4 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "El propietario aprueba",
+        "section": "R4 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Accounting-03",
+      "module": "Accounting",
+      "name": "Reproceso de contabilizaciones fallidas",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "4/4 PASS",
+        "section": "R4 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "El propietario aprueba",
+        "section": "R4 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Accounting-04",
+      "module": "Accounting",
+      "name": "generación idempotente de períodos",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "4/4 PASS",
+        "section": "R4 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "El propietario aprueba",
+        "section": "R4 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Accounting-05",
+      "module": "Accounting",
+      "name": "Plan de cuentas y reglas de contabilización",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "Accounting: capacidades implementadas",
+        "section": "Contabilidad y Retenciones"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Accounting-05]"
+      },
+      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+    },
+    {
+      "id": "Accounting-06",
+      "module": "Accounting",
+      "name": "Modo operativo por empresa",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "Accounting: capacidades implementadas",
+        "section": "Contabilidad y Retenciones"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Accounting-06]"
+      },
+      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+    },
+    {
+      "id": "Accounting-07",
+      "module": "Accounting",
+      "name": "Continuidad durable y reproceso por lote",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "Accounting: capacidades implementadas",
+        "section": "Contabilidad y Retenciones"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Accounting-07]"
+      },
+      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+    },
+    {
+      "id": "Accounting-08",
+      "module": "Accounting",
+      "name": "Cierre anual",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "Accounting: capacidades implementadas",
+        "section": "Contabilidad y Retenciones"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Accounting-08]"
+      },
+      "missing": "Falta aprobación de esta capacidad fuera de #26, #27, #28 y #42 de R4; STATUS indica capacidades implementadas, no nuevos cierres."
+    },
+    {
+      "id": "Expenses-01",
+      "module": "Expenses",
+      "name": "Gasto manual/XML con IVA y tipo documental",
+      "scope": "v1",
+      "implementation": {
+        "path": "docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md",
+        "contains": "Gasto manual/XML"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "LISTO / CERRADO para ese alcance",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Expenses-02",
+      "module": "Expenses",
+      "name": "confirmación, CxP y anulación controlada",
+      "scope": "v1",
+      "implementation": {
+        "path": "docs/QA/PURCHASES-EXPENSES-PAYABLES-CLOSEOUT.md",
+        "contains": "Gasto manual/XML"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "LISTO / CERRADO para ese alcance",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Retentions-01",
+      "module": "Retentions",
+      "name": "retención funcional con CxP neta",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "#31 retención funcional",
+        "section": "R2 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R2 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Retentions-02",
+      "module": "Retentions",
+      "name": "emisión XML/RIDE, transmisión y anulación asistida",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "Retenciones: emisión, XML/RIDE, transmisión y anulación asistida implementados",
+        "section": "Contabilidad y Retenciones"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Retentions-02]"
+      },
+      "missing": "Falta E2E SRI integrada de #31; R2 se detuvo antes del XML y no acredita transmisión. WORK_QUEUE conserva el gate integrado."
+    },
+    {
+      "id": "ElectronicDocuments-01",
+      "module": "ElectronicDocuments",
+      "name": "generación, validación y firma de XML",
+      "scope": "v1",
+      "implementation": {
+        "path": "docs/decisions/ADR-023-electronic-documents-v1-closure.md",
+        "contains": "### Responsabilidades"
+      },
+      "approval": {
+        "path": "docs/decisions/ADR-023-electronic-documents-v1-closure.md",
+        "contains": "**Accepted — FROZEN.**"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "ElectronicDocuments-02",
+      "module": "ElectronicDocuments",
+      "name": "recepción/autorización y persistencia del ciclo",
+      "scope": "v1",
+      "implementation": {
+        "path": "docs/decisions/ADR-023-electronic-documents-v1-closure.md",
+        "contains": "### Responsabilidades"
+      },
+      "approval": {
+        "path": "docs/decisions/ADR-023-electronic-documents-v1-closure.md",
+        "contains": "**Accepted — FROZEN.**"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "ElectronicDocuments-03",
+      "module": "ElectronicDocuments",
+      "name": "Monitor y recuperación del núcleo FROZEN",
+      "scope": "v1",
+      "implementation": {
+        "path": "docs/decisions/ADR-023-electronic-documents-v1-closure.md",
+        "contains": "### Responsabilidades"
+      },
+      "approval": {
+        "path": "docs/decisions/ADR-023-electronic-documents-v1-closure.md",
+        "contains": "**Accepted — FROZEN.**"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "ElectronicDocuments-04",
+      "module": "ElectronicDocuments",
+      "name": "Respuestas inciertas y conciliación manual (#32)",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "IMPLEMENTADO",
+        "section": "Caso #32 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:ElectronicDocuments-04]"
+      },
+      "missing": "Falta E2E SRI integrada #32/#30/#31 según WORK_QUEUE; PASS de integración focal no cierra el caso. R32: sin reenvío para comprobante nunca recibido; decisión pendiente sobre retenciones anteriores anuladas.",
+      "blocker": {
+        "path": "STATUS.md",
+        "section": "Riesgos y limitaciones vigentes",
+        "contains": "R32 BLOCKED"
+      }
+    },
+    {
+      "id": "ElectronicDocuments-05",
+      "module": "ElectronicDocuments",
+      "name": "Pausa total de emisión por empresa y reanudación explícita",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "pausa total: ninguna llamada"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:ElectronicDocuments-05]"
+      },
+      "missing": "Falta gate del propietario SRI-TOGGLE-08; CI-FIX-SRI-01 aprueba la corrección C-03, no el cierre de la pausa SRI."
+    },
+    {
+      "id": "ElectronicDocuments-06",
+      "module": "ElectronicDocuments",
+      "name": "Salud técnica SRI centralizada",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "salud técnica SRI"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:ElectronicDocuments-06]"
+      },
+      "missing": "Falta aprobación del propietario de Salud técnica SRI centralizada, registrada READY FOR REVIEW."
+    },
+    {
+      "id": "ElectronicDocuments-07",
+      "module": "ElectronicDocuments",
+      "name": "corrección y retransmisión fiscal 01/04/07 (R12)",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "READY FOR REVIEW",
+        "section": "SRI 2.34 R12 Fase B"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:ElectronicDocuments-07]"
+      },
+      "missing": "Falta aceptación funcional R12 Fase B y validación integrada SRI; STATUS conserva READY FOR REVIEW."
+    },
+    {
+      "id": "Dashboard-01",
+      "module": "Dashboard",
+      "name": "KPIs reales del ERP",
+      "scope": "v1",
+      "implementation": {
+        "path": "backend/src/ERP.Application/Modules/Dashboard/GetDashboardKpisQuery.cs",
+        "contains": "GetDashboardKpisQuery"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Dashboard-01]"
+      },
+      "missing": "Existe implementación y pruebas de KPIs, pero no consta aprobación funcional del Dashboard ERP en STATUS."
+    },
+    {
+      "id": "Security-01",
+      "module": "Security",
+      "name": "administración de memberships, perfiles y permisos por empresa",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Acceso / Seguridad |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Security-01]"
+      },
+      "missing": "Falta aprobación integral de administración de accesos; SEC-05 registra revisión técnica PASS, no cierre funcional global."
+    },
+    {
+      "id": "Security-02",
+      "module": "Security",
+      "name": "revocación de permisos con caché",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "CLOSED",
+        "section": "SEGURIDAD — SEC-06"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "CLOSED",
+        "section": "SEGURIDAD — SEC-06"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Session-01",
+      "module": "Session",
+      "name": "Login, JWT y refresh rotation",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Acceso / Seguridad |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Session-01]"
+      },
+      "missing": "Falta aceptación del flujo completo; AUTH-INTERCEPTOR-FIX-01 solo cierra la corrección de dos rutas públicas."
+    },
+    {
+      "id": "Session-02",
+      "module": "Session",
+      "name": "sesión operativa y preferencias de login",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Acceso / Seguridad |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Session-02]"
+      },
+      "missing": "Falta aceptación del flujo completo; AUTH-INTERCEPTOR-FIX-01 solo cierra la corrección de dos rutas públicas."
+    },
+    {
+      "id": "Session-03",
+      "module": "Session",
+      "name": "límites de intentos de login",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "IMPLEMENTACIÓN V1 CLOSED",
+        "section": "SEC-A01 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "Cierre de la implementación aprobado expresamente",
+        "section": "SEC-A01 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Navigation-01",
+      "module": "Navigation",
+      "name": "Menu jerárquico y navegación con permisos",
+      "scope": "v1",
+      "implementation": {
+        "path": "docs/ARCHITECTURE.md",
+        "contains": "LauncherSearchBar"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Navigation-01]"
+      },
+      "missing": "Falta aceptación funcional completa de esta capacidad de navegación/UI; no usar los porcentajes históricos del dibujo."
+    },
+    {
+      "id": "Navigation-02",
+      "module": "Navigation",
+      "name": "Design System ZH y tablas compactas",
+      "scope": "v1",
+      "implementation": {
+        "path": "docs/ARCHITECTURE.md",
+        "contains": "LauncherSearchBar"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Navigation-02]"
+      },
+      "missing": "Falta aceptación funcional completa de esta capacidad de navegación/UI; no usar los porcentajes históricos del dibujo."
+    },
+    {
+      "id": "InitialLoad-01",
+      "module": "InitialLoad",
+      "name": "IL-1 productos",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "5/5 PASS",
+        "section": "R1 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R1 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "InitialLoad-02",
+      "module": "InitialLoad",
+      "name": "IL-2 importación de clientes",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "5/5 PASS",
+        "section": "R1 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R1 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "InitialLoad-03",
+      "module": "InitialLoad",
+      "name": "IL-4 inventario",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "5/5 PASS",
+        "section": "R1 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R1 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "InitialLoad-04",
+      "module": "InitialLoad",
+      "name": "IL-5 saldos iniciales CxC con apertura contable",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "5/5 PASS",
+        "section": "R1 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R1 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "InitialLoad-05",
+      "module": "InitialLoad",
+      "name": "Cierre irreversible y contrato uniforme de carga inicial",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "adopción del contrato uniforme pendiente"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:InitialLoad-05]"
+      },
+      "missing": "Falta adopción del contrato uniforme y aceptación del cierre irreversible; R1 conserva la carga abierta y conciliada.",
+      "implemented": false
+    },
+    {
+      "id": "FirstRun-01",
+      "module": "FirstRun",
+      "name": "instalación inicial manual",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "First Run (instalación inicial"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "First Run | Cerrado",
+        "section": "Cierres acreditados y límites"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Configuration-01",
+      "module": "Configuration",
+      "name": "Preferencias organizacionales e historial de cambios",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "| Configuración organizacional |"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Configuration-01]"
+      },
+      "missing": "Falta aprobación funcional de configuración organizacional e historial, sin cierre específico acreditado en STATUS."
+    },
+    {
+      "id": "Future-01",
+      "module": "Future",
+      "name": "CRM, BI/Data Warehouse, IA y aplicación móvil",
+      "scope": "future",
+      "implementation": {
+        "path": "docs/ROADMAP.md",
+        "contains": "Etapa"
+      },
+      "approval": null,
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Operations-01",
+      "module": "Operations",
+      "name": "Proxy, Redis, BCrypt y validación del despliegue SEC-A01",
+      "scope": "production",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "PRODUCCIÓN NO-GO",
+        "section": "SEC-A01 —"
+      },
+      "approval": null,
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "InitialLoad-06",
+      "module": "InitialLoad",
+      "name": "IL-3 importación de proveedores",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "5/5 PASS",
+        "section": "R1 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R1 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "InitialLoad-07",
+      "module": "InitialLoad",
+      "name": "IL-6 saldos iniciales CxP con apertura contable",
+      "scope": "v1",
+      "implementation": {
+        "path": "STATUS.md",
+        "contains": "5/5 PASS",
+        "section": "R1 —"
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "aprobado expresamente por el propietario",
+        "section": "R1 —"
+      },
+      "missing": "Falta aprobación funcional explícita para esta capacidad; la implementación no acredita aceptación."
+    },
+    {
+      "id": "Navigation-03",
+      "module": "Navigation",
+      "name": "Interfaz en español e inglés",
+      "scope": "v1",
+      "implementation": {
+        "path": "FEATURES.md",
+        "contains": "Español e Inglés."
+      },
+      "approval": {
+        "path": "STATUS.md",
+        "contains": "[V1-APPROVED:Navigation-03]"
+      },
+      "missing": "Falta aceptación funcional del alcance bilingüe declarado en FEATURES; las correcciones de claves aisladas no acreditan el conjunto."
+    }
+  ],
+  "method": "Registro único de capacidades del catálogo FEATURES y del detalle existente del dibujo, conciliado con cierres por alcance de STATUS. Cada fila tiene un único módulo propietario; integraciones no duplican la capacidad en el consumidor. No es un conteo de handlers ni certificación de producción. Nuevas aprobaciones sin cierre previo usan [V1-APPROVED:<id>] en STATUS, solo con aceptación explícita del propietario y evidencia.",
+  "catalogCoverage": [
+    {
+      "label": "Auth & acceso",
+      "module": "Session"
+    },
+    {
+      "label": "Master data — Business Partners (Customer/Supplier)",
+      "module": "MasterData"
+    },
+    {
+      "label": "Carga Inicial — Productos (IL-1)",
+      "module": "InitialLoad"
+    },
+    {
+      "label": "Carga Inicial — Clientes (IL-2)",
+      "module": "InitialLoad"
+    },
+    {
+      "label": "Carga Inicial — Proveedores (IL-3)",
+      "module": "InitialLoad"
+    },
+    {
+      "label": "Carga Inicial — Inventario (IL-4)",
+      "module": "InitialLoad"
+    },
+    {
+      "label": "Carga Inicial — Cuentas por Pagar (IL-6)",
+      "module": "InitialLoad"
+    },
+    {
+      "label": "Carga Inicial — Cuentas por Cobrar (IL-5)",
+      "module": "InitialLoad"
+    },
+    {
+      "label": "Carga Inicial — Apertura contable",
+      "module": "InitialLoad"
+    },
+    {
+      "label": "Catálogo / Ítems",
+      "module": "Items"
+    },
+    {
+      "label": "Motor de Pricing v2",
+      "module": "Pricing"
+    },
+    {
+      "label": "Inventario",
+      "module": "Inventory"
+    },
+    {
+      "label": "Compras",
+      "module": "Purchases"
+    },
+    {
+      "label": "Compras — Product + Service y distribuciones de costos",
+      "module": "Purchases"
+    },
+    {
+      "label": "Pagos a proveedor — anticipo por remanente (ZH-SUPPLIER-PAYMENT-UNAPPLIED-ADVANCE-02C, ADR-035)",
+      "module": "Finance"
+    },
+    {
+      "label": "Saldos a favor de proveedor — reembolso",
+      "module": "Finance"
+    },
+    {
+      "label": "Ventas",
+      "module": "Sales"
+    },
+    {
+      "label": "Cuentas por cobrar — corrección de cobros",
+      "module": "Finance"
+    },
+    {
+      "label": "Devolución de Ventas (SalesReturn) + Nota de Crédito SRI",
+      "module": "Sales"
+    },
+    {
+      "label": "Configuración / SRI",
+      "module": "ElectronicDocuments"
+    },
+    {
+      "label": "Configuración organizacional",
+      "module": "Configuration"
+    },
+    {
+      "label": "Sucursales",
+      "module": "Branches"
+    },
+    {
+      "label": "Establecimientos SRI",
+      "module": "Branches"
+    },
+    {
+      "label": "Puntos de Emisión",
+      "module": "Branches"
+    },
+    {
+      "label": "Acceso / Seguridad",
+      "module": "Security"
+    },
+    {
+      "label": "Contabilidad",
+      "module": "Accounting"
+    },
+    {
+      "label": "Empresas",
+      "module": "Companies"
+    },
+    {
+      "label": "Tenant / onboarding",
+      "module": "FirstRun"
+    }
+  ],
+  "moduleTitles": {
+    "InitialLoad": "Carga inicial",
+    "FirstRun": "Instalación inicial",
+    "Configuration": "Configuración organizacional"
+  }
+}

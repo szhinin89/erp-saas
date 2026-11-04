@@ -141,6 +141,7 @@ $generators = @(
     @{ Script = "analyze-progress-map.ps1"; Output = "architecture-progress.json" },
     @{ Script = "analyze-modules.ps1"; Output = "modules.json" },
     @{ Script = "analyze-features.ps1"; Output = "features.json" },
+    @{ Script = "analyze-functional-v1.ps1"; Output = "functional-v1.json" },
     @{ Script = "analyze-processes.ps1"; Output = "processes.json" },
     @{ Script = "analyze-tasks.ps1"; Output = "tasks.json" },
     @{ Script = "validate-dashboard-model.ps1"; Output = "model-health.json" },

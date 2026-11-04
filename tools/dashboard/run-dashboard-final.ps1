@@ -79,6 +79,8 @@ $scripts = @(
 
 "analyze-features.ps1"
 
+"analyze-functional-v1.ps1"
+
 "analyze-processes.ps1"
 
 "analyze-tasks.ps1"

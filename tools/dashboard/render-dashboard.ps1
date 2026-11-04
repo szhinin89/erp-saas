@@ -4382,6 +4382,8 @@ $jsHtml,
 ) -join "`n"
 
 
+# Recompute acceptance evidence even on the fast render path; never reuse stale percentages.
+& (Join-Path $PSScriptRoot 'analyze-functional-v1.ps1')
 . (Join-Path $PSScriptRoot 'compose-curated-dashboard.ps1')
 $html = Merge-CuratedDashboard -GeneratedHtml $html -ProjectRoot $ProjectRoot
 

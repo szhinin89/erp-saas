@@ -1,5 +1,10 @@
 # Features — ERP SaaS
 
+Avance funcional V1: [registro único de capacidades y evidencias](docs/ProgressDashboard/data/functional-v1-source.json),
+derivado de este catálogo y conciliado con los cierres de STATUS. Fórmula, límites y
+actualización en el [contrato del Dashboard](docs/ProgressDashboard/DASHBOARD-CONTRACT.md#dashboard-v1-final--contrato-vigente-del-avance-funcional).
+El registro mide aprobaciones por capacidad; no sustituye las SSOT ni declara nuevos cierres.
+
 ## Instalacion inicial manual
 
 First Run (instalación inicial por `/setup` y `/api/v1/setup/admin`): ver [SSOT First Run](docs/architecture/first-run.md).

@@ -36,6 +36,10 @@ function Merge-CuratedDashboard([string]$GeneratedHtml, [string]$ProjectRoot) {
         }
         $template = $template.Replace('{{DATA:' + $name + '}}', $json)
     }
+    $functional = Get-Content (Join-Path $ProjectRoot 'docs/ProgressDashboard/data/functional-v1.json') -Raw -Encoding UTF8 | ConvertFrom-Json | ConvertTo-Json -Depth 30 -Compress
+    # Escape HTML script terminators in evidence; retain JSON semantics.
+    $functional = $functional.Replace('<', '\u003c').Replace('>', '\u003e').Replace('&', '\u0026')
+    $template = $template.Replace('{{DATA:FUNCTIONAL_V1}}', $functional)
     # DH-005: real generation metadata from the generated footer (dashboard-model-v12.json), never a date frozen in the template.
     $generated = [regex]::Match($GeneratedHtml, "<footer class='footer'>\s*<p>Generated: ([^<]+?) &middot;")
     if (!$generated.Success) { throw 'Missing generated footer metadata' }

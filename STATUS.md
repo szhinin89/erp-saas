@@ -1,5 +1,59 @@
 # Project Status
 
+## DASHBOARD-V1-FINAL — READY FOR REVIEW (2026-11-04)
+
+BUG REAL: el dibujo no calculaba avance funcional verificable. KEEP: las once tarjetas,
+CSS, posiciones, flechas, conexiones, navegación y detalle existentes; sin código ERP.
+FALTA cubierta: registro único de capacidades de FEATURES y del inventario existente,
+conciliado con aprobaciones por alcance en este documento y evidencias previas.
+Futuro y preparación de producción excluidos. La falta de aceptación no se presenta
+como código faltante ni se reabren módulos CLOSED. Este bloque supera la solución
+provisional de etiquetas de DASHBOARD-FIX-02 sin modificar sus evidencias históricas.
+
+Generador y dataset funcional integrados en ambos orquestadores y en cada render rápido.
+Contrato: [DASHBOARD-CONTRACT](docs/ProgressDashboard/DASHBOARD-CONTRACT.md#dashboard-v1-final--contrato-vigente-del-avance-funcional).
+Resultado de esta revisión: 49/70 capacidades V1 aprobadas (70 %); Core 32/43 (74.42 %).
+21 sin aprobación: 19 implementadas sin aceptación, una bloqueada (#32) y una capacidad
+de carga inicial pendiente de implementación/aceptación. No acredita producción,
+nuevos cierres funcionales ni ejecución de suites ERP.
+
+Pruebas focales del agente: cálculo 6/6 PASS (duplicados, denominadores, cambio de
+aprobación, exclusiones y fallo ante catálogo/evidencia inválidos); navegador Chromium
+PASS para 21 módulos, Web/Core, evidencias, hash routes y breadcrumbs; estructura de
+once nodos/CSS protegidos y posiciones preservadas; composición curada y documentation
+PASS; git diff --check PASS. Sin suites generales, staging, commit ni push.
+Gate del propietario pendiente; no CLOSED. Desde la raíz:
+
+~~~powershell
+node --test tools/dashboard/functional-v1.test.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/render-dashboard.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/test-curated-dashboard.ps1
+node tools/dashboard/test-functional-v1-ui.mjs
+node tools/architecture/run-all.mjs --only documentation
+git diff --check
+~~~
+
+
+## DASHBOARD-FIX-02 - READY FOR REVIEW (2026-11-04)
+
+BUG REAL documental: Web ERP, Servicios Core y sus fichas mostraban porcentajes
+manuales historicos sin formula verificable. Sustituidos por CLOSED o PENDIENTE
+segun el alcance acreditado aqui y en FEATURES.md; sin declarar cierres globales
+a partir de R3/R4 focales. Evidencia enlazada desde las fichas; diseno y navegacion
+conservados. KEEP: datasets y metricas automaticas, referencias historicas y
+cambios previos de la plantilla. Sin cambios de codigo ERP.
+
+Renderer oficial, composicion curada, sintaxis JavaScript, render focal Web/Core,
+enlaces de evidencia, check documentation y git diff --check PASS agente.
+Sin suites generales, staging, commit ni push. Gate del propietario pendiente;
+no CLOSED. Comandos desde raiz:
+
+~~~powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/dashboard/test-curated-dashboard.ps1
+node tools/architecture/run-all.mjs --only documentation
+git diff --check
+~~~
+
 ## DOC-GOVERNANCE-CONSOLIDATION — READY FOR REVIEW (2026-11-04)
 
 BUG REAL documental: entradas Cursor/Copilot y catálogo PR con jerarquías paralelas,
