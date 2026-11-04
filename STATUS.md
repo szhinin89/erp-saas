@@ -1455,14 +1455,14 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   exposición ni incidente; su revisión o depuración depende de la operación de cada entorno.
 - **Aislamiento entre empresas — límites conocidos tras SEC-03** (contrato:
   [security.md](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant)):
-  `UpdateCustomerRoleConfigValidator` (request TENANT) comprueba códigos de catálogo contra la
-  empresa del contexto; `CreateCompanyUserPreferences` es un consumidor interno sin marcador de
+  `CreateCompanyUserPreferences` es un consumidor interno sin marcador de
   empresa; `INV_E2` no cubre todos los módulos ni detecta un marcador TENANT puesto por error.
   Tras SEC-04 la resolución de permisos ya no usa la única membership cuando
   el header no tiene membership; la firma `IRuntimePermissionAuthorizer.IsAuthorizedAsync`
   conserva el parámetro `role`, sin efecto. Los perfiles de acceso son por empresa desde SEC-05.
-  Impacto acreditado: como máximo, el validador revela si un código existe en el catálogo de otra
-  empresa; no se acredita lectura ni escritura de sus datos.
+  Retirado (2026-11-03): `UpdateCustomerRoleConfigValidator` (request TENANT) ya no revela
+  códigos de otra empresa; SEC-04 rechaza con 403 un `X-Company-Id` sin membership activa antes
+  del validator y, sin header, la consulta de catálogo no devuelve filas.
 - **Seguridad — revocación de permisos con caché (SEC-06):** garantías y
   contrato en [security.md](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
   Límites: (1) cumplir "Redis obligatorio con varias instancias" depende de que el despliegue declare
