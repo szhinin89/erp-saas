@@ -62,6 +62,92 @@ public sealed class ElectronicDocumentXmlCorrectionComparerTests
         </comprobanteRetencion>
         """;
 
+    internal static string CreditNote(
+        string dirMatriz = "Av. Siempre Viva 123",
+        string valorIva = "1.50",
+        string signature = "AAA",
+        string? replace = null,
+        string? with = null
+    )
+    {
+        var xml = $"""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <notaCredito id="comprobante" version="1.1.0">
+              <infoTributaria>
+                <ambiente>1</ambiente><tipoEmision>1</tipoEmision><razonSocial>ZH SA</razonSocial>
+                <ruc>1790000000001</ruc><claveAcceso>{Key}</claveAcceso><codDoc>04</codDoc>
+                <estab>001</estab><ptoEmi>001</ptoEmi><secuencial>000000001</secuencial>
+                <dirMatriz>{dirMatriz}</dirMatriz>
+              </infoTributaria>
+              <infoNotaCredito>
+                <fechaEmision>30/10/2026</fechaEmision><dirEstablecimiento>Local 1</dirEstablecimiento>
+                <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+                <razonSocialComprador>Cliente</razonSocialComprador>
+                <identificacionComprador>0912345678</identificacionComprador>
+                <codDocModificado>01</codDocModificado><numDocModificado>001-001-000000016</numDocModificado>
+                <fechaEmisionDocSustento>29/10/2026</fechaEmisionDocSustento>
+                <totalSinImpuestos>10.00</totalSinImpuestos><valorModificacion>11.50</valorModificacion>
+                <moneda>DOLAR</moneda>
+                <totalConImpuestos><totalImpuesto><codigo>2</codigo><codigoPorcentaje>4</codigoPorcentaje>
+                  <baseImponible>10.00</baseImponible><valor>{valorIva}</valor></totalImpuesto></totalConImpuestos>
+                <motivo>Devolución</motivo>
+              </infoNotaCredito>
+              <detalles><detalle><codigoInterno>A1</codigoInterno><descripcion>Item</descripcion>
+                <cantidad>1.000000</cantidad><precioUnitario>10.000000</precioUnitario>
+                <descuento>0.00</descuento><precioTotalSinImpuesto>10.00</precioTotalSinImpuesto></detalle></detalles>
+              <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="S1">
+                <ds:SignatureValue>{signature}</ds:SignatureValue>
+              </ds:Signature>
+            </notaCredito>
+            """;
+        return replace is null ? xml : xml.Replace(replace, with);
+    }
+
+    [Theory]
+    [InlineData("<codDocModificado>01<", "<codDocModificado>03<")]
+    [InlineData("001-001-000000016", "001-001-000000017")]
+    [InlineData("<fechaEmisionDocSustento>29/10/2026<", "<fechaEmisionDocSustento>28/10/2026<")]
+    [InlineData("<valorModificacion>11.50<", "<valorModificacion>11.51<")]
+    [InlineData("<motivo>Devolución<", "<motivo>Otro motivo<")]
+    [InlineData("<identificacionComprador>0912345678<", "<identificacionComprador>0999999999<")]
+    [InlineData("<razonSocialComprador>Cliente<", "<razonSocialComprador>Otro<")]
+    [InlineData("<totalSinImpuestos>10.00<", "<totalSinImpuestos>10.01<")]
+    [InlineData("<codigoInterno>A1<", "<codigoInterno>B2<")]
+    [InlineData("<cantidad>1.000000<", "<cantidad>2.000000<")]
+    [InlineData("<precioTotalSinImpuesto>10.00<", "<precioTotalSinImpuesto>10.01<")]
+    [InlineData("<fechaEmision>30/10/2026<", "<fechaEmision>31/10/2026<")]
+    [InlineData("<secuencial>000000001<", "<secuencial>000000002<")]
+    public void Credit_note_protected_data_changes_are_never_accepted(string replace, string with)
+    {
+        var result = ElectronicDocumentXmlCorrectionComparer.Compare(
+            ElectronicDocumentType.CreditNote,
+            CreditNote(),
+            CreditNote(dirMatriz: "Av. Corregida 456", signature: "BBB", replace: replace, with: with)
+        );
+
+        result.Outcome.Should().Be(ElectronicDocumentXmlCorrectionOutcome.ProtectedDataChanged);
+    }
+
+    [Fact]
+    public void Credit_note_issuer_or_tax_corrections_are_accepted_and_resigning_is_not()
+    {
+        ElectronicDocumentXmlCorrectionComparer
+            .Compare(ElectronicDocumentType.CreditNote, CreditNote(signature: "AAA"), CreditNote(signature: "BBB"))
+            .Outcome.Should().Be(ElectronicDocumentXmlCorrectionOutcome.NoCorrection);
+
+        var issuer = ElectronicDocumentXmlCorrectionComparer.Compare(
+            ElectronicDocumentType.CreditNote,
+            CreditNote(),
+            CreditNote(dirMatriz: "Av. Corregida 456", signature: "BBB")
+        );
+        issuer.Outcome.Should().Be(ElectronicDocumentXmlCorrectionOutcome.Corrected);
+        issuer.Summary.Should().Contain("dirMatriz").And.NotContain("Signature");
+
+        ElectronicDocumentXmlCorrectionComparer
+            .Compare(ElectronicDocumentType.CreditNote, CreditNote(valorIva: "1.50"), CreditNote(valorIva: "1.5"))
+            .Outcome.Should().Be(ElectronicDocumentXmlCorrectionOutcome.Corrected);
+    }
+
     [Fact]
     public void Resigning_without_changes_is_not_a_correction()
     {

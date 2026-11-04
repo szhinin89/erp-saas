@@ -848,8 +848,10 @@ ausencia de registro tras consultas reiteradas, incluso después de 24 h, no dem
 exista una transmisión anterior.
 Nunca autoriza, rechaza, descarta ni libera un reenvío por declaración del usuario: el estado
 fiscal solo lo decide una respuesta del SRI. En Retenciones con origen que ya no permite
-procesamiento, la evidencia queda registrada y no hay consulta. Un comprobante que el SRI nunca
-recibió permanece pendiente de conciliación. Pendientes: [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
+procesamiento, la evidencia queda registrada y no hay consulta; con ADR-036 la anulación del
+origen se bloquea mientras su comprobante es incierto, así que solo registros anteriores a ese
+ciclo llegan a ese estado. Un comprobante que el SRI nunca recibió permanece pendiente de
+conciliación y se escala, sin reenvío ni cierre manual. Pendientes: [STATUS](../../STATUS.md#riesgos-y-limitaciones-vigentes).
 
 Cobertura PostgreSQL del Caso #32:
 `ElectronicDocumentUncertainSriPostgreSqlTests.cs` integra repositorios y persistencia reales,
@@ -860,7 +862,7 @@ Verifica `ReconciliationRecorded` persistido con referencia, observación, usuar
 empresa y fecha, sin autorización ni rechazo manual, y aislamiento entre tenants y empresas.
 Solo se simula la frontera externa del SRI: esta cobertura no acredita comunicación real con
 sus servicios. Resultados, evidencias y estado de entrega exclusivamente en
-[STATUS — Caso #32](../../STATUS.md#caso-32--implementado--pass-integración-focal--pendiente-e2e-sri-2026-10-30).
+[STATUS — Caso #32](../../STATUS.md#caso-32--implementado--v1-aprobado-2026-11-04).
 
 
 ## Configuración organizacional

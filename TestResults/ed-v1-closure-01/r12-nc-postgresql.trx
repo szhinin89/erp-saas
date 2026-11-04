@@ -1,0 +1,250 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="7f911df5-fcc8-4c46-9dd1-a09aac9bda75" name="Sebas@SEBASTIAN 2026-11-04 08:37:20" runUser="SEBASTIAN\Sebas" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-11-04T08:37:20.8686438-05:00" queuing="2026-11-04T08:37:20.8686446-05:00" start="2026-11-04T08:36:59.1246875-05:00" finish="2026-11-04T08:39:01.0688727-05:00" />
+  <TestSettings name="default" id="9b633ddc-3f79-4ae0-b506-d57cf482a62f">
+    <Deployment runDeploymentRoot="Sebas_SEBASTIAN_2026-11-04_08_37_20" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="5c50a418-82ab-4aab-be8d-d19cf40301e7" testId="d227a095-3a3a-5a2c-1497-e789b3736e2a" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Tras_el_reclamo_confirmado_un_reinicio_del_worker_solo_consulta_y_nunca_reenvia(failure: &quot;timeout&quot;)" computerName="SEBASTIAN" duration="00:00:00.2135090" startTime="2026-11-04T08:37:20.8400509-05:00" endTime="2026-11-04T08:37:28.0268172-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5c50a418-82ab-4aab-be8d-d19cf40301e7" />
+    <UnitTestResult executionId="b4f3588a-9485-4022-a826-47bfbc6dbb34" testId="97fa689c-85ba-cded-007a-60c8f26b1658" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Nota_de_credito_dos_solicitudes_concurrentes_producen_un_reclamo_y_una_transmision" computerName="SEBASTIAN" duration="00:00:00.5262432" startTime="2026-11-04T08:37:28.0372384-05:00" endTime="2026-11-04T08:37:35.2061437-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b4f3588a-9485-4022-a826-47bfbc6dbb34" />
+    <UnitTestResult executionId="1a55096d-2594-4f18-819e-2486f32bbc1c" testId="bf43866c-c813-b952-3b23-5ddb7c109d1d" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.El_XML_anterior_queda_intacto_y_la_version_nueva_es_independiente_y_verificable" computerName="SEBASTIAN" duration="00:00:00.1654441" startTime="2026-11-04T08:38:27.5294939-05:00" endTime="2026-11-04T08:38:34.2260695-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1a55096d-2594-4f18-819e-2486f32bbc1c" />
+    <UnitTestResult executionId="55f32647-1976-4a46-8ea3-0ff399b27da4" testId="ed5ecb6c-c95a-4fb5-50aa-59d061e9ad46" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.El_indice_unico_impide_registrar_dos_veces_el_mismo_intento" computerName="SEBASTIAN" duration="00:00:00.1327816" startTime="2026-11-04T08:38:34.2268856-05:00" endTime="2026-11-04T08:38:41.1770036-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="55f32647-1976-4a46-8ea3-0ff399b27da4" />
+    <UnitTestResult executionId="552cc72e-0e7d-4614-bf9e-e8bdded25c7b" testId="dcdbf4c8-0f1b-9a18-0993-9080274fc8c0" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.La_marca_persistida_descarta_la_NO_AUTORIZADO_historica_releida_tras_el_reinicio" computerName="SEBASTIAN" duration="00:00:00.1553622" startTime="2026-11-04T08:38:47.8372242-05:00" endTime="2026-11-04T08:38:54.3354145-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="552cc72e-0e7d-4614-bf9e-e8bdded25c7b" />
+    <UnitTestResult executionId="4652968a-3ba3-4940-87c8-2f238a93c0fe" testId="84583e0c-3889-86d8-ffd6-054d9db97ebc" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.El_reclamo_espera_la_anulacion_en_curso_y_luego_no_transmite" computerName="SEBASTIAN" duration="00:00:00.2834439" startTime="2026-11-04T08:37:48.8057350-05:00" endTime="2026-11-04T08:37:55.4675411-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4652968a-3ba3-4940-87c8-2f238a93c0fe" />
+    <UnitTestResult executionId="f86977c2-f47f-42d1-81ea-7d0727933b94" testId="5a031829-0533-877a-e0cc-34d0a3ba6b3f" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Plazo_R11_se_cuenta_desde_la_RECIBIDA_del_intento" computerName="SEBASTIAN" duration="00:00:00.1301610" startTime="2026-11-04T08:37:35.2072840-05:00" endTime="2026-11-04T08:37:41.9579768-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f86977c2-f47f-42d1-81ea-7d0727933b94" />
+    <UnitTestResult executionId="a087b851-c472-4309-acf7-69f60ad1e1d6" testId="5115a4d9-939e-8617-ac05-f045e1fcb82c" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Factura_ya_anulada_no_es_elegible" computerName="SEBASTIAN" duration="00:00:00.4080863" startTime="2026-11-04T08:37:41.9593032-05:00" endTime="2026-11-04T08:37:48.8043709-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a087b851-c472-4309-acf7-69f60ad1e1d6" />
+    <UnitTestResult executionId="2a2ad276-81d2-4b6b-97c8-d2a8031ced18" testId="cd604170-97f0-1815-2afa-ad822f3c3032" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Dos_solicitudes_concurrentes_producen_exactamente_un_reclamo_y_una_transmision" computerName="SEBASTIAN" duration="00:00:00.2808689" startTime="2026-11-04T08:38:41.1775965-05:00" endTime="2026-11-04T08:38:47.8361277-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2a2ad276-81d2-4b6b-97c8-d2a8031ced18" />
+    <UnitTestResult executionId="ac15a4e6-b9dd-46a0-8690-7e70a53fa998" testId="3ada75a9-6cbf-2ab2-2781-fbbc47580f3e" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Reclamada_la_retransmision_la_anulacion_queda_bloqueada_por_resultado_incierto" computerName="SEBASTIAN" duration="00:00:00.1819102" startTime="2026-11-04T08:38:54.3359820-05:00" endTime="2026-11-04T08:39:00.8946691-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ac15a4e6-b9dd-46a0-8690-7e70a53fa998" />
+    <UnitTestResult executionId="df310e51-2c82-4013-9296-cb7842829021" testId="cfccdfeb-4045-6d29-3119-b1d78e8c32af" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Otro_tenant_u_otra_empresa_no_ven_ni_retransmiten_el_comprobante" computerName="SEBASTIAN" duration="00:00:00.1197274" startTime="2026-11-04T08:38:20.9105199-05:00" endTime="2026-11-04T08:38:27.5278676-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="df310e51-2c82-4013-9296-cb7842829021" />
+    <UnitTestResult executionId="84c507c1-e8c2-4173-86cc-721547bf5120" testId="90179167-853f-e351-72b7-96833f9ad06d" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Sin_correccion_no_se_almacena_ni_se_transmite_nada" computerName="SEBASTIAN" duration="00:00:00.1148526" startTime="2026-11-04T08:38:07.4020717-05:00" endTime="2026-11-04T08:38:14.0245235-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="84c507c1-e8c2-4173-86cc-721547bf5120" />
+    <UnitTestResult executionId="de44a5b1-7066-479c-bcef-405de7d3f9bf" testId="7e9a2201-387d-9691-c61a-8f1cb11985cd" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Nota_de_credito_misma_clave_de_idempotencia_no_transmite_dos_veces" computerName="SEBASTIAN" duration="00:00:00.2635591" startTime="2026-11-04T08:38:14.0260691-05:00" endTime="2026-11-04T08:38:20.9091093-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="de44a5b1-7066-479c-bcef-405de7d3f9bf" />
+    <UnitTestResult executionId="8888babf-b91b-4d41-ab71-bf7903965c04" testId="23236b0a-e4e5-754d-543a-5c3960d79f4b" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Tras_el_reclamo_confirmado_un_reinicio_del_worker_solo_consulta_y_nunca_reenvia(failure: &quot;crash&quot;)" computerName="SEBASTIAN" duration="00:00:01.8723412" startTime="2026-11-04T08:37:01.3217736-05:00" endTime="2026-11-04T08:37:20.7988920-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8888babf-b91b-4d41-ab71-bf7903965c04" />
+    <UnitTestResult executionId="2decb439-2588-4b78-829c-4d5948c49f17" testId="d26eb716-e3b3-87b4-7766-080750c27813" testName="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Misma_clave_de_idempotencia_concurrente_o_repetida_no_transmite_dos_veces" computerName="SEBASTIAN" duration="00:00:00.2233511" startTime="2026-11-04T08:37:55.4685639-05:00" endTime="2026-11-04T08:38:07.4007601-05:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2decb439-2588-4b78-829c-4d5948c49f17" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.La_marca_persistida_descarta_la_NO_AUTORIZADO_historica_releida_tras_el_reinicio" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="dcdbf4c8-0f1b-9a18-0993-9080274fc8c0">
+      <Execution id="552cc72e-0e7d-4614-bf9e-e8bdded25c7b" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="La_marca_persistida_descarta_la_NO_AUTORIZADO_historica_releida_tras_el_reinicio" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Reclamada_la_retransmision_la_anulacion_queda_bloqueada_por_resultado_incierto" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="3ada75a9-6cbf-2ab2-2781-fbbc47580f3e">
+      <Execution id="ac15a4e6-b9dd-46a0-8690-7e70a53fa998" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Reclamada_la_retransmision_la_anulacion_queda_bloqueada_por_resultado_incierto" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Dos_solicitudes_concurrentes_producen_exactamente_un_reclamo_y_una_transmision" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="cd604170-97f0-1815-2afa-ad822f3c3032">
+      <Execution id="2a2ad276-81d2-4b6b-97c8-d2a8031ced18" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Dos_solicitudes_concurrentes_producen_exactamente_un_reclamo_y_una_transmision" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.El_XML_anterior_queda_intacto_y_la_version_nueva_es_independiente_y_verificable" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="bf43866c-c813-b952-3b23-5ddb7c109d1d">
+      <Execution id="1a55096d-2594-4f18-819e-2486f32bbc1c" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="El_XML_anterior_queda_intacto_y_la_version_nueva_es_independiente_y_verificable" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Tras_el_reclamo_confirmado_un_reinicio_del_worker_solo_consulta_y_nunca_reenvia(failure: &quot;timeout&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="d227a095-3a3a-5a2c-1497-e789b3736e2a">
+      <Execution id="5c50a418-82ab-4aab-be8d-d19cf40301e7" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Tras_el_reclamo_confirmado_un_reinicio_del_worker_solo_consulta_y_nunca_reenvia" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Otro_tenant_u_otra_empresa_no_ven_ni_retransmiten_el_comprobante" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="cfccdfeb-4045-6d29-3119-b1d78e8c32af">
+      <Execution id="df310e51-2c82-4013-9296-cb7842829021" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Otro_tenant_u_otra_empresa_no_ven_ni_retransmiten_el_comprobante" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Sin_correccion_no_se_almacena_ni_se_transmite_nada" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="90179167-853f-e351-72b7-96833f9ad06d">
+      <Execution id="84c507c1-e8c2-4173-86cc-721547bf5120" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Sin_correccion_no_se_almacena_ni_se_transmite_nada" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.El_reclamo_espera_la_anulacion_en_curso_y_luego_no_transmite" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="84583e0c-3889-86d8-ffd6-054d9db97ebc">
+      <Execution id="4652968a-3ba3-4940-87c8-2f238a93c0fe" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="El_reclamo_espera_la_anulacion_en_curso_y_luego_no_transmite" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Plazo_R11_se_cuenta_desde_la_RECIBIDA_del_intento" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="5a031829-0533-877a-e0cc-34d0a3ba6b3f">
+      <Execution id="f86977c2-f47f-42d1-81ea-7d0727933b94" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Plazo_R11_se_cuenta_desde_la_RECIBIDA_del_intento" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Nota_de_credito_dos_solicitudes_concurrentes_producen_un_reclamo_y_una_transmision" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="97fa689c-85ba-cded-007a-60c8f26b1658">
+      <Execution id="b4f3588a-9485-4022-a826-47bfbc6dbb34" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Nota_de_credito_dos_solicitudes_concurrentes_producen_un_reclamo_y_una_transmision" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.El_indice_unico_impide_registrar_dos_veces_el_mismo_intento" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="ed5ecb6c-c95a-4fb5-50aa-59d061e9ad46">
+      <Execution id="55f32647-1976-4a46-8ea3-0ff399b27da4" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="El_indice_unico_impide_registrar_dos_veces_el_mismo_intento" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Tras_el_reclamo_confirmado_un_reinicio_del_worker_solo_consulta_y_nunca_reenvia(failure: &quot;crash&quot;)" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="23236b0a-e4e5-754d-543a-5c3960d79f4b">
+      <Execution id="8888babf-b91b-4d41-ab71-bf7903965c04" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Tras_el_reclamo_confirmado_un_reinicio_del_worker_solo_consulta_y_nunca_reenvia" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Nota_de_credito_misma_clave_de_idempotencia_no_transmite_dos_veces" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="7e9a2201-387d-9691-c61a-8f1cb11985cd">
+      <Execution id="de44a5b1-7066-479c-bcef-405de7d3f9bf" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Nota_de_credito_misma_clave_de_idempotencia_no_transmite_dos_veces" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Factura_ya_anulada_no_es_elegible" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="5115a4d9-939e-8617-ac05-f045e1fcb82c">
+      <Execution id="a087b851-c472-4309-acf7-69f60ad1e1d6" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Factura_ya_anulada_no_es_elegible" />
+    </UnitTest>
+    <UnitTest name="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests.Misma_clave_de_idempotencia_concurrente_o_repetida_no_transmite_dos_veces" storage="c:\proyectcursor\erp-saas\backend\src\erp.infrastructure.tests\bin\debug\net10.0\erp.infrastructure.tests.dll" id="d26eb716-e3b3-87b4-7766-080750c27813">
+      <Execution id="2decb439-2588-4b78-829c-4d5948c49f17" />
+      <TestMethod codeBase="C:\ProyectCursor\erp-saas\backend\src\ERP.Infrastructure.Tests\bin\Debug\net10.0\ERP.Infrastructure.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ERP.Infrastructure.Tests.ElectronicDocuments.ElectronicDocumentCorrectedRetransmissionPostgreSqlTests" name="Misma_clave_de_idempotencia_concurrente_o_repetida_no_transmite_dos_veces" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="d227a095-3a3a-5a2c-1497-e789b3736e2a" executionId="5c50a418-82ab-4aab-be8d-d19cf40301e7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="97fa689c-85ba-cded-007a-60c8f26b1658" executionId="b4f3588a-9485-4022-a826-47bfbc6dbb34" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bf43866c-c813-b952-3b23-5ddb7c109d1d" executionId="1a55096d-2594-4f18-819e-2486f32bbc1c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ed5ecb6c-c95a-4fb5-50aa-59d061e9ad46" executionId="55f32647-1976-4a46-8ea3-0ff399b27da4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dcdbf4c8-0f1b-9a18-0993-9080274fc8c0" executionId="552cc72e-0e7d-4614-bf9e-e8bdded25c7b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="84583e0c-3889-86d8-ffd6-054d9db97ebc" executionId="4652968a-3ba3-4940-87c8-2f238a93c0fe" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5a031829-0533-877a-e0cc-34d0a3ba6b3f" executionId="f86977c2-f47f-42d1-81ea-7d0727933b94" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5115a4d9-939e-8617-ac05-f045e1fcb82c" executionId="a087b851-c472-4309-acf7-69f60ad1e1d6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cd604170-97f0-1815-2afa-ad822f3c3032" executionId="2a2ad276-81d2-4b6b-97c8-d2a8031ced18" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3ada75a9-6cbf-2ab2-2781-fbbc47580f3e" executionId="ac15a4e6-b9dd-46a0-8690-7e70a53fa998" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cfccdfeb-4045-6d29-3119-b1d78e8c32af" executionId="df310e51-2c82-4013-9296-cb7842829021" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="90179167-853f-e351-72b7-96833f9ad06d" executionId="84c507c1-e8c2-4173-86cc-721547bf5120" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7e9a2201-387d-9691-c61a-8f1cb11985cd" executionId="de44a5b1-7066-479c-bcef-405de7d3f9bf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="23236b0a-e4e5-754d-543a-5c3960d79f4b" executionId="8888babf-b91b-4d41-ab71-bf7903965c04" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d26eb716-e3b3-87b4-7766-080750c27813" executionId="2decb439-2588-4b78-829c-4d5948c49f17" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Resultados sin formato de lista" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Todos los resultados cargados" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="15" executed="15" passed="15" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)&#xD;
+[xUnit.net 00:00:01.01]   Discovering: ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:01.46]   Discovered:  ERP.Infrastructure.Tests&#xD;
+[xUnit.net 00:00:01.51]   Starting:    ERP.Infrastructure.Tests&#xD;
+[testcontainers.org 00:00:00.16] Connected to Docker:&#xD;
+  Host: npipe://./pipe/docker_engine&#xD;
+  Server Version: 26.1.4&#xD;
+  Kernel Version: 6.18.54.1-microsoft-standard-WSL2&#xD;
+  API Version: 1.45&#xD;
+  Operating System: Docker Desktop (containerized)&#xD;
+  Total Memory: 15.24 GB&#xD;
+  Labels: &#xD;
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli&#xD;
+[testcontainers.org 00:00:00.46] Docker container 028c3d4ebca7 created&#xD;
+[testcontainers.org 00:00:00.56] Start Docker container 028c3d4ebca7&#xD;
+[testcontainers.org 00:00:02.15] Wait for Docker container 028c3d4ebca7 to complete readiness checks&#xD;
+[testcontainers.org 00:00:02.16] Docker container 028c3d4ebca7 ready&#xD;
+[testcontainers.org 00:00:02.36] Docker container e7b85d082745 created&#xD;
+[testcontainers.org 00:00:02.39] Start Docker container e7b85d082745&#xD;
+[testcontainers.org 00:00:03.85] Wait for Docker container e7b85d082745 to complete readiness checks&#xD;
+[testcontainers.org 00:00:03.87] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container e7b85d082745&#xD;
+[testcontainers.org 00:00:04.99] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container e7b85d082745&#xD;
+[testcontainers.org 00:00:06.07] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container e7b85d082745&#xD;
+[testcontainers.org 00:00:06.18] Docker container e7b85d082745 ready&#xD;
+     Warning:&#xD;
+     The component "Fluent Assertions" is governed by the rules defined in the Xceed License Agreement and&#xD;
+     the Xceed Fluent Assertions Community License. You may use Fluent Assertions free of charge for&#xD;
+     non-commercial use only. An active subscription is required to use Fluent Assertions for commercial use.&#xD;
+     Please contact Xceed Sales mailto:sales@xceed.com to acquire a subscription at a very low cost.&#xD;
+     A paid commercial license supports the development and continued increasing support of&#xD;
+     Fluent Assertions users under both commercial and community licenses. Help us&#xD;
+     keep Fluent Assertions at the forefront of unit testing.&#xD;
+     For more information, visit https://xceed.com/products/unit-testing/fluent-assertions/&#xD;
+[testcontainers.org 00:00:18.88] Delete Docker container e7b85d082745&#xD;
+[testcontainers.org 00:00:19.52] Docker container 850a44ee710a created&#xD;
+[testcontainers.org 00:00:19.53] Start Docker container 850a44ee710a&#xD;
+[testcontainers.org 00:00:20.88] Wait for Docker container 850a44ee710a to complete readiness checks&#xD;
+[testcontainers.org 00:00:20.89] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 850a44ee710a&#xD;
+[testcontainers.org 00:00:21.99] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 850a44ee710a&#xD;
+[testcontainers.org 00:00:22.07] Docker container 850a44ee710a ready&#xD;
+[testcontainers.org 00:00:26.13] Delete Docker container 850a44ee710a&#xD;
+[testcontainers.org 00:00:26.76] Docker container bfacc56083e0 created&#xD;
+[testcontainers.org 00:00:26.78] Start Docker container bfacc56083e0&#xD;
+[testcontainers.org 00:00:28.08] Wait for Docker container bfacc56083e0 to complete readiness checks&#xD;
+[testcontainers.org 00:00:28.09] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container bfacc56083e0&#xD;
+[testcontainers.org 00:00:29.19] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container bfacc56083e0&#xD;
+[testcontainers.org 00:00:29.30] Docker container bfacc56083e0 ready&#xD;
+[testcontainers.org 00:00:33.34] Delete Docker container bfacc56083e0&#xD;
+[testcontainers.org 00:00:33.94] Docker container def27f04bbc1 created&#xD;
+[testcontainers.org 00:00:33.95] Start Docker container def27f04bbc1&#xD;
+[testcontainers.org 00:00:35.25] Wait for Docker container def27f04bbc1 to complete readiness checks&#xD;
+[testcontainers.org 00:00:35.26] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container def27f04bbc1&#xD;
+[testcontainers.org 00:00:36.34] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container def27f04bbc1&#xD;
+[testcontainers.org 00:00:36.42] Docker container def27f04bbc1 ready&#xD;
+[testcontainers.org 00:00:40.07] Delete Docker container def27f04bbc1&#xD;
+[testcontainers.org 00:00:40.66] Docker container e7f494c6ffb2 created&#xD;
+[testcontainers.org 00:00:40.68] Start Docker container e7f494c6ffb2&#xD;
+[testcontainers.org 00:00:41.97] Wait for Docker container e7f494c6ffb2 to complete readiness checks&#xD;
+[testcontainers.org 00:00:41.98] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container e7f494c6ffb2&#xD;
+[testcontainers.org 00:00:43.07] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container e7f494c6ffb2&#xD;
+[testcontainers.org 00:00:43.16] Docker container e7f494c6ffb2 ready&#xD;
+[testcontainers.org 00:00:46.94] Delete Docker container e7f494c6ffb2&#xD;
+[testcontainers.org 00:00:47.53] Docker container e795885c9455 created&#xD;
+[testcontainers.org 00:00:47.54] Start Docker container e795885c9455&#xD;
+[testcontainers.org 00:00:48.85] Wait for Docker container e795885c9455 to complete readiness checks&#xD;
+[testcontainers.org 00:00:48.86] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container e795885c9455&#xD;
+[testcontainers.org 00:00:49.94] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container e795885c9455&#xD;
+[testcontainers.org 00:00:50.01] Docker container e795885c9455 ready&#xD;
+[testcontainers.org 00:00:53.57] Delete Docker container e795885c9455&#xD;
+[testcontainers.org 00:00:54.19] Docker container 4634b2ce0dc7 created&#xD;
+[testcontainers.org 00:00:54.20] Start Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:00:55.51] Wait for Docker container 4634b2ce0dc7 to complete readiness checks&#xD;
+[testcontainers.org 00:00:55.52] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:00:56.60] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:00:57.70] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:00:58.81] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:00:59.90] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:01:00.97] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:01:01.05] Docker container 4634b2ce0dc7 ready&#xD;
+[testcontainers.org 00:01:04.76] Delete Docker container 4634b2ce0dc7&#xD;
+[testcontainers.org 00:01:06.11] Docker container ec0b169a63de created&#xD;
+[testcontainers.org 00:01:06.13] Start Docker container ec0b169a63de&#xD;
+[testcontainers.org 00:01:07.44] Wait for Docker container ec0b169a63de to complete readiness checks&#xD;
+[testcontainers.org 00:01:07.45] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container ec0b169a63de&#xD;
+[testcontainers.org 00:01:08.53] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container ec0b169a63de&#xD;
+[testcontainers.org 00:01:08.60] Docker container ec0b169a63de ready&#xD;
+[testcontainers.org 00:01:12.15] Delete Docker container ec0b169a63de&#xD;
+[testcontainers.org 00:01:12.75] Docker container c73251615c4f created&#xD;
+[testcontainers.org 00:01:12.76] Start Docker container c73251615c4f&#xD;
+[testcontainers.org 00:01:14.07] Wait for Docker container c73251615c4f to complete readiness checks&#xD;
+[testcontainers.org 00:01:14.08] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container c73251615c4f&#xD;
+[testcontainers.org 00:01:15.15] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container c73251615c4f&#xD;
+[testcontainers.org 00:01:15.23] Docker container c73251615c4f ready&#xD;
+[testcontainers.org 00:01:19.01] Delete Docker container c73251615c4f&#xD;
+[testcontainers.org 00:01:19.66] Docker container f7fadb3da0b2 created&#xD;
+[testcontainers.org 00:01:19.67] Start Docker container f7fadb3da0b2&#xD;
+[testcontainers.org 00:01:21.00] Wait for Docker container f7fadb3da0b2 to complete readiness checks&#xD;
+[testcontainers.org 00:01:21.01] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container f7fadb3da0b2&#xD;
+[testcontainers.org 00:01:22.10] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container f7fadb3da0b2&#xD;
+[testcontainers.org 00:01:22.18] Docker container f7fadb3da0b2 ready&#xD;
+[testcontainers.org 00:01:25.65] Delete Docker container f7fadb3da0b2&#xD;
+[testcontainers.org 00:01:26.23] Docker container f2d3ce919c4e created&#xD;
+[testcontainers.org 00:01:26.24] Start Docker container f2d3ce919c4e&#xD;
+[testcontainers.org 00:01:27.52] Wait for Docker container f2d3ce919c4e to complete readiness checks&#xD;
+[testcontainers.org 00:01:27.53] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container f2d3ce919c4e&#xD;
+[testcontainers.org 00:01:28.61] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container f2d3ce919c4e&#xD;
+[testcontainers.org 00:01:28.68] Docker container f2d3ce919c4e ready&#xD;
+[testcontainers.org 00:01:32.36] Delete Docker container f2d3ce919c4e&#xD;
+[testcontainers.org 00:01:32.95] Docker container 800bd61824c1 created&#xD;
+[testcontainers.org 00:01:32.97] Start Docker container 800bd61824c1&#xD;
+[testcontainers.org 00:01:34.27] Wait for Docker container 800bd61824c1 to complete readiness checks&#xD;
+[testcontainers.org 00:01:34.28] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 800bd61824c1&#xD;
+[testcontainers.org 00:01:35.37] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 800bd61824c1&#xD;
+[testcontainers.org 00:01:35.47] Docker container 800bd61824c1 ready&#xD;
+[testcontainers.org 00:01:39.32] Delete Docker container 800bd61824c1&#xD;
+[testcontainers.org 00:01:39.89] Docker container 1b77bb6d56d4 created&#xD;
+[testcontainers.org 00:01:39.90] Start Docker container 1b77bb6d56d4&#xD;
+[testcontainers.org 00:01:41.20] Wait for Docker container 1b77bb6d56d4 to complete readiness checks&#xD;
+[testcontainers.org 00:01:41.21] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 1b77bb6d56d4&#xD;
+[testcontainers.org 00:01:42.29] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 1b77bb6d56d4&#xD;
+[testcontainers.org 00:01:42.37] Docker container 1b77bb6d56d4 ready&#xD;
+[testcontainers.org 00:01:45.95] Delete Docker container 1b77bb6d56d4&#xD;
+[testcontainers.org 00:01:46.58] Docker container ff22cc9ea035 created&#xD;
+[testcontainers.org 00:01:46.59] Start Docker container ff22cc9ea035&#xD;
+[testcontainers.org 00:01:47.88] Wait for Docker container ff22cc9ea035 to complete readiness checks&#xD;
+[testcontainers.org 00:01:47.90] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container ff22cc9ea035&#xD;
+[testcontainers.org 00:01:48.99] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container ff22cc9ea035&#xD;
+[testcontainers.org 00:01:49.07] Docker container ff22cc9ea035 ready&#xD;
+[testcontainers.org 00:01:52.48] Delete Docker container ff22cc9ea035&#xD;
+[testcontainers.org 00:01:53.05] Docker container 5c147d8c80ae created&#xD;
+[testcontainers.org 00:01:53.06] Start Docker container 5c147d8c80ae&#xD;
+[testcontainers.org 00:01:54.37] Wait for Docker container 5c147d8c80ae to complete readiness checks&#xD;
+[testcontainers.org 00:01:54.38] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 5c147d8c80ae&#xD;
+[testcontainers.org 00:01:55.46] Execute "pg_isready --host localhost --dbname erp_corrected_retransmission_test --username erp" at Docker container 5c147d8c80ae&#xD;
+[testcontainers.org 00:01:55.54] Docker container 5c147d8c80ae ready&#xD;
+[testcontainers.org 00:01:59.05] Delete Docker container 5c147d8c80ae&#xD;
+[xUnit.net 00:02:01.16]   Finished:    ERP.Infrastructure.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

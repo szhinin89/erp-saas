@@ -481,6 +481,90 @@ public sealed class ElectronicDocumentCorrectedRetransmissionTests
         changed.NothingTransmitted();
     }
 
+    private static Harness CreditNoteHarness(string regeneratedXml)
+    {
+        var h = new Harness(ElectronicDocumentType.CreditNote) { RegeneratedXml = regeneratedXml };
+        h.Storage.Setup(s => s.ReadAsync(PreviousSignedPath, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<byte[]>.Success(Encoding.UTF8.GetBytes(CreditNote(signature: "OLD"))));
+        return h;
+    }
+
+    [Fact]
+    public async Task Credit_note_with_real_correction_is_claimed_and_transmitted_exactly_once()
+    {
+        var h = CreditNoteHarness(CreditNote(dirMatriz: "Av. Corregida 456", signature: ""));
+
+        var result = await h.RetransmitAsync();
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        h.Reception.Verify(r => r.SendAsync(h.Document.CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Once);
+        h.StateAtReception.Should().Equal(ElectronicDocumentState.Signed);
+        h.Document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+        h.Document.AccessKey!.Value.Should().Be(Key);
+        h.Document.TransmissionAttempt.Should().Be(2);
+        var attempt = h.Attempts.Single();
+        attempt.PreviousSignedXmlPath.Should().Be(PreviousSignedPath);
+        attempt.CorrectionSummary.Should().Contain("dirMatriz");
+    }
+
+    [Theory]
+    [InlineData("<motivo>Devolución<", "<motivo>Otro motivo<")]
+    [InlineData("<valorModificacion>11.50<", "<valorModificacion>11.51<")]
+    [InlineData("001-001-000000016", "001-001-000000017")]
+    public async Task Credit_note_protected_data_change_aborts_without_transmitting(string replace, string with)
+    {
+        var h = CreditNoteHarness(CreditNote(dirMatriz: "Av. Corregida 456", signature: "", replace: replace, with: with));
+
+        var result = await h.RetransmitAsync();
+
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.RetransmissionWithoutCorrection);
+        h.NothingTransmitted();
+    }
+
+    [Fact]
+    public async Task Credit_note_with_cancelled_return_under_the_claim_lock_aborts()
+    {
+        var h = CreditNoteHarness(CreditNote(dirMatriz: "Av. Corregida 456", signature: ""));
+        h.Guard.Setup(g => g.EvaluateAsync(h.Document.TenantId, h.Document.CompanyId, h.Document.SourceEntityId, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ElectronicDocumentSourceLifecycle.Denied("La devolución fue anulada."));
+
+        var result = await h.RetransmitAsync();
+
+        result.Code.Should().Be(ApiResponseCodes.ElectronicDocuments.SourceNotProcessable);
+        h.Storage.Verify(s => s.DiscardAttemptAsync(It.IsAny<ElectronicDocumentStoredXmlPaths>(), It.IsAny<CancellationToken>()), Times.Once);
+        h.NothingTransmitted();
+    }
+
+    [Fact]
+    public async Task Credit_note_transport_failure_leaves_the_attempt_uncertain_and_never_resends()
+    {
+        var h = CreditNoteHarness(CreditNote(dirMatriz: "Av. Corregida 456", signature: ""));
+        h.Reception.Setup(r => r.SendAsync(h.Document.CompanyId, It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<SriReceptionResult>.Failure("Timeout del servicio de recepción del SRI."));
+        h.AuthorizeWith(NotAuthorized(Nat(OldNat)));
+
+        await h.RetransmitAsync();
+        await h.Issuer.RetryAsync(h.Document.TenantId, h.Document.Id, UserId);
+
+        h.Document.CurrentState.Should().Be(ElectronicDocumentState.Signed);
+        h.Document.TransmissionAttempt.Should().Be(2);
+        h.Reception.Verify(r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Once);
+        h.Authorization.Verify(a => a.CheckAsync(h.Document.CompanyId, Key, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Credit_note_same_idempotency_key_never_transmits_twice()
+    {
+        var h = CreditNoteHarness(CreditNote(dirMatriz: "Av. Corregida 456", signature: ""));
+        var key = Guid.NewGuid();
+        await h.RetransmitAsync(key);
+
+        (await h.RetransmitAsync(key)).IsSuccess.Should().BeTrue();
+
+        h.Attempts.Should().ContainSingle();
+        h.Reception.Verify(r => r.SendAsync(It.IsAny<Guid>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     [Fact]
     public async Task R11_window_of_a_retransmission_counts_from_its_own_received()
     {

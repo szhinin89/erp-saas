@@ -739,7 +739,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:Retentions-02]"
       },
-      "missing": "Falta E2E SRI integrada de #31 y aceptación real en celcer de 07; R2 se detuvo antes del XML y no acredita transmisión. WORK_QUEUE conserva el gate integrado."
+      "missing": "Falta la aceptación real en celcer de un comprobante 07 (transmisión, AUTORIZADO, XML y RIDE) en un entorno aislado; R2 (#31) se detuvo antes del XML y no acredita transmisión. Requiere antes la resolución de SRI-INCIDENT-01 y autorización del propietario."
     },
     {
       "id": "ElectronicDocuments-01",
@@ -800,12 +800,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:ElectronicDocuments-04]"
       },
-      "missing": "Falta E2E SRI integrada #32/#30/#31 según WORK_QUEUE; PASS de integración focal no cierra el caso. R32: sin reenvío para comprobante nunca recibido; decisión pendiente sobre retenciones anteriores anuladas.",
-      "blocker": {
-        "path": "STATUS.md",
-        "section": "Riesgos y limitaciones vigentes",
-        "contains": "R32 BLOCKED"
-      }
+      "missing": "Falta aprobación del propietario. Límites R32 (D1) y retenciones heredadas (D2) aceptados 2026-11-04; D3 sin casos heredados en erp_zh_dev."
     },
     {
       "id": "ElectronicDocuments-05",
@@ -851,7 +846,7 @@
         "path": "STATUS.md",
         "contains": "[V1-APPROVED:ElectronicDocuments-07]"
       },
-      "missing": "Falta aceptación real en celcer de un reenvío corregido (R12 Fase B); los PASS usan SRI simulado."
+      "missing": "Falta aprobación del propietario; alcance V1 acreditable con SRI simulado (decisión 2026-11-04)."
     },
     {
       "id": "Dashboard-01",

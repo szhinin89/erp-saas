@@ -17,6 +17,10 @@ Platform/Billing/Subscription/Marketplace/Entitlements quedan fuera del ERP Core
 - Gastos: adjuntos, reportes operativos, permisos finos, filtros/exportación y eventual
   aprobación SingleStep deben delimitarse por fase. No volver a planificar emisión de
   retenciones, XML/RIDE ni CxP como inexistentes: ya tienen consumidores operativos.
+- Comprobante que no consta recibido por el SRI (R32): reenvío explícito del mismo XML firmado
+  con la misma clave (un registro previo respondería 43/70 y pasaría a consulta). FUTURE por
+  decisión D1 del 2026-11-04; requiere alcance y reapertura autorizada de
+  [ElectronicDocuments](architecture/frozen-infrastructure.md).
 - Nuevos tipos electrónicos (guías/débito y extensiones sectoriales) requieren alcance
   propio y respetar [ElectronicDocuments](architecture/frozen-infrastructure.md).
 - Lotes/series, reservas y anulación de transferencias: límites actuales en

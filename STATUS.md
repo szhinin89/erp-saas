@@ -1,5 +1,22 @@
 # Project Status
 
+## ED-V1-CLOSE — ElectronicDocuments-04 y -07 aprobadas — READY FOR REVIEW (2026-11-04)
+
+Aprobación expresa del propietario, condicionada a PASS focal (cumplida): ElectronicDocuments-04
+(Caso #32, respuestas inciertas y conciliación) y ElectronicDocuments-07 (R12, corrección y
+retransmisión 01/04/07). Detalle y evidencia en
+[Caso #32](#caso-32--implementado--v1-aprobado-2026-11-04) y
+[R12 Fase B](#sri-234-r12-fase-b--corrección-y-retransmisión-010407--ready-for-review-2026-10-31).
+Solo se añadieron pruebas (NC 04 en R12 y 403 HTTP de `/reconciliation` y `/corrected-retransmission`):
+Application 71/71, PostgreSQL 15/15 y HTTP 3/3, ejecución focal en contenedores efímeros; **BUG REAL:
+ninguno**; sin código productivo, migraciones, bases persistentes ni llamadas al SRI. El caso #30 no
+tiene definición oficial: se retiró de los pendientes sin crear requisitos.
+
+Matriz y Dashboard: **Web 69/70 = 98.57 %** (antes 67/70 = 95.71 %); **Core 42/43 = 97.67 %**
+(antes 40/43 = 93.02 %). Pendiente V1 exacto: **Retentions-02**, que requiere la aceptación real en
+`celcer` de un comprobante 07 en un entorno aislado, después de la resolución de SRI-INCIDENT-01 y con
+autorización del propietario. Producción NO-GO. Sin staging, commit ni push.
+
 ## V1-CONFIGURATION-INITIALLOAD-01 — capacidades aprobadas — READY FOR REVIEW (2026-11-04)
 
 Aceptaciones expresas del propietario en esta sesión, condicionadas a los PASS focales:
@@ -748,6 +765,22 @@ transmisión) y orden historial → commit → Recepción verificados. Re-ejecuc
 Infrastructure ElectronicDocuments/SRI/Retenciones 456/456. Pendiente: aceptación real en `celcer` de un reenvío
 corregido. Sin SRI real, suites completas, staging, commit ni push.
 
+**ED-V1-CLOSE-07 (2026-11-04) — V1 aprobado por el propietario `[V1-APPROVED:ElectronicDocuments-07]`.**
+Decisión del propietario: el alcance V1 se acredita con SRI simulado, sin provocar un rechazo artificial
+en `celcer` (los códigos corregibles son estructurales y el XSD local los detiene antes del envío). Se
+cerró el único hueco de cobertura, la nota de crédito 04, solo con pruebas; sin código productivo ni
+defectos reales. PASS focal: Application 71/71 (`ElectronicDocumentRetransmissionPolicyTests`,
+`ElectronicDocumentXmlCorrectionComparerTests`, `ElectronicDocumentCorrectedRetransmissionTests`: NC
+elegible por Autorización y Recepción, código no corregible y devolución anulada bloquean; 13 campos
+protegidos de la NC abortan; recorrido con una transmisión, fallo de transporte solo consulta, devolución
+anulada bajo el lock e idempotencia); PostgreSQL 15/15 (`ElectronicDocumentCorrectedRetransmissionPostgreSqlTests`,
+incluye reclamo concurrente bajo el lock de la devolución e idempotencia de la NC); HTTP 3/3 (403 sin
+`electronic-documents.retransmit-corrected`, sin efectos). Resto de R12 reutilizado sin reejecutar. La
+aceptación real en `celcer` de un reenvío corregido queda como evidencia futura oportunista, no como
+requisito V1. Evidencia: [Application 71/71](TestResults/ed-v1-closure-01/r12-nc-application.trx),
+[PostgreSQL 15/15](TestResults/ed-v1-closure-01/r12-nc-postgresql.trx) y
+[HTTP 3/3](TestResults/ed-v1-closure-01/ed-actions-http-403.trx).
+
 ## SRI 2.34 R12 Fase A — concurrencia fiscal 01/04 — READY FOR REVIEW (2026-10-31)
 
 Base `main@98f47a750`. Guard `Sales` (Factura 01 y NC 04): el reclamo de envío revalida la factura/devolución bajo
@@ -1107,12 +1140,24 @@ anterior. Sin suites generales, aplicación de migraciones, commit ni push. No C
 ALPINA continúa bloqueada en la carga por tablas ausentes según lo anterior. DISURGAL queda
 pendiente de validación manual del propietario con la regla vigente de conciliación.
 
-## Caso #32 — IMPLEMENTADO — PASS INTEGRACIÓN FOCAL — PENDIENTE E2E SRI (2026-10-30)
+## Caso #32 — IMPLEMENTADO — V1 APROBADO (2026-11-04)
 
 Validación integrada focal de recuperación y conciliación de respuestas inciertas del SRI.
 Clasificación: **KEEP** implementación existente; cobertura de integración faltante incorporada.
 Sin BUG REAL identificado ni cambios de código productivo en esta validación. Contrato:
 [backend.md](docs/architecture/backend.md#límites-y-finalización); addendum ADR-023.
+
+**Decisiones del propietario (2026-11-04), definitivas para V1:** D1 — comprobante que no consta
+recibido: permanece en "Requiere conciliación" con escalamiento, sin reenvío ni cierre manual
+(reenvío explícito: FUTURE). D2 — retención anterior al ciclo de ADR-036 con origen anulado: se
+conserva el tratamiento vigente (evidencia sin consulta), sin cambios en ADR-036 ni en código. D3 —
+aprobada y ejecutada (2026-11-04): consulta única de solo lectura (`BEGIN TRANSACTION READ ONLY` …
+`ROLLBACK`) sobre `erp_zh_dev` (contenedor `postgreszh`, puerto 5435, entorno Development), comprobantes
+`Retentions` en estado incierto (Signed/Sent/Received/Dispatching o DeadLetter desde ellos) con retención
+`Cancelled` o inexistente: terminó correctamente, **0 registros**; no hay casos heredados que tratar en
+ese entorno. Sin escrituras ni migraciones; no acredita otros entornos. Retira el bloqueo R32 del
+Dashboard; ElectronicDocuments-04 sigue sin aprobación V1 hasta la E2E SRI integrada y el gate del
+propietario. Sin código productivo.
 
 **PASS focal del agente:** 1/1 integración PostgreSQL en
 `backend/src/ERP.Infrastructure.Tests/ElectronicDocuments/ElectronicDocumentUncertainSriPostgreSqlTests.cs`
@@ -1132,10 +1177,29 @@ focal, build y `architecture:check` (0 violaciones nuevas). `ERP.API` y las prue
 se compilaron con salida alternativa porque un `ERP.API.exe` ajeno a la sesión (PID 25680) bloqueaba
 `ERP.API/bin`.
 
-Limitación: la integración focal utiliza el SRI simulado; no acredita comunicación real con
-los servicios del SRI ni E2E funcional. La E2E se agrupa con #20, #30 y #31; siguen pendientes
-permiso efectivo/denegación, evidencia visible en el Monitor y reconsulta real contra el SRI de
-Pruebas con ausencia de reenvío en el recorrido completo de Ventas/NC tras un fallo de envío.
+Limitación (2026-10-30): la integración focal utiliza el SRI simulado; no acredita comunicación real con
+los servicios del SRI ni E2E funcional. Los pendientes de entonces (permiso efectivo/denegación,
+evidencia visible en el Monitor y reconsulta real sin reenvío) se resuelven en el cierre siguiente.
+
+**ED-V1-CLOSE-04 (2026-11-04) — V1 aprobado por el propietario
+`[V1-APPROVED:ElectronicDocuments-04]`.** Alcance V1: comportamiento vigente más las decisiones
+D1/D2 (D3 sin casos heredados). Evidencia, sin nuevas llamadas al SRI ni repetición de PASS:
+- **Reconsulta real sin reenvío (SRI de Pruebas, `celcer`):** logs originales con SHA-256 de
+  `artifacts/sri-incident-01` (SRI-INCIDENT-01, 01–02/11/2026): 5 facturas 01 con SOAP Fault de
+  Recepción, exactamente 5 llamadas a Recepción (una por comprobante) y 28 reintentos «solo consulta
+  de autorización, sin reenvío»; los 5 comprobantes siguen en `Signed` en `erp_zh_dev`. La NC 04 usa
+  el mismo `RetryAsync` del guard `Sales`; su ruta está cubierta por
+  `SalesElectronicSourceConcurrencyPostgreSqlTests` (fallo de transporte en 01/04: solo consulta).
+- **Permiso efectivo y denegación:** nueva `ElectronicDocumentActionAuthorizationHttpTests` (pipeline
+  HTTP real, `RuntimePermissionAuthorizer`, PostgreSQL Testcontainers) 3/3 PASS: sin
+  `electronic-documents.reconcile` → 403 sin efectos (estado, contadores, auditoría, intentos); con
+  el permiso la solicitud supera la autorización y la rechaza el negocio sin llamar al SRI. UI:
+  `ElectronicDocumentDetailPanel.test.tsx` (acción solo con `reconcile`).
+- **Conciliación, auditoría, aislamiento y Monitor:** PASS previos de este caso (integración
+  PostgreSQL 1/1, relacionadas 16/16, vitest Monitor) sin reejecutar.
+Evidencia: [HTTP 3/3](TestResults/ed-v1-closure-01/ed-actions-http-403.trx); los logs de
+SRI-INCIDENT-01 se conservan fuera del repositorio (`artifacts/`, excluido) con sus SHA-256. Sin código productivo,
+migraciones ni bases persistentes; las pruebas usaron contenedores PostgreSQL efímeros.
 El PASS del agente no sustituye el gate del propietario. Sin migraciones, staging, commit ni
 push. **No CLOSED.**
 
@@ -1144,7 +1208,7 @@ push. **No CLOSED.**
 **CASO-20-CLOSE:** el propietario aprueba expresamente el cierre integral de la anulación
 documental de cobros, incluida la evidencia técnica de CASO-20-DEV-E2E-01 y la aceptación
 funcional manual previa. Queda retirado el pendiente técnico del caso #20. Este cierre
-no modifica el alcance ni el estado de #32, #30 o #31 y no acredita despliegue ni SRI.
+no modifica el alcance ni el estado de #32 o #31 y no acredita despliegue ni SRI.
 Los pendientes históricos de este caso descritos debajo quedan superados por este cierre.
 **KEEP:** implementación productiva existente; sin BUG REAL productivo reproducible detectado.
 
@@ -1194,7 +1258,7 @@ en bases nuevas y efímeras `erp_test` y `erp_collection_posting_test`, separada
 PostgreSQL habitual. Migraciones y escrituras exclusivamente en esas bases autorizadas;
 contenedores PostgreSQL de pruebas eliminados automáticamente. Sin uso de `erp_zh_test`,
 base habitual ni producción. Sin llamadas al SRI, repetición de la prueba manual ni pruebas
-de #32/#30/#31. El único cambio de código es el archivo de pruebas; sin código productivo.
+de #32/#31. El único cambio de código es el archivo de pruebas; sin código productivo.
 
 En CASO-20-CLOSE no se repiten pruebas aprobadas: solo documentación de cierre,
 revisión del diff y `git diff --check`. El propietario autoriza expresamente al agente
@@ -1221,7 +1285,7 @@ comprobación: Debe $79,77 / Haber $79,77.
 
 El cierre acredita exclusivamente el comportamiento funcional observado y aceptado
 por el propietario; no acredita E2E completa ni nuevas verificaciones técnicas de
-API/PostgreSQL. El gate técnico integrado sigue pendiente junto con #32, #30 y #31,
+API/PostgreSQL. El gate técnico integrado sigue pendiente junto con #32 y #31,
 sin duplicar la tarea ni cambiar sus estados. Se conserva debajo la evidencia técnica
 de la implementación del 2026-10-28 y sus límites.
 
@@ -1809,11 +1873,14 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   la confirmación de Gastos, porque no existe flujo de aprobación. Contrato:
   [security.md](docs/architecture/security.md#permisos-vs-política-de-flujo-documental-document-flow-policy-01).
   La aprobación es intención futura en [ROADMAP](docs/ROADMAP.md#etapa-1--completar-erp-core).
-- **Comprobantes electrónicos sin respuesta concluyente (Caso #32, PASS integración focal; pendiente E2E SRI):** se
+- **Comprobantes electrónicos sin respuesta concluyente (Caso #32, V1 aprobado 2026-11-04; límites aceptados):** se
   consultan durante el plazo de 24 h del SRI, nunca se reenvían; la conciliación manual solo registra evidencia
-  y reconsulta. Un comprobante que el SRI nunca recibió queda en "Requiere conciliación" sin camino de
-  reenvío (R32 BLOCKED). Sigue sin decisión el tratamiento de comprobantes de retención anteriores al ciclo
-  actual cuyo origen ya fue anulado (antes O-1/O-9): admiten evidencia, no consulta.
+  y reconsulta. Límites V1 aceptados por el propietario (2026-11-04): un comprobante que no consta recibido
+  permanece en "Requiere conciliación" y se escala al responsable fiscal o soporte, sin reenvío ni cierre
+  manual (R32, D1; el reenvío explícito es intención futura en [ROADMAP](docs/ROADMAP.md#etapa-1--completar-erp-core)).
+  Una retención anterior al ciclo de ADR-036 cuyo origen ya fue anulado admite evidencia, no consulta (D2);
+  con el ciclo vigente la anulación del origen se bloquea mientras su comprobante es incierto. Verificación de
+  solo lectura D3 (2026-11-04, `erp_zh_dev` Development): 0 registros heredados; otros entornos no verificados.
   Contrato: [backend.md](docs/architecture/backend.md#límites-y-finalización).
 - **Comprobante electrónico que excede el tamaño admitido (R16):** se bloquea antes del envío y no tiene
   recuperación automática; Ventas no limita líneas (≈ 420 ítems en el peor caso medido). Decisión pendiente del

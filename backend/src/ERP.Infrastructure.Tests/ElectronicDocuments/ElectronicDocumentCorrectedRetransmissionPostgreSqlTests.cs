@@ -172,6 +172,50 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
     }
 
     [Fact]
+    public async Task Nota_de_credito_dos_solicitudes_concurrentes_producen_un_reclamo_y_una_transmision()
+    {
+        var (returnId, documentId, key) = await SeedRejectedCreditNoteAsync();
+        var sri = new RetransmissionSri(_companyId, key, ElectronicDocumentType.CreditNote) { SignBarrier = 2 };
+
+        var results = await Task.WhenAll(
+                RetransmitAsync(documentId, sri, Guid.NewGuid()),
+                RetransmitAsync(documentId, sri, Guid.NewGuid())
+            )
+            .WaitAsync(Wait);
+
+        results.Count(r => r.IsSuccess).Should().Be(1);
+        results.Single(r => !r.IsSuccess).Code.Should().Be(ApiResponseCodes.Common.Conflict);
+        sri.SendCalls.Should().Be(1, "el reclamo de la NC se serializa bajo el lock de la devolución");
+        var attempt = (await ReadAttemptsAsync(documentId)).Should().ContainSingle().Subject;
+        attempt.AttemptNumber.Should().Be(2);
+        var document = await ReadElectronicAsync(returnId);
+        document!.DocumentType.Should().Be(ElectronicDocumentType.CreditNote);
+        document.TransmissionAttempt.Should().Be(2);
+        document.AccessKey!.Value.Should().Be(key);
+        document.CurrentState.Should().Be(ElectronicDocumentState.Authorized);
+    }
+
+    [Fact]
+    public async Task Nota_de_credito_misma_clave_de_idempotencia_no_transmite_dos_veces()
+    {
+        var (_, documentId, key) = await SeedRejectedCreditNoteAsync();
+        var sri = new RetransmissionSri(_companyId, key, ElectronicDocumentType.CreditNote) { SignBarrier = 2 };
+        var idempotencyKey = Guid.NewGuid();
+
+        var results = await Task.WhenAll(
+                RetransmitAsync(documentId, sri, idempotencyKey),
+                RetransmitAsync(documentId, sri, idempotencyKey)
+            )
+            .WaitAsync(Wait);
+        var replay = await RetransmitAsync(documentId, sri, idempotencyKey);
+
+        results.Should().OnlyContain(r => r.IsSuccess, "el perdedor devuelve el resultado del reclamo ganador");
+        replay.IsSuccess.Should().BeTrue();
+        sri.SendCalls.Should().Be(1);
+        (await ReadAttemptsAsync(documentId)).Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task El_indice_unico_impide_registrar_dos_veces_el_mismo_intento()
     {
         var (_, documentId, _) = await SeedRejectedInvoiceAsync();
@@ -439,6 +483,25 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
         </factura>
         """;
 
+    private static string CreditNote(string key, string dirMatriz, string signature) =>
+        $"""
+        <notaCredito id="comprobante" version="1.1.0">
+          <infoTributaria><ambiente>1</ambiente><tipoEmision>1</tipoEmision><ruc>1790012345001</ruc>
+            <claveAcceso>{key}</claveAcceso><codDoc>04</codDoc><estab>001</estab><ptoEmi>001</ptoEmi>
+            <secuencial>000000001</secuencial><dirMatriz>{dirMatriz}</dirMatriz></infoTributaria>
+          <infoNotaCredito><fechaEmision>31/10/2026</fechaEmision><identificacionComprador>1710034065</identificacionComprador>
+            <codDocModificado>01</codDocModificado><numDocModificado>001-001-000000001</numDocModificado>
+            <totalSinImpuestos>10.00</totalSinImpuestos><valorModificacion>10.00</valorModificacion>
+            <motivo>Devolución R12</motivo></infoNotaCredito>
+          <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignatureValue>{signature}</ds:SignatureValue></ds:Signature>
+        </notaCredito>
+        """;
+
+    private static string Xml(ElectronicDocumentType type, string key, string dirMatriz, string signature) =>
+        type == ElectronicDocumentType.CreditNote
+            ? CreditNote(key, dirMatriz, signature)
+            : Invoice(key, dirMatriz, signature);
+
     private string AttemptsDirectory(Guid documentId) =>
         Path.Combine(_storageRoot, "electronic-documents", _tenantId.ToString("N"), "invoice",
             documentId.ToString("N"), "attempts");
@@ -458,23 +521,41 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
             NullLogger<ElectronicDocumentXmlStorageService>.Instance
         );
 
-    private ElectronicDocumentAudit Audit(Guid documentId, string action, ElectronicDocumentState from, ElectronicDocumentState to) =>
+    private ElectronicDocumentAudit Audit(
+        Guid documentId,
+        string action,
+        ElectronicDocumentState from,
+        ElectronicDocumentState to,
+        ElectronicDocumentType type = ElectronicDocumentType.Invoice
+    ) =>
         ElectronicDocumentAudit.Create(
             new AuditActor(_tenantId, _userId, "test", null, null, null, null, null, AuditSource.System),
-            _companyId, documentId, action, ElectronicDocumentType.Invoice, from, to);
+            _companyId, documentId, action, type, from, to);
 
     /// <summary>Factura autorizada con su comprobante NO AUTORIZADO (52): XML firmado en disco y evidencia en el timeline.</summary>
-    private async Task<(Guid InvoiceId, Guid DocumentId, string Key)> SeedRejectedInvoiceAsync()
+    private async Task<(Guid InvoiceId, Guid DocumentId, string Key)> SeedRejectedInvoiceAsync() =>
+        await SeedRejectedAsync(ElectronicDocumentType.Invoice, await SeedAuthorizedInvoiceAsync());
+
+    /// <summary>Devolución autorizada con su nota de crédito 04 NO AUTORIZADA (52); el guard bloquea la devolución.</summary>
+    private async Task<(Guid ReturnId, Guid DocumentId, string Key)> SeedRejectedCreditNoteAsync() =>
+        await SeedRejectedAsync(
+            ElectronicDocumentType.CreditNote,
+            await SeedAuthorizedReturnAsync(await SeedAuthorizedInvoiceAsync())
+        );
+
+    private async Task<(Guid SourceId, Guid DocumentId, string Key)> SeedRejectedAsync(
+        ElectronicDocumentType type,
+        Guid sourceId
+    )
     {
-        var invoiceId = await SeedAuthorizedInvoiceAsync();
         var key = string.Concat(Guid.NewGuid().ToByteArray().Select(b => (b % 10).ToString())).PadRight(49, '7')[..49];
         await using var db = CreateContext();
-        var document = ElectronicDocument.Create(_tenantId, _companyId, ElectronicDocumentType.Invoice, SalesSource, invoiceId, _userId);
-        var signedXml = Invoice(key, OriginalDirMatriz, "ORIGINAL");
+        var document = ElectronicDocument.Create(_tenantId, _companyId, type, SalesSource, sourceId, _userId);
+        var signedXml = Xml(type, key, OriginalDirMatriz, "ORIGINAL");
         var stored = await Storage().StoreAsync(
-            _tenantId, ElectronicDocumentType.Invoice, document.Id,
-            new ElectronicDocumentXml(signedXml, "UTF-8", "1.1.0", ElectronicDocumentType.Invoice, "1", key, DateTime.UtcNow),
-            new SignedElectronicDocumentXml(signedXml, "UTF-8", "1.1.0", ElectronicDocumentType.Invoice, key, DateTime.UtcNow));
+            _tenantId, type, document.Id,
+            new ElectronicDocumentXml(signedXml, "UTF-8", "1.1.0", type, "1", key, DateTime.UtcNow),
+            new SignedElectronicDocumentXml(signedXml, "UTF-8", "1.1.0", type, key, DateTime.UtcNow));
         document.SetEnvironment("1");
         document.MarkXmlGenerated(stored.Value!.DraftXmlPath, "1.1.0", "1.1.0", _userId);
         document.MarkSigned(stored.Value.SignedXmlPath, AccessKey.Create(key), _userId);
@@ -482,13 +563,38 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
         document.MarkReceived(_userId);
         document.MarkRejected("[52] ERROR EN DIFERENCIAS", _userId);
         db.ElectronicDocuments.Add(document);
-        db.Set<ElectronicDocumentAudit>().Add(Audit(document.Id, "Received", ElectronicDocumentState.Sent, ElectronicDocumentState.Received));
-        db.Set<ElectronicDocumentAudit>().Add(Audit(document.Id, "Rejected", ElectronicDocumentState.Received, ElectronicDocumentState.Rejected));
+        db.Set<ElectronicDocumentAudit>().Add(Audit(document.Id, "Received", ElectronicDocumentState.Sent, ElectronicDocumentState.Received, type));
+        db.Set<ElectronicDocumentAudit>().Add(Audit(document.Id, "Rejected", ElectronicDocumentState.Received, ElectronicDocumentState.Rejected, type));
         db.ElectronicDocumentSriMessages.Add(ElectronicDocumentSriMessage.Create(
             new AuditActor(_tenantId, _userId, "test", null, null, null, null, null, AuditSource.System),
             _companyId, document.Id, new SriMessage("52", "ERROR", "ERROR EN DIFERENCIAS", null)));
         await db.SaveChangesAsync();
-        return (invoiceId, document.Id, key);
+        return (sourceId, document.Id, key);
+    }
+
+    private async Task<Guid> SeedAuthorizedReturnAsync(Guid invoiceId)
+    {
+        await using var db = CreateContext();
+        var invoice = await db.SalesInvoices.Include(i => i.Lines).SingleAsync(i => i.Id == invoiceId);
+        var number = Interlocked.Increment(ref _sequence);
+        var salesReturn = SalesReturn.CreateDraft(
+            _tenantId, _companyId, invoiceId, _customerId, $"DEV-{number:D6}", "Devolución R12", _userId
+        );
+        salesReturn.AddLine(
+            SalesReturnDetail.Create(
+                salesReturn.Id, _tenantId, invoice.Lines[0].Id, "Servicio R12B", 1m, 10m,
+                discountPct: 0m, vatCode: "0", vatRate: 0m, uomCode: "UNIT"
+            ),
+            _userId
+        );
+        salesReturn.AddRefundAllocation(
+            SalesReturnRefundAllocation.Create(salesReturn.Id, _tenantId, SalesReturnRefundMethod.Cash, 10m),
+            _userId
+        );
+        salesReturn.Authorize(_userId);
+        db.SalesReturns.Add(salesReturn);
+        await db.SaveChangesAsync();
+        return salesReturn.Id;
     }
 
     private async Task<Result<ElectronicDocumentDto>> RetransmitAsync(
@@ -665,18 +771,18 @@ public sealed class ElectronicDocumentCorrectedRetransmissionPostgreSqlTests : I
         public int SendCalls => Reception.Invocations.Count(i => i.Method.Name == nameof(IElectronicDocumentReceptionService.SendAsync));
         public int HistoryCalls => Authorization.Invocations.Count(i => i.Method.Name == nameof(IElectronicDocumentAuthorizationService.QueryDecisionsAsync));
 
-        public RetransmissionSri(Guid companyId, string key)
+        public RetransmissionSri(Guid companyId, string key, ElectronicDocumentType type = ElectronicDocumentType.Invoice)
         {
             var supplier = new Mock<IElectronicDocumentXmlSupplier>();
             supplier.Setup(s => s.BuildXmlAsync(It.IsAny<ElectronicDocumentSourceReference>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => Result<ElectronicDocumentXml>.Success(new(
-                    Invoice(key, RegeneratedDirMatriz, ""), "UTF-8", "1.1.0", ElectronicDocumentType.Invoice, "1", key, DateTime.UtcNow)));
-            Suppliers.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(supplier.Object);
+                    Xml(type, key, RegeneratedDirMatriz, ""), "UTF-8", "1.1.0", type, "1", key, DateTime.UtcNow)));
+            Suppliers.Setup(r => r.Resolve(type)).Returns(supplier.Object);
 
             var validator = new Mock<IElectronicDocumentSchemaValidator>();
             validator.Setup(v => v.ValidateAsync(It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ElectronicDocumentSchemaValidationResult(true, [], [], "1.1.0", ElectronicDocumentType.Invoice));
-            Validators.Setup(r => r.Resolve(ElectronicDocumentType.Invoice)).Returns(validator.Object);
+                .ReturnsAsync(new ElectronicDocumentSchemaValidationResult(true, [], [], "1.1.0", type));
+            Validators.Setup(r => r.Resolve(type)).Returns(validator.Object);
 
             Signing.Setup(s => s.SignAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ElectronicDocumentXml>(), It.IsAny<CancellationToken>()))
                 .Returns(async (Guid _, Guid _, ElectronicDocumentXml xml, CancellationToken _) =>

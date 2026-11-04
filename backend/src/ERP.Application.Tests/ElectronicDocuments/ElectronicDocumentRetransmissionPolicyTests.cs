@@ -159,6 +159,42 @@ public sealed class ElectronicDocumentRetransmissionPolicyTests
     }
 
     [Fact]
+    public void Credit_note_follows_the_same_eligibility_as_the_invoice()
+    {
+        var authorization = ElectronicDocumentRetransmissionPolicy.Evaluate(
+            RejectedDocument(ElectronicDocumentType.CreditNote),
+            ElectronicDocumentSourceLifecycle.Allowed,
+            Evidence(ElectronicDocumentState.Received, ("52", "ERROR"))
+        );
+        authorization.Eligible.Should().BeTrue();
+        authorization.RejectionStage.Should().Be(ElectronicDocumentRejectionStage.Authorization);
+
+        var reception = ElectronicDocumentRetransmissionPolicy.Evaluate(
+            RejectedDocument(ElectronicDocumentType.CreditNote, atReception: true),
+            ElectronicDocumentSourceLifecycle.Allowed,
+            Evidence(ElectronicDocumentState.Sent, ("35", "ERROR"))
+        );
+        reception.Eligible.Should().BeTrue();
+        reception.RejectionStage.Should().Be(ElectronicDocumentRejectionStage.Reception);
+
+        var blockedCode = ElectronicDocumentRetransmissionPolicy.Evaluate(
+            RejectedDocument(ElectronicDocumentType.CreditNote),
+            ElectronicDocumentSourceLifecycle.Allowed,
+            Evidence(ElectronicDocumentState.Received, ("39", "ERROR"))
+        );
+        blockedCode.Blocks.Select(b => b.Code)
+            .Should().Contain(ElectronicDocumentRetransmissionPolicy.BlockCodesNotCorrectable);
+
+        var cancelledReturn = ElectronicDocumentRetransmissionPolicy.Evaluate(
+            RejectedDocument(ElectronicDocumentType.CreditNote),
+            ElectronicDocumentSourceLifecycle.Denied("La devolución está anulada."),
+            Evidence(ElectronicDocumentState.Received, ("52", "ERROR"))
+        );
+        cancelledReturn.Blocks.Select(b => b.Code)
+            .Should().Contain(ElectronicDocumentRetransmissionPolicy.BlockSourceNotProcessable);
+    }
+
+    [Fact]
     public void Non_rejected_and_unsupported_types_are_not_eligible()
     {
         var authorized = ElectronicDocument.Create(
