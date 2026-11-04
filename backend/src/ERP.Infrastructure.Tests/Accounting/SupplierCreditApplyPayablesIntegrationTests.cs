@@ -26,6 +26,7 @@ using ERP.Infrastructure.Persistence.Repositories.Payables;
 using ERP.Infrastructure.Persistence.Repositories.Purchases;
 using ERP.Infrastructure.Seeding.Steps;
 using ERP.Infrastructure.Tests.Audit;
+using ERP.Infrastructure.Tests.Common;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -507,7 +508,7 @@ public sealed class SupplierCreditApplyPayablesIntegrationTests : IAsyncLifetime
     {
         await using var db = BuildWiredContext();
         return await ApplyHandler(db)
-            .Handle(
+            .HandleWithDomainRules(
                 new ApplySupplierCreditCommand(creditId, payableId, amount, Guid.NewGuid()),
                 CancellationToken.None
             ).ThenDispatchAsync(db);
