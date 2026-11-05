@@ -9,6 +9,7 @@ import type {
   CompanyBpSalesSettingsDto,
   CreateBusinessPartnerBody,
   CustomerConfigBody,
+  CustomerRoleConfigDto,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import { RoleTypeEnum } from "../types/businessPartner.types";
@@ -47,6 +48,8 @@ export function useMasterDataCustomersPage() {
   const [customerConfigBp, setCustomerConfigBp] = useState<{
     bp: BusinessPartnerSummaryDto;
     roleId: string;
+    /** Configuración persistida (fuente: GET roles). El PATCH reemplaza la config completa. */
+    config: CustomerRoleConfigDto | null;
   } | null>(null);
 
   const listState = useCompanyScopedAsync(
@@ -247,14 +250,26 @@ export function useMasterDataCustomersPage() {
 
   // ── Customer Config (CRM fields) ──────────────────────────────────────────
 
+  // BUG-CUSTOMERS-CLASSIFICATION-01: el PATCH customer-config reemplaza la configuración completa
+  // (null = limpiar). El modal solo se abre con la configuración persistida ya leída; un fallo de
+  // lectura se informa y nunca se interpreta como configuración vacía.
   const openCustomerConfig = async (bp: BusinessPartnerSummaryDto) => {
     clearModalError();
+    setInlineError(null);
     try {
       const roles = await businessPartnerFacade.getRoles(bp.id, true);
       const customerRole = roles.find((r) => r.roleType === "Customer");
-      if (customerRole) setCustomerConfigBp({ bp, roleId: customerRole.id });
-    } catch {
-      /* no action — BP may not have Customer role yet */
+      if (!customerRole) {
+        setInlineError("No se encontró un rol de cliente activo para editar la clasificación.");
+        return;
+      }
+      setCustomerConfigBp({ bp, roleId: customerRole.id, config: customerRole.customerConfig ?? null });
+    } catch (err) {
+      setInlineError(
+        formatApiRequestError(err, {
+          generic: "No se pudo cargar la clasificación del cliente. No se realizaron cambios.",
+        }),
+      );
     }
   };
 

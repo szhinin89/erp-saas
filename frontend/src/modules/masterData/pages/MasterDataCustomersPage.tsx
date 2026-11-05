@@ -17,6 +17,7 @@ import { formatApiRequestError } from "../../lib/apiError";
 import type {
   CreateBusinessPartnerBody,
   CustomerConfigBody,
+  CustomerRoleConfigDto,
   UpdateBusinessPartnerBody,
 } from "../types/businessPartner.types";
 import {
@@ -30,27 +31,47 @@ import {
 import "../../../styles/shared/items-catalog.css";
 import "./masterdata-pages.css";
 
+/**
+ * BUG-CUSTOMERS-CLASSIFICATION-01: conserva como opción seleccionable un valor persistido que ya no
+ * figura en el catálogo activo; sin ella el select lo mostraría vacío y el guardado (reemplazo
+ * completo) lo borraría sin intervención del usuario.
+ */
+function PersistedValueOption({
+  value,
+  loading,
+  options,
+}: Readonly<{
+  value: string;
+  loading: boolean;
+  options: readonly { code: string }[];
+}>) {
+  if (!value || loading || options.some((o) => o.code === value)) return null;
+  return <option value={value}>{`${value} (fuera del catálogo activo)`}</option>;
+}
+
 // ── CustomerConfigModal — CRM-ready classification modal ─────────────────────
 function CustomerConfigModal({
   bpName,
+  initialConfig,
   saving,
   error,
   onClose,
   onSave,
 }: {
   bpName: string;
+  initialConfig: CustomerRoleConfigDto | null;
   saving: boolean;
   error?: string | null;
   onClose: () => void;
   onSave: (body: CustomerConfigBody) => void;
 }) {
-  const [category, setCategory] = useState("");
-  const [segment, setSegment] = useState("");
-  const [zone, setZone] = useState("");
-  const [rating, setRating] = useState("");
-  const [loyalty, setLoyalty] = useState("");
-  const [invoiceFormat, setInvoiceFormat] = useState("");
-  const [classification, setClassification] = useState("");
+  const [category, setCategory] = useState(initialConfig?.customerCategory ?? "");
+  const [segment, setSegment] = useState(initialConfig?.customerSegment ?? "");
+  const [zone, setZone] = useState(initialConfig?.salesZone ?? "");
+  const [rating, setRating] = useState(initialConfig?.creditRating ?? "");
+  const [loyalty, setLoyalty] = useState(initialConfig?.loyaltyTier ?? "");
+  const [invoiceFormat, setInvoiceFormat] = useState(initialConfig?.preferredInvoiceFormat ?? "");
+  const [classification, setClassification] = useState(initialConfig?.customerClassification ?? "");
 
   const categories = useCustomerCategories();
   const segments = useCustomerSegments();
@@ -65,9 +86,19 @@ function CustomerConfigModal({
     loyaltyTiers.error ||
     invoiceFormats.error ||
     classifications.error;
+  const catalogsLoading =
+    categories.loading ||
+    segments.loading ||
+    creditRatings.loading ||
+    loyaltyTiers.loading ||
+    invoiceFormats.loading ||
+    classifications.loading;
+  // No se guarda hasta tener catálogos cargados: el payload reemplaza la configuración completa.
+  const saveBlocked = saving || catalogsLoading || Boolean(catalogsError);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (saveBlocked) return;
     onSave({
       customerCategory: category || null,
       customerSegment: segment || null,
@@ -99,6 +130,7 @@ function CustomerConfigModal({
               <option value="">
                 {categories.loading ? "Cargando…" : "— Sin asignar —"}
               </option>
+              <PersistedValueOption value={category} loading={categories.loading} options={categories.options} />
               {categories.options.map((v) => (
                 <option key={v.id} value={v.code}>
                   {v.name}
@@ -115,6 +147,7 @@ function CustomerConfigModal({
               <option value="">
                 {segments.loading ? "Cargando…" : "— Sin asignar —"}
               </option>
+              <PersistedValueOption value={segment} loading={segments.loading} options={segments.options} />
               {segments.options.map((v) => (
                 <option key={v.id} value={v.code}>
                   {v.name}
@@ -141,6 +174,7 @@ function CustomerConfigModal({
               <option value="">
                 {creditRatings.loading ? "Cargando…" : "— Sin calificar —"}
               </option>
+              <PersistedValueOption value={rating} loading={creditRatings.loading} options={creditRatings.options} />
               {creditRatings.options.map((v) => (
                 <option key={v.id} value={v.code}>
                   {v.name}
@@ -155,6 +189,7 @@ function CustomerConfigModal({
               disabled={saving || loyaltyTiers.loading}
             >
               <option value="">{loyaltyTiers.loading ? "Cargando…" : "— Sin nivel —"}</option>
+              <PersistedValueOption value={loyalty} loading={loyaltyTiers.loading} options={loyaltyTiers.options} />
               {loyaltyTiers.options.map((v) => (
                 <option key={v.id} value={v.code}>
                   {v.name}
@@ -171,6 +206,7 @@ function CustomerConfigModal({
               <option value="">
                 {invoiceFormats.loading ? "Cargando…" : "— Sin preferencia —"}
               </option>
+              <PersistedValueOption value={invoiceFormat} loading={invoiceFormats.loading} options={invoiceFormats.options} />
               {invoiceFormats.options.map((v) => (
                 <option key={v.id} value={v.code}>
                   {v.name}
@@ -187,6 +223,7 @@ function CustomerConfigModal({
               <option value="">
                 {classifications.loading ? "Cargando…" : "— Sin clasificar —"}
               </option>
+              <PersistedValueOption value={classification} loading={classifications.loading} options={classifications.options} />
               {classifications.options.map((v) => (
                 <option key={v.id} value={v.code}>
                   {v.name}
@@ -199,7 +236,7 @@ function CustomerConfigModal({
           onCancel={onClose}
           hideDraft
           saveButtonType="submit"
-          disableSave={saving}
+          disableSave={saveBlocked}
           labels={{
             cancel: "Cerrar",
             save: saving ? "Guardando..." : "Guardar",
@@ -479,7 +516,9 @@ export function MasterDataCustomersPage() {
 
       {page.customerConfigBp && (
         <CustomerConfigModal
+          key={page.customerConfigBp.roleId}
           bpName={page.customerConfigBp.bp.legalName}
+          initialConfig={page.customerConfigBp.config}
           saving={page.saving}
           error={page.modalError}
           onClose={page.closeCustomerConfig}

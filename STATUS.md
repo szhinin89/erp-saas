@@ -1,6 +1,31 @@
 # Project Status
 
-## UIUX-FINAL-REVIEW-01 — REVIEWED, PENDING OWNER APPROVAL (2026-11-05)
+## BUG-CUSTOMERS-CLASSIFICATION-01 — READY FOR REVIEW (2026-11-05)
+
+BUG REAL (integridad de datos): Listado de Clientes → «Clasificación» abría con los siete
+campos vacíos porque `openCustomerConfig` descartaba `customerConfig` leído de GET roles, y
+PATCH `customer-config` reemplaza la configuración completa; «Guardar» dejaba en null
+categoría, segmento, zona, rating, fidelización, formato y clasificación. Corrección solo
+frontend: precarga desde la configuración persistida, error visible y sin ventana si falla la
+lectura o no hay rol cliente activo, guardado bloqueado con catálogos cargando o en error y
+valor persistido fuera del catálogo activo conservado como opción. Sin cambios de backend,
+contrato API, semántica de reemplazo, permisos ni diseño.
+
+Pruebas agente: Vitest 38/38 (11 nuevas; 10 fallaban antes del fix); backend Application
+42/42 (3 nuevas que fijan el contrato de reemplazo) y Architecture.Tests 145/145;
+`tsc -b`, ESLint focal, architecture:check (0 violaciones nuevas) y git diff --check PASS.
+Navegador real (Chromium, página real, servicios HTTP reales, backend simulado en memoria con
+datos sintéticos, sin base de datos): 23/23 PASS en carga, guardar sin cambios, cambio de un
+campo, limpieza deliberada, errores de lectura/guardado, valores fuera del catálogo y diseño
+idéntico a HEAD (1440/390 px). No acredita persistencia PostgreSQL ni sesión backend real.
+
+Pendientes: el validador backend solo exime sin cambios a CustomerClassification; los otros
+cinco campos de catálogo con valor desactivado responden 422 al reguardar (sin pérdida; el
+usuario debe elegir un valor activo); decisión del propietario. La etiqueta «(fuera del
+catálogo activo)» se recorta en el ancho del select. Sin control de concurrencia (último
+guardado gana). Pendientes gate del propietario y CI. Sin staging, commit ni push; no CLOSED.
+
+## UIUX-FINAL-REVIEW-01 — CERRADO: commits d7b07f6c8 + 13b8707a2, CI #1094 SUCCESS (2026-11-05)
 
 Revisión final del diff acumulado UIUX-SUPPLIERS-01/02/03, UIUX-GLOBAL-HEADER-01 y
 UIUX-GLOBAL-TABS-01, sin cambios de implementación ni nuevas modificaciones visuales.
@@ -8,8 +33,12 @@ Inventario selectivo: 23 archivos (14 implementación, 6 pruebas, 3 documentaci�
 Excluir del commit UI/UX `docs/ci/PLATFORM_GUARD_REPORT.md`,
 `docs/future-platform/API_USAGE_GRAPH.json` y todo `tmp/`; diferencias revisadas,
 sin restauraciones ni eliminaciones. No se detectan otros cambios productivos ajenos.
-Inventario exacto, clasificación, evidencia y staging sugerido en
-`tmp/uiux-final-review-01/README.md` y `commit-files.txt` de esa carpeta.
+El inventario se integró en el commit `d7b07f6c8` (23 archivos; `git show --stat d7b07f6c8`)
+y la división de pruebas exigida por el guardrail en `13b8707a2`. El README, la lista de
+archivos y las capturas locales de `tmp/uiux-final-review-01/` y de las carpetas `tmp/uiux-*`
+citadas abajo ya no existen en el árbol de trabajo (verificado 2026-11-05) y no se conservó
+copia; la evidencia persistente son esos commits, las pruebas versionadas, los contratos en
+[Frontend](docs/architecture/frontend.md) y CI #1094 SUCCESS (dato del propietario).
 
 Evidencia anterior vigente: menú/permisos y confirmaciones 85/85; resumen de consulta
 42/42; encabezado/integración 51/51; tabs/navegación 32/32. Son ejecuciones superpuestas,
@@ -19,13 +48,13 @@ lint y arquitectura de la última implementación siguen vigentes (147/147 guard
 cero violaciones nuevas); no se repiten pruebas válidas. Gate documental y diff check
 verificados en esta revisión; evidencia local, con datos sintéticos, no sesión backend real.
 
-Se mantienen pendientes los recortes internos del formulario a 320 px, flechas/roving
-tabindex y asociación tab-panel, y las mejoras de otros módulos no implementadas.
-Pendientes gate y aprobación visual del propietario antes de autorizar el commit.
-Índice sin staging; sin commit ni push; no CLOSED.
+Cierre: gate y aprobación visual del propietario completados; commit autorizado y CI #1094
+SUCCESS sobre `13b8707a2`. Quedan fuera del cierre, como pendientes, los recortes internos
+del formulario a 320 px, flechas/roving tabindex y asociación tab-panel, y las mejoras de
+otros módulos no implementadas.
 
 
-## UIUX-GLOBAL-TABS-01 — READY FOR VISUAL REVIEW (2026-11-05)
+## UIUX-GLOBAL-TABS-01 — CERRADO con UIUX-FINAL-REVIEW-01 (CI #1094 SUCCESS) (2026-11-05)
 
 Variante opcional responsive-three en ZHTabBar; solo Proveedores la solicita.
 Contrato en [Frontend](docs/architecture/frontend.md#pestañas-responsive-opcionales-uiux-global-tabs-01).
@@ -34,7 +63,7 @@ trasladadas al DS, sin duplicación local, cambios de tokens o breakpoints globa
 UIUX-SUPPLIERS-01/02/03 y UIUX-GLOBAL-HEADER-01 preservados; formularios, permisos,
 traducciones, Listado y Resumen mantienen su comportamiento.
 
-Evidencia en `tmp/uiux-global-tabs-01/capturas.html`: 320, 360, 390, 480, 768 y 1440 px,
+Evidencia local temporal (`tmp/uiux-global-tabs-01/capturas.html`, ya no conservada): 320, 360, 390, 480, 768 y 1440 px,
 tres estados activos de Proveedores y comparación de Clientes/Condiciones de pago reales,
 además de fixtures ConfigTabsLayout y ZHTabBar de cuatro destinos. 42/42 recortes de
 pestañas idénticos en píxeles y geometría antes/después, encabezados preservados y
@@ -47,11 +76,12 @@ anchos, Tab/Shift+Tab y etiquetas largas sin recorte en móvil PASS. TypeScript/
 lint focal (0 errores, 1 warning previo por tamaño) y arquitectura PASS: 147/147
 guardrails, cero violaciones nuevas. Pruebas anteriores ajenas al cambio conservan
 su evidencia; no se repiten suites de encabezado, Listado ni Resumen sin cambios.
-Detalle, limitaciones de accesibilidad y comandos de gate en `tmp/uiux-global-tabs-01/README.md`.
-Pendientes gate y aprobación visual del propietario; sin staging, commit ni push; no CLOSED.
+El README local con detalle y comandos de gate (`tmp/uiux-global-tabs-01/`) ya no se conserva;
+limitaciones de accesibilidad vigentes en el contrato de Frontend y en UIUX-FINAL-REVIEW-01.
+Cerrado con UIUX-FINAL-REVIEW-01: commit `d7b07f6c8`, CI #1094 SUCCESS.
 
 
-## UIUX-GLOBAL-HEADER-01 — READY FOR VISUAL REVIEW (2026-11-05)
+## UIUX-GLOBAL-HEADER-01 — CERRADO con UIUX-FINAL-REVIEW-01 (CI #1094 SUCCESS) (2026-11-05)
 
 Variante opcional de encabezado implementada en los componentes oficiales; contrato en
 [Frontend](docs/architecture/frontend.md#encabezado-compacto-opcional-uiux-global-header-01).
@@ -59,7 +89,7 @@ Solo Proveedores activa compact; las reglas locales del encabezado se trasladaro
 sin duplicación ni cambios de defaults, tokens o breakpoints globales. El resto de
 UIUX-SUPPLIERS-01/02/03 se conserva, incluida su evidencia y pruebas previas.
 
-Capturas antes/después en `tmp/uiux-global-header-01/capturas.html`: tres pestañas de
+Capturas antes/después en evidencia local temporal (`tmp/uiux-global-header-01/capturas.html`, ya no conservada): tres pestañas de
 Proveedores y consumidores predeterminados Clientes/Condiciones de pago a 1440, 768,
 390 y 320 px. Los 20 encabezados coinciden exactamente en píxeles, geometría y estilos;
 los dos consumidores predeterminados conservan también su markup. Fixtures sintéticos,
@@ -68,11 +98,11 @@ Sin overflow de página en los casos capturados; se conservan limitaciones inter
 preexistentes del formulario estrecho, fuera de alcance.
 
 Pruebas focales 51/51 PASS; TypeScript (`tsc --noEmit` y `tsc -b`), build, lint y
-arquitectura PASS (147/147 guardrails y cero violaciones nuevas). Evidencia, inventario
-de archivos y comandos de gate del propietario en `tmp/uiux-global-header-01/README.md`.
+arquitectura PASS (147/147 guardrails y cero violaciones nuevas). El README local con
+evidencia, inventario y comandos de gate (`tmp/uiux-global-header-01/`) ya no se conserva.
 El build actualiza automáticamente los timestamps de los dos reportes Platform ya
-modificados antes de esta tarea. Pendientes gate y aprobación visual del propietario.
-Sin suites generales/SRI, staging, commit ni push; no CLOSED.
+modificados antes de esta tarea. Sin suites generales/SRI.
+Cerrado con UIUX-FINAL-REVIEW-01: commit `d7b07f6c8`, CI #1094 SUCCESS.
 
 
 ## UIUX-GLOBAL-STANDARD-01 — AUDIT READY FOR OWNER REVIEW (2026-11-05)
@@ -86,23 +116,22 @@ Validación documental 1/1 PASS y git diff --check PASS; preservación SHA256 de
 Sin suites generales/SRI, staging, commit ni push; no CLOSED.
 
 
-## UIUX-SUPPLIERS-03 — READY FOR VISUAL REVIEW (2026-11-05)
+## UIUX-SUPPLIERS-03 — CERRADO con UIUX-FINAL-REVIEW-01 (CI #1094 SUCCESS) (2026-11-05)
 
 Ajuste local de pestañas autorizado para Proveedores; contrato en
 [Frontend](docs/architecture/frontend.md#resumen-de-proveedores). Conserva los cambios
 pendientes de UIUX-SUPPLIERS-01/02, encabezado, navegación y formularios.
-Capturas antes/después en `tmp/uiux-suppliers-03/capturas.html`: 320, 360, 390,
+Capturas antes/después en evidencia local temporal (`tmp/uiux-suppliers-03/capturas.html`, ya no conservada): 320, 360, 390,
 480, 768 y 1440 px, componente real con datos sintéticos y fuentes oficiales.
 Navegación de las tres pestañas, selección y ausencia de overflow de página/pestañas
 verificadas en los seis anchos. El formulario conserva recortes internos preexistentes
 a 320 px, fuera del alcance autorizado. Pruebas focales 42/42 PASS; TypeScript
 (`tsc --noEmit` y `tsc -b`) PASS; lint focal sin errores y con un warning previo
 por tamaño de archivo. `git diff --check` PASS. Arquitectura: 147/147 guardrails
-y runner PASS, cero violaciones nuevas; evidencia en la misma carpeta.
-Pendientes gate y aprobación visual del propietario. Sin staging, commit ni push;
-no CLOSED.
+y runner PASS, cero violaciones nuevas; los logs de esa carpeta temporal tampoco se conservan.
+Cerrado con UIUX-FINAL-REVIEW-01: commit `d7b07f6c8`, CI #1094 SUCCESS.
 
-## UIUX-SUPPLIERS-02 — READY FOR VISUAL REVIEW (2026-11-05)
+## UIUX-SUPPLIERS-02 — CERRADO con UIUX-FINAL-REVIEW-01 (CI #1094 SUCCESS) (2026-11-05)
 
 Resumen compacto autorizado solo para Proveedores. Causas: cuatro columnas para tres
 indicadores, variante vertical con altura mínima, panel lateral de 280 px y accesos
@@ -122,12 +151,11 @@ runner PASS, cero violaciones nuevas; enlaces documentales y `git diff --check` 
 Capturas de la página real a 1440,
 768 y 390 px, con fuentes oficiales y datos sintéticos: tres columnas iguales, dos
 columnas y una columna respectivamente, sin desbordamiento horizontal ni alturas fijas
-de tarjetas. Evidencia actual en `tmp/uiux-suppliers-summary-readonly/`; se conserva la
-evidencia previa en `tmp/uiux-suppliers-summary/`.
-Sin staging, commit ni push. Pendientes gate y aprobación visual del propietario;
-no terminado ni CLOSED.
+de tarjetas. Esas capturas eran evidencia local temporal (`tmp/uiux-suppliers-summary-readonly/`
+y la previa `tmp/uiux-suppliers-summary/`), ya no conservada.
+Cerrado con UIUX-FINAL-REVIEW-01: commit `d7b07f6c8`, CI #1094 SUCCESS.
 
-## UIUX-SUPPLIERS-01 - READY FOR VISUAL REVIEW (2026-11-05)
+## UIUX-SUPPLIERS-01 - CERRADO con UIUX-FINAL-REVIEW-01 (CI #1094 SUCCESS) (2026-11-05)
 
 Listado de Proveedores, incluidos los ajustes visuales 1 y 2 autorizados, aislado de
 Clientes mediante el rol supplier y CSS local. Contrato:
@@ -151,9 +179,9 @@ PASS; lint focal PASS (0 errores, 1 warning de tamaño preexistente).
 Seis capturas de la página real, con datos sintéticos
 y las fuentes oficiales, a 1440 y 390 px: encabezado estable de 44 y 89 px respectivamente,
 sin desbordamiento horizontal y con navegación intacta.
-Evidencia local en `tmp/uiux-suppliers-heading/`; se conserva la de los ajustes anteriores.
-Sin staging, commit ni push. Pendientes gate del propietario y aprobación visual;
-no CLOSED ni piloto terminado.
+Esa evidencia y la de los ajustes anteriores eran locales y temporales
+(`tmp/uiux-suppliers-heading/` y carpetas `tmp/uiux-suppliers-*`), ya no conservadas.
+Cerrado con UIUX-FINAL-REVIEW-01: commit `d7b07f6c8`, CI #1094 SUCCESS.
 
 
 ## NAV-COVERAGE-FINAL-REVIEW-01 — READY FOR REVIEW (2026-11-04)
@@ -370,7 +398,8 @@ git status --short
 
 Casos iniciales exactos: `Invoice_with_mixed_vat_rates_matches_the_approved_golden_file`
 (`03-invoice-with-vat.pdf`) e `Invoice_with_additional_info_matches_the_approved_golden_file`
-(`05-invoice-with-additional-info.pdf`), registrados en `tmp/pdfs/infrastructure.log`.
+(`05-invoice-with-additional-info.pdf`), registrados en un log local temporal
+(`tmp/pdfs/infrastructure.log`), ya no conservado en el árbol de trabajo.
 Investigación exclusivamente focal: la intermitencia se reprodujo y se capturó en 03
 y también en 01 (estándar); el 05 inicial solo conserva el log, no el binario fallido.
 
@@ -386,8 +415,10 @@ Fix mínimo de pruebas: colección xUnit `RideGoldenRendering` sin ejecución pa
 para la clase golden; comparación binaria y golden originales intactos. Ningún cambio
 productivo en esta investigación; ajustes de barras y NC preservados.
 **PASS: 6 ejecuciones conjuntas consecutivas de 14/14 (84/84)**; los 36 candidatos
-golden exportados coinciden byte a byte con los seis originales. Capturas y logs locales
-en `tmp/pdfs/golden-investigation/` y `tmp/pdfs/golden-investigation-*.log`.
+golden exportados coinciden byte a byte con los seis originales. Las capturas y logs
+locales (`tmp/pdfs/golden-investigation/` y `tmp/pdfs/golden-investigation-*.log`) ya no
+se conservan; la evidencia persistente es la colección `RideGoldenRendering` en
+`backend/src/ERP.Infrastructure.Tests/Ride/RideGoldenFileTests.cs` (commit `b681f5b36`).
 Este aislamiento estabiliza el gate; no acredita corregir la biblioteca ni probar
 renderizado productivo concurrente. Sin suites generales, SRI, staging, commit ni push.
 **Producción NO-GO**; gate/aprobación del propietario pendientes, no CLOSED.
