@@ -75,6 +75,7 @@ Manual: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 | [`tools/architecture/check-identity-guardrails.ps1`](./tools/architecture/check-identity-guardrails.ps1) | Auth legacy |
 | [`tools/quality/check-handler-size.ps1`](./tools/quality/check-handler-size.ps1) | Handler size |
 | [`tools/architecture/check-architecture-guardrails.ps1`](./tools/architecture/check-architecture-guardrails.ps1) | Architecture |
+| [`tools/architecture/check-staged-guardrails.ps1`](./tools/architecture/check-staged-guardrails.ps1) | Precommit sobre staging (stack + architecture) |
 | [`tools/generators/new-master-module.ps1`](./tools/generators/new-master-module.ps1) | Scaffolding |
 
 Grandfather JSON: [`tools/architecture/architecture-grandfather.json`](./tools/architecture/architecture-grandfather.json)

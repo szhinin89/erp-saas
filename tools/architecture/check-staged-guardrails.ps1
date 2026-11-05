@@ -1,13 +1,16 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Ejecuta el guardrail oficial de CI (check-architecture-guardrails.ps1 -SkipFrontendChunk) sobre el
+  Ejecuta los controles oficiales de CI Stack Audit (scripts/ci/verify-stack-allowlist.ps1) y
+  Architecture guardrails (check-architecture-guardrails.ps1 -SkipFrontendChunk) sobre el
   contenido PREPARADO EN STAGING, es decir, exactamente lo que incluiría el próximo commit.
 .DESCRIPTION
   No define reglas propias: materializa el índice de git en un directorio temporal
-  (git checkout-index) y ejecuta allí la versión preparada del guardrail oficial, el mismo
-  comando que corre el job "Architecture guardrails" de CI en push. Así detecta PR-7 y el resto
-  de violaciones con independencia de cambios no preparados del árbol de trabajo.
+  (git checkout-index) y ejecuta allí las versiones preparadas de ambos controles, los mismos
+  pasos que corre CI en push. El snapshot contiene solo archivos versionados, como el checkout
+  de CI, de modo que los resultados no dependen de cambios no preparados ni de archivos sin
+  seguimiento del árbol de trabajo. Ambos controles se ejecutan siempre; PASS exige los dos.
+  Fuera de alcance: el chunk Vite (-FrontendChunkOnly, requiere build) y los demás jobs de CI.
 
   Solo lectura respecto del repositorio: no modifica el árbol de trabajo, el índice ni la
   configuración de git, y no prepara cambios. El directorio temporal se elimina al terminar.
@@ -52,16 +55,34 @@ try {
     $prefix = $snapshot.Replace('\', '/').TrimEnd('/') + '/'
     Invoke-Git @('-C', $repoRoot, '-c', 'core.longpaths=true', 'checkout-index', '--all', '--force', "--prefix=$prefix") | Out-Null
 
-    $guardrail = Join-Path $snapshot 'tools/architecture/check-architecture-guardrails.ps1'
-    if (-not (Test-Path -LiteralPath $guardrail -PathType Leaf)) { throw 'El guardrail oficial no esta en el indice.' }
+    # Mismos controles y argumentos que los jobs de CI en push (architecture.yml), en su orden.
+    $controls = @(
+        @{ Name = 'Stack Audit (allowlist)'; Script = 'scripts/ci/verify-stack-allowlist.ps1'; Arguments = @('-RepoRoot', $snapshot) },
+        @{ Name = 'Architecture guardrails'; Script = 'tools/architecture/check-architecture-guardrails.ps1'; Arguments = @('-SkipFrontendChunk') }
+    )
+    foreach ($control in $controls) {
+        $path = Join-Path $snapshot $control.Script
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Control oficial ausente del indice: $($control.Script)" }
+    }
 
-    # Proceso hijo con el mismo motor de PowerShell; GIT_DIR permite verificar commits base (PR-7).
+    # Procesos hijos con el mismo motor de PowerShell. GIT_DIR apunta al repositorio real para las
+    # lecturas git de los controles (commits base PR-7, ls-files de /.local/); el snapshot no es repo.
     $env:GIT_DIR = $gitDir
     $shell = (Get-Process -Id $PID).Path
-    & $shell -NoProfile -ExecutionPolicy Bypass -File $guardrail -SkipFrontendChunk
-    $childExit = $LASTEXITCODE
-    if ($null -eq $childExit) { throw 'El guardrail no devolvio codigo de salida.' }
-    $exitCode = [int]$childExit
+    $results = @()
+    foreach ($control in $controls) {
+        Write-Host "`n=== $($control.Name) sobre staging ===" -ForegroundColor Cyan
+        $global:LASTEXITCODE = $null
+        $controlArgs = $control.Arguments
+        & $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $snapshot $control.Script) @controlArgs
+        $childExit = $LASTEXITCODE
+        if ($null -eq $childExit) { throw "$($control.Name) no devolvio codigo de salida." }
+        $results += [pscustomobject]@{ Control = $control.Name; Exit = [int]$childExit }
+    }
+
+    Write-Host "`nResumen de controles sobre staging:"
+    $results | ForEach-Object { Write-Host ("  {0}: {1}" -f $_.Control, $(if ($_.Exit -eq 0) { 'PASS' } else { "FAIL (exit $($_.Exit))" })) }
+    $exitCode = if (@($results | Where-Object { $_.Exit -ne 0 }).Count -eq 0) { 0 } else { 1 }
 }
 catch {
     Write-Host "Staged guardrails ERROR: $($_.Exception.Message)" -ForegroundColor Red

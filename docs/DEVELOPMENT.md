@@ -97,6 +97,7 @@ Los artefactos no versionados de `/.local/` (directorio ignorado por Git) quedan
 | `tools/architecture/check-identity-guardrails.ps1` | CI: sin referencias auth legacy `users` |
 | `tools/quality/check-handler-size.ps1` | CI: MediatR `Handle` ≤ 150 líneas |
 | `tools/architecture/check-architecture-guardrails.ps1` | CI: capas, patrones frontend, límites TSX, chunk Vite |
+| `tools/architecture/check-staged-guardrails.ps1` | Precommit manual: ejecuta Stack Audit y Architecture guardrails oficiales sobre el contenido en staging (`pwsh -NoProfile -File tools/architecture/check-staged-guardrails.ps1`); solo lectura, exit ≠ 0 ante cualquier fallo |
 | `tools/generators/new-master-module.ps1` | Scaffolding vertical módulo master |
 
 Índice breve: [`scripts/README.md`](../scripts/README.md).

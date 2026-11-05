@@ -150,7 +150,7 @@ Aplicar únicamente los checks correspondientes al cambio:
 |---|---|
 | Backend | `dotnet test` de los proyectos/filtros afectados; PostgreSQL real para los casos del flujo por fase |
 | Frontend | Desde `frontend/`: `npm run lint`, `npx tsc --noEmit`, `npm run build` |
-| Arquitectura/código | Desde `frontend/`: `npm run architecture:check` (ratchet oficial) **y**, desde la raíz, `tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk` (límites PR-1–PR-10, handlers; mismo paso que CI). Antes de commitear: `tools/architecture/check-staged-guardrails.ps1` sobre el contenido en staging |
+| Arquitectura/código | Desde `frontend/`: `npm run architecture:check` (ratchet oficial) **y**, desde la raíz, `tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk` (límites PR-1–PR-10, handlers; mismo paso que CI). Antes de commitear: `tools/architecture/check-staged-guardrails.ps1` (Stack Audit + Architecture guardrails) sobre el contenido en staging |
 | Solo documentación | `node tools/architecture/run-all.mjs --only documentation`, referencias modificadas y `git diff --check`; sin pruebas funcionales |
 
 Pruebas focales y gate del propietario: [flujo por fase](#flujo-obligatorio-del-agente-por-fase).
@@ -174,7 +174,7 @@ No pretende inferir contradicciones de negocio ni validar todos los archivos his
 |-------------|------|
 | Stack allowlist | `scripts/ci/verify-stack-allowlist.ps1` |
 | Architecture guardrails | `tools/architecture/check-architecture-guardrails.ps1` |
-| Guardrails sobre staging (precommit, manual) | `tools/architecture/check-staged-guardrails.ps1`: materializa el índice en un temporal y ejecuta allí el guardrail anterior con `-SkipFrontendChunk`; no define reglas, no modifica árbol ni índice, falla cerrado (exit ≠ 0) |
+| Guardrails sobre staging (precommit, manual) | `tools/architecture/check-staged-guardrails.ps1`: materializa el índice en un temporal y ejecuta allí Stack allowlist y Architecture guardrails (`-SkipFrontendChunk`), como CI en push; no define reglas, no modifica árbol ni índice, falla cerrado (exit ≠ 0). No cubre el chunk Vite ni otros jobs |
 | Identity guardrails | `tools/architecture/check-identity-guardrails.ps1` |
 | Handler size | `tools/quality/check-handler-size.ps1` |
 | NetArchTest | `backend/src/ERP.Architecture.Tests` |

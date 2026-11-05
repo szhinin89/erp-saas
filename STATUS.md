@@ -1,5 +1,20 @@
 # Project Status
 
+## CI-1096-FIX — READY FOR REVIEW (2026-11-05)
+
+CI #1096 (commit `dd10a0f9b`) falló en Stack Audit: `tools/architecture/check-staged-guardrails.ps1`
+no figuraba en `scriptsAllowed`. Registrado en `scripts/stack-allowlist.json` (orden alfabético),
+el mapa de [DEVELOPMENT](docs/DEVELOPMENT.md#scripts-powershell-canónicos) y `CONTEXT.md`, sin
+excepciones genéricas. El control de staging ahora ejecuta también Stack Audit
+(`verify-stack-allowlist.ps1 -RepoRoot <snapshot>`) además de Architecture guardrails; el
+snapshot solo contiene archivos versionados, como el checkout de CI. No cubre el chunk Vite ni
+otros jobs. Sin cambios en Clientes, límites ni reglas.
+
+Validación agente: ambos controles oficiales PASS sobre el árbol; sobre el índice de `dd10a0f9b`
+el control reproduce CI #1096 (Stack Audit FAIL, Architecture PASS) sin alterar índice ni árbol.
+En clon temporal: corrección preparada PASS; `.ps1` no autorizado preparado FAIL, también si se
+borra del árbol (pwsh 7 y Windows PowerShell 5.1). Pendientes gate del propietario y CI; no CLOSED.
+
 ## CI-1095-FIX + PRECOMMIT-GUARD — READY FOR REVIEW (2026-11-05)
 
 CI #1095 falló en PR-7: `MasterDataCustomersPage.tsx` del commit `9d4308935` tiene 511 líneas
