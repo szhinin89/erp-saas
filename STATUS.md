@@ -1,5 +1,29 @@
 # Project Status
 
+## CI-1095-FIX + PRECOMMIT-GUARD — READY FOR REVIEW (2026-11-05)
+
+CI #1095 falló en PR-7: `MasterDataCustomersPage.tsx` del commit `9d4308935` tiene 511 líneas
+no vacías (536 físicas; el guardrail cuenta con `Measure-Object -Line`). Reproducido en local
+con el mismo comando de CI (exit 1, única violación). Corrección: extracción literal del modal
+de Clasificación (con `PersistedValueOption`) a
+`modules/masterData/components/MasterDataCustomerConfigModal.tsx`; solo cambia el nombre
+exportado y su uso (diff verificado). Página en 288 líneas contadas por PR-7, sin excepción
+ni cambio del límite; diseño, permisos y los siete campos intactos.
+
+Causa de la discrepancia: los gates locales anteriores ejecutaron `npm run architecture:check`,
+que no corre `check-architecture-guardrails.ps1` sobre el repositorio (solo prueba el script con
+fixtures); CI lo ejecuta en un paso aparte. El contenido commiteado era idéntico al probado.
+Prevención: `tools/architecture/check-staged-guardrails.ps1` ejecuta el guardrail oficial sobre
+el índice materializado en un temporal; documentado en
+[enforcement](docs/architecture/enforcement.md#tests-pre-merge). Sin hook instalado.
+
+Validación agente: Vitest focal 38/38, `tsc -b`, ESLint focal, guardrail oficial completo
+`-SkipFrontendChunk` PASS, architecture:check y check documental PASS, git diff --check PASS.
+Caso controlado en un clon temporal (pwsh 7 y Windows PowerShell 5.1): HEAD de CI #1095 falla,
+la corrección preparada pasa, un `.tsx` preparado de 501 líneas falla aunque se borre del árbol,
+retirarlo vuelve a pasar y un guardrail ausente del índice falla cerrado (exit 2). Pendientes
+gate del propietario, decisión sobre hook y CI del commit correctivo; no CLOSED.
+
 ## BUG-CUSTOMERS-CLASSIFICATION-01 — READY FOR REVIEW (2026-11-05)
 
 BUG REAL (integridad de datos): Listado de Clientes → «Clasificación» abría con los siete

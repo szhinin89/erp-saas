@@ -150,7 +150,7 @@ Aplicar únicamente los checks correspondientes al cambio:
 |---|---|
 | Backend | `dotnet test` de los proyectos/filtros afectados; PostgreSQL real para los casos del flujo por fase |
 | Frontend | Desde `frontend/`: `npm run lint`, `npx tsc --noEmit`, `npm run build` |
-| Arquitectura/código | Desde `frontend/`: `npm run architecture:check` (ratchet oficial) |
+| Arquitectura/código | Desde `frontend/`: `npm run architecture:check` (ratchet oficial) **y**, desde la raíz, `tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk` (límites PR-1–PR-10, handlers; mismo paso que CI). Antes de commitear: `tools/architecture/check-staged-guardrails.ps1` sobre el contenido en staging |
 | Solo documentación | `node tools/architecture/run-all.mjs --only documentation`, referencias modificadas y `git diff --check`; sin pruebas funcionales |
 
 Pruebas focales y gate del propietario: [flujo por fase](#flujo-obligatorio-del-agente-por-fase).
@@ -174,6 +174,7 @@ No pretende inferir contradicciones de negocio ni validar todos los archivos his
 |-------------|------|
 | Stack allowlist | `scripts/ci/verify-stack-allowlist.ps1` |
 | Architecture guardrails | `tools/architecture/check-architecture-guardrails.ps1` |
+| Guardrails sobre staging (precommit, manual) | `tools/architecture/check-staged-guardrails.ps1`: materializa el índice en un temporal y ejecuta allí el guardrail anterior con `-SkipFrontendChunk`; no define reglas, no modifica árbol ni índice, falla cerrado (exit ≠ 0) |
 | Identity guardrails | `tools/architecture/check-identity-guardrails.ps1` |
 | Handler size | `tools/quality/check-handler-size.ps1` |
 | NetArchTest | `backend/src/ERP.Architecture.Tests` |
@@ -222,7 +223,7 @@ Penalizaciones: violations (−8), warnings (−2), entradas grandfather (−1).
 
 #### Architecture ratchet
 
-`npm run architecture:check` es el único gate oficial y compara findings con el snapshot versionado [`tools/architecture/architecture-baseline.json`](../../tools/architecture/architecture-baseline.json). La deuda histórica no puede crecer: cualquier finding nuevo falla, aunque desaparezca otro finding en el mismo cambio. Resolver deuda pasa y se informa; el baseline solo baja mediante una edición revisada del snapshot, nunca se regenera ni aumenta automáticamente.
+`npm run architecture:check` es el único gate oficial del ratchet de findings Node; no ejecuta el guardrail PowerShell sobre el repositorio (sus pruebas solo usan fixtures), por lo que PR-7 y los demás límites de `check-architecture-guardrails.ps1` requieren ese script, como hace CI. Compara findings con el snapshot versionado [`tools/architecture/architecture-baseline.json`](../../tools/architecture/architecture-baseline.json). La deuda histórica no puede crecer: cualquier finding nuevo falla, aunque desaparezca otro finding en el mismo cambio. Resolver deuda pasa y se informa; el baseline solo baja mediante una edición revisada del snapshot, nunca se regenera ni aumenta automáticamente.
 
 La identidad estable de cada finding es `(check, rule, file, message)`; los números de línea se excluyen para tolerar movimientos de código y las ocurrencias idénticas conservan multiplicidad. El parser valida el schema y el desglose antes de comparar; baseline ausente o malformado falla cerrado.
 
