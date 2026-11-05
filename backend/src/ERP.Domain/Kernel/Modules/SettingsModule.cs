@@ -58,9 +58,14 @@ public static class SettingsModule
 
     // MENU-UX-RENAME-01: label de negocio "Datos de la empresa" (antes "Company"/"Datos de
     // Empresa") — pantalla de la empresa activa (perfil/fiscal/marca), no el multiempresa.
+    // NAV-COVERAGE-H2: sus pestañas leen APIs de dos capacidades independientes (Ventas →
+    // CompanyView vía OrgConfig; el resto → CompaniesView vía perfil). La entrada se muestra con
+    // cualquiera de las dos; cada pestaña aplica su propio permiso. Permission se conserva para que
+    // CompanyView siga siendo asignable (AssignablePermissionKeys).
     [NavItem(
         "Datos de la empresa",
         Permission = SettingsPermissions.CompanyView,
+        PermissionsAnyCsv = SettingsPermissions.CompanyView + "," + SettingsPermissions.CompaniesView,
         LabelKey = "app.nav.item.settings.company",
         SortOrder = 20,
         Id = "00000000-0000-4000-8000-000000000101",

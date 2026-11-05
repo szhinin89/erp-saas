@@ -14,7 +14,7 @@ namespace ERP.Domain.Kernel.Modules;
 // Electrónicos se mueve a SriModule.cs (el árbol objetivo lo agrupa con Facturación electrónica
 // bajo un tile "SRI/Documentos electrónicos" propio, ya que ambos son sobre el ciclo de vida del
 // comprobante electrónico ante el SRI, no una operación de venta en sí). Ventas queda con:
-// Facturas de venta/POS, Devoluciones, Preferencias de Ventas/POS, Reporte de Ventas — igual al
+// Facturas de venta/POS, Devoluciones, Reporte de Ventas — igual al
 // árbol objetivo. Mismos Ids/rutas/permisos en los módulos nuevos, solo cambia a qué [Module]
 // pertenecen.
 [Module("sales", Icon = "💰", SortOrder = 70)]
@@ -72,33 +72,12 @@ public static class SalesModule
     // /electronic-documents/monitor, que queda como redirect en el frontend).
 
     // ── Configuración ────────────────────────────────────────────────
-    [NavItem(
-        "Configuración",
-        LabelKey = "app.nav.item.sales.configuration",
-        SortOrder = 20,
-        Id = "e4000000-0000-4000-9000-000000000020",
-        PermissionsAnyCsv = OperationalPreferencesPermissions.View
-    )]
-    public const string ConfigurationGroup = "/sales/configuration-group";
-
     // PAYMENT-METHOD-ACCOUNT-UI-NAV-01 / DESTINOS-CONTABLES-COBROS-VENTAS-01: "Métodos de Pago"
     // se retiró de aquí — quedaba como una segunda entrada al mismo destino que confundía más de
     // lo que ayudaba (ver decisión del usuario). Única entrada de menú ahora:
     // AccountingModule.SalesCollectionDestinations, bajo Contabilidad > Configuración >
     // Destinos contables > "Cobros de ventas" (mismo Id d1000000-0000-4000-9000-000000000002
     // reutilizado allí, sin generar un ui_nav_items huérfano).
-
-    // Enlace contextual al tab "salesPos" de la pantalla única de Preferencias Operativas
-    // (/settings/operations) — no duplica la pantalla, solo la referencia con deep-link.
-    [NavItem(
-        "Preferencias de Ventas/POS",
-        Permission = OperationalPreferencesPermissions.View,
-        LabelKey = "app.nav.item.sales.posPreferences",
-        SortOrder = 20,
-        Id = "e4000000-0000-4000-9000-000000000021",
-        ParentId = "e4000000-0000-4000-9000-000000000020"
-    )]
-    public const string PosPreferences = "/settings/operations?tab=salesPos";
 
     // MAPA-MENU-ERP-SSOT-01: "Cajas registradoras" y "Preferencias de Caja" se movieron a
     // TreasuryModule (Tesorería > Caja > Configuración) — mismos Ids, ver comentario allí.

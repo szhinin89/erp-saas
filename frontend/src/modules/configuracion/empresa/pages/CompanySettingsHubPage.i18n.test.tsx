@@ -7,6 +7,7 @@ import { ensureLocaleLoaded, storageKey } from "../../../../i18n/dictionaries";
 import es from "../../../../i18n/locales/es.json";
 import en from "../../../../i18n/locales/en.json";
 import { useActiveBranchStore } from "../../../../store/activeBranchStore";
+import { useSessionStore } from "../../../../store/sessionStore";
 import { CompanySettingsHubPage } from "./CompanySettingsHubPage";
 
 vi.mock("../../../../access/usePermissionsUi", () => ({ usePermissionsUi: () => ({ canShow: () => true }) }));
@@ -30,8 +31,12 @@ function Controls() {
   const { setLocale } = useI18n();
   return <><button onClick={() => setLocale("en")}>English</button><button onClick={() => setLocale("es")}>Español</button></>;
 }
-beforeEach(() => useActiveBranchStore.setState({ branch: { id: "test-branch", name: "Fixture", isMainBranch: true } }));
-afterEach(() => { cleanup(); localStorage.clear(); useActiveBranchStore.setState({ branch: null }); });
+// El hub exige sesión resuelta (NAV-COVERAGE-H2); estas pruebas cubren textos con acceso total.
+beforeEach(() => {
+  useActiveBranchStore.setState({ branch: { id: "test-branch", name: "Fixture", isMainBranch: true } });
+  useSessionStore.setState({ isLoaded: true, authorization: { roles: ["User"], permissions: ["*"] } });
+});
+afterEach(() => { cleanup(); localStorage.clear(); useActiveBranchStore.setState({ branch: null }); useSessionStore.setState({ isLoaded: false, authorization: null }); });
 
 const tabs = [
   ["profile", "settings.company.profile.corporate"],

@@ -14,6 +14,7 @@ import { applyServerErrors } from "../../../lib/validationErrors";
 import { formatApiRequestError } from "../../../lib/apiError";
 import { message } from "../../../../lib/messages";
 import { orgConfigService } from "../api/orgConfigService";
+import { COMPANY_SETTINGS_TAB_VIEW_PERMISSION } from "../companySettingsTabAccess";
 import { sriLookupFacade } from "../../../items/facades/sriLookupFacade";
 import { paymentTermLookupFacade } from "../../../masterData/facades/paymentTermLookupFacade";
 import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
@@ -46,7 +47,9 @@ export function CompanySalesSettingsSection() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
 
-  const canView = canShow("erp.companies.view");
+  // NAV-COVERAGE-H2: la lectura usa GET /org-config/company/invoice-defaults (settings.company.view);
+  // el guardado sigue exigiendo erp.companies.update, igual que su PUT.
+  const canView = canShow(COMPANY_SETTINGS_TAB_VIEW_PERMISSION.sales);
   const canEdit = canShow("erp.companies.update");
 
   const [modalOpen, setModalOpen] = useState(false);

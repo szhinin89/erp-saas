@@ -182,6 +182,30 @@ describe("CashFundingRequestDetailPage", () => {
     expect(screen.queryByText("Rechazar")).toBeNull();
   });
 
+  it("NAV-COVERAGE-H1 — solicitud ajena: el 404 del servidor muestra no encontrada sin datos ni acciones", async () => {
+    vi.mocked(cashFundingRequestService.getById).mockImplementationOnce(async () => {
+      throw Object.assign(new Error("Not Found"), { response: { status: 404 } });
+    });
+    renderPage();
+    expect(await screen.findByText("Solicitud de efectivo no encontrada")).toBeTruthy();
+    expect(screen.queryByText("Sergio Compras")).toBeNull();
+    expect(screen.queryByText("Entregar efectivo")).toBeNull();
+    expect(screen.queryByText("Cancelar solicitud")).toBeNull();
+  });
+
+  it("NAV-COVERAGE-H1 — Volver a solicitudes regresa a la lista (Mis solicitudes del solicitante)", async () => {
+    render(
+      <MemoryRouter initialEntries={[`/treasury/cash/funding-requests/${ID}`]}>
+        <Routes>
+          <Route path="/treasury/cash/funding-requests/:id" element={<CashFundingRequestDetailPage />} />
+          <Route path="/treasury/cash/funding-requests" element={<p>LISTA SOLICITUDES</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByText("Volver a solicitudes"));
+    expect(await screen.findByText("LISTA SOLICITUDES")).toBeTruthy();
+  });
+
   it("16. ningún GUID ni dato técnico visible", async () => {
     withFlags({ status: "Fulfilled", supplierPaymentId: g(20), resolvedByName: "Carla Cajera" });
     renderPage();

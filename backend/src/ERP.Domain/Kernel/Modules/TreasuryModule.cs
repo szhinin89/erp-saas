@@ -77,7 +77,7 @@ public static class TreasuryModule
         SortOrder = 20,
         Id = "f5000000-0000-4000-9000-000000000030",
         ParentId = "f5000000-0000-4000-9000-000000000010",
-        PermissionsAnyCsv = CajaPermissions.View + "," + OperationalPreferencesPermissions.View
+        PermissionsAnyCsv = CajaPermissions.View
     )]
     public const string CashConfigurationGroup = "/treasury/cash/configuration-group";
 
@@ -94,18 +94,6 @@ public static class TreasuryModule
         RelatedActionPermissionsCsv = CajaPermissions.Manage
     )]
     public const string CajaRegisters = "/treasury/cash/registers";
-
-    // Enlace contextual al tab "cash" de la pantalla única de Preferencias Operativas
-    // (/settings/operations) — no duplica la pantalla, solo la referencia con deep-link.
-    [NavItem(
-        "Preferencias de Caja",
-        Permission = OperationalPreferencesPermissions.View,
-        LabelKey = "app.nav.item.caja.preferences",
-        SortOrder = 20,
-        Id = "f5000000-0000-4000-9000-000000000021",
-        ParentId = "f5000000-0000-4000-9000-000000000030"
-    )]
-    public const string CajaPreferences = "/settings/operations?tab=cash";
 
     // FINANCIAL-DESTINATION-TO-BANK-ACCOUNT-MIGRATION-01: "Destinos financieros" retirado —
     // legacy treasury destination fue eliminado como intermediario; CompanyBankAccount es ahora el

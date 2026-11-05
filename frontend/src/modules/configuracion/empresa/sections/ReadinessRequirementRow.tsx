@@ -4,6 +4,12 @@ import { Badge } from "../../../../components/PageShell";
 import { useNavigationAccess } from "../../../../components/navigationAccess";
 import { useI18n } from "../../../../i18n/i18n";
 import { getOperationalReadinessActionRoute } from "../operationalReadinessActionRoutes";
+import {
+  COMPANY_SETTINGS_TAB_VIEW_PERMISSION,
+  companySettingsTabOf,
+  useCompanySettingsTabAccess,
+} from "../companySettingsTabAccess";
+import type { CompanySettingsTabId } from "../companySettingsTabs";
 import type {
   ReadinessActionTarget,
   ReadinessFiscalStatus,
@@ -58,10 +64,21 @@ function ReadinessRequirementAction({
 }) {
   const { t } = useI18n();
   const navigation = useNavigationAccess();
+  const tabAccess = useCompanySettingsTabAccess();
   const route = getOperationalReadinessActionRoute(actionTarget);
   if (!route || !navigation.resolved) return null;
 
-  const destination = navigation.findDestination(route);
+  // NAV-COVERAGE-H2: el menú solo acredita la pantalla; una pestaña de Datos de la empresa exige
+  // además el permiso de lectura de su propia API.
+  const companyTab = companySettingsTabOf(route);
+  if (companyTab !== null && tabAccess.status === "loading") return null;
+  const tabAllowed =
+    companyTab === null ||
+    (tabAccess.status === "ready" &&
+      companyTab in COMPANY_SETTINGS_TAB_VIEW_PERMISSION &&
+      tabAccess.canViewTab(companyTab as CompanySettingsTabId));
+
+  const destination = tabAllowed ? navigation.findDestination(route) : null;
   if (!destination) {
     // Un requisito ya listo no necesita acción: el aviso solo aparece si hay algo que corregir.
     if (isReady) return null;

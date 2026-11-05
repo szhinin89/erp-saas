@@ -101,23 +101,9 @@ public static class InventoryModule
         LabelKey = "app.nav.item.inventory.configuration",
         SortOrder = 20,
         Id = "e2000000-0000-4000-9000-000000000020",
-        PermissionsAnyCsv = OperationalPreferencesPermissions.View
-            + ","
-            + InventoryPermissions.AdjustmentReasonsView
+        PermissionsAnyCsv = InventoryPermissions.AdjustmentReasonsView
     )]
     public const string ConfigurationGroup = "/inventory/configuration-group";
-
-    // Enlace contextual al tab "inventory" de la pantalla única de Preferencias Operativas
-    // (/settings/operations) — no duplica la pantalla, solo la referencia con deep-link.
-    [NavItem(
-        "Preferencias de Inventario",
-        Permission = OperationalPreferencesPermissions.View,
-        LabelKey = "app.nav.item.inventory.preferences",
-        SortOrder = 10,
-        Id = "e2000000-0000-4000-9000-000000000021",
-        ParentId = "e2000000-0000-4000-9000-000000000020"
-    )]
-    public const string Preferences = "/settings/operations?tab=inventory";
 
     // INVENTORY-ADJUSTMENTS-02: catálogo administrable de motivos de ajuste de inventario.
     [NavItem(

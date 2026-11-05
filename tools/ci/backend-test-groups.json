@@ -196,6 +196,8 @@
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception.GetPurchaseReceptionXmlViewAffectedInvoiceIntegrationTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception.ResolvePurchaseReceptionLinesIntegrationTests",
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseReception.SriReceptionXmlProviderTests",
+        "ERP.Infrastructure.Tests.Navigation.CompanySettingsMenuVisibilityTests",
+        "ERP.Infrastructure.Tests.Navigation.PurchasesMenuVisibilityTests",
         "ERP.Infrastructure.Tests.Persistence.AuthorizePurchaseReturnConcurrencyTests",
         "ERP.Infrastructure.Tests.Persistence.AuthorizePurchaseReturnLockAConcurrencyTests",
         "ERP.Infrastructure.Tests.Persistence.CashMovementDirectQueryAuditTests",

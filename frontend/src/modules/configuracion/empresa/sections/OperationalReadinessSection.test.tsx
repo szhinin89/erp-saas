@@ -6,6 +6,7 @@ import { I18nProvider } from "../../../../i18n/i18n";
 import { NavigationAccessContext, buildNavigationAccess } from "../../../../components/navigationAccess";
 import type { MainMenuGroup } from "../../../../components/useAppLayoutNavigation";
 import { useActiveBranchStore } from "../../../../store/activeBranchStore";
+import { useSessionStore } from "../../../../store/sessionStore";
 import type {
   CompanyOperationalReadiness,
   CompanyOperationalReadinessCashRegister,
@@ -152,12 +153,15 @@ function rowOf(code: string): HTMLElement {
 
 beforeEach(() => {
   useActiveBranchStore.setState({ branch: MATRIZ });
+  // Destinos ?tab= de Datos de la empresa exigen sesión resuelta (NAV-COVERAGE-H2).
+  useSessionStore.setState({ isLoaded: true, authorization: { roles: ["User"], permissions: ["*"] } });
 });
 
 afterEach(() => {
   cleanup();
   getOperationalReadiness.mockReset();
   useActiveBranchStore.setState({ branch: null });
+  useSessionStore.setState({ isLoaded: false, authorization: null });
 });
 
 describe("OperationalReadinessSection — sucursal activa", () => {

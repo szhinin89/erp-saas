@@ -15,7 +15,7 @@ public static class PurchasesModule
         LabelKey = "app.nav.item.purchases.operation",
         SortOrder = 10,
         Id = "e3000000-0000-4000-9000-000000000010",
-        PermissionsAnyCsv = PurchasePermissions.View + "," + FinancePermissions.View
+        PermissionsAnyCsv = PurchasePermissions.View
     )]
     public const string PurchasesGroup = "/purchases/operation-group";
 
@@ -60,25 +60,6 @@ public static class PurchasesModule
         ParentId = "e3000000-0000-4000-9000-000000000010"
     )]
     public const string CreditNotes = "/purchases/credit-notes";
-
-    [NavItem(
-        "Configuración",
-        LabelKey = "app.nav.item.purchases.configuration",
-        SortOrder = 20,
-        Id = "e3000000-0000-4000-9000-000000000020",
-        PermissionsAnyCsv = OperationalPreferencesPermissions.View
-    )]
-    public const string ConfigurationGroup = "/purchases/configuration-group";
-
-    [NavItem(
-        "Preferencias de Compras",
-        Permission = OperationalPreferencesPermissions.View,
-        LabelKey = "app.nav.item.purchases.preferences",
-        SortOrder = 10,
-        Id = "e3000000-0000-4000-9000-000000000021",
-        ParentId = "e3000000-0000-4000-9000-000000000020"
-    )]
-    public const string Preferences = "/settings/operations?tab=purchases";
 
     [NavItem(
         "Reportes",

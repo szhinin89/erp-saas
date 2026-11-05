@@ -361,8 +361,6 @@ public sealed class KernelRegistryTests
                     // PURCHASE-CREDIT-NOTE-ENTRY-SCREEN-DUAL-MODE-01 — listado de notas de crédito de
                     // compra; "Nueva" es un botón dentro de esa pantalla, nunca una entrada de menú propia.
                     "/purchases/credit-notes",
-                    "/purchases/configuration-group",
-                    "/settings/operations?tab=purchases",
                     "/purchases/reports-group",
                     "/reportes/compras",
                 }
@@ -413,7 +411,6 @@ public sealed class KernelRegistryTests
                     "/treasury/cash/funding-requests",
                     "/treasury/cash/configuration-group",
                     "/treasury/cash/registers",
-                    "/settings/operations?tab=cash",
                     "/treasury/banks/group",
                     // TREASURY-BANK-ACCOUNTS-01
                     "/treasury/banks/accounts",
@@ -590,13 +587,10 @@ public sealed class KernelRegistryTests
     [Fact]
     public void Navigation_sales_and_inventory_expose_their_top_level_containers()
     {
-        // MENU-MODULE-REORG-01: cada módulo agrupa sus pantallas bajo Operación/Configuración/
-        // Reportes. MAPA-MENU-ERP-SSOT-01: Caja se separó de vuelta a su propio módulo
-        // "treasury" (antes fusionada aquí desde CajaModule) — Ventas vuelve a exponer solo 3
-        // contenedores: Ventas/Configuración/Reportes.
+        // NAV-CONSOLIDATION-A01: sales has two containers; inventory keeps configuration.
         var navigation = KernelRegistry.Navigation;
 
-        foreach (var (groupCode, expectedCount) in new[] { ("sales", 3), ("inventory", 3) })
+        foreach (var (groupCode, expectedCount) in new[] { ("sales", 2), ("inventory", 3) })
         {
             var containers = navigation
                 .Where(n => n.GroupCode == groupCode && n.ParentItemId is null)
@@ -612,15 +606,12 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_sales_group_follows_operacion_configuracion_reportes_order()
+    public void Navigation_sales_group_follows_operacion_reportes_order()
     {
-        // MAPA-MENU-ERP-SSOT-01: Caja se separó a su propio módulo "treasury" (antes se
-        // insertaba aquí entre Ventas y Configuración, fusionada desde CajaModule por
-        // NAVIGATION-OPERATING-CYCLES-03) — Ventas vuelve a Operación/Configuración/Reportes.
+        // NAV-CONSOLIDATION-A01: sales configuration is removed with its only child.
         var expectedContainerOrder = new[]
         {
             "/sales/operation-group",
-            "/sales/configuration-group",
             "/sales/reports-group",
         };
 
@@ -670,12 +661,6 @@ public sealed class KernelRegistryTests
         cajaRegisters.GroupCode.Should().Be("treasury");
         cajaRegisters.ParentItemId.Should().Be(cajaConfigGroupId);
 
-        var cajaPreferences = KernelRegistry.Navigation.Single(n =>
-            n.RoutePath == "/settings/operations?tab=cash"
-        );
-        cajaPreferences.GroupCode.Should().Be("treasury");
-        cajaPreferences.ParentItemId.Should().Be(cajaConfigGroupId);
-
         var bankAccounts = KernelRegistry.Navigation.Single(n =>
             n.RoutePath == "/treasury/banks/accounts"
         );
@@ -684,28 +669,46 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_preferences_deep_links_point_to_the_single_operational_preferences_screen()
+    public void Navigation_operational_preferences_has_only_the_settings_entry()
     {
-        // MENU-MODULE-REORG-01: enlaces contextuales (query param ?tab=) a la ÚNICA pantalla real
-        // de Preferencias Operativas — no crean pantallas nuevas ni duplican la existente.
+        var entries = KernelRegistry.Navigation
+            .Where(n => n.RoutePath.StartsWith("/settings/operations", StringComparison.Ordinal))
+            .ToList();
+        entries.Should().ContainSingle();
+        entries[0].RoutePath.Should().Be("/settings/operations");
+        entries[0].GroupCode.Should().Be("settings");
+        entries[0].RelatedActionPermissionKeys.Should().Contain(
+            ERP.Domain.Kernel.Permissions.OperationalPreferencesPermissions.Configure);
+        entries[0].ParentItemId.Should().Be(Guid.Parse("5ece43ac-3228-445b-9bd8-cf86baef2fa8"));
+        KernelRegistry.Navigation.Should().NotContain(n =>
+            n.RoutePath == "/sales/configuration-group" || n.RoutePath == "/purchases/configuration-group");
+    }
+
+    [Theory]
+    [InlineData("/inventory/configuration-group", "/inventory/adjustment-reasons", "inventory.adjustment-reasons.view")]
+    [InlineData("/treasury/cash/configuration-group", "/treasury/cash/registers", "caja.view")]
+    public void Navigation_remaining_configuration_groups_require_their_child_permission(
+        string groupRoute, string childRoute, string permission)
+    {
+        var group = KernelRegistry.Navigation.Single(n => n.RoutePath == groupRoute);
+        var child = KernelRegistry.Navigation.Single(n => n.RoutePath == childRoute);
+        child.ParentItemId.Should().Be(group.Id);
+        child.PermissionKey.Should().Be(permission);
+        System.Text.Json.JsonSerializer.Deserialize<string[]>(group.PermissionKeysAnyJson!)
+            .Should().BeEquivalentTo(new[] { permission });
+        KernelRegistry.Navigation.Where(n => n.ParentItemId == group.Id)
+            .Should().ContainSingle().Which.Should().Be(child);
+    }
+
+    [Fact]
+    public void Navigation_containers_have_registered_children()
+    {
         var navigation = KernelRegistry.Navigation;
-
-        var deepLinks = new[]
+        foreach (var group in navigation.Where(n => n.PermissionKey is null))
         {
-            "/settings/operations?tab=salesPos",
-            "/settings/operations?tab=purchases",
-            "/settings/operations?tab=inventory",
-            "/settings/operations?tab=cash",
-        };
-
-        foreach (var route in deepLinks)
-        {
-            var item = navigation.Single(n => n.RoutePath == route);
-            item.PermissionKey.Should()
-                .Be(ERP.Domain.Kernel.Permissions.OperationalPreferencesPermissions.View);
+            var children = navigation.Where(n => n.ParentItemId == group.Id).ToList();
+            children.Should().NotBeEmpty($"{group.RoutePath} debe tener hijos");
         }
-
-        navigation.Should().ContainSingle(n => n.RoutePath == "/settings/operations");
     }
 
     [Fact]

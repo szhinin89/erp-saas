@@ -1,5 +1,215 @@
 # Project Status
 
+## NAV-COVERAGE-FINAL-REVIEW-01 — READY FOR REVIEW (2026-11-04)
+
+Revisión documental e integridad del conjunto NAV-CONSOLIDATION-A01, H1–H4, corrección CI y
+SECURITY-PRECISION-POLICY-01; sin cambios funcionales. [MENU_MAP](docs/navigation/MENU_MAP.md)
+sincronizado con `Kernel/Modules/*.cs` (96 NavItems, 12 módulos, sin huérfanos ni rutas
+duplicadas; orden por `SortOrder`, etiquetas visibles en español): siete pantallas ya
+implementadas documentadas (Costos pendientes, Solicitudes de efectivo, Motivos de movimientos,
+Contabilizaciones, Modo operativo, Períodos contables, Secuencias documentales), Destinos
+financieros retirado, una sola entrada `/settings/operations`, política de redirects con
+`LEGACY_REDIRECT_ALIASES` (H4) y `CONTEXTUAL_ROUTES` (H1).
+
+Verificación focal: `KernelRegistryTests` **48/48**; `PurchasesMenuVisibilityTests` +
+`CompanySettingsMenuVisibilityTests` **8/8**; `CompanyPrecisionPolicyPermissionContractTests` +
+`CompaniesApiSurfaceSnapshotTests` **11/11**; `CompanyPrecisionPolicyUseCasesTests` **24/24**;
+manifiesto CI `backend_tests.py --group infrastructure-06 --verify-only` **PASS** (209 casos,
+inventario completo, sin ejecutar pruebas); frontend (guard H1/H4, `navigationAccess`,
+`AppLayout`, `src/routes`, `navLabelTaxonomy`, `configuracion/empresa`,
+`configuracion/operaciones`, `caja`, pago con solicitud de efectivo) **322/322**; `tsc -b`,
+ESLint (0 errores), `architecture:check` (0 violaciones nuevas), enlaces de MENU_MAP/STATUS y
+`git diff --check` **PASS**.
+
+Discrepancia pendiente (sección LOCKED, no editada): `security.md` § Security & Access Contract
+V1 describe `canShow`/`has` como shim «siempre `true`» y `SessionContext.authorization.permissions`
+como no consumido. El código real (desde el commit inicial 2026-07-24) verifica la clave con
+fallback permisivo sin sesión/permisos cargados, y H1 (`RouteAccessGuard`), H2
+(`companySettingsTabAccess`) y `AccountsReceivablePage` leen esos permisos fail-closed. Cambiar la
+sección exige discusión explícita + actualización con tests de regresión: requiere decisión del
+propietario/revisión arquitectónica.
+Fuera de alcance: **H5 (Transportistas)**. Hallazgos sin corregir: `LEGACY_REDIRECT_PREFIXES`
+abre segmentos completos (`/masterdata` deja montar `/masterdata/business-partners/:id` sin
+NavItem); el guard abre todo `/treasury` con cualquier NavItem de Tesorería; los `<Navigate>`
+legacy no conservan query/hash; `NavigationBuilder` no poda contenedores anidados vacíos (A01);
+integraciones PostgreSQL de solicitudes de efectivo y `NavigationSyncService` no ejecutados aquí.
+Sin migraciones, SRI, suites generales, staging, commit ni push. **No CLOSED**: pendiente
+aprobación del propietario.
+
+## NAV-COVERAGE-H4 — READY FOR REVIEW (2026-11-04)
+
+Causa: `isRouteAllowed` decide por primer segmento; un redirect legacy cuyo segmento difiere del
+destino y no está en `LEGACY_REDIRECT_PREFIXES` mostraba `NoAccessPage` antes de montar su
+`<Navigate>`, aunque el usuario tuviera el destino (11 bloqueos reproducidos).
+Cambio (solo `RouteAccessGuard.tsx`): `LEGACY_REDIRECT_ALIASES` — rutas EXACTAS (`matchPath`,
+`end` + case-sensitive, sin prefijos) de redirects registrados: `/admin/users`,
+`/sales/payment-methods`, `/cash`, `/cash/registers`, `/finance/credit-terms`,
+`/finance/supplier-credits`, `/finance/supplier-credits/:id`, `/inventory/items`,
+`/inventory/item-types`, `/settings/electronic-invoicing`, `/electronic-documents/monitor`.
+Solo permite montar el redirect; el destino canónico se revalida contra el menú. Rutas,
+destinos, NavItems, backend, permisos y H1 sin cambios.
+
+Pruebas focales: `RouteAccessGuard.legacyAliases` (anti-deriva contra las rutas registradas;
+por cada redirect: autorizado llega al destino, no autorizado queda bloqueado en el destino,
+query/hash no eluden; 12 URLs no registradas bloqueadas) + H1 + `AppLayout` + `src/routes` +
+solicitudes de efectivo **98/98**; `tsc -b` y ESLint (0 errores) **PASS**.
+Limitaciones: los `<Navigate to="…">` existentes no conservan query/hash (preexistente, no se
+alteraron). Hallazgo para el propietario (sin corregir): `LEGACY_REDIRECT_PREFIXES` abre
+segmentos completos; `/masterdata` además deja montar la página real
+`/masterdata/business-partners/:id` sin NavItem (usada por Compras y Datos maestros).
+Sin migraciones, SRI, suites generales, staging, commit ni push. **No CLOSED**.
+
+## NAV-COVERAGE-H1 — APROBACIÓN TÉCNICA (2026-11-04)
+
+Causa: el enlace «Ver solicitud» de Pagos a proveedores abre
+`/treasury/cash/funding-requests/:id`, pero `RouteAccessGuard` decide por primer segmento y el
+solicitante sin permisos de Caja no tiene `/treasury` en su menú → `NoAccessPage`. Backend ya
+correcto (sin cambios): `GET {id}` solo para el solicitante o `caja.funding-requests.view` en la
+sucursal activa (otro caso → 404); `mine`/crear/cancelar con `supplier-payments.create`;
+entregar/rechazar con `caja.funding-requests.fulfill` + control de la sesión.
+Cambio (solo frontend): `CONTEXTUAL_ROUTES` + `isContextualRouteAllowed` en `RouteAccessGuard` —
+ruta EXACTA de lista y detalle (`^/treasury/cash/funding-requests(/:id)?/?$`, sin prefijo) con
+`supplier-payments.create` efectivo (Admin/`*` también); fail-closed sin sesión cargada.
+Ownership, políticas, permisos, NavItems y contratos API sin cambios.
+
+Pruebas focales **42/42**: `RouteAccessGuard.contextual` (solicitante abre detalle y
+`?tab=mine`; 6 rutas de Tesorería no relacionadas bloqueadas; sin permiso o sin sesión
+bloqueado; cajero conserva acceso por menú), `CashFundingRequestDetailPage` (+404 de solicitud
+ajena sin datos ni acciones, «Volver a solicitudes»), `CashFundingRequestsPage`,
+`SupplierPaymentFormPage.cashFunding` (enlace), `cashFundingRequestsRoutes`, `AppLayout`;
+`tsc -b` y ESLint (0 errores) **PASS**.
+Limitaciones: el 404 de solicitud ajena lo cubren las integraciones backend existentes (no
+ejecutadas aquí, requieren PostgreSQL); el guard sigue abriendo todo `/treasury` a quien tenga
+cualquier NavItem de Tesorería (preexistente, la API sigue siendo la autoridad).
+Sin migraciones, SRI, suites generales, staging, commit ni push. **No CLOSED**: aprobación
+técnica registrada; cierre pendiente del propietario.
+
+## SECURITY-PRECISION-POLICY-01 — READY FOR REVIEW (2026-11-04)
+
+Confirmado: `PUT /api/v1/config/precision-policy` solo heredaba el `[Authorize]` de clase
+(cualquier sesión con tenant podía escribir); ni handler ni pipeline validaban permiso.
+Único consumidor: `PrecisionPolicySettingsSection`, cuya UI ya exigía `erp.companies.update`,
+el mismo permiso de las demás escrituras de configuración de la empresa activa.
+Cambio: `[Authorize(Policy = "perm:erp.companies.update")]` solo en el PUT. Los GET (política
+y metadata) siguen solo autenticados; handler, bloqueo, rangos, redondeos, aislamiento por
+empresa, asignaciones y respuesta 403 estándar sin cambios. SSOT:
+[data-standards](docs/architecture/data-standards.md).
+
+Pruebas: `CompanyPrecisionPolicyPermissionContractTests` **8/8** (proveedor y handlers reales
+de `perm:*`, policies del controller; sin HTTP ni BD): PUT denegado sin permisos, con
+`erp.companies.view` y con ambas lecturas, permitido con `erp.companies.update`; GET y metadata
+permitidos sin permisos. `CompaniesApiSurfaceSnapshotTests` **3/3**,
+`CompanyPrecisionPolicyUseCasesTests` **24/24**, `architecture:check` **PASS**.
+Sin migraciones, SRI, suites generales, staging, commit ni push. **No CLOSED**: pendiente
+revisión del propietario.
+
+## NAV-COVERAGE-H2 — READY FOR REVIEW (2026-11-04)
+
+Decisión del propietario: `settings.company.view` y `erp.companies.view` siguen siendo
+capacidades independientes. La entrada Datos de la empresa se muestra con cualquiera
+(`Permission` CompanyView conservado + `PermissionsAnyCsv` con ambas, OR existente de
+`NavigationBuilder`); cada pestaña aplica el permiso de lectura de su API.
+
+| Pestaña | Lectura (API) | Permiso de pestaña | Edición (sin cambios) |
+|---|---|---|---|
+| General, Marca, Fiscal, Operación, Documentos | `GET /companies/profile*` | `erp.companies.view` | `erp.companies.update` |
+| Preparación operativa | `GET /companies/operational-readiness` | `erp.companies.view` | — |
+| Precisión operativa | `GET /config/precision-policy` (solo autenticado) | `erp.companies.view` (gate previo) | `erp.companies.update` en UI |
+| Ventas | `GET /org-config/company/invoice-defaults` | `settings.company.view` | `erp.companies.update`; lista default `pricing.update` |
+
+| Lectura | Menú | Pestañas |
+|---|---|---|
+| Solo `settings.company.view` | Visible | Ventas |
+| Solo `erp.companies.view` | Visible | Las siete restantes |
+| Ambos | Visible | Las ocho |
+| Ninguno | Oculta | Sin acceso |
+
+El hub no usa el fallback permisivo de `canShow`: sin sesión resuelta muestra carga,
+y una lista vacía no concede pestañas (Admin y `*` ven todo). Una pestaña sin permiso
+pedida por URL responde sin acceso; sin `tab` abre la primera visible. Los enlaces
+`?tab=` de Readiness/apertura de caja respetan el mismo permiso. Catálogos de Ventas,
+APIs, asignaciones y aislamiento por empresa sin cambios.
+
+Pruebas focales: `CompanySettingsMenuVisibilityTests` **5/5** (filtro real del menú,
+cuatro combinaciones) + H3 **3/3**; `KernelRegistryTests` **48/48**; frontend
+`configuracion/empresa` + `caja/components` **108/108** y apertura de caja **10/10**;
+`tsc -b`, ESLint (0 errores) y `architecture:check` **PASS**. Pruebas UI con hook real de
+permisos, no autorización HTTP.
+
+Hallazgos para el propietario (sin corregir): `PUT /config/precision-policy` solo exige
+autenticación (la UI exige `erp.companies.update`); security.md describe
+`canShow` como shim "siempre true", desactualizado frente al código.
+Fase A y H3 preservados; sin migraciones, SRI, suites generales, staging, commit ni push.
+**H2 no CLOSED**: pendiente revisión final del propietario.
+
+NAV-COVERAGE-H3-CI-FIX: `PurchasesMenuVisibilityTests` registrada en `infrastructure-06`
+junto a `CompanySettingsMenuVisibilityTests`; `backend_tests.py --verify-only` **PASS**
+(209 casos, sin pruebas sin asignar ni duplicadas). Solo cambia el manifiesto.
+
+## NAV-COVERAGE-H3 — READY FOR REVIEW (2026-11-04)
+
+BUG REAL reproducido con el filtro real de `NavigationBuilder`: `finance.view` sin
+`purchases.view` mostraba el agrupador operativo de Compras sin hijos. La prueba de
+regresión falló en ese caso antes del fix; los otros dos escenarios pasaron.
+Corrección productiva de una línea en `PurchasesModule.PurchasesGroup`: se retira
+`FinancePermissions.View` del OR. Categoría, ID, jerarquía, tres hijos y permisos
+individuales conservados; ningún cambio en `NavigationBuilder` ni otros agrupadores.
+Esto resuelve el hallazgo previo de Compras registrado en NAV-CONSOLIDATION-A01.
+
+Pruebas focales: `PurchasesMenuVisibilityTests` **3/3 PASS** (solo Finanzas: sin grupo;
+solo Compras y ambos permisos: tres opciones operativas y Reportes conservados);
+`KernelRegistryTests` **48/48 PASS**. El filtro se prueba sin BD mediante su método
+real de construcción del árbol; no acredita sincronización ni caché de un entorno.
+`architecture:check` **PASS**, cero violaciones nuevas; documentación y
+`git diff --check` **PASS**.
+Cambios de Fase A preservados; sin migraciones, suites funcionales generales, pruebas
+SRI, staging, commit ni push. Pendientes gate y aprobación del propietario: **H3 y
+Fase A no CLOSED**. Repetición focal desde la raíz:
+
+```powershell
+dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --no-restore --filter FullyQualifiedName~PurchasesMenuVisibilityTests
+dotnet test backend/src/ERP.Domain.Tests/ERP.Domain.Tests.csproj --no-restore --filter FullyQualifiedName~KernelRegistryTests
+git diff --check
+git status --short
+```
+
+## NAV-CONSOLIDATION-A01 — READY FOR REVIEW (2026-11-04)
+
+Consolidación solicitada de los cuatro accesos duplicados a Preferencias Operativas;
+árbol vigente en [MENU_MAP](docs/navigation/MENU_MAP.md). Se retiran también los
+contenedores sin hijos de Ventas y Compras; Inventario y Caja conservan sus catálogos,
+con permisos de contenedor alineados con sus hijos. IDs y permisos restantes conservados.
+KEEP: pantalla, pestañas, ruta y enlaces contextuales, permisos de lectura/edición,
+preferencias y persistencia, APIs y flujos documentales sin cambios.
+
+Evidencia del agente: `KernelRegistryTests` **48/48 PASS** (entrada única, ausencia de
+duplicados, jerarquía, contenedores con hijos y permisos de los grupos conservados);
+frontend focal **24/24 PASS** (navegación contextual, etiquetas, sección Ventas/POS y
+esquemas). `architecture:check` **PASS**, 147 pruebas de guardrails y cero violaciones
+nuevas; check documental **PASS**; `git diff --check` **PASS**. Sin suites funcionales
+generales ni cambios de frontend productivo.
+
+Dependencia: `NavigationSyncService` existente desactiva los registros retirados y
+actualiza permisos durante el arranque normal; no se ejecutó sincronización ni se
+modificó base de datos. Sin migraciones, producción, staging, commit ni push.
+Hallazgo previo fuera de alcance: `/purchases/operation-group` admite `finance.view`
+sin hijos con ese permiso; `NavigationBuilder` no poda contenedores anidados vacíos.
+No se modifica este comportamiento compartido. Los grupos afectados quedan sin ese riesgo.
+
+Pendientes gate y aprobación del propietario; **no CLOSED**. Porcentajes y cierre
+funcional V1 intactos. Repetición focal desde la raíz (PowerShell):
+
+```powershell
+dotnet test backend/src/ERP.Domain.Tests/ERP.Domain.Tests.csproj --no-restore --filter FullyQualifiedName~KernelRegistryTests
+Push-Location frontend
+npx.cmd vitest run src/components/navigationAccess.test.ts src/i18n/navLabelTaxonomy.test.ts src/modules/configuracion/operaciones/sections/SalesPosPreferencesSection.test.tsx src/modules/configuracion/operaciones/schemas/operationalPreferencesSchemas.test.ts
+npm.cmd run architecture:check
+Pop-Location
+node tools/architecture/run-all.mjs --only documentation
+git diff --check
+git status --short
+```
+
 ## RIDE-GOLDEN-DETERMINISM-01 — READY FOR REVIEW (2026-11-04)
 
 Casos iniciales exactos: `Invoice_with_mixed_vat_rates_matches_the_approved_golden_file`
