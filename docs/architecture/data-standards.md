@@ -24,6 +24,7 @@ Una sola política de precisión, leída siempre como `EffectivePrecisionPolicyD
   contexto de empresa o sin política lanza excepción, nunca un default silencioso).
 - Frontend: `GET /api/v1/config/precision-policy` y `/precision-policy/metadata` →
   `precisionPolicy.config.ts`; ruta y guard en [frontend.md § Presentación numérica](frontend.md).
+  Ambos GET solo exigen sesión; `PUT /api/v1/config/precision-policy` exige `erp.companies.update`.
 - Asignaciones internas del prorrateo de Compras: `EffectivePrecisionPolicyDto.CostAllocationDecimals`
   publica la escala fija existente `FiscalPrecision.UnitCost` (6), compatible con
   `purchase_cost_distribution_allocations.amount` y `total_line_cost` (`numeric(18,6)`); el importe

@@ -1,5 +1,6 @@
 using ERP.API.Extensions;
 using ERP.Application.Modules.Companies.UseCases.PrecisionPolicy;
+using ERP.Domain.Kernel.Permissions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +35,11 @@ public sealed class CompanyPrecisionPolicyController : ControllerBase
             "OK"
         );
 
+    // SECURITY-PRECISION-POLICY-01: escritura de configuración de la empresa activa — mismo permiso
+    // que el resto de escrituras de Datos de la empresa y que la UI. Los GET siguen solo autenticados
+    // porque todos los módulos consumen la política efectiva.
     [HttpPut]
+    [Authorize(Policy = $"perm:{SettingsPermissions.CompaniesUpdate}")]
     public async Task<IActionResult> Update(
         [FromBody] UpdateCompanyPrecisionPolicyCommand cmd,
         CancellationToken ct
