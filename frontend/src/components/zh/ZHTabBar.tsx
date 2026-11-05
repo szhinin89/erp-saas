@@ -1,6 +1,8 @@
 export type ZHTab<TId extends string> = {
   id: TId;
   label: string;
+  /** Etiqueta visual móvil; conserva label como nombre accesible completo. */
+  mobileLabel?: string;
   icon?: string;
   /** true = se renderiza deshabilitado, aria-disabled, no dispara onChange. */
   disabled?: boolean;
@@ -20,6 +22,8 @@ type Props<TId extends string> = {
   ariaLabel?: string;
   /** true = las pestañas se reparten el ancho completo del contenedor en partes iguales. */
   fill?: boolean;
+  /** Opt-in: tres columnas móviles únicamente cuando tabs.length === 3. */
+  variant?: "default" | "responsive-three";
 };
 
 /**
@@ -34,10 +38,12 @@ export function ZHTabBar<TId extends string>({
   onChange,
   ariaLabel,
   fill = false,
+  variant = "default",
 }: Props<TId>) {
+  const responsiveThree = variant === "responsive-three" && tabs.length === 3;
   return (
     <div
-      className={`prd-tabs${fill ? " prd-tabs--fill" : ""}`}
+      className={`prd-tabs${fill ? " prd-tabs--fill" : ""}${responsiveThree ? " prd-tabs--responsive-three" : ""}`}
       role="tablist"
       aria-label={ariaLabel}
     >
@@ -46,6 +52,7 @@ export function ZHTabBar<TId extends string>({
           key={tab.id}
           type="button"
           role="tab"
+          aria-label={responsiveThree ? tab.label : undefined}
           aria-selected={activeTab === tab.id}
           aria-disabled={tab.disabled || undefined}
           disabled={tab.disabled}
@@ -56,11 +63,16 @@ export function ZHTabBar<TId extends string>({
           }}
         >
           {tab.icon && (
-            <span className="material-symbols-outlined prd-tab-icon">
+            <span className="material-symbols-outlined prd-tab-icon" aria-hidden={responsiveThree || undefined}>
               {tab.icon}
             </span>
           )}
-          {tab.label}
+          {responsiveThree ? (
+            <>
+              <span className={tab.mobileLabel ? "prd-tab-label--full" : undefined}>{tab.label}</span>
+              {tab.mobileLabel && <span className="prd-tab-label--mobile" aria-hidden="true">{tab.mobileLabel}</span>}
+            </>
+          ) : tab.label}
         </button>
       ))}
     </div>

@@ -1,0 +1,8 @@
+/* Opt-in panel placement for ZHLineAction portal; inline coordinates are measured. */
+.zh-line-action-menu__panel--portal {
+  position: fixed;
+  right: auto;
+  z-index: 1000;
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+}

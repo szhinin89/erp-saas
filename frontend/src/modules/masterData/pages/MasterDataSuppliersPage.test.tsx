@@ -44,6 +44,15 @@ vi.mock("../api/useSriSupplierTypes", () => ({
   useSriSupplierTypes: () => ({ options: [{ code: "01", name: "Persona Natural" }], loading: false }),
 }));
 
+vi.mock("../api/useSriIdTypes", () => ({
+  useSriIdTypes: () => ({ options: [], loading: false }),
+  useSriIdTypesByUsage: () => ({ options: [], loading: false }),
+}));
+
+vi.mock("../api/useLegalEntityTypes", () => ({
+  useLegalEntityTypes: () => ({ options: [], loading: false }),
+}));
+
 vi.mock("../api/useSriPaymentMethods", () => ({
   useSriPaymentMethods: () => ({ options: [{ code: "01", name: "Sin sistema financiero" }], loading: false, error: null }),
 }));
@@ -155,6 +164,55 @@ afterEach(() => {
   });
 });
 
+it("Resumen es de consulta; las pestañas conservan formulario y listado", async () => {
+  const { container } = renderPage();
+  fireEvent.click(screen.getByRole("tab", { name: /Resumen/i }));
+  expect(container.querySelector(".md-supplier-summary")?.querySelector("button")).toBeNull();
+  fireEvent.click(screen.getByRole("tab", { name: /Nuevo proveedor/i }));
+  expect(screen.getByRole("tab", { name: /Nuevo proveedor/i }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByText("Datos de identificación")).toBeTruthy();
+  fireEvent.click(screen.getByRole("tab", { name: /Resumen/i }));
+  fireEvent.click(screen.getByRole("tab", { name: /Listado/i }));
+  await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+  expect(screen.getByRole("tab", { name: /Listado/i }).getAttribute("aria-selected")).toBe("true");
+});
+
+it("el Resumen de consulta conserva el permiso existente del formulario", async () => {
+  vi.mocked(usePermissionsUi).mockReturnValue({
+    canShow: (permission) => permission !== "masterdata.businesspartners.create",
+    has: () => true,
+    isAdminRole: false,
+  });
+  renderPage();
+  fireEvent.click(screen.getByRole("tab", { name: /Resumen/i }));
+  expect(screen.queryByRole("button", { name: "Nuevo proveedor" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Ver listado" })).toBeNull();
+  fireEvent.click(screen.getByRole("tab", { name: /Nuevo proveedor/i }));
+  expect(screen.queryByText("Datos de identificación")).toBeNull();
+  fireEvent.click(screen.getByRole("tab", { name: /Listado/i }));
+  await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+});
+
+it("conserva el mismo encabezado único al navegar por las tres pestañas", async () => {
+  const { container } = renderPage();
+  const heading = screen.getByRole("heading", { name: "Proveedores", level: 1 });
+  const header = heading.closest("header")!;
+  const markup = header.outerHTML;
+
+  for (const name of [/Resumen/i, /Listado/i, /Nuevo proveedor/i, /Resumen/i]) {
+    fireEvent.click(screen.getByRole("tab", { name }));
+    expect(screen.getAllByRole("heading", { name: "Proveedores", level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Proveedores", level: 1 })).toBe(heading);
+    expect(header.outerHTML).toBe(markup);
+    expect(within(header).getByText("Administración de proveedores para compras, pagos y retenciones.")).toBeTruthy();
+    expect(header.querySelector(".zh-screen-heading-kicker")).toBeNull();
+    expect(container.querySelector(".md-suppliers-page")).toBeTruthy();
+    expect(container.querySelector(".md-supplier-list-page")).toBeNull();
+    expect(screen.getByRole("tab", { name }).getAttribute("aria-selected")).toBe("true");
+  }
+  await waitFor(() => expect(businessPartnerFacade.searchBusinessPartnersPaged).toHaveBeenCalled());
+});
+
 describe("MasterDataSuppliersPage — desactivar proveedor: confirmación y feedback", () => {
   it("pide confirmación antes de desactivar, explicando que no borra histórico", async () => {
     vi.mocked(businessPartnerFacade.deactivateBusinessPartner).mockResolvedValue(true);
@@ -162,7 +220,8 @@ describe("MasterDataSuppliersPage — desactivar proveedor: confirmación y feed
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar proveedor" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar proveedor" }));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalledTimes(1);
@@ -179,7 +238,8 @@ describe("MasterDataSuppliersPage — desactivar proveedor: confirmación y feed
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar proveedor" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar proveedor" }));
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(businessPartnerFacade.deactivateBusinessPartner).not.toHaveBeenCalled();
@@ -191,7 +251,8 @@ describe("MasterDataSuppliersPage — desactivar proveedor: confirmación y feed
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar proveedor" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar proveedor" }));
 
     await waitFor(() =>
       expect(message.success).toHaveBeenCalledWith("Proveedor desactivado correctamente."),
@@ -211,7 +272,8 @@ describe("MasterDataSuppliersPage — desactivar proveedor: confirmación y feed
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar proveedor" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar proveedor" }));
 
     await waitFor(() => {
       expect(message.error).toHaveBeenCalledWith("El proveedor tiene compras pendientes.");
@@ -236,7 +298,8 @@ describe("MasterDataSuppliersPage — activar proveedor: confirmación y feedbac
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Activar proveedor" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Activar proveedor" }));
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalledTimes(1);
@@ -264,7 +327,8 @@ describe("MasterDataSuppliersPage — activar proveedor: confirmación y feedbac
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Activar proveedor" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Activar proveedor" }));
 
     await waitFor(() => expect(message.error).toHaveBeenCalled());
     expect(message.success).not.toHaveBeenCalled();
@@ -325,7 +389,8 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Configuraci\u00f3n SRI" }));
 
     await waitFor(() => expect(businessPartnerFacade.getRoles).toHaveBeenCalledWith("bp-2", true));
     await waitFor(() =>
@@ -341,7 +406,8 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
   it("ya no permite escribir el sustento tributario manualmente: es <select>, no <input>", async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Configuraci\u00f3n SRI" }));
 
     await waitFor(() => getSelectByFieldLabel("Sustento tributario predeterminado"));
     expect(screen.queryByPlaceholderText("01")).toBeNull();
@@ -360,7 +426,8 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
 
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Configuraci\u00f3n SRI" }));
 
     await waitFor(() =>
       expect(getSelectByFieldLabel("Sustento tributario predeterminado").value).toBe("99"),
@@ -377,7 +444,8 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
 
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Configuraci\u00f3n SRI" }));
 
     await screen.findByText("Obligado a llevar contabilidad");
     const toggle = getToggleSwitchByLabel("Obligado a llevar contabilidad");
@@ -439,7 +507,8 @@ describe("MasterDataSuppliersPage — Config SRI: toggle Obligado a llevar conta
 
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Configuraci\u00f3n SRI" }));
 
     await screen.findByText("Retenciones predeterminadas");
     await waitFor(() =>
@@ -494,7 +563,8 @@ describe("MasterDataSuppliersPage — sin diálogos nativos", () => {
 
     renderPage();
     await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar proveedor" }));
+    fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar proveedor" }));
     await waitFor(() =>
       expect(businessPartnerFacade.deactivateBusinessPartner).toHaveBeenCalled(),
     );
@@ -513,7 +583,8 @@ describe("MasterDataSuppliersPage — sin diálogos nativos", () => {
 it("offers global ATS inventory codes in supplier defaults", async () => {
   renderPage();
   await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
-  fireEvent.click(screen.getByRole("button", { name: "SRI" }));
+  fireEvent.click(screen.getByRole("button", { name: /^M\u00e1s acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Configuraci\u00f3n SRI" }));
   await waitFor(() => expect(getSelectByFieldLabel("Sustento tributario predeterminado")).toBeTruthy());
   const options = Array.from(getSelectByFieldLabel("Sustento tributario predeterminado").options);
   expect(options.find(x => x.value === "06")?.textContent).toContain("Inventario - Crédito Tributario para declaración de IVA");

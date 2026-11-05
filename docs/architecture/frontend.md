@@ -127,7 +127,7 @@ y debe migrarse al tocar el archivo.
 | Checkbox / switch (incluye tablas y matrices) | `ZHToggle` (`label`, `description`, `value`, `onChange`, `disabled?`) | `.zh-inline-check`, `.companies-checkbox-label`, `.toggle`/`.toggle-ui`, `.md-page-check` |
 | Tamaño de íconos `material-symbols-outlined` | `.zh-icon-sm` (14px) / `.zh-icon-md` (16px) / `.zh-icon-lg` (18px) / `.zh-icon-xl` (32px) | `style={{ fontSize: N }}`, `.prd-icon-sm` |
 | Header/footer de modal (`.zh-modal-overlay > .zh-modal`) | `ZHModal` (props `title`/`subtitle` para header, `footer` para acciones — ver [modal-standard.md](./modal-standard.md)) | headers/footers ad-hoc por archivo, `.md-modal*`, `ZHModalHeader` (**eliminado** — prohibido importarlo, ver modal-standard.md) |
-| Tabs de formulario/catálogo | `.prd-tabs` / `.prd-tab-btn` / `.prd-tab-btn--active` (namespace compartido en `items-catalog.css`) | `.zh-form-tabs` |
+| Tabs de formulario/catálogo | `ZHTabBar` (`components/zh/`; clases `.prd-tabs` en `zh-ui.css`; variante opcional `responsive-three`, ver contrato abajo) | `.zh-form-tabs` |
 | Listado tabular de registros (administrativo, transaccional, de detalle o dentro de un formulario) | `ZHDataTable` (`components/zh/ZHDataTable.tsx`; columnas tipadas, `rowKey`, `loading`, `emptyMessage`, paginación opcional, `showRowNumber`/`rowNumberOffset` para columna "N°" auxiliar (ZH-DATATABLE-ROW-NUMBER-01), `rowClassName` por fila, `tableClassName`/`cellClassName` para variantes ya documentadas de `zh-ui.css` (`table--compact`, `table--neutral`, `table--align-top`, `table--matrix`, `table--sticky-column`, `zh-table-cell--num`) — usa internamente `.table`/`.table-scroll`) — ZH-LISTING-STANDARD-01, ampliado a todo el frontend por ZH-LISTING-GLOBAL-STANDARD-06 | `<table className="table">` armada a mano por página; `.md-table`, `.md-table-wrap`, `.prd-table-wrap` (eliminada 15A). Excepciones documentadas: fila de alta inline sin entidad real, tabla editable compleja por celda/fila (edición inline con RHF, `useFieldArray`), preview técnico calculado en vivo dentro de un formulario activo, matriz dinámica con columnas data-driven, reporte composable con columnas libres por consumidor (`ReportPageTemplate`), o necesidad de `<tfoot>`/comportamiento que `ZHDataTable` no expone (ej. `JournalEntryDetailPage`) — documentar el motivo puntual en el código; no ampliar `ZHDataTable` para cubrirlos sin evaluar impacto en sus consumidores existentes |
 | Bloque de "actividad reciente" | `.prd-activity__*` (`items-catalog.css`) | `.bod-activity__*` y equivalentes duplicados por módulo |
 | Barra de filtros de listado | `ZHFilterBar` (`plain` cuando ya vive dentro de una card/listado: sin padding/fondo/borde) | `.sr-list-filters` y filas de filtros locales por módulo |
@@ -534,3 +534,96 @@ régimen, contribuyente especial, resoluciones y vigencias de agente de retenci�
 gran contribuyente, obligación contable y los tres indicadores. Las ayudas distinguen
 las casillas operativas de retención de la designación oficial del SRI. No se agregan
 banners informativos; los errores usan `ZHPageNotice` y el guardado un estado accesible.
+
+### Pestañas responsive opcionales (UIUX-GLOBAL-TABS-01)
+
+`ZHTabBar` admite `variant?: "default" | "responsive-three"`. La variante se activa
+solo si se solicita explícitamente y `tabs.length === 3`; con cualquier otra cantidad
+se conserva exactamente el render predeterminado. `fill` mantiene su contrato existente.
+No cambia `ConfigTabsLayout` ni impone tres columnas a otras pantallas.
+
+Cada `ZHTab` puede aportar `mobileLabel`. Solo en la variante activa se renderiza esa
+etiqueta visual móvil, manteniendo `label` completo como nombre accesible (`aria-label`)
+y ocultando del árbol accesible el texto alternativo y el icono decorativo. Sin
+`mobileLabel` se conserva el texto completo y se permite ajustar líneas.
+
+Hasta 480 px, `.prd-tabs--responsive-three` en `zh-ui.css` distribuye tres columnas
+iguales, iconos/etiquetas centrados, wrap sin truncamiento y mínimo de 48 px
+(`--space-12`, superior al mínimo táctil de 44 px). Desde 481 px conserva el diseño
+y las etiquetas completas. El corte y las reglas son exclusivos del modificador;
+no cambian tokens, selectores base ni breakpoints globales.
+
+El componente conserva `aria-selected`, botones nativos (Tab/Shift+Tab para foco,
+Enter/Espacio para activar), `disabled`, `inert` y callbacks controlados por el
+consumidor. Esta variante visual no añade navegación por flechas, roving tabindex
+ni asociación tab/panel; esos aspectos existentes requieren un alcance propio antes
+de certificar el patrón WAI-ARIA completo. No cambia permisos ni el ciclo de formularios.
+
+Proveedores es el único consumidor que solicita la variante; conserva las traducciones
+actuales e iconos. No quedan reglas locales equivalentes de pestañas.
+
+### Encabezado compacto opcional (UIUX-GLOBAL-HEADER-01)
+
+`ZHScreenHeading` (`components/zh/ZHLayout.tsx`) admite `variant?: "default" | "compact"`.
+`PageShell` y `ErpPageTemplate` lo propagan como `headingVariant`. Omitir la opción o
+usar `"default"` conserva el markup y las reglas visuales anteriores. La variante
+`"compact"` alinea título y descripción en escritorio y los apila hasta 768 px;
+permite wrap cuando falta espacio. Conserva H1, kicker opcional, acciones derechas,
+tipografía, colores y tokens. El corte pertenece exclusivamente al modificador
+`.zh-screen-heading--compact` en `zh-ui.css`; no cambia breakpoints ni defaults globales.
+
+Proveedores es el único consumidor que la activa. No requiere CSS local del encabezado
+ni selectores basados en `:has`; las otras pantallas conservan la variante predeterminada.
+No sustituye la cabecera propia de `ReportPage` ni altera el shell o la navegación.
+
+### Listado de Proveedores
+
+En `/suppliers`, la pestaña Listado conserva `ZHDataTable`, identificación, estado,
+paginación y acciones existentes. Solo para proveedores, la razón social es la identidad
+principal; el nombre comercial se presenta debajo cuando no está vacío y difiere de la
+razón social tras quitar espacios exteriores. Los nombres largos admiten salto de línea.
+El CSS local de `masterData` se limita al listado de proveedores; Clientes conserva su
+presentación. Hasta 640 px, identificación y estado se integran en la celda de identidad;
+se ocultan sus columnas duplicadas y el número auxiliar, manteniendo la tabla y las acciones
+visibles sin scroll horizontal a 390 px. Escritorio y tablet conservan las cinco columnas.
+
+La fila presenta «Ver» y el menú «Más acciones», compuesto con `ZHLineAction` y
+`ZHLineActionItem`. Editar, Configuración SRI, asignar como cliente y activar/desactivar
+conservan sus condiciones de permisos, estado, guardado y callbacks de confirmación.
+Cada menú identifica al proveedor por razón social y RUC. El modo opcional `portal` del
+menú oficial lo ubica fuera del scroll y dentro del viewport; permite foco inicial,
+flechas, Home/End, Tab, Escape con retorno al disparador y cierre por clic fuera.
+Los consumidores que no activan este modo conservan su comportamiento existente.
+
+`MasterDataSuppliersPage` declara un único encabezado para Resumen, Listado y Nuevo
+proveedor: título «Proveedores», descripción «Administración de proveedores para compras,
+pagos y retenciones.», sin categoría visible. Activa `headingVariant="compact"` del
+[encabezado oficial](#encabezado-compacto-opcional-uiux-global-header-01).
+Cambiar de pestaña conserva el mismo encabezado; solo cambia el contenido inferior.
+La clase `.md-suppliers-page` identifica el cuerpo; encabezado y pestañas consumen variantes del DS, sin reglas locales equivalentes.
+
+### Resumen de Proveedores
+
+Las pestañas de `/suppliers` se distribuyen hasta 480 px en tres columnas iguales,
+en una sola fila, con iconos y etiquetas centrados, texto ajustable y altura mínima
+de 48 px usando tokens existentes. La etiqueta visual «Nuevo» mantiene el nombre
+accesible «Nuevo proveedor» y la misma navegación. Desde 481 px se conserva la
+presentación compartida con la etiqueta completa. Usa la variante oficial
+[responsive-three](#pestañas-responsive-opcionales-uiux-global-tabs-01) de `ZHTabBar`.
+
+Solo para `role="supplier"`, `MasterDataPartnerResumenTab` es exclusivamente de
+consulta: compone tres `ReportKpiCard` con su variante horizontal oficial y Actividad
+reciente, sin botones ni panel de acciones rápidas. Listado y Nuevo proveedor se
+abren desde sus pestañas existentes, con los mismos permisos de la página. Clientes
+conserva su composición vertical y sus acciones anteriores.
+
+Los indicadores mantienen sus cálculos: total devuelto por el servidor y activos e
+inactivos de los registros de la página actual. Actividad reciente continúa leyendo
+exclusivamente `recentActivity` del store de la sesión, con los mismos eventos,
+orden y textos temporales. No se agregan consultas ni eventos. En Proveedores usa
+`ZHCard` sin acciones de cabecera, con estado vacío compacto.
+
+El CSS local `.md-supplier-summary` organiza tres indicadores iguales en escritorio,
+dos columnas hasta 1024 px y una hasta 580 px. La altura de los indicadores sigue
+su contenido y la actividad limita su anchura a 56 rem. Los nombres largos de la
+actividad admiten saltos de línea sin superponerse con el tipo de evento o el tiempo.

@@ -414,6 +414,27 @@ a:hover {
   font-size: var(--font-size-lg);
 }
 
+/* Optional three-tab mobile layout; desktop/tablet retain the default. */
+.prd-tabs--responsive-three .prd-tab-label--mobile { display: none; }
+@media (max-width: 480px) {
+  .prd-tabs--responsive-three {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .prd-tabs--responsive-three > .prd-tab-btn {
+    min-width: 0;
+    min-height: var(--space-12);
+    padding: var(--space-2) var(--space-1);
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: var(--line-height-snug);
+  }
+  .prd-tabs--responsive-three .prd-tab-label--full { display: none; }
+  .prd-tabs--responsive-three .prd-tab-label--mobile { display: inline; }
+}
+
 /* ── 3. FORMULARIOS — inputs ─────────────────────────────── */
 input,
 select,
@@ -1941,6 +1962,29 @@ select.zh-input--compact {
   flex-shrink: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+/* Optional compact heading: same typography/colors as the default. */
+.zh-screen-heading--compact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.zh-screen-heading--compact .zh-screen-heading-row { flex: 1; }
+.zh-screen-heading--compact .zh-screen-heading-main { align-items: center; }
+.zh-screen-heading--compact .zh-screen-heading-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-5);
+}
+.zh-screen-heading--compact .zh-screen-heading-sub { margin: 0; }
+@media (max-width: 768px) {
+  .zh-screen-heading--compact { display: block; }
+  .zh-screen-heading--compact .zh-screen-heading-copy { display: block; }
+  .zh-screen-heading--compact .zh-screen-heading-sub { margin-top: var(--space-1); }
 }
 
 /* ── 16. ESTADOS ─────────────────────────────────────────── */

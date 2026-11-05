@@ -1,5 +1,161 @@
 # Project Status
 
+## UIUX-FINAL-REVIEW-01 — REVIEWED, PENDING OWNER APPROVAL (2026-11-05)
+
+Revisión final del diff acumulado UIUX-SUPPLIERS-01/02/03, UIUX-GLOBAL-HEADER-01 y
+UIUX-GLOBAL-TABS-01, sin cambios de implementación ni nuevas modificaciones visuales.
+Inventario selectivo: 23 archivos (14 implementación, 6 pruebas, 3 documentación).
+Excluir del commit UI/UX `docs/ci/PLATFORM_GUARD_REPORT.md`,
+`docs/future-platform/API_USAGE_GRAPH.json` y todo `tmp/`; diferencias revisadas,
+sin restauraciones ni eliminaciones. No se detectan otros cambios productivos ajenos.
+Inventario exacto, clasificación, evidencia y staging sugerido en
+`tmp/uiux-final-review-01/README.md` y `commit-files.txt` de esa carpeta.
+
+Evidencia anterior vigente: menú/permisos y confirmaciones 85/85; resumen de consulta
+42/42; encabezado/integración 51/51; tabs/navegación 32/32. Son ejecuciones superpuestas,
+no se suman como pruebas únicas. Verificados hashes de los archivos originales de
+Proveedores y de las 20 comparaciones de encabezado y 42 de pestañas. TypeScript/build,
+lint y arquitectura de la última implementación siguen vigentes (147/147 guardrails,
+cero violaciones nuevas); no se repiten pruebas válidas. Gate documental y diff check
+verificados en esta revisión; evidencia local, con datos sintéticos, no sesión backend real.
+
+Se mantienen pendientes los recortes internos del formulario a 320 px, flechas/roving
+tabindex y asociación tab-panel, y las mejoras de otros módulos no implementadas.
+Pendientes gate y aprobación visual del propietario antes de autorizar el commit.
+Índice sin staging; sin commit ni push; no CLOSED.
+
+
+## UIUX-GLOBAL-TABS-01 — READY FOR VISUAL REVIEW (2026-11-05)
+
+Variante opcional responsive-three en ZHTabBar; solo Proveedores la solicita.
+Contrato en [Frontend](docs/architecture/frontend.md#pestañas-responsive-opcionales-uiux-global-tabs-01).
+Defaults y cantidades distintas de tres conservan su render anterior. Reglas móviles
+trasladadas al DS, sin duplicación local, cambios de tokens o breakpoints globales.
+UIUX-SUPPLIERS-01/02/03 y UIUX-GLOBAL-HEADER-01 preservados; formularios, permisos,
+traducciones, Listado y Resumen mantienen su comportamiento.
+
+Evidencia en `tmp/uiux-global-tabs-01/capturas.html`: 320, 360, 390, 480, 768 y 1440 px,
+tres estados activos de Proveedores y comparación de Clientes/Condiciones de pago reales,
+además de fixtures ConfigTabsLayout y ZHTabBar de cuatro destinos. 42/42 recortes de
+pestañas idénticos en píxeles y geometría antes/después, encabezados preservados y
+markup predeterminado sin cambios. Fixtures sintéticos, componentes reales y fuentes
+oficiales; no valida una sesión autenticada con backend. La limitación interna del
+formulario a 320 px es preexistente y no se modifica.
+
+Pruebas focales 32/32 PASS; teclado real Enter/Espacio en las tres pestañas a seis
+anchos, Tab/Shift+Tab y etiquetas largas sin recorte en móvil PASS. TypeScript/build,
+lint focal (0 errores, 1 warning previo por tamaño) y arquitectura PASS: 147/147
+guardrails, cero violaciones nuevas. Pruebas anteriores ajenas al cambio conservan
+su evidencia; no se repiten suites de encabezado, Listado ni Resumen sin cambios.
+Detalle, limitaciones de accesibilidad y comandos de gate en `tmp/uiux-global-tabs-01/README.md`.
+Pendientes gate y aprobación visual del propietario; sin staging, commit ni push; no CLOSED.
+
+
+## UIUX-GLOBAL-HEADER-01 — READY FOR VISUAL REVIEW (2026-11-05)
+
+Variante opcional de encabezado implementada en los componentes oficiales; contrato en
+[Frontend](docs/architecture/frontend.md#encabezado-compacto-opcional-uiux-global-header-01).
+Solo Proveedores activa compact; las reglas locales del encabezado se trasladaron al DS,
+sin duplicación ni cambios de defaults, tokens o breakpoints globales. El resto de
+UIUX-SUPPLIERS-01/02/03 se conserva, incluida su evidencia y pruebas previas.
+
+Capturas antes/después en `tmp/uiux-global-header-01/capturas.html`: tres pestañas de
+Proveedores y consumidores predeterminados Clientes/Condiciones de pago a 1440, 768,
+390 y 320 px. Los 20 encabezados coinciden exactamente en píxeles, geometría y estilos;
+los dos consumidores predeterminados conservan también su markup. Fixtures sintéticos,
+componentes reales, LayoutFrame y fuentes oficiales; no es una sesión backend real.
+Sin overflow de página en los casos capturados; se conservan limitaciones internas
+preexistentes del formulario estrecho, fuera de alcance.
+
+Pruebas focales 51/51 PASS; TypeScript (`tsc --noEmit` y `tsc -b`), build, lint y
+arquitectura PASS (147/147 guardrails y cero violaciones nuevas). Evidencia, inventario
+de archivos y comandos de gate del propietario en `tmp/uiux-global-header-01/README.md`.
+El build actualiza automáticamente los timestamps de los dos reportes Platform ya
+modificados antes de esta tarea. Pendientes gate y aprobación visual del propietario.
+Sin suites generales/SRI, staging, commit ni push; no CLOSED.
+
+
+## UIUX-GLOBAL-STANDARD-01 — AUDIT READY FOR OWNER REVIEW (2026-11-05)
+
+Auditoría documental y propuesta por bloques, sin implementación global.
+[Matriz de impacto y consumidores](docs/agent/UIUX-GLOBAL-STANDARD-01.md).
+UIUX-SUPPLIERS-01/02/03 conservados; su revisión visual y gates mantienen el estado
+registrado abajo. Variantes y adopción pendientes de aprobación del propietario.
+Sin cambios de código, componentes, estilos, pantallas, negocio, permisos, APIs ni menú.
+Validación documental 1/1 PASS y git diff --check PASS; preservación SHA256 de los archivos previos verificada (salvo esta actualización de estado).
+Sin suites generales/SRI, staging, commit ni push; no CLOSED.
+
+
+## UIUX-SUPPLIERS-03 — READY FOR VISUAL REVIEW (2026-11-05)
+
+Ajuste local de pestañas autorizado para Proveedores; contrato en
+[Frontend](docs/architecture/frontend.md#resumen-de-proveedores). Conserva los cambios
+pendientes de UIUX-SUPPLIERS-01/02, encabezado, navegación y formularios.
+Capturas antes/después en `tmp/uiux-suppliers-03/capturas.html`: 320, 360, 390,
+480, 768 y 1440 px, componente real con datos sintéticos y fuentes oficiales.
+Navegación de las tres pestañas, selección y ausencia de overflow de página/pestañas
+verificadas en los seis anchos. El formulario conserva recortes internos preexistentes
+a 320 px, fuera del alcance autorizado. Pruebas focales 42/42 PASS; TypeScript
+(`tsc --noEmit` y `tsc -b`) PASS; lint focal sin errores y con un warning previo
+por tamaño de archivo. `git diff --check` PASS. Arquitectura: 147/147 guardrails
+y runner PASS, cero violaciones nuevas; evidencia en la misma carpeta.
+Pendientes gate y aprobación visual del propietario. Sin staging, commit ni push;
+no CLOSED.
+
+## UIUX-SUPPLIERS-02 — READY FOR VISUAL REVIEW (2026-11-05)
+
+Resumen compacto autorizado solo para Proveedores. Causas: cuatro columnas para tres
+indicadores, variante vertical con altura mínima, panel lateral de 280 px y accesos
+duplicados; padding acumulado en el estado vacío. Se reutilizan `ReportKpiCard`
+horizontal y `ZHCard`; CSS local, métricas y actividad de sesión conservadas. Contrato:
+[Frontend](docs/architecture/frontend.md#resumen-de-proveedores).
+Decisión final del propietario: Resumen exclusivamente de consulta, sin «Nuevo
+proveedor», «Ver listado» ni panel de acciones rápidas. Se conservan las tres métricas
+iguales y Actividad reciente compacta; la navegación se realiza desde las pestañas
+Listado y Nuevo proveedor, con los permisos existentes. Clientes, encabezado, Listado,
+menú contextual, formulario, backend y datos no se modifican funcionalmente.
+
+Pruebas focales: 42/42 PASS (Resumen sin botones, métricas, permisos, navegación real entre pestañas,
+actividad vacía/poblada y regresiones de Clientes y Listado); TypeScript/build y lint focal
+PASS (0 errores, 1 warning de tamaño preexistente). Arquitectura: 147/147 guardrails y
+runner PASS, cero violaciones nuevas; enlaces documentales y `git diff --check` PASS.
+Capturas de la página real a 1440,
+768 y 390 px, con fuentes oficiales y datos sintéticos: tres columnas iguales, dos
+columnas y una columna respectivamente, sin desbordamiento horizontal ni alturas fijas
+de tarjetas. Evidencia actual en `tmp/uiux-suppliers-summary-readonly/`; se conserva la
+evidencia previa en `tmp/uiux-suppliers-summary/`.
+Sin staging, commit ni push. Pendientes gate y aprobación visual del propietario;
+no terminado ni CLOSED.
+
+## UIUX-SUPPLIERS-01 - READY FOR VISUAL REVIEW (2026-11-05)
+
+Listado de Proveedores, incluidos los ajustes visuales 1 y 2 autorizados, aislado de
+Clientes mediante el rol supplier y CSS local. Contrato:
+[Frontend](docs/architecture/frontend.md#listado-de-proveedores).
+KEEP: ZHDataTable, operaciones, permisos, rutas, formularios, otras tabs y API.
+BUG REAL: identidad invertida y duplicada, corregida solo en Proveedores. Ajuste 2:
+acciones agrupadas con el menú oficial del DS. Corrección final del encabezado:
+único y compacto en las tres pestañas, sin categoría y con el texto aprobado;
+se elimina la condición exclusiva de Listado.
+Pruebas focales: 85/85 PASS (incluye confirmaciones, permisos, teclado, menú y regresiones
+de componentes compartidos); TypeScript/build y lint completo PASS (0 errores,
+39 warnings). Arquitectura: 147/147 pruebas de guardrails y runner PASS, cero violaciones
+nuevas; enlaces documentales y `git diff --check` PASS.
+Capturas antes/después en navegador, con componentes reales, LayoutFrame y
+datos sintéticos: 1440, 768 y 390 px; menú abierto dentro del viewport en los tres anchos,
+sin desbordamiento de página; móvil sin scroll horizontal a 390 px.
+Corrección final: 33/33 pruebas focales PASS (incluida navegación por las tres pestañas
+con el mismo nodo y markup del encabezado), TypeScript/build, arquitectura
+(147/147 guardrails, cero violaciones nuevas), enlaces documentales y `git diff --check`
+PASS; lint focal PASS (0 errores, 1 warning de tamaño preexistente).
+Seis capturas de la página real, con datos sintéticos
+y las fuentes oficiales, a 1440 y 390 px: encabezado estable de 44 y 89 px respectivamente,
+sin desbordamiento horizontal y con navegación intacta.
+Evidencia local en `tmp/uiux-suppliers-heading/`; se conserva la de los ajustes anteriores.
+Sin staging, commit ni push. Pendientes gate del propietario y aprobación visual;
+no CLOSED ni piloto terminado.
+
+
 ## NAV-COVERAGE-FINAL-REVIEW-01 — READY FOR REVIEW (2026-11-04)
 
 Revisión documental e integridad del conjunto NAV-CONSOLIDATION-A01, H1–H4, corrección CI y

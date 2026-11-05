@@ -1,4 +1,6 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useId, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import "./ZHLineAction.css";
 import { ZHIconButton, type ZHIconButtonVariant } from "./ZHIconButton";
 import { ZHLineActionMenuContext } from "./ZHLineActionItem";
 
@@ -41,6 +43,10 @@ export interface ZHLineActionProps {
    * menú debe mantenerlo abierto, ej. un selector inline). */
   closeOnSelect?: boolean;
   menuAlign?: ZHLineActionMenuAlign;
+  /** Opt-in for tables: portal outside overflow, viewport positioning and keyboard focus. */
+  portal?: boolean;
+  menuLabel?: string;
+  menuClassName?: string;
 }
 
 const iconButtonVariant: Record<ZHLineActionTone, ZHIconButtonVariant> = {
@@ -73,6 +79,9 @@ export function ZHLineAction(props: ZHLineActionProps) {
     children,
     closeOnSelect = false,
     menuAlign = "start",
+    portal = false,
+    menuLabel,
+    menuClassName,
   } = props;
 
   const resolvedTone: ZHLineActionTone = tone ?? (variant === "danger" ? "danger" : "default");
@@ -95,6 +104,9 @@ export function ZHLineAction(props: ZHLineActionProps) {
         onOpenChange={onOpenChange}
         closeOnSelect={closeOnSelect}
         menuAlign={menuAlign}
+        portal={portal}
+        menuLabel={menuLabel}
+        menuClassName={menuClassName}
       >
         {children}
       </ZHLineActionMenuTrigger>
@@ -143,6 +155,9 @@ function ZHLineActionMenuTrigger({
   onOpenChange,
   closeOnSelect,
   menuAlign,
+  portal,
+  menuLabel,
+  menuClassName,
   children,
 }: {
   icon: string;
@@ -158,9 +173,37 @@ function ZHLineActionMenuTrigger({
   onOpenChange?: (open: boolean) => void;
   closeOnSelect: boolean;
   menuAlign: ZHLineActionMenuAlign;
+  portal: boolean;
+  menuLabel?: string;
+  menuClassName?: string;
   children?: ReactNode;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  useLayoutEffect(() => {
+    if (!open || !portal) return;
+    const place = () => {
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      const panel = panelRef.current?.getBoundingClientRect();
+      if (!trigger || !panel) return;
+      setPosition({
+        left: Math.max(8, Math.min(trigger.right - panel.width, window.innerWidth - panel.width - 8)),
+        top: Math.max(8, trigger.bottom + panel.height + 4 <= window.innerHeight
+          ? trigger.bottom + 4 : trigger.top - panel.height - 4),
+      });
+    };
+    place();
+    panelRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, portal]);
 
   // Cierre por click-outside / Escape — mismo patrón usado en ZHHeaderUserMenu/ZHModal/etc.
   // Delegado por completo a `onOpenChange`: el consumidor decide si el cierre procede
@@ -170,11 +213,14 @@ function ZHLineActionMenuTrigger({
     const onDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (rootRef.current?.contains(target)) return;
+      if (rootRef.current?.contains(target) || (portal && panelRef.current?.contains(target))) return;
       onOpenChange?.(false);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onOpenChange?.(false);
+      if (event.key === "Escape") {
+        if (portal) { event.preventDefault(); triggerRef.current?.focus(); }
+        onOpenChange?.(false);
+      }
     };
     window.addEventListener("pointerdown", onDown as unknown as EventListener, true);
     window.addEventListener("keydown", onKey);
@@ -182,9 +228,42 @@ function ZHLineActionMenuTrigger({
       window.removeEventListener("pointerdown", onDown as unknown as EventListener, true);
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, onOpenChange]);
+  }, [open, onOpenChange, portal]);
 
   const triggerDisabled = disabled || loading;
+
+  const panel = (
+    <div
+      ref={panelRef}
+      id={panelId}
+      className={`zh-line-action-menu__panel ${menuAlign === "end" ? "zh-line-action-menu__panel--end" : ""} ${portal ? "zh-line-action-menu__panel--portal" : ""} ${menuClassName ?? ""}`.trim()}
+      role="menu"
+      aria-label={menuLabel ?? ariaLabel ?? title}
+      style={portal ? { top: position.top, left: position.left } : undefined}
+      onKeyDown={portal ? (event) => {
+        const items = Array.from(panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []);
+        const index = items.indexOf(document.activeElement as HTMLButtonElement);
+        if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+          event.preventDefault();
+          const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1
+            : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+          items[next]?.focus();
+        } else if (event.key === "Tab") {
+          // Let the browser move from the row trigger to the next/previous control.
+          triggerRef.current?.focus();
+          onOpenChange?.(false);
+        }
+      } : undefined}
+    >
+      <ZHLineActionMenuContext.Provider value={{ closeOnSelect, onOpenChange: portal ? (next) => {
+        if (!next) triggerRef.current?.focus();
+        onOpenChange?.(next);
+      } : onOpenChange }}>
+        {children}
+      </ZHLineActionMenuContext.Provider>
+    </div>
+  );
+
 
   return (
     <div className={`zh-line-action-menu ${className}`.trim()} ref={rootRef}>
@@ -193,12 +272,19 @@ function ZHLineActionMenuTrigger({
         className={`zh-line-action-menu__trigger ${
           tone === "primary" ? "zh-line-action-menu__trigger--primary" : ""
         }`.trim()}
+        ref={triggerRef}
+        aria-controls={open ? panelId : undefined}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={ariaLabel ?? title}
         title={title}
         disabled={triggerDisabled}
         onClick={() => onOpenChange?.(!open)}
+        onKeyDown={portal ? (event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault(); onOpenChange?.(true);
+          }
+        } : undefined}
       >
         <span className="material-symbols-outlined zh-line-action-menu__trigger-icon">
           {icon}
@@ -212,18 +298,7 @@ function ZHLineActionMenuTrigger({
         </span>
       </button>
       {showText && <span className="zh-line-action__label">{label}</span>}
-      {open && (
-        <div
-          className={`zh-line-action-menu__panel ${
-            menuAlign === "end" ? "zh-line-action-menu__panel--end" : ""
-          }`.trim()}
-          role="menu"
-        >
-          <ZHLineActionMenuContext.Provider value={{ closeOnSelect, onOpenChange }}>
-            {children}
-          </ZHLineActionMenuContext.Provider>
-        </div>
-      )}
+      {open && (portal ? createPortal(panel, document.body) : panel)}
     </div>
   );
 }

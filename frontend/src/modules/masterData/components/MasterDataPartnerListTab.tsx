@@ -1,3 +1,4 @@
+import { MasterDataSupplierListActions } from "./MasterDataSupplierListActions";
 import { useNavigate } from "react-router-dom";
 import { LoadingState } from "../../../components/PageShell";
 import { ZHBtn } from "../../../components/zh/ZHForm";
@@ -86,7 +87,19 @@ export function MasterDataPartnerListTab({
     {
       key: "legalName",
       header: t(`${prefix}.col.legalName`, "Razón social"),
-      render: (bp) => (
+      render: (bp) => role === "supplier" ? (
+        <div className="md-supplier-identity">
+          <span className="md-supplier-identity__id mono">{bp.identificationNumber}</span>
+          <span className="md-supplier-identity__legal">{bp.legalName}</span>
+          {bp.tradeName?.trim() && bp.tradeName.trim() !== bp.legalName.trim() && (
+            <span className="md-supplier-identity__trade">{bp.tradeName.trim()}</span>
+          )}
+          <span className={`md-supplier-identity__status prd-status-dot ${bp.isActive ? "prd-status-dot--active" : "prd-status-dot--inactive"}`}>
+            <span className="prd-status-dot__bullet" />
+            {bp.isActive ? t("common.active") : t("common.inactive")}
+          </span>
+        </div>
+      ) : (
         <>
           <span>{bp.tradeName?.trim() || bp.legalName}</span>
           {bp.tradeName?.trim() && <span className="prd-sub-text">{bp.legalName}</span>}
@@ -106,7 +119,11 @@ export function MasterDataPartnerListTab({
     {
       key: "actions",
       header: "",
-      render: (bp) => (
+      render: (bp) => role === "supplier" ? (
+        <MasterDataSupplierListActions partner={bp} canUpdate={canUpdate} canDisable={canDisable}
+          saving={saving} onEdit={startEdit} onSupplierProfile={onSupplierProfile}
+          onAddAsCustomer={onAddAsCustomer} onActivate={onActivate} onDisable={onDisable} />
+      ) : (
         <div className="md-actions prd-actions-cell">
           <ZHBtn
             variant="ghost"
@@ -125,11 +142,6 @@ export function MasterDataPartnerListTab({
               {t(`${prefix}.action.company`, "Condiciones")}
             </ZHBtn>
           )}
-          {role === "supplier" && canUpdate && onSupplierProfile && (
-            <ZHBtn variant="ghost" size="sm" onClick={() => onSupplierProfile(bp)}>
-              {t(`${prefix}.action.sri`, "Config SRI")}
-            </ZHBtn>
-          )}
           {role === "customer" && canUpdate && onCustomerConfig && (
             <ZHBtn variant="ghost" size="sm" onClick={() => onCustomerConfig(bp)}>
               {t(`${prefix}.action.classification`, "Clasificación")}
@@ -137,9 +149,7 @@ export function MasterDataPartnerListTab({
           )}
           {canUpdate && !bp.isActive && (
             <ZHBtn variant="ghost" size="sm" disabled={saving} onClick={() => void onActivate(bp.id)}>
-              {role === "supplier"
-                ? t("masterdata.suppliers.action.activate", "Activar proveedor")
-                : t("common.enable", "Activar")}
+              {t("common.enable", "Activar")}
             </ZHBtn>
           )}
           {role === "customer" && canUpdate && onAddAsSupplier && (
@@ -153,22 +163,9 @@ export function MasterDataPartnerListTab({
               +{t(`${prefix}.action.addSupplierShort`, "Prov.")}
             </ZHBtn>
           )}
-          {role === "supplier" && canUpdate && onAddAsCustomer && (
-            <ZHBtn
-              variant="ghost"
-              size="sm"
-              disabled={saving}
-              onClick={() => void onAddAsCustomer(bp.id)}
-              title={t(`${prefix}.action.addCustomer`, "Agregar como cliente")}
-            >
-              +{t(`${prefix}.action.addCustomerShort`, "Cli.")}
-            </ZHBtn>
-          )}
           {canDisable && bp.isActive && (
             <ZHBtn variant="ghost" size="sm" disabled={saving} onClick={() => void onDisable(bp.id)}>
-              {role === "supplier"
-                ? t("masterdata.suppliers.action.deactivate", "Desactivar proveedor")
-                : t("common.disable", "Desactivar")}
+              {t("common.disable", "Desactivar")}
             </ZHBtn>
           )}
         </div>
@@ -177,7 +174,7 @@ export function MasterDataPartnerListTab({
   ];
 
   return (
-    <div className="prd-listado prd-fadein">
+    <div className={`prd-listado prd-fadein${role === "supplier" ? " md-supplier-list" : ""}`}>
       {/* ── Search bar ──────────────────────────────────────────────────── */}
       <div className="prd-search-wrap">
         <div className="prd-search-box">

@@ -2192,7 +2192,7 @@
   "masterdata.customers.enabled.success": "Cliente activado.",
   "masterdata.suppliers.title": "Proveedores",
   "masterdata.suppliers.kicker": "Personas y empresas",
-  "masterdata.suppliers.subtitle": "Registra y administra las personas o empresas que usarás en compras.",
+  "masterdata.suppliers.subtitle": "Administración de proveedores para compras, pagos y retenciones.",
   "masterdata.suppliers.tabList": "Ver proveedores",
   "masterdata.suppliers.primaryCreate": "Crear proveedor",
   "masterdata.suppliers.dataSection": "Alta de proveedor",
@@ -2219,6 +2219,7 @@
   "masterdata.suppliers.modal.editTitle": "Editar proveedor",
   "masterdata.suppliers.tabs.resumen": "Resumen",
   "masterdata.suppliers.tabs.listado": "Listado",
+  "masterdata.suppliers.tabs.nuevoShort": "Nuevo",
   "masterdata.suppliers.tabs.nuevo": "Nuevo proveedor",
   "masterdata.suppliers.tabs.edit": "Editar proveedor",
   "masterdata.suppliers.tabs.aria": "Secciones de proveedores",
@@ -4757,5 +4758,9 @@
   "help.companyFiscal.withholdsRenta.long": "El ERP lo consulta para evaluar si procede retener renta en compras, junto con las demás reglas aplicables. Es independiente de comercio exterior y de IVA; no acredita una designación oficial del SRI como agente de retención.",
   "help.companyFiscal.withholdsVat.title": "Retención de IVA",
   "help.companyFiscal.withholdsVat.short": "Indicador operativo de que la empresa practica retenciones de IVA. Actívelo cuando corresponda a sus obligaciones y operaciones.",
-  "help.companyFiscal.withholdsVat.long": "El ERP lo consulta para evaluar si procede retener IVA en compras, junto con las demás reglas aplicables. Es independiente de comercio exterior y de renta; no acredita una designación oficial del SRI como agente de retención."
+  "help.companyFiscal.withholdsVat.long": "El ERP lo consulta para evaluar si procede retener IVA en compras, junto con las demás reglas aplicables. Es independiente de comercio exterior y de renta; no acredita una designación oficial del SRI como agente de retención.",
+  "masterdata.suppliers.listAction.more": "Más acciones",
+  "masterdata.suppliers.listAction.edit": "Editar proveedor",
+  "masterdata.suppliers.listAction.sri": "Configuración SRI",
+  "masterdata.suppliers.listAction.assign": "Asignar como cliente"
 }

@@ -31,12 +31,12 @@ function buildPartner(id: string, name: string): BusinessPartnerSummaryDto {
   };
 }
 
-function renderTab(page: number, pageSize: number) {
+function renderTab(page: number, pageSize: number, role: "customer" | "supplier" = "customer", partner = buildPartner("1", "Cliente Página")) {
   return render(
     <I18nProvider>
       <MemoryRouter>
         <MasterDataPartnerListTab
-          role="customer"
+          role={role}
           store={useMasterDataCustomersUiStore}
           canCreate
           canUpdate
@@ -44,7 +44,7 @@ function renderTab(page: number, pageSize: number) {
           canConfigure
           loading={false}
           saving={false}
-          partners={[buildPartner("1", "Cliente Página")]}
+          partners={[partner]}
           totalCount={120}
           search=""
           setSearch={() => {}}
@@ -79,5 +79,28 @@ describe("MasterDataPartnerListTab — showRowNumber con rowNumberOffset", () =>
     const rows = screen.getAllByRole("row").slice(1);
     const firstCell = within(rows[0]).getAllByRole("cell")[0];
     expect(firstCell.textContent).toBe("101");
+  });
+});
+
+describe("supplier identity", () => {
+  it.each([null, "", "   ", "  Legal  "])("omits empty or identical trade name: %s", (tradeName) => {
+    renderTab(1, 50, "supplier", {...buildPartner("1", "Legal"), tradeName});
+    const cell = within(screen.getAllByRole("row")[1]).getAllByRole("cell")[2];
+    expect(cell.querySelector(".md-supplier-identity__legal")?.textContent).toBe("Legal");
+    expect(cell.querySelector(".md-supplier-identity__trade")).toBeNull();
+  });
+  it("shows full long legal name before distinct trade name", () => {
+    const legalName = "Distribuidora de Suministros Industriales ".repeat(8).trim();
+    renderTab(1, 50, "supplier", {...buildPartner("1", legalName), tradeName: "  Comercial  "});
+    expect(screen.getByText(legalName).className).toBe("md-supplier-identity__legal");
+    expect(screen.getByText("Comercial").className).toBe("md-supplier-identity__trade");
+    expect(screen.getAllByText("0999991")).toHaveLength(2);
+  });
+  it("preserves customer identity and excludes supplier styles", () => {
+    const {container} = renderTab(1, 50, "customer", {...buildPartner("1", "Legal"), tradeName: "Comercial"});
+    const cell = within(screen.getAllByRole("row")[1]).getAllByRole("cell")[2];
+    expect(cell.firstElementChild?.textContent).toBe("Comercial");
+    expect(cell.lastElementChild?.textContent).toBe("Legal");
+    expect(container.querySelector(".md-supplier-list")).toBeNull();
   });
 });

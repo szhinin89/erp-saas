@@ -2123,7 +2123,7 @@
   "masterdata.customers.enabled.success": "Customer activated.",
   "masterdata.suppliers.title": "Suppliers",
   "masterdata.suppliers.kicker": "People and companies",
-  "masterdata.suppliers.subtitle": "Register and manage the people or companies you use in purchases.",
+  "masterdata.suppliers.subtitle": "Supplier management for purchases, payments and withholdings.",
   "masterdata.suppliers.tabList": "View suppliers",
   "masterdata.suppliers.primaryCreate": "Create supplier",
   "masterdata.suppliers.dataSection": "New supplier",
@@ -2150,6 +2150,7 @@
   "masterdata.suppliers.modal.editTitle": "Edit supplier",
   "masterdata.suppliers.tabs.resumen": "Overview",
   "masterdata.suppliers.tabs.listado": "List",
+  "masterdata.suppliers.tabs.nuevoShort": "New",
   "masterdata.suppliers.tabs.nuevo": "New supplier",
   "masterdata.suppliers.tabs.edit": "Edit supplier",
   "masterdata.suppliers.tabs.aria": "Supplier sections",
@@ -4757,5 +4758,9 @@
   "help.companyFiscal.withholdsRenta.long": "The ERP checks it when evaluating income tax withholding on purchases, alongside other applicable rules. It is independent of foreign trade and VAT; it does not certify official SRI withholding agent designation.",
   "help.companyFiscal.withholdsVat.title": "VAT withholding",
   "help.companyFiscal.withholdsVat.short": "Operational indicator that the company withholds VAT. Enable it when required by its obligations and operations.",
-  "help.companyFiscal.withholdsVat.long": "The ERP checks it when evaluating VAT withholding on purchases, alongside other applicable rules. It is independent of foreign trade and income tax; it does not certify official SRI withholding agent designation."
+  "help.companyFiscal.withholdsVat.long": "The ERP checks it when evaluating VAT withholding on purchases, alongside other applicable rules. It is independent of foreign trade and income tax; it does not certify official SRI withholding agent designation.",
+  "masterdata.suppliers.listAction.more": "More actions",
+  "masterdata.suppliers.listAction.edit": "Edit supplier",
+  "masterdata.suppliers.listAction.sri": "SRI settings",
+  "masterdata.suppliers.listAction.assign": "Assign as customer"
 }

@@ -93,3 +93,55 @@ describe("ZHTabBar", () => {
     });
   });
 });
+
+describe("ZHTabBar responsive-three — opt-in", () => {
+  const tabs: ZHTab<"a" | "b" | "c">[] = [
+    { id: "a", label: "Resumen", icon: "bar_chart_4_bars" },
+    { id: "b", label: "Listado", icon: "view_list" },
+    { id: "c", label: "Nuevo proveedor", mobileLabel: "Nuevo", icon: "add_box" },
+  ];
+
+  it("mantiene nombre accesible completo e iconos decorativos con etiqueta breve", () => {
+    const onChange = vi.fn();
+    render(<ZHTabBar tabs={tabs} activeTab="a" onChange={onChange} variant="responsive-three" />);
+    const tab = screen.getByRole("tab", { name: "Nuevo proveedor" });
+    expect(screen.getByRole("tablist").classList.contains("prd-tabs--responsive-three")).toBe(true);
+    expect(tab.querySelector(".prd-tab-label--mobile")?.textContent).toBe("Nuevo");
+    expect(tab.querySelector(".prd-tab-label--mobile")?.getAttribute("aria-hidden")).toBe("true");
+    expect(tab.querySelector(".prd-tab-icon")?.getAttribute("aria-hidden")).toBe("true");
+    fireEvent.click(tab);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith("c");
+  });
+
+  it("no altera el markup default ni aplica etiquetas móviles sin la variante", () => {
+    const { container, rerender } = render(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} fill />);
+    const markup = container.innerHTML;
+    expect(container.querySelector(".prd-tab-label--mobile")).toBeNull();
+    expect(screen.getByRole("tablist").className).toBe("prd-tabs prd-tabs--fill");
+    rerender(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} fill variant="default" />);
+    expect(container.innerHTML).toBe(markup);
+  });
+
+  it.each([0, 1, 2, 4, 5])("ignora responsive-three con %i pestañas", (count) => {
+    const otherTabs = Array.from({ length: count }, (_, i) => ({ id: String(i), label: `Destino ${i}`, mobileLabel: `D${i}` }));
+    const { container, rerender } = render(<ZHTabBar tabs={otherTabs} activeTab="0" onChange={() => {}} />);
+    const markup = container.innerHTML;
+    rerender(<ZHTabBar tabs={otherTabs} activeTab="0" onChange={() => {}} variant="responsive-three" />);
+    expect(container.innerHTML).toBe(markup);
+  });
+
+  it("conserva selección, disabled e inert en la variante", () => {
+    const onChange = vi.fn();
+    render(<ZHTabBar tabs={tabs.map(t => ({ ...t, disabled: t.id === "b", inert: t.id === "a" }))} activeTab="a" onChange={onChange} variant="responsive-three" />);
+    const active = screen.getByRole("tab", { name: "Resumen" });
+    const disabled = screen.getByRole("tab", { name: "Listado" });
+    expect(active.getAttribute("aria-selected")).toBe("true");
+    expect(disabled.getAttribute("aria-disabled")).toBe("true");
+    expect((disabled as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(active);
+    fireEvent.click(disabled);
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("tab", { name: "Nuevo proveedor" }));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith("c");
+  });
+});

@@ -728,3 +728,114 @@
 .md-detail-primary-option {
   margin-top: 8px;
 }
+
+/* Supplier listing only: customers retain their existing layout. */
+.md-supplier-list table {
+  table-layout: fixed;
+  min-width: 720px;
+}
+.md-supplier-list table :is(th, td):first-child {
+  width: 48px;
+}
+.md-supplier-list table :is(th, td):nth-child(2) {
+  width: 150px;
+}
+.md-supplier-list table :is(th, td):nth-child(4) {
+  width: 100px;
+}
+.md-supplier-list table :is(th, td):last-child {
+  width: 112px;
+}
+.md-supplier-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+.md-supplier-identity__legal {
+  font-weight: var(--font-weight-semibold);
+}
+.md-supplier-identity__trade {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+.md-supplier-list .md-actions {
+  flex-wrap: wrap;
+}
+.md-supplier-list .prd-search-input {
+  min-width: 0;
+}
+.md-supplier-list .prd-search-meta,
+.md-supplier-list .md-pagination {
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+@media (max-width: 768px) {
+  .md-supplier-list table :is(th, td):last-child {
+    width: 96px;
+  }
+}
+
+.md-supplier-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
+.md-supplier-actions__more .zh-line-action-menu__trigger-chevron { display: none; }
+.md-supplier-actions-menu__identity {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+  padding: var(--space-2);
+  overflow-wrap: anywhere;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+.md-supplier-identity__id,
+.md-supplier-identity__status { display: none; }
+@media (max-width: 640px) {
+  .md-supplier-list table { min-width: 0; }
+  .md-supplier-list table :is(th, td):nth-child(-n+2),
+  .md-supplier-list table :is(th, td):nth-child(4) { display: none; }
+  .md-supplier-identity__id {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: var(--text-help-size);
+  }
+  .md-supplier-identity__status { display: inline-flex; }
+}
+
+/* Supplier summary composes the official horizontal KPI and ZHCard variants. */
+.md-supplier-summary > .prd-kpi-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.md-supplier-summary > .prd-resumen__bottom {
+  display: block;
+  max-width: 56rem;
+}
+.md-supplier-summary__activity > .card-header {
+  padding: var(--space-2) var(--space-4);
+}
+.md-supplier-summary .md-supplier-summary__activity-body {
+  padding: 0;
+}
+.md-supplier-summary .prd-activity-empty {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+}
+.md-supplier-summary .prd-activity__row {
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+}
+.md-supplier-summary .prd-activity__info {
+  flex-wrap: wrap;
+}
+.md-supplier-summary .prd-activity__name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1024px) {
+  .md-supplier-summary > .prd-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 580px) {
+  .md-supplier-summary > .prd-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

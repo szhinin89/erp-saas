@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PageShell } from "../components/PageShell";
+import type { ZHScreenHeadingVariant } from "../components/zh/ZHLayout";
 
 /**
  * Plantilla estándar para pantallas ERP (suscriptor) dentro de AppLayout + LayoutFrame.
@@ -12,6 +13,7 @@ export type ErpPageTemplateProps = {
   kicker?: string;
   subtitle?: string;
   action?: ReactNode;
+  headingVariant?: ZHScreenHeadingVariant;
   /** Envuelve el cuerpo en `.pg-page` (ritmo vertical estándar). Default: true. */
   usePgPage?: boolean;
   /** Clase extra en `.pg-page` (p. ej. prefijo de página `dsh-page`). */
@@ -24,6 +26,7 @@ export function ErpPageTemplate({
   kicker,
   subtitle,
   action,
+  headingVariant,
   usePgPage = true,
   pageClassName,
   children,
@@ -42,6 +45,7 @@ export function ErpPageTemplate({
       kicker={kicker}
       subtitle={subtitle}
       action={action}
+      headingVariant={headingVariant}
     >
       {body}
     </PageShell>

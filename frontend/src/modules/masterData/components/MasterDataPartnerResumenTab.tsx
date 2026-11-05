@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useI18n } from "../../../i18n/i18n";
 import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ReportKpiCard } from "../../../components/ReportPageTemplate";
+import { ZHCard } from "../../../components/zh/ZHCard";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 import type {
   PartnerActivityItem,
@@ -87,10 +88,33 @@ export function MasterDataPartnerResumenTab({
     [partners, totalCount],
   );
 
+  const viewListAction = (
+    <ZHBtn
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={() => setActiveTab("listado")}
+    >
+      {t("masterdata.resumen.viewList", "Ver listado")}
+    </ZHBtn>
+  );
+  const activityContent = activity.length === 0 ? (
+    <p className="prd-activity-empty">
+      {t("masterdata.resumen.noActivity", "Aún no hay acciones en esta sesión.")}
+    </p>
+  ) : (
+    <div className="prd-activity__list">
+      {activity.map((item) => (
+        <ActivityRow key={item.id} item={item} t={t} />
+      ))}
+    </div>
+  );
+
   return (
-    <div className="prd-resumen prd-fadein">
+    <div className={`prd-resumen prd-fadein${role === "supplier" ? " md-supplier-summary" : ""}`}>
       <div className="prd-kpi-grid">
         <ReportKpiCard
+          layout={role === "supplier" ? "horizontal" : "vertical"}
           icon={icon}
           tone="primary"
           label={t(`${prefix}.kpi.total`, "Total registrados")}
@@ -98,6 +122,7 @@ export function MasterDataPartnerResumenTab({
         />
 
         <ReportKpiCard
+          layout={role === "supplier" ? "horizontal" : "vertical"}
           icon="check_circle"
           tone="success"
           label={t(`${prefix}.kpi.activePage`, "Activos (página)")}
@@ -105,6 +130,7 @@ export function MasterDataPartnerResumenTab({
         />
 
         <ReportKpiCard
+          layout={role === "supplier" ? "horizontal" : "vertical"}
           icon="inventory"
           tone="neutral"
           label={t(`${prefix}.kpi.inactivePage`, "Inactivos (página)")}
@@ -113,59 +139,51 @@ export function MasterDataPartnerResumenTab({
       </div>
 
       <div className="prd-resumen__bottom">
-        <div className="prd-activity-card">
-          <div className="prd-activity-card__head">
-            <h3>{t("masterdata.resumen.activity", "Actividad reciente")}</h3>
+        {role === "supplier" ? (
+          <ZHCard
+            className="md-supplier-summary__activity"
+            bodyClassName="md-supplier-summary__activity-body"
+            title={<span role="heading" aria-level={3}>{t("masterdata.resumen.activity", "Actividad reciente")}</span>}
+          >
+            {activityContent}
+          </ZHCard>
+        ) : (
+          <div className="prd-activity-card">
+            <div className="prd-activity-card__head">
+              <h3>{t("masterdata.resumen.activity", "Actividad reciente")}</h3>
+              {viewListAction}
+            </div>
+            {activityContent}
+          </div>
+        )}
+
+        {role === "customer" && (
+          <div className="prd-quick-card">
+            <h3>{t("masterdata.resumen.quickActions", "Acciones rápidas")}</h3>
             <ZHBtn
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="secondary"
               onClick={() => setActiveTab("listado")}
             >
-              {t("masterdata.resumen.viewList", "Ver listado")}
+              <span className="material-symbols-outlined zh-icon-md">view_list</span>
+              {t(
+                `${prefix}.tabList`,
+                role === "customer" ? "Ver clientes" : "Ver proveedores",
+              )}
+            </ZHBtn>
+            <ZHBtn
+              type="button"
+              variant="primary"
+              onClick={() => setActiveTab("nuevo")}
+            >
+              <span className="material-symbols-outlined zh-icon-md">add_circle</span>
+              {t(
+                `${prefix}.tabNew`,
+                role === "customer" ? "Nuevo cliente" : "Nuevo proveedor",
+              )}
             </ZHBtn>
           </div>
-          {activity.length === 0 ? (
-            <p className="prd-activity-empty">
-              {t(
-                "masterdata.resumen.noActivity",
-                "Aún no hay acciones en esta sesión.",
-              )}
-            </p>
-          ) : (
-            <div className="prd-activity__list">
-              {activity.map((item) => (
-                <ActivityRow key={item.id} item={item} t={t} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="prd-quick-card">
-          <h3>{t("masterdata.resumen.quickActions", "Acciones rápidas")}</h3>
-          <ZHBtn
-            type="button"
-            variant="secondary"
-            onClick={() => setActiveTab("listado")}
-          >
-            <span className="material-symbols-outlined zh-icon-md">view_list</span>
-            {t(
-              `${prefix}.tabList`,
-              role === "customer" ? "Ver clientes" : "Ver proveedores",
-            )}
-          </ZHBtn>
-          <ZHBtn
-            type="button"
-            variant="primary"
-            onClick={() => setActiveTab("nuevo")}
-          >
-            <span className="material-symbols-outlined zh-icon-md">add_circle</span>
-            {t(
-              `${prefix}.tabNew`,
-              role === "customer" ? "Nuevo cliente" : "Nuevo proveedor",
-            )}
-          </ZHBtn>
-        </div>
+        )}
       </div>
     </div>
   );

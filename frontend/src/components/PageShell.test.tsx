@@ -79,3 +79,41 @@ describe("PageShell — título de pestaña", () => {
     expect(screen.getByText("lista de flujos")).toBeTruthy();
   });
 });
+
+describe("PageShell — variante opcional", () => {
+  it("conserva el markup al omitir variante o pasar default", () => {
+    const props = { title: "Catálogo", kicker: "Maestros", subtitle: "Descripción", action: <button>Crear</button>, children: <div>contenido</div> };
+    const { container, rerender } = render(<PageShell {...props} />);
+    const markup = container.innerHTML;
+    expect(container.querySelector("header")?.className).toBe("zh-screen-heading");
+    rerender(<PageShell {...props} headingVariant="default" />);
+    expect(container.innerHTML).toBe(markup);
+  });
+
+  it("propaga compact por la plantilla conservando semántica, contexto y acciones", () => {
+    const { container, rerender } = render(
+      <ErpPageTemplate title="Catálogo" kicker="Maestros" subtitle="Descripción extensa" headingVariant="compact" action={<button>Crear</button>}>
+        <div>contenido</div>
+      </ErpPageTemplate>,
+    );
+    const header = container.querySelector("header")!;
+    expect(header.className).toBe("zh-screen-heading zh-screen-heading--compact");
+    expect(header.querySelectorAll("h1")).toHaveLength(1);
+    expect(header.querySelector("h1")?.textContent).toBe("Catálogo");
+    expect(header.querySelector(".zh-screen-heading-kicker")?.textContent).toBe("Maestros");
+    expect(header.querySelector("p")?.textContent).toBe("Descripción extensa");
+    expect(header.querySelector("button")?.textContent).toBe("Crear");
+    expect(header.querySelector(".zh-screen-heading-chip")?.getAttribute("aria-hidden")).toBe("true");
+    expect(document.title).toBe("Catálogo");
+    rerender(<ErpPageTemplate title="Catálogo"><div>contenido</div></ErpPageTemplate>);
+    expect(container.querySelector("header")?.className).toBe("zh-screen-heading");
+  });
+
+  it("admite compact con solo título", () => {
+    const { container } = render(<PageShell title="Solo título" headingVariant="compact"><div>contenido</div></PageShell>);
+    expect(container.querySelector("header h1")?.textContent).toBe("Solo título");
+    expect(container.querySelector("header p")).toBeNull();
+    expect(container.querySelector(".zh-screen-heading-right")).toBeNull();
+    expect(container.querySelector(".zh-screen-heading-kicker")).toBeNull();
+  });
+});

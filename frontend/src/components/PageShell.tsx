@@ -1,6 +1,6 @@
 ﻿import { useI18n } from "../i18n/i18n";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
-import { ZHScreenHeading } from "./zh/ZHLayout";
+import { ZHScreenHeading, type ZHScreenHeadingVariant } from "./zh/ZHLayout";
 import { ZHCard as Card } from "./zh/ZHCard";
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   kicker?: string;
   subtitle?: string;
   action?: React.ReactNode;
+  headingVariant?: ZHScreenHeadingVariant;
   children: React.ReactNode;
 }
 
@@ -18,6 +19,7 @@ export function PageShell({
   kicker,
   subtitle,
   action,
+  headingVariant,
   children,
 }: Props) {
   // Punto único de sincronización del título de la pestaña del navegador:
@@ -33,6 +35,7 @@ export function PageShell({
           title={title}
           subtitle={subtitle}
           right={action}
+          variant={headingVariant}
         />
       </div>
       {children}
