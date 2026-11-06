@@ -124,6 +124,8 @@ describe("P1 - one form summary", () => {
       packagingLevelId: "box-12", conversionFactor: 12, quantity: 1 / 12, quantityInBaseUom: 1, baseUnitPrice: 0.5, unitPrice: 6, vatCode: "4" };
     const ctx = context({ lines: [line], lineReadinessByKey: {}, pendingReceptionItems: [], hasLineReadinessBlockers: false });
     show(ctx, <PurchaseLineCard line={line} idx={0} ctx={ctx} />);
+    // La tarjeta inicia contraída (detalle compacto, 2026-10-29): el aviso vive en «Detalle».
+    fireEvent.click(screen.getByRole("button", { name: "Detalle" }));
     expect(screen.getAllByText(/^No es una cantidad exacta de/)).toHaveLength(1);
     expect(document.querySelector(".zh-line-issues")?.textContent ?? "").not.toContain("Equivalencia informativa");
   });

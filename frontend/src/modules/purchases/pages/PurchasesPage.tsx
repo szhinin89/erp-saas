@@ -1503,12 +1503,11 @@ export function PurchaseLineCard({
   const detailErrors = fieldIssues.filter(issue => !headerFields.some(field => issue.path === field || issue.path.startsWith(`${field}.`)));
 
   // PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — Base/IVA/ICE/Total de la cabecera
-  // editable viven en `vm.editableHeader`, recalculados en cada render desde quantity/unitPrice/
-  // discountPct/vatCode/iceCode actuales — nunca desde el snapshot XML (`vm.xml.*`, que se muestra
-  // aparte en "Producto recibido (XML)" y no cambia con la edición). Antes de este fix, una línea
-  // con origen XML mostraba xmlTaxValue/xmlTotalLine en cabecera sin importar que el usuario ya
-  // hubiera cambiado quantity/unitPrice — Base imp. sí se recalculaba pero IVA/Total quedaban
-  // pegados al valor documental original.
+  // editable viven en `vm.editableHeader`, calculados en cada render: la base sigue la cantidad/
+  // costo/descuento operativos actuales; en una línea con recepción XML, IVA/ICE/IRBPNR conservan
+  // los importes fiscales del XML aunque cambien cantidad, costo o presentación (purchases.md § 2,
+  // `resolveLineTaxes`), y la confirmación los concilia. Las líneas manuales calculan por tarifa.
+  // El snapshot `vm.xml.*` se muestra aparte en "Producto recibido (XML)" y no cambia.
   const vm = buildPurchaseLinePresentation(l, precisionPolicy, t, ctx.vatRatesMap, ctx.iceRatesMap);
   const quantityDecimals = resolvePrecisionDecimals(precisionPolicy, "quantity");
   const purchasePriceDecimals = resolvePrecisionDecimals(precisionPolicy, "purchaseUnitPrice");

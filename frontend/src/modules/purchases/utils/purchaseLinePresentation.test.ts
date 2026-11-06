@@ -898,10 +898,13 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
     });
   });
 
-  describe("PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — IVA/Total de cabecera recalculan al editar Cantidad/Costo", () => {
+  describe("PURCHASE-LINE-HEADER-EDIT-RECALCULATE-TAX-TOTAL-01 — cabecera editable: base operativa e impuestos fiscales del XML", () => {
     // Caso real: CLUB PLATINO LATA 355CC NRB X6 TERMO. Snapshot XML: cantidad 8, precio 5.9125,
     // descuento $6.43 (≈13.594% sobre 47.30 bruto) → base 40.87, IVA 15% → 6.13, total 47.00.
     // Mismo fixture numérico que "Base imponible de cabecera" en purchaseCalc.test.ts.
+    // Regla vigente (purchases.md § 2, a55057a9c): en una línea con recepción XML, editar
+    // cantidad/costo/presentación cambia la base operativa; IVA, ICE e IRBPNR conservan los
+    // importes fiscales del XML (espejo de resolveLineTaxes en purchaseCalc.test.ts).
     const xmlDiscountPct = (6.43 / 47.3) * 100;
     const clubPlatinoXmlLine = (overrides: Partial<PurchaseLineFormValues> = {}) =>
       line({
@@ -931,15 +934,15 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       expect(vm.editableHeader.total).toBeCloseTo(47.0, 2);
     });
 
-    it("caso real: editar a Cantidad 50 / Costo 2 → cabecera editable muestra Base 100 / IVA 15 / Total 115, NO el snapshot XML", () => {
+    it("caso real: editar a Cantidad 50 / Costo 2 → base operativa 100, IVA fiscal XML 6.13, Total 106.13", () => {
       const vm = buildPurchaseLinePresentation(
         clubPlatinoXmlLine({ quantity: 50, unitPrice: 2, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.taxableBase).toBe(100);
-      expect(vm.editableHeader.vatAmount).toBe(15);
+      expect(vm.editableHeader.vatAmount).toBe(6.13);
       expect(vm.editableHeader.iceAmount).toBe(0);
-      expect(vm.editableHeader.total).toBe(115);
+      expect(vm.editableHeader.total).toBeCloseTo(106.13, 2);
     });
 
     it("el bloque 'Producto recibido (XML)' conserva el snapshot original (8 / 5.9125 / 40.87 / 6.13 / 0.00 / 47.00) después de la edición", () => {
@@ -989,24 +992,24 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       expect(afterEdit.xml.additionalFields).toEqual(additionalFields);
     });
 
-    it("editar solo Cantidad recalcula IVA/Total de cabecera", () => {
+    it("editar solo Cantidad cambia la base operativa y conserva el IVA fiscal XML", () => {
       const vm = buildPurchaseLinePresentation(
         clubPlatinoXmlLine({ quantity: 100, unitPrice: 2, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.taxableBase).toBe(200);
-      expect(vm.editableHeader.vatAmount).toBe(30);
-      expect(vm.editableHeader.total).toBe(230);
+      expect(vm.editableHeader.vatAmount).toBe(6.13);
+      expect(vm.editableHeader.total).toBeCloseTo(206.13, 2);
     });
 
-    it("editar solo Costo recalcula IVA/Total de cabecera", () => {
+    it("editar solo Costo cambia la base operativa y conserva el IVA fiscal XML", () => {
       const vm = buildPurchaseLinePresentation(
         clubPlatinoXmlLine({ quantity: 50, unitPrice: 3, discountPct: 0 }), getPrecisionPolicy(),
       );
 
       expect(vm.editableHeader.taxableBase).toBe(150);
-      expect(vm.editableHeader.vatAmount).toBe(22.5);
-      expect(vm.editableHeader.total).toBe(172.5);
+      expect(vm.editableHeader.vatAmount).toBe(6.13);
+      expect(vm.editableHeader.total).toBeCloseTo(156.13, 2);
     });
 
     it("cambiar presentación y luego editar no deja IVA/Total pegados a un valor anterior", () => {
@@ -1026,7 +1029,8 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       );
 
       expect(vm1.editableHeader.total).toBeCloseTo(47.0, 2);
-      expect(vm2.editableHeader.total).toBe(115);
+      expect(vm2.editableHeader.vatAmount).toBe(6.13);
+      expect(vm2.editableHeader.total).toBeCloseTo(106.13, 2);
       expect(vm2.editableHeader.total).not.toBeCloseTo(vm1.editableHeader.total, 2);
 
       // El bloque XML es ajeno al cambio de presentación: sigue siendo el mismo en los dos estados.
@@ -1047,7 +1051,8 @@ describe("buildPurchaseLinePresentation — supplier presentation UX", () => {
       );
 
       expect(vm.editableHeader.irbpnrAmount).toBe(0.72);
-      expect(vm.editableHeader.total).toBe(100 + 15 + 0 + 0.72);
+      expect(vm.editableHeader.vatAmount).toBe(6.13);
+      expect(vm.editableHeader.total).toBeCloseTo(100 + 6.13 + 0 + 0.72, 2);
       // El snapshot XML tampoco cambia.
       expect(vm.xml.irbpnrValue).toBe("$0.72");
     });

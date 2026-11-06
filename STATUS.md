@@ -1,5 +1,24 @@
 # Project Status
 
+## B-02 — pruebas obsoletas de Compras actualizadas — PENDIENTE DE CONSOLIDACIÓN Y VALIDACIÓN COMPLETA DEL RELEASE (2026-11-06)
+
+Bloqueante B-02 de la auditoría de lanzamiento. Compras V1 **continúa CLOSED**
+([DOC-CLEANUP-COMPRAS-01](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03)): los seis
+fallos deterministas eran expectativas anteriores a decisiones aprobadas, no defectos funcionales.
+Reproducción previa en `4ab84b0ba`: 69/75. `purchaseLinePresentation.test.ts` (5) pasa a esperar la regla
+vigente de [Compras § 2](docs/architecture/purchases.md#2-borrador) (`a55057a9c`): editar cantidad,
+costo o presentación de una línea XML cambia la base operativa y conserva IVA/ICE/IRBPNR fiscales del
+XML. `PurchaseFormFeedback.test.tsx` (1) expande «Detalle» antes de buscar el aviso de equivalencia en
+unidad base (detalle contraído, 2026-10-29). En `PurchasesPage.tsx` solo se corrige el comentario que
+describía el recálculo anterior. Sin cambios de lógica, impuestos, backend, API, contabilidad ni diseño.
+
+Validación agente: Vitest focal 139/139 en 4 archivos (`purchaseLinePresentation`,
+`PurchaseFormFeedback`, `purchaseCalc`, `PurchaseLineCard.compact`); `tsc -b`; ESLint focal (solo el
+aviso `max-lines` existente de `PurchasesPage.tsx`); `architecture:check` (0 violaciones nuevas),
+guardrail oficial `-SkipFrontendChunk` y `git diff --check` PASS. Sin SRI ni datos reales.
+Pendiente: gate del propietario, staging/commit/CI y suite frontend completa del release (el CI
+frontend no ejecuta Vitest). Sin staging, commit ni push.
+
 ## UIUX-GLOBAL-ACTIONS-CLIENTS-01 — IMPLEMENTADO; PENDIENTE DE GATE DEL PROPIETARIO Y CONSOLIDACIÓN GIT/CI (2026-11-06)
 
 Bloque 2 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md#11-seguimiento-uiux-global-actions-clients-01-bloque-2--clientes-2026-11-06):
