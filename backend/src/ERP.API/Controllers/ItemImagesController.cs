@@ -50,6 +50,13 @@ public sealed class ItemImagesController : ControllerBase
         return this.ToOkOrBadRequest(await _mediator.Send(cmd, cancellationToken));
     }
 
+    [HttpPatch("{id:guid}/images/{imageId:guid}/enable")]
+    [Authorize(Policy = $"perm:{InventoryPermissions.ItemsEdit}")]
+    [ProducesResponseType(typeof(ApiResponse<ItemImageDto>), 200)]
+    public async Task<IActionResult> EnableImage(Guid id, Guid imageId, CancellationToken cancellationToken) =>
+        this.ToOkOrBadRequest(
+            await _mediator.Send(new EnableItemImageCommand(id, imageId), cancellationToken));
+
     [HttpPatch("{id:guid}/images/{imageId:guid}/disable")]
     [Authorize(Policy = $"perm:{InventoryPermissions.ItemsEdit}")]
     public async Task<IActionResult> DisableImage(

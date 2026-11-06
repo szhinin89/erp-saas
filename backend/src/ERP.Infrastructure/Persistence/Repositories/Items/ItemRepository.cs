@@ -39,6 +39,24 @@ public sealed class ItemRepository : IItemRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<Item?> GetWithImagesForUpdateAsync(
+        Guid id, Guid tenantId, CancellationToken cancellationToken = default)
+    {
+        if (_context.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Image mutations require an active transaction.");
+        if (_context.ChangeTracker.Entries<Item>().Any(e => e.Entity.Id == id)
+            || _context.ChangeTracker.Entries<ItemImage>().Any(e => e.Entity.ItemId == id))
+            throw new InvalidOperationException("Image mutations must lock before tracking the item or its images.");
+        if (!_context.FilterHasCompanyContext || tenantId == Guid.Empty || tenantId != _context.FilterTenantId)
+            return null;
+
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM items WHERE id = {id} AND tenant_id = {tenantId} AND company_id = {_context.FilterCompanyId} FOR UPDATE",
+            cancellationToken);
+        return await Scoped(tenantId).Include(x => x.Images)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public async Task<Item?> GetByIdAsync(
         Guid id,
         Guid tenantId,

@@ -48,6 +48,7 @@ public sealed class ReplaceItemImagesCommandHandler
     : IRequestHandler<ReplaceItemImagesCommand, Result<ItemDetailDto>>
 {
     private readonly IItemRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _user;
     private readonly ISriCatalogResolver _sri;
@@ -56,6 +57,7 @@ public sealed class ReplaceItemImagesCommandHandler
 
     public ReplaceItemImagesCommandHandler(
         IItemRepository repository,
+        IUnitOfWork unitOfWork,
         ICurrentTenant tenant,
         ICurrentUser user,
         ISriCatalogResolver sri,
@@ -64,6 +66,7 @@ public sealed class ReplaceItemImagesCommandHandler
     )
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
         _currentTenant = tenant;
         _user = user;
         _sri = sri;
@@ -76,47 +79,57 @@ public sealed class ReplaceItemImagesCommandHandler
         CancellationToken cancellationToken
     )
     {
-        var item = await _repository.GetByIdLightAsync(
-            cmd.Id,
-            _currentTenant.TenantId,
-            cancellationToken
-        );
-        if (item is null)
-            return Result<ItemDetailDto>.NotFound("Ítem no encontrado.");
+        if (_unitOfWork.HasActiveTransaction)
+            throw new InvalidOperationException("Image mutation must own its transaction.");
+        await _unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var item = await _repository.GetWithImagesForUpdateAsync(
+                cmd.Id,
+                _currentTenant.TenantId,
+                cancellationToken
+            );
+            if (item is null)
+                return Result<ItemDetailDto>.NotFound("Ítem no encontrado.");
 
-        var newImages = cmd
-            .Images.OrderBy(i => i.SortOrder)
-            .Select(i =>
-                ItemImage.Create(
-                    cmd.Id,
-                    item.TenantId,
-                    i.StorageObjectId,
-                    i.AltText,
-                    i.IsMain,
-                    i.IsEcommerce,
-                    i.SortOrder,
-                    _user.UserId,
-                    i.VariantId
+            var newImages = cmd
+                .Images.OrderBy(i => i.SortOrder)
+                .Select(i =>
+                    ItemImage.Create(
+                        cmd.Id,
+                        item.TenantId,
+                        i.StorageObjectId,
+                        i.AltText,
+                        i.IsMain,
+                        i.IsEcommerce,
+                        i.SortOrder,
+                        _user.UserId,
+                        i.VariantId
+                    )
                 )
-            )
-            .ToList();
+                .ToList();
 
-        await _repository.ReplaceImagesAsync(cmd.Id, newImages, cancellationToken);
+            await _repository.ReplaceImagesAsync(cmd.Id, newImages, cancellationToken);
 
-        item.UpdateClassification(item.CategoryNodeId, item.BrandId, _user.UserId);
-        await _repository.SaveChangesAsync(cancellationToken);
+            item.UpdateClassification(item.CategoryNodeId, item.BrandId, _user.UserId);
+            await _repository.SaveChangesAsync(cancellationToken);
 
-        var updated = await _repository.GetByIdAsync(cmd.Id, item.TenantId, cancellationToken);
-        return Result<ItemDetailDto>.Success(
-            await ItemMappingService.ToDetailDtoAsync(
+            var updated = await _repository.GetByIdAsync(cmd.Id, item.TenantId, cancellationToken);
+            var dto = await ItemMappingService.ToDetailDtoAsync(
                 updated!,
                 _sri,
                 _itemTypeRepo,
                 _currentTenant.TenantId,
                 cancellationToken,
                 _businessPartnerRepo
-            )
-        );
+            );
+            await _unitOfWork.CommitAsync(cancellationToken);
+            return Result<ItemDetailDto>.Success(dto);
+        }
+        finally
+        {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+        }
     }
 }
 
@@ -124,16 +137,19 @@ public sealed class DisableItemImageCommandHandler
     : IRequestHandler<DisableItemImageCommand, Result<bool>>
 {
     private readonly IItemRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _user;
 
     public DisableItemImageCommandHandler(
         IItemRepository repository,
+        IUnitOfWork unitOfWork,
         ICurrentTenant tenant,
         ICurrentUser user
     )
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
         _currentTenant = tenant;
         _user = user;
     }
@@ -143,22 +159,33 @@ public sealed class DisableItemImageCommandHandler
         CancellationToken cancellationToken
     )
     {
-        var item = await _repository.GetByIdAsync(
-            cmd.ItemId,
-            _currentTenant.TenantId,
-            cancellationToken
-        );
-        if (item is null)
-            return Result<bool>.NotFound("Ítem no encontrado.");
+        if (_unitOfWork.HasActiveTransaction)
+            throw new InvalidOperationException("Image mutation must own its transaction.");
+        await _unitOfWork.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var item = await _repository.GetWithImagesForUpdateAsync(
+                cmd.ItemId,
+                _currentTenant.TenantId,
+                cancellationToken
+            );
+            if (item is null)
+                return Result<bool>.NotFound("Ítem no encontrado.");
 
-        var image = item.Images.FirstOrDefault(i => i.Id == cmd.ImageId);
-        if (image is null)
-            return Result<bool>.NotFound("Imagen no encontrada.");
+            var image = item.Images.FirstOrDefault(i => i.Id == cmd.ImageId);
+            if (image is null)
+                return Result<bool>.NotFound("Imagen no encontrada.");
 
-        image.Disable(_user.UserId);
-        // Mark item as updated
-        item.UpdateSaleConfig(item.SaleConfig, _user.UserId);
-        await _repository.SaveChangesAsync(cancellationToken);
-        return Result<bool>.Success(true);
+            image.Disable(_user.UserId);
+            // Mark item as updated
+            item.UpdateSaleConfig(item.SaleConfig, _user.UserId);
+            await _repository.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
+            return Result<bool>.Success(true);
+        }
+        finally
+        {
+            await _unitOfWork.RollbackAsync(CancellationToken.None);
+        }
     }
 }

@@ -1,5 +1,23 @@
 # Project Status
 
+## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 1 BACKEND APROBADA TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-06)
+
+Endpoint y coordinación transaccional de reactivación/desactivación/reemplazo implementados.
+Contrato único en [Ítems](docs/architecture/items.md#imágenes-estado-y-recuperación-de-registros).
+Sin migraciones, índice nuevo, cambios históricos ni frontend. Validación agente: dominio 2/2,
+Application 5/5, contrato API/ruta/permisos 4/4, arquitectura .NET 145/145. PostgreSQL 16 real
+en Testcontainers, esquema creado con EnsureCreated (sin ejecutar migraciones), datos ficticios:
+11/11 PASS — activación simultánea, carreras con desactivación/reemplazo, dos reemplazos de
+colección vacía, espera del lock observada en pg_stat_activity para los tres handlers,
+independencia entre productos, rollback tras guardado y fallo de mapeo, no-op con xmin y
+auditoría intactos, principal vigente, pertenencia y scope tenant/company. Compilación API sin
+errores. `architecture:check` PASS (147 pruebas de guardrails, 0 nuevas violaciones), guardrail
+oficial PowerShell `-SkipFrontendChunk`, documentación y `git diff --check` PASS. El reporte
+global conserva score 19/100 (critical); el gate de nuevas violaciones pasa. Sin staging/commit/push.
+Gate PostgreSQL real del propietario: 11/11 PASS, cero omitidas, exit code 0; aprobación
+técnica recibida el 2026-11-06. No se repitieron las pruebas para preparar la consolidación.
+No CLOSED: pendiente de staging selectivo y commit del propietario y consolidación Git/CI.
+
 ## FUNC-DEACTIVATION-CONFIRM-01 — CORRECCIÓN TÉCNICA APROBADA; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-06)
 
 Corrige AA-D5 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md#10-seguimiento-func-deactivation-confirm-01-aa-d5-2026-11-06):
@@ -12,9 +30,9 @@ internacionalizados (es/en, claves `*.deactivate.confirm.*`). Por decisión del 
 **Activar permanece sin confirmación** en estas rutas; Sucursales, Categorías y otros módulos no
 se tocan.
 
-Pendiente independiente registrado: **FUNC-ITEM-IMAGE-REACTIVATION-01** — una imagen de ítem
-desactivada no puede reactivarse (no hay endpoint ni UI); la confirmación lo advierte
-explícitamente. No implementado; requiere cambio de backend y autorización propia.
+Seguimiento independiente: **FUNC-ITEM-IMAGE-REACTIVATION-01**, backend implementado
+por autorización del propietario; frontend de recuperación aún no implementado.
+La confirmación actual sigue advirtiendo que esta pantalla no ofrece reactivación.
 
 Validación agente: Vitest focal (5 archivos nuevos + catálogos, detalle de ítem, Tipos de ítem,
 Cajas, páginas/formulario de Ítems y `ItemEditorModal.update`; 16 archivos) 124/124; `tsc -b`;

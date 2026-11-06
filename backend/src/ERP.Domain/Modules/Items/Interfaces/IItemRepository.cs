@@ -6,6 +6,10 @@ namespace ERP.Domain.Modules.Items.Interfaces;
 /// <summary>All reads/writes are scoped to Tenant + authenticated Company; absent company context fails closed.</summary>
 public interface IItemRepository
 {
+    /// <summary>Requires an open transaction. Locks the scoped item before loading fresh images.
+    /// Rejects pretracked item/images to prevent decisions from stale tracked state.</summary>
+    Task<Item?> GetWithImagesForUpdateAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default);
+
     Task<ItemCodeOwner?> FindCodeOwnerAsync(ItemCodeLookup lookup, Guid tenantId,
         CancellationToken cancellationToken = default);
 

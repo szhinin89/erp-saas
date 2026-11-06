@@ -44,6 +44,17 @@ public sealed class ItemImage : AuditableEntity
         return entity;
     }
 
+    public bool Enable(Guid updatedBy)
+    {
+        if (IsActive)
+            return false;
+
+        IsActive = true;
+        IsMain = false;
+        SetUpdated(updatedBy);
+        return true;
+    }
+
     public void Disable(Guid updatedBy)
     {
         IsActive = false;

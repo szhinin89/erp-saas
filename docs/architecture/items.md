@@ -50,6 +50,32 @@ Código: `ERP.Domain/Modules/Items`, `ERP.Application/Modules/Items`, `ERP.Infra
 - Deshabilitar o habilitar (`IsActive`), nunca borrar físico. Variantes, barcodes y códigos de proveedor también se desactivan. Desvincular un matching incorrecto desactiva el código aprendido no principal ([purchases.md § 3](./purchases.md#3-recepción-electrónica-y-conciliación-de-ítems)).
 - La auditoría de Item (`ItemAudit`) se registra desde los eventos de dominio de creación, actualización, habilitación y precio.
 
+### Imágenes: estado y recuperación de registros
+
+- API: `PATCH /api/v1/items/{id}/images/{imageId}/enable`, autenticado y protegido por
+  `items.edit`, con contexto Company validado. Solo acepta imágenes del Item visible
+  en el tenant y empresa autenticados; no recibe tenant/company ni metadatos en el body.
+- Recuperar una imagen inactiva conserva su ID, StorageObjectId, VariantId, AltText,
+  IsEcommerce, SortOrder y auditoría de creación; establece IsActive=true e IsMain=false.
+  No modifica la principal vigente y permite cero principales activas. Si ya está activa,
+  devuelve éxito con su estado actual sin guardar ni actualizar auditoría de imagen o Item.
+- Respuesta: envelope oficial `ApiResponse<ItemImageDto>` (`OK`); validación de IDs por
+  FluentValidation (`VALIDATION_ERROR`, 422), recurso no visible/inexistente (`NOT_FOUND`,
+  404), autenticación/permisos y errores técnicos según el contrato central de
+  [errores](error-handling.md). La pertenencia se verifica dentro del Item bloqueado.
+- Reactivar, desactivar y reemplazar abren una transacción propia con `IUnitOfWork`;
+  adquieren `FOR UPDATE` sobre la fila del Item con tenant/company antes de cargar sus
+  imágenes y mantienen el lock hasta commit/rollback. Se rechaza entrar con Item/imágenes
+  ya rastreados o una transacción previa; no se añaden reintentos automáticos. Distintos
+  Items no comparten el bloqueo. Un error posterior al guardado también revierte la operación.
+- El reemplazo conserva su semántica de eliminar registros anteriores y crear otros;
+  no es una recuperación. Una operación posterior de reemplazo puede retirar una imagen
+  recién recuperada. No hay ETag ni índice único de principal activa en esta etapa.
+- La recuperación es del registro y su vínculo: no verifica la existencia física del
+  objeto de StorageObjectId. No incluye upload, galería ni designación de principal.
+- Frontend actual: muestra solo imágenes activas y aún no ofrece reactivación.
+  Estado de validación y gates: [STATUS](../../STATUS.md).
+
 ## 7. Pendiente (no operativo)
 
 - `TracksLot` / `TracksSeries` se configuran, pero ningún flujo registra lotes ni series; la carga inicial los rechaza. Ver [inventory.md § 8](./inventory.md#8-pendiente-no-operativo).
