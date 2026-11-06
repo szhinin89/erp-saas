@@ -13,12 +13,18 @@ const outcomes = p => Object.fromEntries(Object.entries({ changes: true, archite
   backend: p.backend, frontend: p.frontend, security: true })
   .map(([job, required]) => [job, { result: required ? 'success' : 'skipped' }]));
 
-test('stage 1 cannot activate selection through environment or dispatch inputs', () => {
-  assert.equal(SELECTIVE_ENABLED, false);
+test('stage 2 enables selection by default and preserves explicit full validation', () => {
+  assert.equal(SELECTIVE_ENABLED, true);
   const p = createPlan({ files: ['STATUS.md'], eventName: 'push', sha });
   assert.equal(p.proposed, 'documentation');
-  assert.equal(p.profile, 'full');
-  assert.equal(p.backend && p.frontend && p.security, true);
+  assert.equal(p.profile, 'documentation');
+  assert.equal(p.backend || p.frontend, false);
+  assert.equal(p.security, true);
+  for (const extra of [{ selectiveEnabled: false }, { forceFull: true }]) {
+    const full = createPlan({ files: ['STATUS.md'], eventName: 'push', sha, ...extra });
+    assert.equal(full.profile, 'full');
+    assert.equal(full.backend && full.frontend && full.security, true);
+  }
 });
 
 for (const [name, files, profile] of [
@@ -189,32 +195,89 @@ test('real Git: missing/shallow history, new branches, invalid SHA and checkout 
   assert.equal(detectChanges({ cwd, eventName: 'push', sha: initial, event: { before: head } }).uncertain, true);
 });
 
-test('CLI emits a full plan while disabled and enforces the same gate used by Actions', t => {
+test('CLI selects documentation, ignores activation overrides and enforces the Actions gate', t => {
   const { cwd, commit } = fixture(t);
   const before = commit({ 'STATUS.md': 'initial\n' });
   const head = commit({ 'STATUS.md': 'changed\n' });
   const eventPath = join(cwd, 'event.json');
   const output = join(cwd, 'output.txt');
-  writeFileSync(eventPath, JSON.stringify({ before, inputs: { selective_enabled: 'true' } }));
+  writeFileSync(eventPath, JSON.stringify({ before, inputs: { selective_enabled: 'false' } }));
   const script = resolve('tools/ci/ci_changes.mjs');
   const env = { ...process.env, GITHUB_EVENT_PATH: eventPath, GITHUB_EVENT_NAME: 'push',
     GITHUB_SHA: head, GITHUB_REF: 'refs/heads/main', GITHUB_OUTPUT: output,
-    CI_SELECTIVE_ENABLED: 'true',
+    CI_SELECTIVE_ENABLED: 'false',
     GITHUB_STEP_SUMMARY: join(cwd, 'summary.md') };
   const p = JSON.parse(execFileSync(process.execPath, [script], { cwd, env, encoding: 'utf8' }));
-  assert.equal(p.profile, 'full');
+  assert.equal(p.profile, 'documentation');
   assert.equal(p.proposed, 'documentation');
   assert.equal(p.publish, false);
-  assert.match(readFileSync(output, 'utf8'), /backend=true/);
+  assert.match(readFileSync(output, 'utf8'), /backend=false/);
+  assert.match(readFileSync(output, 'utf8'), /frontend=false/);
+  assert.match(readFileSync(output, 'utf8'), /architecture_profile=documentation/);
   const gateEnv = { ...env, CI_PLAN: JSON.stringify(p), CI_NEEDS: JSON.stringify(outcomes(p)) };
   execFileSync(process.execPath, [script, '--gate'], { cwd, env: gateEnv });
   assert.throws(() => execFileSync(process.execPath, [script, '--gate'], { cwd,
     env: { ...gateEnv, CI_NEEDS: '{}' }, stdio: 'pipe' }));
   assert.throws(() => execFileSync(process.execPath, [script, '--gate'], { cwd,
-    env: { ...gateEnv, CI_PLAN: JSON.stringify({ ...p, selectiveEnabled: true }) }, stdio: 'pipe' }));
+    env: { ...gateEnv, CI_PLAN: JSON.stringify({ ...p, selectiveEnabled: false }) }, stdio: 'pipe' }));
   writeFileSync(eventPath, JSON.stringify({ inputs: { publish_api: 'false' } }));
   const manual = JSON.parse(execFileSync(process.execPath, [script], { cwd,
     env: { ...env, GITHUB_EVENT_NAME: 'workflow_dispatch' }, encoding: 'utf8' }));
   assert.equal(manual.profile, 'full');
   assert.equal(manual.publish, false);
+});
+
+test('active CLI: push/PR selection matrix, gate outcomes and publication eligibility', t => {
+  const { cwd, commit } = fixture(t);
+  let before = commit({ 'STATUS.md': 'initial\n' });
+  const script = resolve('tools/ci/ci_changes.mjs');
+  const eventPath = join(cwd, 'event.json');
+  const cases = [
+    [['STATUS.md'], 'documentation', false],
+    [['docs/ci/BACKEND_TESTS.md'], 'documentation', false],
+    [['frontend/src/main.tsx'], 'frontend', false],
+    [['backend/src/ERP.Domain/Invoice.cs'], 'full', true],
+    [['frontend/src/main.tsx', 'backend/src/ERP.Domain/Invoice.cs'], 'full', true],
+    [['frontend/src/access/permissionUi.ts'], 'full', false],
+    [['backend/src/ERP.Infrastructure/Identity/AccessTokenService.cs'], 'full', true],
+    [['.github/workflows/ci.yml'], 'full', false],
+    [['infrastructure/docker/compose.base.yml'], 'full', true],
+    [['new-subsystem/file.txt'], 'full', true],
+  ];
+  let sequence = 0;
+  for (const eventName of ['push', 'pull_request']) {
+    for (const [files, profile, publish] of cases) {
+      const head = commit(Object.fromEntries(files.map(file => [file, `${++sequence}\n`])));
+      writeFileSync(eventPath, JSON.stringify(eventName === 'push' ? { before }
+        : { pull_request: { base: { sha: before }, head: { sha: head } } }));
+      const env = { ...process.env, GITHUB_EVENT_PATH: eventPath, GITHUB_EVENT_NAME: eventName,
+        GITHUB_SHA: head, GITHUB_REF: eventName === 'push' ? 'refs/heads/main' : 'refs/pull/1/merge',
+        GITHUB_BASE_REF: eventName === 'push' ? '' : 'main',
+        GITHUB_OUTPUT: join(cwd, 'output.txt'), GITHUB_STEP_SUMMARY: join(cwd, 'summary.md') };
+      const p = JSON.parse(execFileSync(process.execPath, [script], { cwd, env, encoding: 'utf8' }));
+      assert.equal(p.profile, profile, `${eventName}: ${files}`);
+      assert.equal(p.publish, publish, `${eventName}: ${files}`);
+      assert.deepEqual(new Set(p.files), new Set(files));
+      execFileSync(process.execPath, [script, '--gate'], { cwd,
+        env: { ...env, CI_PLAN: JSON.stringify(p), CI_NEEDS: JSON.stringify(outcomes(p)) } });
+      before = head;
+    }
+  }
+});
+
+test('valid admitted documentation never automatically publishes on any eligible event', () => {
+  const docs = ['STATUS.md', 'README.md', 'FEATURES.md', 'CONTEXT.md', 'CONTRIBUTING.md',
+    'ARCHITECTURE_GATES.md', 'ERP_CORE_FREEZE.md', 'docs/architecture/security.md',
+    'docs/decisions/ADR-example.md', 'docs/agent/note.md', 'docs/QA/check.md',
+    'docs/evidence/check.md', 'docs/ci/BACKEND_TESTS.md'];
+  for (const event of [{ eventName: 'push', ref: 'refs/heads/main' },
+    { eventName: 'push', ref: 'refs/heads/develop' },
+    { eventName: 'pull_request', ref: 'refs/pull/1/merge', baseRef: 'main' }]) {
+    for (const files of [...docs.map(file => [file]), docs]) {
+      const p = createPlan({ ...options, ...event, files });
+      assert.equal(p.profile, 'documentation');
+      assert.equal(p.publish, false);
+      assert.deepEqual(evaluateGate(p, outcomes(p), sha), []);
+    }
+  }
 });

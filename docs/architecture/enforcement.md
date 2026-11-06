@@ -163,11 +163,12 @@ Comandos de operación y distribución CI/E2E: [DEVELOPMENT](../DEVELOPMENT.md#t
 ### Plan de CI y activación selectiva
 
 El orquestador `.github/workflows/ci.yml` genera su plan mediante
-[`ci_changes.mjs`](../../tools/ci/ci_changes.mjs). **Etapa 1: selección desactivada**
-(`SELECTIVE_ENABLED = false`, constante versionada; no admite override de entorno ni
-input manual). Push y PR conservan arquitectura completa, los 13 grupos backend,
-frontend y seguridad. El resumen distingue perfil propuesto y efectivo; no constituye
-evidencia de que se haya activado la selección.
+[`ci_changes.mjs`](../../tools/ci/ci_changes.mjs). **Etapa 2: activación preparada
+localmente por autorización del propietario**, con `SELECTIVE_ENABLED = true` en ese
+archivo (no en el YAML). Es una constante versionada sin override de entorno ni input
+manual. Publicación y verificación real de perfiles en Actions pendientes; no CLOSED.
+La etapa 1 sobre `44f3f9709` fue validada en CI #1110 SUCCESS según evidencia confirmada
+por el propietario. El resumen distingue perfil propuesto y efectivo.
 
 El detector compara `before` y SHA final en push, y merge-base de base/head fijos del
 evento en PR; las pruebas se realizan sobre el SHA de integración de Actions. Usa
@@ -189,6 +190,15 @@ el plan. Publicación exige este gate y perfil completo para el mismo SHA; nunca
 se interpreta un CI documental como validación de release. Sus pruebas están en
 [`ci_changes.test.mjs`](../../tools/ci/ci_changes.test.mjs).
 
+| Cambio con clasificación válida | Perfil efectivo | Publicación automática API |
+|---|---|---|
+| Solo documentación admitida, incluido STATUS | Documentación, Stack Audit, Identity y Platform; sin backend/frontend | No |
+| Frontend ordinario | Arquitectura completa, frontend y seguridad | No |
+| Backend ordinario sin elegibilidad de publicación | Arquitectura completa, backend (13 grupos) y seguridad | No |
+| Backend publicable o frontend/backend publicables | Completo: arquitectura, backend (13 grupos), frontend y seguridad | Tras CI gate exitoso |
+| Seguridad sensible, CI, infraestructura o rutas desconocidas | Completo | Solo con elegibilidad e impacto API/empaquetado |
+| Manual | Completo | No, salvo `publish_api` explícito en main/develop |
+
 La publicación automática mantiene los eventos elegibles anteriores (push main/develop,
 PR a main), pero requiere impacto API/empaquetado o incertidumbre del historial.
 Documentación, frontend ordinario y cambios exclusivos de CI no publican API.
@@ -197,21 +207,40 @@ en main/develop y no despliega Azure. Azure conserva su condición de push a mai
 y variable existente; no se modifican secretos ni destinos. Ambos workflows evitan
 cancelar ejecuciones activas de main mediante `cancel-in-progress: false` efectivo;
 la concurrencia de GitHub conserva como máximo un pendiente por grupo, sin garantizar
-FIFO. No se debe usar una ejecución pendiente como evidencia de release.
+FIFO. No se debe usar una ejecución pendiente como evidencia de release. Si el historial
+no permite clasificar, se exige completo y puede publicarse en eventos elegibles; la
+garantía documental requiere un rango válido y rutas admitidas. Documentos desconocidos
+no se admiten automáticamente por su extensión.
 
-**Activación pendiente:** verificar rulesets, checks requeridos, bypasses y protección
-de main en GitHub, registrar `CI gate` como check obligatorio sin retirar protección
-antes de verificarlo, obtener autorización explícita y cambiar la constante. Verificar
-los perfiles mediante Actions reales antes del cierre. Si existe merge queue, añadir
-su trigger `merge_group` antes de activarla (el selector ya exige completo para ese
-evento). La ejecución manual permite CI completo en cualquier fase. Vitest, E2E y
-los requisitos independientes de producción no se incorporan ni sustituyen aquí.
+**Protección de main:** el propietario confirma que no hay protección clásica ni
+rulesets del repositorio. Esta activación no crea ni presupone protección: CI gate
+condiciona la publicación dentro del workflow, pero no impide pushes o merges directos.
+Solo con autorización separada, configurar una regla para `main` en Settings → Branches
+o un ruleset de rama en Settings → Rules → Rulesets; exigir el check `CI gate` observado
+en Actions, con GitHub Actions como origen esperado, y revisar actores con bypass.
+No es necesario habilitar el requisito de pull request para exigir checks. Incluir
+administradores en el cumplimiento si se pretende que tampoco puedan omitirlo.
+
+Con el requisito efectivo y sin bypass, el push directo de un SHA nuevo sin CI previo
+puede ser rechazado: el CI posterior al push en main no puede aprobarlo anticipadamente.
+Para conservar un flujo sin PR, validar primero el mismo SHA en una rama con trigger
+existente (p. ej. `release/ci-validation-*`, que exige completo), y después hacer push
+fast-forward de ese SHA aprobado a main, sin crear otro commit y comprobando que main
+no avanzó. Un bypass permitiría omitir el requisito y no equivale a protección efectiva.
+No se modifica este procedimiento ni configuración en esta fase.
+[Referencia de GitHub sobre checks requeridos y pushes](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging).
+
+**Validación pendiente:** después de publicación autorizada, verificar documentación,
+frontend, backend, mixtos y omisiones/gate mediante Actions reales antes del cierre.
+Si existe merge queue, añadir su trigger `merge_group` antes de activarla (el selector
+ya exige completo para ese evento). La ejecución manual permite CI completo en
+cualquier fase. Vitest, E2E y los requisitos independientes de producción se mantienen.
 
 Limitación de verificación inicial (2026-11-06): GitHub CLI respondió que no hay sesión
 autenticada al consultar protección de main, rulesets y reglas efectivas; el conector
 disponible no expone esas consultas. No se verificaron checks obligatorios ni bypasses,
-no se cambiaron protecciones y la selección permanece desactivada. Validación real
-de Actions y gate del propietario pendientes; no CLOSED.
+no se cambiaron protecciones. El contexto confirmado por el propietario para etapa 2
+resuelve esa limitación: main no tiene protección configurada.
 
 Validación local de etapa 1 (2026-11-06): selector/gate 34/34, arquitectura 147/147
 y ratchet sin violaciones nuevas, guardrail PowerShell `-SkipFrontendChunk`, Stack
@@ -219,6 +248,13 @@ Audit, enlaces de los dos documentos modificados y `git diff --check` PASS. Los 
 workflows pasan parseo YAML, dependencias locales y contratos de inputs reutilizables
 con el parser ya disponible de Playwright; `actionlint` no está instalado. Esta
 comprobación no sustituye el lint específico ni las ejecuciones reales de Actions.
+
+Validación local de etapa 2 (2026-11-06): selector/gate 36/36, incluidos 20 escenarios
+push/PR por CLI con Git real y 42 planes documentales sin publicación; arquitectura
+147/147 y ratchet sin violaciones nuevas; guardrail PowerShell, Stack Audit, YAML y
+contratos de los ocho workflows, referencias documentales y `git diff --check` PASS.
+El propio diff de activación exige completo y no solicita publicación API. Sin cambios
+en protecciones, staging, commit, push ni despliegues; evidencia real de etapa 2 pendiente.
 
 ### Documentación (control focal sin red)
 

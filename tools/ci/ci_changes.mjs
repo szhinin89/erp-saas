@@ -3,8 +3,8 @@ import { appendFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Stage 1: activation requires owner approval and verified GitHub protections.
-export const SELECTIVE_ENABLED = false;
+// Owner-authorized stage 2. Branch protection is configured separately in GitHub.
+export const SELECTIVE_ENABLED = true;
 const SHA = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/;
 const ROOT_DOCS = new Set(['STATUS.md', 'FEATURES.md', 'README.md', 'CONTEXT.md',
   'CONTRIBUTING.md', 'ARCHITECTURE_GATES.md', 'ERP_CORE_FREEZE.md']);

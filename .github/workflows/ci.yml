@@ -54,7 +54,7 @@ jobs:
           node-version: '22'
       - name: Verify selector and gate
         run: node --test tools/ci/ci_changes.test.mjs
-      - name: Plan (selective activation remains disabled in ci_changes.mjs)
+      - name: Plan (selective activation configured in ci_changes.mjs)
         id: plan
         run: node tools/ci/ci_changes.mjs
 
