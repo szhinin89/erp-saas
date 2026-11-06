@@ -559,22 +559,37 @@ consumidor. Esta variante visual no añade navegación por flechas, roving tabin
 ni asociación tab/panel; esos aspectos existentes requieren un alcance propio antes
 de certificar el patrón WAI-ARIA completo. No cambia permisos ni el ciclo de formularios.
 
-Proveedores es el único consumidor que solicita la variante; conserva las traducciones
-actuales e iconos. No quedan reglas locales equivalentes de pestañas.
+Proveedores y Clientes son los únicos consumidores que solicitan la variante; conservan
+sus traducciones e iconos y aportan su `mobileLabel` «Nuevo» con clave i18n propia
+(`masterdata.suppliers.tabs.nuevoShort`, `masterdata.customers.tabs.nuevoShort`).
+No quedan reglas locales equivalentes de pestañas.
 
-### Encabezado compacto opcional (UIUX-GLOBAL-HEADER-01)
+### Encabezado compacto predeterminado (UIUX-GLOBAL-HEADER-DEFAULT-01)
 
-`ZHScreenHeading` (`components/zh/ZHLayout.tsx`) admite `variant?: "default" | "compact"`.
-`PageShell` y `ErpPageTemplate` lo propagan como `headingVariant`. Omitir la opción o
-usar `"default"` conserva el markup y las reglas visuales anteriores. La variante
-`"compact"` alinea título y descripción en escritorio y los apila hasta 768 px;
-permite wrap cuando falta espacio. Conserva H1, kicker opcional, acciones derechas,
-tipografía, colores y tokens. El corte pertenece exclusivamente al modificador
-`.zh-screen-heading--compact` en `zh-ui.css`; no cambia breakpoints ni defaults globales.
+`ZHScreenHeading` (`components/zh/ZHLayout.tsx`) admite `variant?: "compact" | "stacked"`;
+`PageShell` y `ErpPageTemplate` lo propagan como `headingVariant`. **El default es
+`compact`** para todos los consumidores, incluido `NoAccessPage`: no se declara por pantalla.
 
-Proveedores es el único consumidor que la activa. No requiere CSS local del encabezado
-ni selectores basados en `:has`; las otras pantallas conservan la variante predeterminada.
-No sustituye la cabecera propia de `ReportPage` ni altera el shell o la navegación.
+- El kicker no se renderiza en ninguna variante (ni elemento ni texto en el DOM). La prop
+  `kicker` se conserva temporalmente en `ZHScreenHeading`, `PageShell` y `ErpPageTemplate` para no
+  modificar consumidores, sin efecto. Ningún kicker vigente aportaba información que no esté ya
+  en el menú, el título o la acción «Volver».
+- Desde 769 px, título y descripción comparten línea cuando hay espacio; si no cabe, la
+  descripción envuelve debajo con el mismo espaciado que en móvil (`--space-1`).
+- Hasta 768 px, título y descripción se apilan.
+- Las acciones (`action`) quedan a la derecha y bajan de línea cuando falta ancho.
+- Conserva un único H1, tipografía, colores, tokens, breakpoints y `document.title`.
+
+Las reglas pertenecen exclusivamente al modificador `.zh-screen-heading--compact` en `zh-ui.css`;
+no se admite CSS local del encabezado ni selectores `:has`.
+
+`stacked` (markup sin el modificador; apilado con el espaciado anterior) es solo una excepción
+explícita: se usa cuando una pantalla demuestra una regresión real con el compacto, con el motivo
+comentado en el consumidor y listado aquí. **Excepciones vigentes: ninguna.**
+
+Fuera de este contrato y sin cambios: la cabecera propia de `ReportPage` y las pantallas que no
+usan `PageShell`/`ErpPageTemplate` (autenticación/setup, Carga Inicial por entidad, POS y hub de
+empresas).
 
 ### Listado de Proveedores
 
@@ -597,10 +612,19 @@ Los consumidores que no activan este modo conservan su comportamiento existente.
 
 `MasterDataSuppliersPage` declara un único encabezado para Resumen, Listado y Nuevo
 proveedor: título «Proveedores», descripción «Administración de proveedores para compras,
-pagos y retenciones.», sin categoría visible. Activa `headingVariant="compact"` del
-[encabezado oficial](#encabezado-compacto-opcional-uiux-global-header-01).
+pagos y retenciones.», sin categoría visible, con el
+[encabezado oficial](#encabezado-compacto-predeterminado-uiux-global-header-default-01) predeterminado.
 Cambiar de pestaña conserva el mismo encabezado; solo cambia el contenido inferior.
 La clase `.md-suppliers-page` identifica el cuerpo; encabezado y pestañas consumen variantes del DS, sin reglas locales equivalentes.
+
+### Encabezado y pestañas de Clientes
+
+`MasterDataCustomersPage` declara un único encabezado para Resumen, Listado y Nuevo
+cliente: título «Clientes» y su descripción, sin categoría visible, con el
+[encabezado oficial](#encabezado-compacto-predeterminado-uiux-global-header-default-01) predeterminado. Las pestañas usan `ZHTabBar` con la variante
+[responsive-three](#pestañas-responsive-opcionales-uiux-global-tabs-01): etiqueta
+visual móvil «Nuevo» con nombre accesible «Nuevo cliente». Navegación, permisos,
+Listado, Resumen y formulario de Clientes conservan su comportamiento.
 
 ### Resumen de Proveedores
 

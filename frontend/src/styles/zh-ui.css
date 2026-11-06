@@ -1908,14 +1908,6 @@ select.zh-input--compact {
   padding-bottom: 14px;
   border-bottom: var(--border-width) solid var(--color-border);
 }
-.zh-screen-heading-kicker {
-  font-size: var(--text-overline-size);
-  font-weight: var(--text-overline-weight);
-  letter-spacing: var(--text-overline-spacing);
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin-bottom: 6px;
-}
 .zh-screen-heading-row {
   display: flex;
   align-items: flex-start;
@@ -1964,25 +1956,22 @@ select.zh-input--compact {
   justify-content: flex-end;
 }
 
-/* Optional compact heading: same typography/colors as the default. */
+/* Compact heading (default; `stacked` keeps the base rules above). Same typography/colors;
+   the kicker stays in block flow above the row. */
 .zh-screen-heading--compact {
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
 }
-.zh-screen-heading--compact .zh-screen-heading-row { flex: 1; }
 .zh-screen-heading--compact .zh-screen-heading-main { align-items: center; }
 .zh-screen-heading--compact .zh-screen-heading-copy {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-2) var(--space-5);
+  /* Row gap = margen del subtítulo apilado (≤768 px): mismo ritmo cuando el subtítulo envuelve. */
+  gap: var(--space-1) var(--space-5);
 }
 .zh-screen-heading--compact .zh-screen-heading-sub { margin: 0; }
 @media (max-width: 768px) {
-  .zh-screen-heading--compact { display: block; }
   .zh-screen-heading--compact .zh-screen-heading-copy { display: block; }
   .zh-screen-heading--compact .zh-screen-heading-sub { margin-top: var(--space-1); }
 }

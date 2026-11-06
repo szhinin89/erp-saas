@@ -28,6 +28,15 @@ vi.mock("../api/businessPartnerFacade", () => ({
   },
 }));
 
+vi.mock("../api/useSriIdTypes", () => ({
+  useSriIdTypes: () => ({ options: [], loading: false }),
+  useSriIdTypesByUsage: () => ({ options: [], loading: false }),
+}));
+
+vi.mock("../api/useLegalEntityTypes", () => ({
+  useLegalEntityTypes: () => ({ options: [], loading: false }),
+}));
+
 vi.mock("../api/paymentTermService", () => ({ paymentTermService: { list: vi.fn() } }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({
@@ -101,6 +110,39 @@ afterEach(() => {
     activeTab: "resumen",
     editingPartner: null,
     recentActivity: [],
+  });
+});
+
+describe("MasterDataCustomersPage — UIUX-CUSTOMERS-02 encabezado compacto y pestañas responsive", () => {
+  it("usa un único encabezado compacto sin kicker al navegar por las tres pestañas", async () => {
+    renderPage();
+    const heading = screen.getByRole("heading", { name: "Clientes", level: 1 });
+    const header = heading.closest("header")!;
+    const markup = header.outerHTML;
+    expect(header.className).toBe("zh-screen-heading zh-screen-heading--compact");
+    expect(header.querySelector(".zh-screen-heading-kicker")).toBeNull();
+    expect(within(header).queryByText("Personas y empresas")).toBeNull();
+
+    for (const name of [/Resumen/i, /Listado/i, /Nuevo cliente/i, /Resumen/i]) {
+      fireEvent.click(screen.getByRole("tab", { name }));
+      expect(screen.getAllByRole("heading", { name: "Clientes", level: 1 })).toHaveLength(1);
+      expect(screen.getByRole("heading", { name: "Clientes", level: 1 })).toBe(heading);
+      expect(header.outerHTML).toBe(markup);
+      expect(screen.getByRole("tab", { name }).getAttribute("aria-selected")).toBe("true");
+    }
+    await waitFor(() => expect(businessPartnerFacade.searchBusinessPartnersPaged).toHaveBeenCalled());
+  });
+
+  it("usa ZHTabBar responsive-three con etiqueta móvil y nombre accesible completo", async () => {
+    renderPage();
+    const tablist = screen.getByRole("tablist", { name: "Secciones de clientes" });
+    expect(tablist.classList.contains("prd-tabs--responsive-three")).toBe(true);
+    const tabs = within(tablist).getAllByRole("tab");
+    expect(tabs).toHaveLength(3);
+    const nuevo = within(tablist).getByRole("tab", { name: "Nuevo cliente" });
+    expect(nuevo.querySelector(".prd-tab-label--full")?.textContent).toBe("Nuevo cliente");
+    expect(nuevo.querySelector(".prd-tab-label--mobile")?.textContent).toBe("Nuevo");
+    await waitFor(() => expect(businessPartnerFacade.searchBusinessPartnersPaged).toHaveBeenCalled());
   });
 });
 

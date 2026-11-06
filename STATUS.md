@@ -1,5 +1,85 @@
 # Project Status
 
+## UIUX-PERMISSIONS-HEADER-390 — REGISTRADO, SIN CORREGIR (2026-11-05)
+
+Hallazgo preexistente detectado en la validación de UIUX-GLOBAL-HEADER-DEFAULT-01, fuera de su
+alcance: en Asignación de permisos (`/admin/permissions`, `PermissionsAssignmentPage`) a 390 px la
+toolbar de la acción del encabezado (selector «Perfil» y búsqueda, `.access-pa-header-toolbar`)
+no baja de línea y comprime la columna del título, que queda recortado («Asignació…»). Se
+reproduce igual con el diseño `stacked` original (evidencia local temporal en
+`tmp/uiux-global-header-default-01/app/shots/stacked-check/`). No afecta datos ni permisos.
+Pendiente de decisión y alcance propios del propietario; no autorizado ni corregido.
+
+## UIUX-GLOBAL-HEADER-DEFAULT-01 — APROBADO VISUALMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+
+Aprobación visual final del propietario registrada el 2026-11-05: compacto predeterminado,
+kicker no renderizado, acciones y responsive conservados. Bloque 1 de [UIUX-GLOBAL-ARCHITECTURE-02](docs/agent/UIUX-GLOBAL-ARCHITECTURE-02.md): el
+encabezado compacto pasa a ser el default de `ZHScreenHeading` para los 102 sitios
+`PageShell`/`ErpPageTemplate` (84 archivos) y `NoAccessPage`; contrato en
+[Frontend](docs/architecture/frontend.md#encabezado-compacto-predeterminado-uiux-global-header-default-01).
+Variantes `compact` | `stacked`; `"default"` se retira porque ningún consumidor productivo lo
+usaba (solo una prueba). Cambian el modificador `.zh-screen-heading--compact` (sin flex en el
+`<header>`; separación de 4 px cuando la descripción envuelve desde 769 px), el kicker (no
+renderizado; ver corrección final) y la retirada de las props redundantes de Proveedores y Clientes. Excepciones `stacked`: ninguna.
+Sin cambios en textos, tokens, breakpoints, KPI, tablas, pestañas, permisos, rutas, APIs ni backend.
+
+Validación agente: Vitest focal (PageShell, AppLayout, Clientes, Proveedores) 37/37; `tsc -b`;
+ESLint focal sin errores (aviso `max-lines` preexistente de Proveedores); `architecture:check`,
+guardrail oficial `-SkipFrontendChunk`, Stack Audit y `git diff --check` PASS. Visual:
+480 capturas antes/después de 30 pantallas (perfiles P1–P9) a 320/360/390/480/768/769/1024/1440 px
+(`tmp/uiux-global-header-default-01/capturas.html`; harness con componentes oficiales, props
+copiados de cada pantalla y datos sintéticos, sin AppLayout ni sesión). Proveedores y Clientes:
+geometría del encabezado idéntica en los 8 anchos (Δ ≤ 0,1 px, igual al ruido entre corridas) y
+píxeles iguales a las capturas aprobadas salvo antialiasing. Sin incidencias nuevas; desborde
+horizontal preexistente e idéntico antes/después en `PurchaseCreditNoteListPage` (320 px),
+`ExpenseDocumentFormPage` (320–390 px) y `SupplierPaymentDetailPage` (320 px), medido sin el
+padding del shell. Sin suites generales/SRI, staging, commit ni push.
+
+Corrección final del propietario: `ZHScreenHeading` no renderiza el kicker (ni elemento ni
+texto en el DOM) y se elimina la regla `.zh-screen-heading-kicker` de `zh-ui.css`; la prop
+`kicker` se conserva temporalmente en la interfaz pública, sin efecto, para no modificar
+consumidores. Sin dependencias funcionales del elemento (solo el componente, su CSS y pruebas).
+Revisados los 69 kickers: todos son contexto de módulo o listado padre, sin información
+exclusiva; sin excepciones. Validación en AppLayout real
+(frontend real con API simulada, sesión Admin sintética, sin backend ni credenciales) de Clientes,
+Proveedores, Asignación de permisos y Monitor de Documentos Electrónicos a 390 y 1440 px
+(`tmp/uiux-global-header-default-01/app/capturas-app.html`): solo desaparece el kicker; título,
+subtítulo, barra azul y acciones conservan su posición relativa (Δ ≤ 0,1 px) y suben 28 px;
+Clientes y Proveedores sin cambio (Δ 0,0 px); sin overflow. Hallazgo preexistente fuera de alcance:
+en Asignación de permisos a 390 px la toolbar de la acción no baja de línea y recorta el título,
+igual con el diseño `stacked` original. Paso de «oculto» a «no renderizado» verificado en las
+mismas cuatro pantallas y anchos: geometría Δ 0,0 px y píxeles idénticos (diff 0) frente a la
+presentación aprobada. Vitest focal (PageShell, AppLayout, Clientes, Proveedores, Saldos a favor,
+Flujos documentales) 56/56, `tsc -b`, ESLint focal, `architecture:check`, guardrail oficial,
+Stack Audit y `git diff --check` PASS.
+
+## UIUX-GLOBAL-ARCHITECTURE-02 — PLAN APROBADO; BLOQUE 1 APROBADO VISUALMENTE (2026-11-05)
+
+Planificación para aplicar por defecto las mejoras aprobadas del DS (encabezado compacto,
+tres pestañas responsive, KPI simples horizontales, identidad y acciones de Clientes), con
+decisiones del propietario y matriz por consumidor en
+[UIUX-GLOBAL-ARCHITECTURE-02](docs/agent/UIUX-GLOBAL-ARCHITECTURE-02.md). Encabezado verificado:
+102 sitios en 84 archivos, más 23 archivos solo vía `NoAccessPage`. Bloque 1 en
+UIUX-GLOBAL-HEADER-DEFAULT-01; bloques 2–5 pendientes. UIUX-CUSTOMERS-02 y los pendientes
+de Clasificación y CI se conservan en sus propias entradas.
+
+## UIUX-CUSTOMERS-02 — APROBADO VISUALMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+
+Aprobación visual del propietario registrada el 2026-11-05. Su `headingVariant="compact"`
+explícito se retiró en UIUX-GLOBAL-HEADER-DEFAULT-01 (el compacto es ahora el default);
+encabezado verificado idéntico. Registro original:
+
+
+Clientes adopta `headingVariant="compact"` sin kicker y `ZHTabBar variant="responsive-three"`
+con `masterdata.customers.tabs.nuevoShort`; contrato en
+[Frontend](docs/architecture/frontend.md#encabezado-y-pestañas-de-clientes). Sin cambios
+en componentes/CSS globales, Proveedores, Listado, Resumen, formulario, permisos ni backend.
+Pruebas focales Clientes/Proveedores/ZHTabBar 57/57 PASS; `tsc -b`, lint focal,
+`architecture:check` y guardrail oficial PASS. Capturas antes/después/Proveedores en
+evidencia local temporal (`tmp/uiux-customers-02/capturas.html`): 320, 360, 390, 480,
+768 y 1440 px, tres pestañas visibles, sin overflow, 48 px hasta 480 px; harness con
+componentes reales y datos sintéticos, sin sesión autenticada ni backend.
+
 ## CI-1096-FIX — READY FOR REVIEW (2026-11-05)
 
 CI #1096 (commit `dd10a0f9b`) falló en Stack Audit: `tools/architecture/check-staged-guardrails.ps1`
@@ -123,7 +203,7 @@ Cerrado con UIUX-FINAL-REVIEW-01: commit `d7b07f6c8`, CI #1094 SUCCESS.
 ## UIUX-GLOBAL-HEADER-01 — CERRADO con UIUX-FINAL-REVIEW-01 (CI #1094 SUCCESS) (2026-11-05)
 
 Variante opcional de encabezado implementada en los componentes oficiales; contrato en
-[Frontend](docs/architecture/frontend.md#encabezado-compacto-opcional-uiux-global-header-01).
+[Frontend](docs/architecture/frontend.md#encabezado-compacto-predeterminado-uiux-global-header-default-01).
 Solo Proveedores activa compact; las reglas locales del encabezado se trasladaron al DS,
 sin duplicación ni cambios de defaults, tokens o breakpoints globales. El resto de
 UIUX-SUPPLIERS-01/02/03 se conserva, incluida su evidencia y pruebas previas.

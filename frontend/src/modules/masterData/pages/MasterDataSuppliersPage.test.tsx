@@ -196,6 +196,7 @@ it("conserva el mismo encabezado único al navegar por las tres pestañas", asyn
   const heading = screen.getByRole("heading", { name: "Proveedores", level: 1 });
   const header = heading.closest("header")!;
   const markup = header.outerHTML;
+  expect(header.className).toBe("zh-screen-heading zh-screen-heading--compact");
 
   for (const name of [/Resumen/i, /Listado/i, /Nuevo proveedor/i, /Resumen/i]) {
     fireEvent.click(screen.getByRole("tab", { name }));

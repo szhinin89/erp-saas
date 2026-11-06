@@ -751,7 +751,6 @@ export function MasterDataSuppliersPage() {
   return (
     <ErpPageTemplate
       pageClassName="md-suppliers-page"
-      headingVariant="compact"
       title={t("masterdata.suppliers.title")}
       subtitle={t("masterdata.suppliers.subtitle")}
     >

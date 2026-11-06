@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { NoAccessPage } from "../../../components/PageShell";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHTabBar } from "../../../components/zh/ZHTabBar";
 import { useI18n } from "../../../i18n/i18n";
 import { useMasterDataCustomersPage } from "./useMasterDataCustomersPage";
 import { MasterDataSalesSettingsModal } from "./MasterDataSalesSettingsModal";
@@ -186,7 +187,6 @@ export function MasterDataCustomersPage() {
 
   return (
     <ErpPageTemplate
-      kicker={t("masterdata.customers.kicker", "Personas y empresas")}
       title={t("masterdata.customers.title")}
       subtitle={t("masterdata.customers.subtitle")}
     >
@@ -197,26 +197,20 @@ export function MasterDataCustomersPage() {
         <ZHPageNotice variant="error" message={page.inlineError} />
       )}
 
-      <div className="prd-tabs" role="tablist">
-        {TABS.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              className={`prd-tab-btn ${active ? "prd-tab-btn--active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="material-symbols-outlined prd-tab-icon">
-                {tab.icon}
-              </span>
-              {t(tab.labelKey, tab.labelFb)}
-            </button>
-          );
-        })}
-      </div>
+      <ZHTabBar
+        variant="responsive-three"
+        ariaLabel={t("masterdata.customers.tabs.aria", "Secciones de clientes")}
+        tabs={TABS.map((tab) => ({
+          id: tab.id,
+          label: t(tab.labelKey, tab.labelFb),
+          mobileLabel: tab.id === "nuevo"
+            ? t("masterdata.customers.tabs.nuevoShort", "Nuevo")
+            : undefined,
+          icon: tab.icon,
+        }))}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
       <div className="prd-tab-content">
         {activeTab === "resumen" && (
