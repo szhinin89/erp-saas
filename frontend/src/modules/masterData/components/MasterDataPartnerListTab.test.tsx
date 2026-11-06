@@ -96,16 +96,34 @@ describe("supplier identity", () => {
     expect(screen.getByText("Comercial").className).toBe("md-supplier-identity__trade");
     expect(screen.getAllByText("0999991")).toHaveLength(2);
   });
-  it("preserves customer identity and excludes supplier styles", () => {
+  it("preserves customer identity order and excludes supplier styles", () => {
     const {container} = renderTab(1, 50, "customer", {...buildPartner("1", "Legal"), tradeName: "Comercial"});
     const cell = within(screen.getAllByRole("row")[1]).getAllByRole("cell")[2];
-    expect(cell.firstElementChild?.textContent).toBe("Comercial");
-    expect(cell.lastElementChild?.textContent).toBe("Legal");
+    expect(cell.querySelector(".md-customer-identity__name")?.textContent).toBe("Comercial");
+    expect(cell.querySelector(".md-customer-identity__legal")?.textContent).toBe("Legal");
     expect(container.querySelector(".md-supplier-list")).toBeNull();
+    expect(container.querySelector(".md-customer-list")).toBeTruthy();
+  });
+  it("customer cells carry meaning classes for the responsive collapse (not positions)", () => {
+    renderTab(1, 50, "customer", {...buildPartner("1", "Legal"), isActive: false});
+    const cells = within(screen.getAllByRole("row")[1]).getAllByRole("cell");
+    expect(cells.map((c) => c.className)).toEqual([
+      "zh-text-align-center zh-datatable-row-number-col", "md-customer-col-id", "md-customer-col-identity",
+      "md-customer-col-status", "md-customer-col-actions",
+    ]);
+    // Mobile identity duplicates id/status only inside the identity cell (hidden on desktop by CSS).
+    expect(cells[2].querySelector(".md-customer-identity__id")?.textContent).toBe("0999991");
+    expect(cells[2].querySelector(".md-customer-identity__status")?.textContent).toBe("Inactivo");
+  });
+  it("supplier cells do not receive customer classes", () => {
+    renderTab(1, 50, "supplier");
+    const cells = within(screen.getAllByRole("row")[1]).getAllByRole("cell");
+    expect(cells.some((c) => c.className.includes("md-customer"))).toBe(false);
   });
 });
 
-// FUNC-PARTNER-ROLE-01 — «+ Proveedor» en Clientes respeta canAssignAsSupplier del backend.
+// FUNC-PARTNER-ROLE-01 / UIUX-GLOBAL-ACTIONS-CLIENTS-01 — «Agregar como proveedor» vive en
+// «Más acciones» y respeta canAssignAsSupplier del backend.
 describe("customer assign-as-supplier availability", () => {
   function renderCustomerActions(partner: BusinessPartnerSummaryDto, canUpdate = true) {
     const onAddAsSupplier = vi.fn();
@@ -127,28 +145,33 @@ describe("customer assign-as-supplier availability", () => {
     );
     return { onAddAsSupplier, onDisable, onActivate };
   }
-  const assignButton = () => screen.queryByTitle("Agregar también como proveedor");
+  const openMenu = () => fireEvent.click(screen.getByRole("button", { name: /^Más acciones:/ }));
+  const assignItem = () => screen.queryByRole("menuitem", { name: "Agregar como proveedor" });
 
   it("shows it for an active customer without supplier role and keeps the callback", () => {
     const { onAddAsSupplier } = renderCustomerActions(buildPartner("1", "Cliente"));
-    fireEvent.click(assignButton()!);
+    openMenu();
+    fireEvent.click(assignItem()!);
     expect(onAddAsSupplier).toHaveBeenCalledExactlyOnceWith("1");
   });
   it("hides it when the customer already has the supplier role; other actions remain", () => {
     const { onDisable } = renderCustomerActions({ ...buildPartner("1", "Cliente"), isSupplier: true, canAssignAsSupplier: false });
-    expect(assignButton()).toBeNull();
-    expect(screen.getByRole("button", { name: "Editar" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    openMenu();
+    expect(assignItem()).toBeNull();
+    expect(screen.getByRole("button", { name: /^Editar: Cliente/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Desactivar cliente" }));
     expect(onDisable).toHaveBeenCalledExactlyOnceWith("1");
   });
   it("hides it for an inactive customer while activation remains", () => {
     const { onActivate } = renderCustomerActions({ ...buildPartner("1", "Cliente"), isActive: false, canAssignAsSupplier: false });
-    expect(assignButton()).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Habilitar" }));
+    openMenu();
+    expect(assignItem()).toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Activar cliente" }));
     expect(onActivate).toHaveBeenCalledExactlyOnceWith("1");
   });
   it("hides it without update permission even if assignable", () => {
     renderCustomerActions(buildPartner("1", "Cliente"), false);
-    expect(assignButton()).toBeNull();
+    openMenu();
+    expect(assignItem()).toBeNull();
   });
 });

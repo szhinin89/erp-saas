@@ -83,6 +83,12 @@ function renderPage() {
   return utils;
 }
 
+/** UIUX-GLOBAL-ACTIONS-CLIENTS-01: las acciones secundarias viven en «Más acciones». */
+function clickRowAction(name: string) {
+  fireEvent.click(screen.getByRole("button", { name: /^Más acciones: Cliente Uno/ }));
+  fireEvent.click(screen.getByRole("menuitem", { name }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   useMasterDataCustomersUiStore.setState({
@@ -153,7 +159,7 @@ describe("MasterDataCustomersPage — desactivar cliente: confirmación y feedba
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    clickRowAction("Desactivar cliente");
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalledTimes(1);
@@ -171,7 +177,7 @@ describe("MasterDataCustomersPage — desactivar cliente: confirmación y feedba
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    clickRowAction("Desactivar cliente");
 
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(businessPartnerFacade.deactivateBusinessPartner).not.toHaveBeenCalled();
@@ -183,7 +189,7 @@ describe("MasterDataCustomersPage — desactivar cliente: confirmación y feedba
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    clickRowAction("Desactivar cliente");
 
     await waitFor(() =>
       expect(message.success).toHaveBeenCalledWith("Cliente desactivado correctamente."),
@@ -203,7 +209,7 @@ describe("MasterDataCustomersPage — desactivar cliente: confirmación y feedba
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    clickRowAction("Desactivar cliente");
 
     await waitFor(() => {
       expect(message.error).toHaveBeenCalledWith("El cliente tiene facturas pendientes.");
@@ -230,7 +236,7 @@ describe("MasterDataCustomersPage — activar cliente: confirmación y feedback"
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Habilitar" }));
+    clickRowAction("Activar cliente");
 
     await waitFor(() => {
       expect(message.confirm).toHaveBeenCalledTimes(1);
@@ -258,7 +264,7 @@ describe("MasterDataCustomersPage — activar cliente: confirmación y feedback"
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Habilitar" }));
+    clickRowAction("Activar cliente");
 
     await waitFor(() => expect(message.error).toHaveBeenCalled());
     expect(message.success).not.toHaveBeenCalled();
@@ -273,7 +279,7 @@ describe("MasterDataCustomersPage — FUNC-PARTNER-ROLE-01 asignar como proveedo
     });
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
-    fireEvent.click(screen.getByTitle("Agregar también como proveedor"));
+    clickRowAction("Agregar como proveedor");
     expect(await screen.findByText("El rol Supplier ya está activo para este BusinessPartner.")).toBeTruthy();
     expect(businessPartnerFacade.assignRole).toHaveBeenCalledExactlyOnceWith("bp-1", { roleType: expect.anything() });
     expect(businessPartnerFacade.searchBusinessPartnersPaged).toHaveBeenCalledTimes(1);
@@ -289,7 +295,7 @@ describe("MasterDataCustomersPage — sin diálogos nativos", () => {
 
     renderPage();
     await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    clickRowAction("Desactivar cliente");
     await waitFor(() =>
       expect(businessPartnerFacade.deactivateBusinessPartner).toHaveBeenCalled(),
     );
@@ -311,7 +317,9 @@ describe("MasterDataCustomersPage — ZH-LISTING-COMPLIANCE-AUDIT-08, showRowNum
 
     const headers = screen.getAllByRole("columnheader").map((th) => th.textContent);
     expect(headers[0]).toBe("N°");
-    expect(screen.getByText("0999999999")).toBeTruthy();
+    // La identificación vive en su columna; la copia de la identidad solo se muestra en móvil (CSS).
+    const ids = screen.getAllByText("0999999999");
+    expect(ids.map((el) => el.closest("td")?.className)).toEqual(["md-customer-col-id", "md-customer-col-identity"]);
   });
 });
 
@@ -327,7 +335,8 @@ describe("CUSTOMER-SALES-SETTINGS-UX-FIX-01", () => {
     }]);
   });
   async function openSettings() {
-    fireEvent.click(await screen.findByRole("button", { name: "Empresa" }));
+    await screen.findByText("Cliente Uno");
+    clickRowAction("Empresa");
     await waitFor(() => expect((screen.getByRole("button", { name: "Guardar" }) as HTMLButtonElement).disabled).toBe(false));
   }
   it("guarda, confirma y cierra sin recargar ni reabrir automáticamente", async () => {

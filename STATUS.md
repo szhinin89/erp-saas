@@ -1,5 +1,31 @@
 # Project Status
 
+## UIUX-GLOBAL-ACTIONS-CLIENTS-01 — IMPLEMENTADO; PENDIENTE DE GATE DEL PROPIETARIO Y CONSOLIDACIÓN GIT/CI (2026-11-06)
+
+Bloque 2 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md#11-seguimiento-uiux-global-actions-clients-01-bloque-2--clientes-2026-11-06):
+la fila de Clientes muestra Ver y Editar (con permiso) y agrupa Empresa, Clasificación, Agregar
+como proveedor y Activar/Desactivar en «Más acciones» (`MasterDataCustomerListActions`, `portal`
+solo en este menú). Permisos, `canAssignAsSupplier`, callbacks, confirmaciones y estados de
+guardado se conservan; un usuario con solo `configure-company` accede a Empresa; sin ítems no hay
+menú. Responsive por clase de columna (320–1440 px sin scroll horizontal), foco devuelto al
+disparador tras cerrar menú, modal o confirmación. Resuelve AA-D2 («++ Proveedor») y AA-D3.
+Contrato en [Frontend § Listado de Clientes](docs/architecture/frontend.md#listado-de-clientes).
+Sin cambios en backend, endpoints, permisos, reglas de negocio, estilos globales, Proveedores ni
+Compras; sin `ZHRowActions`.
+
+Validación agente: Vitest focal 107/107 en 8 archivos (acciones de Clientes/Proveedores, lista,
+páginas de Clientes y Proveedores, `ZHLineAction`) e i18n 31/31; Compras `PurchaseLineCard` y
+`ProductPicker` PASS; `PurchaseFormFeedback` 1 fallo preexistente, reproducido en `HEAD` limpio.
+`tsc -b`, ESLint focal, `architecture:check` (0 violaciones nuevas, `i18n-keys` PASS), guardrail
+oficial `-SkipFrontendChunk` y `git diff --check` PASS. Capturas con API simulada a 320, 390, 640,
+641, 768, 769 y 1440 px. Sin suites generales ni SRI. Sin staging/commit/push.
+
+Revisión visual final (aprobación técnica recibida): en filas inactivas la opacidad compartida
+dejaba Ver/Editar/«⋯» en 1.9:1; corrección acotada a Clientes (opacidad 1 y nombre con
+`--color-text-secondary`) los deja en 4.34:1, igual que las filas activas, conservando la señal
+de inactivo. Regla global y Proveedores sin cambios. Revalidado a 320/390/768/1440 px sin scroll,
+recortes ni pérdida de foco. `PurchaseFormFeedback` mantiene su fallo preexistente (no tocado).
+
 ## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 2 FRONTEND IMPLEMENTADA; PENDIENTE DE GATE DEL PROPIETARIO Y CONSOLIDACIÓN GIT/CI (2026-11-06)
 
 Filtro, estado y activación de imágenes conectados al endpoint existente; contrato en

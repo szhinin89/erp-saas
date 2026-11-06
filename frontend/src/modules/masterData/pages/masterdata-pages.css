@@ -766,9 +766,12 @@
   }
 }
 
-.md-supplier-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
-.md-supplier-actions__more .zh-line-action-menu__trigger-chevron { display: none; }
-.md-supplier-actions-menu__identity {
+.md-supplier-actions,
+.md-customer-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
+.md-supplier-actions__more .zh-line-action-menu__trigger-chevron,
+.md-customer-actions__more .zh-line-action-menu__trigger-chevron { display: none; }
+.md-supplier-actions-menu__identity,
+.md-customer-actions-menu__identity {
   font-size: var(--text-help-size);
   color: var(--color-text-secondary);
   padding: var(--space-2);
@@ -787,6 +790,65 @@
     font-size: var(--text-help-size);
   }
   .md-supplier-identity__status { display: inline-flex; }
+}
+
+/* Customer listing only (UIUX-GLOBAL-ACTIONS-CLIENTS-01): View + Edit + «Más acciones».
+   Columns collapse by meaning (cell classes), not by position. */
+.md-customer-list table {
+  table-layout: fixed;
+}
+.md-customer-list table .zh-datatable-row-number-col {
+  width: 48px;
+}
+.md-customer-list table .md-customer-col-id {
+  width: 150px;
+}
+.md-customer-list table .md-customer-col-status {
+  width: 100px;
+}
+.md-customer-list table .md-customer-col-actions {
+  width: 176px;
+}
+.md-customer-list .prd-search-input {
+  min-width: 0;
+}
+.md-customer-list .prd-search-meta,
+.md-customer-list .md-pagination {
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.md-customer-actions { flex-wrap: nowrap; }
+.md-customer-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+.md-customer-identity__legal {
+  font-size: var(--text-help-size);
+  color: var(--color-text-secondary);
+}
+.md-customer-identity__id,
+.md-customer-identity__status { display: none; }
+/* Inactive customers: the shared row opacity (0.5) left actions at 1.9:1. Here the signal is
+   the muted identity (secondary text token) plus the «Inactivo» status; actions keep contrast. */
+.md-customer-list .prd-row--inactive { opacity: 1; }
+.md-customer-list .prd-row--inactive .md-customer-identity__name { color: var(--color-text-secondary); }
+@media (max-width: 768px) {
+  .md-customer-list table :is(.zh-datatable-row-number-col, .md-customer-col-id) { display: none; }
+  .md-customer-identity__id {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: var(--text-help-size);
+  }
+}
+@media (max-width: 640px) {
+  .md-customer-list table .md-customer-col-status { display: none; }
+  .md-customer-list table .md-customer-col-actions { width: 148px; }
+  .md-customer-identity__status { display: inline-flex; }
+}
+@media (pointer: coarse) {
+  .md-customer-actions .zh-btn--sm { min-height: var(--density-control-height); }
 }
 
 /* Supplier summary composes the official KPI grid/variant and ZHCard. */

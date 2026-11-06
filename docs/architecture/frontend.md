@@ -642,8 +642,8 @@ En `/suppliers`, la pestaña Listado conserva `ZHDataTable`, identificación, es
 paginación y acciones existentes. Solo para proveedores, la razón social es la identidad
 principal; el nombre comercial se presenta debajo cuando no está vacío y difiere de la
 razón social tras quitar espacios exteriores. Los nombres largos admiten salto de línea.
-El CSS local de `masterData` se limita al listado de proveedores; Clientes conserva su
-presentación. Hasta 640 px, identificación y estado se integran en la celda de identidad;
+Las reglas de tabla de proveedores (`.md-supplier-list`) no afectan a Clientes, que tiene
+su propio contrato ([Listado de Clientes](#listado-de-clientes)). Hasta 640 px, identificación y estado se integran en la celda de identidad;
 se ocultan sus columnas duplicadas y el número auxiliar, manteniendo la tabla y las acciones
 visibles sin scroll horizontal a 390 px. Escritorio y tablet conservan las cinco columnas.
 
@@ -670,6 +670,30 @@ cliente: título «Clientes» y su descripción, sin categoría visible, con el
 [patrón responsive automático](#pestañas-responsive-automáticas-uiux-global-tabs-default-01): etiqueta
 visual móvil «Nuevo» con nombre accesible «Nuevo cliente». Navegación, permisos,
 Listado, Resumen y formulario de Clientes conservan su comportamiento.
+
+### Listado de Clientes
+
+En `/customers`, `MasterDataCustomerListActions` presenta «Ver» y, con
+`masterdata.businesspartners.update`, «Editar»; las acciones secundarias van en «Más acciones»
+(`ZHLineAction kind="menu"` con `portal`, `menuAlign="end"`, `closeOnSelect`, encabezado con
+razón social e identificación): Empresa (`configure-company` y callback disponible),
+Clasificación (`update` y callback), Agregar como proveedor (`update`, callback y
+`canAssignAsSupplier` del backend, sin inferirlo de otros campos), Activar (`update`, inactivo)
+y Desactivar (`disable`, activo, tono `danger`). Un usuario con solo `configure-company` ve
+«Ver» y el menú con Empresa. Sin ítems autorizados no se renderiza el menú. `saving` deshabilita
+asignar, activar y desactivar; las confirmaciones siguen en los handlers de la página. Los
+nombres accesibles de «Ver», «Editar» y del disparador incluyen la identidad del cliente.
+Tras cerrar el modal o la confirmación abiertos desde el menú, el foco vuelve al disparador
+de la fila si quedó en `<body>`, sin modificar `ZHModal` ni el servicio de mensajes.
+
+Las columnas se ocultan por clase de significado (`md-customer-col-*`), no por posición:
+hasta 768 px se ocultan N° e identificación y la identificación se integra en la celda de
+identidad; hasta 640 px también se integra el estado. Nombre comercial y razón social se
+presentan en líneas separadas. En filas inactivas la lista anula la opacidad compartida de
+`prd-row--inactive` y atenúa solo el nombre con `--color-text-secondary` (junto al estado
+«Inactivo»), de modo que las acciones mantienen el contraste de las filas activas. Con puntero táctil, «Ver» y «Editar» usan
+`--density-control-height`. Sin scroll horizontal de 320 a 1440 px. El valor por defecto de
+`portal` y los menús de Proveedores y Compras no cambian.
 
 ### Resumen de Proveedores
 

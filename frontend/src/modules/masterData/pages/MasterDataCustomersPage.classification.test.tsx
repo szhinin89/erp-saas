@@ -107,7 +107,8 @@ const selects = () => within(dialog()).getAllByRole("combobox") as HTMLSelectEle
 const zoneInput = () => within(dialog()).getByPlaceholderText("Norte, Sur, Centro…") as HTMLInputElement;
 
 async function openClassification() {
-  fireEvent.click(await screen.findByRole("button", { name: "Clasificación" }));
+  fireEvent.click(await screen.findByRole("button", { name: /^Más acciones:/ }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Clasificación" }));
 }
 
 async function openReady() {

@@ -2106,8 +2106,6 @@
   "masterdata.customers.action.notes": "Notes",
   "masterdata.customers.action.company": "Company",
   "masterdata.customers.action.classification": "Classification",
-  "masterdata.customers.action.addSupplier": "Also add as supplier",
-  "masterdata.customers.action.addSupplierShort": "+ Supplier",
   "masterdata.customers.modal.createTitle": "New customer",
   "masterdata.customers.modal.editTitle": "Edit customer",
   "masterdata.customers.tabs.resumen": "Overview",
@@ -4790,5 +4788,9 @@
   "masterdata.suppliers.listAction.more": "More actions",
   "masterdata.suppliers.listAction.edit": "Edit supplier",
   "masterdata.suppliers.listAction.sri": "SRI settings",
-  "masterdata.suppliers.listAction.assign": "Assign as customer"
+  "masterdata.suppliers.listAction.assign": "Assign as customer",
+  "masterdata.customers.listAction.more": "More actions",
+  "masterdata.customers.listAction.assign": "Add as supplier",
+  "masterdata.customers.listAction.activate": "Activate customer",
+  "masterdata.customers.listAction.deactivate": "Deactivate customer"
 }

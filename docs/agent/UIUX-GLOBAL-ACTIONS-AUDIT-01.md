@@ -4,7 +4,9 @@ Estado: **AUDITORÍA — sin implementación del patrón** (2026-11-05). La audi
 componentes, CSS, páginas, permisos, STATUS ni WORK_QUEUE. Sin suites generales ni SRI. Sin
 staging/commit/push. Seguimiento posterior: AA-D1 corregido técnicamente por FUNC-PARTNER-ROLE-01 y AA-D5
 corregido técnicamente por FUNC-DEACTIVATION-CONFIRM-01 (§ 10), ambos pendientes de Git/CI (ver
-[STATUS](../../STATUS.md)); los demás hallazgos siguen pendientes.
+[STATUS](../../STATUS.md)). El Bloque 2 (Clientes) está implementado por
+UIUX-GLOBAL-ACTIONS-CLIENTS-01 (§ 11), que además resuelve AA-D2 y AA-D3, pendiente de gate del
+propietario y Git/CI; los demás hallazgos siguen pendientes.
 
 Referencia normativa: [Frontend § Proveedores](../architecture/frontend.md) (fila «Ver» +
 «Más acciones», `portal` opcional), [UIUX-GLOBAL-STANDARD-01](UIUX-GLOBAL-STANDARD-01.md) y
@@ -103,8 +105,8 @@ controles (2 → 2) y añadiría un clic a la acción más frecuente.
 | ID | Severidad | Pantalla | Problema | Evidencia |
 |---|---|---|---|---|
 | AA-D1 | 🟧 Importante — ✅ **Corregido técnicamente** por FUNC-PARTNER-ROLE-01 (2026-11-05); pendiente de Git/CI | Clientes y Proveedores | «+ Proveedor» / «Asignar como cliente» se ofrecen sin consultar `canAssignAsSupplier` / `canAssignAsCustomer`, que el backend ya expone en `BusinessPartnerSummaryDto` («espeja AssignBusinessPartnerRoleHandler»). Para socios que ya tienen el rol o están inactivos, la acción termina en error del backend | [MasterDataPartnerListTab.tsx:156](../../frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx#L156), [MasterDataSupplierListActions.tsx:41](../../frontend/src/modules/masterData/components/MasterDataSupplierListActions.tsx#L41); antes de la corrección ningún consumidor no-test leía `canAssignAs*`; capturas 11, 06 (datos simulados con flags en `false`). Corrección: ambas acciones exigen además `canAssignAs*` del backend (se ocultan si no aplica); el POST conserva su validación |
-| AA-D2 | 🟨 Menor | Clientes | Etiqueta «++ Proveedor»: el código antepone `+` y la traducción ya es «+ Proveedor» | [MasterDataPartnerListTab.tsx:164](../../frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx#L164), `es.json` `masterdata.customers.action.addSupplierShort`; capturas 11–17 |
-| AA-D3 | 🟨 Menor | Clientes | Nombre comercial y razón social se renderizan pegados («Andina PacíficoDistribuidora…»): `.prd-sub-text` no tiene regla CSS en ningún archivo | [MasterDataPartnerListTab.tsx:105](../../frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx#L105); capturas 11, 12, 14 |
+| AA-D2 | 🟨 Menor — ✅ **Resuelto** por UIUX-GLOBAL-ACTIONS-CLIENTS-01 (§ 11; el menú usa «Agregar como proveedor» y se retiraron las claves `addSupplier`/`addSupplierShort`); pendiente de Git/CI | Clientes | Etiqueta «++ Proveedor»: el código antepone `+` y la traducción ya es «+ Proveedor» | [MasterDataPartnerListTab.tsx:164](../../frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx#L164), `es.json` `masterdata.customers.action.addSupplierShort`; capturas 11–17 |
+| AA-D3 | 🟨 Menor — ✅ **Resuelto** por UIUX-GLOBAL-ACTIONS-CLIENTS-01 (§ 11; identidad en columna `.md-customer-identity`); pendiente de Git/CI | Clientes | Nombre comercial y razón social se renderizan pegados («Andina PacíficoDistribuidora…»): `.prd-sub-text` no tiene regla CSS en ningún archivo | [MasterDataPartnerListTab.tsx:105](../../frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx#L105); capturas 11, 12, 14 |
 | AA-D4 | 🟨 Menor | Ajustes de inventario | «Ver» y «Editar» navegan a la misma ruta `/inventory/adjustments/:id` | [StockAdjustmentsPage.tsx:113](../../frontend/src/modules/inventory/adjustments/pages/StockAdjustmentsPage.tsx#L113) y [:122](../../frontend/src/modules/inventory/adjustments/pages/StockAdjustmentsPage.tsx#L122) |
 | AA-D5 | 🟧 Importante — ✅ **Corregido técnicamente** por FUNC-DEACTIVATION-CONFIRM-01 (2026-11-06) en las 5 rutas (detalle por ruta en § 10); pendiente de Git/CI | Catálogos de ítems (`useCatalogCrud`), Tipos de ítem, Cajas, Variantes/Imágenes de ítem | Desactivar sin confirmación (las demás pantallas sí confirman) | `useCatalogCrud.ts:182`, `ItemTypesPage.tsx:134`, `useCashRegistersPage.ts:295`, `useItemDetail.ts:28/39` (líneas previas a la corrección) |
 | AA-D6 | 🟨 Menor | Transportistas | Nombres accesibles en inglés en UI española: `aria-label="Edit"`, `title="Disable"/"Enable"` | [CarriersPage.tsx:213](../../frontend/src/modules/logistica/transportistas/pages/CarriersPage.tsx#L213) |
@@ -112,10 +114,10 @@ controles (2 → 2) y añadiría un clic a la acción más frecuente.
 | AA-D8 | 🟩 Informativo | Proveedores | Regla muerta `.md-supplier-list .md-actions` (Proveedores ya no renderiza `.md-actions`) | [masterdata-pages.css:752](../../frontend/src/modules/masterData/pages/masterdata-pages.css#L752) |
 | AA-D9 | 🟩 Informativo | Textos fijos | Varios listados usan `title`/etiquetas sin i18n («Ver detalle completo», «Editar», «Acciones», «Anular cobro») | Sucursales, Cajas, Puntos de emisión, Establecimientos, Ventas, CxC |
 
-AA-D1 está corregido técnicamente (FUNC-PARTNER-ROLE-01, pendiente de Git/CI); AA-D2 sigue
-pendiente y debe corregirse **antes** o **dentro** del bloque de Clientes; no se arrastra al
-menú. AA-D5 está corregido técnicamente (FUNC-DEACTIVATION-CONFIRM-01, pendiente de Git/CI;
-§ 10). AA-D2..AA-D4 y AA-D6..AA-D9 permanecen pendientes.
+AA-D1 está corregido técnicamente (FUNC-PARTNER-ROLE-01, pendiente de Git/CI). AA-D2 y AA-D3
+quedan resueltos dentro del bloque de Clientes (UIUX-GLOBAL-ACTIONS-CLIENTS-01, § 11). AA-D5 está
+corregido técnicamente (FUNC-DEACTIVATION-CONFIRM-01, pendiente de Git/CI; § 10). AA-D4 y
+AA-D6..AA-D9 permanecen pendientes.
 
 ---
 
@@ -292,6 +294,81 @@ backend real.
    `useI18n`, como `useBranchesPage`. Los textos previos (errores, éxito) no cambian; AA-D9 sigue
    pendiente para el resto.
 5. AA-D5 queda **corregido técnicamente, pendiente de Git/CI**.
+
+## 11. Seguimiento UIUX-GLOBAL-ACTIONS-CLIENTS-01 (Bloque 2 — Clientes, 2026-11-06)
+
+Implementa el diseño aprobado por el propietario, que difiere de la propuesta del § 4: **Ver** y
+**Editar** (con `update`) permanecen visibles; «Más acciones» agrupa Empresa, Clasificación,
+Agregar como proveedor y Activar/Desactivar. Sin `ZHRowActions` (Bloque 1 diferido), sin cambiar
+el valor por defecto de `portal` ni Proveedores/Compras. Contrato vigente en la SSOT
+[Frontend § Listado de Clientes](../architecture/frontend.md#listado-de-clientes).
+
+| Acción | Condición (idéntica a la previa) | Callback / confirmación |
+|---|---|---|
+| Ver (visible) | siempre | navega a `/masterdata/business-partners/:id` |
+| Editar (visible) | `update` | `startEdit` del store (sin confirmación) |
+| Empresa | `configure-company` y callback | `openSettings` → modal de condiciones |
+| Clasificación | `update` y callback | `openCustomerConfig` → modal |
+| Agregar como proveedor | `update`, callback y `canAssignAsSupplier` | `addAsSupplier` (sin confirmación, como antes); `saving` lo deshabilita |
+| Activar cliente | `update` e inactivo | `handleActivate` con `message.confirm`; `saving` lo deshabilita |
+| Desactivar cliente (`danger`) | `disable` y activo | `handleDisable` con `message.confirm`; `saving` lo deshabilita |
+
+Disparador solo si hay al menos un ítem autorizado; un usuario con solo `configure-company` ve
+«Ver» + menú con Empresa. Nombres accesibles con razón social + identificación. Retorno de foco
+al disparador tras cerrar el modal/confirmación abiertos desde el menú (`useReturnFocusAfterDialog`,
+local al módulo; no modifica `ZHModal` ni `message`). Responsive por clase de columna
+(`md-customer-col-*`): ≤768 px oculta N° e identificación; ≤640 px también estado; ambos se
+integran en la identidad. Con puntero táctil, Ver/Editar a `--density-control-height`.
+
+### 11.1 Validación
+
+- Vitest focal: `MasterDataCustomerListActions` (nuevo), `MasterDataPartnerListTab`,
+  `MasterDataCustomersPage` (+ clasificación), `MasterDataSupplierListActions`,
+  `MasterDataSuppliersPage` (+ SRI), `ZHLineAction` — 8 archivos, 107/107; i18n 4 archivos 31/31;
+  Compras `PurchaseLineCard.compact` y `ProductPicker` PASS. `PurchaseFormFeedback.test.tsx`
+  falla 1 caso («base-unit equivalence») **igual en `HEAD` limpio** (worktree temporal): preexistente,
+  ajeno a este bloque.
+- `tsc -b`, ESLint focal, `architecture:check` (0 violaciones nuevas, `i18n-keys` PASS),
+  guardrail oficial `-SkipFrontendChunk` y `git diff --check` PASS.
+- Capturas en la aplicación real (Vite + `AppLayout`) con **API 100 % simulada** (Playwright;
+  solo `POST /auth/refresh` simulado como no-GET; ninguna petición al backend, 0 abortadas) a
+  320, 390, 640, 641, 768, 769 y 1440 px: sin desbordamiento horizontal de página ni de tabla
+  (tabla = contenedor en todos los anchos); menú dentro del viewport (320: `left 36 – right 292`);
+  foco inicial en el primer ítem, ↓ avanza, Escape devuelve el foco al disparador; con solo
+  `configure-company` el menú contiene únicamente Empresa y no hay Editar; con solo `view` no hay
+  menú; táctil 390: Ver/Editar 36 px de alto; tras cerrar el modal Empresa y tras cancelar la
+  confirmación de Desactivar, el foco vuelve al disparador de la fila.
+
+### 11.2 Limitaciones visuales que permanecen
+
+1. ~~Filas inactivas con acciones atenuadas~~ — ✅ **Corregido en la revisión visual final**
+   (§ 11.3). Queda, fuera de alcance, que el token `--color-text-secondary` de los botones `ghost`
+   mide 4.34:1 sobre el fondo de la tabla (filas activas e inactivas, y Proveedores): es del DS.
+2. En pantallas táctiles la fila de Clientes usa botones de 36 px y la de Proveedores conserva
+   26 px («Ver»): divergencia deliberada para no cambiar Proveedores; se unifica en el Bloque 1.
+3. AA-D7 (panel fijo si el disparador sale del viewport) sigue presente: Bloque 4.
+4. «Editar» visible a la izquierda del menú añade ~60 px por fila respecto de Proveedores; a 320 px
+   la identidad dispone de ~140 px y nombres largos ocupan varias líneas (sin desbordar).
+
+### 11.3 Revisión visual final — legibilidad de Clientes inactivos (2026-11-06)
+
+`prd-row--inactive` (`items-catalog.css`, compartida) aplica `opacity: 0.5` a toda la fila.
+Contraste efectivo medido en la aplicación real (WCAG 2.x, datos simulados, 1440/768/390/320 px):
+
+| Elemento (fila inactiva) | Antes | Después | Fila activa (referencia) |
+|---|---|---|---|
+| Ver / Editar (texto) | 1.9:1 | 4.34:1 | 4.34:1 |
+| «⋯» (icono del disparador) | 1.9:1 | 4.34:1 | 4.34:1 |
+| Nombre | 2.57:1 | 4.34:1 (`--color-text-secondary`) | 9.45:1 |
+| Identificación / estado «Inactivo» | 1.9:1 | 4.34:1 | 4.34 / 4.88:1 |
+
+Defecto confirmado (texto < 4.5:1 y controles < 3:1). Corrección acotada a Clientes en
+`masterdata-pages.css`: `.md-customer-list .prd-row--inactive { opacity: 1 }` y el nombre con
+`--color-text-secondary`. La señal de inactivo se conserva (nombre atenuado + «Inactivo» con
+punto gris); las acciones quedan con el mismo contraste que en filas activas. La regla global y
+Proveedores no cambian. A 320/390/768/1440 px: sin scroll horizontal ni celdas recortadas; menú
+de la fila inactiva dentro del viewport (Empresa, Clasificación, Activar cliente), foco inicial
+en el primer ítem y retorno al disparador con Escape.
 
 ## Fuera de alcance / no realizado
 
