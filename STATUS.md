@@ -1,6 +1,6 @@
 # Project Status
 
-## B-02 — pruebas obsoletas de Compras actualizadas — PENDIENTE DE CONSOLIDACIÓN Y VALIDACIÓN COMPLETA DEL RELEASE (2026-11-06)
+## B-02 — pruebas obsoletas de Compras actualizadas — CLOSED (2026-11-06)
 
 Bloqueante B-02 de la auditoría de lanzamiento. Compras V1 **continúa CLOSED**
 ([DOC-CLEANUP-COMPRAS-01](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03)): los seis
@@ -16,8 +16,12 @@ Validación agente: Vitest focal 139/139 en 4 archivos (`purchaseLinePresentatio
 `PurchaseFormFeedback`, `purchaseCalc`, `PurchaseLineCard.compact`); `tsc -b`; ESLint focal (solo el
 aviso `max-lines` existente de `PurchasesPage.tsx`); `architecture:check` (0 violaciones nuevas),
 guardrail oficial `-SkipFrontendChunk` y `git diff --check` PASS. Sin SRI ni datos reales.
-Pendiente: gate del propietario, staging/commit/CI y suite frontend completa del release (el CI
-frontend no ejecuta Vitest). Sin staging, commit ni push.
+
+Cierre (2026-11-06): commit `db6d33d32` publicado en `main`; CI #1108 SUCCESS; suite frontend
+completa de Vitest sobre `db6d33d32` (el CI frontend no ejecuta Vitest) 3.699 PASS, 0 FAIL, 0 SKIP
+en 363 archivos; focales 139/139; TypeScript, ESLint, controles de arquitectura y documentación
+PASS. Las seis pruebas obsoletas quedaron actualizadas sin cambiar la lógica funcional. Compras
+V1 continúa CLOSED y sus reglas no cambian.
 
 ## UIUX-GLOBAL-ACTIONS-CLIENTS-01 — IMPLEMENTADO; PENDIENTE DE GATE DEL PROPIETARIO Y CONSOLIDACIÓN GIT/CI (2026-11-06)
 
@@ -1467,6 +1471,7 @@ Conciliación documental:
   conservados, `a55057a9c`; detalle contraído, 2026-10-29); no indican defecto funcional ni
   reabren Compras. Su actualización forma parte del gate B-02 de lanzamiento. Se conserva el
   intermitente bajo carga, que pasa aislado. No se corrigieron ni se declaran PASS.
+  Resuelto después en [B-02](#b-02--pruebas-obsoletas-de-compras-actualizadas--closed-2026-11-06).
 - **FALTA:** procedencia estructurada XML/default/manual y ampliaciones no operativas
   siguen fuera del alcance implementado; no se convierten en obligaciones V1.
 
@@ -1515,7 +1520,8 @@ de cabecera quedan en el snapshot XML, p. ej. IVA 6.13 en lugar de 15) y 1 en `P
 (equivalencia en unidad base). El 7.º es intermitente bajo carga y cambia de archivo entre corridas
 (`ResolvePendingProductsModal.flows` en la base, `ProductPicker` en el árbol actual); ambos pasan 3/3 aislados en los
 dos árboles. Ningún archivo involucrado difiere de la base. Quedan como deuda del módulo Compras (CLOSED), fuera de
-este alcance; no se corrigieron.
+este alcance; no se corrigieron. Los 6 deterministas se resolvieron después en
+[B-02](#b-02--pruebas-obsoletas-de-compras-actualizadas--closed-2026-11-06).
 
 ## SRI-TOGGLE-07 — pausa total sin excepciones y corte garantizado — READY FOR REVIEW (2026-11-02)
 
