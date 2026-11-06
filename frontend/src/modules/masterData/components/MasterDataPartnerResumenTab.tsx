@@ -112,9 +112,8 @@ export function MasterDataPartnerResumenTab({
 
   return (
     <div className={`prd-resumen prd-fadein${role === "supplier" ? " md-supplier-summary" : ""}`}>
-      <div className="prd-kpi-grid">
+      <div className="pg-kpis">
         <ReportKpiCard
-          layout={role === "supplier" ? "horizontal" : "vertical"}
           icon={icon}
           tone="primary"
           label={t(`${prefix}.kpi.total`, "Total registrados")}
@@ -122,7 +121,6 @@ export function MasterDataPartnerResumenTab({
         />
 
         <ReportKpiCard
-          layout={role === "supplier" ? "horizontal" : "vertical"}
           icon="check_circle"
           tone="success"
           label={t(`${prefix}.kpi.activePage`, "Activos (página)")}
@@ -130,7 +128,6 @@ export function MasterDataPartnerResumenTab({
         />
 
         <ReportKpiCard
-          layout={role === "supplier" ? "horizontal" : "vertical"}
           icon="inventory"
           tone="neutral"
           label={t(`${prefix}.kpi.inactivePage`, "Inactivos (página)")}

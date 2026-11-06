@@ -328,19 +328,9 @@
    "no encontrado" ahora usa <ZHPageNotice variant="info"> (arquitectura de notices existente,
    ver zh-ui.css § 5 Alertas/Notices); sin consumidores TSX. */
 
-/* ── Resumen tab: override KPI grid a 4 columnas ─────────── */
-.prd-resumen .prd-kpi-grid {
-  grid-template-columns: repeat(4, 1fr);
-}
-@media (max-width: 1024px) {
-  .prd-resumen .prd-kpi-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 580px) {
-  .prd-resumen .prd-kpi-grid {
-    grid-template-columns: 1fr;
-  }
+/* ── Resumen tab: KPI con el grid oficial .pg-kpis (UIUX-GLOBAL-KPI-DEFAULT-01) ── */
+.prd-resumen > .pg-kpis {
+  margin-bottom: var(--space-4);
 }
 
 /* ── Resumen tab: sección inferior (actividad + acciones rápidas) ── */
@@ -799,10 +789,7 @@
   .md-supplier-identity__status { display: inline-flex; }
 }
 
-/* Supplier summary composes the official horizontal KPI and ZHCard variants. */
-.md-supplier-summary > .prd-kpi-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
+/* Supplier summary composes the official KPI grid/variant and ZHCard. */
 .md-supplier-summary > .prd-resumen__bottom {
   display: block;
   max-width: 56rem;
@@ -828,14 +815,4 @@
 .md-supplier-summary .prd-activity__name {
   white-space: normal;
   overflow-wrap: anywhere;
-}
-@media (max-width: 1024px) {
-  .md-supplier-summary > .prd-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 580px) {
-  .md-supplier-summary > .prd-kpi-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }

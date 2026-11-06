@@ -24,9 +24,8 @@
   color: var(--color-text-secondary);
 }
 
-.edm-dashboard-secondary .pg-kpi {
-  min-height: 0;
-}
+/* .edm-dashboard-secondary .pg-kpi { min-height: 0 } ELIMINADO (UIUX-GLOBAL-KPI-DEFAULT-01):
+   redundante con .pg-kpi--h (min-height: auto), ya default de ReportKpiCard. */
 
 .edm-retry-suffix {
   font-weight: var(--text-body-md-weight);

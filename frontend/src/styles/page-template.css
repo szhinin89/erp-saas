@@ -130,6 +130,31 @@
   }
 }
 
+/* UIUX-GLOBAL-KPI-DEFAULT-01 — columnas según la cantidad de indicadores (hijos directos):
+   1 ocupa todo el ancho; 2 y 3 se reparten el ancho sin columnas vacías hasta 480/640 px y
+   luego apilan (3 nunca deja una tarjeta huérfana en 2+1); 4 y 5+ conservan las reglas de
+   arriba. :where() mantiene la especificidad de .pg-kpis: una composición propia del
+   consumidor (p. ej. .cfg-opreadiness-capabilities) sigue mandando. */
+.pg-kpis:where(:has(> :only-child)) {
+  grid-template-columns: 1fr;
+}
+.pg-kpis:where(:has(> :nth-child(2):last-child)) {
+  grid-template-columns: repeat(2, 1fr);
+}
+.pg-kpis:where(:has(> :nth-child(3):last-child)) {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 640px) {
+  .pg-kpis:where(:has(> :nth-child(3):last-child)) {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .pg-kpis:where(:has(> :nth-child(2):last-child)) {
+    grid-template-columns: 1fr;
+  }
+}
+
 .pg-kpi {
   background: var(--color-surface);
   padding: var(--density-card-padding);
@@ -286,7 +311,8 @@
   color: var(--color-text-secondary);
 }
 
-/* Variante horizontal (icon left, text right) */
+/* Variante horizontal (icon left, text right) — default de ReportKpiCard desde
+   UIUX-GLOBAL-KPI-DEFAULT-01: altura según contenido, sin el min-height del vertical. */
 .pg-kpi--h {
   flex-direction: row;
   align-items: center;

@@ -41,24 +41,8 @@
   min-height: 320px;
 }
 
-/* ── KPI bento grid ──────────────────────────────────────── */
-.prd-kpi-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 2fr;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
-}
-@media (max-width: 900px) {
-  .prd-kpi-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 580px) {
-  .prd-kpi-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* .prd-kpi-grid ELIMINADO (UIUX-GLOBAL-KPI-DEFAULT-01) — su único consumidor (Resumen de
+   Clientes/Proveedores) usa el grid oficial .pg-kpis, que adapta columnas a la cantidad. */
 /* .prd-kpi-wide / .prd-sparkline* / .prd-kpi-trend-icon ELIMINADOS (Bloque 12B) — sin consumidores. */
 
 /* .prd-quick-stats / .prd-qs* ELIMINADOS (Bloque 12B) — sin consumidores. */

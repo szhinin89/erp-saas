@@ -56,9 +56,11 @@ export function DashboardPage() {
         />
       )}
 
-      {/* ── KPI cards ── */}
+      {/* ── KPI cards ── vertical explícito (UIUX-GLOBAL-KPI-DEFAULT-01): badge de período,
+          trend y sub condicionales; las cuatro tarjetas deben compartir la misma altura. */}
       <div className="pg-kpis">
         <ReportKpiCard
+          layout="vertical"
           icon="payments"
           tone="primary"
           badge={periodLabel ? <Badge label={periodLabel} variant="info" /> : undefined}
@@ -72,6 +74,7 @@ export function DashboardPage() {
         />
 
         <ReportKpiCard
+          layout="vertical"
           icon="account_balance"
           tone="warning"
           label={t("dashboard.kpis.receivables")}
@@ -88,6 +91,7 @@ export function DashboardPage() {
         />
 
         <ReportKpiCard
+          layout="vertical"
           icon="inventory_2"
           tone="error"
           label={t("dashboard.kpis.lowStock")}
@@ -100,6 +104,7 @@ export function DashboardPage() {
         />
 
         <ReportKpiCard
+          layout="vertical"
           icon="shopping_cart"
           tone="primary"
           label={t("dashboard.kpis.payables")}

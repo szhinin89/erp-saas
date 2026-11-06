@@ -82,13 +82,13 @@ describe("Resumen compacto de proveedores", () => {
   });
 });
 
-it("Clientes conserva tarjetas verticales, panel y acciones anteriores", () => {
+it("Clientes usa los KPI compactos del DS y conserva panel y acciones anteriores", () => {
   const { container } = render(<I18nProvider>
     <MasterDataPartnerResumenTab role="customer" partners={partners} totalCount={120}
       store={useMasterDataCustomersUiStore} />
   </I18nProvider>);
   expect(container.querySelector(".md-supplier-summary")).toBeNull();
-  expect(container.querySelectorAll(".pg-kpi--h")).toHaveLength(0);
+  expect(container.querySelectorAll(".pg-kpis > .pg-kpi--h")).toHaveLength(3);
   expect(container.querySelector(".prd-quick-card")).toBeTruthy();
   expect(container.querySelector(".prd-activity-card")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /Nuevo cliente/ }));

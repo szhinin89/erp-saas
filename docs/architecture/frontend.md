@@ -607,6 +607,35 @@ Fuera de este contrato y sin cambios: la cabecera propia de `ReportPage` y las p
 usan `PageShell`/`ErpPageTemplate` (autenticación/setup, Carga Inicial por entidad, POS y hub de
 empresas).
 
+### KPI compactos predeterminados (UIUX-GLOBAL-KPI-DEFAULT-01)
+
+`ReportKpiCard` (`components/ReportPageTemplate.tsx`) admite `layout?: "horizontal" | "vertical"`.
+**El default es `horizontal`** (`.pg-kpi--h`): ícono a la izquierda, etiqueta y valor a la derecha
+y altura según el contenido, sin el `min-height` de 112 px del vertical. No se declara por pantalla.
+
+`vertical` es una excepción explícita de contenido: `badge` solo se renderiza en vertical, y un
+grupo con `trend`/`sub` condicionales que debe compartir altura la declara en cada tarjeta.
+**Excepciones vigentes:** `DashboardPage` (badge de período, `trend` y `sub` condicionales; motivo
+comentado en el consumidor).
+
+El grid oficial `.pg-kpis` (`page-template.css`) adapta sus columnas a la cantidad de hijos
+directos mediante `:where(:has(...))`, con la especificidad de `.pg-kpis`:
+
+| Indicadores | Columnas |
+|---|---|
+| 1 | Todo el ancho, en cualquier ancho |
+| 2 | Dos columnas iguales; una hasta 480 px |
+| 3 | Tres columnas iguales; una hasta 640 px (sin cuarta columna vacía ni tarjeta huérfana 2+1) |
+| 4 | Sin cambio: cuatro; dos hasta 900 px; una hasta 480 px |
+| 5 o más | Sin cambio: mismas reglas que 4, en varias filas |
+
+No se admiten overrides locales del grid para replicar estas reglas. Conservan su composición
+propia, documentada en su CSS: `.cfg-opreadiness-capabilities` (Preparación operativa, cantidad
+variable con `auto-fit`), `.kdx-summary-row` (Kardex, fila flexible), `.pur-reception-kpis`
+(Recepción de compras, junto a la carga de archivos) y `.edm-dashboard-primary` (Monitor de
+documentos electrónicos, filtros por estado). Sus tarjetas usan igualmente el default horizontal.
+Las props `layout="horizontal"` explícitas de consumidores anteriores son redundantes y equivalentes.
+
 ### Listado de Proveedores
 
 En `/suppliers`, la pestaña Listado conserva `ZHDataTable`, identificación, estado,
@@ -651,11 +680,13 @@ accesible «Nuevo proveedor» y la misma navegación. Desde 481 px se conserva l
 presentación compartida con la etiqueta completa. Usa el
 [patrón responsive automático](#pestañas-responsive-automáticas-uiux-global-tabs-default-01) de `ZHTabBar`, sin declarar variante.
 
-Solo para `role="supplier"`, `MasterDataPartnerResumenTab` es exclusivamente de
-consulta: compone tres `ReportKpiCard` con su variante horizontal oficial y Actividad
+`MasterDataPartnerResumenTab` compone, para ambos roles, tres `ReportKpiCard` con el
+[KPI compacto predeterminado](#kpi-compactos-predeterminados-uiux-global-kpi-default-01) en el
+grid oficial `.pg-kpis`. Solo para `role="supplier"` es exclusivamente de consulta: Actividad
 reciente, sin botones ni panel de acciones rápidas. Listado y Nuevo proveedor se
 abren desde sus pestañas existentes, con los mismos permisos de la página. Clientes
-conserva su composición vertical y sus acciones anteriores.
+conserva su panel de actividad y sus acciones rápidas anteriores (su retirada requiere
+validación propia).
 
 Los indicadores mantienen sus cálculos: total devuelto por el servidor y activos e
 inactivos de los registros de la página actual. Actividad reciente continúa leyendo
@@ -663,7 +694,7 @@ exclusivamente `recentActivity` del store de la sesión, con los mismos eventos,
 orden y textos temporales. No se agregan consultas ni eventos. En Proveedores usa
 `ZHCard` sin acciones de cabecera, con estado vacío compacto.
 
-El CSS local `.md-supplier-summary` organiza tres indicadores iguales en escritorio,
-dos columnas hasta 1024 px y una hasta 580 px. La altura de los indicadores sigue
-su contenido y la actividad limita su anchura a 56 rem. Los nombres largos de la
+Los tres indicadores siguen el grid de `.pg-kpis` (tres columnas iguales; una hasta 640 px);
+el antiguo override local de tres/dos/una columnas a 1024/580 px se retiró. La altura de los
+indicadores sigue su contenido y `.md-supplier-summary` limita la actividad a 56 rem. Los nombres largos de la
 actividad admiten saltos de línea sin superponerse con el tipo de evento o el tiempo.

@@ -1,8 +1,5 @@
-/* Distribución exclusiva del reporte; los componentes conservan el contrato visual ZH. */
-.rpt-stock-page .pg-kpis {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
+/* Distribución exclusiva del reporte; los componentes conservan el contrato visual ZH.
+   El grid de tres KPI lo resuelve .pg-kpis según cantidad (UIUX-GLOBAL-KPI-DEFAULT-01). */
 .rpt-stock-page .rpt-filters-fields {
   flex: 1 1 32rem;
 }
@@ -31,10 +28,6 @@
 }
 
 @media (max-width: 640px) {
-  .rpt-stock-page .pg-kpis {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .rpt-stock-page .rpt-filters-fields,
   .rpt-stock-page .rpt-filter-field,
   .rpt-stock-page .rpt-filters-actions {

@@ -1,5 +1,43 @@
 # Project Status
 
+## UIUX-GLOBAL-KPI-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+
+Aprobación visual del propietario registrada el 2026-11-05: Proveedores a 960 px con tres KPI en
+una fila; Clientes a 390 px con KPI horizontales compactos; Stock a 540 px con KPI compactos de
+82 px; Dashboard conserva la variante vertical explícita; grilla global adaptativa aprobada.
+Pendiente de staging selectivo, commit y CI.
+
+Bloque 3 de [UIUX-GLOBAL-ARCHITECTURE-02](docs/agent/UIUX-GLOBAL-ARCHITECTURE-02.md): el KPI
+horizontal compacto pasa a ser el default de `ReportKpiCard` y el grid `.pg-kpis` adapta columnas
+a la cantidad (1 → ancho completo; 2 y 3 → columnas iguales sin columna vacía, apilan a 480/640 px;
+4 y 5+ sin cambio); contrato en
+[Frontend](docs/architecture/frontend.md#kpi-compactos-predeterminados-uiux-global-kpi-default-01).
+Excepción vertical explícita: `DashboardPage` (badge, `trend` y `sub` condicionales). Se retiran
+los overrides locales de `StockReportPage.css`, `.prd-kpi-grid` (sin otros consumidores),
+`.prd-resumen`/`.md-supplier-summary` y el `min-height: 0` redundante del Monitor SRI. El Resumen de
+Clientes y Proveedores usa `.pg-kpis` y el KPI compacto; Clientes conserva actividad y acciones
+rápidas (su retirada queda fuera). Sin cambios en encabezados, pestañas, lógica, permisos, APIs ni
+backend.
+
+Validación agente: Vitest focal (ReportKpiCard, Resumen Clientes/Proveedores, Stock visual,
+Dashboard, Plan de cuentas, Monitor SRI, Ítems) 84/84; `tsc -b`; ESLint focal; `architecture:check`,
+guardrail oficial `-SkipFrontendChunk` (techo PR-7 de `ReportPageTemplate.tsx` respetado), Stack
+Audit y `git diff --check` PASS. Visual en AppLayout real con API simulada (sin backend ni
+credenciales), 13 pantallas a 390/540/768/960/1440 px antes/después
+(`tmp/uiux-global-kpi-default-01/capturas.html`, evidencia local temporal): sin columnas vacías
+(antes 236–356 px libres con 3 KPI), altura de KPI simples 112–122 → 82 px, sin overflow ni
+recortes; Dashboard, Plan de cuentas (6), Bodegas (4) y la sección secundaria del Monitor SRI con
+geometría idéntica. Proveedores pasa de 3/2/1 columnas (cortes 1024/580 px) a 3/1 (corte
+640 px). Stock conserva su distribución (una columna hasta 640 px, ya la aplicaba su override
+local); solo cambia la altura de los KPI. Corrige la afirmación previa de un paso de 2+1 a 1.
+
+Manifiesto `tmp/uiux-global-standard-01-preservation.json` (no eliminado): SHA-256 de 17 archivos
+del conjunto UIUX-SUPPLIERS/FINAL-REVIEW (incluidos los dos reportes generados excluidos del
+commit), tomado como línea base de preservación durante la auditoría UIUX-GLOBAL-STANDARD-01 para
+demostrar que no se alteraban. Hoy 9 coinciden y 8 difieren por commits posteriores
+(`d7b07f6c8` en adelante); ya no protege trabajo sin commit. Eliminación pendiente de decisión
+del propietario.
+
 ## UIUX-GLOBAL-TABS-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
 
 Aprobación visual final del propietario registrada el 2026-11-05 (pestañas del detalle de
@@ -22,7 +60,8 @@ Proveedores ×2, Listas de precios) 76/76; `tsc -b`; ESLint focal sin errores (a
 preexistente de Proveedores); `architecture:check`, guardrail oficial `-SkipFrontendChunk`,
 Stack Audit (`verify-stack-allowlist.ps1` sobre el árbol de trabajo) y `git diff --check` PASS. Visual en AppLayout real con API simulada (sin backend ni
 credenciales) a 320/390/480/481/768/1440 px, antes/después
-(`tmp/uiux-global-tabs-default-01/capturas.html`): Proveedores y Clientes con geometría idéntica
+(`tmp/uiux-global-tabs-default-01/capturas.html`, ya no conservada; se conservan las capturas
+PNG en `shots/`): Proveedores y Clientes con geometría idéntica
 y píxeles iguales salvo antialiasing; las barras de tres pestañas quedan en una fila, sin overflow,
 48 px hasta 480 px. Sin suites generales, staging, commit ni push.
 
@@ -34,7 +73,7 @@ mitad de palabra; ahora usan `mobileLabel` «Establ.» y «Config.»
 con nombres accesibles y etiquetas de escritorio completos. Sin cambios en otras pantallas ni
 en estilos globales. Vitest focal (ZHTabBar, Sucursal) 21/21, `tsc -b`, ESLint focal,
 `architecture:check`, guardrail oficial, Stack Audit y `git diff --check` PASS. Capturas
-finales (`tmp/uiux-global-tabs-default-01/capturas-final.html`): 320, 360, 390 y 480 px con
+finales (`tmp/uiux-global-tabs-default-01/capturas-final.html`, ya no conservada): 320, 360, 390 y 480 px con
 las tres pestañas completas en una línea, sin recorte ni overflow, 48 px; 481, 768 y 1440 px
 con etiquetas completas, píxeles idénticos a la entrega previa. El desborde de Listas de
 precios con seis pestañas se registra aparte (UIUX-PRICELISTS-TABS-OVERFLOW).
@@ -79,7 +118,7 @@ Validación agente: Vitest focal (PageShell, AppLayout, Clientes, Proveedores) 3
 ESLint focal sin errores (aviso `max-lines` preexistente de Proveedores); `architecture:check`,
 guardrail oficial `-SkipFrontendChunk`, Stack Audit y `git diff --check` PASS. Visual:
 480 capturas antes/después de 30 pantallas (perfiles P1–P9) a 320/360/390/480/768/769/1024/1440 px
-(`tmp/uiux-global-header-default-01/capturas.html`; harness con componentes oficiales, props
+(`tmp/uiux-global-header-default-01/capturas.html`, ya no conservada; harness con componentes oficiales, props
 copiados de cada pantalla y datos sintéticos, sin AppLayout ni sesión). Proveedores y Clientes:
 geometría del encabezado idéntica en los 8 anchos (Δ ≤ 0,1 px, igual al ruido entre corridas) y
 píxeles iguales a las capturas aprobadas salvo antialiasing. Sin incidencias nuevas; desborde
@@ -95,7 +134,8 @@ Revisados los 69 kickers: todos son contexto de módulo o listado padre, sin inf
 exclusiva; sin excepciones. Validación en AppLayout real
 (frontend real con API simulada, sesión Admin sintética, sin backend ni credenciales) de Clientes,
 Proveedores, Asignación de permisos y Monitor de Documentos Electrónicos a 390 y 1440 px
-(`tmp/uiux-global-header-default-01/app/capturas-app.html`): solo desaparece el kicker; título,
+(`tmp/uiux-global-header-default-01/app/capturas-app.html`, ya no conservada; quedan el script y
+las capturas PNG en `app/`): solo desaparece el kicker; título,
 subtítulo, barra azul y acciones conservan su posición relativa (Δ ≤ 0,1 px) y suben 28 px;
 Clientes y Proveedores sin cambio (Δ 0,0 px); sin overflow. Hallazgo preexistente fuera de alcance:
 en Asignación de permisos a 390 px la toolbar de la acción no baja de línea y recorta el título,
@@ -114,7 +154,9 @@ decisiones del propietario y matriz por consumidor en
 102 sitios en 84 archivos, más 23 archivos solo vía `NoAccessPage`. Bloque 1 cerrado en
 UIUX-GLOBAL-HEADER-DEFAULT-01 (commit `e1b34d4d6`, CI #1098 SUCCESS); bloque 2 en
 UIUX-GLOBAL-TABS-DEFAULT-01 (aprobado visual y técnicamente, pendiente de consolidación Git/CI);
-bloques 3–5 pendientes. UIUX-CUSTOMERS-02 y los pendientes
+bloque 3 en UIUX-GLOBAL-KPI-DEFAULT-01 (aprobado visual y técnicamente, pendiente de consolidación
+Git/CI); bloques 4–5
+pendientes. UIUX-CUSTOMERS-02 y los pendientes
 de Clasificación y CI se conservan en sus propias entradas.
 
 ## UIUX-CUSTOMERS-02 — CERRADO: commit e1b34d4d6, CI #1098 SUCCESS (2026-11-05)
@@ -133,7 +175,7 @@ con `masterdata.customers.tabs.nuevoShort`; contrato en
 en componentes/CSS globales, Proveedores, Listado, Resumen, formulario, permisos ni backend.
 Pruebas focales Clientes/Proveedores/ZHTabBar 57/57 PASS; `tsc -b`, lint focal,
 `architecture:check` y guardrail oficial PASS. Capturas antes/después/Proveedores en
-evidencia local temporal (`tmp/uiux-customers-02/capturas.html`): 320, 360, 390, 480,
+evidencia local temporal (`tmp/uiux-customers-02/capturas.html`, ya no conservada): 320, 360, 390, 480,
 768 y 1440 px, tres pestañas visibles, sin overflow, 48 px hasta 480 px; harness con
 componentes reales y datos sintéticos, sin sesión autenticada ni backend.
 

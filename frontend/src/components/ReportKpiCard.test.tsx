@@ -79,3 +79,39 @@ describe("ReportKpiCard — value (02C)", () => {
     }
   });
 });
+
+describe("ReportKpiCard — layout por defecto (UIUX-GLOBAL-KPI-DEFAULT-01)", () => {
+  const root = (c: HTMLElement) => c.firstElementChild as HTMLElement;
+
+  it("sin layout: KPI simple horizontal compacto (ícono + texto, sin pg-kpi-top)", () => {
+    const { container } = render(<ReportKpiCard icon="inventory_2" label="Productos" value="12" />);
+    expect(root(container).className).toBe("pg-kpi pg-kpi--h");
+    expect(container.querySelector(".pg-kpi-top")).toBeNull();
+    expect(root(container).firstElementChild?.className).toContain("pg-kpi-icon");
+  });
+
+  it("vertical explícito conserva la composición con badge en pg-kpi-top", () => {
+    const { container } = render(
+      <ReportKpiCard layout="vertical" icon="payments" badge="Mes" label="Ventas" value="10" />,
+    );
+    expect(root(container).className).toBe("pg-kpi");
+    expect(container.querySelector(".pg-kpi-top .badge, .pg-kpi-top [class*='badge']")).toBeTruthy();
+  });
+
+  it("interactivo conserva el default horizontal y su estado activo", () => {
+    const { container } = render(<ReportKpiCard label="Pendientes" value="3" onClick={() => {}} active />);
+    expect(root(container).className).toBe("pg-kpi pg-kpi--h pg-kpi--interactive pg-kpi--active");
+  });
+
+  it("CSS: .pg-kpis adapta columnas a 1/2/3 hijos con especificidad de .pg-kpis", () => {
+    const css = readFileSync(resolve(__dirname, "../styles/page-template.css"), "utf-8").replace(/\r\n/g, "\n");
+    const rule = (selector: string) => {
+      const start = css.indexOf(`${selector} {`);
+      return start < 0 ? "" : css.slice(start, css.indexOf("}", start));
+    };
+    expect(rule(".pg-kpis")).toContain("grid-template-columns: repeat(4, 1fr)");
+    expect(rule(".pg-kpis:where(:has(> :only-child))")).toContain("grid-template-columns: 1fr");
+    expect(rule(".pg-kpis:where(:has(> :nth-child(2):last-child))")).toContain("repeat(2, 1fr)");
+    expect(rule(".pg-kpis:where(:has(> :nth-child(3):last-child))")).toContain("repeat(3, 1fr)");
+  });
+});

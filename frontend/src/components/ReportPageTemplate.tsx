@@ -118,7 +118,7 @@ export function ReportPage({
 export function ReportKpiCard({
   icon,
   tone = "primary",
-  layout = "vertical",
+  layout = "horizontal",
   badge,
   badgeTone = "neutral",
   trend,
@@ -132,7 +132,7 @@ export function ReportKpiCard({
 }: {
   icon?: string;
   tone?: RptKpiTone;
-  /** `horizontal` = ícono a la izquierda, texto a la derecha (`.pg-kpi--h`). */
+  /** Default `horizontal` (`.pg-kpi--h`, compacto); `vertical` explícito si hay `badge` (solo vertical) o alturas a igualar. */
   layout?: "vertical" | "horizontal";
   /** String → se envuelve en <Badge>; ReactNode → se usa tal cual (p.ej. un <Badge> ya construido por el caller). */
   badge?: ReactNode;
