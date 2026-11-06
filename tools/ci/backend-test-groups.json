@@ -166,6 +166,7 @@
         "ERP.Infrastructure.Tests.Modules.Purchases.PurchaseInvoiceListPostgreSqlTests",
         "ERP.Infrastructure.Tests.Payables.SupplierPaymentEndToEndTests",
         "ERP.Infrastructure.Tests.Persistence.AuthorizePurchaseReturnSequenceConcurrencyTests",
+        "ERP.Infrastructure.Tests.Persistence.Items.ItemImageReactivationTests",
         "ERP.Infrastructure.Tests.Persistence.Payables.AccountsPayableSearchTests",
         "ERP.Infrastructure.Tests.Persistence.Purchases.PurchaseCreditNoteDiscountIntegrationTests",
         "ERP.Infrastructure.Tests.Persistence.Purchases.PurchaseReceptionDocumentRepositoryTests",
