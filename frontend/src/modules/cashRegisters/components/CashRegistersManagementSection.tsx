@@ -56,6 +56,7 @@ export function CashRegistersManagementSection() {
           openCreate={handleOpenCreate}
           openEdit={handleOpenEdit}
           toggleDisable={ctx.toggleDisable}
+          togglingId={ctx.togglingId}
           fetchList={ctx.fetchList}
         />
       }

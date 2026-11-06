@@ -22,6 +22,7 @@ type Props = Pick<
   | "selectedId"
   | "openEdit"
   | "toggleDisable"
+  | "togglingId"
   | "openCreate"
   | "fetchList"
 >;
@@ -37,6 +38,7 @@ export function CashRegistersListSection({
   selectedId,
   openEdit,
   toggleDisable,
+  togglingId,
   openCreate,
   fetchList,
 }: Props) {
@@ -112,6 +114,7 @@ export function CashRegistersListSection({
                   size="sm"
                   title={row.isActive ? "Desactivar" : "Activar"}
                   onClick={() => void toggleDisable(row)}
+                  disabled={togglingId !== null}
                 >
                   <span className="material-symbols-outlined">
                     {row.isActive ? "block" : "check_circle"}

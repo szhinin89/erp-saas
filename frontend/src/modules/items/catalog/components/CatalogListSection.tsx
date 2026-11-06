@@ -48,6 +48,7 @@ export function CatalogListSection<
     openCreateModal,
     openEditModal,
     toggleDisable,
+    togglingId,
     fetchList,
   } = ctx;
 
@@ -93,6 +94,7 @@ export function CatalogListSection<
                       size="sm"
                       title={isActive ? t("common.deactivate", "Desactivar") : t("common.activate", "Activar")}
                       onClick={() => void toggleDisable(row as never)}
+                      disabled={togglingId !== null}
                     >
                       <span className="material-symbols-outlined">
                         {isActive ? "block" : "check_circle"}

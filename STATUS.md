@@ -1,5 +1,26 @@
 # Project Status
 
+## FUNC-DEACTIVATION-CONFIRM-01 — CORRECCIÓN TÉCNICA APROBADA; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-06)
+
+Corrige AA-D5 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md#10-seguimiento-func-deactivation-confirm-01-aa-d5-2026-11-06):
+Desactivar en Marcas/Grupos/Definiciones de atributo (`useCatalogCrud`), Tipos de ítem, Cajas y
+Variantes/Imágenes de ítem ahora pide `message.confirm` con el registro y la consecuencia;
+cancelar no llama al backend, un doble clic produce una sola petición y los botones de estado se
+deshabilitan mientras está pendiente. Permisos, endpoints, validaciones y mensajes previos se
+conservan. Sin cambios en backend, APIs, permisos, `ZHRowActions` ni estilos. Textos nuevos
+internacionalizados (es/en, claves `*.deactivate.confirm.*`). Por decisión del propietario,
+**Activar permanece sin confirmación** en estas rutas; Sucursales, Categorías y otros módulos no
+se tocan.
+
+Pendiente independiente registrado: **FUNC-ITEM-IMAGE-REACTIVATION-01** — una imagen de ítem
+desactivada no puede reactivarse (no hay endpoint ni UI); la confirmación lo advierte
+explícitamente. No implementado; requiere cambio de backend y autorización propia.
+
+Validación agente: Vitest focal (5 archivos nuevos + catálogos, detalle de ítem, Tipos de ítem,
+Cajas, páginas/formulario de Ítems y `ItemEditorModal.update`; 16 archivos) 124/124; `tsc -b`;
+ESLint focal; `architecture:check` (0 violaciones nuevas, `i18n-keys` PASS), guardrail oficial
+`-SkipFrontendChunk` y `git diff --check` PASS. Datos ficticios.
+
 ## FUNC-PARTNER-ROLE-01 — CORRECCIÓN TÉCNICA APROBADA; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
 
 Corrige AA-D1 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md):

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -21,6 +21,7 @@ import {
   type CashRegistersPageFormValues,
 } from "../schemas/cashRegistersPageSchema";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { useI18n } from "../../../i18n/i18n";
 import {
   accountLookupFacade,
   type AccountDto,
@@ -31,6 +32,7 @@ import { message } from "../../../lib/messages";
 
 export function useCashRegistersPage() {
   const { canShow } = usePermissionsUi();
+  const { t } = useI18n();
   const canView = canShow("caja.view");
   const canManage = canShow("caja.manage");
 
@@ -292,24 +294,47 @@ export function useCashRegistersPage() {
   });
 
   // ── Toggle activo/inactivo ────────────────────────────────────────────────
+  // FUNC-DEACTIVATION-CONFIRM-01 (AA-D5): desactivar confirma antes de llamar al backend;
+  // activar conserva el flujo directo. Un solo cambio de estado a la vez.
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const togglingRef = useRef(false);
+
   const toggleDisable = async (item: CashRegisterDto) => {
-    setError("");
-    if (!canManage) return;
+    if (!canManage || togglingRef.current) return;
+    togglingRef.current = true;
     try {
       if (item.isActive) {
-        await cashRegisterAdminFacade.disableCashRegister(item.id);
-      } else {
-        await cashRegisterAdminFacade.enableCashRegister(item.id);
+        const confirmed = await message.confirm({
+          title: t("cashRegisters.deactivate.confirm.title", { code: item.code, name: item.name }),
+          message: t("cashRegisters.deactivate.confirm.message", { name: item.name }),
+          variant: "danger",
+          confirmLabel: t("common.deactivate"),
+          cancelLabel: t("common.cancel"),
+        });
+        if (!confirmed) return;
       }
-      await fetchList();
-    } catch (err: unknown) {
-      // El backend expone el motivo exacto (ej. "tiene una sesión de caja abierta") — se
-      // muestra tal cual, sin genericizarlo, para que el usuario sepa qué corregir.
-      setError(
-        formatApiRequestError(err, {
-          generic: "Error al cambiar el estado de la caja.",
-        }),
-      );
+      setError("");
+      setTogglingId(item.id);
+      try {
+        if (item.isActive) {
+          await cashRegisterAdminFacade.disableCashRegister(item.id);
+        } else {
+          await cashRegisterAdminFacade.enableCashRegister(item.id);
+        }
+        await fetchList();
+      } catch (err: unknown) {
+        // El backend expone el motivo exacto (ej. "tiene una sesión de caja abierta") — se
+        // muestra tal cual, sin genericizarlo, para que el usuario sepa qué corregir.
+        setError(
+          formatApiRequestError(err, {
+            generic: "Error al cambiar el estado de la caja.",
+          }),
+        );
+      } finally {
+        setTogglingId(null);
+      }
+    } finally {
+      togglingRef.current = false;
     }
   };
 
@@ -358,6 +383,7 @@ export function useCashRegistersPage() {
     closePanel,
     save,
     toggleDisable,
+    togglingId,
   };
 }
 

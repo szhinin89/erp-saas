@@ -358,7 +358,7 @@ export function ItemFormTabs({
               <ImagesSection
                 t={t}
                 images={detail.item.images}
-                disabled={fieldsDisabled}
+                disabled={fieldsDisabled || detail.statusChangePending}
                 onDisable={detail.disableImage}
               />
             ) : (
@@ -376,7 +376,7 @@ export function ItemFormTabs({
                 <VariantsSection
                   itemId={itemId}
                   variants={detail.item.variants}
-                  disabled={fieldsDisabled}
+                  disabled={fieldsDisabled || detail.statusChangePending}
                   showBarcodes={false}
                   onToggle={detail.toggleVariant}
                   onRefresh={detail.refetch}

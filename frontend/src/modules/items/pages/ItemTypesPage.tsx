@@ -1,5 +1,5 @@
 ﻿import { Badge } from "../../../components/PageShell";
-import {  useCallback, useEffect, useState } from "react";
+import {  useCallback, useEffect, useRef, useState } from "react";
 import {  useI18n } from "../../../i18n/i18n";
 import {  usePermissionsUi } from "../../../access/usePermissionsUi";
 import {  NoAccessPage } from "../../../components/PageShell";
@@ -131,8 +131,26 @@ export function ItemTypesPage() {
     setSaving(false);
   };
 
+  // FUNC-DEACTIVATION-CONFIRM-01 (AA-D5): desactivar confirma antes de llamar al backend;
+  // activar conserva el flujo directo. Un solo cambio de estado a la vez.
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const togglingRef = useRef(false);
+
   const handleToggle = async (it: ItemTypeDto) => {
+    if (!canEdit || togglingRef.current) return;
+    togglingRef.current = true;
     try {
+      if (it.isActive) {
+        const confirmed = await message.confirm({
+          title: t("itemTypes.deactivate.confirm.title", { code: it.code, name: it.name }),
+          message: t("itemTypes.deactivate.confirm.message", { name: it.name }),
+          variant: "danger",
+          confirmLabel: t("common.deactivate"),
+          cancelLabel: t("common.cancel"),
+        });
+        if (!confirmed) return;
+      }
+      setTogglingId(it.id);
       await itemTypeService.toggle(it.id);
       message.success(
         it.isActive
@@ -148,6 +166,9 @@ export function ItemTypesPage() {
         err.response?.data?.message?.user ??
           t("itemTypes.toggle.error", "No se pudo cambiar el estado."),
       );
+    } finally {
+      setTogglingId(null);
+      togglingRef.current = false;
     }
   };
 
@@ -194,6 +215,7 @@ export function ItemTypesPage() {
               variant="ghost"
               size="sm"
               onClick={() => void handleToggle(it)}
+              disabled={togglingId !== null}
               title={it.isActive ? t("common.deactivate", "Desactivar") : t("common.activate", "Activar")}
             >
               <span className="material-symbols-outlined zh-icon-lg">

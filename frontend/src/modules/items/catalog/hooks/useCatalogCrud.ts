@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useForm,
   type DefaultValues,
@@ -8,7 +8,9 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ZodType, ZodTypeDef } from "zod";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+import { useI18n } from "../../../../i18n/i18n";
 import { applyServerErrors } from "../../../lib/validationErrors";
+import { message } from "../../../../lib/messages";
 
 interface CatalogCrudService<
   TDto,
@@ -76,6 +78,7 @@ export function useCatalogCrud<
   } = opts;
 
   const { canShow } = usePermissionsUi();
+  const { t } = useI18n();
   const canView =
     canShow(`${permissionPrefix}.view`) || canShow(permissionPrefix);
   const canCreate =
@@ -179,18 +182,43 @@ export function useCatalogCrud<
     }
   });
 
+  // FUNC-DEACTIVATION-CONFIRM-01 (AA-D5): desactivar confirma antes de llamar al backend;
+  // activar conserva el flujo directo. Un solo cambio de estado a la vez.
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const togglingRef = useRef(false);
+
   const toggleDisable = async (item: TDto) => {
-    setError("");
+    if (togglingRef.current) return;
+    if (item.isActive ? !canDelete : !canUpdate) return;
+    togglingRef.current = true;
     try {
-      const id = getId(item);
       if (item.isActive) {
-        await service.disable(id);
-      } else {
-        await service.enable(id);
+        const confirmed = await message.confirm({
+          title: t("catalog.deactivate.confirm.title", { name: item.name }),
+          message: t("catalog.deactivate.confirm.message", { name: item.name }),
+          variant: "danger",
+          confirmLabel: t("common.deactivate"),
+          cancelLabel: t("common.cancel"),
+        });
+        if (!confirmed) return;
       }
-      await fetchList();
-    } catch {
-      setError("Error al cambiar el estado.");
+      const id = getId(item);
+      setError("");
+      setTogglingId(id);
+      try {
+        if (item.isActive) {
+          await service.disable(id);
+        } else {
+          await service.enable(id);
+        }
+        await fetchList();
+      } catch {
+        setError("Error al cambiar el estado.");
+      } finally {
+        setTogglingId(null);
+      }
+    } finally {
+      togglingRef.current = false;
     }
   };
 
@@ -219,6 +247,7 @@ export function useCatalogCrud<
     closeModal,
     save,
     toggleDisable,
+    togglingId,
   };
 }
 

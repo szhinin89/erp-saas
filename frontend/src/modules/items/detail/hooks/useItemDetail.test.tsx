@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
+import React from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useItemDetailPage } from "./useItemDetail";
 import { itemService } from "../../api/itemService";
 import type { ItemDetailDto } from "../../../../types/items";
+import { I18nProvider } from "../../../../i18n/i18n";
 
 vi.mock("../../api/itemService", () => ({
   itemService: {
@@ -118,7 +120,10 @@ describe("useItemDetailPage", () => {
       .mockResolvedValueOnce(refreshedItem);
     vi.mocked(itemService.replacePackagingLevels).mockResolvedValue(refreshedItem);
 
-    const { result } = renderHook(() => useItemDetailPage("item-1"));
+    const { result } = renderHook(() => useItemDetailPage("item-1"), {
+      wrapper: ({ children }: { children: React.ReactNode }) =>
+        React.createElement(I18nProvider, null, children),
+    });
 
     await waitFor(() => expect(result.current.item).toEqual(baseItem));
 

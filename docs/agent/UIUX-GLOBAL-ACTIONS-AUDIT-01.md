@@ -2,8 +2,9 @@
 
 Estado: **AUDITORÍA — sin implementación del patrón** (2026-11-05). La auditoría no cambió
 componentes, CSS, páginas, permisos, STATUS ni WORK_QUEUE. Sin suites generales ni SRI. Sin
-staging/commit/push. Seguimiento posterior: AA-D1 corregido técnicamente por FUNC-PARTNER-ROLE-01
-(pendiente de Git/CI; ver [STATUS](../../STATUS.md)); los demás hallazgos siguen pendientes.
+staging/commit/push. Seguimiento posterior: AA-D1 corregido técnicamente por FUNC-PARTNER-ROLE-01 y AA-D5
+corregido técnicamente por FUNC-DEACTIVATION-CONFIRM-01 (§ 10), ambos pendientes de Git/CI (ver
+[STATUS](../../STATUS.md)); los demás hallazgos siguen pendientes.
 
 Referencia normativa: [Frontend § Proveedores](../architecture/frontend.md) (fila «Ver» +
 «Más acciones», `portal` opcional), [UIUX-GLOBAL-STANDARD-01](UIUX-GLOBAL-STANDARD-01.md) y
@@ -105,7 +106,7 @@ controles (2 → 2) y añadiría un clic a la acción más frecuente.
 | AA-D2 | 🟨 Menor | Clientes | Etiqueta «++ Proveedor»: el código antepone `+` y la traducción ya es «+ Proveedor» | [MasterDataPartnerListTab.tsx:164](../../frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx#L164), `es.json` `masterdata.customers.action.addSupplierShort`; capturas 11–17 |
 | AA-D3 | 🟨 Menor | Clientes | Nombre comercial y razón social se renderizan pegados («Andina PacíficoDistribuidora…»): `.prd-sub-text` no tiene regla CSS en ningún archivo | [MasterDataPartnerListTab.tsx:105](../../frontend/src/modules/masterData/components/MasterDataPartnerListTab.tsx#L105); capturas 11, 12, 14 |
 | AA-D4 | 🟨 Menor | Ajustes de inventario | «Ver» y «Editar» navegan a la misma ruta `/inventory/adjustments/:id` | [StockAdjustmentsPage.tsx:113](../../frontend/src/modules/inventory/adjustments/pages/StockAdjustmentsPage.tsx#L113) y [:122](../../frontend/src/modules/inventory/adjustments/pages/StockAdjustmentsPage.tsx#L122) |
-| AA-D5 | 🟧 Importante | Catálogos de ítems (`useCatalogCrud`), Tipos de ítem, Cajas, Variantes/Imágenes de ítem | Desactivar sin confirmación (las demás pantallas sí confirman) | `useCatalogCrud.ts:182`, `ItemTypesPage.tsx:134`, `useCashRegistersPage.ts:295`, `useItemDetail.ts:28/39` |
+| AA-D5 | 🟧 Importante — ✅ **Corregido técnicamente** por FUNC-DEACTIVATION-CONFIRM-01 (2026-11-06) en las 5 rutas (detalle por ruta en § 10); pendiente de Git/CI | Catálogos de ítems (`useCatalogCrud`), Tipos de ítem, Cajas, Variantes/Imágenes de ítem | Desactivar sin confirmación (las demás pantallas sí confirman) | `useCatalogCrud.ts:182`, `ItemTypesPage.tsx:134`, `useCashRegistersPage.ts:295`, `useItemDetail.ts:28/39` (líneas previas a la corrección) |
 | AA-D6 | 🟨 Menor | Transportistas | Nombres accesibles en inglés en UI española: `aria-label="Edit"`, `title="Disable"/"Enable"` | [CarriersPage.tsx:213](../../frontend/src/modules/logistica/transportistas/pages/CarriersPage.tsx#L213) |
 | AA-D7 | 🟨 Menor | `ZHLineAction` portal | Si el disparador sale del viewport con el menú abierto, el panel queda fijo en `top: 8px` sobre otras filas (no se cierra ni se oculta). La línea de identidad evita actuar sobre el registro equivocado, pero es confuso | [ZHLineAction.tsx:194](../../frontend/src/components/zh/ZHLineAction.tsx#L194); captura 22 (`menu.top = 8`) |
 | AA-D8 | 🟩 Informativo | Proveedores | Regla muerta `.md-supplier-list .md-actions` (Proveedores ya no renderiza `.md-actions`) | [masterdata-pages.css:752](../../frontend/src/modules/masterData/pages/masterdata-pages.css#L752) |
@@ -113,7 +114,8 @@ controles (2 → 2) y añadiría un clic a la acción más frecuente.
 
 AA-D1 está corregido técnicamente (FUNC-PARTNER-ROLE-01, pendiente de Git/CI); AA-D2 sigue
 pendiente y debe corregirse **antes** o **dentro** del bloque de Clientes; no se arrastra al
-menú. AA-D2 a AA-D9 permanecen pendientes. AA-D5 requiere decisión del propietario (§ 9) porque cambia el flujo de usuario.
+menú. AA-D5 está corregido técnicamente (FUNC-DEACTIVATION-CONFIRM-01, pendiente de Git/CI;
+§ 10). AA-D2..AA-D4 y AA-D6..AA-D9 permanecen pendientes.
 
 ---
 
@@ -179,7 +181,7 @@ Consumidores reales de `kind="menu"`: **dos** — Proveedores (`portal`) y Compr
 | 2 — Clientes | Migrar rama `customer` a `ZHRowActions`; conservar AA-D1 (ya corregido en ambos roles por FUNC-PARTNER-ROLE-01); identidad móvil por significado | Bloque 1 | Permisos reducidos (solo configure-company, solo disable, solo update), inactivo, `saving`, `canAssignAsSupplier=false`, teclado/portal; 320/390/640/641/768/1440 |
 | 3 — Candidatos B | Sucursales, Ajustes de inventario, Productos; Perfiles según decisión | Bloque 1 | Por pantalla: permisos, estado (borrador/ejecutado/anulado), confirmaciones de Ejecutar/Anular, navegación |
 | 4 — Portal | AA-D7 (cerrar/ocultar al salir del viewport), opt-in | `ZHLineAction` | `ZHLineAction.test` portal + scroll; Compras sin cambios (inline) |
-| 5 — Confirmaciones (si se aprueba) | AA-D5 | `message.confirm` | Tests de cada hook |
+| 5 — Confirmaciones | AA-D5 — ✅ realizado por FUNC-DEACTIVATION-CONFIRM-01 (§ 10) | `message.confirm` | Tests de cada hook |
 
 Cada bloque: `npx tsc -b`, ESLint focal, `architecture:check`,
 `check-architecture-guardrails.ps1 -SkipFrontendChunk`, `git diff --check`, capturas y gate del
@@ -239,10 +241,57 @@ cambios propuestos.
 2. Ajustes de inventario: ¿«Ejecutar» queda visible como acción primaria junto a «Ver», o pasa
    al menú? (Recomendación: visible solo en borrador — es la acción de negocio de la fila.)
 3. Asignar rol (cliente ↔ proveedor): ¿requiere confirmación? Hoy no confirma en ninguno de los dos.
-4. AA-D5: ¿agregar confirmación a Desactivar en catálogos de ítems, tipos de ítem, cajas y
-   variantes/imágenes?
+4. ~~AA-D5: ¿agregar confirmación a Desactivar en catálogos de ítems, tipos de ítem, cajas y
+   variantes/imágenes?~~ Resuelto por FUNC-DEACTIVATION-CONFIRM-01; quedan las decisiones del § 10.3.
 5. Confirmar que el Bloque 5 de ARCHITECTURE-02 («`portal` por defecto») se reemplaza por la
    recomendación del § 5.
+
+## 10. Seguimiento FUNC-DEACTIVATION-CONFIRM-01 (AA-D5, 2026-11-06)
+
+Corrección focal de frontend: desactivar pide `message.confirm` (componente oficial; sin
+`window.confirm`) con el registro identificado, la consecuencia, `Cancelar`/`Desactivar` y
+variante `danger`. Cancelar no envía petición; un guard síncrono (`useRef`) impide ejecuciones
+duplicadas y un estado pendiente deshabilita los botones de estado. Permisos, endpoints,
+validaciones del backend, mensajes de éxito/error y la activación (directa, sin confirmar) se
+conservan. Sin cambios en backend, APIs, permisos, `ZHRowActions`, tablas responsive ni estilos.
+
+### 10.1 Diagnóstico por pantalla
+
+| Ruta | Botón → handler | Endpoint | Permiso / elegibilidad | Consecuencia / reversión | Estado |
+|---|---|---|---|---|---|
+| Marcas, Grupos y Definiciones de atributo (`CatalogListSection` → `useCatalogCrud.toggleDisable`) | Icono `block` / `check_circle` | `disable` / `enable` del servicio de cada catálogo | Desactivar: `<prefijo>.delete`; activar: `<prefijo>.update` (ahora también verificado en el hook) | Baja lógica (`IsActive=false`), sin reglas de bloqueo; reversible con Activar | ✅ Confirmación |
+| Tipos de ítem (`ItemTypesPage.handleToggle`) | Icono `toggle_on` / `toggle_off` | `POST /api/v1/item-types/{id}/toggle` | `items.edit`; el backend rechaza si existen ítems activos con el tipo (mensaje mostrado tal cual) | Baja lógica; reversible | ✅ Confirmación |
+| Cajas (`CashRegistersListSection` → `useCashRegistersPage.toggleDisable`) | Icono `block` / `check_circle` | `disableCashRegister` / `enableCashRegister` | `caja.manage`; el backend rechaza con sesión abierta (motivo exacto mostrado) | Baja lógica; reversible | ✅ Confirmación |
+| Variantes de ítem (`VariantsSection` → `useItemDetailPage.toggleVariant`) | Icono `block` / `check_circle` | `disableVariant` / `enableVariant` | `disabled` de la sección (modo/permiso de edición del ítem) | Baja lógica con evento de dominio; reversible | ✅ Confirmación |
+| Imágenes de ítem (`ImagesSection` → `useItemDetailPage.disableImage`) | Icono `block` | `PATCH /api/v1/items/{id}/images/{imageId}/disable` (`items.edit`) | `disabled` de la sección; solo se listan imágenes activas | Baja lógica, **sin endpoint ni UI para reactivar** | ✅ Confirmación (advierte la irreversibilidad en UI y si es la principal) |
+| Categorías (`TreeEditor.handleToggleStatus`) | — | — | — | — | Ya confirmaba; sin cambios |
+
+### 10.2 Validación
+
+Vitest focal (catálogos, Tipos de ítem, Cajas, variantes/imágenes y consumidores de Ítems):
+cancelar sin petición, confirmación con petición única ante doble clic, error del backend, estado
+de carga, sin permiso, registro no elegible (motivo del backend) y activación sin cambios.
+Traducciones es/en: claves presentes, mismos parámetros y textos distintos por idioma
+(`deactivationConfirmKeys.test.ts`). `tsc -b`, ESLint focal, `architecture:check` (incluye
+`i18n-keys`), guardrail oficial `-SkipFrontendChunk` y `git diff --check`. Datos ficticios; sin
+backend real.
+
+### 10.3 Decisiones del propietario (2026-11-06)
+
+1. **Activar permanece sin confirmación** en estas cinco rutas por decisión del propietario.
+   Sucursales, Categorías y demás módulos no se modifican.
+2. Se mantienen las confirmaciones de desactivación y sus protecciones contra doble ejecución.
+3. **Imágenes:** la desactivación no tiene reactivación en API ni UI; se mantiene la advertencia
+   explícita en la confirmación. La reactivación queda registrada como pendiente independiente
+   **FUNC-ITEM-IMAGE-REACTIVATION-01** (no implementado; requiere cambio de backend).
+4. **i18n:** los textos nuevos de confirmación usan claves oficiales en `es.json`/`en.json` con
+   parámetros `{{name}}`, `{{code}}`, `{{label}}`: `catalog.deactivate.confirm.*`,
+   `itemTypes.deactivate.confirm.*`, `cashRegisters.deactivate.confirm.*`,
+   `items.variants.deactivate.*`, `items.images.deactivate.*` (incluye `messageMain` para la
+   imagen principal); botones con `common.deactivate`/`common.cancel`. Los hooks leen `t` de
+   `useI18n`, como `useBranchesPage`. Los textos previos (errores, éxito) no cambian; AA-D9 sigue
+   pendiente para el resto.
+5. AA-D5 queda **corregido técnicamente, pendiente de Git/CI**.
 
 ## Fuera de alcance / no realizado
 

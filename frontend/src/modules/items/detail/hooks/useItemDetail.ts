@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { itemService } from "../../api/itemService";
 import { formatApiRequestError } from "../../../lib/apiError";
+import { message } from "../../../../lib/messages";
+import { useI18n } from "../../../../i18n/i18n";
 import type { ItemDetailDto } from "../../../../types/items";
 
 export function useItemDetailPage(itemId: string | undefined) {
+  const { t } = useI18n();
   const [item, setItem] = useState<ItemDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -25,25 +28,82 @@ export function useItemDetailPage(itemId: string | undefined) {
     void fetchItem();
   }, [fetchItem]);
 
+  // FUNC-DEACTIVATION-CONFIRM-01 (AA-D5): desactivar variante/imagen confirma antes de llamar
+  // al backend; activar variante conserva el flujo directo. Un solo cambio de estado a la vez.
+  const [statusChangePending, setStatusChangePending] = useState(false);
+  const statusChangeRef = useRef(false);
+
+  const runStatusChange = async (
+    confirmOptions: Parameters<typeof message.confirm>[0] | null,
+    action: () => Promise<unknown>,
+    errorMessage: string,
+  ) => {
+    if (!itemId || statusChangeRef.current) return;
+    statusChangeRef.current = true;
+    try {
+      if (confirmOptions && !(await message.confirm(confirmOptions))) return;
+      setStatusChangePending(true);
+      try {
+        await action();
+        await fetchItem();
+      } catch {
+        setError(errorMessage);
+      } finally {
+        setStatusChangePending(false);
+      }
+    } finally {
+      statusChangeRef.current = false;
+    }
+  };
+
   const toggleVariant = async (variantId: string, enable: boolean) => {
     if (!itemId) return;
-    try {
-      if (enable) await itemService.enableVariant(itemId, variantId);
-      else await itemService.disableVariant(itemId, variantId);
-      await fetchItem();
-    } catch {
-      setError("Error al cambiar estado de la variante.");
-    }
+    const variant = item?.variants.find((v) => v.id === variantId);
+    const label = variant
+      ? `${variant.sku} — ${variant.name}`
+      : t("items.variants.deactivate.unknownLabel");
+    await runStatusChange(
+      enable
+        ? null
+        : {
+            title: t("items.variants.deactivate.confirm.title", { label }),
+            message: t("items.variants.deactivate.confirm.message", { label }),
+            variant: "danger",
+            confirmLabel: t("common.deactivate"),
+            cancelLabel: t("common.cancel"),
+          },
+      () =>
+        enable
+          ? itemService.enableVariant(itemId, variantId)
+          : itemService.disableVariant(itemId, variantId),
+      "Error al cambiar estado de la variante.",
+    );
   };
 
   const disableImage = async (imageId: string) => {
     if (!itemId) return;
-    try {
-      await itemService.disableImage(itemId, imageId);
-      await fetchItem();
-    } catch {
-      setError("Error al desactivar la imagen.");
-    }
+    const image = item?.images.find((i) => i.id === imageId);
+    const label =
+      image?.altText ||
+      (image
+        ? `${image.storageObjectId.slice(0, 12)}…`
+        : t("items.images.deactivate.unknownLabel"));
+    await runStatusChange(
+      {
+        title: t("items.images.deactivate.confirm.title", { label }),
+        message: t(
+          image?.isMain
+            ? "items.images.deactivate.confirm.messageMain"
+            : "items.images.deactivate.confirm.message",
+          { label },
+        ),
+        variant: "danger",
+        confirmLabel: t("common.deactivate"),
+        cancelLabel: t("common.cancel"),
+      },
+      () => itemService.disableImage(itemId, imageId),
+      "Error al desactivar la imagen.",
+    );
   };
 
   const replaceUnitConversions = async (
@@ -127,6 +187,7 @@ export function useItemDetailPage(itemId: string | undefined) {
     refetch: fetchItem,
     toggleVariant,
     disableImage,
+    statusChangePending,
     replaceUnitConversions,
     replaceSubstitutes,
     replacePackagingLevels,
