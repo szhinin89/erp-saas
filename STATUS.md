@@ -820,7 +820,7 @@ comprobado y RIDE con **04/11/2026 13:56:35**. La respuesta no contiene errores.
 La comprobación operativa fue aportada por el propietario; este cierre no ejecuta
 llamadas al SRI ni modifica la retención real. Evidencia de aceptación en el
 [registro SRI existente](docs/sri/SRI-2.34-COMPLIANCE-CLOSURE.md#8-estado-final);
-corrección y pruebas en [RETENTION-AUTHORIZED-EVIDENCE-01](#retention-authorized-evidence-01--ready-for-review-2026-11-04).
+corrección y pruebas en [RETENTION-AUTHORIZED-EVIDENCE-01](#retention-authorized-evidence-01--closed-commit-a84a0aeb9-cubierto-por-ci-1094-success-2026-11-04).
 
 Se aprueba la capacidad catalogada completa, conservando la evidencia previa de su
 implementación y de anulación asistida; la aceptación real del comprobante 07 resuelve
@@ -873,7 +873,10 @@ Pop-Location
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk
 ```
 
-## RETENTION-AUTHORIZED-EVIDENCE-01 — READY FOR REVIEW (2026-11-04)
+## RETENTION-AUTHORIZED-EVIDENCE-01 — CLOSED: commit a84a0aeb9, cubierto por CI #1094 SUCCESS (2026-11-04)
+
+Cierre: aprobación del propietario en V1-FUNCTIONAL-CLOSE-01 (Retentions-02), commit
+`a84a0aeb9` y CI #1094 SUCCESS sobre `d7b07f6c8`, que lo incluye (dato del propietario).
 
 BUG REAL: la descarga XML de Retenciones regeneraba el comprobante sin firma; el RIDE
 usaba esa vista previa y el parser dejaba la fecha de autorización en null. Se corrigieron
@@ -891,7 +894,7 @@ en `America/Guayaquil`. Se comprueban igualdad exacta del XML, variantes separad
 404 sin regeneración cuando falta la evidencia autorizada. Repositorio/almacenamiento
 simulados para lectura; no acredita una nueva prueba de persistencia real ni una
 descarga del PDF de la retención operativa. Documentación y `git diff --check` PASS.
-Sin suites generales, staging, commit ni push. Gate del propietario pendiente; no CLOSED.
+Sin suites generales. Publicado y cerrado según lo indicado al inicio.
 Repetición focal desde la raíz:
 
 ```powershell
@@ -910,7 +913,9 @@ KEEP: lógica funcional, permisos, cálculos y pipeline fiscal sin cambios.
 Una prueba focal nueva de visibilidad **1/1 PASS**, con cambio Pruebas→Producción desde
 el store global y ocultación al desactivar la intención o confirmar la compra.
 ESLint de los dos archivos TypeScript afectados, documentación y `git diff --check` PASS.
-Sin suites generales, staging, commit ni push. Gate del propietario pendiente; no CLOSED.
+Sin suites generales.
+Publicado en `a84a0aeb9`; CI #1094 SUCCESS cubre lint/build, no la prueba Vitest
+(el CI frontend no ejecuta Vitest). Gate visual del propietario pendiente; no CLOSED.
 Repetición focal desde `frontend/`:
 
 ```powershell
@@ -1437,9 +1442,12 @@ Conciliación documental:
   fixtures XML, distribución de costos, NC y cierres R2/CxP. Sus límites y resultados
   históricos permanecen; sus pendientes funcionales de Compras quedan superados por
   el cierre global, sin extenderlo a SRI, otros módulos o ampliaciones FUTURE.
-- **DEBT:** se conservan los fallos técnicos históricos de Vitest (plazos XML y
-  SRI-TOGGLE-08), incluido el intermitente. No se corrigieron ni se declaran PASS;
-  tampoco reabren automáticamente Compras ni autorizan trabajo adicional.
+- **DEBT:** los fallos deterministas de Vitest de Compras registrados en plazos XML y
+  SRI-TOGGLE-08 (5 en `purchaseLinePresentation.test.ts`, 1 en `PurchaseFormFeedback.test.tsx`)
+  son expectativas obsoletas frente a decisiones ya aprobadas (importes fiscales XML
+  conservados, `a55057a9c`; detalle contraído, 2026-10-29); no indican defecto funcional ni
+  reabren Compras. Su actualización forma parte del gate B-02 de lanzamiento. Se conserva el
+  intermitente bajo carga, que pasa aislado. No se corrigieron ni se declaran PASS.
 - **FALTA:** procedencia estructurada XML/default/manual y ampliaciones no operativas
   siguen fuera del alcance implementado; no se convierten en obligaciones V1.
 
@@ -2711,6 +2719,8 @@ propietario ni un despliegue.
 Preproducción. Actualización documental: 2026-10-26. Este archivo conserva resultados
 ya registrados; no acredita nuevas ejecuciones ni despliegues. Las aceptaciones del
 propietario se registran solo donde se indican expresamente.
+Las filas de Compras son históricas: estado vigente
+[Compras V1 CLOSED](#doc-cleanup-compras-01--compras-v1-aprobado-y-closed-2026-11-03).
 Reglas funcionales únicamente en las [SSOT](docs/architecture/README.md).
 
 | Entrega | Evidencia registrada | Estado / límite pendiente |
