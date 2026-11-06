@@ -38,7 +38,7 @@ export function MasterDataSupplierListActions({partner: bp, canUpdate, canDisabl
           <div className="md-supplier-actions-menu__identity" role="presentation">{identity}</div>
           {canUpdate && <ZHLineActionItem label={label("edit")} onClick={() => onEdit(bp)} />}
           {canUpdate && onSupplierProfile && <ZHLineActionItem label={label("sri")} onClick={() => onSupplierProfile(bp)} />}
-          {canUpdate && onAddAsCustomer && <ZHLineActionItem label={label("assign")} disabled={saving} onClick={() => onAddAsCustomer(bp.id)} />}
+          {canUpdate && bp.canAssignAsCustomer && onAddAsCustomer && <ZHLineActionItem label={label("assign")} disabled={saving} onClick={() => onAddAsCustomer(bp.id)} />}
           {canUpdate && !bp.isActive && <ZHLineActionItem label={t("masterdata.suppliers.action.activate")} disabled={saving} onClick={() => onActivate(bp.id)} />}
           {canDisable && bp.isActive && <ZHLineActionItem label={t("masterdata.suppliers.action.deactivate")} tone="danger" disabled={saving} onClick={() => onDisable(bp.id)} />}
         </ZHLineAction>

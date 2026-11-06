@@ -6,7 +6,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { MasterDataSupplierListActions } from "./MasterDataSupplierListActions";
 import type { BusinessPartnerSummaryDto } from "../types/businessPartner.types";
 
-const partner = {id: "supplier-42", legalName: "Proveedor Uno", identificationNumber: "0991234567001", isActive: true} as BusinessPartnerSummaryDto;
+const partner = {id: "supplier-42", legalName: "Proveedor Uno", identificationNumber: "0991234567001", isActive: true, isCustomer: false, canAssignAsCustomer: true} as BusinessPartnerSummaryDto;
 function Location() { return <output>{useLocation().pathname}</output>; }
 function setup(overrides = {}) {
   const props = {partner, canUpdate: true, canDisable: true, saving: false,
@@ -86,5 +86,21 @@ describe("supplier row actions", () => {
     fireEvent.click(assign);fireEvent.click(deactivate);
     expect(props.onAddAsCustomer).not.toHaveBeenCalled();expect(props.onDisable).not.toHaveBeenCalled();
     expect((screen.getByRole("menuitem", {name: "Editar proveedor"}) as HTMLButtonElement).disabled).toBe(false);
+  });
+  // FUNC-PARTNER-ROLE-01 — la acción respeta canAssignAsCustomer del backend.
+  it("hides assign-as-customer when the supplier already has the customer role", () => {
+    const {open} = setup({partner: {...partner, isCustomer: true, canAssignAsCustomer: false}}); open();
+    expect(screen.queryByRole("menuitem", {name: "Asignar como cliente"})).toBeNull();
+    expect(screen.getByRole("menuitem", {name: "Editar proveedor"})).toBeTruthy();
+    expect(screen.getByRole("menuitem", {name: "Desactivar proveedor"})).toBeTruthy();
+  });
+  it("hides assign-as-customer for an inactive supplier but keeps activation", () => {
+    const {open} = setup({partner: {...partner, isActive: false, canAssignAsCustomer: false}}); open();
+    expect(screen.queryByRole("menuitem", {name: "Asignar como cliente"})).toBeNull();
+    expect(screen.getByRole("menuitem", {name: "Activar proveedor"})).toBeTruthy();
+  });
+  it("hides assign-as-customer without update permission even if assignable", () => {
+    const {open} = setup({canUpdate: false}); open();
+    expect(screen.queryByRole("menuitem", {name: "Asignar como cliente"})).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { MasterDataPartnerListTab } from "./MasterDataPartnerListTab";
@@ -102,5 +102,53 @@ describe("supplier identity", () => {
     expect(cell.firstElementChild?.textContent).toBe("Comercial");
     expect(cell.lastElementChild?.textContent).toBe("Legal");
     expect(container.querySelector(".md-supplier-list")).toBeNull();
+  });
+});
+
+// FUNC-PARTNER-ROLE-01 — «+ Proveedor» en Clientes respeta canAssignAsSupplier del backend.
+describe("customer assign-as-supplier availability", () => {
+  function renderCustomerActions(partner: BusinessPartnerSummaryDto, canUpdate = true) {
+    const onAddAsSupplier = vi.fn();
+    const onDisable = vi.fn();
+    const onActivate = vi.fn();
+    render(
+      <I18nProvider>
+        <MemoryRouter>
+          <MasterDataPartnerListTab
+            role="customer" store={useMasterDataCustomersUiStore}
+            canCreate canUpdate={canUpdate} canDisable canConfigure
+            loading={false} saving={false} partners={[partner]} totalCount={1}
+            search="" setSearch={() => {}} statusFilter="all" setStatusFilter={() => {}}
+            page={1} pageSize={50} totalPages={1} setPage={() => {}}
+            onAddAsSupplier={onAddAsSupplier} onActivate={onActivate} onDisable={onDisable}
+          />
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+    return { onAddAsSupplier, onDisable, onActivate };
+  }
+  const assignButton = () => screen.queryByTitle("Agregar también como proveedor");
+
+  it("shows it for an active customer without supplier role and keeps the callback", () => {
+    const { onAddAsSupplier } = renderCustomerActions(buildPartner("1", "Cliente"));
+    fireEvent.click(assignButton()!);
+    expect(onAddAsSupplier).toHaveBeenCalledExactlyOnceWith("1");
+  });
+  it("hides it when the customer already has the supplier role; other actions remain", () => {
+    const { onDisable } = renderCustomerActions({ ...buildPartner("1", "Cliente"), isSupplier: true, canAssignAsSupplier: false });
+    expect(assignButton()).toBeNull();
+    expect(screen.getByRole("button", { name: "Editar" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Deshabilitar" }));
+    expect(onDisable).toHaveBeenCalledExactlyOnceWith("1");
+  });
+  it("hides it for an inactive customer while activation remains", () => {
+    const { onActivate } = renderCustomerActions({ ...buildPartner("1", "Cliente"), isActive: false, canAssignAsSupplier: false });
+    expect(assignButton()).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Habilitar" }));
+    expect(onActivate).toHaveBeenCalledExactlyOnceWith("1");
+  });
+  it("hides it without update permission even if assignable", () => {
+    renderCustomerActions(buildPartner("1", "Cliente"), false);
+    expect(assignButton()).toBeNull();
   });
 });

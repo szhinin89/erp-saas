@@ -152,7 +152,8 @@ export function MasterDataPartnerListTab({
               {t("common.enable", "Activar")}
             </ZHBtn>
           )}
-          {role === "customer" && canUpdate && onAddAsSupplier && (
+          {/* canAssignAsSupplier (backend): activo y sin rol Supplier; el POST revalida. */}
+          {role === "customer" && canUpdate && bp.canAssignAsSupplier && onAddAsSupplier && (
             <ZHBtn
               variant="ghost"
               size="sm"

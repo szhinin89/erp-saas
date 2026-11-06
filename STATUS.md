@@ -1,5 +1,22 @@
 # Project Status
 
+## FUNC-PARTNER-ROLE-01 — CORRECCIÓN TÉCNICA APROBADA; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+
+Corrige AA-D1 de [UIUX-GLOBAL-ACTIONS-AUDIT-01](docs/agent/UIUX-GLOBAL-ACTIONS-AUDIT-01.md):
+«+ Proveedor» (Clientes, `MasterDataPartnerListTab`) y «Asignar como cliente» (Proveedores,
+`MasterDataSupplierListActions`) se ofrecían solo según `masterdata.businesspartners.update`,
+sin leer `canAssignAsSupplier`/`canAssignAsCustomer` que `BusinessPartnerSummaryDto` ya deriva
+(activo y sin el rol activo, espejo de `AssignBusinessPartnerRoleHandler`). Ahora ambas acciones
+exigen además el flag del backend y se ocultan si no aplica; el POST sigue siendo la protección
+definitiva. Sin cambios en backend, APIs, permisos, reglas comerciales, etiquetas ni apariencia;
+«++ Proveedor» (AA-D2), `ZHRowActions` y AA-D3..AA-D9 siguen pendientes.
+
+Validación agente: Vitest focal (lista de socios, acciones de proveedor, páginas de Clientes y
+Proveedores, clasificación, configuración SRI) 70/70 — socio activo sin el rol contrario, con el
+rol, inactivo, con/sin permiso, error del backend sin falso refresco y demás acciones intactas;
+`tsc -b`; ESLint focal; `architecture:check` (0 violaciones nuevas), guardrail oficial
+`-SkipFrontendChunk` y `git diff --check` PASS. Sin operaciones sobre datos reales.
+
 ## UIUX-GLOBAL-KPI-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
 
 Aprobación visual del propietario registrada el 2026-11-05: Proveedores a 960 px con tres KPI en

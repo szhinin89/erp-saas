@@ -265,6 +265,21 @@ describe("MasterDataCustomersPage — activar cliente: confirmación y feedback"
   });
 });
 
+describe("MasterDataCustomersPage — FUNC-PARTNER-ROLE-01 asignar como proveedor", () => {
+  it("si el backend rechaza la asignación, muestra su error y no refresca como éxito", async () => {
+    vi.mocked(businessPartnerFacade.assignRole).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 422, data: { message: { user: "El rol Supplier ya está activo para este BusinessPartner." } } },
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Cliente Uno")).toBeTruthy());
+    fireEvent.click(screen.getByTitle("Agregar también como proveedor"));
+    expect(await screen.findByText("El rol Supplier ya está activo para este BusinessPartner.")).toBeTruthy();
+    expect(businessPartnerFacade.assignRole).toHaveBeenCalledExactlyOnceWith("bp-1", { roleType: expect.anything() });
+    expect(businessPartnerFacade.searchBusinessPartnersPaged).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("MasterDataCustomersPage — sin diálogos nativos", () => {
   it("no usa window.confirm/window.prompt/alert", async () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);

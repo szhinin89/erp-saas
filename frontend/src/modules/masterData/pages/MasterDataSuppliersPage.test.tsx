@@ -358,3 +358,31 @@ describe("MasterDataSuppliersPage — sin diálogos nativos", () => {
     alertSpy.mockRestore();
   });
 });
+
+describe("MasterDataSuppliersPage — FUNC-PARTNER-ROLE-01 asignar como cliente", () => {
+  it("si el backend rechaza la asignación, muestra su error y no refresca como éxito", async () => {
+    vi.mocked(businessPartnerFacade.assignRole).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 422, data: { message: { user: "No se puede asignar un rol a un BusinessPartner inactivo." } } },
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: /^Más acciones:/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Asignar como cliente" }));
+    expect(await screen.findByText("No se puede asignar un rol a un BusinessPartner inactivo.")).toBeTruthy();
+    expect(businessPartnerFacade.assignRole).toHaveBeenCalledExactlyOnceWith("bp-2", { roleType: expect.anything() });
+    expect(businessPartnerFacade.searchBusinessPartnersPaged).toHaveBeenCalledTimes(1);
+  });
+
+  it("no ofrece la acción si el proveedor ya es cliente", async () => {
+    vi.mocked(businessPartnerFacade.searchBusinessPartnersPaged).mockResolvedValue({
+      items: [{ ...SUPPLIER, isCustomer: true, canAssignAsCustomer: false }],
+      totalCount: 1, pageNumber: 1, pageSize: 50,
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Proveedor Uno")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: /^Más acciones:/ }));
+    expect(screen.queryByRole("menuitem", { name: "Asignar como cliente" })).toBeNull();
+    expect(screen.getByRole("menuitem", { name: "Editar proveedor" })).toBeTruthy();
+  });
+});
