@@ -7,7 +7,6 @@ import { ZhTextInput } from "../../../../components/zh/inputs/ZhTextInput";
 import { ZhDecimalInput } from "../../../../components/zh/inputs/ZhDecimalInput";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import type {
-  ItemImageDto,
   ItemUnitConversionDto,
   ItemSubstituteDto,
   ItemPackagingLevelDto,
@@ -67,65 +66,7 @@ function SectionWrapper({
   );
 }
 
-export function ImagesSection({
-  t,
-  images,
-  disabled = false,
-  onDisable,
-}: {
-  t: T;
-  images: ItemImageDto[];
-  disabled?: boolean;
-  onDisable: (id: string) => Promise<void>;
-}) {
-  const active = images.filter((i) => i.isActive);
-  const columns: ZHDataTableColumn<ItemImageDto>[] = [
-    {
-      key: "storageObjectId",
-      header: t("items.images.col.storageObjectId", "ID Objeto"),
-      render: (img) => <code>{img.storageObjectId.slice(0, 12)}…</code>,
-    },
-    { key: "altText", header: t("items.images.col.altText", "Alt Text"), render: (img) => img.altText || "—" },
-    {
-      key: "isMain",
-      header: t("items.images.col.isMain", "Principal"),
-      render: (img) => (img.isMain ? t("common.yes", "Sí") : t("common.no", "No")),
-    },
-    {
-      key: "isEcommerce",
-      header: t("items.images.col.isEcommerce", "eCommerce"),
-      render: (img) => (img.isEcommerce ? t("common.yes", "Sí") : t("common.no", "No")),
-    },
-    { key: "sortOrder", header: t("items.images.col.sortOrder", "Orden"), render: (img) => img.sortOrder },
-    {
-      key: "actions",
-      header: t("common.actions", "Acciones"),
-      align: "right",
-      render: (img) => (
-        <ZHBtn
-          type="button"
-          variant="ghost"
-          size="sm"
-          title={t("common.deactivate", "Desactivar")}
-          onClick={() => void onDisable(img.id)}
-          disabled={disabled}
-        >
-          <span className="material-symbols-outlined">block</span>
-        </ZHBtn>
-      ),
-    },
-  ];
-  return (
-    <SectionWrapper
-      title={t("items.images.sectionTitle", "Imágenes")}
-      icon="image"
-      emptyMessage={t("items.images.empty", "No hay imágenes.")}
-      count={active.length}
-    >
-      <ZHDataTable columns={columns} rows={active} rowKey={(img) => img.id} />
-    </SectionWrapper>
-  );
-}
+export { ImagesSection } from "./ImagesSection";
 
 export function UnitConversionsSection({
   t,

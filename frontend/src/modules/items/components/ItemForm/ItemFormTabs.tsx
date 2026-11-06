@@ -358,8 +358,11 @@ export function ItemFormTabs({
               <ImagesSection
                 t={t}
                 images={detail.item.images}
-                disabled={fieldsDisabled || detail.statusChangePending}
+                disabled={fieldsDisabled}
+                pending={detail.statusChangePending}
+                error={detail.imageActivationError}
                 onDisable={detail.disableImage}
+                onEnable={detail.enableImage}
               />
             ) : (
               <AfterCreateNotice

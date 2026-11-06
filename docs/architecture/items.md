@@ -73,8 +73,21 @@ Código: `ERP.Domain/Modules/Items`, `ERP.Application/Modules/Items`, `ERP.Infra
   recién recuperada. No hay ETag ni índice único de principal activa en esta etapa.
 - La recuperación es del registro y su vínculo: no verifica la existencia física del
   objeto de StorageObjectId. No incluye upload, galería ni designación de principal.
-- Frontend actual: muestra solo imágenes activas y aún no ofrece reactivación.
-  Estado de validación y gates: [STATUS](../../STATUS.md).
+- Frontend (`ImagesSection` en la pestaña Imágenes del formulario): filtro Activas
+  predeterminado, Inactivas o Todas; estado visible y orden por SortOrder e Id.
+  Activar se ofrece solo para imágenes inactivas con `items.edit` y fuera de solo lectura.
+  No pide confirmación y usa el endpoint enable mediante el service canónico de Ítems.
+  Comparte la exclusión de cambios de estado en curso para evitar peticiones duplicadas;
+  mantiene la fila y bloquea acciones/filtro durante la petición y el refresco.
+- Después de activar se consulta el detalle completo del servidor; la UI no cambia IsMain
+  ni los metadatos de forma optimista. El registro recuperado es secundario y la principal
+  vigente se conserva. Si falla la activación, se presenta el error oficial sin retirar la
+  fila; si falla el refresco después de guardar, se informa que la activación se guardó y
+  se conserva la última vista disponible, sin presentarla como estado actualizado.
+- Desactivar conserva su confirmación; el texto es/en explica la recuperación desde
+  Inactivas como secundaria y, para una principal, que no se elegirá sustituta automática.
+  No se garantiza disponibilidad física del archivo. Estado de validación y gates:
+  [STATUS](../../STATUS.md).
 
 ## 7. Pendiente (no operativo)
 

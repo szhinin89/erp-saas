@@ -2,6 +2,7 @@ import { itemCodeMutation } from "./itemCodeConflicts";
 import { apiGet, apiPatch, apiPost, apiPut } from "../../lib/apiEnvelope";
 import type {
   ItemDetailDto,
+  ItemImageDto,
   ItemDto,
   ItemVariantDto,
   GetItemsResponse,
@@ -172,6 +173,9 @@ export const itemService = {
 
   disableImage: (itemId: string, imageId: string) =>
     apiPatch<boolean>(`/api/v1/items/${itemId}/images/${imageId}/disable`),
+
+  enableImage: (itemId: string, imageId: string) =>
+    apiPatch<ItemImageDto>(`/api/v1/items/${itemId}/images/${imageId}/enable`),
 
   replaceUnitConversions: (
     itemId: string,

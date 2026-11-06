@@ -19,7 +19,7 @@ import {
 } from "./__tests__/itemEditorModalFixture";
 
 vi.mock("../../../modules/items/api/itemService", () => ({
-  itemService: { create: vi.fn(), update: vi.fn(), getById: vi.fn(), getProfitability: vi.fn().mockResolvedValue(null) },
+  itemService: { create: vi.fn(), update: vi.fn(), getById: vi.fn(), enableImage: vi.fn(), getProfitability: vi.fn().mockResolvedValue(null) },
 }));
 
 vi.mock("../../../modules/pricing/facades/priceListLookupFacade", () => ({
@@ -72,6 +72,29 @@ afterEach(() => {
 });
 
 describe("ItemEditorModal — modo Actualizar (itemId presente)", () => {
+  it.each([false, true])("conecta recuperación en la pestaña real de imágenes (solo lectura=%s)", async (disabled) => {
+    const image = { id: "image-1", variantId: null, storageObjectId: "fake-storage", altText: "Imagen inactiva",
+      isActive: false, isMain: true, isEcommerce: false, sortOrder: 1 };
+    const loaded = { ...existingItem, images: [image] };
+    const restored = { ...image, isActive: true, isMain: false };
+    vi.mocked(itemService.getById).mockResolvedValueOnce(loaded).mockResolvedValue({ ...loaded, images: [restored] });
+    vi.mocked(itemService.enableImage).mockResolvedValue(restored);
+    render(<I18nProvider><ItemFormTabs itemId={existingItem.id} submitting={false} disabled={disabled} onSubmit={vi.fn()} /></I18nProvider>);
+    await screen.findByRole("tab", { name: "Imágenes" });
+    fireEvent.click(screen.getByRole("tab", { name: "Imágenes" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Estado de imágenes" }), { target: { value: "inactive" } });
+    expect(screen.getByText("Imagen inactiva")).toBeTruthy();
+    if (disabled) {
+      expect(screen.queryByRole("button", { name: "Activar" })).toBeNull();
+      expect(itemService.enableImage).not.toHaveBeenCalled();
+    } else {
+      fireEvent.click(screen.getByRole("button", { name: "Activar" }));
+      await waitFor(() => expect(screen.queryByText("Imagen inactiva")).toBeNull());
+      expect(itemService.enableImage).toHaveBeenCalledExactlyOnceWith(existingItem.id, image.id);
+      expect(itemService.getById).toHaveBeenCalledTimes(2);
+    }
+  });
+
   it("precarga sku/nombre/descripción/IVA/precio desde el Item existente", async () => {
     vi.mocked(itemService.getById).mockResolvedValue(existingItem as never);
     const { container } = renderModal({ itemId: "item-1" });

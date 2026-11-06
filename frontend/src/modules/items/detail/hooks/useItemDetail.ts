@@ -32,6 +32,32 @@ export function useItemDetailPage(itemId: string | undefined) {
   // al backend; activar variante conserva el flujo directo. Un solo cambio de estado a la vez.
   const [statusChangePending, setStatusChangePending] = useState(false);
   const statusChangeRef = useRef(false);
+  const [imageActivationError, setImageActivationError] = useState("");
+
+  const enableImage = async (imageId: string) => {
+    if (!itemId || statusChangeRef.current) return;
+    statusChangeRef.current = true;
+    setStatusChangePending(true);
+    setImageActivationError("");
+    try {
+      await itemService.enableImage(itemId, imageId);
+      try {
+        // Keep the current rows until the server supplies the refreshed state.
+        setItem(await itemService.getById(itemId));
+      } catch (err) {
+        setImageActivationError(`${t("items.images.activate.refreshFailed")} ${formatApiRequestError(err, {
+          generic: t("items.images.activate.refreshError"),
+        })}`);
+      }
+    } catch (err) {
+      setImageActivationError(formatApiRequestError(err, {
+        generic: t("items.images.activate.error"),
+      }));
+    } finally {
+      setStatusChangePending(false);
+      statusChangeRef.current = false;
+    }
+  };
 
   const runStatusChange = async (
     confirmOptions: Parameters<typeof message.confirm>[0] | null,
@@ -187,6 +213,8 @@ export function useItemDetailPage(itemId: string | undefined) {
     refetch: fetchItem,
     toggleVariant,
     disableImage,
+    enableImage,
+    imageActivationError,
     statusChangePending,
     replaceUnitConversions,
     replaceSubstitutes,

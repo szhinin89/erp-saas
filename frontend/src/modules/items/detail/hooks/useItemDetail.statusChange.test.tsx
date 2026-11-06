@@ -130,7 +130,7 @@ describe("useItemDetailPage — desactivar variante", () => {
 });
 
 describe("useItemDetailPage — desactivar imagen", () => {
-  it("cancelar no envía petición; el aviso identifica la imagen principal y la irreversibilidad en UI", async () => {
+  it("cancelar no envía petición; el aviso identifica la principal y recuperación como secundaria", async () => {
     vi.mocked(message.confirm).mockResolvedValue(false);
     const { result } = await renderReady();
     await act(async () => {
@@ -139,7 +139,7 @@ describe("useItemDetailPage — desactivar imagen", () => {
     const opts = vi.mocked(message.confirm).mock.calls[0][0];
     expect(opts.title).toBe('Desactivar imagen "Imagen ficticia"');
     expect(String(opts.message)).toContain("imagen principal");
-    expect(String(opts.message)).toContain("no ofrece una acción para reactivarla");
+    expect(String(opts.message)).toContain("se recuperará como secundaria");
     expect(service.disableImage).not.toHaveBeenCalled();
   });
 
@@ -182,6 +182,7 @@ describe("ImagesSection — sección deshabilitada (sin permiso / solo lectura)"
         images={[IMAGE]}
         disabled
         onDisable={onDisable}
+        onEnable={vi.fn()}
       />,
     );
     const btn = screen.getByTitle("Desactivar");

@@ -1,5 +1,22 @@
 # Project Status
 
+## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 2 FRONTEND IMPLEMENTADA; PENDIENTE DE GATE DEL PROPIETARIO Y CONSOLIDACIÓN GIT/CI (2026-11-06)
+
+Filtro, estado y activación de imágenes conectados al endpoint existente; contrato en
+[Ítems](docs/architecture/items.md#imágenes-estado-y-recuperación-de-registros).
+Se extrae únicamente ImagesSection del archivo de colecciones que había alcanzado su techo
+PR-7; reutiliza los componentes globales sin cambiar las otras secciones. Sin cambios en
+backend, migraciones, permisos ni almacenamiento. No garantiza la existencia física del archivo.
+Validación agente: Vitest focal 83/83 en 9 archivos (sección y hook de imágenes, service,
+traducciones, regresión de desactivación/empaques, formulario real y página de Ítems);
+TypeScript `tsc -b`, ESLint focal, build, `architecture:check` (147 pruebas de guardrails,
+0 nuevas violaciones), guardrail PowerShell oficial `-SkipFrontendChunk`, documentación y
+`git diff --check` PASS. Build conserva avisos de chunk grande e import estático/dinámico;
+el reporte arquitectónico global conserva score 19/100 (critical), con gate PASS.
+Sin suites funcionales generales ni SRI; sin nuevas pruebas backend/PostgreSQL en esta etapa.
+Flujo completo NO CLOSED: pendiente de gate del propietario, revisión y consolidación Git/CI
+del frontend. Sin staging/commit/push.
+
 ## FUNC-ITEM-IMAGE-REACTIVATION-01 — ETAPA 1 BACKEND APROBADA TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-06)
 
 Endpoint y coordinación transaccional de reactivación/desactivación/reemplazo implementados.
@@ -30,9 +47,9 @@ internacionalizados (es/en, claves `*.deactivate.confirm.*`). Por decisión del 
 **Activar permanece sin confirmación** en estas rutas; Sucursales, Categorías y otros módulos no
 se tocan.
 
-Seguimiento independiente: **FUNC-ITEM-IMAGE-REACTIVATION-01**, backend implementado
-por autorización del propietario; frontend de recuperación aún no implementado.
-La confirmación actual sigue advirtiendo que esta pantalla no ofrece reactivación.
+Seguimiento independiente: **FUNC-ITEM-IMAGE-REACTIVATION-01**, backend aprobado técnicamente;
+frontend de recuperación implementado en Etapa 2, con validación y consolidación pendientes.
+La confirmación actual explica que se puede recuperar como secundaria desde Inactivas.
 
 Validación agente: Vitest focal (5 archivos nuevos + catálogos, detalle de ítem, Tipos de ítem,
 Cajas, páginas/formulario de Ítems y `ItemEditorModal.update`; 16 archivos) 124/124; `tsc -b`;

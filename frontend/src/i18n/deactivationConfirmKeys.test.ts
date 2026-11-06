@@ -42,13 +42,13 @@ describe("i18n — confirmaciones de desactivación", () => {
     expect(params(enDict[key])).toEqual([...expected].sort());
   });
 
-  it("los mensajes de imagen advierten que no hay reactivación en ambos idiomas", () => {
+  it("los mensajes de imagen explican la recuperación como secundaria en ambos idiomas", () => {
     for (const key of [
       "items.images.deactivate.confirm.message",
       "items.images.deactivate.confirm.messageMain",
     ]) {
-      expect(esDict[key]).toContain("no ofrece una acción para reactivarla");
-      expect(enDict[key]).toContain("no action to reactivate");
+      expect(esDict[key]).toContain("se recuperará como secundaria");
+      expect(enDict[key]).toContain("return as a secondary image");
     }
   });
 });
