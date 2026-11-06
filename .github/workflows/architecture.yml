@@ -2,6 +2,10 @@ name: Architecture & Stack Audit
 
 on:
   workflow_call:
+    inputs:
+      profile:
+        type: string
+        default: full
 
 permissions:
   contents: read
@@ -13,6 +17,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
+      - name: Validate architecture profile
+        env:
+          CI_PROFILE: ${{ inputs.profile }}
+        run: test "$CI_PROFILE" = full || test "$CI_PROFILE" = documentation
       - name: Verify allowed stack
         shell: pwsh
         run: ./scripts/ci/verify-stack-allowlist.ps1
@@ -27,6 +35,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Backend architecture guardrails
+        if: inputs.profile == 'full'
         shell: pwsh
         run: |
           $base = ''
@@ -53,15 +62,22 @@ jobs:
           path: docs/ci/PLATFORM_GUARD_REPORT.md
           if-no-files-found: error
       - name: Frontend + backend architecture checks (Node)
+        if: inputs.profile == 'full'
         working-directory: frontend
         run: npm run architecture:check
         # Emite ::error/::warning annotations cuando GITHUB_ACTIONS=true (run-all.mjs)
       - name: i18n key consistency (F-i18n)
+        if: inputs.profile == 'full'
         working-directory: frontend
         run: npm run architecture:i18n
       - name: Duplicate DI service detection (B-duplicate-di)
+        if: inputs.profile == 'full'
         working-directory: frontend
         run: npm run architecture:duplicates
       - name: Naming conventions (B/F-naming)
+        if: inputs.profile == 'full'
         working-directory: frontend
         run: npm run architecture:naming
+      - name: Documentation references and authority
+        if: inputs.profile == 'documentation'
+        run: node tools/architecture/run-all.mjs --only documentation

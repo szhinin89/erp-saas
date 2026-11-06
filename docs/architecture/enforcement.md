@@ -160,6 +160,66 @@ Comandos de operación y distribución CI/E2E: [DEVELOPMENT](../DEVELOPMENT.md#t
 
 ## Guardrails automatizados
 
+### Plan de CI y activación selectiva
+
+El orquestador `.github/workflows/ci.yml` genera su plan mediante
+[`ci_changes.mjs`](../../tools/ci/ci_changes.mjs). **Etapa 1: selección desactivada**
+(`SELECTIVE_ENABLED = false`, constante versionada; no admite override de entorno ni
+input manual). Push y PR conservan arquitectura completa, los 13 grupos backend,
+frontend y seguridad. El resumen distingue perfil propuesto y efectivo; no constituye
+evidencia de que se haya activado la selección.
+
+El detector compara `before` y SHA final en push, y merge-base de base/head fijos del
+evento en PR; las pruebas se realizan sobre el SHA de integración de Actions. Usa
+Git con historial completo y rutas NUL, sin detección de renombres para incluir
+origen y destino. Historial ausente, rama nueva o evento no reconocido exige completo.
+El job `changes` también verifica whitespace del rango cuando está disponible.
+
+La selección preparada admite únicamente Markdown en la lista positiva del selector
+y entradas informativas explícitas; no admite `docs/**` indiscriminadamente. Código
+frontend/backend ordinario selecciona su dominio; CI, guardrails, configuración,
+seguridad sensible y rutas desconocidas exigen completo. Arquitectura completa se
+conserva para todo cambio no documental. El perfil documental conserva Stack Audit,
+Identity, Platform y el check documental. La suite backend no se subdivide por módulo.
+
+`ci-gate` (`CI gate` en GitHub) usa `always()` y dependencias explícitas. Exige plan
+válido para el SHA del evento y `success` de cada job requerido; fallo, cancelación,
+ausencia u omisión indebida fallan. Solo permite `skipped` para jobs excluidos por
+el plan. Publicación exige este gate y perfil completo para el mismo SHA; nunca
+se interpreta un CI documental como validación de release. Sus pruebas están en
+[`ci_changes.test.mjs`](../../tools/ci/ci_changes.test.mjs).
+
+La publicación automática mantiene los eventos elegibles anteriores (push main/develop,
+PR a main), pero requiere impacto API/empaquetado o incertidumbre del historial.
+Documentación, frontend ordinario y cambios exclusivos de CI no publican API.
+La ejecución manual siempre valida completo; solo publica al marcar `publish_api`
+en main/develop y no despliega Azure. Azure conserva su condición de push a main
+y variable existente; no se modifican secretos ni destinos. Ambos workflows evitan
+cancelar ejecuciones activas de main mediante `cancel-in-progress: false` efectivo;
+la concurrencia de GitHub conserva como máximo un pendiente por grupo, sin garantizar
+FIFO. No se debe usar una ejecución pendiente como evidencia de release.
+
+**Activación pendiente:** verificar rulesets, checks requeridos, bypasses y protección
+de main en GitHub, registrar `CI gate` como check obligatorio sin retirar protección
+antes de verificarlo, obtener autorización explícita y cambiar la constante. Verificar
+los perfiles mediante Actions reales antes del cierre. Si existe merge queue, añadir
+su trigger `merge_group` antes de activarla (el selector ya exige completo para ese
+evento). La ejecución manual permite CI completo en cualquier fase. Vitest, E2E y
+los requisitos independientes de producción no se incorporan ni sustituyen aquí.
+
+Limitación de verificación inicial (2026-11-06): GitHub CLI respondió que no hay sesión
+autenticada al consultar protección de main, rulesets y reglas efectivas; el conector
+disponible no expone esas consultas. No se verificaron checks obligatorios ni bypasses,
+no se cambiaron protecciones y la selección permanece desactivada. Validación real
+de Actions y gate del propietario pendientes; no CLOSED.
+
+Validación local de etapa 1 (2026-11-06): selector/gate 34/34, arquitectura 147/147
+y ratchet sin violaciones nuevas, guardrail PowerShell `-SkipFrontendChunk`, Stack
+Audit, enlaces de los dos documentos modificados y `git diff --check` PASS. Los ocho
+workflows pasan parseo YAML, dependencias locales y contratos de inputs reutilizables
+con el parser ya disponible de Playwright; `actionlint` no está instalado. Esta
+comprobación no sustituye el lint específico ni las ejecuciones reales de Actions.
+
 ### Documentación (control focal sin red)
 
 El check `documentation` de `run-all.mjs`, incorporado al runner y CI existentes,

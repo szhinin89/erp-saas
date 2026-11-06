@@ -73,7 +73,11 @@ Contexto anterior: [705 pruebas Testcontainers en 55 min 56 s](../QA/TESTCONTAIN
 `build-and-deploy.yml` es exclusivamente reutilizable. `ci.yml` lo llama después de backend,
 frontend y seguridad (arquitectura ya es dependencia); conserva las ramas de publicación
 main/develop y PR hacia main. También puede alcanzarse con el dispatch manual de CI.
-Publica la API sin volver a ejecutar pruebas. Azure sigue condicionado a push en main y
+Publica la API sin volver a ejecutar pruebas. El contrato de plan, gate final, selección
+preparada pero desactivada y autorización manual de publicación se mantiene únicamente
+en [Enforcement — Plan de CI](../architecture/enforcement.md#plan-de-ci-y-activación-selectiva).
+La llamada exige validación completa del mismo SHA; documentación o frontend ordinario
+no generan un artefacto API. Azure sigue condicionado a push en main y
 `AZURE_WEBAPP_NAME`; se pasa únicamente el secret de publicación existente.
 Los controles de arquitectura/seguridad permanecen en sus workflows; el guard Platform continúa
 en arquitectura y frontend, sin la tercera repetición del antiguo backend monolítico.

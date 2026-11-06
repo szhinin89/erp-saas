@@ -24,34 +24,85 @@ on:
       - "release/**"
       - "hotfix/**"
   workflow_dispatch:
+    inputs:
+      publish_api:
+        description: 'Publicar API tras CI completo (solo main/develop; no despliega Azure)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    name: CI change plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      plan: ${{ steps.plan.outputs.plan }}
+      backend: ${{ steps.plan.outputs.backend }}
+      frontend: ${{ steps.plan.outputs.frontend }}
+      publish: ${{ steps.plan.outputs.publish }}
+      architecture_profile: ${{ steps.plan.outputs.architecture_profile }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Verify selector and gate
+        run: node --test tools/ci/ci_changes.test.mjs
+      - name: Plan (selective activation remains disabled in ci_changes.mjs)
+        id: plan
+        run: node tools/ci/ci_changes.mjs
+
   architecture:
+    needs: changes
     uses: ./.github/workflows/architecture.yml
+    with:
+      profile: ${{ needs.changes.outputs.architecture_profile }}
 
   backend:
-    needs: architecture
+    needs: [changes, architecture]
+    if: needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/backend-ci.yml
 
   frontend:
-    needs: architecture
+    needs: [changes, architecture]
+    if: needs.changes.outputs.frontend == 'true'
     uses: ./.github/workflows/frontend-ci.yml
 
   security:
     needs: architecture
     uses: ./.github/workflows/security.yml
 
+  ci-gate:
+    name: CI gate
+    if: always()
+    needs: [changes, architecture, backend, frontend, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Require every planned validation on this SHA
+        env:
+          CI_PLAN: ${{ needs.changes.outputs.plan }}
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: node tools/ci/ci_changes.mjs --gate
+
   publish:
-    needs: [backend, frontend, security]
-    # Keep the previous publication branches and PR target.
+    needs: [changes, ci-gate]
     if: >-
-      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')) ||
-      (github.event_name == 'pull_request' && github.base_ref == 'main') ||
-      github.event_name == 'workflow_dispatch'
+      ${{ !cancelled() && needs.ci-gate.result == 'success' &&
+      needs.changes.result == 'success' && needs.changes.outputs.publish == 'true' }}
     uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      validated_sha: ${{ github.sha }}
+      validation_profile: ${{ fromJSON(needs.changes.outputs.plan).profile }}
     secrets:
       AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
