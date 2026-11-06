@@ -3,17 +3,21 @@ import { useParams } from "react-router-dom";
 import { NoAccessPage, LoadingState } from "../../../components/PageShell";
 import { ZHLinkButton } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
+import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { ErpPageTemplate } from "../../../templates/ErpPageTemplate";
 import { branchService, type BranchDetailDto } from "../api/branchService";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
+import { useI18n } from "../../../i18n/i18n";
 import { BranchConfigSection } from "../components/BranchConfigSection";
 import { BranchGeneralSection } from "../components/BranchGeneralSection";
 import "../../../styles/shared/items-catalog.css";
 
 type Tab = "general" | "establishments" | "configuraciones";
 
+
 export function BranchDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const canView = canShow("settings.branches.view");
 
@@ -69,35 +73,24 @@ export function BranchDetailPage() {
         </ZHLinkButton>
       }
     >
-      <div className="prd-tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "general"}
-          className={`prd-tab-btn ${tab === "general" ? "prd-tab-btn--active" : ""}`}
-          onClick={() => setTab("general")}
-        >
-          General
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "establishments"}
-          className={`prd-tab-btn ${tab === "establishments" ? "prd-tab-btn--active" : ""}`}
-          onClick={() => setTab("establishments")}
-        >
-          Establecimientos
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "configuraciones"}
-          className={`prd-tab-btn ${tab === "configuraciones" ? "prd-tab-btn--active" : ""}`}
-          onClick={() => setTab("configuraciones")}
-        >
-          Configuraciones
-        </button>
-      </div>
+      <ZHTabBar
+        tabs={[
+          { id: "general", label: "General" },
+          {
+            id: "establishments",
+            label: "Establecimientos",
+            mobileLabel: t("branches.detail.tabs.establishmentsShort", "Establ."),
+          },
+          {
+            id: "configuraciones",
+            label: "Configuraciones",
+            mobileLabel: t("branches.detail.tabs.configurationsShort", "Config."),
+          },
+        ] satisfies ZHTab<Tab>[]}
+        activeTab={tab}
+        onChange={setTab}
+        ariaLabel="Secciones de la sucursal"
+      />
 
       {tab === "general" && id && (
         <BranchGeneralSection

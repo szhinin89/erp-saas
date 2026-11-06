@@ -94,18 +94,24 @@ describe("ZHTabBar", () => {
   });
 });
 
-describe("ZHTabBar responsive-three — opt-in", () => {
-  const tabs: ZHTab<"a" | "b" | "c">[] = [
+describe("ZHTabBar — distribución responsive automática (UIUX-GLOBAL-TABS-DEFAULT-01)", () => {
+  type Id = "a" | "b" | "c";
+  const tabs: ZHTab<Id>[] = [
     { id: "a", label: "Resumen", icon: "bar_chart_4_bars" },
     { id: "b", label: "Listado", icon: "view_list" },
     { id: "c", label: "Nuevo proveedor", mobileLabel: "Nuevo", icon: "add_box" },
   ];
+  const make = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ id: String(i), label: `Destino ${i}`, mobileLabel: `D${i}`, icon: "add" }));
+  const R3 = "prd-tabs--responsive-three";
 
-  it("mantiene nombre accesible completo e iconos decorativos con etiqueta breve", () => {
+  it("con 3 pestañas aplica el patrón sin prop, con nombre accesible completo e icono decorativo", () => {
     const onChange = vi.fn();
-    render(<ZHTabBar tabs={tabs} activeTab="a" onChange={onChange} variant="responsive-three" />);
+    render(<ZHTabBar tabs={tabs} activeTab="a" onChange={onChange} ariaLabel="Secciones" />);
+    const tablist = screen.getByRole("tablist", { name: "Secciones" });
+    expect(tablist.classList.contains(R3)).toBe(true);
     const tab = screen.getByRole("tab", { name: "Nuevo proveedor" });
-    expect(screen.getByRole("tablist").classList.contains("prd-tabs--responsive-three")).toBe(true);
+    expect(tab.querySelector(".prd-tab-label--full")?.textContent).toBe("Nuevo proveedor");
     expect(tab.querySelector(".prd-tab-label--mobile")?.textContent).toBe("Nuevo");
     expect(tab.querySelector(".prd-tab-label--mobile")?.getAttribute("aria-hidden")).toBe("true");
     expect(tab.querySelector(".prd-tab-icon")?.getAttribute("aria-hidden")).toBe("true");
@@ -113,28 +119,75 @@ describe("ZHTabBar responsive-three — opt-in", () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith("c");
   });
 
-  it("no altera el markup default ni aplica etiquetas móviles sin la variante", () => {
-    const { container, rerender } = render(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} fill />);
-    const markup = container.innerHTML;
+  it("sin mobileLabel conserva la etiqueta completa como texto visible y nombre", () => {
+    render(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} />);
+    const tab = screen.getByRole("tab", { name: "Listado" });
+    expect(tab.querySelector(".prd-tab-label--mobile")).toBeNull();
+    expect(tab.textContent).toContain("Listado");
+  });
+
+  it.each([2, 4, 6])("con %i pestañas conserva el render estándar (sin etiquetas móviles)", (count) => {
+    const { container } = render(<ZHTabBar tabs={make(count)} activeTab="0" onChange={() => {}} />);
+    const tablist = screen.getByRole("tablist");
+    expect(tablist.className).toBe("prd-tabs");
+    expect(container.querySelector(".prd-tab-label--mobile, .prd-tab-label--full")).toBeNull();
+    expect(screen.getAllByRole("tab")).toHaveLength(count);
+    screen.getAllByRole("tab").forEach((t, i) => {
+      expect(t.getAttribute("aria-label")).toBeNull();
+      expect(t.textContent).toContain(`Destino ${i}`);
+    });
+  });
+
+  it("variant=\"standard\" excluye explícitamente el patrón con 3 pestañas", () => {
+    const { container, rerender } = render(<ZHTabBar tabs={make(3)} activeTab="0" onChange={() => {}} variant="standard" />);
+    expect(screen.getByRole("tablist").className).toBe("prd-tabs");
     expect(container.querySelector(".prd-tab-label--mobile")).toBeNull();
-    expect(screen.getByRole("tablist").className).toBe("prd-tabs prd-tabs--fill");
-    rerender(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} fill variant="default" />);
-    expect(container.innerHTML).toBe(markup);
-  });
-
-  it.each([0, 1, 2, 4, 5])("ignora responsive-three con %i pestañas", (count) => {
-    const otherTabs = Array.from({ length: count }, (_, i) => ({ id: String(i), label: `Destino ${i}`, mobileLabel: `D${i}` }));
-    const { container, rerender } = render(<ZHTabBar tabs={otherTabs} activeTab="0" onChange={() => {}} />);
     const markup = container.innerHTML;
-    rerender(<ZHTabBar tabs={otherTabs} activeTab="0" onChange={() => {}} variant="responsive-three" />);
+    rerender(<ZHTabBar tabs={make(4)} activeTab="0" onChange={() => {}} />);
+    rerender(<ZHTabBar tabs={make(3)} activeTab="0" onChange={() => {}} variant="standard" />);
     expect(container.innerHTML).toBe(markup);
   });
 
-  it("conserva selección, disabled e inert en la variante", () => {
+  it("fill se combina con el patrón sin perder su modificador", () => {
+    render(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} fill />);
+    expect(screen.getByRole("tablist").className).toBe(`prd-tabs prd-tabs--fill ${R3}`);
+  });
+
+  it("cambio dinámico 3 → 6 → 3 (p. ej. por permisos o edición) alterna el patrón y conserva foco y selección", () => {
+    const six = [...tabs, { id: "d" as Id, label: "Productos" }, { id: "e" as Id, label: "Excepciones" }, { id: "f" as Id, label: "Clientes" }] as ZHTab<string>[];
+    const { rerender } = render(<ZHTabBar<string> tabs={tabs} activeTab="c" onChange={() => {}} />);
+    const nuevo = screen.getByRole("tab", { name: "Nuevo proveedor" });
+    nuevo.focus();
+    rerender(<ZHTabBar<string> tabs={six} activeTab="c" onChange={() => {}} />);
+    expect(screen.getByRole("tablist").classList.contains(R3)).toBe(false);
+    expect(screen.getAllByRole("tab")).toHaveLength(6);
+    // Render estándar: sin aria-label propio; el mismo nodo conserva foco y selección.
+    const nuevoSix = screen.getAllByRole("tab")[2];
+    expect(nuevoSix).toBe(nuevo);
+    expect(document.activeElement).toBe(nuevo);
+    expect(nuevoSix.getAttribute("aria-selected")).toBe("true");
+    expect(nuevoSix.querySelector(".prd-tab-label--mobile")).toBeNull();
+    rerender(<ZHTabBar<string> tabs={tabs} activeTab="c" onChange={() => {}} />);
+    expect(screen.getByRole("tablist").classList.contains(R3)).toBe(true);
+    expect(document.activeElement).toBe(nuevo);
+  });
+
+  it("cambio dinámico 2 → 3 (permisos) activa el patrón sin alterar el nombre de las existentes", () => {
+    const two = tabs.slice(0, 2);
+    const { rerender } = render(<ZHTabBar tabs={two} activeTab="a" onChange={() => {}} />);
+    expect(screen.getByRole("tablist").classList.contains(R3)).toBe(false);
+    rerender(<ZHTabBar tabs={tabs} activeTab="a" onChange={() => {}} />);
+    expect(screen.getByRole("tablist").classList.contains(R3)).toBe(true);
+    expect(screen.getAllByRole("tab").map((t) => t.getAttribute("aria-label") ?? t.textContent)).toEqual(["Resumen", "Listado", "Nuevo proveedor"]);
+  });
+
+  it("conserva selección, disabled, inert y botones nativos enfocables", () => {
     const onChange = vi.fn();
-    render(<ZHTabBar tabs={tabs.map(t => ({ ...t, disabled: t.id === "b", inert: t.id === "a" }))} activeTab="a" onChange={onChange} variant="responsive-three" />);
+    render(<ZHTabBar tabs={tabs.map(t => ({ ...t, disabled: t.id === "b", inert: t.id === "a" }))} activeTab="a" onChange={onChange} />);
     const active = screen.getByRole("tab", { name: "Resumen" });
     const disabled = screen.getByRole("tab", { name: "Listado" });
+    expect(active.tagName).toBe("BUTTON");
+    expect(active.getAttribute("type")).toBe("button");
     expect(active.getAttribute("aria-selected")).toBe("true");
     expect(disabled.getAttribute("aria-disabled")).toBe("true");
     expect((disabled as HTMLButtonElement).disabled).toBe(true);

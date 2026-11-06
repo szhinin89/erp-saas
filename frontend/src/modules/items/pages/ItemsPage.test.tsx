@@ -353,3 +353,16 @@ describe("ItemsPage — enlace Ver ítem desde conflictos de códigos", () => {
     expect((await screen.findByTestId("item-form")).textContent).toBe("item-42:true");
   });
 });
+
+describe("ItemsPage — pestañas responsive automáticas (UIUX-GLOBAL-TABS-DEFAULT-01)", () => {
+  it("tres pestañas: etiqueta móvil «Nuevo» con nombre accesible completo «Nuevo ítem»", async () => {
+    await renderItemsPage();
+    const tablist = screen.getByRole("tablist");
+    expect(tablist.classList.contains("prd-tabs--responsive-three")).toBe(true);
+    const nuevo = screen.getByRole("tab", { name: /^Nuevo ítem$/i });
+    expect(nuevo.querySelector(".prd-tab-label--full")?.textContent).toMatch(/^Nuevo ítem$/i);
+    expect(nuevo.querySelector(".prd-tab-label--mobile")?.textContent).toBe("Nuevo");
+    fireEvent.click(nuevo);
+    expect(nuevo.getAttribute("aria-selected")).toBe("true");
+  });
+});

@@ -414,7 +414,8 @@ a:hover {
   font-size: var(--font-size-lg);
 }
 
-/* Optional three-tab mobile layout; desktop/tablet retain the default. */
+/* ZHTabBar con exactamente 3 pestañas (default "auto", UIUX-GLOBAL-TABS-DEFAULT-01):
+   tres columnas hasta 480 px; desde 481 px conserva el diseño estándar. */
 .prd-tabs--responsive-three .prd-tab-label--mobile { display: none; }
 @media (max-width: 480px) {
   .prd-tabs--responsive-three {

@@ -211,6 +211,7 @@ export function ItemsPage() {
         tabs={TABS.map((tab) => ({
           id: tab.id,
           label: t(tab.labelKey, tab.labelFb),
+          mobileLabel: tab.id === "nuevo" ? t("items.tabs.nuevoShort", "Nuevo") : undefined,
           icon: tab.icon,
         }))}
         activeTab={activeTab}

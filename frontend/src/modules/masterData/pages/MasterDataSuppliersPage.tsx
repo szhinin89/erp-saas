@@ -762,7 +762,6 @@ export function MasterDataSuppliersPage() {
       )}
 
       <ZHTabBar
-        variant="responsive-three"
         tabs={TABS.map((tab) => ({
           id: tab.id,
           label: t(tab.labelKey, tab.labelFb),

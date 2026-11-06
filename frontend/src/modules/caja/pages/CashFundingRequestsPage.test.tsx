@@ -138,3 +138,17 @@ describe("CashFundingRequestsPage", () => {
     expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
   });
 });
+
+describe("CashFundingRequestsPage — pestañas según permisos (UIUX-GLOBAL-TABS-DEFAULT-01)", () => {
+  it.each([
+    [["caja.funding-requests.view"], 2, false],
+    [["supplier-payments.create"], 1, false],
+    [["caja.funding-requests.view", "supplier-payments.create"], 3, true],
+  ])("con %j muestra %i pestañas; patrón responsive=%s", async (keys, count, responsive) => {
+    grant(...keys);
+    renderPage();
+    const tablist = await screen.findByRole("tablist", { name: "Solicitudes de efectivo" });
+    expect(screen.getAllByRole("tab")).toHaveLength(count);
+    expect(tablist.classList.contains("prd-tabs--responsive-three")).toBe(responsive);
+  });
+});

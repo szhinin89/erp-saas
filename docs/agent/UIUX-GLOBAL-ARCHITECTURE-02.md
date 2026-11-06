@@ -92,9 +92,9 @@ CSS y pruebas acopladas: ningún CSS de módulo selecciona `.zh-screen-heading*`
 |---|---|---|
 | Proveedores, Clientes | 3 | Automático; retirar `variant` explícito |
 | `ItemsPage` | 3 («Nuevo ítem») | Automático con `mobileLabel` «Nuevo» |
-| `CashFundingRequestsPage` | 1–3 según permisos (fijo durante la sesión) | Automático cuando hay 3; etiquetas cortas. Confirmar en Bloque 2 |
-| `PriceListsPage` | 3 sin editar ↔ 6 al editar | **Exclusión explícita**: el número cambia por interacción |
-| `BranchDetailPage` | 3, markup local | Migrar a `ZHTabBar` (hereda el automático) |
+| `CashFundingRequestsPage` | 1–3 según permisos (fijo durante la sesión) | Automático cuando hay 3; sin `mobileLabel` (confirmado en Bloque 2) |
+| `PriceListsPage` | 3 sin editar ↔ 6 al editar | Automático, sin exclusión (Bloque 2): el cambio conserva nodo, foco y selección; a 320 px la barra de 3 dejaba pestañas fuera de vista |
+| `BranchDetailPage` | 3, markup local | Migrada a `ZHTabBar` (automático); `mobileLabel` «Establ.»/«Config.» (Bloque 2) |
 | `UserConfigPage` | N, markup local con `aria-controls` | Conservar: mejor relación tab/panel que `ZHTabBar` |
 | `CompanySettingsHubPage`, `OperationalPreferencesPage` | N, markup local | Migración opcional, sin cambio visual |
 | `AccountingReportsPage` (5), Compras (2), `ItemFormTabs` (2, `fill`), `PaymentMethodsPage` (1–2), `SalesOperationalHeader` (2) | ≠ 3 | Sin cambio |
@@ -194,7 +194,7 @@ visual del propietario; staging y commit los hace el propietario.
 
 | Bloque | Alcance | Validación |
 |---|---|---|
-| 2 — Pestañas | `ZHTabBar`: patrón responsive automático con exactamente 3 pestañas; exclusión explícita (`PriceListsPage`); retirar props de Proveedores/Clientes; `mobileLabel` en Ítems; migrar `BranchDetailPage` | `ZHTabBar.test` (2/3/4 pestañas, exclusión, nombre accesible); Ítems, `CashFundingRequestsPage`, `PriceListsPage`, `BranchDetailPage` a 320/390/480/481 |
+| 2 — Pestañas (UIUX-GLOBAL-TABS-DEFAULT-01: aprobado visual y técnicamente, pendiente de consolidación Git/CI) | `ZHTabBar`: patrón responsive automático con exactamente 3 pestañas; exclusión explícita `variant="standard"` (sin consumidores tras verificar `PriceListsPage`); retirar props de Proveedores/Clientes; `mobileLabel` en Ítems; migrar `BranchDetailPage` | `ZHTabBar.test` (2/3/4 pestañas, exclusión, nombre accesible); Ítems, `CashFundingRequestsPage`, `PriceListsPage`, `BranchDetailPage` a 320/390/480/481 |
 | 3 — KPI | Horizontal por defecto para KPI simples con excepciones explícitas; grid de `.pg-kpis` según cantidad (1–3 llenan el ancho, 4 igual que hoy, 5+ envuelve como hoy); retirar override de Stock; converger el grid de Proveedores | `ReportKpiCard.test`; pantallas con 3, 4 y 6 KPI (Dashboard, Plan de cuentas) |
 | 4 — Clientes | Resumen con tres KPI compactos sin acciones redundantes; identidad y «Ver + Más acciones»; CSS común de `masterData` sin duplicado `md-supplier-*`. Se inicia después de cerrar los pendientes de Clasificación y CI | Pruebas de Clientes/Proveedores y de acciones con permisos reducidos; 390/640/641/1440 |
 | 5 — Acciones y vacíos | `portal` por defecto en `ZHLineAction kind="menu"` (validar Compras); migración gradual de vacíos de sección | `ZHLineAction.test`, línea de Compras |

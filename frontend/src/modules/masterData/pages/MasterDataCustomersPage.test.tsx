@@ -133,7 +133,7 @@ describe("MasterDataCustomersPage — UIUX-CUSTOMERS-02 encabezado compacto y pe
     await waitFor(() => expect(businessPartnerFacade.searchBusinessPartnersPaged).toHaveBeenCalled());
   });
 
-  it("usa ZHTabBar responsive-three con etiqueta móvil y nombre accesible completo", async () => {
+  it("ZHTabBar aplica el patrón responsive automático con etiqueta móvil y nombre accesible completo", async () => {
     renderPage();
     const tablist = screen.getByRole("tablist", { name: "Secciones de clientes" });
     expect(tablist.classList.contains("prd-tabs--responsive-three")).toBe(true);

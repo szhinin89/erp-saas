@@ -198,7 +198,6 @@ export function MasterDataCustomersPage() {
       )}
 
       <ZHTabBar
-        variant="responsive-three"
         ariaLabel={t("masterdata.customers.tabs.aria", "Secciones de clientes")}
         tabs={TABS.map((tab) => ({
           id: tab.id,

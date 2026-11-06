@@ -22,8 +22,13 @@ type Props<TId extends string> = {
   ariaLabel?: string;
   /** true = las pestañas se reparten el ancho completo del contenedor en partes iguales. */
   fill?: boolean;
-  /** Opt-in: tres columnas móviles únicamente cuando tabs.length === 3. */
-  variant?: "default" | "responsive-three";
+  /**
+   * "auto" (default): con exactamente 3 pestañas aplica la distribución móvil de tres
+   * columnas (UIUX-GLOBAL-TABS-DEFAULT-01); con otra cantidad, el render estándar.
+   * "standard": exclusión explícita para barras funcionalmente distintas; siempre el
+   * render estándar. Todo consumidor que la use documenta el motivo junto al prop.
+   */
+  variant?: "auto" | "standard";
 };
 
 /**
@@ -38,9 +43,9 @@ export function ZHTabBar<TId extends string>({
   onChange,
   ariaLabel,
   fill = false,
-  variant = "default",
+  variant = "auto",
 }: Props<TId>) {
-  const responsiveThree = variant === "responsive-three" && tabs.length === 3;
+  const responsiveThree = variant === "auto" && tabs.length === 3;
   return (
     <div
       className={`prd-tabs${fill ? " prd-tabs--fill" : ""}${responsiveThree ? " prd-tabs--responsive-three" : ""}`}

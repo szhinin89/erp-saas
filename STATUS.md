@@ -1,5 +1,55 @@
 # Project Status
 
+## UIUX-GLOBAL-TABS-DEFAULT-01 — APROBADO VISUAL Y TÉCNICAMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+
+Aprobación visual final del propietario registrada el 2026-11-05 (pestañas del detalle de
+Sucursal Principal a 393 px). Pendiente de staging selectivo, commit y CI.
+
+Bloque 2 de [UIUX-GLOBAL-ARCHITECTURE-02](docs/agent/UIUX-GLOBAL-ARCHITECTURE-02.md): el patrón
+responsive de tres pestañas pasa a ser el default de `ZHTabBar` (`variant?: "auto" | "standard"`,
+default `auto`); contrato en
+[Frontend](docs/architecture/frontend.md#pestañas-responsive-automáticas-uiux-global-tabs-default-01).
+Se retira `"responsive-three"`/`"default"` y las props explícitas de Proveedores y Clientes. Ítems
+añade `mobileLabel` «Nuevo» (`items.tabs.nuevoShort`, es/en); `BranchDetailPage` migra sus botones
+locales `prd-tabs` a `ZHTabBar` («Secciones de la sucursal»). Solicitudes de efectivo (1–3 según
+permisos) y Listas de precios (3 ↔ 6 al editar) adoptan el automático sin exclusión: el cambio de
+cantidad conserva nodo, foco y selección, y a 320 px la barra de tres dejaba pestañas fuera de
+vista. Exclusión `standard` disponible y probada; consumidores: ninguno. Sin cambios en tokens,
+breakpoints, KPI, tablas, encabezados, permisos, rutas, APIs ni backend.
+
+Validación agente: Vitest focal (ZHTabBar, Sucursal, Ítems, Solicitudes de efectivo, Clientes,
+Proveedores ×2, Listas de precios) 76/76; `tsc -b`; ESLint focal sin errores (aviso `max-lines`
+preexistente de Proveedores); `architecture:check`, guardrail oficial `-SkipFrontendChunk`,
+Stack Audit (`verify-stack-allowlist.ps1` sobre el árbol de trabajo) y `git diff --check` PASS. Visual en AppLayout real con API simulada (sin backend ni
+credenciales) a 320/390/480/481/768/1440 px, antes/después
+(`tmp/uiux-global-tabs-default-01/capturas.html`): Proveedores y Clientes con geometría idéntica
+y píxeles iguales salvo antialiasing; las barras de tres pestañas quedan en una fila, sin overflow,
+48 px hasta 480 px. Sin suites generales, staging, commit ni push.
+
+Decisiones del propietario (2026-11-05): `auto` se mantiene como default; `standard` se conserva
+como exclusión explícita sin consumidores; Listas de precios sigue en automático. Ajuste final
+autorizado: en Detalle de sucursal a 320 px «Establecimientos» y «Configuraciones» se partían a
+mitad de palabra; ahora usan `mobileLabel` «Establ.» y «Config.»
+(`branches.detail.tabs.establishmentsShort` / `configurationsShort`; inglés «Estab.»/«Config.»),
+con nombres accesibles y etiquetas de escritorio completos. Sin cambios en otras pantallas ni
+en estilos globales. Vitest focal (ZHTabBar, Sucursal) 21/21, `tsc -b`, ESLint focal,
+`architecture:check`, guardrail oficial, Stack Audit y `git diff --check` PASS. Capturas
+finales (`tmp/uiux-global-tabs-default-01/capturas-final.html`): 320, 360, 390 y 480 px con
+las tres pestañas completas en una línea, sin recorte ni overflow, 48 px; 481, 768 y 1440 px
+con etiquetas completas, píxeles idénticos a la entrega previa. El desborde de Listas de
+precios con seis pestañas se registra aparte (UIUX-PRICELISTS-TABS-OVERFLOW).
+
+## UIUX-PRICELISTS-TABS-OVERFLOW — REGISTRADO, SIN CORREGIR (2026-11-05)
+
+Hallazgo preexistente detectado en la validación de UIUX-GLOBAL-TABS-DEFAULT-01, fuera de su
+alcance: en Listas de precios (`/products/pricing`, `PriceListsPage`) al editar una lista la
+barra tiene seis pestañas (Resumen, Listado, Editar Lista, Productos de la lista, Excepciones,
+Clientes de la lista) y desborda su contenedor de 320 a 768 px: las últimas quedan fuera de
+vista sin scroll visible (la página no desborda). Idéntico antes y después del cambio
+(evidencia `tmp/uiux-global-tabs-default-01/shots/{before,after}/pricelists-edit-*.png`); a
+1440 px cabe. Con tres pestañas (sin editar) el patrón automático lo resuelve. No afecta datos,
+permisos ni navegación por teclado. Pendiente de decisión y alcance propios del propietario.
+
 ## UIUX-PERMISSIONS-HEADER-390 — REGISTRADO, SIN CORREGIR (2026-11-05)
 
 Hallazgo preexistente detectado en la validación de UIUX-GLOBAL-HEADER-DEFAULT-01, fuera de su
@@ -10,7 +60,9 @@ reproduce igual con el diseño `stacked` original (evidencia local temporal en
 `tmp/uiux-global-header-default-01/app/shots/stacked-check/`). No afecta datos ni permisos.
 Pendiente de decisión y alcance propios del propietario; no autorizado ni corregido.
 
-## UIUX-GLOBAL-HEADER-DEFAULT-01 — APROBADO VISUALMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+## UIUX-GLOBAL-HEADER-DEFAULT-01 — CERRADO: commit e1b34d4d6, CI #1098 SUCCESS (2026-11-05)
+
+Cierre: aprobación visual del propietario y CI #1098 SUCCESS sobre `e1b34d4d6` (HEAD publicado en `origin/main`; resultado informado por el propietario).
 
 Aprobación visual final del propietario registrada el 2026-11-05: compacto predeterminado,
 kicker no renderizado, acciones y responsive conservados. Bloque 1 de [UIUX-GLOBAL-ARCHITECTURE-02](docs/agent/UIUX-GLOBAL-ARCHITECTURE-02.md): el
@@ -53,21 +105,26 @@ presentación aprobada. Vitest focal (PageShell, AppLayout, Clientes, Proveedore
 Flujos documentales) 56/56, `tsc -b`, ESLint focal, `architecture:check`, guardrail oficial,
 Stack Audit y `git diff --check` PASS.
 
-## UIUX-GLOBAL-ARCHITECTURE-02 — PLAN APROBADO; BLOQUE 1 APROBADO VISUALMENTE (2026-11-05)
+## UIUX-GLOBAL-ARCHITECTURE-02 — PLAN APROBADO; BLOQUE 1 CERRADO (CI #1098); BLOQUE 2 APROBADO, PENDIENTE DE GIT/CI (2026-11-05)
 
 Planificación para aplicar por defecto las mejoras aprobadas del DS (encabezado compacto,
 tres pestañas responsive, KPI simples horizontales, identidad y acciones de Clientes), con
 decisiones del propietario y matriz por consumidor en
 [UIUX-GLOBAL-ARCHITECTURE-02](docs/agent/UIUX-GLOBAL-ARCHITECTURE-02.md). Encabezado verificado:
-102 sitios en 84 archivos, más 23 archivos solo vía `NoAccessPage`. Bloque 1 en
-UIUX-GLOBAL-HEADER-DEFAULT-01; bloques 2–5 pendientes. UIUX-CUSTOMERS-02 y los pendientes
+102 sitios en 84 archivos, más 23 archivos solo vía `NoAccessPage`. Bloque 1 cerrado en
+UIUX-GLOBAL-HEADER-DEFAULT-01 (commit `e1b34d4d6`, CI #1098 SUCCESS); bloque 2 en
+UIUX-GLOBAL-TABS-DEFAULT-01 (aprobado visual y técnicamente, pendiente de consolidación Git/CI);
+bloques 3–5 pendientes. UIUX-CUSTOMERS-02 y los pendientes
 de Clasificación y CI se conservan en sus propias entradas.
 
-## UIUX-CUSTOMERS-02 — APROBADO VISUALMENTE; PENDIENTE DE CONSOLIDACIÓN GIT/CI (2026-11-05)
+## UIUX-CUSTOMERS-02 — CERRADO: commit e1b34d4d6, CI #1098 SUCCESS (2026-11-05)
+
+Cierre: aprobación visual del propietario y CI #1098 SUCCESS sobre `e1b34d4d6` (HEAD publicado en `origin/main`; resultado informado por el propietario).
 
 Aprobación visual del propietario registrada el 2026-11-05. Su `headingVariant="compact"`
 explícito se retiró en UIUX-GLOBAL-HEADER-DEFAULT-01 (el compacto es ahora el default);
-encabezado verificado idéntico. Registro original:
+encabezado verificado idéntico. Su `variant="responsive-three"` se retiró en
+UIUX-GLOBAL-TABS-DEFAULT-01 (patrón automático con tres pestañas); píxeles idénticos. Registro original:
 
 
 Clientes adopta `headingVariant="compact"` sin kicker y `ZHTabBar variant="responsive-three"`
@@ -80,7 +137,7 @@ evidencia local temporal (`tmp/uiux-customers-02/capturas.html`): 320, 360, 390,
 768 y 1440 px, tres pestañas visibles, sin overflow, 48 px hasta 480 px; harness con
 componentes reales y datos sintéticos, sin sesión autenticada ni backend.
 
-## CI-1096-FIX — READY FOR REVIEW (2026-11-05)
+## CI-1096-FIX — CERRADO: commit 7bd7664e2, cubierto por CI #1098 SUCCESS (2026-11-05)
 
 CI #1096 (commit `dd10a0f9b`) falló en Stack Audit: `tools/architecture/check-staged-guardrails.ps1`
 no figuraba en `scriptsAllowed`. Registrado en `scripts/stack-allowlist.json` (orden alfabético),
@@ -93,9 +150,10 @@ otros jobs. Sin cambios en Clientes, límites ni reglas.
 Validación agente: ambos controles oficiales PASS sobre el árbol; sobre el índice de `dd10a0f9b`
 el control reproduce CI #1096 (Stack Audit FAIL, Architecture PASS) sin alterar índice ni árbol.
 En clon temporal: corrección preparada PASS; `.ps1` no autorizado preparado FAIL, también si se
-borra del árbol (pwsh 7 y Windows PowerShell 5.1). Pendientes gate del propietario y CI; no CLOSED.
+borra del árbol (pwsh 7 y Windows PowerShell 5.1). Cierre: gate del propietario con commit
+`7bd7664e2`; CI #1098 SUCCESS sobre `e1b34d4d6`, que lo incluye (informado por el propietario).
 
-## CI-1095-FIX + PRECOMMIT-GUARD — READY FOR REVIEW (2026-11-05)
+## CI-1095-FIX + PRECOMMIT-GUARD — CERRADO: commit dd10a0f9b, cubierto por CI #1098 SUCCESS (2026-11-05)
 
 CI #1095 falló en PR-7: `MasterDataCustomersPage.tsx` del commit `9d4308935` tiene 511 líneas
 no vacías (536 físicas; el guardrail cuenta con `Measure-Object -Line`). Reproducido en local
@@ -116,10 +174,12 @@ Validación agente: Vitest focal 38/38, `tsc -b`, ESLint focal, guardrail oficia
 `-SkipFrontendChunk` PASS, architecture:check y check documental PASS, git diff --check PASS.
 Caso controlado en un clon temporal (pwsh 7 y Windows PowerShell 5.1): HEAD de CI #1095 falla,
 la corrección preparada pasa, un `.tsx` preparado de 501 líneas falla aunque se borre del árbol,
-retirarlo vuelve a pasar y un guardrail ausente del índice falla cerrado (exit 2). Pendientes
-gate del propietario, decisión sobre hook y CI del commit correctivo; no CLOSED.
+retirarlo vuelve a pasar y un guardrail ausente del índice falla cerrado (exit 2). Cierre: gate
+del propietario con commit `dd10a0f9b`; su Stack Audit (CI #1096) se corrigió en CI-1096-FIX y
+CI #1098 SUCCESS sobre `e1b34d4d6` los incluye (informado por el propietario). Sigue abierta,
+fuera del cierre, la decisión sobre instalar un hook.
 
-## BUG-CUSTOMERS-CLASSIFICATION-01 — READY FOR REVIEW (2026-11-05)
+## BUG-CUSTOMERS-CLASSIFICATION-01 — CERRADO: commit 9d4308935, cubierto por CI #1098 SUCCESS (2026-11-05)
 
 BUG REAL (integridad de datos): Listado de Clientes → «Clasificación» abría con los siete
 campos vacíos porque `openCustomerConfig` descartaba `customerConfig` leído de GET roles, y
@@ -142,7 +202,9 @@ Pendientes: el validador backend solo exime sin cambios a CustomerClassification
 cinco campos de catálogo con valor desactivado responden 422 al reguardar (sin pérdida; el
 usuario debe elegir un valor activo); decisión del propietario. La etiqueta «(fuera del
 catálogo activo)» se recorta en el ancho del select. Sin control de concurrencia (último
-guardado gana). Pendientes gate del propietario y CI. Sin staging, commit ni push; no CLOSED.
+guardado gana). Cierre: gate del propietario con commit `9d4308935` (el exceso de líneas de
+CI #1095 se corrigió en CI-1095-FIX); CI #1098 SUCCESS sobre `e1b34d4d6`, que lo incluye
+(informado por el propietario). Los pendientes anteriores quedan fuera del cierre, sin autorizar.
 
 ## UIUX-FINAL-REVIEW-01 — CERRADO: commits d7b07f6c8 + 13b8707a2, CI #1094 SUCCESS (2026-11-05)
 
@@ -176,7 +238,8 @@ otros módulos no implementadas.
 ## UIUX-GLOBAL-TABS-01 — CERRADO con UIUX-FINAL-REVIEW-01 (CI #1094 SUCCESS) (2026-11-05)
 
 Variante opcional responsive-three en ZHTabBar; solo Proveedores la solicita.
-Contrato en [Frontend](docs/architecture/frontend.md#pestañas-responsive-opcionales-uiux-global-tabs-01).
+Contrato vigente en [Frontend](docs/architecture/frontend.md#pestañas-responsive-automáticas-uiux-global-tabs-default-01):
+UIUX-GLOBAL-TABS-DEFAULT-01 convierte la variante en el default de `ZHTabBar` con tres pestañas.
 Defaults y cantidades distintas de tres conservan su render anterior. Reglas móviles
 trasladadas al DS, sin duplicación local, cambios de tokens o breakpoints globales.
 UIUX-SUPPLIERS-01/02/03 y UIUX-GLOBAL-HEADER-01 preservados; formularios, permisos,
