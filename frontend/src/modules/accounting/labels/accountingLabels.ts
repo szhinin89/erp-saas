@@ -1,12 +1,11 @@
 type TParams = Record<string, string | number>;
 export type TFunction = (key: string, fallbackOrParams?: string | TParams) => string;
 
-// ACCOUNTING-JOURNAL-LABELS-UX-01: lista verificada contra los `SourceModuleName` reales de cada
-// *PostingTranslator.cs backend (grep exhaustivo, no inventado) — Sales/Purchases/Finance/
-// Expenses/Retentions/Payables cubren cualquier SourceModule que un PostingFact puede llevar hoy, más
-// "Accounting" que usa el motor de REVERSOS (ver más abajo, FactType "Reversal") para cualquier
-// anulación/cancelación de cualquier módulo — no existe un SourceModule "Inventory" real pese a
-// aparecer como opción de filtro en Libro Diario (ese filtro cubre un caso futuro, no uno actual).
+// ACCOUNTING-JOURNAL-LABELS-UX-01 / ACCOUNTING-POSTING-RULES-UX-01: lista verificada contra los
+// SourceModule reales de `PostingFactCatalog.cs` y de cada *PostingTranslator.cs backend —
+// Sales/Purchases/Finance/Expenses/Retentions/Payables, Inventory (ajustes de inventario,
+// ACCOUNTING-12A), Caja (movimientos y arqueo, ACCOUNTING-12C), InitialLoad (apertura), más
+// "Accounting" que usa el motor de REVERSOS (FactType "Reversal") para cualquier anulación.
 const SOURCE_MODULE_KEYS: Record<string, string> = {
   Sales: "accounting.labels.sourceModule.Sales",
   Purchases: "accounting.labels.sourceModule.Purchases",
@@ -14,6 +13,9 @@ const SOURCE_MODULE_KEYS: Record<string, string> = {
   Expenses: "accounting.labels.sourceModule.Expenses",
   Retentions: "accounting.labels.sourceModule.Retentions",
   Payables: "accounting.labels.sourceModule.Payables",
+  Inventory: "accounting.labels.sourceModule.Inventory",
+  Caja: "accounting.labels.sourceModule.Caja",
+  InitialLoad: "accounting.labels.sourceModule.InitialLoad",
   Accounting: "accounting.labels.sourceModule.Accounting",
 };
 
@@ -48,6 +50,20 @@ const FACT_TYPE_KEYS: Record<string, string> = {
   // Retentions es hoy el único módulo que emite este FactType genérico — mismo riesgo que arriba.
   DocumentIssued: "accounting.labels.factType.Retentions.DocumentIssued",
   Reversal: "accounting.labels.factType.Reversal",
+  // ACCOUNTING-POSTING-RULES-UX-01: hechos de PostingFactCatalog que no tenían etiqueta. La clave
+  // de regla de reembolso no lleva destino (el destino solo existe en el asiento publicado).
+  SupplierCreditRefunded: "accounting.labels.factType.SupplierCreditRefundedRule",
+  StockAdjustmentIn: "accounting.labels.factType.StockAdjustmentIn",
+  StockAdjustmentOut: "accounting.labels.factType.StockAdjustmentOut",
+  ManualIncome: "accounting.labels.factType.ManualIncome",
+  ManualExpense: "accounting.labels.factType.ManualExpense",
+  Withdrawal: "accounting.labels.factType.Withdrawal",
+  BankDeposit: "accounting.labels.factType.BankDeposit",
+  CashCountSurplus: "accounting.labels.factType.CashCountSurplus",
+  CashCountShortage: "accounting.labels.factType.CashCountShortage",
+  OpeningInventory: "accounting.labels.factType.OpeningInventory",
+  OpeningReceivables: "accounting.labels.factType.OpeningReceivables",
+  OpeningPayables: "accounting.labels.factType.OpeningPayables",
 };
 
 const ACCOUNT_TYPE_KEYS: Record<string, string> = {
@@ -82,6 +98,10 @@ const AMOUNT_KIND_KEYS: Record<string, string> = {
   CostVarianceCredit: "accounting.labels.amountKind.CostVarianceCredit",
   HistoricalCost: "accounting.labels.amountKind.HistoricalCost",
   TaxIrbpnr: "accounting.labels.amountKind.TaxIrbpnr",
+  RetentionVat: "accounting.labels.amountKind.RetentionVat",
+  RetentionIncome: "accounting.labels.amountKind.RetentionIncome",
+  CashApplied: "accounting.labels.amountKind.CashApplied",
+  PendingBalance: "accounting.labels.amountKind.PendingBalance",
 };
 
 // ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: descripción corta opcional, solo para los FactType donde
@@ -119,6 +139,15 @@ export function factTypeLabel(t: TFunction, value: string): string {
     return t("accounting.labels.factType.SupplierCreditRefundReversed", { destination: detail });
   }
   return labelFromMap(t, FACT_TYPE_KEYS, value);
+}
+
+/** Operación de una regla contable (SourceModule + FactType). El ASI de apertura usa como FactType
+ * el código de documento "ASI" (`OpeningBalancePostingFacts.OpeningJournalEntry`), que solo es
+ * inequívoco junto con su módulo InitialLoad. */
+export function postingOperationLabel(t: TFunction, sourceModule: string, factType: string): string {
+  if (sourceModule === "InitialLoad" && factType === "ASI")
+    return t("accounting.labels.factType.OpeningJournalEntry");
+  return factTypeLabel(t, factType);
 }
 
 // ACCOUNTING-JOURNAL-LABELS-UX-01: el campo "Description" del asiento (y, por defecto, el de cada

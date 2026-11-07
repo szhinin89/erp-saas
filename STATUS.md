@@ -1,5 +1,108 @@
 # Project Status
 
+## ACCOUNTING-POSTING-RULES-UX-01 — Reglas contables UX/UI — IMPLEMENTED / PENDING CI (2026-11-07)
+
+Mejora UX/UI de `/accounting/configuration/posting-rules` con los componentes oficiales del Design
+System, sin cambios de backend, DTO, endpoints, motor contable, permisos, validaciones ni reglas de
+activación. Reglas vigentes en [Contabilidad § 23](docs/architecture/accounting.md) (pantalla
+actualizada) y [Frontend](docs/architecture/frontend.md).
+
+- **Lista → Detalle** con `ConfigTabsLayout`. Lista: `ZHFilterBar` (módulo, hecho contable, estado) y
+  una sola `ZHDataTable` con una fila por hecho del catálogo y por regla antigua fuera de él, sin
+  duplicados; columnas Operación, Módulo, Tipo de regla, Estado, Diagnóstico (solo con problemas) y
+  acción «Ver detalle» o «Configurar» según permiso.
+- **Tipos** Fija (sin lado dinámico), Mixta (líneas fijas más un lado del origen) y Habilitadora (sin
+  bases de importe); **estados** Activa, Inactiva, Sin regla y No soportada.
+- **Detalle:** operación, módulo, estado, tipo, clave técnica, bases de importe y última
+  modificación; un único aviso de problemas cuando existen; una sola tabla «Asiento que genera»,
+  Debe y Haber, que distingue la cuenta fija configurada (con su base de importe y problemas de la
+  cuenta) de la cuenta aportada por el módulo origen, nunca representada como fija. Las habilitadoras
+  muestran ambos lados del origen sin advertencias de líneas faltantes. Cada cuenta del origen está
+  verificada contra el traductor de su hecho; sin verificación se usa el texto genérico.
+- **Etiquetas y ayudas es/en:** módulos Inventario, Caja y Carga inicial; 13 hechos contables
+  (incluidos `BankDeposit`, `CashCountShortage`, `CashCountSurplus` y el ASI de apertura); 4 bases de
+  importe; textos `dynamic.debit|credit` corregidos; tres ayudas `ZHFieldHelp` (qué es una regla,
+  cómo leer el asiento, efecto de activar o desactivar).
+- **Sin cambios de comportamiento:** reutiliza `PostingRuleEditorModal` sin modificar, los permisos
+  `accounting.view` / `accounting.rules.manage` y la confirmación al desactivar.
+
+Validación agente: Vitest focal 51/51 PASS en 5 archivos (18 nuevas de Reglas contables, incluida la
+paridad i18n, más Libro Diario, detalle de asiento y contabilizaciones); `tsc -b`; ESLint focal;
+`architecture:check` (0 violaciones nuevas, incluido i18n-keys); guardrail oficial
+`-SkipFrontendChunk` y `git diff --check` PASS. Revisión visual del propietario en la aplicación
+local.
+
+Registrado sin abrir trabajo: `ConfigTabsLayout` rotula la primera pestaña «Lista» en ambos idiomas
+(texto fijo del componente compartido, no modificado); en móvil las tablas se desplazan dentro de su
+tarjeta; el importe de las filas del origen se describe de forma genérica porque el DTO no lo
+detalla; la redirección `/accounting/posting-rules` se conserva.
+
+Pendiente: commit y CI. No se declara CLOSED hasta esa evidencia.
+
+## ACCOUNTING-REPORTS-PRO-15 — Reportes contables profesionales — CLOSED (2026-11-07)
+
+Formatos profesionales de los cinco reportes de `/accounting/reports`, solo frontend y de solo
+lectura: sin cambios de backend, DTO, endpoints, cálculos contables ni permisos. Importes y
+verificaciones salen del backend sin recálculo ni cambio de signo. Reglas vigentes en
+[Contabilidad](docs/architecture/accounting.md) y [Frontend](docs/architecture/frontend.md).
+
+- **Libro Diario:** cada asiento con encabezado (número, fecha, operación y documento de origen),
+  líneas con código, cuenta, Debe y Haber, y total por asiento; pie con los totales de la página
+  identificando página y rango de asientos; aviso si los totales de página de la API no cuadran;
+  paginación por asientos que conserva los filtros.
+- **Libro Mayor:** mayor por cuenta con saldo inicial, movimientos con saldo acumulado, totales y
+  saldo final; índice de cuentas con saldo o movimientos, que informa las omitidas; una cuenta
+  elegida en el filtro abre su mayor directamente.
+- **Balance de Comprobación:** cuentas agrupadas por tipo con seis importes (saldo inicial,
+  movimientos y saldo final, en columnas deudora y acreedora) y fila «Comprobación» diferenciada:
+  cuadre de movimientos según `isBalanced` del backend; saldos inicial y final como comparación de
+  los totales recibidos.
+- **Estado de Resultados:** escalonado Ingresos → (−) Costos → (=) Utilidad bruta → (−) Gastos →
+  (=) Utilidad o pérdida neta, en columnas Detalle | Total; un resultado negativo se rotula como
+  pérdida conservando importe y signo.
+- **Balance General:** clasificado con los grupos del Plan de Cuentas, totales por sección,
+  Total Pasivo + Patrimonio y comprobación contable según `isBalanced`/`difference` del backend.
+- **Ayuda contextual es/en** «¿Qué es?» y «¿Cómo se lee?» en cada reporte (`ZHFieldHelp`, sistema
+  oficial de ayuda).
+- Cada pestaña consulta solo al pulsar «Consultar», con el rango validado, y nunca muestra datos de
+  una consulta anterior tras un error.
+
+Validación: 21 pruebas nuevas en `AccountingReportsPage.test.tsx` y
+`AccountingReportsStatements.test.tsx`; Vitest focal 111/111 PASS antes de la publicación.
+Revisión funcional del propietario desde la aplicación local autenticada: cinco reportes,
+15/15 comprobaciones conformes. No constituye una auditoría integral de PostgreSQL.
+
+Cierre (2026-11-07): commit `3cf49b5d4` publicado en `main` y cubierto por CI #1114 SUCCESS
+(arquitectura, frontend, seguridad, backend y `CI gate` PASS; publicación API omitida). El job
+frontend de CI ejecuta lint, `platform:guard`, build y guardrails, no Vitest. Detalle del perfil
+y de los intentos de esa ejecución en [CI-SELECTIVE-01](#ci-selective-01--ci-selectivo--etapas-1-y-2-publicadas-perfil-documental-pendiente-de-evidencia-2026-11-06).
+
+Registrado sin abrir trabajo (alcance de esta versión): sin subtotales por grupo o sección en
+Balance de Comprobación y Balance General (encabezados de grupo sin importe); totales del Libro
+Diario y mayor por cuenta limitados a la página consultada; sin Plan de Cuentas disponible, el
+Balance General muestra las cuentas sin agrupar; Total Pasivo + Patrimonio es la única suma de
+presentación calculada en frontend (dos totales del backend, con Decimal.js).
+
+## ZH-DS-TABBAR-RESPONSIVE-01 — ZHTabBar responsive en móvil — CLOSED (2026-11-07)
+
+Solución responsive oficial de `ZHTabBar` (Design System), aplicable a todos sus consumidores.
+Reglas vigentes en [Frontend](docs/architecture/frontend.md).
+
+- Hasta 768 px, si las pestañas no caben, la barra se desplaza horizontalmente dentro de sí misma
+  (`overflow-x: auto`, `overscroll-behavior-x: contain`) en lugar de ensanchar la página: sin
+  desbordamiento del contenedor ni pestañas inaccesibles.
+- La pestaña activa y la que recibe el foco de teclado se desplazan a la vista moviendo solo el
+  scroll de la barra, nunca el de la página; la línea inferior pasa a sombra interior para no
+  recortar el indicador activo, y el contorno de foco se dibuja hacia dentro.
+- Escritorio sin cambios: los estilos solo aplican en la media query móvil y, sin desbordamiento,
+  el desplazamiento no actúa.
+
+Validación: dos pruebas nuevas en `ZHTabBar.test.tsx` (pestaña activa y enfocada a la vista;
+sin desbordamiento no se toca el scroll), dentro de las focales 111/111 PASS.
+
+Cierre (2026-11-07): commit `102047c0c` publicado en `main`, cubierto por CI #1114 SUCCESS junto
+con `3cf49b5d4`.
+
 ## ACCOUNTING-JOURNAL-UX-01 — Asientos contables UX/UI — CLOSED (2026-11-06)
 
 Mejora UX/UI de Asientos contables con los componentes oficiales del Design System, sin cambios de
@@ -49,6 +152,16 @@ Reglas, perfiles y `CI gate` en
 - Etapa 2 (activación): commit `01f1ff6f3`; CI completo de activación #1111 SUCCESS.
 - Perfil frontend: CI #1112 SUCCESS sobre `2534f5646`; backend y publicación API omitidos
   correctamente por el plan.
+- CI #1114 sobre `3cf49b5d4` (push `ed593b2ce..3cf49b5d4`, solo archivos de `frontend/src/`):
+  perfil efectivo **completo**, no frontend. Causa confirmada al reproducir el plan con
+  `tools/ci/ci_changes.mjs` versionado: `frontend/src/modules/accounting/pages/reports/reportScope.tsx`
+  coincide con el término `scope` del patrón de rutas sensibles, que exige perfil completo; los
+  otros 19 archivos se clasifican como frontend. Es la regla intencional de «seguridad sensible →
+  completo», aplicada por nombre de ruta: el archivo es un componente de presentación, sin efecto
+  de seguridad (falso positivo conservador del patrón). Esta ejecución no valida el perfil
+  frontend selectivo. Intentos: el 1 falló en `Backend (infrastructure-08)` y, por consiguiente,
+  en `CI gate`; el 2 relanzó solo los jobs fallidos y terminó en SUCCESS. La causa del fallo del
+  intento 1 no está determinada (los registros requieren acceso autenticado).
 
 Evidencia de GitHub Actions confirmada por el propietario. **Pendiente:** primera ejecución real del
 perfil exclusivamente documental (documentación, Stack Audit, Identity y Platform; sin backend ni

@@ -199,4 +199,22 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     short: "¿Qué es? La situación financiera de la empresa a la fecha de corte: lo que tiene (Activo), lo que debe (Pasivo) y lo que pertenece a sus propietarios (Patrimonio).",
     long: "¿Cómo se lee? Saldos acumulados hasta la fecha de corte. Las cuentas aparecen bajo su grupo del Plan de Cuentas, con su importe en Detalle y el total de cada sección en Total. Debe cumplirse Activo = Pasivo + Patrimonio: la fila Comprobación muestra el resultado y la diferencia. Patrimonio incluye los resultados aún no cerrados, calculados por el sistema contable.",
   },
+  [HELP_KEYS.ACCOUNTING_POSTING_RULES_OVERVIEW]: {
+    i18nPrefix: "help.accountingPostingRules.overview",
+    title: "Reglas contables: qué son",
+    short: "Cada regla indica qué cuentas usa el ERP para contabilizar automáticamente una operación de un módulo, por ejemplo una venta o un depósito bancario.",
+    long: "Hay una regla por operación. Fija: todas sus cuentas se configuran aquí. Mixta: aquí se configura una parte y el módulo origen aporta el resto. Habilitadora: el módulo origen aporta todas las cuentas y la regla solo permite contabilizar. Una operación sin regla, o con su regla inactiva, no se contabiliza.",
+  },
+  [HELP_KEYS.ACCOUNTING_POSTING_RULES_ENTRY]: {
+    i18nPrefix: "help.accountingPostingRules.entry",
+    title: "Asiento que genera: cómo se lee",
+    short: "Cada fila es una línea del asiento, en el Debe o en el Haber. «Cuenta fija» es la cuenta configurada en esta regla; «Aporta el origen» es una cuenta que el módulo origen determina en cada operación.",
+    long: "La base del importe indica qué valor del documento lleva cada línea fija, por ejemplo el subtotal o el IVA. Las cuentas del origen salen de la configuración de ese módulo (caja, banco, motivo, medio de pago o subcategoría), no de esta pantalla. «Editar líneas» cambia solo las líneas fijas y afecta únicamente contabilizaciones futuras.",
+  },
+  [HELP_KEYS.ACCOUNTING_POSTING_RULES_STATUS]: {
+    i18nPrefix: "help.accountingPostingRules.status",
+    title: "Activar o desactivar una regla",
+    short: "Una regla activa se usa en cada nueva operación de su tipo. Al desactivarla, esas operaciones no podrán contabilizarse hasta reactivar una regla válida.",
+    long: "Los asientos ya publicados no cambian. Para reactivarla, la regla debe volver a cumplir la validación: cuentas activas que admiten movimientos y las líneas de Debe y Haber que exige la operación.",
+  },
 };

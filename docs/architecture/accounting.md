@@ -778,9 +778,16 @@ se eliminaron del modelo (el motor nunca los leyó); `Lines` es la única config
 **Permisos.** Consulta (reglas y catálogo): `accounting.view`. Crear, editar, activar y desactivar:
 `accounting.rules.manage`, acción relacionada del NavItem Contabilidad › Configuración › Reglas contables.
 
-**Pantalla.** `/accounting/configuration/posting-rules`: hechos soportados sin regla (para que una empresa
-nueva los configure sin SQL), reglas con su diagnóstico según el catálogo, editor de líneas (cuenta,
-Debe/Haber, tipo de monto del catálogo) y desactivación con confirmación explícita.
+**Pantalla.** `/accounting/configuration/posting-rules`, patrón Lista → Detalle (`ConfigTabsLayout`). La
+lista es una sola tabla con una fila por hecho del catálogo y por regla antigua fuera de él: operación,
+módulo, tipo de regla (Fija: sin lado dinámico; Mixta: líneas fijas más un lado del origen;
+Habilitadora: sin AmountKinds), estado (Activa, Inactiva, Sin regla, No soportada) y diagnóstico
+según el catálogo. El detalle muestra el asiento que genera: las líneas fijas con su cuenta y base del
+importe, y cada lado dinámico como «Aporta el origen» con la cuenta que resuelve su traductor (caja,
+motivo, banco, medio de pago, subcategoría o líneas del ASI), nunca como cuenta fija. Configurar
+crea la regla de un hecho sin regla (para que una empresa nueva la configure sin SQL); el editor de
+líneas (cuenta, Debe/Haber, tipo de monto del catálogo) y la desactivación con confirmación explícita
+no cambian.
 
 **Balance General.** Activo suma Debe − Haber y Pasivo/Patrimonio Haber − Debe por sección (una cuenta
 correctora resta dentro de su sección). Patrimonio agrega dos filas calculadas desde asientos Posted hasta

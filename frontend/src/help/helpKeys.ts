@@ -40,6 +40,10 @@ export const HELP_KEYS = {
   ACCOUNTING_REPORTS_TRIAL_BALANCE: "accounting.reports.trialBalance",
   ACCOUNTING_REPORTS_INCOME_STATEMENT: "accounting.reports.incomeStatement",
   ACCOUNTING_REPORTS_BALANCE_SHEET: "accounting.reports.balanceSheet",
+  // ACCOUNTING-POSTING-RULES-UX-01: qué es una regla, cómo leer su asiento y efecto de activar/desactivar.
+  ACCOUNTING_POSTING_RULES_OVERVIEW: "accounting.postingRules.overview",
+  ACCOUNTING_POSTING_RULES_ENTRY: "accounting.postingRules.entry",
+  ACCOUNTING_POSTING_RULES_STATUS: "accounting.postingRules.status",
 } as const;
 
 export type HelpKeyId = (typeof HELP_KEYS)[keyof typeof HELP_KEYS];
