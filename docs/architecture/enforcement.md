@@ -163,12 +163,14 @@ Comandos de operación y distribución CI/E2E: [DEVELOPMENT](../DEVELOPMENT.md#t
 ### Plan de CI y activación selectiva
 
 El orquestador `.github/workflows/ci.yml` genera su plan mediante
-[`ci_changes.mjs`](../../tools/ci/ci_changes.mjs). **Etapa 2: activación preparada
-localmente por autorización del propietario**, con `SELECTIVE_ENABLED = true` en ese
-archivo (no en el YAML). Es una constante versionada sin override de entorno ni input
-manual. Publicación y verificación real de perfiles en Actions pendientes; no CLOSED.
-La etapa 1 sobre `44f3f9709` fue validada en CI #1110 SUCCESS según evidencia confirmada
-por el propietario. El resumen distingue perfil propuesto y efectivo.
+[`ci_changes.mjs`](../../tools/ci/ci_changes.mjs). **Etapa 2: activación publicada por
+autorización del propietario**, con `SELECTIVE_ENABLED = true` en ese archivo (no en el
+YAML). Es una constante versionada sin override de entorno ni input manual. Evidencia
+real en Actions, confirmada por el propietario: etapa 1 sobre `44f3f9709`, CI #1110
+SUCCESS; etapa 2 sobre `01f1ff6f3` (perfil completo), CI #1111 SUCCESS; perfil frontend,
+CI #1112 y #1115 SUCCESS; perfil documental, CI #1113 SUCCESS. Los perfiles backend y
+mixto aún no tienen ejecución real independiente; no CLOSED (ver «Validación pendiente»).
+El resumen distingue perfil propuesto y efectivo.
 
 El detector compara `before` y SHA final en push, y merge-base de base/head fijos del
 evento en PR; las pruebas se realizan sobre el SHA de integración de Actions. Usa
@@ -176,10 +178,13 @@ Git con historial completo y rutas NUL, sin detección de renombres para incluir
 origen y destino. Historial ausente, rama nueva o evento no reconocido exige completo.
 El job `changes` también verifica whitespace del rango cuando está disponible.
 
-La selección preparada admite únicamente Markdown en la lista positiva del selector
+La selección admite únicamente Markdown en la lista positiva del selector
 y entradas informativas explícitas; no admite `docs/**` indiscriminadamente. Código
 frontend/backend ordinario selecciona su dominio; CI, guardrails, configuración,
-seguridad sensible y rutas desconocidas exigen completo. Arquitectura completa se
+seguridad sensible y rutas desconocidas exigen completo. La seguridad sensible se
+detecta por términos en la ruta: un archivo sin efecto de seguridad cuyo nombre contiene
+uno de ellos también exige completo (falso positivo conservador diagnosticado en CI #1114
+con `reportScope.tsx`; no corregido). Arquitectura completa se
 conserva para todo cambio no documental. El perfil documental conserva Stack Audit,
 Identity, Platform y el check documental. La suite backend no se subdivide por módulo.
 
@@ -230,8 +235,9 @@ no avanzó. Un bypass permitiría omitir el requisito y no equivale a protecció
 No se modifica este procedimiento ni configuración en esta fase.
 [Referencia de GitHub sobre checks requeridos y pushes](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging).
 
-**Validación pendiente:** después de publicación autorizada, verificar documentación,
-frontend, backend, mixtos y omisiones/gate mediante Actions reales antes del cierre.
+**Validación pendiente:** antes del cierre, verificar mediante Actions reales los perfiles
+backend y mixto. Documentación, frontend, completo y omisiones/gate ya están verificados
+(CI #1111, #1112, #1113 y #1115).
 Si existe merge queue, añadir su trigger `merge_group` antes de activarla (el selector
 ya exige completo para ese evento). La ejecución manual permite CI completo en
 cualquier fase. Vitest, E2E y los requisitos independientes de producción se mantienen.
@@ -254,7 +260,8 @@ push/PR por CLI con Git real y 42 planes documentales sin publicación; arquitec
 147/147 y ratchet sin violaciones nuevas; guardrail PowerShell, Stack Audit, YAML y
 contratos de los ocho workflows, referencias documentales y `git diff --check` PASS.
 El propio diff de activación exige completo y no solicita publicación API. Sin cambios
-en protecciones, staging, commit, push ni despliegues; evidencia real de etapa 2 pendiente.
+en protecciones, staging, commit, push ni despliegues. La evidencia real de etapa 2 llegó
+después con CI #1111 SUCCESS.
 
 ### Documentación (control focal sin red)
 

@@ -1,6 +1,6 @@
 # Project Status
 
-## ACCOUNTING-POSTING-RULES-UX-01 — Reglas contables UX/UI — IMPLEMENTED / PENDING CI (2026-11-07)
+## ACCOUNTING-POSTING-RULES-UX-01 — Reglas contables UX/UI — CLOSED (2026-11-07)
 
 Mejora UX/UI de `/accounting/configuration/posting-rules` con los componentes oficiales del Design
 System, sin cambios de backend, DTO, endpoints, motor contable, permisos, validaciones ni reglas de
@@ -37,7 +37,9 @@ Registrado sin abrir trabajo: `ConfigTabsLayout` rotula la primera pestaña «Li
 tarjeta; el importe de las filas del origen se describe de forma genérica porque el DTO no lo
 detalla; la redirección `/accounting/posting-rules` se conserva.
 
-Pendiente: commit y CI. No se declara CLOSED hasta esa evidencia.
+Cierre (2026-11-07): commit `55ff049af` publicado en `main`; CI #1115 SUCCESS en el primer intento
+(unos 5 min) con perfil frontend selectivo: plan, Stack Audit, Architecture guardrails, Identity
+guardrails, frontend y `CI gate` PASS; backend y publicación API omitidos (SKIPPED) conforme al plan.
 
 ## ACCOUNTING-REPORTS-PRO-15 — Reportes contables profesionales — CLOSED (2026-11-07)
 
@@ -75,7 +77,7 @@ Revisión funcional del propietario desde la aplicación local autenticada: cinc
 Cierre (2026-11-07): commit `3cf49b5d4` publicado en `main` y cubierto por CI #1114 SUCCESS
 (arquitectura, frontend, seguridad, backend y `CI gate` PASS; publicación API omitida). El job
 frontend de CI ejecuta lint, `platform:guard`, build y guardrails, no Vitest. Detalle del perfil
-y de los intentos de esa ejecución en [CI-SELECTIVE-01](#ci-selective-01--ci-selectivo--etapas-1-y-2-publicadas-perfil-documental-pendiente-de-evidencia-2026-11-06).
+y de los intentos de esa ejecución en [CI-SELECTIVE-01](#ci-selective-01--ci-selectivo--perfiles-documental-y-frontend-validados-backend-y-mixto-pendientes-de-evidencia-2026-11-07).
 
 Registrado sin abrir trabajo (alcance de esta versión): sin subtotales por grupo o sección en
 Balance de Comprobación y Balance General (encabezados de grupo sin importe); totales del Libro
@@ -143,7 +145,7 @@ ADR-027; el usuario ve el mensaje específico de `data.errors`); nombres de usua
 (requiere ampliar DTO en backend); elementos de la referencia visual que exigirían ampliar el Design
 System (columna lateral, icono de cabecera, fecha larga, paginación de `ZHDataTable`).
 
-## CI-SELECTIVE-01 — CI selectivo — ETAPAS 1 Y 2 PUBLICADAS; PERFIL DOCUMENTAL PENDIENTE DE EVIDENCIA (2026-11-06)
+## CI-SELECTIVE-01 — CI selectivo — PERFILES DOCUMENTAL Y FRONTEND VALIDADOS; BACKEND Y MIXTO PENDIENTES DE EVIDENCIA (2026-11-07)
 
 Reglas, perfiles y `CI gate` en
 [Enforcement § Plan de CI y activación selectiva](docs/architecture/enforcement.md#plan-de-ci-y-activación-selectiva).
@@ -152,6 +154,11 @@ Reglas, perfiles y `CI gate` en
 - Etapa 2 (activación): commit `01f1ff6f3`; CI completo de activación #1111 SUCCESS.
 - Perfil frontend: CI #1112 SUCCESS sobre `2534f5646`; backend y publicación API omitidos
   correctamente por el plan.
+- **Perfil documental validado** con CI #1113 SUCCESS sobre `ed593b2ce` (push
+  `2534f5646..ed593b2ce`, solo `STATUS.md`; plan reproducido: perfil y arquitectura `documentation`):
+  Stack Audit, Identity guardrails, Platform Control Plane guard, «Documentation references and
+  authority» y `CI gate` PASS; backend, frontend, checks de código de arquitectura y publicación API
+  SKIPPED conforme al plan.
 - CI #1114 sobre `3cf49b5d4` (push `ed593b2ce..3cf49b5d4`, solo archivos de `frontend/src/`):
   perfil efectivo **completo**, no frontend. Causa confirmada al reproducir el plan con
   `tools/ci/ci_changes.mjs` versionado: `frontend/src/modules/accounting/pages/reports/reportScope.tsx`
@@ -162,10 +169,18 @@ Reglas, perfiles y `CI gate` en
   frontend selectivo. Intentos: el 1 falló en `Backend (infrastructure-08)` y, por consiguiente,
   en `CI gate`; el 2 relanzó solo los jobs fallidos y terminó en SUCCESS. La causa del fallo del
   intento 1 no está determinada (los registros requieren acceso autenticado).
+- **Perfil frontend selectivo validado** con CI #1115 SUCCESS sobre `55ff049af` (push
+  `3cf49b5d4..55ff049af`: archivos de `frontend/src/` más `STATUS.md` y `accounting.md`, sin rutas
+  sensibles): plan, Stack Audit, Architecture guardrails, Identity guardrails, frontend y `CI gate`
+  PASS; backend y publicación API SKIPPED conforme al plan. El hallazgo de #1114 se conserva.
 
-Evidencia de GitHub Actions confirmada por el propietario. **Pendiente:** primera ejecución real del
-perfil exclusivamente documental (documentación, Stack Audit, Identity y Platform; sin backend ni
-frontend). No se declara validado hasta obtener esa evidencia.
+Estado (2026-11-07): etapas 1 y 2 publicadas; perfiles completo (#1111), frontend (#1112, #1115)
+y documental (#1113), y `CI gate` con omisiones según el plan, verificados en GitHub Actions
+(evidencia confirmada por el propietario y por los jobs de cada ejecución). **Pendiente para el
+cierre:** primera ejecución real independiente de los perfiles backend y mixto, criterio de
+[Enforcement](docs/architecture/enforcement.md#plan-de-ci-y-activación-selectiva). Su clasificación
+ya está cubierta por `ci_changes.test.mjs` (36/36), pero eso no sustituye la evidencia de Actions.
+El falso positivo de #1114 está diagnosticado y documentado, no corregido.
 
 ## B-02 — pruebas obsoletas de Compras actualizadas — CLOSED (2026-11-06)
 
