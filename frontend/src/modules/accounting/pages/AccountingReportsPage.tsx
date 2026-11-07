@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useI18n } from "../../../i18n/i18n";
 import { PageShell } from "../../../components/PageShell";
 import { ZHTabBar, type ZHTab } from "../../../components/zh/ZHTabBar";
 import { GeneralJournalReportTab } from "./reports/GeneralJournalReportTab";
@@ -19,13 +20,13 @@ type ReportTabId =
   | "income-statement"
   | "balance-sheet";
 
-const TABS: ZHTab<ReportTabId>[] = [
-  { id: "general-journal", label: "Libro Diario" },
-  { id: "general-ledger", label: "Libro Mayor" },
-  { id: "trial-balance", label: "Balance de Comprobación" },
-  { id: "income-statement", label: "Estado de Resultados" },
-  { id: "balance-sheet", label: "Balance General" },
-];
+const TAB_LABEL_KEYS: Record<ReportTabId, string> = {
+  "general-journal": "accounting.reports.tab.generalJournal",
+  "general-ledger": "accounting.reports.tab.generalLedger",
+  "trial-balance": "accounting.reports.tab.trialBalance",
+  "income-statement": "accounting.reports.tab.incomeStatement",
+  "balance-sheet": "accounting.reports.tab.balanceSheet",
+};
 
 /**
  * Contabilidad → Reportes (ACCOUNTING-REPORTS-09, extendido en ACCOUNTING-FINANCIAL-
@@ -41,17 +42,24 @@ const TABS: ZHTab<ReportTabId>[] = [
  * exclusivamente JournalEntry/JournalEntryLine ya Posted, sin recalcular nada de Ventas/Compras/
  * Inventario/Finanzas. ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: pantalla principal, accesible
  * solo desde el menú — sin botones cruzados hacia Asientos contables/Plan de cuentas.
+ * ACCOUNTING-REPORTS-UX-13: textos vía i18n; cada pestaña consulta solo al pulsar Buscar, con
+ * alcance aplicado visible (empresa, período/fecha de corte) y tablas compactas.
  */
 export function AccountingReportsPage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<ReportTabId>("general-journal");
+  const tabs: ZHTab<ReportTabId>[] = (Object.keys(TAB_LABEL_KEYS) as ReportTabId[]).map((id) => ({
+    id,
+    label: t(TAB_LABEL_KEYS[id]),
+  }));
 
   return (
     <PageShell
-      kicker="Contabilidad"
-      title="Reportes contables"
-      subtitle="Libro Diario, Libro Mayor, Balance de Comprobación, Estado de Resultados y Balance General — solo lectura, a partir de asientos ya contabilizados"
+      kicker={t("accounting.reports.page.kicker")}
+      title={t("accounting.reports.page.title")}
+      subtitle={t("accounting.reports.page.subtitle")}
     >
-      <ZHTabBar tabs={TABS} activeTab={tab} onChange={setTab} ariaLabel="Reportes contables" />
+      <ZHTabBar tabs={tabs} activeTab={tab} onChange={setTab} ariaLabel={t("accounting.reports.page.title")} />
       {tab === "general-journal" && <GeneralJournalReportTab />}
       {tab === "general-ledger" && <GeneralLedgerReportTab />}
       {tab === "trial-balance" && <TrialBalanceReportTab />}

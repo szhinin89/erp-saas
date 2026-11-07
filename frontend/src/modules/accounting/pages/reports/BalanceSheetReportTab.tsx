@@ -1,158 +1,194 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import Decimal from "decimal.js";
 import { ReportCompletenessNotice } from "./ReportCompletenessNotice";
+import { ReportScopeTitle } from "./reportScope";
+import { AccountLabel, FinancialStatementSection, StatementHead, type StatementRow } from "./FinancialStatementSection";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
 import { ZhDateInput } from "../../../../components/zh/inputs";
-import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
-import { message } from "../../../../lib/messages";
-import { formatApiRequestError } from "../../../lib/apiError";
-import {
-  accountingApi,
-  type AccountingCompleteness,
-  type FinancialStatementLineDto,
-  type GetBalanceSheetReportResponse,
-} from "../../api/accountingApi";
-import { todayIso } from "../../../../lib/formatters/dateFormatters";
+import { ZHFieldHelp } from "../../../../components/zh/help";
+import { Badge, ErrorState, LoadingState } from "../../../../components/PageShell";
+import { useCompanyScopedAsync } from "../../../../hooks/useCompanyScopedAsync";
+import { HELP_KEYS } from "../../../../help";
+import { formatDate, todayIso } from "../../../../lib/formatters/dateFormatters";
 import { useI18n } from "../../../../i18n/i18n";
-
-/** ACCOUNTING-11 — fila de Patrimonio: cuenta real o fila calculada (sin cuenta ni link). */
-type EquityRow = FinancialStatementLineDto & { calculated?: boolean };
-
-const LINE_COLUMNS: ZHDataTableColumn<EquityRow>[] = [
-  {
-    key: "accountCode",
-    header: "Código",
-    render: (r) => (r.calculated ? <em>{r.accountCode}</em> : <code className="prd-sku">{r.accountCode}</code>),
-  },
-  { key: "accountName", header: "Cuenta", render: (r) => r.accountName },
-  { key: "amount", header: "Saldo", align: "right", render: (r) => <ZHMoneyValue precision="accounting" value={r.amount} /> },
-];
+import { accountingApi, type AccountDto, type FinancialStatementLineDto } from "../../api/accountingApi";
 
 /**
- * Balance General (ACCOUNTING-FINANCIAL-STATEMENTS-10) — consume
- * `GET /accounting/reports/balance-sheet`. Saldo acumulado (desde el inicio del historial Posted)
- * de Activos/Pasivos/Patrimonio hasta la fecha de corte. Solo lectura, sin recálculo.
- * ACCOUNTING-11: Patrimonio incluye las filas calculadas por el backend (resultado del ejercicio y
- * resultados no cerrados de ejercicios anteriores, sin asiento), así que el aviso de descuadre
- * solo aparece ante un descuadre real.
- * ACCOUNTING-REPORTS-DS-QA-FIX-10E: mismo ajuste de filtros/secciones/totales que Estado de
- * Resultados (`ZHFilterBar`, `ZHCard` anidado con `zh-section-title`, `ZHMoneyValue`).
+ * Cuentas de una sección precedidas por el encabezado de su grupo (cuenta padre del Plan de
+ * Cuentas) cada vez que el grupo cambia. El encabezado no lleva importe (D1: sin subtotales por
+ * grupo; nunca el saldo propio de una agrupadora). Se omite cuando el padre es la raíz de la
+ * sección (sin padre propio: repetiría la banda Activo/Pasivo/Patrimonio) o si el Plan de
+ * Cuentas no está disponible — las cuentas se muestran igual, sin clasificación inventada.
+ */
+function groupedRows(lines: FinancialStatementLineDto[], chart: Map<string, AccountDto>): StatementRow[] {
+  const rows: StatementRow[] = [];
+  let currentParent: string | null = null;
+  for (const l of lines) {
+    const parentId = chart.get(l.accountId)?.parentAccountId ?? null;
+    const parent = parentId ? chart.get(parentId) : undefined;
+    const groupId = parent && parent.parentAccountId !== null ? parent.id : null;
+    if (groupId && groupId !== currentParent && parent) {
+      rows.push({ kind: "group", id: `group-${groupId}`, label: <AccountLabel code={parent.code} name={parent.name} /> });
+    }
+    currentParent = groupId;
+    rows.push({ kind: "account", id: l.accountId, account: <AccountLabel code={l.accountCode} name={l.accountName} />, amount: l.amount });
+  }
+  return rows;
+}
+
+/**
+ * Balance General (ACCOUNTING-FINANCIAL-STATEMENTS-10) — `GET /accounting/reports/balance-sheet`,
+ * solo lectura, saldo acumulado hasta la fecha de corte. ACCOUNTING-11: Patrimonio incluye las dos
+ * filas calculadas por el backend (marcadas "Calculado"). ACCOUNTING-REPORTS-PRO-15: estado de
+ * situación clasificado en dos columnas (Detalle | Total): Activo, Pasivo y Patrimonio con los
+ * grupos disponibles del Plan de Cuentas (encabezados sin importe), Total Pasivo + Patrimonio
+ * (`grand`) y la comprobación de la ecuación contable dentro del reporte con `isBalanced`/
+ * `difference` del backend como autoridad. Total Pasivo + Patrimonio es la suma de presentación de
+ * dos totales del backend (Decimal.js), el único importe que el backend no entrega.
  */
 export function BalanceSheetReportTab() {
-  const [asOfDate, setAsOfDate] = useState(todayIso());
   const { t } = useI18n();
-  const [data, setData] = useState<GetBalanceSheetReportResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [completeness, setCompleteness] = useState<AccountingCompleteness | null>(null);
+  const [draft, setDraft] = useState(() => todayIso());
+  const [applied, setApplied] = useState(draft);
+  const [showError, setShowError] = useState(false);
+  const asOfError = draft ? null : t("accounting.reports.filter.asOfRequired");
 
-  const fetchReport = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await accountingApi.getBalanceSheetReport({ asOfDate });
-      setData(r);
-      setCompleteness(r.completeness);
-    } catch (err: unknown) {
-      message.error(
-        formatApiRequestError(err, { generic: "No se pudo cargar el Balance General." }),
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [asOfDate]);
+  const chartState = useCompanyScopedAsync(() => accountingApi.listAccounts());
+  const chart = useMemo(() => new Map((chartState.data ?? []).map((a) => [a.id, a])), [chartState.data]);
 
-  useEffect(() => {
-    void fetchReport();
-  }, [fetchReport]);
+  const { data, loading, error } = useCompanyScopedAsync(
+    () => accountingApi.getBalanceSheetReport({ asOfDate: applied }).then((report) => ({ asOf: applied, report })),
+    true,
+    [applied],
+  );
+  const report = data && data.asOf === applied && !error ? data.report : null;
 
-  const equityRows = useMemo<EquityRow[]>(() => {
-    if (!data) return [];
-    const calculated = t("accounting.reports.balanceSheet.calculated");
-    return [
-      ...data.equityLines,
-      {
-        accountId: "calculated-current-year-result",
-        accountCode: calculated,
-        accountName: t("accounting.reports.balanceSheet.currentYearResult"),
-        amount: data.currentYearResult,
-        calculated: true,
-      },
-      {
-        accountId: "calculated-prior-years-unclosed-result",
-        accountCode: calculated,
-        accountName: t("accounting.reports.balanceSheet.priorYearsUnclosedResult"),
-        amount: data.priorYearsUnclosedResult,
-        calculated: true,
-      },
-    ];
-  }, [data, t]);
+  const apply = () => {
+    setShowError(true);
+    if (asOfError) return;
+    setApplied(draft);
+  };
+
+  const calculated = (id: string, nameKey: string, amount: number): StatementRow => ({
+    kind: "account",
+    id,
+    account: t(nameKey),
+    amount,
+  });
+  const equityRows: StatementRow[] = report
+    ? [
+        ...groupedRows(report.equityLines, chart),
+        // Filas calculadas por el backend (no son cuentas del Plan): encabezado propio para que no
+        // aparezcan dentro del último grupo de Patrimonio.
+        { kind: "group", id: "calculated-results", label: t("accounting.reports.balanceSheet.calculatedGroup") },
+        calculated("calculated-current-year-result", "accounting.reports.balanceSheet.currentYearResult", report.currentYearResult),
+        calculated(
+          "calculated-prior-years-unclosed-result",
+          "accounting.reports.balanceSheet.priorYearsUnclosedResult",
+          report.priorYearsUnclosedResult,
+        ),
+      ]
+    : [];
+  const liabilitiesAndEquity = report
+    ? new Decimal(report.totalLiabilities).plus(report.totalEquity).toNumber()
+    : 0;
 
   return (
-    <ZHCard title="Balance General">
+    <>
       <ZHFilterBar disabled={loading}>
         <div className="zh-filterbar__field">
-          <ZHField label="Fecha de corte" density="compact">
-            <ZhDateInput className="zh-input" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} />
+          <ZHField
+            label={t("accounting.reports.filter.asOfDate")}
+            density="compact"
+            fieldError={showError ? asOfError : null}
+          >
+            <ZhDateInput className="zh-input" value={draft} onChange={(e) => setDraft(e.target.value)} />
           </ZHField>
         </div>
-        <ZHBtn type="button" variant="primary" onClick={() => void fetchReport()} disabled={loading}>
-          Buscar
+        <ZHBtn type="button" variant="primary" onClick={apply} disabled={loading}>
+          {t("accounting.reports.filter.apply")}
         </ZHBtn>
       </ZHFilterBar>
-      <ReportCompletenessNotice completeness={completeness} />
 
-      {data && !data.isBalanced && (
-        <ZHPageNotice variant="error" message="Activo no cuadra con Pasivo + Patrimonio." />
-      )}
-      {data && (
-        <>
-          <ZHCard title={<span className="zh-section-title">Activos</span>} className="zh-mb-16">
-            <ZHDataTable
-              columns={LINE_COLUMNS}
-              rows={data.assetLines}
-              rowKey={(r) => r.accountId}
-              loading={loading}
-              emptyMessage="Sin cuentas de activo con saldo a la fecha de corte."
-            />
-            <div className="zh-actions">
-              <span>Total Activos <ZHMoneyValue precision="accounting" value={data.totalAssets} emphasis="total" /></span>
+      <ZHCard
+        title={<ReportScopeTitle parts={[`${t("accounting.reports.scope.asOf")}: ${formatDate(applied)}`]} />}
+        actions={<ZHFieldHelp helpKey={HELP_KEYS.ACCOUNTING_REPORTS_BALANCE_SHEET} />}
+      >
+        {error && !loading && <ErrorState message={`${t("accounting.reports.balanceSheet.loadError")} ${error}`} />}
+        {!report && !error && <LoadingState />}
+        {report && (
+          <>
+            <ReportCompletenessNotice completeness={report.completeness} />
+            {!report.isBalanced && (
+              <ZHPageNotice variant="error" message={t("accounting.reports.balanceSheet.unbalanced")} />
+            )}
+            <div className="table-scroll">
+              <table className="table table--compact">
+                <StatementHead
+                  first={t("accounting.reports.balanceSheet.col.account")}
+                  detail={t("accounting.reports.statement.col.detail")}
+                  total={t("accounting.reports.statement.col.total")}
+                />
+                <FinancialStatementSection
+                  title={t("accounting.reports.balanceSheet.section.assets")}
+                  rows={groupedRows(report.assetLines, chart)}
+                  emptyMessage={t("accounting.reports.balanceSheet.empty.assets")}
+                  totalLabel={t("accounting.reports.balanceSheet.total.assets")}
+                  total={report.totalAssets}
+                />
+                <FinancialStatementSection
+                  title={t("accounting.reports.balanceSheet.section.liabilities")}
+                  rows={groupedRows(report.liabilityLines, chart)}
+                  emptyMessage={t("accounting.reports.balanceSheet.empty.liabilities")}
+                  totalLabel={t("accounting.reports.balanceSheet.total.liabilities")}
+                  total={report.totalLiabilities}
+                />
+                <FinancialStatementSection
+                  title={t("accounting.reports.balanceSheet.section.equity")}
+                  rows={equityRows}
+                  emptyMessage={t("accounting.reports.balanceSheet.empty.equity")}
+                  totalLabel={t("accounting.reports.balanceSheet.total.equity")}
+                  total={report.totalEquity}
+                />
+                <tfoot>
+                  <tr>
+                    <td colSpan={2}>{t("accounting.reports.balanceSheet.total.liabilitiesEquity")}</td>
+                    <td className="zh-table-cell--num">
+                      <ZHMoneyValue precision="accounting" value={liabilitiesAndEquity} emphasis="grand" />
+                    </td>
+                  </tr>
+                  <tr>
+                    {/* Fila completa: el Badge (no divisible) no ensancha las columnas de importe en móvil. */}
+                    <td colSpan={3}>
+                      {t("accounting.reports.check.row")}{" "}
+                      <Badge
+                        variant={report.isBalanced ? "success" : "error"}
+                        label={
+                          // Un solo hijo inline: el Badge es flex y colapsaría el espacio antes del importe.
+                          <span>
+                            {t(
+                              report.isBalanced
+                                ? "accounting.reports.balanceSheet.balanced"
+                                : "accounting.reports.balanceSheet.unbalancedBadge",
+                            )}
+                            {" · "}
+                            {t("accounting.reports.balanceSheet.difference")}{" "}
+                            <ZHMoneyValue precision="accounting" value={report.difference} />
+                          </span>
+                        }
+                      />
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-          </ZHCard>
-
-          <ZHCard title={<span className="zh-section-title">Pasivos</span>} className="zh-mb-16">
-            <ZHDataTable
-              columns={LINE_COLUMNS}
-              rows={data.liabilityLines}
-              rowKey={(r) => r.accountId}
-              loading={loading}
-              emptyMessage="Sin cuentas de pasivo con saldo a la fecha de corte."
-            />
-            <div className="zh-actions">
-              <span>Total Pasivos <ZHMoneyValue precision="accounting" value={data.totalLiabilities} emphasis="total" /></span>
-            </div>
-          </ZHCard>
-
-          <ZHCard title={<span className="zh-section-title">Patrimonio</span>} className="zh-mb-16">
-            <ZHDataTable
-              columns={LINE_COLUMNS}
-              rows={equityRows}
-              rowKey={(r) => r.accountId}
-              loading={loading}
-              emptyMessage="Sin cuentas de patrimonio con saldo a la fecha de corte."
-            />
-            <div className="zh-actions">
-              <span>Total Patrimonio <ZHMoneyValue precision="accounting" value={data.totalEquity} emphasis="total" /></span>
-            </div>
-          </ZHCard>
-
-          <div className="zh-actions">
-            <span>Total Activo <ZHMoneyValue precision="accounting" value={data.totalAssets} emphasis="grand" /></span>
-            <span>Total Pasivo + Patrimonio <ZHMoneyValue precision="accounting" value={data.totalLiabilities + data.totalEquity} emphasis="grand" /></span>
-          </div>
-        </>
-      )}
-    </ZHCard>
+          </>
+        )}
+      </ZHCard>
+    </>
   );
 }

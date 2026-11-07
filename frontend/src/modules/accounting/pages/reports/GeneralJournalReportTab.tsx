@@ -1,203 +1,307 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import Decimal from "decimal.js";
 import { ReportCompletenessNotice } from "./ReportCompletenessNotice";
+import { ReportScopeTitle } from "./reportScope";
+import { dateRangeError } from "./reportDateRange";
 import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
 import { ZhDateInput, ZhSelect, ZhTextInput } from "../../../../components/zh/inputs";
-import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZHMoneyValue } from "../../../../components/zh/ZHMoneyValue";
+import { ZHFieldHelp } from "../../../../components/zh/help";
+import { EmptyState, ErrorState, LoadingState } from "../../../../components/PageShell";
+import { HELP_KEYS } from "../../../../help";
+import { useCompanyScopedAsync } from "../../../../hooks/useCompanyScopedAsync";
 import { formatDate, firstDayOfMonthIso, todayIso } from "../../../../lib/formatters/dateFormatters";
-import { message } from "../../../../lib/messages";
-import { formatApiRequestError } from "../../../lib/apiError";
 import { useI18n } from "../../../../i18n/i18n";
-import { sourceModuleLabel, factTypeLabel, friendlyDescription } from "../../labels/accountingLabels";
-import { accountingApi, type AccountingCompleteness, type GeneralJournalLineDto } from "../../api/accountingApi";
+import { journalExtraDescription, journalOperation } from "../../labels/accountingLabels";
+import { accountingApi, type GeneralJournalLineDto } from "../../api/accountingApi";
 
 const PAGE_SIZE = 50;
+const SOURCE_MODULES = ["Sales", "Purchases", "Finance", "Inventory", "Accounting"] as const;
 
-const SOURCE_MODULE_OPTIONS = [
-  { value: "", label: "Todos los orígenes" },
-  { value: "Sales", label: "Ventas" },
-  { value: "Purchases", label: "Compras" },
-  { value: "Finance", label: "Caja / Cobros / Pagos" },
-  { value: "Inventory", label: "Inventario" },
-  { value: "Accounting", label: "Contabilidad (reversos)" },
-];
+type Filters = { fromDate: string; toDate: string; sourceModule: string; search: string; page: number };
+
+/** Líneas consecutivas de un mismo asiento (el backend las entrega por asiento, en orden). */
+type EntryLines = { key: string; first: GeneralJournalLineDto; lines: GeneralJournalLineDto[] };
+type EntryGroup = EntryLines & { debit: number; credit: number };
 
 /**
- * Libro Diario (ACCOUNTING-REPORTS-09) — todas las líneas de asientos Posted en el rango,
- * consume `GET /accounting/reports/general-journal`. Solo lectura, sin recálculo.
- * ACCOUNTING-REPORTS-DS-QA-FIX-10E: filtros movidos de `ZHCard actions` (slot de 2-3 campos) a
- * `ZHFilterBar` (barra dedicada, campos con `ZHField` label visible, `zh-filterbar__field` con
- * min-width responsive); totales con `ZHMoneyValue`; `pg-flex`/`pg-gap-8` (clases sin CSS
- * definido en ningún stylesheet del proyecto — layout roto silenciosamente) reemplazadas por
- * `zh-form-actions-row`/`zh-actions`, ambas reales en `zh-ui.css`.
+ * El backend pagina por ASIENTOS y entrega todas las líneas de cada asiento de la página, así que
+ * el total por asiento se obtiene de líneas completas; se suma con Decimal (sin aritmética float).
+ */
+function groupByEntry(lines: GeneralJournalLineDto[]): EntryGroup[] {
+  const groups: EntryLines[] = [];
+  for (const line of lines) {
+    const last = groups.at(-1);
+    if (last && last.first.journalEntryId === line.journalEntryId) last.lines.push(line);
+    else groups.push({ key: `${line.journalEntryId}-${groups.length}`, first: line, lines: [line] });
+  }
+  return groups.map((g) => ({
+    ...g,
+    debit: g.lines.reduce((sum, l) => sum.plus(l.debit), new Decimal(0)).toNumber(),
+    credit: g.lines.reduce((sum, l) => sum.plus(l.credit), new Decimal(0)).toNumber(),
+  }));
+}
+
+/**
+ * Libro Diario (ACCOUNTING-REPORTS-09) — `GET /accounting/reports/general-journal`, solo lectura.
+ * ACCOUNTING-REPORTS-UX-13/14: un `<tbody>` por asiento; su primera fila es una banda de encabezado
+ * con `th scope="rowgroup"` (estilo oficial de `.table th`: N°, fecha, operación traducida,
+ * documento de origen y descripción solo si aporta) y debajo sus líneas (Código, Cuenta, Debe,
+ * Haber) y el total del asiento — sin `rowSpan` ni CSS propio. ACCOUNTING-REPORTS-PRO-15: el pie
+ * identifica la página y el rango de asientos cuyos totales (API) muestra. El tipo de documento se muestra
+ * solo con las etiquetas traducidas oficiales (`journalOperation`), nunca con el texto
+ * `sourceDocumentType` del backend (no traducible). Consulta
+ * solo con «Consultar» y rango validado; paginación por ASIENTOS (el backend pagina asientos:
+ * `totalCount` cuenta asientos). Tabla nativa por excepción documentada en frontend.md (filas de
+ * encabezado por asiento y `<tfoot>` que `ZHDataTable` no expone); el pie de paginación reutiliza
+ * las clases oficiales del de `ZHDataTable`.
  */
 export function GeneralJournalReportTab() {
   const { t } = useI18n();
-  const [fromDate, setFromDate] = useState(firstDayOfMonthIso());
-  const [toDate, setToDate] = useState(todayIso());
-  const [sourceModule, setSourceModule] = useState("");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [lines, setLines] = useState<GeneralJournalLineDto[]>([]);
-  const [completeness, setCompleteness] = useState<AccountingCompleteness | null>(null);
-  const [totalDebit, setTotalDebit] = useState(0);
-  const [totalCredit, setTotalCredit] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState<Filters>(() => ({
+    fromDate: firstDayOfMonthIso(),
+    toDate: todayIso(),
+    sourceModule: "",
+    search: "",
+    page: 1,
+  }));
+  const [applied, setApplied] = useState<Filters>(draft);
+  const [showRangeError, setShowRangeError] = useState(false);
+  const rangeError = dateRangeError(t, draft.fromDate, draft.toDate);
 
-  const fetchReport = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await accountingApi.getGeneralJournalReport({
-        fromDate,
-        toDate,
-        sourceModule: sourceModule || undefined,
-        search: search || undefined,
-        pageNumber: page,
-        pageSize: PAGE_SIZE,
-      });
-      setLines(r.lines);
-      setCompleteness(r.completeness);
-      setTotalDebit(r.totalDebit);
-      setTotalCredit(r.totalCredit);
-      setTotalCount(r.totalCount);
-    } catch (err: unknown) {
-      message.error(
-        formatApiRequestError(err, { generic: "No se pudo cargar el Libro Diario." }),
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [fromDate, toDate, sourceModule, search, page]);
+  const { data, loading, error } = useCompanyScopedAsync(
+    () =>
+      accountingApi
+        .getGeneralJournalReport({
+          fromDate: applied.fromDate,
+          toDate: applied.toDate,
+          sourceModule: applied.sourceModule || undefined,
+          search: applied.search || undefined,
+          pageNumber: applied.page,
+          pageSize: PAGE_SIZE,
+        })
+        .then((report) => ({ filters: applied, report })),
+    true,
+    [applied],
+  );
+  // Solo se muestra el resultado de la consulta aplicada vigente — nunca datos de una anterior.
+  const report = data && data.filters === applied && !error ? data.report : null;
+  const groups = useMemo(() => (report ? groupByEntry(report.lines) : []), [report]);
 
-  useEffect(() => {
-    void fetchReport();
-  }, [fetchReport]);
+  const apply = () => {
+    setShowRangeError(true);
+    if (rangeError) return;
+    setApplied({ ...draft, page: 1 });
+  };
+  const goToPage = (page: number) => setApplied({ ...applied, page });
+  const totalPages = report ? Math.max(1, Math.ceil(report.totalCount / PAGE_SIZE)) : 1;
+  // Totales de página identificados: página y rango de asientos que suman (importes de la API).
+  const firstNumber = groups[0]?.first.entryNumber;
+  const lastNumber = groups.at(-1)?.first.entryNumber;
+  const pageTotalsLabel =
+    firstNumber != null && lastNumber != null
+      ? t("accounting.reports.journal.pageTotalsRange", {
+          page: String(applied.page),
+          pages: String(totalPages),
+          from: String(firstNumber),
+          to: String(lastNumber),
+        })
+      : t("accounting.reports.journal.pageTotals");
+  const sourceName = (module: string) =>
+    module ? t(`accounting.reports.journal.source.${module}`) : t("accounting.reports.journal.source.all");
 
-  const columns: ZHDataTableColumn<GeneralJournalLineDto>[] = [
-    { key: "entryDate", header: "Fecha", render: (r) => formatDate(r.entryDate) },
-    { key: "entryNumber", header: "Asiento", render: (r) => r.entryNumber ?? "—" },
-    {
-      key: "account",
-      header: "Cuenta",
-      render: (r) => (
-        <>
-          <code className="prd-sku">{r.accountCode}</code> {r.accountName}
-        </>
-      ),
-    },
-    {
-      key: "description",
-      header: "Descripción",
-      render: (r) => friendlyDescription(t, r.description),
-    },
-    {
-      key: "source",
-      header: "Documento origen",
-      // ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: fallback cuando no hay número de documento
-      // resuelto — traduce el hecho contable técnico, nunca lo oculta.
-      render: (r) =>
-        r.sourceDocumentNumber ??
-        `${sourceModuleLabel(t, r.sourceModule)} / ${factTypeLabel(t, r.sourceEventType)}`,
-    },
-    {
-      key: "debit",
-      header: "Debe",
-      align: "right",
-      render: (r) => <ZHMoneyValue precision="accounting" value={r.debit > 0 ? r.debit : null} />,
-    },
-    {
-      key: "credit",
-      header: "Haber",
-      align: "right",
-      render: (r) => <ZHMoneyValue precision="accounting" value={r.credit > 0 ? r.credit : null} />,
-    },
-  ];
+  /** N° · fecha · operación + documento de origen; sin número se antepone el módulo (nunca se oculta). */
+  const entryHeading = (line: GeneralJournalLineDto) => {
+    const op = journalOperation(t, line);
+    const extra = journalExtraDescription(t, line);
+    return (
+      <>
+        {line.entryNumber !== null
+          ? t("accounting.reports.journal.entryNumber", { number: String(line.entryNumber) })
+          : t("accounting.reports.journal.noNumber")}
+        {" · "}
+        {formatDate(line.entryDate)}
+        {" · "}
+        {line.sourceDocumentNumber || !op.module ? op.label : `${op.module} / ${op.label}`}
+        {line.sourceDocumentNumber && (
+          <> <span className="zh-code-value zh-code-value--document">{line.sourceDocumentNumber}</span></>
+        )}
+        {extra && <>{" · "}{extra}</>}
+      </>
+    );
+  };
 
   return (
-    <ZHCard title="Libro Diario">
+    <>
       <ZHFilterBar disabled={loading}>
         <div className="zh-filterbar__field">
-          <ZHField label="Desde" density="compact">
+          <ZHField label={t("accounting.reports.filter.fromDate")} density="compact">
             <ZhDateInput
               className="zh-input"
-              value={fromDate}
-              onChange={(e) => { setPage(1); setFromDate(e.target.value); }}
+              value={draft.fromDate}
+              onChange={(e) => setDraft({ ...draft, fromDate: e.target.value })}
             />
           </ZHField>
         </div>
         <div className="zh-filterbar__field">
-          <ZHField label="Hasta" density="compact">
+          <ZHField
+            label={t("accounting.reports.filter.toDate")}
+            density="compact"
+            fieldError={showRangeError ? rangeError : null}
+          >
             <ZhDateInput
               className="zh-input"
-              value={toDate}
-              onChange={(e) => { setPage(1); setToDate(e.target.value); }}
+              value={draft.toDate}
+              onChange={(e) => setDraft({ ...draft, toDate: e.target.value })}
             />
           </ZHField>
         </div>
         <div className="zh-filterbar__field">
-          <ZHField label="Origen" density="compact">
+          <ZHField label={t("accounting.reports.journal.filter.source")} density="compact">
             <ZhSelect
               className="zh-input"
-              value={sourceModule}
-              onChange={(e) => { setPage(1); setSourceModule(e.target.value); }}
+              value={draft.sourceModule}
+              onChange={(e) => setDraft({ ...draft, sourceModule: e.target.value })}
             >
-              {SOURCE_MODULE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+              <option value="">{t("accounting.reports.journal.source.all")}</option>
+              {SOURCE_MODULES.map((m) => (
+                <option key={m} value={m}>{t(`accounting.reports.journal.source.${m}`)}</option>
               ))}
             </ZhSelect>
           </ZHField>
         </div>
-        <div className="zh-filterbar__field zh-filterbar__field--grow">
-          <ZHField label="Buscar" density="compact">
+        <div className="zh-filterbar__field">
+          <ZHField label={t("accounting.reports.journal.filter.search")} density="compact">
             <ZhTextInput
               className="zh-input"
-              placeholder="N° de asiento o descripción"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { setPage(1); void fetchReport(); } }}
+              placeholder={t("accounting.reports.journal.filter.searchPlaceholder")}
+              value={draft.search}
+              onChange={(e) => setDraft({ ...draft, search: e.target.value })}
+              onKeyDown={(e) => { if (e.key === "Enter") apply(); }}
             />
           </ZHField>
         </div>
-        <ZHBtn
-          type="button"
-          variant="primary"
-          onClick={() => { setPage(1); void fetchReport(); }}
-          disabled={loading}
-        >
-          Buscar
+        <ZHBtn type="button" variant="primary" onClick={apply} disabled={loading}>
+          {t("accounting.reports.filter.apply")}
         </ZHBtn>
       </ZHFilterBar>
-      <ReportCompletenessNotice completeness={completeness} />
 
-      {totalDebit !== totalCredit && lines.length > 0 && (
-        <ZHPageNotice
-          variant="warning"
-          message="El total Debe no coincide con el total Haber en esta página del reporte."
-        />
-      )}
-      <ZHDataTable
-        columns={columns}
-        rows={lines}
-        rowKey={(r) => `${r.journalEntryId}-${r.accountId}-${r.debit}-${r.credit}`}
-        loading={loading}
-        showRowNumber
-        rowNumberOffset={(page - 1) * PAGE_SIZE}
-        emptyMessage="No hay asientos contabilizados (Posted) en el rango seleccionado. Ajuste las fechas o el filtro de origen."
-        page={page}
-        pageSize={PAGE_SIZE}
-        onPageChange={setPage}
-        total={totalCount}
-      />
-      {lines.length > 0 && (
-        <div className="zh-actions">
-          <span>Total Debe <ZHMoneyValue precision="accounting" value={totalDebit} emphasis="total" /></span>
-          <span>Total Haber <ZHMoneyValue precision="accounting" value={totalCredit} emphasis="total" /></span>
-        </div>
-      )}
-    </ZHCard>
+      <ZHCard
+        title={
+          <ReportScopeTitle
+            parts={[
+              t("accounting.reports.scope.periodValue", {
+                from: formatDate(applied.fromDate),
+                to: formatDate(applied.toDate),
+              }),
+              sourceName(applied.sourceModule),
+              ...(applied.search ? [`${t("accounting.reports.journal.filter.search")}: ${applied.search}`] : []),
+            ]}
+          />
+        }
+        actions={<ZHFieldHelp helpKey={HELP_KEYS.ACCOUNTING_REPORTS_GENERAL_JOURNAL} />}
+      >
+        {error && !loading && <ErrorState message={`${t("accounting.reports.journal.loadError")} ${error}`} />}
+        {!report && !error && <LoadingState />}
+        {report && (
+          <>
+            <ReportCompletenessNotice completeness={report.completeness} />
+            {report.lines.length === 0 ? (
+              <EmptyState message={t("accounting.reports.journal.empty")} />
+            ) : (
+              <>
+                {report.totalDebit !== report.totalCredit && (
+                  <ZHPageNotice variant="warning" message={t("accounting.reports.journal.pageUnbalanced")} />
+                )}
+                <div className="table-scroll">
+                  <table className="table table--compact">
+                    <thead>
+                      <tr>
+                        <th>{t("accounting.reports.journal.col.code")}</th>
+                        <th>{t("accounting.reports.journal.col.account")}</th>
+                        <th className="zh-table-cell--num">{t("accounting.reports.journal.col.debit")}</th>
+                        <th className="zh-table-cell--num">{t("accounting.reports.journal.col.credit")}</th>
+                      </tr>
+                    </thead>
+                    {groups.map((g) => (
+                      <tbody key={g.key}>
+                        <tr>
+                          <th scope="rowgroup" colSpan={4}>{entryHeading(g.first)}</th>
+                        </tr>
+                        {g.lines.map((line, index) => (
+                          <tr key={`${g.key}-${index}`}>
+                            <td><span className="zh-code-value zh-code-value--document">{line.accountCode}</span></td>
+                            <td>{line.accountName}</td>
+                            <td className="zh-table-cell--num">
+                              <ZHMoneyValue precision="accounting" value={line.debit > 0 ? line.debit : null} />
+                            </td>
+                            <td className="zh-table-cell--num">
+                              <ZHMoneyValue precision="accounting" value={line.credit > 0 ? line.credit : null} />
+                            </td>
+                          </tr>
+                        ))}
+                        <tr>
+                          <td colSpan={2}><strong>{t("accounting.reports.journal.entryTotal")}</strong></td>
+                          <td className="zh-table-cell--num">
+                            <ZHMoneyValue precision="accounting" value={g.debit} emphasis="strong" />
+                          </td>
+                          <td className="zh-table-cell--num">
+                            <ZHMoneyValue precision="accounting" value={g.credit} emphasis="strong" />
+                          </td>
+                        </tr>
+                      </tbody>
+                    ))}
+                    <tfoot>
+                      <tr>
+                        <td colSpan={2}>{pageTotalsLabel}</td>
+                        <td className="zh-table-cell--num">
+                          <ZHMoneyValue precision="accounting" value={report.totalDebit} emphasis="total" />
+                        </td>
+                        <td className="zh-table-cell--num">
+                          <ZHMoneyValue precision="accounting" value={report.totalCredit} emphasis="total" />
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <div className="pg-table-footer">
+                  <span className="zh-datatable-total">
+                    {t("accounting.reports.journal.pagination", {
+                      count: String(report.totalCount),
+                      page: String(applied.page),
+                      pages: String(totalPages),
+                    })}
+                  </span>
+                  <div className="pg-pagination-controls">
+                    <button
+                      className="pg-pagination-btn"
+                      type="button"
+                      aria-label={t("accounting.reports.journal.previousPage")}
+                      disabled={applied.page <= 1}
+                      onClick={() => goToPage(applied.page - 1)}
+                    >
+                      <span className="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <span className="zh-datatable-page-number">{applied.page}</span>
+                    <button
+                      className="pg-pagination-btn"
+                      type="button"
+                      aria-label={t("accounting.reports.journal.nextPage")}
+                      disabled={applied.page >= totalPages}
+                      onClick={() => goToPage(applied.page + 1)}
+                    >
+                      <span className="material-symbols-outlined">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </ZHCard>
+    </>
   );
 }

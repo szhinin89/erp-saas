@@ -169,4 +169,34 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     short:
       "Aquí puede consultar el XML, validar el proveedor y procesar cada comprobante como Compra, Gasto o Nota de crédito de compra.",
   },
+  [HELP_KEYS.ACCOUNTING_REPORTS_GENERAL_JOURNAL]: {
+    i18nPrefix: "help.accountingReports.generalJournal",
+    title: "Libro Diario: qué es y cómo se lee",
+    short: "¿Qué es? El registro cronológico de todos los asientos contabilizados: cada operación del ERP con las cuentas que afecta.",
+    long: "¿Cómo se lee? Cada bloque es un asiento: su encabezado indica número, fecha, operación y documento de origen; debajo, el código y la cuenta de cada línea con su importe en Debe o en Haber, y el total del asiento, donde Debe y Haber son iguales. El pie suma los asientos de la página indicada.",
+  },
+  [HELP_KEYS.ACCOUNTING_REPORTS_GENERAL_LEDGER]: {
+    i18nPrefix: "help.accountingReports.generalLedger",
+    title: "Libro Mayor: qué es y cómo se lee",
+    short: "¿Qué es? El historial de cada cuenta: su saldo inicial, los movimientos del período y el saldo con el que termina.",
+    long: "¿Cómo se lee? Elija una cuenta del índice para ver su mayor: parte del saldo inicial, cada movimiento muestra fecha, asiento, referencia, Debe, Haber y el saldo acumulado después de él, y termina en el saldo final. Los saldos siguen la naturaleza de la cuenta: un valor negativo indica saldo contrario a su naturaleza.",
+  },
+  [HELP_KEYS.ACCOUNTING_REPORTS_TRIAL_BALANCE]: {
+    i18nPrefix: "help.accountingReports.trialBalance",
+    title: "Balance de Comprobación: qué es y cómo se lee",
+    short: "¿Qué es? La matriz de todas las cuentas con sus saldos y movimientos, que comprueba que lo registrado en el Debe es igual a lo registrado en el Haber.",
+    long: "¿Cómo se lee? Por cuenta, agrupada por tipo: saldo inicial, movimientos del período y saldo final, en columnas deudoras y acreedoras. La fila Comprobación indica si los movimientos cuadran (Debe = Haber) y si los totales de saldo inicial y de saldo final son iguales entre Deudor y Acreedor.",
+  },
+  [HELP_KEYS.ACCOUNTING_REPORTS_INCOME_STATEMENT]: {
+    i18nPrefix: "help.accountingReports.incomeStatement",
+    title: "Estado de Resultados: qué es y cómo se lee",
+    short: "¿Qué es? El resultado económico del período: cuánto se ganó o se perdió con las operaciones contabilizadas.",
+    long: "¿Cómo se lee? Se lee de arriba hacia abajo: Ingresos (−) Costos (=) Utilidad bruta (−) Gastos (=) Utilidad o pérdida neta. La columna Detalle muestra cada cuenta y la columna Total, el total de cada concepto. Solo incluye lo contabilizado en el período, sin saldo inicial; un resultado negativo se presenta como pérdida.",
+  },
+  [HELP_KEYS.ACCOUNTING_REPORTS_BALANCE_SHEET]: {
+    i18nPrefix: "help.accountingReports.balanceSheet",
+    title: "Balance General: qué es y cómo se lee",
+    short: "¿Qué es? La situación financiera de la empresa a la fecha de corte: lo que tiene (Activo), lo que debe (Pasivo) y lo que pertenece a sus propietarios (Patrimonio).",
+    long: "¿Cómo se lee? Saldos acumulados hasta la fecha de corte. Las cuentas aparecen bajo su grupo del Plan de Cuentas, con su importe en Detalle y el total de cada sección en Total. Debe cumplirse Activo = Pasivo + Patrimonio: la fila Comprobación muestra el resultado y la diferencia. Patrimonio incluye los resultados aún no cerrados, calculados por el sistema contable.",
+  },
 };

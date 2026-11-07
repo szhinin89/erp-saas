@@ -34,6 +34,12 @@ export const HELP_KEYS = {
   PURCHASES_PAYMENT_SCHEDULE: "purchases.schedule",
   PURCHASES_CREDIT_NOTE: "purchases.creditNote.type",
   PURCHASES_RECEPTION_OVERVIEW: "purchases.reception.overview",
+  // ACCOUNTING-REPORTS-UX-13/14: «¿Qué es?» y «¿Cómo se lee?» de cada reporte de /accounting/reports.
+  ACCOUNTING_REPORTS_GENERAL_JOURNAL: "accounting.reports.generalJournal",
+  ACCOUNTING_REPORTS_GENERAL_LEDGER: "accounting.reports.generalLedger",
+  ACCOUNTING_REPORTS_TRIAL_BALANCE: "accounting.reports.trialBalance",
+  ACCOUNTING_REPORTS_INCOME_STATEMENT: "accounting.reports.incomeStatement",
+  ACCOUNTING_REPORTS_BALANCE_SHEET: "accounting.reports.balanceSheet",
 } as const;
 
 export type HelpKeyId = (typeof HELP_KEYS)[keyof typeof HELP_KEYS];
