@@ -197,4 +197,35 @@ describe("ZHTabBar — distribución responsive automática (UIUX-GLOBAL-TABS-DE
     fireEvent.click(screen.getByRole("tab", { name: "Nuevo proveedor" }));
     expect(onChange).toHaveBeenCalledExactlyOnceWith("c");
   });
+  describe("barra desplazable (ZH-DS-TABBAR-RESPONSIVE-01)", () => {
+    const five: ZHTab<string>[] = ["Uno", "Dos", "Tres", "Cuatro", "Cinco"].map((label) => ({ id: label, label }));
+    // jsdom no calcula layout: se simula una barra de 200 px con pestañas de 100 px.
+    function layout(list: HTMLElement, scrollWidth: number) {
+      Object.defineProperty(list, "clientWidth", { configurable: true, value: 200 });
+      Object.defineProperty(list, "scrollWidth", { configurable: true, value: scrollWidth });
+      Array.from(list.querySelectorAll<HTMLElement>("[role='tab']")).forEach((tab, i) => {
+        Object.defineProperty(tab, "offsetLeft", { configurable: true, value: i * 100 });
+        Object.defineProperty(tab, "offsetWidth", { configurable: true, value: 100 });
+      });
+    }
+
+    it("desplaza solo la barra para mostrar la pestaña activa y la enfocada por teclado", () => {
+      const { rerender } = render(<ZHTabBar tabs={five} activeTab="Uno" onChange={() => {}} />);
+      const list = screen.getByRole("tablist");
+      layout(list, 500);
+      rerender(<ZHTabBar tabs={five} activeTab="Cinco" onChange={() => {}} />);
+      expect(list.scrollLeft).toBe(300); // Cinco (400–500) queda completa en 300–500
+      fireEvent.focus(screen.getByRole("tab", { name: "Dos" }));
+      expect(list.scrollLeft).toBe(100); // Dos (100–200) vuelve a la vista
+    });
+
+    it("sin desbordamiento (escritorio) no toca el scroll", () => {
+      const { rerender } = render(<ZHTabBar tabs={five} activeTab="Uno" onChange={() => {}} />);
+      const list = screen.getByRole("tablist");
+      layout(list, 200);
+      rerender(<ZHTabBar tabs={five} activeTab="Cinco" onChange={() => {}} />);
+      fireEvent.focus(screen.getByRole("tab", { name: "Cuatro" }));
+      expect(list.scrollLeft).toBe(0);
+    });
+  });
 });

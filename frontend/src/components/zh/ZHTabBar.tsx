@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 export type ZHTab<TId extends string> = {
   id: TId;
   label: string;
@@ -46,8 +48,24 @@ export function ZHTabBar<TId extends string>({
   variant = "auto",
 }: Props<TId>) {
   const responsiveThree = variant === "auto" && tabs.length === 3;
+  const listRef = useRef<HTMLDivElement>(null);
+  // ZH-DS-TABBAR-RESPONSIVE-01: con la barra desplazable (móvil) la pestaña activa y la enfocada
+  // por teclado quedan completas a la vista. Solo mueve el scroll horizontal de la propia barra
+  // (nunca la página); sin desbordamiento (escritorio) no hace nada.
+  const reveal = (tab: HTMLElement | null | undefined) => {
+    const list = listRef.current;
+    if (!list || !tab || list.scrollWidth <= list.clientWidth) return;
+    const start = tab.offsetLeft;
+    const end = start + tab.offsetWidth;
+    if (start < list.scrollLeft) list.scrollLeft = start;
+    else if (end > list.scrollLeft + list.clientWidth) list.scrollLeft = end - list.clientWidth;
+  };
+  useEffect(() => {
+    reveal(listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]'));
+  }, [activeTab]);
   return (
     <div
+      ref={listRef}
       className={`prd-tabs${fill ? " prd-tabs--fill" : ""}${responsiveThree ? " prd-tabs--responsive-three" : ""}`}
       role="tablist"
       aria-label={ariaLabel}
@@ -62,6 +80,7 @@ export function ZHTabBar<TId extends string>({
           aria-disabled={tab.disabled || undefined}
           disabled={tab.disabled}
           className={`prd-tab-btn${activeTab === tab.id ? " prd-tab-btn--active" : ""}`}
+          onFocus={(e) => reveal(e.currentTarget)}
           onClick={() => {
             if (tab.disabled || tab.inert) return;
             onChange(tab.id);

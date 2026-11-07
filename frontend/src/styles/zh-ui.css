@@ -436,6 +436,27 @@ a:hover {
   .prd-tabs--responsive-three .prd-tab-label--mobile { display: inline; }
 }
 
+/* ZHTabBar responsive (ZH-DS-TABBAR-RESPONSIVE-01): hasta 768 px, si las pestañas no
+   caben, la barra se desplaza horizontalmente dentro de sí misma en vez de ensanchar la
+   página (el marco de la app recorta overflow-x y las dejaba inaccesibles). La línea
+   inferior pasa a sombra interior para que el scroll no recorte el indicador activo, y
+   el foco se dibuja hacia adentro para no quedar cortado. Escritorio sin cambios. */
+@media (max-width: 768px) {
+  .prd-tabs {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    border-bottom: none;
+    box-shadow: inset 0 calc(-1 * var(--border-width)) 0 var(--color-border);
+  }
+  .prd-tabs > .prd-tab-btn {
+    margin-bottom: 0;
+  }
+  .prd-tabs > .prd-tab-btn:focus-visible {
+    outline-offset: calc(-1 * var(--focus-outline-width));
+  }
+}
+
 /* ── 3. FORMULARIOS — inputs ─────────────────────────────── */
 input,
 select,
