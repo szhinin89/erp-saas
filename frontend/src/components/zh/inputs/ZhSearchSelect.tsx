@@ -1,5 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ZHBtn } from "../ZHForm";
+import { useAnchoredOverlayPosition } from "../useAnchoredOverlayPosition";
 import { ZHIconButton } from "../ZHIconButton";
 import { ZHPickerResultItem } from "../ZHPickerResultItem";
 import { ZHPickerSelectedValue } from "../ZHPickerSelectedValue";
@@ -50,6 +52,11 @@ interface ZhSearchSelectCommonProps<T> {
   id?: string;
   "aria-label"?: string;
   className?: string;
+  /** Opt-in (default `false`): monta la lista de resultados en `document.body` con posición fija
+   * anclada al campo (`useAnchoredOverlayPosition` + `.zh-picker__dropdown--floating`), para que no
+   * la recorten contenedores con overflow (`.table-scroll`, `.card`). Sin la prop, el render es
+   * idéntico al de siempre. */
+  portal?: boolean;
 }
 
 export interface ZhSearchSelectSingleProps<T> extends ZhSearchSelectCommonProps<T> {
@@ -97,6 +104,7 @@ export function ZhSearchSelect<T>(props: ZhSearchSelectProps<T>) {
     disabled = false,
     id,
     className,
+    portal = false,
   } = props;
   const isRemote = loadOptions !== undefined;
   const debounceMs = props.debounceMs ?? (isRemote ? DEFAULT_REMOTE_DEBOUNCE_MS : 0);
@@ -110,6 +118,8 @@ export function ZhSearchSelect<T>(props: ZhSearchSelectProps<T>) {
   const [loading, setLoading] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputWrapRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const autoId = useId();
   const inputId = id ?? `zh-search-select-${autoId}`;
   const listId = `${inputId}-listbox`;
@@ -181,9 +191,42 @@ export function ZhSearchSelect<T>(props: ZhSearchSelectProps<T>) {
   const emptyContent =
     typeof emptyText === "function" ? emptyText(trimmedQuery) : emptyText;
 
+  // Portal: el panel se ancla al campo con el hook oficial (abre arriba/abajo, clamp al viewport,
+  // scroll interno/externo, resize, visualViewport). Su ancho mínimo sigue al del campo; se declara
+  // antes del hook para que este mida el panel ya dimensionado.
+  const portalOpen = portal && showDropdown;
+  useLayoutEffect(() => {
+    if (!portalOpen) return;
+    const anchor = inputWrapRef.current;
+    const panel = panelRef.current;
+    if (!anchor || !panel) return;
+    const syncWidth = () => {
+      const margin = parseFloat(getComputedStyle(panel).getPropertyValue("--space-3")) || 12;
+      const available = (window.visualViewport?.width ?? document.documentElement.clientWidth) - margin * 2;
+      panel.style.minWidth = `${Math.max(0, Math.min(anchor.getBoundingClientRect().width, available))}px`;
+    };
+    syncWidth();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(syncWidth) : null;
+    observer?.observe(anchor);
+    window.addEventListener("resize", syncWidth);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", syncWidth);
+    };
+  }, [portalOpen]);
+  useAnchoredOverlayPosition({
+    open: portalOpen,
+    anchorRef: inputWrapRef,
+    panelRef,
+    deps: [results.length, loading, truncated],
+  });
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      // Con portal la lista vive fuera de `wrapRef`: un clic en ella no es «fuera».
+      if (panelRef.current?.contains(target)) return;
+      if (wrapRef.current && !wrapRef.current.contains(target)) setOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -256,6 +299,7 @@ export function ZhSearchSelect<T>(props: ZhSearchSelectProps<T>) {
     );
   }
 
+  const renderDropdown = (dropdown: ReactNode) => (portal ? createPortal(dropdown, document.body) : dropdown);
   const hasClearable = query !== "" || selected.length > 0;
   const activeOptionId =
     showDropdown && activeIdx >= 0 && activeIdx < results.length
@@ -286,7 +330,7 @@ export function ZhSearchSelect<T>(props: ZhSearchSelectProps<T>) {
           })}
         </div>
       )}
-      <div className="zh-picker__input-wrap">
+      <div ref={inputWrapRef} className="zh-picker__input-wrap">
         <ZhTextInput
           ref={inputRef}
           id={inputId}
@@ -317,8 +361,15 @@ export function ZhSearchSelect<T>(props: ZhSearchSelectProps<T>) {
         </div>
       </div>
 
-      {showDropdown && (
-        <div id={listId} role="listbox" className="zh-picker__dropdown">
+      {showDropdown && renderDropdown(
+        <div
+          ref={panelRef}
+          id={listId}
+          role="listbox"
+          className={portal ? "zh-picker__dropdown zh-picker__dropdown--floating" : "zh-picker__dropdown"}
+          // Contrato de useAnchoredOverlayPosition: montar oculto en el origen; el hook lo ubica y lo muestra.
+          style={portal ? { top: 0, left: 0, visibility: "hidden" } : undefined}
+        >
           {results.length === 0 && (
             <div className="zh-picker__empty">
               {loading ? loadingText : emptyContent}
@@ -340,7 +391,7 @@ export function ZhSearchSelect<T>(props: ZhSearchSelectProps<T>) {
             />
           ))}
           {truncated && <div className="zh-picker__empty-message zh-search-select__hint">{truncatedText}</div>}
-        </div>
+        </div>,
       )}
     </div>
   );

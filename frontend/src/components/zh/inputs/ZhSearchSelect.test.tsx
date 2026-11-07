@@ -64,7 +64,7 @@ function MultipleHarness({
   );
 }
 
-function SingleHarness({ onChangeSpy }: { onChangeSpy?: (v: Opt | null) => void }) {
+function SingleHarness({ onChangeSpy, portal }: { onChangeSpy?: (v: Opt | null) => void; portal?: boolean }) {
   const [value, setValue] = useState<Opt | null>(null);
   return (
     <ZhSearchSelect
@@ -80,6 +80,7 @@ function SingleHarness({ onChangeSpy }: { onChangeSpy?: (v: Opt | null) => void 
       getOptionSearchText={getText}
       aria-label="Proveedor"
       clearLabel="Cambiar"
+      portal={portal}
     />
   );
 }
@@ -272,5 +273,70 @@ describe("ZhSearchSelect — datasource remoto", () => {
     });
     expect(optionsShown()).toHaveLength(1);
     expect(screen.queryByText("Buscando...")).toBeNull();
+  });
+});
+
+// ── portal (opt-in): lista en document.body anclada al campo ─────────────────────────────────
+describe("portal", () => {
+  it("por defecto la lista se renderiza dentro del componente, sin portal (comportamiento existente)", () => {
+    const { container } = render(<SingleHarness />);
+    fireEvent.focus(input());
+    const listbox = screen.getByRole("listbox");
+    expect(container.contains(listbox)).toBe(true);
+    expect(listbox.className).toBe("zh-picker__dropdown");
+    expect(listbox.getAttribute("style")).toBeNull();
+  });
+
+  it("con portal: la lista vive en document.body, usa el modificador oficial y queda anclada (ARIA intacto)", () => {
+    const { container } = render(
+      <div className="table-scroll">
+        <SingleHarness portal />
+      </div>,
+    );
+    fireEvent.focus(input());
+    const listbox = screen.getByRole("listbox");
+    expect(container.contains(listbox)).toBe(false);
+    expect(listbox.parentElement).toBe(document.body);
+    expect(listbox.className).toContain("zh-picker__dropdown--floating");
+    expect(input().getAttribute("aria-controls")).toBe(listbox.id);
+    expect(input().getAttribute("aria-expanded")).toBe("true");
+    // useAnchoredOverlayPosition lo hace visible tras medir.
+    expect(listbox.style.visibility).toBe("visible");
+  });
+
+  it("con portal: clic en una opción selecciona (no cuenta como clic fuera) y cierra la lista", () => {
+    const onChange = vi.fn();
+    render(<SingleHarness portal onChangeSpy={onChange} />);
+    fireEvent.focus(input());
+    type("ñandú");
+    const option = screen.getByRole("option");
+    fireEvent.mouseDown(option);
+    fireEvent.click(option);
+    expect(onChange).toHaveBeenCalledWith(SUPPLIERS[1]);
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("con portal: teclado (flechas + Enter) y Escape siguen funcionando desde el campo", () => {
+    const onChange = vi.fn();
+    render(<SingleHarness portal onChangeSpy={onChange} />);
+    fireEvent.focus(input());
+    fireEvent.keyDown(input(), { key: "Escape" });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    fireEvent.keyDown(input(), { key: "ArrowDown" });
+    fireEvent.keyDown(input(), { key: "ArrowDown" });
+    expect(input().getAttribute("aria-activedescendant")).toBe(`${screen.getByRole("listbox").id}-opt-1`);
+    fireEvent.keyDown(input(), { key: "Enter" });
+    expect(onChange).toHaveBeenCalledWith(SUPPLIERS[1]);
+  });
+
+  it("con portal: un clic realmente fuera cierra la lista y al desmontar no deja restos en body", () => {
+    const { unmount } = render(<SingleHarness portal />);
+    fireEvent.focus(input());
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("listbox")).toBeNull();
+    fireEvent.focus(input());
+    unmount();
+    expect(document.body.querySelector(".zh-picker__dropdown")).toBeNull();
   });
 });

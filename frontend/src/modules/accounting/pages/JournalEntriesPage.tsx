@@ -3,59 +3,63 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell, Badge } from "../../../components/PageShell";
 import { ZHCard } from "../../../components/zh/ZHCard";
-import { ZHBtn } from "../../../components/zh/ZHForm";
-import { ZhSelect } from "../../../components/zh/inputs";
+import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
+import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
+import { ZHDataValue } from "../../../components/zh/ZHDataValue";
+import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
+import { ZhDateInput, ZhSelect } from "../../../components/zh/inputs";
 import { ZHDataTable, type ZHDataTableColumn } from "../../../components/zh/ZHDataTable";
 import { formatDate } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
 import { useI18n } from "../../../i18n/i18n";
-import { sourceModuleLabel, factTypeLabel, friendlyDescription } from "../labels/accountingLabels";
+import {
+  journalExtraDescription,
+  journalModuleChip,
+  journalOperation,
+  journalStatusBadge,
+} from "../labels/accountingLabels";
 import { accountingApi, type JournalEntryListItemDto } from "../api/accountingApi";
-// ACCOUNTING-DS-FULL-AUDIT-10F: sin este import, `.prd-sku` (usado abajo para el código de
-// documento origen truncado) no tiene estilo — mismo root cause ya corregido en
-// AccountingReportsPage.tsx (ACCOUNTING-REPORTS-DS-QA-FIX-10E).
-import "../../../styles/shared/items-catalog.css";
-import { ZHNumberValue } from "../../../components/zh/ZHNumberValue";
 
 const PAGE_SIZE = 20;
+const STATUSES = ["Draft", "Posted", "Discarded"] as const;
 
-const STATUS_OPTIONS = [
-  { value: "", label: "Todos los estados" },
-  { value: "Draft", label: "Borrador" },
-  { value: "Posted", label: "Contabilizado" },
-  { value: "Discarded", label: "Descartado" },
-];
-
-function statusBadge(status: string): { label: string; variant: "gray" | "green" } {
-  switch (status) {
-    case "Posted":
-      return { label: "Contabilizado", variant: "green" };
-    case "Discarded":
-      return { label: "Descartado", variant: "gray" };
-    default:
-      return { label: "Borrador", variant: "gray" };
-  }
+/** Badge oficial con Material Symbol al inicio (la etiqueta de `Badge` admite ReactNode). */
+function IconBadge({ icon, label, variant }: { icon: string; label: string; variant: "success" | "warning" | "info" | "neutral" | "error" }) {
+  return (
+    <Badge
+      variant={variant}
+      label={
+        <>
+          <span className="material-symbols-outlined zh-icon-sm" aria-hidden="true">{icon}</span> {label}
+        </>
+      }
+    />
+  );
 }
 
 /**
  * Listado de asientos contables (ACCOUNTING-LEDGER-VISIBILITY-01) — consume exclusivamente
- * `GET /api/v1/accounting/journal-entries`. Solo lectura: sin crear/editar/eliminar asientos
- * desde esta pantalla (el Posting Engine sigue siendo la única vía de escritura).
- * ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: pantalla principal, accesible solo desde el menú
- * (`AccountingModule.cs`) — sin botones cruzados hacia Plan de cuentas/Reportes (navegación
- * duplicada del menú). El único link saliente es contextual: "Ver detalle" por fila, hacia
- * `/accounting/journal-entries/:id`.
+ * `GET /api/v1/accounting/journal-entries`. Solo lectura: el Posting Engine y el flujo de manuales
+ * siguen siendo las únicas vías de escritura.
+ * ACCOUNTING-NAVIGATION-CANONICAL-AUDIT-11C: sin botones cruzados hacia otras pantallas; el único
+ * link saliente es el detalle `/accounting/journal-entries/:id` (botón o clic en la fila).
+ * ACCOUNTING-JOURNAL-UX-01: barra de filtros `ZHFilterBar` (origen, estado y rango de fechas —
+ * parámetros ya soportados por el endpoint) con campos de ancho equilibrado, y 7 columnas compuestas
+ * en una sola línea por fila. El descuadre se infiere de `totalDebit !== totalCredit`: el DTO del
+ * listado no expone `isBalanced` y ambos totales salen de la misma suma de líneas en servidor.
  */
 export function JournalEntriesPage() {
   const navigate = useNavigate();
   const { canShow } = usePermissionsUi();
-  const [origin, setOrigin] = useState("");
   const { t } = useI18n();
   const [items, setItems] = useState<JournalEntryListItemDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [origin, setOrigin] = useState("");
   const [status, setStatus] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [loading, setLoading] = useState(false);
 
   const fetchList = useCallback(async () => {
@@ -64,108 +68,143 @@ export function JournalEntriesPage() {
       const r = await accountingApi.listJournalEntries(page, PAGE_SIZE, {
         status: status || undefined,
         manual: origin === "" ? undefined : origin === "manual",
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
       });
       setItems(r.items);
       setTotal(r.totalCount);
     } catch (err: unknown) {
-      message.error(
-        formatApiRequestError(err, {
-          generic: "No se pudo cargar el listado de asientos contables.",
-        }),
-      );
+      message.error(formatApiRequestError(err, { generic: t("accounting.journal.loadError") }));
     } finally {
       setLoading(false);
     }
-  }, [page, status, origin]);
+  }, [page, status, origin, fromDate, toDate, t]);
 
   useEffect(() => {
     void fetchList();
   }, [fetchList]);
 
+  const changeFilter = (apply: () => void) => {
+    setPage(1);
+    apply();
+  };
+
+  const clearFilters = () => {
+    setPage(1);
+    setOrigin("");
+    setStatus("");
+    setFromDate("");
+    setToDate("");
+  };
+
+  const openDetail = (row: JournalEntryListItemDto) => navigate(`/accounting/journal-entries/${row.id}`);
+
   const columns: ZHDataTableColumn<JournalEntryListItemDto>[] = [
     {
-      key: "entryDate",
-      header: "Fecha",
-      render: (row) => formatDate(row.entryDate),
+      key: "entry",
+      header: t("accounting.journal.column.entry"),
+      // Dos líneas: dato principal (ZHDataValue default) y secundario (ZHDataValue muted).
+      render: (row) => (
+        <div className="zh-stack">
+          <ZHDataValue>
+            {row.entryNumber != null
+              ? t("accounting.journal.entryNumber", { number: row.entryNumber })
+              : t("accounting.journal.unnumbered")}
+          </ZHDataValue>
+          <ZHDataValue variant="muted">{formatDate(row.entryDate)}</ZHDataValue>
+        </div>
+      ),
     },
     {
-      key: "entryNumber",
-      header: "Número",
-      render: (row) => row.entryNumber ?? "—",
+      key: "operation",
+      header: t("accounting.journal.column.operation"),
+      render: (row) => {
+        const op = journalOperation(t, row);
+        const extra = journalExtraDescription(t, row);
+        const chip = journalModuleChip(row.sourceModule);
+        return (
+          <div className="zh-stack">
+            <ZHDataValue>{op.label}</ZHDataValue>
+            {/* El badge va dentro de un bloque para no estirarse en el flex de .zh-stack. */}
+            {op.module && (
+              <div className="zh-mt-4">
+                <IconBadge icon={chip.icon} label={op.module} variant={chip.variant} />
+              </div>
+            )}
+            {extra && <ZHDataValue variant="muted">{extra}</ZHDataValue>}
+          </div>
+        );
+      },
     },
     {
-      key: "sourceModule",
-      header: "Origen",
-      render: (row) => row.sourceEventType === "ManualJournalEntry" ? "Asiento manual" : sourceModuleLabel(t, row.sourceModule),
+      key: "document",
+      header: t("accounting.journal.column.document"),
+      render: (row) => {
+        if (journalOperation(t, row).module === null) return "—";
+        const reference = [
+          row.sourceDocumentType,
+          row.sourceDocumentDate ? formatDate(row.sourceDocumentDate) : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        return (
+          <div className="zh-stack">
+            {row.sourceDocumentNumber ? (
+              <span className="zh-code-value zh-code-value--document">{row.sourceDocumentNumber}</span>
+            ) : (
+              <span className="zh-code-value zh-code-value--inline" title={row.sourceEventId}>
+                {row.sourceEventId.slice(0, 8)}…
+              </span>
+            )}
+            {reference && <ZHDataValue variant="muted">{reference}</ZHDataValue>}
+          </div>
+        );
+      },
     },
     {
-      key: "sourceDocumentType",
-      header: "Tipo documento",
-      // ACCOUNTING-JOURNAL-SALES-LABELS-UX-01: sourceDocumentType (cuando existe) ya es un texto
-      // legible resuelto por el backend; el fallback a sourceEventType (crudo, ej. "InvoiceIssued")
-      // es el que se traduce aquí — nunca oculta el hecho contable, solo lo hace entendible.
-      render: (row) => row.sourceDocumentType ?? factTypeLabel(t, row.sourceEventType),
-    },
-    {
-      key: "sourceDocumentNumber",
-      header: "Número documento",
-      render: (row) =>
-        row.sourceEventType === "ManualJournalEntry" ? "—" : row.sourceDocumentNumber ?? (
-          <code className="prd-sku" title={row.sourceEventId}>
-            {row.sourceEventId.slice(0, 8)}…
-          </code>
-        ),
-    },
-    {
-      key: "sourcePartyName",
-      header: "Tercero",
+      key: "party",
+      header: t("accounting.journal.column.party"),
       render: (row) => row.sourcePartyName ?? "—",
     },
     {
-      key: "sourceDocumentDate",
-      header: "Fecha documento",
-      render: (row) => (row.sourceDocumentDate ? formatDate(row.sourceDocumentDate) : "—"),
-    },
-    {
-      key: "description",
-      header: "Descripción",
-      // ACCOUNTING-JOURNAL-LABELS-UX-01: el backend compone esta descripción siempre igual
-      // ("Sales — InvoiceIssued — {id}") — se traduce a un texto de negocio; cualquier
-      // descripción real distinta a ese formato se muestra intacta.
-      render: (row) => friendlyDescription(t, row.description),
-    },
-    {
-      key: "totalDebit",
-      header: "Debe",
+      key: "amount",
+      header: t("accounting.journal.column.amount"),
       align: "right",
-      render: (row) => <ZHNumberValue value={row.totalDebit} precision="accounting" />,
-    },
-    {
-      key: "totalCredit",
-      header: "Haber",
-      align: "right",
-      render: (row) => <ZHNumberValue value={row.totalCredit} precision="accounting" />,
+      cellClassName: "zh-table-cell--num",
+      render: (row) => (
+        <>
+          {row.totalDebit !== row.totalCredit && row.status !== "Discarded" && (
+            <>
+              <IconBadge icon="warning" label={t("accounting.journal.unbalanced")} variant="error" />{" "}
+            </>
+          )}
+          <ZHMoneyValue precision="accounting" value={row.totalDebit} />
+        </>
+      ),
     },
     {
       key: "status",
-      header: "Estado",
+      header: t("common.status"),
       render: (row) => {
-        const b = statusBadge(row.status);
-        return <Badge label={b.label} variant={b.variant} />;
+        const b = journalStatusBadge(t, row.status);
+        return <IconBadge icon={b.icon} label={b.label} variant={b.variant} />;
       },
     },
     {
       key: "actions",
-      header: "",
-      align: "right",
+      header: t("common.actions"),
+      cellClassName: "zh-table-cell--actions",
       render: (row) => (
         <ZHBtn
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          onClick={() => navigate(`/accounting/journal-entries/${row.id}`)}
+          onClick={(e) => {
+            e.stopPropagation();
+            openDetail(row);
+          }}
         >
-          Ver detalle
+          {t("accounting.journal.viewDetail")}
         </ZHBtn>
       ),
     },
@@ -173,45 +212,71 @@ export function JournalEntriesPage() {
 
   return (
     <PageShell
-      kicker="Contabilidad"
-      title="Asientos contables"
-      subtitle="Libro contable: asientos manuales y automáticos"
-      action={canShow("accounting.manual.create") ? <ZHBtn onClick={() => navigate("/accounting/journal-entries/new")}>Nuevo asiento manual</ZHBtn> : undefined}
+      kicker={t("app.nav.group.accounting")}
+      title={t("app.nav.item.accounting.journalEntries")}
+      subtitle={t("accounting.journal.subtitle")}
+      action={
+        canShow("accounting.manual.create") ? (
+          <ZHBtn variant="primary" icon="add" onClick={() => navigate("/accounting/journal-entries/new")}>
+            {t("accounting.journal.newManual")}
+          </ZHBtn>
+        ) : undefined
+      }
     >
-      <ZHCard
-        title="Listado"
-        actions={
-          <div className="zh-form-actions-row">
-            <ZhSelect aria-label="Origen del asiento" value={origin} onChange={e => { setPage(1); setOrigin(e.target.value); }}>
-              <option value="">Todos los orígenes</option><option value="manual">Manual</option><option value="automatic">Automático</option>
+      <ZHFilterBar onClear={clearFilters} disabled={loading}>
+        <div className="zh-filterbar__field zh-filterbar__field--grow">
+          <ZHField label={t("accounting.journal.filter.origin")} density="compact">
+            <ZhSelect value={origin} onChange={(e) => changeFilter(() => setOrigin(e.target.value))}>
+              <option value="">{t("accounting.journal.filter.allOrigins")}</option>
+              <option value="manual">{t("accounting.journal.filter.manual")}</option>
+              <option value="automatic">{t("accounting.journal.filter.automatic")}</option>
             </ZhSelect>
-            <ZhSelect
-              value={status}
-              onChange={(e) => {
-                setPage(1);
-                setStatus(e.target.value);
-              }}
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+          </ZHField>
+        </div>
+        <div className="zh-filterbar__field zh-filterbar__field--grow">
+          <ZHField label={t("common.status")} density="compact">
+            <ZhSelect value={status} onChange={(e) => changeFilter(() => setStatus(e.target.value))}>
+              <option value="">{t("common.allStatuses")}</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {journalStatusBadge(t, s).label}
                 </option>
               ))}
             </ZhSelect>
-            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void fetchList()} disabled={loading}>
-              Actualizar
-            </ZHBtn>
-          </div>
-        }
-      >
+          </ZHField>
+        </div>
+        <div className="zh-filterbar__field zh-filterbar__field--grow">
+          <ZHField label={t("accounting.journal.filter.fromDate")} density="compact">
+            <ZhDateInput
+              density="compact"
+              value={fromDate}
+              max={toDate || undefined}
+              onChange={(e) => changeFilter(() => setFromDate(e.target.value))}
+            />
+          </ZHField>
+        </div>
+        <div className="zh-filterbar__field zh-filterbar__field--grow">
+          <ZHField label={t("accounting.journal.filter.toDate")} density="compact">
+            <ZhDateInput
+              density="compact"
+              value={toDate}
+              min={fromDate || undefined}
+              onChange={(e) => changeFilter(() => setToDate(e.target.value))}
+            />
+          </ZHField>
+        </div>
+        <ZHBtn variant="ghost" size="sm" type="button" icon="refresh" onClick={() => void fetchList()} disabled={loading}>
+          {t("common.refresh")}
+        </ZHBtn>
+      </ZHFilterBar>
+      <ZHCard>
         <ZHDataTable
           columns={columns}
           rows={items}
           rowKey={(row) => row.id}
+          onRowClick={openDetail}
           loading={loading}
-          showRowNumber
-          rowNumberOffset={(page - 1) * PAGE_SIZE}
-          emptyMessage="No hay asientos contables registrados."
+          emptyMessage={t("accounting.journal.empty")}
           page={page}
           pageSize={PAGE_SIZE}
           onPageChange={setPage}

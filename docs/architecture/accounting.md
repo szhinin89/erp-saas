@@ -411,9 +411,14 @@ Reversed con snapshot de cabecera/líneas y actor/correlación; no hay auditorí
 **API/UI.** Bajo `/api/v1/accounting/manual-journal-entries`: POST de creación, PUT `/{id}`,
 POST `/{id}/post`, `/{id}/discard` y `/{id}/reverse`. Conserva los GET del libro; el detalle
 agrega referencia, versión, autoría, descarte e intentos para manuales. El listado admite filtro
-`manual=true/false` (incluye sus reversos en Manual). UI: listado existente con nuevo manual;
+`manual=true/false` (incluye sus reversos en Manual). UI: listado existente con nuevo manual y
+filtros de origen, estado y rango de fechas (`fromDate`/`toDate`, ya admitidos por el GET);
 editor `/accounting/journal-entries/new` y `/:id/edit`, inputs decimales canónicos, totales y
-diferencia, guardar/publicar; detalle con acciones, intentos y relación de reverso.
+diferencia con aviso de cuadre informativo (el Draft puede guardarse desbalanceado),
+guardar/publicar con confirmación previa. Antes de publicar, el editor bloquea sin llamar al API
+las líneas con cuenta agrupadora o inactiva (`isActive`/`allowsPosting` del plan); solo anticipa a
+PostingAccountGuard, que sigue siendo la autoridad, y no restringe el Draft. Detalle con acciones,
+intentos y relación de reverso.
 Los manuales no muestran una advertencia de documento comercial faltante.
 Draft/Discarded quedan fuera de las consultas actuales de reportes; Posted y su reverso entran
 según sus fechas propias, sin una lógica de reportes nueva.

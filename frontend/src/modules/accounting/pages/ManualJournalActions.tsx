@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,12 +12,19 @@ import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { formatDateTime, todayIso } from "../../../lib/formatters/dateFormatters";
 import { message } from "../../../lib/messages";
 import { formatApiRequestError } from "../../lib/apiError";
+import { useI18n } from "../../../i18n/i18n";
 import { accountingApi, FISCAL_YEAR_CLOSING_FACT, type JournalEntryDetailDto } from "../api/accountingApi";
 import { manualJournalReasonSchema } from "../schemas/manualJournalSchema";
 
-/** Extends the existing detail, reusing AccountingPeriodsPage's confirmation/modal pattern. */
-export function ManualJournalActions({ entry, onChanged }: { entry: JournalEntryDetailDto; onChanged: () => void }) {
+/**
+ * Extends the existing detail, reusing AccountingPeriodsPage's confirmation/modal pattern.
+ * ACCOUNTING-JOURNAL-UX-01: `children` es el contenido del asiento (resumen y líneas) — se ubica
+ * entre la card de acciones/metadatos y los intentos de publicación, que así quedan después de las
+ * líneas sin separar el estado `attempts` (refrescado localmente tras un fallo de publicación).
+ */
+export function ManualJournalActions({ entry, onChanged, children }: { entry: JournalEntryDetailDto; onChanged: () => void; children?: ReactNode }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +33,7 @@ export function ManualJournalActions({ entry, onChanged }: { entry: JournalEntry
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(manualJournalReasonSchema), defaultValues: { reason: "", effectiveDate: todayIso() },
   });
-  if (!entry.manual) return null;
+  if (!entry.manual) return <>{children}</>;
   const manual = entry.manual;
   const draft = entry.status === "Draft";
   // ACCOUNTING-12D: el cierre anual usa este mismo flujo, pero sus líneas las calcula el sistema (no se edita).
@@ -69,20 +76,33 @@ export function ManualJournalActions({ entry, onChanged }: { entry: JournalEntry
   });
 
   return <>
-    <ZHCard title={yearEnd ? "Asiento de cierre anual" : "Asiento manual"}>
+    <ZHCard
+      className="zh-mb-16"
+      title={t(yearEnd ? "accounting.journal.operation.fiscalYearClosing" : "accounting.journal.operation.manual")}
+      actions={<div className="zh-form-actions-row zh-form-actions-row--flush">
+        {draft && !yearEnd && canShow("accounting.manual.edit") && <ZHBtn variant="ghost" size="sm" disabled={busy} onClick={() => navigate(`/accounting/journal-entries/${entry.id}/edit`)}>Editar borrador</ZHBtn>}
+        {draft && canShow("accounting.manual.discard") && <ZHBtn variant="ghost" size="sm" disabled={busy} onClick={() => { reset({ reason: "", effectiveDate: todayIso() }); setMode("discard"); }}>Descartar</ZHBtn>}
+        {/* reverseJournalEntryId viene de la relación OriginalJournalEntryId del reverso: reversado → sin acción. */}
+        {entry.status === "Posted" && !entry.reverseJournalEntryId && canShow("accounting.manual.reverse") &&
+          <ZHBtn variant="ghost" size="sm" disabled={busy} onClick={() => { reset({ reason: "", effectiveDate: yearEnd ? entry.entryDate : todayIso() }); setMode("reverse"); }}>Reversar</ZHBtn>}
+        {draft && canShow("accounting.manual.post") && <ZHBtn size="sm" disabled={busy} onClick={() => void post()}>Publicar</ZHBtn>}
+      </div>}
+    >
       {error && <ZHPageNotice variant="error" message={error} />}
       {yearEnd && draft && <ZHPageNotice variant="info" message="Generado desde Contabilidad › Períodos con los saldos contabilizados del ejercicio. Si los saldos cambian antes de publicarlo, la publicación se rechaza: descártelo y genere uno nuevo." />}
-      <p>Creado por: {manual.createdBy} · {formatDateTime(entry.createdAt)}</p>
-      <p>Referencia: {manual.reference || "—"}</p>
-      {manual.discardedAtUtc && <p>Descartado por {manual.discardedBy} · {formatDateTime(manual.discardedAtUtc)} · {manual.discardReason}</p>}
-      {draft && !yearEnd && canShow("accounting.manual.edit") && <ZHBtn variant="ghost" disabled={busy} onClick={() => navigate(`/accounting/journal-entries/${entry.id}/edit`)}>Editar borrador</ZHBtn>}
-      {draft && canShow("accounting.manual.post") && <ZHBtn disabled={busy} onClick={() => void post()}>Publicar</ZHBtn>}
-      {draft && canShow("accounting.manual.discard") && <ZHBtn variant="ghost" disabled={busy} onClick={() => { reset({ reason: "", effectiveDate: todayIso() }); setMode("discard"); }}>Descartar</ZHBtn>}
-      {/* reverseJournalEntryId viene de la relación OriginalJournalEntryId del reverso: reversado → sin acción. */}
-      {entry.status === "Posted" && !entry.reverseJournalEntryId && canShow("accounting.manual.reverse") &&
-        <ZHBtn variant="ghost" disabled={busy} onClick={() => { reset({ reason: "", effectiveDate: yearEnd ? entry.entryDate : todayIso() }); setMode("reverse"); }}>Reversar</ZHBtn>}
+      <div className="zh-summary-grid">
+        <div><span className="zh-summary-grid__label">{t("accounting.journal.manual.createdBy")}</span><span className="zh-summary-grid__value">{manual.createdBy}</span></div>
+        <div><span className="zh-summary-grid__label">{t("accounting.journal.manual.createdAt")}</span><span className="zh-summary-grid__value">{formatDateTime(entry.createdAt)}</span></div>
+        <div><span className="zh-summary-grid__label">{t("accounting.journal.manual.reference")}</span><span className="zh-summary-grid__value">{manual.reference || "—"}</span></div>
+        {manual.discardedAtUtc && <>
+          <div><span className="zh-summary-grid__label">{t("accounting.journal.manual.discardedBy")}</span><span className="zh-summary-grid__value">{manual.discardedBy}</span></div>
+          <div><span className="zh-summary-grid__label">{t("accounting.journal.manual.discardedAt")}</span><span className="zh-summary-grid__value">{formatDateTime(manual.discardedAtUtc)}</span></div>
+          <div><span className="zh-summary-grid__label">{t("accounting.journal.manual.discardReason")}</span><span className="zh-summary-grid__value">{manual.discardReason}</span></div>
+        </>}
+      </div>
     </ZHCard>
-    <ZHCard title="Intentos de publicación">
+    {children}
+    {attempts.length > 0 && <ZHCard title={t("accounting.journal.manual.attempts")}>
       <ZHDataTable rows={attempts} rowKey={row => row.id} emptyMessage="Sin intentos registrados."
         columns={[
           { key: "date", header: "Fecha", render: row => formatDateTime(row.attemptedAtUtc) },
@@ -90,7 +110,7 @@ export function ManualJournalActions({ entry, onChanged }: { entry: JournalEntry
           { key: "result", header: "Resultado", render: row => row.success ? "Publicado" : "Rechazado" },
           { key: "error", header: "Detalle", render: row => row.errorMessage ?? "—" },
         ]} />
-    </ZHCard>
+    </ZHCard>}
     <ZHModal open={mode !== null} onClose={() => { if (!busy) setMode(null); }} title={mode === "discard" ? "Descartar borrador" : "Reversar asiento"}>
       <form onSubmit={submitReason}>
         {error && <ZHPageNotice variant="error" message={error} />}

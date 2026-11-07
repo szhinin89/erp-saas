@@ -161,3 +161,65 @@ export function lineDirectionLabel(t: TFunction, value: string): string {
 export function amountKindLabel(t: TFunction, value: string): string {
   return labelFromMap(t, AMOUNT_KIND_KEYS, value);
 }
+
+// ACCOUNTING-JOURNAL-UX-01: estado y operación de un asiento — única definición compartida por el
+// listado y el detalle de asientos (antes `statusBadge` estaba duplicada en ambas páginas).
+// Borrador = warning para no confundirse con Descartado (neutral).
+export function journalStatusBadge(
+  t: TFunction,
+  status: string,
+): { label: string; detail: string; variant: "success" | "warning" | "neutral"; icon: string } {
+  switch (status) {
+    case "Posted":
+      return { label: t("accounting.journal.status.Posted"), detail: t("accounting.journal.statusDetail.Posted"), variant: "success", icon: "check_circle" };
+    case "Discarded":
+      return { label: t("accounting.journal.status.Discarded"), detail: t("accounting.journal.statusDetail.Discarded"), variant: "neutral", icon: "block" };
+    default:
+      return { label: t("accounting.journal.status.Draft"), detail: t("accounting.journal.statusDetail.Draft"), variant: "warning", icon: "edit_note" };
+  }
+}
+
+/** Chip de módulo de origen (variante oficial de `Badge` + Material Symbol) para la columna
+ * Operación del listado. Solo presentación: el color identifica el módulo, no un estado. */
+const SOURCE_MODULE_CHIPS: Record<string, { variant: "success" | "warning" | "info" | "neutral"; icon: string }> = {
+  Sales: { variant: "info", icon: "point_of_sale" },
+  Purchases: { variant: "success", icon: "shopping_cart" },
+  Finance: { variant: "neutral", icon: "account_balance" },
+  Expenses: { variant: "warning", icon: "receipt_long" },
+  Retentions: { variant: "info", icon: "description" },
+  Payables: { variant: "warning", icon: "payments" },
+  Accounting: { variant: "neutral", icon: "menu_book" },
+};
+
+export function journalModuleChip(sourceModule: string): { variant: "success" | "warning" | "info" | "neutral"; icon: string } {
+  return SOURCE_MODULE_CHIPS[sourceModule] ?? { variant: "neutral", icon: "menu_book" };
+}
+
+/** Operación legible del asiento: el manual y el cierre anual (SourceModule "Accounting") no
+ * muestran módulo; el resto muestra el hecho contable traducido y su módulo de origen. */
+export function journalOperation(
+  t: TFunction,
+  entry: { sourceModule: string; sourceEventType: string },
+): { label: string; module: string | null } {
+  if (entry.sourceModule === "Accounting" && entry.sourceEventType === "FiscalYearClosing")
+    return { label: t("accounting.journal.operation.fiscalYearClosing"), module: null };
+  if (entry.sourceModule === "Accounting" && entry.sourceEventType === "ManualJournalEntry")
+    return { label: t("accounting.journal.operation.manual"), module: null };
+  return {
+    label: factTypeLabel(t, entry.sourceEventType),
+    module: sourceModuleLabel(t, entry.sourceModule),
+  };
+}
+
+/** Descripción del asiento solo cuando aporta algo distinto de la operación ya mostrada (en los
+ * automáticos, `friendlyDescription` suele reproducir "Módulo — Hecho"). */
+export function journalExtraDescription(
+  t: TFunction,
+  entry: { sourceModule: string; sourceEventType: string; description: string | null },
+): string | null {
+  if (!entry.description?.trim()) return null;
+  const text = friendlyDescription(t, entry.description);
+  const op = journalOperation(t, entry);
+  const redundant = [op.label, op.module ? `${op.module} — ${op.label}` : null];
+  return redundant.includes(text) ? null : text;
+}
