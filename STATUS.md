@@ -1,5 +1,59 @@
 # Project Status
 
+## ACCOUNTING-JOURNAL-UX-01 — Asientos contables UX/UI — CLOSED (2026-11-06)
+
+Mejora UX/UI de Asientos contables con los componentes oficiales del Design System, sin cambios de
+backend, DTO, endpoints, reglas contables ni permisos. Reglas vigentes en
+[Contabilidad § 11](docs/architecture/accounting.md) (API/UI de manuales) y
+[Frontend](docs/architecture/frontend.md) (`ZhSearchSelect`).
+
+- **Listado** `/accounting/journal-entries`: filtros de origen, estado y rango de fechas en
+  `ZHFilterBar` (parámetros ya admitidos por el GET); siete columnas compuestas en dos líneas con
+  badges de módulo y estado, indicador de descuadre y detalle por botón o fila.
+- **Detalle** `/:id`: estado destacado, «Datos del asiento» y «Documento de origen» en
+  `.zh-summary-grid`, movimientos con totales y un único aviso de cuadre según `isBalanced`;
+  reversos, referencias y, en manuales, acciones antes del contenido e intentos después de las líneas.
+- **Creación y edición de manuales** `/new` y `/:id/edit`: `ZHGrid` de tres campos, tabla editable
+  compacta, Debe/Haber `positiveOnly`, totales y diferencia de presentación con `decimal.js`, aviso de
+  cuadre informativo (el Draft puede guardarse desbalanceado), `ZHFormActions`, confirmación antes de
+  publicar y mensaje visible si la publicación falla (el borrador y su intento se conservan).
+- **Validación previa de cuentas no imputables**: con una cuenta agrupadora o inactiva, «Guardar y
+  publicar» marca la línea y muestra un aviso sin llamar al API; «Guardar borrador» no cambia.
+  `PostingAccountGuard` sigue siendo la autoridad.
+- **`ZhSearchSelect` con `portal`** opt-in (default `false`): lista anclada con
+  `useAnchoredOverlayPosition` + `.zh-picker__dropdown--floating`; solo la usa el editor de manuales.
+- i18n es/en con paridad de claves `accounting.journal.*`.
+
+Validación agente: Vitest focal 239/239 en 23 archivos (Contabilidad, `ZhSearchSelect` y sus
+consumidores, carga inicial, launcher, i18n); `tsc -b`; ESLint de los archivos cambiados;
+`architecture:check` (0 violaciones nuevas, incluido i18n-keys); guardrail oficial
+`-SkipFrontendChunk`; Stack Audit y `git diff --check` PASS. Verificación visual en navegador real
+(componentes reales, API simulada) en escritorio y móvil: sin desbordamientos, desplegable de cuentas
+sin recortes y publicación bloqueada sin llamadas de escritura al API.
+
+Cierre (2026-11-06): commit `2534f5646` publicado en `main`; CI #1112 SUCCESS en 4 min 36 s con
+perfil frontend (arquitectura, frontend, seguridad y `CI gate` PASS; backend y publicación API
+omitidos por el plan), según evidencia de GitHub confirmada por el propietario.
+
+Registrado sin abrir trabajo: códigos de Contabilidad aún sin entrada en `MessageCatalog` (deuda
+ADR-027; el usuario ve el mensaje específico de `data.errors`); nombres de usuario en manuales
+(requiere ampliar DTO en backend); elementos de la referencia visual que exigirían ampliar el Design
+System (columna lateral, icono de cabecera, fecha larga, paginación de `ZHDataTable`).
+
+## CI-SELECTIVE-01 — CI selectivo — ETAPAS 1 Y 2 PUBLICADAS; PERFIL DOCUMENTAL PENDIENTE DE EVIDENCIA (2026-11-06)
+
+Reglas, perfiles y `CI gate` en
+[Enforcement § Plan de CI y activación selectiva](docs/architecture/enforcement.md#plan-de-ci-y-activación-selectiva).
+
+- Etapa 1 (preparación del detector, plan y `CI gate`): commit `44f3f9709`, CI #1110 SUCCESS.
+- Etapa 2 (activación): commit `01f1ff6f3`; CI completo de activación #1111 SUCCESS.
+- Perfil frontend: CI #1112 SUCCESS sobre `2534f5646`; backend y publicación API omitidos
+  correctamente por el plan.
+
+Evidencia de GitHub Actions confirmada por el propietario. **Pendiente:** primera ejecución real del
+perfil exclusivamente documental (documentación, Stack Audit, Identity y Platform; sin backend ni
+frontend). No se declara validado hasta obtener esa evidencia.
+
 ## B-02 — pruebas obsoletas de Compras actualizadas — CLOSED (2026-11-06)
 
 Bloqueante B-02 de la auditoría de lanzamiento. Compras V1 **continúa CLOSED**
