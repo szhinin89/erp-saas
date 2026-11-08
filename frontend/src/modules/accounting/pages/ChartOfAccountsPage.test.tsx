@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, cleanup, within } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n/i18n";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { ChartOfAccountsPage } from "./ChartOfAccountsPage";
 import { accountingApi } from "../api/accountingApi";
 import { message } from "../../../lib/messages";
+import { account, byId, CHART_ACCOUNTS, visibleCodes } from "./ChartOfAccountsPage.testFixtures";
 
 /**
- * CRITICAL-CONFIRMATIONS-INVENTORY-ACCOUNTING-05 — "Activar/desactivar cuenta contable":
- * confirma antes de ejecutar, no llama al backend si se cancela, éxito muestra message.success,
- * fallo muestra el mensaje real vía formatApiRequestError. No cambia validaciones/lógica contable.
+ * ACCOUNTING-CHART-UX-01 — listado jerárquico (5 columnas, expandir/contraer, contexto al filtrar,
+ * vista plana por nivel, filtros únicos, 4 KPI, permisos visibles) + regresión de
+ * CRITICAL-CONFIRMATIONS-INVENTORY-ACCOUNTING-05 (confirmación de activar/desactivar).
+ * Crear/editar en modal: ChartOfAccountsPage.modal.test.tsx.
  */
 
 vi.mock("../api/accountingApi", () => ({
@@ -22,29 +25,16 @@ vi.mock("../api/accountingApi", () => ({
   },
 }));
 
+vi.mock("../../../access/usePermissionsUi", () => ({ usePermissionsUi: vi.fn() }));
+
 vi.mock("../../../lib/messages", () => ({
-  message: {
-    success: vi.fn(),
-    error: vi.fn(),
-    confirm: vi.fn(),
-  },
+  message: { success: vi.fn(), error: vi.fn(), confirm: vi.fn() },
 }));
 
-const ACTIVE_ACCOUNT = {
-  id: "acc-1",
-  code: "1.1.01",
-  name: "Caja general",
-  parentAccountId: null,
-  parentAccountCode: null,
-  parentAccountName: null,
-  level: 0,
-  accountType: "Asset",
-  nature: "Debit",
-  allowsPosting: true,
-  isActive: true,
-  createdAt: "2026-08-01T00:00:00Z",
-  updatedAt: null,
-};
+function grant(...keys: string[] | ["*"]) {
+  const has = (key: string) => keys[0] === "*" || (keys as string[]).includes(key);
+  vi.mocked(usePermissionsUi).mockReturnValue({ canShow: has, has, isAdminRole: false });
+}
 
 function renderPage() {
   return render(
@@ -54,126 +44,239 @@ function renderPage() {
   );
 }
 
+async function renderLoaded() {
+  const view = renderPage();
+  await waitFor(() => expect(screen.getByText("Activo corriente")).toBeTruthy());
+  return view;
+}
+
+const CAJA = account({ id: "acc-1", code: "1.1.01", name: "Caja general" });
+
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(accountingApi.listAccounts).mockResolvedValue([ACTIVE_ACCOUNT]);
+  grant("*");
+  vi.mocked(accountingApi.listAccounts).mockResolvedValue(CHART_ACCOUNTS);
   vi.mocked(message.confirm).mockResolvedValue(true);
 });
 
 afterEach(() => cleanup());
 
-describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y feedback", () => {
-  it("ordena por código contable y renderiza nombres limpios con guías visuales por código", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue([
-      {
-        ...ACTIVE_ACCOUNT,
-        id: "acc-5",
-        code: "1.1.01.002",
-        name: "L Caja chica",
-        level: 1,
-      },
-      {
-        ...ACTIVE_ACCOUNT,
-        id: "acc-3",
-        code: "1.1.01",
-        name: "Efectivo y equivalentes",
-        level: 0,
-        allowsPosting: false,
-      },
-      {
-        ...ACTIVE_ACCOUNT,
-        id: "acc-1",
-        code: "1",
-        name: "Activo",
-        level: 0,
-        allowsPosting: false,
-      },
-      {
-        ...ACTIVE_ACCOUNT,
-        id: "acc-2",
-        code: "1.1",
-        name: "Activo corriente",
-        level: 0,
-        allowsPosting: false,
-      },
-      {
-        ...ACTIVE_ACCOUNT,
-        id: "acc-4",
-        code: "1.1.01.001",
-        name: "Caja General",
-        level: 1,
-      },
-      {
-        ...ACTIVE_ACCOUNT,
-        id: "acc-6",
-        code: "1.1.02",
-        name: "│ ├ Bancos",
-        level: 0,
-        allowsPosting: false,
-      },
-    ]);
+describe("ChartOfAccountsPage — jerarquía y columnas", () => {
+  it("muestra cinco columnas, sin N°, y arranca con los niveles 0 y 1 visibles", async () => {
+    const { container } = await renderLoaded();
 
-    const { container } = renderPage();
-    await waitFor(() => expect(screen.getByText("Caja chica")).toBeTruthy());
-
-    const compactFilterBar = container.querySelector(".acc-coa-list-filters");
-    expect(compactFilterBar).toBeTruthy();
-    expect(screen.getByPlaceholderText("Buscar por código o nombre...")).toBeTruthy();
-    expect(screen.getByText("Todos los tipos")).toBeTruthy();
-    expect(screen.getByText("Todos los estados")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Actualizar" })).toBeTruthy();
-
-    const rows = Array.from(container.querySelectorAll("tbody tr"));
-    expect(rows.map((row) => row.children[0]?.textContent)).toEqual(["1", "2", "3", "4", "5", "6"]);
-    expect(rows.map((row) => row.children[1]?.textContent)).toEqual([
-      "1",
-      "1.1",
-      "1.1.01",
-      "1.1.01.001",
-      "1.1.01.002",
-      "1.1.02",
-    ]);
-    expect(screen.queryByText("L Caja chica")).toBeNull();
-    expect(screen.queryByText(/[\u2502\u2514\u251c]/)).toBeNull();
-
-    const nameCells = rows.map((row) => row.children[2]?.firstElementChild as HTMLElement);
-    expect(nameCells.map((cell) => cell.textContent)).toEqual([
-      "Activo",
-      "Activo corriente",
-      "Efectivo y equivalentes",
-      "Caja General",
-      "Caja chica",
-      "Bancos",
-    ]);
-    expect(nameCells.map((cell) => cell.dataset.depth)).toEqual(["0", "1", "2", "3", "3", "2"]);
-    expect(nameCells[0].querySelector(".acc-coa-tree-name__guides")).toBeNull();
-
-    const depthOneGuides = nameCells[1].querySelector(".acc-coa-tree-name__guides");
-    const depthThreeGuides = nameCells[3].querySelector(".acc-coa-tree-name__guides");
-    expect(depthOneGuides?.getAttribute("aria-hidden")).toBe("true");
-    expect(depthOneGuides?.querySelectorAll(".acc-coa-tree-name__guide")).toHaveLength(1);
-    expect(depthThreeGuides?.getAttribute("aria-hidden")).toBe("true");
-    expect(depthThreeGuides?.querySelectorAll(".acc-coa-tree-name__guide")).toHaveLength(3);
-    expect(depthThreeGuides?.textContent).toBe("");
-
-    rows.forEach((row) => {
-      expect(row.querySelector('button[aria-label="Editar"]')).toBeTruthy();
-      expect(row.querySelector('button[aria-label="Desactivar"]')).toBeTruthy();
-    });
+    const headers = Array.from(container.querySelectorAll("thead th")).map((th) => th.textContent);
+    expect(headers).toEqual(["Cuenta", "Tipo / Naturaleza", "Clase", "Estado", "Acciones"]);
+    expect(visibleCodes(container)).toEqual(["1", "1.1", "2", "2.1"]);
+    expect(screen.queryByText("Caja general")).toBeNull();
+    expect(screen.getByText("4 visibles · 6 cuentas en total")).toBeTruthy();
   });
 
-  it("pide confirmación antes de desactivar, explicando el impacto en asientos/reglas de posteo", async () => {
-    vi.mocked(accountingApi.disableAccount).mockResolvedValue(ACTIVE_ACCOUNT);
+  it("distingue agrupadoras y de movimiento, y agrupa tipo con naturaleza", async () => {
+    const { container } = await renderLoaded();
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
 
+    expect(within(rows[0] as HTMLElement).getByText("Agrupadora")).toBeTruthy();
+    expect(within(rows[3] as HTMLElement).getByText("Movimiento")).toBeTruthy();
+    expect(rows[3]?.children[1]?.textContent).toBe("PasivoCrédito");
+    expect(rows[0]?.querySelector(".acc-coa-tree-name--group")).toBeTruthy();
+    expect(rows[3]?.querySelector(".acc-coa-tree-name--group")).toBeNull();
+  });
+
+  it("expande y contrae una cuenta con aria-expanded y nombre accesible", async () => {
+    const { container } = await renderLoaded();
+
+    const toggle = screen.getByRole("button", { name: "Expandir 1.1 Activo corriente (2 subcuentas)" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggle);
+
+    expect(visibleCodes(container)).toEqual(["1", "1.1", "1.1.01", "1.1.02", "2", "2.1"]);
+    const collapse = screen.getByRole("button", { name: "Contraer 1.1 Activo corriente (2 subcuentas)" });
+    expect(collapse.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Contraer 1 Activo (1 subcuentas)" }));
+    expect(visibleCodes(container)).toEqual(["1", "2", "2.1"]);
+  });
+
+  it("Expandir todo y Contraer todo", async () => {
+    const { container } = await renderLoaded();
+
+    fireEvent.click(screen.getByRole("button", { name: /Expandir todo/ }));
+    expect(visibleCodes(container)).toHaveLength(6);
+
+    fireEvent.click(screen.getByRole("button", { name: /Contraer todo/ }));
+    expect(visibleCodes(container)).toEqual(["1", "2"]);
+  });
+
+  it("una cuenta con padre no disponible se muestra como raíz y queda señalada", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue([
+      ...CHART_ACCOUNTS,
+      account({ id: "orph", code: "9.1", name: "Huérfana", parentAccountId: "missing" }),
+    ]);
+    const { container } = await renderLoaded();
+
+    expect(visibleCodes(container)).toContain("9.1");
+    expect(screen.getByText("(padre no disponible)")).toBeTruthy();
+  });
+
+  it("muestra cuatro indicadores: Total, Agrupadoras, Movimiento e Inactivas", async () => {
+    const { container } = await renderLoaded();
+    const kpis = container.querySelector(".pg-kpis") as HTMLElement;
+    const values = Object.fromEntries(
+      Array.from(kpis.querySelectorAll(".pg-kpi")).map((kpi) => [
+        kpi.querySelector(".pg-kpi-label")?.textContent,
+        kpi.querySelector(".pg-kpi-value")?.textContent?.trim(),
+      ]),
+    );
+    expect(values).toEqual({ "Total cuentas": "6", Agrupadoras: "3", Movimiento: "3", Inactivas: "1" });
+  });
+});
+
+describe("ChartOfAccountsPage — contador del listado", () => {
+  const counter = (container: HTMLElement) =>
+    container.querySelector(".acc-coa-list-summary-text")?.textContent;
+
+  it("distingue visibles, coincidencias, contexto y total al expandir, contraer, buscar y limpiar", async () => {
+    const { container } = await renderLoaded();
+    // Contraído inicial (niveles 0 y 1): 4 filas visibles de 6 cuentas.
+    expect(counter(container)).toBe("4 visibles · 6 cuentas en total");
+
+    fireEvent.click(screen.getByRole("button", { name: "Expandir 1.1 Activo corriente (2 subcuentas)" }));
+    expect(counter(container)).toBe("6 visibles · 6 cuentas en total");
+
+    fireEvent.click(screen.getByRole("button", { name: /Contraer todo/ }));
+    expect(counter(container)).toBe("2 visibles · 6 cuentas en total");
+
+    fireEvent.click(screen.getByRole("button", { name: /Expandir todo/ }));
+    expect(counter(container)).toBe("6 visibles · 6 cuentas en total");
+
+    fireEvent.change(screen.getByPlaceholderText("Código o nombre..."), { target: { value: "caja" } });
+    expect(counter(container)).toBe("1 coincidencia · 2 cuentas de contexto · 6 cuentas en total");
+
+    fireEvent.change(screen.getByPlaceholderText("Código o nombre..."), { target: { value: "activo" } });
+    // "Activo" y "Activo corriente" coinciden; ninguna fila es solo contexto.
+    expect(counter(container)).toBe("2 coincidencias · 6 cuentas en total");
+
+    fireEvent.click(screen.getByRole("button", { name: /Limpiar filtros/ }));
+    // Al limpiar vuelve al estado de expansión previo (todo expandido).
+    expect(counter(container)).toBe("6 visibles · 6 cuentas en total");
+  });
+
+  it("es una región aria-live para anunciar los cambios", async () => {
+    const { container } = await renderLoaded();
+    expect(container.querySelector(".acc-coa-list-summary-text")?.getAttribute("aria-live")).toBe("polite");
+  });
+});
+
+describe("ChartOfAccountsPage — búsqueda y filtros", () => {
+  it("la búsqueda muestra coincidencias con sus ancestros de contexto, aunque estén contraídos", async () => {
+    const { container } = await renderLoaded();
+
+    fireEvent.change(screen.getByPlaceholderText("Código o nombre..."), { target: { value: "bancos" } });
+
+    expect(visibleCodes(container)).toEqual(["1", "1.1", "1.1.02"]);
+    const rows = Array.from(container.querySelectorAll("tbody tr"));
+    expect(rows.map((r) => r.classList.contains("acc-coa-row--context"))).toEqual([true, true, false]);
+    expect(screen.getAllByText("(contexto)")).toHaveLength(2);
+    expect(screen.getByText("1 coincidencia · 2 cuentas de contexto · 6 cuentas en total")).toBeTruthy();
+    // Con filtros activos no hay botones de expandir ni acciones de árbol habilitadas.
+    expect(screen.queryByRole("button", { name: /^Expandir 1\.1/ })).toBeNull();
+    expect((screen.getByRole("button", { name: /Expandir todo/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("filtros de clase y estado combinados, con contexto y botón Limpiar filtros", async () => {
+    const { container } = await renderLoaded();
+
+    fireEvent.change(screen.getByLabelText("Clase"), { target: { value: "posting" } });
+    fireEvent.change(screen.getByLabelText("Estado"), { target: { value: "active" } });
+
+    expect(visibleCodes(container)).toEqual(["1", "1.1", "1.1.01", "2", "2.1"]);
+    expect(screen.getByText("2 coincidencias · 3 cuentas de contexto · 6 cuentas en total")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Limpiar filtros/ }));
+    expect(visibleCodes(container)).toEqual(["1", "1.1", "2", "2.1"]);
+    expect(screen.queryByRole("button", { name: /Limpiar filtros/ })).toBeNull();
+  });
+
+  it("el filtro por tipo conserva la jerarquía", async () => {
+    const { container } = await renderLoaded();
+    fireEvent.change(screen.getByLabelText("Tipo"), { target: { value: "Liability" } });
+    expect(visibleCodes(container)).toEqual(["2", "2.1"]);
+  });
+
+  it("el filtro por nivel usa row.level y presenta una vista plana", async () => {
+    const { container } = await renderLoaded();
+    const level = screen.getByLabelText("Nivel") as HTMLSelectElement;
+    expect(Array.from(level.options).map((o) => o.textContent)).toEqual([
+      "Todos (jerarquía)",
+      "Nivel 0 (lista plana)",
+      "Nivel 1 (lista plana)",
+      "Nivel 2 (lista plana)",
+    ]);
+
+    fireEvent.change(level, { target: { value: "2" } });
+
+    expect(visibleCodes(container)).toEqual(["1.1.01", "1.1.02"]);
+    expect(container.querySelector(".acc-coa-tree-name__guides")).toBeNull();
+    expect(screen.queryByText("(contexto)")).toBeNull();
+    expect(screen.getByText("2 coincidencias · 6 cuentas en total")).toBeTruthy();
+  });
+
+  it("sin coincidencias muestra un mensaje propio de filtros", async () => {
+    await renderLoaded();
+    fireEvent.change(screen.getByPlaceholderText("Código o nombre..."), { target: { value: "zzz" } });
+    expect(screen.getByText("Ninguna cuenta coincide con los filtros.")).toBeTruthy();
+  });
+});
+
+describe("ChartOfAccountsPage — permisos visibles", () => {
+  it("sin permisos de escritura no muestra Nueva cuenta ni acciones de fila", async () => {
+    grant("accounting.view");
+    const { container } = await renderLoaded();
+
+    expect(screen.queryByRole("button", { name: /Nueva cuenta/ })).toBeNull();
+    expect(container.querySelectorAll("tbody .prd-row-actions button")).toHaveLength(0);
+  });
+
+  it("accounting.update edita y activa, pero desactivar exige accounting.delete", async () => {
+    grant("accounting.update");
+    await renderLoaded();
+    fireEvent.click(screen.getByRole("button", { name: /Expandir todo/ }));
+
+    expect(screen.getByRole("button", { name: "Editar 1.1.01 Caja general" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Activar 1.1.02 Bancos" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Desactivar 1.1.01 Caja general" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Crear subcuenta/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Nueva cuenta/ })).toBeNull();
+  });
+
+  it("accounting.create habilita Nueva cuenta y Crear subcuenta solo en agrupadoras activas", async () => {
+    grant("accounting.create");
+    await renderLoaded();
+
+    expect(screen.getByRole("button", { name: /Nueva cuenta/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Crear subcuenta de 1.1 Activo corriente" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Crear subcuenta de 2.1 Proveedores" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Editar/ })).toBeNull();
+  });
+});
+
+describe("ChartOfAccountsPage — activar/desactivar: confirmación y feedback", () => {
+  beforeEach(() => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue([CAJA]);
+  });
+
+  const clickDisable = async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "Desactivar 1.1.01 Caja general" }));
+  };
 
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
+  it("pide confirmación antes de desactivar, explicando el impacto en asientos/reglas de posteo", async () => {
+    vi.mocked(accountingApi.disableAccount).mockResolvedValue(CAJA);
+    await clickDisable();
 
-    await waitFor(() => {
-      expect(message.confirm).toHaveBeenCalledTimes(1);
-      expect(accountingApi.disableAccount).toHaveBeenCalledWith("acc-1");
-    });
+    await waitFor(() => expect(accountingApi.disableAccount).toHaveBeenCalledWith("acc-1"));
     const options = vi.mocked(message.confirm).mock.calls[0][0];
     expect(String(options.message)).toMatch(/no podrá usarse para nuevos asientos/i);
     expect(String(options.message)).toMatch(/no se eliminan/i);
@@ -182,282 +285,66 @@ describe("ChartOfAccountsPage — activar/desactivar cuenta: confirmación y fee
 
   it("si se cancela, no llama a disableAccount", async () => {
     vi.mocked(message.confirm).mockResolvedValue(false);
-
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
-
+    await clickDisable();
     await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     expect(accountingApi.disableAccount).not.toHaveBeenCalled();
   });
 
-  it("al desactivar exitosamente muestra message.success", async () => {
-    vi.mocked(accountingApi.disableAccount).mockResolvedValue(ACTIVE_ACCOUNT);
-
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
-
-    await waitFor(() =>
-      expect(message.success).toHaveBeenCalledWith("Cuenta desactivada correctamente."),
-    );
+  it("al desactivar exitosamente muestra message.success y recarga", async () => {
+    vi.mocked(accountingApi.disableAccount).mockResolvedValue(CAJA);
+    await clickDisable();
+    await waitFor(() => expect(message.success).toHaveBeenCalledWith("Cuenta desactivada correctamente."));
+    expect(accountingApi.listAccounts).toHaveBeenCalledTimes(2);
   });
 
   it("si falla, muestra el mensaje real del backend y no muestra éxito", async () => {
     vi.mocked(accountingApi.disableAccount).mockRejectedValue({
       isAxiosError: true,
-      response: {
-        status: 409,
-        data: { message: { user: "La cuenta tiene reglas de posteo activas." } },
-      },
+      response: { status: 409, data: { message: { user: "La cuenta tiene reglas de posteo activas." } } },
     });
-
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
-
-    await waitFor(() =>
-      expect(message.error).toHaveBeenCalledWith(
-        "La cuenta tiene reglas de posteo activas.",
-      ),
-    );
+    await clickDisable();
+    await waitFor(() => expect(message.error).toHaveBeenCalledWith("La cuenta tiene reglas de posteo activas."));
     expect(message.success).not.toHaveBeenCalled();
   });
 
   it("activar explica que vuelve a estar disponible para uso contable", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue([
-      { ...ACTIVE_ACCOUNT, isActive: false },
-    ]);
-    vi.mocked(accountingApi.enableAccount).mockResolvedValue(ACTIVE_ACCOUNT);
-
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue([{ ...CAJA, isActive: false }]);
+    vi.mocked(accountingApi.enableAccount).mockResolvedValue(CAJA);
     renderPage();
     await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: "Activar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Activar 1.1.01 Caja general" }));
 
     await waitFor(() => expect(accountingApi.enableAccount).toHaveBeenCalledWith("acc-1"));
-    const options = vi.mocked(message.confirm).mock.calls[0][0];
-    expect(String(options.message)).toMatch(/volverá a estar disponible para uso contable/i);
-    await waitFor(() =>
-      expect(message.success).toHaveBeenCalledWith("Cuenta activada correctamente."),
+    expect(String(vi.mocked(message.confirm).mock.calls[0][0].message)).toMatch(
+      /volverá a estar disponible para uso contable/i,
     );
+    await waitFor(() => expect(message.success).toHaveBeenCalledWith("Cuenta activada correctamente."));
   });
 
   it("no usa window.confirm/window.prompt/alert", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("");
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-    vi.mocked(accountingApi.disableAccount).mockResolvedValue(ACTIVE_ACCOUNT);
-
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-    fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
+    const spies = [
+      vi.spyOn(window, "confirm").mockReturnValue(true),
+      vi.spyOn(window, "prompt").mockReturnValue(""),
+      vi.spyOn(window, "alert").mockImplementation(() => {}),
+    ];
+    vi.mocked(accountingApi.disableAccount).mockResolvedValue(CAJA);
+    await clickDisable();
     await waitFor(() => expect(accountingApi.disableAccount).toHaveBeenCalled());
-
-    expect(confirmSpy).not.toHaveBeenCalled();
-    expect(promptSpy).not.toHaveBeenCalled();
-    expect(alertSpy).not.toHaveBeenCalled();
-
-    confirmSpy.mockRestore();
-    promptSpy.mockRestore();
-    alertSpy.mockRestore();
-  });
-});
-
-/**
- * ACCOUNTING-CHART-LIST-INTERACTIVITY-01 — columna N°, resumen compacto, texto "Mostrando X de Y",
- * chips rápidos y filtro por nivel. 100% cálculo/estado en frontend sobre la lista ya cargada — sin
- * tocar backend/DTOs/contratos API.
- */
-const INTERACTIVITY_ACCOUNTS = [
-  {
-    ...ACTIVE_ACCOUNT,
-    id: "acc-root",
-    code: "1",
-    name: "Activo",
-    level: 0,
-    allowsPosting: false,
-    isActive: true,
-  },
-  {
-    ...ACTIVE_ACCOUNT,
-    id: "acc-mid",
-    code: "1.1",
-    name: "Activo corriente",
-    level: 1,
-    allowsPosting: false,
-    isActive: true,
-  },
-  {
-    ...ACTIVE_ACCOUNT,
-    id: "acc-leaf-1",
-    code: "1.1.01",
-    name: "Caja general",
-    level: 2,
-    allowsPosting: true,
-    isActive: true,
-  },
-  {
-    ...ACTIVE_ACCOUNT,
-    id: "acc-leaf-2",
-    code: "1.1.02",
-    name: "Bancos",
-    level: 2,
-    allowsPosting: true,
-    isActive: false,
-  },
-];
-
-describe("ChartOfAccountsPage — interactividad del listado (N°, resumen, chips, nivel)", () => {
-  it("renderiza columna N° con índice iniciando en 1 según el orden visible", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    const { container } = renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    expect(screen.getByText("N°")).toBeTruthy();
-    const rows = Array.from(container.querySelectorAll("tbody tr"));
-    expect(rows.map((row) => row.children[0]?.textContent)).toEqual(["1", "2", "3", "4"]);
-    // El N° es un índice visual, no el Id — nunca coincide con acc-root/acc-mid/etc.
-    expect(rows[0]?.children[0]?.textContent).not.toContain("acc-");
-  });
-
-  it("renderiza el resumen compacto (Total/Agrupadoras/Movimiento/Activas/Inactivas/Nivel máximo)", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    const { container } = renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    // Scoped a .pg-kpis: "Activas"/"Inactivas" también existen como chips rápidos (botones),
-    // así que buscar en todo el documento sería ambiguo.
-    const kpis = container.querySelector(".pg-kpis") as HTMLElement;
-    const getKpiValue = (label: string) => {
-      const labelEl = Array.from(kpis.querySelectorAll(".pg-kpi-label")).find(
-        (el) => el.textContent === label,
-      );
-      return labelEl?.closest(".pg-kpi")?.querySelector(".pg-kpi-value")?.textContent?.trim();
-    };
-
-    // 4 cuentas totales, 2 agrupadoras (allowsPosting=false), 2 de movimiento,
-    // 3 activas, 1 inactiva, nivel máximo 2.
-    expect(getKpiValue("Total cuentas")).toBe("4");
-    expect(getKpiValue("Agrupadoras")).toBe("2");
-    expect(getKpiValue("Movimiento")).toBe("2");
-    expect(getKpiValue("Activas")).toBe("3");
-    expect(getKpiValue("Inactivas")).toBe("1");
-    expect(getKpiValue("Nivel máximo")).toBe("2");
-  });
-
-  it('renderiza "Mostrando X de Y cuentas" y X baja al filtrar', async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    expect(screen.getByText("Mostrando 4 de 4 cuentas")).toBeTruthy();
-
-    fireEvent.change(screen.getByPlaceholderText("Buscar por código o nombre..."), {
-      target: { value: "Bancos" },
+    spies.forEach((spy) => {
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
     });
-
-    await waitFor(() => expect(screen.getByText("Mostrando 1 de 4 cuentas")).toBeTruthy());
   });
 
-  it("el chip rápido Agrupadoras filtra a allowsPosting=false y es accesible vía aria-pressed", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    const { container } = renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    const groupChip = screen.getByRole("button", { name: "Agrupadoras" });
-    expect(groupChip.getAttribute("aria-pressed")).toBe("false");
-
-    fireEvent.click(groupChip);
-
-    expect(groupChip.getAttribute("aria-pressed")).toBe("true");
-    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
-    const rows = Array.from(container.querySelectorAll("tbody tr"));
-    expect(rows.map((row) => row.children[1]?.textContent)).toEqual(["1", "1.1"]);
-  });
-
-  it("el chip rápido Movimiento filtra a allowsPosting=true", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    const { container } = renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    fireEvent.click(screen.getByRole("button", { name: "Movimiento" }));
-
-    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
-    const rows = Array.from(container.querySelectorAll("tbody tr"));
-    expect(rows.map((row) => row.children[1]?.textContent)).toEqual(["1.1.01", "1.1.02"]);
-  });
-
-  it('el chip "Todas" limpia el filtro rápido', async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    fireEvent.click(screen.getByRole("button", { name: "Movimiento" }));
-    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
-
-    fireEvent.click(screen.getByRole("button", { name: "Todas" }));
-    await waitFor(() => expect(screen.getByText("Mostrando 4 de 4 cuentas")).toBeTruthy());
-  });
-
-  it("el filtro por nivel usa row.level y se genera dinámicamente desde las cuentas cargadas", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    const { container } = renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    const levelSelect = screen.getByLabelText("Filtrar por nivel") as HTMLSelectElement;
-    expect(Array.from(levelSelect.options).map((o) => o.textContent)).toEqual([
-      "Todos los niveles",
-      "Nivel 0",
-      "Nivel 1",
-      "Nivel 2",
+  it("los nombres limpios no arrastran prefijos de árbol heredados", async () => {
+    vi.mocked(accountingApi.listAccounts).mockResolvedValue([
+      { ...byId("a1"), name: "│ ├ Activo" },
+      { ...byId("c11"), name: "L Activo corriente" },
     ]);
-
-    fireEvent.change(levelSelect, { target: { value: "2" } });
-
-    await waitFor(() => expect(screen.getByText("Mostrando 2 de 4 cuentas")).toBeTruthy());
-    const rows = Array.from(container.querySelectorAll("tbody tr"));
-    expect(rows.map((row) => row.children[1]?.textContent)).toEqual(["1.1.01", "1.1.02"]);
-  });
-
-  it("los filtros nuevos conviven con búsqueda/tipo/estado existentes sin romperlos", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
     renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    // Chip "Activas" (nuevo) + select "Todos los estados" (existente, sin filtrar) — deben convivir.
-    fireEvent.click(screen.getByRole("button", { name: "Activas" }));
-    await waitFor(() => expect(screen.getByText("Mostrando 3 de 4 cuentas")).toBeTruthy());
-
-    // Combinar con el select de estado existente ("Inactivas") — resultado vacío, sin romper.
-    fireEvent.change(screen.getByText("Todos los estados").closest("select") as HTMLSelectElement, {
-      target: { value: "inactive" },
-    });
-    await waitFor(() => expect(screen.getByText("Mostrando 0 de 4 cuentas")).toBeTruthy());
-  });
-
-  it("las acciones de fila y las guías jerárquicas siguen presentes tras los nuevos filtros", async () => {
-    vi.mocked(accountingApi.listAccounts).mockResolvedValue(INTERACTIVITY_ACCOUNTS);
-
-    const { container } = renderPage();
-    await waitFor(() => expect(screen.getByText("Caja general")).toBeTruthy());
-
-    const rows = Array.from(container.querySelectorAll("tbody tr"));
-    rows.forEach((row) => {
-      expect(row.querySelector('button[aria-label="Editar"]')).toBeTruthy();
-    });
-    expect(container.querySelectorAll(".acc-coa-tree-name__guides").length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByText("Activo corriente")).toBeTruthy());
     expect(screen.queryByText(/[│└├]/)).toBeNull();
+    expect(screen.queryByText("L Activo corriente")).toBeNull();
   });
 });

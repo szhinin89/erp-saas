@@ -1,87 +1,22 @@
+/* ACCOUNTING-CHART-UX-01 — Plan de cuentas: solo layout propio de la jerarquía. Filtros
+   (ZHFilterBar plain), tabla (ZHDataTable + table--compact), badges y KPI vienen del DS. */
+
 .acc-coa-list-card > .card-header {
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
 }
 
-.acc-coa-list-card > .card-header > span {
-  flex: 0 0 auto;
-}
-
-.acc-coa-list-card > .card-header > div {
-  flex: 1 1 620px;
-  min-width: 0;
-}
-
-.acc-coa-list-filters {
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) 180px 180px auto;
-  align-items: center;
-  justify-content: end;
-  gap: var(--space-2);
-  max-width: 900px;
-  margin-left: auto;
-}
-
-.acc-coa-list-filters input,
-.acc-coa-list-filters select {
-  width: 100%;
-}
-
-.acc-coa-list-filters button {
-  white-space: nowrap;
-}
-
-/* ACCOUNTING-CHART-LIST-INTERACTIVITY-01: fila secundaria (chips rápidos + nivel + "Mostrando
-   X de Y") entre el header de filtros existente y la tabla — no reemplaza los filtros de
-   búsqueda/tipo/estado, los complementa. */
-.acc-coa-list-secondary-row {
+.acc-coa-tree-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  padding: 0 var(--space-5) var(--space-3);
-}
-
-.acc-coa-quick-filters {
-  display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 
 .acc-coa-list-summary-text {
-  white-space: nowrap;
-}
-
-.acc-coa-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-md-weight);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    border-color var(--transition),
-    background var(--transition),
-    color var(--transition);
-}
-
-.acc-coa-chip:hover {
-  border-color: var(--color-primary);
-  color: var(--color-text-primary);
-}
-
-.acc-coa-chip--active {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  margin: 0 0 var(--space-2);
 }
 
 .acc-coa-tree-name {
@@ -91,21 +26,29 @@
 
   display: inline-flex;
   align-items: center;
+  gap: var(--space-1);
   min-width: 0;
   max-width: 100%;
   font-weight: 400;
   white-space: nowrap;
 }
 
-.acc-coa-tree-name--group {
+.acc-coa-tree-name--group .zh-account-ref__name {
   font-weight: 600;
+}
+
+/* Hueco fijo del botón expandir/contraer: alinea código y nombre entre cuentas con y sin hijas. */
+.acc-coa-tree-toggle {
+  display: inline-flex;
+  flex: 0 0 52px;
+  justify-content: flex-start;
 }
 
 .acc-coa-tree-name__guides {
   display: inline-flex;
   align-items: stretch;
   flex: 0 0 auto;
-  min-height: var(--text-body-md-height);
+  align-self: stretch;
 }
 
 .acc-coa-tree-name__guide {
@@ -113,7 +56,6 @@
   display: block;
   flex: 0 0 var(--account-tree-step);
   width: var(--account-tree-step);
-  min-height: var(--text-body-md-height);
 }
 
 .acc-coa-tree-name__guide--branch {
@@ -147,32 +89,33 @@
 
 .acc-coa-tree-name__label {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-@media (max-width: 920px) {
-  .acc-coa-list-card > .card-header {
-    align-items: flex-start;
-  }
+/* Ancestro mostrado solo como contexto de una coincidencia (además del texto "(contexto)"). */
+.acc-coa-row--context .zh-account-ref__name,
+.acc-coa-row--context .zh-account-ref__code {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
 
-  .acc-coa-list-card > .card-header > div {
-    flex-basis: 100%;
-  }
-
-  .acc-coa-list-filters {
-    grid-template-columns: 1fr;
-    max-width: none;
-    margin-left: 0;
+@media (max-width: 640px) {
+  .acc-coa-tree-actions {
+    justify-content: flex-start;
     width: 100%;
   }
 
-  .acc-coa-list-filters button {
-    justify-self: flex-start;
+  /* El nombre puede ajustarse en varias líneas, pero con un ancho legible: el resto de
+     columnas se desplaza dentro de .table-scroll (la página nunca desborda). */
+  .acc-coa-tree-name {
+    white-space: normal;
   }
 
-  .acc-coa-list-secondary-row {
-    flex-direction: column;
-    align-items: flex-start;
+  .acc-coa-tree-name__label {
+    flex-wrap: wrap;
+    min-width: 168px;
+  }
+
+  .acc-coa-tree-toggle {
+    flex-basis: 44px;
   }
 }

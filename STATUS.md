@@ -1,5 +1,46 @@
 # Project Status
 
+## ACCOUNTING-CHART-UX-01 — Plan de cuentas UX/UI — IMPLEMENTED / PENDING CI (2026-11-08)
+
+Mejora UX/UI de `/accounting/chart-of-accounts`, solo frontend: sin cambios de backend, API, DTO ni
+reglas contables. Code, AccountType y Nature siguen inmutables; el servidor sigue validando la
+jerarquía canónica, ciclos, unicidad y la desactivación con reglas de contabilización activas.
+
+- **Árbol contable expandible sobre `ZHDataTable`** (sin tabla paralela): jerarquía construida con
+  `parentAccountId` y orden natural por código en el modelo puro `utils/accountTreeModel.ts`; una
+  cuenta con padre ausente, propio o en ciclo se muestra como raíz señalada «(padre no disponible)».
+  Inicio con niveles 0 y 1 visibles; disclosure oficial `ZHBtn expanded` con nombre accesible;
+  «Expandir todo» y «Contraer todo».
+- **Búsqueda y filtros con contexto:** coincidencias más sus ancestros, atenuados y marcados
+  «(contexto)»; el filtro por nivel presenta una lista plana. Filtros únicos en `ZHFilterBar plain`
+  (Buscar, Tipo, Clase, Estado, Nivel, Limpiar filtros); se retiran los chips duplicados de estado.
+- **Contador corregido:** sin filtros, filas visibles según expansión; con filtros, coincidencias y
+  cuentas de contexto por separado; siempre el total («6 visibles · 109 cuentas en total»,
+  «1 coincidencia · 2 cuentas de contexto · 109 cuentas en total»). Región `aria-live`.
+- **Cinco columnas** (Cuenta, Tipo / Naturaleza, Clase, Estado, Acciones; sin N° ni Nivel) con
+  `table--compact` y **cuatro indicadores** (Total, Agrupadoras, Movimiento, Inactivas).
+- **Crear, crear subcuenta y editar en `ZHModal` oficial** (`AccountFormModal`): mismos esquemas
+  Zod, payloads, mensajes y `applyServerErrors`; el padre se deduce del código y se muestra en solo
+  lectura (sin selector con opciones inválidas); crear subcuenta precarga prefijo, tipo y
+  naturaleza; confirmación de descarte con cambios; foco al primer campo y retorno al control que
+  abrió el modal.
+- **Permisos visibles** según las autorizaciones reales: `accounting.create` (crear y crear
+  subcuenta), `accounting.update` (editar y activar), `accounting.delete` (desactivar). Se
+  conservan las confirmaciones de activar/desactivar.
+- PR-7: `ChartOfAccountsPage.tsx` baja de 588 a 474 líneas; su excepción ADR-047 se retira de
+  `architecture-grandfather.json`.
+
+Validación agente: Vitest focal 55/55 PASS (modelo 11, página 23, modal 9, visual en Chromium real
+`ChartOfAccountsPage.visual.test.tsx` 12/12 a 390, 768 y 1440 px: sin desborde de página, controles
+y modal dentro del viewport); `tsc -b`; ESLint de los archivos tocados; `npm run build`;
+`architecture:check` (0 violaciones nuevas); guardrail oficial `-SkipFrontendChunk`; check
+documental y `git diff --check` PASS. Revisión visual del propietario: APROBADA (2026-11-08).
+
+Registrado sin abrir trabajo: avisos informativos del modal al cambiar la clase de una cuenta, que
+no bloquean ni sustituyen validaciones del servidor; el riesgo de integridad queda PENDING como
+ACCOUNTING-CHART-INTEGRITY-01 en la [cola de trabajo](docs/agent/WORK_QUEUE.md). DEBT: sin
+`role="treegrid"` ni navegación por flechas (requeriría ampliar `ZHDataTable`).
+
 ## EXPENSE-CATEGORIES-UX-01 — Catálogo de gastos UX/UI — CLOSED (2026-11-08)
 
 Corrección UX/UI de `/expenses/categories`, solo frontend: sin cambios de backend, API, DTO, permisos,
