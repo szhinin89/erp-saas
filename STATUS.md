@@ -1,6 +1,6 @@
 # Project Status
 
-## ACCOUNTING-CHART-UX-01 — Plan de cuentas UX/UI — IMPLEMENTED / PENDING CI (2026-11-08)
+## ACCOUNTING-CHART-UX-01 — Plan de cuentas UX/UI — CLOSED (2026-11-08)
 
 Mejora UX/UI de `/accounting/chart-of-accounts`, solo frontend: sin cambios de backend, API, DTO ni
 reglas contables. Code, AccountType y Nature siguen inmutables; el servidor sigue validando la
@@ -40,6 +40,12 @@ Registrado sin abrir trabajo: avisos informativos del modal al cambiar la clase 
 no bloquean ni sustituyen validaciones del servidor; el riesgo de integridad queda PENDING como
 ACCOUNTING-CHART-INTEGRITY-01 en la [cola de trabajo](docs/agent/WORK_QUEUE.md). DEBT: sin
 `role="treegrid"` ni navegación por flechas (requeriría ampliar `ZHDataTable`).
+
+Cierre (2026-11-08): commit `bd816be40` publicado en `main`; CI #1121 SUCCESS en el primer intento
+con perfil completo: Frontend, Backend, Architecture guardrails, Identity guardrails y `CI gate`
+PASS; Publish omitido (SKIPPED). Evidencia local conservada: Vitest focal 55/55 PASS, incluidas
+12/12 visuales en Chromium real; revisión visual aprobada por el propietario.
+ACCOUNTING-CHART-INTEGRITY-01 sigue PENDING.
 
 ## EXPENSE-CATEGORIES-UX-01 — Catálogo de gastos UX/UI — CLOSED (2026-11-08)
 
