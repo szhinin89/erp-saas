@@ -41,7 +41,8 @@ export function ElectronicDocumentTimeline({ timeline }: Props) {
                 <>
                   {" "}
                   · {t("electronicDocuments.monitor.detail.duration")}:{" "}
-                  {Math.round(ev.durationSinceLastMinutes)} min
+                  {Math.round(ev.durationSinceLastMinutes)}{" "}
+                  {t("electronicDocuments.monitor.units.minutes")}
                 </>
               )}
             </div>

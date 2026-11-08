@@ -262,7 +262,8 @@ describe("ElectronicDocumentDetailPanel — Descargar RIDE", () => {
       renderPanel({ detail: rejected(true), canRetransmitCorrected: true, onRetransmitCorrected });
 
       fireEvent.click(screen.getByRole("button", { name: RETRANSMIT }));
-      expect(screen.getByText(/NO AUTORIZADO/)).toBeTruthy();
+      // El modal informa la etapa (la ficha también la nombra en el significado del estado).
+      expect(screen.getByText(/Rechazo en autorización \(NO AUTORIZADO\)/)).toBeTruthy();
       const submit = screen.getByRole("button", { name: /Confirmar y retransmitir|Confirm and retransmit/ });
       fireEvent.click(submit);
       expect(await screen.findByText(/motivo de la corrección es obligatorio|correction reason is required/i)).toBeTruthy();

@@ -44,6 +44,12 @@ export const HELP_KEYS = {
   ACCOUNTING_POSTING_RULES_OVERVIEW: "accounting.postingRules.overview",
   ACCOUNTING_POSTING_RULES_ENTRY: "accounting.postingRules.entry",
   ACCOUNTING_POSTING_RULES_STATUS: "accounting.postingRules.status",
+  // SRI-MONITOR-UX-01: definición de cada grupo de indicadores y de la salud técnica del Monitor SRI.
+  ELECTRONIC_DOCUMENTS_MONITOR_CURRENT_STATE: "electronicDocuments.monitor.currentState",
+  ELECTRONIC_DOCUMENTS_MONITOR_TODAY: "electronicDocuments.monitor.today",
+  ELECTRONIC_DOCUMENTS_MONITOR_FOLLOW_UP: "electronicDocuments.monitor.followUp",
+  ELECTRONIC_DOCUMENTS_MONITOR_ATTENTION: "electronicDocuments.monitor.attention",
+  ELECTRONIC_DOCUMENTS_MONITOR_SRI_SERVICES: "electronicDocuments.monitor.sriServices",
 } as const;
 
 export type HelpKeyId = (typeof HELP_KEYS)[keyof typeof HELP_KEYS];

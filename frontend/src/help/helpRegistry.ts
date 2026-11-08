@@ -217,4 +217,34 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     short: "Una regla activa se usa en cada nueva operación de su tipo. Al desactivarla, esas operaciones no podrán contabilizarse hasta reactivar una regla válida.",
     long: "Los asientos ya publicados no cambian. Para reactivarla, la regla debe volver a cumplir la validación: cuentas activas que admiten movimientos y las líneas de Debe y Haber que exige la operación.",
   },
+  [HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_CURRENT_STATE]: {
+    i18nPrefix: "help.electronicDocumentsMonitor.currentState",
+    title: "Estado actual",
+    short: "Cantidad de documentos según su estado actual, sin límite de fecha y de ambos ambientes (Pruebas y Producción). Pulse un indicador para ver esos documentos.",
+    long: "Pendientes: Borrador y XML generado. En proceso: Firmado, Enviado y Recibido. Con error: Reintentos agotados y Falló la generación. Despachando, Anulación en trámite, Anulado y Descartado no se cuentan aquí; búsquelos con el filtro Estado.",
+  },
+  [HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_TODAY]: {
+    i18nPrefix: "help.electronicDocumentsMonitor.today",
+    title: "Hoy",
+    short: "Indicadores del día en curso, según la zona horaria de la empresa.",
+    long: "Registrados hoy: documentos creados hoy, en cualquier estado. Autorizados hoy: autorizados por el SRI hoy. Errores hoy: documentos Rechazados, con Reintentos agotados o con Falló la generación cuya última actualización fue hoy.",
+  },
+  [HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_FOLLOW_UP]: {
+    i18nPrefix: "help.electronicDocumentsMonitor.followUp",
+    title: "Seguimiento",
+    short: "Rechazados y Reintentos pendientes muestran la situación actual; el tiempo promedio de autorización es histórico.",
+    long: "Reintentos pendientes: documentos con al menos un intento que el proceso automático volverá a intentar. Tiempo promedio: desde la creación hasta la autorización, considerando todos los documentos autorizados.",
+  },
+  [HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_ATTENTION]: {
+    i18nPrefix: "help.electronicDocumentsMonitor.attention",
+    title: "Documentos que requieren atención",
+    short: "Los más recientes en estados que pueden requerir revisión: Rechazado, Reintentos agotados, Falló la generación y Despachando.",
+    long: "Abra el detalle para ver los mensajes del SRI, el historial y las acciones disponibles según sus permisos. «Ver todos» abre Documentos con este mismo filtro.",
+  },
+  [HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_SRI_SERVICES]: {
+    i18nPrefix: "help.electronicDocumentsMonitor.sriServices",
+    title: "Comunicación con el SRI",
+    short: "Estado técnico de Recepción y Autorización en el ambiente vigente de la empresa, calculado con las comunicaciones recientes. No indica si un comprobante fue autorizado.",
+    long: "«Sin verificar» significa que aún no hay comunicaciones suficientes para evaluar el servicio; no significa que esté caído. El estado de cada comprobante se consulta en Documentos.",
+  },
 };

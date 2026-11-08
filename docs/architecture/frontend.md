@@ -166,6 +166,40 @@ Nota: `pf-badge`, `prd-status-badge`, `pg-kpi-badge`, `md-badge` **no** están d
 - No modificar flujos auth/session sin auditoría; `authRefreshManager` y
   `fullLogout()` son las puertas únicas de entrada/salida de sesión.
 
+### Agrupación semántica y densidad controlada de tablas (ZH-DS-TABLE-DENSITY-01)
+
+Estándar para listados de `ZHDataTable` nuevos o que se mejoren en cualquier módulo. No obliga a
+migrar pantallas existentes; se aplica al tocarlas por una mejora propia.
+
+- **Agrupar por significado.** Cuando reduzca el ancho sin perjudicar la comprensión, varios campos
+  relacionados comparten una columna (p. ej. número y tipo; contraparte y empresa; fechas e intentos).
+  Los metadatos que acompañan a un dato principal no llevan columna propia.
+- **Jerarquía principal/secundaria.** Cada celda agrupada tiene una línea principal y, como máximo
+  por regla general, una secundaria: bloques en línea propia con `ZHDataValue` (principal) y
+  `ZHDataValue variant="muted"` (secundaria); `variant="code"` para claves e identificadores. Los
+  estados usan `Badge`; las acciones, `ZHIconButton`/`ZHBtn`. El encabezado nombra lo agrupado
+  (p. ej. «Cliente / Proveedor · Empresa») y la secundaria se autoexplica cuando no es obvia
+  (p. ej. «Intentos: 5»).
+- **Visibles siempre:** estado, incidencia o último mensaje relevante y la acción de abrir el detalle
+  (con teclado y nombre accesible propio). Las filas no se convierten en tarjetas.
+- **Información completa accesible.** Una abreviatura (clave de acceso, mensaje en una línea) exige
+  un camino alternativo sin hover: detalle/ficha del registro o acción de copiar. Ningún dato queda
+  disponible solo en `title`.
+- **Densidad.** Preferir filas compactas y legibles con las variantes documentadas
+  `table--compact` y `table--align-top` (celdas de dos líneas alineadas arriba). No hay máximo
+  rígido de columnas ni de altura de fila.
+- **Responsive y accesibilidad.** La página nunca desborda horizontalmente: la tabla se desplaza
+  dentro de `.table-scroll`, con la acción de detalle entre las primeras columnas. Se conservan
+  `rowKey`, `showRowNumber`, paginación, navegación por teclado y nombres accesibles.
+- **Sin paralelos.** Reutilizar `ZHDataTable` y estas primitivas; no crear tablas, adaptadores,
+  componentes de celda ni CSS local de densidad.
+- **Excepciones:** tablas financieras y contables, Kardex, matrices y cualquier listado cuyo valor
+  sea comparar columnas horizontalmente (importes, cantidades, saldos, períodos) conservan una
+  columna por dato. La excepción se comenta en el consumidor.
+
+Referencia: tabla Documentos del Monitor SRI
+([contrato](#monitor-de-documentos-electrónicos-sri-sri-monitor-ux-01)).
+
 ### Incidencias flotantes de linea (ZH-DS-LINE-ISSUES-01)
 
 Componente unico: `ZHLineIssuesTag`, exportado por `components/zh/notices`. Compone
@@ -575,7 +609,8 @@ editar; seis al editar, estándar; el desborde preexistente de seis pestañas en
 tablet está registrado en STATUS como UIUX-PRICELISTS-TABS-OVERFLOW) y Detalle de sucursal
 (`BranchDetailPage`, migrada desde botones locales `prd-tabs`; `mobileLabel` «Establ.» y
 «Config.», `branches.detail.tabs.establishmentsShort` / `configurationsShort`, con nombres
-accesibles «Establecimientos» y «Configuraciones»). Ninguno declara `variant`. No quedan reglas locales
+accesibles «Establecimientos» y «Configuraciones») y Monitor SRI (`mobileLabel` «Servicios»,
+`electronicDocuments.monitor.tabs.servicesShort`, nombre accesible «Servicios SRI»). Ninguno declara `variant`. No quedan reglas locales
 equivalentes de pestañas. Los sistemas de pestañas locales con markup propio
 (`UserConfigPage` con `aria-controls`, `ConfigTabsLayout`, `md-detail-tabs`, `kdx-tabs`)
 conservan su diseño.
@@ -631,10 +666,55 @@ directos mediante `:where(:has(...))`, con la especificidad de `.pg-kpis`:
 
 No se admiten overrides locales del grid para replicar estas reglas. Conservan su composición
 propia, documentada en su CSS: `.cfg-opreadiness-capabilities` (Preparación operativa, cantidad
-variable con `auto-fit`), `.kdx-summary-row` (Kardex, fila flexible), `.pur-reception-kpis`
-(Recepción de compras, junto a la carga de archivos) y `.edm-dashboard-primary` (Monitor de
-documentos electrónicos, filtros por estado). Sus tarjetas usan igualmente el default horizontal.
+variable con `auto-fit`), `.kdx-summary-row` (Kardex, fila flexible) y `.pur-reception-kpis`
+(Recepción de compras, junto a la carga de archivos). Sus tarjetas usan igualmente el default horizontal.
 Las props `layout="horizontal"` explícitas de consumidores anteriores son redundantes y equivalentes.
+
+### Monitor de documentos electrónicos SRI (SRI-MONITOR-UX-01)
+
+`/sri/electronic-documents/monitor` usa `ErpPageTemplate` con «Actualizar» en la acción del
+encabezado; debajo, fuera de las pestañas, la salud compacta (`ZHSriServiceHealth`) en su propia
+fila —la zona derecha del encabezado no se encoge— y el aviso de emisión pausada. `ZHTabBar` con el
+patrón automático de tres pestañas:
+
+- **Resumen:** los diez indicadores de `GET /electronic-documents/dashboard` en tres `ZHCard`
+  (Estado actual 4, Hoy 3, Seguimiento 3) con `ZHFieldHelp` y el grid oficial `.pg-kpis`; el tiempo
+  promedio se marca «Histórico». Los indicadores con filtro (grupos de estados de
+  `ELECTRONIC_DOCUMENT_STATE_GROUPS`, Autorizados, Rechazados, Registrados hoy) lo aplican y abren
+  Documentos; el selector Estado muestra el grupo activo. «Requieren atención» lista con la misma API
+  los cinco más recientes en Rechazado, Reintentos agotados, Falló la generación y Despachando, y
+  «Ver todos» abre Documentos solo con ese filtro.
+- **Documentos:** `ZHFilterBar` (campos siempre editables; búsqueda con `useDebounce`) y `ZHDataTable`
+  paginada (`table--compact table--align-top`) según
+  [ZH-DS-TABLE-DENSITY-01](#agrupación-semántica-y-densidad-controlada-de-tablas-zh-ds-table-density-01):
+  N°; Acciones (botón nativo «Ver detalle» con nombre accesible por documento); Documento (número /
+  tipo); Estado (badge / ambiente); Cliente / Proveedor · Empresa (la empresa distingue documentos
+  cuando no hay contexto de empresa); Fechas e intentos (fecha / actualizado · intentos); SRI /
+  Acceso (último mensaje / clave abreviada con copia). Los intentos no se repiten en el badge. Mensaje
+  y clave completos están en la ficha del detalle (`ElectronicDocumentDetailPanel`). El número usa
+  `.zh-code-value--document`. En escritorio cada fila ocupa dos líneas; en móvil la tabla se desplaza
+  dentro de `.table-scroll` y, como en todo `ZHDataTable`, las celdas de texto pueden envolver.
+- **Servicios SRI:** `ZHSriServiceHealth variant="detail"` en `ZHCard` con ayuda; «Sin verificar» es
+  neutro, nunca caído.
+
+Cada pestaña consulta solo lo que muestra; solo la última respuesta de cada consulta actualiza el
+estado. `DeadLetter` se muestra «Reintentos agotados» (único origen en el dominio). La variante
+`attention` de `ElectronicDocumentsTable` reutiliza las mismas columnas; no hay CSS local de KPIs.
+
+**Ficha operativa del detalle (SRI-MONITOR-SHEET-01).** Solo el Monitor: `ElectronicDocumentDetailPanel`
+(`ZHDrawer`) compone `ElectronicDocumentOperationalSheet` con las piezas oficiales de
+`components/zh/electronicDocuments` (badge de estado, mensajes SRI, historial, XML); Ventas y Notas de
+crédito siguen con `ElectronicDocumentDiagnosticPanel`. A la vista, en `ZHCard` + `.zh-summary-grid`:
+situación ante el SRI (estado, ambiente, significado o incidencia en `ZHPageNotice`, conciliación,
+bloqueos y acciones existentes), comprobante (tipo, número, empresa y RUC, contraparte, recepción SRI,
+autorización SRI, número y fecha de autorización, clave de acceso completa con copia), última respuesta
+del SRI (su detalle largo se expande), fechas e intentos, y archivos (XML según disponibilidad; RIDE y
+correo solo en Autorizado). Plegados con `ZHBtn expanded`: todos los mensajes (si hay más de uno),
+historial (los 20 eventos más recientes que entrega el backend) y datos de soporte. Recepción y
+autorización se derivan solo de datos reales (`utils/sriSituation.ts`): número de autorización, etapa
+del rechazo calculada por el backend (`retransmission.rejectionStage`) y eventos auditados; nunca se
+toma la clave de acceso como número de autorización. La fecha de emisión del documento de origen no
+está en el contrato del detalle y no se muestra.
 
 ### Listado de Proveedores
 

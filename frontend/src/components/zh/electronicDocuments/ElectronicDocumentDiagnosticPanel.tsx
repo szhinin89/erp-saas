@@ -55,6 +55,13 @@ export function ElectronicDocumentDiagnosticPanel({
 }: Props) {
   const { t } = useI18n();
   const xmlAvailableCount = availableXmlCount(diagnostic);
+  // Códigos oficiales SRI (Tabla 4): "1" Pruebas, "2" Producción; cualquier otro valor se muestra tal cual.
+  const environmentLabel =
+    diagnostic.environment === "1"
+      ? t("settings.electronicInvoicing.sri.environmentTest")
+      : diagnostic.environment === "2"
+        ? t("settings.electronicInvoicing.sri.environmentProd")
+        : (diagnostic.environment ?? "—");
   const sriMessagesCount = diagnostic.messages.length;
 
   return (
@@ -83,7 +90,7 @@ export function ElectronicDocumentDiagnosticPanel({
                 )}
               </div>
               <div className="zh-edoc-detail-item-value">
-                {diagnostic.environment ?? "—"}
+                {environmentLabel}
               </div>
             </div>
             <div>

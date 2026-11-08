@@ -1,5 +1,54 @@
 # Project Status
 
+## SRI-MONITOR-UX-01 — Monitor de documentos electrónicos SRI — IMPLEMENTED / PENDING CI (2026-11-08)
+
+Reorganización UX/UI de `/sri/electronic-documents/monitor` con los componentes oficiales del Design
+System, solo frontend: sin cambios de backend, API, DTO, firma XAdES, comunicación SRI, reintentos ni
+máquina de estados. Contrato vigente en [Frontend § Monitor SRI](docs/architecture/frontend.md#monitor-de-documentos-electrónicos-sri-sri-monitor-ux-01).
+
+- **Pestañas** `ZHTabBar` Resumen, Documentos y Servicios SRI; fuera de ellas, «Actualizar» (recarga
+  la pestaña visible y fuerza la salud SRI), salud compacta y aviso de emisión pausada. Cada pestaña
+  consulta solo lo que muestra; solo la última respuesta de cada consulta actualiza el estado.
+- **Resumen:** los diez indicadores existentes en Estado actual, Hoy y Seguimiento (`ReportKpiCard` +
+  `.pg-kpis`, `ZHFieldHelp`); «Registrados hoy» (antes «Total emitidos hoy») y tiempo promedio
+  marcado como histórico; los indicadores con filtro abren Documentos; «Requieren atención» lista los
+  cinco más recientes en Rechazado, Reintentos agotados, Falló la generación y Despachando con la
+  misma API, y «Ver todos» abre Documentos con ese filtro.
+- **Documentos:** filtros siempre editables, búsqueda con `useDebounce`, selector de estado que refleja
+  los grupos del Resumen y tabla compacta según `ZH-DS-TABLE-DENSITY-01` (Documento, Estado,
+  Cliente / Proveedor · Empresa, Fechas e intentos, SRI / Acceso) con «Ver detalle» por teclado.
+  `DeadLetter` se muestra «Reintentos agotados» (única causa en el dominio).
+- **Ficha operativa del detalle** (solo Monitor; Ventas y Notas de crédito conservan
+  `ElectronicDocumentDiagnosticPanel`): situación ante el SRI con significado o incidencia, recepción
+  y autorización SRI separadas del estado documental, número y fecha de autorización, clave de acceso
+  completa con copia, última respuesta del SRI, fechas e intentos, XML y RIDE según disponibilidad;
+  historial, todos los mensajes y datos de soporte plegados. Reintentar, Conciliar, Corregir y
+  retransmitir, Descargar RIDE, permisos, confirmaciones y bloqueos por pausa SRI sin cambios.
+- **Servicios SRI:** salud detallada de Recepción y Autorización con ayuda; «Sin verificar» neutro.
+- **Panel compartido:** ambiente por nombre (Pruebas/Producción) y unidad de duración traducida;
+  claves i18n faltantes completadas. Subtítulo corregido (la pantalla no es de solo lectura).
+- **Estándar global** `ZH-DS-TABLE-DENSITY-01` (agrupación semántica y densidad de tablas) en
+  [Frontend](docs/architecture/frontend.md#agrupación-semántica-y-densidad-controlada-de-tablas-zh-ds-table-density-01),
+  para implementaciones y mejoras futuras, sin migración masiva.
+- **Limpieza:** CSS `.edm-dashboard-*`, `.edm-retry-suffix`, `.edm-retry-btn`, `.edm-detail-grid` y
+  claves i18n huérfanas del Monitor eliminadas; excepción `.edm-dashboard-primary` retirada de la SSOT.
+
+Validación agente: Vitest focal 216/216 PASS en 21 archivos (Monitor, ficha operativa, recepción y
+autorización, panel compartido, `ZHDataTable`, `ZHDataValue`, Ventas/NC, salud SRI, ayudas,
+Retenciones, pestañas y disclosure), incluida la paridad i18n es/en; `tsc -b`; ESLint focal;
+`architecture:check` 147/147 (0 violaciones nuevas, Design System, i18n-keys y CSS PASS); check
+documental PASS; guardrail oficial `-SkipFrontendChunk` y `git diff --check` PASS. Verificación visual
+a 1440 y 390 px con API simulada (sin desborde de página, teclado y búsqueda sin pérdida de foco).
+Revisión visual y funcional del propietario: APROBADA (2026-11-08).
+
+Registrado sin abrir trabajo: «Estado actual» del Resumen mezcla los ambientes de Pruebas y
+Producción y no cuenta Despachando (cálculo del backend, explicado en la ayuda); el detalle entrega
+solo los 20 eventos más recientes, por lo que la recepción de documentos con muchos reintentos puede
+mostrarse «Sin confirmación de recepción»; los mensajes SRI no informan su etapa; la fecha de emisión
+del origen no está en el contrato del detalle; los XML no disponibles se muestran deshabilitados; en
+móvil la tabla se desplaza dentro de su contenedor y sus celdas pueden ocupar más de dos líneas; el
+listado de Ventas conserva «Con error» para `DeadLetter` (clave propia de Ventas).
+
 ## ACCOUNTING-POSTING-RULES-UX-01 — Reglas contables UX/UI — CLOSED (2026-11-07)
 
 Mejora UX/UI de `/accounting/configuration/posting-rules` con los componentes oficiales del Design

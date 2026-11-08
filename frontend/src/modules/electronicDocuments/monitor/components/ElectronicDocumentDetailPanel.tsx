@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { ZHDrawer } from "../../../../components/zh/ZHDrawer";
-import { ZHCard } from "../../../../components/zh/ZHCard";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { LoadingState } from "../../../../components/PageShell";
-import { ElectronicDocumentDiagnosticPanel } from "../../../../components/zh/electronicDocuments/ElectronicDocumentDiagnosticPanel";
+import { ElectronicDocumentOperationalSheet } from "./ElectronicDocumentOperationalSheet";
 import { useI18n } from "../../../../i18n/i18n";
 import { message } from "../../../../lib/messages";
 import type {
@@ -120,7 +119,11 @@ export function ElectronicDocumentDetailPanel({
       onClose={onClose}
       size="lg"
       title={t("electronicDocuments.monitor.detail.title")}
-      subtitle={detail?.documentNumber ?? undefined}
+      subtitle={
+        detail
+          ? `${t(`electronicDocuments.monitor.documentType.${detail.documentType}`)} · ${detail.documentNumber ?? detail.id}`
+          : undefined
+      }
     >
       {loading && (
         <div className="pg-pad-40">
@@ -136,172 +139,121 @@ export function ElectronicDocumentDetailPanel({
       )}
 
       {detail && !loading && (
-        <>
-          <ZHCard title={t("electronicDocuments.monitor.detail.documentInfo")}>
-            <div className="edm-detail-grid">
-              <div>
-                <div className="zh-edoc-detail-item-label">
-                  {t("electronicDocuments.monitor.detail.company")}
-                </div>
-                <div className="zh-edoc-detail-item-value">
-                  {detail.companyName}
-                </div>
-              </div>
-              <div>
-                <div className="zh-edoc-detail-item-label">
-                  {t("electronicDocuments.monitor.detail.companyTaxId")}
-                </div>
-                <div className="zh-edoc-detail-item-value">
-                  {detail.companyTaxId}
-                </div>
-              </div>
-              <div>
-                <div className="zh-edoc-detail-item-label">
-                  {t("electronicDocuments.monitor.detail.counterparty")}
-                </div>
-                <div className="zh-edoc-detail-item-value">
-                  {detail.counterpartyName ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="zh-edoc-detail-item-label">
-                  {t("electronicDocuments.monitor.detail.documentNumber")}
-                </div>
-                <div className="zh-edoc-detail-item-value">
-                  {detail.documentNumber ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="zh-edoc-detail-item-label">
-                  {t("electronicDocuments.monitor.detail.observations")}
-                </div>
-                <div className="zh-edoc-detail-item-value">
-                  {detail.observations ??
-                    t("electronicDocuments.monitor.detail.noObservations")}
-                </div>
-              </div>
-            </div>
-          </ZHCard>
-
-          {detail.diagnostic.requiresReconciliation && (
-            <ZHPageNotice
-              variant="warning"
-              message={t("electronicDocuments.monitor.reconcile.pendingTitle")}
-              detail={t("electronicDocuments.monitor.reconcile.pendingGuidance")}
-            />
-          )}
-
-          <ElectronicDocumentDiagnosticPanel
-            diagnostic={detail.diagnostic}
-            xmlContent={xmlContent}
-            xmlVariant={xmlVariant}
-            xmlLoading={xmlLoading}
-            xmlError={xmlError}
-            downloadFileBaseName={detail.documentNumber ?? detail.id}
-            onViewXml={onViewXml}
-            statusExtra={
-              <>
-                {canRetry &&
-                  RETRYABLE_STATES.has(detail.diagnostic.currentState) && (
-                    <ZHBtn
-                      variant="primary"
-                      size="sm"
-                      type="button"
-                      disabled={retryLoading || sriPaused}
-                      title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
-                      onClick={() => void handleRetryNow()}
-                      className="edm-retry-btn"
-                    >
-                      {t("electronicDocuments.monitor.detail.retryNow")}
-                    </ZHBtn>
-                  )}
-                {canReconcile &&
-                  onReconcile &&
-                  detail.diagnostic.requiresReconciliation && (
-                    <ZHBtn
-                      variant="secondary"
-                      size="sm"
-                      type="button"
-                      disabled={retryLoading || sriPaused}
-                      title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
-                      onClick={() => setReconcileOpen(true)}
-                    >
-                      {t("electronicDocuments.monitor.reconcile.open")}
-                    </ZHBtn>
-                  )}
-                {showRetransmission && retransmission.eligible && (
+        <ElectronicDocumentOperationalSheet
+          key={detail.id}
+          detail={detail}
+          xmlContent={xmlContent}
+          xmlVariant={xmlVariant}
+          xmlLoading={xmlLoading}
+          xmlError={xmlError}
+          onViewXml={onViewXml}
+          actions={
+            <div className="zh-form-actions-row">
+              {canRetry &&
+                RETRYABLE_STATES.has(detail.diagnostic.currentState) && (
                   <ZHBtn
                     variant="primary"
                     size="sm"
                     type="button"
                     disabled={retryLoading || sriPaused}
                     title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
-                    onClick={() => setRetransmitOpen(true)}
+                    onClick={() => void handleRetryNow()}
                   >
-                    {t("electronicDocuments.monitor.retransmit.open")}
+                    {t("electronicDocuments.monitor.detail.retryNow")}
                   </ZHBtn>
                 )}
-              </>
-            }
-          />
-
-          {showRetransmission && !retransmission.eligible && (
-            <ZHCard
-              title={t("electronicDocuments.monitor.retransmit.blockedTitle")}
-            >
-              <ul className="zh-edoc-hint-sm" aria-label={t("electronicDocuments.monitor.retransmit.blockedTitle")}>
-                {retransmission.blocks.map((block) => (
-                  <li key={block.code}>{block.message}</li>
-                ))}
-              </ul>
-            </ZHCard>
-          )}
-
-          {detail.diagnostic.currentState === "Authorized" && (
-            <ZHCard
-              title={t("electronicDocuments.monitor.detail.actionsSection")}
-            >
-              <div className="zh-edoc-xml-actions">
-                {canDownloadRide && (
+              {canReconcile &&
+                onReconcile &&
+                detail.diagnostic.requiresReconciliation && (
                   <ZHBtn
                     variant="secondary"
                     size="sm"
                     type="button"
-                    disabled={
-                      rideUnsupported || rideDownloading
-                    }
-                    onClick={onDownloadRide}
+                    disabled={retryLoading || sriPaused}
+                    title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
+                    onClick={() => setReconcileOpen(true)}
                   >
-                    <span className="material-symbols-outlined zh-icon-sm">
-                      picture_as_pdf
-                    </span>
-                    {t("electronicDocuments.monitor.detail.downloadRide")}
+                    {t("electronicDocuments.monitor.reconcile.open")}
                   </ZHBtn>
                 )}
+              {showRetransmission && retransmission.eligible && (
                 <ZHBtn
-                  variant="secondary"
+                  variant="primary"
                   size="sm"
                   type="button"
-                  disabled
-                  title={t("electronicDocuments.monitor.detail.comingSoon")}
+                  disabled={retryLoading || sriPaused}
+                  title={sriPaused ? t("electronicDocuments.monitor.sriPaused.actionHint") : undefined}
+                  onClick={() => setRetransmitOpen(true)}
                 >
-                  <span className="material-symbols-outlined zh-icon-sm">
-                    mail
-                  </span>
-                  {t("electronicDocuments.monitor.detail.resendEmail")}
+                  {t("electronicDocuments.monitor.retransmit.open")}
                 </ZHBtn>
-              </div>
-              {canDownloadRide && rideUnsupported && (
-                <p className="zh-edoc-hint-sm">
-                  {t("electronicDocuments.monitor.detail.rideRetentionUnavailable")}
-                </p>
               )}
+            </div>
+          }
+          retransmissionBlocks={
+            showRetransmission && !retransmission.eligible ? (
+              <>
+                <p className="zh-summary-grid__label">
+                  {t("electronicDocuments.monitor.retransmit.blockedTitle")}
+                </p>
+                <ul
+                  className="zh-edoc-hint-sm"
+                  aria-label={t("electronicDocuments.monitor.retransmit.blockedTitle")}
+                >
+                  {retransmission.blocks.map((block) => (
+                    <li key={block.code}>{block.message}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null
+          }
+          authorizedFiles={
+            detail.diagnostic.currentState === "Authorized" ? (
+              <>
+                <div className="zh-edoc-xml-actions">
+                  {canDownloadRide && (
+                    <ZHBtn
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                      disabled={rideUnsupported || rideDownloading}
+                      onClick={onDownloadRide}
+                    >
+                      <span className="material-symbols-outlined zh-icon-sm">
+                        picture_as_pdf
+                      </span>
+                      {t("electronicDocuments.monitor.detail.downloadRide")}
+                    </ZHBtn>
+                  )}
+                  <ZHBtn
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    disabled
+                    title={t("electronicDocuments.monitor.detail.comingSoon")}
+                  >
+                    <span className="material-symbols-outlined zh-icon-sm">
+                      mail
+                    </span>
+                    {t("electronicDocuments.monitor.detail.resendEmail")}
+                  </ZHBtn>
+                </div>
+                {canDownloadRide && rideUnsupported && (
+                  <p className="zh-edoc-hint-sm">
+                    {t("electronicDocuments.monitor.detail.rideRetentionUnavailable")}
+                  </p>
+                )}
+                <p className="zh-edoc-hint-sm">
+                  {t("electronicDocuments.monitor.detail.resendEmailComingSoon")}
+                </p>
+              </>
+            ) : (
               <p className="zh-edoc-hint-sm">
-                {t("electronicDocuments.monitor.detail.resendEmailComingSoon")}
+                {t("electronicDocuments.monitor.sheet.rideOnlyAuthorized")}
               </p>
-            </ZHCard>
-          )}
-        </>
+            )
+          }
+        />
       )}
       {retransmitOpen && onRetransmitCorrected && retransmission && (
         <RetransmitCorrectedElectronicDocumentModal

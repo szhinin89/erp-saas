@@ -1,8 +1,10 @@
 import { ReportKpiCard } from "../../../../components/ReportPageTemplate";
-import { ZHGrid } from "../../../../components/zh/ZHForm";
+import { ZHCard } from "../../../../components/zh/ZHCard";
+import { ZHFieldHelp } from "../../../../components/zh/help";
+import { HELP_KEYS } from "../../../../help";
 import { useI18n } from "../../../../i18n/i18n";
 import type { ElectronicDocumentsDashboardDto } from "../api/electronicDocumentsMonitorService";
-import "./electronic-documents-monitor.css";
+import { ELECTRONIC_DOCUMENT_STATE_GROUPS } from "../utils/enumOptions";
 
 type Props = {
   dashboard: ElectronicDocumentsDashboardDto | null;
@@ -13,16 +15,13 @@ type Props = {
   onFilterToday: () => void;
 };
 
-const PENDING_STATES = "Draft,XmlGenerated";
-const IN_PROGRESS_STATES = "Signed,Sent,Received";
-const ERROR_STATES = "DeadLetter,Failed";
+const GROUPS = ELECTRONIC_DOCUMENT_STATE_GROUPS;
 
-function formatMinutes(minutes: number | null, naLabel: string): string {
-  if (minutes === null) return naLabel;
-  if (minutes < 60) return `${Math.round(minutes)} min`;
-  return `${(minutes / 60).toFixed(1)} h`;
-}
-
+/**
+ * Los diez indicadores de `GET /electronic-documents/dashboard`, agrupados en Estado actual, Hoy y
+ * Seguimiento. Cada grupo es un `ZHCard` con su ayuda oficial y el grid `.pg-kpis`. Los valores y
+ * agrupaciones de estados son los del backend: la UI no recalcula ni reinterpreta.
+ */
 export function ElectronicDocumentsDashboardCards({
   dashboard,
   loading,
@@ -32,103 +31,155 @@ export function ElectronicDocumentsDashboardCards({
   onFilterToday,
 }: Props) {
   const { t } = useI18n();
-  const naLabel = t("electronicDocuments.monitor.dashboard.notAvailable");
+  const ready = !loading && dashboard !== null;
 
-  const value = (n: number | undefined) =>
-    loading || dashboard === null ? "—" : (n ?? 0).toString();
+  const value = (n: number | undefined) => (ready ? (n ?? 0).toString() : "—");
+
+  const average = () => {
+    const minutes = dashboard?.averageAuthorizationMinutes ?? null;
+    if (!ready) return { value: "—", unit: undefined };
+    if (minutes === null)
+      return {
+        value: t("electronicDocuments.monitor.dashboard.notAvailable"),
+        unit: undefined,
+      };
+    if (minutes < 60)
+      return {
+        value: Math.round(minutes).toString(),
+        unit: t("electronicDocuments.monitor.units.minutes"),
+      };
+    return {
+      value: (minutes / 60).toFixed(1),
+      unit: t("electronicDocuments.monitor.units.hours"),
+    };
+  };
+  const averageValue = average();
 
   return (
     <>
-      <div className="edm-dashboard-primary">
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.pending")}
-          value={value(dashboard?.pending)}
-          onClick={() => onFilterState(PENDING_STATES)}
-          active={activeState === PENDING_STATES}
-        />
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.inProgress")}
-          value={value(
-            dashboard ? dashboard.signed + dashboard.sent : undefined,
-          )}
-          onClick={() => onFilterState(IN_PROGRESS_STATES)}
-          active={activeState === IN_PROGRESS_STATES}
-        />
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.authorized")}
-          value={value(dashboard?.authorized)}
-          valueTone="success"
-          onClick={() => onFilterState("Authorized")}
-          active={activeState === "Authorized"}
-        />
-        <ReportKpiCard
-          label={t("electronicDocuments.monitor.dashboard.error")}
-          value={value(dashboard?.error)}
-          valueTone="danger"
-          onClick={() => onFilterState(ERROR_STATES)}
-          active={activeState === ERROR_STATES}
-        />
-      </div>
-
-      <section
-        className="edm-dashboard-secondary"
-        aria-label={t(
-          "electronicDocuments.monitor.dashboard.secondarySection",
-          "Detalle operativo",
-        )}
+      <ZHCard
+        className="zh-mb-16"
+        title={t("electronicDocuments.monitor.summary.currentState")}
+        actions={
+          <ZHFieldHelp
+            helpKey={HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_CURRENT_STATE}
+          />
+        }
       >
-        <div className="edm-dashboard-secondary__title zh-section-title">
-          {t(
-            "electronicDocuments.monitor.dashboard.secondarySection",
-            "Detalle operativo",
-          )}
-        </div>
-        <ZHGrid cols={3}>
+        <div className="pg-kpis">
           <ReportKpiCard
-            label={t("electronicDocuments.monitor.dashboard.rejected")}
-            value={value(dashboard?.rejected)}
-            valueTone="danger"
-            layout="horizontal"
-            onClick={() => onFilterState("Rejected")}
-            active={activeState === "Rejected"}
+            icon="schedule"
+            tone="neutral"
+            label={t(GROUPS.pending.labelKey)}
+            value={value(dashboard?.pending)}
+            onClick={() => onFilterState(GROUPS.pending.value)}
+            active={activeState === GROUPS.pending.value}
           />
           <ReportKpiCard
+            icon="hourglass_top"
+            tone="info"
+            label={t(GROUPS.inProgress.labelKey)}
+            value={value(
+              dashboard ? dashboard.signed + dashboard.sent : undefined,
+            )}
+            onClick={() => onFilterState(GROUPS.inProgress.value)}
+            active={activeState === GROUPS.inProgress.value}
+          />
+          <ReportKpiCard
+            icon="check_circle"
+            tone="success"
+            label={t("electronicDocuments.monitor.dashboard.authorized")}
+            value={value(dashboard?.authorized)}
+            valueTone="success"
+            onClick={() => onFilterState("Authorized")}
+            active={activeState === "Authorized"}
+          />
+          <ReportKpiCard
+            icon="report"
+            tone="error"
+            label={t(GROUPS.error.labelKey)}
+            value={value(dashboard?.error)}
+            valueTone="danger"
+            onClick={() => onFilterState(GROUPS.error.value)}
+            active={activeState === GROUPS.error.value}
+          />
+        </div>
+      </ZHCard>
+
+      <ZHCard
+        className="zh-mb-16"
+        title={t("electronicDocuments.monitor.summary.today")}
+        actions={
+          <ZHFieldHelp helpKey={HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_TODAY} />
+        }
+      >
+        <div className="pg-kpis">
+          <ReportKpiCard
+            icon="note_add"
+            tone="primary"
             label={t("electronicDocuments.monitor.dashboard.totalToday")}
             value={value(dashboard?.totalToday)}
-            layout="horizontal"
             onClick={onFilterToday}
             active={isTodayActive}
           />
           <ReportKpiCard
+            icon="task_alt"
+            tone="success"
             label={t("electronicDocuments.monitor.dashboard.authorizedToday")}
             value={value(dashboard?.authorizedToday)}
             valueTone="success"
-            layout="horizontal"
           />
           <ReportKpiCard
+            icon="error"
+            tone="error"
             label={t("electronicDocuments.monitor.dashboard.errorsToday")}
             value={value(dashboard?.errorsToday)}
             valueTone="danger"
-            layout="horizontal"
+          />
+        </div>
+      </ZHCard>
+
+      <ZHCard
+        className="zh-mb-16"
+        title={t("electronicDocuments.monitor.summary.followUp")}
+        actions={
+          <ZHFieldHelp
+            helpKey={HELP_KEYS.ELECTRONIC_DOCUMENTS_MONITOR_FOLLOW_UP}
+          />
+        }
+      >
+        <div className="pg-kpis">
+          <ReportKpiCard
+            icon="cancel"
+            tone="error"
+            label={t("electronicDocuments.monitor.dashboard.rejected")}
+            value={value(dashboard?.rejected)}
+            valueTone="danger"
+            onClick={() => onFilterState("Rejected")}
+            active={activeState === "Rejected"}
           />
           <ReportKpiCard
+            icon="autorenew"
+            tone="warning"
             label={t("electronicDocuments.monitor.dashboard.pendingRetries")}
             value={value(dashboard?.pendingRetries)}
-            layout="horizontal"
           />
           <ReportKpiCard
+            icon="timer"
+            tone="neutral"
             label={t(
               "electronicDocuments.monitor.dashboard.averageAuthorizationTime",
             )}
-            value={
-              loading || dashboard === null
-                ? "—"
-                : formatMinutes(dashboard.averageAuthorizationMinutes, naLabel)
+            value={averageValue.value}
+            unit={averageValue.unit}
+            sub={
+              <p className="subtle">
+                {t("electronicDocuments.monitor.dashboard.historical")}
+              </p>
             }
-            layout="horizontal"
           />
-        </ZHGrid>
-      </section>
+        </div>
+      </ZHCard>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { ZHIconButton } from "../../../../components/zh/ZHIconButton";
 import { Badge } from "../../../../components/PageShell";
+import { ZHDataValue } from "../../../../components/zh/ZHDataValue";
 import {
   ZHDataTable,
   type ZHDataTableColumn,
@@ -20,21 +21,32 @@ import "../../../../components/zh/electronicDocuments/electronic-documents.css";
 type Props = {
   items: ElectronicDocumentListItemDto[];
   loading: boolean;
-  total: number;
-  page: number;
-  pageSize: number;
-  onPageChange: (page: number) => void;
   onSelect: (id: string) => void;
+  /**
+   * `full` (Documentos): todas las columnas y paginación del servidor. `attention` (Resumen):
+   * columnas de seguimiento, sin paginación ni numeración — mismos renders, sin tabla paralela.
+   */
+  variant?: "full" | "attention";
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  emptyMessage?: string;
 };
+
+/** Resumen («Requieren atención»): mismas columnas agrupadas, sin contraparte ni numeración. */
+const ATTENTION_COLUMNS = new Set(["view", "document", "state", "tracking", "sri"]);
 
 export function ElectronicDocumentsTable({
   items,
   loading,
-  total,
-  page,
-  pageSize,
-  onPageChange,
   onSelect,
+  variant = "full",
+  total = 0,
+  page = 1,
+  pageSize = items.length,
+  onPageChange,
+  emptyMessage,
 }: Props) {
   const { t } = useI18n();
 
@@ -64,107 +76,144 @@ export function ElectronicDocumentsTable({
     return key ? t(key) : undefined;
   };
 
-  const columns: ZHDataTableColumn<ElectronicDocumentListItemDto>[] = [
+  const documentLabel = (row: ElectronicDocumentListItemDto) =>
+    row.documentNumber ??
+    t(`electronicDocuments.monitor.documentType.${row.documentType}`);
+
+  /**
+   * ZH-DS-TABLE-DENSITY-01 — celdas agrupadas por significado: línea principal (`ZHDataValue`) y
+   * secundaria (`ZHDataValue variant="muted"`), sin CSS propio. El detalle completo sigue en la ficha.
+   */
+  const stacked = (primary: React.ReactNode, secondary?: React.ReactNode) => (
+    <>
+      <div>{primary}</div>
+      {secondary !== undefined && secondary !== null && <div>{secondary}</div>}
+    </>
+  );
+
+  const allColumns: ZHDataTableColumn<ElectronicDocumentListItemDto>[] = [
+    // Acceso explícito al detalle (botón nativo, operable con teclado). Va primero: así queda a la
+    // vista aunque la tabla se desplace dentro de su contenedor en móvil.
     {
-      key: "state",
-      header: t("electronicDocuments.monitor.table.state"),
+      key: "view",
+      header: t("electronicDocuments.monitor.table.actions"),
+      align: "center",
       render: (row) => (
-        <Badge
-          variant={electronicDocumentStateBadgeVariant(row.currentState)}
-          title={stateHelp(row.currentState)}
-          label={
-            <span className="zh-edoc-state-badge-label">
-              <span className="material-symbols-outlined zh-icon-sm">
-                {electronicDocumentStateIcon(row.currentState)}
-              </span>
-              {t(`electronicDocuments.monitor.state.${row.currentState}`)}
-              {row.retryCount > 0 && row.currentState !== "Authorized" && (
-                <span className="edm-retry-suffix">
-                  {" "}
-                  (
-                  {t("electronicDocuments.monitor.table.retryNumber", {
-                    count: row.retryCount,
-                  })}
-                  )
-                </span>
-              )}
-            </span>
-          }
+        <ZHIconButton
+          icon="visibility"
+          variant="ghost"
+          title={t("electronicDocuments.monitor.table.viewDetail")}
+          ariaLabel={t("electronicDocuments.monitor.table.viewDetailOf", {
+            document: documentLabel(row),
+          })}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(row.id);
+          }}
         />
       ),
     },
     {
-      key: "documentType",
-      header: t("electronicDocuments.monitor.table.documentType"),
+      key: "document",
+      header: t("electronicDocuments.monitor.table.document"),
       render: (row) =>
-        t(`electronicDocuments.monitor.documentType.${row.documentType}`),
-    },
-    {
-      key: "documentNumber",
-      header: t("electronicDocuments.monitor.table.documentNumber"),
-      render: (row) => row.documentNumber ?? "—",
-    },
-    {
-      key: "counterparty",
-      header: t("electronicDocuments.monitor.table.counterparty"),
-      render: (row) => row.counterpartyName ?? "—",
-    },
-    {
-      key: "company",
-      header: t("electronicDocuments.monitor.table.company"),
-      render: (row) => row.companyName,
-    },
-    {
-      key: "date",
-      header: t("electronicDocuments.monitor.table.date"),
-      render: (row) => formatDateTime(row.createdAt),
-    },
-    {
-      key: "environment",
-      header: t("electronicDocuments.monitor.table.environment"),
-      render: (row) => environmentLabel(row.environment),
-    },
-    {
-      key: "accessKey",
-      header: t("electronicDocuments.monitor.table.accessKey"),
-      render: (row) =>
-        row.accessKey ? (
-          <span className="edm-access-key zh-code-value">
-            {row.accessKey.slice(0, 10)}…
-            <ZHIconButton
-              icon="content_copy"
-              title={t("electronicDocuments.monitor.table.copyAccessKey")}
-              onClick={(e) => void handleCopyAccessKey(e, row.accessKey!)}
-            />
-          </span>
-        ) : (
-          "—"
+        stacked(
+          // ZH-DS-ERP-PATTERNS-01: número de documento = identificador principal, sin ajuste de línea.
+          row.documentNumber ? (
+            <span className="zh-code-value zh-code-value--document">{row.documentNumber}</span>
+          ) : (
+            <ZHDataValue variant="muted">—</ZHDataValue>
+          ),
+          <ZHDataValue variant="muted">
+            {t(`electronicDocuments.monitor.documentType.${row.documentType}`)}
+          </ZHDataValue>,
         ),
     },
     {
-      key: "retries",
-      header: t("electronicDocuments.monitor.table.retries"),
-      align: "center",
-      render: (row) => row.retryCount,
-    },
-    {
-      key: "updatedAt",
-      header: t("electronicDocuments.monitor.table.updatedAt"),
-      render: (row) => (row.updatedAt ? formatDateTime(row.updatedAt) : "—"),
-    },
-    {
-      key: "lastMessage",
-      header: t("electronicDocuments.monitor.table.lastMessage"),
+      key: "state",
+      header: t("electronicDocuments.monitor.table.state"),
       render: (row) =>
-        row.lastMessage ? (
-          <span className="edm-last-message" title={row.lastMessage}>
-            {row.lastMessage}
-          </span>
-        ) : (
-          "—"
+        stacked(
+          <Badge
+            variant={electronicDocumentStateBadgeVariant(row.currentState)}
+            title={stateHelp(row.currentState)}
+            label={
+              <span className="zh-edoc-state-badge-label">
+                <span className="material-symbols-outlined zh-icon-sm">
+                  {electronicDocumentStateIcon(row.currentState)}
+                </span>
+                {t(`electronicDocuments.monitor.state.${row.currentState}`)}
+              </span>
+            }
+          />,
+          <ZHDataValue variant="muted">{environmentLabel(row.environment)}</ZHDataValue>,
+        ),
+    },
+    {
+      // El listado abarca todas las empresas del tenant cuando no hay contexto de empresa: la
+      // empresa (secundaria) distingue documentos de empresas distintas.
+      key: "counterparty",
+      header: t("electronicDocuments.monitor.table.counterpartyCompany"),
+      render: (row) =>
+        stacked(
+          <ZHDataValue>{row.counterpartyName ?? "—"}</ZHDataValue>,
+          <ZHDataValue variant="muted">{row.companyName}</ZHDataValue>,
+        ),
+    },
+    {
+      key: "tracking",
+      header: t("electronicDocuments.monitor.table.tracking"),
+      render: (row) =>
+        stacked(
+          <ZHDataValue>{formatDateTime(row.createdAt)}</ZHDataValue>,
+          <ZHDataValue variant="muted">
+            {t("electronicDocuments.monitor.table.updatedShort", {
+              date: row.updatedAt ? formatDateTime(row.updatedAt) : "—",
+            })}{" "}
+            · {t("electronicDocuments.monitor.table.attemptsShort", {
+              count: row.retryCount,
+            })}
+          </ZHDataValue>,
+        ),
+    },
+    {
+      key: "sri",
+      header: t("electronicDocuments.monitor.table.sriAccess"),
+      render: (row) =>
+        stacked(
+          row.lastMessage ? (
+            <span className="edm-last-message" title={row.lastMessage}>
+              {row.lastMessage}
+            </span>
+          ) : (
+            <ZHDataValue variant="muted">
+              {t("electronicDocuments.monitor.table.noMessage")}
+            </ZHDataValue>
+          ),
+          row.accessKey ? (
+            <span className="edm-access-key">
+              <ZHDataValue variant="code">{row.accessKey.slice(0, 10)}…</ZHDataValue>
+              <ZHIconButton
+                icon="content_copy"
+                title={t("electronicDocuments.monitor.table.copyAccessKey")}
+                onClick={(e) => void handleCopyAccessKey(e, row.accessKey!)}
+              />
+            </span>
+          ) : (
+            <ZHDataValue variant="muted">
+              {t("electronicDocuments.monitor.sheet.accessKeyPending")}
+            </ZHDataValue>
+          ),
         ),
     },
   ];
+
+  const columns =
+    variant === "attention"
+      ? allColumns.filter((c) => ATTENTION_COLUMNS.has(c.key))
+      : allColumns;
+
+  const paginated = variant === "full" && onPageChange !== undefined;
 
   return (
     <ZHDataTable
@@ -173,13 +222,14 @@ export function ElectronicDocumentsTable({
       rowKey={(row) => row.id}
       onRowClick={(row) => onSelect(row.id)}
       loading={loading}
-      showRowNumber
+      tableClassName="table--compact table--align-top"
+      showRowNumber={variant === "full"}
       rowNumberOffset={(page - 1) * pageSize}
-      emptyMessage={t("electronicDocuments.monitor.table.empty")}
-      page={page}
-      pageSize={pageSize}
-      total={total}
-      onPageChange={onPageChange}
+      emptyMessage={emptyMessage ?? t("electronicDocuments.monitor.table.empty")}
+      page={paginated ? page : undefined}
+      pageSize={paginated ? pageSize : undefined}
+      total={paginated ? total : undefined}
+      onPageChange={paginated ? onPageChange : undefined}
     />
   );
 }

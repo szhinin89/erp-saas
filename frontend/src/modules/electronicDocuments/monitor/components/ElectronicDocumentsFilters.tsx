@@ -7,6 +7,7 @@ import {
 } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import {
+  ELECTRONIC_DOCUMENT_STATE_GROUPS,
   ELECTRONIC_DOCUMENT_STATES,
   ELECTRONIC_DOCUMENT_TYPES,
   ELECTRONIC_DOCUMENT_ENVIRONMENTS,
@@ -27,6 +28,7 @@ type Props = {
   onEnvironmentChange: (v: string) => void;
   onSearchChange: (v: string) => void;
   onClear: () => void;
+  /** Solo deshabilita "Limpiar" durante la carga: los campos siguen editables (sin pérdida de foco). */
   disabled: boolean;
 };
 
@@ -62,7 +64,6 @@ export function ElectronicDocumentsFilters({
           <ZhDateInput
             className="zh-input"
             value={dateFrom}
-            disabled={disabled}
             onChange={(e) => onDateFromChange(e.target.value)}
           />
         </ZHField>
@@ -75,7 +76,6 @@ export function ElectronicDocumentsFilters({
           <ZhDateInput
             className="zh-input"
             value={dateTo}
-            disabled={disabled}
             onChange={(e) => onDateToChange(e.target.value)}
           />
         </ZHField>
@@ -88,17 +88,26 @@ export function ElectronicDocumentsFilters({
           <ZhSelect
             className="zh-input"
             value={state}
-            disabled={disabled}
             onChange={(e) => onStateChange(e.target.value)}
           >
             <option value="">
               {t("electronicDocuments.monitor.filters.allStates")}
             </option>
-            {ELECTRONIC_DOCUMENT_STATES.map((s) => (
-              <option key={s} value={s}>
-                {t(`electronicDocuments.monitor.state.${s}`)}
-              </option>
-            ))}
+            {/* Grupos que aplican los indicadores del Resumen: el selector refleja el filtro activo. */}
+            <optgroup label={t("electronicDocuments.monitor.filters.stateGroups")}>
+              {Object.values(ELECTRONIC_DOCUMENT_STATE_GROUPS).map((g) => (
+                <option key={g.value} value={g.value}>
+                  {t(g.labelKey)}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={t("electronicDocuments.monitor.filters.states")}>
+              {ELECTRONIC_DOCUMENT_STATES.map((s) => (
+                <option key={s} value={s}>
+                  {t(`electronicDocuments.monitor.state.${s}`)}
+                </option>
+              ))}
+            </optgroup>
           </ZhSelect>
         </ZHField>
       </div>
@@ -110,7 +119,6 @@ export function ElectronicDocumentsFilters({
           <ZhSelect
             className="zh-input"
             value={documentType}
-            disabled={disabled}
             onChange={(e) => onDocumentTypeChange(e.target.value)}
           >
             <option value="">
@@ -132,7 +140,6 @@ export function ElectronicDocumentsFilters({
           <ZhSelect
             className="zh-input"
             value={environment}
-            disabled={disabled}
             onChange={(e) => onEnvironmentChange(e.target.value)}
           >
             <option value="">
@@ -161,7 +168,6 @@ export function ElectronicDocumentsFilters({
               "electronicDocuments.monitor.filters.searchPlaceholder",
             )}
             value={search}
-            disabled={disabled}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </ZHField>
