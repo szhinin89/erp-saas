@@ -1,6 +1,6 @@
 # Project Status
 
-## EXPENSE-CATEGORIES-UX-01 — Catálogo de gastos UX/UI — IMPLEMENTED / PENDING CI (2026-11-08)
+## EXPENSE-CATEGORIES-UX-01 — Catálogo de gastos UX/UI — CLOSED (2026-11-08)
 
 Corrección UX/UI de `/expenses/categories`, solo frontend: sin cambios de backend, API, DTO, permisos,
 cuentas contables ni reglas de contabilización. Causa corregida: el editor vivía en una columna
@@ -40,6 +40,12 @@ dentro del viewport, filas compactas, nodos contraídos ocultos); `tsc -b`; ESLi
 Registrado sin abrir trabajo: DEBT — el formulario del catálogo conserva estado controlado manual
 (sin React Hook Form + Zod, F-V1/F-V2), no ampliado por esta fase; el árbol usa listas anidadas con
 botones nativos y disclosure, sin `role="tree"` ni navegación por flechas.
+
+Cierre (2026-11-08): commit `29e386e60` publicado en `main`; CI #1119 SUCCESS en el primer intento
+con perfil frontend selectivo: CI change plan, Stack Audit, Architecture guardrails, Frontend,
+Identity guardrails y `CI gate` PASS; Backend y Publish omitidos (SKIPPED) conforme al perfil
+frontend. Evidencia local conservada: Vitest del módulo Gastos 100/100 PASS y visual en Chromium
+real 6/6 PASS; revisión visual y funcional aprobada por el propietario.
 
 ## SRI-MONITOR-UX-01 — Monitor de documentos electrónicos SRI — CLOSED (2026-11-08)
 
