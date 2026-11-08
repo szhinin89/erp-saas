@@ -1,5 +1,31 @@
 # Project Status
 
+## PURCHASES-PRODUCT-PICKER-RACE-01 — Carrera de foco en ProductPicker — IMPLEMENTED / PENDING CI (2026-11-08)
+
+Compras sigue CLOSED; reabierto solo para este defecto (hallazgo registrado en
+PURCHASES-RECEPTION-FILTERS-01). Solo frontend: sin cambios de API, contratos, props ni otros módulos.
+
+- Causa: `useEffect(() => setFocusIdx(-1), [query, status])` es un efecto pasivo; cuando los
+  resultados llegan fuera de un evento, React lo difiere. Una tecla pulsada entre la aparición de
+  las opciones y ese efecto quedaba anulada (`+1` seguido de `-1`): se perdía el primer `ArrowDown`.
+- Corrección: el mismo reinicio con `useLayoutEffect` en `ProductPicker.tsx`; se aplica en la misma
+  confirmación que muestra los resultados, antes de procesar cualquier evento. Navegación,
+  `aria-activedescendant`, `aria-selected`, Enter, Escape, ratón y desplazamiento sin cambios.
+- Pruebas nuevas en `ProductPicker.test.tsx` (las originales sin modificar): búsqueda con respuesta
+  controlada y `ArrowDown` en la primera microtarea tras insertarse las opciones, repetida 5 veces;
+  búsquedas sucesivas sin selección arrastrada a los resultados nuevos.
+
+Validación agente: `ProductPicker.test.tsx` 14/14 en tres ejecuciones; control negativo con copia
+temporal del componente anterior (eliminada): las 6 pruebas nuevas fallan 6/6; consumidores
+(`PurchaseLineBreakdownModal`, `CorrectSupplierMatchModal`, `ResolvePendingProductsModal*`) 40/40;
+`tsc -b`, ESLint de los archivos tocados, `npm run build`, guardrail oficial `-SkipFrontendChunk`,
+`architecture:check` (0 violaciones nuevas) y `git diff --check` PASS. Suite completa no ejecutada.
+PENDING: CI remoto y ejecución ampliada (63 archivos) del propietario sin la intermitencia previa.
+
+Hallazgo independiente **ITEMS-LOOKUP-PICKER-FOCUS-RACE-01** (PENDING; Items FROZEN, no reabierto):
+`ItemLookupPicker.tsx` reinicia `focusIdx` con `useEffect(..., [results])`, mismo patrón de
+carrera. No reproducido con prueba; sin cambios. Registrado en la [cola de trabajo](docs/agent/WORK_QUEUE.md).
+
 ## ACCOUNTING-CHART-INTEGRITY-01 — Integridad del Plan de cuentas — IMPLEMENTED / PENDING CI (2026-11-08)
 
 Protecciones de servidor para crear, editar, activar y desactivar cuentas; reglas en
@@ -123,7 +149,8 @@ determinista con una sonda temporal (eliminada). Evidencia en tres ejecuciones a
 archivos): 704/705, 704/705 y 705/705; falla `ProductPicker.test.tsx` › «navega con teclado
 (activedescendant) y selecciona con Enter» — esas ejecuciones no son PASS. Decisión: resolver
 después corrigiendo el componente con pruebas deterministas, no con un parche del test; sin cambios
-en esta entrega. Pendiente en la [cola de trabajo](docs/agent/WORK_QUEUE.md).
+en esta entrega. Corrección implementada después: ver PURCHASES-PRODUCT-PICKER-RACE-01 (IMPLEMENTED /
+PENDING CI) al inicio de este documento.
 
 ## ACCOUNTING-CHART-UX-01 — Plan de cuentas UX/UI — CLOSED (2026-11-08)
 

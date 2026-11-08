@@ -48,7 +48,9 @@ export function ProductPicker({ onSelect, disabled, vatRates, initialQuery, floa
   const dropdownRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const showDropdown = open && query.length >= 2;
-  useEffect(() => setFocusIdx(-1), [query, status]);
+  // Layout effect: the reset commits together with the new results, so a key pressed right after
+  // they appear can never be overwritten by a deferred reset (PURCHASES-PRODUCT-PICKER-RACE-01).
+  useLayoutEffect(() => setFocusIdx(-1), [query, status]);
 
   // Floating mode: fixed panel measured against its own containing block (the transformed modal
   // or the viewport), limited to the space left inside that container; opens upward if needed.

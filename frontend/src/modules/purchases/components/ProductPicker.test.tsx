@@ -178,6 +178,84 @@ describe("ProductPicker — modo flotante (desglose XML)", () => {
   });
 });
 
+describe("ProductPicker — reinicio del foco al llegar resultados (PURCHASES-PRODUCT-PICKER-RACE-01)", () => {
+  const ITEMS = [
+    { ...ITEM },
+    { ...ITEM, id: "item-2", sku: "SKU-002", shortName: "Producto Dos", description: "Producto dos" },
+  ];
+  const OTHER = [
+    { ...ITEM, id: "item-3", sku: "SKU-003", shortName: "Producto Tres", description: "Producto tres" },
+    { ...ITEM, id: "item-4", sku: "SKU-004", shortName: "Producto Cuatro", description: "Producto cuatro" },
+  ];
+
+  /** Escribe `query`, espera la búsqueda pendiente y, al resolverla, pulsa ArrowDown en la primera
+   * microtarea posterior a que React inserte las opciones en el DOM (antes de cualquier efecto diferido). */
+  async function typeAndArrowDownOnArrival(input: HTMLElement, query: string, items: unknown[]) {
+    let resolveSearch!: (value: unknown) => void;
+    const calls = vi.mocked(itemLookupFacade.search).mock.calls.length;
+    vi.mocked(itemLookupFacade.search).mockReturnValueOnce(
+      new Promise((resolve) => { resolveSearch = resolve; }) as never,
+    );
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: query } });
+    await waitFor(() => expect(itemLookupFacade.search).toHaveBeenCalledTimes(calls + 1));
+    const firstSku = (items[0] as { sku: string }).sku;
+    const pressed = new Promise<void>((done) => {
+      const observer = new MutationObserver(() => {
+        if (!screen.queryByText(firstSku)) return;
+        observer.disconnect();
+        fireEvent.keyDown(input, { key: "ArrowDown" });
+        done();
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    });
+    resolveSearch({ items, total: items.length });
+    await pressed;
+  }
+
+  function activeOption(input: HTMLElement) {
+    const id = input.getAttribute("aria-activedescendant");
+    return id ? document.getElementById(id) : null;
+  }
+
+  for (let run = 1; run <= 5; run++) {
+    it(`conserva el ArrowDown pulsado justo al llegar los resultados (repetición ${run})`, async () => {
+      render(<I18nProvider><ProductPicker floating onSelect={vi.fn()} /></I18nProvider>);
+      const input = screen.getByRole("combobox");
+      await typeAndArrowDownOnArrival(input, "Producto", ITEMS);
+
+      await waitFor(() => expect(activeOption(input)?.textContent).toContain("SKU-001"));
+      expect(activeOption(input)!.getAttribute("aria-selected")).toBe("true");
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      expect(activeOption(input)!.textContent).toContain("SKU-002");
+    });
+  }
+
+  it("en búsquedas sucesivas no arrastra la selección anterior a los resultados nuevos", async () => {
+    render(<I18nProvider><ProductPicker floating onSelect={vi.fn()} /></I18nProvider>);
+    const input = screen.getByRole("combobox");
+    await typeAndArrowDownOnArrival(input, "Producto", ITEMS);
+    await waitFor(() => expect(activeOption(input)?.textContent).toContain("SKU-001"));
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(activeOption(input)!.textContent).toContain("SKU-002");
+
+    // Nueva búsqueda: mientras carga no hay opción activa; al llegar, el primer ArrowDown parte de cero.
+    let resolveSecond!: (value: unknown) => void;
+    vi.mocked(itemLookupFacade.search).mockReturnValueOnce(
+      new Promise((resolve) => { resolveSecond = resolve; }) as never,
+    );
+    fireEvent.change(input, { target: { value: "Otro producto" } });
+    expect(input.getAttribute("aria-activedescendant")).toBeNull();
+    expect(screen.queryAllByRole("option")).toHaveLength(0);
+    resolveSecond({ items: OTHER, total: OTHER.length });
+    await screen.findByText("SKU-003");
+    expect(input.getAttribute("aria-activedescendant")).toBeNull();
+    expect(screen.getAllByRole("option").some((o) => o.getAttribute("aria-selected") === "true")).toBe(false);
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(activeOption(input)!.textContent).toContain("SKU-003");
+  });
+});
+
 describe("P0 - search failures and retry", () => {
   it("resets keyboard selection when the query changes and permits Escape with no results", async () => {
     vi.mocked(itemLookupFacade.search).mockResolvedValueOnce({ items: [ITEM], total: 1 } as never)
