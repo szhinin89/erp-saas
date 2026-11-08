@@ -190,6 +190,8 @@ public static class DependencyInjection
         services.AddScoped<ERP.Application.Modules.InitialLoad.OpeningPosting.OpeningAccountingGate>();
         services.AddScoped<ERP.Application.Modules.Accounting.Continuity.IAccountingRelevantFactsReader,
             ERP.Infrastructure.Accounting.Repositories.AccountingRelevantFactsReader>();
+        services.AddScoped<ERP.Application.Modules.Accounting.UseCases.Accounts.IAccountUsageReader,
+            ERP.Infrastructure.Accounting.Repositories.AccountUsageReader>();
         services.AddScoped<
             IInitialReceivableImportSheetReader,
             ClosedXmlInitialReceivableImportSheetReader

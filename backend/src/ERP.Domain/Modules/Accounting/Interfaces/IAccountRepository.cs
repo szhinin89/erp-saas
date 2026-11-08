@@ -37,6 +37,14 @@ public interface IAccountRepository
         CancellationToken ct = default
     );
 
+    /// <summary>
+    /// ACCOUNTING-CHART-INTEGRITY-01 — lock exclusivo del Plan de Cuentas de la Company
+    /// (<c>pg_advisory_xact_lock</c>, misma clave para crear, editar, activar y desactivar
+    /// cuentas). Exige la transacción ambiente: se libera al COMMIT/ROLLBACK y nunca abre una propia.
+    /// Debe adquirirse antes de leer las cuentas y referencias que se validan.
+    /// </summary>
+    Task AcquireChartLockAsync(Guid companyId, CancellationToken ct = default);
+
     Task AddAsync(Account account, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

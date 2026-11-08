@@ -1,5 +1,61 @@
 # Project Status
 
+## ACCOUNTING-CHART-INTEGRITY-01 — Integridad del Plan de cuentas — IMPLEMENTED / PENDING CI (2026-11-08)
+
+Protecciones de servidor para crear, editar, activar y desactivar cuentas; reglas en
+[accounting.md § Core y configuración contable](docs/architecture/accounting.md#core-y-configuración-contable).
+Sin cambios de rutas, DTO, códigos de respuesta, migraciones, frontend ni motor de contabilización.
+
+- I1: cuenta con subcuentas (activas o inactivas) no admite movimiento (422). Subcuentas: rechazo
+  bajo cuenta que admite movimiento (422) o con asientos publicados, incluidos reversos (409).
+- I2: desactivar o quitar movimiento se bloquea (409) por Reglas de Contabilización activas, por
+  toda vinculación existente de formas de pago, cajas, motivos de caja, categorías de gasto,
+  cuentas bancarias y motivos de ajuste de inventario (activos o inactivos) y por la cuenta de
+  resultado del ejercicio; el mensaje nombra hasta tres referencias. Asientos y borradores no bloquean.
+- I3: desactivar con algún descendiente activo de cualquier nivel (409). I4: activar, o crear una
+  cuenta (nace activa), con el padre o algún ancestro inactivo (409), sin reactivar el padre;
+  reutiliza la misma validación de ancestros (`AccountHierarchyRules.HasInactiveAncestor`).
+- Serialización: transacción + `pg_advisory_xact_lock` exclusivo por Company (clave propia
+  `Accounting.ChartOfAccounts`) adquirido antes de leer cuentas y referencias, en las cuatro
+  operaciones. Lector `AccountUsageReader` (Infrastructure) tras el puerto `IAccountUsageReader`;
+  reglas de árbol en `AccountHierarchyRules`; `Handle` dentro del límite de 150 líneas.
+- Datos de `erp_zh_dev` (consulta de solo lectura previa): 0 violaciones de I1–I4 y 117
+  referencias válidas; las reglas no bloquean operaciones válidas existentes. PENDING antes de
+  desplegar en otras bases (QA, cliente): repetir el mismo diagnóstico de solo lectura; una cuenta
+  con subcuentas que aún admita movimiento no podrá editarse sin desmarcar «Permite movimiento».
+
+Validación agente: Domain `AccountHierarchyRulesTests` 24/24; Application `AccountUseCasesTests`
+45/45 (12 de regresión y 33 nuevas: I1–I4, I4 al crear con padre o abuelo inactivo, siete
+familias, cuenta de resultado, orden transacción → lock → lecturas, ámbito tenant/empresa); PostgreSQL real
+`AccountChartIntegrityPostgreSqlTests` 7/7 (familias activas e inactivas, regla inactiva y caja
+sin cuenta excluidas, aislamiento por empresa y por tenant, publicados/reversos frente a
+borradores/descartes, lock por empresa y serialización de crear subcuenta frente a marcar
+movimiento en el padre); HTTP `InternalCapabilitiesHttpTests` del Plan de cuentas 1/1;
+`ERP.Architecture.Tests` 145/145; clase nueva asignada a `infrastructure-01` y cobertura de
+descubrimiento PASS; `dotnet build` de la solución sin errores; guardrail oficial
+`-SkipFrontendChunk` y `architecture:check` (0 violaciones nuevas) PASS. Perfil CI previsto:
+completo (`tools/ci/backend-test-groups.json` no pertenece a ninguna lista selectiva).
+
+Limitación registrada (PENDING, sin trabajo abierto): las configuraciones de otros módulos no
+toman el lock del Plan de cuentas; una asignación de cuenta concurrente con su desactivación o con
+quitarle movimiento puede confirmarse. `PostingAccountGuard` rechaza después la contabilización
+contra esa cuenta, pero no impide ni corrige la configuración inconsistente.
+
+Reasignación con la configuración inactiva (revisión de código, sin cambios en esos módulos): las
+seis familias reasignan su cuenta a otra activa y con movimiento aunque el propietario esté inactivo
+(ninguno de estos handlers exige `IsActive` del propietario): formas de pago `PUT
+/api/v1/payment-methods/{id}/account`, cajas `PUT /api/v1/cash-registers/{id}`, motivos de caja `PUT
+/api/v1/cash-movement-reasons/{id}/account`, subcategorías de gasto `PUT
+/api/v1/expenses/categories/{id}`, cuentas bancarias `PUT /api/v1/treasury/bank-accounts/{id}` y
+motivos de ajuste `PUT /api/v1/inventory/adjustment-reasons/{id}/account`. Caso registrado: un
+vínculo de forma de pago que dejó de ser Tarjeta/Cheque (o pasó a crédito) conserva su fila y sigue
+bloqueando la cuenta, pero `SetPaymentMethodAccount` rechaza reasignarlo mientras el tipo no lo
+admita. Impacto: esa cuenta no puede desactivarse ni perder movimiento. Recuperación sin cambios de
+código: volver temporalmente la forma de pago a Tarjeta/Cheque, reasignar el vínculo a otra cuenta
+válida y restablecer el tipo (`UpdatePaymentMethodHandler` no restringe el cambio; como la forma de
+pago es común al tenant, el cambio temporal afecta a todas sus empresas y debe hacerse sin
+operaciones en curso); una baja del vínculo requeriría reabrir Ventas (no autorizado).
+
 ## PURCHASES-RECEPTION-FILTERS-01 — Seguimiento de recepción electrónica — CLOSED (2026-11-08)
 
 Mejora de seguimiento de `/purchases/reception`, solo frontend: sin cambios de backend, API, DTO,

@@ -25,6 +25,7 @@
       "project": "ERP.Infrastructure.Tests",
       "runner": "ubuntu-latest",
       "classes": [
+        "ERP.Infrastructure.Tests.Accounting.AccountChartIntegrityPostgreSqlTests",
         "ERP.Infrastructure.Tests.Accounting.CloseAccountingPeriodIntegrationTests",
         "ERP.Infrastructure.Tests.Accounting.SalesInvoiceCashReceivableSplitAndCancelReversalIntegrationTests",
         "ERP.Infrastructure.Tests.Accounting.SupplierCreditApplyPayablesIntegrationTests",

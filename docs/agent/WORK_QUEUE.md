@@ -8,14 +8,10 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Producción NO-GO. Estado y gates en
   [STATUS](../../STATUS.md).
-- ACCOUNTING-CHART-INTEGRITY-01 (PENDING: diagnóstico presentado al propietario el 2026-11-08;
-  reglas nuevas pendientes de su decisión): `UpdateAccountHandler` permite quitar `AllowsPosting` a
-  una cuenta referenciada por una Regla de Contabilización activa (desactivarla sí se bloquea) y no
-  impide que una cuenta con hijas admita movimiento ni desactivar una agrupadora con hijas activas.
-  `DisableAccountHandler` solo comprueba Reglas de Contabilización, no las demás configuraciones que
-  apuntan a la cuenta. El fallo aparece después, al contabilizar (`PostingAccountGuard`). El aviso
-  informativo del modal del Plan de cuentas (ACCOUNTING-CHART-UX-01) no resuelve el riesgo ni
-  sustituye validaciones del servidor.
+- ACCOUNTING-CHART-INTEGRITY-01 (IMPLEMENTED / PENDING CI): invariantes I1–I4 aprobadas por el
+  propietario (2026-11-08) e implementadas en el servidor; pendiente la publicación y su CI.
+  Riesgos residuales en [STATUS](../../STATUS.md): concurrencia con otros módulos, vínculo de forma
+  de pago sin desvinculación directa y diagnóstico de datos antes de desplegar en otras bases.
 - PURCHASES-PRODUCT-PICKER-RACE-01 (PENDING; Compras CLOSED, reabierto solo para este defecto):
   corregir en `ProductPicker` la carrera del reinicio de `focusIdx` con la navegación por teclado y
   demostrarlo con pruebas deterministas, sin parches artificiales del test. Evidencia en

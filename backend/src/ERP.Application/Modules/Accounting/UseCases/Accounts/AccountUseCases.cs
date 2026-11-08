@@ -101,6 +101,8 @@ public sealed class GetAccountByCodeQueryValidator : AbstractValidator<GetAccoun
 public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand, Result<AccountDto>>
 {
     private readonly IAccountRepository _repo;
+    private readonly IAccountUsageReader _usage;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
@@ -108,6 +110,8 @@ public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand,
 
     public CreateAccountHandler(
         IAccountRepository repo,
+        IAccountUsageReader usage,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u,
@@ -115,6 +119,8 @@ public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand,
     )
     {
         _repo = repo;
+        _usage = usage;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
@@ -123,11 +129,39 @@ public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand,
 
     public async Task<Result<AccountDto>> Handle(CreateAccountCommand cmd, CancellationToken ct)
     {
+        Result<AccountDto>? result = null;
+        try
+        {
+            // ACCOUNTING-CHART-INTEGRITY-01: lock del Plan de Cuentas antes de cualquier lectura.
+            await _uow.ExecuteInTransactionAsync(
+                async tx =>
+                {
+                    await _repo.AcquireChartLockAsync(_c.CompanyId, tx);
+                    result = await CreateLockedAsync(cmd, tx);
+                },
+                ct
+            );
+            return result!;
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<AccountDto>.ValidationFailure(ex.Message);
+        }
+        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
+        {
+            return Result<AccountDto>.Conflict(
+                $"Ya existe una cuenta con el código '{cmd.Code}' en esta empresa."
+            );
+        }
+    }
+
+    private async Task<Result<AccountDto>> CreateLockedAsync(CreateAccountCommand cmd, CancellationToken ct)
+    {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
         // Pre-check: primera línea de defensa (no la única — ver uq_accounts_company_code +
-        // IDatabaseExceptionTranslator más abajo).
+        // IDatabaseExceptionTranslator en Handle).
         var existing = await _repo.FindByCodeAsync(tenantId, companyId, cmd.Code, ct);
         if (existing is not null)
             return Result<AccountDto>.Conflict(
@@ -157,60 +191,82 @@ public sealed class CreateAccountHandler : IRequestHandler<CreateAccountCommand,
         if (canonicalParentError is not null)
             return Result<AccountDto>.ValidationFailure(canonicalParentError);
 
-        try
+        if (cmd.ParentAccountId is { } validParentId)
         {
-            var code = AccountCode.Create(cmd.Code);
-            var account = Account.Create(
+            var parentError = await AccountChartIntegrity.ValidateNewChildAsync(
+                _usage,
                 tenantId,
                 companyId,
-                code,
-                cmd.Name,
-                cmd.ParentAccountId,
-                cmd.AccountType,
-                cmd.Nature,
-                cmd.AllowsPosting,
-                _u.UserId
+                byId[validParentId],
+                accounts,
+                ct
             );
+            if (parentError is not null)
+                return parentError;
+        }
 
-            await _repo.AddAsync(account, ct);
-            await _repo.SaveChangesAsync(ct);
-            byId[account.Id] = account;
-            return Result<AccountDto>.Success(Map.ToDto(account, byId));
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<AccountDto>.ValidationFailure(ex.Message);
-        }
-        catch (Exception ex) when (_dbEx.TryGetUniqueViolation(ex, out _))
-        {
-            return Result<AccountDto>.Conflict(
-                $"Ya existe una cuenta con el código '{cmd.Code}' en esta empresa."
-            );
-        }
+        var code = AccountCode.Create(cmd.Code);
+        var account = Account.Create(
+            tenantId,
+            companyId,
+            code,
+            cmd.Name,
+            cmd.ParentAccountId,
+            cmd.AccountType,
+            cmd.Nature,
+            cmd.AllowsPosting,
+            _u.UserId
+        );
+
+        await _repo.AddAsync(account, ct);
+        await _repo.SaveChangesAsync(ct);
+        byId[account.Id] = account;
+        return Result<AccountDto>.Success(Map.ToDto(account, byId));
     }
 }
 
 public sealed class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand, Result<AccountDto>>
 {
     private readonly IAccountRepository _repo;
+    private readonly IAccountUsageReader _usage;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public UpdateAccountHandler(
         IAccountRepository repo,
+        IAccountUsageReader usage,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _usage = usage;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
     }
 
     public async Task<Result<AccountDto>> Handle(UpdateAccountCommand cmd, CancellationToken ct)
+    {
+        Result<AccountDto>? result = null;
+        // ACCOUNTING-CHART-INTEGRITY-01: lock del Plan de Cuentas antes de cualquier lectura.
+        await _uow.ExecuteInTransactionAsync(
+            async tx =>
+            {
+                await _repo.AcquireChartLockAsync(_c.CompanyId, tx);
+                result = await UpdateLockedAsync(cmd, tx);
+            },
+            ct
+        );
+        return result!;
+    }
+
+    private async Task<Result<AccountDto>> UpdateLockedAsync(UpdateAccountCommand cmd, CancellationToken ct)
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
@@ -249,6 +305,18 @@ public sealed class UpdateAccountHandler : IRequestHandler<UpdateAccountCommand,
         );
         if (canonicalParentError is not null)
             return Result<AccountDto>.ValidationFailure(canonicalParentError);
+
+        var postingError = await AccountChartIntegrity.ValidateAllowsPostingAsync(
+            _usage,
+            tenantId,
+            companyId,
+            account,
+            cmd.AllowsPosting,
+            accounts,
+            ct
+        );
+        if (postingError is not null)
+            return postingError;
 
         try
         {
@@ -300,14 +368,18 @@ public sealed class EnableAccountHandler : IRequestHandler<EnableAccountCommand,
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
+    private readonly IUnitOfWork _uow;
+
     public EnableAccountHandler(
         IAccountRepository repo,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
@@ -315,12 +387,32 @@ public sealed class EnableAccountHandler : IRequestHandler<EnableAccountCommand,
 
     public async Task<Result<AccountDto>> Handle(EnableAccountCommand cmd, CancellationToken ct)
     {
+        Result<AccountDto>? result = null;
+        // ACCOUNTING-CHART-INTEGRITY-01: lock del Plan de Cuentas antes de cualquier lectura.
+        await _uow.ExecuteInTransactionAsync(
+            async tx =>
+            {
+                await _repo.AcquireChartLockAsync(_c.CompanyId, tx);
+                result = await EnableLockedAsync(cmd, tx);
+            },
+            ct
+        );
+        return result!;
+    }
+
+    private async Task<Result<AccountDto>> EnableLockedAsync(EnableAccountCommand cmd, CancellationToken ct)
+    {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
 
         var account = await _repo.GetByIdAsync(tenantId, companyId, cmd.Id, ct);
         if (account is null)
             return Result<AccountDto>.NotFound("Cuenta no encontrada.");
+
+        var accounts = await _repo.GetByCompanyAsync(tenantId, companyId, ct);
+        var enableError = AccountChartIntegrity.ValidateEnable(account, accounts);
+        if (enableError is not null)
+            return enableError;
 
         // Account.Activate() — el Command se llama "Enable" por consistencia de vocabulario
         // REST con PostingRule.Enable(); el método de dominio conserva su nombre original de
@@ -328,8 +420,7 @@ public sealed class EnableAccountHandler : IRequestHandler<EnableAccountCommand,
         account.Activate(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
-        var byId = (await _repo.GetByCompanyAsync(tenantId, companyId, ct)).ToDictionary(a => a.Id);
-        return Result<AccountDto>.Success(Map.ToDto(account, byId));
+        return Result<AccountDto>.Success(Map.ToDto(account, accounts.ToDictionary(a => a.Id)));
     }
 }
 
@@ -337,27 +428,45 @@ public sealed class DisableAccountHandler
     : IRequestHandler<DisableAccountCommand, Result<AccountDto>>
 {
     private readonly IAccountRepository _repo;
-    private readonly IPostingRuleRepository _postingRuleRepo;
+    private readonly IAccountUsageReader _usage;
+    private readonly IUnitOfWork _uow;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public DisableAccountHandler(
         IAccountRepository repo,
-        IPostingRuleRepository postingRuleRepo,
+        IAccountUsageReader usage,
+        IUnitOfWork uow,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
-        _postingRuleRepo = postingRuleRepo;
+        _usage = usage;
+        _uow = uow;
         _t = t;
         _c = c;
         _u = u;
     }
 
     public async Task<Result<AccountDto>> Handle(DisableAccountCommand cmd, CancellationToken ct)
+    {
+        Result<AccountDto>? result = null;
+        // ACCOUNTING-CHART-INTEGRITY-01: lock del Plan de Cuentas antes de cualquier lectura.
+        await _uow.ExecuteInTransactionAsync(
+            async tx =>
+            {
+                await _repo.AcquireChartLockAsync(_c.CompanyId, tx);
+                result = await DisableLockedAsync(cmd, tx);
+            },
+            ct
+        );
+        return result!;
+    }
+
+    private async Task<Result<AccountDto>> DisableLockedAsync(DisableAccountCommand cmd, CancellationToken ct)
     {
         var tenantId = _t.TenantId;
         var companyId = _c.CompanyId;
@@ -366,24 +475,25 @@ public sealed class DisableAccountHandler
         if (account is null)
             return Result<AccountDto>.NotFound("Cuenta no encontrada.");
 
-        // ACCOUNTING-CHART-OF-ACCOUNTS-02: el Posting Engine (JournalFactory/PostingRuleResolver)
-        // no valida hoy que las cuentas resueltas desde PostingRule sigan activas — deshabilitar
-        // una cuenta todavía referenciada por una regla activa produciría asientos futuros contra
-        // una cuenta inactiva sin ningún error. Bloquear aquí evita ese estado inconsistente sin
-        // tocar el Posting Engine (fuera de alcance de este ticket). No bloquea por asientos ya
-        // contabilizados (JournalEntryLine histórico) — eso es historial, no un riesgo futuro.
-        var rules = await _postingRuleRepo.GetByCompanyAsync(tenantId, companyId, ct);
-        var usedByActiveRule = rules.Any(r => r.IsActive && r.Lines.Any(l => l.AccountId == cmd.Id));
-        if (usedByActiveRule)
-            return Result<AccountDto>.Conflict(
-                "No se puede desactivar: la cuenta está referenciada por una Regla de Contabilización activa."
-            );
+        // ACCOUNTING-CHART-INTEGRITY-01: I3 (descendientes activos) e I2 (configuraciones vigentes
+        // de las ocho familias, incluidas las Reglas de Contabilización activas que ya bloqueaban
+        // aquí). No bloquea por asientos ya contabilizados ni borradores — eso es historial.
+        var accounts = await _repo.GetByCompanyAsync(tenantId, companyId, ct);
+        var disableError = await AccountChartIntegrity.ValidateDisableAsync(
+            _usage,
+            tenantId,
+            companyId,
+            account,
+            accounts,
+            ct
+        );
+        if (disableError is not null)
+            return disableError;
 
         account.Disable(_u.UserId);
 
         await _repo.SaveChangesAsync(ct);
-        var byId = (await _repo.GetByCompanyAsync(tenantId, companyId, ct)).ToDictionary(a => a.Id);
-        return Result<AccountDto>.Success(Map.ToDto(account, byId));
+        return Result<AccountDto>.Success(Map.ToDto(account, accounts.ToDictionary(a => a.Id)));
     }
 }
 

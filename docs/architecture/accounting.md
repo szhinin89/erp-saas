@@ -68,9 +68,31 @@ Los tipos son Asset, Liability, Equity, Income, Cost y Expense (Cost = costo de 
 utilidad bruta de neta); no son catálogos tributarios
 ni decisiones por tenant. Código/tipo/naturaleza se conservan tras crear. La jerarquía
 no admite ciclos ni padres de otra Company. El motor exige cuentas existentes, de la
-misma empresa, activas y con AllowsPosting. No se introduce aquí una regla nueva que
-deduzca AllowsPosting exclusivamente de tener o no hijos. La baja es lógica y no borra
+misma empresa, activas y con AllowsPosting. La baja es lógica y no borra
 líneas ni historia; los cambios de configuración solo afectan contabilizaciones nuevas.
+
+Integridad del Plan de Cuentas (validada por el servidor al crear, editar, activar y desactivar):
+
+- **I1:** una cuenta con subcuentas, activas o inactivas, no admite movimiento (422). Tener o no
+  hijas no fija por sí solo AllowsPosting: una hoja puede no admitir movimiento.
+- **Subcuentas:** no se crean bajo una cuenta que admite movimiento (422; primero se desmarca
+  «Permite movimiento») ni bajo una cuenta con asientos publicados, incluidos los reversos (409).
+  Borradores y descartados no cuentan.
+- **I2:** no se desactiva ni se quita movimiento a una cuenta con referencias vigentes (409):
+  Reglas de Contabilización activas (las inactivas se revalidan al reactivarse); toda vinculación
+  existente, de configuraciones activas o inactivas, de formas de pago, cajas, motivos de caja,
+  categorías de gasto, cuentas bancarias y motivos de ajuste de inventario (su reactivación no
+  revalida la cuenta); y la cuenta de resultado del ejercicio. Asientos, borradores y copias
+  históricas no bloquean.
+- **I3:** no se desactiva una cuenta con algún descendiente activo de cualquier nivel (409).
+- **I4:** no se activa una cuenta con algún ancestro inactivo, ni se crea una cuenta (que siempre
+  nace activa) bajo un padre inactivo o con algún ancestro inactivo (409). El estado del padre no
+  cambia automáticamente.
+
+Las cuatro operaciones se serializan por Company con un lock transaccional exclusivo
+(`pg_advisory_xact_lock`) que se adquiere antes de leer cuentas y referencias. Las configuraciones
+de otros módulos no toman ese lock: una asignación concurrente con la desactivación de su cuenta
+no queda impedida por esta regla (limitación registrada en STATUS).
 
 `PostingRule` es configuración por Company y tipo de hecho, con líneas de cuenta,
 naturaleza y componente monetario. Solo existen reglas para los hechos del catálogo único

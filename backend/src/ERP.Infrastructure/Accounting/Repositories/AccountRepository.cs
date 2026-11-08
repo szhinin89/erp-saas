@@ -62,6 +62,37 @@ public sealed class AccountRepository : IAccountRepository
         Scoped(tenantId, companyId)
             .FirstOrDefaultAsync(x => x.Code == AccountCode.Create(code), ct);
 
+    // ACCOUNTING-CHART-INTEGRITY-01 — pg_advisory_xact_lock(int4, int4), mismo mecanismo y algoritmo
+    // de hash que AccountingOperationalPolicyRepository, con espacio de claves propio (no colisiona
+    // con la política contable ni con los locks del libro). Sin transacción ambiente el lock se
+    // liberaría al instante, así que se exige una activa.
+    public async Task AcquireChartLockAsync(Guid companyId, CancellationToken ct = default)
+    {
+        if (!_context.Database.IsRelational())
+            return;
+        if (_context.Database.CurrentTransaction is null)
+            throw new InvalidOperationException(
+                "El lock del Plan de Cuentas requiere una transacción activa."
+            );
+
+        var hash1 = StableHash(System.Text.Encoding.UTF8.GetBytes(ChartLockNamespace));
+        var hash2 = StableHash(companyId.ToByteArray());
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({hash1}, {hash2})",
+            ct
+        );
+    }
+
+    private const string ChartLockNamespace = "Accounting.ChartOfAccounts";
+
+    private static int StableHash(byte[] bytes)
+    {
+        int h = 17;
+        foreach (var b in bytes)
+            h = unchecked(h * 31 + b);
+        return h;
+    }
+
     public Task AddAsync(Account account, CancellationToken ct = default) =>
         _context.Accounts.AddAsync(account, ct).AsTask();
 
