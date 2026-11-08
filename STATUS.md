@@ -1,6 +1,6 @@
 # Project Status
 
-## SRI-MONITOR-UX-01 — Monitor de documentos electrónicos SRI — IMPLEMENTED / PENDING CI (2026-11-08)
+## SRI-MONITOR-UX-01 — Monitor de documentos electrónicos SRI — CLOSED (2026-11-08)
 
 Reorganización UX/UI de `/sri/electronic-documents/monitor` con los componentes oficiales del Design
 System, solo frontend: sin cambios de backend, API, DTO, firma XAdES, comunicación SRI, reintentos ni
@@ -48,6 +48,14 @@ mostrarse «Sin confirmación de recepción»; los mensajes SRI no informan su e
 del origen no está en el contrato del detalle; los XML no disponibles se muestran deshabilitados; en
 móvil la tabla se desplaza dentro de su contenedor y sus celdas pueden ocupar más de dos líneas; el
 listado de Ventas conserva «Con error» para `DeadLetter` (clave propia de Ventas).
+
+Cierre (2026-11-08): commit `14885cddc` publicado en `main`; CI #1117 SUCCESS en el primer intento
+(completado el 2026-11-08) con perfil frontend selectivo: CI change plan, Stack Audit, Architecture
+guardrails, Identity guardrails, frontend y `CI gate` PASS; backend y publicación API omitidos
+(SKIPPED) conforme al plan. Pruebas focales locales 216/216 PASS; revisión visual y funcional
+aprobada por el propietario. El cierre comprende todas las mejoras del Monitor SRI (pestañas,
+indicadores, filtros, búsqueda, salud SRI, tabla compacta, ficha operativa, ayudas e i18n es/en) y el
+estándar global `ZH-DS-TABLE-DENSITY-01` documentado en [Frontend](docs/architecture/frontend.md).
 
 ## ACCOUNTING-POSTING-RULES-UX-01 — Reglas contables UX/UI — CLOSED (2026-11-07)
 
