@@ -7,90 +7,98 @@ import type {
   ExpenseCategoryTreeNodeDto,
 } from "../api/expenseCategoryService";
 
-interface Props {
-  nodes: ExpenseCategoryTreeNodeDto[];
+const LEVEL_LABEL: Record<ExpenseCategoryNodeLevel, string> = {
+  Type: "Tipo de gasto",
+  Category: "Categoría",
+  Subcategory: "Subcategoría",
+};
+
+const CHILD_LEVEL: Record<ExpenseCategoryNodeLevel, ExpenseCategoryNodeLevel | null> = {
+  Type: "Category",
+  Category: "Subcategory",
+  Subcategory: null,
+};
+
+type OpenerEvent = React.MouseEvent<HTMLButtonElement>;
+
+interface ActionProps {
   accountsById: Map<string, AccountDto>;
   selectedId: string | null;
-  loading?: boolean;
+  collapsedIds: ReadonlySet<string>;
   canCreate: boolean;
   canUpdate: boolean;
   canActivate: boolean;
   canDeactivate: boolean;
   onSelect: (node: ExpenseCategoryTreeNodeDto) => void;
-  onCreateType: () => void;
+  onToggleExpanded: (node: ExpenseCategoryTreeNodeDto) => void;
   onCreateChild: (
     parent: ExpenseCategoryTreeNodeDto,
     level: ExpenseCategoryNodeLevel,
+    event: OpenerEvent,
   ) => void;
-  onEdit: (node: ExpenseCategoryTreeNodeDto) => void;
+  onEdit: (node: ExpenseCategoryTreeNodeDto, event: OpenerEvent) => void;
   onToggleActive: (node: ExpenseCategoryTreeNodeDto) => void;
 }
 
-const LEVEL_LABEL: Record<ExpenseCategoryNodeLevel, string> = {
-  Type: "Tipo de gasto",
-  Category: "Categoria de gasto",
-  Subcategory: "Subcategoria de gasto",
-};
+interface Props extends ActionProps {
+  nodes: ExpenseCategoryTreeNodeDto[];
+  loading?: boolean;
+  onCreateType: (event: OpenerEvent) => void;
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
+}
+
+function childrenListId(node: ExpenseCategoryTreeNodeDto) {
+  return `exp-cat-children-${node.id}`;
+}
 
 export function ExpenseCategoryTree({
   nodes,
-  accountsById,
-  selectedId,
   loading,
-  canCreate,
-  canUpdate,
-  canActivate,
-  canDeactivate,
-  onSelect,
   onCreateType,
-  onCreateChild,
-  onEdit,
-  onToggleActive,
+  onExpandAll,
+  onCollapseAll,
+  ...rowProps
 }: Props) {
+  const hasNodes = nodes.length > 0;
+
   return (
-    <section className="exp-cat-tree" aria-label="Catalogo jerarquico de gastos">
+    <section className="exp-cat-tree" aria-label="Catálogo jerárquico de gastos">
       <div className="exp-cat-tree__toolbar">
         <div>
-          <h2 className="exp-cat-panel-title">Jerarquia</h2>
+          <h2 className="exp-cat-panel-title">Jerarquía</h2>
           <p className="exp-cat-panel-subtitle">
-            Tipo de gasto, categoria y subcategoria.
+            Tipo de gasto › Categoría › Subcategoría con cuenta contable destino.
           </p>
         </div>
-        {canCreate && (
-          <ZHBtn type="button" variant="primary" size="sm" onClick={onCreateType}>
-            <span className="material-symbols-outlined" aria-hidden="true">
-              add
-            </span>
-            Crear tipo
-          </ZHBtn>
-        )}
+        <div className="exp-cat-tree__toolbar-actions">
+          {hasNodes && (
+            <>
+              <ZHBtn type="button" variant="ghost" size="sm" icon="unfold_more" onClick={onExpandAll}>
+                Expandir todo
+              </ZHBtn>
+              <ZHBtn type="button" variant="ghost" size="sm" icon="unfold_less" onClick={onCollapseAll}>
+                Contraer todo
+              </ZHBtn>
+            </>
+          )}
+          {rowProps.canCreate && (
+            <ZHBtn type="button" variant="primary" size="sm" icon="add" onClick={onCreateType}>
+              Crear tipo
+            </ZHBtn>
+          )}
+        </div>
       </div>
 
-      {loading ? (
-        <div className="exp-cat-empty">Cargando catalogo...</div>
-      ) : nodes.length === 0 ? (
-        <div className="exp-cat-empty">
-          No hay tipos de gasto registrados.
-        </div>
-      ) : (
-        <div className="exp-cat-tree__list">
+      {hasNodes ? (
+        <ul className="exp-cat-tree__list">
           {nodes.map((node) => (
-            <TreeNodeRow
-              key={node.id}
-              node={node}
-              depth={0}
-              accountsById={accountsById}
-              selectedId={selectedId}
-              canCreate={canCreate}
-              canUpdate={canUpdate}
-              canActivate={canActivate}
-              canDeactivate={canDeactivate}
-              onSelect={onSelect}
-              onCreateChild={onCreateChild}
-              onEdit={onEdit}
-              onToggleActive={onToggleActive}
-            />
+            <TreeNodeRow key={node.id} node={node} {...rowProps} />
           ))}
+        </ul>
+      ) : (
+        <div className="exp-cat-empty">
+          {loading ? "Cargando catálogo..." : "No hay tipos de gasto registrados."}
         </div>
       )}
     </section>
@@ -99,55 +107,70 @@ export function ExpenseCategoryTree({
 
 function TreeNodeRow({
   node,
-  depth,
-  accountsById,
-  selectedId,
-  canCreate,
-  canUpdate,
-  canActivate,
-  canDeactivate,
-  onSelect,
-  onCreateChild,
-  onEdit,
-  onToggleActive,
-}: {
-  node: ExpenseCategoryTreeNodeDto;
-  depth: number;
-  accountsById: Map<string, AccountDto>;
-  selectedId: string | null;
-  canCreate: boolean;
-  canUpdate: boolean;
-  canActivate: boolean;
-  canDeactivate: boolean;
-  onSelect: (node: ExpenseCategoryTreeNodeDto) => void;
-  onCreateChild: (
-    parent: ExpenseCategoryTreeNodeDto,
-    level: ExpenseCategoryNodeLevel,
-  ) => void;
-  onEdit: (node: ExpenseCategoryTreeNodeDto) => void;
-  onToggleActive: (node: ExpenseCategoryTreeNodeDto) => void;
-}) {
+  ...props
+}: ActionProps & { node: ExpenseCategoryTreeNodeDto }) {
+  const {
+    accountsById,
+    selectedId,
+    collapsedIds,
+    canCreate,
+    canUpdate,
+    canActivate,
+    canDeactivate,
+    onSelect,
+    onToggleExpanded,
+    onCreateChild,
+    onEdit,
+    onToggleActive,
+  } = props;
   const account = node.accountingAccountId
     ? accountsById.get(node.accountingAccountId)
     : undefined;
-  const canCreateCategory = canCreate && node.isActive && node.level === "Type";
-  const canCreateSubcategory =
-    canCreate && node.isActive && node.level === "Category";
+  const description = node.description?.trim() ?? "";
+  const isContainer = node.level !== "Subcategory";
+  const childCount = node.children.length;
+  const expanded = isContainer && childCount > 0 && !collapsedIds.has(node.id);
+  const selected = selectedId === node.id;
+  const childLevel = CHILD_LEVEL[node.level];
+  const canCreateChild = canCreate && node.isActive && childLevel !== null;
   const canToggle =
     (node.isActive && canDeactivate) || (!node.isActive && canActivate);
   const rowClass = [
     "exp-cat-node",
-    `exp-cat-node--depth-${depth}`,
-    selectedId === node.id ? "exp-cat-node--selected" : "",
+    selected ? "exp-cat-node--selected" : "",
     node.isActive ? "" : "exp-cat-node--inactive",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className="exp-cat-node-wrap">
-      <div className="exp-cat-node-row">
-        <button type="button" className={rowClass} onClick={() => onSelect(node)}>
+    <li className="exp-cat-node-wrap">
+      <div
+        className={`exp-cat-node-row ${isContainer ? "exp-cat-node-row--container" : ""}`}
+      >
+        {isContainer && (
+          <ZHBtn
+            type="button"
+            variant="secondary"
+            size="xs"
+            expanded={expanded}
+            aria-controls={childCount > 0 ? childrenListId(node) : undefined}
+            aria-label={`${expanded ? "Contraer" : "Expandir"} ${node.name} (${childCount})`}
+            title={expanded ? "Contraer" : "Expandir"}
+            disabled={childCount === 0}
+            onClick={() => onToggleExpanded(node)}
+          >
+            {childCount}
+          </ZHBtn>
+        )}
+
+        <button
+          type="button"
+          className={rowClass}
+          aria-current={selected ? "true" : undefined}
+          data-node-id={node.id}
+          onClick={() => onSelect(node)}
+        >
           <span className="exp-cat-node__main">
             <span className="exp-cat-node__titleline">
               <code className="exp-cat-code">{node.code}</code>
@@ -161,6 +184,11 @@ function TreeNodeRow({
                 </span>
               )}
             </span>
+            {description && (
+              <span className="exp-cat-node__description" title={description}>
+                {description}
+              </span>
+            )}
           </span>
           <span className="exp-cat-node__status">
             <Badge
@@ -172,22 +200,13 @@ function TreeNodeRow({
         </button>
 
         <div className="exp-cat-node-actions">
-          {canCreateCategory && (
+          {canCreateChild && childLevel && (
             <ZHIconButton
               icon="add"
-              title="Crear categoria dentro de tipo"
-              ariaLabel={`Crear categoria dentro de ${node.name}`}
+              title={childLevel === "Category" ? "Crear categoría" : "Crear subcategoría"}
+              ariaLabel={`${childLevel === "Category" ? "Crear categoría" : "Crear subcategoría"} dentro de ${node.name}`}
               variant="ghost"
-              onClick={() => onCreateChild(node, "Category")}
-            />
-          )}
-          {canCreateSubcategory && (
-            <ZHIconButton
-              icon="add"
-              title="Crear subcategoria dentro de categoria"
-              ariaLabel={`Crear subcategoria dentro de ${node.name}`}
-              variant="ghost"
-              onClick={() => onCreateChild(node, "Subcategory")}
+              onClick={(event) => onCreateChild(node, childLevel, event)}
             />
           )}
           {canUpdate && (
@@ -196,7 +215,7 @@ function TreeNodeRow({
               title="Editar"
               ariaLabel={`Editar ${node.name}`}
               variant="ghost"
-              onClick={() => onEdit(node)}
+              onClick={(event) => onEdit(node, event)}
             />
           )}
           {canToggle && (
@@ -211,27 +230,17 @@ function TreeNodeRow({
         </div>
       </div>
 
-      {node.children.length > 0 && (
-        <div className="exp-cat-node__children">
+      {childCount > 0 && (
+        <ul
+          id={childrenListId(node)}
+          className="exp-cat-node__children"
+          hidden={!expanded}
+        >
           {node.children.map((child) => (
-            <TreeNodeRow
-              key={child.id}
-              node={child}
-              depth={Math.min(depth + 1, 2)}
-              accountsById={accountsById}
-              selectedId={selectedId}
-              canCreate={canCreate}
-              canUpdate={canUpdate}
-              canActivate={canActivate}
-              canDeactivate={canDeactivate}
-              onSelect={onSelect}
-              onCreateChild={onCreateChild}
-              onEdit={onEdit}
-              onToggleActive={onToggleActive}
-            />
+            <TreeNodeRow key={child.id} node={child} {...props} />
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </li>
   );
 }

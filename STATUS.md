@@ -1,5 +1,46 @@
 # Project Status
 
+## EXPENSE-CATEGORIES-UX-01 — Catálogo de gastos UX/UI — IMPLEMENTED / PENDING CI (2026-11-08)
+
+Corrección UX/UI de `/expenses/categories`, solo frontend: sin cambios de backend, API, DTO, permisos,
+cuentas contables ni reglas de contabilización. Causa corregida: el editor vivía en una columna
+derecha sin fijar (y bajo el árbol en ≤ 1024 px), por lo que al seleccionar un nodo bajo en un árbol
+extenso el formulario quedaba fuera de la zona visible.
+
+- **Editor en `ZHModal` oficial** (`md`) en lugar de la columna lateral; reutiliza
+  `ExpenseCategoryFormPanel` (sin formulario paralelo). Títulos «Crear tipo de gasto», «Crear
+  categoría», «Crear subcategoría» y «Editar …»; subtítulo con la ruta jerárquica («Dentro de: …» /
+  «Ubicación: …» / nivel raíz). Guardar es `submit` del formulario en el pie oficial.
+- **Protecciones:** `closeOnBackdrop={false}`; sin cierre durante el guardado (Cancelar deshabilitado,
+  X y Escape ignorados); con cambios sin guardar, Cancelar/X/Escape piden confirmación con
+  `message.confirm`; cierre solo tras guardado exitoso; foco al primer campo al abrir y de vuelta al
+  control que abrió el modal al cerrar.
+- **Jerarquía compacta y expandible:** una sola zona para el árbol; filas sin altura mínima de 64 px y
+  guía vertical por nivel; descripción como línea secundaria solo si existe; expandir/contraer tipos y
+  categorías con disclosure oficial `ZHBtn expanded` (`aria-expanded`/`aria-controls`), independiente
+  de seleccionar y editar; «Expandir todo» y «Contraer todo» (conserva visible la ruta del nodo
+  seleccionado). Tras guardar se recarga el árbol, se conserva/selecciona el nodo y se expanden sus
+  ancestros. En ≤ 640 px el nodo ocupa el ancho completo y las acciones pasan a una segunda línea.
+- **Sin cambios de lógica:** campos, cuenta destino solo en subcategorías (activa, de gasto y con
+  movimientos), validaciones cliente, errores de API por campo, permisos
+  `expenses.catalog.{view,create,update,activate,deactivate}` y confirmación de activar/desactivar.
+  Textos de la pantalla con tildes corregidas. CSS del módulo reducido (sin diseño de dos columnas,
+  detalle lateral ni clases por profundidad); helpers puros en `utils/expenseCategoryModel.ts`.
+
+Validación agente: Vitest del módulo Gastos 100/100 PASS en 12 archivos (página del catálogo 19/19:
+creación en los tres niveles, edición, cuenta solo en subcategoría, validación y error 422, guardado
+y recarga, Cancelar/Escape, confirmación de descarte, bloqueo durante guardado, foco, permisos,
+expansión y selección; regresión de activar/desactivar); visual en Chromium real
+`ExpenseCategoriesPage.visual.test.tsx` 6/6 PASS a 1280, 768 y 320 px (sin desborde de página, modal
+dentro del viewport, filas compactas, nodos contraídos ocultos); `tsc -b`; ESLint del módulo;
+`architecture:check` (0 violaciones nuevas); check documental; guardrail oficial
+`-SkipFrontendChunk` y `git diff --check` PASS. Revisión visual y funcional del propietario: APROBADA
+(2026-11-08).
+
+Registrado sin abrir trabajo: DEBT — el formulario del catálogo conserva estado controlado manual
+(sin React Hook Form + Zod, F-V1/F-V2), no ampliado por esta fase; el árbol usa listas anidadas con
+botones nativos y disclosure, sin `role="tree"` ni navegación por flechas.
+
 ## SRI-MONITOR-UX-01 — Monitor de documentos electrónicos SRI — CLOSED (2026-11-08)
 
 Reorganización UX/UI de `/sri/electronic-documents/monitor` con los componentes oficiales del Design
