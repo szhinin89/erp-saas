@@ -83,6 +83,34 @@
   }
 }
 
+/* PURCHASES-RECEPTION-FILTERS-01 — filtros compactos (ZHFilterBar plain). Segunda línea: atención,
+   "Más filtros", contador y "Limpiar filtros" (.zh-filterbar__clear lo lleva a la derecha). */
+.pur-reception-filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  width: 100%;
+}
+
+.pur-reception-filters__attention {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pur-reception-filters__attention .zh-checkbox-label {
+  padding: 0;
+}
+
+/* Criterios avanzados: cuadrícula responsive en su propia fila. */
+.pur-reception-filters__advanced {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
 /* Celda agrupada "Proveedor": nombre + RUC + estado ERP + acción de creación cuando falta —
    evita una columna aparte solo para el estado del proveedor en el ERP. */
 .pur-supplier-cell {

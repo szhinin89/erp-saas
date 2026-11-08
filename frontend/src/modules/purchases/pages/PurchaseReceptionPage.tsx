@@ -5,9 +5,7 @@ import {
   ZHDataTable,
   type ZHDataTableColumn,
 } from "../../../components/zh/ZHDataTable";
-import { ZHBtn, ZHField } from "../../../components/zh/ZHForm";
-import { ZHFilterBar } from "../../../components/zh/ZHFilterBar";
-import { ZhSearchSelect, ZhSelect } from "../../../components/zh/inputs";
+import { ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHMoneyValue } from "../../../components/zh/ZHMoneyValue";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZHSectionHelp } from "../../../components/zh/help";
@@ -23,11 +21,7 @@ import {
   selectElectronicEmissionPaused,
   useElectronicInvoicingStatusStore,
 } from "../../../store/electronicInvoicingStatusStore";
-import {
-  usePurchaseReceptionPage,
-  type ReceptionDateSortOrder,
-  type ReceptionSupplierOption,
-} from "../hooks/usePurchaseReceptionPage";
+import { usePurchaseReceptionPage } from "../hooks/usePurchaseReceptionPage";
 import type { PurchaseReceptionItem } from "../api/purchaseReceptionService";
 import { CreateSupplierModal } from "../components/CreateSupplierModal";
 import { PurchaseReceptionProcessCell } from "../components/PurchaseReceptionProcessCell";
@@ -37,14 +31,8 @@ import { PurchaseReceptionXmlViewModal } from "../components/PurchaseReceptionXm
 import "../styles/purchase-reception.css";
 import { receptionErpRecordView } from "../utils/receptionErpRecord";
 import { PurchaseReceptionBatchActions } from "../components/PurchaseReceptionBatchActions";
-
-// Getters estables (module-level) para ZhSearchSelect: el índice de búsqueda local se memoiza por
-// referencia, así 2.000+ proveedores del TXT se normalizan una sola vez por importación.
-const RECEPTION_SUPPLIER_MAX_RESULTS = 30;
-const getReceptionSupplierKey = (o: ReceptionSupplierOption) => o.ruc;
-const getReceptionSupplierName = (o: ReceptionSupplierOption) => o.name;
-const getReceptionSupplierSearchText = (o: ReceptionSupplierOption) => `${o.name} ${o.ruc}`;
-const getReceptionSupplierChipLabel = (o: ReceptionSupplierOption) => `${o.name} — ${o.ruc}`;
+import { PurchaseReceptionFilters } from "../components/PurchaseReceptionFilters";
+import { receptionSupplierState } from "../utils/receptionFilters";
 
 export function PurchaseReceptionPage() {
   const ctx = usePurchaseReceptionPage();
@@ -65,19 +53,14 @@ export function PurchaseReceptionPage() {
         <div className="pur-supplier-cell">
           <p className="pur-supplier-name">{row.supplierName}</p>
           <p className="pur-supplier-ruc">{row.supplierRuc}</p>
-          {(row.sourceDocType === "INVOICE"
-            ? row.supplierExists && !!row.supplierId
-            : row.supplierExists) ? (
+          {receptionSupplierState(row) !== "notRegistered" ? (
             <Badge
-              variant={row.supplierIsActive === false ? "warning" : "success"}
-              label={t(
-                row.supplierIsActive === false
-                  ? "purchases.reception.supplier.inactive"
-                  : "purchases.reception.supplier.registered",
-                row.supplierIsActive === false
-                  ? "Proveedor inactivo"
-                  : "Proveedor registrado",
-              )}
+              variant={receptionSupplierState(row) === "inactive" ? "warning" : "success"}
+              label={
+                receptionSupplierState(row) === "inactive"
+                  ? t("purchases.reception.supplier.inactive", "Proveedor inactivo")
+                  : t("purchases.reception.supplier.registered", "Proveedor registrado")
+              }
             />
           ) : (
             <>
@@ -176,9 +159,25 @@ export function PurchaseReceptionPage() {
       align: "center",
       // FASE 5 RECEPTION-UX — registro ERP real del comprobante (Compra/Gasto/NC). La referencia a
       // la factura afectada de una NC vive solo en la columna "Comprobante".
+      // PURCHASES-RECEPTION-FILTERS-01 — documento repetido con datos distintos: "En revisión"
+      // (fuera de las tarjetas) sin ocultar el estado propio de cada fila para investigarlo.
       render: (row) => {
         const { badge } = receptionErpRecordView(row);
-        return <Badge variant={badge.variant} label={t(badge.key, badge.fallback)} />;
+        const own = <Badge variant={badge.variant} label={t(badge.key, badge.fallback)} />;
+        if (ctx.documentBucketOf(row) !== "review") return own;
+        return (
+          <>
+            <Badge
+              variant="warning"
+              label={t("purchases.reception.erpRecord.inReview", "En revisión")}
+              title={t(
+                "purchases.reception.erpRecord.inReviewHint",
+                "Comprobante repetido en el archivo con datos distintos: no se cuenta en las tarjetas hasta resolverlo.",
+              )}
+            />{" "}
+            {own}
+          </>
+        );
       },
     },
     {
@@ -256,6 +255,8 @@ export function PurchaseReceptionPage() {
               layout="horizontal"
               icon="check_circle"
               tone="success"
+              onClick={() => ctx.toggleSummaryBucket("registered")}
+              active={ctx.filters.erpSituation === "registered"}
               label={t(
                 "purchases.reception.summary.registered.title",
                 "Registrados en ERP",
@@ -276,6 +277,8 @@ export function PurchaseReceptionPage() {
               layout="horizontal"
               icon="hourglass_empty"
               tone="neutral"
+              onClick={() => ctx.toggleSummaryBucket("toProcess")}
+              active={ctx.filters.erpSituation === "toProcess"}
               label={t(
                 "purchases.reception.summary.toProcess.title",
                 "Por procesar",
@@ -294,6 +297,8 @@ export function PurchaseReceptionPage() {
               layout="horizontal"
               icon="person_add"
               tone="warning"
+              onClick={() => ctx.toggleSummaryBucket("pendingSupplier")}
+              active={ctx.filters.erpSituation === "pendingSupplier"}
               label={t(
                 "purchases.reception.summary.pendingSupplier.title",
                 "Pendientes de proveedor",
@@ -329,6 +334,33 @@ export function PurchaseReceptionPage() {
               "purchases.reception.skippedUnsupported.detail",
               "no se cargaron porque todavía no están soportados en esta fase.",
             )}`}
+          />
+        </div>
+      )}
+
+      {ctx.result && ctx.summary.inReview > 0 && (
+        <div className="pg-section">
+          <ZHPageNotice
+            variant="warning"
+            message={t("purchases.reception.review.title", { count: ctx.summary.inReview })}
+            detail={t(
+              "purchases.reception.review.detail",
+              "Aparecen repetidos en el archivo con datos distintos. Se muestran todas sus filas y no se cuentan en las tarjetas hasta resolverlo. Localícelos con Situación ERP → En revisión.",
+            )}
+          />
+        </div>
+      )}
+
+      {ctx.result && ctx.normalization && (ctx.normalization.duplicatesRemoved > 0 ||
+        ctx.normalization.invalidIdCount > 0) && (
+        <div className="pg-section">
+          <ZHPageNotice
+            variant="warning"
+            message={t("purchases.reception.normalization.title", "Comprobantes repetidos en el archivo")}
+            detail={t("purchases.reception.normalization.detail", {
+              removed: ctx.normalization.duplicatesRemoved,
+              invalid: ctx.normalization.invalidIdCount,
+            })}
           />
         </div>
       )}
@@ -381,84 +413,28 @@ export function PurchaseReceptionPage() {
           />
         ) : (
           <>
-            {/* ZH-PURCHASES-RECEPTION-FILTER-SORT-01 / ZH-SUPPLIER-SEARCH-REUSABLE-01 — filtro
-                multi-proveedor con el buscador genérico del DS sobre un datasource LOCAL (RUC/nombre
-                del TXT, incluye proveedores no registrados; no se usa SupplierSearchSelect porque
-                ese busca solo BP registrados). Máx. 30 coincidencias visibles, chips removibles.
-                Solo afectan la tabla; los KPI superiores siguen sobre el total importado. */}
+            {/* PURCHASES-RECEPTION-FILTERS-01 — filtros combinables sobre el lote en memoria; los KPI
+                superiores siguen sobre el total importado (pulsarlos filtra su partición). */}
             {ctx.result && (
-              <ZHFilterBar
-                onClear={ctx.clearFilters}
-                clearLabel={t("purchases.reception.filters.clear", "Limpiar filtros")}
+              <PurchaseReceptionFilters
+                filters={ctx.filters}
+                setFilter={ctx.setFilter}
+                advancedFilterCount={ctx.advancedFilterCount}
+                supplierOptions={ctx.supplierOptions}
+                selectedSupplierOptions={ctx.selectedSupplierOptions}
+                setSupplierFilter={ctx.setSupplierFilter}
+                dateSortOrder={ctx.dateSortOrder}
+                setDateSortOrder={ctx.setDateSortOrder}
+                clearFilters={ctx.clearFilters}
+                shownCount={ctx.shownDocuments}
+                totalCount={ctx.allDocuments}
                 disabled={ctx.uploading}
-              >
-                <div className="zh-filterbar__field zh-filterbar__field--grow">
-                  <ZHField
-                    label={t("purchases.reception.filters.supplier", "Proveedor")}
-                    density="compact"
-                  >
-                    <ZhSearchSelect
-                      mode="multiple"
-                      options={ctx.supplierOptions}
-                      value={ctx.selectedSupplierOptions}
-                      onChange={(selected) =>
-                        ctx.setSupplierFilter(selected.map((o) => o.ruc))
-                      }
-                      getOptionKey={getReceptionSupplierKey}
-                      getOptionLabel={getReceptionSupplierName}
-                      getOptionDescription={getReceptionSupplierKey}
-                      getOptionSearchText={getReceptionSupplierSearchText}
-                      getChipLabel={getReceptionSupplierChipLabel}
-                      maxResults={RECEPTION_SUPPLIER_MAX_RESULTS}
-                      disabled={ctx.uploading}
-                      aria-label={t("purchases.reception.filters.supplier", "Proveedor")}
-                      placeholder={t(
-                        "purchases.reception.filters.supplierSearch",
-                        "Buscar proveedor por nombre o RUC...",
-                      )}
-                      emptyText={t(
-                        "purchases.reception.filters.supplierEmpty",
-                        "Ningún proveedor del archivo coincide",
-                      )}
-                      truncatedText={t(
-                        "supplierSearch.truncated",
-                        "Siga escribiendo para refinar la búsqueda.",
-                      )}
-                      clearLabel={t("supplierSearch.clear", "Limpiar selección")}
-                      removeLabel={t(
-                        "purchases.reception.filters.removeSupplier",
-                        "Quitar proveedor",
-                      )}
-                    />
-                  </ZHField>
-                </div>
-                <div className="zh-filterbar__field">
-                  <ZHField
-                    label={t("purchases.reception.filters.dateSort", "Orden por emisión")}
-                    density="compact"
-                  >
-                    <ZhSelect
-                      value={ctx.dateSortOrder}
-                      disabled={ctx.uploading}
-                      onChange={(e) =>
-                        ctx.setDateSortOrder(e.target.value as ReceptionDateSortOrder)
-                      }
-                    >
-                      <option value="desc">
-                        {t("purchases.reception.filters.sortDesc", "Más reciente primero")}
-                      </option>
-                      <option value="asc">
-                        {t("purchases.reception.filters.sortAsc", "Más antiguo primero")}
-                      </option>
-                    </ZhSelect>
-                  </ZHField>
-                </div>
-              </ZHFilterBar>
+              />
             )}
             <ZHDataTable
             columns={columns}
             rows={ctx.items}
-            rowKey={(row) => row.documentId}
+            rowKey={(row) => ctx.rowKeys.get(row) ?? row.documentId}
             loading={ctx.uploading}
             showRowNumber
             rowNumberOffset={(ctx.page - 1) * ctx.pageSize}

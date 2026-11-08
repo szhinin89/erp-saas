@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   purchaseReceptionService,
   type PurchaseReceptionImportResult,
@@ -7,7 +7,19 @@ import {
 } from "../api/purchaseReceptionService";
 import { message } from "../../../lib/messages";
 import { chunkIds, mergeRefreshedReceptionItems } from "../utils/receptionRefresh";
-import { summarizeReceptionItems } from "../utils/receptionErpRecord";
+import {
+  buildReceptionRowKeys,
+  hasValidReceptionDocumentId,
+  normalizeReceptionItems,
+  summarizeReceptionDocuments,
+  type ReceptionNormalization,
+} from "../utils/receptionNormalize";
+import {
+  isResolvedXmlBatchItem,
+  receptionXmlBatchStatus,
+  runReceptionXmlBatches,
+} from "../utils/receptionBatchXml";
+import { useReceptionFilters } from "./useReceptionFilters";
 import { useI18n } from "../../../i18n/i18n";
 import type { ZhBatchProgressStatus } from "../../../components/zh/progress/ZhBatchProgress";
 
@@ -20,14 +32,7 @@ export interface BatchXmlProgressState {
   failed: number;
 }
 
-const PAGE_SIZE = 20;
-
-export type ReceptionDateSortOrder = "desc" | "asc";
-
-export interface ReceptionSupplierOption {
-  ruc: string;
-  name: string;
-}
+export type { ReceptionDateSortOrder, ReceptionSupplierOption } from "./useReceptionFilters";
 
 function extractErrorMessage(err: unknown, fallback: string): string {
   const response = (
@@ -45,13 +50,10 @@ export function usePurchaseReceptionPage() {
     null,
   );
   const [fileName, setFileName] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  // ZH-PURCHASES-RECEPTION-FILTER-SORT-01 — filtro/orden solo de UI sobre las filas ya cargadas
-  // en memoria (el TXT se importa completo). Clave del proveedor = RUC tal como viene en la fila,
-  // así también se filtran proveedores no registrados. No afecta los KPI superiores.
-  const [selectedSupplierRucs, setSelectedSupplierRucs] = useState<string[]>([]);
-  const [dateSortOrder, setDateSortOrderState] =
-    useState<ReceptionDateSortOrder>("desc");
+  // PURCHASES-RECEPTION-FILTERS-01 (B2) — resumen de la normalización por documentId del lote.
+  const [normalization, setNormalization] = useState<Omit<ReceptionNormalization, "items"> | null>(
+    null,
+  );
   // Estado por fila de la consulta de XML — no viene del backend (que solo persiste el estado
   // previo cuando falla), es puramente de UI para mostrar "Consultando..."/"Error consulta".
   const [xmlRowState, setXmlRowState] = useState<
@@ -73,13 +75,21 @@ export function usePurchaseReceptionPage() {
     null,
   );
 
+  // Lote normalizado completo: fuente de la tabla (vía filtros) y de los KPI (sin filtros).
+  const items = useMemo(() => result?.items ?? [], [result]);
+  const rowKeys = useMemo(() => buildReceptionRowKeys(items), [items]);
+  // ZH-PURCHASES-RECEPTION-FILTER-SORT-01 / PURCHASES-RECEPTION-FILTERS-01 — filtros, orden y
+  // paginación solo de UI sobre las filas en memoria (el TXT se importa completo).
+  const filters = useReceptionFilters(items, xmlRowState);
+  // B1 — bloquea consultas individuales mientras corre el lote (evita solicitudes en conflicto).
+  const batchXmlRunningRef = useRef(false);
+
   const handleFileSelected = async (file: File) => {
     setUploading(true);
     setProgress(0);
     setError(null);
-    setPage(1);
     setXmlRowState({});
-    setSelectedSupplierRucs([]);
+    filters.resetForImport();
     try {
       const importResult = await purchaseReceptionService.importTxt(
         file,
@@ -88,15 +98,16 @@ export function usePurchaseReceptionPage() {
       // El TXT del SRI nunca trae nombreComercial — solo llega al consultar el XML (ver
       // handleDownloadXml). Se normaliza a null aquí para que el tipo del item sea siempre
       // consistente, en vez de dejarlo `undefined` hasta esa consulta.
-      setResult({
-        ...importResult,
-        items: importResult.items.map((item) => ({
+      const { items: normalizedItems, ...normalizationSummary } = normalizeReceptionItems(
+        importResult.items.map((item) => ({
           ...item,
           supplierExists: item.sourceDocType === "INVOICE" ? item.supplierExists && !!item.supplierId : item.supplierExists,
           supplierTradeName: item.supplierTradeName ?? null,
           supplierIsActive: item.supplierIsActive ?? null,
         })),
-      });
+      );
+      setResult({ ...importResult, items: normalizedItems });
+      setNormalization(normalizationSummary);
       setFileName(file.name);
       message.success(
         importResult.items.length > 0
@@ -111,12 +122,14 @@ export function usePurchaseReceptionPage() {
         ),
       );
       setResult(null);
+      setNormalization(null);
     } finally {
       setUploading(false);
     }
   };
 
   const handleDownloadXml = async (documentId: string) => {
+    if (batchXmlRunningRef.current) return;
     setXmlRowState((prev) => ({ ...prev, [documentId]: "loading" }));
     try {
       const download = await purchaseReceptionService.downloadXml(documentId);
@@ -227,10 +240,26 @@ export function usePurchaseReceptionPage() {
     }
   };
 
+  /**
+   * PURCHASE-RECEPTION-BULK-SRI-XML-DOWNLOAD-01 / PURCHASES-RECEPTION-FILTERS-01 (B1) — descarga los
+   * XML pendientes en lotes secuenciales de 50 (máximo del backend). Cada lote marca sus filas como
+   * "Consultando" y, al responder, aplica el resumen por documento; un lote fallido deja sus filas en
+   * error sin dar ninguna por descargada.
+   */
   const handleDownloadPendingXml = async () => {
-    const pendingIds = (result?.items ?? [])
-      .filter((item) => item.documentStatus === "IMPORTED")
-      .map((item) => item.documentId);
+    if (batchXmlRunningRef.current || refreshingStatuses || uploading) return;
+    const pendingIds = [
+      ...new Set(
+        items
+          .filter(
+            (item) =>
+              item.documentStatus === "IMPORTED" &&
+              hasValidReceptionDocumentId(item) &&
+              xmlRowState[item.documentId] !== "loading",
+          )
+          .map((item) => item.documentId),
+      ),
+    ];
 
     if (pendingIds.length === 0) {
       message.info(
@@ -242,6 +271,7 @@ export function usePurchaseReceptionPage() {
       return;
     }
 
+    batchXmlRunningRef.current = true;
     setBatchXmlRunning(true);
     setBatchXmlProgress({
       status: "running",
@@ -253,105 +283,100 @@ export function usePurchaseReceptionPage() {
     });
 
     try {
-      const batchResult =
-        await purchaseReceptionService.downloadXmlPending(pendingIds);
-
-      const itemsById = new Map(
-        batchResult.items.map((item) => [item.documentId, item] as const),
+      const outcome = await runReceptionXmlBatches(
+        pendingIds,
+        (chunk) => purchaseReceptionService.downloadXmlPending(chunk),
+        {
+          onChunkStart: (chunk) =>
+            setXmlRowState((prev) => {
+              const next = { ...prev };
+              for (const id of chunk) next[id] = "loading";
+              return next;
+            }),
+          onChunkDone: (chunk, totals) => {
+            const itemsById = new Map(chunk.items.map((item) => [item.documentId, item] as const));
+            // Refresca los badges (documento/proceso/compra/gasto/NC) de cada fila con el resumen
+            // mínimo que ya trae el lote — sin abrir "Ver XML" fila por fila.
+            setResult((prev) => {
+              if (prev === null || itemsById.size === 0) return prev;
+              return {
+                ...prev,
+                items: prev.items.map((item) => {
+                  const batchItem = itemsById.get(item.documentId);
+                  if (batchItem?.documentStatus == null) return item;
+                  return {
+                    ...item,
+                    documentStatus: batchItem.documentStatus,
+                    processingStatus: batchItem.processingStatus ?? item.processingStatus,
+                    purchaseId: batchItem.purchaseId,
+                    purchaseState: batchItem.purchaseState ?? item.purchaseState,
+                    cancelledPurchaseId: batchItem.cancelledPurchaseId ?? null,
+                    expenseExists: batchItem.expenseExists,
+                    creditNoteExists: batchItem.creditNoteExists,
+                    creditNoteId: batchItem.creditNoteId,
+                    cancelledCreditNoteId: batchItem.cancelledCreditNoteId,
+                  };
+                }),
+              };
+            });
+            // Solo se resuelve lo que el backend confirmó; todo lo demás del lote queda en error
+            // de esta sesión (incluida una solicitud fallida por completo).
+            setXmlRowState((prev) => {
+              const next = { ...prev };
+              for (const id of chunk.ids) {
+                const confirmed = itemsById.get(id);
+                if (confirmed && isResolvedXmlBatchItem(confirmed)) delete next[id];
+                else next[id] = "error";
+              }
+              return next;
+            });
+            setBatchXmlProgress({ status: "running", ...totals });
+          },
+        },
       );
-      const failedIds = batchResult.items
-        .filter((i) => i.status !== "Downloaded" && i.status !== "SkippedAlreadyHasXml")
-        .map((i) => i.documentId);
-      const resolvedIds = batchResult.items
-        .filter((i) => i.status === "Downloaded" || i.status === "SkippedAlreadyHasXml")
-        .map((i) => i.documentId);
 
-      // Refresca los badges (documento/proceso/compra/gasto/NC) de cada fila procesada con el
-      // resumen mínimo que ya trae el batch — sin abrir "Ver XML" fila por fila.
-      setResult((prev) => {
-        if (prev === null) return prev;
-        return {
-          ...prev,
-          items: prev.items.map((item) => {
-            const batchItem = itemsById.get(item.documentId);
-            if (batchItem?.documentStatus == null) return item;
-            return {
-              ...item,
-              documentStatus: batchItem.documentStatus,
-              processingStatus: batchItem.processingStatus ?? item.processingStatus,
-              purchaseId: batchItem.purchaseId,
-              // FASE 5 PURCHASE-UX — el lote refresca el estado real de la compra.
-              purchaseState: batchItem.purchaseState ?? item.purchaseState,
-              cancelledPurchaseId: batchItem.cancelledPurchaseId ?? null,
-              expenseExists: batchItem.expenseExists,
-              creditNoteExists: batchItem.creditNoteExists,
-              creditNoteId: batchItem.creditNoteId,
-              cancelledCreditNoteId: batchItem.cancelledCreditNoteId,
-            };
-          }),
-        };
-      });
-      // Reutiliza el mismo estado de error por fila que ya usa la consulta individual — la
-      // fila queda con su indicador "Error consulta" existente sin introducir UI nueva.
-      setXmlRowState((prev) => {
-        const next = { ...prev };
-        for (const id of failedIds) next[id] = "error";
-        for (const id of resolvedIds) delete next[id];
-        return next;
-      });
-
-      let status: ZhBatchProgressStatus = "success";
-      if (batchResult.failed > 0) {
-        status = batchResult.downloaded > 0 ? "warning" : "error";
-      }
+      const status = receptionXmlBatchStatus(outcome);
       setBatchXmlProgress({
         status,
-        total: batchResult.total,
-        processed: batchResult.processed,
-        downloaded: batchResult.downloaded,
-        skipped: batchResult.skipped,
-        failed: batchResult.failed,
+        total: outcome.total,
+        processed: outcome.processed,
+        downloaded: outcome.downloaded,
+        skipped: outcome.skipped,
+        failed: outcome.failed,
       });
 
-      if (status === "success") {
+      if (outcome.failedRequestIds.length === outcome.total) {
+        message.error(
+          extractErrorMessage(
+            outcome.requestErrors[0],
+            "No se pudo completar la descarga de XML pendientes.",
+          ),
+        );
+      } else if (status === "success") {
         message.success(
           t("purchases.reception.batchXml.summarySuccess", {
-            downloaded: batchResult.downloaded,
-            skipped: batchResult.skipped,
+            downloaded: outcome.downloaded,
+            skipped: outcome.skipped,
           }),
         );
       } else if (status === "warning") {
         message.warning(
           t("purchases.reception.batchXml.summaryWarning", {
-            downloaded: batchResult.downloaded,
-            skipped: batchResult.skipped,
-            failed: batchResult.failed,
+            downloaded: outcome.downloaded,
+            skipped: outcome.skipped,
+            failed: outcome.failed,
           }),
         );
       } else {
         message.error(
           t("purchases.reception.batchXml.summaryError", {
-            failed: batchResult.failed,
-            total: batchResult.total,
+            failed: outcome.failed,
+            total: outcome.total,
           }),
         );
       }
-    } catch (err) {
-      setBatchXmlProgress({
-        status: "error",
-        total: pendingIds.length,
-        processed: 0,
-        downloaded: 0,
-        skipped: 0,
-        failed: pendingIds.length,
-      });
-      message.error(
-        extractErrorMessage(
-          err,
-          "No se pudo completar la descarga de XML pendientes.",
-        ),
-      );
     } finally {
+      batchXmlRunningRef.current = false;
       setBatchXmlRunning(false);
     }
   };
@@ -383,61 +408,11 @@ export function usePurchaseReceptionPage() {
     }
   };
 
-  const items = useMemo(() => result?.items ?? [], [result]);
-
-  const supplierOptions = useMemo<ReceptionSupplierOption[]>(() => {
-    const byRuc = new Map<string, string>();
-    for (const item of items) {
-      if (!byRuc.has(item.supplierRuc)) byRuc.set(item.supplierRuc, item.supplierName);
-    }
-    return [...byRuc.entries()]
-      .map(([ruc, name]) => ({ ruc, name }))
-      .sort((a, b) => a.name.localeCompare(b.name) || a.ruc.localeCompare(b.ruc));
-  }, [items]);
-
-  // Primero filtrar, luego ordenar. issueDate es fecha de negocio "YYYY-MM-DD" (ADR-034), la
-  // comparación de strings es cronológica; sort estable conserva el orden del TXT en empates.
-  const visibleItems = useMemo(() => {
-    const selectedRucs = new Set(selectedSupplierRucs);
-    const filtered =
-      selectedRucs.size === 0 ? items : items.filter((i) => selectedRucs.has(i.supplierRuc));
-    const direction = dateSortOrder === "asc" ? 1 : -1;
-    return [...filtered].sort(
-      (a, b) => direction * a.issueDate.localeCompare(b.issueDate),
-    );
-  }, [items, selectedSupplierRucs, dateSortOrder]);
-
-  const pagedItems = useMemo(
-    () => visibleItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [visibleItems, page],
-  );
-
-  // ZH-SUPPLIER-SEARCH-REUSABLE-01 — el buscador (ZhSearchSelect múltiple, datasource local)
-  // entrega la selección completa; conserva el orden de selección y descarta duplicados/vacíos.
-  const setSupplierFilter = (rucs: readonly string[]) => {
-    setSelectedSupplierRucs([...new Set(rucs.filter(Boolean))]);
-    setPage(1);
-  };
-  const selectedSupplierOptions = useMemo(() => {
-    const byRuc = new Map(supplierOptions.map((o) => [o.ruc, o]));
-    return selectedSupplierRucs
-      .map((ruc) => byRuc.get(ruc))
-      .filter((o): o is ReceptionSupplierOption => o !== undefined);
-  }, [supplierOptions, selectedSupplierRucs]);
-  const setDateSortOrder = (order: ReceptionDateSortOrder) => {
-    setDateSortOrderState(order);
-    setPage(1);
-  };
-  const clearFilters = () => {
-    setSelectedSupplierRucs([]);
-    setDateSortOrderState("desc");
-    setPage(1);
-  };
-
   const summary = useMemo(
     () => ({
-      // FASE 5 RECEPTION-UX — Compra/Gasto/NC por registro ERP activo (ver receptionErpRecord).
-      ...summarizeReceptionItems(items),
+      // FASE 5 RECEPTION-UX — Compra/Gasto/NC por registro ERP activo, por comprobante único
+      // (PURCHASES-RECEPTION-FILTERS-01: un documentId repetido nunca cuenta dos veces).
+      ...summarizeReceptionDocuments(items),
       skipped: result?.skippedUnsupportedCount ?? 0,
     }),
     [items, result],
@@ -449,18 +424,9 @@ export function usePurchaseReceptionPage() {
     error,
     result,
     fileName,
-    items: pagedItems,
-    total: visibleItems.length,
-    supplierOptions,
-    selectedSupplierRucs,
-    selectedSupplierOptions,
-    setSupplierFilter,
-    dateSortOrder,
-    setDateSortOrder,
-    clearFilters,
-    page,
-    pageSize: PAGE_SIZE,
-    setPage,
+    ...filters,
+    rowKeys,
+    normalization,
     summary,
     handleFileSelected,
     xmlRowState,
@@ -481,7 +447,7 @@ export function usePurchaseReceptionPage() {
     batchXmlProgress,
     refreshingStatuses,
     handleRefreshStatuses,
-    handleDownloadPendingXml: () => void handleDownloadPendingXml(),
+    handleDownloadPendingXml,
     // El TXT SRI no expone un endpoint de "reverificar proveedor" — tras crearlo, marcamos
     // localmente las filas con ese RUC como existentes (mismo criterio que el backend: proveedor
     // existe + compra no existe todavía => PENDING).

@@ -7,6 +7,14 @@ import {
   buildDocumentStatusLabel,
   buildProcessingStatusLabel,
 } from "../pages/purchaseReceptionLabels";
+import { receptionXmlState } from "../utils/receptionFilters";
+
+const XML_BADGE_VARIANT = {
+  stored: "success",
+  pending: "neutral",
+  loading: "neutral",
+  error: "error",
+} as const;
 
 /**
  * Celda "Recepción y XML" de `/purchases/reception` — lista compacta Recepción/Lectura/XML, alineada en
@@ -23,8 +31,23 @@ export function PurchaseReceptionProcessCell({
   const documentStatusLabel = buildDocumentStatusLabel(t);
   const processingStatusLabel = buildProcessingStatusLabel(t);
   // El detalle/XML todavía no existe mientras el documento no salga de IMPORTED (recién llegado
-  // del TXT, sin "Consultar XML" todavía).
-  const hasDetail = row.documentStatus !== "IMPORTED";
+  // del TXT, sin "Consultar XML" todavía). "Consultando"/"Error" solo existen en esta sesión: el
+  // backend no guarda los intentos fallidos (PURCHASES-RECEPTION-FILTERS-01).
+  const xml = receptionXmlState(row, xmlState);
+  const hasDetail = xml === "stored";
+  const xmlLabel = {
+    stored: t("purchases.reception.xml.stored", "Almacenado"),
+    pending: t("purchases.reception.xml.pending", "Pendiente"),
+    loading: t("purchases.reception.xml.loading", "Consultando..."),
+    error: t("purchases.reception.xml.sessionError", "Error en esta sesión"),
+  }[xml];
+  const xmlTitle =
+    xml === "loading" || xml === "error"
+      ? t(
+          "purchases.reception.xml.sessionHint",
+          "Estado de esta sesión: no se guarda; al recargar se verá como Pendiente.",
+        )
+      : undefined;
   const processingWarningNotice =
     row.processingStatus === "PROCESSED_WITH_WARNINGS" && row.processingNotes
       ? {
@@ -83,26 +106,7 @@ export function PurchaseReceptionProcessCell({
         {t("purchases.reception.process.xml", "XML")}
       </span>
       <span className="pur-process-value">
-        {hasDetail ? (
-          <Badge
-            variant="success"
-            label={t("purchases.reception.xml.received", "Recibido")}
-          />
-        ) : xmlState === "loading" ? (
-          <Badge
-            variant="neutral"
-            label={t("purchases.reception.xml.loading", "Consultando...")}
-          />
-        ) : (
-          <Badge
-            variant={xmlState === "error" ? "error" : "neutral"}
-            label={
-              xmlState === "error"
-                ? t("purchases.reception.xml.error", "Error consulta")
-                : t("purchases.reception.xml.pending", "Pendiente")
-            }
-          />
-        )}
+        <Badge variant={XML_BADGE_VARIANT[xml]} label={xmlLabel} title={xmlTitle} />
       </span>
     </div>
   );

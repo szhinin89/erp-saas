@@ -34,6 +34,7 @@ export const HELP_KEYS = {
   PURCHASES_PAYMENT_SCHEDULE: "purchases.schedule",
   PURCHASES_CREDIT_NOTE: "purchases.creditNote.type",
   PURCHASES_RECEPTION_OVERVIEW: "purchases.reception.overview",
+  PURCHASES_RECEPTION_ATTENTION: "purchases.reception.attention",
   // ACCOUNTING-REPORTS-UX-13/14: «¿Qué es?» y «¿Cómo se lee?» de cada reporte de /accounting/reports.
   ACCOUNTING_REPORTS_GENERAL_JOURNAL: "accounting.reports.generalJournal",
   ACCOUNTING_REPORTS_GENERAL_LEDGER: "accounting.reports.generalLedger",

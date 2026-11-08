@@ -1,5 +1,69 @@
 # Project Status
 
+## PURCHASES-RECEPTION-FILTERS-01 — Seguimiento de recepción electrónica — IMPLEMENTED / PENDING CI (2026-11-08)
+
+Mejora de seguimiento de `/purchases/reception`, solo frontend: sin cambios de backend, API, DTO,
+permisos ni reglas SRI. Los filtros y conteos trabajan sobre el lote del TXT ya importado (en
+memoria); no hay listado ni filtrado de servidor. Reglas: [purchases.md § 3](docs/architecture/purchases.md#3-recepción-electrónica-y-conciliación-de-ítems).
+
+- **Filtros operativos combinables** (Y lógico): búsqueda por RUC, proveedor, número y clave de
+  acceso; selector de proveedores existente; orden por emisión; Situación ERP; estado del proveedor;
+  XML; Recepción y Lectura (solo estados que el backend emite); tipo; emisión desde/hasta; total
+  mínimo/máximo; «Solo requieren atención» (sin registro ERP activo y con proveedor pendiente o
+  inactivo, XML no almacenado o lectura `FAILED`/`PROCESSED_WITH_WARNINGS`), distinto de «Sin
+  registrar». Todo cambio de criterio vuelve a la página 1.
+- **KPI clicables y clasificación compartida:** las tres tarjetas filtran exactamente su partición
+  exclusiva; tarjetas y «Situación ERP» comparten un único estado, sin situaciones incompatibles
+  activas a la vez. Clasificación única `receptionErpRecordView` / `receptionSummaryBucket`.
+- **Barra compacta** (`ZHFilterBar plain`): búsqueda, proveedor y orden; segunda línea con
+  «Solo requieren atención» (checkbox del DS + ayuda contextual `ZHFieldHelp`), «Más filtros (n)»,
+  contador y «Limpiar filtros»; criterios avanzados en cuadrícula plegable, cerrada al inicio.
+- **Contadores de documentos únicos:** tarjetas y «Mostrando N de M comprobantes» cuentan cada
+  `documentId` una vez; los repetidos idénticos del lote se unifican.
+- **Repetidos contradictorios «En revisión»:** mismo `documentId` con datos distintos: todas sus
+  filas visibles, sin elegir una como correcta, etiqueta «En revisión» en Registro ERP, fuera de las
+  tres tarjetas, contado una vez en el total, aviso con el número de documentos únicos y opción
+  «En revisión» en Situación ERP. No modifica datos persistidos.
+- **Descarga de XML pendientes en lotes de máximo 50** (límite existente del backend), secuenciales,
+  con agregación de resultados por documento. Corrige el rechazo total del lote con más de 50
+  pendientes.
+- **Concurrencia y errores parciales:** mientras corre el lote se bloquean otra descarga en lote y
+  las consultas individuales; se excluyen las filas que ya se consultan. Un lote fallido deja sus
+  filas en error de sesión y ningún documento se da por descargado sin confirmación del backend.
+- **XML:** «Almacenado» solo cuando el documento salió de `IMPORTED`; «Consultando» y «Error en esta
+  sesión» son estados de la sesión, no persistidos (no existe historial de intentos ni estado
+  «XML validado»).
+
+Validación agente: Vitest focal 549/549 PASS (recepción: utils, hooks, filtros y página; ayuda;
+i18n), visual en Chromium real `PurchaseReceptionFilters.visual.test.tsx` 6/6 PASS a 390, 768 y
+1440 px con filtros cerrados y abiertos, sin desborde de página; `tsc -b`; ESLint de los archivos
+tocados; `npm run build`; `architecture:check` (0 violaciones nuevas); guardrail oficial
+`-SkipFrontendChunk`; check documental y `git diff --check` PASS. Perfil CI previsto: frontend.
+Revisión visual y funcional del propietario: APROBADA (2026-11-08).
+
+PENDING de comprobación: validación funcional con un TXT auténtico del SRI (no realizada; sin
+evidencia).
+
+Registrado sin abrir trabajo (requieren backend; separados de esta entrega):
+- Persistencia del intento de consulta XML («consulta fallida» que sobreviva a recargar): exige
+  campo y migración en `PurchaseReceptionDocument` y reabrir `DownloadPurchaseReceptionXmlHandler`
+  (ADR-046).
+- Bandeja histórica: no existe endpoint de listado de recepciones; la pantalla solo muestra el TXT
+  importado en la sesión.
+- Backend: el verificador consulta por fila (N+1); `NotFoundInSri` no se emite (SRI caído llega como
+  `SriError`); una clave de acceso repetida en el TXT devuelve dos filas con el mismo `documentId`;
+  `PurchaseReceptionDocument.Cancel()` no tiene llamador (`CANCELLED` no se produce).
+
+Hallazgo **PURCHASES-PRODUCT-PICKER-RACE-01** (fuera de esta entrega; Compras CLOSED): carrera entre
+el efecto que reinicia `focusIdx` en `ProductPicker` (`useEffect(() => setFocusIdx(-1), [query,
+status])`) y la navegación por teclado durante la actualización de resultados: si la primera tecla
+llega antes de que se aplique el efecto pasivo, se pierde un `ArrowDown`. Reproducido de forma
+determinista con una sonda temporal (eliminada). Evidencia en tres ejecuciones ampliadas (63
+archivos): 704/705, 704/705 y 705/705; falla `ProductPicker.test.tsx` › «navega con teclado
+(activedescendant) y selecciona con Enter» — esas ejecuciones no son PASS. Decisión: resolver
+después corrigiendo el componente con pruebas deterministas, no con un parche del test; sin cambios
+en esta entrega.
+
 ## ACCOUNTING-CHART-UX-01 — Plan de cuentas UX/UI — CLOSED (2026-11-08)
 
 Mejora UX/UI de `/accounting/chart-of-accounts`, solo frontend: sin cambios de backend, API, DTO ni

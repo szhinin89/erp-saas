@@ -169,6 +169,14 @@ export const HELP_REGISTRY: Record<HelpKeyId, HelpContent> = {
     short:
       "Aquí puede consultar el XML, validar el proveedor y procesar cada comprobante como Compra, Gasto o Nota de crédito de compra.",
   },
+  // PURCHASES-RECEPTION-FILTERS-01 — criterio del filtro "Solo requieren atención".
+  [HELP_KEYS.PURCHASES_RECEPTION_ATTENTION]: {
+    i18nPrefix: "help.purchasesReception.attention",
+    title: "Solo requieren atención",
+    short:
+      "Comprobantes sin registro ERP activo que tienen algo pendiente: proveedor pendiente o inactivo, XML pendiente o con error en esta sesión, o lectura fallida o con advertencias.",
+    long: "No equivale a «Sin registrar»: un comprobante listo para registrar no aparece aquí.",
+  },
   [HELP_KEYS.ACCOUNTING_REPORTS_GENERAL_JOURNAL]: {
     i18nPrefix: "help.accountingReports.generalJournal",
     title: "Libro Diario: qué es y cómo se lee",

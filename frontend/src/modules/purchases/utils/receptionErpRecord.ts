@@ -14,6 +14,8 @@ export type ReceptionErpRecordKind = "purchase" | "expense" | "creditNote";
 export interface ReceptionErpRecordView {
   /** Registro ERP activo; null = ninguno (incluye anulados/descartados, reprocesables). */
   active: ReceptionErpRecordKind | null;
+  /** Sin registro activo pero con historial anulado/descartado (compra, gasto o NC). */
+  history: boolean;
   badge: { key: string; fallback: string; variant: ReceptionPurchaseBadgeVariant };
 }
 
@@ -38,6 +40,7 @@ export function receptionErpRecordView(row: ErpRecordRow): ReceptionErpRecordVie
     if (row.creditNoteExists) {
       return {
         active: "creditNote",
+        history: false,
         badge: {
           key: "purchases.reception.erpRecord.creditNoteProcessed",
           fallback: "NC procesada",
@@ -48,6 +51,7 @@ export function receptionErpRecordView(row: ErpRecordRow): ReceptionErpRecordVie
     if (row.cancelledCreditNoteId) {
       return {
         active: null,
+        history: true,
         badge: {
           key: "purchases.reception.erpRecord.creditNoteCancelled",
           fallback: "NC anulada",
@@ -55,14 +59,16 @@ export function receptionErpRecordView(row: ErpRecordRow): ReceptionErpRecordVie
         },
       };
     }
-    return { active: null, badge: NOT_PROCESSED };
+    return { active: null, history: false, badge: NOT_PROCESSED };
   }
 
   const purchase = receptionPurchaseView(row.purchaseState);
-  if (purchase.hasActivePurchase) return { active: "purchase", badge: purchase.badge };
+  if (purchase.hasActivePurchase)
+    return { active: "purchase", history: false, badge: purchase.badge };
   if (row.expenseExists) {
     return {
       active: "expense",
+      history: false,
       badge: {
         key: "purchases.reception.erpRecord.expenseRegistered",
         fallback: "Gasto registrado",
@@ -71,10 +77,11 @@ export function receptionErpRecordView(row: ErpRecordRow): ReceptionErpRecordVie
     };
   }
   // Compra anulada / borrador descartado: historial visible, sigue siendo reprocesable.
-  if (purchase.history) return { active: null, badge: purchase.badge };
+  if (purchase.history) return { active: null, history: true, badge: purchase.badge };
   if (row.cancelledExpenseId) {
     return {
       active: null,
+      history: true,
       badge: {
         key: "purchases.reception.erpRecord.expenseCancelled",
         fallback: "Gasto anulado",
@@ -82,7 +89,21 @@ export function receptionErpRecordView(row: ErpRecordRow): ReceptionErpRecordVie
       },
     };
   }
-  return { active: null, badge: NOT_PROCESSED };
+  return { active: null, history: false, badge: NOT_PROCESSED };
+}
+
+/**
+ * PURCHASES-RECEPTION-FILTERS-01 — tarjeta de resumen a la que pertenece un comprobante. Partición
+ * EXCLUSIVA (cada fila cae en una sola): es la misma regla que cuentan las tarjetas y que aplican al
+ * pulsarlas, para que el filtro muestre exactamente las filas del contador.
+ */
+export type ReceptionSummaryBucket = "registered" | "toProcess" | "pendingSupplier";
+
+export function receptionSummaryBucket(
+  row: ErpRecordRow & Pick<PurchaseReceptionItem, "status">,
+): ReceptionSummaryBucket {
+  if (receptionErpRecordView(row).active !== null) return "registered";
+  return row.status === "NEW_SUPPLIER" ? "pendingSupplier" : "toProcess";
 }
 
 export interface ReceptionSummaryCounts {
@@ -113,7 +134,7 @@ export function summarizeReceptionItems(
     if (active === "purchase") counts.purchases++;
     else if (active === "expense") counts.expenses++;
     else if (active === "creditNote") counts.creditNotes++;
-    else if (row.status === "NEW_SUPPLIER") counts.pendingSupplier++;
+    else if (receptionSummaryBucket(row) === "pendingSupplier") counts.pendingSupplier++;
     else counts.toProcess++;
   }
   counts.registered = counts.purchases + counts.expenses + counts.creditNotes;
