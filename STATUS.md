@@ -1,5 +1,22 @@
 # Project Status
 
+## CI-1125-DB-ERROR-ASSERTION-01 — Falso positivo de confidencialidad — IMPLEMENTED / PENDING CI (2026-11-08)
+
+BUG REAL de prueba: buscar `5432` en todo el JSON confundía el identificador opaco de
+correlación con un puerto expuesto. Reproducción determinista con identificador fijo:
+14/14 casos de BD fallan con la aserción anterior. La prueba ahora valida estructura,
+mensajes del catálogo, ausencia de detalle en `data` y metadatos por sus tipos/valores;
+no cambia el contrato de [errores](docs/architecture/error-handling.md).
+
+Validación agente: `ExceptionClassificationTests` 29/29 PASS, incluidos controles
+negativos de filtraciones en mensajes, `data.errors` y campos adicionales en Production
+y Development, e identificador/timestamp que contienen `5432`. Guardrail PowerShell
+`-SkipFrontendChunk`, `architecture:check` (147/147, sin violaciones nuevas), check
+documental y `git diff --check` PASS. Sin cambios productivos, ProductPicker ni reglas contables.
+Gate independiente del propietario: filtro `ExceptionClassificationTests`, exit code 0
+confirmado (2026-11-08). Publicación de estos dos archivos autorizada expresamente;
+pendiente confirmar CI remoto exitoso.
+
 ## PURCHASES-PRODUCT-PICKER-RACE-01 — Carrera de foco en ProductPicker — IMPLEMENTED / PENDING CI (2026-11-08)
 
 Compras sigue CLOSED; reabierto solo para este defecto (hallazgo registrado en

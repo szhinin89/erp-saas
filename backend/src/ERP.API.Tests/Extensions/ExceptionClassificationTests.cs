@@ -1,5 +1,7 @@
 using System.Net.Sockets;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using ERP.Application.Common;
 using ERP.API.Middleware;
 using ERP.Infrastructure.Persistence;
 using FluentAssertions;
@@ -43,6 +45,7 @@ public sealed class ExceptionClassificationTests
     )
     {
         var context = new DefaultHttpContext();
+        context.TraceIdentifier = "a5432b-opaque-request";
         context.Response.Body = new MemoryStream();
         await new ExceptionMiddleware(
             _ => Rethrow(exception),
@@ -358,18 +361,78 @@ public sealed class ExceptionClassificationTests
             (status, code)
                 .Should()
                 .Be((expectedStatus, expectedCode), $"{scenario} ({environment})");
-            body.Should()
-                .NotContain("pg-prod")
-                .And.NotContain("5432")
-                .And.NotContain("Password")
-                .And.NotContain("SELECT")
-                .And.NotContain("identity_users")
-                .And.NotContain("1790012345001")
-                .And.NotContain("uq_secret")
-                .And.NotContain("Exception")
-                .And.NotContain(" at ");
-            using var doc = JsonDocument.Parse(body);
-            doc.RootElement.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null, scenario);
+            AssertSafeDatabaseResponse(body, expectedCode, environment);
+        }
+    }
+
+    private static void AssertSafeDatabaseResponse(string body, string code, string environment)
+    {
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement;
+        root.EnumerateObject().Select(p => p.Name).Should()
+            .BeEquivalentTo("code", "severity", "message", "data", "meta");
+        root.GetProperty("code").GetString().Should().Be(code);
+        var catalog = MessageCatalog.Resolve(code);
+        root.GetProperty("severity").GetString().Should().Be(catalog.Severity);
+        var message = root.GetProperty("message");
+        message.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo("user", "dev");
+        message.GetProperty("user").GetString().Should().Be(catalog.User);
+        message.GetProperty("dev").GetString().Should()
+            .Be(environment == "Development" ? catalog.Dev : null);
+        // Solo el contenido del mensaje se inspecciona como texto técnico. Los metadatos
+        // opacos y temporales pueden contener por casualidad secuencias como 5432.
+        foreach (var field in message.EnumerateObject())
+        {
+            foreach (var sensitive in new[]
+            {
+                "pg-prod", "5432", "Password", "s3cr3t", "SELECT", "identity_users",
+                "1790012345001", "uq_secret", "Exception", " at "
+            })
+                (field.Value.GetString() ?? "").Should().NotContain(sensitive, field.Name);
+        }
+        root.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
+        var meta = root.GetProperty("meta");
+        meta.EnumerateObject().Select(p => p.Name).Should()
+            .BeEquivalentTo("correlationId", "timestamp", "traceId");
+        meta.GetProperty("correlationId").GetString().Should().Be("a5432b-opaque-request");
+        meta.GetProperty("timestamp").GetDateTime().Kind.Should().Be(DateTimeKind.Utc);
+        meta.GetProperty("traceId").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task Metadatos_con_5432_no_son_detalle_de_BD()
+    {
+        var (_, code, body) = await Run(Pg(PostgresErrorCodes.SyntaxError));
+        var response = JsonNode.Parse(body)!;
+        response["meta"]!["timestamp"] = "2026-11-08T12:00:00.5432Z";
+
+        AssertSafeDatabaseResponse(response.ToJsonString(), code, "Development");
+    }
+
+    [Theory]
+    [InlineData("5432")]
+    [InlineData("Host=pg-prod.internal;Port=5432;Password=s3cr3t")]
+    [InlineData("SELECT * FROM identity_users")]
+    [InlineData("Key (ruc)=(1790012345001); constraint uq_secret")]
+    [InlineData("NpgsqlException: inner exception at Database.Save()")]
+    public async Task Asercion_rechaza_filtraciones_reales_en_campos_de_contenido(string sensitive)
+    {
+        foreach (var environment in new[] { "Production", "Development" })
+        {
+            var (_, code, body) = await Run(Pg(PostgresErrorCodes.SyntaxError), environment);
+            foreach (var field in new[] { "user", "dev", "data", "extra" })
+            {
+                var response = JsonNode.Parse(body)!;
+                if (field is "user" or "dev")
+                    response["message"]![field] = sensitive;
+                else if (field == "data")
+                    response["data"] = new JsonObject { ["errors"] = new JsonArray(sensitive) };
+                else
+                    response["detail"] = sensitive;
+
+                Action validate = () => AssertSafeDatabaseResponse(response.ToJsonString(), code, environment);
+                validate.Should().Throw<Xunit.Sdk.XunitException>($"{field} ({environment})");
+            }
         }
     }
 
