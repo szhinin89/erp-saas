@@ -1,6 +1,6 @@
 # Project Status
 
-## PURCHASES-RECEPTION-FILTERS-01 — Seguimiento de recepción electrónica — IMPLEMENTED / PENDING CI (2026-11-08)
+## PURCHASES-RECEPTION-FILTERS-01 — Seguimiento de recepción electrónica — CLOSED (2026-11-08)
 
 Mejora de seguimiento de `/purchases/reception`, solo frontend: sin cambios de backend, API, DTO,
 permisos ni reglas SRI. Los filtros y conteos trabajan sobre el lote del TXT ya importado (en
@@ -41,13 +41,18 @@ tocados; `npm run build`; `architecture:check` (0 violaciones nuevas); guardrail
 `-SkipFrontendChunk`; check documental y `git diff --check` PASS. Perfil CI previsto: frontend.
 Revisión visual y funcional del propietario: APROBADA (2026-11-08).
 
-PENDING de comprobación: validación funcional con un TXT auténtico del SRI (no realizada; sin
-evidencia).
+Cierre (2026-11-08): commit `e9adecc71` publicado en `main`; CI #1123 SUCCESS (confirmado por el
+propietario). Evidencia local conservada: Vitest focal 549/549 y visuales 6/6 PASS; revisión visual
+y funcional aprobada por el propietario.
+
+PENDING de aceptación funcional, fuera del cierre: validación de extremo a extremo con un TXT
+auténtico del SRI (no realizada; sin evidencia), registrada como
+PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 en la [cola de trabajo](docs/agent/WORK_QUEUE.md).
 
 Registrado sin abrir trabajo (requieren backend; separados de esta entrega):
 - Persistencia del intento de consulta XML («consulta fallida» que sobreviva a recargar): exige
   campo y migración en `PurchaseReceptionDocument` y reabrir `DownloadPurchaseReceptionXmlHandler`
-  (ADR-046).
+  (ADR-046); registrado como PURCHASES-RECEPTION-XML-ATTEMPT-01 en la cola de trabajo.
 - Bandeja histórica: no existe endpoint de listado de recepciones; la pantalla solo muestra el TXT
   importado en la sesión.
 - Backend: el verificador consulta por fila (N+1); `NotFoundInSri` no se emite (SRI caído llega como
@@ -62,7 +67,7 @@ determinista con una sonda temporal (eliminada). Evidencia en tres ejecuciones a
 archivos): 704/705, 704/705 y 705/705; falla `ProductPicker.test.tsx` › «navega con teclado
 (activedescendant) y selecciona con Enter» — esas ejecuciones no son PASS. Decisión: resolver
 después corrigiendo el componente con pruebas deterministas, no con un parche del test; sin cambios
-en esta entrega.
+en esta entrega. Pendiente en la [cola de trabajo](docs/agent/WORK_QUEUE.md).
 
 ## ACCOUNTING-CHART-UX-01 — Plan de cuentas UX/UI — CLOSED (2026-11-08)
 
