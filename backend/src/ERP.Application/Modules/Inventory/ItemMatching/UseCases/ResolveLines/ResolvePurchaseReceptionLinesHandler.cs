@@ -34,7 +34,8 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     ICurrentCompany company,
     ICurrentBranch branch,
     ICurrentUser user,
-    IDatabaseExceptionTranslator databaseExceptions
+    IDatabaseExceptionTranslator databaseExceptions,
+    IReceptionMatchingAccess access
 )
     : IRequestHandler<
         ResolvePurchaseReceptionLinesCommand,
@@ -65,7 +66,10 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
     public async Task<Result<ResolvePurchaseReceptionLinesResultDto>> Handle(
         ResolvePurchaseReceptionLinesCommand cmd,
         CancellationToken cancellationToken
-    ) => await HandleAttemptAsync(cmd, cancellationToken, 0);
+    ) =>
+        await access.CanMatchInAnyContextAsync(cancellationToken)
+            ? await HandleAttemptAsync(cmd, cancellationToken, 0)
+            : Result<ResolvePurchaseReceptionLinesResultDto>.Forbidden(ReceptionMatchingAccess.ForbiddenMessage);
 
     private async Task<Result<ResolvePurchaseReceptionLinesResultDto>> HandleAttemptAsync(
         ResolvePurchaseReceptionLinesCommand cmd, CancellationToken cancellationToken, int attempt
@@ -89,6 +93,9 @@ public sealed class ResolvePurchaseReceptionLinesHandler(
             return Result<ResolvePurchaseReceptionLinesResultDto>.NotFound(
                 "El documento de recepción no existe."
             );
+        var matchingDecision = await access.DecideAsync(document, cancellationToken);
+        if (matchingDecision != ReceptionMatchingDecision.Allowed)
+            return ReceptionMatchingAccess.Reject<ResolvePurchaseReceptionLinesResultDto>(matchingDecision);
         if (
             document.Status
             is not (

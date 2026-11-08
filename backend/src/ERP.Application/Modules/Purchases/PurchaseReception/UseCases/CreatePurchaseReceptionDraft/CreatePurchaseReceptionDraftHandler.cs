@@ -38,6 +38,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
     private readonly IPurchaseInvoiceRepository _purchaseRepo;
     private readonly IExpenseDocumentRepository _expenseRepo;
     private readonly IBusinessPartnerRepository _bpRepo;
+    private readonly IBusinessPartnerRoleRepository _roleRepo;
     private readonly IPurchaseReceptionDetailProcessor _detailProcessor;
     private readonly IItemRepository _itemRepo;
     private readonly IPurchaseXmlDraftParser _xmlParser;
@@ -57,9 +58,11 @@ public sealed class CreatePurchaseReceptionDraftHandler
         ICurrentTenant tenant,
         ICurrentUser user,
         ILogger<CreatePurchaseReceptionDraftHandler> logger,
-        ERP.Application.Modules.Inventory.ItemMatching.Services.IPurchaseReceptionAutoMatcher autoMatcher
+        ERP.Application.Modules.Inventory.ItemMatching.Services.IPurchaseReceptionAutoMatcher autoMatcher,
+        IBusinessPartnerRoleRepository roleRepo
     )
     {
+        _roleRepo = roleRepo;
         _autoMatcher = autoMatcher;
         _documentRepo = documentRepo;
         _purchaseRepo = purchaseRepo;
@@ -128,6 +131,7 @@ public sealed class CreatePurchaseReceptionDraftHandler
         var supplier = await ReceptionSupplierResolver.ResolveAsync(
             document,
             _bpRepo,
+            _roleRepo,
             _documentRepo,
             _tenant.TenantId,
             _user.UserId,

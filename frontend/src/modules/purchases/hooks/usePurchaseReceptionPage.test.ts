@@ -757,3 +757,47 @@ describe("FASE 5 PURCHASE-UX — Actualizar estados (sin reimportar TXT)", () =>
     );
   });
 });
+
+// PURCHASES-RECEPTION-SUPPLIER-RULE-01 (H4) — la respuesta de "Consultar XML" solo evalúa el socio:
+// nunca reactiva una fila cuyo proveedor el verificador marcó inactivo (socio o rol).
+describe("usePurchaseReceptionPage — proveedor inactivo tras consultar XML (H4)", () => {
+  function download(supplierIsActive: boolean | null) {
+    vi.mocked(purchaseReceptionService.downloadXml).mockResolvedValue({
+      documentId: "doc-1", status: "VERIFIED", xmlDownloaded: true, authorizationNumber: "1",
+      authorizationDate: "2026-08-01T10:00:00Z", processingStatus: "PROCESSED", linesDetectedCount: 1,
+      linesProcessedCount: 1, processingNotes: null, purchaseId: null, purchaseState: "NONE",
+      cancelledPurchaseId: null, supplierIsActive, supplierTradeName: null, expenseExists: false,
+    });
+  }
+
+  async function importedWith(supplierIsActive: boolean | null) {
+    vi.mocked(purchaseReceptionService.importTxt).mockResolvedValue({
+      items: [buildItem({ supplierIsActive })],
+      totalParsed: 1, parseErrorCount: 0, skippedUnsupportedCount: 0,
+    });
+    const hook = renderReceptionPageHook();
+    await act(async () => { await hook.result.current.handleFileSelected(buildFile()); });
+    return hook;
+  }
+
+  it("no reactiva un proveedor inactivo aunque la descarga informe el socio activo", async () => {
+    const { result } = await importedWith(false);
+    download(true);
+    await act(async () => { await result.current.handleDownloadXml("doc-1"); });
+    expect(result.current.items[0]).toMatchObject({ documentStatus: "VERIFIED", supplierIsActive: false });
+  });
+
+  it("sí marca inactivo cuando la descarga informa el socio inactivo", async () => {
+    const { result } = await importedWith(true);
+    download(false);
+    await act(async () => { await result.current.handleDownloadXml("doc-1"); });
+    expect(result.current.items[0].supplierIsActive).toBe(false);
+  });
+
+  it("conserva el estado activo del verificador", async () => {
+    const { result } = await importedWith(true);
+    download(true);
+    await act(async () => { await result.current.handleDownloadXml("doc-1"); });
+    expect(result.current.items[0].supplierIsActive).toBe(true);
+  });
+});

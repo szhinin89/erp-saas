@@ -91,4 +91,10 @@ describe("SRI-TOGGLE-07 — emisión pausada", () => {
     expect(onDownloadPendingXml).not.toHaveBeenCalled();
     expect(refreshButton().disabled).toBe(false);
   });
+
+  it("H3 — sin purchases.create oculta la descarga y conserva Actualizar estados", () => {
+    show({ canDownloadXml: false });
+    expect(screen.queryByRole("button", { name: /Descargar XML pendientes/ })).toBeNull();
+    expect(refreshButton().disabled).toBe(false);
+  });
 });

@@ -17,6 +17,7 @@ import {
   formatDateTime,
 } from "../../../lib/formatters/dateFormatters";
 import { useI18n } from "../../../i18n/i18n";
+import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import {
   selectElectronicEmissionPaused,
   useElectronicInvoicingStatusStore,
@@ -39,6 +40,11 @@ export function PurchaseReceptionPage() {
   // SRI-TOGGLE-07 — pausa de la emisión de la empresa: sin consultas de XML al SRI (registro manual sigue).
   const sriPaused = useElectronicInvoicingStatusStore(selectElectronicEmissionPaused);
   const { t } = useI18n();
+  // PURCHASES-RECEPTION-WRITE-PERMISSIONS-01 (H3) — mismas claves que exige la API: escribir en
+  // recepción (importar, XML, compra, NC) = purchases.create; preparar un gasto = expenses.documents.create.
+  const { has } = usePermissionsUi();
+  const canProcess = has("purchases.create");
+  const canCreateExpense = has("expenses.documents.create");
 
   const columns: ZHDataTableColumn<PurchaseReceptionItem>[] = [
     {
@@ -204,6 +210,8 @@ export function PurchaseReceptionPage() {
           onProcessCreditNote={ctx.processCreditNote}
           resolvingCreditNoteId={ctx.resolvingCreditNoteId}
           sriPaused={sriPaused}
+          canProcess={canProcess}
+          canCreateExpense={canCreateExpense}
         />
       ),
     },
@@ -220,6 +228,7 @@ export function PurchaseReceptionPage() {
     >
       <div className="pg-section pur-reception-top">
         <div className="pur-reception-upload">
+          {canProcess ? (
           <ZhFileUpload
             compact
             accept=".txt"
@@ -247,6 +256,20 @@ export function PurchaseReceptionPage() {
               "Aún no se ha importado ningún archivo.",
             )}
           />
+          ) : (
+            <ZHPageNotice
+              variant="neutral"
+              icon="lock"
+              message={t(
+                "purchases.reception.permissions.readOnly",
+                "Su perfil solo permite consultar la recepción electrónica.",
+              )}
+              detail={t(
+                "purchases.reception.permissions.readOnlyDetail",
+                "Importar el TXT, consultar XML y registrar comprobantes requieren el permiso de crear compras.",
+              )}
+            />
+          )}
         </div>
 
         {ctx.result && (
@@ -379,6 +402,7 @@ export function PurchaseReceptionPage() {
       {/* FASE 5 PURCHASE-UX — acciones del lote: fila compacta (ver PurchaseReceptionBatchActions). */}
       <PurchaseReceptionBatchActions
         sriPaused={sriPaused}
+        canDownloadXml={canProcess}
         importedCount={ctx.result ? ctx.result.items.length : null}
         uploading={ctx.uploading}
         downloadingXml={ctx.batchXmlRunning}

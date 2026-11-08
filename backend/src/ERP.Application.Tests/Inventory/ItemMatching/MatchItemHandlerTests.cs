@@ -155,7 +155,8 @@ public sealed class MatchItemHandlerTests
             itemRepo.Object,
             confirmationService.Object,
             tenant.Object,
-            user.Object
+            user.Object,
+            ReceptionMatchingAccessDoubles.AllowAll()
         );
     }
 

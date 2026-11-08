@@ -39,7 +39,8 @@ public static class PurchasesModule
         LabelKey = "app.nav.item.purchases.reception",
         SortOrder = 20,
         Id = "c1000000-0000-4000-9000-000000000002",
-        ParentId = "e3000000-0000-4000-9000-000000000010"
+        ParentId = "e3000000-0000-4000-9000-000000000010",
+        RelatedActionPermissionsCsv = PurchasePermissions.Create + "," + PurchasePermissions.Update
     )]
     public const string Reception = "/purchases/reception";
 

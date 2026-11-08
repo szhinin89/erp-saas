@@ -1,7 +1,9 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Models;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPurchaseReception;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
@@ -71,6 +73,29 @@ public sealed class ImportPurchaseReceptionHandlerTests
         return clock;
     }
 
+    /// <summary>
+    /// RUC de la empresa operativa: persona natural cuya cédula es el receptor de la muestra
+    /// (H1 — equivalencia cédula + 001).
+    /// </summary>
+    internal const string CompanyRuc = "0350016432001";
+
+    internal static Mock<ICompanyRepository> CompanyRepoFor(
+        string ruc = CompanyRuc,
+        bool isTemporary = false
+    )
+    {
+        var company = ERP.Domain.Modules.Company.Entities.Company.CreateManaged(
+            TenantId,
+            ruc,
+            "Empresa receptora",
+            isTemporaryTaxIdentification: isTemporary
+        );
+        var repo = new Mock<ICompanyRepository>();
+        repo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(company);
+        return repo;
+    }
+
     private static (
         ImportPurchaseReceptionHandler handler,
         Mock<IPurchaseReceptionParser> parser,
@@ -111,7 +136,9 @@ public sealed class ImportPurchaseReceptionHandlerTests
             company.Object,
             branch.Object,
             user.Object,
-            GuayaquilClock().Object
+            GuayaquilClock().Object,
+            CompanyRepoFor().Object,
+            new Mock<IDatabaseExceptionTranslator>().Object
         );
 
         return (handler, parser, verifier, repo, creditNoteRepo);

@@ -114,10 +114,27 @@ public sealed class CreatePurchaseReceptionDraftHandlerTests
             NullLogger<CreatePurchaseReceptionDraftHandler>.Instance,
             new ERP.Application.Modules.Inventory.ItemMatching.Services.PurchaseReceptionAutoMatcher(
                 itemRepo.Object
-            )
+            ),
+            ActiveSupplierRoles().Object
         );
         SetupSupplierMock(bpRepo);
         return (handler, repo, purchaseRepo, bpRepo, detailProcessor, itemRepo);
+    }
+
+    /// <summary>H4 — operación nueva: el resolver exige rol Proveedor activo del tenant.</summary>
+    private static Mock<ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository> ActiveSupplierRoles()
+    {
+        var roles = new Mock<ERP.Domain.MasterData.Interfaces.IBusinessPartnerRoleRepository>();
+        roles
+            .Setup(r => r.GetByTypeAsync(
+                It.IsAny<Guid>(),
+                ERP.Domain.MasterData.Enums.RoleType.Supplier,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid bpId, ERP.Domain.MasterData.Enums.RoleType type, CancellationToken _) =>
+                ERP.Domain.MasterData.Entities.BusinessPartnerRole.Create(
+                    TenantId, bpId, type, UserId,
+                    ERP.Domain.MasterData.ValueObjects.SupplierRoleConfig.Create()));
+        return roles;
     }
 
     private static BusinessPartner DefaultSupplier { get; } =

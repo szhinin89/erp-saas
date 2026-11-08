@@ -17,6 +17,7 @@ export function PurchaseReceptionBatchActions({
   onDownloadPendingXml,
   progress,
   sriPaused = false,
+  canDownloadXml = true,
 }: {
   /** Comprobantes importados; null = todavía no hay importación (la barra no se muestra). */
   importedCount: number | null;
@@ -29,6 +30,8 @@ export function PurchaseReceptionBatchActions({
   progress?: ReactNode;
   /** SRI-TOGGLE-07 — emisión de la empresa pausada: la descarga consulta el SRI y se deshabilita. */
   sriPaused?: boolean;
+  /** H3 — sin purchases.create no se ofrece la descarga (la API respondería 403). */
+  canDownloadXml?: boolean;
 }) {
   const { t } = useI18n();
   if (importedCount === null) return null;
@@ -58,6 +61,7 @@ export function PurchaseReceptionBatchActions({
               ? t("purchases.reception.actions.refreshingStatuses", "Actualizando…")
               : t("purchases.reception.actions.refreshStatuses", "Actualizar estados")}
           </ZHBtn>
+          {canDownloadXml && (
           <ZHBtn
             variant="secondary"
             size="sm"
@@ -69,6 +73,7 @@ export function PurchaseReceptionBatchActions({
             <span className="material-symbols-outlined zh-icon-md">download</span>
             {t("purchases.reception.actions.downloadPendingXml", "Descargar XML pendientes")}
           </ZHBtn>
+          )}
         </div>
       </div>
       {progress ?? null}

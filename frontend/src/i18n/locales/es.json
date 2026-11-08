@@ -1991,6 +1991,8 @@
   "purchases.reception.sriPaused.message": "Emisión electrónica pausada para esta empresa",
   "purchases.reception.sriPaused.detail": "No se consulta ni descarga XML en el SRI. Los comprobantes importados se conservan y pueden registrarse manualmente.",
   "purchases.reception.sriPaused.actionHint": "Emisión electrónica pausada: no se consulta el SRI.",
+  "purchases.reception.permissions.readOnly": "Su perfil solo permite consultar la recepción electrónica.",
+  "purchases.reception.permissions.readOnlyDetail": "Importar el TXT, consultar XML y registrar comprobantes requieren el permiso de crear compras.",
   "electronicDocuments.monitor.dashboard.notAvailable": "No disponible",
   "electronicDocuments.monitor.dashboard.pending": "Pendientes",
   "electronicDocuments.monitor.dashboard.signed": "Firmados",

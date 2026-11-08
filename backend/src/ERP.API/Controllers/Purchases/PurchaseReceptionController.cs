@@ -36,6 +36,12 @@ namespace ERP.API.Controllers.Purchases;
 [Route("api/v1/purchases/reception")]
 [Authorize]
 [Produces("application/json")]
+// PURCHASES-RECEPTION-WRITE-PERMISSIONS-01 (H3): consultar exige purchases.view; importar,
+// consultar/guardar XML y preparar la compra exigen purchases.create; preparar un gasto,
+// expenses.documents.create (403 antes del handler). Conciliar líneas (match/unmatch/correct/bulk/
+// resolve) declara purchases.view como acceso al módulo y el handler exige el permiso exacto según el
+// dato (IReceptionMatchingAccess): purchases.update si ya existe una compra activa de ese comprobante,
+// purchases.create si no.
 public sealed class PurchaseReceptionController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -43,7 +49,7 @@ public sealed class PurchaseReceptionController : ControllerBase
     public PurchaseReceptionController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost("import")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Create}")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<PurchaseReceptionImportResultDto>),
@@ -60,7 +66,7 @@ public sealed class PurchaseReceptionController : ControllerBase
     }
 
     [HttpPost("{id:guid}/download-xml")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Create}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<DownloadPurchaseReceptionXmlResultDto>),
         StatusCodes.Status200OK
@@ -96,7 +102,7 @@ public sealed class PurchaseReceptionController : ControllerBase
         );
 
     [HttpPost("documents/download-xml-pending")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Create}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<BatchDownloadPurchaseReceptionXmlResultDto>),
         StatusCodes.Status200OK
@@ -113,7 +119,7 @@ public sealed class PurchaseReceptionController : ControllerBase
         );
 
     [HttpPost("{id:guid}/create-draft")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [Authorize(Policy = $"perm:{PurchasePermissions.Create}")]
     [ProducesResponseType(typeof(Contracts.ApiResponse<PurchaseDraftDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreateDraft(Guid id, CancellationToken ct) =>
         this.ToOkOrBadRequest(
@@ -126,7 +132,7 @@ public sealed class PurchaseReceptionController : ControllerBase
     /// <c>ExpenseDocument</c> — eso ocurre al guardar desde el formulario de Gastos.
     /// </summary>
     [HttpPost("{id:guid}/create-expense-draft")]
-    [Authorize(Policy = $"perm:{PurchasePermissions.View}")]
+    [Authorize(Policy = $"perm:{ExpensePermissions.DocumentsCreate}")]
     [ProducesResponseType(
         typeof(Contracts.ApiResponse<ExpenseReceptionDraftDto>),
         StatusCodes.Status200OK

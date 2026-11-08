@@ -1,6 +1,110 @@
 # Project Status
 
-## CI-1125-DB-ERROR-ASSERTION-01 — Falso positivo de confidencialidad — IMPLEMENTED / PENDING CI (2026-11-08)
+## PURCHASES-RECEPTION-SECURITY-01 — Seguridad de recepción previa a la validación SRI real — IMPLEMENTED / PENDING CI (2026-11-08)
+
+Reapertura controlada de Compras autorizada por el propietario (2026-11-08) exclusivamente para H1–H4.
+Sin migraciones ni cambios de índices; sin cambios en emisión, firma, SOAP, transiciones fiscales ni
+en `DownloadPurchaseReceptionXmlHandler` (ADR-028/ADR-046: solo cambia el permiso de su endpoint).
+Reglas vigentes: [purchases.md § 3](docs/architecture/purchases.md#3-recepción-electrónica-y-conciliación-de-ítems).
+Siguen prohibidos importar TXT auténticos y consultar el SRI real (PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01).
+
+- **PURCHASES-RECEPTION-RECEIVER-RUC-01 (H1):** `PurchaseReceptionReceiverRule` (reutiliza `RucValidator`
+  y `EcuadorIdValidator`) valida `IDENTIFICACION_RECEPTOR` de todas las filas en
+  `ImportPurchaseReceptionHandler` antes del verificador y de toda escritura: RUC exacto o cédula de
+  persona natural + `001`. Ajena, ausente o inválida → 422 del archivo completo con números de línea,
+  sin la identificación ajena. RUC temporal o inválido de la empresa → rechazo.
+- **PURCHASES-RECEPTION-CROSS-COMPANY-KEY-01 (H2):** se captura solo
+  `uq_purchase_reception_documents_tenant_access_key` (vía `IDatabaseExceptionTranslator`) → 409
+  genérico; el único `SaveChanges` revierte el archivo. Sin consulta previa entre empresas para no
+  ampliar la lista permitida de `IgnoreQueryFilters`: el índice es la comprobación del tenant.
+- **PURCHASES-RECEPTION-WRITE-PERMISSIONS-01 (H3):** lecturas `purchases.view`; importar, XML
+  individual y en lote y `create-draft` `purchases.create`; `create-expense-draft`
+  `expenses.documents.create` (403 por atributo). Las cinco operaciones de conciliación (vincular,
+  desvincular, corregir, conciliar en lote, resolver) escriben solo líneas de recepción y
+  equivalencias de código de proveedor —nunca la compra— pero sirven a dos contextos; el atributo
+  declara `purchases.view` y `IReceptionMatchingAccess` (patrón de `RetentionSourceAccess`, ADR-036
+  D-9) exige en el handler, antes de toda escritura: sin `create` ni `update` → 403 sin leer el
+  documento; con compra activa (Draft/Confirmed) del comprobante en la empresa → `purchases.update`;
+  sin ella → `purchases.create`; con la compra ya Confirmed → 409 sin escrituras en las cinco
+  operaciones (antes solo «Corregir relación» lo aplicaba: vincular, desvincular, conciliar en lote y
+  resolver podían reescribir la trazabilidad de las líneas XML de una compra confirmada); el lote
+  valida todos sus documentos antes de la primera escritura.
+  `update` nunca autoriza importar, XML ni `create-draft`, y `create` nunca concilia líneas de una
+  compra existente. NavItem Recepción expone `purchases.create` y `purchases.update`. UI de
+  recepción: sin `purchases.create` se reemplaza la carga del TXT por un aviso y se ocultan
+  Consultar XML, Descargar XML pendientes, Crear compra y Procesar NC; sin
+  `expenses.documents.create`, Crear gasto.
+- **PURCHASES-RECEPTION-SUPPLIER-RULE-01 (H4):** el verificador identifica al proveedor con socio y rol
+  del tenant, activos o no, para factura y NC (el documento histórico registrado ya no aparece como
+  «Pendiente de proveedor»); `SupplierIsActive` = socio y rol activos. `ReceptionSupplierResolver`
+  exige además el rol activo antes de escribir (borrador de compra y de gasto). La NC vinculada a una
+  compra existente se ofrece aunque el proveedor esté inactivo (el backend ya la vinculaba siempre a
+  la factura afectada del mismo proveedor, resuelta por `PurchaseInvoiceRepository` acotado a tenant
+  y empresa). La respuesta de Consultar XML (handler congelado, evalúa solo el socio) ya no reactiva
+  en pantalla una fila con rol revocado: solo puede marcarla inactiva.
+
+Revisión final (2026-11-08): matriz H3 contextual aplicada; H2 confirmado contra PostgreSQL —solo
+esa restricción se traduce (otra UNIQUE, FK 23503, longitud 22001 y fallos no SQL se propagan sin
+filas); H4 confirmado —la factura afectada de otra empresa o tenant nunca se resuelve— y sin
+acciones nuevas habilitadas para proveedor inactivo. Gate final: compra confirmada protegida en las
+cinco operaciones; ninguna otra ruta despacha los comandos de conciliación ni usa el servicio de
+equivalencias (create-draft solo autoconcilia sin compra activa).
+
+Evidencia del agente (2026-11-08, gate final): Application `ItemMatching` + `PurchaseReception` +
+`ExpenseDocumentDraftUseCasesTests` 270/270 PASS (incluye `ReceptionMatchingPermissionTests` con el
+servicio real, los cinco handlers y compra confirmada → 409 sin escrituras); integraciones PostgreSQL de
+conciliación, descarte y retención al confirmar 127/127; API `PurchaseReceptionWritePermissionHttpTests`
++ `PurchaseReturnEndToEndTests` 69/69. Revisión previa: Infrastructure focal
+45/45 (H2 PostgreSQL: dos empresas, carrera, rollback y reintento, FK 23503 y longitud 22001 no
+traducidos; resolución de líneas e integración de corrección) y `PurchaseInvoiceAffectedInvoiceResolutionTests`
+5/5 (aislamiento de la factura afectada por empresa y tenant); manifiesto `infrastructure-07` con
+cobertura de descubrimiento PASS; API `PurchaseReceptionWritePermissionHttpTests` 28/28 (incluye
+create vs update por comprobante con y sin compra borrador) y `ApiErrorContractHttpTests` 40/40;
+Domain `KernelRegistryTests` 48/48; Architecture.Tests 145/145; Vitest focal 142/142 e i18n 34/34;
+`tsc -b`, ESLint de los archivos tocados, `npm run build`, `architecture:check` (0 nuevas), guardrail
+oficial `-SkipFrontendChunk`, check documental y `git diff --check` PASS. Suite completa: no
+ejecutada (la ejecuta el propietario).
+
+Riesgos residuales:
+- Perfiles con `purchases.view` sin `purchases.create` pierden importar, XML, compra, NC y la
+  conciliación de comprobantes sin compra; sin `purchases.update` no concilian líneas de una compra
+  ya registrada. Revisar perfiles antes de desplegar (consulta de solo lectura sobre
+  `access_profile_permissions`).
+- La pantalla de Compras (formulario de compra, fuera del alcance) no oculta las acciones de
+  conciliación según el permiso; el servidor responde 403.
+- Un TXT sin la columna `IDENTIFICACION_RECEPTOR` deja de importarse; confirmar con un TXT auténtico.
+- Guardar una compra (también manual) no exige rol Proveedor activo: registrado aparte como
+  PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01, sin cambios en esta entrega.
+- Facturas con proveedor inactivo pasan de «Pendientes de proveedor» a «Por procesar» (siguen en
+  «Solo requieren atención»).
+
+### PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 — Rol Proveedor inactivo al guardar una compra — PENDING (sin trabajo abierto)
+
+Hallazgo de la revisión de H4: `CreatePurchaseDraftHandler` y `UpdatePurchaseDraftHandler`
+(`PurchaseDraftUseCases`, flujo manual y desde recepción) rechazan un socio inactivo y el alta exige la
+configuración SRI del rol Proveedor (`SupplierConfig`), pero ninguno comprueba `BusinessPartnerRole.IsActive`:
+un proveedor con el rol revocado puede recibir una compra nueva al guardar. Desde recepción el borrador
+ya lo bloquea `ReceptionSupplierResolver`; la compra manual no. Compras CLOSED: requiere reapertura
+expresa, decisión sobre borradores existentes con rol revocado y pruebas propias; sin cambios aquí.
+
+### PURCHASES-RECEPTION-SRI-QUERY-ENV-01 — Evaluación de la opción A — PENDING (sin habilitar)
+
+La consulta del XML usa `SriSettings.WsdlUrl` de la empresa (mismo ambiente que la emisión) y la pausa
+de emisión la bloquea (SRI-TOGGLE-07, ADR-023 congelado). Los comprobantes auténticos de proveedores
+solo existen en Producción (`cel.sri.gob.ec`). Opción A (sin cambios de código): base aislada, empresa
+con el RUC receptor real, ambiente Producción, emisión habilitada (requisito de la consulta) y sin
+certificado de firma. No se habilita ninguna consulta real hasta demostrar, con evidencia:
+1. Emisión: la preparación de emisión de la empresa reporta `electronicEmission.certificate`; ventas,
+   NC de venta y retenciones (incluida la de confirmar compra) no pueden emitirse; no existen puntos
+   de emisión ni pendientes automáticos de transmisión.
+2. Certificados: ningún certificado cargado y procedimiento que prohíba cargarlo en esa base.
+3. Permisos: solo un usuario de prueba con `purchases.view` y `purchases.create`; sin permisos de
+   configuración SRI, ventas, retenciones ni certificados.
+4. Red: salida limitada a `AutorizacionComprobantesOffline` de `cel.sri.gob.ec` (sin
+   `RecepcionComprobantesOffline`).
+5. Base: servidor, base y entorno efectivos mostrados y confirmados por el propietario; no producción.
+
+## CI-1125-DB-ERROR-ASSERTION-01 — Falso positivo de confidencialidad — CLOSED (2026-11-08)
 
 BUG REAL de prueba: buscar `5432` en todo el JSON confundía el identificador opaco de
 correlación con un puerto expuesto. Reproducción determinista con identificador fijo:
@@ -14,10 +118,11 @@ y Development, e identificador/timestamp que contienen `5432`. Guardrail PowerSh
 `-SkipFrontendChunk`, `architecture:check` (147/147, sin violaciones nuevas), check
 documental y `git diff --check` PASS. Sin cambios productivos, ProductPicker ni reglas contables.
 Gate independiente del propietario: filtro `ExceptionClassificationTests`, exit code 0
-confirmado (2026-11-08). Publicación de estos dos archivos autorizada expresamente;
-pendiente confirmar CI remoto exitoso.
+confirmado (2026-11-08). Cierre (2026-11-08): publicado en
+`76432638ca888f8e7971288b12a0bf2ff8440045`; CI #1127 SUCCESS, verificado directamente en
+GitHub Actions por el propietario.
 
-## PURCHASES-PRODUCT-PICKER-RACE-01 — Carrera de foco en ProductPicker — IMPLEMENTED / PENDING CI (2026-11-08)
+## PURCHASES-PRODUCT-PICKER-RACE-01 — Carrera de foco en ProductPicker — CLOSED (2026-11-08)
 
 Compras sigue CLOSED; reabierto solo para este defecto (hallazgo registrado en
 PURCHASES-RECEPTION-FILTERS-01). Solo frontend: sin cambios de API, contratos, props ni otros módulos.
@@ -37,13 +142,18 @@ temporal del componente anterior (eliminada): las 6 pruebas nuevas fallan 6/6; c
 (`PurchaseLineBreakdownModal`, `CorrectSupplierMatchModal`, `ResolvePendingProductsModal*`) 40/40;
 `tsc -b`, ESLint de los archivos tocados, `npm run build`, guardrail oficial `-SkipFrontendChunk`,
 `architecture:check` (0 violaciones nuevas) y `git diff --check` PASS. Suite completa no ejecutada.
-PENDING: CI remoto y ejecución ampliada (63 archivos) del propietario sin la intermitencia previa.
+Cierre autorizado por el propietario (2026-11-08): corrección publicada en
+`218a33b9f9497fb9f85650811d2fe8d6d945c307`; CI #1126 SUCCESS, verificado directamente
+en GitHub Actions por el propietario.
+
+Pendiente separado de aceptación: ejecución ampliada (63 archivos) del propietario sin la
+intermitencia previa; no acreditada por este cierre. Seguimiento en la [cola de trabajo](docs/agent/WORK_QUEUE.md).
 
 Hallazgo independiente **ITEMS-LOOKUP-PICKER-FOCUS-RACE-01** (PENDING; Items FROZEN, no reabierto):
 `ItemLookupPicker.tsx` reinicia `focusIdx` con `useEffect(..., [results])`, mismo patrón de
 carrera. No reproducido con prueba; sin cambios. Registrado en la [cola de trabajo](docs/agent/WORK_QUEUE.md).
 
-## ACCOUNTING-CHART-INTEGRITY-01 — Integridad del Plan de cuentas — IMPLEMENTED / PENDING CI (2026-11-08)
+## ACCOUNTING-CHART-INTEGRITY-01 — Integridad del Plan de cuentas — CLOSED (2026-11-08)
 
 Protecciones de servidor para crear, editar, activar y desactivar cuentas; reglas en
 [accounting.md § Core y configuración contable](docs/architecture/accounting.md#core-y-configuración-contable).
@@ -78,6 +188,13 @@ movimiento en el padre); HTTP `InternalCapabilitiesHttpTests` del Plan de cuenta
 descubrimiento PASS; `dotnet build` de la solución sin errores; guardrail oficial
 `-SkipFrontendChunk` y `architecture:check` (0 violaciones nuevas) PASS. Perfil CI previsto:
 completo (`tools/ci/backend-test-groups.json` no pertenece a ninguna lista selectiva).
+
+Cierre autorizado por el propietario (2026-11-08): CI #1127 SUCCESS sobre
+`76432638ca888f8e7971288b12a0bf2ff8440045`, verificado directamente en GitHub Actions
+por el propietario. Antecedente: CI #1125 falló por el falso positivo de la prueba API
+de confidencialidad (búsqueda de `5432` en el JSON completo, incluido `correlationId`);
+la corrección de esa prueba quedó publicada en el commit de CI #1127, sin cambios productivos.
+Se conservan los riesgos residuales y el diagnóstico previo al despliegue descritos aquí.
 
 Limitación registrada (PENDING, sin trabajo abierto): las configuraciones de otros módulos no
 toman el lock del Plan de cuentas; una asignación de cuenta concurrente con su desactivación o con

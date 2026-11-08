@@ -149,7 +149,11 @@ export function usePurchaseReceptionPage() {
                       // FASE 5 PURCHASE-UX — la descarga refresca el estado real de la compra.
                       purchaseState: download.purchaseState ?? item.purchaseState,
                       cancelledPurchaseId: download.cancelledPurchaseId ?? null,
-                      supplierIsActive: download.supplierIsActive,
+                      // H4 — la descarga (handler congelado) solo evalúa el socio; la fila ya trae
+                      // socio + rol del verificador. Solo puede bajar a inactivo, nunca reactivar:
+                      // reactivar lo decide "Actualizar estados" con la regla completa.
+                      supplierIsActive:
+                        download.supplierIsActive === false ? false : item.supplierIsActive,
                       expenseExists: download.expenseExists,
                       supplierTradeName:
                         download.supplierTradeName ?? item.supplierTradeName,

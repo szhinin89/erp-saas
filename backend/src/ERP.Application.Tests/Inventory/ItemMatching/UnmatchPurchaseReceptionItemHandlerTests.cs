@@ -125,7 +125,8 @@ public sealed class UnmatchPurchaseReceptionItemHandlerTests
             documentRepo.Object,
             new ItemMatchConfirmationService(itemRepo.Object),
             tenant.Object,
-            user.Object
+            user.Object,
+            ReceptionMatchingAccessDoubles.AllowAll()
         );
 
         return (documentRepo, itemRepo, handler);
@@ -237,7 +238,8 @@ public sealed class UnmatchPurchaseReceptionItemHandlerTests
             documentRepo.Object,
             new ItemMatchConfirmationService(itemRepo.Object),
             tenant.Object,
-            user.Object
+            user.Object,
+            ReceptionMatchingAccessDoubles.AllowAll()
         );
 
         var result = await handler.Handle(

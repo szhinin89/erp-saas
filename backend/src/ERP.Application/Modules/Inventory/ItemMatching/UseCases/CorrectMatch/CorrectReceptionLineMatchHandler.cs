@@ -31,7 +31,8 @@ public sealed class CorrectReceptionLineMatchHandler(
     ICurrentCompany company,
     ICurrentBranch branch,
     ICurrentUser user,
-    IDatabaseExceptionTranslator databaseExceptions
+    IDatabaseExceptionTranslator databaseExceptions,
+    IReceptionMatchingAccess access
 ) : IRequestHandler<CorrectReceptionLineMatchCommand, Result<CorrectReceptionLineMatchResultDto>>
 {
     public async Task<Result<CorrectReceptionLineMatchResultDto>> Handle(
@@ -39,6 +40,9 @@ public sealed class CorrectReceptionLineMatchHandler(
         CancellationToken cancellationToken
     )
     {
+        if (!await access.CanMatchInAnyContextAsync(cancellationToken))
+            return Result<CorrectReceptionLineMatchResultDto>.Forbidden(ReceptionMatchingAccess.ForbiddenMessage);
+
         var document = await documents.GetByLineIdAsync(
             tenant.TenantId,
             cmd.PurchaseReceptionLineId,
@@ -52,6 +56,12 @@ public sealed class CorrectReceptionLineMatchHandler(
             return Result<CorrectReceptionLineMatchResultDto>.NotFound(
                 "La línea de recepción no existe."
             );
+        // La compra Confirmed la rechaza la regla propia de abajo (mensaje existente); aquí solo el permiso.
+        if (
+            await access.DecideAsync(document, cancellationToken)
+            == ReceptionMatchingDecision.Forbidden
+        )
+            return Result<CorrectReceptionLineMatchResultDto>.Forbidden(ReceptionMatchingAccess.ForbiddenMessage);
         if (
             document.Status
             is not (

@@ -16,15 +16,18 @@ public sealed class MatchItemHandler
     private readonly IItemMatchConfirmationService _confirmationService;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
+    private readonly IReceptionMatchingAccess _access;
 
     public MatchItemHandler(
         IPurchaseReceptionDocumentRepository documentRepo,
         IItemRepository itemRepo,
         IItemMatchConfirmationService confirmationService,
         ICurrentTenant tenant,
-        ICurrentUser user
+        ICurrentUser user,
+        IReceptionMatchingAccess access
     )
     {
+        _access = access;
         _documentRepo = documentRepo;
         _itemRepo = itemRepo;
         _confirmationService = confirmationService;
@@ -37,6 +40,9 @@ public sealed class MatchItemHandler
         CancellationToken cancellationToken
     )
     {
+        if (!await _access.CanMatchInAnyContextAsync(cancellationToken))
+            return Result<PurchaseReceptionLineMatchDto>.Forbidden(ReceptionMatchingAccess.ForbiddenMessage);
+
         var document = await _documentRepo.GetByLineIdAsync(
             _tenant.TenantId,
             request.PurchaseReceptionLineId,
@@ -46,6 +52,9 @@ public sealed class MatchItemHandler
             return Result<PurchaseReceptionLineMatchDto>.NotFound(
                 "La línea de recepción no existe."
             );
+        var matchingDecision = await _access.DecideAsync(document, cancellationToken);
+        if (matchingDecision != ReceptionMatchingDecision.Allowed)
+            return ReceptionMatchingAccess.Reject<PurchaseReceptionLineMatchDto>(matchingDecision);
 
         var line = document.Lines.First(l => l.Id == request.PurchaseReceptionLineId);
 

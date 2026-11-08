@@ -107,6 +107,7 @@ public sealed class CreateExpenseDraftFromReceptionHandler
         var resolved = await ReceptionSupplierResolver.ResolveAsync(
             document,
             _bpRepo,
+            _roles,
             _documentRepo,
             _tenant.TenantId,
             _user.UserId,
@@ -115,17 +116,6 @@ public sealed class CreateExpenseDraftFromReceptionHandler
         if (!resolved.IsSuccess)
             return Result<ExpenseReceptionDraftDto>.Failure(resolved.Error!, resolved.Code);
         var supplier = resolved.Value!;
-        var supplierId = supplier.Id;
-
-        var role = await _roles.GetByTypeAsync(
-            supplierId,
-            ERP.Domain.MasterData.Enums.RoleType.Supplier,
-            cancellationToken
-        );
-        if (role is null || !role.IsActive || role.TenantId != _tenant.TenantId)
-            return Result<ExpenseReceptionDraftDto>.ValidationFailure(
-                "El tercero no tiene un rol de proveedor activo."
-            );
 
         if (document.DocTypeCode != "01")
             return Result<ExpenseReceptionDraftDto>.ValidationFailure(

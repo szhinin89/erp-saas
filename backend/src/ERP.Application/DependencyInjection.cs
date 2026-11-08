@@ -143,6 +143,11 @@ public static class DependencyInjection
         >();
         services.AddScoped<IRetentionElectronicTransmission, RetentionElectronicTransmission>();
         services.AddScoped<IRetentionSourceAccess, RetentionSourceAccess>();
+        // PURCHASES-RECEPTION-WRITE-PERMISSIONS-01 (H3) — permiso contextual de la conciliación de recepción.
+        services.AddScoped<
+            ERP.Application.Modules.Inventory.ItemMatching.Services.IReceptionMatchingAccess,
+            ERP.Application.Modules.Inventory.ItemMatching.Services.ReceptionMatchingAccess
+        >();
         // ZH-RETENTION-SRI-ANNULMENT-01/01B — anulación ante el SRI de retenciones autorizadas (solicitud
         // asistida; verificación automática vía ISriDocumentStatusQuery / ConsultaComprobante, registrado en
         // Infrastructure). La finalización reutiliza el flujo oficial de anulación de

@@ -17,6 +17,8 @@ export function PurchaseReceptionActionsCell({
   onProcessCreditNote,
   resolvingCreditNoteId,
   sriPaused = false,
+  canProcess = true,
+  canCreateExpense = true,
 }: {
   row: PurchaseReceptionItem;
   xmlState: "loading" | "error" | undefined;
@@ -26,6 +28,10 @@ export function PurchaseReceptionActionsCell({
   resolvingCreditNoteId: string | null;
   /** SRI-TOGGLE-07 — emisión de la empresa pausada: "Consultar XML" llama al SRI y se deshabilita. */
   sriPaused?: boolean;
+  /** H3 — purchases.create: consultar XML, crear compra y procesar NC (la API responde 403 sin él). */
+  canProcess?: boolean;
+  /** H3 — expenses.documents.create: crear gasto desde la recepción. */
+  canCreateExpense?: boolean;
 }) {
   const { t } = useI18n();
   // FASE 5 PURCHASE-UX — estado REAL de la compra relacionada (SSOT): textos y acciones.
@@ -48,7 +54,7 @@ export function PurchaseReceptionActionsCell({
     </ZHBtn>
   );
 
-  const consultXmlButton = row.documentStatus === "IMPORTED" && (
+  const consultXmlButton = canProcess && row.documentStatus === "IMPORTED" && (
     <ZHBtn variant="secondary" size="xs" type="button"
       disabled={xmlState === "loading" || sriPaused}
       title={sriPaused ? t("purchases.reception.sriPaused.actionHint", "Emisión electrónica pausada: no se consulta el SRI.") : undefined}
@@ -74,37 +80,6 @@ export function PurchaseReceptionActionsCell({
             onClick={() => openPurchase(row.purchaseId as string)}
           >
             {t(purchaseView.actionLabel.key, purchaseView.actionLabel.fallback)}
-          </ZHBtn>
-        )}
-        {viewXmlButton}
-      </div>
-    );
-  }
-
-  if (row.supplierExists && row.supplierIsActive === false) {
-    return (
-      <div className="pur-actions-cell">
-        <Badge
-          variant="warning"
-          label={t(
-            "purchases.reception.supplier.inactive",
-            "Proveedor inactivo",
-          )}
-        />
-        {row.supplierId && (
-          <ZHBtn
-            variant="secondary"
-            size="xs"
-            type="button"
-            onClick={() =>
-              window.open(
-                `/masterdata/business-partners/${row.supplierId}`,
-                "_blank",
-                "noopener,noreferrer",
-              )
-            }
-          >
-            {t("purchases.reception.supplier.viewButton", "Ver proveedor")}
           </ZHBtn>
         )}
         {viewXmlButton}
@@ -149,6 +124,13 @@ export function PurchaseReceptionActionsCell({
       const isReprocessing = Boolean(row.cancelledCreditNoteId);
       return (
         <div className="pur-actions-cell">
+          {row.supplierIsActive === false && (
+            <Badge
+              variant="warning"
+              label={t("purchases.reception.supplier.inactive", "Proveedor inactivo")}
+            />
+          )}
+          {canProcess && (
           <ZHBtn
             variant="primary"
             size="xs"
@@ -161,6 +143,7 @@ export function PurchaseReceptionActionsCell({
               ? t("purchases.creditNote.actions.reprocessNc", "Reprocesar NC")
               : t("purchases.creditNote.actions.processNc", "Procesar NC")}
           </ZHBtn>
+          )}
           {isReprocessing && (
             <ZHBtn
               variant="secondary"
@@ -205,9 +188,42 @@ export function PurchaseReceptionActionsCell({
     );
   }
 
+  // PURCHASES-RECEPTION-SUPPLIER-RULE-01 (H4) — operación nueva (compra/gasto) con proveedor
+  // inactivo: no se ofrece. La NC se resuelve antes: siempre afecta una compra existente.
+  if (row.supplierExists && row.supplierIsActive === false) {
+    return (
+      <div className="pur-actions-cell">
+        <Badge
+          variant="warning"
+          label={t(
+            "purchases.reception.supplier.inactive",
+            "Proveedor inactivo",
+          )}
+        />
+        {row.supplierId && (
+          <ZHBtn
+            variant="secondary"
+            size="xs"
+            type="button"
+            onClick={() =>
+              window.open(
+                `/masterdata/business-partners/${row.supplierId}`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            {t("purchases.reception.supplier.viewButton", "Ver proveedor")}
+          </ZHBtn>
+        )}
+        {viewXmlButton}
+      </div>
+    );
+  }
+
   return (
     <div className="pur-actions-cell">
-      {row.documentStatus === "IMPORTED" && (
+      {canProcess && row.documentStatus === "IMPORTED" && (
         <ZHBtn
           variant="secondary"
           size="xs"
@@ -236,6 +252,7 @@ export function PurchaseReceptionActionsCell({
           {/* FASE 5 PURCHASE-UX — sin compra activa: compra anulada (Reprocesar compra) o
               borrador descartado (Crear compra), cada uno con su historial. El badge de estado
               vive en "Registro ERP". */}
+          {canProcess && (
           <ZHBtn
             variant="primary"
             size="xs"
@@ -267,6 +284,7 @@ export function PurchaseReceptionActionsCell({
           >
             {t(purchaseView.actionLabel.key, purchaseView.actionLabel.fallback)}
           </ZHBtn>
+          )}
           {purchaseView.history && row.cancelledPurchaseId && (
             <ZHBtn
               variant="secondary"
@@ -279,6 +297,7 @@ export function PurchaseReceptionActionsCell({
           )}
           {row.sourceDocType === "INVOICE" && (
             <>
+              {canCreateExpense && (
               <ZHBtn variant="secondary" size="xs" type="button"
                 disabled={!row.supplierExists || row.supplierIsActive === false}
                 title={
@@ -297,6 +316,7 @@ export function PurchaseReceptionActionsCell({
                   ? t("purchases.reception.actions.reprocessExpense", "Reprocesar gasto")
                   : t("purchases.reception.actions.createExpense", "Crear gasto")}
               </ZHBtn>
+              )}
               {row.cancelledExpenseId && (
                 <ZHBtn
                   variant="secondary"
@@ -315,7 +335,7 @@ export function PurchaseReceptionActionsCell({
               )}
             </>
           )}
-          {!row.supplierExists && (
+          {(canProcess || canCreateExpense) && !row.supplierExists && (
             <p className="pur-actions-hint">
               {t(
                 "purchases.reception.actions.createPurchaseDisabledSupplierMissing",
@@ -323,7 +343,7 @@ export function PurchaseReceptionActionsCell({
               )}
             </p>
           )}
-          {row.supplierExists && row.supplierIsActive === false && (
+          {(canProcess || canCreateExpense) && row.supplierExists && row.supplierIsActive === false && (
             <p className="pur-actions-hint">
               {t(
                 "purchases.reception.actions.createPurchaseDisabledSupplierInactive",

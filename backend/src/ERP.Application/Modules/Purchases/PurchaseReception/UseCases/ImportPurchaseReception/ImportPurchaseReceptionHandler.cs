@@ -1,12 +1,15 @@
 using ERP.Application.Modules.Purchases.PurchaseReception.Services;
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Services;
 using ERP.Application.Modules.Purchases.PurchaseReception.DTOs;
 using ERP.Application.Modules.Purchases.PurchaseReception.Mapping;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Purchases.Interfaces;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Entities;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Enums;
 using ERP.Domain.Modules.Purchases.PurchaseReception.Interfaces;
+using ERP.Domain.Modules.Purchases.PurchaseReception.Models;
 using MediatR;
 
 namespace ERP.Application.Modules.Purchases.PurchaseReception.UseCases.ImportPurchaseReception;
@@ -23,6 +26,15 @@ public sealed class ImportPurchaseReceptionHandler
     private readonly ICurrentBranch _branch;
     private readonly ICurrentUser _user;
     private readonly ICompanyClock _companyClock;
+    private readonly ICompanyRepository _companyRepo;
+    private readonly IDatabaseExceptionTranslator _dbEx;
+
+    /// <summary>Índice tenant + clave de acceso (H2): única violación que se traduce aquí.</summary>
+    public const string AccessKeyUniqueConstraint =
+        "uq_purchase_reception_documents_tenant_access_key";
+
+    public const string AccessKeyConflictMessage =
+        "No se importó ningún documento: uno o más comprobantes del archivo ya están registrados en el sistema y no pertenecen a la empresa activa o se registraron al mismo tiempo. Vuelva a importar el archivo; si persiste, revise el origen del TXT.";
 
     public ImportPurchaseReceptionHandler(
         IPurchaseReceptionParser parser,
@@ -33,9 +45,13 @@ public sealed class ImportPurchaseReceptionHandler
         ICurrentCompany company,
         ICurrentBranch branch,
         ICurrentUser user,
-        ICompanyClock companyClock
+        ICompanyClock companyClock,
+        ICompanyRepository companyRepo,
+        IDatabaseExceptionTranslator dbEx
     )
     {
+        _companyRepo = companyRepo;
+        _dbEx = dbEx;
         _companyClock = companyClock;
         _parser = parser;
         _verifier = verifier;
@@ -53,6 +69,15 @@ public sealed class ImportPurchaseReceptionHandler
     )
     {
         var parseResult = await _parser.ParseAsync(request.File.Content, cancellationToken);
+
+        // PURCHASES-RECEPTION-RECEIVER-RUC-01 (H1): todas las filas deben pertenecer a la empresa
+        // operativa antes de consultar o escribir nada; una sola fila ajena rechaza el archivo.
+        if (parseResult.Records.Count > 0)
+        {
+            var receiverError = await ValidateReceiverAsync(parseResult.Records, cancellationToken);
+            if (receiverError is not null)
+                return Result<PurchaseReceptionImportResultDto>.ValidationFailure(receiverError);
+        }
 
         var verifiedItems = await _verifier.VerifyAsync(parseResult.Records, cancellationToken);
 
@@ -140,7 +165,20 @@ public sealed class ImportPurchaseReceptionHandler
 
         if (hasChanges)
         {
-            await _documentRepo.SaveChangesAsync(cancellationToken);
+            // PURCHASES-RECEPTION-CROSS-COMPANY-KEY-01 (H2): la clave de acceso es única por tenant
+            // pero las búsquedas se acotan a la empresa. Un único SaveChanges (transacción implícita)
+            // hace que el conflicto revierta el archivo completo; la respuesta no revela la empresa.
+            try
+            {
+                await _documentRepo.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+                when (_dbEx.TryGetUniqueViolation(ex, out var info)
+                    && info.ConstraintName == AccessKeyUniqueConstraint
+                )
+            {
+                return Result<PurchaseReceptionImportResultDto>.Conflict(AccessKeyConflictMessage);
+            }
         }
 
         var dto = new PurchaseReceptionImportResultDto(
@@ -150,5 +188,24 @@ public sealed class ImportPurchaseReceptionHandler
             parseResult.SkippedUnsupportedCount
         );
         return Result<PurchaseReceptionImportResultDto>.Success(dto);
+    }
+
+    private async Task<string?> ValidateReceiverAsync(
+        IReadOnlyList<PurchaseReceptionRecord> records,
+        CancellationToken cancellationToken
+    )
+    {
+        var company = await _companyRepo.GetByIdAsync(_company.CompanyId, cancellationToken);
+        if (
+            company is null
+            || company.TenantId != _tenant.TenantId
+            || !PurchaseReceptionReceiverRule.IsCompanyRucUsable(
+                company.TaxIdentificationNumber,
+                company.IsTemporaryTaxIdentification
+            )
+        )
+            return "No se importó ningún documento: la empresa activa no tiene un RUC definitivo válido para verificar el receptor de los comprobantes.";
+
+        return PurchaseReceptionReceiverRule.FindRejection(company.TaxIdentificationNumber, records);
     }
 }

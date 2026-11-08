@@ -237,7 +237,8 @@ public sealed class CorrectReceptionLineMatchHandlerTests
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId),
-                Mock.Of<IDatabaseExceptionTranslator>()
+                Mock.Of<IDatabaseExceptionTranslator>(),
+                ReceptionMatchingAccessDoubles.AllowAll()
             );
 
         public Task<Result<CorrectReceptionLineMatchResultDto>> CorrectAsync(Guid? levelId = null) =>

@@ -1922,6 +1922,8 @@
   "purchases.reception.sriPaused.message": "Electronic issuance paused for this company",
   "purchases.reception.sriPaused.detail": "No XML is queried or downloaded from the SRI. Imported documents are kept and can be registered manually.",
   "purchases.reception.sriPaused.actionHint": "Electronic issuance paused: the SRI is not queried.",
+  "purchases.reception.permissions.readOnly": "Your profile can only view electronic reception.",
+  "purchases.reception.permissions.readOnlyDetail": "Importing the TXT, querying XML and registering documents require the create purchases permission.",
   "electronicDocuments.monitor.dashboard.notAvailable": "Not available",
   "electronicDocuments.monitor.dashboard.pending": "Pending",
   "electronicDocuments.monitor.dashboard.signed": "Signed",

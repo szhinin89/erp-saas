@@ -134,7 +134,8 @@ public sealed class BulkMatchItemsHandlerTests
             itemRepo.Object,
             new ItemMatchConfirmationService(itemRepo.Object),
             tenant.Object,
-            user.Object
+            user.Object,
+            ReceptionMatchingAccessDoubles.AllowAll()
         );
 
         var result = await handler.Handle(

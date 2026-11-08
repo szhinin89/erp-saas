@@ -29,7 +29,7 @@ namespace ERP.Infrastructure.Tests.Persistence;
 /// hay a lo sumo una fila activa por proveedor+número, sin ambigüedad posible). Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
-public sealed class PurchaseInvoiceAffectedInvoiceResolutionTests : IAsyncLifetime
+public sealed partial class PurchaseInvoiceAffectedInvoiceResolutionTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")

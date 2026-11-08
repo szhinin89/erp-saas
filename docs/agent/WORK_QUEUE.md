@@ -8,20 +8,29 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Producción NO-GO. Estado y gates en
   [STATUS](../../STATUS.md).
-- ACCOUNTING-CHART-INTEGRITY-01 (IMPLEMENTED / PENDING CI): invariantes I1–I4 aprobadas por el
-  propietario (2026-11-08) e implementadas en el servidor; pendiente la publicación y su CI.
-  Riesgos residuales en [STATUS](../../STATUS.md): concurrencia con otros módulos, vínculo de forma
-  de pago sin desvinculación directa y diagnóstico de datos antes de desplegar en otras bases.
-- PURCHASES-PRODUCT-PICKER-RACE-01 (IMPLEMENTED / PENDING CI; Compras CLOSED, reabierto solo para
-  este defecto): reinicio de `focusIdx` con `useLayoutEffect` y pruebas deterministas; pendiente la
-  publicación, su CI y la ejecución ampliada del propietario. Evidencia en [STATUS](../../STATUS.md).
+- Aceptación ampliada de ProductPicker (PENDING; separado de PURCHASES-PRODUCT-PICKER-RACE-01,
+  CLOSED con CI #1126 SUCCESS): ejecución ampliada de 63 archivos por el propietario sin la
+  intermitencia previa; aún no acreditada. Cierre y evidencia en [STATUS](../../STATUS.md).
 - ITEMS-LOOKUP-PICKER-FOCUS-RACE-01 (PENDING; Items FROZEN, no reabierto): `ItemLookupPicker`
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
 - PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 (PENDING de aceptación funcional): prueba de extremo a
   extremo de `/purchases/reception` con un TXT auténtico autorizado del SRI, en entorno de pruebas,
-  sin fabricar datos ni escribir en producción.
+  sin fabricar datos ni escribir en producción. Bloqueada hasta cerrar PURCHASES-RECEPTION-SECURITY-01 y
+  PURCHASES-RECEPTION-SRI-QUERY-ENV-01 ([STATUS](../../STATUS.md)); hasta entonces no se importan TXT
+  auténticos ni se consulta el SRI real.
+- PURCHASES-RECEPTION-SECURITY-01 (IMPLEMENTED / PENDING CI; reapertura de Compras solo para H1–H4):
+  RECEIVER-RUC-01 (receptor del TXT), CROSS-COMPANY-KEY-01 (conflicto de clave entre empresas),
+  WRITE-PERMISSIONS-01 (permisos de escritura y UI) y SUPPLIER-RULE-01 (regla única del proveedor).
+  Pendiente: revisión técnica, publicación, CI y revisión de perfiles antes de desplegar. Evidencia
+  y riesgos en [STATUS](../../STATUS.md).
+- PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 (PENDING; Compras CLOSED, requiere reapertura): guardar
+  una compra (alta y actualización del borrador, también manual) no exige rol Proveedor activo.
+  Registro en [STATUS](../../STATUS.md); sin trabajo abierto.
+- PURCHASES-RECEPTION-SRI-QUERY-ENV-01 (PENDING; ADR-023 congelado): evaluación de la opción A registrada
+  en [STATUS](../../STATUS.md); ninguna consulta real hasta demostrar aislamiento de emisión,
+  certificados, permisos y red.
 - PURCHASES-RECEPTION-XML-ATTEMPT-01 (PENDING; requiere backend y migración): historial persistente
   de intentos y resultados de consulta XML. Antes de intervenir el handler congelado, revisar
   ADR-028/ADR-046, migraciones, privacidad y aislamiento; esta cola no autoriza alterar contratos

@@ -49,29 +49,10 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
 
         foreach (var record in records)
         {
-            var supplierExists = false;
-            bool? supplierIsActive = null;
-
-            var businessPartner = await _bpRepo.GetByIdentificationAsync(
-                TaxIdentification.SriRuc,
+            var (supplierExists, supplierIsActive, supplierId) = await ResolveSupplierAsync(
                 record.SupplierRuc,
                 cancellationToken
             );
-            if (businessPartner is not null)
-            {
-                supplierIsActive = businessPartner.IsActive;
-                var supplierRole = await _roleRepo.GetByTypeAsync(
-                    businessPartner.Id,
-                    RoleType.Supplier,
-                    cancellationToken
-                );
-                supplierExists = supplierRole is not null;
-                if (record.SourceDocType == PurchaseReceptionSourceDocType.Invoice)
-                    supplierExists =
-                        businessPartner.TenantId == _tenant.TenantId
-                        && supplierRole is { IsActive: true }
-                        && supplierRole.TenantId == _tenant.TenantId;
-            }
 
             var purchase = PurchaseReceptionPurchaseInfo.None;
             var expenseExists = false;
@@ -108,8 +89,6 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
                     ? PurchaseReceptionStatus.Imported
                 : supplierExists ? PurchaseReceptionStatus.Pending
                 : PurchaseReceptionStatus.NewSupplier;
-
-            var supplierId = supplierExists ? businessPartner?.Id : null;
 
             var affectedPurchaseExists = false;
             Guid? affectedPurchaseId = null;
@@ -149,5 +128,37 @@ public sealed class PurchaseReceptionVerifier : IPurchaseReceptionVerifier
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// PURCHASES-RECEPTION-SUPPLIER-RULE-01 (H4) — misma regla para factura y NC: el proveedor está
+    /// identificado si el socio y su rol Proveedor son del tenant, activos o no, para reconocer los
+    /// documentos históricos ya registrados. El estado activo (socio y rol) se informa aparte; las
+    /// operaciones nuevas lo exigen en el servidor (<c>ReceptionSupplierResolver</c>), salvo la NC,
+    /// que siempre se vincula a una compra existente del mismo proveedor
+    /// (<c>CreateDraftPurchaseCreditNoteHandler</c>).
+    /// </summary>
+    private async Task<(bool Exists, bool? IsActive, Guid? SupplierId)> ResolveSupplierAsync(
+        string supplierRuc,
+        CancellationToken cancellationToken
+    )
+    {
+        var businessPartner = await _bpRepo.GetByIdentificationAsync(
+            TaxIdentification.SriRuc,
+            supplierRuc,
+            cancellationToken
+        );
+        if (businessPartner is null || businessPartner.TenantId != _tenant.TenantId)
+            return (false, null, null);
+
+        var supplierRole = await _roleRepo.GetByTypeAsync(
+            businessPartner.Id,
+            RoleType.Supplier,
+            cancellationToken
+        );
+        if (supplierRole is null || supplierRole.TenantId != _tenant.TenantId)
+            return (false, null, null);
+
+        return (true, businessPartner.IsActive && supplierRole.IsActive, businessPartner.Id);
     }
 }

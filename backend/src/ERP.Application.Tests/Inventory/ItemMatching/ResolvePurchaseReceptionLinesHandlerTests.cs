@@ -136,7 +136,8 @@ public sealed class ResolvePurchaseReceptionLinesHandlerTests
                 Mock.Of<ICurrentCompany>(c => c.CompanyId == CompanyId),
                 Mock.Of<ICurrentBranch>(b => b.BranchId == BranchId),
                 Mock.Of<ICurrentUser>(u => u.UserId == UserId && u.Role == "Compras"),
-                DbExceptions.Object
+                DbExceptions.Object,
+                ReceptionMatchingAccessDoubles.AllowAll()
             );
     }
 
