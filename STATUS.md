@@ -1,5 +1,20 @@
 # Project Status
 
+## CI-1131 — Conciliación documental del estado V1 — CLOSED (2026-11-09)
+
+El propietario confirma [CI #1131](https://github.com/szhinin89/erp-saas/actions/runs/42611968088)
+SUCCESS (2026-11-09, 18 min 7 s) sobre `main`, commit `11112639ec7e99971ccf223b0282bc8c778f865e`
+(`docs: reconcile historical V1 production no-go records`), que concilia los registros históricos
+de producción NO-GO. Ejecución `42611968088`: 21 jobs, 20 exitosos, 0 fallidos y 1 omitido
+(`publish`). Valida la entrega documental; no acredita instalación, despliegue ni puesta en producción.
+
+- **V1 funcional:** 70/70 capacidades aprobadas — CLOSED.
+- **SEC-A01:** implementación CLOSED; verificaciones del servidor productivo pendientes
+  ([registro](#sec-a01--límites-de-intentos-de-login--implementación-v1-closed--despliegue-verificaciones-pendientes-2026-11-03)).
+- **Producción: NO-GO** hasta completar los controles de instalación, seguridad y operación.
+- Los módulos funcionales cerrados no se reabren; los pendientes independientes de
+  [WORK_QUEUE](docs/agent/WORK_QUEUE.md) conservan sus estados actuales.
+
 ## PURCHASES-RECEPTION-SRI-REAL-EVIDENCE-01 — Pruebas con documentos SRI auténticos — CLOSED (2026-11-08)
 
 Registro de evidencia histórica; no abre trabajo ni cambia los estados CLOSED de Recepción, Compras e
