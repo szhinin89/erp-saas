@@ -1004,7 +1004,7 @@ actor e instante en Company, es definitivo e idempotente y conserva el historial
 lotes de saldos de inventario/CxC/CxP, contabilizarlos y publicar/reversar el ASI;
 la fecha de apertura queda bloqueada con el mismo mensaje. Los catálogos de
 productos/clientes/proveedores siguen disponibles. No existe operación de reapertura.
-Evidencia y aprobación: [STATUS](../../STATUS.md#v1-configuration-initialload-01--capacidades-aprobadas--ready-for-review-2026-11-04).
+Evidencia y aprobación: [STATUS](../../STATUS.md#v1-configuration-initialload-01--capacidades-aprobadas-commit-98f7eae11-cubierto-por-ci-1094-success-2026-11-04).
 
 Contrato vigente trasladado desde el catálogo de capacidades de `FEATURES.md`;
 no cambia el comportamiento ni acredita nuevas pruebas. Estado: [STATUS](../../STATUS.md).

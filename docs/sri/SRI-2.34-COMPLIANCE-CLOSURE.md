@@ -253,7 +253,7 @@ ni certificados. El agente no volvió a consultar ni transmitir al SRI ni modifi
 retención real. Corrección de lecturas XML/RIDE: Application **25/25 PASS** y controlador
 **17/17 PASS**, con respuesta SOAP sanitizada y sin red; no sustituyen la aceptación real.
 La aprobación y el porcentaje global viven en
-[STATUS — cierre funcional V1](../../STATUS.md#v1-functional-close-01--cierre-funcional-aprobado-2026-11-04).
+[STATUS — cierre funcional V1](../../STATUS.md#v1-functional-close-01--cierre-funcional-aprobado-commit-a84a0aeb9-cubierto-por-ci-1094-success-2026-11-04).
 Esta evidencia no acredita una anulación real nueva, ni aprueba producción o resuelve
 otros incidentes y pendientes externos.
 

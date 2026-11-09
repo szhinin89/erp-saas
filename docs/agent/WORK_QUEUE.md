@@ -6,7 +6,8 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
 - SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
-  concurrencia y cola, y evaluar el bloqueo temporal dirigido. Producción NO-GO. Estado y gates en
+  concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son
+  comprobaciones de configuración del servidor productivo previas al despliegue. Estado y gates en
   [STATUS](../../STATUS.md).
 - Aceptación ampliada de ProductPicker (PENDING; separado de PURCHASES-PRODUCT-PICKER-RACE-01,
   CLOSED con CI #1126 SUCCESS): ejecución ampliada de 63 archivos por el propietario sin la

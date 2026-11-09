@@ -1387,7 +1387,12 @@ git diff --check
 git status --short
 ```
 
-## RIDE-GOLDEN-DETERMINISM-01 — READY FOR REVIEW (2026-11-04)
+## RIDE-GOLDEN-DETERMINISM-01 — PUBLICADO: commit b681f5b36, cubierto por CI #1094 SUCCESS; aprobación del propietario no acreditada (2026-11-04)
+
+Conciliación documental (2026-11-09): implementación publicada en `b681f5b36`, ancestro de
+`d7b07f6c8`, cuyo CI #1094 SUCCESS (dato del propietario) ejecuta `RideGoldenFileTests` en el
+grupo `infrastructure-08`. No consta gate ni aprobación expresa del propietario; no CLOSED.
+El texto siguiente se conserva como evidencia del 2026-11-04.
 
 Casos iniciales exactos: `Invoice_with_mixed_vat_rates_matches_the_approved_golden_file`
 (`03-invoice-with-vat.pdf`) e `Invoice_with_additional_info_matches_the_approved_golden_file`
@@ -1414,7 +1419,7 @@ se conservan; la evidencia persistente es la colección `RideGoldenRendering` en
 `backend/src/ERP.Infrastructure.Tests/Ride/RideGoldenFileTests.cs` (commit `b681f5b36`).
 Este aislamiento estabiliza el gate; no acredita corregir la biblioteca ni probar
 renderizado productivo concurrente. Sin suites generales, SRI, staging, commit ni push.
-**Producción NO-GO**; gate/aprobación del propietario pendientes, no CLOSED.
+Gate/aprobación del propietario pendientes, no CLOSED (sin bloqueo técnico registrado).
 
 Repetición desde la raíz:
 
@@ -1424,7 +1429,12 @@ node tools/architecture/run-all.mjs --only documentation
 git diff --check
 ```
 
-## RIDE-CREDIT-NOTE-01 — READY FOR REVIEW (2026-11-04)
+## RIDE-CREDIT-NOTE-01 — PUBLICADO: commit b681f5b36, cubierto por CI #1094 SUCCESS; aprobación visual del propietario no acreditada (2026-11-04)
+
+Conciliación documental (2026-11-09): corrección publicada en `b681f5b36`, ancestro de
+`d7b07f6c8` (CI #1094 SUCCESS, dato del propietario; incluye `AccessKeyBarcodeRenderingTests` y
+`RideGoldenFileTests` en `infrastructure-08`). No consta aprobación visual ni gate del propietario;
+no CLOSED. El texto siguiente se conserva como evidencia del 2026-11-04.
 
 BUG REAL reproducido: título fijo «FACTURA» y omisión de referencia/motivo en NC.
 Corregidos en presentación desde el modelo existente; contrato en
@@ -1439,7 +1449,7 @@ Revisión visual de las tres páginas **PASS**: título, referencia, motivo y ba
 decodificación Code128 exacta de 49 dígitos en los tres tipos.
 Muestras sintéticas no versionadas en `output/pdf/ride-credit-note/`.
 
-**Producción NO-GO.** Pendientes aprobación visual y gate del propietario; no CLOSED.
+Pendientes aprobación visual y gate del propietario; no CLOSED (sin bloqueo técnico registrado).
 Sin staging, commit ni push. Repetición focal desde la raíz (golden por separado):
 
 ```powershell
@@ -1451,7 +1461,12 @@ node tools/architecture/run-all.mjs --only documentation
 git diff --check
 ```
 
-## RIDE-BARCODE-LAYOUT-01 — IMPLEMENTADA Y APROBADA TÉCNICAMENTE (2026-11-04)
+## RIDE-BARCODE-LAYOUT-01 — IMPLEMENTADA Y APROBADA TÉCNICAMENTE; commit c2934b149, cubierto por CI #1094 SUCCESS; aprobación del propietario no acreditada (2026-11-04)
+
+Conciliación documental (2026-11-09): publicada en `c2934b149`, ancestro de `d7b07f6c8`
+(CI #1094 SUCCESS, dato del propietario; pruebas RIDE en `infrastructure-08`). «Aprobada
+técnicamente» refleja los PASS del agente; no consta aprobación visual ni gate del propietario,
+por lo que no se declara CLOSED. El texto siguiente se conserva como evidencia del 2026-11-04.
 
 Mejora global del código de barras Code128 de la clave de acceso en los RIDE de
 factura, nota de crédito y retención: bloque compartido `AccessKeyBarcodeSection`
@@ -1470,7 +1485,7 @@ de crédito y retención. `git diff --check` PASS. Muestras para revisión visua
 El defecto independiente de presentación de nota de crédito se atiende en
 RIDE-CREDIT-NOTE-01, arriba, pendiente de revisión del propietario.
 
-**Producción NO-GO.** Sin staging, commit ni push. Repetición focal desde la raíz:
+Sin staging, commit ni push en esa sesión (publicado después en `c2934b149`). Repetición focal desde la raíz:
 
 ```powershell
 dotnet test backend/src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj --filter "FullyQualifiedName~ERP.Infrastructure.Tests.Ride.AccessKeyBarcodeRenderingTests|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.QuestPdfRideRenderer|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.RetentionRideRenderingSectionsTests|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.RideGoldenFileTests|FullyQualifiedName~ERP.Infrastructure.Tests.Ride.RideRenderingSectionsTests"
@@ -1479,7 +1494,14 @@ python tools/ci/backend_tests.py --group infrastructure-08 --verify-only
 git diff --check
 ```
 
-## V1-FUNCTIONAL-CLOSE-01 — cierre funcional aprobado (2026-11-04)
+## V1-FUNCTIONAL-CLOSE-01 — cierre funcional aprobado; commit a84a0aeb9, cubierto por CI #1094 SUCCESS (2026-11-04)
+
+Conciliación documental (2026-11-09): publicado en `a84a0aeb9` y cubierto por CI #1094 SUCCESS
+sobre `d7b07f6c8` (dato del propietario), igual que
+[RETENTION-AUTHORIZED-EVIDENCE-01](#retention-authorized-evidence-01--closed-commit-a84a0aeb9-cubierto-por-ci-1094-success-2026-11-04).
+Matriz funcional V1 vigente: 70/70 aprobada. El «Producción NO-GO» de abajo no señala ninguna
+capacidad funcional pendiente; se refiere a los requisitos independientes de despliegue (p. ej.
+[SEC-A01](#sec-a01--límites-de-intentos-de-login--implementación-v1-closed--despliegue-verificaciones-pendientes-2026-11-03)).
 
 **Retentions-02 APROBADA [V1-APPROVED:Retentions-02]**, por instrucción expresa del
 propietario y con la evidencia real que confirma: retención 07 **001-001-000000001**,
@@ -1628,7 +1650,13 @@ Architecture 145/145; `tsc -b`, lint (0 errores) y build en PASS. Regla en
 [backend.md](docs/architecture/backend.md#estado-comercial-vs-estado-sri-de-una-venta-sales-electronic-status-clarity-01).
 Sin staging, commit ni push.
 
-## ED-V1-CLOSE — ElectronicDocuments-04 y -07 aprobadas — READY FOR REVIEW (2026-11-04)
+## ED-V1-CLOSE — ElectronicDocuments-04 y -07 aprobadas; commit 74d4df457, cubierto por CI #1094 SUCCESS (2026-11-04)
+
+Conciliación documental (2026-11-09): publicado en `74d4df457`, ancestro de `d7b07f6c8`
+(CI #1094 SUCCESS, dato del propietario). La matriz 69/70 y el pendiente Retentions-02 citados
+abajo son históricos: Retentions-02 quedó aprobada en
+[V1-FUNCTIONAL-CLOSE-01](#v1-functional-close-01--cierre-funcional-aprobado-commit-a84a0aeb9-cubierto-por-ci-1094-success-2026-11-04)
+(Web 70/70, Core 43/43). Sin capacidades funcionales pendientes en este registro.
 
 Aprobación expresa del propietario, condicionada a PASS focal (cumplida): ElectronicDocuments-04
 (Caso #32, respuestas inciertas y conciliación) y ElectronicDocuments-07 (R12, corrección y
@@ -1643,9 +1671,19 @@ tiene definición oficial: se retiró de los pendientes sin crear requisitos.
 Matriz y Dashboard: **Web 69/70 = 98.57 %** (antes 67/70 = 95.71 %); **Core 42/43 = 97.67 %**
 (antes 40/43 = 93.02 %). Pendiente V1 exacto: **Retentions-02**, que requiere la aceptación real en
 `celcer` de un comprobante 07 en un entorno aislado, después de la resolución de SRI-INCIDENT-01 y con
-autorización del propietario. Producción NO-GO. Sin staging, commit ni push.
+autorización del propietario (pendiente histórico, resuelto en V1-FUNCTIONAL-CLOSE-01). Sin staging,
+commit ni push en esa sesión (publicado después en `74d4df457`).
 
-## V1-CONFIGURATION-INITIALLOAD-01 — capacidades aprobadas — READY FOR REVIEW (2026-11-04)
+## V1-CONFIGURATION-INITIALLOAD-01 — capacidades aprobadas; commit 98f7eae11, cubierto por CI #1094 SUCCESS (2026-11-04)
+
+Conciliación documental (2026-11-09): publicado en `98f7eae11`, ancestro de `d7b07f6c8`
+(CI #1094 SUCCESS, dato del propietario). Configuration 1/1 e InitialLoad 7/7 aprobadas
+(45/45 PASS). Los pendientes Retentions-02, ElectronicDocuments-04/-07 y el «producción NO-GO
+por bloqueos SRI» citados abajo son históricos: ED-04/-07 se aprobaron en
+[ED-V1-CLOSE](#ed-v1-close--electronicdocuments-04-y--07-aprobadas-commit-74d4df457-cubierto-por-ci-1094-success-2026-11-04)
+y Retentions-02 en
+[V1-FUNCTIONAL-CLOSE-01](#v1-functional-close-01--cierre-funcional-aprobado-commit-a84a0aeb9-cubierto-por-ci-1094-success-2026-11-04).
+Estos módulos no se reabren.
 
 Aceptaciones expresas del propietario en esta sesión, condicionadas a los PASS focales:
 Configuration-01 mantiene la API actual sin pantalla de historial; InitialLoad-05
@@ -2028,14 +2066,19 @@ no CLOSED. Lint PASS (0 errores, 37 warnings ajenos al cambio); TypeScript y bui
 PASS (advertencias de chunks y fullLogout existentes). Architecture:check PASS
 (140/140, 0 violaciones nuevas); git diff --check PASS. Sin staging, commit, push ni despliegue.
 
-## SEC-A01 — límites de intentos de login — IMPLEMENTACIÓN V1 CLOSED / PRODUCCIÓN NO-GO (2026-11-03)
+## SEC-A01 — límites de intentos de login — IMPLEMENTACIÓN V1 CLOSED / DESPLIEGUE: VERIFICACIONES PENDIENTES (2026-11-03)
+
+Estado (conciliación documental 2026-11-09): **desarrollo de SEC-A01 terminado** (implementación
+V1 CLOSED, CI #1071 y #1072 SUCCESS); **pendientes solo las comprobaciones de configuración en el
+servidor productivo**, listadas al final. Despliegue: PRODUCCIÓN NO-GO solo hasta completar esas
+comprobaciones de entorno. No reabren la implementación ni retiran controles.
 
 `login` y `global-login` con admisión previa al handler: reserva atómica K1 cuenta+IP (5/15 min),
 K2 IP (desactivado) y K3 cuenta (30/15 min), concurrencia por instancia configurable, 429
 `RATE_LIMITED` y 503 `LOGIN_THROTTLE_UNAVAILABLE` (Redis configurado e inaccesible, o sin Redis
 fuera de Development/Testing). `X-Forwarded-For` solo desde proxies declarados (lista vacía).
 Handlers, BCrypt, JWT, refresh, sesiones, permisos y frontend sin cambios.
-Contrato: [Seguridad — Límites de intentos de login](docs/architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-v1-closed--producción-no-go).
+Contrato: [Seguridad — Límites de intentos de login](docs/architecture/security.md#límites-de-intentos-de-login-sec-a01--implementación-v1-closed--verificaciones-de-despliegue-pendientes).
 
 PASS agente (focales): Infrastructure 22/22 (reserva en memoria, throttle de login, regresión
 `TryAcquireAsync`) y 9/9 Redis vía Testcontainers; API 233/233 (contrato 429/503, proxies
@@ -2053,7 +2096,8 @@ Cierre documental publicado en `9cb872adac3cd82992c52ba76387c69b969cb3e5`;
 (ejecución `41743143238`: 19 jobs exitosos, 0 fallidos y 1 omitido: Deploy — Azure Web App).
 No acredita despliegue ni ERP V1 listo para producción.
 
-**Producción NO-GO — requisitos abiertos antes del despliegue:**
+**Verificaciones de configuración pendientes del despliegue** (servidor productivo; el despliegue a
+producción no procede hasta completarlas; no son desarrollo pendiente):
 - Verificar la IP real del cliente detrás del proxy y configurar `ForwardedHeaders:KnownProxies`/
   `KnownNetworks` reales; K2 por IP sigue desactivado hasta entonces.
 - Verificar Redis disponible en el entorno de despliegue y el número real de instancias API
