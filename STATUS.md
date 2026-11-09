@@ -1,12 +1,22 @@
 # Project Status
 
-## PURCHASES-RECEPTION-SECURITY-01 — Seguridad de recepción previa a la validación SRI real — IMPLEMENTED / PENDING CI (2026-11-08)
+## PURCHASES-RECEPTION-SECURITY-01 — Seguridad de recepción previa a la validación SRI real — CLOSED (2026-11-08)
 
 Reapertura controlada de Compras autorizada por el propietario (2026-11-08) exclusivamente para H1–H4.
 Sin migraciones ni cambios de índices; sin cambios en emisión, firma, SOAP, transiciones fiscales ni
 en `DownloadPurchaseReceptionXmlHandler` (ADR-028/ADR-046: solo cambia el permiso de su endpoint).
 Reglas vigentes: [purchases.md § 3](docs/architecture/purchases.md#3-recepción-electrónica-y-conciliación-de-ítems).
 Siguen prohibidos importar TXT auténticos y consultar el SRI real (PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01).
+
+Cierre (2026-11-08): publicado en `5032fd41fd9f53895ba425335a85c24ab3da65a3`; CI #1128 SUCCESS,
+verificado directamente en GitHub Actions por el propietario. H1–H4 y la protección de compras
+confirmadas en la conciliación quedan resueltos dentro de esta entrega. Se conservan los riesgos
+residuales siguientes y los pendientes independientes: TXT auténtico del SRI
+(PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 y PURCHASES-RECEPTION-SRI-QUERY-ENV-01), persistencia de
+intentos XML (PURCHASES-RECEPTION-XML-ATTEMPT-01), rol Proveedor en compras manuales
+(PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01), validación ampliada de ProductPicker, concurrencia contable
+entre módulos (limitación de ACCOUNTING-CHART-INTEGRITY-01), CI selectivo
+(CI-SELECTIVE-ARCHITECTURE-01) y Dashboard DH-001 ([cola de trabajo](docs/agent/WORK_QUEUE.md)).
 
 - **PURCHASES-RECEPTION-RECEIVER-RUC-01 (H1):** `PurchaseReceptionReceiverRule` (reutiliza `RucValidator`
   y `EcuadorIdValidator`) valida `IDENTIFICACION_RECEPTOR` de todas las filas en

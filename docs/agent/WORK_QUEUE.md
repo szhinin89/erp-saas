@@ -17,14 +17,13 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
 - PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 (PENDING de aceptación funcional): prueba de extremo a
   extremo de `/purchases/reception` con un TXT auténtico autorizado del SRI, en entorno de pruebas,
-  sin fabricar datos ni escribir en producción. Bloqueada hasta cerrar PURCHASES-RECEPTION-SECURITY-01 y
+  sin fabricar datos ni escribir en producción. Seguridad cerrada (CI #1128); sigue bloqueada por
   PURCHASES-RECEPTION-SRI-QUERY-ENV-01 ([STATUS](../../STATUS.md)); hasta entonces no se importan TXT
   auténticos ni se consulta el SRI real.
-- PURCHASES-RECEPTION-SECURITY-01 (IMPLEMENTED / PENDING CI; reapertura de Compras solo para H1–H4):
-  RECEIVER-RUC-01 (receptor del TXT), CROSS-COMPANY-KEY-01 (conflicto de clave entre empresas),
-  WRITE-PERMISSIONS-01 (permisos de escritura y UI) y SUPPLIER-RULE-01 (regla única del proveedor).
-  Pendiente: revisión técnica, publicación, CI y revisión de perfiles antes de desplegar. Evidencia
-  y riesgos en [STATUS](../../STATUS.md).
+- Revisión de perfiles de acceso antes de desplegar (PENDING; riesgo residual de
+  PURCHASES-RECEPTION-SECURITY-01, CLOSED con CI #1128 SUCCESS): perfiles con `purchases.view` sin
+  `purchases.create`/`purchases.update` pierden acciones de recepción y conciliación. Consulta de
+  solo lectura; detalle en [STATUS](../../STATUS.md).
 - PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 (PENDING; Compras CLOSED, requiere reapertura): guardar
   una compra (alta y actualización del borrador, también manual) no exige rol Proveedor activo.
   Registro en [STATUS](../../STATUS.md); sin trabajo abierto.
@@ -35,6 +34,10 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   de intentos y resultados de consulta XML. Antes de intervenir el handler congelado, revisar
   ADR-028/ADR-046, migraciones, privacidad y aislamiento; esta cola no autoriza alterar contratos
   fiscales protegidos.
+- DASHBOARD-REGEN-DH-001 (PENDING; Dashboard FROZEN v1.0): regeneración documental separada con el
+  procedimiento oficial (`tools/dashboard/run-dashboard-final.ps1`) sobre árbol limpio, revisando el
+  diff antes de publicar; resuelve DH-001 de
+  [DASHBOARD_HEALTH](../ProgressDashboard/DASHBOARD_HEALTH.md). No se mezcla con commits funcionales.
 - CI-SELECTIVE-ARCHITECTURE-01 (PENDING): retirar una excepción de
   `tools/architecture/architecture-grandfather.json` clasifica hoy como perfil completo (ruta fuera
   de las listas de `ci_changes.mjs`; p. ej. CI #1121 sobre `bd816be40`). Evitar el FULL innecesario
