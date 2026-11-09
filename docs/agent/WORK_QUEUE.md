@@ -15,21 +15,19 @@ No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
   reinicia `focusIdx` con un efecto pasivo sobre `results`, mismo patrón de carrera que
   PURCHASES-PRODUCT-PICKER-RACE-01; requiere reapertura expresa de Items, reproducción determinista
   y corrección en el componente. Registro en [STATUS](../../STATUS.md).
-- PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 (PENDING de aceptación funcional): prueba de extremo a
-  extremo de `/purchases/reception` con un TXT auténtico autorizado del SRI, en entorno de pruebas,
-  sin fabricar datos ni escribir en producción. Seguridad cerrada (CI #1128); sigue bloqueada por
-  PURCHASES-RECEPTION-SRI-QUERY-ENV-01 ([STATUS](../../STATUS.md)); hasta entonces no se importan TXT
-  auténticos ni se consulta el SRI real.
 - Revisión de perfiles de acceso antes de desplegar (PENDING; riesgo residual de
   PURCHASES-RECEPTION-SECURITY-01, CLOSED con CI #1128 SUCCESS): perfiles con `purchases.view` sin
   `purchases.create`/`purchases.update` pierden acciones de recepción y conciliación. Consulta de
   solo lectura; detalle en [STATUS](../../STATUS.md).
+- ACCOUNTING-CROSS-MODULE-ACCOUNT-LOCK-01 (PENDING; limitación de ACCOUNTING-CHART-INTEGRITY-01,
+  CLOSED con CI #1127 SUCCESS, no reabierto): las configuraciones de otros módulos no toman el lock
+  del Plan de cuentas; una asignación de cuenta concurrente con su desactivación o con quitarle
+  movimiento puede confirmarse (`PostingAccountGuard` solo rechaza al contabilizar). Incluye la
+  reasignación con propietario inactivo en las seis familias. Revisar antes de producción; detalle
+  en [STATUS](../../STATUS.md).
 - PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01 (PENDING; Compras CLOSED, requiere reapertura): guardar
   una compra (alta y actualización del borrador, también manual) no exige rol Proveedor activo.
   Registro en [STATUS](../../STATUS.md); sin trabajo abierto.
-- PURCHASES-RECEPTION-SRI-QUERY-ENV-01 (PENDING; ADR-023 congelado): evaluación de la opción A registrada
-  en [STATUS](../../STATUS.md); ninguna consulta real hasta demostrar aislamiento de emisión,
-  certificados, permisos y red.
 - PURCHASES-RECEPTION-XML-ATTEMPT-01 (PENDING; requiere backend y migración): historial persistente
   de intentos y resultados de consulta XML. Antes de intervenir el handler congelado, revisar
   ADR-028/ADR-046, migraciones, privacidad y aislamiento; esta cola no autoriza alterar contratos

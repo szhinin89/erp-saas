@@ -1,21 +1,44 @@
 # Project Status
 
-## PURCHASES-RECEPTION-SECURITY-01 — Seguridad de recepción previa a la validación SRI real — CLOSED (2026-11-08)
+## PURCHASES-RECEPTION-SRI-REAL-EVIDENCE-01 — Pruebas con documentos SRI auténticos — CLOSED (2026-11-08)
+
+Registro de evidencia histórica; no abre trabajo ni cambia los estados CLOSED de Recepción, Compras e
+Inventario. Cierra PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 y PURCHASES-RECEPTION-SRI-QUERY-ENV-01:
+la validación real del TXT y la consulta real del XML no se repiten ni se proponen como pendientes.
+
+- **Confirmación del propietario (2026-11-08):** realizó múltiples pruebas funcionales con archivos TXT
+  auténticos del SRI, usados como origen para validar Recepción, Compras, ingreso de mercadería,
+  movimientos de ítems e Inventario.
+- **Registros verificables en PostgreSQL** (`localhost:5435/erp_zh_dev`, consulta de solo lectura con
+  `BEGIN READ ONLY`/`ROLLBACK`, 2026-11-08):
+  - `purchase_reception_documents`: 160 comprobantes importados el 2026-11-01 (140 facturas, 20 NC),
+    todos con clave de acceso de ambiente Producción.
+  - 56 XML autorizados descargados entre 02:30 y 02:35 UTC, con número y fecha de autorización; el
+    `identificacionComprador` de los 56 pertenece a la empresa (48 RUC idéntico, 8 cédula + `001`).
+  - `configuration_change_log`: `SriSettings` en ambiente 2 (`cel.sri.gob.ec`) de 02:28:42 a 02:36:01
+    UTC y devuelto después a ambiente 1 (`celcer`).
+  - `electronic_documents`: ningún comprobante emitido en Producción; los 11 existentes son de
+    ambiente 1 y posteriores a ese intervalo.
+- **Alcance:** las pruebas son anteriores a H1–H4 (PURCHASES-RECEPTION-SECURITY-01, CI #1128) y al
+  interruptor de emisión por empresa; esas protecciones conservan su propia evidencia automatizada.
+  La base no conserva los TXT importados.
+
+## PURCHASES-RECEPTION-SECURITY-01 — Seguridad de recepción — CLOSED (2026-11-08)
 
 Reapertura controlada de Compras autorizada por el propietario (2026-11-08) exclusivamente para H1–H4.
 Sin migraciones ni cambios de índices; sin cambios en emisión, firma, SOAP, transiciones fiscales ni
 en `DownloadPurchaseReceptionXmlHandler` (ADR-028/ADR-046: solo cambia el permiso de su endpoint).
 Reglas vigentes: [purchases.md § 3](docs/architecture/purchases.md#3-recepción-electrónica-y-conciliación-de-ítems).
-Siguen prohibidos importar TXT auténticos y consultar el SRI real (PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01).
+Evidencia real con documentos SRI auténticos:
+[PURCHASES-RECEPTION-SRI-REAL-EVIDENCE-01](#purchases-reception-sri-real-evidence-01--pruebas-con-documentos-sri-auténticos--closed-2026-11-08).
 
 Cierre (2026-11-08): publicado en `5032fd41fd9f53895ba425335a85c24ab3da65a3`; CI #1128 SUCCESS,
 verificado directamente en GitHub Actions por el propietario. H1–H4 y la protección de compras
 confirmadas en la conciliación quedan resueltos dentro de esta entrega. Se conservan los riesgos
-residuales siguientes y los pendientes independientes: TXT auténtico del SRI
-(PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 y PURCHASES-RECEPTION-SRI-QUERY-ENV-01), persistencia de
+residuales siguientes y los pendientes independientes: persistencia de
 intentos XML (PURCHASES-RECEPTION-XML-ATTEMPT-01), rol Proveedor en compras manuales
 (PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01), validación ampliada de ProductPicker, concurrencia contable
-entre módulos (limitación de ACCOUNTING-CHART-INTEGRITY-01), CI selectivo
+entre módulos (ACCOUNTING-CROSS-MODULE-ACCOUNT-LOCK-01), CI selectivo
 (CI-SELECTIVE-ARCHITECTURE-01) y Dashboard DH-001 ([cola de trabajo](docs/agent/WORK_QUEUE.md)).
 
 - **PURCHASES-RECEPTION-RECEIVER-RUC-01 (H1):** `PurchaseReceptionReceiverRule` (reutiliza `RucValidator`
@@ -82,7 +105,7 @@ Riesgos residuales:
   `access_profile_permissions`).
 - La pantalla de Compras (formulario de compra, fuera del alcance) no oculta las acciones de
   conciliación según el permiso; el servidor responde 403.
-- Un TXT sin la columna `IDENTIFICACION_RECEPTOR` deja de importarse; confirmar con un TXT auténtico.
+- Contrato fail-closed de H1: un TXT sin la columna `IDENTIFICACION_RECEPTOR` se rechaza completo.
 - Guardar una compra (también manual) no exige rol Proveedor activo: registrado aparte como
   PURCHASES-MANUAL-SUPPLIER-ROLE-ACTIVE-01, sin cambios en esta entrega.
 - Facturas con proveedor inactivo pasan de «Pendientes de proveedor» a «Por procesar» (siguen en
@@ -97,22 +120,13 @@ un proveedor con el rol revocado puede recibir una compra nueva al guardar. Desd
 ya lo bloquea `ReceptionSupplierResolver`; la compra manual no. Compras CLOSED: requiere reapertura
 expresa, decisión sobre borradores existentes con rol revocado y pruebas propias; sin cambios aquí.
 
-### PURCHASES-RECEPTION-SRI-QUERY-ENV-01 — Evaluación de la opción A — PENDING (sin habilitar)
+### PURCHASES-RECEPTION-SRI-QUERY-ENV-01 — Entorno para la consulta real del XML — CLOSED (2026-11-08)
 
-La consulta del XML usa `SriSettings.WsdlUrl` de la empresa (mismo ambiente que la emisión) y la pausa
-de emisión la bloquea (SRI-TOGGLE-07, ADR-023 congelado). Los comprobantes auténticos de proveedores
-solo existen en Producción (`cel.sri.gob.ec`). Opción A (sin cambios de código): base aislada, empresa
-con el RUC receptor real, ambiente Producción, emisión habilitada (requisito de la consulta) y sin
-certificado de firma. No se habilita ninguna consulta real hasta demostrar, con evidencia:
-1. Emisión: la preparación de emisión de la empresa reporta `electronicEmission.certificate`; ventas,
-   NC de venta y retenciones (incluida la de confirmar compra) no pueden emitirse; no existen puntos
-   de emisión ni pendientes automáticos de transmisión.
-2. Certificados: ningún certificado cargado y procedimiento que prohíba cargarlo en esa base.
-3. Permisos: solo un usuario de prueba con `purchases.view` y `purchases.create`; sin permisos de
-   configuración SRI, ventas, retenciones ni certificados.
-4. Red: salida limitada a `AutorizacionComprobantesOffline` de `cel.sri.gob.ec` (sin
-   `RecepcionComprobantesOffline`).
-5. Base: servidor, base y entorno efectivos mostrados y confirmados por el propietario; no producción.
+Cerrado sin implementar la opción A (base aislada en Producción sin certificado): la consulta real del
+XML ya está acreditada en
+[PURCHASES-RECEPTION-SRI-REAL-EVIDENCE-01](#purchases-reception-sri-real-evidence-01--pruebas-con-documentos-sri-auténticos--closed-2026-11-08).
+Contrato vigente sin cambios: la consulta usa `SriSettings.WsdlUrl` de la empresa (mismo ambiente que
+la emisión) y la pausa de emisión la bloquea (SRI-TOGGLE-07, ADR-023 congelado).
 
 ## CI-1125-DB-ERROR-ASSERTION-01 — Falso positivo de confidencialidad — CLOSED (2026-11-08)
 
@@ -206,7 +220,8 @@ de confidencialidad (búsqueda de `5432` en el JSON completo, incluido `correlat
 la corrección de esa prueba quedó publicada en el commit de CI #1127, sin cambios productivos.
 Se conservan los riesgos residuales y el diagnóstico previo al despliegue descritos aquí.
 
-Limitación registrada (PENDING, sin trabajo abierto): las configuraciones de otros módulos no
+Limitación registrada (ACCOUNTING-CROSS-MODULE-ACCOUNT-LOCK-01, PENDING en la
+[cola de trabajo](docs/agent/WORK_QUEUE.md); no reabre esta entrega): las configuraciones de otros módulos no
 toman el lock del Plan de cuentas; una asignación de cuenta concurrente con su desactivación o con
 quitarle movimiento puede confirmarse. `PostingAccountGuard` rechaza después la contabilización
 contra esa cuenta, pero no impide ni corrige la configuración inconsistente.
@@ -271,9 +286,9 @@ Cierre (2026-11-08): commit `e9adecc71` publicado en `main`; CI #1123 SUCCESS (c
 propietario). Evidencia local conservada: Vitest focal 549/549 y visuales 6/6 PASS; revisión visual
 y funcional aprobada por el propietario.
 
-PENDING de aceptación funcional, fuera del cierre: validación de extremo a extremo con un TXT
-auténtico del SRI (no realizada; sin evidencia), registrada como
-PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01 en la [cola de trabajo](docs/agent/WORK_QUEUE.md).
+Aceptación con TXT auténticos del SRI: acreditada después en
+[PURCHASES-RECEPTION-SRI-REAL-EVIDENCE-01](#purchases-reception-sri-real-evidence-01--pruebas-con-documentos-sri-auténticos--closed-2026-11-08)
+(cierra PURCHASES-RECEPTION-SRI-TXT-VALIDATION-01).
 
 Registrado sin abrir trabajo (requieren backend; separados de esta entrega):
 - Persistencia del intento de consulta XML («consulta fallida» que sobreviva a recargar): exige
@@ -333,15 +348,18 @@ y modal dentro del viewport); `tsc -b`; ESLint de los archivos tocados; `npm run
 documental y `git diff --check` PASS. Revisión visual del propietario: APROBADA (2026-11-08).
 
 Registrado sin abrir trabajo: avisos informativos del modal al cambiar la clase de una cuenta, que
-no bloquean ni sustituyen validaciones del servidor; el riesgo de integridad queda PENDING como
-ACCOUNTING-CHART-INTEGRITY-01 en la [cola de trabajo](docs/agent/WORK_QUEUE.md). DEBT: sin
+no bloquean ni sustituyen validaciones del servidor; el riesgo de integridad se resolvió después en
+[ACCOUNTING-CHART-INTEGRITY-01](#accounting-chart-integrity-01--integridad-del-plan-de-cuentas--closed-2026-11-08)
+(CLOSED, CI #1127 SUCCESS); su limitación de concurrencia entre módulos sigue PENDING como
+ACCOUNTING-CROSS-MODULE-ACCOUNT-LOCK-01 en la [cola de trabajo](docs/agent/WORK_QUEUE.md). DEBT: sin
 `role="treegrid"` ni navegación por flechas (requeriría ampliar `ZHDataTable`).
 
 Cierre (2026-11-08): commit `bd816be40` publicado en `main`; CI #1121 SUCCESS en el primer intento
 con perfil completo: Frontend, Backend, Architecture guardrails, Identity guardrails y `CI gate`
 PASS; Publish omitido (SKIPPED). Evidencia local conservada: Vitest focal 55/55 PASS, incluidas
 12/12 visuales en Chromium real; revisión visual aprobada por el propietario.
-ACCOUNTING-CHART-INTEGRITY-01 sigue PENDING.
+ACCOUNTING-CHART-INTEGRITY-01 quedó CLOSED después (CI #1127 SUCCESS); pendiente independiente:
+ACCOUNTING-CROSS-MODULE-ACCOUNT-LOCK-01.
 
 ## EXPENSE-CATEGORIES-UX-01 — Catálogo de gastos UX/UI — CLOSED (2026-11-08)
 
