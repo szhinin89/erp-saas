@@ -1,6 +1,11 @@
 # Project Status
 
-## BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 y BRANCH-CONFIG-READ-PERMISSION-01 — Acceso a la configuración de sucursal — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+## BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 y BRANCH-CONFIG-READ-PERMISSION-01 — Acceso a la configuración de sucursal — CLOSED (2026-11-10)
+
+El propietario confirma [CI #1136](https://github.com/szhinin89/erp-saas/actions/runs/42860595578)
+SUCCESS (ejecución `42860595578`, `completed / success`) sobre `main`, commit
+`a4b1670f9dd311ed2b693f75a3f6e625830ad1e5` (`fix(branches): validate default warehouse and enforce
+branch access`), tras el gate final del propietario PASS (2026-11-10).
 
 Autorizado por el propietario (opción a). Sin cambios en rutas, permisos de los endpoints, reglas
 fiscales ni políticas de acceso; se reutiliza `IBranchAccessGuard`. Regla vigente:
@@ -22,15 +27,24 @@ fiscales ni políticas de acceso; se reutiliza `IBranchAccessGuard`. Regla vigen
   `ERP.Architecture.Tests` 145/145; frontend `src/modules/branches` 28/28; `tsc -b`, ESLint,
   `npm run build`, `architecture:check` y `check-architecture-guardrails.ps1 -SkipFrontendChunk`.
   Manifiesto CI sin cambios.
-- **Gate final del propietario PASS (2026-11-10).** Pendiente: push autorizado y CI SUCCESS; se
-  declara CLOSED solo con CI SUCCESS sobre su commit.
-- **Pendiente separado (no autorizado):** BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 — `UpdateBranch`,
-  `UpdateWarehouse` y los listados de bodegas (`GetWarehousesQuery` con `BranchId`) son
-  `ICompanyScopedRequest`: un usuario limitado a la sucursal A puede editar los datos y bodegas de
-  B y listar sus bodegas. Requiere decidir si la administración de catálogos por sucursal exige
-  `CompanyUserBranch`.
+- **Gate final del propietario PASS (2026-11-10).** CLOSED con CI #1136 SUCCESS.
+- **Pendiente separado (opción A aprobada; sin cambios de autorización):**
+  BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 — auditoría de solo lectura (2026-11-10) sin vulnerabilidad
+  confirmada: el catálogo de sucursales y el alta/edición de bodegas son administración
+  company-wide autorizada por `settings.branches.*` / `inventory.warehouses.*` (Admin de la
+  empresa, operador global o perfiles que configure un Admin; el perfil semilla `DataEntry` solo
+  tiene `view`); habilitar/deshabilitar bodega ya es branch-scoped. Pendiente: documentar la regla
+  en la SSOT de seguridad y fijarla con pruebas HTTP.
+- **Pendiente separado (auditoría; sin implementación autorizada):**
+  WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 — `UpdateWarehouse` permite cambiar el `BranchId` de
+  una bodega sin validar stock, movimientos ni su uso como bodega principal o por defecto de la
+  sucursal de origen; impacto no verificado.
 
-## BRANCH-CONFIG-WAREHOUSE-UNSET-01 — Bodega por defecto de sucursal — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+## BRANCH-CONFIG-WAREHOUSE-UNSET-01 — Bodega por defecto de sucursal — CLOSED (2026-11-10)
+
+El propietario confirma [CI #1136](https://github.com/szhinin89/erp-saas/actions/runs/42860595578)
+SUCCESS sobre `main`, commit `a4b1670f9dd311ed2b693f75a3f6e625830ad1e5`, tras el gate final del
+propietario PASS (2026-11-10).
 
 Autorizado por el propietario (D1 opción A, D2, D3). Sin cambios en contratos congelados,
 permisos, reglas fiscales, inventario ni otras configuraciones. Regla vigente:
@@ -48,8 +62,7 @@ permisos, reglas fiscales, inventario ni otras configuraciones. Regla vigente:
   `BranchConfigSection.test.tsx`); `tsc -b`, ESLint, `architecture:check` y
   `check-architecture-guardrails.ps1 -SkipFrontendChunk`. Sin clases nuevas en
   `ERP.Infrastructure.Tests` (manifiesto CI sin cambios).
-- **Gate final del propietario PASS (2026-11-10).** Pendiente: push autorizado y CI SUCCESS; se
-  declara CLOSED solo con CI SUCCESS sobre su commit.
+- **Gate final del propietario PASS (2026-11-10).** CLOSED con CI #1136 SUCCESS.
 - Permisos y acceso por sucursal: ver BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 /
   BRANCH-CONFIG-READ-PERMISSION-01 (Editar exige además `inventory.warehouses.view`).
 
@@ -78,8 +91,7 @@ migraciones ni datos. Regla vigente: [Valores por Defecto de Facturación](docs/
   cambios; `CompanySettingsIsolationHttpTests`; `OrganizationalConfigurationV1HttpTests`);
   `ERP.Architecture.Tests`; frontend focal; `tsc -b`, ESLint, `architecture:check` y
   `check-architecture-guardrails.ps1 -SkipFrontendChunk`. Conteos en el reporte de entrega.
-- **Pendiente separado:** BRANCH-CONFIG-WAREHOUSE-UNSET-01 — commit local, pendiente de push y CI;
-  ver su sección.
+- BRANCH-CONFIG-WAREHOUSE-UNSET-01: CLOSED con CI #1136 SUCCESS; ver su sección.
 
 ## COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 — Empresa por defecto atómica — CLOSED (2026-11-10)
 

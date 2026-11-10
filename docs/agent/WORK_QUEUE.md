@@ -4,16 +4,13 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- BRANCH-CONFIG-WAREHOUSE-UNSET-01 (GATE PASS; commit local en `main`; autorizado D1 opción A,
-  D2, D3): «Sin configurar» envía `null`, validación de la bodega al guardar (422) y permiso de
-  edición alineado con el PUT. Pendiente: push autorizado por el propietario y CI SUCCESS.
-- BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 y BRANCH-CONFIG-READ-PERMISSION-01 (GATE PASS; commit local
-  en `main`; autorizados): la configuración de sucursal exige acceso a la sucursal de la ruta
-  (`IBranchAccessGuard`) y la pestaña/Editar se alinean con los permisos de sus APIs. Pendiente:
-  push autorizado por el propietario y CI SUCCESS.
-- BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 (PENDING; separado, no autorizado): revisar si
-  `UpdateBranch`, `UpdateWarehouse` y los listados de bodegas deben exigir acceso a la sucursal.
-  Registro en [STATUS](../../STATUS.md).
+- BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 (PENDING; opción A aprobada): la administración del
+  catálogo de sucursales y bodegas es company-wide y la autoriza el permiso; documentar la regla en
+  la SSOT de seguridad y fijarla con pruebas HTTP, sin cambios de autorización. Registro en
+  [STATUS](../../STATUS.md).
+- WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 (PENDING; auditoría, sin implementación autorizada):
+  `UpdateWarehouse` permite cambiar la sucursal de una bodega sin validar stock, movimientos ni su
+  uso como bodega principal o por defecto. Registro en [STATUS](../../STATUS.md).
 - SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son
