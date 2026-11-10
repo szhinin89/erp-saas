@@ -389,18 +389,22 @@ public sealed class CompanySettingsIsolationHttpTests
         var ownCompany = await asA.GetAsync(CompanyInvoiceDefaults);
         ownCompany.StatusCode.Should().Be(HttpStatusCode.OK, await ownCompany.Content.ReadAsStringAsync());
 
-        // Alcance de sucursal (validación existente): desde A, la sucursal de B no expone sus
-        // valores ni admite escritura.
+        // Alcance de sucursal: desde A, la sucursal de B no expone sus valores ni admite
+        // escritura. BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01: IBranchAccessGuard.RequireBranchAsync
+        // responde 404 (ajena e inexistente indistinguibles) en lugar del 200 vacío previo.
         var foreignBranch = await asA.GetAsync($"/api/v1/org-config/branch/{_f.BranchBId}/invoice-defaults");
         var foreignBranchBody = await foreignBranch.Content.ReadAsStringAsync();
-        foreignBranch.StatusCode.Should().Be(HttpStatusCode.OK, foreignBranchBody);
+        foreignBranch.StatusCode.Should().Be(HttpStatusCode.NotFound, foreignBranchBody);
         foreignBranchBody.Should().NotContain(_f.WarehouseBId.ToString());
 
         var foreignBranchWrite = await asA.PutAsJsonAsync(
             $"/api/v1/org-config/branch/{_f.BranchBId}/invoice-defaults",
             new { branchId = _f.BranchBId, defaultWarehouseId = (Guid?)null }
         );
-        foreignBranchWrite.IsSuccessStatusCode.Should().BeFalse();
+        foreignBranchWrite.StatusCode.Should().Be(
+            HttpStatusCode.NotFound,
+            await foreignBranchWrite.Content.ReadAsStringAsync()
+        );
 
         var ownBranch = await asA.GetAsync($"/api/v1/org-config/branch/{_f.BranchAId}/invoice-defaults");
         ownBranch.StatusCode.Should().Be(HttpStatusCode.OK, await ownBranch.Content.ReadAsStringAsync());

@@ -1,10 +1,11 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.OrgConfig.DTOs;
-using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Inventory.Interfaces;
 using MediatR;
 
 namespace ERP.Application.Modules.OrgConfig.UseCases.UpsertBranchInvoiceOrgSettings;
@@ -12,25 +13,22 @@ namespace ERP.Application.Modules.OrgConfig.UseCases.UpsertBranchInvoiceOrgSetti
 public sealed class UpsertBranchInvoiceOrgSettingsCommandHandler
     : IRequestHandler<UpsertBranchInvoiceOrgSettingsCommand, Result<BranchInvoiceOrgSettingsDto>>
 {
+    public const string InvalidWarehouseMessage =
+        "La bodega seleccionada no existe, está inactiva o no pertenece a esta sucursal.";
+
     private readonly IOrgSettingsRepository _repo;
-    private readonly IBranchRepository _branchRepo;
-    private readonly ICurrentTenant _currentTenant;
-    private readonly ICurrentCompany _currentCompany;
-    private readonly ICurrentUser _currentUser;
+    private readonly IBranchAccessGuard _branchAccess;
+    private readonly IWarehouseRepository _warehouseRepo;
 
     public UpsertBranchInvoiceOrgSettingsCommandHandler(
         IOrgSettingsRepository repo,
-        IBranchRepository branchRepo,
-        ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany,
-        ICurrentUser currentUser
+        IBranchAccessGuard branchAccess,
+        IWarehouseRepository warehouseRepo
     )
     {
         _repo = repo;
-        _branchRepo = branchRepo;
-        _currentTenant = currentTenant;
-        _currentCompany = currentCompany;
-        _currentUser = currentUser;
+        _branchAccess = branchAccess;
+        _warehouseRepo = warehouseRepo;
     }
 
     public async Task<Result<BranchInvoiceOrgSettingsDto>> Handle(
@@ -38,20 +36,38 @@ public sealed class UpsertBranchInvoiceOrgSettingsCommandHandler
         CancellationToken cancellationToken
     )
     {
-        var tenantId = _currentTenant.TenantId;
-        var companyId = _currentCompany.CompanyId;
-        var userId = _currentUser.UserId;
+        // BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01: la sucursal de la ruta se autoriza con la misma
+        // política que la sucursal activa (empresa, activa, CompanyUserBranch u operador global);
+        // BranchScopeBehavior solo valida X-Branch-Id. 404 ajena/inexistente, 403 sin acceso.
+        var access = await _branchAccess.RequireBranchAsync(command.BranchId, cancellationToken);
+        if (!access.IsSuccess)
+            return Result<BranchInvoiceOrgSettingsDto>.Failure(access.Error!, access.Code);
 
-        var branch = await _branchRepo.GetByIdForCompanyAsync(
-            tenantId,
-            companyId,
-            command.BranchId,
-            cancellationToken
-        );
-        if (branch is null)
-            return Result<BranchInvoiceOrgSettingsDto>.Failure(
-                "La sucursal no existe o no pertenece a esta empresa."
+        var tenantId = access.Value!.TenantId;
+        var companyId = access.Value.CompanyId;
+        var userId = access.Value.UserId;
+
+        // BRANCH-CONFIG-WAREHOUSE-UNSET-01: la bodega se valida también al guardar (además del
+        // fail-closed en lectura de InvoiceDefaultsResolver). null = sin configurar → el resolver
+        // usa Warehouse.IsMain de la sucursal. Inexistente, de otra empresa, inactiva o de otra
+        // sucursal → 422 con un único mensaje (no revela si existe en otra empresa).
+        if (command.DefaultWarehouseId is { } warehouseId)
+        {
+            var warehouse = await _warehouseRepo.GetByIdForCompanyAsync(
+                tenantId,
+                companyId,
+                warehouseId,
+                cancellationToken
             );
+            if (
+                warehouse is null
+                || !warehouse.IsActive
+                || warehouse.BranchId != command.BranchId
+            )
+                return Result<BranchInvoiceOrgSettingsDto>.ValidationFailure(
+                    InvalidWarehouseMessage
+                );
+        }
 
         var setting = OrgSetting.Create(
             tenantId,

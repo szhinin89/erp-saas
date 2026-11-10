@@ -1,6 +1,63 @@
 # Project Status
 
-## SALES-PREFERENCES-INTEGRITY-01 — Integridad de preferencias de ventas — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+## BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 y BRANCH-CONFIG-READ-PERMISSION-01 — Acceso a la configuración de sucursal — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+
+Autorizado por el propietario (opción a). Sin cambios en rutas, permisos de los endpoints, reglas
+fiscales ni políticas de acceso; se reutiliza `IBranchAccessGuard`. Regla vigente:
+[Valores por Defecto de Facturación](docs/architecture/frozen-infrastructure.md#valores-por-defecto-de-facturación).
+
+- Reproducido antes de corregir (PostgreSQL, copia de `HEAD` fuera del repo): un usuario con
+  `CompanyUserBranch` solo en A, con sucursal activa A, leía (200 con la bodega) y modificaba (200,
+  valor cambiado en BD) la configuración de B de la misma empresa.
+- GET y PUT `/org-config/branch/{branchId}/invoice-defaults` autorizan la sucursal de la ruta con
+  `IBranchAccessGuard.RequireBranchAsync`: sin `CompanyUserBranch` o sucursal deshabilitada → 403;
+  de otra empresa o inexistente → 404 (antes el GET devolvía 200 vacío); el administrador global
+  en modo operador conserva el acceso. Un administrador de empresa necesita la sucursal asignada.
+- Frontend: la pestaña Configuraciones solo se muestra con `settings.company.view`; Editar exige
+  `erp.companies.update` e `inventory.warehouses.view`; un error al cargar la configuración o las
+  bodegas se muestra como error, nunca como «sin configurar» ni «sin bodegas activas».
+- **Evidencia local (2026-11-10):** Application `OrgConfig` 32/32; API + PostgreSQL 15/15
+  (`BranchDefaultWarehouseHttpTests` 6, incluidas 3 nuevas de aislamiento/operador;
+  `CompanySettingsIsolationHttpTests` con la aserción de sucursal ajena ajustada a 404);
+  `ERP.Architecture.Tests` 145/145; frontend `src/modules/branches` 28/28; `tsc -b`, ESLint,
+  `npm run build`, `architecture:check` y `check-architecture-guardrails.ps1 -SkipFrontendChunk`.
+  Manifiesto CI sin cambios.
+- **Gate final del propietario PASS (2026-11-10).** Pendiente: push autorizado y CI SUCCESS; se
+  declara CLOSED solo con CI SUCCESS sobre su commit.
+- **Pendiente separado (no autorizado):** BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 — `UpdateBranch`,
+  `UpdateWarehouse` y los listados de bodegas (`GetWarehousesQuery` con `BranchId`) son
+  `ICompanyScopedRequest`: un usuario limitado a la sucursal A puede editar los datos y bodegas de
+  B y listar sus bodegas. Requiere decidir si la administración de catálogos por sucursal exige
+  `CompanyUserBranch`.
+
+## BRANCH-CONFIG-WAREHOUSE-UNSET-01 — Bodega por defecto de sucursal — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+
+Autorizado por el propietario (D1 opción A, D2, D3). Sin cambios en contratos congelados,
+permisos, reglas fiscales, inventario ni otras configuraciones. Regla vigente:
+[Valores por Defecto de Facturación](docs/architecture/frozen-infrastructure.md#valores-por-defecto-de-facturación).
+
+- `BranchConfigSection.tsx`: «Sin configurar» envía `null` (`setValueAs`); Editar exige
+  `erp.companies.update`, el mismo permiso del PUT (y `inventory.warehouses.view`, ver abajo); una bodega guardada que ya no está activa en la
+  sucursal se advierte («Bodega no válida») y `null` explica el uso de la bodega principal.
+- `UpsertBranchInvoiceOrgSettingsCommandHandler` valida la bodega al guardar (empresa activa,
+  activa, misma sucursal) → 422 sin escritura. Fallback y fail-closed de lectura sin cambios.
+- **Evidencia local (2026-11-10):** Application `OrgConfig` 25/25 (5 nuevas en
+  `UpsertBranchInvoiceOrgSettingsWarehouseValidationTests`); API + PostgreSQL 12/12
+  (`BranchDefaultWarehouseHttpTests` 3 nuevas + `CompanySettingsIsolationHttpTests`);
+  `ERP.Architecture.Tests` 145/145; frontend `src/modules/branches` 24/24 (6 nuevas en
+  `BranchConfigSection.test.tsx`); `tsc -b`, ESLint, `architecture:check` y
+  `check-architecture-guardrails.ps1 -SkipFrontendChunk`. Sin clases nuevas en
+  `ERP.Infrastructure.Tests` (manifiesto CI sin cambios).
+- **Gate final del propietario PASS (2026-11-10).** Pendiente: push autorizado y CI SUCCESS; se
+  declara CLOSED solo con CI SUCCESS sobre su commit.
+- Permisos y acceso por sucursal: ver BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 /
+  BRANCH-CONFIG-READ-PERMISSION-01 (Editar exige además `inventory.warehouses.view`).
+
+## SALES-PREFERENCES-INTEGRITY-01 — Integridad de preferencias de ventas — CLOSED (2026-11-10)
+
+El propietario confirma CI #1135 SUCCESS sobre `main`, commit
+`89e5d92f1d93ed6a19a9575aded57bab4e98e39e` (`fix(sales): enforce atomic sales preferences and
+price list defaults`), tras el gate final del propietario PASS (2026-11-10).
 
 Autorizado por el propietario (D1–D4, opción B). Sin cambios en reglas fiscales, motor de precios,
 migraciones ni datos. Regla vigente: [Valores por Defecto de Facturación](docs/architecture/frozen-infrastructure.md#valores-por-defecto-de-facturación).
@@ -21,12 +78,8 @@ migraciones ni datos. Regla vigente: [Valores por Defecto de Facturación](docs/
   cambios; `CompanySettingsIsolationHttpTests`; `OrganizationalConfigurationV1HttpTests`);
   `ERP.Architecture.Tests`; frontend focal; `tsc -b`, ESLint, `architecture:check` y
   `check-architecture-guardrails.ps1 -SkipFrontendChunk`. Conteos en el reporte de entrega.
-- **Gate final del propietario PASS (2026-11-10).** Pendiente: push autorizado y CI SUCCESS; se
-  declara CLOSED solo con CI SUCCESS sobre su commit.
-- **Pendiente separado (no implementado):** BRANCH-CONFIG-WAREHOUSE-UNSET-01 —
-  `BranchConfigSection.tsx` usa `z.string().uuid().nullable()` con `register` sin convertir `""`
-  a `null`: elegir «Sin configurar» en la bodega por defecto de la sucursal probablemente falla la
-  validación del formulario. Mismo defecto corregido aquí en Ventas; requiere autorización propia.
+- **Pendiente separado:** BRANCH-CONFIG-WAREHOUSE-UNSET-01 — commit local, pendiente de push y CI;
+  ver su sección.
 
 ## COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 — Empresa por defecto atómica — CLOSED (2026-11-10)
 

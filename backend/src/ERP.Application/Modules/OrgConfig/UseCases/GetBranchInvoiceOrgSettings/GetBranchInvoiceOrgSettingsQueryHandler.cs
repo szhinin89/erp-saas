@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Modules.Branches;
 using ERP.Application.Modules.OrgConfig.DTOs;
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Enums;
@@ -11,18 +12,15 @@ public sealed class GetBranchInvoiceOrgSettingsQueryHandler
     : IRequestHandler<GetBranchInvoiceOrgSettingsQuery, Result<BranchInvoiceOrgSettingsDto>>
 {
     private readonly IOrgSettingsRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
-    private readonly ICurrentCompany _currentCompany;
+    private readonly IBranchAccessGuard _branchAccess;
 
     public GetBranchInvoiceOrgSettingsQueryHandler(
         IOrgSettingsRepository repo,
-        ICurrentTenant currentTenant,
-        ICurrentCompany currentCompany
+        IBranchAccessGuard branchAccess
     )
     {
         _repo = repo;
-        _currentTenant = currentTenant;
-        _currentCompany = currentCompany;
+        _branchAccess = branchAccess;
     }
 
     public async Task<Result<BranchInvoiceOrgSettingsDto>> Handle(
@@ -30,8 +28,15 @@ public sealed class GetBranchInvoiceOrgSettingsQueryHandler
         CancellationToken cancellationToken
     )
     {
-        var tenantId = _currentTenant.TenantId;
-        var companyId = _currentCompany.CompanyId;
+        // BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01: la sucursal de la ruta se autoriza con la misma
+        // política que la sucursal activa (empresa, activa, CompanyUserBranch u operador global);
+        // BranchScopeBehavior solo valida X-Branch-Id. 404 ajena/inexistente, 403 sin acceso.
+        var access = await _branchAccess.RequireBranchAsync(request.BranchId, cancellationToken);
+        if (!access.IsSuccess)
+            return Result<BranchInvoiceOrgSettingsDto>.Failure(access.Error!, access.Code);
+
+        var tenantId = access.Value!.TenantId;
+        var companyId = access.Value.CompanyId;
 
         var all = await _repo.GetAllForScopeAsync(
             tenantId,

@@ -4,13 +4,16 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- SALES-PREFERENCES-INTEGRITY-01 (GATE PASS; commit local en `main`): guardado transaccional de
-  Configuración → Ventas y lógica única de `PriceList.IsDefault`. Pendiente: push autorizado por el
-  propietario y CI SUCCESS. Evidencia en [STATUS](../../STATUS.md).
-- BRANCH-CONFIG-WAREHOUSE-UNSET-01 (PENDING; separado de SALES-PREFERENCES-INTEGRITY-01, no
-  autorizado): «Sin configurar» en la bodega por defecto de sucursal (`BranchConfigSection.tsx`)
-  probablemente no supera la validación (`""` no se convierte a `null`). Requiere reproducción y
-  autorización propia. Registro en [STATUS](../../STATUS.md).
+- BRANCH-CONFIG-WAREHOUSE-UNSET-01 (GATE PASS; commit local en `main`; autorizado D1 opción A,
+  D2, D3): «Sin configurar» envía `null`, validación de la bodega al guardar (422) y permiso de
+  edición alineado con el PUT. Pendiente: push autorizado por el propietario y CI SUCCESS.
+- BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 y BRANCH-CONFIG-READ-PERMISSION-01 (GATE PASS; commit local
+  en `main`; autorizados): la configuración de sucursal exige acceso a la sucursal de la ruta
+  (`IBranchAccessGuard`) y la pestaña/Editar se alinean con los permisos de sus APIs. Pendiente:
+  push autorizado por el propietario y CI SUCCESS.
+- BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 (PENDING; separado, no autorizado): revisar si
+  `UpdateBranch`, `UpdateWarehouse` y los listados de bodegas deben exigir acceso a la sucursal.
+  Registro en [STATUS](../../STATUS.md).
 - SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son

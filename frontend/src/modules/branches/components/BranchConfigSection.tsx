@@ -17,11 +17,22 @@ import { warehouseLookupFacade } from "../../inventory/facades/warehouseLookupFa
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 // Propietario Sucursal: DefaultWarehouseId.
+// «Sin configurar» (option value="") se registra como null vía setValueAs; null = el backend
+// resuelve la bodega principal de la sucursal (Warehouse.IsMain).
 const schema = z.object({
   defaultWarehouseId: z.string().uuid().nullable(),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const emptyToNull = (value: unknown) => (value === "" ? null : value);
+
+const MAIN_WAREHOUSE_FALLBACK_HINT =
+  "Sin configurar: las facturas usan la bodega principal de la sucursal.";
+const INVALID_WAREHOUSE_NOTICE =
+  "La bodega configurada ya no es válida (no existe, está inactiva o es de otra sucursal). Las facturas exigirán seleccionar la bodega manualmente hasta corregirla.";
+const SETTINGS_LOAD_ERROR = "No se pudo cargar la configuración de la sucursal.";
+const WAREHOUSES_LOAD_ERROR = "No se pudieron cargar las bodegas de la sucursal.";
 
 interface Props {
   branchId: string;
@@ -31,7 +42,11 @@ export function BranchConfigSection({ branchId }: Props) {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
 
-  const canEdit = canShow("settings.branches.update");
+  // BRANCH-CONFIG-READ-PERMISSION-01: editar exige el permiso del PUT
+  // /org-config/branch/{id}/invoice-defaults (erp.companies.update, contrato congelado) y el del
+  // listado de bodegas que alimenta el selector (inventory.warehouses.view).
+  const hasEditPermissions =
+    canShow("erp.companies.update") && canShow("inventory.warehouses.view");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -50,6 +65,11 @@ export function BranchConfigSection({ branchId }: Props) {
     true,
     [branchId],
   );
+
+  // Un error de carga se muestra como tal; nunca como «sin configurar» (p. ej. 403 por sucursal
+  // no autorizada o 404). Sin configuración cargada no se ofrece Editar.
+  const settingsLoaded = settingsState.data != null && !settingsState.error;
+  const canEdit = hasEditPermissions && settingsLoaded;
 
   const {
     register,
@@ -112,9 +132,18 @@ export function BranchConfigSection({ branchId }: Props) {
   });
 
   const warehouses = warehousesState.data ?? [];
-  const warehouseLabel = warehouses.find(
-    (w) => w.id === settingsState.data?.defaultWarehouseId,
-  );
+  const configuredWarehouseId = settingsState.data?.defaultWarehouseId ?? null;
+  const warehouseLabel = warehouses.find((w) => w.id === configuredWarehouseId);
+  // Solo se declara inválida cuando la lista de bodegas activas cargó: el backend es fail-closed
+  // con ese valor (no cae a la bodega principal).
+  const configuredIsInvalid =
+    configuredWarehouseId !== null &&
+    warehousesState.data != null &&
+    !warehouseLabel;
+  let emptyWarehouseText = "—";
+  if (configuredIsInvalid) emptyWarehouseText = "Bodega no válida";
+  else if (configuredWarehouseId === null)
+    emptyWarehouseText = MAIN_WAREHOUSE_FALLBACK_HINT;
 
   if (settingsState.loading) return <LoadingState />;
 
@@ -151,18 +180,37 @@ export function BranchConfigSection({ branchId }: Props) {
         </div>
 
         <div className="pg-section-body">
-          <div className="pg-detail-grid">
-            <div className="pg-detail-item">
-              <span className="pg-detail-label">Bodega por Defecto</span>
-              <span className="pg-detail-value">
-                {warehouseLabel ? (
-                  `${warehouseLabel.name}${warehouseLabel.code ? ` (${warehouseLabel.code})` : ""}`
-                ) : (
-                  <span className="pg-detail-empty">Sin configurar</span>
-                )}
-              </span>
+          {settingsState.error && (
+            <ZHPageNotice
+              variant="error"
+              message={SETTINGS_LOAD_ERROR}
+              detail={settingsState.error}
+            />
+          )}
+          {settingsLoaded && warehousesState.error && (
+            <ZHPageNotice
+              variant="warning"
+              message={WAREHOUSES_LOAD_ERROR}
+              detail={warehousesState.error}
+            />
+          )}
+          {settingsLoaded && (
+            <div className="pg-detail-grid">
+              <div className="pg-detail-item">
+                <span className="pg-detail-label">Bodega por Defecto</span>
+                <span className="pg-detail-value">
+                  {warehouseLabel ? (
+                    `${warehouseLabel.name}${warehouseLabel.code ? ` (${warehouseLabel.code})` : ""}`
+                  ) : (
+                    <span className="pg-detail-empty">{emptyWarehouseText}</span>
+                  )}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
+          {configuredIsInvalid && (
+            <ZHPageNotice variant="warning" message={INVALID_WAREHOUSE_NOTICE} />
+          )}
         </div>
       </div>
 
@@ -204,6 +252,18 @@ export function BranchConfigSection({ branchId }: Props) {
           />
         )}
 
+        {configuredIsInvalid && (
+          <ZHPageNotice variant="warning" message={INVALID_WAREHOUSE_NOTICE} />
+        )}
+
+        {warehousesState.error && (
+          <ZHPageNotice
+            variant="warning"
+            message={WAREHOUSES_LOAD_ERROR}
+            detail={warehousesState.error}
+          />
+        )}
+
         {warehousesState.loading ? (
           <LoadingState />
         ) : (
@@ -211,17 +271,22 @@ export function BranchConfigSection({ branchId }: Props) {
             <ZHField
               label="Bodega por Defecto"
               hint={
-                warehouses.length === 0
+                !warehousesState.error && warehouses.length === 0
                   ? "No hay bodegas activas para esta sucursal."
-                  : undefined
+                  : MAIN_WAREHOUSE_FALLBACK_HINT
               }
               error={errors.defaultWarehouseId?.message}
             >
               <select
                 disabled={saving || !canEdit}
-                {...register("defaultWarehouseId")}
+                {...register("defaultWarehouseId", { setValueAs: emptyToNull })}
               >
                 <option value="">— Sin configurar —</option>
+                {configuredIsInvalid && configuredWarehouseId && (
+                  <option value={configuredWarehouseId} disabled>
+                    — Bodega configurada no válida —
+                  </option>
+                )}
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}

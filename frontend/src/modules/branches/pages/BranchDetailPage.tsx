@@ -20,6 +20,7 @@ export function BranchDetailPage() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const canView = canShow("settings.branches.view");
+  const canViewConfig = canShow("settings.company.view");
 
   const [branch, setBranch] = useState<BranchDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,11 +82,17 @@ export function BranchDetailPage() {
             label: "Establecimientos",
             mobileLabel: t("branches.detail.tabs.establishmentsShort", "Establ."),
           },
-          {
-            id: "configuraciones",
-            label: "Configuraciones",
-            mobileLabel: t("branches.detail.tabs.configurationsShort", "Config."),
-          },
+          // BRANCH-CONFIG-READ-PERMISSION-01: la pestaña lee GET
+          // /org-config/branch/{id}/invoice-defaults, que exige settings.company.view.
+          ...(canViewConfig
+            ? [
+                {
+                  id: "configuraciones" as const,
+                  label: "Configuraciones",
+                  mobileLabel: t("branches.detail.tabs.configurationsShort", "Config."),
+                },
+              ]
+            : []),
         ] satisfies ZHTab<Tab>[]}
         activeTab={tab}
         onChange={setTab}
@@ -100,7 +107,9 @@ export function BranchDetailPage() {
         />
       )}
 
-      {tab === "configuraciones" && id && <BranchConfigSection branchId={id} />}
+      {tab === "configuraciones" && canViewConfig && id && (
+        <BranchConfigSection branchId={id} />
+      )}
 
       {tab === "establishments" && (
         <div className="pg-section">

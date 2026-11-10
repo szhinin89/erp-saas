@@ -6,8 +6,9 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { BranchDetailPage } from "./BranchDetailPage";
 import { branchService, type BranchDetailDto } from "../api/branchService";
 
+const denied = new Set<string>();
 vi.mock("../../../access/usePermissionsUi", () => ({
-  usePermissionsUi: () => ({ canShow: () => true }),
+  usePermissionsUi: () => ({ canShow: (perm: string) => !denied.has(perm) }),
 }));
 vi.mock("../api/branchService", () => ({ branchService: { getById: vi.fn() } }));
 vi.mock("../components/BranchGeneralSection", () => ({
@@ -22,6 +23,7 @@ const BRANCH = { id: "b1", name: "Sucursal Centro", address: "Av. Principal 123"
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  denied.clear();
 });
 
 const renderPage = () =>
@@ -76,5 +78,18 @@ describe("BranchDetailPage — pestañas (ZHTabBar, UIUX-GLOBAL-TABS-DEFAULT-01)
     fireEvent.click(screen.getByRole("tab", { name: "Establecimientos" }));
     expect(screen.getByText("Establecimientos SRI asociados")).toBeTruthy();
     expect(screen.queryByText("sección general")).toBeNull();
+  });
+
+  it("oculta Configuraciones sin settings.company.view (permiso del GET de la pestaña)", async () => {
+    // BRANCH-CONFIG-READ-PERMISSION-01
+    denied.add("settings.company.view");
+    vi.mocked(branchService.getById).mockResolvedValue(BRANCH);
+    renderPage();
+    await screen.findByRole("tablist", { name: "Secciones de la sucursal" });
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    expect(screen.getByRole("tab", { name: "General" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Establecimientos/ })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: /Configuraciones/ })).toBeNull();
+    expect(screen.queryByText("sección configuraciones")).toBeNull();
   });
 });

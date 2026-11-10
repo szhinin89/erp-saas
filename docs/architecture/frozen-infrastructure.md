@@ -274,6 +274,13 @@ setting de la sucursal activa (debe existir, estar activa y pertenecer a esa suc
 inválido o cruzado no cae al siguiente nivel: devuelve `null`, selección manual y
 `ConfigurationWarnings`. `DefaultWarehouseSource` informa `BranchSetting`, `BranchMainWarehouse`
 o `None`. La bodega de la caja activa la aplica el frontend fuera de este resolver.
+El PUT de sucursal aplica la misma validación al guardar: una bodega inexistente, de otra
+empresa, inactiva o de otra sucursal se rechaza con 422 sin escribir; `null` («Sin configurar»)
+se guarda y activa el fallback a `Warehouse.IsMain`. Los valores corruptos ya guardados siguen
+el tratamiento fail-closed de lectura.
+GET y PUT de sucursal autorizan la sucursal de la ruta con `IBranchAccessGuard.RequireBranchAsync`
+(además de la sucursal activa): sin `CompanyUserBranch` o deshabilitada → 403; de otra empresa o
+inexistente → 404; el administrador global en modo operador conserva el acceso.
 La respuesta incluye las constantes `SriSettings.FallbackDocTypeCode` y
 `SriSettings.FallbackSriPaymentMethodCode` como campos separados de los valores configurados.
 
