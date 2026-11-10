@@ -240,6 +240,31 @@ Infraestructura transversal del ERP. Gestiona los valores que se precargan al cr
 | Punto de emisión | `EmissionPoint.IsDefault` activo del establecimiento principal activo de la empresa (no es un `org_setting`) | — |
 
 Todos son opcionales: ausencia de valor significa "sin configurar" y la selección es manual.
+Vacío o solo espacios se guarda como `null`.
+
+### Validez y guardado (Configuración → Ventas)
+
+`IInvoiceDefaultsCatalogValidator` es la regla única de validez de los defaults de empresa:
+tipo de documento solo `01` (Factura) activo en `sri_doc_types`; forma de pago SRI existente
+y activa; condición de pago existente, activa y del tenant. Al escribir, el validador del
+comando rechaza (422 por campo); la lectura administrativa publica `allowedDocTypeCodes` (tipos
+aceptados hoy) y la UI filtra su selector con esa lista, sin replicar la política. Al leer, un valor guardado que ya no es válido se conserva
+(nunca se borra ni corrige automáticamente): la lectura administrativa lo devuelve con
+`ConfigurationWarnings` e `InvoiceDefaultsResolver` lo trata como `null` con advertencia.
+
+El PUT de empresa guarda los tres settings y, si el payload incluye `defaultPriceList`, la
+reasignación de la lista predeterminada en una única transacción
+(`IUnitOfWork.ExecuteInTransactionAsync`): cualquier fallo revierte el conjunto. La lista sigue
+viviendo solo en `PriceList.IsDefault` (proyectada como `defaultPriceListId`, nunca como
+`org_setting`); `defaultPriceList` ausente no la toca y `priceListId: null` la quita (Ventas
+aplica el PVP). Pedir ese cambio exige además `pricing.update`; sin él se rechaza la operación
+completa (403) antes de escribir. Las reglas del cambio de default y su auditoría están solo en
+`IPriceListDefaultAssigner`, compartido con `PATCH /api/v1/pricing/price-lists/{id}/set-default`
+y con el alta/edición de listas cuando cambia `IsDefault` (que conservan su regla: 422 si ya hay
+otra predeterminada activa; una lista deshabilitada no puede marcarse): como máximo una lista
+predeterminada por empresa; desmarca toda lista que conserve la bandera, activa o no, porque
+`uq_price_lists_tenant_company_default` no filtra por estado ni es diferible (se desmarca y se
+envía a la BD antes de marcar, dentro de la misma transacción), y audita cada cambio.
 
 ### Resolución
 
@@ -257,7 +282,7 @@ La respuesta incluye las constantes `SriSettings.FallbackDocTypeCode` y
 ```text
 GetSalesInvoiceDefaultsQuery              →  GET /api/v1/sales/invoice-defaults ([Authorize])
 GetCompanyInvoiceOrgSettingsQuery         →  GET /api/v1/org-config/company/invoice-defaults (settings.company.view)
-UpsertCompanyInvoiceOrgSettingsCommand    →  PUT /api/v1/org-config/company/invoice-defaults (erp.companies.update)
+UpsertCompanyInvoiceOrgSettingsCommand    →  PUT /api/v1/org-config/company/invoice-defaults (erp.companies.update; + pricing.update si incluye defaultPriceList)
 GetBranchInvoiceOrgSettingsQuery          →  GET /api/v1/org-config/branch/{branchId}/invoice-defaults (settings.company.view)
 UpsertBranchInvoiceOrgSettingsCommand     →  PUT /api/v1/org-config/branch/{branchId}/invoice-defaults (erp.companies.update)
 ```
@@ -269,6 +294,8 @@ UpsertBranchInvoiceOrgSettingsCommand     →  PUT /api/v1/org-config/branch/{br
 | Queries/commands Company y Branch | `ERP.Application/Modules/OrgConfig/UseCases/` |
 | `GetSalesInvoiceDefaultsQueryHandler` | `ERP.Application/Modules/Sales/UseCases/GetSalesInvoiceDefaults/` |
 | `IInvoiceDefaultsResolver` / `InvoiceDefaultsResolver` | `ERP.Domain/Modules/Sales/Interfaces/` / `ERP.Infrastructure/Services/` |
+| `IInvoiceDefaultsCatalogValidator` / `InvoiceDefaultsCatalogValidator` | `ERP.Domain/Modules/Sales/Interfaces/` / `ERP.Infrastructure/Services/` |
+| `IPriceListDefaultAssigner` / `PriceListDefaultAssigner` | `ERP.Domain/Modules/Pricing/Interfaces/` / `ERP.Infrastructure/Services/` |
 | `OrgConfigController` | `ERP.API/Controllers/OrgConfigController.cs` |
 | `orgConfigService` | `frontend/src/modules/configuracion/empresa/api/orgConfigService.ts` |
 | `CompanySalesSettingsSection.tsx` (defaults Company) | `frontend/src/modules/configuracion/empresa/sections/` |

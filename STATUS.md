@@ -1,6 +1,38 @@
 # Project Status
 
-## COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 — Empresa por defecto atómica — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+## SALES-PREFERENCES-INTEGRITY-01 — Integridad de preferencias de ventas — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+
+Autorizado por el propietario (D1–D4, opción B). Sin cambios en reglas fiscales, motor de precios,
+migraciones ni datos. Regla vigente: [Valores por Defecto de Facturación](docs/architecture/frozen-infrastructure.md#valores-por-defecto-de-facturación).
+
+- Configuración → Ventas guarda tipo de documento, forma de pago SRI, condición de pago y lista
+  predeterminada en un único PUT transaccional; «No configurado» se guarda como `null` y permite
+  quitar la lista (PVP). El selector de tipo de documento solo ofrece los tipos que publica el
+  backend (`allowedDocTypeCodes`).
+- `IPriceListDefaultAssigner` es la única lógica de `PriceList.IsDefault`: la usan el PUT de
+  Ventas, el PATCH `set-default` (conservado) y el alta/edición de listas cuando cambia la bandera
+  (mismo contrato y regla de 422; ahora auditado). Se retiró `priceListDefaultFacade` (sin uso).
+- Corregido bug preexistente detectado con PostgreSQL real: reasignar o crear la lista
+  predeterminada violaba `uq_price_lists_tenant_company_default` (409) cuando ya existía otra con
+  la bandera, incluida una deshabilitada.
+- **Evidencia local (2026-11-10):** Application Pricing/OrgConfig/Sales; Infrastructure
+  (resolver y regresiones); API + PostgreSQL (`SalesPreferencesIntegrityHttpTests` con alta/edición,
+  lista deshabilitada y rollback forzado por trigger que deja OrgSettings, PriceList y auditoría sin
+  cambios; `CompanySettingsIsolationHttpTests`; `OrganizationalConfigurationV1HttpTests`);
+  `ERP.Architecture.Tests`; frontend focal; `tsc -b`, ESLint, `architecture:check` y
+  `check-architecture-guardrails.ps1 -SkipFrontendChunk`. Conteos en el reporte de entrega.
+- **Gate final del propietario PASS (2026-11-10).** Pendiente: push autorizado y CI SUCCESS; se
+  declara CLOSED solo con CI SUCCESS sobre su commit.
+- **Pendiente separado (no implementado):** BRANCH-CONFIG-WAREHOUSE-UNSET-01 —
+  `BranchConfigSection.tsx` usa `z.string().uuid().nullable()` con `register` sin convertir `""`
+  a `null`: elegir «Sin configurar» en la bodega por defecto de la sucursal probablemente falla la
+  validación del formulario. Mismo defecto corregido aquí en Ventas; requiere autorización propia.
+
+## COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 — Empresa por defecto atómica — CLOSED (2026-11-10)
+
+El propietario confirma CI #1134 SUCCESS sobre `main`, commit
+`682c457c5e470e9943e6a8f4ef699ae2e5dafda6` (`fix(companies): make default company provisioning
+atomic per tenant`), tras el gate final del propietario PASS (2026-11-10).
 
 Autorizado por el propietario (D1–D3). Sin cambios en H-16/H-25, `LoginHandler`, First Run, steps,
 configuración SRI, migraciones ni datos.
@@ -20,8 +52,7 @@ configuración SRI, migraciones ni datos.
   -SkipFrontendChunk` OK.
 - **Gate final del propietario PASS (2026-11-10):** `CompanyProvisioningAtomicityPostgreSqlTests`
   (5), `FirstRunFullInstallationTests` (handler real de First Run con el lock dentro de su
-  transacción) y `BootstrapStepGovernanceTests`: 11/11 PASS. Se declara CLOSED solo con CI SUCCESS
-  sobre su commit.
+  transacción) y `BootstrapStepGovernanceTests`: 11/11 PASS. CLOSED con CI #1134 SUCCESS.
 - **Riesgo residual:** una empresa por defecto parcial ya existente en algún entorno no se repara
   (requeriría intervención de datos autorizada).
 

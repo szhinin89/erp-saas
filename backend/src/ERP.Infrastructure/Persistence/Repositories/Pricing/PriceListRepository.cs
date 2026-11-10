@@ -73,6 +73,11 @@ public sealed class PriceListRepository : IPriceListRepository
     public Task<PriceList?> GetDefaultAsync(Guid tenantId, CancellationToken ct = default) =>
         Scoped(tenantId).FirstOrDefaultAsync(p => p.IsDefault && p.IsActive, ct);
 
+    public async Task<IReadOnlyList<PriceList>> GetDefaultFlagHoldersAsync(
+        Guid tenantId,
+        CancellationToken ct = default
+    ) => await Scoped(tenantId).Where(p => p.IsDefault).ToListAsync(ct);
+
     public Task AddAsync(PriceList priceList, CancellationToken ct = default) =>
         _context.PriceLists.AddAsync(priceList, ct).AsTask();
 

@@ -931,7 +931,8 @@ un establecimiento principal por empresa (`uq_establishment_tenant_company_main`
 emisión default por establecimiento (`uq_emission_point_establishment_default`), una bodega
 principal por sucursal (`uq_warehouses_tenant_branch_main`) y una lista de precios default por
 empresa (`uq_price_lists_tenant_company_default`). Sucursal, establecimiento, punto de emisión
-y lista de precios desmarcan el anterior al marcar uno nuevo. Ningún caso de uso cambia la
+y lista de precios desmarcan el anterior al marcar uno nuevo (la lista, vía `IPriceListDefaultAssigner`:
+[Valores por Defecto de Facturación](./frozen-infrastructure.md#valores-por-defecto-de-facturación)). Ningún caso de uso cambia la
 bodega principal; el índice es su protección.
 
 ### Historial

@@ -409,6 +409,33 @@ public sealed class CompanySettingsIsolationHttpTests
     }
 
     [Fact]
+    public async Task Preferencias_de_ventas_con_cambio_de_lista_sin_permiso_Pricing_se_rechazan_completas()
+    {
+        // SALES-PREFERENCES-INTEGRITY-01: este usuario tiene erp.companies.update pero no
+        // pricing.update → el PUT que pide cambiar la lista se rechaza entero, sin guardar los
+        // demás campos.
+        using var asA = _f.CreateClient(_f.CompanyAId);
+        using var before = JsonDocument.Parse(await asA.GetStringAsync(CompanyInvoiceDefaults));
+        var docTypeBefore = before.RootElement.GetProperty("data").GetProperty("defaultDocTypeCode").GetString();
+
+        var denied = await asA.PutAsJsonAsync(
+            CompanyInvoiceDefaults,
+            new
+            {
+                defaultDocTypeCode = docTypeBefore == "01" ? null : "01",
+                defaultSriPaymentMethodCode = (string?)null,
+                defaultPaymentTermId = (Guid?)null,
+                defaultPriceList = new { priceListId = (Guid?)null },
+            }
+        );
+        denied.StatusCode.Should().Be(HttpStatusCode.Forbidden, await denied.Content.ReadAsStringAsync());
+
+        using var after = JsonDocument.Parse(await asA.GetStringAsync(CompanyInvoiceDefaults));
+        after.RootElement.GetProperty("data").GetProperty("defaultDocTypeCode").GetString()
+            .Should().Be(docTypeBefore);
+    }
+
+    [Fact]
     public async Task Politica_fiscal_de_ventas_de_B_no_se_lee_ni_modifica_desde_A()
     {
         var before = await LoadCompanyBSettingsAsync();

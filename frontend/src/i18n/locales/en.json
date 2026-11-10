@@ -1558,6 +1558,8 @@
   "settings.company.sales.defaultPaymentTerm": "Payment Term",
   "settings.company.sales.notConfigured": "Not configured",
   "settings.company.sales.noPriceLists": "No active price lists. Create one from Pricing → Price Lists.",
+  "settings.company.sales.priceListRequiresPricingPermission": "Changing the default price list requires permission to edit Pricing.",
+  "settings.company.sales.configurationWarnings": "Some saved preferences are no longer valid; Sales ignores them until they are fixed.",
   "common.configure": "Configure",
   "common.review": "Review",
   "operationalReadiness.title": "Operational readiness",

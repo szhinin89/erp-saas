@@ -1206,6 +1206,14 @@ public static class DependencyInjection
             ERP.Infrastructure.Services.InvoiceDefaultsResolver
         >();
         services.AddScoped<
+            ERP.Domain.Modules.Sales.Interfaces.IInvoiceDefaultsCatalogValidator,
+            ERP.Infrastructure.Services.InvoiceDefaultsCatalogValidator
+        >();
+        services.AddScoped<
+            ERP.Domain.Modules.Pricing.Interfaces.IPriceListDefaultAssigner,
+            ERP.Infrastructure.Services.PriceListDefaultAssigner
+        >();
+        services.AddScoped<
             ERP.Domain.Configuration.Interfaces.IOperationalPreferencesResolver,
             ERP.Infrastructure.Services.OperationalPreferencesResolver
         >();

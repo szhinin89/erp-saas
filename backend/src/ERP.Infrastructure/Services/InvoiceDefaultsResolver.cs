@@ -21,16 +21,19 @@ public sealed class InvoiceDefaultsResolver : IInvoiceDefaultsResolver
     private readonly IOrgSettingsRepository _orgRepo;
     private readonly IEmissionPointRepository _epRepo;
     private readonly IWarehouseRepository _warehouseRepo;
+    private readonly IInvoiceDefaultsCatalogValidator _catalog;
 
     public InvoiceDefaultsResolver(
         IOrgSettingsRepository orgRepo,
         IEmissionPointRepository epRepo,
-        IWarehouseRepository warehouseRepo
+        IWarehouseRepository warehouseRepo,
+        IInvoiceDefaultsCatalogValidator catalog
     )
     {
         _orgRepo = orgRepo;
         _epRepo = epRepo;
         _warehouseRepo = warehouseRepo;
+        _catalog = catalog;
     }
 
     public async Task<InvoiceDefaultsResult> GetAsync(
@@ -59,9 +62,47 @@ public sealed class InvoiceDefaultsResolver : IInvoiceDefaultsResolver
             return null;
         }
 
-        var docTypeCode = Resolve(OrgSettingKeys.Invoice.DefaultDocTypeCode);
-        var payMethodCode = Resolve(OrgSettingKeys.Invoice.DefaultPaymentMethodCode);
+        var docTypeCode = Resolve(OrgSettingKeys.Invoice.DefaultDocTypeCode)?.Trim();
+        var payMethodCode = Resolve(OrgSettingKeys.Invoice.DefaultPaymentMethodCode)?.Trim();
         var paymentTermId = ResolveGuid(OrgSettingKeys.Invoice.DefaultPaymentTermId);
+
+        // SALES-PREFERENCES-INTEGRITY-01: un default guardado que ya no es válido (código fuera de
+        // catálogo/inactivo, tipo distinto de 01, condición de pago inexistente/inactiva/de otro
+        // tenant) se ignora con advertencia explícita — se conserva en BD, nunca se borra aquí.
+        var companyWarnings = new List<string>();
+        if (
+            docTypeCode is not null
+            && !await _catalog.IsValidDocTypeCodeAsync(docTypeCode, cancellationToken)
+        )
+        {
+            docTypeCode = null;
+            companyWarnings.Add(
+                InvoiceDefaultsCatalogMessages.InvalidDocType
+                    + InvoiceDefaultsCatalogMessages.StoredValueIgnoredSuffix
+            );
+        }
+        if (
+            payMethodCode is not null
+            && !await _catalog.IsValidSriPaymentMethodCodeAsync(payMethodCode, cancellationToken)
+        )
+        {
+            payMethodCode = null;
+            companyWarnings.Add(
+                InvoiceDefaultsCatalogMessages.InvalidSriPaymentMethod
+                    + InvoiceDefaultsCatalogMessages.StoredValueIgnoredSuffix
+            );
+        }
+        if (
+            paymentTermId is { } termId
+            && !await _catalog.IsValidPaymentTermAsync(tenantId, termId, cancellationToken)
+        )
+        {
+            paymentTermId = null;
+            companyWarnings.Add(
+                InvoiceDefaultsCatalogMessages.InvalidPaymentTerm
+                    + InvoiceDefaultsCatalogMessages.StoredValueIgnoredSuffix
+            );
+        }
 
         // DefaultEmissionPointId: resuelto siempre desde EmissionPoint.IsDefault (única fuente).
         var defaultEp = await _epRepo.GetDefaultForCompanyAsync(
@@ -81,7 +122,9 @@ public sealed class InvoiceDefaultsResolver : IInvoiceDefaultsResolver
             DefaultWarehouseId: warehouseId,
             DefaultWarehouseSource: warehouseSource,
             RequiresManualWarehouseSelection: requiresManualWarehouseSelection,
-            ConfigurationWarnings: warnings
+            ConfigurationWarnings: companyWarnings.Count == 0
+                ? warnings
+                : companyWarnings.Concat(warnings).ToList()
         );
     }
 

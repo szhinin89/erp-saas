@@ -125,8 +125,8 @@ export function PriceListsPage() {
     try {
       let saved: PriceListDto;
       if (editing) {
-        // isDefault no se edita desde este catálogo — único punto de escritura:
-        // Configuración → Ventas (priceListService.setDefault). Se reenvía sin cambios.
+        // isDefault no se edita desde este catálogo — se reasigna desde Configuración → Ventas
+        // (guardado transaccional de preferencias). Se reenvía sin cambios.
         const p: UpdatePriceListPayload = {
           id: editing.id,
           name: fName,

@@ -18,15 +18,14 @@ import { COMPANY_SETTINGS_TAB_VIEW_PERMISSION } from "../companySettingsTabAcces
 import { sriLookupFacade } from "../../../items/facades/sriLookupFacade";
 import { paymentTermLookupFacade } from "../../../masterData/facades/paymentTermLookupFacade";
 import { priceListLookupFacade } from "../../../pricing/facades/priceListLookupFacade";
-import { priceListDefaultFacade } from "../../../pricing/facades/priceListDefaultFacade";
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 // Propietario Empresa: DocTypeCode, PaymentMethodCode, PaymentTermId, PriceList.IsDefault.
 // DefaultWarehouseId → Sucursal. DefaultEmissionPointId → EmissionPoint.IsDefault.
-// Lista de precios predeterminada: fuente de verdad única = PriceList.IsDefault (backend),
-// esta sección solo la reasigna vía priceListDefaultFacade.setDefault — nunca crea un OrgSetting
-// paralelo (evitaría dos fuentes de verdad para el mismo default, ver auditoría
-// COMPANY-SETTINGS-SALES-SECTION-01).
+// Lista de precios predeterminada: fuente de verdad única = PriceList.IsDefault (backend); nunca
+// un OrgSetting paralelo. SALES-PREFERENCES-INTEGRITY-01: todo se guarda en un único PUT
+// transaccional; la lista solo viaja cuando cambió (y exige pricing.update).
+// "No configurado" (option value="") se registra como null vía setValueAs.
 const schema = z.object({
   defaultDocTypeCode: z.string().nullable(),
   defaultSriPaymentMethodCode: z.string().nullable(),
@@ -35,6 +34,8 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const emptyToNull = (value: unknown) => (value === "" ? null : value);
 
 const defaultValues: FormValues = {
   defaultDocTypeCode: null,
@@ -51,6 +52,7 @@ export function CompanySalesSettingsSection() {
   // el guardado sigue exigiendo erp.companies.update, igual que su PUT.
   const canView = canShow(COMPANY_SETTINGS_TAB_VIEW_PERMISSION.sales);
   const canEdit = canShow("erp.companies.update");
+  const canEditPriceList = canEdit && canShow("pricing.update");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,7 +70,8 @@ export function CompanySalesSettingsSection() {
   );
 
   const currentDefaultPriceListId =
-    priceListsState.data?.find((pl) => pl.isDefault)?.id ?? null;
+    settingsState.data?.defaultPriceListId ?? null;
+  const configurationWarnings = settingsState.data?.configurationWarnings ?? [];
 
   const {
     register,
@@ -105,17 +108,17 @@ export function CompanySalesSettingsSection() {
     setSaveError(null);
     setSaving(true);
     try {
+      const priceListChanged =
+        canEditPriceList &&
+        (values.defaultPriceListId ?? null) !== currentDefaultPriceListId;
       await orgConfigService.upsertCompanyInvoiceDefaults({
         defaultDocTypeCode: values.defaultDocTypeCode ?? null,
         defaultSriPaymentMethodCode: values.defaultSriPaymentMethodCode ?? null,
         defaultPaymentTermId: values.defaultPaymentTermId ?? null,
+        ...(priceListChanged
+          ? { defaultPriceList: { priceListId: values.defaultPriceListId ?? null } }
+          : {}),
       });
-      if (
-        values.defaultPriceListId &&
-        values.defaultPriceListId !== currentDefaultPriceListId
-      ) {
-        await priceListDefaultFacade.setDefault(values.defaultPriceListId);
-      }
       message.success(t("settings.company.sales.saved"));
       settingsState.refetch();
       priceListsState.refetch();
@@ -147,6 +150,14 @@ export function CompanySalesSettingsSection() {
   if (settingsState.loading) return <LoadingState />;
 
   const docTypes = docTypesState.data ?? [];
+  // El backend publica qué tipos acepta como default (IInvoiceDefaultsCatalogValidator); la UI
+  // solo filtra con esa lista — no replica la política fiscal.
+  const allowedDocTypeCodes = new Set(
+    settingsState.data?.allowedDocTypeCodes ?? [],
+  );
+  const selectableDocTypes = docTypes.filter((dt) =>
+    allowedDocTypeCodes.has(dt.code),
+  );
   const paymentMethods = paymentMethodsState.data ?? [];
   const paymentTerms = (paymentTermsState.data ?? []).filter(
     (pt) => pt.isActive,
@@ -198,6 +209,13 @@ export function CompanySalesSettingsSection() {
         </div>
 
         <div className="pg-section-body">
+          {configurationWarnings.length > 0 && (
+            <ZHPageNotice
+              variant="warning"
+              message={t("settings.company.sales.configurationWarnings")}
+              detail={configurationWarnings.join(" ")}
+            />
+          )}
           <div className="pg-detail-grid">
             <div className="pg-detail-item">
               <span className="pg-detail-label">
@@ -310,8 +328,10 @@ export function CompanySalesSettingsSection() {
                 error={errors.defaultPriceListId?.message ? t(errors.defaultPriceListId?.message) : undefined}
               >
                 <ZhSelect
-                  disabled={saving || !canEdit || priceLists.length === 0}
-                  {...register("defaultPriceListId")}
+                  disabled={
+                    saving || !canEditPriceList || priceLists.length === 0
+                  }
+                  {...register("defaultPriceListId", { setValueAs: emptyToNull })}
                 >
                   <option value="">
                     — {t("settings.company.sales.notConfigured")} —
@@ -328,6 +348,11 @@ export function CompanySalesSettingsSection() {
                   {t("settings.company.sales.noPriceLists")}
                 </p>
               )}
+              {canEdit && !canEditPriceList && (
+                <p className="zh-text-muted zh-text-xs">
+                  {t("settings.company.sales.priceListRequiresPricingPermission")}
+                </p>
+              )}
 
               <ZHField
                 label={t("settings.company.sales.defaultDocType")}
@@ -335,12 +360,12 @@ export function CompanySalesSettingsSection() {
               >
                 <ZhSelect
                   disabled={saving || !canEdit}
-                  {...register("defaultDocTypeCode")}
+                  {...register("defaultDocTypeCode", { setValueAs: emptyToNull })}
                 >
                   <option value="">
                     — {t("settings.company.sales.notConfigured")} —
                   </option>
-                  {docTypes.map((dt) => (
+                  {selectableDocTypes.map((dt) => (
                     <option key={dt.code} value={dt.code}>
                       {dt.code} — {dt.name}
                     </option>
@@ -354,7 +379,9 @@ export function CompanySalesSettingsSection() {
               >
                 <ZhSelect
                   disabled={saving || !canEdit}
-                  {...register("defaultSriPaymentMethodCode")}
+                  {...register("defaultSriPaymentMethodCode", {
+                    setValueAs: emptyToNull,
+                  })}
                 >
                   <option value="">
                     — {t("settings.company.sales.notConfigured")} —
@@ -373,7 +400,7 @@ export function CompanySalesSettingsSection() {
               >
                 <ZhSelect
                   disabled={saving || !canEdit}
-                  {...register("defaultPaymentTermId")}
+                  {...register("defaultPaymentTermId", { setValueAs: emptyToNull })}
                 >
                   <option value="">
                     — {t("settings.company.sales.notConfigured")} —

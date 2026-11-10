@@ -4,9 +4,13 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 (GATE PASS; riesgo derivado de H-16/H-25, CLOSED con
-  CI #1133 SUCCESS): `EnsureDefaultCompanyAsync` transaccional y serializado por tenant. Pendiente:
-  commit local, push autorizado por el propietario y CI SUCCESS. Evidencia en [STATUS](../../STATUS.md).
+- SALES-PREFERENCES-INTEGRITY-01 (GATE PASS; commit local en `main`): guardado transaccional de
+  Configuración → Ventas y lógica única de `PriceList.IsDefault`. Pendiente: push autorizado por el
+  propietario y CI SUCCESS. Evidencia en [STATUS](../../STATUS.md).
+- BRANCH-CONFIG-WAREHOUSE-UNSET-01 (PENDING; separado de SALES-PREFERENCES-INTEGRITY-01, no
+  autorizado): «Sin configurar» en la bodega por defecto de sucursal (`BranchConfigSection.tsx`)
+  probablemente no supera la validación (`""` no se convierte a `null`). Requiere reproducción y
+  autorización propia. Registro en [STATUS](../../STATUS.md).
 - SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son

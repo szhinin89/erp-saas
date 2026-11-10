@@ -1627,6 +1627,8 @@
   "settings.company.sales.defaultPaymentTerm": "Condición de Pago",
   "settings.company.sales.notConfigured": "Sin configurar",
   "settings.company.sales.noPriceLists": "No hay listas de precios activas. Crea una desde Pricing → Listas de Precios.",
+  "settings.company.sales.priceListRequiresPricingPermission": "Cambiar la lista de precios predeterminada requiere permiso para editar Pricing.",
+  "settings.company.sales.configurationWarnings": "Hay preferencias guardadas que ya no son válidas; Ventas las ignora hasta que se corrijan.",
   "common.configure": "Configurar",
   "common.review": "Revisar",
   "operationalReadiness.title": "Preparación operativa",

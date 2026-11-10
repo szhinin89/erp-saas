@@ -219,7 +219,10 @@ export const priceListService = {
   enable: (id: string) => apiPatch<boolean>(`${BASE}/price-lists/${id}/enable`),
   disable: (id: string) =>
     apiPatch<boolean>(`${BASE}/price-lists/${id}/disable`),
-  /** Único punto de escritura para el default — usado desde Configuración → Ventas. */
+  /**
+   * PATCH set-default (API conservada). Configuración → Ventas ya no lo usa: guarda la lista junto
+   * con sus preferencias en un único PUT transaccional (orgConfigService.upsertCompanyInvoiceDefaults).
+   */
   setDefault: (id: string) =>
     apiPatch<PriceListDto>(`${BASE}/price-lists/${id}/set-default`),
   /** Responsabilidad única: qué ítems pertenecen a esta lista (sin reglas ni excepciones). */

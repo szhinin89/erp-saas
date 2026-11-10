@@ -4,7 +4,11 @@ using ERP.Application.Modules.OrgConfig.UseCases.UpsertCompanyInvoiceOrgSettings
 using ERP.Domain.Configuration.Constants;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Enums;
+using ERP.Application.Access.Authorization;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Modules.Pricing.Entities;
+using ERP.Domain.Modules.Pricing.Interfaces;
+using ERP.Domain.Modules.Sales.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -70,8 +74,15 @@ public sealed class CompanyInvoiceOrgSettingsCompanyScopeTests
                 }
             );
 
+        var priceLists = new Mock<IPriceListRepository>();
+        priceLists
+            .Setup(r => r.GetDefaultFlagHoldersAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PriceList>());
+
         var handler = new GetCompanyInvoiceOrgSettingsQueryHandler(
             repo.Object,
+            priceLists.Object,
+            Mock.Of<IInvoiceDefaultsCatalogValidator>(),
             tenant.Object,
             company.Object
         );
@@ -111,6 +122,11 @@ public sealed class CompanyInvoiceOrgSettingsCompanyScopeTests
 
         var handler = new UpsertCompanyInvoiceOrgSettingsCommandHandler(
             repo.Object,
+            Mock.Of<IPriceListRepository>(),
+            Mock.Of<IPriceListDefaultAssigner>(),
+            Mock.Of<IRuntimePermissionAuthorizer>(),
+            CompanySalesPreferencesIntegrityTests.TransactionalUnitOfWork().Object,
+            Mock.Of<IInvoiceDefaultsCatalogValidator>(),
             tenant.Object,
             company.Object,
             user.Object

@@ -3,6 +3,7 @@ using ERP.Application.Modules.Pricing.UseCases.PriceLists;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Interfaces;
+using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Moq;
 
@@ -23,12 +24,15 @@ public sealed class SetDefaultPriceListHandlerTests
     private static PriceList NewList(string code, bool isDefault) =>
         PriceList.Create(TenantId, CompanyId, code, code, "USD", isDefault, UserId);
 
+    private static Mock<IUnitOfWork> _uow = null!;
+
     private static (
         SetDefaultPriceListHandler Handler,
         Mock<IPriceListRepository> Repo,
         Mock<IConfigurationChangeLogger> ChangeLogger
     ) BuildHandler()
     {
+        _uow = OrgConfig.CompanySalesPreferencesIntegrityTests.TransactionalUnitOfWork();
         var repo = new Mock<IPriceListRepository>();
         var changeLogger = new Mock<IConfigurationChangeLogger>();
         var tenant = new Mock<ICurrentTenant>();
@@ -36,9 +40,15 @@ public sealed class SetDefaultPriceListHandlerTests
         var user = new Mock<ICurrentUser>();
         user.SetupGet(u => u.UserId).Returns(UserId);
 
+        // Por defecto ninguna lista conserva la bandera; cada test fija sus holders.
+        repo.Setup(r => r.GetDefaultFlagHoldersAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PriceList>());
+
+        // SALES-PREFERENCES-INTEGRITY-01: el handler delega en la implementación real del
+        // asignador compartido — estos tests cubren ambos.
         var handler = new SetDefaultPriceListHandler(
-            repo.Object,
-            changeLogger.Object,
+            _uow.Object,
+            new PriceListDefaultAssigner(repo.Object, changeLogger.Object, _uow.Object),
             tenant.Object,
             user.Object
         );
@@ -77,7 +87,7 @@ public sealed class SetDefaultPriceListHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -87,6 +97,8 @@ public sealed class SetDefaultPriceListHandlerTests
         var target = NewList("GENERAL", isDefault: true);
         repo.Setup(r => r.GetByIdAsync(TenantId, target.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(target);
+        repo.Setup(r => r.GetDefaultFlagHoldersAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { target });
 
         var result = await handler.Handle(
             new SetDefaultPriceListCommand(target.Id),
@@ -95,8 +107,7 @@ public sealed class SetDefaultPriceListHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.IsDefault.Should().BeTrue();
-        repo.Verify(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()), Times.Never);
-        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -108,8 +119,8 @@ public sealed class SetDefaultPriceListHandlerTests
 
         repo.Setup(r => r.GetByIdAsync(TenantId, newDefault.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(newDefault);
-        repo.Setup(r => r.GetDefaultAsync(TenantId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(previousDefault);
+        repo.Setup(r => r.GetDefaultFlagHoldersAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { previousDefault });
 
         var result = await handler.Handle(
             new SetDefaultPriceListCommand(newDefault.Id),
@@ -119,7 +130,7 @@ public sealed class SetDefaultPriceListHandlerTests
         result.IsSuccess.Should().BeTrue();
         newDefault.IsDefault.Should().BeTrue();
         previousDefault.IsDefault.Should().BeFalse();
-        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once); // flush intermedio dentro de la transacción
 
         // CONFIG-FOUNDATION-P2-01: el flip completo se audita — la lista anterior desmarcada y
         // la nueva marcada, ambas con EntityType="PriceList"/FieldName="IsDefault".
@@ -160,12 +171,43 @@ public sealed class SetDefaultPriceListHandlerTests
         var target = NewList("GENERAL", isDefault: true);
         repo.Setup(r => r.GetByIdAsync(TenantId, target.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(target);
+        repo.Setup(r => r.GetDefaultFlagHoldersAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { target });
 
         await handler.Handle(new SetDefaultPriceListCommand(target.Id), CancellationToken.None);
 
         changeLogger.Verify(
             l => l.LogAsync(It.IsAny<ConfigurationChangeLogEntry>(), It.IsAny<CancellationToken>()),
             Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task Handle_desmarca_tambien_una_lista_deshabilitada_que_conservaba_la_bandera()
+    {
+        // uq_price_lists_tenant_company_default no filtra por estado: una lista default
+        // deshabilitada bloquearía el índice si no se desmarca en el mismo flip.
+        var (handler, repo, changeLogger) = BuildHandler();
+        var staleDefault = NewList("ANTIGUA", isDefault: true);
+        staleDefault.Disable(UserId);
+        var newDefault = NewList("MAYORISTA", isDefault: false);
+        repo.Setup(r => r.GetByIdAsync(TenantId, newDefault.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(newDefault);
+        repo.Setup(r => r.GetDefaultFlagHoldersAsync(TenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { staleDefault });
+
+        var result = await handler.Handle(
+            new SetDefaultPriceListCommand(newDefault.Id),
+            CancellationToken.None
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        staleDefault.IsDefault.Should().BeFalse();
+        newDefault.IsDefault.Should().BeTrue();
+        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once); // flush intermedio dentro de la transacción
+        changeLogger.Verify(
+            l => l.LogAsync(It.IsAny<ConfigurationChangeLogEntry>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2)
         );
     }
 }

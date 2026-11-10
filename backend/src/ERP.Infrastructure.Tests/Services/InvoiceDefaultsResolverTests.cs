@@ -6,6 +6,7 @@ using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Infrastructure.Services;
 using FluentAssertions;
 using Moq;
@@ -30,9 +31,29 @@ public sealed class InvoiceDefaultsResolverTests
         public Mock<IOrgSettingsRepository> OrgRepo { get; } = new();
         public Mock<IEmissionPointRepository> EpRepo { get; } = new();
         public Mock<IWarehouseRepository> WarehouseRepo { get; } = new();
+        public Mock<IInvoiceDefaultsCatalogValidator> Catalog { get; } = new();
 
         public Fixture()
         {
+            // Por defecto los valores guardados son válidos; los tests de integridad lo invierten.
+            Catalog
+                .Setup(c => c.IsValidDocTypeCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+            Catalog
+                .Setup(c =>
+                    c.IsValidSriPaymentMethodCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())
+                )
+                .ReturnsAsync(true);
+            Catalog
+                .Setup(c =>
+                    c.IsValidPaymentTermAsync(
+                        It.IsAny<Guid>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(true);
+
             OrgRepo
                 .Setup(r =>
                     r.GetAllForScopeAsync(
@@ -53,7 +74,7 @@ public sealed class InvoiceDefaultsResolverTests
         }
 
         public InvoiceDefaultsResolver BuildResolver() =>
-            new(OrgRepo.Object, EpRepo.Object, WarehouseRepo.Object);
+            new(OrgRepo.Object, EpRepo.Object, WarehouseRepo.Object, Catalog.Object);
 
         public void SetBranchWarehouseSetting(string? rawValue)
         {
@@ -318,5 +339,59 @@ public sealed class InvoiceDefaultsResolverTests
         result.DefaultDocTypeCode.Should().Be("01");
         result.DefaultSriPaymentMethodCode.Should().Be("01");
         result.DefaultPaymentTermId.Should().Be(paymentTermId);
+    }
+
+    [Fact]
+    public async Task Defaults_de_empresa_invalidos_se_ignoran_con_advertencia_sin_borrarse()
+    {
+        // SALES-PREFERENCES-INTEGRITY-01: tipo 07, forma de pago inactiva y condición de pago
+        // inexistente/de otro tenant → null + advertencia explícita; nunca se escriben.
+        var f = new Fixture();
+        var paymentTermId = Guid.NewGuid();
+        OrgSetting Setting(string key, string value, SettingDataType type) =>
+            OrgSetting.Create(TenantId, CompanyId, OrgScope.Company, CompanyId, key, value, type, UserId);
+        f.OrgRepo.Setup(r =>
+                r.GetAllForScopeAsync(
+                    TenantId,
+                    CompanyId,
+                    OrgScope.Company,
+                    CompanyId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                new[]
+                {
+                    Setting(OrgSettingKeys.Invoice.DefaultDocTypeCode, "07", SettingDataType.String),
+                    Setting(OrgSettingKeys.Invoice.DefaultPaymentMethodCode, "99", SettingDataType.String),
+                    Setting(
+                        OrgSettingKeys.Invoice.DefaultPaymentTermId,
+                        paymentTermId.ToString(),
+                        SettingDataType.Guid
+                    ),
+                }
+            );
+        f.Catalog.Setup(c => c.IsValidDocTypeCodeAsync("07", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        f.Catalog.Setup(c => c.IsValidSriPaymentMethodCodeAsync("99", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        f.Catalog.Setup(c =>
+                c.IsValidPaymentTermAsync(TenantId, paymentTermId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(false);
+
+        var result = await f.BuildResolver().GetAsync(TenantId, CompanyId, null, default);
+
+        result.DefaultDocTypeCode.Should().BeNull();
+        result.DefaultSriPaymentMethodCode.Should().BeNull();
+        result.DefaultPaymentTermId.Should().BeNull();
+        result.ConfigurationWarnings.Should().HaveCount(3);
+        result.ConfigurationWarnings.Should().OnlyContain(w =>
+            w.EndsWith(InvoiceDefaultsCatalogMessages.StoredValueIgnoredSuffix)
+        );
+        f.OrgRepo.Verify(
+            r => r.UpsertAsync(It.IsAny<OrgSetting>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
     }
 }

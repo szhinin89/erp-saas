@@ -21,6 +21,16 @@ public interface IPriceListRepository
 
     /// <summary>Lista predeterminada activa vigente del tenant, o null si no hay ninguna — usado para reasignar el default desde Configuración → Ventas.</summary>
     Task<PriceList?> GetDefaultAsync(Guid tenantId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Toda lista de la empresa operativa con <c>IsDefault = true</c>, activa o no — el índice
+    /// <c>uq_price_lists_tenant_company_default</c> no filtra por estado. Uso exclusivo de
+    /// <see cref="IPriceListDefaultAssigner"/>; la resolución de precios usa <see cref="GetDefaultAsync"/>.
+    /// </summary>
+    Task<IReadOnlyList<PriceList>> GetDefaultFlagHoldersAsync(
+        Guid tenantId,
+        CancellationToken ct = default
+    );
     Task AddAsync(PriceList priceList, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

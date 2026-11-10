@@ -1,7 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Pricing.DTOs;
-using ERP.Domain.Configuration.Enums;
-using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Pricing.Entities;
 using ERP.Domain.Modules.Pricing.Enums;
 using ERP.Domain.Modules.Pricing.Interfaces;
@@ -63,8 +61,8 @@ public sealed record GetPriceListsQuery(bool? IsActive = null, string? Search = 
 
 /// <summary>
 /// Reasigna la lista predeterminada de forma atómica: desmarca la actual (si existe otra) y marca
-/// la indicada — único punto de escritura para Configuración → Ventas (settings/company), evita
-/// que la UI de Settings tenga que reenviar Name/CurrencyCode/etc. como en <see cref="UpdatePriceListCommand"/>.
+/// la indicada, sin reenviar Name/CurrencyCode/etc. como en <see cref="UpdatePriceListCommand"/>.
+/// Comparte reglas y auditoría con Configuración → Ventas vía <see cref="IPriceListDefaultAssigner"/>.
 /// </summary>
 public sealed record SetDefaultPriceListCommand(Guid Id)
     : IRequest<Result<PriceListDto>>,
@@ -117,22 +115,32 @@ public sealed class CreatePriceListHandler
     : IRequestHandler<CreatePriceListCommand, Result<PriceListDto>>
 {
     private readonly IPriceListRepository _repo;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IPriceListDefaultAssigner _defaultAssigner;
     private readonly ICurrentTenant _t;
     private readonly ICurrentCompany _c;
     private readonly ICurrentUser _u;
 
     public CreatePriceListHandler(
         IPriceListRepository repo,
+        IUnitOfWork unitOfWork,
+        IPriceListDefaultAssigner defaultAssigner,
         ICurrentTenant t,
         ICurrentCompany c,
         ICurrentUser u
     )
     {
         _repo = repo;
+        _unitOfWork = unitOfWork;
+        _defaultAssigner = defaultAssigner;
         _t = t;
         _c = c;
         _u = u;
     }
+
+    // SALES-PREFERENCES-INTEGRITY-01: se conserva la regla (rechazar si ya hay otra predeterminada
+    // activa); la bandera se aplica solo vía IPriceListDefaultAssigner — desmarca listas
+    // deshabilitadas que la conservaban y audita el cambio, en la misma transacción del alta.
 
     public async Task<Result<PriceListDto>> Handle(CreatePriceListCommand cmd, CancellationToken ct)
     {
@@ -153,7 +161,7 @@ public sealed class CreatePriceListHandler
                 cmd.Code,
                 cmd.Name,
                 cmd.CurrencyCode,
-                cmd.IsDefault,
+                isDefault: false,
                 _u.UserId,
                 cmd.ValidFrom,
                 cmd.ValidUntil,
@@ -165,8 +173,17 @@ public sealed class CreatePriceListHandler
         {
             return Result<PriceListDto>.ValidationFailure(ex.Message);
         }
-        await _repo.AddAsync(pl, ct);
-        await _repo.SaveChangesAsync(ct);
+        await _unitOfWork.ExecuteInTransactionAsync(
+            async c =>
+            {
+                await _repo.AddAsync(pl, c);
+                if (!cmd.IsDefault)
+                    return;
+                await _unitOfWork.SaveChangesAsync(c); // la lista debe existir antes de marcarla
+                await _defaultAssigner.AssignAsync(tid, pl.Id, _u.UserId, c);
+            },
+            ct
+        );
         return Result<PriceListDto>.Success(Map.ToDto(pl));
     }
 }
@@ -175,15 +192,29 @@ public sealed class UpdatePriceListHandler
     : IRequestHandler<UpdatePriceListCommand, Result<PriceListDto>>
 {
     private readonly IPriceListRepository _repo;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IPriceListDefaultAssigner _defaultAssigner;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
-    public UpdatePriceListHandler(IPriceListRepository repo, ICurrentTenant t, ICurrentUser u)
+    public UpdatePriceListHandler(
+        IPriceListRepository repo,
+        IUnitOfWork unitOfWork,
+        IPriceListDefaultAssigner defaultAssigner,
+        ICurrentTenant t,
+        ICurrentUser u
+    )
     {
         _repo = repo;
+        _unitOfWork = unitOfWork;
+        _defaultAssigner = defaultAssigner;
         _t = t;
         _u = u;
     }
+
+    // SALES-PREFERENCES-INTEGRITY-01: mismo contrato; si IsDefault cambia, la bandera se aplica vía
+    // IPriceListDefaultAssigner (auditada, sin dejar otra lista con la marca) en la misma
+    // transacción que el resto de la edición. Una lista deshabilitada no puede marcarse.
 
     public async Task<Result<PriceListDto>> Handle(UpdatePriceListCommand cmd, CancellationToken ct)
     {
@@ -200,7 +231,7 @@ public sealed class UpdatePriceListHandler
             pl.Update(
                 cmd.Name,
                 cmd.CurrencyCode,
-                cmd.IsDefault,
+                pl.IsDefault,
                 _u.UserId,
                 cmd.ValidFrom,
                 cmd.ValidUntil,
@@ -212,7 +243,29 @@ public sealed class UpdatePriceListHandler
         {
             return Result<PriceListDto>.ValidationFailure(ex.Message);
         }
-        await _repo.SaveChangesAsync(ct);
+
+        var rejected = false;
+        await _unitOfWork.ExecuteInTransactionAsync(
+            async c =>
+            {
+                if (cmd.IsDefault == pl.IsDefault)
+                    return;
+                // true → esta lista; false → quitar la predeterminada (sin lista, aplica el PVP).
+                var assignment = await _defaultAssigner.AssignAsync(
+                    _t.TenantId,
+                    cmd.IsDefault ? pl.Id : null,
+                    _u.UserId,
+                    c
+                );
+                if (assignment.IsSuccess)
+                    return;
+                rejected = true;
+                _unitOfWork.ClearChangeTracker(); // descarta también la edición de campos
+            },
+            ct
+        );
+        if (rejected)
+            return Result<PriceListDto>.ValidationFailure(PriceListDefaultMessages.Inactive);
         return Result<PriceListDto>.Success(Map.ToDto(pl));
     }
 }
@@ -270,82 +323,46 @@ public sealed class DisablePriceListHandler : IRequestHandler<DisablePriceListCo
 public sealed class SetDefaultPriceListHandler
     : IRequestHandler<SetDefaultPriceListCommand, Result<PriceListDto>>
 {
-    private readonly IPriceListRepository _repo;
-    private readonly IConfigurationChangeLogger _changeLogger;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IPriceListDefaultAssigner _defaultAssigner;
     private readonly ICurrentTenant _t;
     private readonly ICurrentUser _u;
 
     public SetDefaultPriceListHandler(
-        IPriceListRepository repo,
-        IConfigurationChangeLogger changeLogger,
+        IUnitOfWork unitOfWork,
+        IPriceListDefaultAssigner defaultAssigner,
         ICurrentTenant t,
         ICurrentUser u
     )
     {
-        _repo = repo;
-        _changeLogger = changeLogger;
+        _unitOfWork = unitOfWork;
+        _defaultAssigner = defaultAssigner;
         _t = t;
         _u = u;
     }
 
+    // SALES-PREFERENCES-INTEGRITY-01: las reglas del flip y su auditoría viven solo en
+    // IPriceListDefaultAssigner (compartido con Configuración → Ventas), en una transacción sin cambios parciales.
     public async Task<Result<PriceListDto>> Handle(
         SetDefaultPriceListCommand cmd,
         CancellationToken ct
     )
     {
-        var tid = _t.TenantId;
-        var target = await _repo.GetByIdAsync(tid, cmd.Id, ct);
-        if (target is null)
-            return Result<PriceListDto>.NotFound("Lista de precios no encontrada.");
-        if (!target.IsActive)
-            return Result<PriceListDto>.ValidationFailure(
-                "No se puede marcar como predeterminada una lista deshabilitada."
-            );
-
-        if (!target.IsDefault)
-        {
-            var current = await _repo.GetDefaultAsync(tid, ct);
-            if (current is not null && current.Id != target.Id)
-            {
-                current.SetDefault(false, _u.UserId);
-                await LogFlagChangeAsync(current.Id, target.CompanyId, true, false, ct);
-            }
-            target.SetDefault(true, _u.UserId);
-            await LogFlagChangeAsync(target.Id, target.CompanyId, false, true, ct);
-            await _repo.SaveChangesAsync(ct);
-        }
-
-        return Result<PriceListDto>.Success(Map.ToDto(target));
-    }
-
-    // CONFIG-FOUNDATION-P2-01: registra tanto la lista que se desmarca como la que se marca —
-    // el flip completo, no solo el lado "nuevo". Se agrega al mismo DbContext que _repo
-    // (via IConfigurationChangeLogger), así viaja en la misma transacción que SaveChangesAsync.
-    private Task LogFlagChangeAsync(
-        Guid priceListId,
-        Guid companyId,
-        bool oldValue,
-        bool newValue,
-        CancellationToken ct
-    ) =>
-        _changeLogger.LogAsync(
-            new ConfigurationChangeLogEntry(
-                TenantId: _t.TenantId,
-                CompanyId: companyId,
-                Scope: OrgScope.Company,
-                ScopeId: companyId,
-                Key: null,
-                EntityType: "PriceList",
-                EntityId: priceListId,
-                FieldName: "IsDefault",
-                OldValue: oldValue ? "true" : "false",
-                NewValue: newValue ? "true" : "false",
-                ValueType: ConfigurationChangeValueType.Bool,
-                ChangedBy: _u.UserId,
-                Source: ConfigurationChangeSource.Api
-            ),
+        PriceListDefaultAssignment assignment = null!;
+        await _unitOfWork.ExecuteInTransactionAsync(
+            async c => assignment = await _defaultAssigner.AssignAsync(_t.TenantId, cmd.Id, _u.UserId, c),
             ct
         );
+        switch (assignment.Error)
+        {
+            case PriceListDefaultAssignmentError.NotFound:
+                return Result<PriceListDto>.NotFound(PriceListDefaultMessages.NotFound);
+            case PriceListDefaultAssignmentError.Inactive:
+                return Result<PriceListDto>.ValidationFailure(PriceListDefaultMessages.Inactive);
+        }
+
+        return Result<PriceListDto>.Success(Map.ToDto(assignment.Default!));
+    }
 }
 
 public sealed class GetPriceListByIdHandler
