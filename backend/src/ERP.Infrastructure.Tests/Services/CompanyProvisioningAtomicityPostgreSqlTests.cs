@@ -113,6 +113,190 @@ public sealed class CompanyProvisioningAtomicityPostgreSqlTests
         Assert.Equal(new[] { companyId, companyBId }.OrderBy(x => x), grants.Select(g => g.GrantCompany).OrderBy(x => x));
     }
 
+    // ── COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01: EnsureDefaultCompanyAsync ──────────────────
+
+    [Fact]
+    public async Task EnsureDefault_failure_mid_bootstrap_rolls_back_and_retry_in_same_scope_creates_once()
+    {
+        var (tenantId, _) = await _fx.SeedTenantAndUserAsync();
+        var before = await _fx.CountsAsync();
+        var step = new ScriptedStep(failFirstCall: true);
+
+        Guid companyId;
+        await using (var provider = _fx.Provider(step))
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var tenant = await Fixture.LoadTenantAsync(db, tenantId);
+
+            await Assert.ThrowsAsync<SimulatedBootstrapFailure>(() => provisioning.EnsureDefaultCompanyAsync(tenant));
+            Assert.False(scope.ServiceProvider.GetRequiredService<IUnitOfWork>().HasActiveTransaction);
+            Assert.Empty(db.ChangeTracker.Entries());
+            Assert.Equal(before, await _fx.CountsAsync());
+            Assert.Equal(0, await _fx.RowsForCompanyAsync(step.CompanyIds[0]));
+
+            // Reintento en el mismo scope: el tracker limpio no reinserta huérfanos.
+            companyId = (await provisioning.EnsureDefaultCompanyAsync(tenant)).Id;
+        }
+
+        Assert.Equal(2, step.Calls);
+        Assert.NotEqual(step.CompanyIds[0], companyId);
+        await AssertDefaultBootstrappedAsync(tenantId, companyId);
+        Assert.Equal(1, await _fx.CompaniesForTenantAsync(tenantId));
+
+        // Idempotencia: una segunda llamada devuelve la misma empresa sin escribir nada.
+        var afterSuccess = await _fx.CountsAsync();
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            var tenant = await Fixture.LoadTenantAsync(scope.ServiceProvider.GetRequiredService<ErpDbContext>(), tenantId);
+            Assert.Equal(companyId, (await provisioning.EnsureDefaultCompanyAsync(tenant)).Id);
+        }
+        Assert.Equal(afterSuccess, await _fx.CountsAsync());
+    }
+
+    [Fact]
+    public async Task EnsureDefault_concurrent_scopes_serialize_on_tenant_lock_and_create_a_single_company()
+    {
+        var (tenantId, _) = await _fx.SeedTenantAndUserAsync();
+        var step = new ScriptedStep(failFirstCall: false, pauseFirstCall: true);
+
+        await using var provider = _fx.Provider(step);
+        await using var scope1 = provider.CreateAsyncScope();
+        await using var scope2 = provider.CreateAsyncScope();
+        var tenant1 = await Fixture.LoadTenantAsync(scope1.ServiceProvider.GetRequiredService<ErpDbContext>(), tenantId);
+        var tenant2 = await Fixture.LoadTenantAsync(scope2.ServiceProvider.GetRequiredService<ErpDbContext>(), tenantId);
+
+        // 1) El primero toma el lock, crea la empresa y queda detenido a mitad del bootstrap.
+        var first = scope1.ServiceProvider.GetRequiredService<ICompanyProvisioningService>()
+            .EnsureDefaultCompanyAsync(tenant1);
+        await step.Entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        // 2) El segundo no ve empresa activa (no confirmada) y queda esperando el mismo lock.
+        var second = scope2.ServiceProvider.GetRequiredService<ICompanyProvisioningService>()
+            .EnsureDefaultCompanyAsync(tenant2);
+        await _fx.WaitForBlockedAdvisoryLockAsync(TimeSpan.FromSeconds(30));
+        Assert.False(second.IsCompleted);
+
+        // 3) Al confirmar el primero, el segundo vuelve a consultar bajo el lock y reutiliza la empresa.
+        step.Release.SetResult();
+        var created = await first;
+        var reused = await second;
+
+        Assert.Equal(created.Id, reused.Id);
+        Assert.Equal(1, step.Calls);
+        Assert.Equal(1, await _fx.CompaniesForTenantAsync(tenantId));
+        await AssertDefaultBootstrappedAsync(tenantId, created.Id);
+    }
+
+    [Fact]
+    public async Task EnsureDefault_returns_existing_managed_company_without_creating_another()
+    {
+        var (tenantId, userId) = await _fx.SeedTenantAndUserAsync();
+        Guid managedId;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            managedId = (await Create(provisioning, tenantId, userId, ProvisionalTaxIdGenerator.Create())).Id;
+        }
+        var before = await _fx.CountsAsync();
+
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            var tenant = await Fixture.LoadTenantAsync(scope.ServiceProvider.GetRequiredService<ErpDbContext>(), tenantId);
+            Assert.Equal(managedId, (await provisioning.EnsureDefaultCompanyAsync(tenant)).Id);
+        }
+
+        Assert.Equal(before, await _fx.CountsAsync());
+        Assert.Equal(1, await _fx.CompaniesForTenantAsync(tenantId));
+    }
+
+    [Fact]
+    public async Task EnsureDefault_participates_in_ambient_transaction_without_nesting_or_clearing_tracker()
+    {
+        var (tenantId, _) = await _fx.SeedTenantAndUserAsync();
+        var before = await _fx.CountsAsync();
+        var step = new ScriptedStep(failFirstCall: true);
+
+        await using var provider = _fx.Provider(step);
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            var tenant = await Fixture.LoadTenantAsync(db, tenantId);
+
+            // Fallo: el rollback lo hace el caller (como First Run); el servicio no limpia su tracker.
+            await Assert.ThrowsAsync<SimulatedBootstrapFailure>(() => uow.ExecuteInTransactionAsync(async ct =>
+            {
+                var ambient = db.Database.CurrentTransaction;
+                Assert.NotNull(ambient);
+                try { await provisioning.EnsureDefaultCompanyAsync(tenant, ct); }
+                finally { Assert.Same(ambient, db.Database.CurrentTransaction); }
+            }));
+            Assert.NotEmpty(db.ChangeTracker.Entries());
+        }
+        Assert.Equal(before, await _fx.CountsAsync());
+        Assert.Equal(0, await _fx.RowsForCompanyAsync(step.CompanyIds[0]));
+
+        // Éxito: la empresa se confirma con el commit del caller.
+        Guid companyId = Guid.Empty;
+        await using (var scope = provider.CreateAsyncScope())
+        {
+            var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            var tenant = await Fixture.LoadTenantAsync(scope.ServiceProvider.GetRequiredService<ErpDbContext>(), tenantId);
+            await uow.ExecuteInTransactionAsync(async ct =>
+                companyId = (await provisioning.EnsureDefaultCompanyAsync(tenant, ct)).Id);
+        }
+        await AssertDefaultBootstrappedAsync(tenantId, companyId);
+        Assert.Equal(1, await _fx.CompaniesForTenantAsync(tenantId));
+    }
+
+    private async Task AssertDefaultBootstrappedAsync(Guid tenantId, Guid companyId)
+    {
+        await using var readScope = _fx.Root.CreateAsyncScope();
+        var db = readScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var company = await db.Companies.IgnoreQueryFilters().SingleAsync(c => c.Id == companyId);
+        Assert.Equal(tenantId, company.TenantId);
+        Assert.True(company.IsActive);
+        Assert.True(await db.Branches.IgnoreQueryFilters()
+            .AnyAsync(b => b.CompanyId == companyId && b.IsMainBranch && b.IsActive));
+        Assert.True(await db.Warehouses.IgnoreQueryFilters().AnyAsync(w => w.CompanyId == companyId));
+        Assert.True(await db.Accounts.IgnoreQueryFilters().AnyAsync(a => a.CompanyId == companyId));
+    }
+
+    private sealed class SimulatedBootstrapFailure() : Exception("fallo simulado del bootstrap");
+
+    /// <summary>
+    /// Step sintético entre Sales (40) y Caja (45): registra cada empresa, puede fallar en la primera
+    /// llamada o detenerse en ella hasta que la prueba la libere.
+    /// </summary>
+    private sealed class ScriptedStep(bool failFirstCall, bool pauseFirstCall = false) : ICompanyBootstrapStep
+    {
+        private int _calls;
+        public List<Guid> CompanyIds { get; } = [];
+        public int Calls => _calls;
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int Order => 41;
+
+        public async Task ExecuteAsync(CompanyBootstrapContext context, CancellationToken cancellationToken = default)
+        {
+            lock (CompanyIds) CompanyIds.Add(context.CompanyId);
+            var call = Interlocked.Increment(ref _calls);
+            if (call == 1 && pauseFirstCall)
+            {
+                Entered.SetResult();
+                await Release.Task.WaitAsync(TimeSpan.FromSeconds(60), cancellationToken);
+            }
+            if (call == 1 && failFirstCall)
+                throw new SimulatedBootstrapFailure();
+        }
+    }
+
     private async Task AssertFullyProvisionedAsync(Guid tenantId, Guid companyId, Guid userId)
     {
         await using var readScope = _fx.Root.CreateAsyncScope();
@@ -223,6 +407,33 @@ public sealed class CompanyProvisioningAtomicityPostgreSqlTests
                 await db.Warehouses.IgnoreQueryFilters().LongCountAsync(),
                 await db.Accounts.IgnoreQueryFilters().LongCountAsync(),
             ];
+        }
+
+        public static Task<Tenant> LoadTenantAsync(ErpDbContext db, Guid tenantId) =>
+            db.Tenants.IgnoreQueryFilters().AsNoTracking().SingleAsync(t => t.Id == tenantId);
+
+        public async Task<long> CompaniesForTenantAsync(Guid tenantId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            return await db.Companies.IgnoreQueryFilters().LongCountAsync(c => c.TenantId == tenantId);
+        }
+
+        /// <summary>Espera a que una sesión quede bloqueada en un advisory lock (no concedido).</summary>
+        public async Task WaitForBlockedAdvisoryLockAsync(TimeSpan timeout)
+        {
+            await using var conn = new NpgsqlConnection(ConnectionString);
+            await conn.OpenAsync();
+            var deadline = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < deadline)
+            {
+                await using var cmd = new NpgsqlCommand(
+                    "SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted", conn);
+                if ((long)(await cmd.ExecuteScalarAsync())! > 0)
+                    return;
+                await Task.Delay(50);
+            }
+            Assert.Fail("Ninguna sesión quedó esperando el lock de aprovisionamiento por tenant.");
         }
 
         public async Task<long> RowsForCompanyAsync(Guid companyId)

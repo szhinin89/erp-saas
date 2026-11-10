@@ -1,9 +1,35 @@
 # Project Status
 
-## H-16 / H-25 — Alta atómica de empresa y acceso a la sucursal principal — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+## COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 — Empresa por defecto atómica — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
 
-Gate final del propietario PASS (2026-11-10); consolidado en un único commit local autorizado por el
-propietario. Se declara CLOSED solo con CI SUCCESS sobre ese commit.
+Autorizado por el propietario (D1–D3). Sin cambios en H-16/H-25, `LoginHandler`, First Run, steps,
+configuración SRI, migraciones ni datos.
+
+- `CompanyProvisioningService.EnsureDefaultCompanyAsync`: con transacción ambiente (First Run)
+  participa en ella sin abrir otra ni limpiar el tracker; sin ella, camino rápido si hay empresa
+  activa y, si no, `IUnitOfWork.ExecuteInTransactionAsync` + `ClearChangeTracker` ante fallo.
+- `ICompanyRepository.AcquireDefaultProvisioningLockAsync`: `pg_advisory_xact_lock` por tenant
+  antes de volver a consultar empresas activas; sin efecto en InMemory; exige transacción activa.
+- **Evidencia local (2026-11-10):** 4 pruebas nuevas en `CompanyProvisioningAtomicityPostgreSqlTests`
+  (fallo en el step 41 → 0 filas y tracker limpio; reintento en el mismo scope → 1 empresa
+  bootstrapeada; idempotencia; dos scopes concurrentes → uno espera el lock y reutiliza la única
+  empresa; tenant con empresa gestionada → sin alta; transacción ambiente sin anidar ni limpiar
+  tracker). Con `FirstRunSetupConcurrencyTests` y `CompanyBootstrapOrchestratorTests`: 22/22 PASS;
+  `CreateInitialAdminHandlerTests` + `LoginHandlerTests` 23/23 PASS; `ERP.Architecture.Tests`
+  145/145 PASS; build de la solución 0 errores; `check-architecture-guardrails.ps1
+  -SkipFrontendChunk` OK.
+- **Gate final del propietario PASS (2026-11-10):** `CompanyProvisioningAtomicityPostgreSqlTests`
+  (5), `FirstRunFullInstallationTests` (handler real de First Run con el lock dentro de su
+  transacción) y `BootstrapStepGovernanceTests`: 11/11 PASS. Se declara CLOSED solo con CI SUCCESS
+  sobre su commit.
+- **Riesgo residual:** una empresa por defecto parcial ya existente en algún entorno no se repara
+  (requeriría intervención de datos autorizada).
+
+## H-16 / H-25 — Alta atómica de empresa y acceso a la sucursal principal — CLOSED (2026-11-10)
+
+El propietario confirma CI #1133 SUCCESS sobre `main`, commit
+`9c0c0b14de95ba5e45dc669a0051ff11bd5f9888` (`fix(companies): make managed company provisioning
+atomic and grant main branch`), tras el gate final del propietario PASS (2026-11-10).
 
 - **H-16:** `CompanyProvisioningService.CreateManagedCompanyAsync` (usado por `CreateCompanyHandler`,
   `CreateIntegrationCompanyHandler` y el seed E2E) confirma empresa, membresía del creador, los 13
@@ -22,7 +48,8 @@ propietario. Se declara CLOSED solo con CI SUCCESS sobre ese commit.
   `BootstrapStepGovernanceTests` y `FirstRunFullInstallationTests`: 11/11 PASS.
   `ERP.Architecture.Tests` 145/145 PASS; `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK.
   Clase registrada en `tools/ci/backend-test-groups.json`.
-- **Riesgo pendiente:** COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 ([cola](docs/agent/WORK_QUEUE.md)).
+- **Riesgo derivado:** COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01, con gate PASS y pendiente de CI
+  (registro propio al inicio de este archivo).
 
 ## CI-1131 — Conciliación documental del estado V1 — CLOSED (2026-11-09)
 

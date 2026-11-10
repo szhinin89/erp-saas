@@ -19,7 +19,8 @@ namespace ERP.Infrastructure.Services;
 /// <see cref="ICompanyBootstrapService"/>, nunca hay que llamarlo por separado desde el caller.
 /// <see cref="CreateManagedCompanyAsync"/> es atómico (H-16): empresa, membresía del creador, los
 /// 13 steps del bootstrap y su <see cref="CompanyUserBranch"/> en la sucursal principal (H-25) se
-/// confirman en una sola transacción PostgreSQL o se revierten completos.
+/// confirman en una sola transacción PostgreSQL o se revierten completos. <see cref="EnsureDefaultCompanyAsync"/>
+/// también es atómico y se serializa por tenant (COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01).
 /// </summary>
 public sealed class CompanyProvisioningService : ICompanyProvisioningService
 {
@@ -47,40 +48,70 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         _companyUserBranches = companyUserBranches;
     }
 
+    /// <summary>
+    /// COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01: la comprobación de empresa activa, la creación y
+    /// los 13 steps del bootstrap son una unidad todo-o-nada serializada por tenant. Con transacción
+    /// ambiente (First Run) se participa en ella sin abrir otra ni limpiar el tracker: el rollback lo
+    /// decide el caller. Sin ella, se abre una propia; si falla, se revierte completa y se limpia el
+    /// tracker para que un reintento en el mismo scope no reinserte entidades huérfanas.
+    /// </summary>
     public async Task<Company> EnsureDefaultCompanyAsync(
         Tenant tenant,
         CancellationToken cancellationToken = default
     )
     {
+        if (_unitOfWork.HasActiveTransaction)
+            return await EnsureLockedAsync(cancellationToken);
+
+        // Camino rápido (Login): con empresa activa no se abre transacción ni se toma el lock.
         var active = await _companies.GetActiveByTenantIdAsync(tenant.Id, cancellationToken);
         if (active.Count > 0)
             return active[0];
 
-        var company = await CreateDefaultCompanyForTenantAsync(
-            tenant,
-            cancellationToken: cancellationToken
-        );
-        await _companies.AddAsync(company, cancellationToken);
+        Company? ensured = null;
+        try
+        {
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async ct => ensured = await EnsureLockedAsync(ct),
+                cancellationToken
+            );
+        }
+        catch
+        {
+            _unitOfWork.ClearChangeTracker();
+            throw;
+        }
+        return ensured!;
 
-        // Actor de sistema: esta rama solo se activa cuando el tenant se quedó sin ninguna
-        // empresa activa (auto-sanación fuera de un flujo de creación explícito con usuario real).
-        var systemActorId = Guid.NewGuid();
+        async Task<Company> EnsureLockedAsync(CancellationToken ct)
+        {
+            // Lock antes de volver a consultar: un proceso concurrente que ya creó la empresa
+            // por defecto la confirma antes de que esta transacción la busque.
+            await _companies.AcquireDefaultProvisioningLockAsync(tenant.Id, ct);
+            var current = await _companies.GetActiveByTenantIdAsync(tenant.Id, ct);
+            if (current.Count > 0)
+                return current[0];
 
-        // El bootstrap (PriceList, PricingRule, etc.) dispara domain events que los *AuditHandler
-        // resuelven vía IAuditContext → ICurrentCompany, la cual lee de HttpContext/header y no
-        // tiene ningún valor todavía aquí (la empresa recién se está creando, nunca fue "la
-        // empresa actual" de ningún request). JobExecutionContext es el mecanismo ya existente
-        // para este caso (mismo usado por ElectronicDocumentRetryJob) — sin él, cualquier
-        // *AuditHandler que dependa de CompanyId lanza ArgumentException("companyId requerido").
-        using var _ = JobExecutionContext.Begin(tenant.Id, company.Id);
-        await _bootstrap.BootstrapCompanyAsync(
-            tenant.Id,
-            company.Id,
-            systemActorId,
-            cancellationToken
-        );
+            var company = await CreateDefaultCompanyForTenantAsync(tenant, cancellationToken: ct);
+            await _companies.AddAsync(company, ct);
 
-        return company;
+            // Actor de sistema: esta rama solo se activa cuando el tenant se quedó sin ninguna
+            // empresa activa (auto-sanación fuera de un flujo de creación explícito con usuario real).
+            var systemActorId = Guid.NewGuid();
+
+            // El bootstrap (PriceList, PricingRule, etc.) dispara domain events que los *AuditHandler
+            // resuelven vía IAuditContext → ICurrentCompany, la cual lee de HttpContext/header y no
+            // tiene ningún valor todavía aquí (la empresa recién se está creando, nunca fue "la
+            // empresa actual" de ningún request). JobExecutionContext es el mecanismo ya existente
+            // para este caso (mismo usado por ElectronicDocumentRetryJob) — sin él, cualquier
+            // *AuditHandler que dependa de CompanyId lanza ArgumentException("companyId requerido").
+            using (JobExecutionContext.Begin(tenant.Id, company.Id))
+            {
+                await _bootstrap.BootstrapCompanyAsync(tenant.Id, company.Id, systemActorId, ct);
+            }
+
+            return company;
+        }
     }
 
     public async Task<Company> CreateDefaultCompanyForTenantAsync(

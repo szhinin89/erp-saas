@@ -82,6 +82,29 @@ public sealed class CompanyRepository : ICompanyRepository
             .OrderBy(c => c.LegalName)
             .ToListAsync(cancellationToken);
 
+    // COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 — pg_advisory_xact_lock(int4, int4) con espacio de
+    // claves propio (mismo mecanismo que ElectronicEmissionSwitch). Cubre la creación, que es un INSERT
+    // sin fila que bloquear; una colisión de hash solo serializa de más. Sin transacción ambiente el
+    // lock se liberaría al instante, así que se exige una activa.
+    public async Task AcquireDefaultProvisioningLockAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (!_db.Database.IsRelational())
+            return;
+        if (_db.Database.CurrentTransaction is null)
+            throw new InvalidOperationException(
+                "El lock de aprovisionamiento de la empresa por defecto requiere una transacción activa."
+            );
+
+        var key = tenantId.ToString("N");
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtext('erp.company.default_provisioning'), hashtext({key}))",
+            cancellationToken
+        );
+    }
+
     public Task<int> CountActiveByTenantIdAsync(
         Guid tenantId,
         CancellationToken cancellationToken = default

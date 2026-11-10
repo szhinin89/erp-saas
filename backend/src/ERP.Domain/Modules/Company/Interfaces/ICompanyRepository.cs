@@ -65,6 +65,15 @@ public interface ICompanyRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Serializa por tenant la creación de la empresa por defecto (lock de transacción; exige una
+    /// transacción activa). Sin efecto en proveedores no relacionales.
+    /// </summary>
+    Task AcquireDefaultProvisioningLockAsync(
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
+
     Task AddAsync(CompanyEntity company, CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
