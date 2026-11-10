@@ -28,8 +28,16 @@ fiscales ni políticas de acceso; se reutiliza `IBranchAccessGuard`. Regla vigen
   `npm run build`, `architecture:check` y `check-architecture-guardrails.ps1 -SkipFrontendChunk`.
   Manifiesto CI sin cambios.
 - **Gate final del propietario PASS (2026-11-10).** CLOSED con CI #1136 SUCCESS.
-- **BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 (opción A; sin cambios de autorización) — documentación
-  y pruebas completas, pendiente de gate del propietario y CI.** Auditoría de solo lectura
+
+## BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 y WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 — Administración de sucursales y bodegas — CLOSED (2026-11-10)
+
+El propietario confirma [CI #1138](https://github.com/szhinin89/erp-saas/actions/runs/42879344054)
+SUCCESS (ejecución `42879344054`, `completed / success`) sobre `main`, commit
+`66133217051bcdd3aee3556452f5918b3d4fd089` (`fix(inventory): protect warehouse branch reassignment
+integrity`), tras el gate del propietario. Cierre documental definitivo de sucursales y bodegas.
+
+- **BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 (opción A; sin cambios de autorización) — CLOSED
+  (2026-11-10, CI #1138 SUCCESS).** Auditoría de solo lectura
   (2026-11-10) sin vulnerabilidad: el catálogo de sucursales y el alta/edición de bodegas son
   administración company-wide autorizada por `settings.branches.*` / `inventory.warehouses.*`
   (Admin de la empresa, operador global o perfiles que configure un Admin; el perfil semilla
@@ -39,8 +47,8 @@ fiscales ni políticas de acceso; se reutiliza `IBranchAccessGuard`. Regla vigen
   PostgreSQL) junto con `BranchDefaultWarehouseHttpTests` 6/6. Observación menor sin ticket:
   `PUT /settings/branches/{id}` de otra empresa responde 400 «Sucursal no encontrada.» (no 404),
   sin fuga ni cambios.
-- **WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 — opción B aprobada e implementada (2026-11-10),
-  pendiente de gate del propietario y CI.** Regla en
+- **WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 — opción B aprobada e implementada — CLOSED
+  (2026-11-10, CI #1138 SUCCESS).** Regla en
   [Inventario § Bodegas](docs/architecture/inventory.md#1-bodegas): el cambio de sucursal solo se
   permite sin existencias (≠ 0), Kardex, lotes/series, documentos u obligaciones de costo, ni uso
   como bodega principal o predeterminada (configuración o caja); si no, 422 con el motivo y sin

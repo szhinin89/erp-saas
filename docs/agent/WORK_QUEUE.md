@@ -4,13 +4,6 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 (PENDING de gate del propietario y CI): regla documentada
-  en la SSOT de seguridad y fijada con `BranchWarehouseCatalogAccessHttpTests`. Registro en
-  [STATUS](../../STATUS.md).
-- WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 (PENDING de gate del propietario y CI; opción B
-  implementada): el cambio de sucursal de una bodega solo se permite sin existencias, historial ni
-  referencias operativas. Regla en [Inventario](../architecture/inventory.md#1-bodegas); registro
-  en [STATUS](../../STATUS.md).
 - SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son
