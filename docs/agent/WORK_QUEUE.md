@@ -4,6 +4,13 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- H-16 / H-25 (GATE PASS; commit local en `main`): alta atómica de empresa y `CompanyUserBranch`
+  del creador en la sucursal principal. Pendiente: push autorizado por el propietario y CI SUCCESS.
+  Evidencia en [STATUS](../../STATUS.md).
+- COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 (PENDING; riesgo residual de H-16, no modificado):
+  `CompanyProvisioningService.EnsureDefaultCompanyAsync` no abre transacción propia. First Run la
+  envuelve en la suya; la auto-recuperación (tenant sin empresa activa) y el seed E2E pueden dejar una
+  empresa por defecto parcialmente inicializada si falla un step. Requiere autorización expresa.
 - SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son

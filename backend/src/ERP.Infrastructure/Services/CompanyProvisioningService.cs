@@ -2,6 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
@@ -16,22 +17,34 @@ namespace ERP.Infrastructure.Services;
 /// numeraciones, formas de pago, tipos de ítem, consumidor final, lista de precios, condición de
 /// pago, perfiles de acceso por defecto) antes de retornar — un único punto de invocación de
 /// <see cref="ICompanyBootstrapService"/>, nunca hay que llamarlo por separado desde el caller.
+/// <see cref="CreateManagedCompanyAsync"/> es atómico (H-16): empresa, membresía del creador, los
+/// 13 steps del bootstrap y su <see cref="CompanyUserBranch"/> en la sucursal principal (H-25) se
+/// confirman en una sola transacción PostgreSQL o se revierten completos.
 /// </summary>
 public sealed class CompanyProvisioningService : ICompanyProvisioningService
 {
     private readonly ICompanyRepository _companies;
     private readonly IAccessRepository _access;
     private readonly ICompanyBootstrapService _bootstrap;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IBranchRepository _branches;
+    private readonly ICompanyUserBranchRepository _companyUserBranches;
 
     public CompanyProvisioningService(
         ICompanyRepository companies,
         IAccessRepository access,
-        ICompanyBootstrapService bootstrap
+        ICompanyBootstrapService bootstrap,
+        IUnitOfWork unitOfWork,
+        IBranchRepository branches,
+        ICompanyUserBranchRepository companyUserBranches
     )
     {
         _companies = companies;
         _access = access;
         _bootstrap = bootstrap;
+        _unitOfWork = unitOfWork;
+        _branches = branches;
+        _companyUserBranches = companyUserBranches;
     }
 
     public async Task<Company> EnsureDefaultCompanyAsync(
@@ -116,50 +129,107 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
     )
     {
         var normalized = NormalizeProvidedTaxId(ruc);
-        await EnsureTaxIdAvailableGloballyAsync(normalized, cancellationToken);
 
-        var company = Company.CreateManaged(
-            tenantId,
-            normalized,
-            legalName,
-            tradeName,
-            corporateEmail: email,
-            countryCode,
-            timezone,
-            currencyCode,
-            website,
-            isTemporaryTaxIdentification: ProvisionalTaxIdGenerator.IsProvisional(normalized),
-            taxIdentificationStatus: ProvisionalTaxIdGenerator.IsProvisional(normalized)
-                ? TaxIdentificationStatus.Pending
-                : TaxIdentificationStatus.Verified,
-            createdBy: createdByUserId
-        );
+        // H-16: empresa, membresía, los 13 pasos del bootstrap y el acceso a la sucursal principal
+        // son una única unidad todo-o-nada. Los SaveChanges intermedios (propios y de los steps) se
+        // mantienen, pero ninguno se confirma hasta el commit final. Si ya hay una transacción
+        // ambiente, se participa en ella (mismo criterio que UpsertCompanyUserMembershipHandler).
+        if (_unitOfWork.HasActiveTransaction)
+            return await CreateAsync(cancellationToken);
 
-        await _companies.AddAsync(company, cancellationToken);
-        await _companies.SaveChangesAsync(cancellationToken);
+        Company? created = null;
+        try
+        {
+            await _unitOfWork.ExecuteInTransactionAsync(
+                async ct => created = await CreateAsync(ct),
+                cancellationToken
+            );
+        }
+        catch
+        {
+            // El rollback ya revirtió la BD; se descartan las entidades huérfanas del tracker para
+            // que un reintento en el mismo scope no vuelva a insertarlas.
+            _unitOfWork.ClearChangeTracker();
+            throw;
+        }
+        return created!;
 
-        var membership = CompanyUserMembership.Create(
-            company.Id,
-            createdByUserId,
-            creatorRole,
-            profileId: null,
-            createdByUserId
-        );
-        await _access.AddCompanyUserMembershipAsync(membership, cancellationToken);
-        await _access.SaveChangesAsync(cancellationToken);
+        async Task<Company> CreateAsync(CancellationToken ct)
+        {
+            await EnsureTaxIdAvailableGloballyAsync(normalized, ct);
 
-        // Ver comentario equivalente en EnsureDefaultCompanyAsync: el bootstrap dispara domain
-        // events auditados que necesitan CompanyId, y esta empresa nueva nunca fue "la empresa
-        // actual" de ningún HttpContext todavía.
-        using var _ = JobExecutionContext.Begin(tenantId, company.Id);
-        await _bootstrap.BootstrapCompanyAsync(
-            tenantId,
-            company.Id,
-            createdByUserId,
-            cancellationToken
-        );
+            var company = Company.CreateManaged(
+                tenantId,
+                normalized,
+                legalName,
+                tradeName,
+                corporateEmail: email,
+                countryCode,
+                timezone,
+                currencyCode,
+                website,
+                isTemporaryTaxIdentification: ProvisionalTaxIdGenerator.IsProvisional(normalized),
+                taxIdentificationStatus: ProvisionalTaxIdGenerator.IsProvisional(normalized)
+                    ? TaxIdentificationStatus.Pending
+                    : TaxIdentificationStatus.Verified,
+                createdBy: createdByUserId
+            );
 
-        return company;
+            await _companies.AddAsync(company, ct);
+            await _companies.SaveChangesAsync(ct);
+
+            var membership = CompanyUserMembership.Create(
+                company.Id,
+                createdByUserId,
+                creatorRole,
+                profileId: null,
+                createdByUserId
+            );
+            await _access.AddCompanyUserMembershipAsync(membership, ct);
+            await _access.SaveChangesAsync(ct);
+
+            // Ver comentario equivalente en EnsureDefaultCompanyAsync: el bootstrap dispara domain
+            // events auditados que necesitan CompanyId, y esta empresa nueva nunca fue "la empresa
+            // actual" de ningún HttpContext todavía.
+            using (JobExecutionContext.Begin(tenantId, company.Id))
+            {
+                await _bootstrap.BootstrapCompanyAsync(
+                    tenantId,
+                    company.Id,
+                    createdByUserId,
+                    ct
+                );
+            }
+
+            // H-25: sin CompanyUserBranch el creador queda bloqueado por BranchAccessGuard en toda
+            // operación branch-scoped. Mismo patrón que CreateInitialAdminHandler (First Run), pero
+            // aquí la sucursal principal es obligatoria: sin ella la creación se revierte completa.
+            var mainBranch =
+                (
+                    await _branches.GetByCompanyAsync(
+                        tenantId,
+                        company.Id,
+                        activeFilter: true,
+                        cancellationToken: ct
+                    )
+                ).FirstOrDefault(b => b.IsMainBranch)
+                ?? throw new InvalidOperationException(
+                    "El bootstrap de la empresa no dejó una sucursal principal activa."
+                );
+            await _companyUserBranches.AddAsync(
+                CompanyUserBranch.Create(
+                    tenantId,
+                    company.Id,
+                    membership.Id,
+                    mainBranch.Id,
+                    createdByUserId
+                ),
+                ct
+            );
+            await _companyUserBranches.SaveChangesAsync(ct);
+
+            return company;
+        }
     }
 
     private async Task<(

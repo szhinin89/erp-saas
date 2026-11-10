@@ -1,5 +1,29 @@
 # Project Status
 
+## H-16 / H-25 — Alta atómica de empresa y acceso a la sucursal principal — GATE PASS; COMMIT LOCAL EN `main`, PENDIENTE DE PUSH Y CI (2026-11-10)
+
+Gate final del propietario PASS (2026-11-10); consolidado en un único commit local autorizado por el
+propietario. Se declara CLOSED solo con CI SUCCESS sobre ese commit.
+
+- **H-16:** `CompanyProvisioningService.CreateManagedCompanyAsync` (usado por `CreateCompanyHandler`,
+  `CreateIntegrationCompanyHandler` y el seed E2E) confirma empresa, membresía del creador, los 13
+  steps del bootstrap y el acceso a sucursal en una única transacción PostgreSQL
+  (`IUnitOfWork.ExecuteInTransactionAsync`; participa en la transacción ambiente si existe). Ante
+  cualquier fallo, rollback completo y limpieza del change tracker; el RUC queda libre para reintentar.
+- **H-25:** el creador recibe `CompanyUserBranch` en la sucursal principal activa (mismo patrón que
+  First Run, `IBranchRepository` + `ICompanyUserBranchRepository`). Sin sucursal principal, la
+  creación se revierte.
+- Sin migraciones ni cambios en First Run, `EnsureDefaultCompanyAsync`, steps o configuración
+  tributaria. Inventario de los 13 steps: [Seeding/README.md](backend/src/ERP.Infrastructure/Seeding/README.md).
+- **Evidencia local (2026-11-10):** `CompanyProvisioningAtomicityPostgreSqlTests` (Testcontainer
+  PostgreSQL 16 + migraciones + bootstrap global: fallo intermedio en el step 41 → 0 filas; reintento
+  con el mismo RUC → 1 empresa/membresía/sucursal principal/`CompanyUserBranch`; RUC duplicado sin
+  rastros; aislamiento entre dos empresas) junto con `CompanyBootstrapOrchestratorTests`,
+  `BootstrapStepGovernanceTests` y `FirstRunFullInstallationTests`: 11/11 PASS.
+  `ERP.Architecture.Tests` 145/145 PASS; `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK.
+  Clase registrada en `tools/ci/backend-test-groups.json`.
+- **Riesgo pendiente:** COMPANY-DEFAULT-PROVISIONING-ATOMICITY-01 ([cola](docs/agent/WORK_QUEUE.md)).
+
 ## CI-1131 — Conciliación documental del estado V1 — CLOSED (2026-11-09)
 
 El propietario confirma [CI #1131](https://github.com/szhinin89/erp-saas/actions/runs/42611968088)

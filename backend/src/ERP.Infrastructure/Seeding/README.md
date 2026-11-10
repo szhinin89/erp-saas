@@ -14,7 +14,8 @@ vs. de empresa: [`docs/DATABASE.md`](../../../../docs/DATABASE.md).
 | Interfaz de step | `Seeding/Global/IGlobalBootstrapStep` | `ERP.Application/Common/Interfaces/ICompanyBootstrapStep` |
 | Constantes de orden | `Seeding/Global/GlobalBootstrapStepOrder` | `ERP.Application/Common/Interfaces/CompanyBootstrapStepOrder` |
 | Único invocador | `Program.cs` (composition root) | `ERP.Infrastructure/Services/CompanyProvisioningService` |
-| Steps actuales | `NavigationBootstrapStep` (10), `InstallDataBootstrapStep` (20) | `OrganizationBootstrapStep` (10), `ElectronicDocumentsBootstrapStep` (20), `InventoryBootstrapStep` (30), `MasterDataClassificationBootstrapStep` (35), `SalesBootstrapStep` (40), `CajaBootstrapStep` (45), `AccountingBootstrapStep` (47), `ExpensesCatalogBootstrapStep` (48), `AccessBootstrapStep` (50) |
+| Steps actuales | `NavigationBootstrapStep` (10), `InstallDataBootstrapStep` (20) | 13 steps: `PrecisionPolicyBootstrapStep` (5), `OrganizationBootstrapStep` (10), `BankCatalogBootstrapStep` (15), `ElectronicDocumentsBootstrapStep` (20), `InventoryBootstrapStep` (30), `MasterDataClassificationBootstrapStep` (35), `SalesBootstrapStep` (40), `CajaBootstrapStep` (45), `CashMovementReasonsBootstrapStep` (46), `AccountingBootstrapStep` (47), `ExpensesCatalogBootstrapStep` (48), `DocumentFlowPolicyBootstrapStep` (49), `AccessBootstrapStep` (50) |
+| Atomicidad | — | `CreateManagedCompanyAsync`: empresa, membresía del creador, los 13 steps y su `CompanyUserBranch` en la sucursal principal en **una sola transacción** (`IUnitOfWork.ExecuteInTransactionAsync`, o la transacción ambiente si existe); cualquier fallo revierte todo. First Run aporta su propia transacción a `EnsureDefaultCompanyAsync` |
 
 ## Flujo oficial (único, no hay atajos)
 

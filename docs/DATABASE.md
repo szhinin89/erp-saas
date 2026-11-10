@@ -99,7 +99,7 @@ sobre `erp_zh_dev`; la conexión sale de los user-secrets de ERP.API).
 |-----------|-----|
 | `Migrations/*.cs` | Schema oficial (incluye `HasData()` de catálogos SRI globales) |
 | `Seeding/Global/GlobalBootstrapOrchestrator.cs` + `Seeding/Global/Steps/*BootstrapStep.cs` | Único orquestador del bootstrap global (una vez por instalación, en cada arranque): `NavigationBootstrapStep` (navegación/permisos del Platform Kernel desde `KernelRegistry.cs`) e `InstallDataBootstrapStep` (geografía INEC CGE 2026, `Seeding/InstallData/001_inec_cge_2026_geography.sql`) |
-| `Seeding/CompanyBootstrapOrchestrator.cs` + `Seeding/Steps/*BootstrapStep.cs` | Único orquestador del bootstrap por empresa nueva, un step por dominio (Organización, Documentos Electrónicos, Inventario, Ventas, Caja, Accesos) |
+| `Seeding/CompanyBootstrapOrchestrator.cs` + `Seeding/Steps/*BootstrapStep.cs` | Único orquestador del bootstrap por empresa nueva, un step por dominio (13 steps; inventario y atomicidad en [`Seeding/README.md`](../backend/src/ERP.Infrastructure/Seeding/README.md)) |
 
 ### Naming schema
 

@@ -212,6 +212,7 @@
         "ERP.Infrastructure.Tests.Persistence.SriDocTypeSeedAlignmentTests",
         "ERP.Infrastructure.Tests.Security.PermissionsCacheRedisGuaranteeTests",
         "ERP.Infrastructure.Tests.Security.PermissionsCacheRevocationRedisTests",
+        "ERP.Infrastructure.Tests.Services.CompanyProvisioningAtomicityPostgreSqlTests",
         "ERP.Infrastructure.Tests.Services.DistributedFixedWindowRateLimitRedisTests",
         "ERP.Infrastructure.Tests.Services.Sri.SriReceptionClientTests",
         "ERP.Infrastructure.Tests.Setup.FirstRunFullInstallationTests"
