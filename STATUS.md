@@ -28,17 +28,36 @@ fiscales ni políticas de acceso; se reutiliza `IBranchAccessGuard`. Regla vigen
   `npm run build`, `architecture:check` y `check-architecture-guardrails.ps1 -SkipFrontendChunk`.
   Manifiesto CI sin cambios.
 - **Gate final del propietario PASS (2026-11-10).** CLOSED con CI #1136 SUCCESS.
-- **Pendiente separado (opción A aprobada; sin cambios de autorización):**
-  BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 — auditoría de solo lectura (2026-11-10) sin vulnerabilidad
-  confirmada: el catálogo de sucursales y el alta/edición de bodegas son administración
-  company-wide autorizada por `settings.branches.*` / `inventory.warehouses.*` (Admin de la
-  empresa, operador global o perfiles que configure un Admin; el perfil semilla `DataEntry` solo
-  tiene `view`); habilitar/deshabilitar bodega ya es branch-scoped. Pendiente: documentar la regla
-  en la SSOT de seguridad y fijarla con pruebas HTTP.
-- **Pendiente separado (auditoría; sin implementación autorizada):**
-  WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 — `UpdateWarehouse` permite cambiar el `BranchId` de
-  una bodega sin validar stock, movimientos ni su uso como bodega principal o por defecto de la
-  sucursal de origen; impacto no verificado.
+- **BRANCH-ADMIN-CATALOG-ACCESS-REVIEW-01 (opción A; sin cambios de autorización) — documentación
+  y pruebas completas, pendiente de gate del propietario y CI.** Auditoría de solo lectura
+  (2026-11-10) sin vulnerabilidad: el catálogo de sucursales y el alta/edición de bodegas son
+  administración company-wide autorizada por `settings.branches.*` / `inventory.warehouses.*`
+  (Admin de la empresa, operador global o perfiles que configure un Admin; el perfil semilla
+  `DataEntry` solo tiene `view`); habilitar/deshabilitar bodega es branch-scoped. Regla en
+  [Seguridad § aislamiento entre empresas](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
+  Evidencia local (2026-11-10): `BranchWarehouseCatalogAccessHttpTests` 4/4 nuevas (API +
+  PostgreSQL) junto con `BranchDefaultWarehouseHttpTests` 6/6. Observación menor sin ticket:
+  `PUT /settings/branches/{id}` de otra empresa responde 400 «Sucursal no encontrada.» (no 404),
+  sin fuga ni cambios.
+- **WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01 — opción B aprobada e implementada (2026-11-10),
+  pendiente de gate del propietario y CI.** Regla en
+  [Inventario § Bodegas](docs/architecture/inventory.md#1-bodegas): el cambio de sucursal solo se
+  permite sin existencias (≠ 0), Kardex, lotes/series, documentos u obligaciones de costo, ni uso
+  como bodega principal o predeterminada (configuración o caja); si no, 422 con el motivo y sin
+  escrituras; los demás campos siguen editables. Sin migraciones ni cambios de permisos o
+  contratos. Concurrencia (gate del propietario): el cambio de sucursal bloquea la bodega con
+  `FOR UPDATE` y reevalúa en la misma transacción (`IUnitOfWork.ExecuteInTransactionAsync`); el
+  Kardex (`StockRepository`, único punto que crea movimientos) lee su sucursal con `FOR SHARE`.
+  Evidencia local (2026-11-10): `WarehouseBranchReassignmentHttpTests` 11/11 (API + PostgreSQL;
+  2 de concurrencia, una por orden, estables en 3 ejecuciones; cada una falla si se retira su
+  bloqueo), Application `Warehouse|Inventory` 163/163, Infrastructure `Stock|Inventory|Warehouse`
+  91/91, API `InventoryAdjustmentsEndToEndTests`, `SalesReturnEndToEndTests`,
+  `PurchaseReturnEndToEndTests` e `ItemLookupStockFilterHttpTests` 88/88,
+  `ERP.Architecture.Tests` 145/145, guardrails OK. Hallazgo
+  original: `UpdateWarehouse` aceptaba cualquier `BranchId` de la empresa sin comparar con el
+  actual: `CurrentStock` y los detalles solo guardan `WarehouseId` y el Kardex guarda `BranchId`,
+  por lo que el saldo pasaba a otra sucursal sin movimiento, y podían quedar sucursales sin bodega
+  principal o predeterminadas (sucursal o caja) apuntando a otra sucursal.
 
 ## BRANCH-CONFIG-WAREHOUSE-UNSET-01 — Bodega por defecto de sucursal — CLOSED (2026-11-10)
 

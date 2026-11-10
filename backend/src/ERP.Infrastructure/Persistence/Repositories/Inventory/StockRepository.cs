@@ -331,10 +331,18 @@ public sealed class StockRepository : IStockRepository
         // Branch Ownership: el movimiento pertenece a la sucursal dueña de la bodega afectada,
         // no a la sucursal de sesión activa del operador — en una transferencia inter-sucursal,
         // el movimiento del lado destino debe llevar la sucursal de la bodega destino.
-        var branchId = await _db.Set<Warehouse>()
-            .Where(w => w.Id == r.WarehouseId)
-            .Select(w => w.BranchId)
-            .FirstOrDefaultAsync(ct);
+        // WAREHOUSE-BRANCH-REASSIGNMENT-INTEGRITY-01: en PostgreSQL la lectura toma FOR SHARE sobre
+        // la bodega hasta el fin de la transacción del movimiento (abierta en LockStockResourceAsync),
+        // serializándola con el cambio de sucursal (FOR UPDATE en UpdateWarehouse).
+        var branchId = _db.Database.IsNpgsql()
+            ? await _db.Database.SqlQuery<Guid>(
+                    $"SELECT branch_id AS \"Value\" FROM warehouses WHERE tenant_id = {r.TenantId} AND company_id = {r.CompanyId} AND id = {r.WarehouseId} FOR SHARE"
+                )
+                .FirstOrDefaultAsync(ct)
+            : await _db.Set<Warehouse>()
+                .Where(w => w.Id == r.WarehouseId)
+                .Select(w => w.BranchId)
+                .FirstOrDefaultAsync(ct);
         if (branchId == Guid.Empty)
             throw new InvalidOperationException(
                 $"No se pudo resolver la sucursal de la bodega '{r.WarehouseId}' para registrar el movimiento de Kardex."

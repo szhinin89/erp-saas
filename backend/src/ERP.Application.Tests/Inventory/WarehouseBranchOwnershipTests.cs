@@ -195,12 +195,16 @@ public sealed class WarehouseBranchOwnershipTests
         public Mock<ICurrentTenant> Tenant { get; } = new();
         public Mock<ICurrentCompany> Company { get; } = new();
         public Mock<ICurrentUser> User { get; } = new();
+        public Mock<IUnitOfWork> UnitOfWork { get; } = new();
 
         public UpdateFixture()
         {
             Tenant.Setup(t => t.TenantId).Returns(TenantId);
             Company.Setup(c => c.CompanyId).Returns(CompanyAId);
             User.Setup(u => u.UserId).Returns(UserId);
+            UnitOfWork
+                .Setup(u => u.ExecuteInTransactionAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>()))
+                .Returns<Func<CancellationToken, Task>, CancellationToken>((op, ct) => op(ct));
         }
 
         public UpdateWarehouseCommandHandler BuildHandler() =>
@@ -210,7 +214,8 @@ public sealed class WarehouseBranchOwnershipTests
                 Activity.Object,
                 Tenant.Object,
                 Company.Object,
-                User.Object
+                User.Object,
+                UnitOfWork.Object
             );
     }
 
@@ -309,11 +314,20 @@ public sealed class WarehouseBranchOwnershipTests
                 )
             )
             .ReturnsAsync(otherOwnBranch);
+        // El cambio de sucursal relee la bodega con FOR UPDATE dentro de la transacción.
+        f.Repo.Setup(r =>
+                r.GetByIdForCompanyForUpdateAsync(TenantId, CompanyAId, warehouse.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(warehouse);
 
         var result = await f.BuildHandler()
             .Handle(BuildUpdateCommand(warehouse.Id, otherOwnBranch.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        f.Repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        warehouse.BranchId.Should().Be(otherOwnBranch.Id);
+        f.UnitOfWork.Verify(
+            u => u.ExecuteInTransactionAsync(It.IsAny<Func<CancellationToken, Task>>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 }
