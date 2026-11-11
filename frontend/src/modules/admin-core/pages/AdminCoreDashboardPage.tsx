@@ -17,6 +17,7 @@ import { formatApiRequestError } from "../../lib/apiError";
 import type { AdminCoreCompany } from "../../../types/adminCore";
 
 import { ZHModal } from "../../../components/zh/ZHModal";
+import { CompanyAdministratorsModal } from "../components/CompanyAdministratorsModal";
 
 interface TenantGroup {
   tenantId: string;
@@ -57,6 +58,7 @@ export function AdminCoreDashboardPage() {
   const login = useAuthStore((s) => s.login);
   const [companies, setCompanies] = useState<AdminCoreCompany[]>([]);
   const [editing, setEditing] = useState<AdminCoreCompany | null>(null);
+  const [managingAdmins, setManagingAdmins] = useState<AdminCoreCompany | null>(null);
   const [taxId, setTaxId] = useState("");
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState("");
@@ -179,6 +181,15 @@ export function AdminCoreDashboardPage() {
             Editar
           </ZHBtn>
           <ZHBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            disabled={operatingCompanyId !== null}
+            onClick={() => setManagingAdmins(r)}
+          >
+            Administradores
+          </ZHBtn>
+          <ZHBtn
             variant="primary"
             size="sm"
             type="button"
@@ -285,6 +296,10 @@ export function AdminCoreDashboardPage() {
           </form>
         ) : null}
       </ZHModal>
+      <CompanyAdministratorsModal
+        company={managingAdmins}
+        onClose={() => setManagingAdmins(null)}
+      />
       {error ? <ZHPageNotice variant="error" message={error} /> : null}
       {groups.length === 0 && !loading ? (
         <ZHCard>

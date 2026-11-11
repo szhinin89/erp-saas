@@ -17,6 +17,7 @@ public interface ICompanyBootstrapService
         Guid tenantId,
         Guid companyId,
         Guid actorId,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        bool seedInitialProfiles = false
     );
 }

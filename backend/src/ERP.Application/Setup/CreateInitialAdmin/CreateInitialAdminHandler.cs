@@ -119,7 +119,7 @@ public sealed class CreateInitialAdminHandler
 
         await _tenants.AddAsync(tenant, cancellationToken);
 
-        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, cancellationToken);
+        var company = await _companyProvisioning.EnsureInitialCompanyAsync(tenant, cancellationToken);
         var membership = CompanyUserMembership.Create(
             company.Id,
             user.Id,

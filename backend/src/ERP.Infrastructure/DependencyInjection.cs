@@ -1093,7 +1093,6 @@ public static class DependencyInjection
             ERP.Application.Navigation.INavigationBuilder,
             ERP.Infrastructure.Persistence.Navigation.NavigationBuilder
         >();
-        services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
         services.AddScoped<ICompanyBootstrapService, CompanyBootstrapOrchestrator>();
         services.AddScoped<ICompanyBootstrapStep, PrecisionPolicyBootstrapStep>();
         services.AddScoped<ICompanyBootstrapStep, OrganizationBootstrapStep>();

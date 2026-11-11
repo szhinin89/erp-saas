@@ -115,7 +115,7 @@ public sealed class CreateInitialAdminHandlerTests
             )
             .ReturnsAsync(false);
         f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>())
+                s.EnsureInitialCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(
                 (Tenant t, CancellationToken _) =>
@@ -158,7 +158,7 @@ public sealed class CreateInitialAdminHandlerTests
             "el admin inicial también debe quedar autorizado como AdminGlobalCore"
         );
         f.CompanyProvisioning.Verify(
-            p => p.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
+            p => p.EnsureInitialCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()),
             Times.Once,
             "el bootstrap de la empresa (sucursal, bodega, perfiles, etc.) ahora es responsabilidad "
                 + "interna de CompanyProvisioningService — el handler solo debe garantizar que se invoque"
@@ -189,7 +189,7 @@ public sealed class CreateInitialAdminHandlerTests
 
         Company? createdCompany = null;
         f.CompanyProvisioning.Setup(s =>
-                s.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>())
+                s.EnsureInitialCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(
                 (Tenant t, CancellationToken _) =>

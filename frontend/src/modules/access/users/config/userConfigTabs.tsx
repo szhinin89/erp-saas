@@ -23,6 +23,8 @@ export type UserConfigContext = {
   mode: "new" | "edit";
   membership: CompanyUserMembershipAdminDto | null;
   profiles: Profile[];
+  /** false mientras se cargan los perfiles (alta): evita mostrar el estado vacío antes de tiempo. */
+  profilesLoaded: boolean;
   branchesCatalog: BranchListItemDto[];
   canManage: boolean;
   canCreateUser: boolean;
@@ -65,6 +67,7 @@ export const userConfigTabs: UserConfigTab[] = [
         errors={ctx.errors}
         initialProfileId={ctx.membership?.profileId ?? null}
         profiles={ctx.profiles}
+        profilesLoaded={ctx.profilesLoaded}
         canManage={ctx.canManage}
         canCreateUser={ctx.canCreateUser}
         disabled={ctx.saving}

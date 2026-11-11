@@ -38,8 +38,12 @@ public sealed partial class BankCatalogSeeder
 
     public async Task<int> SeedAsync(Guid tenantId, Guid actorId, CancellationToken ct = default)
     {
+        // IgnoreQueryFilters + TenantId explícito: con un token global (tenant_id vacío) el filtro de
+        // tenant no ve ningún banco y el seed intentaría reinsertar el catálogo de un tenant que ya lo
+        // tiene (uq_master_banks_tenant_country_code) al crear su segunda empresa desde Admin Core.
         var existingCodes = await _db
-            .Banks.Where(b => b.TenantId == tenantId && b.CountryCode == Bank.DefaultCountryCode)
+            .Banks.IgnoreQueryFilters()
+            .Where(b => b.TenantId == tenantId && b.CountryCode == Bank.DefaultCountryCode)
             .Select(b => b.Code)
             .ToListAsync(ct);
 

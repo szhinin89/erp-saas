@@ -61,6 +61,9 @@ public static class CompanyBootstrapStepOrder
     /// </summary>
     public const int DocumentFlowPolicy = 49;
 
-    /// <summary>Perfiles de acceso por defecto. Último — no depende de ningún otro step.</summary>
+    /// <summary>
+    /// Perfiles operativos iniciales (Facturador, Contador) de una empresa nueva. Último — no
+    /// depende de ningún otro step.
+    /// </summary>
     public const int Access = 50;
 }

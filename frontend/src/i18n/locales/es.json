@@ -3719,6 +3719,8 @@
   "users.membership.role": "Role",
   "users.membership.profile": "Perfil de acceso",
   "users.membership.profile.none": "Sin perfil (sin acceso)",
+  "users.membership.profile.empty": "Primero cree un perfil y configure sus permisos para registrar usuarios operativos.",
+  "users.membership.profile.goToProfiles": "Ir a Perfiles",
   "users.membership.success": "Usuario guardado correctamente.",
   "users.membership.error": "No se pudo guardar el usuario.",
   "users.createUser.firstName": "Nombre",

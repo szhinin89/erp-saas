@@ -267,7 +267,7 @@ public sealed class FirstRunSetupConcurrencyTests : IAsyncLifetime
                 await db.Database.ExecuteSqlRawAsync("INSERT INTO first_run_probe VALUES (1)", ct);
             });
         var provisioning = new Mock<ICompanyProvisioningService>(MockBehavior.Strict);
-        provisioning.Setup(x => x.EnsureDefaultCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
+        provisioning.Setup(x => x.EnsureInitialCompanyAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Synthetic provisioning failure before account persistence"));
         var handler = Handler(owner, db, tenants.Object, provisioning.Object);
         await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(Command("synthetic-test-input"), default));

@@ -28,7 +28,8 @@ public sealed class IgnoreQueryFiltersAuditTests
         "src/ERP.Infrastructure/Seeding/Steps/InventoryBootstrapStep.cs", // idem
         "src/ERP.Infrastructure/Seeding/Steps/SalesBootstrapStep.cs", // idem
         "src/ERP.Infrastructure/Seeding/Steps/AccountingBootstrapStep.cs", // bootstrap needs cross-tenant visibility (hallazgo pre-existente, corregido en ACCOUNTING-PAYMENT-METHOD-ACCOUNT-MAPPING-14: faltaba en esta allowlist desde ACCOUNTING-INITIAL-CHART-SEED-11)
-        "src/ERP.Infrastructure/Seeding/DefaultProfileSeeder.cs", // seeder needs cross-tenant visibility
+        "src/ERP.Infrastructure/Seeding/BankCatalogSeeder.cs", // existencia por tenant explícito: con token global el filtro no ve el catálogo del tenant
+        "src/ERP.Infrastructure/Seeding/Steps/AccessBootstrapStep.cs", // perfiles iniciales: filtro explícito TenantId+CompanyId (bootstrap needs cross-tenant visibility)
         "src/ERP.Infrastructure/Seeding/Steps/CajaBootstrapStep.cs", // bootstrap needs cross-tenant visibility
         "src/ERP.Infrastructure/Seeding/E2E/E2ESeedService.cs", // provisioning E2E fuera de Production, bajo bandera explícita: mismo motivo que los *BootstrapStep (bootstrap needs cross-tenant visibility)
         "src/ERP.API/Health/MembershipConsistencyHealthCheck.cs", // health check sin contexto de tenant: mismo motivo que BusinessPartnerReconciliationService (chequeo de integridad cross-tenant de solo lectura)

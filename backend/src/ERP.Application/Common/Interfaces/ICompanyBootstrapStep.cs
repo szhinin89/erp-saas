@@ -6,7 +6,17 @@ namespace ERP.Application.Common.Interfaces;
 /// en base de datos (consultado por el step que lo necesite) — nunca a través de campos adicionales
 /// de este contexto ni de referencias directas entre steps.
 /// </summary>
-public sealed record CompanyBootstrapContext(Guid TenantId, Guid CompanyId, Guid ActorId);
+public sealed record CompanyBootstrapContext(Guid TenantId, Guid CompanyId, Guid ActorId)
+{
+    /// <summary>
+    /// Política del llamador (no comunicación entre steps): true solo cuando se aprovisiona una
+    /// empresa NUEVA (alta de empresa o First Run). La auto-sanación del login y cualquier
+    /// bootstrap sobre una empresa existente la dejan en false y no reciben perfiles iniciales.
+    /// Es una propiedad init, no parte del constructor posicional, para no alterar la
+    /// deconstrucción (tenantId, companyId, actorId) que usan los demás steps.
+    /// </summary>
+    public bool SeedInitialProfiles { get; init; }
+}
 
 /// <summary>
 /// Unidad de inicialización de un único dominio/módulo dentro del bootstrap de una empresa nueva.

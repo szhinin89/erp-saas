@@ -8,8 +8,8 @@ import { ZHBtn, ZHFormSection, ZHGrid, ZHField } from "../../../components/zh/ZH
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
 import {
-  companyManagementFormSchema,
-  type CompanyManagementFormValues,
+  adminCoreCompanyCreateSchema,
+  type AdminCoreCompanyCreateValues,
 } from "../../../schemas/companyManagementSchema";
 import { companyRegistrationFacade } from "../../company-management/facades/companyRegistrationFacade";
 import { adminCoreService } from "../api/adminCoreService";
@@ -21,14 +21,26 @@ import { formatApiRequestError } from "../../lib/apiError";
 import { applyServerErrors } from "../../lib/validationErrors";
 import { logoutSession } from "../../../lib/session/logoutSession";
 import type { AdminCoreTenant } from "../../../types/adminCore";
+import type { InitialAdministratorCredentials } from "../../../types/companyManagement";
+import { TemporaryCredentialsPanel } from "../components/TemporaryCredentialsPanel";
 
-const defaults = (): CompanyManagementFormValues => ({
+const defaults = (): AdminCoreCompanyCreateValues => ({
   tenantId: "",
   taxId: "",
   legalName: "",
   tradeName: "",
   isActive: true,
+  adminUsername: "",
+  adminFirstName: "",
+  adminLastName: "",
+  adminEmail: "",
 });
+
+/** Empresa recién creada y, si aplica, credenciales temporales del administrador (solo en memoria). */
+interface CreatedState {
+  legalName: string;
+  credentials: InitialAdministratorCredentials | null;
+}
 
 /**
  * AdminGlobalCore — crear empresa. Reutiliza el schema y el servicio de company-management
@@ -46,7 +58,9 @@ export function AdminCoreCompanyCreatePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<string | null>(null);
+  const [created, setCreated] = useState<CreatedState | null>(null);
+  // «Ya copié las credenciales»: descarta la contraseña del estado; no se puede volver a mostrar.
+  const [credentialsDismissed, setCredentialsDismissed] = useState(false);
   const [tenants, setTenants] = useState<AdminCoreTenant[]>([]);
   const [loadingTenants, setLoadingTenants] = useState(true);
   const [tenantsError, setTenantsError] = useState("");
@@ -58,8 +72,8 @@ export function AdminCoreCompanyCreatePage() {
     setValue,
     setError: setFieldError,
     formState: { errors },
-  } = useForm<CompanyManagementFormValues>({
-    resolver: zodResolver(companyManagementFormSchema),
+  } = useForm<AdminCoreCompanyCreateValues>({
+    resolver: zodResolver(adminCoreCompanyCreateSchema),
     defaultValues: defaults(),
   });
 
@@ -126,8 +140,18 @@ export function AdminCoreCompanyCreatePage() {
         taxId: values.taxId.trim(),
         legalName: values.legalName.trim(),
         tradeName: values.tradeName?.trim() || null,
+        initialAdministrator: {
+          username: values.adminUsername.trim(),
+          firstName: values.adminFirstName.trim(),
+          lastName: values.adminLastName.trim(),
+          email: values.adminEmail.trim(),
+        },
       });
-      setCreated(detail.legalName);
+      setCredentialsDismissed(false);
+      setCreated({
+        legalName: detail.legalName,
+        credentials: detail.initialAdministrator ?? null,
+      });
     } catch (e) {
       const applied = applyServerErrors(e, setFieldError, (msg) => setError(msg));
       if (!applied) {
@@ -147,7 +171,33 @@ export function AdminCoreCompanyCreatePage() {
     return (
       <PageShell title="Empresa creada" subtitle="AdminGlobalCore">
         <ZHCard>
-          <ZHPageNotice variant="success" message={`Empresa "${created}" creada correctamente.`} />
+          <ZHPageNotice variant="success" message={`Empresa "${created.legalName}" creada correctamente.`} />
+          {created.credentials && !credentialsDismissed ? (
+            <>
+              <TemporaryCredentialsPanel
+                title="Credenciales del administrador inicial de la empresa."
+                username={created.credentials.username}
+                temporaryPassword={created.credentials.temporaryPassword}
+              />
+              <ZHBtn
+                variant="primary"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setCredentialsDismissed(true);
+                  setCreated({ ...created, credentials: null });
+                }}
+              >
+                Ya copié las credenciales
+              </ZHBtn>
+            </>
+          ) : created.credentials === null ? (
+            <ZHPageNotice
+              variant="info"
+              message="Las credenciales ya no se pueden consultar."
+              detail="Si se perdieron, genera una nueva contraseña temporal desde el dashboard global (Administradores)."
+            />
+          ) : null}
           <div className="zh-form-actions-row zh-mt-16">
             <ZHBtn
               variant="primary"
@@ -225,6 +275,35 @@ export function AdminCoreCompanyCreatePage() {
                 </ZHField>
                 <ZHField label="Nombre comercial" fieldError={errors.tradeName?.message}>
                   <ZhTextInput disabled={saving} {...register("tradeName")} />
+                </ZHField>
+              </ZHGrid>
+            </ZHFormSection>
+            <ZHFormSection title="Administrador inicial">
+              <ZHPageNotice
+                variant="info"
+                message="La contraseña temporal se genera automáticamente y se mostrará una sola vez al crear la empresa. El administrador deberá cambiarla en su primer ingreso."
+              />
+              <ZHGrid cols={2}>
+                <ZHField label="Usuario" required fieldError={errors.adminUsername?.message}>
+                  <ZhTextInput
+                    disabled={saving}
+                    autoComplete="off"
+                    {...register("adminUsername")}
+                  />
+                </ZHField>
+                <ZHField label="Correo electrónico" required fieldError={errors.adminEmail?.message}>
+                  <ZhTextInput
+                    disabled={saving}
+                    inputMode="email"
+                    autoComplete="off"
+                    {...register("adminEmail")}
+                  />
+                </ZHField>
+                <ZHField label="Nombres" required fieldError={errors.adminFirstName?.message}>
+                  <ZhTextInput disabled={saving} {...register("adminFirstName")} />
+                </ZHField>
+                <ZHField label="Apellidos" required fieldError={errors.adminLastName?.message}>
+                  <ZhTextInput disabled={saving} {...register("adminLastName")} />
                 </ZHField>
               </ZHGrid>
             </ZHFormSection>

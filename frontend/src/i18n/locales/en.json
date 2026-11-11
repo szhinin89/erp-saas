@@ -3430,6 +3430,8 @@
   "users.membership.role": "Role",
   "users.membership.profile": "Access profile",
   "users.membership.profile.none": "No profile (no access)",
+  "users.membership.profile.empty": "First create a profile and configure its permissions to register operational users.",
+  "users.membership.profile.goToProfiles": "Go to Profiles",
   "users.membership.success": "User saved successfully.",
   "users.membership.error": "Could not save the user.",
   "users.createUser.firstName": "First name",

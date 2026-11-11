@@ -195,7 +195,7 @@ public sealed class BranchWarehouseCatalogAccessFixture : IAsyncLifetime
             "Administrador de sucursales",
             ["settings.branches.view", "settings.branches.update"]
         );
-        // Equivalente al perfil semilla DataEntry: solo lectura del catálogo.
+        // Perfil operativo de solo lectura del catálogo.
         ViewOnlyId = await SeedUserAsync(
             db,
             "Solo lectura",

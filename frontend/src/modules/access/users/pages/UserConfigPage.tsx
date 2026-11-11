@@ -74,6 +74,8 @@ export function UserConfigPage() {
   const [loading, setLoading] = useState(mode === "edit");
   const [loadError, setLoadError] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  // En alta los perfiles se cargan aparte; en edición la pantalla espera a `loading` antes de pintar.
+  const [profilesLoaded, setProfilesLoaded] = useState(mode !== "new");
   const [branchesCatalog, setBranchesCatalog] = useState<BranchListItemDto[]>(
     [],
   );
@@ -108,11 +110,13 @@ export function UserConfigPage() {
           if (cancelled) return;
           setProfiles(profilesList);
           setBranchesCatalog(branchesList);
+          setProfilesLoaded(true);
         })
         .catch(() => {
           if (!cancelled) {
             setProfiles([]);
             setBranchesCatalog([]);
+            setProfilesLoaded(true);
           }
         });
       return () => {
@@ -433,6 +437,7 @@ export function UserConfigPage() {
     mode,
     membership,
     profiles,
+    profilesLoaded,
     branchesCatalog,
     canManage,
     canCreateUser,

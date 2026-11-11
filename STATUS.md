@@ -1,5 +1,41 @@
 # Project Status
 
+## IAM-V1-F3 — Perfiles iniciales y administrador inicial de empresa — IMPLEMENTADO, pendiente de CI propio y gate del propietario (2026-11-11)
+
+Autorizado por el propietario (decisiones de 2026-11-11). **No está CLOSED:** el commit de la fase
+es local (sin push) y su propio CI aún no existe; el cierre exige CI SUCCESS y el gate del
+propietario. Regla vigente:
+[Seguridad § identidades globales y alcance IAM](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant)
+(viñeta «Administrador inicial de empresa y credenciales temporales»). Sin migraciones ni datos
+reales modificados: `DataEntry` conserva sus 126 permisos y los perfiles existentes no se tocan.
+
+- Perfiles iniciales **Facturador** y **Contador** solo en empresas nuevas (alta de empresa y First
+  Run; nunca en la auto-sanación del login). Un perfil existente con el mismo nombre se conserva
+  íntegro y el bootstrap nunca restaura permisos retirados ni quita los agregados. Se retira el
+  seeder automático de `DataEntry`; `Admin` sigue sin perfil. Formulario de Usuarios: aviso de
+  respaldo cuando no hay perfiles.
+- Alta de empresa desde Admin Core con administrador inicial (usuario, nombres, apellidos, correo;
+  sin contraseña): empresa, bootstrap, cuenta, membresía `Admin` sin perfil y acceso a la sucursal
+  principal en una sola transacción. Contraseña temporal generada por el backend, mostrada una sola
+  vez, sin persistirla ni auditarla; cambio obligatorio en el primer ingreso con el flujo existente.
+  Duplicados: 409 genérico, también ante concurrencia. Sin administrador inicial el contrato de
+  integración/E2E no cambia; First Run sin cambios.
+- Admin Core: «Administradores» por empresa y «Generar nueva contraseña temporal» con
+  confirmación (invalida la anterior, exige cambio, revoca sesiones, auditoría sin secretos).
+- Concurrencia: las altas de empresa de un mismo tenant se serializan con el lock de
+  aprovisionamiento por tenant (corrige el interbloqueo `40P01` reproducido en el seeder de
+  bancos); el seed de bancos ya no reinserta el catálogo de un tenant existente con token global.
+- **Evidencia local (2026-11-11):** Dominio `Kernel` 53/53; Application (Access, First Run, login,
+  empresas, auth) 437/437; Infraestructura (gobernanza, filtros, orquestador, aprovisionamiento
+  PostgreSQL, First Run, bancos, sesiones) 51/51; API + PostgreSQL (administrador inicial, primer
+  ingreso con cambio obligatorio, identidad de empresa, aislamiento y privilegios) 75/75; frontend
+  `admin-core`, `company-management` y `access/users` 98/98, `tsc -b` y ESLint (0 errores);
+  `check-architecture-guardrails.ps1 -SkipFrontendChunk`, `git diff --cached --check` y
+  `check-staged-guardrails.ps1` OK. Suite completa no ejecutada (la corre el propietario).
+- Pendientes conocidos: `E2ESeedService` no siembra perfiles iniciales (usa la ruta de
+  auto-sanación); el modo "create" de `CompanyManagementFormPage` no tiene ruta (el único acceso al
+  alta es Admin Core).
+
 ## IAM-V1-F2 — Administración de perfiles, permisos y usuarios; visibilidad por permisos efectivos — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
 
 Autorizado por el propietario con ajustes (2026-11-10). Regla vigente:
@@ -30,6 +66,15 @@ perfiles, permisos, usuarios ni datos: `DataEntry` conserva sus 126 permisos (ve
   `tsc -b`, ESLint (0 errores), `npm run build`, `architecture:check` PASS y
   `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK. Suite completa no ejecutada (la corre
   el propietario).
+- **CI de la cadena IAM (2026-11-11, `main`):** #1140 ya figura en F1. Las correcciones de #1142 y
+  #1143 quedan validadas por #1144 SUCCESS; el gate del propietario de F2 sigue pendiente.
+
+  | CI | Resultado | Commit | Detalle |
+  |---|---|---|---|
+  | [#1141](https://github.com/szhinin89/erp-saas/actions/runs/42945057896) | SUCCESS | `26cadc4a7f87dc06d94fd30cc7591f1eb8381a4e` `docs: close IAM V1 phase 1` | Cierre documental de F1. |
+  | [#1142](https://github.com/szhinin89/erp-saas/actions/runs/43000066364) | **FAILURE** | `baebc48bb98220ac920d25b15a7b9f639b0ccfe5` `feat(iam): improve company user profiles and permissions UX` (F2) | Fallaron `Backend (api)` (verificación de inventario y grupo de pruebas) y `CI gate`. |
+  | [#1143](https://github.com/szhinin89/erp-saas/actions/runs/43003091394) | **FAILURE** | `dcb47520d9f0a9c23f79dfefb94812a2ef66ae56` `fix(ci): preserve OpenAPI snapshot and pin WebUtilities` | Falló `Stack Audit (allowlist)` (Verify allowed stack) y, con ella, `CI gate`; el resto se omitió. |
+  | [#1144](https://github.com/szhinin89/erp-saas/actions/runs/43006258440) | SUCCESS | `edf33a97e799e8c37b3b31bd6ec67285f0d3a1a9` `fix(ci): allow security-pinned WebUtilities dependency` | 21 jobs en éxito y 1 omitido; valida el contenido de F2 y las dos correcciones. |
 
 ## IAM-V1-F1 — Protección de identidades globales y aislamiento IAM multiempresa — CLOSED (2026-11-10)
 

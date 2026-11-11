@@ -29,6 +29,37 @@ public sealed class CompanyBootstrapOrchestratorTests
         return step;
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Propaga_la_politica_de_perfiles_iniciales_al_contexto_de_cada_step(bool seed)
+    {
+        var step = new Mock<ICompanyBootstrapStep>();
+        step.Setup(s => s.Order).Returns(10);
+        CompanyBootstrapContext? received = null;
+        step.Setup(s =>
+                s.ExecuteAsync(It.IsAny<CompanyBootstrapContext>(), It.IsAny<CancellationToken>())
+            )
+            .Callback<CompanyBootstrapContext, CancellationToken>((c, _) => received = c)
+            .Returns(Task.CompletedTask);
+
+        var orchestrator = new CompanyBootstrapOrchestrator(
+            new[] { step.Object },
+            NullLogger<CompanyBootstrapOrchestrator>.Instance
+        );
+
+        await orchestrator.BootstrapCompanyAsync(
+            TenantId,
+            CompanyId,
+            ActorId,
+            CancellationToken.None,
+            seedInitialProfiles: seed
+        );
+
+        received.Should().NotBeNull();
+        received!.SeedInitialProfiles.Should().Be(seed);
+    }
+
     [Fact]
     public async Task Ejecuta_los_steps_en_orden_ascendente_por_Order_sin_importar_el_orden_de_registro()
     {

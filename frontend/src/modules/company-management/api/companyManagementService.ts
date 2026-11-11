@@ -1,6 +1,7 @@
 import { api } from "../../lib/api";
 import type { ApiResponse } from "../../../types/api";
 import type {
+  CompanyCreatedResult,
   CompanyDetail,
   CompanyListItem,
   CreateCompanyPayload,
@@ -32,8 +33,8 @@ export const companyManagementService = {
     return data.data;
   },
 
-  async create(payload: CreateCompanyPayload): Promise<CompanyDetail> {
-    const { data } = await api.post<ApiResponse<CompanyDetail>>(
+  async create(payload: CreateCompanyPayload): Promise<CompanyCreatedResult> {
+    const { data } = await api.post<ApiResponse<CompanyCreatedResult>>(
       "/api/v1/companies",
       payload,
     );

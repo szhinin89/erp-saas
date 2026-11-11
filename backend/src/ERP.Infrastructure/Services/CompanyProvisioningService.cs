@@ -2,12 +2,17 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Audit.Entities;
+using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Kernel.Security;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Entities;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace ERP.Infrastructure.Services;
 
@@ -15,7 +20,7 @@ namespace ERP.Infrastructure.Services;
 /// Único punto de creación de <see cref="Company"/> en producción. Ambos métodos públicos dejan
 /// la empresa completamente bootstrapeada (sucursal, bodega, establecimiento, punto de emisión,
 /// numeraciones, formas de pago, tipos de ítem, consumidor final, lista de precios, condición de
-/// pago, perfiles de acceso por defecto) antes de retornar — un único punto de invocación de
+/// pago, perfiles operativos iniciales en altas de empresa) antes de retornar — un único punto de invocación de
 /// <see cref="ICompanyBootstrapService"/>, nunca hay que llamarlo por separado desde el caller.
 /// <see cref="CreateManagedCompanyAsync"/> es atómico (H-16): empresa, membresía del creador, los
 /// 13 steps del bootstrap y su <see cref="CompanyUserBranch"/> en la sucursal principal (H-25) se
@@ -30,6 +35,8 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBranchRepository _branches;
     private readonly ICompanyUserBranchRepository _companyUserBranches;
+    private readonly IUserActivityRepository _activity;
+    private readonly ICurrentUser _currentUser;
 
     public CompanyProvisioningService(
         ICompanyRepository companies,
@@ -37,7 +44,9 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         ICompanyBootstrapService bootstrap,
         IUnitOfWork unitOfWork,
         IBranchRepository branches,
-        ICompanyUserBranchRepository companyUserBranches
+        ICompanyUserBranchRepository companyUserBranches,
+        IUserActivityRepository activity,
+        ICurrentUser currentUser
     )
     {
         _companies = companies;
@@ -46,6 +55,8 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         _unitOfWork = unitOfWork;
         _branches = branches;
         _companyUserBranches = companyUserBranches;
+        _activity = activity;
+        _currentUser = currentUser;
     }
 
     /// <summary>
@@ -55,9 +66,25 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
     /// decide el caller. Sin ella, se abre una propia; si falla, se revierte completa y se limpia el
     /// tracker para que un reintento en el mismo scope no reinserte entidades huérfanas.
     /// </summary>
-    public async Task<Company> EnsureDefaultCompanyAsync(
+    public Task<Company> EnsureDefaultCompanyAsync(
         Tenant tenant,
         CancellationToken cancellationToken = default
+    ) => EnsureCompanyAsync(tenant, seedInitialProfiles: false, cancellationToken);
+
+    /// <summary>
+    /// First Run (IAM-V1-F3): empresa inicial de una instalación nueva, con los perfiles
+    /// operativos iniciales. La auto-sanación del login (<see cref="EnsureDefaultCompanyAsync"/>)
+    /// no los crea.
+    /// </summary>
+    public Task<Company> EnsureInitialCompanyAsync(
+        Tenant tenant,
+        CancellationToken cancellationToken = default
+    ) => EnsureCompanyAsync(tenant, seedInitialProfiles: true, cancellationToken);
+
+    private async Task<Company> EnsureCompanyAsync(
+        Tenant tenant,
+        bool seedInitialProfiles,
+        CancellationToken cancellationToken
     )
     {
         if (_unitOfWork.HasActiveTransaction)
@@ -107,7 +134,13 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             // *AuditHandler que dependa de CompanyId lanza ArgumentException("companyId requerido").
             using (JobExecutionContext.Begin(tenant.Id, company.Id))
             {
-                await _bootstrap.BootstrapCompanyAsync(tenant.Id, company.Id, systemActorId, ct);
+                await _bootstrap.BootstrapCompanyAsync(
+                    tenant.Id,
+                    company.Id,
+                    systemActorId,
+                    ct,
+                    seedInitialProfiles
+                );
             }
 
             return company;
@@ -156,7 +189,8 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         string timezone = "America/Guayaquil",
         string currencyCode = "USD",
         string? website = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        InitialCompanyAdministrator? initialAdministrator = null
     )
     {
         var normalized = NormalizeProvidedTaxId(ruc);
@@ -187,6 +221,13 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
 
         async Task<Company> CreateAsync(CancellationToken ct)
         {
+            // Dos altas simultáneas del MISMO tenant sembraban a la vez los datos de nivel tenant
+            // (catálogo de bancos, etc.) y se interbloqueaban (40P01) o chocaban con los índices
+            // únicos. Mismo lock por tenant que EnsureDefaultCompanyAsync (pg_advisory_xact_lock,
+            // se libera al confirmar o revertir): las altas del tenant se serializan y las
+            // siguientes ya encuentran lo sembrado. Los demás tenants no se bloquean entre sí.
+            await _companies.AcquireDefaultProvisioningLockAsync(tenantId, ct);
+
             await EnsureTaxIdAvailableGloballyAsync(normalized, ct);
 
             var company = Company.CreateManaged(
@@ -228,7 +269,8 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
                     tenantId,
                     company.Id,
                     createdByUserId,
-                    ct
+                    ct,
+                    seedInitialProfiles: true
                 );
             }
 
@@ -259,7 +301,91 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             );
             await _companyUserBranches.SaveChangesAsync(ct);
 
+            if (initialAdministrator is not null)
+                await CreateInitialAdministratorAsync(
+                    initialAdministrator,
+                    tenantId,
+                    company.Id,
+                    mainBranch.Id,
+                    createdByUserId,
+                    ct
+                );
+
             return company;
+        }
+    }
+
+    /// <summary>
+    /// IAM-V1-F3: cuenta independiente de Administrador de empresa, en la MISMA transacción que la
+    /// empresa. Membresía <c>Admin</c> sin perfil, acceso a la sucursal principal y cambio
+    /// obligatorio de contraseña en el primer ingreso (<c>RequirePasswordReset</c>). Usuario y
+    /// correo son únicos en todo el sistema: se comprueban de nuevo aquí y la violación del índice
+    /// único (concurrencia) se traduce a la misma excepción genérica, lo que revierte todo.
+    /// Solo se audita el alta del administrador: nunca la contraseña ni su hash.
+    /// </summary>
+    private async Task CreateInitialAdministratorAsync(
+        InitialCompanyAdministrator admin,
+        Guid tenantId,
+        Guid companyId,
+        Guid mainBranchId,
+        Guid createdByUserId,
+        CancellationToken ct
+    )
+    {
+        var username = admin.Username.Trim().ToLowerInvariant();
+        var email = admin.Email.Trim().ToLowerInvariant();
+        if (
+            await _access.AnyUserWithUsernameAsync(username, ct)
+            || await _access.AnyUserWithEmailAsync(email, ct)
+        )
+            throw new InitialAdministratorIdentityUnavailableException();
+
+        var user = IdentityUser.Create(
+            username,
+            admin.FirstName,
+            admin.LastName,
+            email,
+            admin.PasswordHash,
+            createdByUserId
+        );
+        user.MarkRequirePasswordReset(createdByUserId);
+        var membership = CompanyUserMembership.Create(
+            companyId,
+            user.Id,
+            SecurityRoles.Admin,
+            profileId: null,
+            createdByUserId
+        );
+
+        await _access.AddUserAsync(user, ct);
+        await _access.AddCompanyUserMembershipAsync(membership, ct);
+        await _companyUserBranches.AddAsync(
+            CompanyUserBranch.Create(tenantId, companyId, membership.Id, mainBranchId, createdByUserId),
+            ct
+        );
+        await _activity.AddAsync(
+            UserActivity.Create(
+                tenantId,
+                createdByUserId,
+                _currentUser.Email,
+                _currentUser.FullName,
+                module: "companies",
+                action: "company.initial-admin.create",
+                entityType: "Company",
+                entityId: companyId,
+                description: $"Administrador inicial: {username}"
+            ),
+            ct
+        );
+
+        try
+        {
+            await _access.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+            when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            throw new InitialAdministratorIdentityUnavailableException();
         }
     }
 

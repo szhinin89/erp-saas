@@ -31,12 +31,16 @@ public sealed partial class CompanyBootstrapOrchestrator : ICompanyBootstrapServ
         Guid tenantId,
         Guid companyId,
         Guid actorId,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        bool seedInitialProfiles = false
     )
     {
         LogBootstrappingCompany(companyId, tenantId);
 
-        var context = new CompanyBootstrapContext(tenantId, companyId, actorId);
+        var context = new CompanyBootstrapContext(tenantId, companyId, actorId)
+        {
+            SeedInitialProfiles = seedInitialProfiles,
+        };
 
         foreach (var step in _steps)
         {

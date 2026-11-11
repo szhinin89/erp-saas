@@ -39,6 +39,7 @@ interface Props {
   /** Perfil guardado de la membership en edición (null = operativo existente sin perfil). */
   initialProfileId?: string | null;
   profiles: Profile[];
+  profilesLoaded?: boolean;
   canManage: boolean;
   canCreateUser: boolean;
   disabled: boolean;
@@ -60,6 +61,7 @@ export function UserGeneralSection({
   errors,
   initialProfileId = null,
   profiles,
+  profilesLoaded = true,
   canManage,
   canCreateUser,
   disabled,
@@ -193,6 +195,7 @@ export function UserGeneralSection({
           control={control}
           errors={errors}
           profiles={profiles}
+          profilesLoaded={profilesLoaded}
           disabled={!canManage || disabled}
           allowNoProfile={!initialProfileId}
         />
@@ -297,6 +300,7 @@ export function UserGeneralSection({
             control={control}
             errors={errors}
             profiles={profiles}
+            profilesLoaded={profilesLoaded}
             disabled={disabled}
             allowNoProfile={false}
           />
@@ -310,6 +314,7 @@ export function UserGeneralSection({
             control={control}
             errors={errors}
             profiles={profiles}
+            profilesLoaded={profilesLoaded}
             disabled={disabled}
             allowNoProfile={false}
           />

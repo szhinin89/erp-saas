@@ -38,6 +38,21 @@ vi.mock("../../session/api/sessionService", () => ({ sessionService: shellSpies.
 const TENANT_A = { tenantId: "tenant-a", tenantName: "Tenant A", tenantIsActive: true };
 const TENANT_B = { tenantId: "tenant-b", tenantName: "Tenant B", tenantIsActive: true };
 
+function fillAdministrator() {
+  fireEvent.change(screen.getByLabelText("Usuario", { exact: false }), {
+    target: { value: "acme.admin" },
+  });
+  fireEvent.change(screen.getByLabelText("Correo electrónico", { exact: false }), {
+    target: { value: "ana@example.test" },
+  });
+  fireEvent.change(screen.getByLabelText("Nombres", { exact: false }), {
+    target: { value: "Ana" },
+  });
+  fireEvent.change(screen.getByLabelText("Apellidos", { exact: false }), {
+    target: { value: "Pérez" },
+  });
+}
+
 function LocationProbe() {
   const location = useLocation();
   return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
@@ -214,7 +229,13 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
       isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      initialAdministrator: {
+        identityUserId: "admin-1",
+        username: "acme.admin",
+        temporaryPassword: "Xk7mQ2pRw9TnB4cV",
+      },
     });
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
 
     renderPage();
 
@@ -228,6 +249,7 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
     fireEvent.change(screen.getByLabelText("Razón social", { exact: false }), {
       target: { value: "Empresa Nueva" },
     });
+    fillAdministrator();
 
     fireEvent.click(screen.getByRole("button", { name: "Crear empresa" }));
 
@@ -243,8 +265,77 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
         taxId: "1790012345001",
         legalName: "Empresa Nueva",
         tradeName: null,
+        initialAdministrator: {
+          username: "acme.admin",
+          firstName: "Ana",
+          lastName: "Pérez",
+          email: "ana@example.test",
+        },
       });
     });
+
+    // Entrega única de credenciales: usuario y contraseña visibles, con copia.
+    expect(screen.getByTestId("credentials-username").textContent).toBe("acme.admin");
+    expect(screen.getByTestId("credentials-password").textContent).toBe("Xk7mQ2pRw9TnB4cV");
+    expect(screen.getByRole("button", { name: "Copiar usuario" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Copiar contraseña" })).toBeTruthy();
+
+    // Nunca se persiste en el navegador.
+    expect(
+      setItem.mock.calls.some(([, value]) => String(value).includes("Xk7mQ2pRw9TnB4cV")),
+    ).toBe(false);
+    expect(JSON.stringify({ ...localStorage })).not.toContain("Xk7mQ2pRw9TnB4cV");
+    expect(JSON.stringify({ ...sessionStorage })).not.toContain("Xk7mQ2pRw9TnB4cV");
+
+    // Al confirmar que se copiaron, la contraseña desaparece y no vuelve a poder consultarse.
+    fireEvent.click(screen.getByRole("button", { name: "Ya copié las credenciales" }));
+    expect(screen.queryByTestId("credentials-password")).toBeNull();
+    expect(screen.queryByText("Xk7mQ2pRw9TnB4cV")).toBeNull();
+    expect(screen.getByText("Las credenciales ya no se pueden consultar.")).toBeTruthy();
+  });
+
+  it("exige los datos del administrador inicial y no envía la empresa sin ellos", async () => {
+    vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A]);
+
+    renderPage();
+
+    await screen.findByLabelText("Tenant / grupo destino", { exact: false });
+    fireEvent.change(screen.getByLabelText("RUC", { exact: false }), {
+      target: { value: "1790012345001" },
+    });
+    fireEvent.change(screen.getByLabelText("Razón social", { exact: false }), {
+      target: { value: "Empresa Nueva" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Crear empresa" }));
+
+    expect(await screen.findByText("Los nombres del administrador son obligatorios.")).toBeTruthy();
+    expect(screen.getByText("El correo del administrador es obligatorio.")).toBeTruthy();
+    expect(companyRegistrationFacade.create).not.toHaveBeenCalled();
+    // No se solicita contraseña: la genera el backend.
+    expect(screen.queryByLabelText(/contraseña/i)).toBeNull();
+  });
+
+  it("un 409 por usuario o correo duplicado muestra el error sin exponer credenciales", async () => {
+    vi.mocked(adminCoreService.listTenants).mockResolvedValue([TENANT_A]);
+    vi.mocked(companyRegistrationFacade.create).mockRejectedValue({
+      response: { status: 409, data: { message: { user: "La operación no se puede completar." } } },
+    });
+
+    renderPage();
+
+    await screen.findByLabelText("Tenant / grupo destino", { exact: false });
+    fireEvent.change(screen.getByLabelText("RUC", { exact: false }), {
+      target: { value: "1790012345001" },
+    });
+    fireEvent.change(screen.getByLabelText("Razón social", { exact: false }), {
+      target: { value: "Empresa Nueva" },
+    });
+    fillAdministrator();
+    fireEvent.click(screen.getByRole("button", { name: "Crear empresa" }));
+
+    await waitFor(() => expect(companyRegistrationFacade.create).toHaveBeenCalled());
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.queryByTestId("credentials-password")).toBeNull();
   });
 
   it("nunca dispara endpoints operativos", async () => {

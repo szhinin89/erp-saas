@@ -36,7 +36,7 @@ public sealed class CompanyIdentityUpdateFixture : IAsyncLifetime
     public Guid TenantId { get; private set; }
     public Guid ForeignTenantId { get; private set; }
     public Guid UserId { get; private set; }
-    public Guid GlobalAdminId { get; } = Guid.NewGuid();
+    public Guid GlobalAdminId { get; private set; }
 
     public async Task InitializeAsync()
     {
@@ -67,6 +67,20 @@ public sealed class CompanyIdentityUpdateFixture : IAsyncLifetime
             db.IdentityUsers.Add(user);
             await db.SaveChangesAsync();
             UserId = user.Id;
+
+            // Administrador global real (IAM-V1-F3: crea empresas con membresía y es invisible).
+            var global = IdentityUser.Create(
+                $"glb-{Guid.NewGuid():N}"[..12],
+                "Admin",
+                "Global",
+                $"glb-{Guid.NewGuid():N}@test.com",
+                "TEST_PASSWORD_HASH",
+                _adminId
+            );
+            db.IdentityUsers.Add(global);
+            db.GlobalUserRoles.Add(GlobalUserRole.Create(global.Id, "Admin", _adminId));
+            await db.SaveChangesAsync();
+            GlobalAdminId = global.Id;
         }
 
         App = _factory.WithWebHostBuilder(builder =>
@@ -132,6 +146,21 @@ public sealed class CompanyIdentityUpdateFixture : IAsyncLifetime
                 ? TestJwtFactory.CreateSessionJwt(Guid.Empty, GlobalAdminId, role: "Admin")
                 : TestJwtFactory.CreateSessionJwt(TenantId, UserId, role: "Admin")
         );
+        return client;
+    }
+
+    /// <summary>
+    /// Cliente autenticado con un JWT REAL emitido por el login (no el JWT de prueba), con el
+    /// contexto de tenant/empresa/usuario del host de prueba alineado a ese token.
+    /// </summary>
+    public HttpClient ClientWithRealToken(string bearer, Guid tenantId, Guid companyId, Guid userId, string role)
+    {
+        _factory.MutableTenant.TenantId = tenantId;
+        _factory.MutableCompany.CompanyId = companyId;
+        _factory.MutableUser.UserId = userId;
+        _factory.MutableUser.Role = role;
+        var client = App.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
         return client;
     }
 

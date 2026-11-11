@@ -1,9 +1,10 @@
 import { useWatch, type Control, type FieldErrors, type UseFormRegister } from "react-hook-form";
-import { ZHField } from "../../../../components/zh/ZHForm";
+import { ZHField, ZHLinkButton } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { isAdminRole } from "../../../../access/permissionUi";
+import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { MEMBERSHIP_ROLES } from "../api/membershipService";
 import { type Profile } from "../../api/profileService";
 import { membershipRoleDescription, membershipRoleLabel } from "../../roleLabels";
@@ -14,6 +15,8 @@ interface Props {
   control: Control<UserConfigFormValues>;
   errors: FieldErrors<UserConfigFormValues>;
   profiles: Profile[];
+  /** false mientras los perfiles se cargan: no se muestra el estado vacío. */
+  profilesLoaded?: boolean;
   disabled: boolean;
   /**
    * Solo al editar un usuario operativo que ya existía sin perfil: se conserva y se permite
@@ -32,12 +35,18 @@ export function UserRoleProfileFields({
   control,
   errors,
   profiles,
+  profilesLoaded = true,
   disabled,
   allowNoProfile,
 }: Props) {
   const { t } = useI18n();
+  const { canShow } = usePermissionsUi();
   const role = useWatch({ control, name: "role" });
   const admin = isAdminRole(role);
+  // IAM-V1-F3: las empresas nuevas no traen perfiles; sin ellos no se puede registrar un usuario
+  // operativo. El acceso a Perfiles solo se ofrece a quien tiene permiso para gestionarlos.
+  const noProfiles = profilesLoaded && profiles.length === 0;
+  const canOpenProfiles = canShow("access.profiles.view");
 
   return (
     <>
@@ -62,6 +71,21 @@ export function UserRoleProfileFields({
             "Perfil de acceso: no aplica. El Administrador de empresa tiene acceso total a esta empresa.",
           )}
         />
+      ) : noProfiles ? (
+        <>
+          <ZHPageNotice
+            variant="warning"
+            message={t(
+              "users.membership.profile.empty",
+              "Primero cree un perfil y configure sus permisos para registrar usuarios operativos.",
+            )}
+          />
+          {canOpenProfiles ? (
+            <ZHLinkButton variant="secondary" size="md" to="/admin/roles">
+              {t("users.membership.profile.goToProfiles", "Ir a Perfiles")}
+            </ZHLinkButton>
+          ) : null}
+        </>
       ) : (
         <ZHField
           label={t("users.membership.profile", "Perfil de acceso")}

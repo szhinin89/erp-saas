@@ -68,13 +68,15 @@ public sealed class CompaniesController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "CompanyProvisioning")]
-    [ProducesResponseType(typeof(ApiResponse<CompanyDetailDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<CompanyCreatedDto>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(
         [FromBody] CreateCompanyCommand command,
         CancellationToken cancellationToken = default
     )
     {
         var result = await _mediator.Send(command, cancellationToken);
+        // La respuesta puede incluir las credenciales temporales del administrador inicial.
+        Response.Headers.CacheControl = "no-store";
         return this.ToCreatedOrBadRequest(result);
     }
 

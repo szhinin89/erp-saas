@@ -1,13 +1,18 @@
 using System.Data.Common;
 using ERP.Application;
 using ERP.Application.Common;
+using ERP.Application.Modules.Company.UseCases.CompanyAdministratorsForAdminCore;
+using ERP.Application.Auth;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Exceptions;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Kernel.Security;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Seeding.Global;
+using ERP.Infrastructure.Seeding.Steps;
+using ERP.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -323,6 +328,453 @@ public sealed class CompanyProvisioningAtomicityPostgreSqlTests
         Assert.True(await db.Accounts.IgnoreQueryFilters().AnyAsync(a => a.CompanyId == companyId));
     }
 
+    // ── IAM-V1-F3: perfiles operativos iniciales (Facturador y Contador) ─────────────────────────
+
+    private static readonly string[] InitialNames =
+        [InitialProfileBundles.BillerName, InitialProfileBundles.AccountantName];
+
+    [Fact]
+    public async Task Managed_company_gets_exactly_the_two_initial_profiles_independent_per_company()
+    {
+        var (tenantId, userId) = await _fx.SeedTenantAndUserAsync();
+        Guid companyAId, companyBId;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            companyAId = (await Create(provisioning, tenantId, userId, ProvisionalTaxIdGenerator.Create())).Id;
+            companyBId = (await Create(provisioning, tenantId, userId, ProvisionalTaxIdGenerator.Create())).Id;
+        }
+
+        var a = await _fx.InitialProfilesAsync(companyAId);
+        var b = await _fx.InitialProfilesAsync(companyBId);
+        foreach (var company in new[] { a, b })
+        {
+            Assert.Equal(InitialNames.OrderBy(n => n), company.Keys.OrderBy(n => n));
+            Assert.Equal(
+                InitialProfileBundles.Biller.Permissions.OrderBy(k => k),
+                company[InitialProfileBundles.BillerName].Permissions.OrderBy(k => k));
+            Assert.Equal(
+                InitialProfileBundles.Accountant.Permissions.OrderBy(k => k),
+                company[InitialProfileBundles.AccountantName].Permissions.OrderBy(k => k));
+        }
+
+        // Independencia: cada empresa tiene sus propios perfiles y modificar uno no afecta al otro.
+        Assert.NotEqual(a[InitialProfileBundles.BillerName].Id, b[InitialProfileBundles.BillerName].Id);
+        Assert.NotEqual(a[InitialProfileBundles.AccountantName].Id, b[InitialProfileBundles.AccountantName].Id);
+        await _fx.RemovePermissionAsync(a[InitialProfileBundles.BillerName].Id, SalesPermissionKey);
+        var bAfter = await _fx.InitialProfilesAsync(companyBId);
+        Assert.Contains(SalesPermissionKey, bAfter[InitialProfileBundles.BillerName].Permissions);
+
+        // El administrador creador conserva su membresía Admin sin perfil.
+        await using var read = _fx.Root.CreateAsyncScope();
+        var db = read.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var memberships = await db.CompanyUserMemberships.IgnoreQueryFilters()
+            .Where(m => m.IdentityUserId == userId).ToListAsync();
+        Assert.Equal(2, memberships.Count);
+        Assert.All(memberships, m =>
+        {
+            Assert.Equal(SecurityRoles.Admin, m.Role);
+            Assert.Null(m.ProfileId);
+        });
+    }
+
+    private const string SalesPermissionKey = "sales.create";
+
+    [Fact]
+    public async Task Rerunning_the_access_step_never_restores_removed_or_removes_added_permissions()
+    {
+        var (tenantId, userId) = await _fx.SeedTenantAndUserAsync();
+        Guid companyId;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            companyId = (await Create(provisioning, tenantId, userId, ProvisionalTaxIdGenerator.Create())).Id;
+        }
+
+        // El administrador retira un permiso del Facturador y agrega otro al Contador.
+        var before = await _fx.InitialProfilesAsync(companyId);
+        const string added = "inventory.stock.manage";
+        await _fx.RemovePermissionAsync(before[InitialProfileBundles.BillerName].Id, SalesPermissionKey);
+        await _fx.AddPermissionAsync(tenantId, before[InitialProfileBundles.AccountantName].Id, added, userId);
+        var edited = await _fx.InitialProfilesAsync(companyId);
+
+        // Re-ejecución del paso (incluso con la bandera de empresa nueva): nada cambia.
+        await _fx.RunAccessStepAsync(tenantId, companyId, userId, seedInitialProfiles: true);
+
+        var after = await _fx.InitialProfilesAsync(companyId);
+        Assert.Equal(2, after.Count);
+        foreach (var name in InitialNames)
+        {
+            Assert.Equal(edited[name].Id, after[name].Id);
+            Assert.Equal(edited[name].Permissions.OrderBy(k => k), after[name].Permissions.OrderBy(k => k));
+        }
+        Assert.DoesNotContain(SalesPermissionKey, after[InitialProfileBundles.BillerName].Permissions);
+        Assert.Contains(added, after[InitialProfileBundles.AccountantName].Permissions);
+    }
+
+    [Fact]
+    public async Task Existing_profile_with_the_same_name_is_kept_untouched()
+    {
+        var (tenantId, userId) = await _fx.SeedTenantAndUserAsync();
+        Guid companyId;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            companyId = (await Create(provisioning, tenantId, userId, ProvisionalTaxIdGenerator.Create())).Id;
+        }
+
+        // Empresa con un «Facturador» propio y distinto (p. ej. creado antes por el administrador).
+        var custom = await _fx.InitialProfilesAsync(companyId);
+        await _fx.ReplacePermissionsAsync(tenantId, custom[InitialProfileBundles.BillerName].Id, ["items.view"], userId);
+
+        await _fx.RunAccessStepAsync(tenantId, companyId, userId, seedInitialProfiles: true);
+
+        var after = await _fx.InitialProfilesAsync(companyId);
+        Assert.Equal(custom[InitialProfileBundles.BillerName].Id, after[InitialProfileBundles.BillerName].Id);
+        Assert.Equal(["items.view"], after[InitialProfileBundles.BillerName].Permissions);
+    }
+
+    [Fact]
+    public async Task First_run_company_gets_initial_profiles_but_login_auto_heal_does_not()
+    {
+        var (firstRunTenant, _) = await _fx.SeedTenantAndUserAsync();
+        var (healTenant, _) = await _fx.SeedTenantAndUserAsync();
+
+        Guid firstRunCompany, healCompany;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            firstRunCompany = (await provisioning.EnsureInitialCompanyAsync(
+                await Fixture.LoadTenantAsync(db, firstRunTenant))).Id;
+        }
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            healCompany = (await provisioning.EnsureDefaultCompanyAsync(
+                await Fixture.LoadTenantAsync(db, healTenant))).Id;
+        }
+
+        Assert.Equal(InitialNames.OrderBy(n => n), (await _fx.InitialProfilesAsync(firstRunCompany)).Keys.OrderBy(n => n));
+        Assert.Equal(0, await _fx.ProfilesForCompanyAsync(healCompany));
+    }
+
+    [Fact]
+    public async Task Bootstrap_without_the_new_company_flag_creates_no_profiles_and_leaves_existing_ones()
+    {
+        var (tenantId, userId) = await _fx.SeedTenantAndUserAsync();
+        Guid companyId;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var provisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
+            companyId = (await Create(provisioning, tenantId, userId, ProvisionalTaxIdGenerator.Create())).Id;
+        }
+
+        // Perfil preexistente (p. ej. «DataEntry» de una base ya instalada) con permisos propios.
+        string[] keys = ["items.view", "masterdata.businesspartners.view", "custom.permission"];
+        Guid existingId = await _fx.AddProfileAsync(tenantId, companyId, "DataEntry", keys, userId);
+        var profilesBefore = await _fx.ProfilesForCompanyAsync(companyId);
+
+        // Bootstrap de una empresa existente: sin bandera no se crea ni se toca nada.
+        await _fx.RunAccessStepAsync(tenantId, companyId, userId, seedInitialProfiles: false);
+
+        Assert.Equal(profilesBefore, await _fx.ProfilesForCompanyAsync(companyId));
+        Assert.Equal(keys.OrderBy(k => k), (await _fx.PermissionsOfAsync(existingId)).OrderBy(k => k));
+    }
+
+    // ── IAM-V1-F3: administrador inicial de la empresa y regeneración de su contraseña ──────────
+
+    private static InitialCompanyAdministrator InitialAdmin(string username, string email) =>
+        new(username, "Ana", "Administradora", email, "$2a$11$syntheticHashForTestsOnlyNotARealHashValue00000000");
+
+    private static Task<ERP.Domain.Modules.Company.Entities.Company> CreateWithAdmin(
+        ICompanyProvisioningService provisioning, Guid tenantId, Guid creatorId, InitialCompanyAdministrator? admin) =>
+        provisioning.CreateManagedCompanyAsync(
+            tenantId, ProvisionalTaxIdGenerator.Create(), "Synthetic Admin Co", mainAddress: "Quito",
+            creatorId, SecurityRoles.Admin, tradeName: "Synthetic", initialAdministrator: admin);
+
+    [Fact]
+    public async Task Initial_administrator_is_created_atomically_with_company_and_creator_membership_is_kept()
+    {
+        var (tenantId, creatorId) = await _fx.SeedTenantAndUserAsync();
+        var admin = InitialAdmin("acme.admin", "acme.admin@example.test");
+
+        ERP.Domain.Modules.Company.Entities.Company company;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+            company = await CreateWithAdmin(
+                scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>(), tenantId, creatorId, admin);
+
+        await using var read = _fx.Root.CreateAsyncScope();
+        var db = read.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var user = await db.IdentityUsers.IgnoreQueryFilters().SingleAsync(u => u.UsernameNormalized == "acme.admin");
+        Assert.True(user.RequirePasswordReset);
+        Assert.Equal(admin.PasswordHash, user.PasswordHash);
+
+        var memberships = await db.CompanyUserMemberships.IgnoreQueryFilters()
+            .Where(m => m.CompanyId == company.Id).ToListAsync();
+        Assert.Equal(2, memberships.Count);
+        var adminMembership = memberships.Single(m => m.IdentityUserId == user.Id);
+        Assert.Equal(SecurityRoles.Admin, adminMembership.Role);
+        Assert.Null(adminMembership.ProfileId);
+        Assert.True(adminMembership.IsActive);
+        // El creador (administrador global) conserva su membresía Admin.
+        Assert.Contains(memberships, m => m.IdentityUserId == creatorId && m.Role == SecurityRoles.Admin);
+
+        // Acceso a la sucursal principal de ESTA empresa.
+        var main = await db.Branches.IgnoreQueryFilters().SingleAsync(b => b.CompanyId == company.Id && b.IsMainBranch);
+        var grants = await db.CompanyUserBranches.IgnoreQueryFilters()
+            .Where(g => g.CompanyUserMembershipId == adminMembership.Id).ToListAsync();
+        Assert.Single(grants);
+        Assert.Equal(main.Id, grants[0].BranchId);
+        Assert.Equal(company.Id, grants[0].CompanyId);
+
+        // Auditoría: el hecho sí, la contraseña o su hash nunca.
+        var activity = await db.UserActivities.IgnoreQueryFilters()
+            .Where(a => a.Action == "company.initial-admin.create" && a.EntityId == company.Id).ToListAsync();
+        Assert.Single(activity);
+        Assert.DoesNotContain(admin.PasswordHash, activity[0].Description ?? "");
+    }
+
+    [Fact]
+    public async Task Company_without_initial_administrator_keeps_the_previous_behaviour()
+    {
+        var (tenantId, creatorId) = await _fx.SeedTenantAndUserAsync();
+        await using var scope = _fx.Root.CreateAsyncScope();
+        var company = await CreateWithAdmin(
+            scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>(), tenantId, creatorId, null);
+
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var members = await db.CompanyUserMemberships.IgnoreQueryFilters().Where(m => m.CompanyId == company.Id).ToListAsync();
+        Assert.Single(members);
+        Assert.Equal(creatorId, members[0].IdentityUserId);
+    }
+
+    [Theory]
+    [InlineData("DUP.Admin", "otro.correo@example.test")]       // mismo usuario, distinto caso
+    [InlineData("otro.admin", "DUP.Admin@Example.test")]         // mismo correo, distinto caso
+    public async Task Duplicate_username_or_email_is_rejected_generically_and_leaves_nothing_behind(string username, string email)
+    {
+        var (tenantId, creatorId) = await _fx.SeedTenantAndUserAsync();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var first = InitialAdmin($"dup.admin.{suffix}", $"dup.admin.{suffix}@example.test");
+        await using (var scope = _fx.Root.CreateAsyncScope())
+            await CreateWithAdmin(scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>(), tenantId, creatorId, first);
+        var before = await _fx.CountsAsync();
+        var usersBefore = await _fx.UserCountAsync();
+
+        var clash = InitialAdmin(
+            username.Replace("DUP.Admin", $"DUP.Admin.{suffix}"),
+            email.Replace("DUP.Admin", $"DUP.Admin.{suffix}"));
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var ex = await Assert.ThrowsAsync<InitialAdministratorIdentityUnavailableException>(() =>
+                CreateWithAdmin(scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>(), tenantId, creatorId, clash));
+            Assert.Equal(InitialAdministratorIdentityUnavailableException.GenericMessage, ex.Message);
+        }
+
+        Assert.Equal(before, await _fx.CountsAsync());           // ninguna empresa, membresía ni sucursal nueva
+        Assert.Equal(usersBefore, await _fx.UserCountAsync());   // ningún usuario nuevo
+    }
+
+    [Fact]
+    public async Task Concurrent_creations_with_the_same_username_yield_exactly_one_company()
+    {
+        // Mismo tenant y mismo creador: las altas se serializan por tenant y la segunda pierde por la
+        // unicidad global del usuario, sin dejar datos a medias.
+        var (tenantA, creatorA) = await _fx.SeedTenantAndUserAsync();
+        var (tenantB, creatorB) = (tenantA, creatorA);
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var before = await _fx.CountsAsync();
+
+        async Task<bool> Attempt(Guid tenantId, Guid creatorId, string email)
+        {
+            await using var scope = _fx.Root.CreateAsyncScope();
+            try
+            {
+                await CreateWithAdmin(
+                    scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>(), tenantId, creatorId,
+                    InitialAdmin($"race.admin.{suffix}", email));
+                return true;
+            }
+            catch (InitialAdministratorIdentityUnavailableException)
+            {
+                return false;
+            }
+        }
+
+        var results = await Task.WhenAll(
+            Attempt(tenantA, creatorA, $"race.a.{suffix}@example.test"),
+            Attempt(tenantB, creatorB, $"race.b.{suffix}@example.test"));
+
+        Assert.Single(results, r => r);
+        var after = await _fx.CountsAsync();
+        Assert.Equal(before[0] + 1, after[0]);   // una sola empresa nueva: la perdedora se revirtió completa
+        Assert.Equal(before[1] + 2, after[1]);   // creador + administrador de la ganadora
+    }
+
+    [Fact]
+    public async Task Concurrent_creations_in_the_same_tenant_all_succeed_with_complete_data_and_no_duplicate_tenant_catalogs()
+    {
+        // Regresión del interbloqueo 40P01 (BankCatalogSeeder): N altas simultáneas del MISMO tenant se
+        // serializan con el lock de aprovisionamiento por tenant; ninguna falla ni queda incompleta.
+        var (tenantId, creatorId) = await _fx.SeedTenantAndUserAsync();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        async Task<(Guid CompanyId, string Username)> Attempt(int i)
+        {
+            await using var scope = _fx.Root.CreateAsyncScope();
+            var username = $"par{i}.{suffix}";
+            var company = await CreateWithAdmin(
+                scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>(), tenantId, creatorId,
+                InitialAdmin(username, $"{username}@example.test"));
+            return (company.Id, username);
+        }
+
+        var created = await Task.WhenAll(Enumerable.Range(0, 3).Select(Attempt));
+
+        Assert.Equal(3, created.Select(c => c.CompanyId).Distinct().Count());
+        foreach (var (companyId, username) in created)
+        {
+            await AssertFullyProvisionedAsync(tenantId, companyId, creatorId);
+            var profiles = await _fx.InitialProfilesAsync(companyId);
+            Assert.Equal(InitialNames.OrderBy(n => n), profiles.Keys.OrderBy(n => n));
+            await AssertAdministratorAsync(companyId, username);
+        }
+
+        // Catálogo de bancos del tenant: un único juego, sin duplicados.
+        var codes = await _fx.BankCodesAsync(tenantId);
+        Assert.NotEmpty(codes);
+        Assert.Equal(codes.Count, codes.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    private async Task AssertAdministratorAsync(Guid companyId, string username)
+    {
+        await using var scope = _fx.Root.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var user = await db.IdentityUsers.IgnoreQueryFilters().SingleAsync(u => u.UsernameNormalized == username);
+        Assert.True(user.RequirePasswordReset);
+        var membership = await db.CompanyUserMemberships.IgnoreQueryFilters()
+            .SingleAsync(m => m.CompanyId == companyId && m.IdentityUserId == user.Id);
+        Assert.Equal(SecurityRoles.Admin, membership.Role);
+        Assert.Null(membership.ProfileId);
+        var main = await db.Branches.IgnoreQueryFilters().SingleAsync(b => b.CompanyId == companyId && b.IsMainBranch);
+        var grant = await db.CompanyUserBranches.IgnoreQueryFilters().SingleAsync(g => g.CompanyUserMembershipId == membership.Id);
+        Assert.Equal(main.Id, grant.BranchId);
+    }
+
+    // ── Regeneración de contraseña temporal (Admin Core) ─────────────────────────────────────────
+
+    private async Task<(Guid TenantId, Guid CreatorId, ERP.Domain.Modules.Company.Entities.Company Company, Guid AdminId)>
+        SeedCompanyWithAdminAsync(string suffix)
+    {
+        var (tenantId, creatorId) = await _fx.SeedTenantAndUserAsync();
+        await _fx.MarkGlobalAsync(creatorId); // el creador es el administrador global
+        await using var scope = _fx.Root.CreateAsyncScope();
+        var company = await CreateWithAdmin(
+            scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>(), tenantId, creatorId,
+            InitialAdmin($"regen.{suffix}", $"regen.{suffix}@example.test"));
+        var adminId = await _fx.UserIdAsync($"regen.{suffix}");
+        return (tenantId, creatorId, company, adminId);
+    }
+
+    private RegenerateCompanyAdministratorPasswordHandler RegenHandler(
+        IServiceScope scope, Guid actorId, bool globalSession)
+    {
+        var sp = scope.ServiceProvider;
+        var user = new Mock<ICurrentUser>();
+        user.SetupGet(u => u.IsAuthenticated).Returns(true);
+        user.SetupGet(u => u.UserId).Returns(actorId);
+        user.SetupGet(u => u.Role).Returns(SecurityRoles.Admin);
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.SetupGet(t => t.TenantId).Returns(globalSession ? Guid.Empty : Guid.NewGuid());
+        return new RegenerateCompanyAdministratorPasswordHandler(
+            sp.GetRequiredService<ERP.Domain.Access.Interfaces.IAccessRepository>(),
+            sp.GetRequiredService<ERP.Domain.Modules.Company.Interfaces.ICompanyRepository>(),
+            sp.GetRequiredService<IPasswordHasher>(),
+            sp.GetRequiredService<IUserAccessRevocationService>(),
+            sp.GetRequiredService<ERP.Domain.Audit.Interfaces.IUserActivityRepository>(),
+            sp.GetRequiredService<IUnitOfWork>(),
+            user.Object, tenant.Object);
+    }
+
+    [Fact]
+    public async Task Regenerating_the_password_invalidates_the_old_one_forces_reset_revokes_sessions_and_audits_without_secrets()
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var (tenantId, creatorId, company, adminId) = await SeedCompanyWithAdminAsync(suffix);
+        var oldHash = await _fx.PasswordHashAsync(adminId);
+        var (tokenId, sessionId) = await _fx.SeedLiveAccessAsync(tenantId, company.Id, adminId);
+
+        RegeneratedAdministratorPasswordDto result;
+        await using (var scope = _fx.Root.CreateAsyncScope())
+        {
+            var r = await RegenHandler(scope, creatorId, globalSession: true)
+                .Handle(new RegenerateCompanyAdministratorPasswordCommand(company.Id, adminId), CancellationToken.None);
+            Assert.True(r.IsSuccess, r.Error);
+            result = r.Value!;
+        }
+
+        // Contraseña nueva válida y conforme a la política; la anterior queda invalidada.
+        Assert.Equal($"regen.{suffix}", result.Username);
+        Assert.Equal(TemporaryPasswordGenerator.Length, result.TemporaryPassword.Length);
+        var newHash = await _fx.PasswordHashAsync(adminId);
+        Assert.NotEqual(oldHash, newHash);
+        await using (var scope = _fx.Root.CreateAsyncScope())
+            Assert.True(scope.ServiceProvider.GetRequiredService<IPasswordHasher>().VerifyPassword(result.TemporaryPassword, newHash));
+        Assert.True(await _fx.RequiresResetAsync(adminId));
+
+        // Sesiones y refresh tokens vivos revocados.
+        Assert.True(await _fx.RefreshTokenRevokedAsync(tokenId));
+        Assert.False(await _fx.SessionActiveAsync(sessionId));
+
+        // Auditoría: la operación sí; contraseña y hash nunca.
+        var rows = await _fx.ActivityAsync("company.admin.password-regenerate", adminId);
+        var row = Assert.Single(rows);
+        Assert.DoesNotContain(result.TemporaryPassword, row ?? "");
+        Assert.DoesNotContain(newHash, row ?? "");
+        Assert.DoesNotContain(oldHash, row ?? "");
+
+        // Una segunda regeneración invalida la anterior y produce otra distinta.
+        await using var scope2 = _fx.Root.CreateAsyncScope();
+        var second = await RegenHandler(scope2, creatorId, true)
+            .Handle(new RegenerateCompanyAdministratorPasswordCommand(company.Id, adminId), CancellationToken.None);
+        Assert.NotEqual(result.TemporaryPassword, second.Value!.TemporaryPassword);
+        Assert.False(scope2.ServiceProvider.GetRequiredService<IPasswordHasher>()
+            .VerifyPassword(result.TemporaryPassword, await _fx.PasswordHashAsync(adminId)));
+    }
+
+    [Fact]
+    public async Task Regeneration_is_limited_to_global_sessions_and_to_non_global_administrators_of_that_company()
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var (_, creatorId, company, adminId) = await SeedCompanyWithAdminAsync(suffix);
+        var other = await SeedCompanyWithAdminAsync(Guid.NewGuid().ToString("N")[..8]);
+        var hashBefore = await _fx.PasswordHashAsync(adminId);
+        var otherHashBefore = await _fx.PasswordHashAsync(other.AdminId);
+
+        await using var scope = _fx.Root.CreateAsyncScope();
+
+        // Una sesión de empresa (tenant != vacío) no puede ejecutarla.
+        var forbidden = await RegenHandler(scope, creatorId, globalSession: false)
+            .Handle(new RegenerateCompanyAdministratorPasswordCommand(company.Id, adminId), CancellationToken.None);
+        Assert.False(forbidden.IsSuccess);
+        Assert.Equal(hashBefore, await _fx.PasswordHashAsync(adminId));
+
+        var global = RegenHandler(scope, creatorId, globalSession: true);
+        // Administrador de OTRA empresa/tenant, cuenta global (el creador) y usuario inexistente:
+        // todos responden igual (404 uniforme) y nada cambia.
+        foreach (var target in new[] { other.AdminId, creatorId, Guid.NewGuid() })
+        {
+            var r = await global.Handle(
+                new RegenerateCompanyAdministratorPasswordCommand(company.Id, target), CancellationToken.None);
+            Assert.False(r.IsSuccess);
+            Assert.Equal("Administrador no encontrado.", r.Error);
+        }
+        Assert.Equal(hashBefore, await _fx.PasswordHashAsync(adminId));
+        Assert.Equal(otherHashBefore, await _fx.PasswordHashAsync(other.AdminId)); // la otra empresa no se tocó
+    }
+
     private static Task<ERP.Domain.Modules.Company.Entities.Company> Create(
         ICompanyProvisioningService provisioning, Guid tenantId, Guid userId, string ruc) =>
         provisioning.CreateManagedCompanyAsync(
@@ -407,6 +859,167 @@ public sealed class CompanyProvisioningAtomicityPostgreSqlTests
                 await db.Warehouses.IgnoreQueryFilters().LongCountAsync(),
                 await db.Accounts.IgnoreQueryFilters().LongCountAsync(),
             ];
+        }
+
+        public async Task<long> ProfilesForCompanyAsync(Guid companyId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            return await db.AccessProfiles.IgnoreQueryFilters().LongCountAsync(p => p.CompanyId == companyId);
+        }
+
+        /// <summary>Perfiles de la empresa por nombre, con las claves de permiso permitidas.</summary>
+        public async Task<Dictionary<string, (Guid Id, List<string> Permissions)>> InitialProfilesAsync(Guid companyId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var profiles = await db.AccessProfiles.IgnoreQueryFilters()
+                .Where(p => p.CompanyId == companyId).ToListAsync();
+            var result = new Dictionary<string, (Guid, List<string>)>();
+            foreach (var profile in profiles)
+                result[profile.Name] = (profile.Id, await PermissionsOfAsync(profile.Id));
+            return result;
+        }
+
+        public async Task<List<string>> PermissionsOfAsync(Guid profileId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            return await db.AccessProfilePermissions.IgnoreQueryFilters()
+                .Where(p => p.ProfileId == profileId && p.IsAllowed).Select(p => p.PermissionKey).ToListAsync();
+        }
+
+        public async Task RemovePermissionAsync(Guid profileId, string key)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            db.AccessProfilePermissions.RemoveRange(await db.AccessProfilePermissions.IgnoreQueryFilters()
+                .Where(p => p.ProfileId == profileId && p.PermissionKey == key).ToListAsync());
+            await db.SaveChangesAsync();
+        }
+
+        public async Task AddPermissionAsync(Guid tenantId, Guid profileId, string key, Guid userId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            db.AccessProfilePermissions.Add(AccessProfilePermission.Create(tenantId, profileId, key, true, userId));
+            await db.SaveChangesAsync();
+        }
+
+        public async Task ReplacePermissionsAsync(Guid tenantId, Guid profileId, string[] keys, Guid userId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            db.AccessProfilePermissions.RemoveRange(await db.AccessProfilePermissions.IgnoreQueryFilters()
+                .Where(p => p.ProfileId == profileId).ToListAsync());
+            db.AccessProfilePermissions.AddRange(keys.Select(k =>
+                AccessProfilePermission.Create(tenantId, profileId, k, true, userId)));
+            await db.SaveChangesAsync();
+        }
+
+        public async Task<Guid> AddProfileAsync(Guid tenantId, Guid companyId, string name, string[] keys, Guid userId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var profile = AccessProfile.Create(tenantId, companyId, name, "Existente", userId);
+            db.AccessProfiles.Add(profile);
+            await db.SaveChangesAsync();
+            db.AccessProfilePermissions.AddRange(keys.Select(k =>
+                AccessProfilePermission.Create(tenantId, profile.Id, k, true, userId)));
+            await db.SaveChangesAsync();
+            return profile.Id;
+        }
+
+        /// <summary>Ejecuta únicamente el paso Access del bootstrap sobre una empresa ya creada.</summary>
+        public async Task RunAccessStepAsync(Guid tenantId, Guid companyId, Guid userId, bool seedInitialProfiles)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var step = scope.ServiceProvider.GetServices<ICompanyBootstrapStep>().OfType<AccessBootstrapStep>().Single();
+            using (JobExecutionContext.Begin(tenantId, companyId))
+                await step.ExecuteAsync(new CompanyBootstrapContext(tenantId, companyId, userId)
+                {
+                    SeedInitialProfiles = seedInitialProfiles,
+                });
+        }
+
+        public async Task MarkGlobalAsync(Guid userId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            db.GlobalUserRoles.Add(GlobalUserRole.Create(userId, SecurityRoles.Admin, userId));
+            await db.SaveChangesAsync();
+        }
+
+        public async Task<List<string>> BankCodesAsync(Guid tenantId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().Banks.IgnoreQueryFilters()
+                .Where(b => b.TenantId == tenantId).Select(b => b.Code).ToListAsync();
+        }
+
+        public async Task<long> UserCountAsync()
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().IdentityUsers.IgnoreQueryFilters().LongCountAsync();
+        }
+
+        public async Task<Guid> UserIdAsync(string username)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().IdentityUsers.IgnoreQueryFilters()
+                .Where(u => u.UsernameNormalized == username).Select(u => u.Id).SingleAsync();
+        }
+
+        public async Task<string> PasswordHashAsync(Guid userId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().IdentityUsers.IgnoreQueryFilters()
+                .Where(u => u.Id == userId).Select(u => u.PasswordHash).SingleAsync();
+        }
+
+        public async Task<bool> RequiresResetAsync(Guid userId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().IdentityUsers.IgnoreQueryFilters()
+                .Where(u => u.Id == userId).Select(u => u.RequirePasswordReset).SingleAsync();
+        }
+
+        /// <summary>Refresh token vigente y sesión activa del usuario en la empresa (para probar la revocación).</summary>
+        public async Task<(Guid TokenId, Guid SessionId)> SeedLiveAccessAsync(Guid tenantId, Guid companyId, Guid userId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var branchId = await db.Branches.IgnoreQueryFilters()
+                .Where(b => b.CompanyId == companyId && b.IsMainBranch).Select(b => b.Id).SingleAsync();
+            var token = ERP.Domain.Auth.Entities.RefreshToken.Create(
+                userId, tenantId, companyId, ERP.Domain.Auth.Entities.RefreshToken.TypeIdentity,
+                Guid.NewGuid().ToString("N"), DateTime.UtcNow.AddHours(8), DateTime.UtcNow.AddDays(1));
+            var session = UserSession.Create(tenantId, companyId, userId, branchId, "synthetic-terminal");
+            db.RefreshTokens.Add(token);
+            db.UserSessions.Add(session);
+            await db.SaveChangesAsync();
+            return (token.Id, session.Id);
+        }
+
+        public async Task<bool> RefreshTokenRevokedAsync(Guid tokenId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().RefreshTokens.IgnoreQueryFilters()
+                .Where(t => t.Id == tokenId).Select(t => t.IsRevoked).SingleAsync();
+        }
+
+        public async Task<bool> SessionActiveAsync(Guid sessionId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().UserSessions.IgnoreQueryFilters()
+                .Where(s => s.Id == sessionId).Select(s => s.Status == ERP.Domain.Access.Enums.UserSessionStatus.Active).SingleAsync();
+        }
+
+        public async Task<List<string?>> ActivityAsync(string action, Guid entityId)
+        {
+            await using var scope = Root.CreateAsyncScope();
+            return await scope.ServiceProvider.GetRequiredService<ErpDbContext>().UserActivities.IgnoreQueryFilters()
+                .Where(a => a.Action == action && a.EntityId == entityId).Select(a => a.Description).ToListAsync();
         }
 
         public static Task<Tenant> LoadTenantAsync(ErpDbContext db, Guid tenantId) =>

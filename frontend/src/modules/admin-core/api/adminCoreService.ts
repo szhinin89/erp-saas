@@ -2,6 +2,8 @@ import { api } from "../../lib/api";
 import type { ApiResponse } from "../../../types/api";
 import type {
   AdminCoreCompany,
+  AdminCoreCompanyAdministrator,
+  AdminCoreRegeneratedPassword,
   AdminCoreTenant,
 } from "../../../types/adminCore";
 
@@ -44,6 +46,29 @@ export const adminCoreService = {
       isActive: company.isActive,
       taxId: taxId.trim() || null,
     });
+  },
+
+  async listCompanyAdministrators(
+    companyId: string,
+  ): Promise<AdminCoreCompanyAdministrator[]> {
+    const { data } = await api.get<ApiResponse<AdminCoreCompanyAdministrator[]>>(
+      `/api/v1/admin-core/companies/${companyId}/administrators`,
+    );
+    return data.data ?? [];
+  },
+
+  /**
+   * Genera una contraseña temporal nueva (invalida la anterior, revoca sus sesiones y exige
+   * cambio en el próximo ingreso). La respuesta es la única vez que se muestra.
+   */
+  async regenerateAdministratorPassword(
+    companyId: string,
+    identityUserId: string,
+  ): Promise<AdminCoreRegeneratedPassword> {
+    const { data } = await api.post<ApiResponse<AdminCoreRegeneratedPassword>>(
+      `/api/v1/admin-core/companies/${companyId}/administrators/${identityUserId}/temporary-password`,
+    );
+    return data.data;
   },
 
   async listTenants(): Promise<AdminCoreTenant[]> {

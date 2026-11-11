@@ -2,6 +2,7 @@ using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Company.DTOs;
+using ERP.Application.Modules.Company.UseCases.CompanyAdministratorsForAdminCore;
 using ERP.Application.Modules.Company.UseCases.ListCompaniesForAdminCore;
 using ERP.Application.Modules.Company.UseCases.UpdateCompanyForAdminCore;
 using MediatR;
@@ -43,6 +44,43 @@ public sealed class AdminCoreController : ControllerBase
     {
         var result = await _mediator.Send(new ListCompaniesForAdminCoreQuery(), cancellationToken);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<AdminCoreCompanyDto>());
+    }
+
+    /// <summary>
+    /// Administradores empresariales (no globales) de la empresa, para la acción «Generar nueva
+    /// contraseña temporal». Nunca incluye credenciales.
+    /// </summary>
+    [HttpGet("companies/{companyId:guid}/administrators")]
+    public async Task<IActionResult> ListCompanyAdministrators(
+        Guid companyId,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await _mediator.Send(
+            new ListCompanyAdministratorsForAdminCoreQuery(companyId),
+            cancellationToken
+        );
+        return this.ToOkOrNotFound(result);
+    }
+
+    /// <summary>
+    /// Regenera la contraseña temporal del administrador: invalida la anterior, exige cambio en el
+    /// próximo ingreso y revoca sus sesiones. La respuesta es la única vez que se muestra.
+    /// </summary>
+    [HttpPost("companies/{companyId:guid}/administrators/{identityUserId:guid}/temporary-password")]
+    public async Task<IActionResult> RegenerateAdministratorPassword(
+        Guid companyId,
+        Guid identityUserId,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await _mediator.Send(
+            new RegenerateCompanyAdministratorPasswordCommand(companyId, identityUserId),
+            cancellationToken
+        );
+        // Respuesta con credenciales: nunca en caché de navegador ni de proxy.
+        Response.Headers.CacheControl = "no-store";
+        return this.ToOkOrNotFound(result);
     }
 
     [HttpPut("companies/{id:guid}")]
