@@ -639,6 +639,27 @@ function Test-ApiListenerOwnership {
     return $false
 }
 
+# Get-NetTCPConnection (CIM) devuelve intermitentemente 0 resultados aunque el puerto esté en
+# LISTEN (visto en Wait-ApiReady: el API respondía 200 y el launcher vencía por timeout). Se
+# reintenta y, si sigue vacío, se confirma con netstat, que lee la tabla TCP directamente.
+function Get-ApiPortListeners {
+    param([Parameter(Mandatory)][int]$Port)
+
+    for ($attempt = 0; $attempt -lt 3; $attempt++) {
+        $found = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+        if ($found.Count -gt 0) { return $found }
+    }
+
+    $owners = @(
+        netstat -ano -p TCP 2>$null |
+            ForEach-Object {
+                if ($_ -match "^\s*TCP\s+\S+:$Port\s+\S+\s+LISTENING\s+(\d+)\s*$") { [int]$Matches[1] }
+            } |
+            Sort-Object -Unique
+    )
+    return @($owners | ForEach-Object { [pscustomobject]@{ LocalPort = $Port; OwningProcess = $_ } })
+}
+
 function Wait-ApiReady {
     param([Parameter(Mandatory)]$Launch)
 
@@ -655,7 +676,7 @@ function Wait-ApiReady {
                 Write-Warn "El proceso API lanzado termino antes de estar disponible (codigo=$($Launch.Process.ExitCode))."
                 return $false
             }
-            $listeners = @(Get-NetTCPConnection -LocalPort $Config.ApiPort -State Listen -ErrorAction SilentlyContinue)
+            $listeners = @(Get-ApiPortListeners -Port $Config.ApiPort)
             foreach ($listener in $listeners) {
                 if (-not (Test-ApiListenerOwnership $Launch $listener.OwningProcess)) {
                     Write-Warn "Puerto $($Config.ApiPort) ocupado por otro proceso. Inicio rechazado."
@@ -684,7 +705,7 @@ function Wait-ApiReady {
                 Write-Warn "El proceso API termino durante la comprobacion HTTP."
                 return $false
             }
-            $listeners = @(Get-NetTCPConnection -LocalPort $Config.ApiPort -State Listen -ErrorAction SilentlyContinue)
+            $listeners = @(Get-ApiPortListeners -Port $Config.ApiPort)
             if ($listeners.Count -eq 0) { continue }
             foreach ($listener in $listeners) {
                 if (-not (Test-ApiListenerOwnership $Launch $listener.OwningProcess)) {
@@ -726,7 +747,7 @@ function Start-Backend {
     # resto del sistema — las ventanas abiertas con Start-Process pwsh no ven dotnet/npm
     # aunque la sesión que las lanza sí los vea. powershell.exe no tiene ese problema.
     $script:ApiLaunch = $null
-    if (@(Get-NetTCPConnection -LocalPort $Config.ApiPort -State Listen -ErrorAction SilentlyContinue).Count -gt 0) {
+    if (@(Get-ApiPortListeners -Port $Config.ApiPort).Count -gt 0) {
         throw "Puerto $($Config.ApiPort) ocupado. No se inicio otro proceso API."
     }
     $backendLiteral = $BackendPath.Replace("'", "''")
