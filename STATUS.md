@@ -1,10 +1,10 @@
 # Project Status
 
-## IAM-V1-F3 — Perfiles iniciales y administrador inicial de empresa — IMPLEMENTADO, pendiente de CI propio y gate del propietario (2026-11-11)
+## IAM-V1-F3 — Perfiles iniciales y administrador inicial de empresa — CLOSED (2026-11-11)
 
-Autorizado por el propietario (decisiones de 2026-11-11). **No está CLOSED:** el commit de la fase
-es local (sin push) y su propio CI aún no existe; el cierre exige CI SUCCESS y el gate del
-propietario. Regla vigente:
+El propietario aprueba el cierre (2026-11-11) tras confirmar
+[CI #1146](https://github.com/szhinin89/erp-saas/actions/runs/43027936628) SUCCESS sobre `main`,
+commit `1d1679fcdb3702c8d1b013fe0b42af3cdce8d937` (21 jobs en éxito y 1 omitido). Regla vigente:
 [Seguridad § identidades globales y alcance IAM](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant)
 (viñeta «Administrador inicial de empresa y credenciales temporales»). Sin migraciones ni datos
 reales modificados: `DataEntry` conserva sus 126 permisos y los perfiles existentes no se tocan.
@@ -32,7 +32,19 @@ reales modificados: `DataEntry` conserva sus 126 permisos y los perfiles existen
   `admin-core`, `company-management` y `access/users` 98/98, `tsc -b` y ESLint (0 errores);
   `check-architecture-guardrails.ps1 -SkipFrontendChunk`, `git diff --cached --check` y
   `check-staged-guardrails.ps1` OK. Suite completa no ejecutada (la corre el propietario).
-- Pendientes conocidos: `E2ESeedService` no siembra perfiles iniciales (usa la ruta de
+- **Commits de la fase (`main`):**
+  - `e873f0c2977e179fd3dbcbbb591a633319100f1c` `feat(iam): provision company administrators and initial profiles` (fase F3).
+  - `b4b46a18fe185e311df7820c7c58789995b55525` `fix(scripts): detect API port listener reliably in dev launcher` (launcher de desarrollo).
+  - `1d1679fcdb3702c8d1b013fe0b42af3cdce8d937` `test(api): update companies OpenAPI snapshot for company creation response` (corrección del snapshot: `POST /api/v1/companies` responde `CompanyCreatedDto` en lugar de `CompanyDetailDto`; único cambio, atribuible a F3).
+- **CI de F3 (2026-11-11):** historial #1140–#1146 conservado; #1140–#1144 figuran en F1 y en la tabla
+  de F2 (más abajo).
+
+  | CI | Resultado | Commit | Detalle |
+  |---|---|---|---|
+  | [#1145](https://github.com/szhinin89/erp-saas/actions/runs/43022974697) | **FAILURE** | `b4b46a18fe185e311df7820c7c58789995b55525` `fix(scripts): detect API port listener reliably in dev launcher` (primer CI con el contenido de F3) | Falló solo `CompaniesApiSurfaceSnapshotTests.Documento_OpenAPI_de_las_rutas_de_empresas_no_cambia`: snapshot OpenAPI desactualizado (esperaba `CompanyDetailDto`, la API devuelve `CompanyCreatedDto`). |
+  | [#1146](https://github.com/szhinin89/erp-saas/actions/runs/43027936628) | SUCCESS | `1d1679fcdb3702c8d1b013fe0b42af3cdce8d937` `test(api): update companies OpenAPI snapshot for company creation response` | 21 jobs en éxito y 1 omitido; valida F3, el launcher y la corrección. |
+
+- Pendientes conocidos (no bloquean el cierre): `E2ESeedService` no siembra perfiles iniciales (usa la ruta de
   auto-sanación); el modo "create" de `CompanyManagementFormPage` no tiene ruta (el único acceso al
   alta es Admin Core).
 
@@ -67,7 +79,7 @@ perfiles, permisos, usuarios ni datos: `DataEntry` conserva sus 126 permisos (ve
   `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK. Suite completa no ejecutada (la corre
   el propietario).
 - **CI de la cadena IAM (2026-11-11, `main`):** #1140 ya figura en F1. Las correcciones de #1142 y
-  #1143 quedan validadas por #1144 SUCCESS; el gate del propietario de F2 sigue pendiente.
+  #1143 quedan validadas por #1144 SUCCESS; el gate del propietario de F2 sigue pendiente (F3 cerró después con CI #1146; ver su sección).
 
   | CI | Resultado | Commit | Detalle |
   |---|---|---|---|

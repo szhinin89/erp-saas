@@ -4,13 +4,9 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
-- IAM-V1-F3 (IMPLEMENTADO, commit local sin push; pendiente de CI propio y gate del propietario;
-  autorizado 2026-11-11): perfiles iniciales Facturador y Contador en empresas nuevas,
-  administrador inicial de empresa con credenciales temporales de una sola visualización,
-  regeneración desde Admin Core y serialización del alta por tenant. No se cierra hasta su CI
-  SUCCESS. Estado y evidencia en [STATUS](../../STATUS.md).
 - IAM-V1-F2 (IMPLEMENTADO, pendiente gate del propietario; autorizado 2026-11-10; CI #1144
-  SUCCESS valida su contenido): administración de Perfiles, Permisos y Usuarios, visibilidad
+  SUCCESS valida su contenido; IAM-V1-F3 ya CLOSED con CI #1146 SUCCESS y aceptación del propietario
+  2026-11-11, evidencia en [STATUS](../../STATUS.md); sin siguiente fase IAM autorizada): administración de Perfiles, Permisos y Usuarios, visibilidad
   fail-closed y protección de rutas por permisos efectivos. Estado, evidencia y archivos en
   [STATUS](../../STATUS.md). La decisión de datos sobre el perfil `DataEntry` sigue siendo del
   propietario (sin cambios).
