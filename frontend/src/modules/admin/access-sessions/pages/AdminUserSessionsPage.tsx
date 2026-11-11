@@ -1,50 +1,77 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  EmptyState,
+  Badge,
   ErrorState,
-  LoadingState,
   NoAccessPage,
+  type BadgeVariant,
 } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
-import { ZHBtn } from "../../../../components/zh/ZHForm";
-import { ZHCard } from "../../../../components/zh/ZHCard";
+import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
 import { ZHConfirmModal } from "../../../../components/zh/ZHConfirmModal";
-import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
-import { companyDayUtcRange, formatDateTime } from "../../../../lib/formatters/dateFormatters";
+import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
+import {
+  ZHDataTable,
+  type ZHDataTableColumn,
+} from "../../../../components/zh/ZHDataTable";
+import { ZhDateInput, ZhSelect } from "../../../../components/zh/inputs";
+import {
+  companyDayUtcRange,
+  formatDateTime,
+} from "../../../../lib/formatters/dateFormatters";
 import {
   userSessionAdminService,
   type SessionStatisticsDto,
   type UserSessionAdminDto,
 } from "../../api/userSessionAdminService";
-import { companyLookupFacade } from "../../../company-management/facades/companyLookupFacade";
-import type { CompanyListItem } from "../../../../types/companyManagement";
+import {
+  membershipLookupFacade,
+  type CompanyUserMembershipAdminDto,
+} from "../../../access/facades/membershipLookupFacade";
 import { formatApiError } from "../../../lib/formatApiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
 import { useI18n } from "../../../../i18n/i18n";
 
-const STATUS_LABEL: Record<UserSessionAdminDto["status"], string> = {
-  Active: "Activa",
-  ClosedManually: "Cerrada manualmente",
-  ClosedByNewLogin: "Cerrada por nuevo login",
-  Expired: "Expirada",
+type SessionStatus = UserSessionAdminDto["status"];
+
+const STATUS_BADGE: Record<SessionStatus, BadgeVariant> = {
+  Active: "success",
+  ClosedManually: "neutral",
+  ClosedByNewLogin: "neutral",
+  Expired: "warning",
+};
+
+const STATUSES: SessionStatus[] = [
+  "Active",
+  "ClosedManually",
+  "ClosedByNewLogin",
+  "Expired",
+];
+
+const STATS_KEY: Record<SessionStatus, keyof SessionStatisticsDto> = {
+  Active: "active",
+  ClosedManually: "closedManually",
+  ClosedByNewLogin: "closedByNewLogin",
+  Expired: "expired",
 };
 
 const PAGE_SIZE = 25;
+
+function shortId(id: string): string {
+  return `${id.slice(0, 8)}…`;
+}
 
 export function AdminUserSessionsPage() {
   const { t } = useI18n();
   const { canShow } = usePermissionsUi();
   const canView = canShow("access.sessions.view");
   const canClose = canShow("access.sessions.close");
-  // Reutiliza companyLookupFacade (ya usado por /companies) para reemplazar el filtro de
-  // empresa por un selector real en vez de un GUID crudo — solo si el usuario tiene el permiso
-  // que ese servicio exige (erp.companies.view); si no lo tiene, el filtro degrada a texto libre
-  // en vez de romper la pantalla con un 403 al cargar.
-  const canPickCompany = canShow("erp.companies.view");
+  // El selector de usuario reutiliza la facade de membresías de la empresa activa; si el perfil no
+  // tiene ese permiso, el filtro por usuario simplemente no se ofrece (la tabla ya muestra nombres
+  // resueltos por el backend, sin depender de este permiso).
+  const canPickUser = canShow("access.company_user_memberships.view");
 
   const [identityUserId, setIdentityUserId] = useState("");
-  const [companyId, setCompanyId] = useState("");
   const [status, setStatus] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -57,7 +84,7 @@ export function AdminUserSessionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
+  const [members, setMembers] = useState<CompanyUserMembershipAdminDto[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,7 +93,6 @@ export function AdminUserSessionsPage() {
       const [paged, statistics] = await Promise.all([
         userSessionAdminService.getPaged({
           identityUserId: identityUserId || undefined,
-          companyId: companyId || undefined,
           status: status || undefined,
           // Días de empresa (Company.Timezone) → rango instante UTC [desde, hasta).
           fromUtc: fromDate ? companyDayUtcRange(fromDate)?.startUtc : undefined,
@@ -74,7 +100,7 @@ export function AdminUserSessionsPage() {
           pageNumber,
           pageSize: PAGE_SIZE,
         }),
-        userSessionAdminService.getStatistics(companyId || undefined),
+        userSessionAdminService.getStatistics(),
       ]);
       setRows(paged.items);
       setTotalCount(paged.totalCount);
@@ -86,48 +112,107 @@ export function AdminUserSessionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [identityUserId, companyId, status, fromDate, toDate, pageNumber]);
+  }, [identityUserId, status, fromDate, toDate, pageNumber]);
 
   useEffect(() => {
     if (canView) void load();
   }, [canView, load]);
 
   useEffect(() => {
-    if (!canView || !canPickCompany) return;
-    companyLookupFacade
+    if (!canView || !canPickUser) return;
+    membershipLookupFacade
       .list(false)
-      .then(setCompanies)
-      .catch(() => setCompanies([]));
-  }, [canView, canPickCompany]);
+      .then(setMembers)
+      .catch(() => setMembers([]));
+  }, [canView, canPickUser]);
 
   if (!canView)
     return <NoAccessPage title={t("app.nav.item.admin.accessSessions")} />;
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  /** Cualquier cambio de filtro vuelve a la primera página. */
+  function changeFilter(setter: (value: string) => void) {
+    return (value: string) => {
+      setter(value);
+      setPageNumber(1);
+    };
+  }
+
+  function clearFilters() {
+    setIdentityUserId("");
+    setStatus("");
+    setFromDate("");
+    setToDate("");
+    setPageNumber(1);
+  }
+
+  const hasFilters = Boolean(identityUserId || status || fromDate || toDate);
 
   const sessionColumns: ZHDataTableColumn<UserSessionAdminDto>[] = [
-    { key: "user", header: "Usuario", render: (row) => <span title={row.identityUserId}>{row.identityUserId.slice(0, 8)}…</span> },
-    { key: "company", header: "Empresa", render: (row) => <span title={row.companyId}>{row.companyId.slice(0, 8)}…</span> },
-    { key: "branch", header: "Sucursal", render: (row) => <span title={row.branchId}>{row.branchId.slice(0, 8)}…</span> },
-    { key: "terminal", header: "Terminal", render: (row) => row.terminalId },
-    { key: "status", header: "Estado", render: (row) => STATUS_LABEL[row.status] },
-    { key: "createdAt", header: "Creada", render: (row) => formatDateTime(row.createdAt) },
-    { key: "updatedAt", header: "Última actualización", render: (row) => (row.updatedAt ? formatDateTime(row.updatedAt) : "—") },
+    {
+      key: "user",
+      header: t("admin.accessSessions.column.user"),
+      render: (row) =>
+        row.userFullName || row.username ? (
+          <div>
+            <div>{row.userFullName || row.username}</div>
+            {row.userFullName && row.username && (
+              <div className="zh-text-muted zh-text-xs">@{row.username}</div>
+            )}
+          </div>
+        ) : (
+          <span title={row.identityUserId}>{shortId(row.identityUserId)}</span>
+        ),
+    },
+    {
+      key: "branch",
+      header: t("admin.accessSessions.column.branch"),
+      render: (row) =>
+        row.branchName || (
+          <span title={row.branchId}>{shortId(row.branchId)}</span>
+        ),
+    },
+    {
+      key: "terminal",
+      header: t("admin.accessSessions.column.terminal"),
+      render: (row) => row.terminalId,
+    },
+    {
+      key: "status",
+      header: t("admin.accessSessions.column.status"),
+      render: (row) => (
+        <Badge
+          variant={STATUS_BADGE[row.status]}
+          label={t(`admin.accessSessions.status.${row.status}`)}
+        />
+      ),
+    },
+    {
+      key: "createdAt",
+      header: t("admin.accessSessions.column.startedAt"),
+      render: (row) => formatDateTime(row.createdAt),
+    },
+    {
+      key: "updatedAt",
+      header: t("admin.accessSessions.column.updatedAt"),
+      render: (row) => (row.updatedAt ? formatDateTime(row.updatedAt) : "—"),
+    },
     {
       key: "action",
-      header: "Acción",
+      header: t("admin.accessSessions.column.action"),
+      cellClassName: "zh-table-cell--actions",
       render: (row) =>
         canClose && row.status === "Active" ? (
-          <ZHBtn variant="destructive" size="sm" type="button" onClick={() => setClosingId(row.sessionId)}>
-            Cerrar sesión
+          <ZHBtn
+            variant="destructive"
+            size="sm"
+            type="button"
+            onClick={() => setClosingId(row.sessionId)}
+          >
+            {t("admin.accessSessions.close.action")}
           </ZHBtn>
         ) : null,
     },
   ];
-
-  function applyFilters() {
-    setPageNumber(1);
-  }
 
   async function confirmClose() {
     if (!closingId) return;
@@ -135,7 +220,7 @@ export function AdminUserSessionsPage() {
     setClosingId(null);
     try {
       await userSessionAdminService.close(id);
-      setNotice("Sesión cerrada correctamente.");
+      setNotice(t("admin.accessSessions.close.success"));
       await load();
     } catch (e) {
       setError(formatApiError(e));
@@ -155,160 +240,139 @@ export function AdminUserSessionsPage() {
           onClick={() => void load()}
         >
           <span className="material-symbols-outlined">refresh</span>
-          Actualizar
+          {t("common.refresh")}
         </ZHBtn>
       }
     >
-      {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
+      {error && (
+        <ZHPageNotice
+          variant="error"
+          message={t("common.errorPrefix")}
+          detail={error}
+        />
+      )}
       {notice && <ZHPageNotice variant="success" message={notice} />}
 
-      <div className="pg-section pg-stat-cards">
-        <ZHCard title="Activas">
-          <strong>{stats?.active ?? "—"}</strong>
-        </ZHCard>
-        <ZHCard title="Cerradas manualmente">
-          <strong>{stats?.closedManually ?? "—"}</strong>
-        </ZHCard>
-        <ZHCard title="Cerradas por nuevo login">
-          <strong>{stats?.closedByNewLogin ?? "—"}</strong>
-        </ZHCard>
-        <ZHCard title="Expiradas">
-          <strong>{stats?.expired ?? "—"}</strong>
-        </ZHCard>
-        <ZHCard title="Total">
-          <strong>{stats?.total ?? "—"}</strong>
-        </ZHCard>
-      </div>
-
       <div className="pg-section">
-        <div className="pg-table-controls">
-          <div className="pg-table-controls-left">
-            {/* TODO(ADMIN-SESSIONS-ACTIVITY-POLISH-01): no existe hoy un buscador reutilizable
-                de identity users a través de empresas del tenant (LookupUserByUsernameAdmin exige
-                username exacto, no es un picker de búsqueda) — se documenta en vez de improvisar
-                un selector nuevo. Reemplazar por un buscador real cuando exista ese servicio. */}
-            <input
-              className="zh-input"
-              type="text"
-              placeholder="Id. de usuario (GUID)…"
-              value={identityUserId}
-              onChange={(e) => setIdentityUserId(e.target.value)}
-            />
-            {canPickCompany ? (
-              <select
-                className="zh-input"
-                value={companyId}
-                onChange={(e) => setCompanyId(e.target.value)}
+        {/* Los indicadores son también filtros rápidos por estado: una sola fila compacta. */}
+        <ZHFilterBar
+          plain
+          disabled={loading}
+          onClear={hasFilters ? clearFilters : undefined}
+          chips={
+            <>
+              <ZHBtn
+                variant={status === "" ? "primary" : "secondary"}
+                size="sm"
+                type="button"
+                aria-pressed={status === ""}
+                onClick={() => changeFilter(setStatus)("")}
               >
-                <option value="">Todas las empresas</option>
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.tradeName || c.legalName}
+                {t("admin.accessSessions.stats.all")} {stats?.total ?? "—"}
+              </ZHBtn>
+              {STATUSES.map((s) => (
+                <ZHBtn
+                  key={s}
+                  variant={status === s ? "primary" : "secondary"}
+                  size="sm"
+                  type="button"
+                  aria-pressed={status === s}
+                  onClick={() => changeFilter(setStatus)(s)}
+                >
+                  {t(`admin.accessSessions.stats.${STATS_KEY[s]}`)}{" "}
+                  {stats?.[STATS_KEY[s]] ?? "—"}
+                </ZHBtn>
+              ))}
+            </>
+          }
+        >
+          {canPickUser && (
+            <div className="zh-filterbar__field">
+              <ZHField label={t("admin.accessSessions.filter.user")} density="compact">
+                <ZhSelect
+                  className="zh-input"
+                  value={identityUserId}
+                  onChange={(e) => changeFilter(setIdentityUserId)(e.target.value)}
+                >
+                  <option value="">{t("admin.accessSessions.filter.allUsers")}</option>
+                  {members.map((m) => (
+                    <option key={m.identityUserId} value={m.identityUserId}>
+                      {m.fullName} (@{m.username})
+                    </option>
+                  ))}
+                </ZhSelect>
+              </ZHField>
+            </div>
+          )}
+          <div className="zh-filterbar__field">
+            <ZHField label={t("admin.accessSessions.filter.status")} density="compact">
+              <ZhSelect
+                className="zh-input"
+                value={status}
+                onChange={(e) => changeFilter(setStatus)(e.target.value)}
+              >
+                <option value="">{t("admin.accessSessions.filter.allStatuses")}</option>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`admin.accessSessions.status.${s}`)}
                   </option>
                 ))}
-              </select>
-            ) : (
-              <input
+              </ZhSelect>
+            </ZHField>
+          </div>
+          <div className="zh-filterbar__field">
+            <ZHField label={t("admin.accessSessions.filter.from")} density="compact">
+              <ZhDateInput
                 className="zh-input"
-                type="text"
-                placeholder="Id. de empresa (GUID)…"
-                value={companyId}
-                onChange={(e) => setCompanyId(e.target.value)}
+                aria-label={t("admin.accessSessions.filter.from")}
+                value={fromDate}
+                onChange={(e) => changeFilter(setFromDate)(e.target.value)}
               />
-            )}
-            <select
-              className="zh-input"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="">Todos los estados</option>
-              <option value="Active">Activa</option>
-              <option value="ClosedManually">Cerrada manualmente</option>
-              <option value="ClosedByNewLogin">Cerrada por nuevo login</option>
-              <option value="Expired">Expirada</option>
-            </select>
-            <input
-              className="zh-input"
-              type="date"
-              aria-label="Fecha desde"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-            <input
-              className="zh-input"
-              type="date"
-              aria-label="Fecha hasta"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
-            <ZHBtn variant="secondary" type="button" onClick={applyFilters}>
-              Filtrar
-            </ZHBtn>
+            </ZHField>
           </div>
-          <div className="pg-table-controls-right">
-            <span>
-              Pág. {pageNumber} de {totalPages}
-            </span>
+          <div className="zh-filterbar__field">
+            <ZHField label={t("admin.accessSessions.filter.to")} density="compact">
+              <ZhDateInput
+                className="zh-input"
+                aria-label={t("admin.accessSessions.filter.to")}
+                value={toDate}
+                onChange={(e) => changeFilter(setToDate)(e.target.value)}
+              />
+            </ZHField>
           </div>
-        </div>
+        </ZHFilterBar>
 
-        {loading ? (
-          <div className="pg-pad-40">
-            <LoadingState />
-          </div>
-        ) : error ? (
+        {error && !loading ? (
           <div className="pg-pad-40">
             <ErrorState message={error} />
-            <ZHBtn
-              variant="secondary"
-              type="button"
-              onClick={() => void load()}
-            >
-              Reintentar
+            <ZHBtn variant="secondary" type="button" onClick={() => void load()}>
+              {t("common.refresh")}
             </ZHBtn>
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="pg-pad-40">
-            <EmptyState message="No se encontraron sesiones con los filtros indicados." />
           </div>
         ) : (
           <ZHDataTable
             columns={sessionColumns}
             rows={rows}
             rowKey={(row) => row.sessionId}
+            loading={loading}
+            emptyMessage={t("admin.accessSessions.empty")}
+            page={pageNumber}
+            pageSize={PAGE_SIZE}
+            total={totalCount}
+            onPageChange={setPageNumber}
             showRowNumber
             rowNumberOffset={(pageNumber - 1) * PAGE_SIZE}
+            tableClassName="table--compact"
           />
         )}
-
-        <div className="pg-table-footer">
-          <div className="pg-pagination-controls">
-            <button
-              className="pg-pagination-btn"
-              type="button"
-              disabled={pageNumber <= 1 || loading}
-              onClick={() => setPageNumber((p) => p - 1)}
-            >
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button
-              className="pg-pagination-btn"
-              type="button"
-              disabled={pageNumber >= totalPages || loading}
-              onClick={() => setPageNumber((p) => p + 1)}
-            >
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       <ZHConfirmModal
         open={closingId !== null}
-        title="Cerrar sesión"
-        message="¿Confirma cerrar esta sesión? El usuario deberá iniciar sesión nuevamente en esta empresa."
+        title={t("admin.accessSessions.close.action")}
+        message={t("admin.accessSessions.close.message")}
         variant="danger"
-        confirmLabel="Cerrar sesión"
+        confirmLabel={t("admin.accessSessions.close.action")}
         onConfirm={() => void confirmClose()}
         onCancel={() => setClosingId(null)}
       />

@@ -16,7 +16,6 @@ function requiresCompanyContext(path: string): boolean {
     "/catalog/",
     "/reportes/",
     "/admin/",
-    "/security",
     "/electronic-documents/",
   ];
   return erpPrefixes.some((p) => path === p || path.startsWith(p));

@@ -39,7 +39,7 @@
                           "evidence":  [
                                            "backend/src/ERP.Application/Modules/Sales/SalesMapper.cs",
                                            "backend/src/ERP.Application/Modules/Sales/Communications/SalesElectronicDocumentCommunicationContributor.cs",
-                                           "backend/src/ERP.Application/Modules/Sales/Services/ElectronicSalesInvoiceEmissionStrategy.cs"
+                                           "backend/src/ERP.Application/Modules/Sales/DTOs/SalesDtos.cs"
                                        ]
                       },
                       {

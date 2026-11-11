@@ -157,7 +157,6 @@ Generado con `rg -l` sobre TSX productivo, excluyendo tests, por símbolo/clase.
 - `components/zh/electronicDocuments/ElectronicDocumentXmlActions.tsx`
 - `modules/configuracion/documentFlows/pages/DocumentFlowPoliciesPage.tsx`
 - `modules/configuracion/comunicaciones/sections/CommunicationsEmailSettingsSection.tsx`
-- `modules/security/pages/SecuritySettingsPage.tsx`
 - `components/zh/electronicDocuments/ElectronicDocumentStatusBadge.tsx`
 - `modules/configuracion/operaciones/pages/OperationalPreferencesPage.tsx`
 - `modules/inventory/adjustmentReasons/pages/InventoryAdjustmentReasonsPage.tsx`
@@ -470,7 +469,6 @@ Generado con `rg -l` sobre TSX productivo, excluyendo tests, por símbolo/clase.
 - `modules/accounting/pages/AccountingPostingsPage.tsx`
 - `modules/accounting/pages/ManualJournalActions.tsx`
 - `modules/accounting/pages/JournalEntryDetailPage.tsx`
-- `modules/security/pages/SecuritySettingsPage.tsx`
 - `modules/establishments/components/EstablishmentsListSection.tsx`
 - `modules/accounting/pages/JournalEntriesPage.tsx`
 - `components/items/ItemEditorModal/ItemEditorPurchaseInfo.tsx`
@@ -565,7 +563,6 @@ Generado con `rg -l` sobre TSX productivo, excluyendo tests, por símbolo/clase.
 - `modules/documentSequences/components/DocumentSequencesListSection.tsx`
 - `modules/supplier-payments/pages/SupplierPaymentsPage.tsx`
 - `modules/supplier-payments/pages/SupplierPaymentDetailPage.tsx`
-- `modules/security/pages/SecuritySettingsPage.tsx`
 - `modules/payables/pages/PayablesPage.tsx`
 - `modules/payables/pages/PayableDetailPage.tsx`
 - `modules/caja/components/CashMovementReasonListTab.tsx`

@@ -681,7 +681,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <table class='sortable'>
 <tr><th>Dominio</th><th>Modulos</th><th>Funcionalidades</th><th>Procesos</th></tr>
 <tr><td>Configuration</td><td>Company, Companies, Tenants, Branches, Configuration, OrgConfig</td><td>Create Emission Point, Create Establishment, Disable Emission Point, Disable Establishment, Enable Emission Point, Enable Establishment, Get Emission Points, Get Establishments, Update Emission Point, Update Establishment, Create Company, Company Precision Policy, Get Company By Id, Get Company Logo Alt Content, Get Company Logo Content, Get Company Profile, Get Current Company, List Companies, Update Company, Update Company Branding, Update Company Documents, Update Company Fiscal, Update Company Operation, Update Company Profile, Upload Company Logo, Upload Company Logo Alt, Create Branch, Disable Branch, Enable Branch, Get Branch By Id, Get Branches, Get Geo Cantons, Get Geo Countries, Get Geo Parishes, Get Geo Provinces, Update Branch, Get Branch Invoice Org Settings, Get Company Invoice Org Settings, Upsert Branch Invoice Org Settings, Upsert Company Invoice Org Settings</td><td>No processes mapped yet</td></tr>
-<tr><td>Security</td><td>Auth, Access, Session, Security, Audit</td><td>Change My Password, Complete Password Reset, List My Companies, Login, Logout, Password Reset, Refresh Token, Switch Company, Company User Preferences Login Resolver, Password Reset Token Consumer, Password Reset Token Issuer, Assign Temporary Password Admin, Close User Session Admin, Create Authenticated Session, Create Company User Preferences, Create System User, Create System User Admin, Expire User Sessions, Get Company User Branches Admin, Get Company User Memberships Admin, Get Company User Preferences, Get Company User Preferences Admin, Get Session Statistics, Get User Sessions Paged, Lookup User By Username Admin, Permissions, Profiles, Revoke Company User Membership, Revoke Company User Membership Admin, Update Company User Branches Admin, Update Company User Preferences, Update Company User Preferences Admin, Upsert Company User Membership, Upsert Company User Membership Admin, Company Administrator Invariant, Company User Preferences Default Branch Validation, Get My Available Branches, Get Session Context, Switch Branch, Get Security Admin Matrix, Upsert Security Admin Scopes, Get Entity Activity, Get My Activity</td><td>No processes mapped yet</td></tr>
+<tr><td>Security</td><td>Auth, Access, Session, Audit</td><td>Change My Password, Complete Password Reset, List My Companies, Login, Logout, Password Reset, Refresh Token, Switch Company, Company User Preferences Login Resolver, Password Reset Token Consumer, Password Reset Token Issuer, Assign Temporary Password Admin, Close User Session Admin, Create Authenticated Session, Create Company User Preferences, Create System User, Create System User Admin, Expire User Sessions, Get Company User Branches Admin, Get Company User Memberships Admin, Get Company User Preferences, Get Company User Preferences Admin, Get Session Statistics, Get User Sessions Paged, Lookup User By Username Admin, Permissions, Profiles, Revoke Company User Membership, Revoke Company User Membership Admin, Update Company User Branches Admin, Update Company User Preferences, Update Company User Preferences Admin, Upsert Company User Membership, Upsert Company User Membership Admin, Company Administrator Invariant, Company User Preferences Default Branch Validation, Get My Available Branches, Get Session Context, Switch Branch, Get Entity Activity, Get My Activity</td><td>No processes mapped yet</td></tr>
 <tr><td>Business Partners</td><td>Sin modulos mapeados</td><td>-</td><td>-</td></tr>
 <tr><td>CRM</td><td>Sin modulos mapeados</td><td>-</td><td>-</td></tr>
 <tr><td>Purchases</td><td>Purchases</td><td>Get Purchase Item Context, Calculate Retention, Cancel Purchase, Cancel Withholding, Confirm Purchase, Get Withholding, Issue Withholding, Purchase Cost, Purchase Draft, Purchase Margin, Create Purchase Reception Draft, Download Purchase Reception Xml, Import Purchase Reception</td><td>Compra</td></tr>
@@ -1318,7 +1318,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <table class='sortable'>
 <tr><th>Domain</th><th>Modules</th><th>Avg Score</th><th>Module List</th></tr>
 <tr><td>Configuration</td><td>6</td><td>78.38%</td><td>Company, Companies, Tenants, Branches, Configuration, OrgConfig</td></tr>
-<tr><td>Security</td><td>5</td><td>80.75%</td><td>Auth, Access, Session, Security, Audit</td></tr>
+<tr><td>Security</td><td>4</td><td>80.75%</td><td>Auth, Access, Session, Audit</td></tr>
 <tr><td>Business Partners</td><td>0</td><td>0%</td><td>No modules mapped yet</td></tr>
 <tr><td>CRM</td><td>0</td><td>0%</td><td>No modules mapped yet</td></tr>
 <tr><td>Purchases</td><td>1</td><td>81.5%</td><td>Purchases</td></tr>
@@ -1423,7 +1423,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='tree-group-label'>Related tasks (evidence-matched)</div>
 <ul class='tree-files'><li class='tree-empty-li'>No tasks with evidence pointing at this module</li></ul>
 </details></details>
-<details class='tree-node'><summary>Security <span class='tree-count'>5 modules</span></summary><details class='tree-node' id='mod-auth'>
+<details class='tree-node'><summary>Security <span class='tree-count'>4 modules</span></summary><details class='tree-node' id='mod-auth'>
 <summary>Auth <span class='pill' style='background:#16a34a;color:#fff'>81.5%</span></summary>
 <div class='tree-group-label'>Features</div>
 <details class='tree-node'><summary>Change My Password <span class='pill pill-d'>implemented</span></summary><ul class='tree-files'><li class='tree-file'>backend/src/ERP.Application/Modules/Auth/UseCases/ChangeMyPassword</li></ul></details>
@@ -1481,16 +1481,6 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <details class='tree-node'><summary>Get My Available Branches <span class='pill pill-d'>implemented</span></summary><ul class='tree-files'><li class='tree-file'>backend/src/ERP.Application/Modules/Session/UseCases/GetMyAvailableBranches</li></ul></details>
 <details class='tree-node'><summary>Get Session Context <span class='pill pill-d'>implemented</span></summary><ul class='tree-files'><li class='tree-file'>backend/src/ERP.Application/Modules/Session/UseCases/GetSessionContext</li></ul></details>
 <details class='tree-node'><summary>Switch Branch <span class='pill pill-d'>implemented</span></summary><ul class='tree-files'><li class='tree-file'>backend/src/ERP.Application/Modules/Session/UseCases/SwitchBranch</li></ul></details>
-<div class='tree-group-label'>Process steps</div>
-<div class='tree-empty'>No process steps evidenced for this module</div>
-<div class='tree-group-label'>Related tasks (evidence-matched)</div>
-<ul class='tree-files'><li class='tree-empty-li'>No tasks with evidence pointing at this module</li></ul>
-</details>
-<details class='tree-node' id='mod-security'>
-<summary>Security <span class='pill' style='background:#16a34a;color:#fff'>81.5%</span></summary>
-<div class='tree-group-label'>Features</div>
-<details class='tree-node'><summary>Get Security Admin Matrix <span class='pill pill-d'>implemented</span></summary><ul class='tree-files'><li class='tree-file'>backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix</li></ul></details>
-<details class='tree-node'><summary>Upsert Security Admin Scopes <span class='pill pill-d'>implemented</span></summary><ul class='tree-files'><li class='tree-file'>backend/src/ERP.Application/Modules/Security/UseCases/UpsertSecurityAdminScopes</li></ul></details>
 <div class='tree-group-label'>Process steps</div>
 <div class='tree-empty'>No process steps evidenced for this module</div>
 <div class='tree-group-label'>Related tasks (evidence-matched)</div>
@@ -1829,7 +1819,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='tree-group-label'>Dependencies (this module depends on)</div>
 <ul class='tree-files'><li>Auth</li><li>Branches</li><li>Common</li><li>Company</li><li>Navigation</li><li>Tenants</li></ul>
 <div class='tree-group-label'>Dependents (depend on this module)</div>
-<ul class='tree-files'><li>Auth</li><li>Companies</li><li>Inventory</li><li>Security</li><li>Session</li></ul>
+<ul class='tree-files'><li>Auth</li><li>Companies</li><li>Inventory</li><li>Session</li></ul>
 <div class='tree-group-label'>Impact</div>
 <p>Transitive dependents: <b>19</b> &middot; Impacted feature points: <b>191</b> &middot; % of ERP (by feature points): <b>103.24%</b></p>
 <div class='tree-group-label'>Risk</div>
@@ -1933,7 +1923,7 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <div class='tree-group-label'>Dependencies (this module depends on)</div>
 <div class='tree-empty'>No dependencies (fanOut=0)</div>
 <div class='tree-group-label'>Dependents (depend on this module)</div>
-<ul class='tree-files'><li>Access</li><li>Accounting</li><li>Audit</li><li>Auth</li><li>Branches</li><li>Caja</li><li>Catalog</li><li>Companies</li><li>Company</li><li>Configuration</li><li>Dashboard</li><li>ElectronicDocuments</li><li>ElectronicInvoicing</li><li>Finance</li><li>Integration</li><li>Inventory</li><li>Items</li><li>Media</li><li>Navigation</li><li>OrgConfig</li><li>Pricing</li><li>Purchases</li><li>Ride</li><li>Sales</li><li>Security</li><li>Session</li><li>Tenants</li></ul>
+<ul class='tree-files'><li>Access</li><li>Accounting</li><li>Audit</li><li>Auth</li><li>Branches</li><li>Caja</li><li>Catalog</li><li>Companies</li><li>Company</li><li>Configuration</li><li>Dashboard</li><li>ElectronicDocuments</li><li>ElectronicInvoicing</li><li>Finance</li><li>Integration</li><li>Inventory</li><li>Items</li><li>Media</li><li>Navigation</li><li>OrgConfig</li><li>Pricing</li><li>Purchases</li><li>Ride</li><li>Sales</li><li>Session</li><li>Tenants</li></ul>
 <div class='tree-group-label'>Impact</div>
 <p>Transitive dependents: <b>28</b> &middot; Impacted feature points: <b>185</b> &middot; % of ERP (by feature points): <b>100%</b></p>
 <div class='tree-group-label'>Risk</div>
@@ -2174,19 +2164,6 @@ Deuda tecnica: <span class='pill pill-p'>CONTROLADA</span></p>
 <p>Risk of modifying this module: <b style='color:#d97706'>MEDIUM</b> (source: impact.json)</p>
 <div class='tree-group-label'>Related tasks (evidence-matched, source: tasks.json)</div>
 <ul class='tree-files'><li>Refactor large file (1034 lines): frontend/src/modules/sales/hooks/useSalesPage.ts</li><li>Refactor large file (743 lines): frontend/src/modules/sales/pages/SalesPage.tsx</li><li>Refactor large file (538 lines): backend/src/ERP.Application/Modules/Sales/UseCases/SalesDraftUseCases.cs</li></ul>
-</details>
-<details class='tree-node' id='depmod-security'>
-<summary>Security <span class='pill' style='background:#2563eb;color:#fff'>coupling 2</span></summary>
-<div class='tree-group-label'>Dependencies (this module depends on)</div>
-<ul class='tree-files'><li>Access</li><li>Common</li></ul>
-<div class='tree-group-label'>Dependents (depend on this module)</div>
-<div class='tree-empty'>No dependents (fanIn=0)</div>
-<div class='tree-group-label'>Impact</div>
-<p>Transitive dependents: <b>0</b> &middot; Impacted feature points: <b>2</b> &middot; % of ERP (by feature points): <b>1.08%</b></p>
-<div class='tree-group-label'>Risk</div>
-<p>Risk of modifying this module: <b style='color:#d97706'>MEDIUM</b> (source: impact.json)</p>
-<div class='tree-group-label'>Related tasks (evidence-matched, source: tasks.json)</div>
-<div class='tree-empty'>No related tasks with file evidence</div>
 </details>
 <details class='tree-node' id='depmod-session'>
 <summary>Session <span class='pill' style='background:#2563eb;color:#fff'>coupling 8</span></summary>

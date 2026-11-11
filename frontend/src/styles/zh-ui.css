@@ -1612,14 +1612,13 @@ select.zh-input--compact {
    Consolida 4 clases duplicadas detectadas en la auditoría 12F-0
    (.pg-overflow-x en legacy-pages.css, .prd-table-wrap en items-catalog.css,
    .rpt-table-wrap en ReportPageTemplate.css, .security-scroll en
-   SecuritySettingsPage.css) — mismo comportamiento exacto, mismas 19+7+1+1
+   una pantalla ya retirada) — mismo comportamiento exacto, mismas 19+7+1+1
    consumidores reales repartidos en 4 archivos distintos. Esta fase solo
    agrega la clase SSOT; las 4 clases legacy y sus consumidores TSX no se
    tocan todavía (Bloque 12F-2). Auditoría 15A (alcance: prefijos
    pf-/prd-/pg-/md-/sales-/pur-/br-/zh-input): .pg-overflow-x y
    .prd-table-wrap quedaron sin consumidores TSX y fueron eliminadas.
-   .security-scroll ya no existe (eliminada en Bloque 12F-3C, ver
-   SecuritySettingsPage.css). .rpt-table-wrap quedó sin consumidores TSX
+   .security-scroll ya no existe (eliminada en Bloque 12F-3C). .rpt-table-wrap quedó sin consumidores TSX
    detectados en esta auditoría pero está fuera del alcance de prefijos de
    15A (prefijo rpt-) — no se elimina aquí, queda para un barrido dedicado.
    Distinta de .table-card: esta es un wrapper

@@ -99,7 +99,6 @@ const MENU_DESCRIPTION_BY_ROUTE_PREFIX: ReadonlyArray<readonly [string, string]>
   ["/settings", "Parámetros de empresa y sistema"],
   ["/configuracion", "Parámetros de empresa y sistema"],
   ["/access", "Usuarios, roles y permisos"],
-  ["/security", "Usuarios, roles y permisos"],
   ["/admin", "Administración y control operativo"],
   ["/reportes", "Consultas operativas y análisis"],
 ];

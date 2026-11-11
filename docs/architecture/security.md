@@ -43,7 +43,7 @@ Una empresa no consulta, modifica, usa ni afecta datos operativos de otra, aunqu
   - `UpsertCompanyUserMembership` valida todo (incluidas las sucursales) antes de persistir y persiste membership, sucursales y preferencias en una transacción (la ambiente si existe, p. ej. alta de usuario): un fallo de preferencias revierte el cambio de rol/perfil.
   - Anti-escalamiento en memberships (mismo bypass `OperationalCompanyContext.HasAdminBypass` y mismo criterio de alcance que `UpsertProfilePermissions`): solo un Admin de la empresa o el administrador global en modo operador asigna, modifica o retira el rol Admin (incluida la revocación de una membership Admin); un usuario no Admin con permisos delegados no modifica su propia membership ni asigna un perfil con permisos que él no tiene efectivos en esa empresa.
 - **Identidades globales y alcance IAM empresarial (IAM-V1-F1).** Única regla en `IamIdentityScope` (Application/Access); identidad global = `GlobalUserRole` activo, nunca por username, email o perfil. Las identidades no guardan tenant: su pertenencia sale de sus memberships.
-  - Desde cualquier sesión de empresa (incluido el modo operador) una cuenta global es invisible y no administrable: listado de usuarios, búsqueda por username, vinculación, cambio de rol/perfil, revocación, contraseña temporal, sucursales, preferencias, sesiones (listado, estadísticas, cierre) y la matriz/asignación de Seguridad administrativa. Su membership (p. ej. Admin de la primera empresa de First Run) y su autorización operativa no cambian; se administra solo desde Admin Core.
+  - Desde cualquier sesión de empresa (incluido el modo operador) una cuenta global es invisible y no administrable: listado de usuarios, búsqueda por username, vinculación, cambio de rol/perfil, revocación, contraseña temporal, sucursales, preferencias, sesiones (listado, estadísticas, cierre). Su membership (p. ej. Admin de la primera empresa de First Run) y su autorización operativa no cambian; se administra solo desde Admin Core.
   - Administrable = membership en la empresa operativa y no global. Vinculable (agregar un usuario existente) = alguna membership en una empresa del mismo tenant y no global; una identidad de otro tenant nunca es visible ni vinculable.
   - Fuera de alcance responde exactamente igual que «no existe» en cada endpoint: lookup `identityUserExists=false`; vincular, revocar y contraseña temporal 404 «Usuario no encontrado.»; sucursales/preferencias y cierre de sesión su 404 habitual. Crear usuario con username o email ocupado (únicos en todo el sistema) responde 409 con un mensaje genérico único; ese conflicto es el único indicio residual de existencia.
   - Sesiones administrativas: siempre la empresa operativa; un `companyId` de la query no amplía el alcance.
@@ -178,15 +178,15 @@ Modelo de autorización UI vigente, congelado para esta pasada (Security & Acces
 
 **Modelo actual:**
 - **Menú/navegación**: 100% server-driven vía `GET /api/v1/me/menu` (`NavigationBuilder`, filtra por rol + `IEffectivePermissionKeysProvider`; Admin ve todo sin filtro).
-- **Gates de página por rol**: único mecanismo permitido es `isAdminRole(user?.role)` (ej. `SecuritySettingsPage`, `ConfigContext` para lectura de config de tenant).
+- **Gates de página por rol**: único mecanismo permitido es `isAdminRole(user?.role)` (ej. `ConfigContext` para lectura de config de tenant).
 - **`usePermissionsUi().canShow` / `.has`**: visibilidad de UI según `SessionContext.authorization.permissions` (Admin y `*` = todo). **Fail-closed** (IAM-V1-F2): sin sesión cargada devuelve `false` y con la lista vacía solo concede lo que contenga. No es autorización: la API decide con `perm:*`.
 - **`RouteAccessGuard`** (IAM-V1-F2): no monta ninguna página hasta resolver el menú de la sesión actual (ligado a usuario + tenant + empresa) y los permisos; si la sesión no pudo cargarse, un usuario no Admin no ve pantallas. Una URL se permite si es una pantalla del menú del usuario, su detalle/alta/edición (`/:param`, `/new`, `/:param/edit`), una hija declarada en `INHERITED_CHILD_ROUTES` (solo las que comparten exactamente el permiso del padre), un redirect registrado o `/dashboard`. Una hija con permiso propio (p. ej. `/suppliers/credits`) nunca hereda: necesita su ítem de menú. Los patrones salen de los mismos arreglos de rutas de `App.tsx` (`routes/protectedRoutePaths.ts`); una prueba de inventario exige que toda ruta registrada sea alcanzable con el menú completo.
 - **Deny-by-default**: sin sesión / rol no-Admin en páginas con gate → `NoAccessPage` (`common.noAccess`). No hay acceso implícito.
 
 ✅ **Permitido** (no requiere revisión arquitectónica):
-- Agregar nuevas páginas con gate `isAdminRole(user?.role)` siguiendo el patrón de `SecuritySettingsPage`.
+- Agregar nuevas páginas con gate `isAdminRole(user?.role)`.
 - Agregar nuevos permission keys al catálogo backend (`ERP.Domain/Kernel/Permissions/*.cs`) y al menú server-driven (`UiNavItems.PermissionKey`/`PermissionKeysAnyJson`).
-- Agregar tests de acceso (admin / no-admin / sin sesión) siguiendo `SecuritySettingsPage.test.tsx`.
+- Agregar tests de acceso (admin / no-admin / sin sesión) siguiendo `AdminUserSessionsPage.test.tsx`.
 
 ❌ **Restringido** (requiere revisión arquitectónica explícita):
 - Cambiar la semántica fail-closed de `canShow`/`has` o las reglas de herencia de `RouteAccessGuard` sin actualizar esta sección + tests de regresión.

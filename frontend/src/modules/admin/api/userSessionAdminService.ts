@@ -15,6 +15,10 @@ export type UserSessionAdminDto = {
   status: "Active" | "ClosedManually" | "ClosedByNewLogin" | "Expired";
   createdAt: string;
   updatedAt: string | null;
+  /** Solo lectura, resueltos por el backend dentro de la empresa operativa; null si no se pudo resolver. */
+  userFullName?: string | null;
+  username?: string | null;
+  branchName?: string | null;
 };
 
 export type SessionStatisticsDto = {
@@ -27,7 +31,6 @@ export type SessionStatisticsDto = {
 
 export type GetUserSessionsPagedParams = {
   identityUserId?: string;
-  companyId?: string;
   status?: string;
   fromUtc?: string;
   toUtc?: string;
@@ -54,10 +57,10 @@ export const userSessionAdminService = {
       )
       .then((r) => r.data.data),
 
-  getStatistics: (companyId?: string) =>
+  getStatistics: () =>
     api
       .get<ApiResponse<SessionStatisticsDto>>(
-        `/api/v1/admin/access/sessions/statistics${buildQuery({ companyId })}`,
+        "/api/v1/admin/access/sessions/statistics",
       )
       .then((r) => r.data.data),
 

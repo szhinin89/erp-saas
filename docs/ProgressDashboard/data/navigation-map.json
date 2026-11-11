@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-03 06:36:55",
+    "generated":  "2026-11-11 11:33:36",
     "source":  "architecture-progress.json, modules.json, domains.json, database-analysis.json, migration-analysis.json, frontend-analysis.json, backend-analysis.json",
     "method":  {
                    "layerToStage":  "Contiguous-window search over stages[] (real array order); a window is a candidate only if its average pct exactly equals the already-published layers[].pct. If multiple window sizes match, the largest is preferred (a multi-stage exact match is far less likely to be coincidental than a single-stage one); accepted as verified only if that largest match is unique. Ambiguous cases are reported (candidateCount) instead of guessed.",
@@ -96,7 +96,6 @@
                                              "Pricing",
                                              "Purchases",
                                              "Sales",
-                                             "Security",
                                              "Session",
                                              "Tenants"
                                          ],
@@ -104,13 +103,13 @@
                        "migrations":  null,
                        "frontendStats":  {
                                              "statistics":  {
-                                                                "SourceFiles":  1174,
+                                                                "SourceFiles":  1264,
                                                                 "Pages":  0,
-                                                                "Components":  142,
+                                                                "Components":  147,
                                                                 "Hooks":  8,
                                                                 "Services":  0,
                                                                 "Stores":  0,
-                                                                "Routes":  1
+                                                                "Routes":  2
                                                             },
                                              "modules":  [
                                                              "access",
@@ -144,7 +143,6 @@
                                                              "retentions",
                                                              "ride",
                                                              "sales",
-                                                             "security",
                                                              "session",
                                                              "settings",
                                                              "supplier-payments"
@@ -432,29 +430,29 @@
 
                                          ],
                        "databaseStats":  {
-                                             "DbContext":  108,
-                                             "DbSets":  199,
+                                             "DbContext":  106,
+                                             "DbSets":  198,
                                              "EntityConfigurations":  0,
-                                             "Repositories":  92,
+                                             "Repositories":  105,
                                              "Migrations":  3
                                          },
                        "migrations":  {
                                           "totalFiles":  3,
                                           "mostRecent":  [
                                                              {
-                                                                 "name":  "ErpDbContextModelSnapshot",
-                                                                 "modified":  "2026-10-31 20:22:56",
-                                                                 "sizeKB":  932.97
+                                                                 "name":  "20261101012214_InitialProductionBaseline.Designer",
+                                                                 "modified":  "2026-11-11 11:09:19",
+                                                                 "sizeKB":  930.89
                                                              },
                                                              {
                                                                  "name":  "20261101012214_InitialProductionBaseline",
-                                                                 "modified":  "2026-10-31 20:22:55",
-                                                                 "sizeKB":  697.43
+                                                                 "modified":  "2026-11-11 11:09:19",
+                                                                 "sizeKB":  695.81
                                                              },
                                                              {
-                                                                 "name":  "20261101012214_InitialProductionBaseline.Designer",
-                                                                 "modified":  "2026-10-31 20:22:55",
-                                                                 "sizeKB":  933.09
+                                                                 "name":  "ErpDbContextModelSnapshot",
+                                                                 "modified":  "2026-11-11 10:44:53",
+                                                                 "sizeKB":  952.68
                                                              }
                                                          ]
                                       },

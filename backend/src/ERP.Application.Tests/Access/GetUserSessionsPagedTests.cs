@@ -4,6 +4,8 @@ using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Branches.Entities;
+using ERP.Domain.Branches.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -98,7 +100,7 @@ public sealed class GetUserSessionsPagedHandlerTests
             )
             .ReturnsAsync((Array.Empty<UserSession>(), 0));
 
-        var handler = new GetUserSessionsPagedHandler(repo.Object, tenant.Object, CurrentCompany().Object);
+        var handler = NewHandler(repo, tenant);
         var query = new GetUserSessionsPagedQuery(
             IdentityUserId,
             CompanyId,
@@ -133,7 +135,7 @@ public sealed class GetUserSessionsPagedHandlerTests
             )
             .ReturnsAsync((new[] { session }, 1));
 
-        var handler = new GetUserSessionsPagedHandler(repo.Object, tenant.Object, CurrentCompany().Object);
+        var handler = NewHandler(repo, tenant);
         var result = await handler.Handle(new GetUserSessionsPagedQuery(), CancellationToken.None);
 
         result.Value!.Items.Should().ContainSingle();
@@ -158,6 +160,72 @@ public sealed class GetUserSessionsPagedHandlerTests
                 || p.Name.Contains("Hash", StringComparison.OrdinalIgnoreCase)
                 || p.Name.Contains("Token", StringComparison.OrdinalIgnoreCase)
             );
+    }
+
+    private static GetUserSessionsPagedHandler NewHandler(
+        Mock<IUserSessionRepository> repo,
+        Mock<ICurrentTenant> tenant,
+        IReadOnlyList<IdentityUser>? users = null,
+        IReadOnlyList<Branch>? branches = null
+    )
+    {
+        var access = new Mock<IAccessRepository>();
+        access
+            .Setup(a =>
+                a.GetUsersByIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(users ?? Array.Empty<IdentityUser>());
+        var branchRepo = new Mock<IBranchRepository>();
+        branchRepo
+            .Setup(r =>
+                r.GetByCompanyAsync(
+                    TenantId,
+                    CompanyId,
+                    null,
+                    null,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(branches ?? Array.Empty<Branch>());
+        return new GetUserSessionsPagedHandler(
+            repo.Object,
+            tenant.Object,
+            CurrentCompany().Object,
+            access.Object,
+            branchRepo.Object
+        );
+    }
+
+    [Fact]
+    public async Task Resuelve_nombre_de_usuario_y_sucursal_solo_con_datos_de_la_empresa_operativa()
+    {
+        var (repo, tenant) = BuildMocks();
+        var user = IdentityUser.Create("jperez", "Juan", "Perez", null, "hash", Guid.NewGuid());
+        var branch = Branch.Create(
+            TenantId, "Matriz", "Av. 1", "001", null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null, true, Guid.NewGuid(),
+            companyId: CompanyId
+        );
+        var known = UserSession.Create(TenantId, CompanyId, user.Id, branch.Id, "caja-1");
+        var unknown = UserSession.Create(TenantId, CompanyId, Guid.NewGuid(), Guid.NewGuid(), "caja-2");
+        repo.Setup(r =>
+                r.GetPagedAsync(TenantId, null, CompanyId, null, null, null, 1, 25, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((new[] { known, unknown }, 2));
+
+        var handler = NewHandler(repo, tenant, new[] { user }, new[] { branch });
+        var result = await handler.Handle(new GetUserSessionsPagedQuery(), CancellationToken.None);
+
+        var items = result.Value!.Items;
+        items[0].UserFullName.Should().Be(user.FullName);
+        items[0].Username.Should().Be("jperez");
+        items[0].BranchName.Should().Be("Matriz");
+        items[1].UserFullName.Should().BeNull();
+        items[1].Username.Should().BeNull();
+        items[1].BranchName.Should().BeNull();
     }
 
     private static Mock<ICurrentCompany> CurrentCompany()
@@ -187,7 +255,7 @@ public sealed class GetUserSessionsPagedHandlerTests
             )
             .ReturnsAsync((Array.Empty<UserSession>(), 0));
 
-        var handler = new GetUserSessionsPagedHandler(repo.Object, tenant.Object, CurrentCompany().Object);
+        var handler = NewHandler(repo, tenant);
         var result = await handler.Handle(
             new GetUserSessionsPagedQuery(CompanyId: Guid.NewGuid()),
             CancellationToken.None

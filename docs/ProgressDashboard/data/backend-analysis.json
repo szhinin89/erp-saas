@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-11-03 06:31:31",
+    "Generated":  "2026-11-11 11:32:22",
     "BackendRoot":  "C:\\ProyectCursor\\erp-saas\\backend\\src",
     "ProjectCount":  12,
-    "ModuleCount":  38,
+    "ModuleCount":  37,
     "Projects":  [
                      {
                          "Name":  "ERP.AI.Application",
@@ -171,10 +171,6 @@
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Sales"
                                          },
                                          {
-                                             "Name":  "Security",
-                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Security"
-                                         },
-                                         {
                                              "Name":  "Session",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application\\Modules\\Session"
                                          },
@@ -314,10 +310,6 @@
                                          {
                                              "Name":  "Sales",
                                              "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Sales"
-                                         },
-                                         {
-                                             "Name":  "Security",
-                                             "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Domain\\Modules\\Security"
                                          },
                                          {
                                              "Name":  "SriCatalogs",
@@ -608,17 +600,6 @@
                         "Name":  "ElectronicInvoicing",
                         "Layers":  "Application",
                         "Projects":  "ERP.Application"
-                    },
-                    {
-                        "Name":  "Security",
-                        "Layers":  [
-                                       "Application",
-                                       "Domain"
-                                   ],
-                        "Projects":  [
-                                         "ERP.Application",
-                                         "ERP.Domain"
-                                     ]
                     },
                     {
                         "Name":  "Configuration",

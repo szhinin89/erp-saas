@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-03 06:36:34",
+    "generated":  "2026-11-11 11:33:20",
     "coverage":  {
                      "mappedFeaturePoints":  53,
                      "totalFeaturePoints":  306,
@@ -12,14 +12,14 @@
                                         {
                                             "name":  "Company",
                                             "score":  77.75,
-                                            "features":  15,
+                                            "features":  16,
                                             "processes":  [
 
                                                           ],
                                             "risks":  [
-
+                                                          "1 possible secret(s) detected in module source"
                                                       ],
-                                            "risk":  "MEDIUM"
+                                            "risk":  "HIGH"
                                         },
                                         {
                                             "name":  "Companies",
@@ -29,9 +29,9 @@
 
                                                           ],
                                             "risks":  [
-
+                                                          "1 possible secret(s) detected in module source"
                                                       ],
-                                            "risk":  "MEDIUM"
+                                            "risk":  "HIGH"
                                         },
                                         {
                                             "name":  "OrgConfig",
@@ -101,12 +101,12 @@
                                         {
                                             "name":  "Access",
                                             "score":  81.5,
-                                            "features":  25,
+                                            "features":  26,
                                             "processes":  [
 
                                                           ],
                                             "risks":  [
-                                                          "7 possible secret(s) detected in module source",
+                                                          "8 possible secret(s) detected in module source",
                                                           "1 anonymous-access file(s) detected in module source"
                                                       ],
                                             "risk":  "HIGH"
@@ -115,18 +115,6 @@
                                             "name":  "Session",
                                             "score":  81.5,
                                             "features":  3,
-                                            "processes":  [
-
-                                                          ],
-                                            "risks":  [
-
-                                                      ],
-                                            "risk":  "MEDIUM"
-                                        },
-                                        {
-                                            "name":  "Security",
-                                            "score":  81.5,
-                                            "features":  2,
                                             "processes":  [
 
                                                           ],

@@ -1004,22 +1004,6 @@
       "allowed": true
     },
     {
-      "endpoint": "/api/v1/security/admin-matrix",
-      "files": [
-        "frontend/src/modules/security/api/securityService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
-      "endpoint": "/api/v1/security/admin-scopes",
-      "files": [
-        "frontend/src/modules/security/api/securityService.ts"
-      ],
-      "legacy": false,
-      "allowed": true
-    },
-    {
       "endpoint": "/api/v1/session/available-branches",
       "files": [
         "frontend/src/modules/session/api/sessionService.ts"

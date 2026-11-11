@@ -518,11 +518,5 @@
 | `frontend/src/modules/sales/styles/sales-return.css` | 135 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
 | `frontend/src/modules/sales/styles/sales-return.css` | 145 | `font-size` | `font-size: inherit;` | OK_GLOBAL | Sin accion - cumple regla DS. |
 | `frontend/src/modules/sales/styles/sales-return.css` | 146 | `font-weight` | `font-weight: inherit;` | OK_GLOBAL | Sin accion - cumple regla DS. |
-| `frontend/src/modules/security/pages/SecuritySettingsPage.css` | 18 | `font-weight` | `font-weight: 600;` | NEEDS_DECISION | Revisar: si es dato normal, mover a token var(--text-*-weight) o al componente global correspondiente. |
-| `frontend/src/modules/security/pages/SecuritySettingsPage.css` | 19 | `font-size` | `font-size: var(--text-body-md-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/security/pages/SecuritySettingsPage.css` | 39 | `font-size` | `font-size: var(--text-badge-size);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/security/pages/SecuritySettingsPage.css` | 40 | `font-weight` | `font-weight: var(--text-badge-weight);` | OK_TOKEN | Sin accion - cumple regla DS. |
-| `frontend/src/modules/security/pages/SecuritySettingsPage.css` | 41 | `text-transform` | `text-transform: uppercase;` | NEEDS_DECISION | Revisar si es titulo/label global (OK) o uppercase local sin justificacion. |
-| `frontend/src/modules/security/pages/SecuritySettingsPage.css` | 42 | `letter-spacing` | `letter-spacing: 0.04em;` | NEEDS_DECISION | Revisar si es titulo/label global (OK) o tracking local sin justificacion. |
 
 

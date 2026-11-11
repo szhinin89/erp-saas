@@ -802,41 +802,7 @@ public sealed class IamIdentityIsolationHttpTests : IClassFixture<IamIdentityIso
         stored.Status.Should().Be(ERP.Domain.Access.Enums.UserSessionStatus.Active);
     }
 
-    // ── Seguridad administrativa y actividad ───────────────────────────────────────────────
-
-    [Fact]
-    public async Task Matriz_de_seguridad_solo_lista_usuarios_administrables_de_A()
-    {
-        var matrix = await SendAsync(AdminA(), HttpMethod.Get, "/api/v1/security/admin-matrix");
-
-        matrix.Status.Should().Be(HttpStatusCode.OK, matrix.Body);
-        using var doc = JsonDocument.Parse(matrix.Body);
-        var ids = doc
-            .RootElement.GetProperty("data")
-            .GetProperty("users")
-            .EnumerateArray()
-            .Select(u => u.GetProperty("id").GetGuid())
-            .ToList();
-        ids.Should().Contain(_f.OperA.Id);
-        ids.Should().NotContain([_f.Global.Id, _f.UserB.Id, _f.UserC.Id]);
-
-        var reference = await SendAsync(
-            AdminA(),
-            HttpMethod.Put,
-            "/api/v1/security/admin-scopes",
-            new { subjectType = "User", subjectKey = Guid.NewGuid().ToString(), allowedScopes = new[] { 1 } }
-        );
-        reference.Status.Should().Be(HttpStatusCode.NotFound, reference.Body);
-        ShouldBeIdentical(
-            await SendAsync(
-                AdminA(),
-                HttpMethod.Put,
-                "/api/v1/security/admin-scopes",
-                new { subjectType = "User", subjectKey = _f.Global.Id.ToString(), allowedScopes = new[] { 1 } }
-            ),
-            reference
-        );
-    }
+    // ── Actividad ───────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Actividad_conserva_el_registro_pero_no_revela_la_identidad_global()
@@ -1091,7 +1057,6 @@ public sealed class IamIdentityIsolationHttpTests : IClassFixture<IamIdentityIso
                 Memberships,
                 $"{Memberships}/lookup?username={_f.AdminA.Username}",
                 Sessions,
-                "/api/v1/security/admin-matrix",
             }
         )
         {

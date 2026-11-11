@@ -3,6 +3,13 @@
         "module":  "Company",
         "features":  [
                          {
+                             "name":  "Company Administrators For Admin Core",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Company/UseCases/CompanyAdministratorsForAdminCore"
+                                          ]
+                         },
+                         {
                              "name":  "Configure Document Sequence",
                              "status":  "implemented",
                              "evidence":  [
@@ -692,6 +699,13 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Access/UseCases/CompanyUserPreferencesDefaultBranchValidation.cs"
+                                          ]
+                         },
+                         {
+                             "name":  "Iam Identity Scope",
+                             "status":  "implemented",
+                             "evidence":  [
+                                              "backend/src/ERP.Application/Modules/Access/UseCases/IamIdentityScope.cs"
                                           ]
                          }
                      ]
@@ -2011,25 +2025,6 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/ElectronicInvoicing/UseCases/ValidateSriConfiguration"
-                                          ]
-                         }
-                     ]
-    },
-    {
-        "module":  "Security",
-        "features":  [
-                         {
-                             "name":  "Get Security Admin Matrix",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Security/UseCases/GetSecurityAdminMatrix"
-                                          ]
-                         },
-                         {
-                             "name":  "Upsert Security Admin Scopes",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Security/UseCases/UpsertSecurityAdminScopes"
                                           ]
                          }
                      ]

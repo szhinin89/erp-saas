@@ -151,7 +151,7 @@ window.__ARCHITECTURE_PROGRESS_SOURCE__ = [
               {
                 "s": "f",
                 "n": "Access Profiles + Permission Grid",
-                "d": "CRUD perfiles de acceso con asignación granular. SecurityAdminScopeAssignment. Frontend completo.",
+                "d": "CRUD perfiles de acceso con asignación granular. Frontend completo.",
                 "tags": [
                   [
                     "a",

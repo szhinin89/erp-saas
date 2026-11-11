@@ -719,10 +719,6 @@
       "name": "SalesReturn"
     },
     {
-      "description": "Delegaci\u00F3n de administraci\u00F3n (matriz manageRoles/manageModules/manageScreens/manageProcesses\r\npor usuario) \u2014 ver /admin/security. ADMIN-SECURITY-SPLIT-01: protegido por el sistema de\r\npol\u00EDticas perm: igual que el resto del ERP, ya no por [Authorize(Roles = SecurityRoles.Admin)]\r\ncomo \u00FAnica puerta \u2014 ese chequeo por rol literal era la excepci\u00F3n del grupo Administraci\u00F3n\r\n(los otros cinco controllers ya usaban perm:). El rol Admin sigue teniendo acceso total: el\r\nauthorizer de \u0022perm:\u0022 hace bypass autom\u00E1tico para SecurityRoles.Admin (mismo mecanismo que\r\nNavigationBuilder usa para el men\u00FA), as\u00ED que no se pierde compatibilidad con el rol.",
-      "name": "Security"
-    },
-    {
       "description": "First-run ERP initialization endpoints. Both actions are anonymous and token-gated.",
       "name": "Setup"
     },

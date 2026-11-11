@@ -113,7 +113,7 @@ describe("inventario de rutas protegidas registradas", () => {
 
 /** Rutas bajo prefijos legacy (solo redirects históricos) — permitidas para redirigir. */
 function isLegacyOnly(path: string): boolean {
-  return ["/inventario", "/logistica", "/configuracion", "/actividad", "/security", "/masterdata", "/catalog", "/master", "/pricing"].some(
+  return ["/inventario", "/logistica", "/configuracion", "/actividad", "/masterdata", "/catalog", "/master", "/pricing"].some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
 }

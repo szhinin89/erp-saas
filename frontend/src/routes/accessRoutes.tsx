@@ -1,10 +1,6 @@
 import { Route, Navigate } from "react-router-dom";
 import { lazyNamedPage } from "./lazyPage";
 
-const SecuritySettingsPage = lazyNamedPage(
-  () => import("../modules/security/pages/SecuritySettingsPage"),
-  "SecuritySettingsPage",
-);
 const ProfilesPage = lazyNamedPage(
   () => import("../modules/access/pages/ProfilesPage"),
   "ProfilesPage",
@@ -23,11 +19,6 @@ const UserConfigPage = lazyNamedPage(
 );
 
 export const accessRoutes = [
-  <Route
-    key="admin-security"
-    path="/admin/security"
-    element={<SecuritySettingsPage />}
-  />,
   <Route key="access-users" path="/access/users" element={<UsersPage />} />,
   <Route
     key="access-users-new"
@@ -49,10 +40,5 @@ export const accessRoutes = [
     key="admin-permissions"
     path="/admin/permissions"
     element={<PermissionsAssignmentPage />}
-  />,
-  <Route
-    key="security-legacy"
-    path="/security"
-    element={<Navigate to="/admin/security" replace />}
   />,
 ];

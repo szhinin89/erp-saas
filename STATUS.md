@@ -1,5 +1,30 @@
 # Project Status
 
+## ADMIN-SESSIONS-ACTIVITY-01 — Sesiones y Actividad: rediseño UI/UX y limpieza de administración — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
+
+Autorizado expresamente por el propietario. Sin staging, commit ni push; el esquema se verificó solo en un
+PostgreSQL vacío desechable (nunca contra `postgreszh` ni bases del propietario).
+
+- **Limpieza**: se retiró del producto un control administrativo que nunca autorizó operaciones (pantalla,
+  ruta, API, permisos propios y tabla). La autorización real sigue siendo `perm:` (IAM Fase 2/3). La baseline
+  `InitialProductionBaseline` ya no crea la tabla correspondiente y no existe migración de borrado
+  (preproducción). Esquema verificado desde PostgreSQL vacío: 0 tablas/índices obsoletos y
+  `has-pending-model-changes` sin cambios. Las instalaciones que ya aplicaron la baseline anterior (p. ej.
+  `postgreszh`) conservan la tabla huérfana hasta reconstruirse; filas heredadas de permisos retirados en
+  perfiles quedan inertes. Perfiles, membresías y permisos vigentes no se modifican.
+- **Sesiones** (`/admin/access/sessions`): `UserSessionAdminDto` suma `UserFullName`, `Username` y
+  `BranchName` (solo lectura, resueltos dentro de la empresa operativa; `null` si no se resuelven). Se
+  retiran filtro y columna de empresa (el endpoint ya estaba restringido a la empresa activa). Indicadores
+  compactos que actúan como filtro por estado, `Badge` de estado, selector de usuario (con
+  `access.company_user_memberships.view`), `ZHFilterBar`, paginación de `ZHDataTable` y reinicio a la página 1
+  al cambiar filtros. El cierre de sesión conserva `access.sessions.close`.
+- **Actividad** (`/admin/activity`): se mantiene el endpoint y el alcance `my`; aviso explícito de que es la
+  actividad del usuario autenticado, etiquetas de acción y módulo legibles, selector cerrado de módulo,
+  `Badge`, detalle en dos líneas y paginación de `ZHDataTable`. Sin cambios en escritura, conservación ni
+  aislamiento de auditoría; sin feed global ni permisos nuevos.
+- **Límite conocido**: la paginación de Actividad sigue sin total del servidor (el endpoint devuelve una lista
+  plana); una página exactamente llena habilita «siguiente» aunque no haya más filas.
+
 ## IAM-V1-F3 — Perfiles iniciales y administrador inicial de empresa — CLOSED (2026-11-11)
 
 El propietario aprueba el cierre (2026-11-11) tras confirmar
@@ -111,7 +136,7 @@ Sin migraciones, sin cambios en First Run, perfiles, `DataEntry`, permisos, cred
   podía asignar contraseña temporal al administrador global (membership Admin en la primera
   empresa); vincular, cambiar rol o revocar por username alcanzaba identidades de cualquier tenant
   o al global; el lookup revelaba existencia y nombre completo de cualquier username del sistema;
-  el listado, la matriz de Seguridad administrativa y las sesiones mostraban al global; las
+  el listado y las sesiones mostraban al global; las
   sesiones cruzaban empresas del mismo tenant; 404 frente a 403 y mensajes distintos revelaban
   existencia.
 - Diagnóstico previo de `facturador1` (sin cambios): su acceso a Usuarios es real y autorizado por
@@ -2243,9 +2268,9 @@ Pendientes, sin autorización de implementación:
 | Navigation-02 | FALTA de validación visual: los PASS de componentes no acreditan el conjunto ZH/tablas compactas con fuentes e iconos reales cargados; se conserva la limitación visual registrada. No se ejecutó otra suite general ni se alteró el diseño. |
 | Navigation-03 | BUG REAL reproducido: con locale activo `en`, DashboardPage conserva «Ventas del mes», «Cuentas por cobrar/pagar», «vencido», «sin stock» y «Resumen Anual» en español. El check i18n-keys PASS y lazyLocale PASS solo acreditan claves/carga, no traducción de literales JSX. |
 
-Validación nueva: **74/74 PASS** en nueve archivos Vitest focales (los siete de
-DashboardPage, SessionBootstrap, CompanySelectPage, SecuritySettingsPage, navigationAccess,
-launcherHierarchy y lazyLocale: 58/58; BranchSelectorModal/useBranchGate: 16/16).
+Validación nueva: PASS en los archivos Vitest focales de DashboardPage, SessionBootstrap,
+CompanySelectPage, navigationAccess, launcherHierarchy y lazyLocale, y de
+BranchSelectorModal/useBranchGate.
 Navigation-03: **1/1 FAIL esperado** en prueba temporal sobre el mismo fixture de
 DashboardPage, `ensureLocaleLoaded("en")` + storageKey=`en`; verificado locale=`en`, falla
 `expect(text).not.toContain("Ventas del mes")`. Fixture temporal retirado tras reproducir;

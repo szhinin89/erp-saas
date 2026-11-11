@@ -27,7 +27,6 @@ using ERP.Domain.Modules.Ride.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Navigation.Entities;
-using ERP.Domain.Security.Entities;
 using ERP.Domain.Setup;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence.Outbox;
@@ -190,8 +189,6 @@ public class ErpDbContext : DbContext
     public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();
     public DbSet<AccessProfilePermission> AccessProfilePermissions =>
         Set<AccessProfilePermission>();
-    public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments =>
-        Set<SecurityAdminScopeAssignment>();
 
     // ── Tenants ───────────────────────────────────────────────────────────
     public DbSet<Tenant> Tenants => Set<Tenant>();

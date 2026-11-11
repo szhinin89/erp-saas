@@ -3,7 +3,6 @@ perm:access.profiles.view | Perfiles (Roles) | 👥 | /admin/roles | parent= | s
 perm:access.sessions.view | Sesiones (Admin) | 🖥️ | /admin/access/sessions | parent= | sort=211 | menu=True
 perm:accounting.view | Contabilidad | 📒 | /accounting | parent= | sort=60 | menu=True
 perm:admin.activity.view | Actividad | 📜 | /admin/activity | parent= | sort=200 | menu=True
-perm:admin.delegation.view | Delegación de administración (API) | 🧩 |  | parent= | sort=989 | menu=False
 perm:admin_core.dashboard | Admin Core | 🌐 |  | parent= | sort=991 | menu=False
 perm:auth.api | Auth API | 🧩 |  | parent= | sort=988 | menu=False
 perm:caja.view | Caja | 💵 | /treasury/cash | parent= | sort=70 | menu=True

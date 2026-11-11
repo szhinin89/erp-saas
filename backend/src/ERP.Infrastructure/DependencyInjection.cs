@@ -21,7 +21,6 @@ using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Modules.InitialLoad.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Menu.Interfaces;
-using ERP.Domain.Security.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using ERP.Infrastructure.Access.Caching;
 using ERP.Infrastructure.Communications;
@@ -357,7 +356,6 @@ public static class DependencyInjection
         >();
         services.AddScoped<IAccessTokenService, AccessTokenService>();
         services.AddScoped<ITenantRepository, TenantRepository>();
-        services.AddScoped<ISecurityRepository, SecurityRepository>();
         services.AddScoped<IBranchRepository, BranchRepository>();
         services.AddScoped<IGeographyReadRepository, GeographyReadRepository>();
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();

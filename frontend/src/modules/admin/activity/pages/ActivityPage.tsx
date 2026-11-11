@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  EmptyState,
-  LoadingState,
-  NoAccessPage,
-} from "../../../../components/PageShell";
+import { Badge, NoAccessPage } from "../../../../components/PageShell";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
-import { ZHBtn } from "../../../../components/zh/ZHForm";
-import { ZhTextInput } from "../../../../components/zh/inputs";
-import { ZHDataTable, type ZHDataTableColumn } from "../../../../components/zh/ZHDataTable";
+import { ZHBtn, ZHField } from "../../../../components/zh/ZHForm";
+import { ZHFilterBar } from "../../../../components/zh/ZHFilterBar";
+import { ZhSelect } from "../../../../components/zh/inputs";
+import {
+  ZHDataTable,
+  type ZHDataTableColumn,
+} from "../../../../components/zh/ZHDataTable";
 import { useI18n } from "../../../../i18n/i18n";
 import { formatDateTime } from "../../../../lib/formatters/dateFormatters";
 import {
@@ -17,6 +17,12 @@ import {
 } from "../../api/activityService";
 import { formatApiError } from "../../../lib/formatApiError";
 import { usePermissionsUi } from "../../../../access/usePermissionsUi";
+
+/**
+ * Módulos que hoy escriben en la bitácora (códigos exactos que persiste el backend). El filtro del
+ * servidor es por igualdad exacta, por eso se ofrece como lista cerrada y no como texto libre.
+ */
+const ACTIVITY_MODULES = ["branches", "inventory", "masterdata", "companies"];
 
 function actionVerbI18nKey(action: string): string {
   const i = action.lastIndexOf(".");
@@ -35,6 +41,8 @@ function actionVerbI18nKey(action: string): string {
   }
 }
 
+const pageSize = 25;
+
 export function ActivityPage() {
   const { canShow } = usePermissionsUi();
   const { t } = useI18n();
@@ -45,7 +53,6 @@ export function ActivityPage() {
   const [error, setError] = useState<string | null>(null);
   const [module, setModule] = useState("");
   const [page, setPage] = useState(1);
-  const pageSize = 25;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,12 +79,44 @@ export function ActivityPage() {
   if (!canView)
     return <NoAccessPage title={t("app.nav.item.admin.activity")} />;
 
+  /** Etiqueta legible de la acción completa; si no está catalogada, cae al verbo genérico. */
+  const actionLabel = (action: string) =>
+    t(`admin.activity.action.${action}`, t(actionVerbI18nKey(action)));
+  /** Etiqueta legible del módulo; si no está catalogado, muestra el código tal cual. */
+  const moduleLabel = (code: string) =>
+    t(`admin.activity.module.${code}`, code);
+
   const activityColumns: ZHDataTableColumn<UserActivityDto>[] = [
-    { key: "when", header: t("audit.column.when"), render: (row) => formatDateTime(row.createdAt) },
-    { key: "who", header: t("audit.column.who"), render: (row) => row.userFullName || row.userEmail || "—" },
-    { key: "module", header: "Módulo", render: (row) => row.module },
-    { key: "what", header: t("audit.column.what"), render: (row) => t(actionVerbI18nKey(row.action)) },
-    { key: "detail", header: t("audit.column.detail"), render: (row) => row.description || row.entityType || "—" },
+    {
+      key: "when",
+      header: t("audit.column.when"),
+      render: (row) => formatDateTime(row.createdAt),
+    },
+    {
+      key: "module",
+      header: t("admin.activity.column.module"),
+      render: (row) => <Badge variant="neutral" label={moduleLabel(row.module)} />,
+    },
+    {
+      key: "what",
+      header: t("audit.column.what"),
+      render: (row) => actionLabel(row.action),
+    },
+    {
+      key: "detail",
+      header: t("audit.column.detail"),
+      render: (row) =>
+        row.description || row.entityType ? (
+          <div>
+            <div>{row.description || row.entityType}</div>
+            {row.description && row.entityType && (
+              <div className="zh-text-muted zh-text-xs">{row.entityType}</div>
+            )}
+          </div>
+        ) : (
+          "—"
+        ),
+    },
   ];
 
   return (
@@ -93,10 +132,11 @@ export function ActivityPage() {
           onClick={() => void load()}
         >
           <span className="material-symbols-outlined">refresh</span>
-          Actualizar
+          {t("common.refresh")}
         </ZHBtn>
       }
     >
+      <ZHPageNotice variant="info" message={t("admin.activity.scopeNotice")} />
       {error && (
         <ZHPageNotice
           variant="error"
@@ -106,61 +146,52 @@ export function ActivityPage() {
       )}
 
       <div className="pg-section">
-        <div className="pg-table-controls">
-          <div className="pg-table-controls-left">
-            <ZhTextInput
-              className="zh-input"
-              placeholder="Filtrar por módulo (opcional)…"
-              value={module}
-              onChange={(e) => {
-                setModule(e.target.value);
-                setPage(1);
-              }}
-            />
+        <ZHFilterBar
+          plain
+          disabled={loading}
+          onClear={
+            module
+              ? () => {
+                  setModule("");
+                  setPage(1);
+                }
+              : undefined
+          }
+        >
+          <div className="zh-filterbar__field">
+            <ZHField label={t("admin.activity.filter.module")} density="compact">
+              <ZhSelect
+                className="zh-input"
+                value={module}
+                onChange={(e) => {
+                  setModule(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">{t("admin.activity.filter.allModules")}</option>
+                {ACTIVITY_MODULES.map((code) => (
+                  <option key={code} value={code}>
+                    {moduleLabel(code)}
+                  </option>
+                ))}
+              </ZhSelect>
+            </ZHField>
           </div>
-          <div className="pg-table-controls-right">
-            <span>Pág. {page}</span>
-          </div>
-        </div>
+        </ZHFilterBar>
 
-        {loading ? (
-          <div className="pg-pad-40">
-            <LoadingState />
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="pg-pad-40">
-            <EmptyState message={t("audit.empty")} />
-          </div>
-        ) : (
-          <ZHDataTable
-            columns={activityColumns}
-            rows={rows}
-            rowKey={(row) => row.id}
-            showRowNumber
-            rowNumberOffset={(page - 1) * pageSize}
-          />
-        )}
-
-        <div className="pg-table-footer">
-          <div className="pg-pagination-controls">
-            <button
-              className="pg-pagination-btn"
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button
-              className="pg-pagination-btn"
-              type="button"
-              disabled={rows.length < pageSize || loading}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
-          </div>
-        </div>
+        <ZHDataTable
+          columns={activityColumns}
+          rows={rows}
+          rowKey={(row) => row.id}
+          loading={loading}
+          emptyMessage={t("admin.activity.empty")}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          showRowNumber
+          rowNumberOffset={(page - 1) * pageSize}
+          tableClassName="table--compact"
+        />
       </div>
     </ErpPageTemplate>
   );

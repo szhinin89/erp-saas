@@ -19509,62 +19509,6 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("ui_nav_items", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Security.Entities.SecurityAdminScopeAssignment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<bool>("IsAllowed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_allowed");
-
-                    b.Property<int>("Scope")
-                        .HasColumnType("integer")
-                        .HasColumnName("scope");
-
-                    b.Property<string>("SubjectKey")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("subject_key");
-
-                    b.Property<string>("SubjectType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("subject_type");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "SubjectType", "SubjectKey", "Scope")
-                        .IsUnique()
-                        .HasDatabaseName("ux_security_admin_scopes_subject");
-
-                    b.ToTable("security_admin_scope_assignments", (string)null);
-                });
-
             modelBuilder.Entity("ERP.Domain.Setup.SystemSetupState", b =>
                 {
                     b.Property<int>("Id")

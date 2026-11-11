@@ -140,7 +140,6 @@ Administración                              [Module("admin")]
 │  ├─ Perfiles                              /admin/roles
 │  └─ Permisos                              /admin/permissions
 └─ Seguridad
-   ├─ Seguridad administrativa              /admin/security
    ├─ Sesiones                              /admin/access/sessions
    └─ Actividad                             /admin/activity
 ```

@@ -1,14 +1,14 @@
 ﻿{
-    "Generated":  "2026-11-03 06:31:32",
+    "Generated":  "2026-11-11 11:32:23",
     "FrontendRoot":  "C:\\ProyectCursor\\erp-saas\\frontend\\src",
     "Statistics":  {
-                       "SourceFiles":  1174,
+                       "SourceFiles":  1264,
                        "Pages":  0,
-                       "Components":  142,
+                       "Components":  147,
                        "Hooks":  8,
                        "Services":  0,
                        "Stores":  0,
-                       "Routes":  1
+                       "Routes":  2
                    },
     "Modules":  [
                     "access",
@@ -42,7 +42,6 @@
                     "retentions",
                     "ride",
                     "sales",
-                    "security",
                     "session",
                     "settings",
                     "supplier-payments"

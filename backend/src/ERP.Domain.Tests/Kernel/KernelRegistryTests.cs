@@ -739,7 +739,7 @@ public sealed class KernelRegistryTests
             .Be(ERP.Domain.Kernel.Permissions.AccessPermissions.SessionsView);
         // ADMIN-SESSIONS-ACTIVITY-POLISH-01: reordenado antes de Actividad (SortOrder 45 → 40).
         // ADMINISTRATION-CLEAN-ACCESS-01: "Asignación de permisos" se insertó en SortOrder 30,
-        // corriendo Seguridad administrativa/Sesiones/Actividad un paso (40 → 50).
+        // corriendo Sesiones/Actividad un paso (40 → 50).
         accessSessions.SortOrder.Should().Be(50);
 
         navigation.Should().NotContain(n => n.RoutePath == "/rrhh");
@@ -871,24 +871,16 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_admin_security_requires_delegation_view_permission_not_a_bare_role_check()
+    public void Navigation_and_permissions_no_longer_expose_the_removed_admin_security_matrix()
     {
-        // ADMIN-SECURITY-SPLIT-01: antes este NavItem no tenía Permission (visible a cualquier
-        // usuario autenticado) mientras la pantalla/API solo estaban protegidas por
-        // [Authorize(Roles = "Admin")]. Ahora exige admin.delegation.view, igual que el resto del
-        // grupo Administración.
-        // ADMINISTRATION-CLEAN-ACCESS-01: renombrado a "Seguridad administrativa" (antes "Delegar
-        // Funciones" — nombre engañoso para una matriz permanente de capacidades, no delegación
-        // temporal); mismo Id/ruta/permiso. SortOrder corrido de 30 a 40 por la inserción de
-        // "Asignación de permisos" en 30.
-        var navigation = KernelRegistry.Navigation;
-
-        var delegation = navigation.Single(n => n.RoutePath == "/admin/security");
-        delegation.GroupCode.Should().Be("admin");
-        delegation
-            .PermissionKey.Should()
-            .Be(ERP.Domain.Kernel.Permissions.AdminPermissions.DelegationView);
-        delegation.SortOrder.Should().Be(40);
+        // Guard de regresión: una pantalla de administración que no autorizaba nada se retiró;
+        // ni su ruta ni sus permisos deben reaparecer en el registro.
+        KernelRegistry.Navigation.Should().NotContain(n => n.RoutePath == "/admin/security");
+        KernelRegistry.Permissions.Should().NotContain("admin.delegation.view");
+        KernelRegistry.Permissions.Should().NotContain("admin.delegation.configure");
+        KernelRegistry
+            .AssignablePermissionKeys.Should()
+            .NotContain(new[] { "admin.delegation.view", "admin.delegation.configure" });
     }
 
     [Fact]
@@ -912,7 +904,7 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_admin_group_has_exactly_six_screens_and_two_categories()
+    public void Navigation_admin_group_has_exactly_five_screens_and_two_categories()
     {
         // ADMINISTRATION-CLEAN-ACCESS-01: Usuarios, Perfiles, Asignación de permisos, Seguridad
         // administrativa, Sesiones de usuario, Actividad — ni más ni menos, y ninguna pantalla
@@ -924,7 +916,7 @@ public sealed class KernelRegistryTests
         var screens = adminItems.Where(n => n.PermissionKey != null).ToList();
         var categories = adminItems.Where(n => n.PermissionKey is null).ToList();
 
-        screens.Should().HaveCount(6);
+        screens.Should().HaveCount(5);
         screens
             .Should()
             .OnlyContain(
@@ -965,7 +957,7 @@ public sealed class KernelRegistryTests
     public void Navigation_admin_group_follows_the_requested_menu_order()
     {
         // ADMIN-SESSIONS-ACTIVITY-POLISH-01 / ADMINISTRATION-CLEAN-ACCESS-01: Usuarios, Perfiles,
-        // Asignación de permisos, Seguridad administrativa, Sesiones de usuario, Actividad — en
+        // Asignación de permisos, Sesiones de usuario, Actividad — en
         // ese orden. NAV-HIERARCHY-UNIFY-01: ahora agrupadas en 2 categorías (Usuarios y roles /
         // Seguridad); se verifica el orden dentro de cada categoría por separado.
         var usersRolesGroupId = Guid.Parse("bd7b2326-c77b-4534-ad6f-a7edb19827d6");
@@ -985,7 +977,7 @@ public sealed class KernelRegistryTests
             .ToArray();
         securityOrder
             .Should()
-            .Equal("/admin/security", "/admin/access/sessions", "/admin/activity");
+            .Equal("/admin/access/sessions", "/admin/activity");
 
         var topLevelOrder = KernelRegistry
             .Navigation.Where(n => n.GroupCode == "admin" && n.ParentItemId is null)

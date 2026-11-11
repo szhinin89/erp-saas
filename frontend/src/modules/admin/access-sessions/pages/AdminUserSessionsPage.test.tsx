@@ -15,6 +15,13 @@ import { AdminUserSessionsPage } from "./AdminUserSessionsPage";
 const getPaged = vi.fn();
 const getStatistics = vi.fn();
 const close = vi.fn();
+const listMembers = vi.fn((..._args: unknown[]) => Promise.resolve<unknown[]>([]));
+
+vi.mock("../../../access/facades/membershipLookupFacade", () => ({
+  membershipLookupFacade: {
+    list: (...args: unknown[]) => listMembers(...args),
+  },
+}));
 
 vi.mock("../../api/userSessionAdminService", () => ({
   userSessionAdminService: {
@@ -33,6 +40,9 @@ const ROW = {
   status: "Active" as const,
   createdAt: "2026-07-01T10:00:00Z",
   updatedAt: null,
+  userFullName: "Juan Pérez",
+  username: "jperez",
+  branchName: "Matriz",
 };
 
 const STATS = {
@@ -125,8 +135,46 @@ describe("AdminUserSessionsPage", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText("device-1")).toBeTruthy());
-    expect(screen.getByText("10")).toBeTruthy(); // Total
+    // Indicadores compactos (también filtros rápidos): total y por estado.
+    expect(screen.getByRole("button", { name: /Todas\s*10/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Expiradas\s*4/ })).toBeTruthy();
     expect(screen.getAllByText("Activa").length).toBeGreaterThan(0);
+  });
+
+  it("muestra nombres de usuario y sucursal en lugar de GUID, sin columna ni filtro de empresa", async () => {
+    setAuth("User");
+    setPermissions(["access.sessions.view"]);
+    getPaged.mockResolvedValue({ items: [ROW], pageNumber: 1, pageSize: 25, totalCount: 1 });
+    getStatistics.mockResolvedValue(STATS);
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Juan Pérez")).toBeTruthy());
+    expect(screen.getByText("@jperez")).toBeTruthy();
+    expect(screen.getByText("Matriz")).toBeTruthy();
+    expect(screen.queryByText("Empresa")).toBeNull();
+    expect(screen.queryByText(/user-111/)).toBeNull();
+    expect(screen.queryByText(/Todas las empresas/)).toBeNull();
+    expect(getPaged).toHaveBeenCalledWith(
+      expect.not.objectContaining({ companyId: expect.anything() }),
+    );
+  });
+
+  it("si el backend no resuelve nombres, muestra el identificador abreviado", async () => {
+    setAuth("User");
+    setPermissions(["access.sessions.view"]);
+    getPaged.mockResolvedValue({
+      items: [{ ...ROW, userFullName: null, username: null, branchName: null }],
+      pageNumber: 1,
+      pageSize: 25,
+      totalCount: 1,
+    });
+    getStatistics.mockResolvedValue(STATS);
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("user-111…")).toBeTruthy());
+    expect(screen.getByText("branch-1…")).toBeTruthy();
   });
 
   it("empresa admin (rol Admin) también accede aunque no tenga permisos explícitos", async () => {
@@ -207,11 +255,94 @@ describe("AdminUserSessionsPage", () => {
     fireEvent.change(screen.getByDisplayValue("Todos los estados"), {
       target: { value: "Expired" },
     });
-    fireEvent.click(screen.getByText("Filtrar"));
 
     await waitFor(() => expect(getPaged).toHaveBeenCalledTimes(2));
     expect(getPaged).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: "Expired" }),
     );
+  });
+
+  it("el indicador de estado actúa como filtro rápido y 'Limpiar filtros' lo restablece", async () => {
+    setAuth("User");
+    setPermissions(["access.sessions.view"]);
+    getPaged.mockResolvedValue({ items: [], pageNumber: 1, pageSize: 25, totalCount: 0 });
+    getStatistics.mockResolvedValue(STATS);
+
+    renderPage();
+    await waitFor(() => expect(getPaged).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: /Expiradas\s*4/ }));
+    await waitFor(() =>
+      expect(getPaged).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: "Expired", pageNumber: 1 }),
+      ),
+    );
+
+    fireEvent.click(screen.getByText("Limpiar filtros"));
+    await waitFor(() =>
+      expect(getPaged).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: undefined }),
+      ),
+    );
+  });
+
+  it("cambiar un filtro desde otra página vuelve a la página 1", async () => {
+    setAuth("User");
+    setPermissions(["access.sessions.view"]);
+    getPaged.mockResolvedValue({ items: [ROW], pageNumber: 1, pageSize: 25, totalCount: 60 });
+    getStatistics.mockResolvedValue(STATS);
+
+    const { container } = renderPage();
+    await waitFor(() => expect(screen.getByText("device-1")).toBeTruthy());
+
+    const [, next] = container.querySelectorAll<HTMLButtonElement>(".pg-pagination-btn");
+    fireEvent.click(next);
+    await waitFor(() =>
+      expect(getPaged).toHaveBeenLastCalledWith(expect.objectContaining({ pageNumber: 2 })),
+    );
+
+    fireEvent.change(screen.getByDisplayValue("Todos los estados"), {
+      target: { value: "Active" },
+    });
+    await waitFor(() =>
+      expect(getPaged).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: "Active", pageNumber: 1 }),
+      ),
+    );
+  });
+
+  it("ofrece el filtro por usuario solo con permiso de membresías y filtra por identityUserId", async () => {
+    setAuth("User");
+    setPermissions(["access.sessions.view", "access.company_user_memberships.view"]);
+    getPaged.mockResolvedValue({ items: [], pageNumber: 1, pageSize: 25, totalCount: 0 });
+    getStatistics.mockResolvedValue(STATS);
+    listMembers.mockResolvedValue([
+      { identityUserId: "u-1", fullName: "Juan Pérez", username: "jperez", role: "User", isActive: true },
+    ]);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Juan Pérez (@jperez)")).toBeTruthy());
+
+    fireEvent.change(screen.getByDisplayValue("Todos los usuarios"), {
+      target: { value: "u-1" },
+    });
+    await waitFor(() =>
+      expect(getPaged).toHaveBeenLastCalledWith(
+        expect.objectContaining({ identityUserId: "u-1" }),
+      ),
+    );
+  });
+
+  it("sin permiso de membresías no muestra el filtro por usuario ni consulta membresías", async () => {
+    setAuth("User");
+    setPermissions(["access.sessions.view"]);
+    getPaged.mockResolvedValue({ items: [], pageNumber: 1, pageSize: 25, totalCount: 0 });
+    getStatistics.mockResolvedValue(STATS);
+
+    renderPage();
+    await waitFor(() => expect(getPaged).toHaveBeenCalled());
+
+    expect(screen.queryByDisplayValue("Todos los usuarios")).toBeNull();
+    expect(listMembers).not.toHaveBeenCalled();
   });
 });

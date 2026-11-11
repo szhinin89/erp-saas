@@ -85,15 +85,6 @@ Single centralized HTTP client: `frontend/src/modules/lib/api.ts`.
 
 ---
 
-## Security — `api/v1/security`
-
-| Method | Route | Auth | Request | Response |
-|--------|-------|------|---------|----------|
-| GET | `/api/v1/security/admin-matrix` | Session + Admin role | — | `object` |
-| PUT | `/api/v1/security/admin-scopes` | Session + Admin role | `UpsertSecurityAdminScopesCommand` | `object` |
-
----
-
 ## Companies — `api/v1/companies`
 
 | Method | Route | Auth | Request | Response |

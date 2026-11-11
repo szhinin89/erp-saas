@@ -41,7 +41,10 @@ public sealed record UserSessionAdminDto(
     string TerminalId,
     string Status,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    string? UserFullName = null,
+    string? Username = null,
+    string? BranchName = null
 );
 
 /// <summary>Métricas básicas de GetSessionStatisticsQuery (Fase 10) — solo conteos, sin PII.</summary>

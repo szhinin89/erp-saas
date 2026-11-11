@@ -19,7 +19,12 @@ internal static class AccessSessionMapper
             s.ClosedReason
         );
 
-    public static UserSessionAdminDto ToAdminDto(UserSession s) =>
+    public static UserSessionAdminDto ToAdminDto(
+        UserSession s,
+        string? userFullName = null,
+        string? username = null,
+        string? branchName = null
+    ) =>
         new(
             s.Id,
             s.IdentityUserId,
@@ -28,6 +33,9 @@ internal static class AccessSessionMapper
             s.TerminalId,
             s.Status.ToString(),
             s.CreatedAt,
-            s.UpdatedAt
+            s.UpdatedAt,
+            userFullName,
+            username,
+            branchName
         );
 }

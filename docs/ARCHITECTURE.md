@@ -171,7 +171,6 @@ Registro: [`ERP.Application/DependencyInjection.cs`](../backend/src/ERP.Applicat
 | Master data — Business Partners | `/api/master/business-partners*` | `BusinessPartnersController` y relacionados |
 | Catálogo / Items / Productos | `/api/catalog`, `/api/items`, `/api/inventory/*` | `CatalogController`, `ItemsController`, `Product*Controller`, `BrandsController`, `TariffsController` |
 | IAM / Actividad admin | `/api/admin/iam`, `/api/admin/activity` | `AccessProfilesController`, `AccessSessionController`, `ActivityController` |
-| Seguridad | `/api/security` | `SecurityController` |
 | Dashboard | `/api/dashboard` | `DashboardController` |
 | Menú SPA | `/api/internal/spa-menu-catalog` | `SpaMenuCatalogController` |
 | Público | `/api/public` | `PublicController` |

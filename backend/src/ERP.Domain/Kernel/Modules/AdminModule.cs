@@ -6,10 +6,7 @@ namespace ERP.Domain.Kernel.Modules;
 // MAPA-MENU-ERP-SSOT-01: labels ajustados a Usuarios/Perfiles/Permisos/Seguridad/Sesiones/
 // Actividad ("Roles"→"Perfiles" ya coincidía con el nombre real de la pantalla, ProfilesPage;
 // "Asignación de permisos"→"Permisos"; "Sesiones de usuario"→"Sesiones"; "Activity"→"Actividad",
-// corrige un label en inglés suelto). "Seguridad administrativa" se deja sin cambio: renombrarla a
-// "Seguridad" duplicaría el label de su grupo contenedor (mismo problema ya señalado para
-// "Cuentas por cobrar"/"Cuentas por pagar" en otros módulos) — el bullet "Seguridad" del árbol
-// objetivo ya se satisface con el grupo contenedor. Mismos Ids/rutas/permisos en todos los casos.
+// corrige un label en inglés suelto). Mismos Ids/rutas/permisos en todos los casos.
 [Module("admin", Icon = "🛡️", SortOrder = 120)]
 public static class AdminModule
 {
@@ -66,43 +63,17 @@ public static class AdminModule
     )]
     public const string PermissionsAssignment = "/admin/permissions";
 
-    // NAV-HIERARCHY-UNIFY-01: contenedor "Seguridad" — Seguridad administrativa + Sesiones de
-    // usuario + Actividad.
+    // NAV-HIERARCHY-UNIFY-01: contenedor "Seguridad" — Sesiones + Actividad.
     [NavItem(
         "Seguridad",
         LabelKey = "app.nav.item.admin.securityGroup",
         SortOrder = 40,
         Id = "09671d4f-1687-44cd-8d26-c8f0c245957b",
-        PermissionsAnyCsv = AdminPermissions.DelegationView
-            + ","
-            + AccessPermissions.SessionsView
-            + ","
-            + AdminPermissions.ActivityView
+        PermissionsAnyCsv = AccessPermissions.SessionsView + "," + AdminPermissions.ActivityView
     )]
     public const string SecurityGroup = "/admin/security-group";
 
-    // ADMINISTRATION-CLEAN-ACCESS-01: renombrado de "Delegar Funciones" a "Seguridad
-    // administrativa" — esta pantalla es una matriz permanente de capacidades administrativas
-    // (manageRoles/manageModules/manageScreens/manageProcesses), no delegación temporal
-    // (delegante/delegado/fechas/motivo/estado); el nombre anterior prometía algo que la pantalla
-    // no hace. Mismo Id/ruta/permiso — la delegación temporal real queda para un ticket futuro.
-    // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: DelegationConfigure (PUT admin-scopes —
-    // SecuritySettingsPage.tsx "Guardar"/canConfigure) es la única acción de escritura real de
-    // esta pantalla y no estaba en el catálogo asignable.
-    [NavItem(
-        "Seguridad administrativa",
-        Permission = AdminPermissions.DelegationView,
-        LabelKey = "app.nav.item.admin.security",
-        SortOrder = 40,
-        Id = "a1000000-0000-4000-9000-00000000000a",
-        ParentId = "09671d4f-1687-44cd-8d26-c8f0c245957b",
-        RelatedActionPermissionsCsv = AdminPermissions.DelegationConfigure
-    )]
-    public const string Security = "/admin/security";
-
-    // ADMIN-SESSIONS-ACTIVITY-POLISH-01 / ADMINISTRATION-CLEAN-ACCESS-01: orden final —
-    // Usuarios, Perfiles, Asignación de permisos, Seguridad administrativa, Sesiones de usuario,
-    // Actividad.
+    // Orden final dentro de Seguridad: Sesiones, Actividad.
     // ADMIN-PERMISSIONS-ACTION-SCOPE-AUDIT-03: SessionsClose (POST .../close —
     // AdminUserSessionsPage.tsx "Cerrar sesión"/canClose) es la única acción de escritura real de
     // esta pantalla y no estaba en el catálogo asignable.

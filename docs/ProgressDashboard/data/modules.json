@@ -260,16 +260,6 @@
         "frontend":  70
     },
     {
-        "id":  "Security",
-        "domainId":  "security",
-        "score":  81.5,
-        "architecture":  90,
-        "tests":  80,
-        "documentation":  70,
-        "backend":  90,
-        "frontend":  70
-    },
-    {
         "id":  "Configuration",
         "domainId":  "configuration",
         "score":  77.75,
