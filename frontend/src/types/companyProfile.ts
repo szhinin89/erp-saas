@@ -49,6 +49,8 @@ export interface CompanyProfile {
 }
 
 export interface UpdateCompanyProfilePayload {
+  legalName: string;
+  tradeName?: string | null;
   corporateEmail?: string | null;
   phone?: string | null;
   website?: string | null;

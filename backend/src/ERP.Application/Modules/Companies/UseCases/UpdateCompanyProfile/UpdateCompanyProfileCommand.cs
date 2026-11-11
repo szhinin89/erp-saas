@@ -1,15 +1,19 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Companies.DTOs;
+using ERP.Application.Modules.Companies.UseCases.UpdateCompany;
 using MediatR;
 
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile;
 
 /// <summary>
-/// Contacto, representante legal y configuración regional de la empresa activa
-/// ("General" de Company Settings). LegalName/TradeName/RUC no forman parte de este comando:
-/// son propiedad exclusiva de Companies Admin (<c>UpdateCompanyCommand</c>).
+/// Razón social, nombre comercial, contacto, representante legal y configuración regional de la
+/// empresa activa ("General" de Company Settings). El RUC y el estado activo/inactivo no forman
+/// parte de este comando: solo los edita Admin Global (<c>UpdateCompanyForAdminCoreCommand</c>).
+/// La empresa destino siempre es la activa del token; el comando no lleva identificador.
 /// </summary>
 public sealed record UpdateCompanyProfileCommand(
+    string LegalName,
+    string? TradeName,
     string? CorporateEmail,
     string? Phone,
     string? Website,
@@ -20,4 +24,4 @@ public sealed record UpdateCompanyProfileCommand(
     string? LegalRepIdNumber,
     string? LegalRepEmail,
     string? LegalRepPhone
-) : IRequest<Result<CompanyProfileDto>>;
+) : IRequest<Result<CompanyProfileDto>>, ICompanyNamesInput;

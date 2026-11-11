@@ -25,7 +25,7 @@ const PAGE_SIZE = 25;
 /**
  * Listado de devoluciones de venta — consume exclusivamente
  * `GET /api/v1/sales/returns`. Mismo patrón de lista que
- * `CompanyManagementListPage`/`PurchaseReceptionPage` (PageShell + ZHCard +
+ * `PurchaseReceptionPage` (PageShell + ZHCard +
  * ZHDataTable con paginación integrada), no el layout POS de `SalesPage`.
  */
 export function SalesReturnListPage() {

@@ -1,5 +1,5 @@
 ﻿{
-    "generated":  "2026-11-11 11:33:46",
+    "generated":  "2026-11-11 12:43:16",
     "source":  "modules.json, features.json, processes.json, tasks.json, domains.json, dependencies.json, critical-path.json, impact.json, dashboard-model-v12.json, completion-intelligence.json, git log",
     "method":  {
                    "changeRiskFormula":  "riskScore = (100-score)*0.25 + min(coupling,20)/20*100*0.20 + min(largeFilesCount,10)/10*100*0.15 + RiskCategoryScore(impact.json risk: LOW=10/MEDIUM=40/HIGH=70/CRITICAL=100)*0.25 + min(transitiveDependents,15)/15*100*0.10 + (busFactor\u003c=1 ? 100 : 0)*0.05 -- bands: \u003c20 Safe, \u003c40 Low Risk, \u003c60 Medium Risk, \u003c80 High Risk, \u003e=80 Critical",
@@ -53,7 +53,7 @@
                                      "largeFiles":  [
                                                         {
                                                             "file":  "backend/src/ERP.Domain/Modules/Company/Entities/Company.cs",
-                                                            "lines":  573
+                                                            "lines":  572
                                                         }
                                                     ],
                                      "largeFilesCount":  1,
@@ -266,14 +266,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -493,9 +491,9 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (573 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs"
+                                                            "Refactor large file (572 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs"
                                                         ],
-                                       "percentOfErp":  104.25,
+                                       "percentOfErp":  104.28,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "1 possible secret(s) detected in module source"
                                    },
@@ -866,14 +864,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -1103,7 +1099,7 @@
                                                             "Refactor large file (547 lines): backend/src/ERP.Application.Tests/Payables/PayablesCompanyLevelBranchIndependenceTests.cs",
                                                             "Refactor large file (529 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Payables/AccountsPayableSearchTests.cs"
                                                         ],
-                                       "percentOfErp":  100.98,
+                                       "percentOfErp":  100.99,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -1298,14 +1294,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -1527,7 +1521,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  99.02,
+                                       "percentOfErp":  99.01,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -1555,21 +1549,19 @@
                         "documentation":  70,
                         "backend":  65,
                         "frontend":  70,
-                        "filesScanned":  61,
+                        "filesScanned":  54,
                         "busFactor":  1,
                         "lastEvidenceDate":  "2026-11-11",
-                        "featuresCount":  20,
+                        "featuresCount":  18,
                         "featureNames":  [
                                              "Create Company",
                                              "Get Company Branding",
-                                             "Get Company By Id",
                                              "Get Company Logo Alt Content",
                                              "Get Company Logo Content",
                                              "Get Company Operational Readiness",
                                              "Get Company Profile",
                                              "Get Current Company",
                                              "Get Sales Fiscal Policy",
-                                             "List Companies",
                                              "Precision Policy",
                                              "Update Company",
                                              "Update Company Branding",
@@ -1815,14 +1807,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -2044,7 +2034,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs"
                                                         ],
-                                       "percentOfErp":  105.56,
+                                       "percentOfErp":  104.93,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "1 possible secret(s) detected in module source"
                                    },
@@ -2382,14 +2372,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -2613,7 +2601,7 @@
                                                             "Refactor large file (720 lines): backend/src/ERP.Application.Tests/Auth/SwitchCompanyHandlerTests.cs",
                                                             "Review anonymous-access endpoints (12 found)"
                                                         ],
-                                       "percentOfErp":  103.92,
+                                       "percentOfErp":  103.95,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "8 possible secret(s) detected in module source"
                                    },
@@ -2713,7 +2701,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (558 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs"
                                                         ],
-                                       "percentOfErp":  0.65,
+                                       "percentOfErp":  0.66,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -2820,7 +2808,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (543 lines): backend/src/ERP.Application.Tests/OrgConfig/CompanySalesPreferencesIntegrityTests.cs"
                                                         ],
-                                       "percentOfErp":  1.31,
+                                       "percentOfErp":  1.32,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -2886,7 +2874,7 @@
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
-                                                            "lines":  544
+                                                            "lines":  664
                                                         },
                                                         {
                                                             "file":  "backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
@@ -2998,18 +2986,18 @@
                                                             "Refactor large file (704 lines): backend/src/ERP.API.Tests/Integration/CompanyAccessProfilesIsolationHttpTests.cs",
                                                             "Refactor large file (701 lines): backend/src/ERP.API.Tests/Integration/SalesCancelCollectionConcurrencyTests.cs",
                                                             "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
+                                                            "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                                                             "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyTests.cs",
                                                             "Refactor large file (617 lines): backend/src/ERP.API.Tests/Integration/ApiErrorContractHttpTests.cs",
                                                             "Refactor large file (603 lines): backend/src/ERP.API.Tests/Integration/CashRegisterDefaultsEndToEndTests.cs",
                                                             "Refactor large file (575 lines): backend/src/ERP.API.Tests/Integration/SalesPreferencesIntegrityHttpTests.cs",
                                                             "Refactor large file (571 lines): backend/src/ERP.API.Tests/Integration/SalesCancelAuthorizedReturnRuleTests.cs",
                                                             "Refactor large file (555 lines): backend/src/ERP.API.Tests/Integration/BranchDefaultWarehouseHttpTests.cs",
-                                                            "Refactor large file (544 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                                                             "Refactor large file (513 lines): backend/src/ERP.API.Tests/Integration/InventoryAdjustmentReasonCompanyIsolationHttpTests.cs",
                                                             "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                                                             "Review possible secrets in source files (79 real matches, excluding node_modules)"
                                                         ],
-                                       "percentOfErp":  0.65,
+                                       "percentOfErp":  0.66,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -3297,14 +3285,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -3531,7 +3517,7 @@
                                                             "Refactor large file (518 lines): frontend/src/modules/access/users/pages/UserConfigPage.tsx",
                                                             "Refactor large file (502 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx"
                                                         ],
-                                       "percentOfErp":  107.52,
+                                       "percentOfErp":  107.57,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "8 possible secret(s) detected in module source",
@@ -3993,14 +3979,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -4236,8 +4220,8 @@
                                                             "Refactor large file (650 lines): frontend/src/modules/sales/hooks/useSalesCustomerRepricing.test.ts",
                                                             "Refactor large file (618 lines): backend/src/ERP.Application.Tests/Sales/GetSalesReceiptPrintPayloadHandlerTests.cs",
                                                             "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Sales/SalesReturnDraftHandlerTests.cs",
-                                                            "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                             "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+                                                            "Refactor large file (598 lines): frontend/src/modules/sales/pages/SalesPage.moneyValues.test.tsx",
                                                             "Refactor large file (594 lines): backend/src/ERP.Application.Tests/Sales/SalesDraftSpecialTaxTests.cs",
                                                             "Refactor large file (594 lines): frontend/src/modules/sales/pages/SalesPage.ride.test.tsx",
                                                             "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
@@ -4249,7 +4233,7 @@
                                                             "Refactor large file (521 lines): backend/src/ERP.Application/Modules/Sales/UseCases/PaymentMethodUseCases.cs",
                                                             "Refactor large file (517 lines): frontend/src/modules/sales/components/PaymentMethodsSection.tsx"
                                                         ],
-                                       "percentOfErp":  105.23,
+                                       "percentOfErp":  105.26,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "3 large file(s) (\u003e=500 lines)",
@@ -4549,14 +4533,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -4782,7 +4764,7 @@
                                                             "Refactor large file (554 lines): backend/src/ERP.Domain/Modules/Items/Entities/Item.cs",
                                                             "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx"
                                                         ],
-                                       "percentOfErp":  107.19,
+                                       "percentOfErp":  107.24,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -5328,14 +5310,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -5604,7 +5584,7 @@
                                                             "Refactor large file (517 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/SupplierCredit.cs",
                                                             "Refactor large file (512 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseReception/BatchDownloadPurchaseReceptionXmlHandlerTests.cs"
                                                         ],
-                                       "percentOfErp":  110.13,
+                                       "percentOfErp":  110.2,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "5 large file(s) (\u003e=500 lines)"
                                    },
@@ -5807,14 +5787,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -6036,7 +6014,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  99.02,
+                                       "percentOfErp":  99.01,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -6143,7 +6121,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  0.98,
+                                       "percentOfErp":  0.99,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -6423,14 +6401,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -6656,7 +6632,7 @@
                                                             "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
                                                             "Refactor large file (502 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionSriAnnulmentDomainTests.cs"
                                                         ],
-                                       "percentOfErp":  101.63,
+                                       "percentOfErp":  101.64,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -6923,14 +6899,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -7470,14 +7444,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -7697,15 +7669,15 @@
                                                                  "Settings / Update Operational Preferences"
                                                              ],
                                        "relatedTasks":  [
-                                                            "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                             "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
+                                                            "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                                                             "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                                                             "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                                                             "Refactor large file (616 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentExecuteCancelTests.cs",
                                                             "Refactor large file (523 lines): frontend/src/modules/inventory/adjustments/hooks/useStockAdjustmentFormPage.ts",
                                                             "Refactor large file (512 lines): frontend/src/modules/inventory/adjustments/pages/StockAdjustmentFormPage.test.tsx"
                                                         ],
-                                       "percentOfErp":  110.78,
+                                       "percentOfErp":  110.86,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "1 large file(s) (\u003e=500 lines)"
                                    },
@@ -7974,14 +7946,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -8210,7 +8180,7 @@
                                                             "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                                                             "Refactor large file (505 lines): frontend/src/modules/finance/pages/CreditTermsPage.tsx"
                                                         ],
-                                       "percentOfErp":  102.29,
+                                       "percentOfErp":  102.3,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "2 large file(s) (\u003e=500 lines)"
                                    },
@@ -8460,14 +8430,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -8689,7 +8657,7 @@
                                        "relatedTasks":  [
                                                             "Refactor large file (573 lines): frontend/src/modules/branches/components/BranchGeneralSection.tsx"
                                                         ],
-                                       "percentOfErp":  102.29,
+                                       "percentOfErp":  102.3,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -8886,14 +8854,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -9115,7 +9081,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  99.35,
+                                       "percentOfErp":  99.34,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -9334,14 +9300,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -9564,7 +9528,7 @@
                                                             "Refactor large file (605 lines): frontend/src/modules/pricing/pages/PriceListExceptionsTab.tsx",
                                                             "Refactor large file (535 lines): frontend/src/modules/pricing/pages/PriceListsPage.tsx"
                                                         ],
-                                       "percentOfErp":  100.98,
+                                       "percentOfErp":  100.99,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -9846,14 +9810,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -10085,7 +10047,7 @@
                                                             "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
                                                             "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs"
                                                         ],
-                                       "percentOfErp":  103.27,
+                                       "percentOfErp":  103.29,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "2 large file(s) (\u003e=500 lines)"
                                    },
@@ -10376,14 +10338,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -10827,14 +10787,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -11056,7 +11014,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  101.96,
+                                       "percentOfErp":  101.97,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "3 possible secret(s) detected in module source"
                                    },
@@ -11279,14 +11237,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -11508,7 +11464,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  99.35,
+                                       "percentOfErp":  99.34,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  "2 possible secret(s) detected in module source"
                                    },
@@ -11725,14 +11681,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -12208,14 +12162,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -12444,7 +12396,7 @@
                                                             "Refactor large file (554 lines): backend/src/ERP.Application/Modules/InitialLoad/OpeningPosting/GetOpeningBalanceReconciliation.cs",
                                                             "Refactor large file (527 lines): backend/src/ERP.Application.Tests/InitialLoad/InitialPayableImportProcessorTests.cs"
                                                         ],
-                                       "percentOfErp":  102.61,
+                                       "percentOfErp":  102.63,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -12839,14 +12791,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -13074,7 +13024,7 @@
                                                             "Refactor large file (663 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentCorrectedRetransmissionTests.cs",
                                                             "Refactor large file (526 lines): backend/src/ERP.Application.Tests/ElectronicDocuments/ElectronicDocumentIssuerEmissionSwitchTests.cs"
                                                         ],
-                                       "percentOfErp":  102.61,
+                                       "percentOfErp":  102.63,
                                        "riskOfModifying":  "HIGH",
                                        "legacyRisks":  [
                                                            "1 large file(s) (\u003e=500 lines)",
@@ -13401,14 +13351,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -14039,14 +13987,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -14299,7 +14245,7 @@
                                                             "Refactor large file (506 lines): frontend/src/modules/accounting/pages/ChartOfAccountsPage.tsx",
                                                             "Refactor large file (506 lines): frontend/src/modules/accounting/pages/AccountingPeriodsPage.tsx"
                                                         ],
-                                       "percentOfErp":  100.98,
+                                       "percentOfErp":  100.99,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -14558,14 +14504,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -14788,7 +14732,7 @@
                                                             "Refactor large file (686 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriRetentionCatalogResolutionIntegrationTests.cs",
                                                             "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs"
                                                         ],
-                                       "percentOfErp":  99.02,
+                                       "percentOfErp":  99.01,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  {
 
@@ -15049,14 +14993,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -15469,14 +15411,12 @@
                                                                  "Communications / Update Company Email Settings",
                                                                  "Companies / Create Company",
                                                                  "Companies / Get Company Branding",
-                                                                 "Companies / Get Company By Id",
                                                                  "Companies / Get Company Logo Alt Content",
                                                                  "Companies / Get Company Logo Content",
                                                                  "Companies / Get Company Operational Readiness",
                                                                  "Companies / Get Company Profile",
                                                                  "Companies / Get Current Company",
                                                                  "Companies / Get Sales Fiscal Policy",
-                                                                 "Companies / List Companies",
                                                                  "Companies / Precision Policy",
                                                                  "Companies / Update Company",
                                                                  "Companies / Update Company Branding",
@@ -15698,7 +15638,7 @@
                                        "relatedTasks":  [
 
                                                         ],
-                                       "percentOfErp":  99.35,
+                                       "percentOfErp":  99.34,
                                        "riskOfModifying":  "MEDIUM",
                                        "legacyRisks":  "Unmapped business domain - no domains.json relationship"
                                    },
@@ -16231,6 +16171,18 @@
                                                           "label":  "Refactor large file (1428 lines): frontend/src/modules/caja/hooks/useCajaPage.test.tsx",
                                                           "domainId":  "cash",
                                                           "domainName":  "Cash"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Feature",
+                                                          "module":  "Auth",
+                                                          "label":  "Company User Preferences Login Resolver",
+                                                          "domainId":  "security",
+                                                          "domainName":  "Security"
                                                       }
                                                   ]
                              },
@@ -16786,14 +16738,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                                 "file":  "backend/src/ERP.Application/Modules/Expenses/UseCases/Documents",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Feature",
-                                                          "module":  "Auth",
-                                                          "label":  "Company User Preferences Login Resolver",
-                                                          "domainId":  "security",
-                                                          "domainName":  "Security"
+                                                          "module":  "Expenses",
+                                                          "label":  "Documents",
+                                                          "domainId":  "unmapped",
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -17077,18 +17029,6 @@
                                                           "label":  "Refactor large file (1250 lines): backend/src/ERP.Application.Tests/Sales/AuthorizeSalesReturnHandlerTests.cs",
                                                           "domainId":  "sales",
                                                           "domainName":  "Sales"
-                                                      }
-                                                  ]
-                             },
-                             {
-                                 "file":  "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyById",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Feature",
-                                                          "module":  "Companies",
-                                                          "label":  "Get Company By Id",
-                                                          "domainId":  "configuration",
-                                                          "domainName":  "Configuration"
                                                       }
                                                   ]
                              },
@@ -17484,14 +17424,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
+                                 "file":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
                                  "referencedBy":  [
                                                       {
-                                                          "type":  "Feature",
-                                                          "module":  "Company",
-                                                          "label":  "Create Emission Point",
-                                                          "domainId":  "configuration",
-                                                          "domainName":  "Configuration"
+                                                          "type":  "Process",
+                                                          "module":  "Sales",
+                                                          "label":  "Venta / Quote / Draft",
+                                                          "domainId":  "sales",
+                                                          "domainName":  "Sales"
                                                       }
                                                   ]
                              },
@@ -17815,14 +17755,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
+                                 "file":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
                                  "referencedBy":  [
                                                       {
-                                                          "type":  "Task",
-                                                          "module":  null,
-                                                          "label":  "Refactor large file (1644 lines): backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
-                                                          "domainId":  null,
-                                                          "domainName":  null
+                                                          "type":  "Feature",
+                                                          "module":  "Company",
+                                                          "label":  "Create Emission Point",
+                                                          "domainId":  "configuration",
+                                                          "domainName":  "Configuration"
                                                       }
                                                   ]
                              },
@@ -17907,6 +17847,18 @@
                                                           "label":  "Refactor large file (605 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
                                                           "domainId":  "purchases",
                                                           "domainName":  "Purchases"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompletePasswordReset",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Feature",
+                                                          "module":  "Auth",
+                                                          "label":  "Complete Password Reset",
+                                                          "domainId":  "security",
+                                                          "domainName":  "Security"
                                                       }
                                                   ]
                              },
@@ -18347,12 +18299,12 @@
                                                   ]
                              },
                              {
-                                 "file":  "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+                                 "file":  "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Task",
-                                                          "module":  "Expenses",
-                                                          "label":  "Refactor large file (581 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+                                                          "module":  "Settings",
+                                                          "label":  "Refactor large file (558 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -18745,14 +18697,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompletePasswordReset",
+                                 "file":  "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CancelStockAdjustment",
                                  "referencedBy":  [
                                                       {
                                                           "type":  "Feature",
-                                                          "module":  "Auth",
-                                                          "label":  "Complete Password Reset",
-                                                          "domainId":  "security",
-                                                          "domainName":  "Security"
+                                                          "module":  "Inventory",
+                                                          "label":  "Cancel Stock Adjustment",
+                                                          "domainId":  "inventory",
+                                                          "domainName":  "Inventory"
                                                       }
                                                   ]
                              },
@@ -19330,7 +19282,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Integration",
-                                                          "label":  "Refactor large file (544 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
+                                                          "label":  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                                                           "domainId":  "unmapped",
                                                           "domainName":  null
                                                       }
@@ -20100,18 +20052,6 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Task",
-                                                          "module":  "Settings",
-                                                          "label":  "Refactor large file (558 lines): backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
-                                                          "domainId":  "unmapped",
-                                                          "domainName":  null
-                                                      }
-                                                  ]
-                             },
-                             {
                                  "file":  "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/GetWarehouseById",
                                  "referencedBy":  [
                                                       {
@@ -20208,14 +20148,14 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Companies/UseCases/ListCompanies",
+                                 "file":  "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
                                  "referencedBy":  [
                                                       {
-                                                          "type":  "Feature",
-                                                          "module":  "Companies",
-                                                          "label":  "List Companies",
-                                                          "domainId":  "configuration",
-                                                          "domainName":  "Configuration"
+                                                          "type":  "Task",
+                                                          "module":  "Expenses",
+                                                          "label":  "Refactor large file (581 lines): frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+                                                          "domainId":  "unmapped",
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -20264,6 +20204,18 @@
                                                           "label":  "Get Electronic Document",
                                                           "domainId":  "electronic-documents",
                                                           "domainName":  "Electronic Documents"
+                                                      }
+                                                  ]
+                             },
+                             {
+                                 "file":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
+                                 "referencedBy":  [
+                                                      {
+                                                          "type":  "Task",
+                                                          "module":  null,
+                                                          "label":  "Refactor large file (1644 lines): backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
+                                                          "domainId":  null,
+                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -20580,18 +20532,6 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CancelStockAdjustment",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Feature",
-                                                          "module":  "Inventory",
-                                                          "label":  "Cancel Stock Adjustment",
-                                                          "domainId":  "inventory",
-                                                          "domainName":  "Inventory"
-                                                      }
-                                                  ]
-                             },
-                             {
                                  "file":  "backend/src/ERP.Application/Modules/Accounting/UseCases/AccountingPeriods/AccountingPeriodUseCases.cs",
                                  "referencedBy":  [
                                                       {
@@ -20801,7 +20741,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  null,
-                                                          "label":  "Refactor large file (1169 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
+                                                          "label":  "Refactor large file (1156 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
                                                           "domainId":  null,
                                                           "domainName":  null
                                                       }
@@ -20852,18 +20792,6 @@
                                                           "label":  "Resolve Lines",
                                                           "domainId":  "inventory",
                                                           "domainName":  "Inventory"
-                                                      }
-                                                  ]
-                             },
-                             {
-                                 "file":  "backend/src/ERP.Application/Modules/Expenses/UseCases/Documents",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Feature",
-                                                          "module":  "Expenses",
-                                                          "label":  "Documents",
-                                                          "domainId":  "unmapped",
-                                                          "domainName":  null
                                                       }
                                                   ]
                              },
@@ -21088,7 +21016,7 @@
                                                       {
                                                           "type":  "Task",
                                                           "module":  "Company",
-                                                          "label":  "Refactor large file (573 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs",
+                                                          "label":  "Refactor large file (572 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs",
                                                           "domainId":  "configuration",
                                                           "domainName":  "Configuration"
                                                       }
@@ -22572,18 +22500,6 @@
                                                   ]
                              },
                              {
-                                 "file":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
-                                 "referencedBy":  [
-                                                      {
-                                                          "type":  "Process",
-                                                          "module":  "Sales",
-                                                          "label":  "Venta / Quote / Draft",
-                                                          "domainId":  "sales",
-                                                          "domainName":  "Sales"
-                                                      }
-                                                  ]
-                             },
-                             {
                                  "file":  "backend/src/ERP.Infrastructure.Tests/Seeding/ExpensesCatalogBootstrapStepTests.cs",
                                  "referencedBy":  [
                                                       {
@@ -23486,11 +23402,6 @@
                           },
                           {
                               "type":  "Feature",
-                              "label":  "Companies / Get Company By Id",
-                              "moduleId":  "Companies"
-                          },
-                          {
-                              "type":  "Feature",
                               "label":  "Companies / Get Company Logo Alt Content",
                               "moduleId":  "Companies"
                           },
@@ -23517,11 +23428,6 @@
                           {
                               "type":  "Feature",
                               "label":  "Companies / Get Sales Fiscal Policy",
-                              "moduleId":  "Companies"
-                          },
-                          {
-                              "type":  "Feature",
-                              "label":  "Companies / List Companies",
                               "moduleId":  "Companies"
                           },
                           {
@@ -25131,7 +25037,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (1169 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
+                              "label":  "Refactor large file (1156 lines): backend/src/ERP.Domain.Tests/Kernel/KernelRegistryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25211,12 +25117,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (995 lines): backend/src/ERP.Infrastructure.Tests/Finance/CollectionPostingIntegrationTests.cs",
+                              "label":  "Refactor large file (995 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteDraftUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (995 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseCreditNoteDraftUseCases.cs",
+                              "label":  "Refactor large file (995 lines): backend/src/ERP.Infrastructure.Tests/Finance/CollectionPostingIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25271,12 +25177,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (883 lines): frontend/src/components/zh/inputs/ZhDecimalInput.test.tsx",
+                              "label":  "Refactor large file (883 lines): backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (883 lines): backend/src/ERP.Application.Tests/Expenses/ExpenseDocumentDraftUseCasesTests.cs",
+                              "label":  "Refactor large file (883 lines): frontend/src/components/zh/inputs/ZhDecimalInput.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -25291,12 +25197,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (870 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
+                              "label":  "Refactor large file (870 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (870 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftExplicitCostAllocationTests.cs",
+                              "label":  "Refactor large file (870 lines): frontend/src/modules/caja/pages/CajaPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -25351,12 +25257,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (841 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
+                              "label":  "Refactor large file (841 lines): backend/src/ERP.Application.Tests/Ride/RidePipelineTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (841 lines): backend/src/ERP.Application.Tests/Ride/RidePipelineTests.cs",
+                              "label":  "Refactor large file (841 lines): backend/src/ERP.Domain.Tests/Purchases/PurchaseReturnTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25371,12 +25277,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
+                              "label":  "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (821 lines): backend/src/ERP.Infrastructure/Persistence/Repositories/Inventory/StockRepository.cs",
+                              "label":  "Refactor large file (821 lines): backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines/ResolvePurchaseReceptionLinesHandler.cs",
                               "moduleId":  null
                           },
                           {
@@ -25416,12 +25322,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (799 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Documents/ExpenseDocumentConfirmUseCases.cs",
+                              "label":  "Refactor large file (799 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (799 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnAuthorizedPostingIntegrationTests.cs",
+                              "label":  "Refactor large file (799 lines): backend/src/ERP.Application/Modules/Expenses/UseCases/Documents/ExpenseDocumentConfirmUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -25461,7 +25367,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
+                              "label":  "Refactor large file (736 lines): backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -25471,7 +25377,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (736 lines): backend/src/ERP.Application/Modules/Sales/UseCases/AuthorizeSalesUseCases.cs",
+                              "label":  "Refactor large file (736 lines): backend/src/ERP.Infrastructure.Tests/Communications/CommunicationOutboxDeliveryIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25516,12 +25422,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (719 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
+                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (719 lines): backend/src/ERP.Application.Tests/InitialLoad/ItemImportProcessorTests.cs",
+                              "label":  "Refactor large file (719 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -25536,22 +25442,22 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Finance/RegisterCollectionCommandHandlerTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Inventory/Stock/StockAdjustmentBranchOwnershipTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (704 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnCancelledPostingIntegrationTests.cs",
+                              "label":  "Refactor large file (705 lines): backend/src/ERP.Application.Tests/Finance/RegisterCollectionCommandHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (704 lines): backend/src/ERP.API.Tests/Integration/CompanyAccessProfilesIsolationHttpTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (704 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PurchaseReturnCancelledPostingIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25571,12 +25477,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
+                              "label":  "Refactor large file (690 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/UpdateSalesDraftAtomicityPostgreSqlTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (690 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Sales/UpdateSalesDraftAtomicityPostgreSqlTests.cs",
+                              "label":  "Refactor large file (690 lines): backend/src/ERP.API.Tests/Integration/FinancialCommandIdempotencyFixture.cs",
                               "moduleId":  null
                           },
                           {
@@ -25596,12 +25502,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
+                              "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Modules/Purchases/PurchaseRetentionConfirmIntegrationTests.ElectronicCancellation.cs",
+                              "label":  "Refactor large file (676 lines): backend/src/ERP.Infrastructure.Tests/Accounting/PostingEngineIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25611,12 +25517,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
+                              "label":  "Refactor large file (671 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SalesInvoiceAuthorizedPostingIntegrationTests.ReadinessGap.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (671 lines): backend/src/ERP.Infrastructure.Tests/Accounting/SalesInvoiceAuthorizedPostingIntegrationTests.ReadinessGap.cs",
+                              "label":  "Refactor large file (671 lines): backend/src/ERP.Application.Tests/Inventory/ItemMatching/ResolvePurchaseReceptionLinesHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25642,6 +25548,11 @@
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (666 lines): backend/src/ERP.Infrastructure.Tests/Accounting/CloseAccountingPeriodIntegrationTests.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (664 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25681,12 +25592,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
+                              "label":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (651 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoice.cs",
+                              "label":  "Refactor large file (651 lines): backend/src/ERP.Application.Tests/Caja/CashSessionBranchScopeTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25706,12 +25617,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (639 lines): backend/src/ERP.Infrastructure.Tests/Seeding/IgnoreQueryFiltersScopeIntegrationTests.cs",
+                              "label":  "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (639 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionDocumentTests.cs",
+                              "label":  "Refactor large file (639 lines): backend/src/ERP.Infrastructure.Tests/Seeding/IgnoreQueryFiltersScopeIntegrationTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25761,12 +25672,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (624 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
+                              "label":  "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (624 lines): backend/src/ERP.Infrastructure.Tests/Persistence/SriCatalogs/SriCatalogComplianceTests.cs",
+                              "label":  "Refactor large file (624 lines): backend/src/ERP.Domain/Modules/Purchases/Entities/PurchaseCreditNote.cs",
                               "moduleId":  null
                           },
                           {
@@ -25816,7 +25727,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (605 lines): backend/src/ERP.Application.Tests/Access/RevokeCompanyUserMembershipHandlerTests.cs",
+                              "label":  "Refactor large file (605 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
                               "moduleId":  null
                           },
                           {
@@ -25826,7 +25737,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (605 lines): frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
+                              "label":  "Refactor large file (605 lines): backend/src/ERP.Application.Tests/Access/RevokeCompanyUserMembershipHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25846,7 +25757,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (602 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
+                              "label":  "Refactor large file (602 lines): backend/src/ERP.Application/Modules/Payables/Services/SupplierPaymentRegistrar.cs",
                               "moduleId":  null
                           },
                           {
@@ -25856,7 +25767,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (602 lines): backend/src/ERP.Application/Modules/Payables/Services/SupplierPaymentRegistrar.cs",
+                              "label":  "Refactor large file (602 lines): backend/src/ERP.Application.Tests/Purchases/PurchaseDraftRecoveryTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -25866,7 +25777,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (598 lines): backend/src/ERP.Domain/Modules/Payables/Entities/AccountsPayable.cs",
+                              "label":  "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
                               "moduleId":  null
                           },
                           {
@@ -25881,7 +25792,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (598 lines): frontend/src/modules/sales/components/SalesInvoiceLineGridRow.tsx",
+                              "label":  "Refactor large file (598 lines): backend/src/ERP.Domain/Modules/Payables/Entities/AccountsPayable.cs",
                               "moduleId":  null
                           },
                           {
@@ -25906,12 +25817,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (591 lines): frontend/src/components/ReportPageTemplate.tsx",
+                              "label":  "Refactor large file (591 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnDraftUseCases.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (591 lines): backend/src/ERP.Application/Modules/Purchases/UseCases/PurchaseReturnDraftUseCases.cs",
+                              "label":  "Refactor large file (591 lines): frontend/src/components/ReportPageTemplate.tsx",
                               "moduleId":  null
                           },
                           {
@@ -25946,17 +25857,17 @@
                           },
                           {
                               "type":  "Task",
+                              "label":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
                               "label":  "Refactor large file (578 lines): backend/src/ERP.Application.Tests/MasterData/BpNestedResourceOwnershipHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (578 lines): backend/src/ERP.Application.Tests/Purchases/AuthorizePurchaseCreditNoteHandlerTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
-                              "label":  "Refactor large file (578 lines): backend/src/ERP.Domain/Modules/Sales/Entities/SalesInvoiceDetail.cs",
                               "moduleId":  null
                           },
                           {
@@ -25971,7 +25882,7 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (573 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs",
+                              "label":  "Refactor large file (572 lines): backend/src/ERP.Domain/Modules/Company/Entities/Company.cs",
                               "moduleId":  null
                           },
                           {
@@ -26011,17 +25922,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (559 lines): frontend/src/modules/supplier-payments/pages/SupplierPaymentFormPage.test.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (559 lines): frontend/src/modules/purchases/api/purchaseReceptionService.ts",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (559 lines): backend/src/ERP.Application.Tests/Companies/CompanyPrecisionPolicyUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26086,11 +25997,6 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (544 lines): backend/src/ERP.API.Tests/Integration/CompanySettingsIsolationHttpTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (543 lines): backend/src/ERP.Application.Tests/OrgConfig/CompanySalesPreferencesIntegrityTests.cs",
                               "moduleId":  null
                           },
@@ -26126,17 +26032,17 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
-                              "moduleId":  null
-                          },
-                          {
-                              "type":  "Task",
                               "label":  "Refactor large file (529 lines): backend/src/ERP.Infrastructure.Tests/Persistence/Payables/AccountsPayableSearchTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
                               "label":  "Refactor large file (529 lines): frontend/src/modules/items/catalog/wizard/TreeEditor.tsx",
+                              "moduleId":  null
+                          },
+                          {
+                              "type":  "Task",
+                              "label":  "Refactor large file (529 lines): backend/src/ERP.Application.Tests/Caja/CashSessionListSummaryHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
@@ -26191,12 +26097,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (518 lines): frontend/src/modules/expenses/pages/ExpenseCategoriesPage.tsx",
+                              "label":  "Refactor large file (518 lines): frontend/src/modules/access/users/pages/UserConfigPage.tsx",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (518 lines): frontend/src/modules/access/users/pages/UserConfigPage.tsx",
+                              "label":  "Refactor large file (518 lines): frontend/src/modules/expenses/pages/ExpenseCategoriesPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26216,12 +26122,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (515 lines): frontend/src/components/zh/ZHMoneyValue.test.tsx",
+                              "label":  "Refactor large file (515 lines): backend/src/ERP.Application.Tests/Accounting/PostingRuleUseCasesTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (515 lines): backend/src/ERP.Application.Tests/Accounting/PostingRuleUseCasesTests.cs",
+                              "label":  "Refactor large file (515 lines): frontend/src/components/zh/ZHMoneyValue.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26246,12 +26152,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
+                              "label":  "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (511 lines): backend/src/ERP.API.Tests/Integration/SalesReturnInvoiceStateConcurrencyTests.cs",
+                              "label":  "Refactor large file (511 lines): backend/src/ERP.Application/Modules/Finance/UseCases/RegisterSupplierCreditRefundUseCases.cs",
                               "moduleId":  null
                           },
                           {
@@ -26261,12 +26167,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (508 lines): frontend/src/modules/expenses/pages/ExpenseCategoriesPage.test.tsx",
+                              "label":  "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (508 lines): backend/src/ERP.Application.Tests/Caja/SalesInvoiceAuthorizedHandlerTests.cs",
+                              "label":  "Refactor large file (508 lines): frontend/src/modules/expenses/pages/ExpenseCategoriesPage.test.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26291,12 +26197,12 @@
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (502 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx",
+                              "label":  "Refactor large file (502 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionSriAnnulmentDomainTests.cs",
                               "moduleId":  null
                           },
                           {
                               "type":  "Task",
-                              "label":  "Refactor large file (502 lines): backend/src/ERP.Domain.Tests/Retentions/RetentionSriAnnulmentDomainTests.cs",
+                              "label":  "Refactor large file (502 lines): frontend/src/modules/access/pages/PermissionsAssignmentPage.tsx",
                               "moduleId":  null
                           },
                           {
@@ -26546,6 +26452,11 @@
                           },
                           {
                               "type":  "File",
+                              "label":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
+                              "moduleId":  "Auth"
+                          },
+                          {
+                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Pricing/UseCases/PriceListCustomers",
                               "moduleId":  "Pricing"
                           },
@@ -26761,8 +26672,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompanyUserPreferencesLoginResolver.cs",
-                              "moduleId":  "Auth"
+                              "label":  "backend/src/ERP.Application/Modules/Expenses/UseCases/Documents",
+                              "moduleId":  "Expenses"
                           },
                           {
                               "type":  "File",
@@ -26878,11 +26789,6 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application.Tests/Sales/AuthorizeSalesReturnHandlerTests.cs",
                               "moduleId":  "Sales"
-                          },
-                          {
-                              "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyById",
-                              "moduleId":  "Companies"
                           },
                           {
                               "type":  "File",
@@ -27046,8 +26952,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
-                              "moduleId":  "Company"
+                              "label":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
+                              "moduleId":  "Sales"
                           },
                           {
                               "type":  "File",
@@ -27181,8 +27087,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
-                              "moduleId":  null
+                              "label":  "backend/src/ERP.Application/Modules/Company/UseCases/CreateEmissionPoint",
+                              "moduleId":  "Company"
                           },
                           {
                               "type":  "File",
@@ -27218,6 +27124,11 @@
                               "type":  "File",
                               "label":  "frontend/src/modules/purchases/hooks/usePurchasesPage.retention.test.ts",
                               "moduleId":  "Purchases"
+                          },
+                          {
+                              "type":  "File",
+                              "label":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompletePasswordReset",
+                              "moduleId":  "Auth"
                           },
                           {
                               "type":  "File",
@@ -27391,8 +27302,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
-                              "moduleId":  "Expenses"
+                              "label":  "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
+                              "moduleId":  "Settings"
                           },
                           {
                               "type":  "File",
@@ -27551,8 +27462,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Auth/UseCases/CompletePasswordReset",
-                              "moduleId":  "Auth"
+                              "label":  "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CancelStockAdjustment",
+                              "moduleId":  "Inventory"
                           },
                           {
                               "type":  "File",
@@ -28101,11 +28012,6 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Settings/Operations/UseCases/UpdateOperationalPreferences/UpdateOperationalPreferencesCommandHandler.cs",
-                              "moduleId":  "Settings"
-                          },
-                          {
-                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Inventory/Warehouses/UseCases/GetWarehouseById",
                               "moduleId":  "Inventory"
                           },
@@ -28146,8 +28052,8 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Companies/UseCases/ListCompanies",
-                              "moduleId":  "Companies"
+                              "label":  "frontend/src/modules/expenses/pages/ExpenseDocumentFormPage.retention.test.tsx",
+                              "moduleId":  "Expenses"
                           },
                           {
                               "type":  "File",
@@ -28168,6 +28074,11 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/ElectronicDocuments/UseCases/GetElectronicDocument",
                               "moduleId":  "ElectronicDocuments"
+                          },
+                          {
+                              "type":  "File",
+                              "label":  "backend/src/ERP.Infrastructure.Tests/Services/CompanyOperationalReadinessResolverTests.cs",
+                              "moduleId":  null
                           },
                           {
                               "type":  "File",
@@ -28301,11 +28212,6 @@
                           },
                           {
                               "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Inventory/Stock/UseCases/CancelStockAdjustment",
-                              "moduleId":  "Inventory"
-                          },
-                          {
-                              "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Accounting/UseCases/AccountingPeriods/AccountingPeriodUseCases.cs",
                               "moduleId":  "Accounting"
                           },
@@ -28413,11 +28319,6 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Inventory/ItemMatching/UseCases/ResolveLines",
                               "moduleId":  "Inventory"
-                          },
-                          {
-                              "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Expenses/UseCases/Documents",
-                              "moduleId":  "Expenses"
                           },
                           {
                               "type":  "File",
@@ -29093,11 +28994,6 @@
                               "type":  "File",
                               "label":  "backend/src/ERP.Application/Modules/Companies/UseCases/GetSalesFiscalPolicy",
                               "moduleId":  "Companies"
-                          },
-                          {
-                              "type":  "File",
-                              "label":  "backend/src/ERP.Application/Modules/Sales/EventHandlers/SalesReturnAuditHandler.cs",
-                              "moduleId":  "Sales"
                           },
                           {
                               "type":  "File",

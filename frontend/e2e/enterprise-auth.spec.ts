@@ -115,9 +115,15 @@ test.describe("Enterprise auth & limits", () => {
     expect(foreignSwitch.ok()).toBeFalsy();
     expect(foreignSwitch.status()).toBeGreaterThanOrEqual(400);
 
+    // Una empresa ajena indicada por X-Company-Id (sin membership) debe ser rechazada.
     const foreignCompanyGet = await request.get(
-      `${API_BASE}/api/v1/companies/00000000-0000-0000-0000-000000000099`,
-      { headers: { Authorization: `Bearer ${session.token}` } },
+      `${API_BASE}/api/v1/companies/current`,
+      {
+        headers: {
+          Authorization: `Bearer ${session.token}`,
+          "X-Company-Id": "00000000-0000-0000-0000-000000000099",
+        },
+      },
     );
     expect(foreignCompanyGet.ok()).toBeFalsy();
   });

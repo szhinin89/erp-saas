@@ -1,8 +1,8 @@
 namespace ERP.Domain.Kernel.Permissions;
 
 /// <summary>
-/// Permisos del módulo Settings — sucursales, geografía, datos de la empresa
-/// y empresas operativas (hub <c>/settings</c> + <c>/companies</c>).
+/// Permisos del módulo Settings — sucursales, geografía y datos de la empresa activa
+/// (hub <c>/settings</c>).
 /// </summary>
 public static class SettingsPermissions
 {

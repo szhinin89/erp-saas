@@ -204,13 +204,6 @@
                                           ]
                          },
                          {
-                             "name":  "Get Company By Id",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Companies/UseCases/GetCompanyById"
-                                          ]
-                         },
-                         {
                              "name":  "Get Company Logo Alt Content",
                              "status":  "implemented",
                              "evidence":  [
@@ -250,13 +243,6 @@
                              "status":  "implemented",
                              "evidence":  [
                                               "backend/src/ERP.Application/Modules/Companies/UseCases/GetSalesFiscalPolicy"
-                                          ]
-                         },
-                         {
-                             "name":  "List Companies",
-                             "status":  "implemented",
-                             "evidence":  [
-                                              "backend/src/ERP.Application/Modules/Companies/UseCases/ListCompanies"
                                           ]
                          },
                          {

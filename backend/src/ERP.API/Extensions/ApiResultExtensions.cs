@@ -155,7 +155,7 @@ public static class ApiResultExtensions
     /// 404, FORBIDDEN → 403, VALIDATION_ERROR → 422, CONFLICT → 409, etc. Un fallo SIN <c>Code</c>
     /// conserva su contrato histórico de 404: los handlers de "obtener por id" que devuelven
     /// <c>Failure("X no encontrado")</c>, y los que ocultan a propósito la existencia de un recurso
-    /// ajeno (p. ej. GetCompanyById sin membresía). ZH-API-RESULT-STATUS-MAPPING-01: antes cualquier
+    /// ajeno. ZH-API-RESULT-STATUS-MAPPING-01: antes cualquier
     /// fallo, con o sin código, salía como 404.
     /// </summary>
     public static IActionResult ToOkOrNotFound<T>(

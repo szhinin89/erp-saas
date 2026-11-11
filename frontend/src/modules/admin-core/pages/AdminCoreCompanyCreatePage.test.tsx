@@ -65,7 +65,6 @@ function renderPage(initialPath = "/admin-core/companies/new") {
       <Routes>
         <Route path="/admin-core/companies/new" element={<AdminCoreCompanyCreatePage />} />
         <Route path="/admin-core/dashboard" element={<div>ADMIN_CORE_DASHBOARD</div>} />
-        <Route path="/companies" element={<div>COMPANIES_OPERATIVO</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -257,7 +256,7 @@ describe("AdminCoreCompanyCreatePage — selector de tenant", () => {
     expect(screen.getByRole("button", { name: "Crear otra empresa" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Volver al dashboard global" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeTruthy();
-    expect(screen.queryByText("COMPANIES_OPERATIVO")).toBeNull();
+    expect(screen.getByTestId("location").textContent).toBe("/admin-core/companies/new");
 
     await waitFor(() => {
       expect(companyRegistrationFacade.create).toHaveBeenCalledWith({

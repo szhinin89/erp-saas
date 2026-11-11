@@ -1,24 +1,9 @@
 namespace ERP.Application.Modules.Companies.DTOs;
 
-public sealed record CompanyListItemDto(
-    Guid Id,
-    Guid TenantId,
-    string LegalName,
-    string? TradeName,
-    string TaxId,
-    string CountryCode,
-    string Timezone,
-    string CurrencyCode,
-    bool IsActive,
-    string Role
-);
-
 /// <summary>
-/// Vista administrativa de Companies Admin (<c>/companies</c>): identidad legal, RUC y estado.
-/// Contacto/branding/locale son propiedad de Company Settings (<see cref="CompanyProfileDto"/>)
-/// y no se exponen aquí para evitar el mismo dato editable desde dos pantallas.
-/// CountryCode/Timezone/CurrencyCode se conservan de solo lectura: son informativos para
-/// <c>CurrentCompanyCard</c>, no editables desde este módulo.
+/// Identidad de la empresa: razón social, RUC y estado (resultado de la edición de Admin Global y
+/// de <c>GET /api/v1/companies/current</c>). Contacto/branding/locale son de Company Settings
+/// (<see cref="CompanyProfileDto"/>). CountryCode/Timezone/CurrencyCode son informativos.
 /// </summary>
 public sealed record CompanyDetailDto(
     Guid Id,

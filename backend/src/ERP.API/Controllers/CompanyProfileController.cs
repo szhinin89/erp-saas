@@ -25,10 +25,10 @@ namespace ERP.API.Controllers;
 
 // ZH-API-THIN-COMPANIES-01 — perfil y configuración de la EMPRESA ACTIVA (perfil, fiscal, operación,
 // documentos, branding, logos, política fiscal de ventas, preparación operativa). Consumido por
-// configuracion/empresa en el frontend. La administración de empresas del tenant (listar, crear,
-// editar por id, empresa actual) sigue en CompaniesController.
-// Contrato intacto: mismas rutas bajo api/v1/companies, mismas policies, mismo tag OpenAPI
-// "Companies" y sin [AppFeature] propio (la fila "Empresas operativas" la aporta CompaniesController).
+// configuracion/empresa en el frontend. Crear empresa y la empresa actual siguen en
+// CompaniesController; la identidad completa (RUC, estado) solo la edita Admin Global.
+// Mismas rutas bajo api/v1/companies, mismo tag OpenAPI "Companies" y sin [AppFeature] propio
+// (la fila "Empresa activa" la aporta CompaniesController).
 // Comentario no-XML a propósito: un <summary> de clase agregaría un tag nuevo al documento OpenAPI.
 [ApiController]
 [Route("api/v1/companies")]

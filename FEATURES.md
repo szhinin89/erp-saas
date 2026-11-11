@@ -58,7 +58,7 @@ contabilización: [Accounting](docs/architecture/accounting.md). Las capacidades
 
 | Feature | Ruta | Notas |
 |---------|------|-------|
-| Empresas | `/companies`, `/api/companies` | Sin UUID en URL (sessionStorage `erp.saas.*`) |
+| Empresas | `/settings/company`, `/api/v1/companies/profile` | El administrador de la empresa edita razón social, nombre comercial, contacto y datos regionales; RUC, estado y alta de empresas son solo de Admin Global (`/admin-core`) |
 | Tenant / onboarding | `Modules/Tenants`, `/api/v1/setup` ([First Run](docs/architecture/first-run.md)) | Administración multiempresa — ver [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#jerarquía-multiempresa) |
 
 > La capa de planes/billing/entitlements descrita en versiones anteriores de este documento fue **eliminada en FASE 1 — ERP Kernel Cleanup** (2026-06-05). No existen rutas `/superadmin/*` ni `/api/saas/*` activas — ver [`STATUS.md`](STATUS.md) y [`docs/archive/SAAS-COMMERCIAL.md`](docs/archive/SAAS-COMMERCIAL.md) (histórico).

@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 export const companyConfigSchema = z.object({
+  legalName: z
+    .string()
+    .trim()
+    .min(1, "common.required")
+    .max(200, "settings.company.validation.max200"),
+  tradeName: z.string().trim().max(200, "settings.company.validation.max200").optional(),
   corporateEmail: z
     .string()
     .email("settings.company.validation.email")
@@ -24,6 +30,8 @@ export const companyConfigSchema = z.object({
 export type CompanyConfigValues = z.infer<typeof companyConfigSchema>;
 
 export const defaultCompanyConfigValues: CompanyConfigValues = {
+  legalName: "",
+  tradeName: "",
   corporateEmail: "",
   phone: "",
   website: "",

@@ -114,8 +114,7 @@ public sealed class GetPermissionCatalogHandler
         foreach (var container in topLevelContainers)
         {
             // Recorre todos los descendientes del contenedor, no solo hijos directos — una
-            // categoría puede envolver un sub-contenedor propio (p. ej. "Empresa" envuelve al
-            // contenedor "Empresas", que a su vez agrupa "Mis empresas"/"Datos de la empresa").
+            // categoría puede envolver un sub-contenedor propio.
             var items = CollectDescendantScreens(moduleItems, container.Id)
                 .OrderBy(n => n.SortOrder)
                 .Select(BuildItem)

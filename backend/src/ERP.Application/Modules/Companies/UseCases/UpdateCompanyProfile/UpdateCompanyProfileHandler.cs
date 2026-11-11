@@ -40,6 +40,15 @@ public sealed class UpdateCompanyProfileHandler
         if (entity is null)
             return Result<CompanyProfileDto>.Failure("Empresa no encontrada.");
 
+        // Razón social y nombre comercial: misma persistencia que Admin Global. El estado activo se
+        // conserva (nunca viene del cliente) y el RUC no se toca.
+        entity.UpdateAdminIdentity(
+            command.LegalName,
+            command.TradeName,
+            entity.IsActive,
+            _currentUser.UserId
+        );
+
         entity.UpdateContactProfile(
             command.CorporateEmail,
             command.Phone,

@@ -1,33 +1,6 @@
 {
   "paths": {
     "/api/v1/companies": {
-      "get": {
-        "parameters": [
-          {
-            "in": "query",
-            "name": "activeOnly",
-            "schema": {
-              "default": true,
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[System.Collections.Generic.IReadOnlyList\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyListItemDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "tags": [
-          "Companies"
-        ]
-      },
       "post": {
         "requestBody": {
           "content": {
@@ -474,93 +447,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyProfileDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "tags": [
-          "Companies"
-        ]
-      }
-    },
-    "/api/v1/companies/{id}": {
-      "get": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
-                }
-              }
-            },
-            "description": "Not Found"
-          }
-        },
-        "tags": [
-          "Companies"
-        ]
-      },
-      "put": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/*\u002Bjson": {
-              "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompany.UpdateCompanyCommand"
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompany.UpdateCompanyCommand"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ERP.Application.Modules.Companies.UseCases.UpdateCompany.UpdateCompanyCommand"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
                 }
               }
             },

@@ -10,7 +10,6 @@ import {
   accessRoutes,
   adminCoreRoutes,
   catalogRoutes,
-  companyManagementRoutes,
   mainRoutes,
   publicRoutes,
 } from "../routes";
@@ -29,7 +28,6 @@ const ALL_ROUTES = [
   ...publicRoutes,
   ...mainRoutes,
   ...catalogRoutes,
-  ...companyManagementRoutes,
   ...accessRoutes,
   ...adminCoreRoutes,
 ] as RouteEl[];

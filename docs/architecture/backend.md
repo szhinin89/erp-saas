@@ -360,21 +360,17 @@ El efectivo entregado es dato operacional del settlement y **no modifica el impo
 
 ---
 
-## Una capacidad, varios contextos de autorización (ZH-COMPANY-IDENTITY-SSOT-01)
+## Identidad de empresa: quién edita qué (ZH-COMPANY-IDENTITY-SSOT-01)
 
-Cuando la misma capacidad se expone a actores con fronteras de seguridad distintas, se mantienen endpoints y comandos separados (cada uno con su policy y su resolución de alcance) y **una sola** implementación de la regla: un validator de reglas compartidas incluido por cada comando (`Include`) y una operación de aplicación única que ambos handlers llaman tras resolver su alcance. Nunca Controller → Controller, ni un handler que construye el comando del otro o envía un request MediatR para reutilizarlo.
+La administración empresarial tiene una sola fuente por actor, sin pantallas ni endpoints paralelos:
 
-Caso vigente — identidad de empresa (RUC, razón social, nombre comercial, activo):
+| Dato | Actor | Endpoint | Autorización | Alcance |
+|---|---|---|---|---|
+| Razón social, nombre comercial, contacto, representante legal, moneda y zona horaria | Administrador de la empresa activa | `PUT /api/v1/companies/profile` (`UpdateCompanyProfileCommand`) | `perm:erp.companies.update` | Solo la empresa activa del contexto (`RequireCurrentCompanyAsync` + tenant resuelto server-side); el comando no lleva id, RUC ni estado |
+| RUC, razón social, nombre comercial, activo/inactivo | Admin Global | `PUT /api/v1/admin-core/companies/{id}` (`UpdateCompanyForAdminCoreCommand`) | policy `PlatformAdmin` (token sin tenant + Admin) + chequeo en el handler | Empresa explícita de cualquier tenant (`GetTrackedByIdForAdminCoreAsync`) |
+| Alta de empresa y administrador inicial | Admin Global | `POST /api/v1/companies` | policy `CompanyProvisioning` | Tenant destino explícito |
 
-| | Operativo | Global |
-|---|---|---|
-| Endpoint | `PUT /api/v1/companies/{id}` | `PUT /api/v1/admin-core/companies/{id}` |
-| Autorización | `perm:erp.companies.update` + membership (`ICompanyAccessGuard`) | policy `PlatformAdmin` (token sin tenant + Admin) + chequeo en handler |
-| Alcance | empresa del tenant resuelto server-side (`GetTrackedByIdForTenantAsync`); ajena = 404 | empresa explícita de cualquier tenant (`GetTrackedByIdForAdminCoreAsync`) |
-| Comando | `UpdateCompanyCommand` | `UpdateCompanyForAdminCoreCommand` |
-| Regla común | `CompanyIdentityRules` (formato, RUC oficial Ecuador) + `CompanyIdentityUpdate.ApplyAsync` (unicidad global del RUC → `Company.UpdateTaxIdentification`/`UpdateAdminIdentity`, `UpdatedBy`) | ídem |
-
-Mismo dato → misma respuesta desde ambos: inválido 422 `VALIDATION_ERROR`, RUC duplicado 409 `COMPANY_RUC_ALREADY_EXISTS`, inexistente 404. Contacto/representante/regional se editan solo en Configuración → Empresa (`UpdateContactProfile`), que muestra la identidad de solo lectura.
+Una sola implementación de la regla: `CompanyNamesRules` (razón social obligatoria, longitudes) la incluyen (`Include`) los validators de ambos comandos; `CompanyIdentityRules` suma el RUC oficial ecuatoriano para Admin Global; la persistencia de nombres es `Company.UpdateAdminIdentity` (el perfil conserva el estado vigente) y la del RUC `CompanyIdentityUpdate.ApplyAsync` (unicidad global → 409 `COMPANY_RUC_ALREADY_EXISTS`). Nunca Controller → Controller, ni un handler que construye el comando del otro. El RUC y el estado nunca viajan en el comando empresarial: un cuerpo manipulado con `taxId`, `isActive` o un id ajeno no los modifica. No existen listado ni detalle de empresas por id para el operador del tenant: la empresa activa se consulta con `GET /api/v1/companies/current` y el selector usa `/api/v1/auth/my-companies`.
 
 ## Retenciones: una capacidad, una política de emisión (ZH-RETENTION-EMISSION-SSOT-01, ZH-PURCHASE-RETENTION-CONFIRM-01)
 

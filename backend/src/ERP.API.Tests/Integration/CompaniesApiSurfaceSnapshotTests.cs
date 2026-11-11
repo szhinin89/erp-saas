@@ -113,7 +113,7 @@ public sealed class CompaniesApiSurfaceSnapshotTests : IAsyncLifetime
             .OrderBy(l => l, StringComparer.Ordinal)
             .ToList();
 
-        endpoints.Should().HaveCount(19);
+        endpoints.Should().HaveCount(16);
         MatchSnapshot("companies-routes.txt", string.Join("\n", endpoints) + "\n");
     }
 

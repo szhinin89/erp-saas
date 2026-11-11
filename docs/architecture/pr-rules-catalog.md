@@ -944,7 +944,7 @@ URLs filtran por historial, analytics y referrers.
 
 ### BAD
 ```typescript
-navigate(`/companies?tenantId=${id}`);
+navigate(`/suppliers?tenantId=${id}`);
 ```
 
 ### GOOD
@@ -952,7 +952,7 @@ navigate(`/companies?tenantId=${id}`);
 // Nombre ilustrativo — persistir el id fuera de la URL (sessionStorage `erp.saas.*` o store del módulo),
 // no en query string. Implementar según el store real del módulo que navega.
 persistDetailContext(id);
-navigate('/companies');
+navigate('/suppliers');
 ```
 
 ### ENFORCEMENT

@@ -8,9 +8,10 @@ using MediatR;
 namespace ERP.Application.Modules.Company.UseCases.UpdateCompanyForAdminCore;
 
 /// <summary>
-/// Edición de identidad de empresa desde la consola global (Admin Global, token sin tenant). Mismo
-/// contrato de datos y misma regla que <see cref="UpdateCompanyCommand"/> (usuario del tenant); lo que
-/// cambia es el contexto de autorización y el alcance (empresa explícita de cualquier tenant).
+/// Edición de identidad de empresa desde la consola global (Admin Global, token sin tenant): RUC, razón
+/// social, nombre comercial y estado de una empresa explícita de cualquier tenant. La razón social y el
+/// nombre comercial comparten <c>CompanyNamesRules</c> con el perfil de la empresa activa; el RUC y el
+/// estado solo se editan por este comando.
 /// </summary>
 public sealed record UpdateCompanyForAdminCoreCommand(
     Guid Id,

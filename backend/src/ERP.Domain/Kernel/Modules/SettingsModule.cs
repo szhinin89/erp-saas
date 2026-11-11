@@ -13,19 +13,13 @@ namespace ERP.Domain.Kernel.Modules;
 public static class SettingsModule
 {
     /// <summary>
-    /// ADMIN-COMPANIES-REGROUP-01: movida desde AdminModule (grupo Administración) — administra
-    /// datos de empresa/fiscales/branding/documentos/operación de cada Company del tenant, lo que
-    /// conceptualmente es Configuración, no usuarios/perfiles/delegación/sesiones/actividad. Mismo
-    /// Id/ruta/permiso que tenía en AdminModule — sin cambios de API ni de lógica de negocio.
+    /// Configuración de la empresa activa (datos de empresa, fiscales, branding, documentos,
+    /// operación), no usuarios/perfiles/delegación/sesiones/actividad.
     /// </summary>
     // NAV-HIERARCHY-UNIFY-01: contenedor "Empresa" — agrupa todos los catálogos de identidad/
-    // ubicación de empresa (Mis empresas, datos de empresa, Sucursales, Establecimientos, Puntos
+    // ubicación de empresa (datos de empresa, Sucursales, Establecimientos, Puntos
     // de emisión, Geografía) para que ninguno quede suelto bajo el módulo Configuración.
     // (MAPA-MENU-ERP-SSOT-01: Destinos financieros se movió a Tesorería, ver más abajo.)
-    // MENU-COMPANY-HIERARCHY-FLAT-01: "Mis empresas" (multiempresa, CompaniesView) y
-    // "Datos de la empresa" (empresa activa, CompanyView) son pantallas reales distintas con
-    // permisos distintos; se dejan como hermanos directos bajo "Empresa" para evitar el nivel
-    // redundante Configuración > Empresa > Empresas.
     [NavItem(
         "Empresa",
         LabelKey = "app.nav.item.settings.enterpriseGroup",
@@ -45,23 +39,13 @@ public static class SettingsModule
     )]
     public const string EnterpriseGroup = "/settings/enterprise-group";
 
-    [NavItem(
-        "Mis empresas",
-        Permission = SettingsPermissions.CompaniesView,
-        LabelKey = "app.nav.item.erp.companies",
-        SortOrder = 10,
-        Id = "00000000-0000-4000-8000-000000000104",
-        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
-        RelatedActionPermissionsCsv = SettingsPermissions.CompaniesUpdate
-    )]
-    public const string Companies = "/companies";
-
     // MENU-UX-RENAME-01: label de negocio "Datos de la empresa" (antes "Company"/"Datos de
     // Empresa") — pantalla de la empresa activa (perfil/fiscal/marca), no el multiempresa.
     // NAV-COVERAGE-H2: sus pestañas leen APIs de dos capacidades independientes (Ventas →
     // CompanyView vía OrgConfig; el resto → CompaniesView vía perfil). La entrada se muestra con
-    // cualquiera de las dos; cada pestaña aplica su propio permiso. Permission se conserva para que
-    // CompanyView siga siendo asignable (AssignablePermissionKeys).
+    // cualquiera de las dos; cada pestaña aplica su propio permiso. Permission y
+    // RelatedActionPermissionsCsv se conservan para que CompanyView, CompaniesView y CompaniesUpdate
+    // sigan siendo asignables (AssignablePermissionKeys).
     [NavItem(
         "Datos de la empresa",
         Permission = SettingsPermissions.CompanyView,
@@ -69,7 +53,10 @@ public static class SettingsModule
         LabelKey = "app.nav.item.settings.company",
         SortOrder = 20,
         Id = "00000000-0000-4000-8000-000000000101",
-        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d"
+        ParentId = "7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d",
+        RelatedActionPermissionsCsv = SettingsPermissions.CompaniesView
+            + ","
+            + SettingsPermissions.CompaniesUpdate
     )]
     public const string Company = "/settings/company";
 

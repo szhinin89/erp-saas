@@ -2,7 +2,6 @@ import { isValidElement, type ReactElement } from "react";
 import { Navigate } from "react-router-dom";
 import { accessRoutes } from "./accessRoutes";
 import { catalogRoutes } from "./catalogRoutes";
-import { companyManagementRoutes } from "./companyManagementRoutes";
 import { mainRoutes } from "./mainRoutes";
 import { SupplierCreditDetailLegacyRedirect } from "./legacyRedirects";
 
@@ -17,7 +16,6 @@ type RouteEl = ReactElement<{ path?: string; element?: ReactElement }>;
 const PROTECTED_ROUTES = [
   ...mainRoutes,
   ...catalogRoutes,
-  ...companyManagementRoutes,
   ...accessRoutes,
 ] as RouteEl[];
 

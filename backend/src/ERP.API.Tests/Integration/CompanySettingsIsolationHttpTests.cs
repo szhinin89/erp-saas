@@ -540,4 +540,124 @@ public sealed class CompanySettingsIsolationHttpTests
         var tenantScoped = await noCompany.GetAsync("/api/v1/master/business-partners");
         tenantScoped.StatusCode.Should().Be(HttpStatusCode.OK, await tenantScoped.Content.ReadAsStringAsync());
     }
+
+    // ── Identidad editable por el administrador de la empresa activa (solo nombres) ─────────
+
+    private const string ProfileUrl = "/api/v1/companies/profile";
+
+    private async Task<Company> ReadCompanyAsync(Guid companyId)
+    {
+        using var scope = _f.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        return await db.Companies.IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(c => c.Id == companyId);
+    }
+
+    private static Dictionary<string, object?> ProfileBody(string legalName, string? tradeName) =>
+        new()
+        {
+            ["legalName"] = legalName,
+            ["tradeName"] = tradeName,
+            ["corporateEmail"] = null,
+            ["phone"] = null,
+            ["website"] = null,
+            ["currencyCode"] = "USD",
+            ["timezone"] = "America/Guayaquil",
+            ["legalRepName"] = null,
+            ["legalRepPosition"] = null,
+            ["legalRepIdNumber"] = null,
+            ["legalRepEmail"] = null,
+            ["legalRepPhone"] = null,
+        };
+
+    [Fact]
+    public async Task Perfil_actualiza_razon_social_y_nombre_comercial_de_la_empresa_activa_sin_tocar_RUC_ni_estado()
+    {
+        var beforeA = await ReadCompanyAsync(_f.CompanyAId);
+        var beforeB = await ReadCompanyAsync(_f.CompanyBId);
+        using var asA = _f.CreateClient(_f.CompanyAId);
+
+        var response = await asA.PutAsJsonAsync(
+            ProfileUrl,
+            ProfileBody("  Empresa A Renombrada S.A.  ", "  A Comercial  ")
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        var afterA = await ReadCompanyAsync(_f.CompanyAId);
+        afterA.LegalName.Should().Be("Empresa A Renombrada S.A.");
+        afterA.TradeName.Should().Be("A Comercial");
+        afterA.TaxIdentificationNumber.Should().Be(beforeA.TaxIdentificationNumber);
+        afterA.IsActive.Should().Be(beforeA.IsActive);
+        afterA.UpdatedBy.Should().Be(_f.UserId);
+        (await ReadCompanyAsync(_f.CompanyBId)).Should().BeEquivalentTo(beforeB);
+    }
+
+    [Fact]
+    public async Task Perfil_ignora_RUC_estado_e_id_ajeno_enviados_en_el_cuerpo()
+    {
+        var beforeA = await ReadCompanyAsync(_f.CompanyAId);
+        var beforeB = await ReadCompanyAsync(_f.CompanyBId);
+        using var asA = _f.CreateClient(_f.CompanyAId);
+        var body = ProfileBody("Empresa A Manipulada S.A.", null);
+        body["taxId"] = "1790000000001";
+        body["taxIdentificationNumber"] = "1790000000001";
+        body["isActive"] = false;
+        body["id"] = _f.CompanyBId;
+        body["companyId"] = _f.CompanyBId;
+
+        var response = await asA.PutAsJsonAsync(ProfileUrl, body);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+        var afterA = await ReadCompanyAsync(_f.CompanyAId);
+        afterA.LegalName.Should().Be("Empresa A Manipulada S.A.");
+        afterA.TaxIdentificationNumber.Should().Be(beforeA.TaxIdentificationNumber);
+        afterA.IsActive.Should().BeTrue();
+        (await ReadCompanyAsync(_f.CompanyBId)).Should().BeEquivalentTo(beforeB);
+    }
+
+    [Fact]
+    public async Task Perfil_desde_empresa_B_sin_membership_es_rechazado_y_B_no_cambia()
+    {
+        var beforeB = await ReadCompanyAsync(_f.CompanyBId);
+        using var asB = _f.CreateClient(_f.CompanyBId);
+
+        var response = await asB.PutAsJsonAsync(
+            ProfileUrl,
+            ProfileBody("Empresa B Intrusa S.A.", "Intrusa")
+        );
+
+        ((int)response.StatusCode).Should().BeInRange(400, 499);
+        response.StatusCode.Should().NotBe(HttpStatusCode.OK);
+        (await ReadCompanyAsync(_f.CompanyBId)).Should().BeEquivalentTo(beforeB);
+    }
+
+    [Fact]
+    public async Task Perfil_con_razon_social_vacia_es_422_VALIDATION_ERROR()
+    {
+        var before = await ReadCompanyAsync(_f.CompanyAId);
+        using var asA = _f.CreateClient(_f.CompanyAId);
+
+        var response = await asA.PutAsJsonAsync(ProfileUrl, ProfileBody("   ", null));
+
+        var text = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, text);
+        using var doc = JsonDocument.Parse(text);
+        doc.RootElement.GetProperty("code").GetString().Should().Be("VALIDATION_ERROR");
+        (await ReadCompanyAsync(_f.CompanyAId)).LegalName.Should().Be(before.LegalName);
+    }
+
+    [Fact]
+    public async Task Empresa_actual_con_X_Company_Id_de_una_empresa_ajena_es_rechazada()
+    {
+        using var asB = _f.CreateClient(_f.CompanyBId);
+
+        var foreign = await asB.GetAsync("/api/v1/companies/current");
+        foreign.StatusCode.Should().NotBe(HttpStatusCode.OK);
+        ((int)foreign.StatusCode).Should().BeInRange(400, 499);
+
+        using var asA = _f.CreateClient(_f.CompanyAId);
+        var own = await asA.GetAsync("/api/v1/companies/current");
+        own.StatusCode.Should().Be(HttpStatusCode.OK, await own.Content.ReadAsStringAsync());
+    }
 }

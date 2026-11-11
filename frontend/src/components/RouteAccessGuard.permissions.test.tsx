@@ -53,7 +53,6 @@ describe("isRouteAllowed — pantalla del menú, no prefijo", () => {
     expect(isRouteAllowed("/access/users/new", menu("/access/users"))).toBe(true);
     expect(isRouteAllowed("/access/users/abc-123", menu("/access/users"))).toBe(true);
     expect(isRouteAllowed("/suppliers/credits/abc-123", menu("/suppliers/credits"))).toBe(true);
-    expect(isRouteAllowed("/companies/abc-123/edit", menu("/companies"))).toBe(true);
     expect(isRouteAllowed("/access/users/abc-123", menu("/admin/roles"))).toBe(false);
   });
 

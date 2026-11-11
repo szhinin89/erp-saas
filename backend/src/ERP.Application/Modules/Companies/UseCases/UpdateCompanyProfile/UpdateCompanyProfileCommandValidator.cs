@@ -1,3 +1,4 @@
+using ERP.Application.Modules.Companies.UseCases.UpdateCompany;
 using FluentValidation;
 using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 
@@ -8,6 +9,8 @@ public sealed class UpdateCompanyProfileCommandValidator
 {
     public UpdateCompanyProfileCommandValidator()
     {
+        Include(new CompanyNamesRules());
+
         RuleFor(x => x.CorporateEmail)
             .MaximumLength(CompanyEntity.CorporateEmailMaxLen)
             .EmailAddress()

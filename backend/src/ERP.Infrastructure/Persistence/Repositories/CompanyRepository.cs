@@ -46,21 +46,6 @@ public sealed class CompanyRepository : ICompanyRepository
                 cancellationToken
             );
 
-    public async Task<IReadOnlyList<Company>> GetByIdsForManagementAsync(
-        IReadOnlyCollection<Guid> companyIds,
-        Guid tenantId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        if (companyIds.Count == 0)
-            return Array.Empty<Company>();
-        return await _db
-            .Companies.AsNoTracking()
-            .Where(c => companyIds.Contains(c.Id) && c.TenantId == tenantId)
-            .OrderBy(c => c.LegalName)
-            .ToListAsync(cancellationToken);
-    }
-
     public Task<Company?> GetTrackedByIdForTenantAsync(
         Guid companyId,
         Guid tenantId,

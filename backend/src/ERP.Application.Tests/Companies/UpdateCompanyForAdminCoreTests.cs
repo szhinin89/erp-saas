@@ -2,7 +2,7 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Companies;
 using ERP.Application.Modules.Companies.DTOs;
 using ERP.Application.Modules.Companies.UseCases.GetCompanyProfile;
-using ERP.Application.Modules.Companies.UseCases.UpdateCompany;
+using ERP.Application.Modules.Companies.UseCases.UpdateCompanyProfile;
 using ERP.Application.Modules.Company.UseCases.UpdateCompanyForAdminCore;
 using ERP.Application.Modules.Media;
 using ERP.Domain.Modules.Company.Entities;
@@ -86,36 +86,66 @@ public sealed class UpdateCompanyForAdminCoreTests
     }
 
     /// <summary>
-    /// ZH-COMPANY-IDENTITY-SSOT-01 — el formato de la identidad lo valida el pipeline con la misma
-    /// regla (<c>CompanyIdentityRules</c>) para ambos comandos: mismas propiedades, mismos mensajes.
-    /// El rechazo HTTP (422 sin mutar) está cubierto en CompanyIdentityUpdateHttpTests.
+    /// ZH-COMPANY-IDENTITY-SSOT-01 — el formato de la identidad completa (RUC + nombres) lo valida el
+    /// pipeline con <c>CompanyIdentityRules</c>. El rechazo HTTP (422 sin mutar) está cubierto en
+    /// CompanyIdentityUpdateHttpTests.
     /// </summary>
     [Theory]
     [InlineData("1234567890123", "Nueva razon")]
     [InlineData("1760000070000", "Nueva razon")] // entidad pública con establecimiento 0000 (RucValidatorTests)
     [InlineData("TMP-EC-other", "Nueva razon")]
     [InlineData("1790016919001", "   ")]
-    public void Invalid_identity_is_rejected_with_the_same_rule_from_both_contexts(
-        string ruc,
-        string legalName
+    public void Invalid_identity_is_rejected(string ruc, string legalName)
+    {
+        var result = new UpdateCompanyForAdminCoreCommandValidator().Validate(
+            new UpdateCompanyForAdminCoreCommand(entity.Id, legalName, "Comercial", true, ruc)
+        );
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Razón social y nombre comercial tienen una sola regla (<c>CompanyNamesRules</c>): el comando de
+    /// Admin Global y el perfil de la empresa activa rechazan los mismos valores con la misma
+    /// propiedad y el mismo mensaje.
+    /// </summary>
+    [Theory]
+    [InlineData("   ", "Comercial")]
+    [InlineData("", null)]
+    public void Invalid_names_are_rejected_with_the_same_rule_from_both_contexts(
+        string legalName,
+        string? tradeName
     )
     {
         var global = new UpdateCompanyForAdminCoreCommandValidator().Validate(
-            new UpdateCompanyForAdminCoreCommand(entity.Id, legalName, "Comercial", true, ruc)
+            new UpdateCompanyForAdminCoreCommand(entity.Id, legalName, tradeName, true, null)
         );
-        var tenantScoped = new UpdateCompanyCommandValidator().Validate(
-            new UpdateCompanyCommand(entity.Id, legalName, "Comercial", true, ruc)
+        var profile = new UpdateCompanyProfileCommandValidator().Validate(
+            new UpdateCompanyProfileCommand(
+                legalName,
+                tradeName,
+                null,
+                null,
+                null,
+                "USD",
+                "America/Guayaquil",
+                null,
+                null,
+                null,
+                null,
+                null
+            )
         );
 
         global.IsValid.Should().BeFalse();
-        global
+        profile
             .Errors.Select(e => (e.PropertyName, e.ErrorMessage))
             .Should()
-            .BeEquivalentTo(tenantScoped.Errors.Select(e => (e.PropertyName, e.ErrorMessage)));
+            .BeEquivalentTo(global.Errors.Select(e => (e.PropertyName, e.ErrorMessage)));
     }
 
     [Fact]
-    public async Task Missing_company_is_NOT_FOUND_like_the_tenant_endpoint()
+    public async Task Missing_company_is_NOT_FOUND()
     {
         companies
             .Setup(x =>

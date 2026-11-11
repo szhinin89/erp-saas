@@ -89,11 +89,11 @@ Single centralized HTTP client: `frontend/src/modules/lib/api.ts`.
 
 | Method | Route | Auth | Request | Response |
 |--------|-------|------|---------|----------|
-| GET | `/api/v1/companies` | Bearer + `perm:companies.view` | `activeOnly?` (bool) | `CompanyListItemDto[]` |
 | GET | `/api/v1/companies/current` | Bearer + `perm:companies.view` | — | `CompanyDetailDto` |
-| GET | `/api/v1/companies/{id}` | Bearer + `perm:companies.view` | — | `CompanyDetailDto` |
-| POST | `/api/v1/companies` | Bearer + `perm:companies.create` | `CreateCompanyCommand` | `CompanyDetailDto` |
-| PUT | `/api/v1/companies/{id}` | Bearer + `perm:companies.update` | `UpdateCompanyCommand` | `CompanyDetailDto` |
+| POST | `/api/v1/companies` | Bearer + policy `CompanyProvisioning` (Admin Global) | `CreateCompanyCommand` | `CompanyCreatedDto` |
+| GET | `/api/v1/companies/profile` | Bearer + `perm:erp.companies.view` | — | `CompanyProfileDto` |
+| PUT | `/api/v1/companies/profile` | Bearer + `perm:erp.companies.update` | `UpdateCompanyProfileCommand` (razón social, nombre comercial, contacto, representante legal, moneda, zona horaria; sin RUC ni estado) | `CompanyProfileDto` |
+| PUT | `/api/v1/admin-core/companies/{id}` | Bearer + policy `PlatformAdmin` | `UpdateCompanyForAdminCoreCommand` (RUC, razón social, nombre comercial, activo) | `CompanyDetailDto` |
 
 ---
 

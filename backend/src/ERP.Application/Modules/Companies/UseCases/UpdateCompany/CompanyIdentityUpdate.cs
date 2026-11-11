@@ -7,15 +7,12 @@ using CompanyEntity = ERP.Domain.Modules.Company.Entities.Company;
 namespace ERP.Application.Modules.Companies.UseCases.UpdateCompany;
 
 /// <summary>
-/// ZH-COMPANY-IDENTITY-SSOT-01 — única operación de aplicación que cambia la identidad de una
-/// empresa (RUC, razón social, nombre comercial, activo). La usan los dos contextos de
-/// autorización, cada uno después de resolver su propio alcance:
-/// <list type="bullet">
-///   <item><see cref="UpdateCompanyHandler"/> — usuario del tenant, empresa con membership, lectura
-///   acotada al tenant resuelto server-side;</item>
-///   <item><c>UpdateCompanyForAdminCoreHandler</c> — Admin Global, empresa explícita de cualquier
-///   tenant.</item>
-/// </list>
+/// ZH-COMPANY-IDENTITY-SSOT-01 — operación de aplicación que cambia la identidad completa de una
+/// empresa (RUC, razón social, nombre comercial, activo). Solo la usa
+/// <c>UpdateCompanyForAdminCoreHandler</c> (Admin Global, empresa explícita de cualquier tenant).
+/// El administrador de la empresa activa edita únicamente razón social y nombre comercial por
+/// <c>UpdateCompanyProfileHandler</c>, que reutiliza <see cref="CompanyNamesRules"/> y la misma
+/// persistencia de dominio (<c>Company.UpdateAdminIdentity</c>) sin poder tocar RUC ni estado.
 /// El formato ya fue validado por el pipeline (<see cref="CompanyIdentityRules"/>); aquí vive la
 /// regla que requiere datos: unicidad global del RUC. Los cambios de estado son del dominio
 /// (<c>Company.UpdateTaxIdentification</c> / <c>Company.UpdateAdminIdentity</c>: normalización y

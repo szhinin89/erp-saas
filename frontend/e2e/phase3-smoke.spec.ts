@@ -47,12 +47,13 @@ test.describe("Phase 3 — Runtime smoke", () => {
 
   test("forbidden cross-company access", async ({ request }) => {
     const session = await login(request);
-    const res = await request.get(
-      `${API_BASE}/api/v1/companies/00000000-0000-0000-0000-000000000099`,
-      {
-        headers: { Authorization: `Bearer ${session.token}` },
+    // Una empresa ajena indicada por X-Company-Id (sin membership) debe ser rechazada.
+    const res = await request.get(`${API_BASE}/api/v1/companies/current`, {
+      headers: {
+        Authorization: `Bearer ${session.token}`,
+        "X-Company-Id": "00000000-0000-0000-0000-000000000099",
       },
-    );
+    });
     expect(res.ok()).toBeFalsy();
   });
 });

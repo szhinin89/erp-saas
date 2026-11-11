@@ -285,9 +285,8 @@ public class Company : ITenantScopedEntity
 
     /// <summary>
     /// Actualiza contacto, representante legal y configuración regional (pestaña "General"
-    /// de Company Settings, empresa activa). No toca <see cref="LegalName"/>/<see cref="TradeName"/>/
-    /// <see cref="IsActive"/> — esos son propiedad exclusiva de Companies Admin
-    /// (<see cref="UpdateAdminIdentity"/>), para evitar el mismo campo editable en dos pantallas.
+    /// de Company Settings, empresa activa). No toca <see cref="IsActive"/> ni el RUC; razón social y
+    /// nombre comercial se persisten con <see cref="UpdateAdminIdentity"/>.
     /// </summary>
     public void UpdateContactProfile(
         string? corporateEmail,
@@ -324,9 +323,9 @@ public class Company : ITenantScopedEntity
     }
 
     /// <summary>
-    /// Actualiza identidad administrativa (Companies Admin: <c>/companies</c>): razón social,
-    /// nombre comercial y estado activo/inactivo. No toca contacto/marca/locale/fiscal —
-    /// esos son propiedad exclusiva de Company Settings.
+    /// Actualiza razón social, nombre comercial y estado activo/inactivo. Admin Global lo llama con
+    /// el estado que edita; el perfil de la empresa activa lo llama conservando el estado actual.
+    /// No toca contacto/marca/locale/fiscal.
     /// </summary>
     public void UpdateAdminIdentity(
         string legalName,

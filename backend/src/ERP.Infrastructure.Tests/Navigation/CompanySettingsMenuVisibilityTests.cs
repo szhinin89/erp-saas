@@ -59,11 +59,7 @@ public sealed class CompanySettingsMenuVisibilityTests
 
         var enterprise = menu.Should().ContainSingle(n =>
             n.RoutePath == SettingsModule.EnterpriseGroup).Which;
-        var expected = new List<string>();
-        if (canViewCompanies)
-            expected.Add(SettingsModule.Companies);
-        expected.Add(SettingsModule.Company);
-        enterprise.Children.Select(n => n.RoutePath).Should().Equal(expected);
+        enterprise.Children.Select(n => n.RoutePath).Should().Equal(SettingsModule.Company);
     }
 
     [Fact]

@@ -71,34 +71,23 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_items_preserve_legacy_guids_for_company_and_companies()
+    public void Navigation_items_preserve_legacy_guid_for_company_and_has_no_companies_screen()
     {
         var byRoute = KernelRegistry.Navigation.ToDictionary(n => n.RoutePath, n => n.Id);
 
         byRoute["/settings/company"]
             .Should()
             .Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
-        byRoute["/companies"].Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
+        byRoute.Should().NotContainKey("/companies");
     }
 
     [Fact]
-    public void Navigation_companies_and_company_are_direct_children_of_enterprise_group_without_losing_permissions()
+    public void Navigation_company_is_a_direct_child_of_enterprise_group_and_keeps_assignable_permissions()
     {
-        // MENU-COMPANY-HIERARCHY-FLAT-01: "Mis empresas" (multiempresa, CompaniesView) y "Datos de la
-        // empresa" (empresa activa, CompanyView) son pantallas reales distintas con permisos
-        // distintos — no se fusionan en una sola entrada. Quedan como hermanos directos bajo
-        // "Empresa", sin el nivel redundante Empresa > Empresas.
+        // "Datos de la empresa" (empresa activa) es la única pantalla de configuración de empresa:
+        // cuelga directo de "Empresa" y conserva asignables CompanyView, CompaniesView y CompaniesUpdate.
         var navigation = KernelRegistry.Navigation;
         var enterpriseGroupId = Guid.Parse("7eabb75d-1ccf-4a4a-a4ee-46a082a7e90d");
-
-        navigation.Should().NotContain(n => n.RoutePath == "/settings/companies-group");
-
-        var companies = navigation.Single(n => n.RoutePath == "/companies");
-        companies.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
-        companies.ParentItemId.Should().Be(enterpriseGroupId);
-        companies
-            .PermissionKey.Should()
-            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
 
         var company = navigation.Single(n => n.RoutePath == "/settings/company");
         company.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000101"));
@@ -106,6 +95,16 @@ public sealed class KernelRegistryTests
         company
             .PermissionKey.Should()
             .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompanyView);
+        KernelRegistry
+            .AssignablePermissionKeys.Should()
+            .Contain(
+                new[]
+                {
+                    ERP.Domain.Kernel.Permissions.SettingsPermissions.CompanyView,
+                    ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView,
+                    ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesUpdate,
+                }
+            );
     }
 
     [Fact]
@@ -933,22 +932,10 @@ public sealed class KernelRegistryTests
     }
 
     [Fact]
-    public void Navigation_companies_moved_from_admin_to_settings_group_with_same_permission()
+    public void Navigation_admin_group_has_no_companies_screen()
     {
-        // ADMIN-COMPANIES-REGROUP-01: Empresas administra datos de empresa/fiscales/branding —
-        // conceptualmente Configuración, no Administración (usuarios/perfiles/delegación/
-        // sesiones/actividad). Mismo Id/ruta/permiso que tenía en AdminModule.
-        var navigation = KernelRegistry.Navigation;
-
-        var companies = navigation.Single(n => n.RoutePath == "/companies");
-        companies.GroupCode.Should().Be("settings");
-        companies
-            .PermissionKey.Should()
-            .Be(ERP.Domain.Kernel.Permissions.SettingsPermissions.CompaniesView);
-        companies.Id.Should().Be(Guid.Parse("00000000-0000-4000-8000-000000000104"));
-
-        navigation
-            .Where(n => n.GroupCode == "admin")
+        KernelRegistry
+            .Navigation.Where(n => n.GroupCode == "admin")
             .Should()
             .NotContain(n => n.RoutePath == "/companies");
     }

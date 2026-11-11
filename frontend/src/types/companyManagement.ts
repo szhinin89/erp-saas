@@ -1,17 +1,4 @@
-﻿export interface CompanyListItem {
-  id: string;
-  tenantId: string;
-  legalName: string;
-  tradeName: string | null;
-  taxId: string;
-  countryCode: string;
-  timezone: string;
-  currencyCode: string;
-  isActive: boolean;
-  role: string;
-}
-
-export interface CompanyDetail {
+﻿export interface CompanyDetail {
   id: string;
   tenantId: string;
   legalName: string;
@@ -54,12 +41,4 @@ export interface CreateCompanyPayload {
 /** Respuesta de POST /api/v1/companies: el detalle más, si se registró, el administrador inicial. */
 export interface CompanyCreatedResult extends CompanyDetail {
   initialAdministrator?: InitialAdministratorCredentials | null;
-}
-
-export interface UpdateCompanyPayload {
-  id: string;
-  taxId: string;
-  legalName: string;
-  tradeName?: string | null;
-  isActive: boolean;
 }

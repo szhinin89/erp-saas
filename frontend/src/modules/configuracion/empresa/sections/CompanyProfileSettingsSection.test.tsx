@@ -82,7 +82,7 @@ it("cambiar idioma traduce campos, opciones, acciones y errores sin perder edici
 it("envía todos los campos editables, recarga y conserva el perfil al reabrir", async () => {
   const view = mount();
   await screen.findByDisplayValue("old@example.invalid");
-  const values = { corporateEmail: "new@example.invalid", website: "https://new.example.invalid", legalRepName: "Ana Pérez", legalRepPosition: "Directora", legalRepIdNumber: "1710034065", legalRepEmail: "ana@example.invalid", currencyCode: "EUR", timezone: "America/Lima" };
+  const values = { legalName: "Empresa Renombrada S.A.", tradeName: "Marca Nueva", corporateEmail: "new@example.invalid", website: "https://new.example.invalid", legalRepName: "Ana Pérez", legalRepPosition: "Directora", legalRepIdNumber: "1710034065", legalRepEmail: "ana@example.invalid", currencyCode: "EUR", timezone: "America/Lima" };
   for (const [name, value] of Object.entries(values)) {
     const field = view.container.querySelector(`[name="${name}"]`)!;
     expect(field).toBeTruthy();
@@ -94,7 +94,7 @@ it("envía todos los campos editables, recarga y conserva el perfil al reabrir",
   view.unmount();
   mount();
   await screen.findByDisplayValue("new@example.invalid");
-  for (const value of ["https://new.example.invalid", "Ana Pérez", "Directora", "ana@example.invalid"]) expect(screen.getByDisplayValue(value)).toBeTruthy();
+  for (const value of ["Empresa Renombrada S.A.", "Marca Nueva", "https://new.example.invalid", "Ana Pérez", "Directora", "ana@example.invalid"]) expect(screen.getByDisplayValue(value)).toBeTruthy();
 });
 
 it("un correo inválido bloquea el envío sin cambiar lo guardado", async () => {
@@ -105,4 +105,27 @@ it("un correo inválido bloquea el envío sin cambiar lo guardado", async () => 
   await screen.findByText("Correo electrónico inválido");
   expect(companyProfileService.updateProfile).not.toHaveBeenCalled();
   expect(stored.corporateEmail).toBe("old@example.invalid");
+});
+
+it("RUC y estado son de solo lectura: el RUC no es editable y el envío no los incluye", async () => {
+  const view = mount();
+  const ruc = (await screen.findByDisplayValue("1790016919001")) as HTMLInputElement;
+  expect(ruc.disabled || ruc.readOnly).toBe(true);
+  expect(view.container.querySelector('[name="taxIdentificationNumber"], [name="taxId"], [name="isActive"]')).toBeNull();
+  fireEvent.change(await screen.findByDisplayValue("Marca"), { target: { value: "Marca Editada" } });
+  fireEvent.click(screen.getByRole("button", { name: /Guardar Configuración/ }));
+  await waitFor(() => expect(companyProfileService.updateProfile).toHaveBeenCalled());
+  const payload = vi.mocked(companyProfileService.updateProfile).mock.calls[0][0] as unknown as Record<string, unknown>;
+  expect(payload).toEqual(expect.objectContaining({ legalName: "Empresa", tradeName: "Marca Editada" }));
+  for (const key of ["taxId", "taxIdentificationNumber", "isActive", "id", "companyId"]) expect(payload).not.toHaveProperty(key);
+});
+
+it("una razón social vacía bloquea el envío", async () => {
+  const view = mount();
+  const legalName = await screen.findByDisplayValue("Empresa");
+  fireEvent.change(legalName, { target: { value: "   " } });
+  fireEvent.submit(view.container.querySelector("form")!);
+  await screen.findByText("Este campo es obligatorio.");
+  expect(companyProfileService.updateProfile).not.toHaveBeenCalled();
+  expect(stored.legalName).toBe("Empresa");
 });

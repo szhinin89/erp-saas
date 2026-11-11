@@ -117,7 +117,6 @@ SRI                                         [Module("sri")]
 
 Configuración                               [Module("settings")]
 ├─ Empresa
-│  ├─ Mis Empresas                          /companies
 │  ├─ Datos de la Empresa                   /settings/company
 │  ├─ Sucursales                            /settings/branches
 │  ├─ Establecimientos SRI                  /settings/establishments

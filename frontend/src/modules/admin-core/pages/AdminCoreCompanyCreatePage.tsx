@@ -44,9 +44,8 @@ interface CreatedState {
 
 /**
  * AdminGlobalCore — crear empresa. Reutiliza el schema y el servicio de company-management
- * (puros, sin acoplamiento a layout operativo) pero NO reutiliza CompanyManagementFormPage: su
- * onSubmit navega a /companies de forma fija y no expone un onSuccess inyectable. Tras crear, no
- * redirige — muestra éxito con 3 acciones.
+ * (puros, sin acoplamiento a layout operativo). Tras crear, no redirige — muestra éxito con 3
+ * acciones.
  *
  * El tenant destino se elige por nombre (select), nunca escribiendo el GUID a mano — se deriva
  * de GET /api/v1/admin-core/companies vía adminCoreService.listTenants(). Desde el dashboard global

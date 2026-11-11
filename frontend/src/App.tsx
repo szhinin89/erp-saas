@@ -10,7 +10,6 @@ import {
   publicRoutes,
   mainRoutes,
   catalogRoutes,
-  companyManagementRoutes,
   accessRoutes,
   adminCoreRoutes,
 } from "./routes";
@@ -38,7 +37,6 @@ function AppRoutes() {
             <Route index element={<HomeRedirect />} />
             {mainRoutes}
             {catalogRoutes}
-            {companyManagementRoutes}
             {accessRoutes}
           </Route>
         </Route>

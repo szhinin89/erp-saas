@@ -11,7 +11,7 @@ perm:catalog.manage | Catálogo de Ítems | 🏷️ | /catalog | parent= | sort=
 perm:communications.view | Correo SMTP | ✉️ | /settings/communications/email | parent=perm:settings.group | sort=27 | menu=True
 perm:electronic-documents.view | Monitor de Documentos Electrónicos | 📡 | /sri/electronic-documents/monitor | parent=perm:settings.group | sort=26 | menu=True
 perm:electronic-invoicing.view | Facturación electrónica | 🧾 | /sri/configuration/electronic-invoicing | parent=perm:settings.group | sort=25 | menu=True
-perm:erp.companies.view | Empresas operativas | 🏢 | /companies | parent= | sort=28 | menu=False
+perm:erp.companies.view | Empresa activa | 🏢 | /settings/company | parent= | sort=28 | menu=False
 perm:expenses.catalog.view | Catalogo de Gastos | ReceiptText | /expenses/categories | parent= | sort=47 | menu=False
 perm:expenses.documents.view | Documentos de Gastos | ReceiptText | /expenses/documents | parent=perm:expenses.catalog.view | sort=50 | menu=False
 perm:finance.view | Condiciones de Crédito | 📋 | /finance/credit-terms | parent= | sort=55 | menu=True

@@ -1,9 +1,45 @@
 # Project Status
 
-## ADMIN-SESSIONS-ACTIVITY-01 — Sesiones y Actividad: rediseño UI/UX y limpieza de administración — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
+## COMPANY-ADMIN-CONSOLIDATION-01 — Administración empresarial en una sola fuente — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
 
-Autorizado expresamente por el propietario. Sin staging, commit ni push; el esquema se verificó solo en un
-PostgreSQL vacío desechable (nunca contra `postgreszh` ni bases del propietario).
+Autorizado expresamente por el propietario. Sin staging, commit ni push; sin migraciones ni datos reales
+modificados (las pruebas HTTP usan PostgreSQL desechable de Testcontainers, nunca `postgreszh`).
+
+- **Pantalla única de empresa activa**: `/settings/company` es la única pantalla de configuración de la empresa
+  activa. El administrador de la empresa edita razón social y nombre comercial junto con contacto,
+  representante legal y datos regionales (`PUT /companies/profile`, reutiliza `CompanyNamesRules` y
+  `Company.UpdateAdminIdentity`); RUC y estado activo/inactivo son de solo lectura.
+- **Admin Core** conserva en exclusiva alta de empresas y administradores iniciales, edición de RUC, razón
+  social y nombre comercial, y activación/desactivación (el modal ya editaba todos los campos).
+- **Superficie vigente**: no hay pantalla ni endpoint de listado, detalle o identidad por id para el operador
+  del tenant; la empresa activa se consulta con `GET /companies/current`. `erp.companies.view` y
+  `erp.companies.update` siguen asignables desde «Datos de la empresa». Se conservan `POST /companies`, el
+  selector de empresas y First Run.
+- **Seguridad**: el comando empresarial no lleva id, RUC ni estado; un cuerpo manipulado no los modifica y
+  una empresa sin membership/permiso es rechazada (`CompanySettingsIsolationHttpTests`,
+  `CrossCompanyAdminPrivilegeHttpTests`, `CompanyIdentityUpdateHttpTests`); las comprobaciones e2e de empresa
+  ajena usan `GET /companies/current` con `X-Company-Id` ajeno. El módulo Companies del ProgressDashboard
+  apunta a `/settings/company` y el dashboard se regeneró con el procedimiento oficial.
+- **Estado**: en curso. Sin commit y sin CI asignado; no está CLOSED hasta publicarse, validarse en CI y
+  recibir la aceptación del propietario.
+
+## ADMIN-SESSIONS-ACTIVITY-01 — Sesiones y Actividad: rediseño UI/UX y limpieza de administración — CLOSED (2026-11-11)
+
+El propietario acepta el cierre (2026-11-11) tras confirmar directamente en GitHub Actions
+[CI #1149](https://github.com/szhinin89/erp-saas/actions/runs/43062944874) SUCCESS sobre `main`, commit
+`e4337458214661d769ce3bd875bfa087b878eeaf`. El esquema se verificó solo en un PostgreSQL vacío desechable
+(nunca contra `postgreszh` ni bases del propietario).
+
+- **Commits (`main`):**
+  - `1399ada166645d70d8ed07e61e0a6c2344f037be` `refactor(admin): remove unused security scopes and improve sessions activity UI` (contenido de la entrega).
+  - `e4337458214661d769ce3bd875bfa087b878eeaf` `fix(ci): allow company sessions admin endpoint in platform guard` (corrección del Platform Control Plane guard).
+- **CI (2026-11-11, `main`):** #1140–#1146 figuran en F1, F2 y F3.
+
+  | CI | Resultado | Commit | Detalle |
+  |---|---|---|---|
+  | [#1147](https://github.com/szhinin89/erp-saas/actions/runs/43045687381) | SUCCESS | `602ee37bfddc5ea195c1304f00e5dc9f74594ffb` `docs(iam): close IAM V1 phase 3` | 5 jobs en éxito y 3 omitidos; cierre documental de F3. |
+  | [#1148](https://github.com/szhinin89/erp-saas/actions/runs/43061911403) | **FAILURE** | `1399ada166645d70d8ed07e61e0a6c2344f037be` `refactor(admin): remove unused security scopes and improve sessions activity UI` | Falló el paso `Platform Control Plane guard (hard-gate)` del job `architecture / Architecture guardrails` y, por dependencia, `CI gate`. La estadística de sesiones pasó a ser un literal de cadena y el guard (`api-endpoints/api-not-in-allowlist`) empezó a evaluarla: es un endpoint ERP de alcance empresa (`perm:access.sessions.view`, filtrado por la empresa activa), no del plano global. |
+  | [#1149](https://github.com/szhinin89/erp-saas/actions/runs/43062944874) | SUCCESS | `e4337458214661d769ce3bd875bfa087b878eeaf` `fix(ci): allow company sessions admin endpoint in platform guard` | 20 jobs en éxito y 1 omitido; la corrección agrega solo el prefijo `/api/admin/access/sessions` a `tools/ci/platform-guard-config.json` y valida la entrega completa. |
 
 - **Limpieza**: se retiró del producto un control administrativo que nunca autorizó operaciones (pantalla,
   ruta, API, permisos propios y tabla). La autorización real sigue siendo `perm:` (IAM Fase 2/3). La baseline
@@ -69,9 +105,8 @@ reales modificados: `DataEntry` conserva sus 126 permisos y los perfiles existen
   | [#1145](https://github.com/szhinin89/erp-saas/actions/runs/43022974697) | **FAILURE** | `b4b46a18fe185e311df7820c7c58789995b55525` `fix(scripts): detect API port listener reliably in dev launcher` (primer CI con el contenido de F3) | Falló solo `CompaniesApiSurfaceSnapshotTests.Documento_OpenAPI_de_las_rutas_de_empresas_no_cambia`: snapshot OpenAPI desactualizado (esperaba `CompanyDetailDto`, la API devuelve `CompanyCreatedDto`). |
   | [#1146](https://github.com/szhinin89/erp-saas/actions/runs/43027936628) | SUCCESS | `1d1679fcdb3702c8d1b013fe0b42af3cdce8d937` `test(api): update companies OpenAPI snapshot for company creation response` | 21 jobs en éxito y 1 omitido; valida F3, el launcher y la corrección. |
 
-- Pendientes conocidos (no bloquean el cierre): `E2ESeedService` no siembra perfiles iniciales (usa la ruta de
-  auto-sanación); el modo "create" de `CompanyManagementFormPage` no tiene ruta (el único acceso al
-  alta es Admin Core).
+- Pendiente conocido (no bloquea el cierre): `E2ESeedService` no siembra perfiles iniciales (usa la ruta de
+  auto-sanación).
 
 ## IAM-V1-F2 — Administración de perfiles, permisos y usuarios; visibilidad por permisos efectivos — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
 
@@ -3926,11 +3961,10 @@ Registrados sin autorización de implementación; no constituyen trabajo abierto
   del validator y, sin header, la consulta de catálogo no devuelve filas.
   Verificación de cobertura (2026-11-03): fuera de los namespaces de `INV_E2`, los requests que
   operan datos de una empresa declaran marcador o validan con el guard en el handler; el guardrail
-  no impide que un request nuevo de esos módulos omita ambos. Corregido (2026-11-03):
-  `UpdateCompany` (`PUT /companies/{id}`) evaluaba `erp.companies.update` solo en la empresa del
-  header — un Admin de A con membership limitada en B podía renombrar o desactivar B; ahora exige
-  el permiso también en la empresa del id (`CrossCompanyAdminPrivilegeHttpTests`,
-  `UpdateCompanyHandlerTests`).
+  no impide que un request nuevo de esos módulos omita ambos. La edición empresarial de identidad
+  opera solo sobre la empresa activa (`PUT /companies/profile`, sin id en el contrato) y exige
+  `erp.companies.update` en ella (`CrossCompanyAdminPrivilegeHttpTests`,
+  `CompanySettingsIsolationHttpTests`).
 - **Seguridad — revocación de permisos con caché (SEC-06):** garantías y
   contrato en [security.md](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
   Límites: (1) cumplir "Redis obligatorio con varias instancias" depende de que el despliegue declare

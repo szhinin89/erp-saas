@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
 import {
   Badge,
   LoadingState,
@@ -68,6 +67,8 @@ export function CompanyProfileSettingsSection() {
   const toFormValues = (
     profile: NonNullable<typeof profileState.data>,
   ): CompanyConfigValues => ({
+    legalName: profile.legalName ?? "",
+    tradeName: profile.tradeName ?? "",
     corporateEmail: profile.corporateEmail ?? "",
     phone: profile.phone ?? "",
     website: profile.website ?? "",
@@ -93,6 +94,8 @@ export function CompanyProfileSettingsSection() {
     setSaving(true);
     try {
       await companyProfileService.updateProfile({
+        legalName: values.legalName,
+        tradeName: values.tradeName || null,
         corporateEmail: values.corporateEmail || null,
         phone: values.phone || null,
         website: values.website || null,
@@ -186,21 +189,26 @@ export function CompanyProfileSettingsSection() {
           </div>
           <div className="pg-section-body">
             <ZHGrid cols={2}>
-              <ZHField label={t("settings.company.profile.legalName")}>
+              <ZHField
+                label={t("settings.company.profile.legalName")}
+                required
+                error={errors.legalName?.message ? t(errors.legalName?.message) : undefined}
+              >
                 <ZhTextInput
                   className="zh-input"
-                  value={profile?.legalName ?? ""}
-                  readOnly
-                  disabled
+                  disabled={saving || !canEdit}
+                  {...register("legalName")}
                 />
               </ZHField>
 
-              <ZHField label={t("settings.company.profile.tradeName")}>
+              <ZHField
+                label={t("settings.company.profile.tradeName")}
+                error={errors.tradeName?.message ? t(errors.tradeName?.message) : undefined}
+              >
                 <ZhTextInput
                   className="zh-input"
-                  value={profile?.tradeName ?? ""}
-                  readOnly
-                  disabled
+                  disabled={saving || !canEdit}
+                  {...register("tradeName")}
                 />
               </ZHField>
 
@@ -214,11 +222,7 @@ export function CompanyProfileSettingsSection() {
               </ZHField>
             </ZHGrid>
             <p className="zh-text-muted zh-text-xs zh-mt-8">
-              {t("settings.company.profile.identityHint")} {" "}
-              <Link to="/companies" className="zh-link">
-                {t("settings.company.profile.management")}
-              </Link>
-              .
+              {t("settings.company.profile.identityHint")}
             </p>
           </div>
         </div>

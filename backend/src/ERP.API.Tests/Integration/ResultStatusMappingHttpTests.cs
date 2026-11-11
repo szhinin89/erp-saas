@@ -18,8 +18,7 @@ namespace ERP.API.Tests.Integration;
 /// ZH-API-RESULT-STATUS-MAPPING-01 — contrato HTTP real (handlers reales, PostgreSQL) de los
 /// endpoints cuyo status depende de ToOkOrNotFound / ToFileOrNotFound:
 ///   - los que cambian: logo/content y logo-alt/content sin empresa operativa (404 → 403 FORBIDDEN);
-///   - los que NO deben cambiar: recurso inexistente → 404, logo inexistente → 404, y el 404
-///     intencional de GetCompanyById sobre una empresa ajena (no revela su existencia).
+///   - los que NO deben cambiar: recurso inexistente → 404 y logo inexistente → 404.
 /// Requiere Docker.
 /// </summary>
 [Trait("Category", "PostgreSql")]
@@ -29,7 +28,6 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
     private readonly Guid _adminId = Guid.NewGuid();
     private Guid _tenantId;
     private Guid _companyId;
-    private Guid _foreignCompanyId;
     private Guid _userId;
     private WebApplicationFactory<Program> _app = null!;
     private HttpClient _client = null!;
@@ -66,7 +64,6 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
             db.Companies.AddRange(company, foreign);
             await db.SaveChangesAsync();
             _companyId = company.Id;
-            _foreignCompanyId = foreign.Id;
 
             var user = IdentityUser.Create(
                 "sadmi",
@@ -201,18 +198,5 @@ public sealed class ResultStatusMappingHttpTests : IAsyncLifetime
 
         status.Should().Be(HttpStatusCode.NotFound, $"{code}: {string.Join(" | ", errs)}");
         code.Should().Be("NOT_FOUND");
-    }
-
-    [Fact]
-    public async Task GetCompanyById_de_una_empresa_ajena_sigue_404_intencional_sin_revelar_existencia()
-    {
-        var foreign = await Get($"/api/v1/companies/{_foreignCompanyId}");
-        var missing = await Get($"/api/v1/companies/{Guid.NewGuid()}");
-
-        foreign.Status.Should().Be(HttpStatusCode.NotFound);
-        foreign.Code.Should().Be("NOT_FOUND");
-        foreign
-            .Should()
-            .BeEquivalentTo(missing, "una empresa ajena es indistinguible de una inexistente");
     }
 }

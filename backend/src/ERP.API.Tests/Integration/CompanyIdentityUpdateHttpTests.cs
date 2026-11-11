@@ -18,14 +18,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// ZH-COMPANY-IDENTITY-SSOT-01 — la identidad de empresa (RUC, razón social, nombre comercial,
-/// activo) se edita desde dos contextos de autorización legítimos:
-///   - operativo: <c>PUT /api/v1/companies/{id}</c> — usuario del tenant con permiso
-///     settings.companies.update y membership en la empresa (scope server-side del tenant);
-///   - global: <c>PUT /api/v1/admin-core/companies/{id}</c> — token global (tenant vacío + Admin,
-///     policy PlatformAdmin) sobre la empresa explícitamente indicada de cualquier tenant.
-/// Ambos llegan a la misma regla (validación, unicidad del RUC, normalización, auditoría): mismo
-/// status y mismo código ante el mismo dato. HTTP real + PostgreSQL real.
+/// ZH-COMPANY-IDENTITY-SSOT-01 — la identidad completa de empresa (RUC, razón social, nombre
+/// comercial, activo) solo se edita desde Admin Global: <c>PUT /api/v1/admin-core/companies/{id}</c>
+/// (token global: tenant vacío + Admin, policy PlatformAdmin) sobre la empresa explícita de cualquier
+/// tenant. El administrador de la empresa activa edita únicamente razón social y nombre comercial por
+/// <c>PUT /api/v1/companies/profile</c> (ver <c>CompanySettingsIsolationHttpTests</c>). El endpoint
+/// <c>PUT /api/v1/companies/{id}</c> ya no existe. HTTP real + PostgreSQL real.
 /// </summary>
 public sealed class CompanyIdentityUpdateFixture : IAsyncLifetime
 {
@@ -190,32 +188,10 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
 
     private sealed record Response(HttpStatusCode Status, string? Code);
 
-    private static string Url(bool global, Guid id) =>
-        global ? $"/api/v1/admin-core/companies/{id}" : $"/api/v1/companies/{id}";
+    private static string GlobalUrl(Guid id) => $"/api/v1/admin-core/companies/{id}";
 
-    /// <summary>PUT al endpoint del contexto <paramref name="endpointGlobal"/> con el token del contexto <paramref name="tokenGlobal"/>.</summary>
-    private async Task<Response> SendAsync(
-        bool endpointGlobal,
-        bool tokenGlobal,
-        Guid id,
-        string legalName,
-        string? tradeName,
-        bool isActive,
-        string? taxId
-    )
+    private static async Task<Response> ReadAsync(HttpResponseMessage http)
     {
-        using var client = _f.Client(tokenGlobal);
-        var http = await client.PutAsJsonAsync(
-            Url(endpointGlobal, id),
-            new
-            {
-                id,
-                legalName,
-                tradeName,
-                isActive,
-                taxId,
-            }
-        );
         var text = await http.Content.ReadAsStringAsync();
         string? code = null;
         if (!string.IsNullOrWhiteSpace(text) && text.TrimStart().StartsWith('{'))
@@ -225,34 +201,50 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
         return new Response(http.StatusCode, code);
     }
 
-    /// <summary>Cada contexto por su propio endpoint.</summary>
+    /// <summary>PUT al endpoint global con el token del contexto <paramref name="tokenGlobal"/>.</summary>
+    private async Task<Response> SendAsync(
+        bool tokenGlobal,
+        Guid id,
+        string legalName,
+        string? tradeName,
+        bool isActive,
+        string? taxId
+    )
+    {
+        using var client = _f.Client(tokenGlobal);
+        return await ReadAsync(
+            await client.PutAsJsonAsync(
+                GlobalUrl(id),
+                new
+                {
+                    id,
+                    legalName,
+                    tradeName,
+                    isActive,
+                    taxId,
+                }
+            )
+        );
+    }
+
     private Task<Response> Put(
-        bool global,
         Guid id,
         string legalName,
         string? tradeName = null,
         bool isActive = true,
         string? taxId = null
-    ) => SendAsync(global, global, id, legalName, tradeName, isActive, taxId);
-
-    private Task<Response> PutWithTokenAsync(bool endpointGlobal, bool tokenGlobal, Guid id) =>
-        SendAsync(endpointGlobal, tokenGlobal, id, "Intento", null, true, null);
+    ) => SendAsync(true, id, legalName, tradeName, isActive, taxId);
 
     private Task<Guid> OwnCompanyAsync(string? ruc = null) =>
         _f.CreateCompanyAsync(_f.TenantId, ruc);
 
-    // ── Misma regla desde ambos contextos ───────────────────────────────
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Actualizacion_valida_normaliza_y_audita_igual(bool global)
+    [Fact]
+    public async Task Actualizacion_valida_normaliza_y_audita()
     {
         var id = await OwnCompanyAsync();
         var ruc = CompanyIdentityUpdateFixture.ValidRuc();
 
         var response = await Put(
-            global,
             id,
             "  Nueva Razón  ",
             "  Comercial  ",
@@ -268,98 +260,70 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
         company.TaxIdentificationNumber.Should().Be(ruc);
         company.IsTemporaryTaxIdentification.Should().BeFalse();
         company.TaxIdentificationStatus.Should().Be(TaxIdentificationStatus.Verified);
-        company.UpdatedBy.Should().Be(global ? _f.GlobalAdminId : _f.UserId);
+        company.UpdatedBy.Should().Be(_f.GlobalAdminId);
     }
 
     [Theory]
-    [InlineData(false, "1234567890123")]
-    [InlineData(true, "1234567890123")]
-    [InlineData(false, "17ABC")]
-    [InlineData(true, "17ABC")]
-    public async Task RUC_invalido_misma_semantica_422_VALIDATION_ERROR_sin_cambios(
-        bool global,
-        string ruc
-    )
+    [InlineData("1234567890123")]
+    [InlineData("17ABC")]
+    public async Task RUC_invalido_422_VALIDATION_ERROR_sin_cambios(string ruc)
     {
         var id = await OwnCompanyAsync();
         var before = await _f.ReadAsync(id);
 
-        var response = await Put(global, id, "Otra", taxId: ruc);
+        var response = await Put(id, "Otra", taxId: ruc);
 
         response.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
         response.Code.Should().Be("VALIDATION_ERROR");
         (await _f.ReadAsync(id)).Should().BeEquivalentTo(before);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Razon_social_vacia_misma_semantica_422_VALIDATION_ERROR(bool global)
+    [Fact]
+    public async Task Razon_social_vacia_422_VALIDATION_ERROR()
     {
         var id = await OwnCompanyAsync();
 
-        var response = await Put(global, id, "   ");
+        var response = await Put(id, "   ");
 
         response.Status.Should().Be(HttpStatusCode.UnprocessableEntity);
         response.Code.Should().Be("VALIDATION_ERROR");
         (await _f.ReadAsync(id)).LegalName.Should().Be("Empresa Original");
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task RUC_duplicado_de_otro_tenant_mismo_codigo_409(bool global)
+    [Fact]
+    public async Task RUC_duplicado_de_otro_tenant_409()
     {
         var takenRuc = CompanyIdentityUpdateFixture.ValidRuc();
         await _f.CreateCompanyAsync(_f.ForeignTenantId, takenRuc);
         var id = await OwnCompanyAsync();
 
-        var response = await Put(global, id, "Otra", taxId: takenRuc);
+        var response = await Put(id, "Otra", taxId: takenRuc);
 
         response.Status.Should().Be(HttpStatusCode.Conflict);
         response.Code.Should().Be("COMPANY_RUC_ALREADY_EXISTS");
         (await _f.ReadAsync(id)).TaxIdentificationNumber.Should().NotBe(takenRuc);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Empresa_inexistente_misma_semantica_404_NOT_FOUND(bool global)
+    [Fact]
+    public async Task Empresa_inexistente_404_NOT_FOUND()
     {
-        var response = await Put(global, Guid.NewGuid(), "Otra");
+        var response = await Put(Guid.NewGuid(), "Otra");
 
         response.Status.Should().Be(HttpStatusCode.NotFound);
         response.Code.Should().Be("NOT_FOUND");
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task RUC_vacio_conserva_la_identificacion_fiscal(bool global)
+    [Fact]
+    public async Task RUC_vacio_conserva_la_identificacion_fiscal()
     {
         var ruc = CompanyIdentityUpdateFixture.ValidRuc();
         var id = await OwnCompanyAsync(ruc);
 
-        (await Put(global, id, "Solo nombres", taxId: null)).Status.Should().Be(HttpStatusCode.OK);
+        (await Put(id, "Solo nombres", taxId: null)).Status.Should().Be(HttpStatusCode.OK);
 
         var company = await _f.ReadAsync(id);
         company.TaxIdentificationNumber.Should().Be(ruc);
         company.LegalName.Should().Be("Solo nombres");
-    }
-
-    // ── Contexto / alcance ──────────────────────────────────────────────
-
-    [Fact]
-    public async Task Operativo_sobre_empresa_de_otro_tenant_es_404_igual_que_inexistente()
-    {
-        var foreign = await _f.CreateCompanyAsync(_f.ForeignTenantId);
-        var before = await _f.ReadAsync(foreign);
-
-        var response = await Put(global: false, foreign, "Intrusa");
-
-        response.Status.Should().Be(HttpStatusCode.NotFound);
-        response.Code.Should().Be("NOT_FOUND");
-        (await _f.ReadAsync(foreign)).Should().BeEquivalentTo(before);
     }
 
     [Fact]
@@ -367,9 +331,7 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
     {
         var foreign = await _f.CreateCompanyAsync(_f.ForeignTenantId);
 
-        (await Put(global: true, foreign, "Editada por plataforma"))
-            .Status.Should()
-            .Be(HttpStatusCode.OK);
+        (await Put(foreign, "Editada por plataforma")).Status.Should().Be(HttpStatusCode.OK);
 
         (await _f.ReadAsync(foreign)).LegalName.Should().Be("Editada por plataforma");
     }
@@ -379,20 +341,57 @@ public sealed class CompanyIdentityUpdateHttpTests : IClassFixture<CompanyIdenti
     {
         var id = await OwnCompanyAsync();
 
-        var response = await PutWithTokenAsync(endpointGlobal: true, tokenGlobal: false, id);
+        var response = await SendAsync(
+            tokenGlobal: false,
+            id,
+            "Intento",
+            null,
+            isActive: true,
+            taxId: null
+        );
 
         response.Status.Should().Be(HttpStatusCode.Forbidden);
         (await _f.ReadAsync(id)).LegalName.Should().Be("Empresa Original");
     }
 
-    [Fact]
-    public async Task Token_global_no_opera_por_el_endpoint_de_tenant()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task El_endpoint_empresarial_de_identidad_por_id_ya_no_existe(bool tokenGlobal)
     {
         var id = await OwnCompanyAsync();
+        using var client = _f.Client(tokenGlobal);
 
-        var response = await PutWithTokenAsync(endpointGlobal: false, tokenGlobal: true, id);
+        var response = await ReadAsync(
+            await client.PutAsJsonAsync(
+                $"/api/v1/companies/{id}",
+                new
+                {
+                    id,
+                    legalName = "Intento",
+                    tradeName = (string?)null,
+                    isActive = false,
+                    taxId = CompanyIdentityUpdateFixture.ValidRuc(),
+                }
+            )
+        );
 
-        ((int)response.Status).Should().BeGreaterThanOrEqualTo(400).And.BeLessThan(500);
-        (await _f.ReadAsync(id)).LegalName.Should().Be("Empresa Original");
+        ((int)response.Status).Should().BeInRange(404, 405);
+        var company = await _f.ReadAsync(id);
+        company.LegalName.Should().Be("Empresa Original");
+        company.IsActive.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("/api/v1/companies")]
+    [InlineData("/api/v1/companies/{0}")]
+    public async Task Listado_y_detalle_empresariales_ya_no_existen(string template)
+    {
+        var id = await OwnCompanyAsync();
+        using var client = _f.Client(global: false);
+
+        var response = await client.GetAsync(string.Format(template, id));
+
+        ((int)response.StatusCode).Should().BeInRange(404, 405);
     }
 }

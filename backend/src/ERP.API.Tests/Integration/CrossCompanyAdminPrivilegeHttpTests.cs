@@ -367,7 +367,7 @@ public sealed class CrossCompanyAdminPrivilegeHttpTests
     }
 
     [Fact]
-    public async Task Admin_en_A_no_actualiza_la_empresa_B_donde_no_tiene_el_permiso()
+    public async Task Admin_en_A_no_actualiza_la_identidad_de_la_empresa_B_donde_no_tiene_el_permiso()
     {
         async Task<Company> ReadAsync(Guid id)
         {
@@ -376,16 +376,19 @@ public sealed class CrossCompanyAdminPrivilegeHttpTests
             return await db.Companies.IgnoreQueryFilters().AsNoTracking().SingleAsync(c => c.Id == id);
         }
 
-        async Task<(HttpStatusCode Status, string Body)> PutAsync(
-            Guid targetId,
-            Guid headerCompanyId,
-            bool isActive
-        )
+        // La empresa destino la fija el X-Company-Id; el cuerpo no puede nombrar otra empresa.
+        async Task<(HttpStatusCode Status, string Body)> PutProfileAsync(Guid headerCompanyId)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/companies/{targetId}")
+            using var request = new HttpRequestMessage(HttpMethod.Put, "/api/v1/companies/profile")
             {
                 Content = JsonContent.Create(
-                    new { id = targetId, legalName = "Renombrada SEC03", tradeName = (string?)null, isActive }
+                    new
+                    {
+                        legalName = "Renombrada SEC03",
+                        tradeName = (string?)null,
+                        currencyCode = "USD",
+                        timezone = "America/Guayaquil",
+                    }
                 ),
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", MultiUserJwtFromA());
@@ -396,15 +399,15 @@ public sealed class CrossCompanyAdminPrivilegeHttpTests
 
         var before = await ReadAsync(_f.CompanyBId);
 
-        // El permiso se evalúa en A (Admin); en B el perfil no incluye erp.companies.update.
-        var foreign = await PutAsync(_f.CompanyBId, _f.CompanyAId, isActive: false);
+        // En B el perfil del usuario no incluye erp.companies.update: el permiso se evalúa en B.
+        var foreign = await PutProfileAsync(_f.CompanyBId);
         foreign.Status.Should().Be(HttpStatusCode.Forbidden, foreign.Body);
         var after = await ReadAsync(_f.CompanyBId);
         after.LegalName.Should().Be(before.LegalName);
         after.IsActive.Should().Be(before.IsActive);
 
         // Control: en A (Admin) la actualización procede.
-        var own = await PutAsync(_f.CompanyAId, _f.CompanyAId, isActive: true);
+        var own = await PutProfileAsync(_f.CompanyAId);
         own.Status.Should().Be(HttpStatusCode.OK, own.Body);
         (await ReadAsync(_f.CompanyAId)).LegalName.Should().Be("Renombrada SEC03");
     }

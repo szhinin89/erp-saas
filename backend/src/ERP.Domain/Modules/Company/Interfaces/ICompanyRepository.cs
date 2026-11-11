@@ -27,12 +27,6 @@ public interface ICompanyRepository
         CancellationToken cancellationToken = default
     );
 
-    Task<IReadOnlyList<CompanyEntity>> GetByIdsForManagementAsync(
-        IReadOnlyCollection<Guid> companyIds,
-        Guid tenantId,
-        CancellationToken cancellationToken = default
-    );
-
     Task<CompanyEntity?> GetTrackedByIdForTenantAsync(
         Guid companyId,
         Guid tenantId,

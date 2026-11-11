@@ -1,8 +1,8 @@
 ﻿{
-    "Generated":  "2026-11-11 11:32:26",
+    "Generated":  "2026-11-11 12:41:35",
     "Backend":  {
                     "TestProjects":  5,
-                    "TestFiles":  959,
+                    "TestFiles":  958,
                     "Projects":  [
                                      {
                                          "Project":  "ERP.API.Tests",
@@ -12,12 +12,12 @@
                                      {
                                          "Project":  "ERP.Application.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Application.Tests",
-                                         "TestFiles":  376
+                                         "TestFiles":  373
                                      },
                                      {
                                          "Project":  "ERP.Architecture.Tests",
                                          "Path":  "C:\\ProyectCursor\\erp-saas\\backend\\src\\ERP.Architecture.Tests",
-                                         "TestFiles":  35
+                                         "TestFiles":  37
                                      },
                                      {
                                          "Project":  "ERP.Domain.Tests",
@@ -32,6 +32,6 @@
                                  ]
                 },
     "Frontend":  {
-                     "TestFiles":  565
+                     "TestFiles":  564
                  }
 }
