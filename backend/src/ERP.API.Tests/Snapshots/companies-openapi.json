@@ -53,7 +53,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyDetailDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                  "$ref": "#/components/schemas/ERP.API.Contracts.ApiResponse\u00601[[ERP.Application.Modules.Companies.DTOs.CompanyCreatedDto, ERP.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
                 }
               }
             },
