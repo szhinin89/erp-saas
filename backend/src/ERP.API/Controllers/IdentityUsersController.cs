@@ -18,10 +18,11 @@ namespace ERP.API.Controllers;
 /// también MembershipsView habría requerido ambos permisos a la vez. TenantId/CompanyId nunca
 /// viajan en el request: <see cref="CreateSystemUserAdminHandler"/> los resuelve del contexto
 /// autenticado, mismo principio anti-IDOR que <see cref="CompanyUserMembershipsController"/>.
-/// IAM-V1-F2: cada acción declara su propio permiso — a nivel de clase solo se exige sesión
-/// autenticada. Antes la policy de clase (IdentityUsersCreate) se sumaba con AND a la de la
-/// contraseña temporal, que entonces exigía también permiso de crear usuarios.
 /// </summary>
+// IAM-V1-F2: cada acción declara su propio permiso — a nivel de clase solo se exige sesión
+// autenticada. Antes la policy de clase (IdentityUsersCreate) se sumaba con AND a la de la
+// contraseña temporal, que entonces exigía también permiso de crear usuarios.
+// (Comentario normal, no XML: el summary de clase se publica como descripción del tag OpenAPI.)
 [ApiController]
 [Route("api/v1/admin/iam/users")]
 [Authorize]
