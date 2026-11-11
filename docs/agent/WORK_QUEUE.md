@@ -4,6 +4,14 @@ Autoridad de entrega y gates: [STATUS](../../STATUS.md). Reglas y responsables:
 [flujo por fase](../architecture/enforcement.md#flujo-obligatorio-del-agente-por-fase).
 No incluye entregas terminadas ni autoriza desarrollos por mencionarlos.
 
+- IAM-V1-F2 (PENDING; siguiente trabajo de IAM, sin cambios autorizados; IAM-V1-F1 CLOSED con
+  CI #1140 SUCCESS): alcance a definir por el propietario a partir de lo ya identificado en el
+  diagnóstico de Fase 1, sin ampliarlo: visibilidad de UI que permite por defecto
+  (`usePermissionsUi.canShow` sin permisos cargados o vacíos; `RouteAccessGuard` por primer
+  segmento de ruta y montando la página mientras el menú no está resuelto) y la policy de clase
+  de `IdentityUsersController` que exige `access.identity_users.create` también para la contraseña
+  temporal. La decisión de datos sobre el perfil `DataEntry` es del propietario. Detalle en
+  [STATUS](../../STATUS.md).
 - SEC-A01 (requisitos de despliegue; implementación CLOSED): antes de producción, verificar IP
   real tras el proxy y proxies confiables, Redis e instancias API, medir BCrypt y fijar límites,
   concurrencia y cola, y evaluar el bloqueo temporal dirigido. Desarrollo terminado; son

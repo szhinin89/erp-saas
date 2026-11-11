@@ -1,10 +1,23 @@
 # Project Status
 
-## IAM-V1-F1 — Protección de identidades globales y aislamiento IAM multiempresa — IMPLEMENTADO, pendiente gate del propietario (2026-11-10)
+## IAM-V1-F1 — Protección de identidades globales y aislamiento IAM multiempresa — CLOSED (2026-11-10)
+
+El propietario confirma [CI #1140](https://github.com/szhinin89/erp-saas/actions/runs/42931737111)
+SUCCESS (ejecución `42931737111`) sobre `main`, commit
+`cb50e224d8cf09b304f1bcf9a44f3324a76c5de2` (`fix(iam): isolate global identities and company
+administration`), tras el gate final de aislamiento del propietario (2026-11-10). Siguiente
+trabajo: IAM Fase 2, sin cambios autorizados (ver [WORK_QUEUE](docs/agent/WORK_QUEUE.md)).
 
 Alcance y decisiones D1–D5 aprobados por el propietario (con condiciones). Regla vigente:
 [Seguridad § identidades globales y alcance IAM](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
 Sin migraciones, sin cambios en First Run, perfiles, `DataEntry`, permisos, credenciales ni datos.
+
+- Decisiones del propietario: D1 cuentas globales invisibles y no administrables desde cualquier
+  sesión de empresa, incluido el modo operador (se administran desde Admin Core); D2 solo se
+  vinculan identidades existentes del mismo tenant; D3 el invariante de administradores excluye al
+  global, con primer Admin permitido en una empresa administrada solo por el global; D4 respuesta
+  404 uniforme para inexistente, global u otra empresa/tenant; D5 conflicto genérico único al crear
+  usuario con username o email ocupados (único indicio residual de existencia).
 
 - Hallazgos corregidos (verificados en código y `erp_zh_dev`, solo lectura): un Admin de empresa
   podía asignar contraseña temporal al administrador global (membership Admin en la primera
@@ -28,7 +41,9 @@ Sin migraciones, sin cambios en First Run, perfiles, `DataEntry`, permisos, cred
   `AdminUserSessionIntegrationTests` 4/4 (PostgreSQL); `ERP.Architecture.Tests` 145/145;
   `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK; `architecture:check` PASS; ESLint del
   archivo frontend tocado (solo comentarios); `git diff --check` OK. Manifiesto CI sin cambios.
-  Suite completa no ejecutada (la corre el propietario).
+  Antes del commit: `git diff --cached --check` OK y `check-staged-guardrails.ps1` PASS (Stack Audit
+  y Architecture guardrails) sobre los 43 archivos en staging.
+- **Gate final del propietario PASS (2026-11-10).** CLOSED con CI #1140 SUCCESS.
 
 ## BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 y BRANCH-CONFIG-READ-PERMISSION-01 — Acceso a la configuración de sucursal — CLOSED (2026-11-10)
 
