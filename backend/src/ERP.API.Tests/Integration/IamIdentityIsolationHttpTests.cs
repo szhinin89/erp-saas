@@ -8,6 +8,7 @@ using ERP.API.Tests.Support;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.Kernel.Permissions;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
@@ -48,6 +49,9 @@ public sealed class IamIdentityIsolationHttpFixture : IAsyncLifetime
     public IdentityUser FirstAdminD { get; private set; } = null!;
     public IdentityUser AdminC { get; private set; } = null!;
     public IdentityUser AdminB { get; private set; } = null!;
+    public IdentityUser SupportA { get; private set; } = null!;
+    public IdentityUser PwdTargetA { get; private set; } = null!;
+    public Guid OperativeProfileAId { get; private set; }
     public IdentityUser UserC { get; private set; } = null!;
 
     public Guid GlobalMembershipAId { get; private set; }
@@ -118,6 +122,8 @@ public sealed class IamIdentityIsolationHttpFixture : IAsyncLifetime
         AdminC = NewUser("iam-admin-c", seedBy);
         UserC = NewUser("iam-user-c", seedBy);
         AdminB = NewUser("iam-admin-b", seedBy);
+        SupportA = NewUser("iam-support-a", seedBy);
+        PwdTargetA = NewUser("iam-pwd-a", seedBy);
         db.IdentityUsers.AddRange(
             Global,
             AdminA,
@@ -127,9 +133,35 @@ public sealed class IamIdentityIsolationHttpFixture : IAsyncLifetime
             FirstAdminD,
             AdminC,
             UserC,
-            AdminB
+            AdminB,
+            SupportA,
+            PwdTargetA
         );
         await db.SaveChangesAsync();
+
+        // IAM-V1-F2: perfil de soporte con SOLO contraseña temporal (sin crear usuarios) y un
+        // perfil operativo para las vinculaciones de usuarios operativos.
+        var supportProfile = AccessProfile.Create(t1.Id, a.Id, "Soporte A", null, seedBy);
+        var operativeProfile = AccessProfile.Create(t1.Id, a.Id, "Operativo A", null, seedBy);
+        db.AccessProfiles.AddRange(supportProfile, operativeProfile);
+        await db.SaveChangesAsync();
+        OperativeProfileAId = operativeProfile.Id;
+        db.AccessProfilePermissions.AddRange(
+            AccessProfilePermission.Create(
+                t1.Id,
+                supportProfile.Id,
+                AccessPermissions.MembershipsView,
+                true,
+                seedBy
+            ),
+            AccessProfilePermission.Create(
+                t1.Id,
+                supportProfile.Id,
+                AccessPermissions.IdentityUsersAssignTemporaryPassword,
+                true,
+                seedBy
+            )
+        );
 
         var globalA = CompanyUserMembership.Create(a.Id, Global.Id, "Admin", null, seedBy);
         var operA = CompanyUserMembership.Create(a.Id, OperA.Id, "User", null, seedBy);
@@ -139,6 +171,14 @@ public sealed class IamIdentityIsolationHttpFixture : IAsyncLifetime
             operA,
             CompanyUserMembership.Create(b.Id, UserB.Id, "User", null, seedBy),
             CompanyUserMembership.Create(b.Id, AdminB.Id, "Admin", null, seedBy),
+            CompanyUserMembership.Create(a.Id, SupportA.Id, "User", supportProfile.Id, seedBy),
+            CompanyUserMembership.Create(
+                a.Id,
+                PwdTargetA.Id,
+                "User",
+                operativeProfile.Id,
+                seedBy
+            ),
             CompanyUserMembership.Create(b.Id, LinkB.Id, "User", null, seedBy),
             CompanyUserMembership.Create(b.Id, FirstAdminD.Id, "User", null, seedBy),
             CompanyUserMembership.Create(d.Id, Global.Id, "Admin", null, seedBy),
@@ -314,6 +354,9 @@ public sealed class IamIdentityIsolationHttpTests : IClassFixture<IamIdentityIso
 
     private Actor AdminC() =>
         new(_f.Tenant2Id, _f.AdminC.Id, _f.CompanyCId, Jwt(_f.Tenant2Id, _f.AdminC.Id, "Admin"));
+
+    private Actor SupportA() =>
+        new(_f.Tenant1Id, _f.SupportA.Id, _f.CompanyAId, Jwt(_f.Tenant1Id, _f.SupportA.Id, "User"));
 
     private Actor AdminB() =>
         new(_f.Tenant1Id, _f.AdminB.Id, _f.CompanyBId, Jwt(_f.Tenant1Id, _f.AdminB.Id, "Admin"));
@@ -523,7 +566,12 @@ public sealed class IamIdentityIsolationHttpTests : IClassFixture<IamIdentityIso
             AdminA(),
             HttpMethod.Post,
             Memberships,
-            new { username = _f.LinkB.Username, role = "User" }
+            new
+            {
+                username = _f.LinkB.Username,
+                role = "User",
+                profileId = _f.OperativeProfileAId,
+            }
         );
 
         link.Status.Should().Be(HttpStatusCode.OK, link.Body);
@@ -918,6 +966,92 @@ public sealed class IamIdentityIsolationHttpTests : IClassFixture<IamIdentityIso
         );
         foreignHeader.Status.Should().Be(HttpStatusCode.Forbidden, foreignHeader.Body);
         foreignHeader.Body.Should().NotContain("Cambio en la sucursal de B");
+    }
+
+    // ── IAM-V1-F2: contraseña temporal y perfil obligatorio ────────────────────────────────
+
+    [Fact]
+    public async Task IAM_V1_F2_contrasena_temporal_solo_exige_su_propio_permiso()
+    {
+        // Perfil con assign_temporary_password y SIN access.identity_users.create.
+        var ok = await SendAsync(
+            SupportA(),
+            HttpMethod.Post,
+            $"{Users}/{_f.PwdTargetA.Username}/assign-temporary-password",
+            new { temporaryPassword = TempPassword }
+        );
+        ok.Status.Should().Be(HttpStatusCode.OK, ok.Body);
+        var stored = await InDbAsync(db =>
+            db.IdentityUsers.AsNoTracking().SingleAsync(u => u.Id == _f.PwdTargetA.Id)
+        );
+        stored.PasswordHash.Should().NotBe("hash-original");
+        stored.RequirePasswordReset.Should().BeTrue();
+
+        // Ese mismo perfil sigue sin poder crear usuarios.
+        var create = await SendAsync(
+            SupportA(),
+            HttpMethod.Post,
+            Users,
+            new
+            {
+                username = $"iam-nuevo-{Guid.NewGuid():N}"[..20],
+                firstName = "Nuevo",
+                lastName = "Usuario",
+                email = (string?)null,
+                password = TempPassword,
+                role = "User",
+                profileId = _f.OperativeProfileAId,
+            }
+        );
+        create.Status.Should().Be(HttpStatusCode.Forbidden, create.Body);
+
+        // Un operativo sin el permiso no puede asignarla.
+        var denied = await SendAsync(
+            OperA(),
+            HttpMethod.Post,
+            $"{Users}/{_f.PwdTargetA.Username}/assign-temporary-password",
+            new { temporaryPassword = TempPassword }
+        );
+        denied.Status.Should().Be(HttpStatusCode.Forbidden, denied.Body);
+    }
+
+    [Fact]
+    public async Task IAM_V1_F2_alta_o_vinculacion_operativa_sin_perfil_se_rechaza_sin_persistir()
+    {
+        var newUsername = $"iam-sinperfil-{Guid.NewGuid():N}"[..24];
+        var create = await SendAsync(
+            AdminA(),
+            HttpMethod.Post,
+            Users,
+            new
+            {
+                username = newUsername,
+                firstName = "Sin",
+                lastName = "Perfil",
+                email = (string?)null,
+                password = TempPassword,
+                role = "User",
+            }
+        );
+        ((int)create.Status).Should().BeInRange(400, 499, create.Body);
+        create.Body.Should().Contain("requiere un perfil de acceso");
+        (
+            await InDbAsync(db =>
+                db.IdentityUsers.AsNoTracking().AnyAsync(u => u.Username == newUsername)
+            )
+        )
+            .Should()
+            .BeFalse();
+
+        var link = await SendAsync(
+            AdminA(),
+            HttpMethod.Post,
+            Memberships,
+            new { username = _f.UserB.Username, role = "User" }
+        );
+        ((int)link.Status).Should().BeInRange(400, 499, link.Body);
+        link.Body.Should().Contain("requiere un perfil de acceso");
+        (await MembershipAsync(_f.CompanyAId, _f.UserB.Id)).Should().BeNull();
     }
 
     // ── Invariante de administradores y usuarios operativos ────────────────────────────────

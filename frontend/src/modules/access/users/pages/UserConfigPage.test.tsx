@@ -124,6 +124,18 @@ const twoBranchesCatalog = [
   },
 ];
 
+/**
+ * Datos mínimos de un alta nueva: nombre, apellido, contraseña inicial y (IAM-V1-F2) el perfil de
+ * acceso obligatorio del usuario operativo. La contraseña tiene un "hint" dentro del mismo
+ * <label>, por eso se busca por prefijo.
+ */
+function fillNewUserFields() {
+  fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "Nuevo" } });
+  fireEvent.change(screen.getByLabelText("Apellido"), { target: { value: "Usuario" } });
+  fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), { target: { value: "Passw0rd" } });
+  fireEvent.change(screen.getByLabelText("Perfil de acceso"), { target: { value: "profile-1" } });
+}
+
 function setUserRole(role: string | null) {
   useAuthStore.setState({
     user:
@@ -381,17 +393,7 @@ describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
       ).disabled,
     ).toBe(false);
 
-    fireEvent.change(screen.getByLabelText("Nombre"), {
-      target: { value: "Nuevo" },
-    });
-    fireEvent.change(screen.getByLabelText("Apellido"), {
-      target: { value: "Usuario" },
-    });
-    // El campo tiene un "hint" adicional dentro del mismo <label> (RHF/ZHField), por eso el
-    // match exacto de getByLabelText no aplica — se usa un prefijo con regex.
-    fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), {
-      target: { value: "Passw0rd" },
-    });
+    fillNewUserFields();
 
     fireEvent.click(screen.getByRole("tab", { name: "Acceso a sucursales" }));
     await waitFor(() => expect(screen.getByText("Matriz")).toBeTruthy());
@@ -409,6 +411,8 @@ describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
           firstName: "Nuevo",
           lastName: "Usuario",
           password: "Passw0rd",
+          role: "User",
+          profileId: "profile-1",
         }),
       );
       expect(
@@ -442,15 +446,7 @@ describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
     fireEvent.blur(screen.getByLabelText("Username"));
 
     await waitFor(() => expect(screen.getByLabelText("Nombre")).toBeTruthy());
-    fireEvent.change(screen.getByLabelText("Nombre"), {
-      target: { value: "Nuevo" },
-    });
-    fireEvent.change(screen.getByLabelText("Apellido"), {
-      target: { value: "Usuario" },
-    });
-    fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), {
-      target: { value: "Passw0rd" },
-    });
+    fillNewUserFields();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Guardar configuración" }),
@@ -485,15 +481,7 @@ describe("UserConfigPage — alta de usuario nuevo sin paso intermedio", () => {
     fireEvent.blur(screen.getByLabelText("Username"));
 
     await waitFor(() => expect(screen.getByLabelText("Nombre")).toBeTruthy());
-    fireEvent.change(screen.getByLabelText("Nombre"), {
-      target: { value: "Nuevo" },
-    });
-    fireEvent.change(screen.getByLabelText("Apellido"), {
-      target: { value: "Usuario" },
-    });
-    fireEvent.change(screen.getByLabelText(/^Contraseña inicial/), {
-      target: { value: "Passw0rd" },
-    });
+    fillNewUserFields();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Guardar configuración" }),

@@ -8,7 +8,7 @@ import {
   type PermissionCatalogCategory,
   type PermissionCatalogItem,
 } from "../api/adminPermissionsService";
-import { ZHField, ZHToggle, ZHFormActions, ZHBtn } from "../../../components/zh/ZHForm";
+import { ZHField, ZHFormActions, ZHBtn } from "../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../components/zh/ZHPageNotice";
 import { NoAccessPage, Badge } from "../../../components/PageShell";
 import { ZhSelect, ZhTextInput } from "../../../components/zh/inputs";
@@ -18,8 +18,12 @@ import { presentPermissionsMutationFailure } from "../permissionsMutationFailure
 import {
   categoryActionCodes,
   categorySelectionState as selectionStateOf,
+  isMassAssignment,
+  permStateDiff,
   toggleActionState,
 } from "../permissionsAssignmentState";
+import { PermissionsCatalogTree } from "../components/PermissionsCatalogTree";
+import { PermissionGrantSummary } from "../components/PermissionGrantSummary";
 import { message } from "../../../lib/messages";
 import "./ProfilesPage.css";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
@@ -62,6 +66,8 @@ export function PermissionsAssignmentPage() {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const [permState, setPermState] = useState<Record<string, boolean>>({});
+  /** Estado guardado del perfil (para mostrar las diferencias antes de guardar). */
+  const [savedPermState, setSavedPermState] = useState<Record<string, boolean>>({});
   const [permLoading, setPermLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -142,8 +148,10 @@ export function PermissionsAssignmentPage() {
           if (item.permissionKey in next) next[item.permissionKey] = !!item.isAllowed;
         }
         setPermState(next);
+        setSavedPermState(next);
       } catch (err) {
         setPermState(buildEmptyPermState());
+        setSavedPermState(buildEmptyPermState());
         setSaveError(formatApiRequestError(err, { generic: t("profiles.perms.error.load") }));
       } finally {
         setPermLoading(false);
@@ -155,7 +163,10 @@ export function PermissionsAssignmentPage() {
   useEffect(() => {
     if (!catalog) return;
     if (selectedProfileId) void loadPermissions(selectedProfileId);
-    else setPermState(buildEmptyPermState());
+    else {
+      setPermState(buildEmptyPermState());
+      setSavedPermState(buildEmptyPermState());
+    }
   }, [selectedProfileId, loadPermissions, buildEmptyPermState, catalog]);
 
   const selectedProfile = useMemo(
@@ -175,7 +186,20 @@ export function PermissionsAssignmentPage() {
 
   /* ── Acciones rápidas: conveniencias de edición masiva sobre el mismo permState,
      mismo mecanismo que togglear una a una — no llaman a ningún servicio nuevo. ── */
-  const markAll = () => {
+  const markAll = async () => {
+    // IAM-V1-F2: conceder todo el catálogo a un perfil operativo es excepcional — confirmación
+    // explícita (el acceso total corresponde a la función Administrador de empresa).
+    const confirmed = await message.confirm({
+      title: t("permissionsAssignment.markAll.confirmTitle", "Marcar todos los permisos"),
+      message: t(
+        "permissionsAssignment.markAll.confirmMessage",
+        "Este perfil quedará con acceso a todas las pantallas y acciones de la empresa. Para acceso total usa la función Administrador de empresa en el usuario.",
+      ),
+      variant: "warning",
+      confirmLabel: t("permissionsAssignment.markAll.confirmAction", "Marcar todo"),
+      cancelLabel: t("common.cancel"),
+    });
+    if (!confirmed) return;
     setPermState((state) => {
       const next = { ...state };
       for (const code of allActionCodes) next[code] = true;
@@ -214,6 +238,8 @@ export function PermissionsAssignmentPage() {
     });
   };
 
+  const isGrantedNow = useCallback((code: string) => !!permState[code], [permState]);
+
   const toggleCollapsed = (itemId: string) => {
     setCollapsedIds((prev) => {
       const next = new Set(prev);
@@ -232,6 +258,7 @@ export function PermissionsAssignmentPage() {
       0,
     );
 
+    const diff = permStateDiff(savedPermState, permState, allActionCodes);
     const confirmed = await message.confirm({
       title: `Guardar permisos de "${selectedProfile.name}"`,
       message: (
@@ -242,8 +269,19 @@ export function PermissionsAssignmentPage() {
             inmediato.
           </p>
           <p className="zh-confirm-message">
-            Permisos que quedarán activos: <strong>{activeCount}</strong> de {totalActionsCount}.
+            Permisos que quedarán activos: <strong>{activeCount}</strong> de {totalActionsCount}{" "}
+            (se agregan <strong>{diff.added}</strong>, se quitan <strong>{diff.removed}</strong>).
           </p>
+          {isMassAssignment(activeCount, totalActionsCount) ? (
+            <p className="zh-confirm-message">
+              <strong>
+                {t(
+                  "permissionsAssignment.massWarning",
+                  "Atención: este perfil concederá más de la mitad de todos los permisos de la empresa. Revisa que sea una función operativa y no un acceso de administrador.",
+                )}
+              </strong>
+            </p>
+          ) : null}
         </>
       ),
       variant: "warning",
@@ -265,6 +303,7 @@ export function PermissionsAssignmentPage() {
         (r) => r.rejectionCode === "blocked_by_plan",
       );
       setRejectedPerms(planRejections);
+      setSavedPermState(permState);
       message.success(
         t("permissionsAssignment.saveSuccess", "Permisos guardados correctamente."),
       );
@@ -365,7 +404,7 @@ export function PermissionsAssignmentPage() {
             <span className="access-pa-quick-actions-label">
               {t("permissionsAssignment.quickActions.label")}
             </span>
-            <ZHBtn variant="secondary" size="xs" type="button" onClick={markAll}>
+            <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void markAll()}>
               {t("permissionsAssignment.quickActions.markAll")}
             </ZHBtn>
             <ZHBtn variant="secondary" size="xs" type="button" onClick={unmarkAll}>
@@ -391,92 +430,28 @@ export function PermissionsAssignmentPage() {
           ) : visibleGroups.length === 0 ? (
             <p className="subtle pg-state-pad">{t("permissionsAssignment.noFilterMatches")}</p>
           ) : (
-            visibleGroups.map((group) => (
-              <div key={group.code} className="access-pa-group">
-                <h4 className="access-pa-group-title">{t(group.labelKey)}</h4>
-                {group.categories.map((category) => {
-                  const selectionState = categorySelectionState(category);
-                  const categoryLabel = t(category.labelKey);
-                  return (
-                    <div key={category.id} className="access-pa-category">
-                      <div className="access-pa-category-header">
-                        <span className="access-pa-category-title">{categoryLabel}</span>
-                        <ZHBtn
-                          variant="ghost"
-                          size="xs"
-                          type="button"
-                          onClick={() => toggleCategoryAll(category)}
-                        >
-                          {t(
-                            selectionState === "all"
-                              ? "permissionsAssignment.category.unmarkAll"
-                              : "permissionsAssignment.category.markAll",
-                          )}
-                        </ZHBtn>
-                      </div>
-                      {category.items.map((item) => {
-                        const collapsed = collapsedIds.has(item.id);
-                        const itemLabel = t(item.labelKey);
-                        return (
-                          <div key={item.id} className="pg-section access-pa-item-card">
-                            <button
-                              type="button"
-                              className="pg-section-header access-pa-item-header"
-                              onClick={() => toggleCollapsed(item.id)}
-                              aria-expanded={!collapsed}
-                              aria-label={t(
-                                collapsed
-                                  ? "permissionsAssignment.expandItem"
-                                  : "permissionsAssignment.collapseItem",
-                                { name: itemLabel },
-                              )}
-                            >
-                              <span className="pg-section-header-left access-pa-item-header-left">
-                                <span className="material-symbols-outlined pg-section-icon access-pa-item-chevron">
-                                  {collapsed ? "chevron_right" : "expand_more"}
-                                </span>
-                                <span className="access-pa-item-title-wrap">
-                                  <span className="access-pa-item-title">{itemLabel}</span>
-                                  <Badge label={item.route} variant="neutral" code />
-                                </span>
-                              </span>
-                              <Badge
-                                label={t("permissionsAssignment.actionsCount", {
-                                  count: item.actions.length,
-                                })}
-                                variant="neutral"
-                              />
-                            </button>
-                            {!collapsed && (
-                              <div className="pg-section-body access-pa-actions-grid">
-                                {item.actions.map((action, index) => (
-                                  <div
-                                    key={action.code}
-                                    title={action.code}
-                                    className={
-                                      index === 0
-                                        ? "access-pa-action-tile access-pa-action-tile--access"
-                                        : "access-pa-action-tile access-pa-action-tile--action"
-                                    }
-                                  >
-                                    <ZHToggle
-                                      label={action.label}
-                                      description={action.description}
-                                      value={!!permState[action.code]}
-                                      onChange={(checked) => toggleAction(item, action.code, checked)}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
+            <div className="access-pa-layout">
+              <div className="access-pa-layout-main">
+                <PermissionsCatalogTree
+                  groups={visibleGroups}
+                  permState={permState}
+                  collapsedIds={collapsedIds}
+                  onToggleCollapsed={toggleCollapsed}
+                  onToggleAction={toggleAction}
+                  onToggleCategory={toggleCategoryAll}
+                  categorySelectionState={categorySelectionState}
+                />
               </div>
-            ))
+              {catalog ? (
+                <aside className="access-pa-layout-aside">
+                  <PermissionGrantSummary
+                    catalog={catalog}
+                    isGranted={isGrantedNow}
+                    title={t("permissionsSummary.title", "Este perfil concede")}
+                  />
+                </aside>
+              ) : null}
+            </div>
           )}
 
           <div className="access-pa-summary-bar">

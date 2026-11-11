@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ErpPageTemplate } from "../../../../templates/ErpPageTemplate";
-import { NoAccessPage } from "../../../../components/PageShell";
+import { Badge, NoAccessPage } from "../../../../components/PageShell";
 import { ZHBtn } from "../../../../components/zh/ZHForm";
 import { ZHPageNotice } from "../../../../components/zh/ZHPageNotice";
 import { ZhTextInput } from "../../../../components/zh/inputs";
@@ -19,6 +19,8 @@ import {
 import { branchAssignmentService } from "../api/branchAssignmentService";
 import { companyUserPreferencesService } from "../../api/companyUserPreferencesService";
 import "./UsersPage.css";
+import { membershipRoleLabel } from "../../roleLabels";
+import { isAdminRole as isAdminMembershipRole } from "../../../../access/permissionUi";
 
 const PERMISSION = "access.company_user_memberships.view";
 
@@ -267,14 +269,23 @@ export function UsersPage() {
       render: (row) => <span className="acc-user-email">{row.email ?? "—"}</span>,
     },
     {
-      key: "profile",
-      header: t("users.table.profile", "Perfil"),
-      render: (row) => row.profileName ?? t("users.table.noProfile", "Sin perfil"),
+      key: "role",
+      header: t("users.table.function", "Función"),
+      render: (row) => membershipRoleLabel(row.role, t),
     },
     {
-      key: "role",
-      header: t("users.table.role", "Role"),
-      render: (row) => row.role,
+      key: "profile",
+      header: t("users.table.profile", "Perfil de acceso"),
+      // IAM-V1-F2: el Administrador de empresa no usa perfil; un operativo sin perfil no tiene
+      // acceso a ninguna pantalla y se señala explícitamente.
+      render: (row) =>
+        isAdminMembershipRole(row.role) ? (
+          t("users.table.profileNotApplicable", "No aplica (acceso total)")
+        ) : row.profileName ? (
+          row.profileName
+        ) : (
+          <Badge label={t("users.table.noAccess", "Sin perfil · sin acceso")} variant="gray" />
+        ),
     },
     {
       key: "status",

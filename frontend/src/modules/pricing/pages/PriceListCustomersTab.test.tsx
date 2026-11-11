@@ -6,6 +6,7 @@ import { PriceListCustomersTab } from "./PriceListCustomersTab";
 import { priceListCustomerService, type PriceListDto } from "../api/pricingService";
 import { customerLookupFacade } from "../../masterData/facades/customerLookupFacade";
 import { message } from "../../../lib/messages";
+import { useSessionStore } from "../../../store/sessionStore";
 
 // PRICING-CUSTOMER-PRICE-LIST-ADMIN-05B: administración de PriceListCustomer desde
 // /products/pricing — reutiliza el mismo patrón de mocking que PriceListExceptionsTab.test.tsx.
@@ -82,6 +83,20 @@ beforeEach(() => {
   vi.mocked(priceListCustomerService.list).mockResolvedValue([ASSIGNED_CUSTOMER]);
   vi.mocked(customerLookupFacade.searchCustomers).mockResolvedValue([SEARCH_RESULT]);
   vi.mocked(message.confirm).mockResolvedValue(true);
+});
+
+
+// IAM-V1-F2: canShow es fail-closed — sesión cargada con los permisos que estas pruebas ejercitan
+// (antes los recibían implícitamente porque canShow devolvía true sin sesión).
+beforeEach(() => {
+  useSessionStore.setState({
+    isLoaded: true,
+    isLoading: false,
+    authorization: { permissions: ["pricing.view", "pricing.update"] } as never,
+  });
+});
+afterEach(() => {
+  useSessionStore.setState({ isLoaded: false, isLoading: false, authorization: null });
 });
 
 describe("PriceListCustomersTab", () => {

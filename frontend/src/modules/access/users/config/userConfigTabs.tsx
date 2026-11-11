@@ -9,6 +9,7 @@ import type {
 import { UserGeneralSection } from "../sections/UserGeneralSection";
 import { UserBranchesSection } from "../sections/UserBranchesSection";
 import { UserPreferencesSection } from "../sections/UserPreferencesSection";
+import { UserAccessSection } from "../sections/UserAccessSection";
 import { UserSecuritySection } from "../sections/UserSecuritySection";
 import { type CompanyUserMembershipAdminDto } from "../api/membershipService";
 import { type Profile } from "../../api/profileService";
@@ -16,7 +17,7 @@ import { type BranchListItemDto } from "../../../branches/facades/branchLookupFa
 import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
 
 export type UserConfigTabId =
-  "general" | "branches" | "preferences" | "security";
+  "general" | "branches" | "preferences" | "access" | "security";
 
 export type UserConfigContext = {
   mode: "new" | "edit";
@@ -60,7 +61,9 @@ export const userConfigTabs: UserConfigTab[] = [
         mode={ctx.mode}
         register={ctx.register}
         setValue={ctx.setValue}
+        control={ctx.control}
         errors={ctx.errors}
+        initialProfileId={ctx.membership?.profileId ?? null}
         profiles={ctx.profiles}
         canManage={ctx.canManage}
         canCreateUser={ctx.canCreateUser}
@@ -100,6 +103,13 @@ export const userConfigTabs: UserConfigTab[] = [
         blockError={ctx.blockErrors.preferences}
       />
     ),
+  },
+  {
+    id: "access",
+    labelKey: "users.config.tabs.access",
+    requiresExistingUser: true,
+    render: (ctx) =>
+      ctx.membership ? <UserAccessSection membership={ctx.membership} /> : null,
   },
   {
     id: "security",

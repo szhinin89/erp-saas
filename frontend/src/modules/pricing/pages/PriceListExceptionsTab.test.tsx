@@ -12,6 +12,7 @@ import {
   type PricingRuleDto,
 } from "../api/pricingService";
 import { message } from "../../../lib/messages";
+import { useSessionStore } from "../../../store/sessionStore";
 
 /**
  * CRITICAL-CONFIRMATIONS-CLEANUP-07 — residuo encontrado en el barrido: "Eliminar excepción"
@@ -90,6 +91,20 @@ beforeEach(() => {
   vi.mocked(priceListService.getAssignedItems).mockResolvedValue([ASSIGNED_ITEM]);
   vi.mocked(pricingRuleService.list).mockResolvedValue([RULE]);
   vi.mocked(message.confirm).mockResolvedValue(true);
+});
+
+
+// IAM-V1-F2: canShow es fail-closed — sesión cargada con los permisos que estas pruebas ejercitan
+// (antes los recibían implícitamente porque canShow devolvía true sin sesión).
+beforeEach(() => {
+  useSessionStore.setState({
+    isLoaded: true,
+    isLoading: false,
+    authorization: { permissions: ["pricing.view", "pricing.create", "pricing.delete", "items.view", "items.edit"] } as never,
+  });
+});
+afterEach(() => {
+  useSessionStore.setState({ isLoaded: false, isLoading: false, authorization: null });
 });
 
 describe("PriceListExceptionsTab — eliminar excepción: sin window.confirm", () => {

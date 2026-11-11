@@ -295,6 +295,9 @@ public class UpsertCompanyUserMembershipHandler
         await _companyUserBranchRepository.SaveChangesAsync(cancellationToken);
     }
 
+    public const string OperationalProfileRequiredMessage =
+        "Un usuario operativo requiere un perfil de acceso.";
+
     private async Task<Result<object>?> ValidateAssignmentAsync(
         UpsertCompanyUserMembershipCommand command,
         Guid companyId,
@@ -322,6 +325,16 @@ public class UpsertCompanyUserMembershipHandler
                     "Solo un administrador de la empresa puede asignar, modificar o retirar el rol Admin."
                 );
         }
+
+        // IAM-V1-F2: toda asignación operativa NUEVA exige perfil — alta, reactivación o paso de
+        // Administrador de empresa a usuario operativo. Un usuario operativo activo que ya existía
+        // sin perfil se conserva tal cual (se puede editar sin forzar un perfil).
+        if (
+            command.ProfileId is null
+            && !IsAdminRole(command.Role)
+            && (existing is not { IsActive: true } || IsAdminRole(existing.Role))
+        )
+            return Result<object>.ValidationFailure(OperationalProfileRequiredMessage);
 
         if (command.ProfileId is not Guid profileId)
             return null;

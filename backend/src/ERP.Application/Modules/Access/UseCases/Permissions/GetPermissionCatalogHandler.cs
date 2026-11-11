@@ -58,6 +58,19 @@ public sealed class GetPermissionCatalogHandler
             "Asignar contraseña temporal",
             "Permite asignar una contraseña temporal."
         ),
+        // IAM-V1-F2: verbos que el catálogo mostraba crudos (solo presentación; las claves de
+        // permiso no cambian).
+        ["view"] = ("Consultar", "Permite consultar la información relacionada."),
+        ["post"] = ("Contabilizar", "Permite contabilizar el registro."),
+        ["discard"] = ("Descartar", "Permite descartar un borrador."),
+        ["reprocess"] = ("Reprocesar", "Permite reprocesar la operación."),
+        ["fulfill"] = ("Atender", "Permite atender la solicitud."),
+        ["reconcile"] = ("Conciliar", "Permite conciliar el estado del documento."),
+        ["regenerate"] = ("Regenerar", "Permite regenerar el documento."),
+        ["retransmit-corrected"] = (
+            "Retransmitir corregido",
+            "Permite retransmitir un documento corregido."
+        ),
     };
 
     public Task<Result<PermissionCatalogDto>> HandleAsync(

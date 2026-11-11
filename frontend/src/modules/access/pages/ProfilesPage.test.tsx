@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../../../i18n/i18n";
 import { useAuthStore } from "../../../store/authStore";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { ProfilesPage } from "./ProfilesPage";
 import { profileService } from "../api/profileService";
+import { membershipService } from "../users/api/membershipService";
 import { message } from "../../../lib/messages";
 
 /**
@@ -31,6 +32,10 @@ vi.mock("../api/profileService", () => ({
     getPermissions: vi.fn(),
     upsertPermissions: vi.fn(),
   },
+}));
+
+vi.mock("../users/api/membershipService", () => ({
+  membershipService: { list: vi.fn() },
 }));
 
 vi.mock("../../../access/usePermissionsUi", () => ({
@@ -90,7 +95,18 @@ beforeEach(() => {
   vi.mocked(profileService.list).mockResolvedValue([PROFILE]);
   vi.mocked(profileService.create).mockReset();
   vi.mocked(profileService.update).mockReset();
-  vi.mocked(profileService.getPermissions).mockReset();
+  vi.mocked(profileService.getPermissions).mockReset().mockResolvedValue({
+    profileId: PROFILE.id,
+    items: [
+      { permissionKey: "sales.view", isAllowed: true },
+      { permissionKey: "sales.create", isAllowed: true },
+      { permissionKey: "sales.update", isAllowed: false },
+    ],
+  });
+  vi.mocked(membershipService.list).mockReset().mockResolvedValue([
+    { companyUserId: "c1", identityUserId: "u1", username: "ana", fullName: "Ana", email: null, role: "User", isActive: true, profileId: PROFILE.id, profileName: PROFILE.name },
+    { companyUserId: "c2", identityUserId: "u2", username: "adm", fullName: "Adm", email: null, role: "Admin", isActive: true, profileId: PROFILE.id, profileName: PROFILE.name },
+  ]);
   vi.mocked(profileService.upsertPermissions).mockReset();
   vi.mocked(message.confirm).mockReset().mockResolvedValue(true);
   vi.mocked(message.success).mockReset();
@@ -147,7 +163,9 @@ describe("ProfilesPage — lista y CRUD sin permisos embebidos", () => {
     // Guard de responsabilidad única: nada de switches de permisos ni catálogo de módulos aquí.
     expect(screen.queryAllByRole("switch").length).toBe(0);
     expect(screen.queryByText("Permisos del perfil")).toBeNull();
-    expect(profileService.getPermissions).not.toHaveBeenCalled();
+    // IAM-V1-F2: la tabla lee los permisos de cada perfil solo para la columna «Concede»;
+    // esta pantalla nunca los modifica.
+    expect(profileService.upsertPermissions).not.toHaveBeenCalled();
   });
 
   it('el botón "Gestionar permisos" navega a /admin/permissions con el perfil preseleccionado', async () => {
@@ -230,6 +248,28 @@ describe("ProfilesPage — lista y CRUD sin permisos embebidos", () => {
       expect(screen.getByLabelText(/Nombre del perfil/i)).toBeTruthy(),
     );
     expect(message.success).not.toHaveBeenCalled();
+  });
+});
+
+describe("ProfilesPage — IAM-V1-F2 función administrativa y alcance de cada perfil", () => {
+  it("presenta «Administrador de empresa» como función fija, no como fila editable", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Ventas Jr.")).toBeTruthy());
+
+    const card = screen.getByRole("note");
+    expect(card.textContent).toContain("Administrador de empresa");
+    expect(card.textContent).toContain("no como perfil");
+    expect(screen.getAllByRole("row").some((r) => r.textContent?.includes("Administrador de empresa"))).toBe(false);
+  });
+
+  it("muestra cuántos permisos concede y cuántos usuarios operativos lo usan (sin contar administradores)", async () => {
+    renderPage();
+    expect(await screen.findByText("2 permisos")).toBeTruthy();
+    const row = screen.getAllByRole("row").find((r) => r.textContent?.includes("Ventas Jr."))!;
+    expect(row.textContent).toContain("2 permisos");
+    const cells = within(row).getAllByRole("cell").map((c) => c.textContent);
+    // La columna «Usuarios operativos» sigue a «Concede»: 1 (el Administrador no se cuenta).
+    expect(cells[cells.indexOf("2 permisos") + 1]).toBe("1");
   });
 });
 

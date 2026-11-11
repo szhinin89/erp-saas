@@ -52,14 +52,24 @@ public sealed class IdentityUsersControllerTests
     }
 
     [Fact]
-    public void El_controller_exige_perm_access_identity_users_create()
+    public void IAM_V1_F2_la_clase_solo_exige_sesion_y_Create_exige_perm_access_identity_users_create()
     {
-        var attr = typeof(IdentityUsersController)
+        // Una policy de clase se suma con AND a cada acción: la clase no debe exigir el permiso
+        // de crear usuarios, que solo corresponde a POST /users.
+        typeof(IdentityUsersController)
+            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
+            .Cast<AuthorizeAttribute>()
+            .Should()
+            .ContainSingle()
+            .Which.Policy.Should()
+            .BeNull();
+
+        var create = typeof(IdentityUsersController)
+            .GetMethod(nameof(IdentityUsersController.Create))!
             .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
             .Cast<AuthorizeAttribute>()
             .Single();
-
-        attr.Policy.Should().Be($"perm:{AccessPermissions.IdentityUsersCreate}");
+        create.Policy.Should().Be($"perm:{AccessPermissions.IdentityUsersCreate}");
     }
 
     [Fact]

@@ -31,6 +31,7 @@ import { message } from "../../../lib/messages";
 import "./ProfilesPage.css";
 import { usePermissionsUi } from "../../../access/usePermissionsUi";
 import { useAuthStore } from "../../../store/authStore";
+import { useProfileUsage } from "../hooks/useProfileUsage";
 
 /**
  * ADMINISTRATION-CLEAN-ACCESS-01: pantalla de responsabilidad única — CRUD de perfiles
@@ -43,6 +44,7 @@ export function ProfilesPage() {
   const user = useAuthStore((s) => s.user);
   const { canShow, isAdminRole } = usePermissionsUi();
   const canManage = canShow("access.profiles.view");
+  const canViewUsers = canShow("access.company_user_memberships.view");
   const navigate = useNavigate();
 
   /* list state */
@@ -88,6 +90,8 @@ export function ProfilesPage() {
   useEffect(() => {
     void loadProfiles();
   }, [loadProfiles]);
+
+  const usage = useProfileUsage(profiles, canViewUsers);
 
   /* ── Filtered list ─────────────────────────────────────────── */
   const filteredProfiles = useMemo(() => {
@@ -235,6 +239,26 @@ export function ProfilesPage() {
       ),
     },
     {
+      key: "grants",
+      header: t("profiles.table.grants", "Concede"),
+      render: (p) => {
+        const count = usage[p.id]?.permissionCount;
+        if (count == null) return "—";
+        return count === 0
+          ? t("profiles.table.grantsNone", "Sin permisos (sin acceso)")
+          : t("profiles.table.grantsCount", { count });
+      },
+    },
+    ...(canViewUsers
+      ? [
+          {
+            key: "users",
+            header: t("profiles.table.users", "Usuarios operativos"),
+            render: (p: Profile) => usage[p.id]?.userCount ?? "—",
+          },
+        ]
+      : []),
+    {
       key: "active",
       header: t("profiles.table.active"),
       render: (p) => (
@@ -301,6 +325,25 @@ export function ProfilesPage() {
         />
       ) : null}
 
+      {/* IAM-V1-F2: la función administrativa no es un perfil — se presenta fija, sin
+          duplicar sus privilegios (Role = Admin da acceso total por sí mismo). */}
+      <div className="access-admin-function-card" role="note">
+        <span className="material-symbols-outlined access-admin-function-icon" aria-hidden="true">
+          admin_panel_settings
+        </span>
+        <div>
+          <h3 className="access-admin-function-title">
+            {t("access.role.companyAdmin", "Administrador de empresa")}
+          </h3>
+          <p className="access-admin-function-text">
+            {t(
+              "profiles.adminFunction.description",
+              "Función administrativa con acceso total a esta empresa. Se asigna en Usuarios como función del usuario, no como perfil, y no se edita aquí. Los perfiles de esta lista definen el acceso de los usuarios operativos.",
+            )}
+          </p>
+        </div>
+      </div>
+
       {/* ── Table section ──────────────────────────────────────── */}
       <div className="pg-section">
         <div className="pg-table-controls">
@@ -346,7 +389,7 @@ export function ProfilesPage() {
                 <ZhTextInput
                   className="zh-input"
                   {...register("name")}
-                  placeholder="Ej. Analista de Finanzas Jr."
+                  placeholder={t("profiles.form.namePlaceholder", "Ej. Cajero, Bodeguero, Facturador")}
                 />
               </ZHField>
               <ZHField label={t("profiles.form.status")}>
@@ -364,6 +407,10 @@ export function ProfilesPage() {
               <ZHField
                 label={t("profiles.form.description")}
                 error={errors.description?.message}
+                hint={t(
+                  "profiles.form.descriptionHint",
+                  "Describe qué hace quien tiene este perfil, p. ej. «Factura en caja y consulta clientes».",
+                )}
               >
                 <ZhTextarea
                   className="zh-input"

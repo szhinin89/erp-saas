@@ -6,6 +6,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { PurchaseReceptionPage } from "./PurchaseReceptionPage";
 import { purchaseReceptionService } from "../api/purchaseReceptionService";
 import { buildReceptionRow as row } from "../utils/reception.testFixtures";
+import { useSessionStore } from "../../../store/sessionStore";
 
 vi.mock("../api/purchaseReceptionService", () => ({
   purchaseReceptionService: {
@@ -75,6 +76,20 @@ async function renderImported() {
 
 const tableNames = () =>
   Array.from(document.querySelectorAll(".pur-supplier-name")).map((n) => n.textContent);
+
+
+// IAM-V1-F2: canShow es fail-closed — sesión cargada con los permisos que estas pruebas ejercitan
+// (antes los recibían implícitamente porque canShow devolvía true sin sesión).
+beforeEach(() => {
+  useSessionStore.setState({
+    isLoaded: true,
+    isLoading: false,
+    authorization: { permissions: ["purchases.view", "purchases.create", "expenses.documents.create"] } as never,
+  });
+});
+afterEach(() => {
+  useSessionStore.setState({ isLoaded: false, isLoading: false, authorization: null });
+});
 
 describe("PurchaseReceptionPage — KPI accionables (PURCHASES-RECEPTION-FILTERS-01)", () => {
   it("las tarjetas son botones con estado: filtran su partición y se desactivan al pulsarlas de nuevo", async () => {

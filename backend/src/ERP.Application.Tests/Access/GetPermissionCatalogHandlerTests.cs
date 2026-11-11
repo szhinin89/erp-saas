@@ -137,4 +137,25 @@ public sealed class GetPermissionCatalogHandlerTests
 
         allCodes.Should().OnlyContain(code => allPermissions.Contains(code));
     }
+
+    [Fact]
+    public async Task IAM_V1_F2_ninguna_accion_se_muestra_con_el_verbo_crudo_de_la_clave()
+    {
+        var result = await _handler.Handle(new GetPermissionCatalogQuery(), CancellationToken.None);
+
+        var actions = result
+            .Value!.Groups.SelectMany(g => g.Categories)
+            .SelectMany(c => c.Items)
+            .SelectMany(i => i.Actions)
+            .ToList();
+
+        actions.Should().NotBeEmpty();
+        actions
+            .Where(a =>
+                string.Equals(a.Label, a.Code[(a.Code.LastIndexOf('.') + 1)..], StringComparison.Ordinal)
+            )
+            .Select(a => a.Code)
+            .Should()
+            .BeEmpty("cada acción debe tener una etiqueta comprensible en español");
+    }
 }

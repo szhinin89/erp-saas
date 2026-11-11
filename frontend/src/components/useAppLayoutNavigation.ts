@@ -32,36 +32,45 @@ export function useAppLayoutNavigation() {
   const [sessionMenuDto, setSessionMenuDto] = useState<
     NavMenuGroupDto[] | undefined
   >(undefined);
-  const [sessionMenuResolved, setSessionMenuResolved] = useState(false);
+  // IAM-V1-F2: el menú resuelto queda ligado a la sesión (usuario + tenant + empresa) para la
+  // que se pidió. Al cambiar de cuenta o de empresa, el menú anterior deja de contar como
+  // resuelto en el mismo render — nunca autoriza rutas de la sesión nueva.
+  const sessionKey = user
+    ? `${user.userId}|${user.tenantId}|${user.companyId ?? ""}`
+    : null;
+  const [resolvedSessionKey, setResolvedSessionKey] = useState<string | null>(
+    null,
+  );
+  const sessionMenuResolved =
+    sessionKey !== null && resolvedSessionKey === sessionKey;
 
   useEffect(() => {
-    if (!user) {
+    if (!sessionKey) {
       startTransition(() => {
         setSessionMenuDto(undefined);
-        setSessionMenuResolved(false);
+        setResolvedSessionKey(null);
       });
       return;
     }
     let cancelled = false;
-    setSessionMenuResolved(false);
     void accessService
       .getSessionMenu()
       .then((rows) => {
         if (!cancelled) {
           setSessionMenuDto(rows.length > 0 ? rows : []);
-          setSessionMenuResolved(true);
+          setResolvedSessionKey(sessionKey);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setSessionMenuDto([]);
-          setSessionMenuResolved(true);
+          setResolvedSessionKey(sessionKey);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [user, user?.tenantId]);
+  }, [sessionKey, user]);
 
   const restrictedPlanMenu = useMemo(
     () => isPlanBuilderSessionMenu(sessionMenuDto),

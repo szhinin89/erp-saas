@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { isValidElement, type ReactElement } from "react";
 import { MemoryRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
@@ -15,6 +15,8 @@ import {
   publicRoutes,
 } from "../routes";
 import { SupplierCreditDetailLegacyRedirect } from "../routes/legacyRedirects";
+import { useAuthStore } from "../store/authStore";
+import { useSessionStore } from "../store/sessionStore";
 
 /**
  * NAV-COVERAGE-H4 — los redirects legacy registrados llegan a montar su <Navigate> aunque su primer
@@ -88,7 +90,21 @@ function renderRedirect(legacy: string, url: string, destination: string, menu: 
   );
 }
 
-afterEach(cleanup);
+// IAM-V1-F2: el guard no monta páginas sin sesión cargada — usuario operativo con sesión resuelta.
+beforeEach(() => {
+  useAuthStore.setState({ user: { role: "User" } as never });
+  useSessionStore.setState({
+    isLoaded: true,
+    isLoading: false,
+    authorization: { permissions: [] } as never,
+  });
+});
+
+afterEach(() => {
+  cleanup();
+  useAuthStore.setState({ user: null });
+  useSessionStore.setState({ isLoaded: false, isLoading: false, authorization: null });
+});
 
 describe("LEGACY_REDIRECT_ALIASES — solo redirects registrados (anti-deriva)", () => {
   it("cada alias es un redirect registrado en routes/*", () => {

@@ -87,6 +87,20 @@ export const userConfigSchema = z
       }
     }
 
+    // IAM-V1-F2: toda asignación nueva de un usuario operativo exige perfil (el backend aplica la
+    // misma regla). Al editar se conserva un operativo existente sin perfil.
+    if (
+      (data.stage === "create" || data.stage === "assign") &&
+      data.role === "User" &&
+      !data.profileId
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Selecciona el perfil de acceso del usuario operativo.",
+        path: ["profileId"],
+      });
+    }
+
     if (data.loginMode === "DirectToDefault") {
       if (!data.defaultBranchId) {
         ctx.addIssue({

@@ -1,7 +1,11 @@
 import { useMemo, type ReactNode } from "react";
 import { matchPath, useLocation } from "react-router-dom";
 import { useI18n } from "../i18n/i18n";
-import { NoAccessPage } from "./PageShell";
+import { LoadingState, NoAccessPage } from "./PageShell";
+import {
+  PROTECTED_REDIRECT_PATHS,
+  PROTECTED_ROUTE_PATHS,
+} from "../routes/protectedRoutePaths";
 import type { MainMenuGroup } from "./useAppLayoutNavigation";
 import type { NavItem } from "../nav/navConfig";
 import { NavigationAccessContext, buildNavigationAccess } from "./navigationAccess";
@@ -59,35 +63,105 @@ function isLegacyRedirectAlias(pathname: string): boolean {
   );
 }
 
-function firstSegment(path: string): string {
+function cleanPath(path: string): string {
   const clean = path.split("?")[0].split("#")[0];
-  const segment = clean.split("/").filter(Boolean)[0];
+  return clean.length > 1 ? clean.replace(/\/+$/, "") : clean;
+}
+
+function firstSegment(path: string): string {
+  const segment = cleanPath(path).split("/").filter(Boolean)[0];
   return segment ? `/${segment}` : "/";
 }
 
-function collectAllowedPrefixes(items: NavItem[], acc: Set<string>): void {
+/** Rutas protegidas sin ítem de menú propio que todo usuario autenticado puede abrir. */
+const ALWAYS_ALLOWED_PATHS = new Set(["/", "/dashboard"]);
+
+/**
+ * IAM-V1-F2 — pantallas hijas con segmento literal que comparten EXACTAMENTE el permiso de su
+ * pantalla padre del menú (verificado contra sus controllers): heredan su visibilidad. Una hija
+ * con permiso propio (p. ej. /suppliers/credits, /sales/returns) nunca va aquí: necesita su
+ * propio ítem de menú. Patrón registrado → ruta padre del menú.
+ */
+export const INHERITED_CHILD_ROUTES: Readonly<Record<string, string>> = {
+  // Carga inicial: mismos permisos initialload.* que /initial-load.
+  "/initial-load/customers": "/initial-load",
+  "/initial-load/suppliers": "/initial-load",
+  "/initial-load/products": "/initial-load",
+  "/initial-load/initial-stock": "/initial-load",
+  "/initial-load/initial-receivables": "/initial-load",
+  "/initial-load/initial-payables": "/initial-load",
+  // Devoluciones de compra: PurchaseReturnController exige purchases.view, igual que /purchases.
+  "/purchases/returns": "/purchases",
+  "/purchases/returns/:id": "/purchases",
+};
+
+/**
+ * Sufijos que heredan la visibilidad de la pantalla del menú de la que cuelgan: el detalle
+ * (`/:id`), el alta (`/new`) y la edición (`/:id/edit`) de esa misma pantalla.
+ */
+const INHERITING_SUFFIX = /^(?::[^/]+|new|:[^/]+\/edit)$/;
+
+function collectNavRoutes(items: NavItem[], acc: Set<string>): void {
   for (const item of items) {
-    if (item.to) acc.add(firstSegment(item.to));
-    if (item.children?.length) collectAllowedPrefixes(item.children, acc);
+    if (item.to) acc.add(cleanPath(item.to));
+    if (item.children?.length) collectNavRoutes(item.children, acc);
   }
 }
 
-/** True si `pathname` cae dentro del árbol de navegación permitido por el backend. */
+/** Patrón registrado más específico (más segmentos literales) que coincide con la URL. */
+export function resolveRoutePattern(
+  pathname: string,
+  registeredPaths: readonly string[],
+): string | null {
+  const clean = cleanPath(pathname);
+  let best: string | null = null;
+  let bestStatic = -1;
+  for (const pattern of registeredPaths) {
+    if (!matchPath({ path: pattern, end: true, caseSensitive: true }, clean)) continue;
+    const staticCount = pattern.split("/").filter((s) => s && !s.startsWith(":")).length;
+    if (staticCount > bestStatic) {
+      best = pattern;
+      bestStatic = staticCount;
+    }
+  }
+  return best;
+}
+
+/**
+ * True si `pathname` corresponde a una pantalla autorizada por el menú del usuario (permisos
+ * efectivos resueltos por el backend). IAM-V1-F2: ya no basta compartir el primer segmento —
+ * la URL debe ser una ruta del menú, su detalle/alta/edición, una hija que comparte permiso
+ * (INHERITED_CHILD_ROUTES), un redirect registrado o una ruta siempre permitida.
+ */
 export function isRouteAllowed(
   pathname: string,
   mainMenuGroups: MainMenuGroup[],
+  registeredPaths: readonly string[] = PROTECTED_ROUTE_PATHS,
+  redirectPaths: ReadonlySet<string> = PROTECTED_REDIRECT_PATHS,
 ): boolean {
-  const segment = firstSegment(pathname);
+  const clean = cleanPath(pathname);
+  if (ALWAYS_ALLOWED_PATHS.has(clean)) return true;
+  if (LEGACY_REDIRECT_PREFIXES.has(firstSegment(clean))) return true;
+  if (isLegacyRedirectAlias(clean)) return true;
 
-  if (segment === "/") return true;
-  if (LEGACY_REDIRECT_PREFIXES.has(segment)) return true;
-  if (isLegacyRedirectAlias(pathname)) return true;
+  const navRoutes = new Set<string>();
+  for (const group of mainMenuGroups) collectNavRoutes(group.items, navRoutes);
+  if (navRoutes.has(clean)) return true;
 
-  const allowed = new Set<string>();
-  for (const group of mainMenuGroups) {
-    collectAllowedPrefixes(group.items, allowed);
+  const pattern = resolveRoutePattern(clean, registeredPaths);
+  if (!pattern) return false;
+  if (navRoutes.has(pattern)) return true;
+  // Un redirect solo monta un <Navigate>: el destino se valida de nuevo contra el menú.
+  if (redirectPaths.has(pattern)) return true;
+
+  const inheritedParent = INHERITED_CHILD_ROUTES[pattern];
+  if (inheritedParent) return navRoutes.has(inheritedParent);
+
+  for (const navRoute of navRoutes) {
+    if (!pattern.startsWith(`${navRoute}/`)) continue;
+    if (INHERITING_SUFFIX.test(pattern.slice(navRoute.length + 1))) return true;
   }
-  return allowed.has(segment);
+  return false;
 }
 
 /**
@@ -125,7 +199,7 @@ export function isContextualRouteAllowed(
 
 /**
  * Defensa en profundidad (Nivel 2): impide montar páginas fuera del árbol de
- * navegación recibido del servidor (mainMenuGroups). El backend sigue siendo la
+ * navegación recibido del servidor (mainMenuGroups) y antes de resolver sesión y menú. El backend sigue siendo la
  * autoridad final vía [Authorize(Policy="perm:*")].
  */
 export function RouteAccessGuard({
@@ -141,6 +215,7 @@ export function RouteAccessGuard({
   const { t } = useI18n();
   const admin = isAdminRole(useAuthStore((s) => s.user?.role));
   const sessionLoaded = useSessionStore((s) => s.isLoaded);
+  const sessionLoading = useSessionStore((s) => s.isLoading);
   const permissions = useSessionStore((s) => s.authorization?.permissions);
   // Fail-closed: sin sesión cargada no hay permisos efectivos (Admin = comodín).
   let effectivePermissions: readonly string[] = [];
@@ -152,10 +227,17 @@ export function RouteAccessGuard({
     [mainMenuGroups, sessionMenuResolved],
   );
 
+  // IAM-V1-F2: ninguna página se monta antes de resolver el menú y los permisos de la sesión
+  // (antes se montaba mientras cargaban y disparaba sus consultas). Si la sesión no pudo
+  // cargarse, sin permisos efectivos no hay pantallas autorizadas (fail-closed).
+  if (!sessionMenuResolved || (!sessionLoaded && sessionLoading)) {
+    return <LoadingState />;
+  }
+
   if (
-    sessionMenuResolved &&
-    !isRouteAllowed(location.pathname, mainMenuGroups) &&
-    !isContextualRouteAllowed(location.pathname, effectivePermissions)
+    (!admin && !sessionLoaded) ||
+    (!isRouteAllowed(location.pathname, mainMenuGroups) &&
+      !isContextualRouteAllowed(location.pathname, effectivePermissions))
   ) {
     return <NoAccessPage title={t("app.accessDenied.title")} />;
   }

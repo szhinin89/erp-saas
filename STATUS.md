@@ -1,5 +1,36 @@
 # Project Status
 
+## IAM-V1-F2 — Administración de perfiles, permisos y usuarios; visibilidad por permisos efectivos — IMPLEMENTADO, pendiente gate del propietario (2026-11-11)
+
+Autorizado por el propietario con ajustes (2026-11-10). Regla vigente:
+[Seguridad § administración de usuarios y perfiles](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant)
+y [Security & Access Contract](docs/architecture/security.md#security--access-contract-v1--locked).
+Sin migraciones ni cambios en First Run, creación de empresas, modelo de roles, autorización,
+perfiles, permisos, usuarios ni datos: `DataEntry` conserva sus 126 permisos (verificado en
+`erp_zh_dev`, solo lectura). Fase 1 intacta.
+
+- «Administrador de empresa» (`Role = Admin`) y «Usuario operativo» (`Role = User`) en Perfiles
+  (tarjeta fija de la función, sin perfil representativo), lista y ficha de usuario; el perfil no
+  se ofrece al Administrador de empresa.
+- Perfil obligatorio en toda asignación operativa nueva (backend y formulario); los operativos
+  existentes sin perfil se conservan y se señalan «sin acceso».
+- Permisos: etiquetas en español para los 8 verbos que se mostraban crudos (solo catálogo), conteo
+  «X de Y» por pantalla, resumen «Este perfil concede», confirmación de «Marcar todo» y aviso de
+  asignación masiva (> 50 %) con diferencias al guardar. Usuarios: pestaña «Accesos» con función,
+  perfil y lo que concede; Seguridad queda solo con la contraseña temporal.
+- Visibilidad: `canShow` fail-closed; `RouteAccessGuard` no monta páginas antes de resolver sesión
+  y menú (ligado a la sesión actual) y deja de autorizar por primer segmento: las hijas con permiso
+  propio no heredan.
+- Contraseña temporal: exige solo `access.identity_users.assign_temporary_password` (antes también
+  `access.identity_users.create` por la policy de clase).
+- **Evidencia local (2026-11-11):** Application `Access|Audit|Security` 252/252; API + PostgreSQL
+  `IamIdentityIsolationHttpTests` 23/23 (2 nuevas: contraseña temporal sin permiso de crear; alta y
+  vinculación sin perfil) y suites relacionadas 220/220; `ERP.Architecture.Tests` 145/145; frontend
+  115 archivos focalizados (consumidores de `canShow`, guard, layout y `modules/access`) 1149/1149,
+  `tsc -b`, ESLint (0 errores), `npm run build`, `architecture:check` PASS y
+  `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK. Suite completa no ejecutada (la corre
+  el propietario).
+
 ## IAM-V1-F1 — Protección de identidades globales y aislamiento IAM multiempresa — CLOSED (2026-11-10)
 
 El propietario confirma [CI #1140](https://github.com/szhinin89/erp-saas/actions/runs/42931737111)

@@ -1,0 +1,69 @@
+/* IAM-V1-F2 — resumen de solo lectura de permisos concedidos (Asignación de permisos y ficha de
+   usuario). Mismos tokens que el resto de access-pa-*. */
+.access-grant-summary {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.access-grant-summary-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.access-grant-summary-title {
+  margin: 0;
+  font-size: var(--text-label-sm-size);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.access-grant-summary-count {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.access-grant-summary-group {
+  margin-bottom: var(--space-3);
+}
+
+.access-grant-summary-group-title {
+  margin: 0 0 var(--space-1);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.access-grant-summary-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.access-grant-summary-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.access-grant-summary-item:last-child {
+  border-bottom: none;
+}
+
+.access-grant-summary-screen {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.access-grant-summary-actions {
+  color: var(--color-text-secondary);
+}

@@ -182,6 +182,43 @@ describe("UsersPage — tabla principal", () => {
     });
   });
 
+  it("IAM-V1-F2: muestra la función legible, «No aplica» para el Administrador de empresa y «sin acceso» para un operativo sin perfil", async () => {
+    vi.mocked(membershipService.list).mockResolvedValue([
+      membershipRow,
+      {
+        ...membershipRow,
+        companyUserId: "cu-admin",
+        identityUserId: "iu-admin",
+        username: "admin.empresa",
+        fullName: "Admin Empresa",
+        role: "Admin",
+        profileId: null,
+        profileName: null,
+      },
+      {
+        ...membershipRow,
+        companyUserId: "cu-sin",
+        identityUserId: "iu-sin",
+        username: "sin.perfil",
+        fullName: "Sin Perfil",
+        role: "User",
+        profileId: null,
+        profileName: null,
+      },
+    ]);
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText("Admin Empresa")).toBeTruthy());
+    expect(screen.getByText("Administrador de empresa")).toBeTruthy();
+    expect(screen.getAllByText("Usuario operativo").length).toBe(2);
+    expect(screen.getByText("No aplica (acceso total)")).toBeTruthy();
+    expect(screen.getByText("Sin perfil · sin acceso")).toBeTruthy();
+    expect(screen.getByText("Ventas")).toBeTruthy();
+    // Nunca el valor interno del rol.
+    expect(screen.queryByText("Admin")).toBeNull();
+    expect(screen.queryByText("User")).toBeNull();
+  });
+
   it("un error al cargar la lista se muestra con la infraestructura existente", async () => {
     vi.mocked(membershipService.list).mockRejectedValue({
       isAxiosError: true,

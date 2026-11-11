@@ -218,11 +218,13 @@ describe("PermissionsAssignmentPage — catálogo dinámico desde el backend", (
       expect(profileService.getPermissions).toHaveBeenCalledWith(PROFILE.id);
     });
 
-    expect(await screen.findByText("Proveedores")).toBeTruthy();
-    expect(await screen.findByText("Pagos a proveedores")).toBeTruthy();
-    expect(screen.getByText("Ver / Acceder")).toBeTruthy();
-    expect(screen.getByText("Crear")).toBeTruthy();
-    expect(screen.getByText("Reversar")).toBeTruthy();
+    // IAM-V1-F2: módulo y pantalla aparecen en el árbol y, si están concedidos, también en el
+    // resumen «Este perfil concede».
+    expect((await screen.findAllByText("Proveedores")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Pagos a proveedores")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ver / Acceder").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Crear").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Reversar").length).toBeGreaterThan(0);
   });
 
   it("no queda ninguna referencia a los módulos hardcodeados de MODULE_PERM_GROUPS", async () => {
@@ -330,9 +332,15 @@ describe("PermissionsAssignmentPage — refactor visual compacto (PERMISSIONS-AS
 
     await waitFor(() => expect(screen.getByText("Pagos a proveedores")).toBeTruthy());
 
+    // IAM-V1-F2: «Marcar todo» pide confirmación explícita antes de conceder todo el catálogo.
+    vi.mocked(message.confirm).mockResolvedValueOnce(true);
     fireEvent.click(screen.getByRole("button", { name: "Marcar todo" }));
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
     let switches = screen.getAllByRole("switch");
-    expect(switches.every((s) => s.getAttribute("aria-checked") === "true")).toBe(true);
+    await waitFor(() => {
+      switches = screen.getAllByRole("switch");
+      expect(switches.every((s) => s.getAttribute("aria-checked") === "true")).toBe(true);
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Desmarcar todo" }));
     switches = screen.getAllByRole("switch");
@@ -376,6 +384,37 @@ describe("PermissionsAssignmentPage — refactor visual compacto (PERMISSIONS-AS
     expect(screen.getByText("Total: 1 pantallas, 3 permisos")).toBeTruthy();
     expect(screen.getByText("Acceso: 1")).toBeTruthy();
     expect(screen.getByText("Acciones: 2")).toBeTruthy();
-    expect(screen.getByText("3 permisos")).toBeTruthy();
+    // IAM-V1-F2: cada pantalla muestra cuántas de sus acciones están concedidas.
+    expect(screen.getByText(/^\d+ de 3$/)).toBeTruthy();
+  });
+
+  it("IAM-V1-F2: cancelar la confirmación de «Marcar todo» no cambia ningún permiso", async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+    // Espera a que el estado guardado del perfil (supplier-payments.view) esté aplicado.
+    await waitFor(() =>
+      expect(screen.getAllByRole("switch")[0].getAttribute("aria-checked")).toBe("true"),
+    );
+    const before = screen.getAllByRole("switch").map((s) => s.getAttribute("aria-checked"));
+
+    vi.mocked(message.confirm).mockResolvedValueOnce(false);
+    fireEvent.click(screen.getByRole("button", { name: "Marcar todo" }));
+    await waitFor(() => expect(message.confirm).toHaveBeenCalled());
+
+    expect(screen.getAllByRole("switch").map((s) => s.getAttribute("aria-checked"))).toEqual(before);
+  });
+
+  it("IAM-V1-F2: el resumen «Este perfil concede» refleja los cambios antes de guardar", async () => {
+    renderPage(`/admin/permissions?profileId=${PROFILE.id}`);
+    await waitFor(() => expect(screen.getAllByText("Pagos a proveedores").length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole("button", { name: "Desmarcar todo" }));
+    expect(await screen.findByText(/no da acceso a ninguna pantalla/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Solo permisos de acceso (Ver)" }));
+    const summary = screen.getByRole("region", { name: "Este perfil concede" });
+    expect(summary.textContent).toContain("Pagos a proveedores");
+    expect(summary.textContent).toContain("Ver / Acceder");
+    expect(summary.textContent).not.toContain("Reversar");
+    expect(profileService.upsertPermissions).not.toHaveBeenCalled();
   });
 });

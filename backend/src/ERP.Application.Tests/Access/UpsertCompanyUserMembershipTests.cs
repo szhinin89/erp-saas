@@ -148,6 +148,19 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
                     ? new List<CompanyUserMembership> { existingMembership }
                     : new List<CompanyUserMembership>()
             );
+        // IAM-V1-F2: una asignación operativa nueva exige perfil — perfil operativo activo de la
+        // empresa disponible por defecto para los escenarios que no prueban perfiles.
+        f.AccessRepo.Setup(r =>
+                r.GetProfileByIdAsync(
+                    tenant.Id,
+                    company.Id,
+                    OperativeProfileId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                AccessProfile.Create(tenant.Id, company.Id, "Operativo", null, CreatedBy)
+            );
         // Por defecto el que asigna es Admin de la empresa del comando (flujo administrativo normal).
         SetActor(
             f,
@@ -169,6 +182,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             .ReturnsAsync(actor);
 
     private static readonly Guid DelegateProfileId = Guid.NewGuid();
+    private static readonly Guid OperativeProfileId = Guid.NewGuid();
 
     // Usuario delegado (no Admin) con access.company_user_memberships.view en la empresa.
     private static void SetDelegateActor(Fixture f, Guid companyId, params string[] effectiveKeys)
@@ -302,7 +316,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+            new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User", OperativeProfileId),
             CancellationToken.None
         );
 
@@ -375,6 +389,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             company.Id,
             Username,
             "User",
+            ProfileId: OperativeProfileId,
             AuthorizedBranchIds: new[] { branch.Id },
             DefaultBranchId: branch.Id,
             LoginMode: nameof(CompanyUserLoginMode.DirectToDefault)
@@ -425,6 +440,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             company.Id,
             Username,
             "User",
+            ProfileId: OperativeProfileId,
             AuthorizedBranchIds: new[] { missingBranchId }
         );
 
@@ -488,6 +504,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             company.Id,
             Username,
             "User",
+            ProfileId: OperativeProfileId,
             AuthorizedBranchIds: new[] { branch.Id }
         );
 
@@ -675,7 +692,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+            new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User", OperativeProfileId),
             CancellationToken.None
         );
 
@@ -736,7 +753,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+            new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User", OperativeProfileId),
             CancellationToken.None
         );
 
@@ -774,7 +791,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
-            new UpsertCompanyUserMembershipCommand(tenant.Id, companyB.Id, Username, "User"),
+            new UpsertCompanyUserMembershipCommand(tenant.Id, companyB.Id, Username, "User", OperativeProfileId),
             CancellationToken.None
         );
 
@@ -838,6 +855,7 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
                 companyB.Id,
                 Username,
                 "User",
+                ProfileId: OperativeProfileId,
                 AuthorizedBranchIds: new[] { branchA.Id }
             ),
             CancellationToken.None
@@ -1487,5 +1505,107 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
             Times.Never
         );
         c.F.UnitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── IAM-V1-F2: perfil obligatorio en asignaciones operativas nuevas ────────────────────
+
+    [Fact]
+    public async Task IAM_V1_F2_alta_operativa_sin_perfil_es_rechazada_y_no_persiste()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: null);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be(UpsertCompanyUserMembershipHandler.OperationalProfileRequiredMessage);
+        f.AccessRepo.Verify(
+            r => r.AddCompanyUserMembershipAsync(It.IsAny<CompanyUserMembership>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task IAM_V1_F2_reactivar_operativo_revocado_sin_perfil_es_rechazado()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var revoked = CompanyUserMembership.Create(company.Id, user.Id, "User", null, CreatedBy);
+        revoked.Deactivate(CreatedBy);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: revoked);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+                CancellationToken.None
+            );
+
+        result.Error.Should().Be(UpsertCompanyUserMembershipHandler.OperationalProfileRequiredMessage);
+        revoked.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IAM_V1_F2_operativo_activo_existente_sin_perfil_se_conserva_al_editar()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var existing = CompanyUserMembership.Create(company.Id, user.Id, "User", null, CreatedBy);
+        var admin = CompanyUserMembership.Create(company.Id, Guid.NewGuid(), "Admin", null, CreatedBy);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: existing);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(company.Id, true, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new List<CompanyUserMembership> { existing, admin });
+        f.Mediator.Setup(m =>
+                m.Send(It.IsAny<GetCompanyUserPreferencesQuery>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(
+                Result<CompanyUserPreferencesDto?>.Success(
+                    Preferences(
+                        existing.Id,
+                        company.Id,
+                        tenant.Id,
+                        CompanyUserLoginMode.AskBranch,
+                        null
+                    )
+                )
+            );
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        existing.ProfileId.Should().BeNull();
+        existing.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IAM_V1_F2_pasar_de_Administrador_de_empresa_a_operativo_exige_perfil()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var existing = CompanyUserMembership.Create(company.Id, user.Id, "Admin", null, CreatedBy);
+        var f = BuildBaseFixture(user, tenant, company, existingMembership: existing);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new UpsertCompanyUserMembershipCommand(tenant.Id, company.Id, Username, "User"),
+                CancellationToken.None
+            );
+
+        result.Error.Should().Be(UpsertCompanyUserMembershipHandler.OperationalProfileRequiredMessage);
+        existing.Role.Should().Be("Admin");
     }
 }

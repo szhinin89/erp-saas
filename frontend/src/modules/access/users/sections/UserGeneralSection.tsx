@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type {
+  Control,
   FieldErrors,
   UseFormRegister,
   UseFormSetValue,
@@ -9,7 +10,6 @@ import {
   ZHPageNotice,
   type ZHPageNoticeVariant,
 } from "../../../../components/zh/ZHPageNotice";
-import { ZhSelect } from "../../../../components/zh/inputs";
 import { useI18n } from "../../../../i18n/i18n";
 import { formatApiRequestError } from "../../../lib/apiError";
 import {
@@ -19,6 +19,7 @@ import {
 } from "../api/membershipService";
 import { type Profile } from "../../api/profileService";
 import { type UserConfigFormValues } from "../../../../schemas/access/userConfigSchema";
+import { UserRoleProfileFields } from "./UserRoleProfileFields";
 
 type Notice = { variant: ZHPageNoticeVariant; message: string } | null;
 
@@ -33,7 +34,10 @@ interface Props {
   mode: "new" | "edit";
   register: UseFormRegister<UserConfigFormValues>;
   setValue: UseFormSetValue<UserConfigFormValues>;
+  control: Control<UserConfigFormValues>;
   errors: FieldErrors<UserConfigFormValues>;
+  /** Perfil guardado de la membership en edición (null = operativo existente sin perfil). */
+  initialProfileId?: string | null;
   profiles: Profile[];
   canManage: boolean;
   canCreateUser: boolean;
@@ -52,7 +56,9 @@ export function UserGeneralSection({
   mode,
   register,
   setValue,
+  control,
   errors,
+  initialProfileId = null,
   profiles,
   canManage,
   canCreateUser,
@@ -182,34 +188,14 @@ export function UserGeneralSection({
           />
         ) : null}
 
-        <ZHField
-          label={t("users.membership.role", "Role")}
-          error={errors.role?.message}
-        >
-          <ZhSelect disabled={!canManage || disabled} {...register("role")}>
-            {MEMBERSHIP_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </ZhSelect>
-        </ZHField>
-
-        <ZHField
-          label={t("users.membership.profile", "Perfil")}
-          error={errors.profileId?.message}
-        >
-          <ZhSelect disabled={!canManage || disabled} {...register("profileId")}>
-            <option value="">
-              {t("users.membership.profile.none", "Sin perfil")}
-            </option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </ZhSelect>
-        </ZHField>
+        <UserRoleProfileFields
+          register={register}
+          control={control}
+          errors={errors}
+          profiles={profiles}
+          disabled={!canManage || disabled}
+          allowNoProfile={!initialProfileId}
+        />
       </div>
     );
   }
@@ -306,65 +292,27 @@ export function UserGeneralSection({
               {...register("password")}
             />
           </ZHField>
-          <ZHField
-            label={t("users.membership.role", "Role")}
-            error={errors.role?.message}
-          >
-            <ZhSelect disabled={disabled} {...register("role")}>
-              {MEMBERSHIP_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField
-            label={t("users.membership.profile", "Perfil")}
-            error={errors.profileId?.message}
-          >
-            <ZhSelect disabled={disabled} {...register("profileId")}>
-              <option value="">
-                {t("users.membership.profile.none", "Sin perfil")}
-              </option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
+          <UserRoleProfileFields
+            register={register}
+            control={control}
+            errors={errors}
+            profiles={profiles}
+            disabled={disabled}
+            allowNoProfile={false}
+          />
         </>
       ) : null}
 
       {resolvedMode === "assign" ? (
         <>
-          <ZHField
-            label={t("users.membership.role", "Role")}
-            error={errors.role?.message}
-          >
-            <ZhSelect disabled={disabled} {...register("role")}>
-              {MEMBERSHIP_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
-          <ZHField
-            label={t("users.membership.profile", "Perfil")}
-            error={errors.profileId?.message}
-          >
-            <ZhSelect disabled={disabled} {...register("profileId")}>
-              <option value="">
-                {t("users.membership.profile.none", "Sin perfil")}
-              </option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </ZhSelect>
-          </ZHField>
+          <UserRoleProfileFields
+            register={register}
+            control={control}
+            errors={errors}
+            profiles={profiles}
+            disabled={disabled}
+            allowNoProfile={false}
+          />
         </>
       ) : null}
     </div>

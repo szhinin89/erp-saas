@@ -43,6 +43,7 @@ import {
 } from "../../../../schemas/access/userConfigSchema";
 import "../../../../styles/shared/items-catalog.css";
 import "../pages/UsersPage.css";
+import { membershipRoleLabel } from "../../roleLabels";
 
 const PERMISSION = "access.company_user_memberships.view";
 const CREATE_USER_PERMISSION = "access.identity_users.create";
@@ -205,8 +206,8 @@ export function UserConfigPage() {
         message: (
           <>
             <p className="zh-confirm-message">
-              Vas a crear el acceso de <strong>{values.username}</strong> a esta empresa con rol{" "}
-              <strong>{values.role}</strong>
+              Vas a crear el acceso de <strong>{values.username}</strong> a esta empresa como{" "}
+              <strong>{membershipRoleLabel(values.role, t)}</strong>
               {profileName ? (
                 <>
                   {" "}

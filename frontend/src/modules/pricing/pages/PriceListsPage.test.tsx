@@ -5,6 +5,7 @@ import { I18nProvider } from "../../../i18n/i18n";
 import { PriceListsPage } from "./PriceListsPage";
 import { priceListService, type PriceListDto } from "../api/pricingService";
 import { message } from "../../../lib/messages";
+import { useSessionStore } from "../../../store/sessionStore";
 
 function renderPage() {
   return render(
@@ -69,6 +70,20 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(priceListService.list).mockResolvedValue([ACTIVE_PL]);
   vi.mocked(message.confirm).mockResolvedValue(true);
+});
+
+
+// IAM-V1-F2: canShow es fail-closed — sesión cargada con los permisos que estas pruebas ejercitan
+// (antes los recibían implícitamente porque canShow devolvía true sin sesión).
+beforeEach(() => {
+  useSessionStore.setState({
+    isLoaded: true,
+    isLoading: false,
+    authorization: { permissions: ["pricing.view", "pricing.create", "pricing.update", "pricing.delete"] } as never,
+  });
+});
+afterEach(() => {
+  useSessionStore.setState({ isLoaded: false, isLoading: false, authorization: null });
 });
 
 describe("PriceListsPage — activar/desactivar: confirmación y feedback", () => {

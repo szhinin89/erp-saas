@@ -359,3 +359,55 @@
 .prf-modal-error-wrap {
   padding: 0 var(--space-6);
 }
+
+/* ── IAM-V1-F2: árbol editable + resumen «Este perfil concede» ───────────────────────────── */
+.access-pa-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.access-pa-layout-aside {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .access-pa-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+
+  .access-pa-layout-aside {
+    position: sticky;
+    top: var(--space-4);
+  }
+}
+
+/* ── IAM-V1-F2: función «Administrador de empresa» en Perfiles ───────────────────────────── */
+.access-admin-function-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+}
+
+.access-admin-function-icon {
+  color: var(--color-primary);
+}
+
+.access-admin-function-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-label-sm-size);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.access-admin-function-text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}

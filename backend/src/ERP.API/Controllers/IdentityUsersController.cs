@@ -18,10 +18,13 @@ namespace ERP.API.Controllers;
 /// también MembershipsView habría requerido ambos permisos a la vez. TenantId/CompanyId nunca
 /// viajan en el request: <see cref="CreateSystemUserAdminHandler"/> los resuelve del contexto
 /// autenticado, mismo principio anti-IDOR que <see cref="CompanyUserMembershipsController"/>.
+/// IAM-V1-F2: cada acción declara su propio permiso — a nivel de clase solo se exige sesión
+/// autenticada. Antes la policy de clase (IdentityUsersCreate) se sumaba con AND a la de la
+/// contraseña temporal, que entonces exigía también permiso de crear usuarios.
 /// </summary>
 [ApiController]
 [Route("api/v1/admin/iam/users")]
-[Authorize(Policy = $"perm:{AccessPermissions.IdentityUsersCreate}")]
+[Authorize]
 [Produces("application/json")]
 public sealed class IdentityUsersController : ControllerBase
 {
@@ -30,6 +33,7 @@ public sealed class IdentityUsersController : ControllerBase
     public IdentityUsersController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost]
+    [Authorize(Policy = $"perm:{AccessPermissions.IdentityUsersCreate}")]
     [ProducesResponseType(typeof(ApiResponse<CreateSystemUserResultDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
@@ -56,8 +60,8 @@ public sealed class IdentityUsersController : ControllerBase
     /// <summary>
     /// Asigna una contraseña temporal a un usuario existente de la empresa activa. Fuerza
     /// RequirePasswordReset y revoca todo su acceso vivo (refresh tokens + sesiones activas).
-    /// Nunca devuelve la contraseña. Permiso propio (más restrictivo que IdentityUsersCreate,
-    /// mismo patrón AND de clase+método que AdminUserSessionController.Close).
+    /// Nunca devuelve la contraseña. Permiso propio e independiente de IdentityUsersCreate
+    /// (IAM-V1-F2).
     /// </summary>
     [HttpPost("{username}/assign-temporary-password")]
     [Authorize(Policy = $"perm:{AccessPermissions.IdentityUsersAssignTemporaryPassword}")]
