@@ -436,4 +436,169 @@ public sealed class RevokeCompanyUserMembershipHandlerTests
         membership.IsActive.Should().BeFalse();
         steps.Should().Equal("begin", "save", "complete");
     }
+
+    // ── IAM-V1-F1 ──────────────────────────────────────────────────────────────────────────
+
+    private static void SetGlobals(Fixture f, params Guid[] globalUserIds) =>
+        f.AccessRepo.Setup(r =>
+                r.GetActiveGlobalUserIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                (IReadOnlyCollection<Guid> ids, CancellationToken _) =>
+                    ids.Where(globalUserIds.Contains).ToList()
+            );
+
+    [Fact]
+    public async Task IAM_V1_F1_revocar_la_cuenta_global_responde_NotFound_y_no_la_toca()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var globalMembership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, globalMembership, [globalMembership]);
+        SetGlobals(f, user.Id);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Usuario no encontrado.");
+        globalMembership.IsActive.Should().BeTrue();
+        f.AccessRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_usuario_sin_membership_en_la_empresa_responde_NotFound_uniforme()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = BuildBaseFixture(user, tenant, company, null!, []);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync((CompanyUserMembership?)null);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Usuario no encontrado.");
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_no_se_puede_revocar_al_ultimo_admin_no_global_aunque_quede_el_global()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var ownAdmin = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var globalUserId = Guid.NewGuid();
+        var globalAdmin = CompanyUserMembership.Create(
+            company.Id,
+            globalUserId,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, ownAdmin, [ownAdmin, globalAdmin]);
+        SetGlobals(f, globalUserId);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("La empresa debe conservar al menos un administrador activo.");
+        ownAdmin.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_con_otro_admin_no_global_si_se_puede_revocar_un_admin()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var ownAdmin = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var otherOwnAdmin = CompanyUserMembership.Create(
+            company.Id,
+            Guid.NewGuid(),
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, ownAdmin, [ownAdmin, otherOwnAdmin]);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue();
+        ownAdmin.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_empresa_administrada_solo_por_el_global_permite_revocar_usuarios_operativos()
+    {
+        var user = NewUser();
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var operative = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
+            SecurityRoles.User,
+            null,
+            CreatedBy
+        );
+        var globalUserId = Guid.NewGuid();
+        var globalAdmin = CompanyUserMembership.Create(
+            company.Id,
+            globalUserId,
+            SecurityRoles.Admin,
+            null,
+            CreatedBy
+        );
+        var f = BuildBaseFixture(user, tenant, company, operative, [operative, globalAdmin]);
+        SetGlobals(f, globalUserId);
+
+        var result = await f.BuildHandler()
+            .Handle(
+                new RevokeCompanyUserMembershipCommand(tenant.Id, company.Id, Username),
+                CancellationToken.None
+            );
+
+        result.IsSuccess.Should().BeTrue();
+        operative.IsActive.Should().BeFalse();
+    }
 }

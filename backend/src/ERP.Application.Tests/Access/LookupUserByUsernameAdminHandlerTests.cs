@@ -18,6 +18,7 @@ public sealed class LookupUserByUsernameAdminHandlerTests
 {
     private static readonly Guid CreatedBy = Guid.NewGuid();
     private static readonly Guid CompanyId = Guid.NewGuid();
+    private static readonly Guid TenantId = Guid.NewGuid();
     private const string Username = "ana.perez";
 
     private static IdentityUser NewUser() =>
@@ -36,8 +37,12 @@ public sealed class LookupUserByUsernameAdminHandlerTests
     {
         public Mock<IAccessRepository> AccessRepo { get; } = new();
 
-        public LookupUserByUsernameAdminHandler BuildHandler(bool hasCompanyContext = true) =>
-            new(AccessRepo.Object, new CurrentCompanyStub(hasCompanyContext));
+        public LookupUserByUsernameAdminHandler BuildHandler(bool hasCompanyContext = true)
+        {
+            var tenant = new Mock<ICurrentTenant>();
+            tenant.Setup(t => t.TenantId).Returns(TenantId);
+            return new(AccessRepo.Object, new CurrentCompanyStub(hasCompanyContext), tenant.Object);
+        }
     }
 
     [Fact]
@@ -93,6 +98,15 @@ public sealed class LookupUserByUsernameAdminHandlerTests
                 r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync((CompanyUserMembership?)null);
+        // IAM-V1-F1: vinculable porque pertenece a otra empresa del MISMO tenant.
+        f.AccessRepo.Setup(r =>
+                r.HasCompanyUserMembershipInTenantAsync(
+                    user.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(true);
 
         var handler = f.BuildHandler();
         var result = await handler.Handle(
@@ -161,5 +175,55 @@ public sealed class LookupUserByUsernameAdminHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Membership!.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_usuario_de_otro_tenant_responde_igual_que_inexistente()
+    {
+        var user = NewUser();
+        var f = new Fixture();
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.HasCompanyUserMembershipInTenantAsync(
+                    user.Id,
+                    TenantId,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(false);
+
+        var result = await f.BuildHandler()
+            .Handle(new LookupUserByUsernameAdminQuery(Username), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeEquivalentTo(new { IdentityUserExists = false, FullName = (string?)null, Membership = (object?)null });
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_cuenta_global_responde_igual_que_inexistente_aunque_tenga_membership()
+    {
+        var user = NewUser();
+        var membership = CompanyUserMembership.Create(CompanyId, user.Id, "Admin", null, CreatedBy);
+        var f = new Fixture();
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        f.AccessRepo.Setup(r =>
+                r.GetActiveGlobalUserIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([user.Id]);
+
+        var result = await f.BuildHandler()
+            .Handle(new LookupUserByUsernameAdminQuery(Username), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeEquivalentTo(new { IdentityUserExists = false, FullName = (string?)null, Membership = (object?)null });
     }
 }

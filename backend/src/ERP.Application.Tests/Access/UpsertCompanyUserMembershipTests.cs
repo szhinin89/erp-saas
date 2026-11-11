@@ -134,6 +134,20 @@ public sealed class UpsertCompanyUserMembershipHandlerTests
                 r.GetCompanyUserMembershipAsync(company.Id, user.Id, It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(existingMembership);
+        // Memberships activas de la empresa (insumo del CompanyAdministratorInvariant); los tests
+        // del invariante sobrescriben este setup con su propio escenario.
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipsByCompanyAsync(
+                    company.Id,
+                    true,
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync(
+                existingMembership is { IsActive: true }
+                    ? new List<CompanyUserMembership> { existingMembership }
+                    : new List<CompanyUserMembership>()
+            );
         // Por defecto el que asigna es Admin de la empresa del comando (flujo administrativo normal).
         SetActor(
             f,

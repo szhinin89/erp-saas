@@ -60,7 +60,16 @@ public sealed class UpdateCompanyUserBranchesAdminHandler
             command.CompanyUserMembershipId,
             cancellationToken
         );
-        if (membership is null || membership.CompanyId != _currentCompany.CompanyId)
+        // IAM-V1-F1: una cuenta global responde igual que "no existe" / "otra empresa".
+        if (
+            !await IamIdentityScope.IsAdministrableMembershipAsync(
+                _accessRepository,
+                membership,
+                _currentCompany.CompanyId,
+                cancellationToken
+            )
+            || membership is null
+        )
             return Result<CompanyUserBranchesAdminDto>.NotFound(
                 "Usuario de empresa no encontrado."
             );

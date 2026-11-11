@@ -63,14 +63,17 @@ export const membershipService = {
 
   /**
    * Alta o edición de membership (rol/perfil). No crea IdentityUser — el username debe pertenecer
-   * a un usuario ya existente en la plataforma; si no existe, el backend responde con un error
-   * controlado ("Usuario no existe."). Reactiva automáticamente una membership inactiva (mismo
-   * comportamiento que UpsertCompanyUserMembershipHandler.Activate en el backend).
+   * a un usuario de la empresa activa o de otra empresa del mismo tenant (IAM-V1-F1); inexistente,
+   * cuenta global u otro tenant responden igual: 404 "Usuario no encontrado.". Reactiva
+   * automáticamente una membership inactiva (UpsertCompanyUserMembershipHandler.Activate).
    */
   upsertMembership: (payload: UpsertMembershipPayload) =>
     apiPost<object>("/api/v1/admin/iam/memberships", payload),
 
-  /** Revoca (desactiva) la membership del usuario en la empresa activa. Idempotente. */
+  /**
+   * Revoca (desactiva) la membership del usuario en la empresa activa. Idempotente sobre una
+   * membership ya inactiva; fuera de alcance responde 404 uniforme (IAM-V1-F1).
+   */
   revokeMembership: (username: string) =>
     apiPost<object>("/api/v1/admin/iam/memberships/revoke", { username }),
 
@@ -84,9 +87,9 @@ export const membershipService = {
 
   /**
    * Fase F (username en Fase G) — único punto de entrada de "Agregar usuario": resuelve si el
-   * username ya es un IdentityUser (y si ya tiene membership en la empresa activa) para que el
-   * wizard decida automáticamente entre upsertMembership y createSystemUser, sin que el admin
-   * tenga que saberlo.
+   * username ya es un IdentityUser visible desde la empresa activa (y si ya tiene membership en
+   * ella) para que el wizard decida automáticamente entre upsertMembership y createSystemUser.
+   * IAM-V1-F1: cuentas globales y de otros tenants responden `identityUserExists=false`.
    */
   lookupUserByUsername: (username: string) =>
     apiGet<UsernameLookupDto>("/api/v1/admin/iam/memberships/lookup", {

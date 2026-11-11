@@ -1,5 +1,35 @@
 # Project Status
 
+## IAM-V1-F1 — Protección de identidades globales y aislamiento IAM multiempresa — IMPLEMENTADO, pendiente gate del propietario (2026-11-10)
+
+Alcance y decisiones D1–D5 aprobados por el propietario (con condiciones). Regla vigente:
+[Seguridad § identidades globales y alcance IAM](docs/architecture/security.md#aislamiento-entre-empresas-del-mismo-tenant).
+Sin migraciones, sin cambios en First Run, perfiles, `DataEntry`, permisos, credenciales ni datos.
+
+- Hallazgos corregidos (verificados en código y `erp_zh_dev`, solo lectura): un Admin de empresa
+  podía asignar contraseña temporal al administrador global (membership Admin en la primera
+  empresa); vincular, cambiar rol o revocar por username alcanzaba identidades de cualquier tenant
+  o al global; el lookup revelaba existencia y nombre completo de cualquier username del sistema;
+  el listado, la matriz de Seguridad administrativa y las sesiones mostraban al global; las
+  sesiones cruzaban empresas del mismo tenant; 404 frente a 403 y mensajes distintos revelaban
+  existencia.
+- Diagnóstico previo de `facturador1` (sin cambios): su acceso a Usuarios es real y autorizado por
+  los permisos actuales del perfil `DataEntry` de la base (126, ampliados por un Admin el
+  2026-11-04); decisión de datos pendiente del propietario.
+- Gate final de aislamiento (aprobado funcionalmente por el propietario): la actividad por entidad
+  quedaba acotada solo por tenant; ahora exige empresa operativa validada y que la entidad
+  pertenezca a ella (sin cambios de esquema ni de escritura de auditoría). Las nuevas pruebas de
+  empresa fallan si se retira la verificación (comprobado retirándola temporalmente).
+- **Evidencia local (2026-11-10):** Application `Access|Security|Activity|Audit` 247/247; API +
+  PostgreSQL `IamIdentityIsolationHttpTests` 21/21 nuevas (4 de actividad: dos empresas del mismo
+  tenant, otro tenant, dato TENANT, tipo desconocido, empresa sin membership) y `ERP.API.Tests.Access`,
+  `CompanyAccessProfilesIsolationHttpTests` (destinos de asignación con membership en B del mismo
+  tenant), `CrossCompanyAdminPrivilege`, `Security`, `Activity`, `TenantIsolation` 97/97; Infrastructure
+  `AdminUserSessionIntegrationTests` 4/4 (PostgreSQL); `ERP.Architecture.Tests` 145/145;
+  `check-architecture-guardrails.ps1 -SkipFrontendChunk` OK; `architecture:check` PASS; ESLint del
+  archivo frontend tocado (solo comentarios); `git diff --check` OK. Manifiesto CI sin cambios.
+  Suite completa no ejecutada (la corre el propietario).
+
 ## BRANCH-CONFIG-CROSS-BRANCH-ACCESS-01 y BRANCH-CONFIG-READ-PERMISSION-01 — Acceso a la configuración de sucursal — CLOSED (2026-11-10)
 
 El propietario confirma [CI #1136](https://github.com/szhinin89/erp-saas/actions/runs/42860595578)

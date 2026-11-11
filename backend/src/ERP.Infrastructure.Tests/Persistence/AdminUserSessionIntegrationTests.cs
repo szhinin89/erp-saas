@@ -15,7 +15,8 @@ namespace ERP.Infrastructure.Tests.Persistence;
 
 /// <summary>
 /// Fase 10: integración real (PostgreSQL vía Testcontainers) del dashboard administrativo —
-/// prueba que GetPagedAsync/GetStatusCountsAsync respetan TenantId (nunca cruzan tenants) y
+/// prueba que GetPagedAsync/GetStatusCountsAsync respetan TenantId + CompanyId y excluyen cuentas
+/// globales (IAM-V1-F1), y
 /// que GetByIdAsync (cierre administrativo) respeta el filtro automático de empresa, sin
 /// necesidad de validación manual adicional en el handler.
 /// </summary>
@@ -33,6 +34,7 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
     private Guid _companyAId;
     private Guid _companyBId;
     private Guid _identityUserId;
+    private Guid _globalUserId;
     private Guid _branchId;
 
     public async Task InitializeAsync()
@@ -106,9 +108,23 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
 
         db.Tenants.AddRange(tenant, otherTenant);
         db.Companies.AddRange(companyA, companyB, companyOther);
-        db.IdentityUsers.Add(user);
+        // IAM-V1-F1: cuenta global (GlobalUserRole activo) con sesión en la empresa A.
+        var globalUser = IdentityUser.Create(
+            $"global{Guid.NewGuid():N}",
+            "Global",
+            "Admin",
+            null,
+            "hash",
+            createdBy
+        );
+        db.IdentityUsers.AddRange(user, globalUser);
         db.Branches.Add(branch);
         await db.SaveChangesAsync();
+        db.GlobalUserRoles.Add(
+            GlobalUserRole.Create(globalUser.Id, ERP.Domain.Kernel.Security.SecurityRoles.Admin, createdBy)
+        );
+        await db.SaveChangesAsync();
+        _globalUserId = globalUser.Id;
 
         _tenantId = tenant.Id;
         _otherTenantId = otherTenant.Id;
@@ -126,6 +142,10 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
         );
         await seedRepo.AddAsync(
             UserSession.Create(_tenantId, _companyBId, _identityUserId, _branchId, "device-b"),
+            CancellationToken.None
+        );
+        await seedRepo.AddAsync(
+            UserSession.Create(_tenantId, _companyAId, _globalUserId, _branchId, "device-global"),
             CancellationToken.None
         );
         await seedRepo.AddAsync(
@@ -158,29 +178,12 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetPagedAsync_nunca_cruza_tenants_y_respeta_el_filtro_de_CompanyId()
+    public async Task GetPagedAsync_IAM_V1_F1_solo_la_empresa_indicada_sin_otros_tenants_ni_cuentas_globales()
     {
         await using var db = CreateContext(_tenantId, _companyAId);
         var repo = new UserSessionRepository(db);
 
-        var (allInTenant, totalInTenant) = await repo.GetPagedAsync(
-            _tenantId,
-            null,
-            null,
-            null,
-            null,
-            null,
-            1,
-            25,
-            CancellationToken.None
-        );
-
-        totalInTenant.Should().Be(2);
-        allInTenant.Should().OnlyContain(x => x.TenantId == _tenantId);
-        allInTenant.Should().Contain(x => x.CompanyId == _companyAId);
-        allInTenant.Should().Contain(x => x.CompanyId == _companyBId);
-
-        var (onlyCompanyA, totalCompanyA) = await repo.GetPagedAsync(
+        var (companyA, totalCompanyA) = await repo.GetPagedAsync(
             _tenantId,
             null,
             _companyAId,
@@ -192,19 +195,50 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
             CancellationToken.None
         );
 
+        // Empresa A tiene 2 sesiones en BD (Ana + global); la global nunca se lista.
         totalCompanyA.Should().Be(1);
-        onlyCompanyA.Should().OnlyContain(x => x.CompanyId == _companyAId);
+        companyA.Should().ContainSingle();
+        companyA.Should().OnlyContain(x =>
+            x.TenantId == _tenantId && x.CompanyId == _companyAId && x.IdentityUserId == _identityUserId
+        );
+
+        var (_, totalGlobalFilter) = await repo.GetPagedAsync(
+            _tenantId,
+            _globalUserId,
+            _companyAId,
+            null,
+            null,
+            null,
+            1,
+            25,
+            CancellationToken.None
+        );
+        totalGlobalFilter.Should().Be(0);
+
+        var (companyB, totalCompanyB) = await repo.GetPagedAsync(
+            _tenantId,
+            null,
+            _companyBId,
+            null,
+            null,
+            null,
+            1,
+            25,
+            CancellationToken.None
+        );
+        totalCompanyB.Should().Be(1);
+        companyB.Should().OnlyContain(x => x.CompanyId == _companyBId);
     }
 
     [Fact]
-    public async Task GetStatusCountsAsync_solo_cuenta_sesiones_del_tenant_indicado()
+    public async Task GetStatusCountsAsync_IAM_V1_F1_solo_la_empresa_indicada_sin_cuentas_globales()
     {
         await using var db = CreateContext(_tenantId, _companyAId);
         var repo = new UserSessionRepository(db);
 
-        var counts = await repo.GetStatusCountsAsync(_tenantId, null, CancellationToken.None);
+        var counts = await repo.GetStatusCountsAsync(_tenantId, _companyAId, CancellationToken.None);
 
-        counts[UserSessionStatus.Active].Should().Be(2); // solo las dos del tenant bajo prueba
+        counts[UserSessionStatus.Active].Should().Be(1);
     }
 
     [Fact]
@@ -214,7 +248,10 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
         var sessionA = await seedDb
             .UserSessions.IgnoreQueryFilters()
             .FirstAsync(
-                x => x.TenantId == _tenantId && x.CompanyId == _companyAId,
+                x =>
+                    x.TenantId == _tenantId
+                    && x.CompanyId == _companyAId
+                    && x.IdentityUserId == _identityUserId,
                 CancellationToken.None
             );
         var sessionB = await seedDb
@@ -242,7 +279,10 @@ public sealed class AdminUserSessionIntegrationTests : IAsyncLifetime
         var sessionA = await seedDb
             .UserSessions.IgnoreQueryFilters()
             .FirstAsync(
-                x => x.TenantId == _tenantId && x.CompanyId == _companyAId,
+                x =>
+                    x.TenantId == _tenantId
+                    && x.CompanyId == _companyAId
+                    && x.IdentityUserId == _identityUserId,
                 CancellationToken.None
             );
 

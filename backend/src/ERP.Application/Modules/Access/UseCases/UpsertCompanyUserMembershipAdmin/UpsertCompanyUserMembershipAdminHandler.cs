@@ -1,5 +1,6 @@
 using ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 using ERP.Application.Common;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using MediatR;
@@ -20,15 +21,18 @@ public sealed class UpsertCompanyUserMembershipAdminHandler
     private readonly ITenantRepository _tenantRepository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IMediator _mediator;
+    private readonly IAccessRepository _accessRepository;
 
     public UpsertCompanyUserMembershipAdminHandler(
         ICurrentTenant currentTenant,
         ICurrentCompany currentCompany,
         ITenantRepository tenantRepository,
         ICompanyRepository companyRepository,
-        IMediator mediator
+        IMediator mediator,
+        IAccessRepository accessRepository
     )
     {
+        _accessRepository = accessRepository;
         _currentTenant = currentTenant;
         _currentCompany = currentCompany;
         _tenantRepository = tenantRepository;
@@ -55,6 +59,18 @@ public sealed class UpsertCompanyUserMembershipAdminHandler
         );
         if (company is null)
             return Result<object>.NotFound("Empresa activa no encontrada para el tenant.");
+
+        // IAM-V1-F1: solo identidades administrables en esta empresa o vinculables desde otra
+        // empresa del mismo tenant. Inexistente, global o de otro tenant responden igual.
+        var visibleUser = await IamIdentityScope.FindVisibleUserByUsernameAsync(
+            _accessRepository,
+            _currentTenant.TenantId,
+            company.Id,
+            command.Username,
+            cancellationToken
+        );
+        if (visibleUser is null)
+            return Result<object>.NotFound(IamIdentityScope.UserNotFoundMessage);
 
         return await _mediator.Send(
             new UpsertCompanyUserMembershipCommand(

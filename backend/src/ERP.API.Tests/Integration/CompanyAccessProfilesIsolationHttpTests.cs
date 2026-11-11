@@ -178,6 +178,14 @@ public sealed class CompanyAccessProfilesIsolationHttpFixture : IAsyncLifetime
                 seedBy
             )
         );
+        // IAM-V1-F1: los destinos de asignación son identidades del MISMO tenant (membership en
+        // B), única forma de que una identidad existente sea vinculable desde A.
+        db.CompanyUserMemberships.AddRange(
+            CompanyUserMembership.Create(CompanyBId, targetForeign.Id, "User", null, seedBy),
+            CompanyUserMembership.Create(CompanyBId, targetRicher.Id, "User", null, seedBy),
+            CompanyUserMembership.Create(CompanyBId, targetSubset.Id, "User", null, seedBy),
+            CompanyUserMembership.Create(CompanyBId, targetOwn.Id, "User", null, seedBy)
+        );
         db.GlobalUserRoles.Add(GlobalUserRole.Create(global.Id, "Admin", seedBy));
         await db.SaveChangesAsync();
     }

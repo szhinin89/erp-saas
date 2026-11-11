@@ -55,7 +55,7 @@ public sealed class CloseUserSessionAdminHandlerTests
         repo.Setup(r => r.GetByIdAsync(session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
 
-        var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object);
+        var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object, new Mock<IAccessRepository>().Object);
         var result = await handler.Handle(
             new CloseUserSessionAdminCommand(session.Id),
             CancellationToken.None
@@ -74,7 +74,7 @@ public sealed class CloseUserSessionAdminHandlerTests
         repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserSession?)null);
 
-        var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object);
+        var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object, new Mock<IAccessRepository>().Object);
         var result = await handler.Handle(
             new CloseUserSessionAdminCommand(Guid.NewGuid()),
             CancellationToken.None
@@ -93,7 +93,7 @@ public sealed class CloseUserSessionAdminHandlerTests
         repo.Setup(r => r.GetByIdAsync(session.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(session);
 
-        var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object);
+        var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object, new Mock<IAccessRepository>().Object);
         var result = await handler.Handle(
             new CloseUserSessionAdminCommand(session.Id),
             CancellationToken.None
@@ -102,5 +102,34 @@ public sealed class CloseUserSessionAdminHandlerTests
         result.IsSuccess.Should().BeTrue();
         session.Status.Should().Be(UserSessionStatus.ClosedManually);
         session.UpdatedBy.Should().Be(OwnerUserId); // no se reescribe: Close() es idempotente
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_sesion_de_cuenta_global_responde_NotFound_y_no_se_cierra()
+    {
+        var (repo, user) = BuildMocks();
+        var session = UserSession.Create(TenantId, CompanyId, OwnerUserId, BranchId, "device-1");
+        repo.Setup(r => r.GetByIdAsync(session.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(session);
+        var access = new Mock<IAccessRepository>();
+        access
+            .Setup(a =>
+                a.GetActiveGlobalUserIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([OwnerUserId]);
+
+        var handler = new CloseUserSessionAdminHandler(repo.Object, user.Object, access.Object);
+        var result = await handler.Handle(
+            new CloseUserSessionAdminCommand(session.Id),
+            CancellationToken.None
+        );
+
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Sesión no encontrada.");
+        session.Status.Should().Be(UserSessionStatus.Active);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

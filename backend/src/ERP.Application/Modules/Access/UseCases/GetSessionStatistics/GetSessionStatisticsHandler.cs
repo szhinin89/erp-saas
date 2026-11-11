@@ -15,14 +15,17 @@ public sealed class GetSessionStatisticsHandler
 {
     private readonly IUserSessionRepository _repository;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
     public GetSessionStatisticsHandler(
         IUserSessionRepository repository,
-        ICurrentTenant currentTenant
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
     )
     {
         _repository = repository;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<SessionStatisticsDto>> Handle(
@@ -30,9 +33,13 @@ public sealed class GetSessionStatisticsHandler
         CancellationToken cancellationToken
     )
     {
+        // IAM-V1-F1: mismo alcance que el listado (empresa operativa, sin cuentas globales).
+        if (!_currentCompany.HasCompanyContext)
+            return Result<SessionStatisticsDto>.Forbidden("No hay una empresa activa en la sesión.");
+
         var counts = await _repository.GetStatusCountsAsync(
             _currentTenant.TenantId,
-            request.CompanyId,
+            _currentCompany.CompanyId,
             cancellationToken
         );
 

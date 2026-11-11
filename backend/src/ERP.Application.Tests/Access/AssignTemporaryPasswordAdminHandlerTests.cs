@@ -130,7 +130,7 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
     }
 
     [Fact]
-    public async Task Usuario_sin_membership_en_la_empresa_activa_devuelve_Forbidden()
+    public async Task Usuario_sin_membership_en_la_empresa_activa_devuelve_NotFound_uniforme()
     {
         var user = NewTargetUser();
         var f = new Fixture();
@@ -145,7 +145,8 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var result = await handler.Handle(ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Usuario no encontrado.");
         user.PasswordHash.Should()
             .Be("old-hash", "no debe tocarse el password si el scoping de empresa falla");
         f.UnitOfWork.Verify(
@@ -166,7 +167,7 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
     }
 
     [Fact]
-    public async Task Membership_inactiva_devuelve_Forbidden()
+    public async Task Membership_inactiva_devuelve_NotFound_uniforme()
     {
         var user = NewTargetUser();
         var membership = ActiveMembership(user.Id);
@@ -183,7 +184,8 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         var result = await handler.Handle(ValidCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Code.Should().Be(ApiResponseCodes.Common.Forbidden);
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Usuario no encontrado.");
         user.PasswordHash.Should().Be("old-hash");
         f.UnitOfWork.Verify(
             u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()),
@@ -290,5 +292,33 @@ public sealed class AssignTemporaryPasswordAdminHandlerTests
         await act.Should().ThrowAsync<InvalidOperationException>();
         f.UnitOfWork.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         f.UnitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_cuenta_global_con_membership_activa_responde_NotFound_y_no_cambia_password()
+    {
+        var user = NewTargetUser();
+        var membership = ActiveMembership(user.Id);
+        var f = new Fixture();
+        f.AccessRepo.Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        f.AccessRepo.Setup(r =>
+                r.GetCompanyUserMembershipAsync(CompanyId, user.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(membership);
+        f.AccessRepo.Setup(r =>
+                r.GetActiveGlobalUserIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
+            .ReturnsAsync([user.Id]);
+
+        var result = await f.BuildHandler().Handle(ValidCommand(), CancellationToken.None);
+
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Usuario no encontrado.");
+        user.PasswordHash.Should().Be("old-hash");
+        f.Hasher.Verify(h => h.HashPassword(It.IsAny<string>()), Times.Never);
     }
 }

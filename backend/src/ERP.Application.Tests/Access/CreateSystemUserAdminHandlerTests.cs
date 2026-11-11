@@ -194,7 +194,7 @@ public sealed class CreateSystemUserAdminHandlerTests
                 m.Send(It.IsAny<CreateSystemUserCommand>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(
-                Result<CreateSystemUserResultDto>.Conflict("Ya existe un usuario con ese email.")
+                Result<CreateSystemUserResultDto>.Conflict("El nombre de usuario o el correo no están disponibles.")
             );
 
         var handler = f.BuildHandler(tenant.Id, company.Id);

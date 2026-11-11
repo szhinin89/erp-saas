@@ -11,14 +11,17 @@ public sealed class GetUserSessionsPagedHandler
 {
     private readonly IUserSessionRepository _repository;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentCompany _currentCompany;
 
     public GetUserSessionsPagedHandler(
         IUserSessionRepository repository,
-        ICurrentTenant currentTenant
+        ICurrentTenant currentTenant,
+        ICurrentCompany currentCompany
     )
     {
         _repository = repository;
         _currentTenant = currentTenant;
+        _currentCompany = currentCompany;
     }
 
     public async Task<Result<PagedResult<UserSessionAdminDto>>> Handle(
@@ -26,6 +29,13 @@ public sealed class GetUserSessionsPagedHandler
         CancellationToken cancellationToken
     )
     {
+        // IAM-V1-F1: siempre la empresa operativa del actor. Un CompanyId de la query distinto
+        // no amplía el alcance (otra empresa del tenant nunca es visible desde aquí).
+        if (!_currentCompany.HasCompanyContext)
+            return Result<PagedResult<UserSessionAdminDto>>.Forbidden(
+                "No hay una empresa activa en la sesión."
+            );
+
         UserSessionStatus? status = null;
         if (
             !string.IsNullOrWhiteSpace(request.Status)
@@ -36,7 +46,7 @@ public sealed class GetUserSessionsPagedHandler
         var (items, total) = await _repository.GetPagedAsync(
             _currentTenant.TenantId,
             request.IdentityUserId,
-            request.CompanyId,
+            _currentCompany.CompanyId,
             status,
             request.FromUtc,
             request.ToUtc,

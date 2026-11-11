@@ -1,3 +1,4 @@
+using ERP.Application.Access.UseCases;
 using ERP.Application.Common;
 using ERP.Application.Security.DTOs;
 using ERP.Domain.Access.Interfaces;
@@ -19,13 +20,16 @@ public class GetSecurityAdminMatrixHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly IAccessRepository _accessRepository;
     private readonly ISecurityRepository _securityRepository;
+    private readonly ICurrentCompany _currentCompany;
 
     public GetSecurityAdminMatrixHandler(
         ICurrentTenant currentTenant,
         IAccessRepository accessRepository,
-        ISecurityRepository securityRepository
+        ISecurityRepository securityRepository,
+        ICurrentCompany currentCompany
     )
     {
+        _currentCompany = currentCompany;
         _currentTenant = currentTenant;
         _accessRepository = accessRepository;
         _securityRepository = securityRepository;
@@ -44,14 +48,38 @@ public class GetSecurityAdminMatrixHandler
                 IReadOnlyList<SecurityAdminScopeAssignmentDto>
             )>.Failure("Tenant inválido.");
 
-        var users = await _accessRepository.GetActiveIdentityUsersForTenantAsync(
-            _currentTenant.TenantId,
-            cancellationToken
-        );
-        var memberships = await _accessRepository.GetCompanyUserMembershipsByTenantAsync(
-            _currentTenant.TenantId,
+        if (!_currentCompany.HasCompanyContext)
+            return Result<(
+                IReadOnlyList<SecurityUserDto>,
+                IReadOnlyList<SecurityAdminScopeAssignmentDto>
+            )>.Forbidden("No hay una empresa activa en la sesión.");
+
+        // IAM-V1-F1: solo identidades administrables de la empresa operativa — membership activa
+        // en ella y sin GlobalUserRole activo. Nunca otras empresas del tenant ni cuentas globales.
+        var companyMemberships = await _accessRepository.GetCompanyUserMembershipsByCompanyAsync(
+            _currentCompany.CompanyId,
             onlyActive: true,
             cancellationToken
+        );
+        var globalUserIds = await IamIdentityScope.GetGlobalUserIdsAsync(
+            _accessRepository,
+            companyMemberships.Select(m => m.IdentityUserId),
+            cancellationToken
+        );
+        var memberships = companyMemberships
+            .Where(m => !globalUserIds.Contains(m.IdentityUserId))
+            .ToList();
+        var users = (
+            await _accessRepository.GetUsersByIdsAsync(
+                memberships.Select(m => m.IdentityUserId).Distinct().ToList(),
+                cancellationToken
+            )
+        )
+            .Where(u => u.IsActive)
+            .OrderBy(u => u.FullName)
+            .ToList();
+        var visibleUserKeys = users.Select(u => u.Id.ToString()).ToHashSet(
+            StringComparer.OrdinalIgnoreCase
         );
         var roleByUser = memberships
             .GroupBy(m => m.IdentityUserId)
@@ -80,6 +108,7 @@ public class GetSecurityAdminMatrixHandler
             .ToList();
 
         var assignmentDtos = assignments
+            .Where(a => a.SubjectType != "User" || visibleUserKeys.Contains(a.SubjectKey))
             .Select(a => new SecurityAdminScopeAssignmentDto(
                 a.SubjectType,
                 a.SubjectKey,

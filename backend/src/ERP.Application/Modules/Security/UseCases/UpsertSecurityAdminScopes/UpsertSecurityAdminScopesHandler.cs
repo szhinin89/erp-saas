@@ -1,4 +1,6 @@
+using ERP.Application.Access.UseCases;
 using ERP.Application.Common;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Security.Entities;
 using ERP.Domain.Security.Interfaces;
 using MediatR;
@@ -19,13 +21,19 @@ public class UpsertSecurityAdminScopesHandler
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _currentUser;
     private readonly ISecurityRepository _repository;
+    private readonly ICurrentCompany _currentCompany;
+    private readonly IAccessRepository _accessRepository;
 
     public UpsertSecurityAdminScopesHandler(
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ISecurityRepository repository
+        ISecurityRepository repository,
+        ICurrentCompany currentCompany,
+        IAccessRepository accessRepository
     )
     {
+        _currentCompany = currentCompany;
+        _accessRepository = accessRepository;
         _currentTenant = currentTenant;
         _currentUser = currentUser;
         _repository = repository;
@@ -49,6 +57,25 @@ public class UpsertSecurityAdminScopesHandler
         var subjectKey = command.SubjectKey.Trim();
         if (string.IsNullOrWhiteSpace(subjectKey))
             return Result<bool>.Failure("SubjectKey requerido.");
+
+        // IAM-V1-F1: un sujeto User debe ser administrable desde la empresa operativa (membership
+        // en ella y sin GlobalUserRole activo). Inexistente, global o de otra empresa/tenant
+        // responden igual.
+        if (subjectType == "User")
+        {
+            var administrable =
+                _currentCompany.HasCompanyContext
+                && Guid.TryParse(subjectKey, out var subjectUserId)
+                && await IamIdentityScope.GetAdministrableMembershipAsync(
+                    _accessRepository,
+                    _currentCompany.CompanyId,
+                    subjectUserId,
+                    cancellationToken
+                )
+                    is not null;
+            if (!administrable)
+                return Result<bool>.NotFound(IamIdentityScope.UserNotFoundMessage);
+        }
 
         var allowed = new HashSet<int>(command.AllowedScopes.Distinct());
 

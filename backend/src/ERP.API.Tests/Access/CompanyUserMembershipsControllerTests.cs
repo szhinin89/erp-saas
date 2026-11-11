@@ -219,16 +219,16 @@ public sealed class CompanyUserMembershipsControllerTests
     }
 
     [Fact]
-    public async Task Upsert_con_usuario_inexistente_retorna_400()
+    public async Task Upsert_con_usuario_fuera_de_alcance_retorna_404()
     {
-        var controller = BuildController(_ => Result<object>.Failure("Usuario no existe."));
+        var controller = BuildController(_ => Result<object>.NotFound("Usuario no encontrado."));
 
         var response = await controller.Upsert(
             new UpsertCompanyUserMembershipRequest("no-existe", "User"),
             CancellationToken.None
         );
 
-        response.Should().BeOfType<BadRequestObjectResult>();
+        response.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -286,15 +286,15 @@ public sealed class CompanyUserMembershipsControllerTests
     }
 
     [Fact]
-    public async Task Revoke_con_usuario_inexistente_retorna_400()
+    public async Task Revoke_con_usuario_fuera_de_alcance_retorna_404()
     {
-        var controller = BuildController(_ => Result<object>.Failure("Usuario no existe."));
+        var controller = BuildController(_ => Result<object>.NotFound("Usuario no encontrado."));
 
         var response = await controller.Revoke(
             new RevokeCompanyUserMembershipRequest("no-existe"),
             CancellationToken.None
         );
 
-        response.Should().BeOfType<BadRequestObjectResult>();
+        response.Should().BeOfType<NotFoundObjectResult>();
     }
 }

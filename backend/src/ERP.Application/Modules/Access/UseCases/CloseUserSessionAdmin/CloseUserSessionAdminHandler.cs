@@ -19,11 +19,17 @@ public sealed class CloseUserSessionAdminHandler
 {
     private readonly IUserSessionRepository _repository;
     private readonly ICurrentUser _currentUser;
+    private readonly IAccessRepository _accessRepository;
 
-    public CloseUserSessionAdminHandler(IUserSessionRepository repository, ICurrentUser currentUser)
+    public CloseUserSessionAdminHandler(
+        IUserSessionRepository repository,
+        ICurrentUser currentUser,
+        IAccessRepository accessRepository
+    )
     {
         _repository = repository;
         _currentUser = currentUser;
+        _accessRepository = accessRepository;
     }
 
     public async Task<Result<string>> Handle(
@@ -36,7 +42,15 @@ public sealed class CloseUserSessionAdminHandler
         // sesión de otra empresa simplemente no existe desde este query, nunca es un 403
         // silencioso ni una fuga de datos.
         var session = await _repository.GetByIdAsync(command.SessionId, cancellationToken);
-        if (session is null)
+        // IAM-V1-F1: la sesión de una cuenta global responde igual que una inexistente.
+        if (
+            session is null
+            || await IamIdentityScope.IsGlobalAsync(
+                _accessRepository,
+                session.IdentityUserId,
+                cancellationToken
+            )
+        )
             return Result<string>.NotFound("Sesión no encontrada.");
 
         session.CloseManually(_currentUser.UserId);

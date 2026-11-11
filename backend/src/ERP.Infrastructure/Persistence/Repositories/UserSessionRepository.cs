@@ -46,13 +46,17 @@ public sealed class UserSessionRepository : IUserSessionRepository
         return await query.OrderBy(x => x.StartedAt).ThenBy(x => x.Id).Take(batchSize).ToListAsync(cancellationToken);
     }
 
-    // IgnoreQueryFilters(): dashboard administrativo (Fase 10) — CompanyId es un filtro
-    // opcional explícito, no el scope automático de ICompanyOperationalEntity, porque un
-    // administrador de tenant debe poder ver sesiones de varias empresas a la vez.
+    // IAM-V1-F1: tenant + empresa explícitos (la empresa operativa la resuelve el handler) y sin
+    // sesiones de cuentas globales — misma consulta, para que la paginación y el total coincidan.
+    private IQueryable<UserSession> AdminScopedQuery(Guid tenantId, Guid companyId) =>
+        _db.UserSessions.AsPlatformQuery()
+            .Where(x => x.TenantId == tenantId && x.CompanyId == companyId)
+            .Where(x => !_db.GlobalUserRoles.Any(g => g.IsActive && g.UserId == x.IdentityUserId));
+
     public async Task<(IReadOnlyList<UserSession> Items, int Total)> GetPagedAsync(
         Guid tenantId,
         Guid? identityUserId,
-        Guid? companyId,
+        Guid companyId,
         UserSessionStatus? status,
         DateTime? fromUtc,
         DateTime? toUtc,
@@ -61,12 +65,10 @@ public sealed class UserSessionRepository : IUserSessionRepository
         CancellationToken cancellationToken = default
     )
     {
-        var query = _db.UserSessions.AsPlatformQuery().Where(x => x.TenantId == tenantId);
+        var query = AdminScopedQuery(tenantId, companyId);
 
         if (identityUserId is Guid uid)
             query = query.Where(x => x.IdentityUserId == uid);
-        if (companyId is Guid cid)
-            query = query.Where(x => x.CompanyId == cid);
         if (status is UserSessionStatus st)
             query = query.Where(x => x.Status == st);
         if (fromUtc is DateTime from)
@@ -85,18 +87,14 @@ public sealed class UserSessionRepository : IUserSessionRepository
         return (items, total);
     }
 
-    // IgnoreQueryFilters(): mismo criterio que GetPagedAsync — estadísticas cross-company
-    // dentro del tenant.
+    // Mismo alcance que GetPagedAsync (IAM-V1-F1).
     public async Task<IReadOnlyDictionary<UserSessionStatus, int>> GetStatusCountsAsync(
         Guid tenantId,
-        Guid? companyId,
+        Guid companyId,
         CancellationToken cancellationToken = default
     )
     {
-        var query = _db.UserSessions.AsPlatformQuery().Where(x => x.TenantId == tenantId);
-
-        if (companyId is Guid cid)
-            query = query.Where(x => x.CompanyId == cid);
+        var query = AdminScopedQuery(tenantId, companyId);
 
         var counts = await query
             .GroupBy(x => x.Status)

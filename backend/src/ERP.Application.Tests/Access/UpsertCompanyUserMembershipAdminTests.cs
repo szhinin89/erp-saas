@@ -1,6 +1,8 @@
 using ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 using ERP.Application.Access.UseCases.UpsertCompanyUserMembershipAdmin;
 using ERP.Application.Common;
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Tenants.Entities;
@@ -53,6 +55,29 @@ public sealed class UpsertCompanyUserMembershipAdminHandlerTests
         public Mock<ITenantRepository> TenantRepo { get; } = new();
         public Mock<ICompanyRepository> CompanyRepo { get; } = new();
         public Mock<IMediator> Mediator { get; } = new();
+        public Mock<IAccessRepository> AccessRepo { get; } = new();
+        public IdentityUser User { get; } =
+            IdentityUser.Create(Username, "Ana", "Perez", null, "hash", CreatedBy);
+
+        /// <summary>
+        /// Por defecto la identidad es vinculable: existe, no es global y pertenece a otra
+        /// empresa del mismo tenant (IAM-V1-F1).
+        /// </summary>
+        public Fixture()
+        {
+            AccessRepo
+                .Setup(r => r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(User);
+            AccessRepo
+                .Setup(r =>
+                    r.HasCompanyUserMembershipInTenantAsync(
+                        User.Id,
+                        It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                )
+                .ReturnsAsync(true);
+        }
 
         public UpsertCompanyUserMembershipAdminHandler BuildHandler(
             Guid tenantId,
@@ -63,7 +88,8 @@ public sealed class UpsertCompanyUserMembershipAdminHandlerTests
                 new CurrentCompanyStub(companyId),
                 TenantRepo.Object,
                 CompanyRepo.Object,
-                Mediator.Object
+                Mediator.Object,
+                AccessRepo.Object
             );
     }
 
@@ -179,7 +205,7 @@ public sealed class UpsertCompanyUserMembershipAdminHandlerTests
     }
 
     [Fact]
-    public async Task Usuario_inexistente_propaga_el_Failure_del_UseCase_de_Fase_D()
+    public async Task Failure_del_UseCase_de_Fase_D_se_propaga_sin_cambios()
     {
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
@@ -196,16 +222,16 @@ public sealed class UpsertCompanyUserMembershipAdminHandlerTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(Result<object>.Failure("Usuario no existe."));
+            .ReturnsAsync(Result<object>.Failure("Fallo de Fase D."));
 
         var handler = f.BuildHandler(tenant.Id, company.Id);
         var result = await handler.Handle(
-            new UpsertCompanyUserMembershipAdminCommand("no-existe", "User"),
+            new UpsertCompanyUserMembershipAdminCommand(Username, "User"),
             CancellationToken.None
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("Usuario no existe.");
+        result.Error.Should().Be("Fallo de Fase D.");
     }
 
     [Fact]
@@ -230,6 +256,63 @@ public sealed class UpsertCompanyUserMembershipAdminHandlerTests
                     It.IsAny<UpsertCompanyUserMembershipCommand>(),
                     It.IsAny<CancellationToken>()
                 ),
+            Times.Never
+        );
+    }
+
+    [Theory]
+    [InlineData("otro-tenant")]
+    [InlineData("global")]
+    [InlineData("inexistente")]
+    public async Task IAM_V1_F1_identidad_fuera_de_alcance_responde_NotFound_uniforme_sin_delegar(
+        string caso
+    )
+    {
+        var tenant = NewTenant();
+        var company = NewCompany(tenant.Id);
+        var f = new Fixture();
+        f.TenantRepo.Setup(r => r.GetByIdAsync(tenant.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(tenant);
+        f.CompanyRepo.Setup(r =>
+                r.GetByIdForTenantAsync(company.Id, tenant.Id, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(company);
+        switch (caso)
+        {
+            case "otro-tenant":
+                f.AccessRepo.Setup(r =>
+                        r.HasCompanyUserMembershipInTenantAsync(
+                            f.User.Id,
+                            tenant.Id,
+                            It.IsAny<CancellationToken>()
+                        )
+                    )
+                    .ReturnsAsync(false);
+                break;
+            case "global":
+                f.AccessRepo.Setup(r =>
+                        r.GetActiveGlobalUserIdsAsync(
+                            It.IsAny<IReadOnlyCollection<Guid>>(),
+                            It.IsAny<CancellationToken>()
+                        )
+                    )
+                    .ReturnsAsync([f.User.Id]);
+                break;
+            default:
+                f.AccessRepo.Setup(r =>
+                        r.GetUserByUsernameAsync(Username, It.IsAny<CancellationToken>())
+                    )
+                    .ReturnsAsync((IdentityUser?)null);
+                break;
+        }
+
+        var result = await f.BuildHandler(tenant.Id, company.Id)
+            .Handle(new UpsertCompanyUserMembershipAdminCommand(Username, "User"), CancellationToken.None);
+
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Usuario no encontrado.");
+        f.Mediator.Verify(
+            m => m.Send(It.IsAny<UpsertCompanyUserMembershipCommand>(), It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

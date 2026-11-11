@@ -56,20 +56,19 @@ public sealed class AssignTemporaryPasswordAdminHandler
             username,
             cancellationToken
         );
-        if (targetUser is null)
-            return Result<string>.NotFound("Usuario no encontrado.");
-
-        // Anti-IDOR: el admin solo puede actuar sobre usuarios con membership activa en su
-        // empresa activa — mismo criterio que LookupUserByUsernameAdminHandler. Un usuario sin
-        // membership en esta empresa (de otro tenant, de otra empresa, o sin acceso) queda fuera
-        // sin distinguir el motivo, para no filtrar información de existencia entre tenants.
-        var membership = await _accessRepository.GetCompanyUserMembershipAsync(
-            _currentCompany.CompanyId,
-            targetUser.Id,
-            cancellationToken
-        );
-        if (membership is null || !membership.IsActive)
-            return Result<string>.Forbidden("El usuario no pertenece a la empresa activa.");
+        // Anti-IDOR / IAM-V1-F1: solo usuarios con membership activa en la empresa activa y sin
+        // GlobalUserRole activo. Inexistente, global, de otro tenant/empresa o sin acceso responden
+        // exactamente igual (404 uniforme), para no filtrar existencia de cuentas.
+        var membership = targetUser is null
+            ? null
+            : await IamIdentityScope.GetAdministrableMembershipAsync(
+                _accessRepository,
+                _currentCompany.CompanyId,
+                targetUser.Id,
+                cancellationToken
+            );
+        if (targetUser is null || membership is null || !membership.IsActive)
+            return Result<string>.NotFound(IamIdentityScope.UserNotFoundMessage);
 
         var hash = _passwordHasher.HashPassword(command.TemporaryPassword);
 

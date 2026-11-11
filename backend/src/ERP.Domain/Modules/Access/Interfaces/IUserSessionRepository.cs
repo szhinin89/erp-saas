@@ -29,14 +29,14 @@ public interface IUserSessionRepository
     );
 
     /// <summary>
-    /// Listado paginado para el dashboard administrativo (Fase 10) — cruza todas las empresas
-    /// del tenant (CompanyId es un filtro opcional, no un scope automático), mismo criterio
-    /// cross-company ya usado por GetActiveSessionsAsync/GetExpiredActiveSessionsAsync.
+    /// Listado paginado para la administración empresarial de sesiones. IAM-V1-F1: siempre
+    /// acotado a <paramref name="companyId"/> (empresa operativa del actor) y excluye sesiones
+    /// de cuentas globales (<c>GlobalUserRole</c> activo).
     /// </summary>
     Task<(IReadOnlyList<UserSession> Items, int Total)> GetPagedAsync(
         Guid tenantId,
         Guid? identityUserId,
-        Guid? companyId,
+        Guid companyId,
         UserSessionStatus? status,
         DateTime? fromUtc,
         DateTime? toUtc,
@@ -45,10 +45,13 @@ public interface IUserSessionRepository
         CancellationToken cancellationToken = default
     );
 
-    /// <summary>Conteo de sesiones por Status dentro del tenant (Fase 10), CompanyId opcional.</summary>
+    /// <summary>
+    /// Conteo de sesiones por Status de la empresa operativa. IAM-V1-F1: mismo alcance que
+    /// <see cref="GetPagedAsync"/> (empresa obligatoria, sin cuentas globales).
+    /// </summary>
     Task<IReadOnlyDictionary<UserSessionStatus, int>> GetStatusCountsAsync(
         Guid tenantId,
-        Guid? companyId,
+        Guid companyId,
         CancellationToken cancellationToken = default
     );
 

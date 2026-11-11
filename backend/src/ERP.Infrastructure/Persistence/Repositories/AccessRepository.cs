@@ -99,6 +99,33 @@ public class AccessRepository : IAccessRepository
             cancellationToken
         );
 
+    public async Task<IReadOnlyList<Guid>> GetActiveGlobalUserIdsAsync(
+        IReadOnlyCollection<Guid> userIds,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (userIds.Count == 0)
+            return Array.Empty<Guid>();
+
+        return await _db
+            .GlobalUserRoles.Where(r => r.IsActive && userIds.Contains(r.UserId))
+            .Select(r => r.UserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<bool> HasCompanyUserMembershipInTenantAsync(
+        Guid identityUserId,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    ) =>
+        (
+            from m in _db.CompanyUserMemberships.AsPlatformQuery()
+            join c in _db.Companies.AsPlatformQuery() on m.CompanyId equals c.Id
+            where m.IdentityUserId == identityUserId && c.TenantId == tenantId
+            select m.Id
+        ).AnyAsync(cancellationToken);
+
     public async Task<
         IReadOnlyList<CompanyUserMembership>
     > GetActiveCompanyUserMembershipsForUserSystemAsync(

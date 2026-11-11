@@ -32,16 +32,20 @@ public sealed class CreateSystemUserHandler
         _unitOfWork = unitOfWork;
     }
 
+    public const string IdentityUnavailableMessage =
+        "El nombre de usuario o el correo no están disponibles.";
+
     public async Task<Result<CreateSystemUserResultDto>> Handle(
         CreateSystemUserCommand command,
         CancellationToken cancellationToken
     )
     {
+        // IAM-V1-F1 (D5): username y email son únicos en todo el sistema; el conflicto usa un
+        // único mensaje genérico para no indicar cuál de los dos existe ni dónde. Un usuario del
+        // mismo tenant se vincula desde la búsqueda (lookup), no desde aquí.
         var username = command.Username.Trim().ToLowerInvariant();
         if (await _accessRepository.AnyUserWithUsernameAsync(username, cancellationToken))
-            return Result<CreateSystemUserResultDto>.Conflict(
-                "Ya existe un usuario con ese username. Asigne la membership sobre el usuario existente."
-            );
+            return Result<CreateSystemUserResultDto>.Conflict(IdentityUnavailableMessage);
 
         var email = string.IsNullOrWhiteSpace(command.Email)
             ? null
@@ -50,9 +54,7 @@ public sealed class CreateSystemUserHandler
             email is not null
             && await _accessRepository.AnyUserWithEmailAsync(email, cancellationToken)
         )
-            return Result<CreateSystemUserResultDto>.Conflict(
-                "Ya existe un usuario con ese email."
-            );
+            return Result<CreateSystemUserResultDto>.Conflict(IdentityUnavailableMessage);
 
         var passwordHash = _hasher.HashPassword(command.Password);
         var user = IdentityUser.Create(

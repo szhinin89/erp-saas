@@ -63,15 +63,19 @@ public class RevokeCompanyUserMembershipHandler
 
         var username = command.Username.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByUsernameAsync(username, cancellationToken);
-        if (user is null)
-            return Result<object>.Failure("Usuario no existe.");
-
-        var membership = await _accessRepository.GetCompanyUserMembershipAsync(
-            company.Id,
-            user.Id,
-            cancellationToken
-        );
-        if (membership is null || !membership.IsActive)
+        // IAM-V1-F1 (D4): inexistente, global o sin membership en esta empresa responden igual —
+        // no se revela la existencia de cuentas globales ni de otros tenants/empresas.
+        var membership = user is null
+            ? null
+            : await IamIdentityScope.GetAdministrableMembershipAsync(
+                _accessRepository,
+                company.Id,
+                user.Id,
+                cancellationToken
+            );
+        if (user is null || membership is null)
+            return Result<object>.NotFound(IamIdentityScope.UserNotFoundMessage);
+        if (!membership.IsActive)
             return Result<object>.Success(new { });
 
         // SEC-05: retirar una membership Admin es retirar el rol Admin — solo un Admin de esta
@@ -98,7 +102,12 @@ public class RevokeCompanyUserMembershipHandler
         var invariantViolation = CompanyAdministratorInvariant.Validate<object>(
             membership,
             new CompanyAdministratorInvariant.FutureState(IsActive: false, Role: membership.Role),
-            activeMemberships
+            activeMemberships,
+            await IamIdentityScope.GetGlobalUserIdsAsync(
+                _accessRepository,
+                activeMemberships.Select(m => m.IdentityUserId),
+                cancellationToken
+            )
         );
         if (invariantViolation is not null)
             return invariantViolation;

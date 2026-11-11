@@ -139,13 +139,13 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
     }
 
     /// <summary>
-    /// El email no corresponde a ningún IdentityUser — RevokeCompanyUserMembershipHandler (Fase D)
-    /// devuelve Failure("Usuario no existe.") en ese caso (a diferencia de una membresía inexistente
-    /// o ya inactiva para un usuario real, que ese mismo handler trata como no-op idempotente por
-    /// diseño — comportamiento heredado, no modificado en esta fase).
+    /// IAM-V1-F1 (D4): RevokeCompanyUserMembershipHandler devuelve NotFound("Usuario no
+    /// encontrado.") por igual para usuario inexistente, cuenta global o sin membership en la
+    /// empresa activa (solo una membership ya inactiva de esta empresa sigue siendo no-op). Este
+    /// envoltorio lo propaga sin cambios.
     /// </summary>
     [Fact]
-    public async Task Usuario_inexistente_propaga_el_Failure_del_UseCase_de_Fase_D()
+    public async Task Usuario_fuera_de_alcance_propaga_el_NotFound_uniforme_del_UseCase_de_Fase_D()
     {
         var tenant = NewTenant();
         var company = NewCompany(tenant.Id);
@@ -162,7 +162,7 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
                     It.IsAny<CancellationToken>()
                 )
             )
-            .ReturnsAsync(Result<object>.Failure("Usuario no existe."));
+            .ReturnsAsync(Result<object>.NotFound("Usuario no encontrado."));
 
         var handler = f.BuildHandler(tenant.Id, company.Id);
         var result = await handler.Handle(
@@ -171,7 +171,8 @@ public sealed class RevokeCompanyUserMembershipAdminHandlerTests
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("Usuario no existe.");
+        result.Code.Should().Be(ApiResponseCodes.Common.NotFound);
+        result.Error.Should().Be("Usuario no encontrado.");
     }
 
     [Fact]

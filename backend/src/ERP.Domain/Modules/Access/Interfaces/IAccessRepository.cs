@@ -38,6 +38,25 @@ public interface IAccessRepository
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// IAM-V1-F1 — subconjunto de <paramref name="userIds"/> con <see cref="GlobalUserRole"/>
+    /// activo. Única forma de identificar una cuenta global (nunca por username, email o perfil).
+    /// </summary>
+    Task<IReadOnlyList<Guid>> GetActiveGlobalUserIdsAsync(
+        IReadOnlyCollection<Guid> userIds,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// IAM-V1-F1 — true si la identidad tiene alguna membership (activa o no) en una empresa del
+    /// tenant indicado. Las identidades no guardan tenant propio: su pertenencia sale de aquí.
+    /// </summary>
+    Task<bool> HasCompanyUserMembershipInTenantAsync(
+        Guid identityUserId,
+        Guid tenantId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<CompanyUserMembership>> GetActiveCompanyUserMembershipsForUserSystemAsync(
         Guid identityUserId,
         CancellationToken cancellationToken = default

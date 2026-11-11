@@ -125,7 +125,12 @@ public class UpsertCompanyUserMembershipHandler
             var invariantViolation = CompanyAdministratorInvariant.Validate<object>(
                 existing,
                 new CompanyAdministratorInvariant.FutureState(IsActive: true, Role: command.Role),
-                activeMemberships
+                activeMemberships,
+                await IamIdentityScope.GetGlobalUserIdsAsync(
+                    _accessRepository,
+                    activeMemberships.Select(m => m.IdentityUserId),
+                    cancellationToken
+                )
             );
             if (invariantViolation is not null)
                 return invariantViolation;

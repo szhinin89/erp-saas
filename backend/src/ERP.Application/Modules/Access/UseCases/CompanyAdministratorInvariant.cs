@@ -31,10 +31,16 @@ internal static class CompanyAdministratorInvariant
     /// caller ANTES de persistir el cambio (por eso <paramref name="membership"/> todavía aparece
     /// en esta colección con su estado actual, no el futuro — se excluye por Id al contar).
     /// </param>
+    /// <param name="globalUserIds">
+    /// IAM-V1-F1 — identidades con <c>GlobalUserRole</c> activo entre
+    /// <paramref name="activeCompanyMemberships"/> (vía <see cref="IamIdentityScope"/>). El
+    /// administrador global no cuenta como administrador propio de la empresa.
+    /// </param>
     public static Result<T>? Validate<T>(
         CompanyUserMembership membership,
         FutureState futureState,
-        IReadOnlyCollection<CompanyUserMembership> activeCompanyMemberships
+        IReadOnlyCollection<CompanyUserMembership> activeCompanyMemberships,
+        IReadOnlySet<Guid> globalUserIds
     )
     {
         // Si la membership continuará siendo un Administrador activo, el invariante queda
@@ -43,10 +49,28 @@ internal static class CompanyAdministratorInvariant
         if (futureState.IsActive && futureState.Role == SecurityRoles.Admin)
             return null;
 
-        var anotherActiveAdminExists = activeCompanyMemberships.Any(m =>
-            m.Id != membership.Id && m.Role == SecurityRoles.Admin
-        );
+        var otherActiveAdmins = activeCompanyMemberships
+            .Where(m => m.Id != membership.Id && m.Role == SecurityRoles.Admin)
+            .ToList();
 
-        return anotherActiveAdminExists ? null : Result<T>.ValidationFailure(ViolationMessage);
+        // Regla base: nunca dejar la empresa sin ningún Administrador activo.
+        if (otherActiveAdmins.Count == 0)
+            return Result<T>.ValidationFailure(ViolationMessage);
+
+        // IAM-V1-F1: una vez que la empresa tiene administradores propios, debe conservar al
+        // menos uno no global. Una empresa administrada solo por el global (First Run) no queda
+        // bloqueada: solo se protege retirar al ÚLTIMO administrador no global activo.
+        var isCurrentlyOwnActiveAdmin =
+            activeCompanyMemberships.Any(m => m.Id == membership.Id)
+            && membership.IsActive
+            && membership.Role == SecurityRoles.Admin
+            && !globalUserIds.Contains(membership.IdentityUserId);
+        if (!isCurrentlyOwnActiveAdmin)
+            return null;
+
+        var anotherOwnAdminExists = otherActiveAdmins.Any(m =>
+            !globalUserIds.Contains(m.IdentityUserId)
+        );
+        return anotherOwnAdminExists ? null : Result<T>.ValidationFailure(ViolationMessage);
     }
 }

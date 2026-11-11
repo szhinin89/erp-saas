@@ -127,7 +127,9 @@ public sealed class IdentityUsersControllerTests
     public async Task Create_con_email_duplicado_retorna_409()
     {
         var controller = BuildController(_ =>
-            Result<CreateSystemUserResultDto>.Conflict("Ya existe un usuario con ese email.")
+            Result<CreateSystemUserResultDto>.Conflict(
+                "El nombre de usuario o el correo no están disponibles."
+            )
         );
 
         var response = await controller.Create(
@@ -236,11 +238,10 @@ public sealed class IdentityUsersControllerTests
     }
 
     [Fact]
-    public async Task AssignTemporaryPassword_usuario_de_otra_empresa_retorna_403()
+    public async Task AssignTemporaryPassword_usuario_fuera_de_la_empresa_retorna_404_uniforme()
     {
-        var controller = BuildController(_ =>
-            Result<string>.Forbidden("El usuario no pertenece a la empresa activa.")
-        );
+        // IAM-V1-F1: otra empresa/tenant o cuenta global responden igual que inexistente.
+        var controller = BuildController(_ => Result<string>.NotFound("Usuario no encontrado."));
 
         var response = await controller.AssignTemporaryPassword(
             "ana.perez",
@@ -248,7 +249,6 @@ public sealed class IdentityUsersControllerTests
             CancellationToken.None
         );
 
-        response.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)response).StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        response.Should().BeOfType<NotFoundObjectResult>();
     }
 }

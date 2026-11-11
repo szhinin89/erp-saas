@@ -41,11 +41,21 @@ public sealed class GetCompanyUserMembershipsAdminHandler
                 "No hay una empresa activa en la sesión."
             );
 
-        var memberships = await _accessRepository.GetCompanyUserMembershipsByCompanyAsync(
+        var allMemberships = await _accessRepository.GetCompanyUserMembershipsByCompanyAsync(
             _currentCompany.CompanyId,
             request.OnlyActive,
             cancellationToken
         );
+
+        // IAM-V1-F1: las cuentas globales (GlobalUserRole activo) son invisibles desde la empresa.
+        var globalUserIds = await IamIdentityScope.GetGlobalUserIdsAsync(
+            _accessRepository,
+            allMemberships.Select(m => m.IdentityUserId),
+            cancellationToken
+        );
+        var memberships = allMemberships
+            .Where(m => !globalUserIds.Contains(m.IdentityUserId))
+            .ToList();
 
         if (memberships.Count == 0)
             return Result<IReadOnlyList<CompanyUserMembershipAdminDto>>.Success(

@@ -10,15 +10,27 @@ namespace ERP.Application.Tests.Access;
 public sealed class GetSessionStatisticsHandlerTests
 {
     private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid CompanyId = Guid.NewGuid();
+
+    private static (Mock<ICurrentTenant> tenant, Mock<ICurrentCompany> company) Context(
+        bool hasCompany = true
+    )
+    {
+        var tenant = new Mock<ICurrentTenant>();
+        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.HasCompanyContext).Returns(hasCompany);
+        company.Setup(c => c.CompanyId).Returns(hasCompany ? CompanyId : Guid.Empty);
+        return (tenant, company);
+    }
 
     [Fact]
     public async Task Calcula_las_estadisticas_correctamente_desde_los_conteos_por_status()
     {
         var repo = new Mock<IUserSessionRepository>();
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var (tenant, company) = Context();
 
-        repo.Setup(r => r.GetStatusCountsAsync(TenantId, null, It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.GetStatusCountsAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(
                 new Dictionary<UserSessionStatus, int>
                 {
@@ -29,7 +41,7 @@ public sealed class GetSessionStatisticsHandlerTests
                 }
             );
 
-        var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object);
+        var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object, company.Object);
         var result = await handler.Handle(new GetSessionStatisticsQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -44,31 +56,46 @@ public sealed class GetSessionStatisticsHandlerTests
     public async Task Status_ausentes_en_el_diccionario_se_cuentan_como_cero()
     {
         var repo = new Mock<IUserSessionRepository>();
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var (tenant, company) = Context();
 
-        repo.Setup(r => r.GetStatusCountsAsync(TenantId, null, It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.GetStatusCountsAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<UserSessionStatus, int>());
 
-        var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object);
+        var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object, company.Object);
         var result = await handler.Handle(new GetSessionStatisticsQuery(), CancellationToken.None);
 
         result.Value!.Total.Should().Be(0);
     }
 
     [Fact]
-    public async Task Filtra_por_CompanyId_cuando_se_recibe()
+    public async Task IAM_V1_F1_un_CompanyId_de_otra_empresa_no_amplia_el_alcance()
     {
-        var companyId = Guid.NewGuid();
+        var otherCompanyId = Guid.NewGuid();
         var repo = new Mock<IUserSessionRepository>();
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.Setup(t => t.TenantId).Returns(TenantId);
-        repo.Setup(r => r.GetStatusCountsAsync(TenantId, companyId, It.IsAny<CancellationToken>()))
+        var (tenant, company) = Context();
+        repo.Setup(r => r.GetStatusCountsAsync(TenantId, CompanyId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<UserSessionStatus, int>());
 
-        var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object);
-        await handler.Handle(new GetSessionStatisticsQuery(companyId), CancellationToken.None);
+        var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object, company.Object);
+        await handler.Handle(new GetSessionStatisticsQuery(otherCompanyId), CancellationToken.None);
 
         repo.VerifyAll();
+        repo.Verify(
+            r => r.GetStatusCountsAsync(TenantId, otherCompanyId, It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+    }
+
+    [Fact]
+    public async Task IAM_V1_F1_sin_empresa_activa_es_Forbidden()
+    {
+        var repo = new Mock<IUserSessionRepository>();
+        var (tenant, company) = Context(hasCompany: false);
+
+        var handler = new GetSessionStatisticsHandler(repo.Object, tenant.Object, company.Object);
+        var result = await handler.Handle(new GetSessionStatisticsQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        repo.VerifyNoOtherCalls();
     }
 }

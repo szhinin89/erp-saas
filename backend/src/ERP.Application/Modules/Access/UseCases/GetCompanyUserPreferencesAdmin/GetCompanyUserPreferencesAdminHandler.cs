@@ -37,7 +37,16 @@ public sealed class GetCompanyUserPreferencesAdminHandler
         // Mismo mensaje para "no existe" y "pertenece a otra empresa" — evita que un
         // administrador de un tenant/empresa distinto pueda confirmar por diferencia de
         // respuesta que un CompanyUserId de otra empresa existe.
-        if (membership is null || membership.CompanyId != _currentCompany.CompanyId)
+        // IAM-V1-F1: una cuenta global responde igual que "no existe" / "otra empresa".
+        if (
+            !await IamIdentityScope.IsAdministrableMembershipAsync(
+                _accessRepository,
+                membership,
+                _currentCompany.CompanyId,
+                cancellationToken
+            )
+            || membership is null
+        )
             return Result<CompanyUserPreferencesAdminDto?>.NotFound(
                 "Usuario de empresa no encontrado."
             );
