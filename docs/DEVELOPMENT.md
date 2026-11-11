@@ -137,6 +137,7 @@ Esta sección mantiene la lista y versiones oficiales. La [política de herramie
 | Excel | ClosedXML | |
 | Códigos QR / barras | QRCoder, ZXing.Net + SkiaSharp | `SkiaSharp.NativeAssets.Linux.NoDependencies` aporta el nativo musl del runtime Docker Alpine |
 | HTTP saliente | `Microsoft.Extensions.Http` | `IHttpClientFactory` (cliente SOAP SRI) |
+| Contexto HTTP (Infrastructure) | `Microsoft.AspNetCore.Http`, `Microsoft.AspNetCore.Http.Abstractions`, `Microsoft.AspNetCore.Hosting.Abstractions`, `Microsoft.AspNetCore.WebUtilities` | `WebUtilities` fijado en **2.3.14** (pin explícito en `ERP.Infrastructure.csproj`) para evitar la dependencia transitiva vulnerable GHSA-6527-9fp8-r4x6 (2.3.0–2.3.13) que arrastra `Microsoft.AspNetCore.Http`; retirar el pin cuando `Http` dependa de una versión parcheada |
 | Redis directo | `StackExchange.Redis` | rate limiting distribuido / health probe |
 | API docs | Swashbuckle | `/swagger` |
 | BD | PostgreSQL **16** | Docker `postgreszh`, puerto **5435** |

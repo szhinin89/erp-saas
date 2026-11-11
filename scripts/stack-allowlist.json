@@ -18,6 +18,7 @@
     "Microsoft.AspNetCore.Http",
     "Microsoft.AspNetCore.Http.Abstractions",
     "Microsoft.AspNetCore.Hosting.Abstractions",
+    "Microsoft.AspNetCore.WebUtilities",
     "Microsoft.IdentityModel.Tokens",
     "System.IdentityModel.Tokens.Jwt",
     "AspNetCore.HealthChecks.Redis",
