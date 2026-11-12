@@ -50,11 +50,13 @@ function Resolve-DsScopePaths {
     return $map[$Scope] | Where-Object { Test-Path $_ }
 }
 
-# Lista de archivos .tsx/.css bajo las rutas resueltas.
+# Lista de archivos .tsx/.css bajo las rutas resueltas. Solo codigo de produccion:
+# excluye *.test.tsx (incluye *.visual.test.tsx), cuyos fixtures (hex, rgba) no son UI.
 function Get-DsTargetFiles {
     param([string[]]$Paths)
     $files = foreach ($p in $Paths) {
-        Get-ChildItem -Path $p -Recurse -File -Include "*.tsx", "*.css" -ErrorAction SilentlyContinue
+        Get-ChildItem -Path $p -Recurse -File -Include "*.tsx", "*.css" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notlike "*.test.tsx" }
     }
     return ,@($files | Sort-Object FullName -Unique)
 }

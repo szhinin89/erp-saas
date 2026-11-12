@@ -177,7 +177,8 @@ color se deja al consumidor (semántico por bloque).
 
 Todos los scripts viven en `scripts/ds/` y son PowerShell (`-ExecutionPolicy
 Bypass -File ...`), solo tocan `frontend/src/{modules,components,styles}`,
-nunca `backend/`, nunca hacen commit.
+nunca `backend/`, nunca hacen commit. Auditan solo código de producción: excluyen
+`*.test.tsx` (incluye `*.visual.test.tsx`).
 
 ```powershell
 # Auditoría de solo lectura — genera docs/design-system/DS_AUDIT_REPORT.md
