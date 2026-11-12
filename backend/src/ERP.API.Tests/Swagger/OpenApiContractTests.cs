@@ -366,16 +366,42 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         "Payables",
     ];
 
-    private IEnumerable<(string Path, string Method, JsonObject Op)> Phase2B1Operations() =>
+    /// <summary>API-DOC-V1 / Fase 2B-2: Contabilidad (42) y Ventas (23).</summary>
+    private static readonly string[] Phase2B2Controllers =
+    [
+        "Accounting",
+        "AccountingReports",
+        "ManualJournal",
+        "Sales",
+        "SalesReceivables",
+        "SalesReturn",
+    ];
+
+    private IEnumerable<(string Path, string Method, JsonObject Op)> OperationsOf(
+        string[] controllers
+    ) =>
         Operations()
-            .Where(o =>
-                Phase2B1Controllers.Contains(o.Op["operationId"]!.GetValue<string>().Split('_')[0])
-            );
+            .Where(o => controllers.Contains(o.Op["operationId"]!.GetValue<string>().Split('_')[0]));
+
+    private IEnumerable<(string Path, string Method, JsonObject Op)> Phase2B1Operations() =>
+        OperationsOf(Phase2B1Controllers);
+
+    /// <summary>Todas las operaciones con documentación funcional completa (2B-1 + 2B-2).</summary>
+    private IEnumerable<(string Path, string Method, JsonObject Op)> DocumentedOperations() =>
+        OperationsOf([.. Phase2B1Controllers, .. Phase2B2Controllers]);
 
     [Fact]
     public void Las_71_operaciones_de_Integraciones_Caja_y_Finanzas_estan_inventariadas()
     {
         Phase2B1Operations().Should().HaveCount(71);
+    }
+
+    [Fact]
+    public void Las_65_operaciones_de_Contabilidad_y_Ventas_estan_inventariadas()
+    {
+        OperationsOf(Phase2B2Controllers).Should().HaveCount(65);
+        OperationsOf(["Accounting", "AccountingReports", "ManualJournal"]).Should().HaveCount(42);
+        OperationsOf(["Sales", "SalesReceivables", "SalesReturn"]).Should().HaveCount(23);
     }
 
     [Fact]
@@ -394,9 +420,9 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public void Operaciones_de_los_tres_modulos_tienen_summary_contrato_2xx_tipado_y_respuestas_descritas()
+    public void Operaciones_documentadas_tienen_summary_contrato_2xx_tipado_y_respuestas_descritas()
     {
-        foreach (var (path, method, op) in Phase2B1Operations())
+        foreach (var (path, method, op) in DocumentedOperations())
         {
             var label = $"{method.ToUpperInvariant()} {path}";
             op["summary"]?.GetValue<string>().Should().NotBeNullOrWhiteSpace(label);
@@ -433,6 +459,14 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     [InlineData("/api/integration/v1/companies/{id}/status", "GET", "200", new[] { "404" })]
     [InlineData("/api/integration/v1/companies/{id}/activate", "PUT", "200", new[] { "404" })]
     [InlineData("/api/integration/v1/companies/{id}/suspend", "PUT", "200", new[] { "404" })]
+    [InlineData("/api/v1/sales", "POST", "201", new[] { "404", "422" })]
+    [InlineData("/api/v1/sales/{id}/authorize", "POST", "200", new[] { "404", "422" })]
+    [InlineData("/api/v1/sales/{id}/cancel", "POST", "200", new[] { "400", "404", "422" })]
+    [InlineData("/api/v1/sales/{id}", "PUT", "200", new[] { "400", "404", "422" })]
+    [InlineData("/api/v1/accounting/accounts", "POST", "201", new[] { "409", "422" })]
+    [InlineData("/api/v1/accounting/accounts/{id}/disable", "PATCH", "200", new[] { "404", "409" })]
+    [InlineData("/api/v1/accounting/accounting-periods/{id}/close", "PATCH", "200", new[] { "404", "422" })]
+    [InlineData("/api/v1/accounting/reports/trial-balance", "GET", "200", new[] { "422" })]
     [InlineData("/api/v1/cash-sessions/{id}/close", "POST", "200", new[] { "404", "422" })]
     [InlineData("/api/v1/cash-sessions/open", "POST", "201", new[] { "404", "409", "422" })]
     [InlineData("/api/v1/cash-funding-requests/{id}/cancel", "POST", "200", new[] { "403", "404", "422" })]

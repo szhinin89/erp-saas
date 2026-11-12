@@ -1,3 +1,4 @@
+using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Sales.UseCases;
 using ERP.Domain.Kernel.Permissions;
@@ -27,13 +28,36 @@ public sealed class SalesReceivablesController : ControllerBase
 
     public SalesReceivablesController(IMediator mediator) => _mediator = mediator;
 
+    /// <summary>Obtiene la cuenta por cobrar generada por una factura de venta, con sus cuotas.</summary>
+    /// <remarks>
+    /// Exige sucursal activa autorizada, pero no filtra por sucursal. El estado persistido solo distingue
+    /// <c>pending</c> y <c>cancelled</c>; la etiqueta de estado (Anulada, Pagada, Vencida, Parcial, Pendiente) se
+    /// calcula en el servidor a partir del saldo y la mora.
+    /// </remarks>
+    /// <param name="invoiceId">Id de la factura de venta.</param>
+    /// <response code="200">Cuenta por cobrar de la factura.</response>
+    /// <response code="404">La factura no tiene cuenta por cobrar.</response>
     [HttpGet("by-invoice/{invoiceId:guid}")]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
+    [ProducesResponseType(typeof(ApiResponse<SalesReceivableDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByInvoice(Guid invoiceId, CancellationToken ct) =>
         this.ToOkOrNotFound(await _mediator.Send(new GetReceivableByInvoiceQuery(invoiceId), ct));
 
+    /// <summary>Lista las cuentas por cobrar de ventas, paginadas y ordenadas de la más reciente a la más antigua.</summary>
+    /// <remarks>
+    /// Exige sucursal activa autorizada. Filtro <c>status</c>: <c>pending</c> (no anulada y con saldo), <c>paid</c> (no
+    /// anulada y saldo en cero) o cualquier otro valor, que se compara literalmente con el estado persistido (por
+    /// ejemplo <c>cancelled</c>). No se validan los límites de paginación.
+    /// </remarks>
+    /// <param name="search">Texto de búsqueda opcional.</param>
+    /// <param name="status">Filtro de estado opcional (<c>pending</c>, <c>paid</c>, <c>cancelled</c>).</param>
+    /// <param name="pageNumber">Página (base 1; por defecto 1).</param>
+    /// <param name="pageSize">Tamaño de página (por defecto 25).</param>
+    /// <response code="200">Página de cuentas por cobrar con el total.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
+    [ProducesResponseType(typeof(ApiResponse<ReceivablesListResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetList(
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,

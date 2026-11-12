@@ -1,6 +1,6 @@
 # Project Status
 
-## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fase 2B-1 implementada; pendiente de CI)
+## API-DOC-V1 — Documentación Swagger/OpenAPI — EN CURSO (Fase 2B-1 en `main`; Fase 2B-2 implementada, pendiente de revisión)
 
 **No está CLOSED:** faltan los módulos restantes (la cobertura de `summary`, contrato 2xx, errores específicos y
 ejemplos es parcial fuera de los módulos ya trabajados). Solo metadatos y pruebas: sin cambios de rutas, métodos,
@@ -12,7 +12,8 @@ permisos, DTO, validadores ni lógica.
   garantiza, `ProblemDetails` inferido sustituido por el envelope, `operationId` `{Controller}_{Action}`, ids de
   esquema portables, `required` en esquemas solo de respuesta, `writeOnly` en secretos de entrada). Pruebas en
   `ERP.API.Tests/Swagger/OpenApiContractTests.cs`.
-- **Fase 2B-1 — Integraciones (8), Caja (29) y Finanzas/Tesorería (34), 71 operaciones:** `summary`, `remarks`
+- **Fase 2B-1 — Integraciones (8), Caja (29) y Finanzas/Tesorería (34), 71 operaciones** (`5c9bd8b91`; CI #1167
+  SUCCESS confirmado por el propietario): `summary`, `remarks`
   verificados contra el handler, `[ProducesResponseType]` tipado, errores 400/404/409/422 solo con evidencia,
   descripción de parámetros. 13 POST pasan a documentar 201 (el código ya respondía 201). Dos correcciones a la
   Fase 2A: los filtros de operación se registran **después** de los comentarios XML (el filtro XML sobrescribía la
@@ -21,6 +22,12 @@ permisos, DTO, validadores ni lógica.
   Compras (`GET purchases/returns/{id}`, `GET purchases/invoices/{invoiceId}/returnable-lines`,
   `DELETE purchases/{id}`) ya documentado en XML gana el cuerpo envelope, comprobado contra
   `ToOkOrNotFound`/`ToOkOrBadRequest` y `Result<T>.NotFound`; sus controladores no se tocaron.
+- **Fase 2B-2 — Contabilidad (42) y Ventas (23), 65 operaciones** (`AccountingController`,
+  `AccountingReportsController`, `ManualJournalController`, `SalesController`, `SalesReceivablesController`,
+  `SalesReturnController`): mismo procedimiento que 2B-1, solo XML, `[ProducesResponseType]` y `using`
+  (código idéntico a HEAD comprobado). 5 POST pasan a documentar 201 (el código ya respondía 201): `accounts`,
+  `accounting-periods`, `posting-rules`, `manual-journal-entries` y `sales`. Contabilidad y Ventas figuran como
+  CLOSED en entregas previas; se documentaron solo con metadatos por autorización del propietario.
 - **Sin ejemplos:** requieren tocar DTO; pendiente de decisión.
 
 ### Hallazgos de la Fase 2B-1 — pendientes de clasificación por el propietario
@@ -39,6 +46,17 @@ Detectados al documentar; **no** autorizan desarrollo. Clasificación pendiente 
 | API-DOC-F-07 | `CashMovementReasons.Update` | Con id de ruta distinto al del cuerpo devuelve `BadRequest()` sin envelope; `CashRegister.Update` usa `ApiBadRequest` con envelope. No verificado en ejecución. |
 | API-DOC-F-08 | `CashSession.Close/RecordMovement/RecordBankDeposit` | Sesión ajena o cerrada responde 422, no 403. Contrato vigente documentado; confirmar si es intencional. |
 | API-DOC-F-09 | `IntegrationController.CreateCompany` | `NormalizeOfficial` rellena con ceros o trunca el RUC a 13 caracteres; un tercero puede no esperarlo. |
+| API-DOC-F-10 | Cierre anual (`GenerateFiscalYearClosingEntry`) y asientos manuales (`PERIOD_NOT_OPEN`, `MANUAL_FUTURE_DATE`, `ACCOUNTING_NOT_ENABLED`, `YEAR_END_CLOSING_*`, `FISCAL_YEAR_*`, `MANUAL_POST_INTERNAL`) | Códigos construidos con `ValidationFailure` pero ausentes de `MessageCatalog`: caen en el fallback BusinessRule y responden 400 (mensaje genérico «Unmapped response code» en cierre anual) en vez de 422; los demás fallos de negocio salen 422. Criterio de status no uniforme dentro del módulo. |
+| API-DOC-F-11 | `AccountingController.ReprocessPosting` | Un fallo contable de la obligación responde 200 (queda `Failed` en el cuerpo); solo «no pudo registrarse el resultado» responde 400 (`Failure` sin código). |
+| API-DOC-F-12 | Reglas de contabilización y períodos | `Enable`/`Disable` de reglas con estado repetido responde 409 (`Conflict`); las transiciones inválidas de períodos responden 422. Criterio no uniforme. |
+| API-DOC-F-13 | `AccountingController.GenerateAccountingFiscalYear` | Responde 200 aunque crea períodos (`ToOkOrBadRequest`, no `ToCreatedOrBadRequest`). |
+| API-DOC-F-14 | `ManualJournalController.Create` (reintento idempotente) | Devuelve siempre `Draft`, versión 1 y sin número, aunque el asiento ya se haya editado o publicado. |
+| API-DOC-F-15 | `ManualJournalController.Reverse` | La respuesta describe el asiento de reverso, no el original. |
+| API-DOC-F-16 | `ManualJournalController` | No declara `[Produces("application/json")]`, a diferencia del resto de controladores. |
+| API-DOC-F-17 | Listados de `SalesReceivables` y `SalesReturn` | `pageNumber`/`pageSize` no se validan (el Libro Diario sí: `pageSize` 1–200); en `SalesReturn` un `status` desconocido se ignora sin filtrar. |
+| API-DOC-F-18 | `SalesController.AuthorizeInvoice` | Con una factura anulada responde 422 con el mensaje «Esta factura ya fue autorizada.», que no corresponde al estado. |
+| API-DOC-F-19 | `SalesController.ApplyGlobalDiscount` / `CancelInvoice` | Sus 400 salen de `ArgumentException` mapeada por `ExceptionMiddleware`, no de una validación explícita. |
+| API-DOC-F-20 | `SalesController.AuthorizeInvoice` | Tiene lector de reintentos ante conflictos de concurrencia; el código HTTP final de un conflicto no resuelto no está verificado (no se declaró 409). |
 
 ## UIUX-DS-CONSOLIDATION-V1 — Consolidación arquitectónica del Design System UI/UX — CLOSED (2026-11-12)
 

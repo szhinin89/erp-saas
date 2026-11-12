@@ -40,8 +40,9 @@ public sealed class SalesReturnController : ControllerBase
     /// Tributaria). No autoriza ni afecta inventario/Caja/CxC/Contabilidad; eso ocurre
     /// recién en <see cref="Authorize"/>.
     /// </summary>
+    /// <param name="command">Factura origen, motivo (obligatorio) y líneas (<c>InvoiceDetailId</c> y cantidad) a devolver.</param>
     /// <response code="201">Borrador creado.</response>
-    /// <response code="404">La factura origen no existe.</response>
+    /// <response code="404">La factura origen no existe en la sucursal activa.</response>
     /// <response code="422">
     /// Motivo vacío, factura no autorizada, línea que no pertenece a la factura, o cantidad
     /// que excede el remanente devolvible.
@@ -61,7 +62,10 @@ public sealed class SalesReturnController : ControllerBase
     /// editable (fijado al crear el Draft). Solo permitido mientras la devolución esté en
     /// estado <c>Draft</c>.
     /// </summary>
+    /// <param name="id">Id de la devolución; debe coincidir con <c>command.id</c>.</param>
+    /// <param name="command">Id de la devolución y nuevas líneas (reemplazan a las anteriores).</param>
     /// <response code="200">Borrador actualizado.</response>
+    /// <response code="400">El id de la ruta no coincide con el del cuerpo.</response>
     /// <response code="404">La devolución o la factura origen no existen.</response>
     /// <response code="422">
     /// La devolución ya no está en borrador, línea que no pertenece a la factura, o
@@ -70,6 +74,7 @@ public sealed class SalesReturnController : ControllerBase
     [HttpPut("{id:guid}")]
     [Authorize(Policy = $"perm:{SalesPermissions.Update}")]
     [ProducesResponseType(typeof(ApiResponse<SalesReturnDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateDraft(
@@ -88,6 +93,7 @@ public sealed class SalesReturnController : ControllerBase
     /// elimina el registro). Solo permitido desde <c>Draft</c>; una devolución ya
     /// <c>Authorized</c> no puede cancelarse por esta vía.
     /// </summary>
+    /// <param name="id">Id de la devolución en borrador.</param>
     /// <response code="200">Borrador cancelado.</response>
     /// <response code="404">La devolución no existe.</response>
     /// <response code="422">La devolución ya no está en borrador (autorizada o ya cancelada).</response>
@@ -104,6 +110,7 @@ public sealed class SalesReturnController : ControllerBase
     // ══════════════════════════════════════════════════════════════════════
 
     /// <summary>Obtiene una devolución de venta por Id, con sus líneas y asignaciones de reembolso.</summary>
+    /// <param name="id">Id de la devolución.</param>
     /// <response code="200">Devolución encontrada.</response>
     /// <response code="404">La devolución no existe.</response>
     [HttpGet("{id:guid}")]
@@ -114,6 +121,14 @@ public sealed class SalesReturnController : ControllerBase
         this.ToOkOrNotFound(await _mediator.Send(new GetSalesReturnByIdQuery(id), ct));
 
     /// <summary>Lista devoluciones de venta paginadas, con filtro opcional por texto y estado.</summary>
+    /// <remarks>
+    /// El filtro <c>status</c> acepta los nombres <c>Draft</c>, <c>Authorized</c> y <c>Cancelled</c> sin distinguir
+    /// mayúsculas; un valor desconocido se ignora y no filtra. No se validan los límites de paginación.
+    /// </remarks>
+    /// <param name="search">Texto de búsqueda opcional.</param>
+    /// <param name="status">Estado opcional: <c>Draft</c>, <c>Authorized</c> o <c>Cancelled</c>.</param>
+    /// <param name="pageNumber">Página (base 1; por defecto 1).</param>
+    /// <param name="pageSize">Tamaño de página (por defecto 25).</param>
     /// <response code="200">Listado paginado.</response>
     [HttpGet]
     [Authorize(Policy = $"perm:{SalesPermissions.View}")]
@@ -139,6 +154,7 @@ public sealed class SalesReturnController : ControllerBase
     /// <c>Authorized</c> previas). Usado por el formulario de creación del Draft para
     /// mostrar qué y cuánto se puede devolver.
     /// </summary>
+    /// <param name="invoiceId">Id de la factura de venta.</param>
     /// <response code="200">Líneas devolvibles de la factura.</response>
     /// <response code="404">La factura no existe.</response>
     [HttpGet("/api/v1/sales/invoices/{invoiceId:guid}/returnable-lines")]
@@ -165,6 +181,13 @@ public sealed class SalesReturnController : ControllerBase
     /// reembolso (Caja/CxC) en la misma transacción. Emite además, si corresponde, la Nota
     /// de Crédito electrónica asociada.
     /// </summary>
+    /// <remarks>
+    /// No es idempotente: solo se autoriza una devolución en <c>Draft</c> (una ya autorizada o cancelada responde 422).
+    /// La autorización toma un bloqueo por factura, revalida bajo bloqueo que la factura siga siendo devolvible y que
+    /// las cantidades no excedan el remanente, y no deja efectos parciales si algo falla (se revierte la transacción).
+    /// </remarks>
+    /// <param name="id">Id de la devolución en borrador.</param>
+    /// <param name="request">Asignaciones de reembolso (<c>refundAllocations</c>): método y monto; su suma debe igualar el total devuelto.</param>
     /// <response code="200">Devolución autorizada.</response>
     /// <response code="404">La devolución o la factura origen no existen.</response>
     /// <response code="422">
