@@ -363,28 +363,33 @@ public sealed class ApiErrorContractHttpTests : IAsyncLifetime
     // ── ZH-SCOPE-ERROR-SEMANTICS-01 ─────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Empresa_por_id_de_otro_tenant_de_otra_empresa_sin_membership_e_inexistente_son_el_mismo_404()
+    public async Task Empresa_por_id_de_otro_tenant_de_otra_empresa_sin_membership_e_inexistente_son_rechazadas_con_el_mismo_codigo()
     {
+        // El acceso por id de empresa ya no existe: la empresa objetivo la fija X-Company-Id.
+        // Otro tenant e inexistente son indistinguibles; sin membership comparte status y código.
         var otherTenant = await SendAsync(
             HttpMethod.Get,
-            $"/api/v1/companies/{_otherTenantCompanyId}",
-            branchId: null
+            "/api/v1/companies/current",
+            branchId: null,
+            companyId: _otherTenantCompanyId
         );
         var sameTenantNoMembership = await SendAsync(
             HttpMethod.Get,
-            $"/api/v1/companies/{_foreignCompanyId}",
-            branchId: null
+            "/api/v1/companies/current",
+            branchId: null,
+            companyId: _foreignCompanyId
         );
         var nonexistent = await SendAsync(
             HttpMethod.Get,
-            $"/api/v1/companies/{Guid.NewGuid()}",
-            branchId: null
+            "/api/v1/companies/current",
+            branchId: null,
+            companyId: Guid.NewGuid()
         );
 
-        nonexistent.Status.Should().Be(HttpStatusCode.NotFound);
-        nonexistent.Code.Should().Be("NOT_FOUND");
+        nonexistent.Status.Should().Be(HttpStatusCode.Forbidden);
+        nonexistent.Code.Should().Be("COMPANY_SCOPE_FORBIDDEN");
         otherTenant.Should().BeEquivalentTo(nonexistent);
-        sameTenantNoMembership.Should().BeEquivalentTo(nonexistent);
+        (sameTenantNoMembership.Status, sameTenantNoMembership.Code).Should().Be((nonexistent.Status, nonexistent.Code));
     }
 
     [Fact]

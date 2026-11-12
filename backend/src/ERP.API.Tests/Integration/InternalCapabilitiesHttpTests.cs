@@ -196,12 +196,9 @@ public sealed partial class InternalCapabilitiesHttpTests : IClassFixture<CrossC
     public async Task Perfil_completo_branding_y_fiscal_se_guardan_y_reabren_por_HTTP()
     {
         using var admin = Admin();
-        await Data(await admin.PutAsJsonAsync($"/api/v1/companies/{_f.CompanyAId}", new
-        {
-            id = _f.CompanyAId, legalName = "Empresa interna V1", tradeName = "Marca interna", isActive = true,
-        }));
         var general = new
         {
+            legalName = "Empresa interna V1", tradeName = "Marca interna",
             corporateEmail = "empresa@example.invalid", phone = "022345678", website = "https://example.invalid",
             currencyCode = "USD", timezone = "America/Guayaquil", legalRepName = "Representante Prueba",
             legalRepPosition = "Gerente", legalRepIdNumber = "1710034065", legalRepEmail = "rep@example.invalid", legalRepPhone = "0991234567",
