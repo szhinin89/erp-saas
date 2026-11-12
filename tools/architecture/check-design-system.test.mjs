@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {
   collectDynamicCustomProperties,
   findCssLiteralViolations,
+  findRetiredCssSelectorViolations,
+  findViolations,
+  stripComments,
   findStaleLiteralAllowances,
   findUndefinedTokenViolations,
   runCheckDesignSystem,
@@ -138,4 +141,71 @@ test('repo real: sin violaciones F-04-primitive/-rgb/-motion (deuda histórica c
     ['F-04-primitive', 'F-04-rgb', 'F-04-motion'].includes(v.rule),
   );
   assert.deepEqual(literal, []);
+});
+
+/**
+ * Lote 2C — `.pf-table` retirada: un nuevo consumidor TSX o una declaración CSS activa falla;
+ * comentarios y clases hermanas distintas (`pf-table-empty`) no.
+ */
+const PF_CFG = {
+  deprecatedClassPatterns: [
+    {
+      rule: 'F-04-pf-table',
+      pattern: '(?<![\\w-])pf-table(?![\\w-])',
+      ignoreComments: true,
+      message: 'retirada',
+    },
+  ],
+  iconInlineStyleRule: 'F-04-icon',
+  iconInlineStyleMessage: 'icon',
+  retiredCssSelectors: [
+    { rule: 'F-04-pf-table', pattern: '(?<![\\w-])\\.pf-table(?![\\w-])', message: 'retirado' },
+  ],
+};
+const TSX = 'frontend/src/modules/demo/Demo.tsx';
+const CSS_X = 'frontend/src/styles/x.css';
+const hits = (list) => list.map((v) => `${v.rule}@${v.line}`);
+
+test('pf-table: className en TSX → FAIL (con línea correcta)', () => {
+  const tsx = 'export const A = () => (\n  <table className="pf-table zh-mb-16" />\n);';
+  assert.deepEqual(hits(findViolations(PF_CFG, TSX, tsx)), ['F-04-pf-table@2']);
+  assert.deepEqual(hits(findViolations(PF_CFG, TSX, '<table className={"x pf-table"} />')), ['F-04-pf-table@1']);
+});
+
+test('pf-table: comentarios de línea, de bloque, JSDoc y JSX → PASS', () => {
+  const tsx = [
+    '// se migró desde pf-table',
+    '/* ex pf-table */',
+    '/**\n * historial: pf-table\n */',
+    'const a = <div>{/* pf-table */}</div>;',
+  ].join('\n');
+  assert.deepEqual(findViolations(PF_CFG, TSX, tsx), []);
+});
+
+test('pf-table: clases hermanas (pf-table-empty, my-pf-table) no coinciden', () => {
+  assert.deepEqual(findViolations(PF_CFG, TSX, '<td className="pf-table-empty my-pf-table" />'), []);
+});
+
+test('pf-table: stripComments conserva saltos de línea y no trata una URL como comentario', () => {
+  const src = 'a // c\nb /* x\ny */ c\nhttp://h/p';
+  const out = stripComments(src);
+  assert.equal(out.split('\n').length, src.split('\n').length);
+  assert.ok(out.includes('http://h/p'));
+  assert.equal(out.includes('// c'), false);
+});
+
+test('pf-table: declaración CSS activa → FAIL; comentarios, .pf-table-empty y otras clases → PASS', () => {
+  const css = '/* x */\n.pf-table {\n  width: 100%;\n}\n.a .pf-table thead th { color: red; }';
+  assert.deepEqual(hits(findRetiredCssSelectorViolations(PF_CFG, CSS_X, css)), [
+    'F-04-pf-table@2',
+    'F-04-pf-table@5',
+  ]);
+  const ok =
+    '/* .pf-table ELIMINADO */\n/* multi\n   .pf-table */\n.pf-table-empty { color: red; }\n.table { width: 100%; }';
+  assert.deepEqual(findRetiredCssSelectorViolations(PF_CFG, CSS_X, ok), []);
+});
+
+test('repo real: sin consumidores TSX ni declaraciones CSS activas de .pf-table', () => {
+  const v = runCheckDesignSystem().violations.filter((x) => x.rule === 'F-04-pf-table');
+  assert.deepEqual(v, []);
 });

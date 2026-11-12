@@ -82,6 +82,20 @@
       "pattern": "\\bpf-field(__[\\w-]+)?\\b|\\bpf-label\\b",
       "message": "Clase eliminada '.pf-field'/'.pf-field__*'/'.pf-label' (Fase 3B) — usar <ZHField density=\"compact\">."
     }
+    ,
+    {
+      "rule": "F-04-pf-table",
+      "pattern": "(?<![\\w-])pf-table(?![\\w-])",
+      "ignoreComments": true,
+      "message": "Clase retirada '.pf-table' (Lote 2C) — usar <ZHDataTable> o className=\"table table--compact table--neutral\"."
+    }
+  ],
+  "retiredCssSelectors": [
+    {
+      "rule": "F-04-pf-table",
+      "pattern": "(?<![\\w-])\\.pf-table(?![\\w-])",
+      "message": "Selector retirado '.pf-table' (Lote 2C) — las tablas usan .table + .table--compact + .table--neutral (zh-ui.css)."
+    }
   ],
   "iconInlineStyleRule": "F-04-icon",
   "iconInlineStyleMessage": "Ícono con style={{ fontSize: N }} — usar .zh-icon-sm/md/lg/xl según valor (14/16/18/32px).",

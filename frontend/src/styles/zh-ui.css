@@ -1719,11 +1719,11 @@ select.zh-input--compact {
   padding: var(--density-table-cell-padding-y) var(--density-table-cell-padding-x);
 }
 
-/* Neutral variant (Bloque 9B) — reproduce la identidad visual histórica de
-   .pf-table (erp-form-core.css, ya en retiro): encabezado gris neutro en vez
-   del tinte de marca, texto más claro, borde de encabezado más grueso, borde
-   de celda visible incluso en la última fila. Aditiva: solo toca color/
-   fondo/borde/tamaño de fuente, nunca padding — combina sin conflicto con
+/* Neutral variant (Bloque 9B) — identidad visual neutra de las tablas ERP
+   densas y editables: encabezado gris neutro en vez del tinte de marca, texto
+   más claro, borde de encabezado más grueso, borde de celda visible incluso
+   en la última fila. Aditiva: solo toca color/fondo/borde/tamaño de fuente,
+   nunca padding — combina sin conflicto con
    .table--compact (que solo toca padding). No usar sola: siempre junto a
    .table, ej. className="table table--compact table--neutral". */
 .table--neutral {

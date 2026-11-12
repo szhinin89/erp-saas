@@ -29,8 +29,8 @@ interface Props {
  * (líneas de factura con remanente), mientras que esta pantalla necesita
  * filas dinámicas libres (concepto + monto) sin origen en ninguna línea de
  * factura — no existe un editor de líneas libres reutilizable en el módulo
- * Purchases. Se extiende el mismo patrón visual (`pf-table`, `zh-text-align-right`,
- * `table-scroll`) en vez de crear una tabla nueva desde cero.
+ * Purchases. Se extiende el mismo patrón visual (`table table--compact table--neutral`,
+ * `zh-text-align-right`, `table-scroll`) en vez de crear una tabla nueva desde cero.
  *
  * Nunca incluye Item/Bodega/Cantidad — diseño FLOW-READY-02C §2.2: esta
  * entidad es solo para descuento/promoción, nunca mueve inventario.

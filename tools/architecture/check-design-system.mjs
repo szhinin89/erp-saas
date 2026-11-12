@@ -72,6 +72,7 @@ export function designSystemRulesFor(cfg, rel) {
       rules.add(CSS_TOKEN_RULE);
       for (const { rule } of CSS_LITERAL_RULES) rules.add(rule);
     }
+    for (const { rule } of cfg.retiredCssSelectors ?? []) rules.add(rule);
   }
   return rules;
 }
@@ -159,19 +160,56 @@ function lineOf(content, index) {
 }
 
 /**
+ * Sustituye comentarios (bloque y de línea) por espacios, conservando saltos de línea para que
+ * offsets y números de línea no cambien. Sirve a las reglas que prohíben USOS de una clase y no
+ * deben fallar por referencias históricas en comentarios. Un doble slash precedido por ':' (URL)
+ * no es comentario.
+ * @param {string} content
+ */
+export function stripComments(content) {
+  const blank = (m) => m.replace(/[^\n]/g, ' ');
+  return content
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
+    .replace(/(^|[^:\w"'`])(\/\/[^\n]*)/g, (_, pre, c) => pre + blank(c));
+}
+
+/**
+ * Selectores CSS retirados (`cfg.retiredCssSelectors`): una declaración activa de la clase en un
+ * .css es violación; los comentarios no cuentan.
+ * @param {{ retiredCssSelectors?: { rule: string, pattern: string, message: string }[] }} cfg
+ * @param {string} rel
+ * @param {string} content
+ */
+export function findRetiredCssSelectorViolations(cfg, rel, content) {
+  /** @type {{ rule: string, file: string, message: string, line: number }[]} */
+  const found = [];
+  const code = content.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  for (const { rule, pattern, message } of cfg.retiredCssSelectors ?? []) {
+    const re = new RegExp(pattern, 'g');
+    let m;
+    while ((m = re.exec(code)) !== null) {
+      found.push({ rule, file: rel, message, line: lineOf(code, m.index) });
+    }
+  }
+  return found;
+}
+
+/**
  * @param {{ scanGlobs: string[], deprecatedClassPatterns: { rule: string, pattern: string, message: string }[], iconInlineStyleRule: string, iconInlineStyleMessage: string }} cfg
  * @param {string} rel
  * @param {string} content
  */
-function findViolations(cfg, rel, content) {
+export function findViolations(cfg, rel, content) {
   /** @type {{ rule: string, file: string, message: string, line: number }[]} */
   const found = [];
+  const code = stripComments(content);
 
-  for (const { rule, pattern, message } of cfg.deprecatedClassPatterns) {
+  for (const { rule, pattern, message, ignoreComments } of cfg.deprecatedClassPatterns) {
+    const source = ignoreComments ? code : content;
     const re = new RegExp(pattern, 'g');
     let m;
-    while ((m = re.exec(content)) !== null) {
-      found.push({ rule, file: rel, message, line: lineOf(content, m.index) });
+    while ((m = re.exec(source)) !== null) {
+      found.push({ rule, file: rel, message, line: lineOf(source, m.index) });
     }
   }
 
@@ -346,6 +384,7 @@ export function runCheckDesignSystem() {
         ? []
         : findUndefinedTokenViolations(definedTokens, rel, content, dynamicByCss.get(rel))),
       ...findCssLiteralViolations(cfg.cssLiteralAllowances, rel, content),
+      ...findRetiredCssSelectorViolations(cfg, rel, content),
     ];
     for (const v of cssViolations) {
       if (!allowed?.has(v.rule)) addViolation(result, v);

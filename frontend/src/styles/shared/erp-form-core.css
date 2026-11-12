@@ -175,49 +175,10 @@
   font-size: 14px;
 }
 
-/* ── Products Table ─────────────────────────────────────────── */
-/* .pf-table-wrap ELIMINADO (Bloque 7B) — sin consumidores. */
-.pf-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.pf-table thead th {
-  padding: var(--space-3) var(--space-3);
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: var(--color-surface-container-low);
-  border-bottom: 2px solid var(--color-border);
-  white-space: nowrap;
-}
-/* .pf-th--right/--center/.pf-td--right/--center ELIMINADOS (Bloque 7B) —
-   consolidados en .zh-text-align-right/--center (zh-ui.css). */
-.pf-table tbody td {
-  padding: var(--space-2) var(--space-3);
-  vertical-align: middle;
-  border-bottom: 1px solid var(--color-surface-container-low);
-}
-.pf-table tbody tr:hover {
-  background: var(--color-surface-container-low);
-}
-/* .pf-td--num ELIMINADO (Bloque 7B) — consolidado en .zh-table-cell--num (zh-ui.css). */
-
-/* .pf-table-input/--num ELIMINADOS (Bloque 8A) — consolidados en
-   ZhDateInput/ZhDecimalInput/ZhTextInput (components/zh/inputs/) +
-   .zh-numeric-input (zh-ui.css) para alineación numérica.
-   .pf-table-input--sm/--xs ELIMINADOS (Bloque 7B) — sin consumidores. */
-
 /* Row actions */
 /* .pf-row-actions ELIMINADO (Bloque 7B) — sin consumidores. */
 /* .pf-row-action/--danger ELIMINADOS (Bloque 7C) — consolidados en el
    componente oficial <ZHIconButton> (components/zh/ZHIconButton.tsx). */
-
-/* .pf-table-empty ELIMINADO (Bloque 7B) — consolidado en .zh-table-empty (zh-ui.css).
-   .pf-table-empty__icon ELIMINADO (Bloque 7B) — sin consumidores. */
 
 /* ── Main Layout (content + totals sidebar) ─────────────────── */
 .pf-main-layout {
